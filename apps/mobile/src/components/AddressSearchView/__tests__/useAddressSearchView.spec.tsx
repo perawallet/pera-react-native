@@ -62,7 +62,32 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     getChainDescriptor: (chainId: string) => ({
         family: chainId === 'ethereum' ? 'evm' : 'algorand',
+        displayName: chainId === 'ethereum' ? 'Ethereum' : 'Algorand',
     }),
+}))
+
+// Echo params so a test can see what reaches the copy.
+vi.mock('@hooks/useLanguage', () => ({
+    useLanguage: () => ({
+        t: (key: string, params?: Record<string, string>) =>
+            params ? `${key} ${JSON.stringify(params)}` : key,
+    }),
+}))
+
+const mockFamiliesWithCopy = new Set(['algorand', 'evm'])
+
+vi.mock('@modules/chain-ui', () => ({
+    chainUiFor: (family: string) => ({
+        wrongNetworkAddress: mockFamiliesWithCopy.has(family)
+            ? {
+                  titleKey: `title.${family}`,
+                  bodyKey: `body.${family}`,
+                  sendBodyKey: `send_body.${family}`,
+                  sendOnNetworkBodyKey: `send_body_on_network.${family}`,
+              }
+            : undefined,
+    }),
+    chainFamilyDisplay: (family: string) => ({ label: `family.${family}` }),
 }))
 
 const ALGORAND_SCOPE: ChainScope = {
@@ -1012,6 +1037,62 @@ describe('useAddressSearchView', () => {
             expect(
                 itemsOfType(result.current.matchingItems, 'account'),
             ).toHaveLength(1)
+        })
+
+        describe('message', () => {
+            const enterEvmAddress = (
+                props: Partial<Parameters<typeof useAddressSearchView>[0]>,
+            ) => {
+                vi.mocked(addressFamilyOf).mockReturnValue({
+                    family: 'evm',
+                    address: EVM_ADDRESS,
+                })
+                const { result } = renderHook(() =>
+                    useAddressSearchView({ scope: ALGORAND_SCOPE, ...props }),
+                )
+                act(() => {
+                    result.current.setValue(EVM_ADDRESS)
+                })
+                return result.current.wrongNetworkMessage
+            }
+
+            afterEach(() => {
+                mockFamiliesWithCopy.add('evm')
+            })
+
+            it("titles the address's network and keeps the body neutral when nothing is sent", () => {
+                expect(enterEvmAddress({})).toEqual({
+                    title: 'title.evm',
+                    body: 'body.algorand',
+                })
+            })
+
+            it("names the sent asset and points at the address's family", () => {
+                expect(
+                    enterEvmAddress({ sendingAssetLabel: 'ALGO' })?.body,
+                ).toBe(
+                    `send_body.algorand ${JSON.stringify({
+                        asset: 'ALGO',
+                        network: 'Algorand',
+                        family: 'family.evm',
+                    })}`,
+                )
+            })
+
+            it('names the network of an asset found on several chains', () => {
+                expect(
+                    enterEvmAddress({
+                        sendingAssetLabel: 'USDC',
+                        isSendingMultiChainAsset: true,
+                    })?.body,
+                ).toMatch(/^send_body_on_network\.algorand /)
+            })
+
+            it('has no message when a family registers no copy, so the search miss shows', () => {
+                mockFamiliesWithCopy.delete('evm')
+
+                expect(enterEvmAddress({})).toBeUndefined()
+            })
         })
 
         it('does not flag input that is no address at all', () => {

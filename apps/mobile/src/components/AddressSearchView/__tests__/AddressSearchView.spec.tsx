@@ -13,7 +13,7 @@
 import { render, screen, fireEvent } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { AddressSearchView } from '../AddressSearchView'
-import { addressFamilyOf, useContacts } from '@perawallet/wallet-core-contacts'
+import { useContacts } from '@perawallet/wallet-core-contacts'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { useNfdSearchQuery } from '@perawallet/wallet-core-nfd'
 import {
@@ -54,27 +54,11 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
 })
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    getChainDescriptor: () => ({ family: 'algorand', displayName: 'Algorand' }),
+    getChainDescriptor: () => ({ family: 'algorand' }),
 }))
 
-// Echo params so a test can see what reaches the copy.
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({
-        t: (key: string, params?: Record<string, string>) =>
-            params ? `${key} ${JSON.stringify(params)}` : key,
-    }),
-}))
-
-vi.mock('@modules/chain-ui', () => ({
-    chainUiFor: (family: string) => ({
-        wrongNetworkAddress: {
-            titleKey: `address_entry.wrong_network.title.${family}`,
-            bodyKey: `address_entry.wrong_network.body.${family}`,
-            sendBodyKey: `address_entry.wrong_network.send_body.${family}`,
-            sendOnNetworkBodyKey: `address_entry.wrong_network.send_body_on_network.${family}`,
-        },
-    }),
-}))
+// The real registry loads every chain's UI; the copy is the hook spec's concern.
+vi.mock('@modules/chain-ui', () => ({ chainUiFor: () => ({}) }))
 
 vi.mock('@perawallet/wallet-core-nfd', () => ({
     useNfdSearchQuery: vi.fn(() => ({ data: [], isLoading: false })),
@@ -392,85 +376,5 @@ describe('AddressSearchView', () => {
             'NFD_ADDRESS_123',
             'alice.algo',
         )
-    })
-
-    describe('address from another network', () => {
-        const EVM_ADDRESS = '0xb0c164986d5d753a88455d5dbf82541573d21d48'
-
-        const typeAddress = () => {
-            const input = screen.getAllByPlaceholderText(
-                'address_entry.search_placeholder',
-            )[1]
-            fireEvent.change(input, { target: { value: EVM_ADDRESS } })
-        }
-
-        beforeEach(() => {
-            vi.mocked(addressFamilyOf).mockReturnValue({
-                family: 'evm',
-                address: EVM_ADDRESS,
-            })
-        })
-
-        it('explains that the asset being sent cannot go to that network', () => {
-            render(
-                <AddressSearchView
-                    scope={SCOPE}
-                    onSelected={mockOnSelected}
-                    sendingAssetLabel='ALGO'
-                />,
-            )
-
-            typeAddress()
-
-            expect(
-                screen.getByText('address_entry.wrong_network.title.evm'),
-            ).toBeTruthy()
-            expect(
-                screen.getByText(
-                    `address_entry.wrong_network.send_body.algorand ${JSON.stringify(
-                        { asset: 'ALGO', network: 'Algorand' },
-                    )}`,
-                ),
-            ).toBeTruthy()
-            expect(
-                screen.queryByText('address_entry.no_accounts_found'),
-            ).toBeNull()
-        })
-
-        it('names the network of an asset found on several chains', () => {
-            render(
-                <AddressSearchView
-                    scope={SCOPE}
-                    onSelected={mockOnSelected}
-                    sendingAssetLabel='USDC'
-                    isSendingMultiChainAsset
-                />,
-            )
-
-            typeAddress()
-
-            expect(
-                screen.getByText(
-                    `address_entry.wrong_network.send_body_on_network.algorand ${JSON.stringify(
-                        { asset: 'USDC', network: 'Algorand' },
-                    )}`,
-                ),
-            ).toBeTruthy()
-        })
-
-        it('stays neutral when nothing is being sent', () => {
-            render(
-                <AddressSearchView
-                    scope={SCOPE}
-                    onSelected={mockOnSelected}
-                />,
-            )
-
-            typeAddress()
-
-            expect(
-                screen.getByText('address_entry.wrong_network.body.algorand'),
-            ).toBeTruthy()
-        })
     })
 })

@@ -213,12 +213,12 @@
                 "evm": "Hier können nur EVM-kompatible Adressen hinzugefügt werden. Bitte überprüfe die Adresse und versuche es erneut."
             },
             "send_body": {
-                "algorand": "{{asset}} kann nur an Algorand-Adressen gesendet werden. Bitte überprüfe die Empfängeradresse oder wähle ein EVM-Asset zum Senden.",
-                "evm": "{{asset}} kann nur an EVM-kompatible Adressen (beginnend mit „0x“) gesendet werden. Bitte überprüfe die Empfängeradresse oder wähle ein Algorand-Asset zum Senden."
+                "algorand": "{{asset}} kann nur an Algorand-Adressen gesendet werden. Bitte überprüfe die Empfängeradresse oder wähle zum Senden ein Asset auf {{family}}.",
+                "evm": "{{asset}} kann nur an EVM-kompatible Adressen (beginnend mit „0x“) gesendet werden. Bitte überprüfe die Empfängeradresse oder wähle zum Senden ein Asset auf {{family}}."
             },
             "send_body_on_network": {
-                "algorand": "{{asset}} auf {{network}} kann nur an Algorand-Adressen gesendet werden. Bitte überprüfe die Empfängeradresse oder wähle ein EVM-Asset zum Senden.",
-                "evm": "{{asset}} auf {{network}} kann nur an EVM-kompatible Adressen (beginnend mit „0x“) gesendet werden. Bitte überprüfe die Empfängeradresse oder wähle ein Algorand-Asset zum Senden."
+                "algorand": "{{asset}} auf {{network}} kann nur an Algorand-Adressen gesendet werden. Bitte überprüfe die Empfängeradresse oder wähle zum Senden ein Asset auf {{family}}.",
+                "evm": "{{asset}} auf {{network}} kann nur an EVM-kompatible Adressen (beginnend mit „0x“) gesendet werden. Bitte überprüfe die Empfängeradresse oder wähle zum Senden ein Asset auf {{family}}."
             }
         }
     },

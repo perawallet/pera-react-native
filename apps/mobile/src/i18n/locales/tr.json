@@ -213,12 +213,12 @@
                 "evm": "Buraya yalnızca EVM uyumlu adresler eklenebilir. Adresi kontrol et ve tekrar dene."
             },
             "send_body": {
-                "algorand": "{{asset}} yalnızca Algorand adreslerine gönderilebilir. Alıcı adresini kontrol et veya göndermek için bir EVM varlığı seç.",
-                "evm": "{{asset}} yalnızca EVM uyumlu adreslere (“0x” ile başlayan) gönderilebilir. Alıcı adresini kontrol et veya göndermek için bir Algorand varlığı seç."
+                "algorand": "{{asset}} yalnızca Algorand adreslerine gönderilebilir. Alıcı adresini kontrol et veya göndermek için {{family}} üzerinde bir varlık seç.",
+                "evm": "{{asset}} yalnızca EVM uyumlu adreslere (“0x” ile başlayan) gönderilebilir. Alıcı adresini kontrol et veya göndermek için {{family}} üzerinde bir varlık seç."
             },
             "send_body_on_network": {
-                "algorand": "{{network}} üzerindeki {{asset}} yalnızca Algorand adreslerine gönderilebilir. Alıcı adresini kontrol et veya göndermek için bir EVM varlığı seç.",
-                "evm": "{{network}} üzerindeki {{asset}} yalnızca EVM uyumlu adreslere (“0x” ile başlayan) gönderilebilir. Alıcı adresini kontrol et veya göndermek için bir Algorand varlığı seç."
+                "algorand": "{{network}} üzerindeki {{asset}} yalnızca Algorand adreslerine gönderilebilir. Alıcı adresini kontrol et veya göndermek için {{family}} üzerinde bir varlık seç.",
+                "evm": "{{network}} üzerindeki {{asset}} yalnızca EVM uyumlu adreslere (“0x” ile başlayan) gönderilebilir. Alıcı adresini kontrol et veya göndermek için {{family}} üzerinde bir varlık seç."
             }
         }
     },

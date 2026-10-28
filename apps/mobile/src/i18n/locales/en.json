@@ -213,12 +213,12 @@
                 "evm": "Only EVM-compatible addresses can be added here. Please check the address and try again."
             },
             "send_body": {
-                "algorand": "{{asset}} can only be sent to Algorand addresses. Please check the recipient address or choose an EVM asset to send.",
-                "evm": "{{asset}} can only be sent to EVM-compatible addresses (starting with “0x”). Please check the recipient address or choose an Algorand asset to send."
+                "algorand": "{{asset}} can only be sent to Algorand addresses. Please check the recipient address or choose an asset on {{family}} to send.",
+                "evm": "{{asset}} can only be sent to EVM-compatible addresses (starting with “0x”). Please check the recipient address or choose an asset on {{family}} to send."
             },
             "send_body_on_network": {
-                "algorand": "{{asset}} on {{network}} can only be sent to Algorand addresses. Please check the recipient address or choose an EVM asset to send.",
-                "evm": "{{asset}} on {{network}} can only be sent to EVM-compatible addresses (starting with “0x”). Please check the recipient address or choose an Algorand asset to send."
+                "algorand": "{{asset}} on {{network}} can only be sent to Algorand addresses. Please check the recipient address or choose an asset on {{family}} to send.",
+                "evm": "{{asset}} on {{network}} can only be sent to EVM-compatible addresses (starting with “0x”). Please check the recipient address or choose an asset on {{family}} to send."
             }
         }
     },

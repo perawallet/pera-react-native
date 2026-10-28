@@ -12,11 +12,7 @@
 
 import { useCallback, useMemo } from 'react'
 import { addressOn, type WalletAccount } from '@perawallet/wallet-core-accounts'
-import type {
-    ChainScope,
-    I18nKey,
-} from '@perawallet/wallet-core-chain-contract'
-import { getChainDescriptor } from '@perawallet/wallet-core-chain-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     PWIcon,
     PWLoadingIndicator,
@@ -31,7 +27,6 @@ import {
     type SearchableListSearchProps,
 } from '@components/SearchableList'
 import { useLanguage } from '@hooks/useLanguage'
-import { chainUiFor } from '@modules/chain-ui'
 import { AccountResultRow } from './AccountResultRow'
 import { AddressSearchInput } from './AddressSearchInput'
 import { PasteFromClipboardRow } from './PasteFromClipboardRow'
@@ -40,18 +35,6 @@ import {
     useAddressSearchView,
     type AddressSearchItem,
 } from './useAddressSearchView'
-
-/** A family's copy for an address entered where another family's is expected. */
-export type WrongNetworkAddressCopy = {
-    /** Names this family, for its address entered elsewhere. */
-    titleKey: I18nKey
-    /** For a field that takes this family's addresses. */
-    bodyKey: I18nKey
-    /** As `bodyKey`, while sending the `{{asset}}`. */
-    sendBodyKey: I18nKey
-    /** As `sendBodyKey`, naming the `{{network}}` of an asset found on several. */
-    sendOnNetworkBodyKey: I18nKey
-}
 
 export type AddressSearchViewProps = {
     onSelected: (address: string, nfdName?: string) => void
@@ -66,12 +49,9 @@ export type AddressSearchViewProps = {
     showAddIcon?: boolean
     /** See {@link UseAddressSearchViewProps.showClipboardPaste}. */
     showClipboardPaste?: boolean
-    /**
-     * The asset being sent, such as its unit name. Set, the wrong-network
-     * message speaks of sending it; unset, it stays neutral.
-     */
+    /** See {@link UseAddressSearchViewProps.sendingAssetLabel}. */
     sendingAssetLabel?: string
-    /** The sent asset exists on other chains too, so the message names this one. */
+    /** See {@link UseAddressSearchViewProps.isSendingMultiChainAsset}. */
     isSendingMultiChainAsset?: boolean
 }
 
@@ -86,7 +66,7 @@ export const AddressSearchView = ({
     showAddIcon = false,
     showClipboardPaste = false,
     sendingAssetLabel,
-    isSendingMultiChainAsset = false,
+    isSendingMultiChainAsset,
 }: AddressSearchViewProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
@@ -96,13 +76,15 @@ export const AddressSearchView = ({
         matchingItems,
         hasResults,
         isNfdLoading,
-        mismatchedFamily,
+        wrongNetworkMessage,
     } = useAddressSearchView({
         scope,
         excludeAddress,
         accountFilter,
         showAllContactsWhenEmpty,
         showClipboardPaste,
+        sendingAssetLabel,
+        isSendingMultiChainAsset,
     })
 
     const renderItem = useCallback(
@@ -249,44 +231,21 @@ export const AddressSearchView = ({
 
     const keyExtractor = useCallback((item: AddressSearchItem) => item.key, [])
 
-    const emptyComponent = useCallback(() => {
-        const addressCopy =
-            mismatchedFamily && chainUiFor(mismatchedFamily).wrongNetworkAddress
-        const descriptor = getChainDescriptor(scope.chainId)
-        const expectedCopy = chainUiFor(descriptor.family).wrongNetworkAddress
-        if (addressCopy && expectedCopy) {
-            return (
+    const emptyComponent = useCallback(
+        () =>
+            wrongNetworkMessage ? (
                 <EmptyView
-                    title={t(addressCopy.titleKey)}
-                    body={
-                        sendingAssetLabel
-                            ? t(
-                                  isSendingMultiChainAsset
-                                      ? expectedCopy.sendOnNetworkBodyKey
-                                      : expectedCopy.sendBodyKey,
-                                  {
-                                      asset: sendingAssetLabel,
-                                      network: descriptor.displayName,
-                                  },
-                              )
-                            : t(expectedCopy.bodyKey)
-                    }
+                    title={wrongNetworkMessage.title}
+                    body={wrongNetworkMessage.body}
                 />
-            )
-        }
-        return (
-            <EmptyView
-                title={t('address_entry.no_accounts_found')}
-                body={t('address_entry.no_accounts_body')}
-            />
-        )
-    }, [
-        t,
-        mismatchedFamily,
-        scope.chainId,
-        sendingAssetLabel,
-        isSendingMultiChainAsset,
-    ])
+            ) : (
+                <EmptyView
+                    title={t('address_entry.no_accounts_found')}
+                    body={t('address_entry.no_accounts_body')}
+                />
+            ),
+        [t, wrongNetworkMessage],
+    )
 
     const listEmptyComponent = isNfdLoading ? (
         <PWView style={styles.loadingContainer}>

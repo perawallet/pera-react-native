@@ -213,12 +213,12 @@
                 "evm": "Aquí solo se pueden añadir direcciones compatibles con EVM. Revisa la dirección e inténtalo de nuevo."
             },
             "send_body": {
-                "algorand": "{{asset}} solo se puede enviar a direcciones de Algorand. Revisa la dirección del destinatario o elige un activo EVM para enviar.",
-                "evm": "{{asset}} solo se puede enviar a direcciones compatibles con EVM (que empiezan por “0x”). Revisa la dirección del destinatario o elige un activo de Algorand para enviar."
+                "algorand": "{{asset}} solo se puede enviar a direcciones de Algorand. Revisa la dirección del destinatario o elige un activo en {{family}} para enviar.",
+                "evm": "{{asset}} solo se puede enviar a direcciones compatibles con EVM (que empiezan por “0x”). Revisa la dirección del destinatario o elige un activo en {{family}} para enviar."
             },
             "send_body_on_network": {
-                "algorand": "{{asset}} en {{network}} solo se puede enviar a direcciones de Algorand. Revisa la dirección del destinatario o elige un activo EVM para enviar.",
-                "evm": "{{asset}} en {{network}} solo se puede enviar a direcciones compatibles con EVM (que empiezan por “0x”). Revisa la dirección del destinatario o elige un activo de Algorand para enviar."
+                "algorand": "{{asset}} en {{network}} solo se puede enviar a direcciones de Algorand. Revisa la dirección del destinatario o elige un activo en {{family}} para enviar.",
+                "evm": "{{asset}} en {{network}} solo se puede enviar a direcciones compatibles con EVM (que empiezan por “0x”). Revisa la dirección del destinatario o elige un activo en {{family}} para enviar."
             }
         }
     },
