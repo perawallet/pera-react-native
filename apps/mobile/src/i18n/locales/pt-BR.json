@@ -1766,7 +1766,12 @@
             "source_of_wealth_other_label": "Origem do seu patrimônio",
             "business_sector_label": "Setor de atividade",
             "annual_income_label": "Renda anual estimada",
-            "annual_income_invalid": "Digite sua renda anual estimada (até 50 caracteres)",
+            "annual_income_bands": {
+                "less_than_20k": "Menos de $20,000",
+                "between_20k_and_50k": "De $20,000 a $50,000",
+                "between_50k_and_100k": "De $50,000 a $100,000",
+                "more_than_100k": "Mais de $100,000"
+            },
             "income_country_label": "País onde você tem renda",
             "add_income_country": "Adicionar outro país",
             "remove_country": "Remover",

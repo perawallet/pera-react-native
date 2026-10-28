@@ -164,6 +164,7 @@ export type AdditionalDetailsInput = {
     /** Only with {@link OTHER_SOURCE_OF_WEALTH_KEY}. */
     sourceOfWealthOther?: string
     businessSector?: string
+    /** One of {@link EstimatedAnnualIncome}. */
     estimatedAnnualIncome: string
     /** ISO 3166-1 alpha-2, one to three. */
     incomeCountries: string[]
@@ -486,8 +487,33 @@ export const mailingAddressSchema = z.object({
 
 export type MailingAddressFormValues = z.infer<typeof mailingAddressSchema>
 
-// Format unconfirmed with Baanx: the spec's example is a band key with no list.
-export const estimatedAnnualIncomeSchema = z.string().trim().min(1).max(50)
+/**
+ * Baanx's annual income bands, in display order and always shown in USD. Its
+ * spec only shows `between_20k_and_50k`; the other keys follow that pattern
+ * and are unconfirmed.
+ */
+export const EstimatedAnnualIncome = {
+    LessThan20k: 'less_than_20k',
+    Between20kAnd50k: 'between_20k_and_50k',
+    Between50kAnd100k: 'between_50k_and_100k',
+    MoreThan100k: 'more_than_100k',
+} as const
+export type EstimatedAnnualIncome =
+    (typeof EstimatedAnnualIncome)[keyof typeof EstimatedAnnualIncome]
+
+export const ESTIMATED_ANNUAL_INCOME_BANDS: readonly EstimatedAnnualIncome[] =
+    Object.values(EstimatedAnnualIncome)
+
+export const isEstimatedAnnualIncome = (
+    value: unknown,
+): value is EstimatedAnnualIncome =>
+    ESTIMATED_ANNUAL_INCOME_BANDS.includes(value as EstimatedAnnualIncome)
+
+// Typed boolean so zod keeps the field a string (TS infers a guard from a bare
+// arrow): the form starts blank until a band is picked.
+export const estimatedAnnualIncomeSchema = z
+    .string()
+    .refine((value): boolean => isEstimatedAnnualIncome(value))
 
 const TIN_MAX_LENGTH = 20
 const OTHER_TEXT_MAX_LENGTH = 100

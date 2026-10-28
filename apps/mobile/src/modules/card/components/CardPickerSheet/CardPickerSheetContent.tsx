@@ -25,7 +25,7 @@ import { EmptyView } from '@components/EmptyView'
 import { useStyles } from './styles'
 
 export type CardPickerSheetCopy = {
-    searchPlaceholder: string
+    searchPlaceholder?: string
     emptyTitle: string
     emptyBody: string
     errorTitle: string
@@ -36,8 +36,9 @@ export type CardPickerSheetCopy = {
 export type CardPickerSheetContentProps<T> = {
     title: string
     items: T[]
-    search: string
-    onSearchChange: (value: string) => void
+    /** Leave out for a short fixed list, which shows no search box. */
+    search?: string
+    onSearchChange?: (value: string) => void
     isLoading: boolean
     isError: boolean
     onRetry: () => void
@@ -48,7 +49,7 @@ export type CardPickerSheetContentProps<T> = {
     copy: CardPickerSheetCopy
 }
 
-/** The searchable list sheet the card signup pickers share. */
+/** The list sheet the card signup pickers share, searchable when long. */
 export const CardPickerSheetContent = <T,>({
     title,
     items,
@@ -101,11 +102,13 @@ export const CardPickerSheetContent = <T,>({
                 </PWView>
             ) : (
                 <PWView style={styles.content}>
-                    <SearchInput
-                        value={search}
-                        onChangeText={onSearchChange}
-                        placeholder={copy.searchPlaceholder}
-                    />
+                    {onSearchChange ? (
+                        <SearchInput
+                            value={search ?? ''}
+                            onChangeText={onSearchChange}
+                            placeholder={copy.searchPlaceholder}
+                        />
+                    ) : null}
                     <PWFlatList
                         inBottomSheet
                         data={items}

@@ -14,24 +14,43 @@ import type {
     RegistrationOption,
     RegistrationOptionList,
 } from '@perawallet/wallet-core-card'
+import { useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { CardPickerSheetContent } from '../CardPickerSheet'
 import { useCardOptionPicker } from './useCardOptionPicker'
 
 export type CardOptionPickerContentProps = {
     title: string
-    list: RegistrationOptionList
-}
+} & (
+    | { list: RegistrationOptionList; options?: undefined }
+    /** A short fixed set the app owns, shown without search. */
+    | { options: RegistrationOption[]; list?: undefined }
+)
 
 const getKey = (option: RegistrationOption) => option.key
 const getLabel = (option: RegistrationOption) => option.name
 const getTestID = (option: RegistrationOption) => `card-option-${option.key}`
 
-export const CardOptionPickerContent = ({
+const useOptionPickerCopy = () => {
+    const { t } = useLanguage()
+    return {
+        searchPlaceholder: t('peraCard.option_picker.search_placeholder'),
+        emptyTitle: t('peraCard.option_picker.empty_title'),
+        emptyBody: t('peraCard.option_picker.empty_body'),
+        errorTitle: t('peraCard.option_picker.error_title'),
+        errorBody: t('peraCard.option_picker.error_body'),
+        retry: t('peraCard.option_picker.retry'),
+    }
+}
+
+const SettingsOptionPicker = ({
     title,
     list,
-}: CardOptionPickerContentProps) => {
-    const { t } = useLanguage()
+}: {
+    title: string
+    list: RegistrationOptionList
+}) => {
+    const copy = useOptionPickerCopy()
     const {
         search,
         setSearch,
@@ -55,16 +74,46 @@ export const CardOptionPickerContent = ({
             getKey={getKey}
             getLabel={getLabel}
             getTestID={getTestID}
-            copy={{
-                searchPlaceholder: t(
-                    'peraCard.option_picker.search_placeholder',
-                ),
-                emptyTitle: t('peraCard.option_picker.empty_title'),
-                emptyBody: t('peraCard.option_picker.empty_body'),
-                errorTitle: t('peraCard.option_picker.error_title'),
-                errorBody: t('peraCard.option_picker.error_body'),
-                retry: t('peraCard.option_picker.retry'),
-            }}
+            copy={copy}
         />
     )
 }
+
+const FixedOptionPicker = ({
+    title,
+    options,
+}: {
+    title: string
+    options: RegistrationOption[]
+}) => {
+    const copy = useOptionPickerCopy()
+    const { resolve } = useBottomSheetResult<RegistrationOption>()
+
+    return (
+        <CardPickerSheetContent
+            title={title}
+            items={options}
+            isLoading={false}
+            isError={false}
+            onRetry={() => undefined}
+            onSelect={resolve}
+            getKey={getKey}
+            getLabel={getLabel}
+            getTestID={getTestID}
+            copy={copy}
+        />
+    )
+}
+
+export const CardOptionPickerContent = (props: CardOptionPickerContentProps) =>
+    props.list === undefined ? (
+        <FixedOptionPicker
+            title={props.title}
+            options={props.options}
+        />
+    ) : (
+        <SettingsOptionPicker
+            title={props.title}
+            list={props.list}
+        />
+    )

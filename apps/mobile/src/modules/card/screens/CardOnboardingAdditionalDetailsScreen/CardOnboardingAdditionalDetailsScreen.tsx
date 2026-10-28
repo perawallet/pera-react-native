@@ -22,7 +22,6 @@ import {
 import { useLanguage } from '@hooks/useLanguage'
 import { CountrySelectorField } from '../../components/CountrySelectorField'
 import { OptionSelectorField } from '../../components/OptionSelectorField'
-import { AnnualIncomeField } from './AnnualIncomeField'
 import { useCardOnboardingAdditionalDetailsScreen } from './useCardOnboardingAdditionalDetailsScreen'
 import { useStyles } from './styles'
 
@@ -48,6 +47,8 @@ export const CardOnboardingAdditionalDetailsScreen = () => {
         handleSelectSourceOfWealth,
         selectedBusinessSector,
         handleSelectBusinessSector,
+        selectedAnnualIncome,
+        handleSelectAnnualIncome,
         incomeCountries,
         hasDuplicateIncomeCountry,
         canAddIncomeCountry,
@@ -216,7 +217,15 @@ export const CardOnboardingAdditionalDetailsScreen = () => {
                         />
                     ) : null}
 
-                    <AnnualIncomeField control={control} />
+                    <OptionSelectorField
+                        label={t(
+                            'peraCard.additional_details.annual_income_label',
+                        )}
+                        placeholder={optionPlaceholder}
+                        value={selectedAnnualIncome?.name}
+                        onPress={handleSelectAnnualIncome}
+                        testID='card-onboarding-annual-income-field'
+                    />
 
                     {incomeCountries.map((country, index) => (
                         <PWView key={`${country.iso3166alpha2}-${index}`}>

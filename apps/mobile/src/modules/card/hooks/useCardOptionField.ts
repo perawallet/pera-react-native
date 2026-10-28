@@ -20,12 +20,15 @@ import { useBottomSheet } from '@modules/bottom-sheet'
 import { CardOptionPickerContent } from '../components/CardOptionPicker'
 
 export type UseCardOptionFieldParams = {
-    list: RegistrationOptionList
     /** Title of the picker sheet. */
     pickerTitle: string
     /** Called with the chosen option, e.g. to write its key into a form. */
     onChange: (option: RegistrationOption) => void
-}
+} & (
+    | { list: RegistrationOptionList; options?: undefined }
+    /** A short fixed set the app owns, picked without search. */
+    | { options: RegistrationOption[]; list?: undefined }
+)
 
 export type UseCardOptionFieldResult = {
     selected: Optional<RegistrationOption>
@@ -34,9 +37,10 @@ export type UseCardOptionFieldResult = {
     setSelected: (option: RegistrationOption) => void
 }
 
-/** One choice from a GET /v1/auth/settings `{ key, name }` list. */
+/** One `{ key, name }` choice, from a GET /v1/auth/settings list or a fixed set. */
 export const useCardOptionField = ({
     list,
+    options,
     pickerTitle,
     onChange,
 }: UseCardOptionFieldParams): UseCardOptionFieldResult => {
@@ -55,15 +59,17 @@ export const useCardOptionField = ({
     const handleSelect = useCallback(() => {
         void (async () => {
             const option = await request<RegistrationOption>({
-                contents: createElement(CardOptionPickerContent, {
-                    title: pickerTitle,
-                    list,
-                }),
+                contents: createElement(
+                    CardOptionPickerContent,
+                    list === undefined
+                        ? { title: pickerTitle, options }
+                        : { title: pickerTitle, list },
+                ),
                 options: { size: 'full', autoCreateContainer: false },
             })
             if (option) setSelected(option)
         })()
-    }, [request, pickerTitle, list, setSelected])
+    }, [request, pickerTitle, list, options, setSelected])
 
     return { selected, handleSelect, setSelected }
 }

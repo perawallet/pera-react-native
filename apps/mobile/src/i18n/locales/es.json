@@ -1764,7 +1764,12 @@
             "source_of_wealth_other_label": "Origen de tu patrimonio",
             "business_sector_label": "Sector de actividad",
             "annual_income_label": "Ingresos anuales estimados",
-            "annual_income_invalid": "Introduce tus ingresos anuales estimados (máximo 50 caracteres)",
+            "annual_income_bands": {
+                "less_than_20k": "Menos de $20,000",
+                "between_20k_and_50k": "De $20,000 a $50,000",
+                "between_50k_and_100k": "De $50,000 a $100,000",
+                "more_than_100k": "Más de $100,000"
+            },
             "income_country_label": "País donde obtienes ingresos",
             "add_income_country": "Añadir otro país",
             "remove_country": "Eliminar",

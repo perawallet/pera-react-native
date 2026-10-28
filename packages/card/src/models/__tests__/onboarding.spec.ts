@@ -24,6 +24,8 @@ import {
     personalDetailsSchema,
     additionalDetailsSchema,
     createAdditionalDetailsSchema,
+    ESTIMATED_ANNUAL_INCOME_BANDS,
+    isEstimatedAnnualIncome,
 } from '../onboarding'
 
 const parse = (password: string, confirmPassword = password) =>
@@ -346,6 +348,25 @@ describe('addressSchema', () => {
     })
 })
 
+describe('EstimatedAnnualIncome', () => {
+    it('lists the four bands in display order', () => {
+        expect(ESTIMATED_ANNUAL_INCOME_BANDS).toEqual([
+            'less_than_20k',
+            'between_20k_and_50k',
+            'between_50k_and_100k',
+            'more_than_100k',
+        ])
+    })
+
+    it.each([
+        ['between_20k_and_50k', true],
+        ['30000', false],
+        [null, false],
+    ])('reads %s as a band: %s', (value, expected) => {
+        expect(isEstimatedAnnualIncome(value)).toBe(expected)
+    })
+})
+
 describe('additionalDetailsSchema', () => {
     const valid = {
         tin: '123456789',
@@ -355,7 +376,7 @@ describe('additionalDetailsSchema', () => {
         sourceOfWealth: 'employment_salaried',
         sourceOfWealthOther: '',
         businessSector: 'information_and_communication',
-        estimatedAnnualIncome: '30000',
+        estimatedAnnualIncome: 'between_20k_and_50k',
         incomeCountries: ['PT'],
     }
 
@@ -396,10 +417,14 @@ describe('additionalDetailsSchema', () => {
             'occupationOther',
         ],
         ['no business sector', { businessSector: '' }, 'businessSector'],
-        ['no income', { estimatedAnnualIncome: '  ' }, 'estimatedAnnualIncome'],
         [
-            'an income over 50 characters',
-            { estimatedAnnualIncome: '1'.repeat(51) },
+            'no income band',
+            { estimatedAnnualIncome: '' },
+            'estimatedAnnualIncome',
+        ],
+        [
+            'an income that is not one of the bands',
+            { estimatedAnnualIncome: '30000' },
             'estimatedAnnualIncome',
         ],
         ['no income country', { incomeCountries: [] }, 'incomeCountries'],
