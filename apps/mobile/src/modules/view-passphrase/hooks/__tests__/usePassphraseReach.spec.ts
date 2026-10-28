@@ -19,7 +19,7 @@ type Option = { chainId: string; isEnabled: boolean; address?: string }
 
 const mocks = vi.hoisted(() => ({
     accounts: [] as unknown[],
-    seedChains: [] as string[],
+    registry: [] as { id: string; family: string }[],
     switchedOff: [] as string[],
     optionsByAccount: new Map<string, Option[]>(),
 }))
@@ -39,7 +39,6 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
                 entry => entry?.address === address,
             ),
         ),
-    hdDiscoveryChains: () => mocks.seedChains,
     accountChainOptions: (
         account: WalletAccount,
         isOn: (chainId: string) => boolean,
@@ -47,6 +46,37 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
         (mocks.optionsByAccount.get(account.id) ?? []).filter(option =>
             isOn(option.chainId),
         ),
+}))
+
+const descriptorOf = (id: string) => {
+    const entry = mocks.registry.find(chain => chain.id === id)!
+    return {
+        id,
+        family: entry.family,
+        signing: {
+            schemes: ['scheme'],
+            derivationPaths: { scheme: () => 'm/0' },
+            rawKeySchemes: [],
+        },
+    }
+}
+
+vi.mock('@perawallet/wallet-extension-provider', () => ({
+    getProvider: () => ({
+        chains: {
+            list: () => mocks.registry.map(({ id }) => descriptorOf(id)),
+            has: (id: string) => mocks.registry.some(chain => chain.id === id),
+            get: (id: string) => ({ descriptor: descriptorOf(id) }),
+            isSwitchedOff: (id: string) => mocks.switchedOff.includes(id),
+        },
+    }),
+}))
+
+vi.mock('@modules/chain-ui', () => ({
+    chainUiFor: (family: string) => ({
+        passphraseCompatibilityKey:
+            family === 'unknown' ? undefined : `compatibility.${family}`,
+    }),
 }))
 
 vi.mock('@perawallet/wallet-core-chain-contract', async importOriginal => ({
@@ -63,7 +93,6 @@ vi.mock('@perawallet/wallet-core-chain-contract', async importOriginal => ({
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     chainDisplayNameOf: (chainId: string) =>
         ({ algorand: 'Algorand', ethereum: 'Ethereum', base: 'Base' })[chainId],
-    useSwitchedOffChainIds: () => mocks.switchedOff,
 }))
 
 const hdAccount = (
@@ -84,7 +113,11 @@ const ROOT = hdAccount('root', 0, {
 describe('usePassphraseReach', () => {
     beforeEach(() => {
         mocks.accounts = [ROOT]
-        mocks.seedChains = ['algorand', 'ethereum', 'base']
+        mocks.registry = [
+            { id: 'algorand', family: 'algorand' },
+            { id: 'ethereum', family: 'evm' },
+            { id: 'base', family: 'evm' },
+        ]
         mocks.switchedOff = []
         mocks.optionsByAccount = new Map([
             [
@@ -126,6 +159,7 @@ describe('usePassphraseReach', () => {
                     address: 'ethereum:0xroot',
                 },
             ],
+            compatibilityKeys: ['compatibility.algorand', 'compatibility.evm'],
         })
     })
 
@@ -174,20 +208,48 @@ describe('usePassphraseReach', () => {
         ])
     })
 
-    it('leaves out a chain that is switched off', () => {
+    it('still names and lists a chain whose kill switch is on, since the words still control its funds', () => {
+        mocks.registry = [
+            { id: 'algorand', family: 'algorand' },
+            { id: 'ethereum', family: 'evm' },
+        ]
         mocks.switchedOff = ['ethereum']
 
         const { result } = renderHook(() =>
             usePassphraseReach({ address: 'ALGO-ROOT' }),
         )
 
+        expect(result.current.isMultiNetwork).toBe(true)
+        expect(result.current.networkNames).toEqual(['Algorand', 'Ethereum'])
         expect(result.current.linkedAddresses.map(row => row.chainId)).toEqual([
             'algorand',
+            'ethereum',
+        ])
+    })
+
+    it('gives one explainer paragraph per reached family that has one', () => {
+        mocks.registry = [
+            { id: 'algorand', family: 'algorand' },
+            { id: 'other', family: 'unknown' },
+        ]
+
+        const { result } = renderHook(() =>
+            usePassphraseReach({ address: 'ALGO-ROOT' }),
+        )
+
+        expect(result.current.compatibilityKeys).toEqual([
+            'compatibility.algorand',
         ])
     })
 
     it('is single-network when the seed reaches one chain only', () => {
-        mocks.seedChains = ['algorand']
+        mocks.registry = [{ id: 'algorand', family: 'algorand' }]
+        mocks.optionsByAccount.set('root', [
+            { chainId: 'algorand', isEnabled: true, address: 'ALGO-ROOT' },
+        ])
+        mocks.accounts = [
+            hdAccount('root', 0, { algorand: { address: 'ALGO-ROOT' } }),
+        ]
 
         const { result } = renderHook(() =>
             usePassphraseReach({ address: 'ALGO-ROOT' }),
@@ -197,6 +259,7 @@ describe('usePassphraseReach', () => {
             isMultiNetwork: false,
             networkNames: [],
             linkedAddresses: [],
+            compatibilityKeys: [],
         })
     })
 
@@ -241,6 +304,7 @@ describe('usePassphraseReach', () => {
             isMultiNetwork: false,
             networkNames: [],
             linkedAddresses: [],
+            compatibilityKeys: [],
         })
     })
 })

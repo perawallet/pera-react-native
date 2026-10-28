@@ -10,16 +10,19 @@
  limitations under the License
  */
 
+import type { I18nKey } from '@perawallet/wallet-core-chain-contract'
 import { PWText, PWView } from '@components/core'
 import { InfoButton } from '@components/InfoButton'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 
 export type PassphraseCompatibilityRowProps = {
+    compatibilityKeys: readonly I18nKey[]
     testID?: string
 }
 
 export const PassphraseCompatibilityRow = ({
+    compatibilityKeys,
     testID = 'view_passphrase_bottom_sheet_compatibility',
 }: PassphraseCompatibilityRowProps) => {
     const { t } = useLanguage()
@@ -40,8 +43,9 @@ export const PassphraseCompatibilityRow = ({
             }
         >
             <PWView style={styles.body}>
-                <PWText>{t('view_passphrase.compatibility.evm')}</PWText>
-                <PWText>{t('view_passphrase.compatibility.algorand')}</PWText>
+                {compatibilityKeys.map(key => (
+                    <PWText key={key}>{t(key)}</PWText>
+                ))}
                 <PWText>{t('view_passphrase.compatibility.warning')}</PWText>
             </PWView>
         </InfoButton>

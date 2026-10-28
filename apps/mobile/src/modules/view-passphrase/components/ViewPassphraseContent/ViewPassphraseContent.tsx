@@ -39,7 +39,8 @@ export const ViewPassphraseContent = ({
     const { wordIndices, isLoading, error } = useViewPassphraseContent({
         address,
     })
-    const { isMultiNetwork, linkedAddresses } = usePassphraseReach({ address })
+    const { isMultiNetwork, linkedAddresses, compatibilityKeys } =
+        usePassphraseReach({ address })
     const hasWords = !isLoading && !error && (wordIndices?.length ?? 0) > 0
 
     usePreventScreenCapture(SCREEN_CAPTURE_TAG, true)
@@ -144,7 +145,9 @@ export const ViewPassphraseContent = ({
                         <PassphraseReachList
                             linkedAddresses={linkedAddresses}
                         />
-                        <PassphraseCompatibilityRow />
+                        <PassphraseCompatibilityRow
+                            compatibilityKeys={compatibilityKeys}
+                        />
                     </>
                 )}
             </PWScrollView>
