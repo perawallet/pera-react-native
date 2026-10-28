@@ -29,6 +29,7 @@ import {
     MAX_RECORD_PAGE_READS,
     useTransactionRecordsQuery,
 } from '../useTransactionRecordsQuery'
+import { invalidateTransactionQueriesForAddresses } from '../querykeys'
 
 const mocks = vi.hoisted(() => ({
     getTransactionHistoryWithPending: vi.fn(),
@@ -350,6 +351,335 @@ describe('useTransactionRecordsQuery', () => {
 
         await waitFor(() => expect(result.current.records).toHaveLength(1))
         expect(result.current.hasNextPage).toBe(true)
+    })
+
+    describe('background refetch', () => {
+        type Backend = Record<
+            string,
+            {
+                items: TransactionRecord[]
+                minedItems?: TransactionRecord[]
+                next?: { cursor: string }
+            }
+        >
+        const serve = (backend: Backend) =>
+            mocks.getTransactionHistoryWithPending.mockImplementation(
+                async (_address, _scope, page?: { cursor: string }) =>
+                    backend[page?.cursor ?? 'head'],
+            )
+        const mount = (params: { assetId?: string } = {}) =>
+            renderHook(
+                () =>
+                    useTransactionRecordsQuery({
+                        accountAddress: ADDRESS,
+                        scope: SCOPE,
+                        ...params,
+                    }),
+                { wrapper },
+            )
+        const cached = () =>
+            queryClient.getQueryCache().getAll()[0].state.data as {
+                pages: { records: TransactionRecord[] }[]
+                pageParams: unknown[]
+            }
+        const loadPages = async (
+            result: { current: { fetchNextPage: () => void } },
+            count: number,
+        ) => {
+            await waitFor(() => expect(cached()?.pages).toHaveLength(1))
+            for (let loaded = 1; loaded < count; loaded++) {
+                act(() => result.current.fetchNextPage())
+                await waitFor(() =>
+                    expect(cached().pages).toHaveLength(loaded + 1),
+                )
+            }
+        }
+        const invalidate = async (options?: {
+            shouldRefetchAllPages: true
+        }) => {
+            act(() => {
+                invalidateTransactionQueriesForAddresses(
+                    queryClient,
+                    [ADDRESS],
+                    SCOPE,
+                    options,
+                )
+            })
+            await waitFor(() => expect(queryClient.isFetching()).toBe(0))
+        }
+        const threePages = (): Backend => ({
+            head: {
+                items: [record('B', JAN_10)],
+                next: { cursor: 'c1' },
+            },
+            c1: {
+                items: [record('A', JAN_10 - DAY_MS)],
+                next: { cursor: 'c2' },
+            },
+            c2: { items: [record('Z', JAN_10 - 2 * DAY_MS)] },
+        })
+
+        test('makes one backend read, whatever the number of loaded pages', async () => {
+            const backend = threePages()
+            serve(backend)
+            const { result } = mount()
+            await loadPages(result, 3)
+            mocks.getTransactionHistoryWithPending.mockClear()
+
+            await invalidate()
+
+            expect(
+                mocks.getTransactionHistoryWithPending,
+            ).toHaveBeenCalledTimes(1)
+            expect(mocks.getTransactionHistoryWithPending).toHaveBeenCalledWith(
+                ADDRESS,
+                SCOPE,
+                undefined,
+            )
+            expect(result.current.records.map(r => r.id)).toEqual([
+                'B',
+                'A',
+                'Z',
+            ])
+            expect(cached().pageParams).toEqual([
+                null,
+                { cursor: 'c1' },
+                { cursor: 'c2' },
+            ])
+        })
+
+        test('adds new records ahead and updates loaded ones in place, keeping every page and cursor', async () => {
+            const sent = record('SENT', undefined)
+            const backend: Backend = {
+                head: {
+                    items: [sent, record('A', JAN_10)],
+                    minedItems: [record('A', JAN_10)],
+                    next: { cursor: 'c1' },
+                },
+                c1: { items: [record('Z', JAN_10 - DAY_MS)] },
+            }
+            serve(backend)
+            const { result } = mount()
+            await loadPages(result, 2)
+            backend.head = {
+                items: [
+                    record('NEW', JAN_10 + 2 * DAY_MS),
+                    record('SENT', JAN_10 + DAY_MS),
+                    record('A', JAN_10),
+                    record('OLDER_BEYOND_LOADED', JAN_10 - 3 * DAY_MS),
+                ],
+                next: { cursor: 'c1' },
+            }
+
+            await invalidate()
+
+            expect(result.current.records.map(r => r.id)).toEqual([
+                'NEW',
+                'SENT',
+                'A',
+                'Z',
+            ])
+            expect(
+                result.current.records.find(r => r.id === 'SENT')?.status,
+            ).toBe('confirmed')
+            expect(cached().pageParams).toEqual([null, { cursor: 'c1' }])
+            expect(result.current.hasNextPage).toBe(false)
+        })
+
+        test('re-reads the loaded pages when the head no longer reaches them', async () => {
+            serve(threePages())
+            const { result } = mount()
+            await loadPages(result, 2)
+            mocks.getTransactionHistoryWithPending.mockClear()
+            mocks.getTransactionHistoryWithPending.mockImplementation(
+                async (_address, _scope, page?: { cursor: string }) => {
+                    const k = page ? Number(page.cursor.slice(1)) + 1 : 1
+                    return {
+                        items: [record(`N${k}`, JAN_10 - k * 1000)],
+                        next: { cursor: `n${k}` },
+                    }
+                },
+            )
+
+            await invalidate()
+
+            expect(
+                mocks.getTransactionHistoryWithPending,
+            ).toHaveBeenCalledTimes(MAX_RECORD_PAGE_READS + 1)
+            expect(result.current.records.map(r => r.id)).toEqual([
+                'N1',
+                'N2',
+                'N3',
+                'N4',
+                'N5',
+                'N6',
+            ])
+        })
+
+        test('finds a new match in a filtered list without reading past the head', async () => {
+            const backend: Backend = {
+                head: {
+                    items: [record('ETH1', JAN_10)],
+                    next: { cursor: 'r2' },
+                },
+                r2: {
+                    items: [record('USDC_OLD', JAN_10 - DAY_MS, USDC)],
+                    next: { cursor: 'c1' },
+                },
+                c1: {
+                    items: [record('USDC_OLDER', JAN_10 - 2 * DAY_MS, USDC)],
+                },
+            }
+            serve(backend)
+            const { result } = mount({ assetId: USDC })
+            await loadPages(result, 2)
+            mocks.getTransactionHistoryWithPending.mockClear()
+            backend.head = {
+                items: [
+                    record('USDC_NEW', JAN_10 + DAY_MS, USDC),
+                    record('ETH1', JAN_10),
+                    record('ETH0', JAN_10 - 1000),
+                ],
+                next: { cursor: 'r2' },
+            }
+
+            await invalidate()
+
+            expect(
+                mocks.getTransactionHistoryWithPending,
+            ).toHaveBeenCalledTimes(1)
+            expect(result.current.records.map(r => r.id)).toEqual([
+                'USDC_NEW',
+                'USDC_OLD',
+                'USDC_OLDER',
+            ])
+        })
+
+        test('keeps a paused filtered search paused at one backend read', async () => {
+            mocks.getTransactionHistoryWithPending.mockImplementation(
+                async (_address, _scope, page?: { cursor: string }) => ({
+                    items: [record(`E-${page?.cursor ?? 'c'}`, JAN_10)],
+                    next: { cursor: `${page?.cursor ?? 'c'}+` },
+                }),
+            )
+            const { result } = mount({ assetId: USDC })
+            await waitFor(() =>
+                expect(result.current.isSearchPaused).toBe(true),
+            )
+            const pageCount = cached().pages.length
+            mocks.getTransactionHistoryWithPending.mockClear()
+
+            await invalidate()
+
+            expect(
+                mocks.getTransactionHistoryWithPending,
+            ).toHaveBeenCalledTimes(1)
+            expect(cached().pages).toHaveLength(pageCount)
+            expect(result.current.isSearchPaused).toBe(true)
+        })
+
+        test('re-reads every loaded page when an explicit refresh asks, and only that once', async () => {
+            serve(threePages())
+            const { result } = mount()
+            await loadPages(result, 3)
+            mocks.getTransactionHistoryWithPending.mockClear()
+
+            await invalidate({ shouldRefetchAllPages: true })
+
+            expect(
+                mocks.getTransactionHistoryWithPending.mock.calls.map(
+                    call => call[2],
+                ),
+            ).toEqual([undefined, { cursor: 'c1' }, { cursor: 'c2' }])
+            mocks.getTransactionHistoryWithPending.mockClear()
+
+            await invalidate()
+
+            expect(
+                mocks.getTransactionHistoryWithPending,
+            ).toHaveBeenCalledTimes(1)
+        })
+
+        test('stays a full re-read when an invalidation cancels it part way', async () => {
+            const backend = threePages()
+            serve(backend)
+            const { result } = mount()
+            await loadPages(result, 3)
+            mocks.getTransactionHistoryWithPending.mockImplementation(
+                async (_address, _scope, page?: { cursor: string }) =>
+                    page ? new Promise(() => {}) : backend.head,
+            )
+            act(() => {
+                invalidateTransactionQueriesForAddresses(
+                    queryClient,
+                    [ADDRESS],
+                    SCOPE,
+                    { shouldRefetchAllPages: true },
+                )
+            })
+            await waitFor(() =>
+                expect(
+                    mocks.getTransactionHistoryWithPending,
+                ).toHaveBeenCalledWith(ADDRESS, SCOPE, { cursor: 'c1' }),
+            )
+            serve(backend)
+            mocks.getTransactionHistoryWithPending.mockClear()
+
+            await invalidate()
+
+            expect(
+                mocks.getTransactionHistoryWithPending.mock.calls.map(
+                    call => call[2],
+                ),
+            ).toEqual([undefined, { cursor: 'c1' }, { cursor: 'c2' }])
+        })
+
+        test('keeps reading for the newest id when the first backend page is empty', async () => {
+            const backend: Backend = {
+                head: { items: [], next: { cursor: 'r2' } },
+                r2: {
+                    items: [record('B', JAN_10)],
+                    next: { cursor: 'c1' },
+                },
+                c1: { items: [record('A', JAN_10 - DAY_MS)] },
+            }
+            serve(backend)
+            const { result } = mount()
+            await loadPages(result, 2)
+            mocks.getTransactionHistoryWithPending.mockClear()
+
+            await invalidate()
+
+            expect(
+                mocks.getTransactionHistoryWithPending,
+            ).toHaveBeenCalledTimes(2)
+            expect(result.current.records.map(r => r.id)).toEqual(['B', 'A'])
+        })
+
+        test('replaces the page shown offline once the backend can be read', async () => {
+            onlineManager.setOnline(false)
+            mocks.getPendingTransactionRecords.mockResolvedValue([
+                record('SENT', undefined),
+            ])
+            const { result } = mount()
+            await waitFor(() =>
+                expect(result.current.records.map(r => r.id)).toEqual(['SENT']),
+            )
+            serve({
+                head: {
+                    items: [record('A', JAN_10)],
+                    next: { cursor: 'c1' },
+                },
+            })
+            onlineManager.setOnline(true)
+
+            await invalidate()
+
+            await waitFor(() =>
+                expect(result.current.records.map(r => r.id)).toEqual(['A']),
+            )
+            expect(result.current.hasNextPage).toBe(true)
+        })
     })
 
     test('keeps fetchNextPage and refetch stable across renders', async () => {

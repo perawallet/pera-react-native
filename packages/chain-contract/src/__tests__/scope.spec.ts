@@ -22,6 +22,7 @@ import {
     LEGACY_CHAIN_ID,
     LEGACY_SCOPES,
     parseScopeKey,
+    queryKeyReferencesChain,
     queryKeyReferencesScope,
     scopeKeyLegacyNetworkRecord,
     scopeFromNetworkColumn,
@@ -204,6 +205,30 @@ describe('queryKeyReferencesScope', () => {
         const key = ['assets', null, { assetId: '1' }]
 
         expect(queryKeyReferencesScope(key, testnet)).toBe(false)
+    })
+})
+
+describe('queryKeyReferencesChain', () => {
+    it('matches the chain on any of its networks, in a scope field or bare', () => {
+        const mainnet = { chainId: 'ethereum', networkId: 'mainnet' }
+        const sepolia = { chainId: 'ethereum', networkId: 'sepolia' }
+
+        expect(
+            queryKeyReferencesChain(['x', { scope: mainnet }], 'ethereum'),
+        ).toBe(true)
+        expect(queryKeyReferencesChain(['x', sepolia], 'ethereum')).toBe(true)
+    })
+
+    it('does not match another chain', () => {
+        const key = ['x', { scope: { chainId: 'base', networkId: 'mainnet' } }]
+
+        expect(queryKeyReferencesChain(key, 'ethereum')).toBe(false)
+    })
+
+    it('does not match a bare asset reference of the chain', () => {
+        const key = ['x', { chainId: 'ethereum', assetId: '0xusdc' }]
+
+        expect(queryKeyReferencesChain(key, 'ethereum')).toBe(false)
     })
 })
 

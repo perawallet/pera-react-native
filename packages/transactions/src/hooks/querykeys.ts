@@ -13,8 +13,10 @@
 import type { Query, QueryClient, QueryKey } from '@tanstack/react-query'
 import type { Decimal } from 'decimal.js'
 import {
+    queryKeyReferencesChain,
     queryKeyReferencesScope,
     type AssetRef,
+    type ChainId,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 
@@ -169,6 +171,21 @@ export function invalidateTransactionQueriesForScope(
     })
 }
 
+/**
+ * Chain-wide variant: a settle reports the chain it settled on, not a network,
+ * so every network of that chain is invalidated and no other chain is.
+ */
+export function invalidateTransactionQueriesForChain(
+    queryClient: QueryClient,
+    chainId: ChainId,
+): void {
+    void queryClient.invalidateQueries({
+        predicate: query =>
+            query.queryKey[0] === MODULE_PREFIX &&
+            queryKeyReferencesChain(query.queryKey, chainId),
+    })
+}
+
 export function invalidateSpendableBalanceQueries(
     queryClient: QueryClient,
 ): void {
@@ -176,6 +193,9 @@ export function invalidateSpendableBalanceQueries(
         queryKey: [MODULE_PREFIX, 'spendable-balance'],
     })
 }
+
+// Weak so a garbage-collected query takes its mark with it.
+const fullRefetchRequests = new WeakSet<Query>()
 
 /**
  * Scoped variant of {@link invalidateTransactionQueries}: invalidates only the
@@ -185,29 +205,48 @@ export function invalidateSpendableBalanceQueries(
  * refresh can re-read just the affected accounts' histories instead of
  * refetching every mounted account's infinite query, all pages included.
  * Pass `scope` to stop at one chain: EVM chains share addresses.
+ *
+ * A backend-read History refetches page one only. `shouldRefetchAllPages`, for
+ * explicit refreshes such as pull-to-refresh, makes it re-read every loaded page.
  */
 export function invalidateTransactionQueriesForAddresses(
     queryClient: QueryClient,
     addresses: string[],
     scope?: ChainScope,
+    options?: { shouldRefetchAllPages?: boolean },
 ): void {
     if (addresses.length === 0) return
     const targets = new Set(addresses)
-    void queryClient.invalidateQueries({
-        predicate: query =>
-            query.queryKey[0] === MODULE_PREFIX &&
-            (scope === undefined ||
-                queryKeyReferencesScope(query.queryKey, scope)) &&
-            query.queryKey.some(part => {
-                if (typeof part !== 'object' || part === null) return false
-                const { accountAddress } = part as Record<string, unknown>
-                return (
-                    typeof accountAddress === 'string' &&
-                    targets.has(accountAddress)
-                )
-            }),
-    })
+    const isTargeted = (query: Query): boolean =>
+        query.queryKey[0] === MODULE_PREFIX &&
+        (scope === undefined ||
+            queryKeyReferencesScope(query.queryKey, scope)) &&
+        query.queryKey.some(part => {
+            if (typeof part !== 'object' || part === null) return false
+            const { accountAddress } = part as Record<string, unknown>
+            return (
+                typeof accountAddress === 'string' &&
+                targets.has(accountAddress)
+            )
+        })
+    if (options?.shouldRefetchAllPages) {
+        for (const query of queryClient.getQueryCache().findAll({
+            predicate: isTargeted,
+        })) {
+            if (query.queryKey[1] === 'records') requestFullRefetch(query)
+        }
+    }
+    void queryClient.invalidateQueries({ predicate: isTargeted })
 }
+
+/** Asks for the query's next refetch to re-read every loaded page. */
+export const requestFullRefetch = (query: Query): void => {
+    fullRefetchRequests.add(query)
+}
+
+/** Whether an explicit refresh asked this query for a full re-read; clears the request. */
+export const consumeFullRefetchRequest = (query: Query): boolean =>
+    fullRefetchRequests.delete(query)
 
 export const getReplaceableTransactionQueryKey = (
     scope: ChainScope,
