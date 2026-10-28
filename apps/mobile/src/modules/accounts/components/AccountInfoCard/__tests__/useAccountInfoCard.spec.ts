@@ -36,8 +36,7 @@ vi.mock('@routes/navigationRef', () => ({
 vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({
         t: (key: string, params?: Record<string, unknown>) => {
-            if (params?.number != null)
-                return key.replace('{{number}}', String(params.number))
+            if (params?.number != null) return `${key} #${params.number}`
             if (params?.count != null) return `${key} (${params.count})`
             if (params?.network != null) return `${key} (${params.network})`
             return key
@@ -217,7 +216,9 @@ describe('useAccountInfoCard', () => {
         )
         expect(result.current.showStructure).toBe(true)
         expect(result.current.structureIcon).toBe('wallet')
-        expect(result.current.structureLabel).toBe('account_info.wallet_label')
+        expect(result.current.structureLabel).toBe(
+            'account_info.wallet_label #1',
+        )
         expect(result.current.structureRows.map(row => row.account)).toEqual([
             hdAccount,
         ])
@@ -271,8 +272,8 @@ describe('useAccountInfoCard', () => {
         expect(
             result.current.structureRows.map(row => [row.account, row.name]),
         ).toEqual([
-            [ledgerAccount, 'account_info.main_address'],
-            [subLedgerAccount, 'account_info.sub_address'],
+            [ledgerAccount, 'account_info.account_number #1'],
+            [subLedgerAccount, 'account_info.account_number #2'],
         ])
     })
 
@@ -399,7 +400,7 @@ describe('useAccountInfoCard', () => {
             )
         })
 
-        test('falls back to main and sub labels for unnamed accounts', () => {
+        test('numbers unnamed accounts by their place in the seed', () => {
             const unnamedMain = { ...hdAccount, name: undefined }
             const namedAfterTruncation = hdSibling(
                 'truncated-name',
@@ -426,9 +427,9 @@ describe('useAccountInfoCard', () => {
             const { result } = render(unnamedMain)
 
             expect(result.current.structureRows.map(row => row.name)).toEqual([
-                'account_info.main_address',
-                'account_info.sub_address',
-                'account_info.sub_address',
+                'account_info.account_number #1',
+                'account_info.account_number #2',
+                'account_info.account_number #2',
                 'Savings',
             ])
         })
@@ -449,7 +450,7 @@ describe('useAccountInfoCard', () => {
             const { result } = render()
 
             expect(result.current.structureRows[1].name).toBe(
-                'account_info.sub_address',
+                'account_info.account_number #2',
             )
         })
 
@@ -468,8 +469,29 @@ describe('useAccountInfoCard', () => {
             const { result } = render()
 
             expect(result.current.structureRows[1].name).toBe(
-                'account_info.sub_address',
+                'account_info.account_number #2',
             )
+        })
+
+        test('keeps the remaining numbers when a middle account is removed', () => {
+            const third: LocalAccount = {
+                ...hdSibling('hd-third', {
+                    algorand: { address: 'THIRD_ADDR', keyPairId: 'key-6' },
+                }),
+                custody: {
+                    kind: 'local',
+                    seed: 'bip39',
+                    hd: { account: 2, keyIndex: 0 },
+                },
+            }
+            withHdGroup([hdAccount, third])
+
+            const { result } = render()
+
+            expect(result.current.structureRows.map(row => row.name)).toEqual([
+                'account_info.account_number #1',
+                'account_info.account_number #3',
+            ])
         })
 
         test('opens one row at a time and closes it on a second tap', () => {
