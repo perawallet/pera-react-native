@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+// @vitest-environment jsdom
 import {
     describe,
     test,
@@ -299,8 +300,6 @@ describe('useTransactionHistoryQuery', () => {
         // An empty SQLite read means the initial sync hasn't written this
         // account yet, not that the account has no history — and an empty list
         // never fires onEndReached, so the hook bridges to the API itself.
-        // Previously this dead-ended on "no transactions" until the user
-        // navigated away and back.
         mockGetTransactionHistory.mockResolvedValue([])
         ;(endpoints.fetchTransactionHistory as Mock).mockResolvedValue({
             transactions: [],
@@ -841,7 +840,7 @@ describe('useTransactionHistoryQuery', () => {
         expect(result.current.transactions).toBe(firstIdentity)
     })
 
-    describe('pending submission entries (PERA-4588)', () => {
+    describe('pending submission entries', () => {
         beforeEach(() => {
             mockGetOpenSubmissionAttempts.mockReset()
             mockGetOpenSubmissionAttempts.mockResolvedValue([])

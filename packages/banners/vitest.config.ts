@@ -12,7 +12,10 @@
 
 import { defineConfig } from 'vitest/config'
 import { coverageConfig } from '@perawallet/wallet-core-devtools/vitest/coverage'
-import { poolConfig } from '@perawallet/wallet-core-devtools/vitest/pool'
+import {
+    poolConfig,
+    vmGlobalsSetup,
+} from '@perawallet/wallet-core-devtools/vitest/pool'
 import path from 'path'
 import { fileURLToPath } from 'url'
 
@@ -24,7 +27,7 @@ export default defineConfig({
         coverage: coverageConfig,
         globals: true,
         environment: 'jsdom',
-        setupFiles: ['./vitest.setup.ts'],
+        setupFiles: [vmGlobalsSetup, './vitest.setup.ts'],
         exclude: ['**/node_modules/**', '**/dist/**'],
     },
     resolve: {

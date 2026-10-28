@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-// @vitest-environment node
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import type { Key } from '@algorandfoundation/keystore-core'
 import { SIGNING_ACCESS_DOMAIN } from '../../constants'

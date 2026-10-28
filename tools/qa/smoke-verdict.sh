@@ -9,11 +9,14 @@ set -uo pipefail
 # still exited 0, so the gate reported a pass for a build that never reached
 # the home screen. The artefacts are the only honest source.
 #
-# Deliberately reads the XML with grep rather than calling `rebot`: this runs
-# from the Bitrise publish step too, which is a separate shell with no harness
-# venv on PATH.
+# Uses the system Python standard library: the Bitrise publish step has no harness
+# venv on PATH. Parse the complete XML so truncated output cannot look like a pass.
 
 RESULTS_DIR="${1:?results dir required}"
+if [ -e "$RESULTS_DIR/.incomplete" ]; then
+    echo "fail"
+    exit 1
+fi
 
 # The merged file when pabot managed to write one, otherwise the per-process
 # outputs — the observed failure left results ONLY in pabot_results/0/, so a
@@ -35,30 +38,27 @@ if [ "${#OUTPUTS[@]}" -eq 0 ]; then
     exit 1
 fi
 
-total_pass=0
-total_fail=0
-for f in "${OUTPUTS[@]}"; do
-    # Robot records the run's tally in <statistics><total><stat .../></total>.
-    # Flatten first: the element is routinely split across lines.
-    block=$(tr '\n' ' ' <"$f" | sed -n 's#.*<total>\(.*\)</total>.*#\1#p')
-    if [ -z "$block" ]; then
-        # Truncated or unparseable output — the run did not finish cleanly.
-        echo "fail"
-        exit 1
-    fi
-    p=$(printf '%s' "$block" | grep -o 'pass="[0-9]*"' | head -1 | tr -dc '0-9')
-    q=$(printf '%s' "$block" | grep -o 'fail="[0-9]*"' | head -1 | tr -dc '0-9')
-    total_pass=$((total_pass + ${p:-0}))
-    total_fail=$((total_fail + ${q:-0}))
-done
+python3 - "${OUTPUTS[@]}" <<'PYTHON'
+import sys
+import xml.etree.ElementTree as ET
 
-# pass>0 is load-bearing, not belt-and-braces: a `--include` tag that matches
-# nothing produces a clean run with zero tests, which is the same silent green
-# this script exists to stop.
-if [ "$total_fail" -eq 0 ] && [ "$total_pass" -gt 0 ]; then
-    echo "ok"
-    exit 0
-fi
-
-echo "fail"
-exit 1
+try:
+    passed = failed = 0
+    for path in sys.argv[1:]:
+        root = ET.parse(path).getroot()
+        if root.tag != "robot":
+            raise ValueError("Not Robot output")
+        totals = root.findall("./statistics/total/stat")
+        if len(totals) != 1:
+            raise ValueError("Missing or ambiguous totals")
+        values = [totals[0].get(key, "") for key in ("pass", "fail", "skip")]
+        if not all(value.isascii() and value.isdecimal() for value in values):
+            raise ValueError("Invalid totals")
+        passed += int(values[0])
+        failed += int(values[1])
+    ok = passed > 0 and failed == 0
+except (OSError, ET.ParseError, ValueError):
+    ok = False
+print("ok" if ok else "fail")
+sys.exit(0 if ok else 1)
+PYTHON

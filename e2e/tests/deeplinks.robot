@@ -8,6 +8,7 @@ Suite Setup         Start Pera With Wallet
 Suite Teardown      Close Pera
 Test Setup          Go Home
 Test Teardown       Capture Failure Screenshot
+Test Timeout        ${E2E_TEST_TIMEOUT}
 Test Tags           deeplinks
 
 
@@ -83,6 +84,40 @@ Asset Opt-In Link Asks For An Account Then Shows The Opt-In
     Wait Until Settled    ${OPT_IN_COPY_ID}
     Page Should Contain Element    ${OPT_IN_CONFIRM}
     Page Should Contain Text    ${OPT_IN_ASSET_ID}
+
+Pasted Add Contact Link Opens The Prefilled Form
+    [Documentation]    The paste sheet dispatches through the scanner's path, so a pasted link lands
+    ...                where a scanned one does.
+    [Tags]    id:deeplinks.paste.add-contact    p1
+    Start With No Contacts
+    Paste Link    ${ADD_CONTACT_LINK}
+    Wait Until Page Does Not Contain Element    ${PASTE_LINK_INPUT}    timeout=15s
+    Add Contact Form Should Be Prefilled
+
+Pasted Text That Is Not A Link Is Refused In Place
+    [Tags]    id:deeplinks.paste.invalid    p2
+    Paste Link    not a link at all
+    Wait Until Page Contains Element    ${PASTE_LINK_ERROR}    timeout=10s
+    Page Should Contain Element    ${PASTE_LINK_INPUT}
+    Close Sheet
+    Wait Until Page Does Not Contain Element    ${PASTE_LINK_INPUT}    timeout=10s
+
+Empty And Whitespace Pasted Links Cannot Be Submitted
+    [Tags]    id:deeplinks.paste.empty-disabled    p1
+    Open Paste Link
+    Expect Element    ${PASTE_LINK_SUBMIT}    disabled    timeout=5s
+    Input Text    ${PASTE_LINK_INPUT}    ${SPACE}${SPACE}${SPACE}
+    Expect Element    ${PASTE_LINK_SUBMIT}    disabled    timeout=5s
+
+An Invalid Pasted Link Can Be Corrected
+    [Tags]    id:deeplinks.paste.correct-invalid    p1
+    Start With No Contacts
+    Paste Link    not a link at all
+    Wait Until Page Contains Element    ${PASTE_LINK_ERROR}    timeout=10s
+    Submit Pasted Link    ${ADD_CONTACT_LINK}
+    Wait Until Page Does Not Contain Element    ${PASTE_LINK_INPUT}    timeout=15s
+    Wait Until Page Contains Element    ${CONTACT_NAME_INPUT}    timeout=15s
+    Input Should Hold    contact_name_input    ${LINK_LABEL}
 
 Link Fired While Locked Waits For The PIN
     [Tags]    id:deeplinks.locked.resumes-after-unlock    p1

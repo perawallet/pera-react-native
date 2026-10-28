@@ -26,10 +26,15 @@ type AsaInboxItemModel = Extract<InboxItemModel, { type: 'asa_inbox' }>
 
 export type AsaInboxItemProps = {
     item: AsaInboxItemModel
+    chainBadgeName?: string
     onPress?: () => void
 }
 
-export const AsaInboxItem = ({ item, onPress }: AsaInboxItemProps) => {
+export const AsaInboxItem = ({
+    item,
+    chainBadgeName,
+    onPress,
+}: AsaInboxItemProps) => {
     const { t } = useLanguage()
     const accounts = useAllAccounts()
     const account = findAccountByAddressOn(
@@ -54,6 +59,7 @@ export const AsaInboxItem = ({ item, onPress }: AsaInboxItemProps) => {
     return (
         <InboxItemShell
             item={item}
+            chainBadgeName={chainBadgeName}
             onPress={onPress}
             testID='asa_inbox_item'
             icon={icon}

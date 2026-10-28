@@ -22,12 +22,15 @@ import {
 } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import type { DisplayableAsset } from '@perawallet/wallet-core-assets'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { AssetIcon } from '@components/AssetIcon'
 import { useAssetItemView } from './useAssetItemView'
 import { useStyles } from './styles'
 
 export type AssetItemViewProps = {
     asset: DisplayableAsset
+    /** The asset's chain; an id that is an address on it shows truncated by that chain's codec. */
+    chainId?: ChainId
     /** Right-hand content: balance display (account) or add button (search). */
     right?: ReactNode
     /** Trails the name in the title row, such as the holding's network. */
@@ -49,6 +52,7 @@ export type AssetItemViewProps = {
 
 export const AssetItemView = ({
     asset,
+    chainId,
     right,
     titleAccessory,
     subtitle: subtitleOverride,
@@ -73,7 +77,7 @@ export const AssetItemView = ({
         verificationIcon,
         iconShape,
         onCopyAssetId,
-    } = useAssetItemView(asset, { copyableAssetId })
+    } = useAssetItemView(asset, { copyableAssetId, chainId })
 
     const isFavorited = showFavorite && asset.peraMetadata?.isFavorited === true
     const showDeleted = showDeletedLabel && isDeleted

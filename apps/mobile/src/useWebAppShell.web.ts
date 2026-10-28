@@ -113,7 +113,7 @@ export const useWebAppShell = (): UseWebAppShellResult => {
         logger.info('Web shell config', {
             appEnvironment: config.appEnvironment,
             build: config.appBuildNumber || '(local)',
-            integrityBearer: config.webIntegrityBearerEnabled,
+            integrityHeaderEnabled: config.webIntegrityBearerEnabled,
         })
         // Chrome's initialize() already Promise.allSettled's the three
         // services, so a single failing one cannot take the others down. Push

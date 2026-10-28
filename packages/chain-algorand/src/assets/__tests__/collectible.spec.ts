@@ -38,6 +38,12 @@ describe('hasAlgorandNftShape', () => {
         ['pure NFT', 0, '1', true],
         ['editioned NFT (indivisible, many copies)', 0, '1000', true],
         ['ARC-3 fractional NFT (10^decimals)', 2, '100', true],
+        [
+            'ARC-3 fractional NFT at 19 decimals',
+            19,
+            '10000000000000000000',
+            true,
+        ],
         ['fungible token', 6, '10000000000', false],
         ['divisible supply below 10^decimals', 2, '50', false],
     ])('%s', (_label, decimals, totalSupply, expected) => {

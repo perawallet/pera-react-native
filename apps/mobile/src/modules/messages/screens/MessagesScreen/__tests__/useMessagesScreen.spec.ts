@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { isValidElement } from 'react'
 import { renderHook } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useRoute } from '@react-navigation/native'
@@ -18,7 +19,10 @@ import {
     useInboxStatus,
     type InboxItem,
 } from '@perawallet/wallet-core-messages'
+import { InboxInfoContent } from '@modules/messages/components/InboxInfoContent'
 import { useMessagesScreen } from '../useMessagesScreen'
+
+const mockRequest = vi.fn()
 
 vi.mock('@react-navigation/native', () => ({
     useRoute: vi.fn(),
@@ -30,7 +34,11 @@ vi.mock('@perawallet/wallet-core-messages', () => ({
 }))
 
 vi.mock('@modules/bottom-sheet', () => ({
-    useBottomSheet: () => ({ request: vi.fn() }),
+    useBottomSheet: () => ({ request: mockRequest }),
+}))
+
+vi.mock('@modules/messages/components/InboxInfoContent', () => ({
+    InboxInfoContent: () => null,
 }))
 
 vi.mock('@modules/messages/components/NotificationSettingsContent', () => ({
@@ -162,5 +170,20 @@ describe('useMessagesScreen', () => {
         expect(result.current.activeTab).toBe('Notifications')
         expect(result.current.showInboxBadge).toBe(false)
         expect(result.current.showNotificationsBadge).toBe(false)
+    })
+
+    it('opens the inbox explainer as a modal sheet', () => {
+        const { result } = renderHook(() => useMessagesScreen())
+
+        result.current.openInboxInfo()
+
+        expect(mockRequest).toHaveBeenCalledTimes(1)
+        const [{ contents, options }] = mockRequest.mock.calls[0]
+        expect(isValidElement(contents) && contents.type).toBe(InboxInfoContent)
+        expect(options).toEqual({
+            size: 'modal',
+            enablePanDownToClose: true,
+            autoCreateContainer: false,
+        })
     })
 })

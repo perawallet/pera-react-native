@@ -10,8 +10,16 @@
  limitations under the License
  */
 
-import { renderHook } from '@test-utils/render'
-import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
+import { act, renderHook } from '@test-utils/render'
+import {
+    afterEach,
+    describe,
+    it,
+    expect,
+    beforeEach,
+    vi,
+    type Mock,
+} from 'vitest'
 import { Decimal } from 'decimal.js'
 import {
     isUniqueCollectible,
@@ -50,7 +58,6 @@ describe('useSendFundsContent — state carried between sheet sessions', () => {
     })
 
     it('clears the previous send when the sheet is torn down without onFinished', () => {
-        // Arrange: a send started from asset details, part-filled by the user.
         const first = renderHook(() => useSendFundsContent(ASA))
         useSendFundsStore.getState().setDestination(OLD_RECIPIENT)
         useSendFundsStore.getState().setAmount(new Decimal(42))
@@ -58,16 +65,11 @@ describe('useSendFundsContent — state carried between sheet sessions', () => {
         expect(useSendFundsStore.getState().canSelectAsset).toBe(false)
         expect(useSendFundsStore.getState().selectedAsset).toEqual(ASA)
 
-        // Act: the sheet goes away without `onFinished` running — this is what a
-        // backdrop press does (dismiss -> remove -> unmount), and `onFinished`
-        // is only wired to the explicit close/done buttons.
+        // A backdrop press unmounts the sheet (dismiss -> remove) without
+        // running `onFinished`, which only the close/done buttons are wired to.
         first.unmount()
-
-        // Act: user taps the main Send button, which opens the sheet with no
-        // asset preselected.
         renderHook(() => useSendFundsContent(undefined))
 
-        // Assert: they should land on asset selection with nothing carried over.
         const state = useSendFundsStore.getState()
         expect(state.canSelectAsset).toBe(true)
         expect(state.selectedAsset).toBeUndefined()
@@ -75,17 +77,15 @@ describe('useSendFundsContent — state carried between sheet sessions', () => {
         expect(state.amount).toBeUndefined()
     })
 
+    // Deeplink/account-actions callers populate the store and then open the
+    // sheet, so the cleanup must be teardown-only — a mount-time reset would
+    // silently swallow the deeplink's destination.
     it('keeps prefill written before the sheet opened', () => {
-        // Arrange: deeplink/account-actions callers populate the store and then
-        // open the sheet, so the cleanup must be teardown-only — a mount-time
-        // reset would silently swallow the deeplink's destination.
         useSendFundsStore.getState().setDestination(OLD_RECIPIENT)
         useSendFundsStore.getState().setAmount(new Decimal(42))
 
-        // Act
         renderHook(() => useSendFundsContent(undefined))
 
-        // Assert
         expect(useSendFundsStore.getState().destination).toBe(OLD_RECIPIENT)
         expect(useSendFundsStore.getState().amount?.toString()).toBe('42')
     })
@@ -138,20 +138,37 @@ describe('useSendFundsContent — deterministic initial route', () => {
         expect(result.current.isReady).toBe(true)
     })
 
-    it('prefills the amount to 1 for a unique collectible once the asset has settled', () => {
-        ;(isUniqueCollectible as Mock).mockReturnValue(true)
-
-        const { result } = renderHook(() => useSendFundsContent(ASA))
-
-        expect(result.current.isReady).toBe(true)
-        expect(useSendFundsStore.getState().amount?.toString()).toBe('1')
-    })
-
     it('does not prefill an amount for a non-collectible asset', () => {
         const { result } = renderHook(() => useSendFundsContent(ASA))
 
         expect(result.current.isReady).toBe(true)
         expect(useSendFundsStore.getState().amount).toBeUndefined()
+    })
+
+    it('returns the selected account', () => {
+        const { result } = renderHook(() => useSendFundsContent(ASA))
+
+        expect(result.current.selectedAccount).toEqual({
+            address: 'SENDERADDR',
+        })
+    })
+
+    it('leaves an asset already selected under the same ref untouched', () => {
+        const existing = { chainId: 'algorand' as const, assetId: ASA_ID }
+        useSendFundsStore.getState().setSelectedAsset(existing)
+        useSendFundsStore.getState().setCanSelectAsset(false)
+
+        renderHook(() => useSendFundsContent({ ...ASA }))
+
+        expect(useSendFundsStore.getState().selectedAsset).toBe(existing)
+    })
+
+    it('registers handleFinished as the flow onFinished', () => {
+        const { result } = renderHook(() => useSendFundsContent(ASA))
+
+        expect(useSendFundsStore.getState().onFinished).toBe(
+            result.current.handleFinished,
+        )
     })
 
     it('reads the asset on its own chain and puts the send on it', () => {
@@ -207,5 +224,69 @@ describe('useSendFundsContent — a collectible on another chain', () => {
         renderHook(() => useSendFundsContent(NFT))
 
         expect(useSendFundsStore.getState().amount).toBeUndefined()
+    })
+})
+
+describe('useSendFundsContent — unique collectible prefill latch', () => {
+    const NFT_1 = { chainId: 'algorand', assetId: 'nft-1' } as const
+    let amountWrites = 0
+    let unsubscribe: () => void
+
+    beforeEach(() => {
+        useSendFundsStore.getState().reset()
+        vi.clearAllMocks()
+        ;(isUniqueCollectible as Mock).mockReturnValue(true)
+        // A fresh Map per render (as a refetch would produce) keeps the
+        // prefill effect re-running, so only the latch stops a second write.
+        ;(useAssetsQuery as Mock).mockImplementation(() => ({
+            data: new Map([
+                ['nft-1', { assetId: 'nft-1' }],
+                ['nft-2', { assetId: 'nft-2' }],
+            ]),
+            isFetched: true,
+        }))
+        amountWrites = 0
+        unsubscribe = useSendFundsStore.subscribe((state, prev) => {
+            if (state.amount !== prev.amount) amountWrites += 1
+        })
+    })
+
+    afterEach(() => {
+        unsubscribe()
+    })
+
+    it('prefills the amount only once even when the effect re-runs', () => {
+        const { rerender } = renderHook(() => useSendFundsContent(NFT_1))
+        rerender()
+        rerender()
+
+        expect(amountWrites).toBe(1)
+        expect(useSendFundsStore.getState().amount?.toString()).toBe('1')
+    })
+
+    it('prefills again after switching to a different unique collectible', () => {
+        const { rerender } = renderHook(
+            ({ assetId }: { assetId: string }) =>
+                useSendFundsContent({ chainId: 'algorand', assetId }),
+            { initialProps: { assetId: 'nft-1' } },
+        )
+        rerender({ assetId: 'nft-2' })
+
+        expect(amountWrites).toBe(2)
+    })
+
+    it('re-prefills the same unique collectible after handleFinished clears the latch', () => {
+        const { result, rerender } = renderHook(() =>
+            useSendFundsContent(NFT_1),
+        )
+
+        act(() => {
+            result.current.handleFinished()
+        })
+        rerender()
+
+        expect(mockDismiss).toHaveBeenCalledTimes(1)
+        expect(amountWrites).toBe(3)
+        expect(useSendFundsStore.getState().amount?.toString()).toBe('1')
     })
 })

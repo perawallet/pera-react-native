@@ -88,6 +88,30 @@ describe('import/no-default-export', () => {
     })
 })
 
+describe('no-restricted-imports', () => {
+    type RestrictedImports = [string, { paths: unknown[] }]
+    const paths = (override: OxlintOverride): unknown[] =>
+        (override.rules['no-restricted-imports'] as RestrictedImports)[1].paths
+
+    // A later override replaces the rule's options rather than merging them, so
+    // a narrower block that drops one of the src/** bans silently lifts it there.
+    it('repeats every src/** ban in each narrower mobile override', () => {
+        const mobile = readOxlintConfig('apps/mobile/.oxlintrc.json')
+        const [general, ...narrower] = overridesWith(
+            mobile,
+            'no-restricted-imports',
+        )
+
+        expect(general.files).toEqual(['src/**'])
+        expect(narrower.length).toBeGreaterThan(0)
+        for (const override of narrower) {
+            expect(paths(override)).toEqual(
+                expect.arrayContaining(paths(general)),
+            )
+        }
+    })
+})
+
 describe('pera/no-hardcoded-ui-strings', () => {
     it('blocks in all mobile source, developer screens aside', () => {
         const mobile = readOxlintConfig('apps/mobile/.oxlintrc.json')
@@ -99,6 +123,28 @@ describe('pera/no-hardcoded-ui-strings', () => {
         expect(overrides[0].excludeFiles).toContain(
             'src/modules/settings/screens/developer/**',
         )
+    })
+})
+
+describe('no-console', () => {
+    it('blocks console calls in package, extension and browser-app source, tests aside', () => {
+        const root = readOxlintConfig('.oxlintrc.json')
+        const mobile = readOxlintConfig(
+            'apps/mobile/.oxlintrc.json',
+        ) as unknown as { rules: Record<string, string> }
+        const overrides = overridesWith(root, 'no-console')
+
+        expect(overrides).toHaveLength(1)
+        expect(overrides[0].files).toEqual([
+            'packages/*/src/**',
+            'extensions/*/src/**',
+            'apps/browser/src/**',
+        ])
+        expect(overrides[0].rules['no-console']).toBe('error')
+        expect(overrides[0].excludeFiles).toEqual(
+            expect.arrayContaining(['**/__tests__/**', '**/*.spec.{ts,tsx}']),
+        )
+        expect(mobile.rules['no-console']).toBe('warn')
     })
 })
 

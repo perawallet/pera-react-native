@@ -11,7 +11,7 @@
  */
 
 import { render, screen } from '@test-utils/render'
-import { describe, it, expect, vi } from 'vitest'
+import { beforeEach, describe, it, expect, vi } from 'vitest'
 // Ensure i18n is initialised so t() resolves real strings in this test's module graph.
 import '../../../i18n'
 import { WealthChart } from '../WealthChart'
@@ -19,7 +19,6 @@ import {
     useAccountBalancesHistoryQuery,
     useAllAccounts,
 } from '@perawallet/wallet-core-accounts'
-import { Decimal } from 'decimal.js'
 
 import { registerEthereumChain } from '@test-utils/chain-fixtures'
 
@@ -39,98 +38,78 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
 })
 
 describe('WealthChart', () => {
-    it('renders loading state when isPending is true', () => {
-        vi.mocked(useAccountBalancesHistoryQuery).mockReturnValue({
-            data: [],
-            isPending: true,
-        } as unknown as ReturnType<typeof useAccountBalancesHistoryQuery>)
-
-        const { container } = render(
-            <WealthChart
-                period='one-week'
-                onSelectionChanged={vi.fn()}
-            />,
-        )
-        expect(container).toBeTruthy()
+    beforeEach(() => {
+        vi.mocked(useAllAccounts).mockReturnValue([])
     })
 
-    it('renders empty view when no data is available', () => {
-        vi.mocked(useAccountBalancesHistoryQuery).mockReturnValue({
-            data: [],
-            isPending: false,
-        } as unknown as ReturnType<typeof useAccountBalancesHistoryQuery>)
-
-        const { container } = render(
-            <WealthChart
-                period='one-week'
-                onSelectionChanged={vi.fn()}
-            />,
-        )
-        expect(container).toBeTruthy()
-    })
-
-    it('renders chart when data is available', () => {
-        const mockData = [
-            { preferredValue: new Decimal(100), datetime: new Date() },
-            { preferredValue: new Decimal(110), datetime: new Date() },
-        ]
-        vi.mocked(useAccountBalancesHistoryQuery).mockReturnValue({
-            data: mockData,
-            isPending: false,
-        } as unknown as ReturnType<typeof useAccountBalancesHistoryQuery>)
-
-        const { container } = render(
-            <WealthChart
-                period='one-week'
-                onSelectionChanged={vi.fn()}
-            />,
-        )
-        expect(container).toBeTruthy()
-    })
-
-    it('uses single account address when account prop is provided', () => {
-        const mockAccount = {
-            name: 'Test',
-            chains: { algorand: { address: 'test-address' } },
-        }
-        const mockData = [
-            { preferredValue: new Decimal(100), datetime: new Date() },
-        ]
-
-        vi.mocked(useAccountBalancesHistoryQuery).mockReturnValue({
-            data: mockData,
-            isPending: false,
-        } as any as ReturnType<typeof useAccountBalancesHistoryQuery>) // eslint-disable-line @typescript-eslint/no-explicit-any
-
-        const { container } = render(
-            <WealthChart
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                account={mockAccount as any}
-                period='one-week'
-                onSelectionChanged={vi.fn()}
-            />,
-        )
-        expect(container).toBeTruthy()
-    })
-
-    it('uses all account addresses when no account prop is provided', () => {
+    it('reads the history of the given account only', () => {
         vi.mocked(useAllAccounts).mockReturnValue([
-            { chains: { algorand: { address: 'addr1' } } },
-            { chains: { algorand: { address: 'addr2' } } },
-        ] as any) // eslint-disable-line @typescript-eslint/no-explicit-any
-
+            {
+                id: 'other',
+                custody: { kind: 'watch' },
+                chains: { algorand: { address: 'other-address' } },
+            },
+        ])
         vi.mocked(useAccountBalancesHistoryQuery).mockReturnValue({
-            data: [{ preferredValue: new Decimal(200), datetime: new Date() }],
+            data: [],
             isPending: false,
         } as unknown as ReturnType<typeof useAccountBalancesHistoryQuery>)
 
-        const { container } = render(
+        render(
+            <WealthChart
+                account={{
+                    id: 'test',
+                    custody: { kind: 'watch' },
+                    chains: { algorand: { address: 'test-address' } },
+                }}
+                period='one-week'
+                onSelectionChanged={vi.fn()}
+            />,
+        )
+
+        expect(
+            vi.mocked(useAccountBalancesHistoryQuery),
+        ).toHaveBeenLastCalledWith(
+            ['test-address'],
+            'one-week',
+            expect.objectContaining({ chainId: 'algorand' }),
+            true,
+        )
+    })
+
+    it('reads the history of every account when no account is given', () => {
+        vi.mocked(useAllAccounts).mockReturnValue([
+            {
+                id: 'a1',
+                custody: { kind: 'watch' },
+                chains: { algorand: { address: 'addr1' } },
+            },
+            {
+                id: 'a2',
+                custody: { kind: 'watch' },
+                chains: { algorand: { address: 'addr2' } },
+            },
+        ])
+        vi.mocked(useAccountBalancesHistoryQuery).mockReturnValue({
+            data: [],
+            isPending: false,
+        } as unknown as ReturnType<typeof useAccountBalancesHistoryQuery>)
+
+        render(
             <WealthChart
                 period='one-week'
                 onSelectionChanged={vi.fn()}
             />,
         )
-        expect(container).toBeTruthy()
+
+        expect(
+            vi.mocked(useAccountBalancesHistoryQuery),
+        ).toHaveBeenLastCalledWith(
+            ['addr1', 'addr2'],
+            'one-week',
+            expect.objectContaining({ chainId: 'algorand' }),
+            true,
+        )
     })
 
     it('renders the offline state instead of the spinner when the history query is paused', () => {

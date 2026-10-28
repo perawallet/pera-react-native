@@ -93,7 +93,7 @@ export const useEditContactForm = (): UseEditContactFormResult => {
     const form = useContactForm(targetContact)
     const targetId = targetContact?.id ?? ''
 
-    const { showToast } = useToast()
+    const { errorToast } = useToast()
     const isCloudBackupAvailable = useIsCloudBackupAvailable()
     const isBackedUp = useIsContactBackedUp(targetId)
     const needsBackupChoice = isCloudBackupAvailable && isBackedUp
@@ -171,15 +171,14 @@ export const useEditContactForm = (): UseEditContactFormResult => {
                     })
                 }
                 if (!isRecorded) {
-                    showToast({
-                        title: t(
+                    errorToast(
+                        t(
                             backupChoice === 'delete'
                                 ? 'cloud_backup.contacts.delete_error'
                                 : 'cloud_backup.contacts.keep_error',
                         ),
-                        body: '',
-                        type: 'error',
-                    })
+                        '',
+                    )
                     return
                 }
             }
@@ -201,7 +200,7 @@ export const useEditContactForm = (): UseEditContactFormResult => {
             deleteContact,
             setSelectedContact,
             navigation,
-            showToast,
+            errorToast,
             t,
         ],
     )

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
     createConnectionRegistry,
     DappRequestRejectedError,
@@ -148,6 +148,10 @@ describe('DappConnectionHandler', () => {
     beforeEach(() => {
         vi.useFakeTimers()
         dappRequestChainAdapters.reset()
+    })
+
+    afterEach(() => {
+        vi.useRealTimers()
     })
 
     describe('connect', () => {

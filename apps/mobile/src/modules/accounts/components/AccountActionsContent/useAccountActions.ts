@@ -99,6 +99,7 @@ export const useAccountActions = ({
             const sendFundsStore = useSendFundsStore.getState()
             sendFundsStore.reset()
             sendFundsStore.setDestination(address)
+            if (chainId) sendFundsStore.setChainId(chainId)
             void requestByType(
                 'send-funds',
                 {},
@@ -109,7 +110,7 @@ export const useAccountActions = ({
                 },
             )
         },
-        [address, requestByType],
+        [address, chainId, requestByType],
     )
 
     const openSendTransaction = useCallback(() => {

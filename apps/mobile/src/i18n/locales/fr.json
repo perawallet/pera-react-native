@@ -102,6 +102,11 @@
         "search_placeholder": "Rechercher par nom ou ID d’actif",
         "no_results": "Aucun actif trouvé",
         "partial_results": "Certains réseaux n’ont pas pu être consultés, des résultats peuvent donc manquer.",
+        "not_listed": {
+            "title": "Pas encore disponible",
+            "body": "Pera ne répertorie pas encore d’actifs sur {{chain}}.",
+            "body_all": "Pera ne répertorie pas encore d’actifs sur ces réseaux."
+        },
         "opt_in": {
             "failed_title": "Échec de l’ajout",
             "success_title": "Ajout réussi",
@@ -747,6 +752,7 @@
             "available_count_one": "{{count}} disponible depuis la sauvegarde",
             "device_title": "Comptes",
             "device_subtitle": "Disponibles sur cet appareil",
+            "networks_hint": "Votre sauvegarde inclut tous les réseaux de chaque compte.",
             "add_from_backup_title": "Ajouter depuis la sauvegarde",
             "add_from_backup_subtitle": "Dans votre Cloud Backup, pas sur cet appareil",
             "not_backed_up_title": "Non sauvegardés",
@@ -1935,7 +1941,7 @@
         },
         "inbox": {
             "empty_title": "Aucun message en attente",
-            "empty_body": "Vous n’avez actuellement aucun message en attente dans votre boîte de réception",
+            "empty_body": "La boîte de réception contient les actifs Algorand qui vous ont été envoyés avant que vous n’ayez effectué l’opt-in, ainsi que les invitations à des comptes partagés et les demandes de signature. Les tokens sur les autres réseaux arrivent directement dans votre solde.",
             "asa_requests_one": "1 actif entrant",
             "asa_requests_other": "{{count}} actifs entrants",
             "multisig_sign": {
@@ -1947,7 +1953,16 @@
                 "status_confirmed": "Confirmée"
             },
             "invitation_title": "<0>Vous avez reçu une invitation</0> à rejoindre un compte partagé {{address}}",
-            "view_invitation_details": "Voir les détails de l’invitation"
+            "view_invitation_details": "Voir les détails de l’invitation",
+            "info": {
+                "title": "À propos de la boîte de réception",
+                "algorand_title": "Algorand",
+                "algorand_body": "Un compte Algorand doit effectuer un opt-in pour un actif avant de pouvoir le détenir. Les actifs qui vous sont envoyés avant votre opt-in attendent ici, dans la boîte de réception, jusqu’à ce que vous les réclamiez ou les refusiez. Les invitations à des comptes partagés et les demandes de signature arrivent également ici.",
+                "other_networks_title": "Autres réseaux",
+                "other_networks_body": "Les réseaux comme Ethereum et Base n’ont pas d’opt-in. Les tokens qui vous y sont envoyés arrivent directement dans votre solde et n’apparaissent jamais dans la boîte de réception.",
+                "find_tokens_body": "Pour les voir, ouvrez le compte et consultez ses actifs sur ce réseau.",
+                "learn_more": "En savoir plus"
+            }
         },
         "claim": {
             "asset_transfer_requests_title": "Demandes de transfert d’actifs",
@@ -2722,13 +2737,13 @@
             "cancel": "Annuler"
         }
     },
+    "chain_selection": {
+        "title": "Choisir un réseau",
+        "add_action": "Ajouter"
+    },
     "receive_funds": {
         "account_selection": {
             "title": "Sélectionner un compte"
-        },
-        "chain_selection": {
-            "title": "Choisir un réseau",
-            "add_action": "Ajouter"
         },
         "qrview": {
             "error_title": "Aucun compte sélectionné",
@@ -2846,7 +2861,10 @@
             "title": "Sélectionner un actif",
             "search_placeholder": "Rechercher par nom ou ID d’actif",
             "no_results_title": "Aucun actif correspondant",
-            "no_results_body": "Aucun actif ne correspond à votre recherche"
+            "no_results_body": "Aucun actif ne correspond à votre recherche",
+            "empty_title": "Rien à envoyer sur {{network}}",
+            "empty_body": "Ce compte n’a pas encore d’actifs sur {{network}}. Recevez-en pour commencer à envoyer.",
+            "empty_receive_action": "Recevoir"
         },
         "bottom_sheet": {
             "no_account_title": "Aucun compte sélectionné",
@@ -2931,13 +2949,17 @@
             "subtitle": "Votre transaction est en cours de traitement par le réseau Algorand.",
             "title_hardware": "Connexion à votre appareil Ledger",
             "subtitle_hardware": "Connexion à {{deviceName}} en cours. Assurez-vous qu’il est déverrouillé, à portée, et que l’application {{appName}} est ouverte.",
-            "subtitle_hardware_noDevice": "Connexion à votre appareil Ledger en cours. Assurez-vous qu’il est déverrouillé, à portée, et que l’application {{appName}} est ouverte."
+            "subtitle_hardware_noDevice": "Connexion à votre appareil Ledger en cours. Assurez-vous qu’il est déverrouillé, à portée, et que l’application {{appName}} est ouverte.",
+            "broadcast_subtitle": "Votre transaction est en cours d’envoi au réseau {{network}}."
         },
         "success": {
             "title": "Transaction traitée",
             "asset_transferred_title": "Actif transféré",
             "subtitle": "Votre transaction a bien été reçue par le réseau Algorand",
+            "pending_title": "Transaction envoyée",
+            "pending_subtitle": "Votre transaction a été envoyée au réseau {{network}} et attend sa confirmation.",
             "view_in_explorer": "Voir le détail de la transaction dans Pera Explorer",
+            "view_on_explorer": "Voir sur {{explorer}}",
             "done": "Terminé"
         },
         "close_account": {
@@ -3350,6 +3372,23 @@
             "show_details": "Afficher les détails",
             "details_title": "Détails de la demande d’authentification",
             "details_description": "Examinez toutes les métadonnées de cette demande d’authentification avant de l’approuver."
+        },
+        "address_safety": {
+            "listed_title": "Adresse frauduleuse connue",
+            "listed_body": "Cette demande mentionne une adresse figurant sur une liste publique d’adresses utilisées pour voler des fonds. En signant, vous pourriez lui céder vos actifs.",
+            "look_alike_title": "Cette demande mentionne une adresse qui imite une adresse que vous connaissez",
+            "look_alike_body": "Elle commence et se termine comme une adresse que vous connaissez, mais les caractères du milieu sont différents. Les escrocs créent des adresses ressemblantes pour vous tromper. Comparez les adresses complètes ci-dessous.",
+            "acknowledge": "Je comprends le risque et je veux signer quand même",
+            "role": {
+                "recipient": "Destinataire",
+                "token_recipient": "Destinataire du jeton",
+                "close_recipient": "Reçoit le solde restant",
+                "new_authorizer": "Nouvelle autorité de signature",
+                "referenced_account": "Compte référencé",
+                "target": "Contrat",
+                "spender": "Adresse autorisée",
+                "operator": "Opérateur"
+            }
         }
     },
     "site_safety": {

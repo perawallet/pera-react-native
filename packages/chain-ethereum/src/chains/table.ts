@@ -31,6 +31,7 @@ export const EVM_CHAIN_ROWS: readonly EvmChainRow[] = [
         id: ETHEREUM_CHAIN_ID,
         displayName: 'Ethereum',
         nativeAsset: ETHER,
+        explorerName: 'Etherscan',
         explorerBase: {
             mainnet: 'https://etherscan.io',
             sepolia: 'https://sepolia.etherscan.io',
@@ -43,6 +44,7 @@ export const EVM_CHAIN_ROWS: readonly EvmChainRow[] = [
         id: 'base',
         displayName: 'Base',
         nativeAsset: ETHER,
+        explorerName: 'Basescan',
         explorerBase: {
             mainnet: 'https://basescan.org',
             sepolia: 'https://sepolia.basescan.org',
@@ -63,6 +65,7 @@ export const EVM_CHAIN_ROWS: readonly EvmChainRow[] = [
             decimals: 18,
             slip44: '714',
         },
+        explorerName: 'BscScan',
         explorerBase: {
             mainnet: 'https://bscscan.com',
             testnet: 'https://testnet.bscscan.com',
@@ -75,6 +78,7 @@ export const EVM_CHAIN_ROWS: readonly EvmChainRow[] = [
         id: 'arbitrum',
         displayName: 'Arbitrum One',
         nativeAsset: ETHER,
+        explorerName: 'Arbiscan',
         explorerBase: {
             mainnet: 'https://arbiscan.io',
             sepolia: 'https://sepolia.arbiscan.io',
@@ -93,6 +97,7 @@ export const EVM_CHAIN_ROWS: readonly EvmChainRow[] = [
             decimals: 18,
             slip44: '9000',
         },
+        explorerName: 'Snowtrace',
         explorerBase: {
             mainnet: 'https://snowtrace.io',
             fuji: 'https://testnet.snowtrace.io',
@@ -110,6 +115,7 @@ export const EVM_CHAIN_ROWS: readonly EvmChainRow[] = [
             decimals: 18,
             slip44: '966',
         },
+        explorerName: 'Polygonscan',
         explorerBase: {
             mainnet: 'https://polygonscan.com',
             amoy: 'https://amoy.polygonscan.com',

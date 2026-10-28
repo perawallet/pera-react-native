@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-// @vitest-environment node
 import { afterAll, afterEach, beforeAll, vi } from 'vitest'
 import { Decimal } from 'decimal.js'
 import { generateAccount } from 'algosdk'

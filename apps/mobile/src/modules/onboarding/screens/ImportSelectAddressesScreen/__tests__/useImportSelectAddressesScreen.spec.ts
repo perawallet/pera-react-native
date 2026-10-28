@@ -33,6 +33,7 @@ const {
     mockCancelImport,
     mockMarkBackupComplete,
     mockShowToast,
+    mockErrorToast,
 } = vi.hoisted(() => ({
     mockReplace: vi.fn(),
     mockGoBack: vi.fn(),
@@ -47,6 +48,7 @@ const {
     mockCancelImport: vi.fn(),
     mockMarkBackupComplete: vi.fn(),
     mockShowToast: vi.fn(),
+    mockErrorToast: vi.fn(),
 }))
 
 vi.mock('@hooks/useLanguage')
@@ -58,7 +60,7 @@ vi.mock('@hooks/useAppNavigation', () => ({
     }),
 }))
 vi.mock('@hooks/useToast', () => ({
-    useToast: () => ({ showToast: mockShowToast }),
+    useToast: () => ({ errorToast: mockErrorToast }),
 }))
 vi.mock('@react-navigation/native', () => ({
     useRoute: () => ({ params: mockRouteParams.current }),
@@ -352,11 +354,9 @@ describe('useImportSelectAddressesScreen - failure reporting', () => {
             await result.current.handleContinue()
         })
 
-        expect(mockShowToast).toHaveBeenCalledWith(
-            expect.objectContaining({
-                type: 'error',
-                title: 'onboarding.import_account.failed_title',
-            }),
+        expect(mockErrorToast).toHaveBeenCalledWith(
+            'onboarding.import_account.failed_title',
+            'onboarding.import_account.failed_body',
         )
         expect(mockExitFailedAccountFlow).toHaveBeenCalled()
         expect(mockExitAccountFlow).not.toHaveBeenCalled()
@@ -372,11 +372,7 @@ describe('useImportSelectAddressesScreen - failure reporting', () => {
             await result.current.handleContinue()
         })
 
-        expect(mockShowToast).not.toHaveBeenCalledWith(
-            expect.objectContaining({
-                title: 'onboarding.import_account.failed_title',
-            }),
-        )
+        expect(mockErrorToast).not.toHaveBeenCalled()
         expect(mockExitAccountFlow).toHaveBeenCalled()
         expect(mockExitFailedAccountFlow).not.toHaveBeenCalled()
     })

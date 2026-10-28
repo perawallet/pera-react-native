@@ -18,9 +18,9 @@ type MutationCallbacks = {
     onError?: (error: Error) => void
 }
 
-const { showToastMock, replaceMock, mutateMock, capturedOptions } = vi.hoisted(
+const { errorToastMock, replaceMock, mutateMock, capturedOptions } = vi.hoisted(
     () => ({
-        showToastMock: vi.fn(),
+        errorToastMock: vi.fn(),
         replaceMock: vi.fn(),
         mutateMock: vi.fn(),
         capturedOptions: { value: null as MutationCallbacks | null },
@@ -39,7 +39,7 @@ vi.mock('@perawallet/wallet-core-backup', () => ({
 }))
 
 vi.mock('@hooks/useToast', () => ({
-    useToast: () => ({ showToast: showToastMock }),
+    useToast: () => ({ errorToast: errorToastMock }),
 }))
 
 vi.mock('@hooks/useLanguage')
@@ -62,7 +62,7 @@ describe('useRegisterCloudBackup', () => {
         expect(replaceMock).toHaveBeenCalledWith(
             'CloudBackupStoreEncryptionKey',
         )
-        expect(showToastMock).not.toHaveBeenCalled()
+        expect(errorToastMock).not.toHaveBeenCalled()
     })
 
     test('shows an error toast and stays put on failure', () => {
@@ -70,11 +70,9 @@ describe('useRegisterCloudBackup', () => {
 
         act(() => capturedOptions.value?.onError?.(new Error('network down')))
 
-        expect(showToastMock).toHaveBeenCalledWith(
-            expect.objectContaining({
-                title: 'cloud_backup.enable.error',
-                type: 'error',
-            }),
+        expect(errorToastMock).toHaveBeenCalledWith(
+            'cloud_backup.enable.error',
+            '',
         )
         expect(replaceMock).not.toHaveBeenCalled()
     })

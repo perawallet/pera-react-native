@@ -141,6 +141,7 @@ describe('Flow: deeplinks route by their own chain', () => {
                 chainId: 'ethereum',
                 assetId: 'native',
             })
+            expect(send.chainId).toBe('ethereum')
             expect(send.destination).toBe(RECEIVER)
             expect(openedSheets()).toEqual([SendFundsContent])
         })
@@ -186,6 +187,7 @@ describe('Flow: deeplinks route by their own chain', () => {
                 chainId: 'algorand',
                 assetId: '0',
             })
+            expect(send.chainId).toBe('algorand')
             expect(send.destination).toBe(ALGORAND_RECEIVER)
             expect(openedSheets()).toEqual([SendFundsContent])
         })

@@ -10,8 +10,6 @@
  limitations under the License
  */
 
-// @vitest-environment node
-
 import { describe, expect, it } from 'vitest'
 import { webcrypto } from 'node:crypto'
 import * as falcon from 'falcon-1024'

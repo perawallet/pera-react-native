@@ -217,6 +217,10 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
             },
             { timeout: 10_000 },
         )
+        expect(screen.getByText('send_funds.success.title')).toBeTruthy()
+        expect(
+            screen.getByText('send_funds.success.view_in_explorer'),
+        ).toBeTruthy()
 
         // Algod POST happened with the signed, grouped transaction.
         expect(sendSpy).toHaveBeenCalled()
@@ -594,7 +598,9 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
         const duplicateSpy = vi.fn(() =>
             HttpResponse.json(
                 {
-                    message: `TransactionPool.Remember: transaction already in ledger: ${'A'.repeat(52)}`,
+                    message: `TransactionPool.Remember: transaction already in ledger: ${'A'.repeat(
+                        52,
+                    )}`,
                 },
                 { status: 400 },
             ),
@@ -805,7 +811,9 @@ describe('Flow: save the recipient as a contact from Confirm Transaction', () =>
     const savedContacts = () => useContactsStore.getState().contacts
 
     const resetContacts = () => {
-        act(() => useContactsStore.getState().resetState())
+        act(() => {
+            useContactsStore.getState().resetState()
+        })
     }
 
     // The test navigator drops headers, so this stands in for the back button.

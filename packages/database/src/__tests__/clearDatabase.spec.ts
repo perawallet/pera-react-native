@@ -113,6 +113,9 @@ describe('clearDatabase', () => {
             await db.run(
                 sql`INSERT INTO phishing_list_domains (source, generation, kind, domain) VALUES ('metamask', 1, 'deny', 'phish.example')`,
             )
+            await db.run(
+                sql`INSERT INTO phishing_list_addresses (source, generation, address) VALUES ('mew-darklist', 1, '0x00000000000000000000000000000000000000aa')`,
+            )
 
             await clearDatabase(db, { keep: RESET_PRESERVED_TABLES })
 
@@ -127,6 +130,9 @@ describe('clearDatabase', () => {
             ).toHaveLength(1)
             expect(
                 await db.all(sql`SELECT * FROM phishing_list_domains`),
+            ).toHaveLength(1)
+            expect(
+                await db.all(sql`SELECT * FROM phishing_list_addresses`),
             ).toHaveLength(1)
         } finally {
             teardown()

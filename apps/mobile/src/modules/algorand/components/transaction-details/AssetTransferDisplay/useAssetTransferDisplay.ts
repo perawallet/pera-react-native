@@ -18,7 +18,7 @@ import {
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useSingleAssetDetailsQuery } from '@perawallet/wallet-core-assets'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import { Decimal } from 'decimal.js'
+import { baseUnitsToDisplayUnits } from '@perawallet/wallet-core-shared'
 import { useStyles } from './styles'
 
 export const useAssetTransferDisplay = (
@@ -45,17 +45,18 @@ export const useAssetTransferDisplay = (
     const closeToAddress = assetTransfer?.closeTo
     const closeAmountValue = useMemo(() => {
         if (assetTransfer?.closeAmount === undefined) return null
-        return new Decimal(assetTransfer.closeAmount.toString()).dividedBy(
-            new Decimal(10 ** (asset?.decimals ?? 6)),
+        return baseUnitsToDisplayUnits(
+            assetTransfer.closeAmount,
+            asset?.decimals ?? 6,
         )
     }, [assetTransfer?.closeAmount, asset?.decimals])
     // The paid leg only — an opt-out's swept holding renders in its own
     // Remainder Amount row (closeAmountValue), so the two never double-count.
     const amount = useMemo(() => {
-        const amount = new Decimal(assetTransfer?.amount?.toString() ?? '0')
-        return amount
-            .dividedBy(new Decimal(10 ** (asset?.decimals ?? 6)))
-            .mul(referenceAddress === assetTransfer?.receiver ? -1 : 1)
+        return baseUnitsToDisplayUnits(
+            assetTransfer?.amount ?? 0n,
+            asset?.decimals ?? 6,
+        ).mul(referenceAddress === assetTransfer?.receiver ? -1 : 1)
     }, [
         assetTransfer?.amount,
         asset?.decimals,

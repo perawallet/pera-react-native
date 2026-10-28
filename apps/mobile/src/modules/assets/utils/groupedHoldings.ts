@@ -77,9 +77,6 @@ export const isMainnetScope = ({ chainId, networkId }: ChainScope): boolean => {
     )
 }
 
-export const spansChains = (holdings: readonly GroupableHolding[]): boolean =>
-    new Set(holdings.map(holding => holding.scope.chainId)).size > 1
-
 const holdingKey = (scope: ChainScope, assetId: string): string =>
     `${toScopeKey(scope)}|${assetId}`
 

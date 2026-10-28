@@ -10,8 +10,9 @@
  limitations under the License
  */
 
-import { Decimal } from 'decimal.js'
+import type { Decimal } from 'decimal.js'
 import type { CollectibleStandard } from '@perawallet/wallet-core-assets'
+import { baseUnitsToDisplayUnits } from '@perawallet/wallet-core-shared'
 
 type AsaSupply = { totalSupply: Decimal; decimals: number }
 
@@ -38,4 +39,4 @@ export const hasAlgorandNftShape = ({
     totalSupply,
     decimals,
 }: AsaSupply): boolean =>
-    decimals === 0 || totalSupply.eq(Decimal.pow(10, decimals))
+    decimals === 0 || baseUnitsToDisplayUnits(totalSupply, decimals).eq(1)

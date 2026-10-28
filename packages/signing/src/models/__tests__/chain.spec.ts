@@ -12,7 +12,7 @@
 
 import { describe, it, expect } from 'vitest'
 import { makeUnsignedTransaction } from '../../__tests__/transactions'
-import { chainIdOfSignRequest } from '../chain'
+import { chainIdOfSignRequest, scopeOfSignRequest } from '../chain'
 import type { SignRequest } from '../index'
 
 const base = { id: 'req-1', transport: 'network' as const }
@@ -56,4 +56,45 @@ describe('chainIdOfSignRequest', () => {
 
         expect(chainIdOfSignRequest(request)).toBe('ethereum')
     })
+})
+
+describe('scopeOfSignRequest', () => {
+    it("takes a transaction request's scope from its transactions", () => {
+        const transaction = makeUnsignedTransaction('0xFROM')
+        const request = {
+            ...base,
+            type: 'transactions',
+            txs: [transaction],
+        } as SignRequest
+
+        expect(scopeOfSignRequest(request)).toEqual(transaction.scope)
+    })
+
+    it("takes a message request's scope from its message", () => {
+        const scope = { chainId: 'ethereum', networkId: 'sepolia' }
+        const request = {
+            ...base,
+            type: 'message',
+            message: { scope, method: 'plain', signer: '0xFROM', payload: {} },
+        } as unknown as SignRequest
+
+        expect(scopeOfSignRequest(request)).toEqual(scope)
+    })
+
+    it.each([
+        { type: 'transactions', txs: [] },
+        { type: 'arbitrary-data', data: [] },
+        { type: 'auth-data', authData: {}, metadata: {} },
+    ])(
+        'names no network for a $type request stamped with a chain alone',
+        shape => {
+            const request = {
+                ...base,
+                ...shape,
+                chainId: 'ethereum',
+            } as unknown as SignRequest
+
+            expect(scopeOfSignRequest(request)).toBeUndefined()
+        },
+    )
 })

@@ -89,6 +89,7 @@ export const CloudBackupAccountsReviewScreen = () => {
                                         <AvailableFromBackupRow
                                             address={entry.address}
                                             type={entry.type}
+                                            chains={entry.chains}
                                             needsUpdate={entry.needsUpdate}
                                             isBusy={isBusy(entry.address)}
                                             onAdd={onAdd}

@@ -112,6 +112,8 @@ const AssetListItemViewBase = ({
         )
     }
 
+    const fiatAssetId = displayCurrencyToAssetId(fiat.displayCurrency, chainId)
+
     const balance = (
         <PWView style={styles.amountContainer}>
             {/* No unit next to the figure: the row already carries it under the
@@ -133,10 +135,8 @@ const AssetListItemViewBase = ({
                 value). */}
             <CurrencyAmount
                 currency={fiat.displayCurrency}
-                assetId={displayCurrencyToAssetId(
-                    fiat.displayCurrency,
-                    chainId,
-                )}
+                assetId={fiatAssetId}
+                isFiat={fiatAssetId === null}
                 value={fiat.value}
                 precision='compact'
                 showSymbol
@@ -150,6 +150,7 @@ const AssetListItemViewBase = ({
     return (
         <AssetItemView
             asset={asset}
+            chainId={chainId}
             right={balance}
             subtitle={
                 isGroupMember ? <ChainLabel chainId={chainId} /> : undefined

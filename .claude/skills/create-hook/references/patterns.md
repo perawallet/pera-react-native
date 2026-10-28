@@ -3,7 +3,7 @@
 ## React Query Hook Example (with explicit types)
 
 ```typescript
-// modules/accounts/hooks/useAccountsQuery.ts
+// packages/accounts/src/hooks/useAccountsQuery.ts
 import { useQuery } from '@tanstack/react-query'
 import { fetchAccounts } from '../api'
 import { accountQueryKeys } from '../queryKeys'
@@ -43,7 +43,7 @@ export const useAccountsQuery = (
 ## Mutation Hook Example
 
 ```typescript
-// modules/accounts/hooks/useCreateAccountMutation.ts
+// packages/accounts/src/hooks/useCreateAccountMutation.ts
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { createAccount } from '../api'
 import { accountQueryKeys } from '../queryKeys'
@@ -158,13 +158,16 @@ export const useAccountScreen = () => {
 ## Domain Hook Directory Structure
 
 ```
-modules/accounts/
+packages/accounts/src/hooks/       ← Queries and mutations live in the package
+├── useAccountsQuery.ts
+├── useAccountBalanceQuery.ts
+├── useCreateAccountMutation.ts
+└── index.ts                       ← Barrel file
+
+apps/mobile/src/modules/accounts/
 ├── hooks/
-│   ├── useAccountsQuery.ts
-│   ├── useAccountBalanceQuery.ts
-│   ├── useCreateAccountMutation.ts
-│   ├── useAccountsStore.ts
-│   └── index.ts                   ← Barrel file
+│   ├── useAccountsStore.ts        ← App-side state and presentation hooks only
+│   └── index.ts
 ├── screens/
 └── components/
 ```

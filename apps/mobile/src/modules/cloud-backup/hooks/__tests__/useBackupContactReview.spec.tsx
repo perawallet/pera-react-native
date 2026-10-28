@@ -10,10 +10,9 @@
  limitations under the License
  */
 
-import React from 'react'
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act, waitFor } from '@testing-library/react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { createQueryClientWrapper } from '@test-utils/render'
 import { useBackupContactReview } from '../useBackupContactReview'
 
 const {
@@ -21,6 +20,7 @@ const {
     reviewMock,
     busyItemsMock,
     showToastMock,
+    errorToastMock,
     showErrorMock,
     reviewActionMock,
     kindMock,
@@ -46,6 +46,7 @@ const {
     },
     busyItemsMock: { current: [] as string[] },
     showToastMock: vi.fn(),
+    errorToastMock: vi.fn(),
     showErrorMock: vi.fn(),
     reviewActionMock: vi.fn(
         async (_variables: {
@@ -104,7 +105,10 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
 }))
 
 vi.mock('@hooks/useToast', () => ({
-    useToast: () => ({ showToast: showToastMock }),
+    useToast: () => ({
+        showToast: showToastMock,
+        errorToast: errorToastMock,
+    }),
 }))
 
 vi.mock('@hooks/useErrorToast', () => ({
@@ -113,19 +117,10 @@ vi.mock('@hooks/useErrorToast', () => ({
 
 vi.mock('@hooks/useLanguage')
 
-const createWrapper = () => {
-    const queryClient = new QueryClient({
-        defaultOptions: { mutations: { retry: false } },
-    })
-    return ({ children }: { children: React.ReactNode }) => (
-        <QueryClientProvider client={queryClient}>
-            {children}
-        </QueryClientProvider>
-    )
-}
-
 const renderReview = () =>
-    renderHook(() => useBackupContactReview(), { wrapper: createWrapper() })
+    renderHook(() => useBackupContactReview(), {
+        wrapper: createQueryClientWrapper(),
+    })
 
 beforeEach(() => {
     vi.clearAllMocks()
@@ -287,8 +282,9 @@ describe('useBackupContactReview', () => {
         act(() => result.current.addFromBackup('id-GONE'))
 
         await waitFor(() =>
-            expect(showToastMock).toHaveBeenCalledWith(
-                expect.objectContaining({ type: 'error' }),
+            expect(errorToastMock).toHaveBeenCalledWith(
+                'cloud_backup.contacts.add_error',
+                '',
             ),
         )
     })
@@ -301,6 +297,7 @@ describe('useBackupContactReview', () => {
 
         await waitFor(() => expect(showErrorMock).toHaveBeenCalledTimes(1))
         expect(showErrorMock.mock.calls[0][0]).toBeInstanceOf(NoConnectionError)
+        expect(errorToastMock).not.toHaveBeenCalled()
         expect(showToastMock).not.toHaveBeenCalled()
     })
 })

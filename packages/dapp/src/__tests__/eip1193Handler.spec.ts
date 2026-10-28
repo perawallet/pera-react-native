@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
     ConnectionsError,
     createConnectionRegistry,
@@ -236,6 +236,10 @@ describe('createEip1193ConnectionHandler', () => {
     beforeEach(() => {
         vi.useFakeTimers()
         dappRequestChainAdapters.reset()
+    })
+
+    afterEach(() => {
+        vi.useRealTimers()
     })
 
     describe('eth_chainId', () => {

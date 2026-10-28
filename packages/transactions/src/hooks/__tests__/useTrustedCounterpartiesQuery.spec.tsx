@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+// @vitest-environment jsdom
 import React from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, renderHook, waitFor } from '@testing-library/react'
@@ -84,6 +85,25 @@ describe('useTrustedCounterpartiesQuery', () => {
 
         await waitFor(() => expect(result.current.data).toHaveLength(2))
         expect(result.current.data).toEqual([paid('A-PAYEE'), paid('B-PAYEE')])
+    })
+
+    it('reads no history without a scope', () => {
+        const { result } = renderHook(
+            () =>
+                useTrustedCounterpartiesQuery({
+                    senderAddress: 'A',
+                    accountAddresses: ['A'],
+                    scope: undefined,
+                }),
+            { wrapper: wrapper(queryClient) },
+        )
+
+        expect(result.current).toEqual({
+            data: [],
+            isPending: false,
+            hasSenderHistory: false,
+        })
+        expect(fetchTrustedCounterparties).not.toHaveBeenCalled()
     })
 
     it("is pending while the sender's history loads", () => {

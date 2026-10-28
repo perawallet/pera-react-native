@@ -10,21 +10,15 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
+import { useCallback, type ReactElement } from 'react'
 import {
     HoldingRestrictions,
     type AssetWithAccountBalance,
     type ChainAssetBalance,
 } from '@perawallet/wallet-core-accounts'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { EmptyView } from '@components/EmptyView'
 import { AssetSelectionList } from '@modules/assets/components'
-import { useAssetListFiatConverter } from '../../hooks/useAssetListFiatConverter'
-import {
-    groupedHoldingItemKey,
-    type GroupedHoldingItem,
-} from '../../utils/groupedHoldings'
-import { AssetGroupRow } from '../AssetGroupRow'
-import { ChainLabel } from '../ChainLabel'
 import { AccountAssetItemView } from '../AssetItem/AccountAssetItemView'
 import { useAccountAssetSelectionList } from './useAccountAssetSelectionList'
 import { useStyles } from './styles'
@@ -39,9 +33,13 @@ export type AccountAssetSelectionListProps = {
     searchPlaceholder: string
     emptyResultTitle: string
     emptyResultBody: string
-    /** See `useAccountAssetSelectionList`'s `isAcrossChains`. */
-    isAcrossChains?: boolean
+    /** See `useAccountAssetSelectionList`'s `chainId`. */
+    chainId?: ChainId
+    /** Shown when the list has nothing to offer, no search term is active and the read didn't fail. */
+    emptyView?: ReactElement
 }
+
+const keyOf = (item: ChainAssetBalance) => item.assetId
 
 export const AccountAssetSelectionList = ({
     onAssetSelected,
@@ -53,44 +51,26 @@ export const AccountAssetSelectionList = ({
     searchPlaceholder,
     emptyResultTitle,
     emptyResultBody,
-    isAcrossChains,
+    chainId,
+    emptyView,
 }: AccountAssetSelectionListProps) => {
     const styles = useStyles({ hasPadding })
     const {
-        items,
-        toggleGroupExpanded,
+        filteredBalanceData,
         searchFilter,
         setSearchFilter,
         debouncedSearchFilter,
         isLoading,
+        isError,
     } = useAccountAssetSelectionList({
         isVisible,
         excludeAssetId,
         filterAsset,
-        isAcrossChains,
+        chainId,
     })
 
-    const convertFiat = useAssetListFiatConverter()
-
     const renderItem = useCallback(
-        ({
-            item: listItem,
-        }: {
-            item: GroupedHoldingItem<ChainAssetBalance>
-        }) => {
-            if (listItem.kind === 'group') {
-                return (
-                    <AssetGroupRow
-                        item={listItem}
-                        convertFiat={convertFiat}
-                        onToggleExpanded={() =>
-                            toggleGroupExpanded(listItem.group.id)
-                        }
-                        style={styles.item}
-                    />
-                )
-            }
-            const { holding: item, isGroupMember } = listItem
+        ({ item }: { item: ChainAssetBalance }) => {
             const isTransferBlocked =
                 item.restriction === HoldingRestrictions.transferBlocked
             return (
@@ -105,23 +85,18 @@ export const AccountAssetSelectionList = ({
                     // selectable.
                     disabled={isTransferBlocked}
                     showFrozenBadge={isTransferBlocked}
-                    subtitle={
-                        isGroupMember ? (
-                            <ChainLabel chainId={item.scope.chainId} />
-                        ) : undefined
-                    }
                     testID={`asset-list-item-${item.assetId}`}
                 />
             )
         },
-        [onAssetSelected, styles, convertFiat, toggleGroupExpanded],
+        [onAssetSelected, styles],
     )
 
     return (
         <AssetSelectionList
-            data={items}
+            data={filteredBalanceData}
             renderItem={renderItem}
-            keyExtractor={groupedHoldingItemKey}
+            keyExtractor={keyOf}
             searchValue={searchFilter}
             onSearchChange={setSearchFilter}
             searchPlaceholder={searchPlaceholder}
@@ -134,7 +109,9 @@ export const AccountAssetSelectionList = ({
                         title={emptyResultTitle}
                         body={emptyResultBody}
                     />
-                ) : undefined
+                ) : isError ? undefined : (
+                    emptyView
+                )
             }
         />
     )

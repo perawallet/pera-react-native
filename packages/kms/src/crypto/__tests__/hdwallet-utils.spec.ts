@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-// @vitest-environment node
 import { describe, test, expect, vi } from 'vitest'
 import { mnemonicToEntropy, mnemonicToSeed } from '@scure/bip39'
 import { wordlist } from '@scure/bip39/wordlists/english.js'

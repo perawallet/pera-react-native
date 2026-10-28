@@ -20,10 +20,16 @@ vi.mock('@analytics', async () => ({
     trackEvent: vi.fn(),
 }))
 
-const { navigateMock, backUpAccountMock, isBackedUpMock } = vi.hoisted(() => ({
-    navigateMock: vi.fn(),
-    backUpAccountMock: vi.fn(),
-    isBackedUpMock: vi.fn((address: string) => address === 'A'),
+const { navigateMock, backUpAccountMock, isBackedUpMock, multichain } =
+    vi.hoisted(() => ({
+        multichain: { value: false },
+        navigateMock: vi.fn(),
+        backUpAccountMock: vi.fn(),
+        isBackedUpMock: vi.fn((address: string) => address === 'A'),
+    }))
+
+vi.mock('@modules/accounts', () => ({
+    useIsMultichain: () => multichain.value,
 }))
 
 vi.mock('@react-navigation/native', () => ({
@@ -67,6 +73,7 @@ vi.mock('../../../hooks/useBackupAccountReview', () => ({
 
 beforeEach(() => {
     vi.clearAllMocks()
+    multichain.value = false
 })
 
 describe('useCloudBackupAccounts', () => {
@@ -105,5 +112,15 @@ describe('useCloudBackupAccounts', () => {
 
         expect(trackEvent).toHaveBeenCalledWith(CloudBackupEvent.AccountsBackUp)
         expect(backUpAccountMock).toHaveBeenCalledWith('B')
+    })
+
+    it('explains that a backup covers every network only once more than one is on', () => {
+        const { result, rerender } = renderHook(() => useCloudBackupAccounts())
+        expect(result.current.showsNetworksHint).toBe(false)
+
+        multichain.value = true
+        rerender()
+
+        expect(result.current.showsNetworksHint).toBe(true)
     })
 })

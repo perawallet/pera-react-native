@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+// @vitest-environment jsdom
 import { describe, it, expect } from 'vitest'
 import {
     CONNECT_MODAL_WRAPPER_ID,

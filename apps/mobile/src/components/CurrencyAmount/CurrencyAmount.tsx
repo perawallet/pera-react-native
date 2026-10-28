@@ -29,7 +29,11 @@ import {
     type TypographyVariant,
 } from '@theme/typography'
 import { UNKNOWN_AMOUNT_PLACEHOLDER } from '@constants/ui'
-import { resolvePrecision, type PrecisionVariant } from './precision'
+import {
+    resolveFiatFloor,
+    resolvePrecision,
+    type PrecisionVariant,
+} from './precision'
 import { useIsNativeAssetId } from '@perawallet/wallet-core-assets'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
@@ -76,6 +80,12 @@ export type CurrencyAmountProps = {
      */
     assetId: Nullable<string>
     value: Maybe<Decimal>
+    /**
+     * The amount is money in a fiat currency. Opt-in because a null `assetId`
+     * doesn't imply it: a token the chain package can't resolve also has none.
+     * A fiat amount under one cent shows as "< 0.01" in `compact` precision.
+     */
+    isFiat?: boolean
     prefix?: string
     /**
      * A +/- (or similar) sign rendered between the asset symbol and the amount
@@ -104,6 +114,7 @@ export const CurrencyAmount = (props: CurrencyAmountProps) => {
         currency,
         assetId,
         value,
+        isFiat = false,
         precision: precisionVariant,
         assetDecimals,
         alignRight: _alignRight,
@@ -119,14 +130,16 @@ export const CurrencyAmount = (props: CurrencyAmountProps) => {
         ...rest
     } = props
 
+    // Identity comes from the asset id alone; `currency` never earns the glyph.
+    const isAssetMode = assetId != null
+    const fiatFloor = resolveFiatFloor(precisionVariant, isFiat, value)
+    // A floored amount is formatted as the floor itself, behind a bound marker.
+    const shownValue = fiatFloor ?? value
     const { precision, minPrecision } = resolvePrecision(
         precisionVariant,
         assetDecimals,
-        value,
+        shownValue,
     )
-
-    // Identity comes from the asset id alone; `currency` never earns the glyph.
-    const isAssetMode = assetId != null
     const isAlgo = isNativeAssetId(assetId)
     // Passed explicitly rather than left to formatCurrency's getActiveLocale()
     // default so a mid-session language switch actually invalidates the memo.
@@ -161,23 +174,30 @@ export const CurrencyAmount = (props: CurrencyAmountProps) => {
                 : formatRawNumberInput(rawValue, currentLanguage)
         }
 
-        if (value == null) {
+        if (shownValue == null) {
             return UNKNOWN_AMOUNT_PLACEHOLDER
         }
 
-        return privacyMode
-            ? '****'
-            : formatCurrency(
-                  value,
-                  precision,
-                  currency,
-                  currentLanguage,
-                  shouldShowSymbolInFormat,
-                  truncateToUnits,
-                  minPrecision,
-              )
+        if (privacyMode) {
+            return '****'
+        }
+
+        const formatted = formatCurrency(
+            shownValue,
+            precision,
+            currency,
+            currentLanguage,
+            shouldShowSymbolInFormat,
+            truncateToUnits,
+            minPrecision,
+        )
+        if (!fiatFloor) {
+            return formatted
+        }
+        return `${fiatFloor.isNegative() ? '> ' : '< '}${formatted}`
     }, [
-        value,
+        shownValue,
+        fiatFloor,
         precision,
         currency,
         shouldShowSymbolInFormat,

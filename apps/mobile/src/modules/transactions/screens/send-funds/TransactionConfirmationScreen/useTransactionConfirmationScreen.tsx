@@ -133,7 +133,7 @@ export const useTransactionConfirmationScreen =
         }, [selectedAssetId, assets])
 
         const selectedAccount = useSelectedAccount()
-        const { showToast } = useToast()
+        const { errorToast } = useToast()
         const { request: requestBottomSheet } = useBottomSheet()
 
         const selectedAddress = selectedAccount
@@ -261,12 +261,9 @@ export const useTransactionConfirmationScreen =
                 !amount ||
                 !asset
             ) {
-                showToast(
-                    {
-                        title: t('errors.transaction.title'),
-                        body: t('errors.transaction.body'),
-                        type: 'error',
-                    },
+                errorToast(
+                    t('errors.transaction.title'),
+                    t('errors.transaction.body'),
                     {
                         notifier: bottomSheetNotifier.current ?? undefined,
                     },
@@ -276,16 +273,9 @@ export const useTransactionConfirmationScreen =
 
             if (isFeeCoverageChecked) {
                 if (isFeeError) {
-                    showToast(
-                        {
-                            title: t(
-                                'send_funds.confirmation.fee_unavailable.title',
-                            ),
-                            body: t(
-                                'send_funds.confirmation.fee_unavailable.body',
-                            ),
-                            type: 'error',
-                        },
+                    errorToast(
+                        t('send_funds.confirmation.fee_unavailable.title'),
+                        t('send_funds.confirmation.fee_unavailable.body'),
                         {
                             notifier: bottomSheetNotifier.current ?? undefined,
                         },
@@ -299,25 +289,16 @@ export const useTransactionConfirmationScreen =
                     ? baseUnitAmount.plus(maxFeeAmount)
                     : maxFeeAmount
                 if (nativeSpendable.max.lt(nativeNeeded)) {
-                    showToast(
-                        {
-                            title: t(
-                                'send_funds.confirmation.fee_shortfall.title',
-                                {
-                                    symbol: nativeAsset.unitName,
-                                },
-                            ),
-                            body: t(
-                                'send_funds.confirmation.fee_shortfall.body',
-                                {
-                                    fee: `${formatNumber(
-                                        toWholeUnits(maxFeeAmount, nativeAsset),
-                                        nativeAsset.decimals,
-                                    )} ${nativeAsset.unitName}`,
-                                },
-                            ),
-                            type: 'error',
-                        },
+                    errorToast(
+                        t('send_funds.confirmation.fee_shortfall.title', {
+                            symbol: nativeAsset.unitName,
+                        }),
+                        t('send_funds.confirmation.fee_shortfall.body', {
+                            fee: `${formatNumber(
+                                toWholeUnits(maxFeeAmount, nativeAsset),
+                                nativeAsset.decimals,
+                            )} ${nativeAsset.unitName}`,
+                        }),
                         {
                             notifier: bottomSheetNotifier.current ?? undefined,
                         },
@@ -327,19 +308,14 @@ export const useTransactionConfirmationScreen =
             }
 
             if (recipientWarning) {
-                showToast(
-                    {
-                        title: t(
-                            recipientWarning.title.key,
-                            recipientWarning.title.params,
-                        ),
-                        body: recipientWarning.body
-                            .map(paragraph =>
-                                t(paragraph.key, paragraph.params),
-                            )
-                            .join(' '),
-                        type: 'error',
-                    },
+                errorToast(
+                    t(
+                        recipientWarning.title.key,
+                        recipientWarning.title.params,
+                    ),
+                    recipientWarning.body
+                        .map(paragraph => t(paragraph.key, paragraph.params))
+                        .join(' '),
                     {
                         notifier: bottomSheetNotifier.current ?? undefined,
                     },

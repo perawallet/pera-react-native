@@ -29,7 +29,7 @@ export const RatingsContent = () => {
     const { t } = useLanguage()
     const provider = usePeraProvider()
     const deviceInfoService = provider.deviceInfo
-    const { showToast } = useToast()
+    const { errorToast } = useToast()
     const { dismiss } = useBottomSheetResult<void>()
 
     const handleRatingClick = async () => {
@@ -45,12 +45,7 @@ export const RatingsContent = () => {
                 throw new Error('Failed to open store for review')
             }
         } catch {
-            // lanekeep-ignore-next-line pera/no-error-toast-in-catch reason: catch discards the error, so it is not available for showError, which requires one
-            showToast({
-                title: t('common.error.title'),
-                body: t('common.error.body'),
-                type: 'error',
-            })
+            errorToast(t('common.error.title'), t('common.error.body'))
         }
     }
 

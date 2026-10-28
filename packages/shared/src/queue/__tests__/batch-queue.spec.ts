@@ -10,11 +10,12 @@
  limitations under the License
  */
 
-import { describe, it, expect, vi } from 'vitest'
+import { afterEach, describe, it, expect, vi } from 'vitest'
 import { BatchQueue } from '../batch-queue'
 
-const wait = (ms: number) =>
-    new Promise<void>(resolve => setTimeout(resolve, ms))
+afterEach(() => {
+    vi.useRealTimers()
+})
 
 describe('BatchQueue', () => {
     it('coalesces concurrent enqueues for the same partition into one executor call', async () => {
@@ -129,11 +130,13 @@ describe('BatchQueue', () => {
         const executor = vi.fn().mockImplementation(async (keys: string[]) => {
             return new Map(keys.map(k => [k, k.toUpperCase()]))
         })
+        vi.useFakeTimers()
         const queue = new BatchQueue<string, string, string>(executor, 50)
 
         const p1 = queue.enqueue('a', 'main')
-        await wait(20) // less than 50ms delay
+        await vi.advanceTimersByTimeAsync(20)
         const p2 = queue.enqueue('b', 'main')
+        await vi.advanceTimersByTimeAsync(30)
 
         const [a, b] = await Promise.all([p1, p2])
 
@@ -148,11 +151,16 @@ describe('BatchQueue', () => {
         const executor = vi.fn().mockImplementation(async (keys: string[]) => {
             return new Map(keys.map(k => [k, k.toUpperCase()]))
         })
+        vi.useFakeTimers()
         const queue = new BatchQueue<string, string, string>(executor, 20)
 
-        const a = await queue.enqueue('a', 'main')
-        await wait(40)
-        const b = await queue.enqueue('b', 'main')
+        const pa = queue.enqueue('a', 'main')
+        await vi.advanceTimersByTimeAsync(20)
+        const a = await pa
+        await vi.advanceTimersByTimeAsync(40)
+        const pb = queue.enqueue('b', 'main')
+        await vi.advanceTimersByTimeAsync(20)
+        const b = await pb
 
         expect(executor).toHaveBeenCalledTimes(2)
         expect(a).toBe('A')
@@ -178,7 +186,7 @@ describe('BatchQueue', () => {
         const queue = new BatchQueue<string, string, string>(executor, 0)
 
         const first = queue.enqueue('a', 'main')
-        await wait(5) // let the first batch start
+        await vi.waitFor(() => expect(executor).toHaveBeenCalled())
 
         // Second enqueue arrives during the first executor's await
         const second = queue.enqueue('b', 'main')
@@ -205,6 +213,7 @@ describe('BatchQueue debounce', () => {
             )
 
     it('defers dispatch while enqueues keep arriving', async () => {
+        vi.useFakeTimers()
         const executor = upperExecutor()
         const queue = new BatchQueue<string, string, string>(executor, {
             delayMs: 30,
@@ -215,10 +224,11 @@ describe('BatchQueue debounce', () => {
         // Each step is shorter than delayMs, so a fixed window would have
         // dispatched partway through; debouncing must not.
         for (const key of ['b', 'c', 'd']) {
-            await wait(15)
+            await vi.advanceTimersByTimeAsync(15)
             pending.push(queue.enqueue(key, 'main'))
             expect(executor).not.toHaveBeenCalled()
         }
+        await vi.advanceTimersByTimeAsync(30)
 
         await Promise.all(pending)
 
@@ -264,6 +274,7 @@ describe('BatchQueue debounce', () => {
     // slightly faster than delayMs restart the timer forever, and a count cap
     // never trips because the batch stays small.
     it('dispatches at maxWaitMs even while enqueues keep arriving', async () => {
+        vi.useFakeTimers()
         const executor = upperExecutor()
         const queue = new BatchQueue<string, string, string>(executor, {
             delayMs: 30,
@@ -274,7 +285,7 @@ describe('BatchQueue debounce', () => {
 
         queue.enqueue('a', 'main')
         for (const key of ['b', 'c', 'd', 'e', 'f']) {
-            await wait(20)
+            await vi.advanceTimersByTimeAsync(20)
             queue.enqueue(key, 'main')
         }
 
@@ -284,6 +295,7 @@ describe('BatchQueue debounce', () => {
     // maxWaitMs is measured per window; a fresh window must get the full
     // budget rather than inheriting the previous window's spent one.
     it('gives each window its own maxWait budget', async () => {
+        vi.useFakeTimers()
         const executor = upperExecutor()
         const queue = new BatchQueue<string, string, string>(executor, {
             delayMs: 20,
@@ -291,14 +303,18 @@ describe('BatchQueue debounce', () => {
             maxWaitMs: 50,
         })
 
-        await queue.enqueue('a', 'main')
+        const first = queue.enqueue('a', 'main')
+        await vi.advanceTimersByTimeAsync(20)
+        await first
         expect(executor).toHaveBeenCalledTimes(1)
+        await vi.advanceTimersByTimeAsync(100)
 
         // Second window: still debounced, so an enqueue inside delayMs
         // coalesces rather than dispatching instantly.
         const second = queue.enqueue('b', 'main')
-        await wait(10)
+        await vi.advanceTimersByTimeAsync(10)
         const third = queue.enqueue('c', 'main')
+        await vi.advanceTimersByTimeAsync(20)
         await Promise.all([second, third])
 
         expect(executor).toHaveBeenCalledTimes(2)

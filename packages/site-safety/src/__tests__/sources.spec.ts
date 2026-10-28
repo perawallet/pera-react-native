@@ -12,9 +12,13 @@
 
 import { describe, expect, it } from 'vitest'
 import {
+    isCompleteList,
     parseMetaMaskPhishingConfig,
+    parseMewDarklist,
     parsePolkadotPhishingList,
+    PHISHING_LIST_SOURCES,
 } from '../sources'
+import { evmAddressList, hostList, mewDarklist } from './fixtures'
 
 describe('parseMetaMaskPhishingConfig', () => {
     it('maps the blocklist, allowlist and fuzzylist', () => {
@@ -30,6 +34,7 @@ describe('parseMetaMaskPhishingConfig', () => {
             deny: ['phish.example', 'xn--phntom-jta.com'],
             allow: ['walletconnect.com'],
             impersonationTargets: ['opensea.io'],
+            addresses: [],
         })
     })
 
@@ -71,10 +76,70 @@ describe('parsePolkadotPhishingList', () => {
             deny: ['dot-airdrop.example'],
             allow: [],
             impersonationTargets: [],
+            addresses: [],
         })
     })
 
     it('rejects a malformed list', () => {
         expect(parsePolkadotPhishingList({ deny: [1, 2] })).toBeUndefined()
+    })
+})
+
+describe('parseMewDarklist', () => {
+    it('keeps valid addresses as lowercase keys and ignores the extra fields', () => {
+        expect(
+            parseMewDarklist([
+                {
+                    address: '0x09750ad360fdb7A2ee23669C4503c974D86D8694',
+                    comment: 'XRP phishing website',
+                    date: '2020-11-17',
+                },
+                { address: '0x09750AD360FDB7A2EE23669C4503C974D86D8694' },
+                { address: 'not-an-address' },
+                { address: '0x1234' },
+            ]),
+        ).toEqual({
+            deny: [],
+            allow: [],
+            impersonationTargets: [],
+            addresses: ['0x09750ad360fdb7a2ee23669c4503c974d86d8694'],
+        })
+    })
+
+    it.each([null, {}, [{ wallet: '0x0' }], [{ address: 1 }]])(
+        'rejects a malformed list %#',
+        raw => {
+            expect(parseMewDarklist(raw)).toBeUndefined()
+        },
+    )
+})
+
+describe('isCompleteList', () => {
+    const sourceOf = (id: string) => {
+        const source = PHISHING_LIST_SOURCES.find(entry => entry.id === id)
+        if (!source) throw new Error(id)
+        return source
+    }
+
+    it('rejects a darklist shorter than its floor', () => {
+        const source = sourceOf('mew-darklist')
+        const short = parseMewDarklist(
+            mewDarklist(evmAddressList(source.minimumAddressEntries - 1)),
+        )
+        const full = parseMewDarklist(
+            mewDarklist(evmAddressList(source.minimumAddressEntries)),
+        )
+
+        expect(short && isCompleteList(source, short)).toBe(false)
+        expect(full && isCompleteList(source, full)).toBe(true)
+    })
+
+    it('rejects a domain list shorter than its deny floor', () => {
+        const source = sourceOf('polkadot')
+        const short = parsePolkadotPhishingList({
+            deny: hostList(source.minimumDenyEntries - 1, 'dot'),
+        })
+
+        expect(short && isCompleteList(source, short)).toBe(false)
     })
 })

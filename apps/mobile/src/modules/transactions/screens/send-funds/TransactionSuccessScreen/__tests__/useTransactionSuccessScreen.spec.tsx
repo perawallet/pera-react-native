@@ -73,7 +73,10 @@ describe('useTransactionSuccessScreen', () => {
             accountAddress: null,
         })
         ;(getChainDescriptor as Mock).mockReturnValue({
+            displayName: 'Algorand',
+            protocol: { confirmsOnSubmit: true },
             explorer: {
+                name: 'Pera Explorer',
                 transactionUrl: (networkId: string, txId: string) =>
                     networkId === 'mainnet'
                         ? `https://explorer.perawallet.app/tx/${txId}`
@@ -110,8 +113,46 @@ describe('useTransactionSuccessScreen', () => {
         })
     })
 
+    it('reports an Algorand send as final, with Pera Explorer', () => {
+        const { result } = renderHook(() => useTransactionSuccessScreen())
+
+        expect(result.current).toMatchObject({
+            isAwaitingConfirmation: false,
+            networkName: 'Algorand',
+            explorerName: 'Pera Explorer',
+        })
+    })
+
+    it("reports an EVM send as awaiting confirmation, with its network's explorer", () => {
+        ;(getChainDescriptor as Mock).mockReturnValue({
+            displayName: 'Base',
+            protocol: { confirmsOnSubmit: false },
+            explorer: {
+                name: 'Basescan',
+                transactionUrl: (_networkId: string, txId: string) =>
+                    `https://basescan.org/tx/${txId}`,
+            },
+        })
+
+        const { result } = renderHook(() => useTransactionSuccessScreen())
+
+        expect(result.current).toMatchObject({
+            isAwaitingConfirmation: true,
+            networkName: 'Base',
+            explorerName: 'Basescan',
+        })
+        act(() => {
+            result.current.handleViewInExplorer?.()
+        })
+        expect(mockPushWebView).toHaveBeenCalledWith({
+            url: 'https://basescan.org/tx/TX_ID_123',
+            id: 'mock-uuid',
+        })
+    })
+
     it('offers no explorer action on a network with no explorer', () => {
         ;(getChainDescriptor as Mock).mockReturnValue({
+            protocol: { confirmsOnSubmit: true },
             explorer: { transactionUrl: () => undefined },
         })
 

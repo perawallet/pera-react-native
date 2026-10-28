@@ -402,11 +402,8 @@ describe('queryClient', () => {
         )
     })
 
-    it('should handle errors and log them when debugEnabled is true', async () => {
+    it('logs a failed request at debug level', async () => {
         const { queryClient } = await import('../query-client')
-        const consoleLogSpy = vi
-            .spyOn(console, 'log')
-            .mockImplementation(() => {})
 
         const testError = new Error('Test error')
         mockJson.mockRejectedValue(testError)
@@ -420,10 +417,9 @@ describe('queryClient', () => {
             }),
         ).rejects.toThrow('Test error')
 
-        // Verify error was logged
-        expect(consoleLogSpy).toHaveBeenCalledWith('Query error', testError)
-
-        consoleLogSpy.mockRestore()
+        expect(mockLogger.debug).toHaveBeenCalledWith('Query error', {
+            error: testError,
+        })
     })
 
     it('should handle URL without leading slash', async () => {

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { act, renderHook, waitFor } from '@testing-library/react'
+import { act, renderHook } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { logger } from '@perawallet/wallet-core-shared'
 
@@ -206,6 +206,8 @@ describe('useWebAppShell module import', () => {
 })
 
 describe('useWebAppShell', () => {
+    const flush = () => act(async () => {})
+
     beforeEach(() => {
         // The mocked storage never completes a rehydrate; the real extension
         // has hydrated the accounts store long before the vault unlocks.
@@ -216,7 +218,6 @@ describe('useWebAppShell', () => {
         mocks.showOnboarding = false
         mocks.hasAccounts = false
         mocks.passkeySetupPending = false
-        vi.clearAllMocks()
         useDatabaseReadinessStore.getState().resetState()
         mocks.initializeDatabase.mockResolvedValue(undefined)
         mocks.seedNativeAssets.mockResolvedValue(undefined)
@@ -243,9 +244,8 @@ describe('useWebAppShell', () => {
 
         // Remote Config gates feature flags read by the first screen, so this
         // must not wait on the unlock-gated bootstrap below it.
-        await waitFor(() =>
-            expect(mocks.platformInitialize).toHaveBeenCalledOnce(),
-        )
+        await flush()
+        expect(mocks.platformInitialize).toHaveBeenCalledOnce()
         expect(mocks.keystoreReady).not.toHaveBeenCalled()
     })
 
@@ -255,14 +255,32 @@ describe('useWebAppShell', () => {
         mocks.isUnlocked = true
 
         const { rerender } = renderHook(() => useWebAppShell())
-        await waitFor(() =>
-            expect(mocks.platformInitialize).toHaveBeenCalledOnce(),
-        )
+        await flush()
+        expect(mocks.platformInitialize).toHaveBeenCalledOnce()
 
         rerender()
         rerender()
 
         expect(mocks.platformInitialize).toHaveBeenCalledOnce()
+    })
+
+    it('logs the resolved config under keys the logger does not redact', () => {
+        const infoSpy = vi.spyOn(logger, 'info').mockImplementation(() => {})
+        mocks.surface = 'popup'
+        mocks.isInitialized = true
+        mocks.isUnlocked = false
+
+        renderHook(() => useWebAppShell())
+
+        expect(infoSpy).toHaveBeenCalledWith(
+            'Web shell config',
+            expect.objectContaining({
+                appEnvironment: expect.anything(),
+                integrityHeaderEnabled: expect.anything(),
+            }),
+        )
+
+        infoSpy.mockRestore()
     })
 
     it('still reaches main when platform service init rejects (flags degrade, shell does not)', async () => {
@@ -274,7 +292,8 @@ describe('useWebAppShell', () => {
 
         const { result } = renderHook(() => useWebAppShell())
 
-        await waitFor(() => expect(result.current.shellState).toBe('main'))
+        await flush()
+        expect(result.current.shellState).toBe('main')
     })
 
     it('returns approval-placeholder when surface is approval, regardless of vault state', () => {
@@ -299,9 +318,8 @@ describe('useWebAppShell', () => {
 
         expect(result.current.shellState).toBe('resolving')
 
-        await waitFor(() =>
-            expect(result.current.shellState).toBe('dapp-request'),
-        )
+        await flush()
+        expect(result.current.shellState).toBe('dapp-request')
     })
 
     it('falls through to the normal wallet flow when the popup has no pending enable', async () => {
@@ -313,12 +331,11 @@ describe('useWebAppShell', () => {
 
         const { result } = renderHook(() => useWebAppShell())
 
-        await waitFor(() =>
-            expect(mocks.getCurrentApproval).toHaveBeenCalledOnce(),
-        )
+        await flush()
+        expect(mocks.getCurrentApproval).toHaveBeenCalledOnce()
 
         expect(result.current.shellState).not.toBe('dapp-request')
-        await waitFor(() => expect(result.current.shellState).toBe('main'))
+        expect(result.current.shellState).toBe('main')
     })
 
     it('returns resolving when vault state is still null', () => {
@@ -338,9 +355,8 @@ describe('useWebAppShell', () => {
         const { result } = renderHook(() => useWebAppShell())
         // Popup surface waits on the pending-enable check (resolves to null
         // here) before falling through to vault-state routing.
-        await waitFor(() =>
-            expect(result.current.shellState).toBe('create-password'),
-        )
+        await flush()
+        expect(result.current.shellState).toBe('create-password')
     })
 
     it('returns onboarding when initialized+unlocked and showOnboarding is true, after bootstrap resolves', async () => {
@@ -354,9 +370,8 @@ describe('useWebAppShell', () => {
         // Initially resolving while the bootstrap chain runs
         expect(result.current.shellState).toBe('resolving')
 
-        await waitFor(() =>
-            expect(result.current.shellState).toBe('onboarding'),
-        )
+        await flush()
+        expect(result.current.shellState).toBe('onboarding')
 
         expect(mocks.keystoreReady).toHaveBeenCalledOnce()
     })
@@ -372,12 +387,11 @@ describe('useWebAppShell', () => {
         expect(result.current.shellState).toBe('resolving')
 
         // Stays 'resolving' until DB + sync bootstrap resolve, not just keystore.
-        await waitFor(() => expect(mocks.keystoreReady).toHaveBeenCalledOnce())
-        await waitFor(() =>
-            expect(mocks.initializeDatabase).toHaveBeenCalledOnce(),
-        )
+        await flush()
+        expect(mocks.keystoreReady).toHaveBeenCalledOnce()
+        expect(mocks.initializeDatabase).toHaveBeenCalledOnce()
 
-        await waitFor(() => expect(result.current.shellState).toBe('main'))
+        expect(result.current.shellState).toBe('main')
     })
 
     it('calls keystore ready only once per unlock transition, not on every render', async () => {
@@ -388,7 +402,8 @@ describe('useWebAppShell', () => {
 
         const { result, rerender } = renderHook(() => useWebAppShell())
 
-        await waitFor(() => expect(result.current.shellState).toBe('main'))
+        await flush()
+        expect(result.current.shellState).toBe('main')
 
         // Force re-renders
         act(() => {
@@ -408,7 +423,8 @@ describe('useWebAppShell', () => {
 
         const { result, rerender } = renderHook(() => useWebAppShell())
 
-        await waitFor(() => expect(result.current.shellState).toBe('main'))
+        await flush()
+        expect(result.current.shellState).toBe('main')
         expect(mocks.keystoreReady).toHaveBeenCalledOnce()
 
         mocks.isUnlocked = false
@@ -420,7 +436,8 @@ describe('useWebAppShell', () => {
             rerender()
         })
 
-        await waitFor(() => expect(result.current.shellState).toBe('main'))
+        await flush()
+        expect(result.current.shellState).toBe('main')
         expect(mocks.keystoreReady).toHaveBeenCalledOnce()
     })
 
@@ -439,9 +456,8 @@ describe('useWebAppShell', () => {
 
             const { result } = renderHook(() => useWebAppShell())
 
-            await waitFor(() =>
-                expect(result.current.shellState).not.toBe('resolving'),
-            )
+            await flush()
+            expect(result.current.shellState).not.toBe('resolving')
             expect(mocks.armAutoLock).not.toHaveBeenCalled()
         },
     )
@@ -472,7 +488,8 @@ describe('useWebAppShell', () => {
 
         const { result } = renderHook(() => useWebAppShell())
 
-        await waitFor(() => expect(result.current.shellState).toBe('main'))
+        await flush()
+        expect(result.current.shellState).toBe('main')
 
         expect(callOrder).toEqual([
             'keystoreReady',
@@ -506,7 +523,8 @@ describe('useWebAppShell', () => {
         mocks.hasAccounts = false
 
         const { result, rerender } = renderHook(() => useWebAppShell())
-        await waitFor(() => expect(result.current.shellState).toBe('main'))
+        await flush()
+        expect(result.current.shellState).toBe('main')
 
         // No accounts yet: sync never starts.
         expect(mocks.syncStart).not.toHaveBeenCalled()
@@ -516,14 +534,16 @@ describe('useWebAppShell', () => {
         act(() => {
             rerender()
         })
-        await waitFor(() => expect(mocks.syncStart).toHaveBeenCalledOnce())
+        await flush()
+        expect(mocks.syncStart).toHaveBeenCalledOnce()
 
         // Lock: sync stops.
         mocks.isUnlocked = false
         act(() => {
             rerender()
         })
-        await waitFor(() => expect(mocks.syncStop).toHaveBeenCalledOnce())
+        await flush()
+        expect(mocks.syncStop).toHaveBeenCalledOnce()
     })
 
     it('sets shellState to error when initializeDatabase rejects (fail loud, not silent main)', async () => {
@@ -535,7 +555,8 @@ describe('useWebAppShell', () => {
 
         const { result } = renderHook(() => useWebAppShell())
 
-        await waitFor(() => expect(result.current.shellState).toBe('error'))
+        await flush()
+        expect(result.current.shellState).toBe('error')
     })
 
     it('marks the database ready once it opens, before the rest of bootstrap finishes', async () => {
@@ -547,11 +568,8 @@ describe('useWebAppShell', () => {
         renderHook(() => useWebAppShell())
 
         expect(useDatabaseReadinessStore.getState().readiness).toBe('pending')
-        await waitFor(() =>
-            expect(useDatabaseReadinessStore.getState().readiness).toBe(
-                'ready',
-            ),
-        )
+        await flush()
+        expect(useDatabaseReadinessStore.getState().readiness).toBe('ready')
         expect(mocks.initializeSyncService).not.toHaveBeenCalled()
     })
 
@@ -563,11 +581,8 @@ describe('useWebAppShell', () => {
 
         renderHook(() => useWebAppShell())
 
-        await waitFor(() =>
-            expect(useDatabaseReadinessStore.getState().readiness).toBe(
-                'failed',
-            ),
-        )
+        await flush()
+        expect(useDatabaseReadinessStore.getState().readiness).toBe('failed')
     })
 
     it('keeps the database ready when a later bootstrap step fails', async () => {
@@ -578,7 +593,8 @@ describe('useWebAppShell', () => {
 
         const { result } = renderHook(() => useWebAppShell())
 
-        await waitFor(() => expect(result.current.shellState).toBe('error'))
+        await flush()
+        expect(result.current.shellState).toBe('error')
         expect(useDatabaseReadinessStore.getState().readiness).toBe('ready')
     })
 
@@ -606,7 +622,8 @@ describe('useWebAppShell', () => {
 
         const { result } = renderHook(() => useWebAppShell())
 
-        await waitFor(() => expect(result.current.shellState).toBe('main'))
+        await flush()
+        expect(result.current.shellState).toBe('main')
         expect(callOrder).toEqual([
             'keystoreReady',
             'resealLegacyMaterial',
@@ -628,7 +645,8 @@ describe('useWebAppShell', () => {
 
         const { result } = renderHook(() => useWebAppShell())
 
-        await waitFor(() => expect(result.current.shellState).toBe('main'))
+        await flush()
+        expect(result.current.shellState).toBe('main')
         expect(warnSpy).toHaveBeenCalledWith(
             expect.any(String),
             expect.objectContaining({ ids: ['k1'] }),
@@ -646,9 +664,8 @@ describe('useWebAppShell', () => {
 
             const { result } = renderHook(() => useWebAppShell())
 
-            await waitFor(() =>
-                expect(result.current.shellState).toBe('passkey-setup'),
-            )
+            await flush()
+            expect(result.current.shellState).toBe('passkey-setup')
         })
 
         it('hydrates the pending flag once on mount', async () => {
@@ -659,9 +676,8 @@ describe('useWebAppShell', () => {
             rerender()
             rerender()
 
-            await waitFor(() =>
-                expect(mocks.hydratePasskeySetup).toHaveBeenCalledOnce(),
-            )
+            await flush()
+            expect(mocks.hydratePasskeySetup).toHaveBeenCalledOnce()
         })
 
         it('stays resolving while the pending flag is unknown', async () => {
@@ -671,12 +687,9 @@ describe('useWebAppShell', () => {
 
             const { result } = renderHook(() => useWebAppShell())
 
-            await waitFor(() =>
-                expect(mocks.initializeDatabase).toHaveBeenCalledOnce(),
-            )
-            await act(async () => {
-                await Promise.resolve()
-            })
+            await flush()
+            expect(mocks.initializeDatabase).toHaveBeenCalledOnce()
+            await flush()
             expect(result.current.shellState).toBe('resolving')
         })
 
@@ -687,16 +700,14 @@ describe('useWebAppShell', () => {
             mocks.passkeySetupPending = true
 
             const { result, rerender } = renderHook(() => useWebAppShell())
-            await waitFor(() =>
-                expect(result.current.shellState).toBe('passkey-setup'),
-            )
+            await flush()
+            expect(result.current.shellState).toBe('passkey-setup')
 
             mocks.passkeySetupPending = false
             rerender()
 
-            await waitFor(() =>
-                expect(result.current.shellState).toBe('onboarding'),
-            )
+            await flush()
+            expect(result.current.shellState).toBe('onboarding')
         })
 
         it('keeps create-password ahead of the step when no vault exists', async () => {
@@ -706,9 +717,8 @@ describe('useWebAppShell', () => {
 
             const { result } = renderHook(() => useWebAppShell())
 
-            await waitFor(() =>
-                expect(result.current.shellState).toBe('create-password'),
-            )
+            await flush()
+            expect(result.current.shellState).toBe('create-password')
         })
     })
 })

@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+// @vitest-environment jsdom
 import '../../__tests__/registerAlgorandAccounts'
 import React from 'react'
 import { act, renderHook, waitFor } from '@testing-library/react'

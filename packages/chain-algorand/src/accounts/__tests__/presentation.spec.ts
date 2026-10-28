@@ -273,13 +273,13 @@ describe('algorandAccountPresentation.transitionLabel', () => {
 
 describe('glyphs', () => {
     it.each([
-        standaloneAccount('A'),
-        hdAccount('A'),
-        hardwareAccount('A'),
-        multisigAccount('A', null),
-        watchAccount('A'),
-        quantumAccount('A'),
-    ])('are the same whether or not the account can sign', account => {
+        ['standalone', standaloneAccount('A')],
+        ['HD', hdAccount('A')],
+        ['hardware', hardwareAccount('A')],
+        ['multisig', multisigAccount('A', null)],
+        ['watch', watchAccount('A')],
+        ['quantum', quantumAccount('A')],
+    ])('are the same whether or not a %s account can sign', (_, account) => {
         const kindId = kindIdOf(account)
 
         expect(

@@ -35,7 +35,7 @@ export type RemoveFromBackupChoice = (passkey: Passkey) => Promise<boolean>
 
 export const useRemoveFromBackupChoice = (): RemoveFromBackupChoice => {
     const { request } = useBottomSheet()
-    const { showToast } = useToast()
+    const { errorToast } = useToast()
     const { t } = useLanguage()
     const isCloudBackupAvailable = useIsCloudBackupAvailable()
     const syncState = useBackupSyncStateStore(state => state.syncState)
@@ -81,18 +81,17 @@ export const useRemoveFromBackupChoice = (): RemoveFromBackupChoice => {
                 })
             }
 
-            showToast({
-                title: t(
+            errorToast(
+                t(
                     choice
                         ? 'cloud_backup.passkeys.delete_error'
                         : 'cloud_backup.passkeys.keep_error',
                 ),
-                body: '',
-                type: 'error',
-            })
+                '',
+            )
             return false
         },
-        [isCloudBackupAvailable, syncState, request, showToast, t],
+        [isCloudBackupAvailable, syncState, request, errorToast, t],
     )
 
     return useCallback(

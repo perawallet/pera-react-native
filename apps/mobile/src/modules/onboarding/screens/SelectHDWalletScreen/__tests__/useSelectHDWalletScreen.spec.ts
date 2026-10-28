@@ -39,17 +39,10 @@ vi.mock('@react-navigation/native', async () => {
     }
 })
 
-const mockShowToast = vi.fn()
 const mockShowError = vi.fn()
 vi.mock('@hooks/useErrorToast', () => ({
     useErrorToast: () => ({
         showError: mockShowError,
-    }),
-}))
-
-vi.mock('@hooks/useToast', () => ({
-    useToast: () => ({
-        showToast: mockShowToast,
     }),
 }))
 

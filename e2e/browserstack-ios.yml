@@ -1,0 +1,19 @@
+# BrowserStack App Automate settings for tools/browserstack.sh, which runs from a copy with `app` set.
+framework: robot
+app: bs://unset
+platforms:
+  - platformName: ios
+    platformVersion: "17"
+    deviceName: iPhone 15 Pro
+projectName: Pera Wallet
+buildName: e2e ios
+parallelsPerPlatform: 1
+browserstackLocal: false
+# The newest BrowserStack offers, and the major the suite runs on locally. Its default (1.22 on
+# Android) rejects commands the suite drives, such as mobile: terminateApp and clickGesture.
+appiumVersion: "3.5.2"
+deviceLogs: true
+# The one log that names the command a failed run stopped on; a session without it cannot be
+# diagnosed after the fact.
+appiumLogs: true
+idleTimeout: 300

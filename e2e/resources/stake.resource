@@ -6,17 +6,17 @@ Resource            discover.resource
 
 
 *** Variables ***
-${MENU_STAKING_BUTTON}          xpath=//*[@resource-id='menu_staking_button' or @name='menu_staking_button' or @content-desc='menu_staking_button']
-${STAKING_SUBTITLE}             xpath=//*[@resource-id='staking-subtitle' or @name='staking-subtitle' or @content-desc='staking-subtitle']
-${STAKING_HELP_BUTTON}          xpath=//*[@resource-id='staking-help-button' or @name='staking-help-button' or @content-desc='staking-help-button']
-${STAKING_HELP_TITLE}           xpath=//*[@resource-id='staking-help-sheet-title' or @name='staking-help-sheet-title' or @content-desc='staking-help-sheet-title']
-${STAKING_ERROR_TITLE}          xpath=//*[@resource-id='staking-error-title' or @name='staking-error-title' or @content-desc='staking-error-title' or @resource-id='staking-error-title']
+${MENU_STAKING_BUTTON}          tid=menu_staking_button
+${STAKING_SUBTITLE}             tid=staking-subtitle
+${STAKING_HELP_BUTTON}          tid=staking-help-button
+${STAKING_HELP_TITLE}           tid=staking-help-sheet-title
+${STAKING_ERROR_TITLE}          tid=staking-error-title
 # Card ids come from remote config, so match the prefix on either platform's id attribute.
 ${STAKING_FIRST_CARD}           xpath=(//*[starts-with(@content-desc, 'staking-project-card-') or starts-with(@resource-id, 'staking-project-card-') or starts-with(@name,'staking-project-card-')])[1]
-${STAKING_DISCLAIMER_TITLE}     xpath=//*[@resource-id='staking-disclaimer-title' or @name='staking-disclaimer-title' or @content-desc='staking-disclaimer-title']
-${STAKING_DISCLAIMER_ACCEPT}    xpath=//*[@resource-id='staking-disclaimer-accept-button' or @name='staking-disclaimer-accept-button' or @content-desc='staking-disclaimer-accept-button']
-${WEBVIEW_CLOSE_BUTTON}         xpath=//*[@resource-id='webview_close_button' or @name='webview_close_button' or @content-desc='webview_close_button']
-${STAKING_EMPTY_VIEW}           xpath=//*[@resource-id='staking-empty-view' or @name='staking-empty-view' or @content-desc='staking-empty-view']
+${STAKING_DISCLAIMER_TITLE}     tid=staking-disclaimer-title
+${STAKING_DISCLAIMER_ACCEPT}    tid=staking-disclaimer-accept-button
+${WEBVIEW_CLOSE_BUTTON}         tid=webview_close_button
+${STAKING_EMPTY_VIEW}           tid=staking-empty-view
 ${STAKING_SETTLED}              xpath=//*[starts-with(@content-desc,'staking-project-card-') or starts-with(@resource-id,'staking-project-card-') or starts-with(@name,'staking-project-card-') or @content-desc='staking-error-title' or @resource-id='staking-error-title' or @name='staking-error-title' or @resource-id='staking-empty-view' or @name='staking-empty-view']
 
 
@@ -37,17 +37,26 @@ Staking Projects Should Be Listed
 Tap First Project
     [Documentation]    Returns whether the disclaimer showed rather than the project opening directly.
     ...                Once the disclaimer has been accepted the tap goes straight to the project,
-    ...                which is a webview over the network and the slower of the two outcomes; 20s
-    ...                was not enough for it on a cold run.
-    Tap    ${STAKING_FIRST_CARD}
-    FOR    ${i}    IN RANGE    90
-        ${disclaimer}=    Run Keyword And Return Status    Page Should Contain Element    ${STAKING_DISCLAIMER_TITLE}
-        IF    ${disclaimer}    RETURN    ${True}
-        ${project}=    Run Keyword And Return Status    Page Should Contain Element    ${WEBVIEW_CLOSE_BUTTON}
-        IF    ${project}    RETURN    ${False}
-        Sleep    0.5s
+    ...                which is a webview over the network and the slower of the two outcomes.
+    ...
+    ...                A tap straight after closing a project page can do nothing at all: the list is
+    ...                back and the card is on screen - the failure screenshot shows it at the top,
+    ...                fully visible - and the app simply does not act on it. Waiting it out does not
+    ...                help, because there is nothing on the way; one run sat for 75s. So spend the
+    ...                same budget on three taps rather than one, and the webview's own chrome
+    ...                answers within two seconds of a tap that did land.
+    FOR    ${attempt}    IN RANGE    3
+        Tap    ${STAKING_FIRST_CARD}
+        FOR    ${i}    IN RANGE    30
+            ${disclaimer}=    Run Keyword And Return Status    Page Should Contain Element    ${STAKING_DISCLAIMER_TITLE}
+            IF    ${disclaimer}    RETURN    ${True}
+            ${project}=    Run Keyword And Return Status    Page Should Contain Element    ${WEBVIEW_CLOSE_BUTTON}
+            IF    ${project}    RETURN    ${False}
+            Sleep    0.5s
+        END
+        Log    A project tap did nothing in 15s; tapping the card again.    level=WARN
     END
-    Fail    Tapping a project opened neither the disclaimer nor the project page in 45s.
+    Fail    Tapping a project opened neither the disclaimer nor the project page in 45s, over three taps.
 
 Open Disclaimer
     [Documentation]    The disclaimer shows until accepted once per install, so a run after an
@@ -73,7 +82,7 @@ Accept Should Be Disabled Before Scrolling
     FOR    ${i}    IN RANGE    45
         ${present}=    Run Keyword And Return Status    Page Should Contain Element    ${STAKING_DISCLAIMER_ACCEPT}
         IF    ${present}
-            Element Should Be Disabled    ${STAKING_DISCLAIMER_ACCEPT}
+            Expect Element    ${STAKING_DISCLAIMER_ACCEPT}    disabled    timeout=0s
             RETURN
         END
         Swipe    start_x=${x}    start_y=${{ int(${h} * 0.7) }}    end_x=${x}    end_y=${{ int(${h} * 0.65) }}    duration=400ms
@@ -83,11 +92,11 @@ Accept Should Be Disabled Before Scrolling
 Scroll Disclaimer To The End
     Wait Until Settled    ${STAKING_DISCLAIMER_TITLE}
     FOR    ${i}    IN RANGE    6
-        ${enabled}=    Run Keyword And Return Status    Element Should Be Enabled    ${STAKING_DISCLAIMER_ACCEPT}
+        ${enabled}=    Run Keyword And Return Status    Expect Element    ${STAKING_DISCLAIMER_ACCEPT}    enabled    timeout=0s
         IF    ${enabled}    RETURN
         Swipe By Percent    50    80    50    25    duration=400ms
     END
-    Element Should Be Enabled    ${STAKING_DISCLAIMER_ACCEPT}
+    Expect Element    ${STAKING_DISCLAIMER_ACCEPT}    enabled    timeout=0s
 
 Close Disclaimer
     [Documentation]    Scrolled to the end, a downward swipe can scroll the text back instead of

@@ -2,43 +2,64 @@
 Documentation       Shared session, wallet and fixture keywords. The platform adapter is chosen by
 ...                 PLATFORM (android or ios) and supplies Open Pera (attached, past any dev-client intro), Restart Pera, Open Deeplink,
 ...                 Close Sheet and ${MENU_TAB}.
-Library             AppiumLibrary    run_on_failure=Nothing
+Library             libraries/PeraAppiumLibrary.py    run_on_failure=Nothing    AS    AppiumLibrary
 Library             libraries/NavTrace.py
+Library             String
+Library             OperatingSystem
 Resource            platforms/${PLATFORM}.resource
 
 
 *** Variables ***
-${CREATE_WALLET_BUTTON}         xpath=//*[@resource-id='onboarding_create_wallet_button' or @name='onboarding_create_wallet_button' or @content-desc='onboarding_create_wallet_button']
-${TERMS_AGREE_BUTTON}           xpath=//*[@resource-id='terms_agree_button' or @name='terms_agree_button' or @content-desc='terms_agree_button']
-${ACCOUNT_NAME_INPUT}           xpath=//*[@resource-id='name_account_name_input' or @name='name_account_name_input' or @content-desc='name_account_name_input']
-${ACCOUNT_FINISH_BUTTON}        xpath=//*[@resource-id='name_account_finish_button' or @name='name_account_finish_button' or @content-desc='name_account_finish_button']
-${PIN_PROMPT_DONT_ASK}          xpath=//*[@resource-id='pin_security_prompt_dont_ask_button' or @name='pin_security_prompt_dont_ask_button' or @content-desc='pin_security_prompt_dont_ask_button']
-${BANNERS_MODAL_CLOSE}          xpath=//*[@resource-id='banners_carousel_modal_close' or @name='banners_carousel_modal_close' or @content-desc='banners_carousel_modal_close']
-${ANALYTICS_CONSENT_DECLINE}    xpath=//*[@resource-id='analytics_consent_prompt_decline_button' or @name='analytics_consent_prompt_decline_button' or @content-desc='analytics_consent_prompt_decline_button']
-${STARTUP_PROMPT_ANY}           xpath=//*[@content-desc='pin_security_prompt_dont_ask_button' or @resource-id='pin_security_prompt_dont_ask_button' or @name='pin_security_prompt_dont_ask_button' or @content-desc='banners_carousel_modal_close' or @resource-id='banners_carousel_modal_close' or @name='banners_carousel_modal_close' or @content-desc='analytics_consent_prompt_decline_button' or @resource-id='analytics_consent_prompt_decline_button' or @name='analytics_consent_prompt_decline_button']
-${NAVIGATION_BACK_BUTTON}       xpath=//*[@resource-id='navigation_back_button' or @name='navigation_back_button' or @content-desc='navigation_back_button']
-${MENU_SETTINGS_BUTTON}         xpath=//*[@resource-id='menu_settings_button' or @name='menu_settings_button' or @content-desc='menu_settings_button']
-${SETTINGS_SCREEN}              xpath=//*[@resource-id='settings_screen' or @name='settings_screen']
-${SETTINGS_SECURITY_ITEM}       xpath=//*[@resource-id='settings_item_security' or @name='settings_item_security' or @content-desc='settings_item_security']
-${DELETE_ALL_SUCCESS_SHEET}     xpath=//*[@resource-id='settings_delete_all_success_bottom_sheet' or @name='settings_delete_all_success_bottom_sheet']
-# Screens that can show a recovery phrase: the import word fields, the backup grid and quiz.
-${SECRET_SCREEN}                xpath=//*[starts-with(@name,'import_account_word_input_') or starts-with(@content-desc,'import_account_word_input_') or starts-with(@resource-id,'import_account_word_input_') or starts-with(@name,'passphrase_word_') or starts-with(@resource-id,'passphrase_word_') or starts-with(@name,'backup_verification_item_') or starts-with(@content-desc,'backup_verification_item_') or starts-with(@resource-id,'backup_verification_item_')]
+${CREATE_WALLET_BUTTON}         tid=onboarding_create_wallet_button
+${TERMS_AGREE_BUTTON}           tid=terms_agree_button
+${ACCOUNT_NAME_INPUT}           tid=name_account_name_input
+${ACCOUNT_FINISH_BUTTON}        tid=name_account_finish_button
+${PIN_PROMPT_DONT_ASK}          tid=pin_security_prompt_dont_ask_button
+${BANNERS_MODAL_CLOSE}          tid=banners_carousel_modal_close
+${BANNER_PROMPT_CLOSE}          tid=banner_prompt_close
+${ANALYTICS_CONSENT_DECLINE}    tid=analytics_consent_prompt_decline_button
+${BIOMETRICS_PROMPT_DISMISS}    tid=biometrics_disabled_prompt_dismiss_button
+${LEGACY_QUANTUM_PROMPT_DISMISS}    tid=legacy_quantum_prompt_dismiss_button
+# Every prompt the app can raise over Home after launch (modules/prompts). The adapters define
+# ${STARTUP_PROMPT_ANY}, one probe that matches any of them; keep the three in step.
+@{STARTUP_PROMPT_IDS}           pin_security_prompt_dont_ask_button    banners_carousel_modal_close
+...                             banner_prompt_close    analytics_consent_prompt_decline_button
+...                             biometrics_disabled_prompt_dismiss_button    legacy_quantum_prompt_dismiss_button
+${NAVIGATION_BACK_BUTTON}       tid=navigation_back_button
+${MENU_SETTINGS_BUTTON}         tid=menu_settings_button
+${SETTINGS_SCREEN}              tid=settings_screen
+${SETTINGS_SECURITY_ITEM}       tid=settings_item_security
+${DELETE_ALL_SUCCESS_SHEET}     tid=settings_delete_all_success_bottom_sheet
+# Screens that can show a recovery phrase or a private key, matched on their containers so a
+# half-drawn one counts too. The view-passphrase sheet draws its own words rather than through
+# PassphraseGrid. Android blacks these screens out itself; iOS does not, since prevent-screen-capture
+# there stops recording rather than a driver's screenshot.
+${SECRET_SCREEN}                xpath=//*[starts-with(@name,'import_account_word_input_') or starts-with(@content-desc,'import_account_word_input_') or starts-with(@resource-id,'import_account_word_input_') or starts-with(@name,'passphrase_word_') or starts-with(@content-desc,'passphrase_word_') or starts-with(@resource-id,'passphrase_word_') or starts-with(@name,'backup_verification_item_') or starts-with(@content-desc,'backup_verification_item_') or starts-with(@resource-id,'backup_verification_item_') or starts-with(@name,'view_passphrase_bottom_sheet') or starts-with(@content-desc,'view_passphrase_bottom_sheet') or starts-with(@resource-id,'view_passphrase_bottom_sheet') or starts-with(@name,'reveal_private_key_bottom_sheet') or starts-with(@content-desc,'reveal_private_key_bottom_sheet') or starts-with(@resource-id,'reveal_private_key_bottom_sheet') or starts-with(@name,'cloud_backup_verify_item_') or starts-with(@content-desc,'cloud_backup_verify_item_') or starts-with(@resource-id,'cloud_backup_verify_item_') or @name='paste-link-input' or @resource-id='paste-link-input']
 # Onboarding (no wallet) or Home (wallet); either means the app has rendered.
 ${FIRST_SCREEN}                 xpath=//*[@name='onboarding_create_wallet_button' or @content-desc='onboarding_create_wallet_button' or @resource-id='onboarding_create_wallet_button' or @name='tab_menu_button' or @content-desc='Menu' or @resource-id='tab_menu_button' or @name='numpad_key_1' or @content-desc='numpad_key_1' or @resource-id='numpad_key_1']
-${PIN_PAD_KEY}                  xpath=//*[@resource-id='numpad_key_1' or @name='numpad_key_1' or @content-desc='numpad_key_1']
-${ACCOUNT_DRAWER_SLIVER}        xpath=//*[@resource-id='pw_drawer_gesture_surface' or @name='pw_drawer_gesture_surface']
-${SHEET_BACKDROP}                xpath=//*[@content-desc='Bottom sheet backdrop' or @name='Bottom sheet backdrop']
+${PIN_PAD_KEY}                  tid=numpad_key_1
+${ACCOUNT_DRAWER_SLIVER}        tid=pw_drawer_gesture_surface
+${SHEET_BACKDROP}                tid=Bottom sheet backdrop
 # The only PINs any suite sets (security.robot). A run that dies with one set leaves the next cold
 # start on the lock screen, so every relaunch unlocks with them rather than failing there.
 @{E2E_PINS}                     123456    445566
 ${FIXTURE_URL}                  perawallet://app/dev/e2e-fixture
 ${FIXTURE_SETTLE}               1.5s
+${E2E_TEST_TIMEOUT}             5 minutes
+${E2E_REUSE_SESSION}            ${False}
 
 
 *** Keywords ***
 Start Pera With Wallet
     [Documentation]    Fixtures need an account to exist, and creating one stays a UI journey so the
     ...                fixture hook never handles key material. Reuses the wallet when one is there.
+    IF    ${E2E_REUSE_SESSION}
+        ${open}=    Run Keyword And Return Status    Get Appium SessionId
+        IF    ${open}
+            Go Home
+            RETURN
+        END
+    END
     Open Pera
     # A relaunch shows the app's real start screen rather than whatever a previous run left up.
     Relaunch Pera
@@ -65,10 +86,10 @@ Unlock With Known Pins
         IF    not ${locked}    RETURN
         # The pad keeps digits across attempts; one lost or doubled tap would shift every PIN after it.
         FOR    ${_}    IN RANGE    6
-            Click Element    xpath=//*[@resource-id='numpad_key_delete' or @name='numpad_key_delete' or @content-desc='numpad_key_delete']
+            Click Element    tid=numpad_key_delete
         END
         FOR    ${digit}    IN    @{{ list($pin) }}
-            Tap    xpath=//*[@resource-id='numpad_key_${digit}' or @name='numpad_key_${digit}' or @content-desc='numpad_key_${digit}']
+            Tap    tid=numpad_key_${digit}
         END
         # A Logging in overlay hides the pad while the PIN is checked; a wrong PIN brings the pad
         # back, a right one lands on Home. Then the loop tries the next PIN or returns.
@@ -85,7 +106,15 @@ Go Home
     Wait Until Page Contains Element    ${MENU_TAB}    timeout=30s
     # The reset only starts the last test's sheet sliding out; a sheet requested before it has
     # gone is dropped with it.
-    Wait Until Page Does Not Contain Element    ${SHEET_BACKDROP}    timeout=10s
+    ${closed}=    Run Keyword And Return Status
+    ...    Wait Until Page Does Not Contain Element    ${SHEET_BACKDROP}    timeout=10s
+    # A build without the fixture hook (the staging build the smoke gate runs) ignores the link and
+    # leaves the sheet up; a relaunch is the only other way back to a bare Home.
+    IF    not ${closed}
+        Restart Pera
+        Wait Until Page Contains Element    ${MENU_TAB}    timeout=30s
+        Wait Clear Of Startup Prompts
+    END
 
 Create Wallet
     # Onboarding slides in after Remove All; a tap while it moves misses the button.
@@ -111,15 +140,16 @@ Create Wallet
 
 Wait Clear Of Startup Prompts
     [Documentation]    The PIN, analytics-consent and banner prompts arrive about 3s after Home and swallow taps.
+    ...                A backend with announcements (staging) also raises the banner prompt sheet.
     ...                Dismiss them until none has shown for longer than that delay.
-    ...                One probe covers all three, so a quiet round costs one driver call instead of three.
+    ...                One probe covers them all, so a quiet round costs one driver call.
     ${quiet_since}=    Evaluate    time.time()    modules=time
     FOR    ${i}    IN RANGE    90
         ${any}=    Run Keyword And Return Status    Page Should Contain Element    ${STARTUP_PROMPT_ANY}
         IF    ${any}
-            Tap If Present    ${PIN_PROMPT_DONT_ASK}
-            Tap If Present    ${BANNERS_MODAL_CLOSE}
-            Tap If Present    ${ANALYTICS_CONSENT_DECLINE}
+            FOR    ${id}    IN    @{STARTUP_PROMPT_IDS}
+                Tap If Present    tid=${id}
+            END
             ${quiet_since}=    Evaluate    time.time()    modules=time
         ELSE IF    ${{time.time() - $quiet_since}} > 4
             RETURN
@@ -146,34 +176,113 @@ Tap
     [Documentation]    Retries only a stale or briefly missing element (a re-render between the wait and
     ...                the click): that tap never landed. Any other error may follow a tap that did
     ...                land, and retrying it could toggle a switch twice.
+    ...
+    ...                Six attempts rather than three: a sheet animating in replaces its own
+    ...                elements for longer than the 0.6s three allowed, even after waiting for the
+    ...                element to settle. Staleness is the one error that says for certain the tap
+    ...                did not land, so there is nothing to double by being patient with it.
     [Arguments]    ${locator}
-    FOR    ${attempt}    IN RANGE    3
+    FOR    ${attempt}    IN RANGE    6
         TRY
             Click Element    ${locator}
             RETURN
         EXCEPT    StaleElementReferenceException*    type=GLOB    AS    ${error}
-            Sleep    0.2s
+            Sleep    0.4s
         EXCEPT    *did not match any elements*    type=GLOB    AS    ${error}
             Wait Until Page Contains Element    ${locator}    timeout=5s
         END
     END
     Fail    ${locator} kept going stale: ${error}
 
+Tap Until
+    [Documentation]    Tap, and tap again if the screen it should have opened does not arrive.
+    ...
+    ...                A tap that silently does nothing is this suite's most common failure: the
+    ...                failure screenshot shows the button on screen and enabled, and waiting longer
+    ...                finds nothing because nothing was ever on the way. One run sat 75s for a
+    ...                screen that a second tap opened at once. So spend the budget on taps rather
+    ...                than on waiting, and say in the log when one had to be repeated - a screen
+    ...                that regularly needs the second tap is worth knowing about, not absorbing.
+    [Arguments]    ${locator}    ${anchor}    ${timeout}=15s
+    FOR    ${attempt}    IN RANGE    3
+        Tap    ${locator}
+        ${arrived}=    Run Keyword And Return Status
+        ...    Wait Until Page Contains Element    ${anchor}    timeout=${timeout}
+        IF    ${arrived}    RETURN
+        # A tap that took the control off screen was acted on, so there is nothing to tap again:
+        # the retry finds nothing and fails saying the control went missing, which describes the
+        # tap landing rather than the screen that never came. Stop here and say that instead.
+        ${still_offered}=    Run Keyword And Return Status
+        ...    Page Should Contain Element    ${locator}
+        IF    not ${still_offered}
+            Fail    ${locator} was acted on - it is gone from the screen - but ${anchor} did not follow within ${timeout}.
+        END
+        Log    ${locator} did not bring up ${anchor} in ${timeout}; tapping it again.    level=WARN
+    END
+    Fail    ${locator} did not bring up ${anchor} over three taps.
+
+Type Exactly
+    [Documentation]    Types into a field and confirms the field holds exactly that before moving on.
+    ...
+    ...                XCUITest's typing drops and doubles characters under load: a search for
+    ...                "AutoTestContact" went in as "AuoTestContactt", and the case then reported
+    ...                that the contact was missing - which was true of what had actually been
+    ...                searched for. A probe typing the same string by hand came back clean, so it
+    ...                is intermittent and only the field can say when it happened.
+    ...
+    ...                Logs what landed, so never type a recovery phrase through this.
+    [Arguments]    ${locator}    ${text}
+    FOR    ${attempt}    IN RANGE    3
+        Clear Text    ${locator}
+        Input Text    ${locator}    ${text}
+        ${landed}=    Get Text    ${locator}
+        IF    $landed == $text    RETURN
+        Log    ${locator} took "${landed}" rather than "${text}"; typing it again.    level=WARN
+    END
+    Fail    ${locator} kept mistyping "${text}": the field holds "${landed}".
+
 Capture Failure Screenshot
     [Documentation]    Test Teardown for every suite. Skips the screenshot while a recovery phrase can
     ...                be on screen: Android blacks those screens out, but iOS does not.
+    ...
+    ...                Pass the path. Called with no arguments the keyword reports success and writes
+    ...                nothing, so every failure this suite has ever had came without a picture - and
+    ...                a message like "neither the disclaimer nor the project page appeared" is a
+    ...                description of two absences, which is the least useful thing a failure can say.
     IF    '${TEST STATUS}' != 'FAIL'    RETURN
-    ${secret}=    Run Keyword And Return Status    Page Should Contain Element    ${SECRET_SCREEN}
-    IF    ${secret}
+    # Get Webelements raises when nothing matches, which is the usual, screenshot-safe case.
+    TRY
+        ${secret}=    Get Webelements    ${SECRET_SCREEN}
+    EXCEPT    *did not match any elements*    type=GLOB
+        ${secret}=    Create List
+    EXCEPT
+        Log    Screenshot skipped: the screen could not be inspected for recovery phrases.    level=WARN
+        RETURN
+    END
+    IF    $secret
         Log    Screenshot skipped: a recovery phrase may be on screen.    level=WARN
     ELSE
-        Run Keyword And Ignore Error    Capture Page Screenshot
+        ${name}=    Evaluate    re.sub(r'[^A-Za-z0-9]+', '-', $TEST_NAME).strip('-')    modules=re
+        Run Keyword And Ignore Error    Capture Page Screenshot    ${OUTPUT DIR}/failed-${name}.png
+        # Android blacks out capture-protected screens, so the picture of a failure on one is a
+        # black rectangle that proves only which screens those are. The tree is the only evidence
+        # left there, and it is safe to keep for exactly the reason the screenshot was: this runs
+        # only where no recovery phrase was found on screen.
+        ${source}=    Run Keyword And Ignore Error    Get Source
+        Run Keyword And Ignore Error    Create File    ${OUTPUT DIR}/failed-${name}.xml    ${source}[1]
     END
 
 Reset To Fresh Wallet
     [Documentation]    Suite Teardown for suites that import, add or remove accounts: removes every
     ...                account and creates one new unfunded wallet, so later suites start from the
     ...                state Start Pera With Wallet assumes instead of whatever this suite left.
+    # A teardown runs every step even after one fails, so from a wrong screen each later step
+    # would spend its full wait, minutes per failed suite. Stop at the first failure instead.
+    [Tags]    robot:recursive-stop-on-failure
+    # Nothing to reset when the suite never reached the app. Only a suite teardown has the message;
+    # tests call this too.
+    ${suite_message}=    Get Variable Value    \${SUITE MESSAGE}    ${EMPTY}
+    IF    'Suite setup failed' in $suite_message    RETURN
     # A case that failed after removing every account leaves onboarding up, where fixtures do nothing.
     ${onboarding}=    Run Keyword And Return Status    Page Should Contain Element    ${CREATE_WALLET_BUTTON}
     IF    not ${onboarding}    Remove All Accounts
@@ -209,9 +318,9 @@ Remove All Accounts
     [Documentation]    Settings > Remove all accounts, through to a settled onboarding screen.
     Open Settings
     Scroll Into View    settings_remove_all_accounts_button
-    Tap    xpath=//*[@resource-id='settings_remove_all_accounts_button' or @name='settings_remove_all_accounts_button' or @content-desc='settings_remove_all_accounts_button']
-    Wait Until Settled    xpath=//*[@resource-id='settings_delete_all_confirm_button' or @name='settings_delete_all_confirm_button' or @content-desc='settings_delete_all_confirm_button']
-    Tap    xpath=//*[@resource-id='settings_delete_all_confirm_button' or @name='settings_delete_all_confirm_button' or @content-desc='settings_delete_all_confirm_button']
+    Tap    tid=settings_remove_all_accounts_button
+    Wait Until Settled    tid=settings_delete_all_confirm_button
+    Tap    tid=settings_delete_all_confirm_button
     # The app routes back to onboarding only once the success sheet is closed.
     Wait Until Page Contains Element    ${DELETE_ALL_SUCCESS_SHEET}    timeout=30s
     # A backdrop tap while the sheet still slides up is lost, and onboarding under it then
@@ -242,13 +351,26 @@ Wait Until Settled
     ...                slides in, and a tap at their moving position lands on the backdrop and closes it.
     [Arguments]    ${locator}
     Wait Until Page Contains Element    ${locator}    timeout=15s
-    ${last}=    Get Element Location    ${locator}
+    ${last}=    Element Bounds    ${locator}
+    ${stable}=    Set Variable    ${0}
     FOR    ${i}    IN RANGE    30
         Sleep    0.15s
-        ${now}=    Get Element Location    ${locator}
-        IF    $now == $last    RETURN
+        ${now}=    Element Bounds    ${locator}
+        IF    $now == $last
+            ${stable}=    Evaluate    $stable + 1
+            IF    $stable >= 3    RETURN
+        ELSE
+            ${stable}=    Set Variable    ${0}
+        END
         ${last}=    Set Variable    ${now}
     END
+    Fail    ${locator} did not stop moving or resizing.
+
+Element Bounds
+    [Arguments]    ${locator}
+    ${element}=    Get Webelement    ${locator}
+    ${bounds}=    Evaluate    $element.rect
+    RETURN    ${bounds}
 
 Tap If Present
     [Arguments]    ${locator}
@@ -268,10 +390,67 @@ Tap If Shown
     [Arguments]    ${locator}    ${timeout}
     ${shown}=    Run Keyword And Return Status
     ...    Wait Until Page Contains Element    ${locator}    timeout=${timeout}
-    IF    ${shown}    Click Element    ${locator}
+    IF    ${shown}    Tap    ${locator}
 
 Close Pera
+    # Only the planner's warm allowlist enables this; WarmSession closes at the job root.
+    IF    ${E2E_REUSE_SESSION}    RETURN
     Close All Applications
+
+Scroll Until Present
+    [Documentation]    Swipes up until the element is in the tree. Enough for Android, which lists
+    ...                only what is on screen; iOS lists off-screen rows too, so a tap there still
+    ...                needs Scroll Until Tappable.
+    [Arguments]    ${locator}
+    FOR    ${i}    IN RANGE    6
+        ${present}=    Run Keyword And Return Status    Page Should Contain Element    ${locator}
+        IF    ${present}    RETURN
+        Swipe By Percent    50    75    50    30    duration=400ms
+    END
+    Wait Until Page Contains Element    ${locator}    timeout=5s
+
+Slide To Confirm
+    [Documentation]    The confirm control is a pan gesture; a tap does nothing. One drag only: a
+    ...                retry could submit a second real transaction.
+    [Arguments]    ${slide}
+    Wait Until Settled    ${slide}
+    ${loc}=    Get Element Location    ${slide}
+    ${size}=    Get Element Size    ${slide}
+    ${y}=    Evaluate    int($loc['y'] + $size['height'] / 2)
+    ${x1}=    Evaluate    int($loc['x'] + $size['width'] * 0.1)
+    ${x2}=    Evaluate    int($loc['x'] + $size['width'] * 0.95)
+    Swipe    start_x=${x1}    start_y=${y}    end_x=${x2}    end_y=${y}    duration=1500ms
+
+Bare Test Id
+    [Documentation]    The testID inside a locator: a bare id, a tid=<id>, or an XPath that names it
+    ...                as @resource-id. Splitting an XPath on its first '=' would return the whole
+    ...                predicate, which then goes into another XPath and does not parse.
+    [Arguments]    ${locator}
+    ${bare}=    Get Regexp Matches    ${locator}    @resource-id='([^']+)'    1
+    IF    ${bare}    RETURN    ${bare}[0]
+    IF    '=' not in $locator    RETURN    ${locator}
+    RETURN    ${{ $locator.split('=', 1)[1] }}
+
+Switch Locator
+    [Documentation]    A switch (or radio) in the given state. Android reports it as checked; iOS as
+    ...                value 1/0 for a switch, and for a radio a joined value such as "radio button, checked".
+    [Arguments]    ${locator}    ${on}
+    ${id}=    Bare Test Id    ${locator}
+    IF    ${on}
+        RETURN    xpath=//*[(@content-desc='${id}' or @resource-id='${id}' or @name='${id}') and (@checked='true' or @value='1' or (contains(@value,'checked') and not(contains(@value,'unchecked'))))]
+    END
+    RETURN    xpath=//*[(@content-desc='${id}' or @resource-id='${id}' or @name='${id}') and (@checked='false' or @value='0' or contains(@value,'unchecked'))]
+
+Switch Is On
+    [Arguments]    ${locator}
+    ${on_locator}=    Switch Locator    ${locator}    ${True}
+    ${on}=    Run Keyword And Return Status    Page Should Contain Element    ${on_locator}
+    RETURN    ${on}
+
+Switch Should Be
+    [Arguments]    ${locator}    ${on}
+    ${state}=    Switch Locator    ${locator}    ${on}
+    Wait Until Page Contains Element    ${state}    timeout=10s
 
 Scroll Until Tappable
     [Documentation]    Swipes up until the element's centre, where a tap lands, is inside the window.
@@ -279,12 +458,19 @@ Scroll Until Tappable
     ...                tapping it there lands on whatever is at its off-screen coordinates instead.
     [Arguments]    ${locator}
     ${height}=    Get Window Height
+    ${width}=    Get Window Width
     FOR    ${i}    IN RANGE    6
         ${present}=    Run Keyword And Return Status    Page Should Contain Element    ${locator}
         IF    ${present}
             ${location}=    Get Element Location    ${locator}
             ${size}=    Get Element Size    ${locator}
-            IF    ${location}[y] + ${size}[height] / 2 < ${height} * 0.95    RETURN
+            ${x}=    Evaluate    $location['x'] + $size['width'] / 2
+            ${y}=    Evaluate    $location['y'] + $size['height'] / 2
+            IF    0 < $x < $width and $height * 0.1 < $y < $height * 0.95 and $size['width'] > 0 and $size['height'] > 0
+                ${element}=    Get Webelement    ${locator}
+                ${visible}=    Call Method    ${element}    is_displayed
+                IF    ${visible}    RETURN
+            END
         END
         Swipe By Percent    50    75    50    35    duration=600ms
     END
@@ -295,7 +481,7 @@ Displayed Value
     ...                the accessibility label to the testID, which hides the rendered value; fail on
     ...                that rather than assert against the id.
     [Arguments]    ${test_id}
-    ${text}=    Get Text    xpath=//*[@resource-id='${test_id}' or @name='${test_id}' or @content-desc='${test_id}']
+    ${text}=    Get Text    tid=${test_id}
     Skip If    $text.strip() == $test_id
     ...    App gap: PWText passes its testID through getTestProps (apps/mobile/src/components/core/PWText/PWText.tsx), which makes it the iOS accessibility label, so ${test_id}'s value cannot be read.
     RETURN    ${text}
@@ -323,11 +509,10 @@ Text Under
     [Documentation]    The text a container renders, gathered from its child text nodes. Reading a
     ...                container directly gives back an empty string on Android.
     [Arguments]    ${locator}
-    # The locator carries its strategy prefix; the descendant step has to go on the xpath itself.
-    ${path}=    Set Variable    ${{ $locator.split('=', 1)[1] if $locator.startswith('xpath=') else $locator }}
-    ${found}    ${nodes}=    Run Keyword And Ignore Error    Get Webelements
-    ...    xpath=(${path})//*[string-length(@text) > 0 or string-length(@label) > 0 or string-length(@name) > 0]
-    IF    '${found}' != 'PASS'    RETURN    ${EMPTY}
+    # Resolve the container through Appium first so tid= and XPath both work.
+    ${container}=    Get Webelement    ${locator}
+    ${nodes}=    Call Method    ${container}    find_elements    xpath
+    ...    .//*[string-length(@text) > 0 or string-length(@label) > 0 or string-length(@name) > 0]
     @{parts}=    Create List
     FOR    ${node}    IN    @{nodes}
         ${text}=    Get Text    ${node}

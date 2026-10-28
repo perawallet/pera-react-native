@@ -9,6 +9,7 @@ Suite Setup         Run Keywords    Start Pera With Wallet    AND    Turn Pin Of
 Suite Teardown      Run Keywords    Turn Pin Off    AND    Close Pera
 Test Setup          Start On Security
 Test Teardown       Capture Failure Screenshot
+Test Timeout        ${E2E_TEST_TIMEOUT}
 Test Tags           security
 
 
@@ -29,7 +30,7 @@ Duress Pin Equal To The Regular Pin Is Rejected
     # The save handler refuses it and restarts the sheet at setup; the error toast is too brief to wait on.
     Wait Until Page Contains Element    ${PIN_SETUP_TITLE}    timeout=15s
     Close Pin Sheet
-    Switch Should Turn    ${DURESS_TOGGLE_ID}    ${False}
+    Switch Should Be    ${DURESS_TOGGLE_ID}    ${False}
 
 Mismatched Duress Confirmation Saves Nothing
     [Tags]    id:security.duress.mismatch-not-saved    p1
@@ -42,7 +43,7 @@ Mismatched Duress Confirmation Saves Nothing
     Wait Until Page Contains Element    ${PIN_CONFIRM_TITLE}    timeout=15s
     Page Should Contain Element    ${PIN_SHEET}
     Close Pin Sheet
-    Switch Should Turn    ${DURESS_TOGGLE_ID}    ${False}
+    Switch Should Be    ${DURESS_TOGGLE_ID}    ${False}
 
 Shake To Lock Can Be Switched On And Off
     [Documentation]    Only the switch: no device farm or simulator can drive the shake itself.
@@ -53,9 +54,9 @@ Shake To Lock Can Be Switched On And Off
     Reveal On Security Screen    ${SHAKE_TOGGLE_ID}
     ${before}=    Switch Is On    ${SHAKE_TOGGLE_ID}
     Tap    ${SHAKE_TOGGLE}
-    Switch Should Turn    ${SHAKE_TOGGLE_ID}    ${{not $before}}
+    Switch Should Be    ${SHAKE_TOGGLE_ID}    ${{not $before}}
     Tap    ${SHAKE_TOGGLE}
-    Switch Should Turn    ${SHAKE_TOGGLE_ID}    ${before}
+    Switch Should Be    ${SHAKE_TOGGLE_ID}    ${before}
 
 Regular Pin Unlocks Without Wiping
     [Tags]    id:security.duress.regular-pin-no-wipe    p0    rc
@@ -65,7 +66,7 @@ Regular Pin Unlocks Without Wiping
     Unlock With Pin    ${REGULAR_PIN}
     Open Security Settings
     Regular Pin Should Still Be Set
-    Switch Should Turn    ${DURESS_TOGGLE_ID}    ${True}
+    Switch Should Be    ${DURESS_TOGGLE_ID}    ${True}
 
 Wrong Pin Neither Unlocks Nor Wipes
     [Tags]    id:security.duress.wrong-pin-no-wipe    p0
@@ -110,7 +111,7 @@ Changing The Regular Pin Keeps The Duress Pin
     Unlock With Pin    ${NEW_REGULAR_PIN}
     Open Security Settings
     Regular Pin Should Still Be Set
-    Switch Should Turn    ${DURESS_TOGGLE_ID}    ${True}
+    Switch Should Be    ${DURESS_TOGGLE_ID}    ${True}
     [Teardown]    Run Keywords    Capture Failure Screenshot
     ...    AND    Restore Regular Pin
 

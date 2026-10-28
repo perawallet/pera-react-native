@@ -13,35 +13,35 @@ ${FUNDED_ADDRESS}                   %{E2E_FUNDED_ADDRESS=}
 ${REKEY_AUTH_ADDRESS}               %{E2E_REKEY_AUTH_ADDRESS=}
 ${REKEYED_ADDRESS}                  %{E2E_REKEYED_ADDRESS=}
 
-${OPTION_REKEY_ACCOUNT}             xpath=//*[@resource-id='account_option_rekey-account' or @name='account_option_rekey-account' or @content-desc='account_option_rekey-account']
-${OPTION_SCAN_REKEYED}              xpath=//*[@resource-id='account_option_scan-rekeyed' or @name='account_option_scan-rekeyed' or @content-desc='account_option_scan-rekeyed']
-${TARGET_STANDARD}                  xpath=//*[@resource-id='rekey_option_standard' or @name='rekey_option_standard' or @content-desc='rekey_option_standard']
-${TARGET_LEDGER}                    xpath=//*[@resource-id='rekey_option_ledger' or @name='rekey_option_ledger' or @content-desc='rekey_option_ledger']
-${TARGET_QUANTUM}                   xpath=//*[@resource-id='rekey_option_quantum' or @name='rekey_option_quantum' or @content-desc='rekey_option_quantum']
-${STANDARD_INTRO_START}             xpath=//*[@resource-id='rekey-to-standard-intro-start' or @name='rekey-to-standard-intro-start' or @content-desc='rekey-to-standard-intro-start']
-${STANDARD_CONFIRM_CTA}             xpath=//*[@resource-id='rekey-to-standard-confirm-cta' or @name='rekey-to-standard-confirm-cta' or @content-desc='rekey-to-standard-confirm-cta']
-${STANDARD_UNDERFUNDED}             xpath=//*[@resource-id='rekey-to-standard-underfunded-notice' or @name='rekey-to-standard-underfunded-notice' or @content-desc='rekey-to-standard-underfunded-notice']
-${QUANTUM_INTRO_START}              xpath=//*[@resource-id='rekey-to-quantum-intro-start' or @name='rekey-to-quantum-intro-start' or @content-desc='rekey-to-quantum-intro-start']
-${QUANTUM_CONFIRM_CTA}              xpath=//*[@resource-id='rekey-to-quantum-confirm-cta' or @name='rekey-to-quantum-confirm-cta' or @content-desc='rekey-to-quantum-confirm-cta']
-${QUANTUM_UNDERFUNDED}              xpath=//*[@resource-id='rekey-to-quantum-underfunded-notice' or @name='rekey-to-quantum-underfunded-notice' or @content-desc='rekey-to-quantum-underfunded-notice']
-${LEDGER_INTRO_START}               xpath=//*[@resource-id='rekey-to-ledger-intro-start' or @name='rekey-to-ledger-intro-start' or @content-desc='rekey-to-ledger-intro-start']
-${RESCAN_SELECT_ALL}                xpath=//*[@resource-id='rescan-rekeyed-select-all-checkbox' or @name='rescan-rekeyed-select-all-checkbox' or @content-desc='rescan-rekeyed-select-all-checkbox']
-${RESCAN_ADD}                       xpath=//*[@resource-id='rescan-rekeyed-add' or @name='rescan-rekeyed-add' or @content-desc='rescan-rekeyed-add']
-${RESCAN_SKIP}                      xpath=//*[@resource-id='rescan-rekeyed-skip' or @name='rescan-rekeyed-skip' or @content-desc='rescan-rekeyed-skip' or @resource-id='rescan-rekeyed-skip']
+${OPTION_REKEY_ACCOUNT}             tid=account_option_rekey-account
+${OPTION_SCAN_REKEYED}              tid=account_option_scan-rekeyed
+${TARGET_STANDARD}                  tid=rekey_option_standard
+${TARGET_LEDGER}                    tid=rekey_option_ledger
+${TARGET_QUANTUM}                   tid=rekey_option_quantum
+${STANDARD_INTRO_START}             tid=rekey-to-standard-intro-start
+${STANDARD_CONFIRM_CTA}             tid=rekey-to-standard-confirm-cta
+${STANDARD_UNDERFUNDED}             tid=rekey-to-standard-underfunded-notice
+${QUANTUM_INTRO_START}              tid=rekey-to-quantum-intro-start
+${QUANTUM_CONFIRM_CTA}              tid=rekey-to-quantum-confirm-cta
+${QUANTUM_UNDERFUNDED}              tid=rekey-to-quantum-underfunded-notice
+${LEDGER_INTRO_START}               tid=rekey-to-ledger-intro-start
+${RESCAN_SELECT_ALL}                tid=rescan-rekeyed-select-all-checkbox
+${RESCAN_ADD}                       tid=rescan-rekeyed-add
+${RESCAN_SKIP}                      tid=rescan-rekeyed-skip
 # Screen containers are not accessibility elements: Android exposes their testID only as
 # resource-id, iOS only as name.
-${STANDARD_SELECT_TARGET}           xpath=//*[@resource-id='rekey-to-standard-select-target-screen' or @name='rekey-to-standard-select-target-screen']
-${QUANTUM_SELECT_TARGET}            xpath=//*[@resource-id='rekey-to-quantum-select-target-screen' or @name='rekey-to-quantum-select-target-screen']
-${RESCAN_ERROR}                     xpath=//*[@resource-id='rescan-rekeyed-error' or @name='rescan-rekeyed-error']
+${STANDARD_SELECT_TARGET}           tid=rekey-to-standard-select-target-screen
+${QUANTUM_SELECT_TARGET}            tid=rekey-to-quantum-select-target-screen
+${RESCAN_ERROR}                     tid=rescan-rekeyed-error
 # Loading has no testID; empty, error and the select list are the three ways a rescan settles.
 ${RESCAN_SETTLED}                   xpath=//*[@resource-id='rescan-rekeyed-empty' or @name='rescan-rekeyed-empty' or @resource-id='rescan-rekeyed-error' or @name='rescan-rekeyed-error' or @content-desc='rescan-rekeyed-skip' or @resource-id='rescan-rekeyed-skip' or @name='rescan-rekeyed-skip']
 ${ANY_TARGET_ROW}                   xpath=//*[starts-with(@content-desc, 'rekey-target-row-') or starts-with(@resource-id, 'rekey-target-row-') or starts-with(@name,'rekey-target-row-')]
 
-${IMPORT_HD_BUTTON}                 xpath=//*[@resource-id='import_options_hd_wallet_button' or @name='import_options_hd_wallet_button' or @content-desc='import_options_hd_wallet_button']
-${IMPORT_ALGO25_BUTTON}             xpath=//*[@resource-id='import_options_algo25_button' or @name='import_options_algo25_button' or @content-desc='import_options_algo25_button']
-${IMPORT_ACCOUNT_BUTTON}            xpath=//*[@resource-id='import_account_import_button' or @name='import_account_import_button' or @content-desc='import_account_import_button']
-${IMPORT_SELECT_CONTINUE}           xpath=//*[@resource-id='import_select_addresses_continue_button' or @name='import_select_addresses_continue_button' or @content-desc='import_select_addresses_continue_button']
-${IMPORT_REKEYED_SKIP}              xpath=//*[@resource-id='import_rekeyed_addresses_skip_button' or @name='import_rekeyed_addresses_skip_button' or @content-desc='import_rekeyed_addresses_skip_button']
+${IMPORT_HD_BUTTON}                 tid=import_options_hd_wallet_button
+${IMPORT_ALGO25_BUTTON}             tid=import_options_algo25_button
+${IMPORT_ACCOUNT_BUTTON}            tid=import_account_import_button
+${IMPORT_SELECT_CONTINUE}           tid=import_select_addresses_continue_button
+${IMPORT_REKEYED_SKIP}              tid=import_rekeyed_addresses_skip_button
 
 
 *** Keywords ***

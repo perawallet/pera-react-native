@@ -12,12 +12,17 @@
 
 import { describe, expect, it, vi } from 'vitest'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
-import { displayChainOption } from '../chainOptionDisplay'
+import {
+    chainAddressCopyValue,
+    displayChainOption,
+} from '../chainOptionDisplay'
 
 vi.mock('@perawallet/wallet-core-chain-contract', () => ({
     addressCodecs: {
         get: (chainId: string) => ({
             truncate: (address: string) => `${chainId}:${address}`,
+            isValid: (address: string) => address.startsWith('0x'),
+            normalize: (address: string) => address.toUpperCase(),
         }),
     },
 }))
@@ -55,5 +60,19 @@ describe('displayChainOption', () => {
             displayName: 'unknown',
             address: undefined,
         })
+    })
+})
+
+describe('chainAddressCopyValue', () => {
+    it("normalizes an address the chain's codec parses", () => {
+        expect(chainAddressCopyValue('ethereum' as ChainId, '0xabc')).toBe(
+            '0XABC',
+        )
+    })
+
+    it('copies an address the codec rejects as stored, rather than throwing', () => {
+        expect(chainAddressCopyValue('ethereum' as ChainId, 'junk')).toBe(
+            'junk',
+        )
     })
 })

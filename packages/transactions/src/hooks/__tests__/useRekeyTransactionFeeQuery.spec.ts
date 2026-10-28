@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+// @vitest-environment jsdom
 import React from 'react'
 import { Decimal } from 'decimal.js'
 import { describe, it, expect, vi, beforeEach } from 'vitest'

@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+// @vitest-environment jsdom
 import { beforeEach, describe, expect, test } from 'vitest'
 import { act, renderHook } from '@testing-library/react'
 import { getProvider } from '@perawallet/wallet-extension-provider'

@@ -108,7 +108,7 @@ export const useInputScreen = () => {
         valueRef.current = newValue
         setValue(newValue)
     }, [])
-    const { showToast } = useToast()
+    const { errorToast } = useToast()
     const { t } = useLanguage()
 
     const assetIDs = useMemo(
@@ -315,17 +315,14 @@ export const useInputScreen = () => {
     ])
 
     const showExceedsBalance = useCallback(() => {
-        showToast(
-            {
-                title: t('send_funds.input.exceeds_max_title'),
-                body: t('send_funds.input.exceeds_max_body'),
-                type: 'error',
-            },
+        errorToast(
+            t('send_funds.input.exceeds_max_title'),
+            t('send_funds.input.exceeds_max_body'),
             {
                 notifier: bottomSheetNotifier.current ?? undefined,
             },
         )
-    }, [showToast, t])
+    }, [errorToast, t])
 
     const handleNext = useCallback(async () => {
         const amountValue = value ? new Decimal(value) : null
@@ -339,12 +336,9 @@ export const useInputScreen = () => {
             amountValue.lt(0) ||
             (!isZeroAllowed && amountValue.isZero())
         ) {
-            showToast(
-                {
-                    title: t('send_funds.input.error_title'),
-                    body: t('send_funds.input.error_body', { min: 0 }),
-                    type: 'error',
-                },
+            errorToast(
+                t('send_funds.input.error_title'),
+                t('send_funds.input.error_body', { min: 0 }),
                 {
                     notifier: bottomSheetNotifier.current ?? undefined,
                 },
@@ -388,7 +382,7 @@ export const useInputScreen = () => {
         maxAmount,
         totalBalance,
         proceedToDestination,
-        showToast,
+        errorToast,
         t,
         emptyAccount,
         reserveNotice,

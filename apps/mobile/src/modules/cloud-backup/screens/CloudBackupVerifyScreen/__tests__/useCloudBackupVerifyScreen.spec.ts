@@ -98,7 +98,7 @@ vi.mock('@react-navigation/native', () => ({
 }))
 
 vi.mock('@hooks/useToast', () => ({
-    useToast: () => ({ showToast: vi.fn() }),
+    useToast: () => ({ errorToast: vi.fn() }),
 }))
 
 vi.mock('@hooks/useLanguage')

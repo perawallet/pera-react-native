@@ -22,13 +22,13 @@ import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useSendFundsStore } from './useSendFunds'
 
 /**
- * The chain a send runs on: the selected asset's, at that chain's selected
- * network. An account can hold addresses on several chains, so only before an
- * asset is picked does it fall back to the account's first chain.
+ * The chain a send runs on, at that chain's selected network: the selected
+ * asset's, else the network chosen before picking one, else the account's
+ * first chain.
  */
 export const useSendScope = (): ChainScope => {
     const selectedChainId = useSendFundsStore(
-        state => state.selectedAsset?.chainId,
+        state => state.selectedAsset?.chainId ?? state.chainId,
     )
     const accountChainId = useAccountChainId(
         useSelectedAccount(),

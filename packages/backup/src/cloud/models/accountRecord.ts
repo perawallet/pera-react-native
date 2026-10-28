@@ -158,6 +158,35 @@ export const cachedRecordSeedReference = (
     return parsed.success ? accountRecordSeedReference(parsed.data) : null
 }
 
+/** One chain of a record as a review row lists it. `chain` is as the record
+ *  wrote it, which may be a chain this build doesn't register. */
+export type CachedRecordChain = {
+    chain: string
+    address: string
+}
+
+/** What a review row shows of cached record content, parsed once. */
+export type CachedRecordOverview = {
+    /** Only a newer client can read the record. */
+    needsUpdate: boolean
+    /** Every chain, a newer client's record included; empty when it is not a record. */
+    chains: CachedRecordChain[]
+}
+
+export const cachedRecordOverview = (
+    record: Record<string, unknown> | null | undefined,
+): CachedRecordOverview => {
+    const parsed = accountRecordPayloadSchema.safeParse(record)
+    if (!parsed.success) return { needsUpdate: false, chains: [] }
+    return {
+        needsUpdate: !isAccountRecordReadable(parsed.data),
+        chains: parsed.data.chains.map(({ chain, address }) => ({
+            chain,
+            address,
+        })),
+    }
+}
+
 /** True for content cached from a record only a newer client can read; this
  *  build never writes over such a record. */
 export const isNewerAccountRecord = (

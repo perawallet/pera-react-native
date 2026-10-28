@@ -140,6 +140,7 @@ describe('Flow: Messages — inbox & notifications lists', () => {
                 ).length,
             ).toBeGreaterThan(0)
         })
+        expect(screen.getByText('messages.inbox.empty_body')).toBeTruthy()
     })
 
     it('Given the notifications endpoint returns two notifications, when NotificationsScreen mounts, then both messages render', async () => {

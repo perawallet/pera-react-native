@@ -15,6 +15,7 @@ import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 import { trackEvent, CloudBackupEvent } from '@analytics'
+import { useIsMultichain } from '@modules/accounts'
 import { useBackupAccountReview } from '../../hooks/useBackupAccountReview'
 import type { CloudBackupStackParamList } from '../../routes/types'
 import { backupAccountsOf, type BackupAccount } from '../../utils/backupAddress'
@@ -25,6 +26,8 @@ type UseCloudBackupAccountsResult = {
     isBackedUp: (address: string) => boolean
     notBackedUpCount: number
     availableFromBackupCount: number
+    /** With one chain on, every account is on it, so there is nothing to explain. */
+    showsNetworksHint: boolean
     isBusy: (address: string) => boolean
     onBackUp: (address: string) => void
     onReview: () => void
@@ -38,6 +41,7 @@ export const useCloudBackupAccounts = (): UseCloudBackupAccountsResult => {
         () => backupAccountsOf(storedAccounts),
         [storedAccounts],
     )
+    const showsNetworksHint = useIsMultichain()
     const {
         isBackedUp,
         notBackedUpAccounts,
@@ -64,6 +68,7 @@ export const useCloudBackupAccounts = (): UseCloudBackupAccountsResult => {
         isBackedUp,
         notBackedUpCount: notBackedUpAccounts.length,
         availableFromBackupCount: availableFromBackup.length,
+        showsNetworksHint,
         isBusy,
         onBackUp,
         onReview,

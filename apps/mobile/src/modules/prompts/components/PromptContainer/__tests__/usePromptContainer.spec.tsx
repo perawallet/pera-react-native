@@ -53,7 +53,7 @@ vi.mock('@hooks/useIsLockOverlayVisible', () => ({
     useIsLockOverlayVisible: () => mockIsLockOverlayVisible(),
 }))
 
-vi.mock('../PinSecurityPrompt/PinSecurityPrompt', () => ({
+vi.mock('../../PinSecurityPrompt/PinSecurityPrompt', () => ({
     PinSecurityPrompt: () => null,
 }))
 

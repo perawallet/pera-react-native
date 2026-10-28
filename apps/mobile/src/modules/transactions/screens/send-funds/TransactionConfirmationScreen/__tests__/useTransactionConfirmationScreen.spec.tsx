@@ -99,7 +99,7 @@ vi.mock('@modules/bottom-sheet', () => ({
     }),
 }))
 
-vi.mock('../../../components/send-funds/AddNoteContent', () => ({
+vi.mock('@modules/transactions/components/send-funds/AddNoteContent', () => ({
     AddNoteContent: () => null,
 }))
 
@@ -255,7 +255,7 @@ const RECIPIENT_WARNING: ChainNotice = {
 
 describe('useTransactionConfirmationScreen', () => {
     const mockOnNext = vi.fn()
-    const mockShowToast = vi.fn()
+    const mockErrorToast = vi.fn()
 
     const mockAccount = {
         id: 'test-account',
@@ -306,7 +306,7 @@ describe('useTransactionConfirmationScreen', () => {
             isPending: false,
         })
         ;(useToast as Mock).mockReturnValue({
-            showToast: mockShowToast,
+            errorToast: mockErrorToast,
         })
         ;(useSelectedAccount as Mock).mockReturnValue(null)
         ;(useAssetsQuery as Mock).mockReturnValue({
@@ -445,12 +445,9 @@ describe('useTransactionConfirmationScreen', () => {
                 result.current.handleConfirm()
             })
 
-            expect(mockShowToast).toHaveBeenCalledWith(
-                {
-                    title: 'errors.transaction.title',
-                    body: 'errors.transaction.body',
-                    type: 'error',
-                },
+            expect(mockErrorToast).toHaveBeenCalledWith(
+                'errors.transaction.title',
+                'errors.transaction.body',
                 { notifier: undefined },
             )
             expect(mockNavigate).not.toHaveBeenCalled()
@@ -477,7 +474,7 @@ describe('useTransactionConfirmationScreen', () => {
             })
 
             expect(mockNavigate).toHaveBeenCalledWith('TransactionProcessing')
-            expect(mockShowToast).not.toHaveBeenCalled()
+            expect(mockErrorToast).not.toHaveBeenCalled()
         })
 
         it('does not confirm while the recipient check blocks it', () => {
@@ -564,10 +561,9 @@ describe('useTransactionConfirmationScreen', () => {
             confirmNativeSend(new Decimal(600))
 
             expect(mockNavigate).not.toHaveBeenCalled()
-            expect(mockShowToast).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    title: 'send_funds.confirmation.fee_shortfall.title',
-                }),
+            expect(mockErrorToast).toHaveBeenCalledWith(
+                'send_funds.confirmation.fee_shortfall.title',
+                expect.any(String),
                 expect.anything(),
             )
         })
@@ -608,10 +604,9 @@ describe('useTransactionConfirmationScreen', () => {
             })
 
             expect(mockNavigate).not.toHaveBeenCalled()
-            expect(mockShowToast).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    title: 'send_funds.confirmation.fee_shortfall.title',
-                }),
+            expect(mockErrorToast).toHaveBeenCalledWith(
+                'send_funds.confirmation.fee_shortfall.title',
+                expect.any(String),
                 expect.anything(),
             )
         })
@@ -626,10 +621,9 @@ describe('useTransactionConfirmationScreen', () => {
             confirmNativeSend(new Decimal(1))
 
             expect(mockNavigate).not.toHaveBeenCalled()
-            expect(mockShowToast).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    title: 'send_funds.confirmation.fee_unavailable.title',
-                }),
+            expect(mockErrorToast).toHaveBeenCalledWith(
+                'send_funds.confirmation.fee_unavailable.title',
+                expect.any(String),
                 expect.anything(),
             )
         })
@@ -713,7 +707,7 @@ describe('useTransactionConfirmationScreen', () => {
 
             expect(result.current.recipientWarning).toBeUndefined()
             expect(mockNavigate).toHaveBeenCalledWith('TransactionProcessing')
-            expect(mockShowToast).not.toHaveBeenCalled()
+            expect(mockErrorToast).not.toHaveBeenCalled()
         })
 
         it('handleConfirm is a no-op while the recipient check is pending', () => {
@@ -730,7 +724,7 @@ describe('useTransactionConfirmationScreen', () => {
 
             expect(result.current.isRecipientInfoPending).toBe(true)
             expect(mockNavigate).not.toHaveBeenCalled()
-            expect(mockShowToast).not.toHaveBeenCalled()
+            expect(mockErrorToast).not.toHaveBeenCalled()
         })
 
         it("blocks confirm and toasts the chain's warning", () => {
@@ -746,12 +740,9 @@ describe('useTransactionConfirmationScreen', () => {
             })
 
             expect(mockNavigate).not.toHaveBeenCalled()
-            expect(mockShowToast).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    title: 'send_funds.confirmation.recipient_below_mbr.title',
-                    body: 'send_funds.confirmation.recipient_below_mbr.body',
-                    type: 'error',
-                }),
+            expect(mockErrorToast).toHaveBeenCalledWith(
+                'send_funds.confirmation.recipient_below_mbr.title',
+                'send_funds.confirmation.recipient_below_mbr.body',
                 expect.anything(),
             )
         })

@@ -84,6 +84,44 @@ describe('useAssetTransferDisplay', () => {
         expect(result.current.closeAmountValue?.toString()).toBe('0.25')
     })
 
+    it.each([
+        ['the sender', 'SENDER', '1'],
+        ['the receiver', 'RECEIVER', '-1'],
+    ])(
+        'signs the amount from the view of %s',
+        (_label, reference, expected) => {
+            vi.mocked(useSingleAssetDetailsQuery).mockReturnValue({
+                data: { assetId: '123', name: 'Test', decimals: 6 },
+            } as UseQueryResult<PeraAsset, Error>)
+
+            const { result } = renderHook(() =>
+                useAssetTransferDisplay(baseTx, reference),
+            )
+
+            expect(result.current.amount.toString()).toBe(expected)
+        },
+    )
+
+    it('converts a u64-max amount exactly', () => {
+        vi.mocked(useSingleAssetDetailsQuery).mockReturnValue({
+            data: { assetId: '123', name: 'Test', decimals: 6 },
+        } as UseQueryResult<PeraAsset, Error>)
+        const maxTx = {
+            ...baseTx,
+            assetTransferTransaction: {
+                receiver: 'RECEIVER',
+                amount: 18_446_744_073_709_551_615n,
+                assetId: 123n,
+            },
+        } as unknown as PeraDisplayableTransaction
+
+        const { result } = renderHook(() =>
+            useAssetTransferDisplay(maxTx, 'SENDER'),
+        )
+
+        expect(result.current.amount.toString()).toBe('18446744073709.551615')
+    })
+
     it('returns asset metadata as metadataHash when present', () => {
         vi.mocked(useSingleAssetDetailsQuery).mockReturnValue({
             data: {
