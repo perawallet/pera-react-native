@@ -56,5 +56,6 @@ export const useDelegationAuthorities = (
                     authority.accountsDelegatedTo(address, accounts).length > 0,
             ),
         )
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- chainStates re-runs the memo: accountsDelegatedTo reads the chain-state store, not its arguments
     }, [addresses, accounts, chainId, chainStates])
 }
