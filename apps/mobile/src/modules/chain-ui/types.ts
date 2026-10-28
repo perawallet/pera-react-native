@@ -14,6 +14,7 @@ import type {
     ChainFamily,
     I18nKey,
 } from '@perawallet/wallet-core-chain-contract'
+import type { WrongNetworkAddressCopy } from '@components/AddressSearchView'
 import type { AccountOptionsDisplay } from '@modules/accounts'
 import type {
     AssetDetailsDisplay,
@@ -36,6 +37,8 @@ export type ChainUi = {
     accountOptions?: AccountOptionsDisplay
     /** Used while this family alone can watch accounts; otherwise the watch flow names no chain. */
     watchAccountCopy?: WatchAccountCopy
+    /** Unset, an address of this family entered elsewhere reads as a search miss. */
+    wrongNetworkAddress?: WrongNetworkAddressCopy
 }
 
 export type ChainUiRegistry = Partial<Record<ChainFamily, ChainUi>>

@@ -13,12 +13,17 @@
 import { useCallback, useMemo, useState } from 'react'
 import {
     addressCodecs,
+    type ChainFamily,
     type ChainScope,
     i18nKey,
     type I18nKey,
 } from '@perawallet/wallet-core-chain-contract'
 import { getChainDescriptor } from '@perawallet/wallet-core-chain-shared'
-import { useContacts, type Contact } from '@perawallet/wallet-core-contacts'
+import {
+    addressFamilyOf,
+    useContacts,
+    type Contact,
+} from '@perawallet/wallet-core-contacts'
 import {
     addressOn,
     findAddressHolder,
@@ -34,9 +39,12 @@ import {
 import {
     useDebouncedValue,
     type Nullable,
+    type Optional,
 } from '@perawallet/wallet-core-shared'
 import { SEARCH_DEBOUNCE_TIME } from '@constants/ui'
 import { useClipboard } from '@hooks/useClipboard'
+import { useLanguage } from '@hooks/useLanguage'
+import { chainFamilyDisplay, chainUiFor } from '@modules/chain-ui'
 import { useFocusEffect } from '@react-navigation/native'
 
 export type AddressSearchItem =
@@ -47,6 +55,18 @@ export type AddressSearchItem =
     | { type: 'nfd'; nfd: NfdSearchResult; key: string }
     | { type: 'address'; address: string; key: string }
     | { type: 'paste'; address: string; key: string }
+
+/** A family's copy for an address entered where another family's is expected. */
+export type WrongNetworkAddressCopy = {
+    /** Names this family, for its address entered elsewhere. */
+    titleKey: I18nKey
+    /** For a field that takes this family's addresses. */
+    bodyKey: I18nKey
+    /** As `bodyKey`, while sending the `{{asset}}`; `{{family}}` is the address's. */
+    sendBodyKey: I18nKey
+    /** As `sendBodyKey`, naming the `{{network}}` of an asset found on several. */
+    sendOnNetworkBodyKey: I18nKey
+}
 
 type UseAddressSearchViewProps = {
     /**
@@ -65,6 +85,13 @@ type UseAddressSearchViewProps = {
      * `willCopiedItemBeHandled` is the send-receiver screen only.
      */
     showClipboardPaste?: boolean
+    /**
+     * The asset being sent, such as its unit name. Set, the wrong-network
+     * message speaks of sending it; unset, it stays neutral.
+     */
+    sendingAssetLabel?: string
+    /** The sent asset exists on other chains too, so the message names this one. */
+    isSendingMultiChainAsset?: boolean
 }
 
 type UseAddressSearchViewResult = {
@@ -73,6 +100,10 @@ type UseAddressSearchViewResult = {
     matchingItems: AddressSearchItem[]
     hasResults: boolean
     isNfdLoading: boolean
+    /** Set when `value` is a valid address of a family other than the scope's. */
+    mismatchedFamily: Optional<ChainFamily>
+    /** Unset when either family registers no wrong-network copy. */
+    wrongNetworkMessage: Optional<{ title: string; body: string }>
 }
 
 export const useAddressSearchView = ({
@@ -81,7 +112,10 @@ export const useAddressSearchView = ({
     accountFilter,
     showAllContactsWhenEmpty = false,
     showClipboardPaste = false,
+    sendingAssetLabel,
+    isSendingMultiChainAsset = false,
 }: UseAddressSearchViewProps): UseAddressSearchViewResult => {
+    const { t } = useLanguage()
     const [value, setValue] = useState('')
     const [clipboardAddress, setClipboardAddress] =
         useState<Nullable<string>>(null)
@@ -106,6 +140,44 @@ export const useAddressSearchView = ({
         () => addressCodecs.get(scope.chainId).isValid(value),
         [scope.chainId, value],
     )
+
+    // Without this, another family's address falls through to name matching
+    // and reads as a search miss rather than as the wrong network.
+    const mismatchedFamily = useMemo(() => {
+        if (addressIsValid) return undefined
+        const family = addressFamilyOf(value)?.family
+        return family && family !== chainFamily ? family : undefined
+    }, [addressIsValid, value, chainFamily])
+    const isAddress = addressIsValid || !!mismatchedFamily
+
+    const wrongNetworkMessage = useMemo(() => {
+        if (!mismatchedFamily) return undefined
+        const addressCopy = chainUiFor(mismatchedFamily).wrongNetworkAddress
+        const expectedCopy = chainUiFor(chainFamily).wrongNetworkAddress
+        if (!addressCopy || !expectedCopy) return undefined
+        const title = t(addressCopy.titleKey)
+        if (!sendingAssetLabel) return { title, body: t(expectedCopy.bodyKey) }
+        return {
+            title,
+            body: t(
+                isSendingMultiChainAsset
+                    ? expectedCopy.sendOnNetworkBodyKey
+                    : expectedCopy.sendBodyKey,
+                {
+                    asset: sendingAssetLabel,
+                    network: getChainDescriptor(scope.chainId).displayName,
+                    family: chainFamilyDisplay(mismatchedFamily, t).label,
+                },
+            ),
+        }
+    }, [
+        mismatchedFamily,
+        chainFamily,
+        sendingAssetLabel,
+        isSendingMultiChainAsset,
+        scope.chainId,
+        t,
+    ])
 
     // Re-read on focus rather than once on mount: the user leaves to copy an
     // address and comes back, which is the whole point of the affordance. Mirrors
@@ -139,7 +211,7 @@ export const useAddressSearchView = ({
 
     const matchingAccounts = useMemo(
         () =>
-            addressIsValid
+            isAddress
                 ? []
                 : accounts.filter(a => {
                       const address = addressOn(a, scope)
@@ -156,11 +228,11 @@ export const useAddressSearchView = ({
                                   .includes(value.toLowerCase()))
                       )
                   }),
-        [value, accounts, excludeAddress, accountFilter, addressIsValid, scope],
+        [value, accounts, excludeAddress, accountFilter, isAddress, scope],
     )
 
     const matchingContacts = useMemo(() => {
-        if (addressIsValid) return []
+        if (isAddress) return []
         if (!value.length && !showAllContactsWhenEmpty) return []
         // A contact must not appear under "Contacts" if its address is:
         // - any wallet account (so an account saved as a contact only shows under "My Accounts")
@@ -181,7 +253,7 @@ export const useAddressSearchView = ({
         value,
         findContacts,
         chainFamily,
-        addressIsValid,
+        isAddress,
         showAllContactsWhenEmpty,
         accounts,
         excludeAddress,
@@ -189,6 +261,9 @@ export const useAddressSearchView = ({
     ])
 
     const matchingItems = useMemo(() => {
+        // Even the paste row would hide the mismatch message behind a list.
+        if (mismatchedFamily) return []
+
         const items: AddressSearchItem[] = []
 
         // First row, and deliberately not gated on the query or deduped against
@@ -279,6 +354,7 @@ export const useAddressSearchView = ({
         nfdResults,
         clipboardAddress,
         scope,
+        mismatchedFamily,
     ])
 
     const hasResults = matchingItems.length > 0
@@ -289,5 +365,7 @@ export const useAddressSearchView = ({
         matchingItems,
         hasResults,
         isNfdLoading,
+        mismatchedFamily,
+        wrongNetworkMessage,
     }
 }

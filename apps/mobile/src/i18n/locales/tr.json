@@ -202,7 +202,25 @@
         "search_placeholder": "Hesap adresi, NFD adı veya kısa ad",
         "nfd_results": "NFDomains",
         "nfd_resolving": "NFD çözümleniyor...",
-        "nfd_resolved": "{{name}} üzerinden çözümlendi"
+        "nfd_resolved": "{{name}} üzerinden çözümlendi",
+        "wrong_network": {
+            "title": {
+                "algorand": "Bu bir Algorand adresi",
+                "evm": "Bu bir Ethereum (EVM) adresi"
+            },
+            "body": {
+                "algorand": "Buraya yalnızca Algorand adresleri eklenebilir. Adresi kontrol et ve tekrar dene.",
+                "evm": "Buraya yalnızca EVM uyumlu adresler eklenebilir. Adresi kontrol et ve tekrar dene."
+            },
+            "send_body": {
+                "algorand": "{{asset}} yalnızca Algorand adreslerine gönderilebilir. Alıcı adresini kontrol et veya göndermek için {{family}} üzerinde bir varlık seç.",
+                "evm": "{{asset}} yalnızca EVM uyumlu adreslere (“0x” ile başlayan) gönderilebilir. Alıcı adresini kontrol et veya göndermek için {{family}} üzerinde bir varlık seç."
+            },
+            "send_body_on_network": {
+                "algorand": "{{network}} üzerindeki {{asset}} yalnızca Algorand adreslerine gönderilebilir. Alıcı adresini kontrol et veya göndermek için {{family}} üzerinde bir varlık seç.",
+                "evm": "{{network}} üzerindeki {{asset}} yalnızca EVM uyumlu adreslere (“0x” ile başlayan) gönderilebilir. Alıcı adresini kontrol et veya göndermek için {{family}} üzerinde bir varlık seç."
+            }
+        }
     },
     "asset_inbox": {
         "requests": {

@@ -202,7 +202,25 @@
         "search_placeholder": "Account address, NFD name, or short name",
         "nfd_results": "NFDomains",
         "nfd_resolving": "Resolving NFD...",
-        "nfd_resolved": "Resolved from {{name}}"
+        "nfd_resolved": "Resolved from {{name}}",
+        "wrong_network": {
+            "title": {
+                "algorand": "This is an Algorand address",
+                "evm": "This is an Ethereum (EVM) address"
+            },
+            "body": {
+                "algorand": "Only Algorand addresses can be added here. Please check the address and try again.",
+                "evm": "Only EVM-compatible addresses can be added here. Please check the address and try again."
+            },
+            "send_body": {
+                "algorand": "{{asset}} can only be sent to Algorand addresses. Please check the recipient address or choose an asset on {{family}} to send.",
+                "evm": "{{asset}} can only be sent to EVM-compatible addresses (starting with “0x”). Please check the recipient address or choose an asset on {{family}} to send."
+            },
+            "send_body_on_network": {
+                "algorand": "{{asset}} on {{network}} can only be sent to Algorand addresses. Please check the recipient address or choose an asset on {{family}} to send.",
+                "evm": "{{asset}} on {{network}} can only be sent to EVM-compatible addresses (starting with “0x”). Please check the recipient address or choose an asset on {{family}} to send."
+            }
+        }
     },
     "asset_inbox": {
         "requests": {
