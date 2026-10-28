@@ -170,8 +170,8 @@ export const runOffscreenApp = async ({
     getSyncService().start()
     logger.info('[offscreen] database host ready, warm polling started')
 
-    // Offscreen is the one long-lived context with the database, so it alone
-    // keeps the phishing lists fresh; approval windows only read them.
+    // The lists' only writer: UI contexts never seed or prune them, and pick up
+    // the active copy as this context's store write reaches chrome.storage.
     startPhishingListRefresh()
 
     // Offscreen outlives every UI surface, so it owns the handlers and their

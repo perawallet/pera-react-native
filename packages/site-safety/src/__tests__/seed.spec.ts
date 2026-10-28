@@ -60,6 +60,34 @@ describe('ensurePhishingListsSeeded', () => {
         })
     })
 
+    it('lets a check wait for a seed already running in this context', async () => {
+        let release: () => void = () => {}
+        const gate = new Promise<void>(resolve => {
+            release = resolve
+        })
+        const seeding = ensurePhishingListsSeeded({
+            loadSnapshot: async () => {
+                await gate
+                return FIXTURE_SNAPSHOT
+            },
+        })
+
+        const verdict = assessSiteSafety({
+            urls: ['https://bundled-phish.example'],
+        })
+        release()
+        await seeding
+
+        expect(await verdict).toMatchObject({ kind: 'blocked' })
+    })
+
+    it('never seeds from a check, so a reading context cannot replace the writer’s copy', async () => {
+        expect(
+            await assessSiteSafety({ urls: ['https://bundled-phish.example'] }),
+        ).toEqual({ kind: 'clear' })
+        expect(usePhishingListStore.getState().sources).toEqual({})
+    })
+
     it('does not reseed lists that already have rows', async () => {
         await ensurePhishingListsSeeded({ loadSnapshot })
         const seeded = usePhishingListStore.getState().sources

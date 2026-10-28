@@ -107,6 +107,25 @@ describe('assessSiteSafety', () => {
         })
     })
 
+    it("matches a list target by its registrable domain and leaves that domain's own sites alone", async () => {
+        await database.current!.run(
+            "INSERT INTO phishing_list_domains (source, generation, kind, domain) VALUES ('metamask', " +
+                usePhishingListStore.getState().sources.metamask!.generation +
+                ", 'impersonation-target', 'launchpad.ethereum.org')",
+        )
+
+        expect(
+            await assessSiteSafety({ urls: ['https://ethereum.org'] }),
+        ).toEqual({ kind: 'clear' })
+        expect(
+            await assessSiteSafety({ urls: ['https://ethereum-airdrop.com'] }),
+        ).toEqual({
+            kind: 'look-alike',
+            host: 'ethereum-airdrop.com',
+            imitates: { name: 'ethereum.org', domain: 'ethereum.org' },
+        })
+    })
+
     it('reports the worst result across the urls it is given', async () => {
         expect(
             await assessSiteSafety({
@@ -124,6 +143,27 @@ describe('assessSiteSafety', () => {
             await assessSiteSafety({ urls: ['https://uniswap.org'] }),
         ).toEqual({ kind: 'clear' })
         expect(await assessSiteSafety({ urls: [undefined, null] })).toEqual({
+            kind: 'clear',
+        })
+    })
+
+    it('reuses a verdict until a new copy of the lists is active', async () => {
+        const url = 'https://bundled-phish.example'
+        expect(await assessSiteSafety({ urls: [url] })).toMatchObject({
+            kind: 'blocked',
+        })
+
+        database.current = null
+        expect(await assessSiteSafety({ urls: [url] })).toMatchObject({
+            kind: 'blocked',
+        })
+
+        usePhishingListStore.getState().activateGeneration('metamask', {
+            generation: 1,
+            refreshedAt: 1,
+            origin: 'downloaded',
+        })
+        expect(await assessSiteSafety({ urls: [url] })).toEqual({
             kind: 'clear',
         })
     })

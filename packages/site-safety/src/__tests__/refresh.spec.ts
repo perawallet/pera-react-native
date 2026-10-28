@@ -130,6 +130,25 @@ describe('refreshPhishingLists', () => {
         expect(await isListed('bundled-phish.example')).toBe(true)
     })
 
+    it('records an identical download as a check, without rewriting the lists', async () => {
+        server.use(
+            ...mockPhishingListSources({
+                metamask: { body: metaMaskConfig({ deny: META_MASK_DENY }) },
+                polkadot: { status: 304 },
+            }),
+        )
+        await refreshPhishingLists({ now: () => 1_000 })
+        const first = usePhishingListStore.getState().sources.metamask!
+
+        const outcomes = await refreshPhishingLists({ now: () => 2_000 })
+
+        expect(outcomes.metamask).toBe('unchanged')
+        expect(usePhishingListStore.getState().sources.metamask).toEqual({
+            ...first,
+            refreshedAt: 2_000,
+        })
+    }, 30_000)
+
     it('sends the stored ETag only when there is one', async () => {
         usePhishingListStore.getState().activateGeneration('metamask', {
             ...usePhishingListStore.getState().sources.metamask!,

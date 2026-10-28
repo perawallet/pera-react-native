@@ -15,6 +15,7 @@ import {
     deleteOtherGenerations,
     writePhishingListGeneration,
 } from './db/repository'
+import { fingerprintPhishingListEntries } from './fingerprint'
 import { nextPhishingListGeneration } from './generation'
 import type {
     PhishingListRefreshOutcome,
@@ -100,6 +101,20 @@ const refreshSource = async (
         return 'malformed'
     }
 
+    // GitHub's ETag is unreadable from the extension, so an unchanged list
+    // arrives as a full download; matching content skips the rewrite.
+    const fingerprint = fingerprintPhishingListEntries(entries)
+    const etag = response.headers.get('etag') ?? undefined
+    const current = usePhishingListStore.getState().sources[source.id]
+    if (current?.fingerprint === fingerprint) {
+        store.activateGeneration(source.id, {
+            ...current,
+            etag,
+            refreshedAt: context.now(),
+        })
+        return 'unchanged'
+    }
+
     const generation = nextPhishingListGeneration()
     try {
         await writePhishingListGeneration({
@@ -119,9 +134,10 @@ const refreshSource = async (
 
     store.activateGeneration(source.id, {
         generation,
-        etag: response.headers.get('etag') ?? undefined,
+        etag,
         refreshedAt: context.now(),
         origin: 'downloaded',
+        fingerprint,
     })
     await deleteOtherGenerations({
         source: source.id,

@@ -43,6 +43,7 @@ export {
     writePhishingListGeneration,
 } from './db/repository'
 export {
+    PHISHING_LIST_STORE_NAME,
     selectActiveGenerations,
     usePhishingListStore,
     type PhishingListSourceState,
@@ -51,6 +52,7 @@ export {
 export {
     ensurePhishingListsSeeded,
     loadBundledPhishingLists,
+    whenPhishingListsSeeded,
     type EnsurePhishingListsSeededOptions,
 } from './seed'
 export {

@@ -102,3 +102,11 @@ export const ensurePhishingListsSeeded = (
     })
     return inFlight
 }
+
+/**
+ * Settles once a seed started in this context has finished. Readers wait on
+ * this instead of seeding: in the extension several contexts share one
+ * database, and only the context running the refresh may write it.
+ */
+export const whenPhishingListsSeeded = (): Promise<void> =>
+    inFlight ?? Promise.resolve()

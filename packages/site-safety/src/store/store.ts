@@ -19,7 +19,7 @@ import {
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import type { ActiveGenerations, PhishingListSourceId } from '../models'
 
-const STORE_NAME = 'site-safety-phishing-lists-store'
+export const PHISHING_LIST_STORE_NAME = 'site-safety-phishing-lists-store'
 
 export type PhishingListSourceState = {
     generation: number
@@ -27,6 +27,8 @@ export type PhishingListSourceState = {
     etag?: string
     /** Epoch ms of the last successful check, including a `304`. */
     refreshedAt: number
+    /** Of the downloaded entries; a download that matches it is not rewritten. */
+    fingerprint?: string
     origin: 'bundled' | 'downloaded'
 }
 
@@ -69,7 +71,7 @@ export const usePhishingListStore: UseBoundStore<
             resetState: () => set(getInitialState()),
         }),
         {
-            name: STORE_NAME,
+            name: PHISHING_LIST_STORE_NAME,
             storage: () => getProvider().keyValueStorage,
             version: 1,
             partialize: state => ({ sources: state.sources }),
@@ -78,7 +80,7 @@ export const usePhishingListStore: UseBoundStore<
 )
 
 registerStore({
-    name: STORE_NAME,
+    name: PHISHING_LIST_STORE_NAME,
     clearStorage: () =>
         (
             usePhishingListStore as unknown as {

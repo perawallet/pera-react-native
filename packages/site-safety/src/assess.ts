@@ -16,15 +16,16 @@ import {
     findImpersonationTargetDomains,
     findListedDomains,
 } from './db/repository'
-import { listLookupCandidates, toSiteHost } from './host'
+import { listLookupCandidates, registrableDomainOf, toSiteHost } from './host'
 import { findImpersonatedTarget } from './lookAlike'
 import type {
+    ActiveGenerations,
     AssessSiteSafetyParams,
     ImpersonationTarget,
     SiteHost,
     SiteSafetyVerdict,
 } from './models'
-import { ensurePhishingListsSeeded } from './seed'
+import { whenPhishingListsSeeded } from './seed'
 import { selectActiveGenerations, usePhishingListStore } from './store/store'
 import { WELL_KNOWN_DAPPS } from './wellKnownDapps'
 
@@ -37,46 +38,112 @@ const uniqueHosts = (urls: AssessSiteSafetyParams['urls']): SiteHost[] => {
     return [...hosts.values()]
 }
 
-type ListLookup = {
-    blocked?: SiteSafetyVerdict
+type ListContext = {
     allowDomains: string[]
-    listedTargets: string[]
+    targets: ImpersonationTarget[]
 }
 
-const lookUpLists = async (hosts: readonly SiteHost[]): Promise<ListLookup> => {
-    await ensurePhishingListsSeeded()
-    const generations = selectActiveGenerations(usePhishingListStore.getState())
-    const [allowDomains, listedTargets] = await Promise.all([
-        findAllowedDomains({ generations }),
-        findImpersonationTargetDomains({ generations }),
-    ])
+const generationsKeyOf = (generations: ActiveGenerations): string =>
+    Object.entries(generations)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([source, generation]) => `${source}:${generation}`)
+        .join(',')
+
+// The allow list and look-alike targets change only with a new copy of the
+// lists, so they are read once per copy rather than on every check.
+let cachedListContext:
+    | { key: string; context: Promise<ListContext> }
+    | undefined
+
+const listContextFor = (
+    key: string,
+    generations: ActiveGenerations,
+): Promise<ListContext> => {
+    if (cachedListContext?.key !== key) {
+        const context = Promise.all([
+            findAllowedDomains({ generations }),
+            findImpersonationTargetDomains({ generations }),
+        ]).then(([allowDomains, listedTargets]) => ({
+            allowDomains,
+            targets: impersonationTargets(listedTargets),
+        }))
+        cachedListContext = { key, context }
+        context.catch(() => {
+            if (cachedListContext?.context === context) {
+                cachedListContext = undefined
+            }
+        })
+    }
+    return cachedListContext.context
+}
+
+const findListedHost = async (
+    hosts: readonly SiteHost[],
+    generations: ActiveGenerations,
+): Promise<SiteHost | undefined> => {
     for (const host of hosts) {
         const { denied, allowed } = await findListedDomains({
             generations,
             domains: listLookupCandidates(host.ascii),
         })
-        if (denied.length > 0 && allowed.length === 0) {
+        if (denied.length > 0 && allowed.length === 0) return host
+    }
+    return undefined
+}
+
+// Accounts are re-read on every eth_accounts poll; within one copy of the
+// lists a site's verdict cannot change, so it is reused until the copy does.
+const MAX_CACHED_VERDICTS = 500
+const cachedVerdicts = new Map<string, SiteSafetyVerdict>()
+let cachedVerdictsKey: string | undefined
+
+const rememberVerdict = (
+    generationsKey: string,
+    hostsKey: string,
+    verdict: SiteSafetyVerdict,
+): SiteSafetyVerdict => {
+    if (cachedVerdictsKey !== generationsKey) {
+        cachedVerdicts.clear()
+        cachedVerdictsKey = generationsKey
+    }
+    if (cachedVerdicts.size >= MAX_CACHED_VERDICTS) cachedVerdicts.clear()
+    cachedVerdicts.set(hostsKey, verdict)
+    return verdict
+}
+
+const lookAlikeVerdictOf = (
+    hosts: readonly SiteHost[],
+    { allowDomains, targets }: ListContext,
+): SiteSafetyVerdict => {
+    for (const host of hosts) {
+        const imitated = findImpersonatedTarget(host, targets, allowDomains)
+        if (imitated) {
             return {
-                blocked: {
-                    kind: 'blocked',
-                    host: host.unicode,
-                    reason: 'phishing-list',
-                },
-                allowDomains,
-                listedTargets,
+                kind: 'look-alike',
+                host: host.unicode,
+                imitates: imitated,
             }
         }
     }
-    return { allowDomains, listedTargets }
+    return { kind: 'clear' }
 }
 
+// A list target can name a subdomain (`launchpad.ethereum.org`); only its
+// registrable domain is matched and named, so the subdomain's parent site is
+// exempt rather than read as an imitation of itself.
 const impersonationTargets = (
     listedTargets: readonly string[],
 ): ImpersonationTarget[] => {
-    const known = new Set(WELL_KNOWN_DAPPS.map(target => target.domain))
+    const known = new Set(
+        WELL_KNOWN_DAPPS.flatMap(target => [
+            target.domain,
+            ...(target.otherDomains ?? []),
+        ]),
+    )
+    const listed = new Set(listedTargets.map(registrableDomainOf))
     return [
         ...WELL_KNOWN_DAPPS,
-        ...listedTargets
+        ...[...listed]
             .filter(domain => !known.has(domain))
             .map(domain => ({ name: domain, domain })),
     ]
@@ -101,30 +168,32 @@ export const assessSiteSafety = async ({
     }
     if (hosts.length === 0) return { kind: 'clear' }
 
-    let lookup: ListLookup = { allowDomains: [], listedTargets: [] }
+    const hostsKey = hosts.map(host => host.ascii).join('\n')
     try {
-        lookup = await lookUpLists(hosts)
+        await whenPhishingListsSeeded()
+        const generations = selectActiveGenerations(
+            usePhishingListStore.getState(),
+        )
+        const generationsKey = generationsKeyOf(generations)
+        if (cachedVerdictsKey === generationsKey) {
+            const cached = cachedVerdicts.get(hostsKey)
+            if (cached) return cached
+        }
+        const listed = await findListedHost(hosts, generations)
+        const verdict: SiteSafetyVerdict = listed
+            ? { kind: 'blocked', host: listed.unicode, reason: 'phishing-list' }
+            : lookAlikeVerdictOf(
+                  hosts,
+                  await listContextFor(generationsKey, generations),
+              )
+        return rememberVerdict(generationsKey, hostsKey, verdict)
     } catch (error) {
         // The look-alike rules need no database, so a failed read still
-        // leaves them running.
+        // leaves them running. Not cached: the next check retries the lists.
         logger.warn('[site-safety] phishing list lookup failed', { error })
+        return lookAlikeVerdictOf(hosts, {
+            allowDomains: [],
+            targets: impersonationTargets([]),
+        })
     }
-    if (lookup.blocked) return lookup.blocked
-
-    const targets = impersonationTargets(lookup.listedTargets)
-    for (const host of hosts) {
-        const imitated = findImpersonatedTarget(
-            host,
-            targets,
-            lookup.allowDomains,
-        )
-        if (imitated) {
-            return {
-                kind: 'look-alike',
-                host: host.unicode,
-                imitates: imitated,
-            }
-        }
-    }
-    return { kind: 'clear' }
 }
