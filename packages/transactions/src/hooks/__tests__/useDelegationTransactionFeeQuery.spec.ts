@@ -47,8 +47,9 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
 }))
 
 // The fixture chain prices its native asset in 6-decimal base units.
+const mockGetChainDescriptor = vi.fn()
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    getChainDescriptor: () => ({ nativeAsset: { decimals: 6 } }),
+    getChainDescriptor: (...args: unknown[]) => mockGetChainDescriptor(...args),
 }))
 
 import { sendFlowChainAdapters } from '../../chain-adapter'
@@ -113,6 +114,7 @@ beforeEach(() => {
         minTxnFee: 1000n,
         pqMultiplier: 3n,
     })
+    mockGetChainDescriptor.mockReturnValue({ nativeAsset: { decimals: 6 } })
     mockUseAllAccounts.mockReturnValue([])
     // Default: no PQ signer in the chain, so the resolver returns the base
     // fee — matches the pre-existing (non-quantum) regression expectations.
@@ -120,6 +122,30 @@ beforeEach(() => {
 })
 
 describe('useDelegationTransactionFeeQuery', () => {
+    it('scales the fee by the decimals of the scope chain native asset', async () => {
+        mockGetChainDescriptor.mockReturnValue({
+            nativeAsset: { decimals: 18 },
+        })
+        mockBuildRekeyTx.mockResolvedValueOnce({ fee: 2n * 10n ** 15n })
+        const { wrapper } = buildWrapper()
+
+        const { result } = renderHook(
+            () =>
+                useDelegationTransactionFeeQuery(
+                    'SRC',
+                    'TGT',
+                    mockCallerScope(),
+                ),
+            { wrapper },
+        )
+
+        await waitFor(() => {
+            expect(result.current.isPending).toBe(false)
+        })
+        expect(mockGetChainDescriptor).toHaveBeenCalledWith(LEGACY_CHAIN_ID)
+        expect(result.current.fee?.toString()).toBe('0.002')
+    })
+
     it('resolves to a fee derived from the built transaction fee', async () => {
         // The chain adapter returned a 2000 microAlgo fee → 0.002 ALGO.
         mockBuildRekeyTx.mockResolvedValueOnce({ fee: 2000n })
