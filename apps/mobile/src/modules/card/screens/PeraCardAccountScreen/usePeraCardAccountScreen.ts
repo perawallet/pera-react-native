@@ -22,6 +22,7 @@ import {
 } from '@modules/accounts'
 import { trackEvent, HomeEvent } from '@analytics'
 import { useLanguage } from '@hooks/useLanguage'
+import { useAccountName } from '@hooks/useAccountName'
 import { useModalState } from '@hooks/useModalState'
 import { useCardScope } from '../../hooks/useCardScope'
 import { useCardSessionGuard } from '../../hooks/useCardSessionGuard'
@@ -40,6 +41,7 @@ type UsePeraCardAccountScreenResult = {
 export const usePeraCardAccountScreen = (): UsePeraCardAccountScreenResult => {
     const scope = useCardScope()
     const { t } = useLanguage()
+    const { getAccountName } = useAccountName()
     const accounts = useAllAccounts()
     const connectedAddress = useCardStore(
         state => state.connectedFundingSourceAddress,
@@ -70,11 +72,13 @@ export const usePeraCardAccountScreen = (): UsePeraCardAccountScreenResult => {
         }
         return {
             title: t('peraCard.account.navigation_title'),
-            subtitle: account?.name
-                ? t('peraCard.account.linked_to', { name: account.name })
+            subtitle: account
+                ? t('peraCard.account.linked_to', {
+                      name: getAccountName(account, LEGACY_CHAIN_ID),
+                  })
                 : t('peraCard.account.linked_to_fallback'),
         }
-    }, [accounts, connectedAddress, escrowCardAddress, t])
+    }, [accounts, connectedAddress, escrowCardAddress, t, getAccountName])
 
     // The switcher here is the shared drawer, which reads its behaviour from the
     // published kind rather than from props on the trigger. Publishing is what
