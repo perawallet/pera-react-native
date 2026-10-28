@@ -14,6 +14,8 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 import type { ReactNode } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { renderHook } from '@testing-library/react'
+import { backupCredentialsFileName } from '@perawallet/wallet-core-backup'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import { useStoreBackupCredentials } from '../useStoreBackupCredentials'
 
 const {
@@ -22,7 +24,7 @@ const {
     mockShowToast,
     mockShowError,
     mockLoggerError,
-    saveCredentialsFile,
+    saveToDevice,
     storeState,
 } = vi.hoisted(() => ({
     mockRequest: vi.fn(),
@@ -30,7 +32,7 @@ const {
     mockShowToast: vi.fn(),
     mockShowError: vi.fn(),
     mockLoggerError: vi.fn(),
-    saveCredentialsFile: vi.fn(),
+    saveToDevice: vi.fn(),
     storeState: {
         salt: null as string | null,
         backupId: null as string | null,
@@ -74,11 +76,39 @@ vi.mock('../../components/StoreBackupCredentialsSheet', () => ({
 }))
 vi.mock('../../storage', async importOriginal => ({
     ...(await importOriginal<Record<string, unknown>>()),
-    saveCredentialsFile,
+    saveToDevice,
 }))
 
 const SALT = 'q311Z4ReDNWpMVuH8XdvSw=='
 const BACKUP_ID = `did:pera:VQBGR${'A'.repeat(53)}`
+
+const cloudSave = () => vi.mocked(getProvider().cloudFileStorage.save)
+
+type Destination = 'device' | 'icloud' | 'googleDrive'
+
+const writerFor = (destination: Destination) =>
+    destination === 'device' ? saveToDevice : cloudSave()
+
+const expectSavedTo = (destination: Destination) => {
+    const fileName = backupCredentialsFileName(BACKUP_ID)
+    const contents = expect.stringContaining(SALT)
+    if (destination === 'device') {
+        expect(saveToDevice).toHaveBeenCalledWith(fileName, contents)
+        expect(cloudSave()).not.toHaveBeenCalled()
+    } else {
+        expect(cloudSave()).toHaveBeenCalledWith(
+            destination,
+            fileName,
+            contents,
+        )
+        expect(saveToDevice).not.toHaveBeenCalled()
+    }
+}
+
+const expectNothingSaved = () => {
+    expect(saveToDevice).not.toHaveBeenCalled()
+    expect(cloudSave()).not.toHaveBeenCalled()
+}
 
 beforeEach(() => {
     vi.clearAllMocks()
@@ -86,7 +116,8 @@ beforeEach(() => {
     storeState.backupId = BACKUP_ID
     mockRequest.mockResolvedValue('device')
     mockRequirePin.mockResolvedValue(true)
-    saveCredentialsFile.mockResolvedValue('saved')
+    saveToDevice.mockResolvedValue('saved')
+    cloudSave().mockResolvedValue('saved')
 })
 
 const renderStoreHook = () => {
@@ -132,7 +163,7 @@ describe('useStoreBackupCredentials', () => {
         await store()
 
         expect(mockRequirePin).not.toHaveBeenCalled()
-        expect(saveCredentialsFile).not.toHaveBeenCalled()
+        expectNothingSaved()
     })
 
     test('asks for the PIN only after a destination is chosen', async () => {
@@ -147,10 +178,7 @@ describe('useStoreBackupCredentials', () => {
         await store({ hasVerifiedPin: true })
 
         expect(mockRequirePin).not.toHaveBeenCalled()
-        expect(saveCredentialsFile).toHaveBeenCalledWith('device', {
-            salt: SALT,
-            backupId: BACKUP_ID,
-        })
+        expectSavedTo('device')
     })
 
     test('saves nothing when PIN verification fails', async () => {
@@ -158,7 +186,7 @@ describe('useStoreBackupCredentials', () => {
 
         await store()
 
-        expect(saveCredentialsFile).not.toHaveBeenCalled()
+        expectNothingSaved()
         expect(mockShowToast).not.toHaveBeenCalled()
     })
 
@@ -173,7 +201,7 @@ describe('useStoreBackupCredentials', () => {
 
         // The refusal itself lives in `useSaveCredentialsFile`, which this spec
         // runs for real: nothing reaches the file writer.
-        expect(saveCredentialsFile).not.toHaveBeenCalled()
+        expectNothingSaved()
         expect(mockShowError).toHaveBeenCalledWith(
             expect.any(Error),
             'cloud_backup.store_credentials.error',
@@ -206,10 +234,7 @@ describe('useStoreBackupCredentials', () => {
 
             await store()
 
-            expect(saveCredentialsFile).toHaveBeenCalledWith(destination, {
-                salt: SALT,
-                backupId: BACKUP_ID,
-            })
+            expectSavedTo(destination)
             expect(mockShowToast).toHaveBeenCalledWith(
                 {
                     title: 'cloud_backup.store_credentials.success',
@@ -223,7 +248,7 @@ describe('useStoreBackupCredentials', () => {
 
     test('stays silent when the user backs out inside the destination', async () => {
         mockRequest.mockResolvedValueOnce('googleDrive')
-        saveCredentialsFile.mockResolvedValueOnce('cancelled')
+        writerFor('googleDrive').mockResolvedValueOnce('cancelled')
 
         await store()
 
