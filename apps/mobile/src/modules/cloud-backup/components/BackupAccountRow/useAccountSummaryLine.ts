@@ -17,8 +17,7 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useNativeAsset, type PeraAsset } from '@perawallet/wallet-core-assets'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { Maybe, Nullable } from '@perawallet/wallet-core-shared'
 import { useAccountWithBalance } from '@components/AccountWithBalance'
 
@@ -42,8 +41,9 @@ type UseAccountSummaryLineResult = {
 export const useAccountSummaryLine = (
     account: WalletAccount,
     address: string,
+    /** Where `address` lives, which the single-chain line is valued on. */
+    scope: ChainScope,
 ): UseAccountSummaryLineResult => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const nativeAsset = useNativeAsset(scope)
     const algorand = useAccountSummaryQuery(address, scope)
     const { holdingsCount } = useAccountHoldingsCountQuery(account)

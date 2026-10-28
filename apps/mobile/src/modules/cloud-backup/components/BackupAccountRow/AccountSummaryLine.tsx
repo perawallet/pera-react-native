@@ -11,6 +11,8 @@
  */
 
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { PWText, PWView } from '@components/core'
 import { AssetAmount } from '@components/AssetAmount'
 import { PreferredAmount } from '@components/PreferredAmount'
@@ -30,7 +32,12 @@ export const AccountSummaryLine = ({
 }: AccountSummaryLineProps) => {
     const { t } = useLanguage()
     const styles = useSummaryStyles()
-    const { holdingsCount, value } = useAccountSummaryLine(account, address)
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const { holdingsCount, value } = useAccountSummaryLine(
+        account,
+        address,
+        scope,
+    )
 
     return (
         <PWView style={styles.line}>

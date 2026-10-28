@@ -70,7 +70,7 @@ describe('useBackupAccountRow', () => {
 
     it("lists every network a device account is on, with each one's address", () => {
         const { result } = renderHook(() =>
-            useBackupAccountRow({ address: 'ALGO', account: HD_ACCOUNT }),
+            useBackupAccountRow({ account: HD_ACCOUNT }),
         )
 
         expect(result.current.chainIds).toEqual([
@@ -90,7 +90,7 @@ describe('useBackupAccountRow', () => {
         state.switchedOff = ['base']
 
         const { result } = renderHook(() =>
-            useBackupAccountRow({ address: 'ALGO', account: HD_ACCOUNT }),
+            useBackupAccountRow({ account: HD_ACCOUNT }),
         )
 
         expect(result.current.chainIds).toEqual(['algorand', 'ethereum'])
@@ -103,7 +103,7 @@ describe('useBackupAccountRow', () => {
         } as unknown as WalletAccount
 
         const { result } = renderHook(() =>
-            useBackupAccountRow({ address: 'LEDGER', account: ledger }),
+            useBackupAccountRow({ account: ledger }),
         )
 
         expect(result.current.chainIds).toEqual(['algorand'])
@@ -112,7 +112,6 @@ describe('useBackupAccountRow', () => {
     it("lists a backup-only account's networks from its record, in registry order, skipping one this build doesn't know", () => {
         const { result } = renderHook(() =>
             useBackupAccountRow({
-                address: 'ALGO',
                 backupChains: [
                     { chain: 'base', address: '0xeth' },
                     { chain: 'algorand', address: 'ALGO' },
@@ -125,22 +124,9 @@ describe('useBackupAccountRow', () => {
         expect(result.current.chains[1]?.copyValue).toBe('copy:0xeth')
     })
 
-    it('treats a backup-only item from before records as Algorand', () => {
-        const { result } = renderHook(() =>
-            useBackupAccountRow({ address: 'OLD', backupChains: [] }),
-        )
-
-        expect(result.current.chains).toEqual([
-            expect.objectContaining({
-                chainId: 'algorand',
-                copyValue: 'copy:OLD',
-            }),
-        ])
-    })
-
     it('expands and collapses on toggle', () => {
         const { result } = renderHook(() =>
-            useBackupAccountRow({ address: 'ALGO', account: HD_ACCOUNT }),
+            useBackupAccountRow({ account: HD_ACCOUNT }),
         )
 
         expect(result.current.canExpand).toBe(true)
@@ -154,7 +140,7 @@ describe('useBackupAccountRow', () => {
         state.isMultichain = false
 
         const { result } = renderHook(() =>
-            useBackupAccountRow({ address: 'ALGO', account: HD_ACCOUNT }),
+            useBackupAccountRow({ account: HD_ACCOUNT }),
         )
 
         expect(result.current.canExpand).toBe(false)

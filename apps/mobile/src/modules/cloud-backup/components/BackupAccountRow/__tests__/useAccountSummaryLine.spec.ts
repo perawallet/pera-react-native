@@ -14,6 +14,7 @@ import { renderHook } from '@testing-library/react'
 import { Decimal } from 'decimal.js'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useAccountSummaryLine } from '../useAccountSummaryLine'
 
 const state = vi.hoisted(() => ({
@@ -38,11 +39,8 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
     useNativeAsset: () => NATIVE,
 }))
 
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useSelectedScope: (chainId: string) => ({ chainId, networkId: 'mainnet' }),
-}))
-
 const ACCOUNT = { id: 'a' } as WalletAccount
+const SCOPE = { chainId: 'algorand', networkId: 'mainnet' } as ChainScope
 
 describe('useAccountSummaryLine', () => {
     beforeEach(() => {
@@ -51,7 +49,7 @@ describe('useAccountSummaryLine', () => {
 
     it('keeps the Algorand count and ALGO value while one chain is active', () => {
         const { result } = renderHook(() =>
-            useAccountSummaryLine(ACCOUNT, 'ALGO'),
+            useAccountSummaryLine(ACCOUNT, 'ALGO', SCOPE),
         )
 
         expect(result.current).toEqual({
@@ -69,7 +67,7 @@ describe('useAccountSummaryLine', () => {
         state.crossChainTotal = { kind: 'fiat', value: total }
 
         const { result } = renderHook(() =>
-            useAccountSummaryLine(ACCOUNT, 'ALGO'),
+            useAccountSummaryLine(ACCOUNT, 'ALGO', SCOPE),
         )
 
         expect(result.current).toEqual({
@@ -84,7 +82,7 @@ describe('useAccountSummaryLine', () => {
             state.crossChainTotal = { kind }
 
             const { result } = renderHook(() =>
-                useAccountSummaryLine(ACCOUNT, 'ALGO'),
+                useAccountSummaryLine(ACCOUNT, 'ALGO', SCOPE),
             )
 
             expect(result.current).toEqual({

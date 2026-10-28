@@ -67,7 +67,13 @@ export const BackupAccountRow = ({
 }: BackupAccountRowProps) => {
     const styles = useStyles()
     const { isMultichain, chainIds, chains, canExpand, isExpanded, onToggle } =
-        useBackupAccountRow({ address, account, backupChains })
+        useBackupAccountRow({
+            account,
+            // An item written before records names no chain; those were Algorand only.
+            backupChains: backupChains?.length
+                ? backupChains
+                : [{ chain: LEGACY_CHAIN_ID, address }],
+        })
 
     const backupKindId =
         !account && accountType != null

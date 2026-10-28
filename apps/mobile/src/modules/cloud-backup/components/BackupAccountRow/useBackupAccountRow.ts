@@ -17,10 +17,7 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { CachedRecordChain } from '@perawallet/wallet-core-backup'
-import {
-    LEGACY_CHAIN_ID,
-    type ChainId,
-} from '@perawallet/wallet-core-chain-contract'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { useSwitchedOffChainIds } from '@perawallet/wallet-core-chain-shared'
 import { useIsMultichain } from '@modules/accounts'
 import {
@@ -37,7 +34,6 @@ export type BackupAccountChainAddress = {
 }
 
 type UseBackupAccountRowParams = {
-    address: string
     account?: WalletAccount
     /** For an account only the backup holds: its record's chains. */
     backupChains?: CachedRecordChain[]
@@ -54,7 +50,6 @@ type UseBackupAccountRowResult = {
 }
 
 export const useBackupAccountRow = ({
-    address,
     account,
     backupChains,
 }: UseBackupAccountRowParams): UseBackupAccountRowResult => {
@@ -72,15 +67,11 @@ export const useBackupAccountRow = ({
                     : [],
             )
         }
-        // An item written before records names no chain; those were Algorand only.
-        const entries = backupChains?.length
-            ? backupChains
-            : [{ chain: LEGACY_CHAIN_ID, address }]
         return registeredChainIds.filter(isOn).flatMap(chainId => {
-            const entry = entries.find(({ chain }) => chain === chainId)
+            const entry = backupChains?.find(({ chain }) => chain === chainId)
             return entry ? [toChainAddress(chainId, entry.address)] : []
         })
-    }, [account, backupChains, address, registeredChainIds, switchedOff])
+    }, [account, backupChains, registeredChainIds, switchedOff])
 
     const chainIds = useMemo(() => chains.map(chain => chain.chainId), [chains])
     const canExpand = isMultichain && chains.length > 0
