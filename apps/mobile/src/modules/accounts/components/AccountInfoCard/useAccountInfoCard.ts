@@ -17,7 +17,6 @@ import {
     hardwareDetailsOf,
     hdIndexOf,
     isLedgerAccount,
-    isNamedAfterAddress,
     useCapabilityChainResolver,
     useHdSeedGroups,
     useLedgerDeviceGroups,
@@ -34,6 +33,7 @@ import type { Optional } from '@perawallet/wallet-core-shared'
 import { useCapableChainId } from '@hooks/useCapableChainIds'
 import { useIsMultichain } from '../../hooks/useIsMultichain'
 import { useLanguage } from '@hooks/useLanguage'
+import { useAccountName } from '@hooks/useAccountName'
 import { navigationRef } from '@routes/navigationRef'
 import {
     useAccountTypeLabel,
@@ -54,13 +54,6 @@ export type AccountStructureRow = {
     canExpand: boolean
     chains: ChainAddress[]
 }
-
-// Unnamed accounts are stored under one of their addresses, on any chain they
-// hold, shown or not.
-const isNamedAfterOwnAddress = (account: WalletAccount): boolean =>
-    (Object.keys(account.chains) as ChainId[]).some(chainId =>
-        isNamedAfterAddress(account, chainId),
-    )
 
 type UseAccountInfoCardParams = {
     account: WalletAccount
@@ -89,6 +82,7 @@ export const useAccountInfoCard = ({
     onClose,
 }: UseAccountInfoCardParams): UseAccountInfoCardResult => {
     const { t } = useLanguage()
+    const { getAccountName } = useAccountName()
     const [isExpanded, setIsExpanded] = useState(false)
     const [expandedRowId, setExpandedRowId] = useState<Optional<string>>()
 
@@ -187,23 +181,19 @@ export const useAccountInfoCard = ({
                     ),
                 }
             })
-            const fallbackName =
-                member.id === structureGroup.firstAccount.id
-                    ? t('account_info.main_address')
-                    : t('account_info.sub_address')
             const isViewing = member.id === account.id
             return {
                 account: member,
-                name:
-                    member.name && !isNamedAfterOwnAddress(member)
-                        ? member.name
-                        : fallbackName,
+                name: getAccountName(
+                    member,
+                    options[0]?.chainId ?? LEGACY_CHAIN_ID,
+                ),
                 isViewing,
                 canExpand: !isViewing && chains.length > 0,
                 chains,
             }
         })
-    }, [structureGroup, switchedOff, account.id, t])
+    }, [structureGroup, switchedOff, account.id, getAccountName])
 
     const showStructure = isHDWallet || (isLedger && structureRows.length > 0)
 

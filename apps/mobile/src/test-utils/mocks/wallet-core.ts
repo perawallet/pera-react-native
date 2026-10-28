@@ -555,6 +555,22 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
             isPending: false,
         })),
         getAccountDisplayName: vi.fn(a => a?.name || ''),
+        isNamedAfterOwnAddress: vi.fn(
+            (account: any) =>
+                !!account?.name &&
+                entriesOf(account).some(
+                    entry => entry.address === account.name,
+                ),
+        ),
+        accountNumberOf: vi.fn((account: any) => {
+            const custody = account?.custody
+            if (custody?.kind === 'local' && custody.seed === 'bip39') {
+                return custody.hd.account + custody.hd.keyIndex + 1
+            }
+            return custody?.kind === 'hardware'
+                ? custody.accountIndex + 1
+                : undefined
+        }),
         useAccountPresentation: vi.fn(() => null),
         authorityTransitionLabel: vi.fn(() => ({
             labelKey: i18nKey('account_info.type_rekeyed_signer'),
