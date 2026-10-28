@@ -124,6 +124,22 @@ describe('toEvmError', () => {
             params: {},
         },
         {
+            name: "a node's unclassified intrinsic gas too low rejection",
+            error: new InvalidInputRpcError(rpcError('intrinsic gas too low')),
+            code: 'out_of_gas',
+            params: {},
+        },
+        {
+            name: "Anvil's undecoded custom error",
+            error: wrapped(
+                new ExecutionRevertedError({
+                    message: `execution reverted: custom error 0x2712e753: ${'\u0000'.repeat(31)}*`,
+                }),
+            ),
+            code: 'reverted',
+            params: {},
+        },
+        {
             name: 'a nonce too low rejection',
             error: wrapped(new NonceTooLowError({ nonce: 7 })),
             code: 'nonce_too_low',

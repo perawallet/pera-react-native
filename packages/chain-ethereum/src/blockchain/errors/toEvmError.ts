@@ -36,7 +36,14 @@ const INSUFFICIENT_FUNDS = /insufficient funds/i
 
 // viem files geth's estimateGas "gas required exceeds allowance" under
 // ExecutionRevertedError, so this must be checked before the revert branch.
-const OUT_OF_GAS = /out of gas|gas required exceeds allowance/i
+// A rejected eth_sendRawTransaction reaches viem as a plain InvalidInputRpcError,
+// so "intrinsic gas too low" is matched as text too.
+const OUT_OF_GAS =
+    /out of gas|gas required exceeds allowance|intrinsic gas too low/i
+
+// Anvil renders a Solidity custom error as `custom error 0x<selector>: <raw
+// data bytes>`; the data is binary, so it is not a reason a user can read.
+const CUSTOM_ERROR_PLACEHOLDER = /^custom error 0x[0-9a-f]{8}\b/i
 
 const EXECUTION_REVERTED_REASON = /^Execution reverted with reason: (.+)\.$/s
 
@@ -71,7 +78,7 @@ const revertReasonOf = (chain: unknown[]): string | undefined => {
             const reason = EXECUTION_REVERTED_REASON.exec(
                 link.shortMessage,
             )?.[1]
-            if (reason) return reason
+            if (reason && !CUSTOM_ERROR_PLACEHOLDER.test(reason)) return reason
         }
     }
     return undefined
