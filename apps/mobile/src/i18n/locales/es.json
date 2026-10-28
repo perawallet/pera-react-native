@@ -1884,7 +1884,11 @@
             "step_auto_funding_label": "Permitir la financiación automática desde la cuenta vinculada",
             "proceed_button": "Continuar",
             "standing_authority_title": "Qué estás autorizando",
-            "standing_authority_body": "Esta autorización sigue activa hasta que la desactives. El límite por transacción lo fija el proveedor de tu tarjeta, no tu firma. Puedes detenerla en cualquier momento cambiando el tipo de financiación a Manual."
+            "standing_authority_body": "Esta autorización sigue activa hasta que la desactives. El límite por transacción lo fija el proveedor de tu tarjeta, no tu firma. Puedes detenerla en cualquier momento cambiando el tipo de financiación a Manual.",
+            "add_funds_source_description": "Añadir fondos a tu Pera Card",
+            "withdraw_request_source_description": "Solicitar un retiro de tu Pera Card",
+            "withdraw_source_description": "Retirar de tu Pera Card",
+            "withdraw_cancel_source_description": "Cancelar un retiro de Pera Card"
         },
         "auto_funding_signing": {
             "title": "Solicitud de aprobación de firma automática",

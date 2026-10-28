@@ -1876,7 +1876,11 @@
             "step_auto_funding_label": "Auto-Funding vom verknüpften Konto erlauben",
             "proceed_button": "Fortfahren",
             "standing_authority_title": "Was du autorisierst",
-            "standing_authority_body": "Diese Autorisierung bleibt aktiv, bis du sie deaktivierst. Das Limit pro Transaktion legt dein Kartenanbieter fest, nicht deine Signatur. Du kannst sie jederzeit stoppen, indem du den Finanzierungstyp auf Manuell umstellst."
+            "standing_authority_body": "Diese Autorisierung bleibt aktiv, bis du sie deaktivierst. Das Limit pro Transaktion legt dein Kartenanbieter fest, nicht deine Signatur. Du kannst sie jederzeit stoppen, indem du den Finanzierungstyp auf Manuell umstellst.",
+            "add_funds_source_description": "Guthaben zu deiner Pera Card hinzufügen",
+            "withdraw_request_source_description": "Auszahlung von deiner Pera Card anfordern",
+            "withdraw_source_description": "Von deiner Pera Card auszahlen",
+            "withdraw_cancel_source_description": "Pera Card-Auszahlung abbrechen"
         },
         "auto_funding_signing": {
             "title": "Anfrage zur automatischen Signaturgenehmigung",

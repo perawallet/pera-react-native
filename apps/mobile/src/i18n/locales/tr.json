@@ -1884,7 +1884,11 @@
             "step_auto_funding_label": "Bağlı hesaptan otomatik fonlamaya izin ver",
             "proceed_button": "Devam et",
             "standing_authority_title": "Neyi yetkilendiriyorsun",
-            "standing_authority_body": "Bu yetki, sen kapatana kadar geçerli kalır. İşlem başına limiti imzan değil, kart sağlayıcın belirler. Fonlama Tipi’ni Manuel yaparak istediğin zaman durdurabilirsin."
+            "standing_authority_body": "Bu yetki, sen kapatana kadar geçerli kalır. İşlem başına limiti imzan değil, kart sağlayıcın belirler. Fonlama Tipi’ni Manuel yaparak istediğin zaman durdurabilirsin.",
+            "add_funds_source_description": "Pera Card’ına bakiye ekle",
+            "withdraw_request_source_description": "Pera Card’ından para çekme talebi oluştur",
+            "withdraw_source_description": "Pera Card’ından para çek",
+            "withdraw_cancel_source_description": "Pera Card para çekme talebini iptal et"
         },
         "auto_funding_signing": {
             "title": "Otomatik imzalama onay isteği",

@@ -1884,7 +1884,11 @@
             "step_auto_funding_label": "Allow Auto Funding from the linked account",
             "proceed_button": "Proceed",
             "standing_authority_title": "What you're authorizing",
-            "standing_authority_body": "This authorization stays active until you turn it off. Your card provider sets the per-transaction limit, not your signature. You can stop it anytime by switching Funding Type to Manual."
+            "standing_authority_body": "This authorization stays active until you turn it off. Your card provider sets the per-transaction limit, not your signature. You can stop it anytime by switching Funding Type to Manual.",
+            "add_funds_source_description": "Add funds to your Pera Card",
+            "withdraw_request_source_description": "Request a withdrawal from your Pera Card",
+            "withdraw_source_description": "Withdraw from your Pera Card",
+            "withdraw_cancel_source_description": "Cancel a Pera Card withdrawal"
         },
         "auto_funding_signing": {
             "title": "Auto-signing Approval Request",
