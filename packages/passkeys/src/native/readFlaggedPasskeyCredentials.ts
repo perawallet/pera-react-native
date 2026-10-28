@@ -59,7 +59,7 @@ export type ReadFlaggedPasskeyCredentialsDeps = {
      * Callers supply this rather than the module importing it:
      * `react-native-quick-crypto` is not a dependency of this package (see its
      * `package.json`), and every caller already has a `SubtleCrypto` to hand —
-     * the mobile app from that module, tests from `globalThis.crypto`.
+     * `useFlaggedPasskeysQuery` passes `keystoreSubtle`, tests `globalThis.crypto`.
      */
     subtle: SubtleCrypto
     storage?: FlaggedPasskeyStorage

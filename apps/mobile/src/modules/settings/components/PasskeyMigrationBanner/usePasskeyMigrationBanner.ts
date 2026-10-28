@@ -11,11 +11,8 @@
  */
 
 import { useCallback, useMemo, useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
-import { subtle } from 'react-native-quick-crypto'
 import {
-    passkeysQueryKeyRoot,
-    readFlaggedPasskeyCredentials,
+    useFlaggedPasskeysQuery,
     usePasskeysQuery,
     type Passkey,
 } from '@perawallet/wallet-core-passkeys'
@@ -61,14 +58,6 @@ export type UsePasskeyMigrationBannerResult = {
     onDismiss: () => void
 }
 
-// Built from the shared root because `useRemovePasskeyMutation` invalidates
-// that root and TanStack matches by prefix — a key outside it would leave the
-// banner listing a credential the user just deleted.
-const flaggedPasskeysQueryKey = [
-    ...passkeysQueryKeyRoot,
-    'needs-migration',
-] as const
-
 /**
  * The two places a `needs-migration` marker can still be read, unioned:
  *
@@ -87,14 +76,7 @@ export const usePasskeyMigrationBanner = ({
     const { passkeys } = usePasskeysQuery()
     const [isDismissed, setIsDismissed] = useState(false)
 
-    const flaggedQuery = useQuery({
-        queryKey: flaggedPasskeysQueryKey,
-        queryFn: () =>
-            readFlaggedPasskeyCredentials({
-                subtle: subtle as unknown as SubtleCrypto,
-            }),
-        staleTime: 30_000,
-    })
+    const { flaggedPasskeys, isComplete } = useFlaggedPasskeysQuery()
 
     // Keyed on `id`, the url-safe-normalised credential id `mergePasskeys`
     // also dedupes on — not on the raw `keyId`. Both native credential stores
@@ -105,12 +87,12 @@ export const usePasskeyMigrationBanner = ({
         const byId = new Map<string, Passkey>()
         for (const candidate of [
             ...passkeys.filter(p => p.needsMigration),
-            ...(flaggedQuery.data?.flagged ?? []),
+            ...flaggedPasskeys,
         ]) {
             if (!byId.has(candidate.id)) byId.set(candidate.id, candidate)
         }
         return [...byId.values()]
-    }, [passkeys, flaggedQuery.data])
+    }, [passkeys, flaggedPasskeys])
 
     const onDismiss = useCallback(() => setIsDismissed(true), [])
 
@@ -118,13 +100,7 @@ export const usePasskeyMigrationBanner = ({
         affected,
         isVisible: isManaging && !isDismissed && affected.length > 0,
         canRecreate: isProviderActive,
-        // `isSuccess` alone is not enough — and neither is "no longer
-        // pending". The read resolves on every failure it can catch, so its
-        // own `isComplete` is the only thing that separates "nothing is
-        // flagged" from "nothing could be read"; treating the second as the
-        // first is the one wrong answer that is irreversible.
-        isFlagSourceComplete:
-            flaggedQuery.isSuccess && flaggedQuery.data.isComplete,
+        isFlagSourceComplete: isComplete,
         onRecreate: onRequestDelete,
         onDismiss,
     }
