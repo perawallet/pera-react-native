@@ -23,11 +23,10 @@ describe('algorandKeyKindOptions', () => {
             recover: {
                 id: 'hd_wallet',
                 titleKey: 'onboarding.import_options.hd_wallet.title',
-                chipKey: 'onboarding.import_options.hd_wallet.chip',
                 descriptionKey:
                     'onboarding.import_options.hd_wallet.description',
-                mnemonicInfoKey: 'onboarding.import_options.mnemonic_info',
                 isSuggested: true,
+                order: 0,
                 analyticsEvent: 'onb_createacc_recover_24',
             },
         })
@@ -40,9 +39,8 @@ describe('algorandKeyKindOptions', () => {
                 titleKey: 'onboarding.import_options.algo25.title',
                 chipKey: 'onboarding.import_options.algo25.chip',
                 descriptionKey: 'onboarding.import_options.algo25.description',
-                mnemonicInfoKey:
-                    'onboarding.import_options.algo25.mnemonic_info',
                 isSuggested: false,
+                order: 2,
                 analyticsEvent: 'onb_createacc_recover_25',
             },
             create: {
@@ -56,7 +54,7 @@ describe('algorandKeyKindOptions', () => {
         })
     })
 
-    it('offers the quantum kind as a featured create option and its own import row', () => {
+    it('offers the quantum kind as a featured create option and from the recover chooser', () => {
         expect(algorandKeyKindOptions(SeedScheme.Quantum)).toEqual({
             create: {
                 id: 'quantum',
@@ -75,12 +73,12 @@ describe('algorandKeyKindOptions', () => {
                 },
                 analyticsEvent: 'createacc_quantumAccount_press',
             },
-            import: {
+            recover: {
                 id: 'quantum',
-                titleKey: 'onboarding.import_account_options.quantum_title',
-                descriptionKey:
-                    'onboarding.import_account_options.quantum_description',
-                icon: 'quantum',
+                titleKey: 'onboarding.import_options.quantum.title',
+                descriptionKey: 'onboarding.import_options.quantum.description',
+                isSuggested: false,
+                order: 1,
             },
         })
     })

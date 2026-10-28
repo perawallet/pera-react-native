@@ -45,7 +45,7 @@ export type AuthorityTransitionLabel = {
     supportUrl?: string
 }
 
-/** A screen row that mints or imports one key kind; every `*Key` is an i18n key. */
+/** A screen row that mints one key kind; every `*Key` is an i18n key. */
 export type LocalKeyEntryOption = {
     /** Stable slug the row's test id is built from. */
     id: string
@@ -57,7 +57,7 @@ export type LocalKeyEntryOption = {
 
 /** How the add-account screen offers minting a key kind. */
 export type LocalKeyCreateOption = LocalKeyEntryOption & {
-    /** Listed among the screen's main options rather than under its other options. */
+    /** Offered beside the multichain account rather than under the add-account menu's other options. */
     isFeatured: boolean
     /** Replaces the screen's progress title while the key is generated. */
     progressTitleKey?: I18nKey
@@ -72,20 +72,20 @@ export type LocalKeyRecoverOption = {
     /** Stable slug the option's test id is built from. */
     id: string
     titleKey: I18nKey
-    chipKey: I18nKey
+    chipKey?: I18nKey
     descriptionKey: I18nKey
-    mnemonicInfoKey: I18nKey
     /** Gives the chip the emphasis of the chain's suggested kind. */
     isSuggested: boolean
+    /** Position on the chooser, lowest first; independent of detection order. */
+    order: number
     /** Analytics event logged when the user picks the option. */
-    analyticsEvent: string
+    analyticsEvent?: string
 }
 
 /** How the onboarding screens offer one local key kind; an absent entry leaves that screen without a row for it. */
 export type LocalKeyKindOptions = {
     recover?: LocalKeyRecoverOption
     create?: LocalKeyCreateOption
-    import?: LocalKeyEntryOption
 }
 
 /**

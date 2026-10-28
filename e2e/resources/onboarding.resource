@@ -29,6 +29,7 @@ ${RESCAN_ADD_BUTTON}                    tid=rescan-rekeyed-add
 ${RESCAN_SKIP_BUTTON}                   tid=rescan-rekeyed-skip
 
 ${ADD_ACCOUNT_ADD_BUTTON}               tid=add_account_add_button
+${ADD_ACCOUNT_MULTICHAIN_BUTTON}        tid=add_account_options_multichain_button
 ${ADD_ACCOUNT_IMPORT_BUTTON}            tid=add_account_import_button
 ${ADD_ACCOUNT_SEE_OTHER_OPTIONS}        tid=add_account_see_other_options_button
 ${ADD_ACCOUNT_WATCH_BUTTON}             tid=add_account_watch_button
@@ -42,6 +43,7 @@ ${REMOVE_ALL_SUCCESS_SHEET}             tid=settings_delete_all_success_bottom_s
 ${IMPORT_OPTION_RECOVER_WALLET}         tid=import_account_options_recover_wallet_button
 ${IMPORT_OPTION_RECOVER_QR}             tid=import_account_options_recover_qr_button
 ${IMPORT_OPTION_PAIR_LEDGER}            tid=import_account_options_pair_ledger_button
+${IMPORT_OPTION_SEE_OTHER_OPTIONS}      tid=import_account_options_see_other_options_button
 ${IMPORT_OPTION_PERA_WEB}               tid=import_account_options_pera_web_button
 ${IMPORT_OPTION_ASB}                    tid=import_account_options_asb_button
 ${RECOVER_UNIVERSAL_WALLET}             tid=import_options_hd_wallet_button
@@ -220,6 +222,12 @@ Reveal Other Add Account Options
     Tap    ${ADD_ACCOUNT_SEE_OTHER_OPTIONS}
     # The toggle unmounts once the options show, so its absence proves the tap landed.
     Wait Until Page Does Not Contain Element    ${ADD_ACCOUNT_SEE_OTHER_OPTIONS}    timeout=10s
+
+Reveal Other Import Options
+    Scroll Into View    import_account_options_see_other_options_button
+    Tap    ${IMPORT_OPTION_SEE_OTHER_OPTIONS}
+    # The toggle unmounts once the options show, so its absence proves the tap landed.
+    Wait Until Page Does Not Contain Element    ${IMPORT_OPTION_SEE_OTHER_OPTIONS}    timeout=10s
 
 Name Account And Finish
     [Arguments]    ${name}

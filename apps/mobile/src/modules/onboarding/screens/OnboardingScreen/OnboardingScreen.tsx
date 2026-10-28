@@ -13,7 +13,7 @@
 import React from 'react'
 import { Trans } from 'react-i18next'
 import { useWindowDimensions } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { useTheme } from '@rneui/themed'
 import {
     PWImage,
     PWLoadingOverlay,
@@ -22,17 +22,19 @@ import {
     PWView,
 } from '@components/core'
 import { PanelButton } from '@components/PanelButton'
-import welcomeBackground from '@assets/images/welcome-background.webp'
+import onboardingHeaderDark from '@assets/images/onboarding-header-dark.webp'
+import onboardingHeaderLight from '@assets/images/onboarding-header-light.webp'
 import { useLanguage } from '@hooks/useLanguage'
 import { useOnboardingScreen } from './useOnboardingScreen'
 import { useStyles } from './styles'
 
 export const OnboardingScreen = () => {
-    const insets = useSafeAreaInsets()
-    const { height: screenHeight } = useWindowDimensions()
-    const styles = useStyles({ insets, screenHeight })
+    const { width: screenWidth, height: screenHeight } = useWindowDimensions()
+    const styles = useStyles({ screenWidth, screenHeight })
+    const { theme } = useTheme()
     const { t } = useLanguage()
     const {
+        handleTermsPress,
         handlePrivacyPress,
         handleCreateAccount,
         handleImportAccount,
@@ -42,12 +44,18 @@ export const OnboardingScreen = () => {
     return (
         <>
             <PWScreen horizontalPadding='none'>
+                <PWImage
+                    source={
+                        theme.mode === 'dark'
+                            ? onboardingHeaderDark
+                            : onboardingHeaderLight
+                    }
+                    style={styles.headerImage}
+                    showLoadingIndicator={false}
+                    transition={false}
+                />
                 <PWView style={styles.rootContainer}>
                     <PWView style={styles.headerContainer}>
-                        <PWImage
-                            source={welcomeBackground}
-                            style={styles.headerImage}
-                        />
                         <PWText
                             style={styles.headerTitle}
                             variant='h1'
@@ -62,7 +70,7 @@ export const OnboardingScreen = () => {
                             style={styles.buttonTitle}
                             variant='h4'
                         >
-                            {t('onboarding.main_screen.new_to_algo')}
+                            {t('onboarding.main_screen.new_to_pera')}
                         </PWText>
                         <PanelButton
                             testID='onboarding_create_wallet_button'
@@ -78,14 +86,14 @@ export const OnboardingScreen = () => {
                             style={styles.buttonTitle}
                             variant='h4'
                         >
-                            {t('onboarding.main_screen.already_have_account')}
+                            {t('onboarding.main_screen.already_have_wallet')}
                         </PWText>
                         <PanelButton
                             testID='onboarding_import_account_button'
-                            title={t('onboarding.main_screen.import_account')}
+                            title={t('onboarding.main_screen.import_wallet')}
                             titleWeight='h4'
                             onPress={handleImportAccount}
-                            leftIcon={'key'}
+                            leftIcon={'wallet-import'}
                             rightIcon={'chevron-right'}
                         />
                     </PWView>
@@ -93,8 +101,13 @@ export const OnboardingScreen = () => {
                     <PWView style={styles.footerContainer}>
                         <PWText style={styles.termsAndPrivacyText}>
                             <Trans
-                                i18nKey='onboarding.main_screen.privacy_agreement'
+                                i18nKey='onboarding.add_account.terms_and_privacy'
                                 components={[
+                                    <PWText
+                                        key='terms'
+                                        variant='link'
+                                        onPress={handleTermsPress}
+                                    />,
                                     <PWText
                                         key='privacy'
                                         variant='link'

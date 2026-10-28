@@ -16,6 +16,7 @@ import { NavigationHeader } from '@components/NavigationHeader'
 import type { NativeStackHeaderProps } from '@react-navigation/native-stack'
 import { createAppStackNavigator } from '@routes/createAppStackNavigator'
 import { AddAccountScreen } from '@modules/onboarding/screens/AddAccountScreen'
+import { AddAccountOptionsScreen } from '@modules/onboarding/screens/AddAccountOptionsScreen'
 import { WatchInfoScreen } from '@modules/onboarding/screens/WatchInfoScreen'
 import { WatchAccountScreen } from '@modules/onboarding/screens/WatchAccountScreen'
 import { SelectHDWalletScreen } from '@modules/onboarding/screens/SelectHDWalletScreen'
@@ -32,6 +33,9 @@ import {
 
 const AddAccountScreenWithErrorBoundary =
     withAccountErrorBoundary(AddAccountScreen)
+const AddAccountOptionsScreenWithErrorBoundary = withAccountErrorBoundary(
+    AddAccountOptionsScreen,
+)
 const SelectHDWalletScreenWithErrorBoundary =
     withAccountErrorBoundary(SelectHDWalletScreen)
 const WatchInfoScreenWithErrorBoundary =
@@ -60,6 +64,11 @@ export const AddAccountStackNavigator = () => {
                 options={{ headerShown: false }}
                 layout={fullScreenLayout}
                 component={AddAccountScreenWithErrorBoundary}
+            />
+            <AddAccountStack.Screen
+                name='AddAccountOptions'
+                options={{ title: '' }}
+                component={AddAccountOptionsScreenWithErrorBoundary}
             />
             <AddAccountStack.Screen
                 name='SelectHDWallet'

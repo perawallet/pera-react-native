@@ -22,6 +22,7 @@ import {
     type UseImportAccountOptionsScreenResult,
 } from '../useImportAccountOptionsScreen'
 import { capabilityState } from '@test-utils/capability-mock'
+import { useOnboardingStore } from '../../../hooks/useOnboardingStore'
 import { registerAlgorandAccountsAdapter } from '@test-utils/algorandAccountsAdapter'
 import {
     ETHEREUM_CHAIN_ID,
@@ -170,10 +171,15 @@ vi.mock('@modules/cloud-backup', () => ({
     }),
 }))
 
+const optionsOf = (screen: UseImportAccountOptionsScreenResult) => [
+    ...screen.mainOptions,
+    ...screen.otherOptions,
+]
+
 const pressCloudBackupOption = async (result: {
     current: UseImportAccountOptionsScreenResult
 }) => {
-    const option = result.current.options.find(
+    const option = optionsOf(result.current).find(
         o => o.testID === 'import_account_options_cloud_backup_button',
     )!
 
@@ -195,62 +201,72 @@ describe('useImportAccountOptionsScreen', () => {
         mockCloudBackupState.isConfigured = false
         mockLedgerSupport.isReady = false
         mockLedgerSupport.supportedTransportTypes = []
+        useOnboardingStore.getState().setIsOnboarding(false)
     })
 
-    it('returns 5 options without Ledger USB', () => {
-        const { result } = renderHook(() => useImportAccountOptionsScreen())
-
-        expect(result.current.options).toHaveLength(5)
-    })
-
-    it('returns 6 options with Ledger USB', () => {
-        mockCapabilities.ledgerUsb = true
+    it('splits the rows into passphrase, cloud backup and Ledger first, the rest behind other options', () => {
+        mockCloudBackupFlag.enabled = true
 
         const { result } = renderHook(() => useImportAccountOptionsScreen())
 
-        expect(result.current.options).toHaveLength(6)
-    })
-
-    it('options have correct testIDs', () => {
-        const { result } = renderHook(() => useImportAccountOptionsScreen())
-
-        const testIDs = result.current.options.map(o => o.testID)
-
-        expect(testIDs).toContain(
+        expect(result.current.mainOptions.map(o => o.testID)).toEqual([
             'import_account_options_recover_wallet_button',
-        )
-        expect(testIDs).toContain('import_account_options_recover_qr_button')
-        expect(testIDs).toContain('import_account_options_pair_ledger_button')
-        expect(testIDs).toContain('import_account_options_pera_web_button')
-        expect(testIDs).toContain('import_account_options_asb_button')
+            'import_account_options_cloud_backup_button',
+            'import_account_options_pair_ledger_button',
+        ])
+        expect(result.current.otherOptions.map(o => o.testID)).toEqual([
+            'import_account_options_pera_web_button',
+            'import_account_options_asb_button',
+            'import_account_options_recover_qr_button',
+        ])
     })
 
-    it('hides the USB option without Ledger USB', () => {
-        const { result } = renderHook(() => useImportAccountOptionsScreen())
-
-        const testIDs = result.current.options.map(o => o.testID)
-
-        expect(testIDs).not.toContain(
-            'import_account_options_pair_ledger_usb_button',
-        )
-    })
-
-    it('shows the USB option with Ledger USB', () => {
+    it('offers one Ledger row whether or not USB is possible', () => {
         mockCapabilities.ledgerUsb = true
 
         const { result } = renderHook(() => useImportAccountOptionsScreen())
 
-        const testIDs = result.current.options.map(o => o.testID)
+        const ledgerIds = optionsOf(result.current)
+            .map(o => o.testID)
+            .filter(id => id.includes('ledger'))
+        expect(ledgerIds).toEqual(['import_account_options_pair_ledger_button'])
+    })
 
-        expect(testIDs).toContain(
-            'import_account_options_pair_ledger_usb_button',
+    it('hides the other options until toggled', () => {
+        const { result } = renderHook(() => useImportAccountOptionsScreen())
+
+        expect(result.current.isOtherOptionsVisible).toBe(false)
+
+        act(() => {
+            result.current.handleToggleOtherOptions()
+        })
+
+        expect(result.current.isOtherOptionsVisible).toBe(true)
+    })
+
+    it('titles the screen Import Wallet during onboarding and Import Account otherwise', () => {
+        const { result: addAccount } = renderHook(() =>
+            useImportAccountOptionsScreen(),
+        )
+        expect(addAccount.current.titleKey).toBe(
+            'onboarding.import_account_options.title',
+        )
+
+        act(() => {
+            useOnboardingStore.getState().setIsOnboarding(true)
+        })
+        const { result: onboarding } = renderHook(() =>
+            useImportAccountOptionsScreen(),
+        )
+        expect(onboarding.current.titleKey).toBe(
+            'onboarding.import_account_options.onboarding_title',
         )
     })
 
     it('recover wallet option requests import options bottom sheet', async () => {
         const { result } = renderHook(() => useImportAccountOptionsScreen())
 
-        const recoverOption = result.current.options.find(
+        const recoverOption = optionsOf(result.current).find(
             o => o.testID === 'import_account_options_recover_wallet_button',
         )!
 
@@ -265,7 +281,7 @@ describe('useImportAccountOptionsScreen', () => {
         mockRequestBottomSheet.mockResolvedValueOnce(null)
         const { result } = renderHook(() => useImportAccountOptionsScreen())
 
-        const recoverOption = result.current.options.find(
+        const recoverOption = optionsOf(result.current).find(
             o => o.testID === 'import_account_options_recover_wallet_button',
         )!
 
@@ -288,7 +304,7 @@ describe('useImportAccountOptionsScreen', () => {
             const { result } = renderHook(() => useImportAccountOptionsScreen())
 
             await act(async () => {
-                await result.current.options
+                await optionsOf(result.current)
                     .find(
                         o =>
                             o.testID ===
@@ -303,11 +319,31 @@ describe('useImportAccountOptionsScreen', () => {
         },
     )
 
+    it('takes a quantum pick from the passphrase sheet to ImportInfo without a recover event', async () => {
+        mockRequestBottomSheet.mockResolvedValueOnce('quantum')
+        const { result } = renderHook(() => useImportAccountOptionsScreen())
+
+        await act(async () => {
+            await optionsOf(result.current)
+                .find(
+                    o =>
+                        o.testID ===
+                        'import_account_options_recover_wallet_button',
+                )!
+                .onPress()
+        })
+
+        expect(trackEvent).not.toHaveBeenCalled()
+        expect(mockPush).toHaveBeenCalledWith('ImportInfo', {
+            accountType: 'quantum',
+        })
+    })
+
     it('stays put when the import options sheet is dismissed', async () => {
         mockRequestBottomSheet.mockResolvedValueOnce(undefined)
         const { result } = renderHook(() => useImportAccountOptionsScreen())
 
-        const recoverOption = result.current.options.find(
+        const recoverOption = optionsOf(result.current).find(
             o => o.testID === 'import_account_options_recover_wallet_button',
         )!
 
@@ -323,7 +359,7 @@ describe('useImportAccountOptionsScreen', () => {
         const { result } = renderHook(() => useImportAccountOptionsScreen())
 
         act(() => {
-            result.current.options
+            optionsOf(result.current)
                 .find(
                     o =>
                         o.testID === 'import_account_options_recover_qr_button',
@@ -348,7 +384,7 @@ describe('useImportAccountOptionsScreen', () => {
 
         expect(result.current.isQRScannerVisible).toBe(false)
 
-        const qrOption = result.current.options.find(
+        const qrOption = optionsOf(result.current).find(
             o => o.testID === 'import_account_options_recover_qr_button',
         )!
 
@@ -362,7 +398,7 @@ describe('useImportAccountOptionsScreen', () => {
     it('Ledger BLE option navigates to LedgerPair on the only Ledger chain without asking', async () => {
         const { result } = renderHook(() => useImportAccountOptionsScreen())
 
-        const ledgerOption = result.current.options.find(
+        const ledgerOption = optionsOf(result.current).find(
             o => o.testID === 'import_account_options_pair_ledger_button',
         )!
 
@@ -388,7 +424,7 @@ describe('useImportAccountOptionsScreen', () => {
         it('asks for the chain and pairs on the one picked', async () => {
             mockRequestBottomSheet.mockResolvedValueOnce('ethereum')
             const { result } = renderHook(() => useImportAccountOptionsScreen())
-            const ledgerOption = result.current.options.find(
+            const ledgerOption = optionsOf(result.current).find(
                 o => o.testID === 'import_account_options_pair_ledger_button',
             )!
 
@@ -405,7 +441,7 @@ describe('useImportAccountOptionsScreen', () => {
         it('stays put when the chain sheet is dismissed', async () => {
             mockRequestBottomSheet.mockResolvedValueOnce(undefined)
             const { result } = renderHook(() => useImportAccountOptionsScreen())
-            const ledgerOption = result.current.options.find(
+            const ledgerOption = optionsOf(result.current).find(
                 o => o.testID === 'import_account_options_pair_ledger_button',
             )!
 
@@ -417,29 +453,60 @@ describe('useImportAccountOptionsScreen', () => {
         })
     })
 
-    it('Ledger USB option navigates to LedgerInstructions with usb transportType', async () => {
-        mockCapabilities.ledgerUsb = true
-
-        const { result } = renderHook(() => useImportAccountOptionsScreen())
-
-        const usbOption = result.current.options.find(
-            o => o.testID === 'import_account_options_pair_ledger_usb_button',
-        )!
-
-        await act(async () => {
-            usbOption.onPress()
+    describe('where Ledger USB is possible', () => {
+        beforeEach(() => {
+            mockCapabilities.ledgerUsb = true
         })
 
-        expect(mockPush).toHaveBeenCalledWith('LedgerInstructions', {
-            transportType: 'usb',
-            chainId: 'algorand',
+        const pressLedger = async (result: {
+            current: UseImportAccountOptionsScreenResult
+        }) => {
+            const ledgerOption = optionsOf(result.current).find(
+                o => o.testID === 'import_account_options_pair_ledger_button',
+            )!
+            await act(async () => {
+                ledgerOption.onPress()
+            })
+        }
+
+        it('asks for the transport, then pairs over USB when picked', async () => {
+            mockRequestBottomSheet.mockResolvedValueOnce('usb')
+            const { result } = renderHook(() => useImportAccountOptionsScreen())
+
+            await pressLedger(result)
+
+            expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
+            expect(mockPush).toHaveBeenCalledWith('LedgerInstructions', {
+                transportType: 'usb',
+                chainId: 'algorand',
+            })
+        })
+
+        it('pairs over Bluetooth when picked', async () => {
+            mockRequestBottomSheet.mockResolvedValueOnce('ble')
+            const { result } = renderHook(() => useImportAccountOptionsScreen())
+
+            await pressLedger(result)
+
+            expect(mockPush).toHaveBeenCalledWith('LedgerPair', {
+                chainId: 'algorand',
+            })
+        })
+
+        it('stays put when the transport sheet is dismissed', async () => {
+            mockRequestBottomSheet.mockResolvedValueOnce(undefined)
+            const { result } = renderHook(() => useImportAccountOptionsScreen())
+
+            await pressLedger(result)
+
+            expect(mockPush).not.toHaveBeenCalled()
         })
     })
 
     it('Pera Web option navigates to the Pera Web import wizard', () => {
         const { result } = renderHook(() => useImportAccountOptionsScreen())
 
-        const peraWebOption = result.current.options.find(
+        const peraWebOption = optionsOf(result.current).find(
             o => o.testID === 'import_account_options_pera_web_button',
         )!
 
@@ -453,7 +520,7 @@ describe('useImportAccountOptionsScreen', () => {
     it('ASB option navigates to the ASB recovery wizard', () => {
         const { result } = renderHook(() => useImportAccountOptionsScreen())
 
-        const asbOption = result.current.options.find(
+        const asbOption = optionsOf(result.current).find(
             o => o.testID === 'import_account_options_asb_button',
         )!
 
@@ -467,7 +534,7 @@ describe('useImportAccountOptionsScreen', () => {
     it('ASB option keeps its Algorand Secure Backup title when cloud backup is off', () => {
         const { result } = renderHook(() => useImportAccountOptionsScreen())
 
-        const asbOption = result.current.options.find(
+        const asbOption = optionsOf(result.current).find(
             o => o.testID === 'import_account_options_asb_button',
         )!
 
@@ -481,7 +548,7 @@ describe('useImportAccountOptionsScreen', () => {
 
         const { result } = renderHook(() => useImportAccountOptionsScreen())
 
-        const asbOption = result.current.options.find(
+        const asbOption = optionsOf(result.current).find(
             o => o.testID === 'import_account_options_asb_button',
         )!
 
@@ -496,8 +563,8 @@ describe('useImportAccountOptionsScreen', () => {
 
         const { result } = renderHook(() => useImportAccountOptionsScreen())
 
-        const testIDs = result.current.options.map(o => o.testID)
-        const asbOption = result.current.options.find(
+        const testIDs = optionsOf(result.current).map(o => o.testID)
+        const asbOption = optionsOf(result.current).find(
             o => o.testID === 'import_account_options_asb_button',
         )!
 
@@ -515,7 +582,7 @@ describe('useImportAccountOptionsScreen', () => {
 
         const { result } = renderHook(() => useImportAccountOptionsScreen())
 
-        const testIDs = result.current.options.map(o => o.testID)
+        const testIDs = optionsOf(result.current).map(o => o.testID)
 
         expect(testIDs).not.toContain('import_account_options_asb_button')
         expect(testIDs).toContain(
@@ -529,7 +596,7 @@ describe('useImportAccountOptionsScreen', () => {
 
         // Open the QR scanner
         act(() => {
-            result.current.options
+            optionsOf(result.current)
                 .find(
                     o =>
                         o.testID === 'import_account_options_recover_qr_button',
@@ -635,80 +702,34 @@ describe('useImportAccountOptionsScreen', () => {
         expect(mockPush).not.toHaveBeenCalled()
     })
 
-    describe('quantum import option', () => {
-        it('is absent when the quantum accounts flag is off', () => {
-            setQuantumEnabled(false)
+    it('offers no quantum row on the screen itself; the passphrase sheet does', () => {
+        setQuantumEnabled(true)
 
-            const { result } = renderHook(() => useImportAccountOptionsScreen())
+        const { result } = renderHook(() => useImportAccountOptionsScreen())
 
-            const testIDs = result.current.options.map(o => o.testID)
-
-            expect(testIDs).not.toContain('import_account_quantum_button')
-        })
-
-        it('is present with the quantum title when the flag is on and adds exactly one option', () => {
-            setQuantumEnabled(false)
-            const { result: offResult } = renderHook(() =>
-                useImportAccountOptionsScreen(),
-            )
-            const offLength = offResult.current.options.length
-
-            setQuantumEnabled(true)
-            const { result: onResult } = renderHook(() =>
-                useImportAccountOptionsScreen(),
-            )
-
-            const quantumOption = onResult.current.options.find(
-                o => o.testID === 'import_account_quantum_button',
-            )
-
-            expect(quantumOption).toBeDefined()
-            expect(quantumOption!.titleKey).toBe(
-                'onboarding.import_account_options.quantum_title',
-            )
-            expect(onResult.current.options).toHaveLength(offLength + 1)
-        })
-
-        it('navigates to ImportAccount with the quantum account type on press', () => {
-            setQuantumEnabled(true)
-
-            const { result } = renderHook(() => useImportAccountOptionsScreen())
-
-            const quantumOption = result.current.options.find(
-                o => o.testID === 'import_account_quantum_button',
-            )!
-
-            act(() => {
-                quantumOption.onPress()
-            })
-
-            expect(mockPush).toHaveBeenCalledWith('ImportAccount', {
-                accountType: 'quantum',
-            })
-        })
+        expect(
+            optionsOf(result.current).some(o => o.testID.includes('quantum')),
+        ).toBe(false)
     })
 
     describe('cloud backup import option', () => {
         it('is absent when the cloud backup flag is off', () => {
             const { result } = renderHook(() => useImportAccountOptionsScreen())
 
-            const testIDs = result.current.options.map(o => o.testID)
+            const testIDs = optionsOf(result.current).map(o => o.testID)
 
             expect(testIDs).not.toContain(
                 'import_account_options_cloud_backup_button',
             )
         })
 
-        it('sits directly above the ASB option when the flag is on', () => {
+        it('sits right after the passphrase row when the flag is on', () => {
             mockCloudBackupFlag.enabled = true
 
             const { result } = renderHook(() => useImportAccountOptionsScreen())
 
-            const testIDs = result.current.options.map(o => o.testID)
-
-            expect(testIDs.indexOf('import_account_options_asb_button')).toBe(
-                testIDs.indexOf('import_account_options_cloud_backup_button') +
-                    1,
+            expect(result.current.mainOptions[1]?.testID).toBe(
+                'import_account_options_cloud_backup_button',
             )
         })
 
@@ -770,7 +791,7 @@ describe('useImportAccountOptionsScreen', () => {
         it('is absent with Algorand alone', () => {
             const { result } = renderHook(() => useImportAccountOptionsScreen())
 
-            expect(result.current.options.map(o => o.testID)).not.toContain(
+            expect(optionsOf(result.current).map(o => o.testID)).not.toContain(
                 PRIVATE_KEY_BUTTON,
             )
         })
@@ -779,7 +800,7 @@ describe('useImportAccountOptionsScreen', () => {
             registerEthereumChain()
             const { result } = renderHook(() => useImportAccountOptionsScreen())
 
-            const option = result.current.options.find(
+            const option = optionsOf(result.current).find(
                 o => o.testID === PRIVATE_KEY_BUTTON,
             )
             act(() => option!.onPress!())
@@ -795,7 +816,7 @@ describe('useImportAccountOptionsScreen', () => {
 
             const { result } = renderHook(() => useImportAccountOptionsScreen())
 
-            expect(result.current.options.map(o => o.testID)).not.toContain(
+            expect(optionsOf(result.current).map(o => o.testID)).not.toContain(
                 PRIVATE_KEY_BUTTON,
             )
         })
@@ -804,7 +825,7 @@ describe('useImportAccountOptionsScreen', () => {
     describe('capability gating', () => {
         const optionIds = (): string[] => {
             const { result } = renderHook(() => useImportAccountOptionsScreen())
-            return result.current.options.map(o => o.testID)
+            return optionsOf(result.current).map(o => o.testID)
         }
 
         it('removes the Pera Web row, and only it, when peraWebImport is off', () => {
@@ -823,7 +844,7 @@ describe('useImportAccountOptionsScreen', () => {
             )
         })
 
-        it('removes both Ledger rows when the ledger capability is off', () => {
+        it('removes the Ledger row when the ledger capability is off', () => {
             mockCapabilities.ledgerUsb = true
             const before = optionIds()
             expect(before).toContain(
@@ -836,9 +857,6 @@ describe('useImportAccountOptionsScreen', () => {
             expect(after).not.toContain(
                 'import_account_options_pair_ledger_button',
             )
-            expect(after).not.toContain(
-                'import_account_options_pair_ledger_usb_button',
-            )
         })
 
         it('keeps every other row enabled', () => {
@@ -846,71 +864,68 @@ describe('useImportAccountOptionsScreen', () => {
 
             const { result } = renderHook(() => useImportAccountOptionsScreen())
 
-            expect(result.current.options.every(o => !o.isDisabled)).toBe(true)
+            expect(optionsOf(result.current).every(o => !o.isDisabled)).toBe(
+                true,
+            )
         })
     })
 
     describe('Ledger transport support', () => {
-        const findOption = (
-            result: { current: UseImportAccountOptionsScreenResult },
-            testID: string,
-        ) => result.current.options.find(o => o.testID === testID)!
+        const ledgerOption = (result: {
+            current: UseImportAccountOptionsScreenResult
+        }) =>
+            optionsOf(result.current).find(
+                o => o.testID === 'import_account_options_pair_ledger_button',
+            )!
 
-        beforeEach(() => {
-            mockCapabilities.ledgerUsb = true
-        })
-
-        it('keeps both Ledger rows enabled until the browser check resolves', () => {
+        it('keeps the Ledger row enabled until the browser check resolves', () => {
             const { result } = renderHook(() => useImportAccountOptionsScreen())
 
-            expect(
-                findOption(result, 'import_account_options_pair_ledger_button')
-                    .isDisabled,
-            ).toBe(false)
-            expect(
-                findOption(
-                    result,
-                    'import_account_options_pair_ledger_usb_button',
-                ).isDisabled,
-            ).toBe(false)
+            expect(ledgerOption(result).isDisabled).toBe(false)
         })
 
-        it('disables Bluetooth pairing, and says why, in a browser without Web Bluetooth', () => {
+        it('keeps the Ledger row enabled while either transport works', () => {
+            mockCapabilities.ledgerUsb = true
             mockLedgerSupport.isReady = true
             mockLedgerSupport.supportedTransportTypes = ['usb']
 
             const { result } = renderHook(() => useImportAccountOptionsScreen())
-            const ble = findOption(
-                result,
-                'import_account_options_pair_ledger_button',
-            )
 
-            expect(ble.isDisabled).toBe(true)
-            expect(ble.descriptionKey).toBe(
-                'onboarding.import_account_options.pair_ledger_unsupported_description',
-            )
-            expect(
-                findOption(
-                    result,
-                    'import_account_options_pair_ledger_usb_button',
-                ).isDisabled,
-            ).toBe(false)
+            expect(ledgerOption(result).isDisabled).toBe(false)
         })
 
-        it('disables USB pairing in a browser without WebHID', () => {
+        it('disables the Ledger row, and says why, when no offered transport works', () => {
+            mockLedgerSupport.isReady = true
+            mockLedgerSupport.supportedTransportTypes = ['usb']
+
+            const { result } = renderHook(() => useImportAccountOptionsScreen())
+
+            expect(ledgerOption(result).isDisabled).toBe(true)
+            expect(ledgerOption(result).descriptionKey).toBe(
+                'onboarding.import_account_options.pair_ledger_unsupported_description',
+            )
+        })
+
+        it('tells the transport sheet which transports this browser supports', async () => {
+            mockCapabilities.ledgerUsb = true
             mockLedgerSupport.isReady = true
             mockLedgerSupport.supportedTransportTypes = ['ble']
 
             const { result } = renderHook(() => useImportAccountOptionsScreen())
-            const usb = findOption(
-                result,
-                'import_account_options_pair_ledger_usb_button',
-            )
 
-            expect(usb.isDisabled).toBe(true)
-            expect(usb.descriptionKey).toBe(
-                'onboarding.import_account_options.pair_ledger_unsupported_description',
-            )
+            await act(async () => {
+                ledgerOption(result).onPress()
+            })
+
+            const sheet = mockRequestBottomSheet.mock.calls[0]![0] as {
+                contents: {
+                    props: { isBleAvailable: boolean; isUsbAvailable: boolean }
+                }
+            }
+            expect(sheet.contents.props).toEqual({
+                isBleAvailable: true,
+                isUsbAvailable: false,
+            })
         })
     })
 })

@@ -25,8 +25,9 @@ vi.mock('@react-navigation/native', () => ({
 }))
 
 vi.mock('@hooks/useIsMounted', () => ({ useIsMounted: () => () => true }))
+const mockPushWebView = vi.fn()
 vi.mock('@modules/webview', () => ({
-    useWebView: () => ({ pushWebView: vi.fn() }),
+    useWebView: () => ({ pushWebView: mockPushWebView }),
     withLanguageParam: (url: string, locale: string) => `${url}?lang=${locale}`,
 }))
 vi.mock('@hooks/useModalState', () => ({
@@ -112,5 +113,17 @@ describe('useOnboardingScreen — double-tap guard', () => {
 
         expect(mockPush).toHaveBeenCalledTimes(1)
         expect(mockPush).toHaveBeenCalledWith('ImportAccountOptions')
+    })
+
+    it('opens the terms of service from the footer link', () => {
+        const { result } = renderHook(() => useOnboardingScreen())
+
+        act(() => {
+            result.current.handleTermsPress()
+        })
+
+        expect(mockPushWebView).toHaveBeenCalledWith(
+            expect.objectContaining({ id: 'terms-of-service' }),
+        )
     })
 })

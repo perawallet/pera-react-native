@@ -46,15 +46,17 @@ Import Lists Every Recovery Method
     [Tags]    id:onboarding.import.options    p0    rc
     Start Without Wallet
     Open Import Options From Welcome
-    Page Should Contain Element    ${IMPORT_OPTION_RECOVER_QR}
     Page Should Contain Element    ${IMPORT_OPTION_PAIR_LEDGER}
+    Reveal Other Import Options
     Scroll Until Present    ${IMPORT_OPTION_PERA_WEB}
     Scroll Until Present    ${IMPORT_OPTION_ASB}
+    Scroll Until Present    ${IMPORT_OPTION_RECOVER_QR}
 
 Algorand Secure Backup Option Opens Its Import Flow
     [Tags]    id:onboarding.import.asb-entry    p1
     Start Without Wallet
     Open Import Options From Welcome
+    Reveal Other Import Options
     Scroll Until Tappable    ${IMPORT_OPTION_ASB}
     Tap    ${IMPORT_OPTION_ASB}
     Wait Until Page Contains Element    ${ASB_INFO_CONTINUE}    timeout=20s
@@ -130,6 +132,8 @@ New Account Is Added To The Existing Wallet
     Start With New Wallet
     Open Add Account
     Tap    ${ADD_ACCOUNT_ADD_BUTTON}
+    Wait Until Page Contains Element    ${ADD_ACCOUNT_MULTICHAIN_BUTTON}    timeout=20s
+    Tap    ${ADD_ACCOUNT_MULTICHAIN_BUTTON}
     Name Account And Finish    ${SECOND_ACCOUNT_NAME}
     Selected Account Should Be Named    ${SECOND_ACCOUNT_NAME}
 
