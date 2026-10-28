@@ -33,6 +33,7 @@ import noReactNativeImportsInPackages from './lanekeep/rules/no-react-native-imp
 import noRetiredQuantumCustody from './lanekeep/rules/no-retired-quantum-custody.js'
 import noSecretInLogs from './lanekeep/rules/no-secret-in-logs.js'
 import noSnapshotTests from './lanekeep/rules/no-snapshot-tests.js'
+import noSplitSentences from './lanekeep/rules/no-split-sentences.js'
 import noTypographyInStyles from './lanekeep/rules/no-typography-in-styles.js'
 import noUnusedStyleKeys from './lanekeep/rules/no-unused-style-keys.js'
 import noUnusedTranslationKeys from './lanekeep/rules/no-unused-translation-keys.js'
@@ -106,6 +107,7 @@ export default defineConfig({
         localeKeyParity,
         translationKeyExists,
         noUnusedTranslationKeys,
+        noSplitSentences,
         noI18nIntegritySuppressions,
         pqLibrarySeam,
         secp256k1LibrarySeam,
