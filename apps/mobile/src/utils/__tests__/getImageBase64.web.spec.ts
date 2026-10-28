@@ -33,11 +33,44 @@ describe('getImageBase64 (web)', () => {
             'unused',
         )
 
-        expect(fetch).toHaveBeenCalledWith('https://example.com/nft.png')
+        expect(fetch).toHaveBeenCalledWith('https://example.com/nft.png', {
+            signal: expect.anything(),
+        })
         // jsdom's FileReader produces a real data URL; just assert the
         // "data:...;base64," prefix was stripped and something was returned.
         expect(result.length).toBeGreaterThan(0)
         expect(result).not.toContain('data:')
+
+        vi.unstubAllGlobals()
+    })
+
+    it('bounds the download by a 30 s deadline', async () => {
+        const signal = new AbortController().signal
+        const timeout = vi
+            .spyOn(AbortSignal, 'timeout')
+            .mockReturnValueOnce(signal)
+        const fetchMock = vi.fn().mockResolvedValue({
+            ok: true,
+            blob: () => Promise.resolve(new Blob(['bytes'])),
+        })
+        vi.stubGlobal('fetch', fetchMock)
+
+        await getImageBase64('https://example.com/nft.png', 'unused')
+
+        expect(timeout).toHaveBeenCalledWith(30_000)
+        expect(fetchMock.mock.calls[0]![1]).toMatchObject({ signal })
+
+        vi.unstubAllGlobals()
+    })
+
+    it('rejects when the deadline aborts the download', async () => {
+        const timedOut = new Error('The operation timed out')
+        timedOut.name = 'TimeoutError'
+        vi.stubGlobal('fetch', vi.fn().mockRejectedValue(timedOut))
+
+        await expect(
+            getImageBase64('https://example.com/nft.png', 'unused'),
+        ).rejects.toBe(timedOut)
 
         vi.unstubAllGlobals()
     })

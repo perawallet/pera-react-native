@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+const IMAGE_COPY_TIMEOUT_MS = 30_000
+
 /**
  * Web/extension twin of `getImageBase64`. expo-file-system's `File`/`Paths`
  * API is a native-only no-op stub on web (every method just warns and
@@ -24,7 +26,9 @@ export const getImageBase64 = async (
     imageUrl: string,
     _cacheKey: string,
 ): Promise<string> => {
-    const response = await fetch(imageUrl)
+    const response = await fetch(imageUrl, {
+        signal: AbortSignal.timeout(IMAGE_COPY_TIMEOUT_MS),
+    })
     if (!response.ok) {
         throw new Error(`Failed to fetch image (${response.status})`)
     }

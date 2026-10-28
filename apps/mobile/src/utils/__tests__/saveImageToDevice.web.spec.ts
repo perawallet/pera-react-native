@@ -51,11 +51,38 @@ describe('saveImageToDevice (web)', () => {
             'collectible_12345.png',
         )
 
-        expect(fetch).toHaveBeenCalledWith('https://example.com/full.png')
+        expect(fetch).toHaveBeenCalledWith('https://example.com/full.png', {
+            signal: expect.anything(),
+        })
         expect(mockAnchor.href).toBe(mockObjectUrl)
         expect(mockAnchor.download).toBe('collectible_12345.png')
         expect(mockAnchor.click).toHaveBeenCalledTimes(1)
         expect(URL.revokeObjectURL).toHaveBeenCalledWith(mockObjectUrl)
+    })
+
+    it('bounds the download by a 120 s deadline', async () => {
+        const signal = new AbortController().signal
+        const timeout = vi
+            .spyOn(AbortSignal, 'timeout')
+            .mockReturnValueOnce(signal)
+
+        await saveImageToDevice('https://example.com/full.png', 'file.png')
+
+        expect(timeout).toHaveBeenCalledWith(120_000)
+        expect(vi.mocked(fetch).mock.calls[0]![1]).toMatchObject({ signal })
+    })
+
+    it('rejects on a timed-out download without triggering a download', async () => {
+        const timedOut = new Error('The operation timed out')
+        timedOut.name = 'TimeoutError'
+        vi.stubGlobal('fetch', vi.fn().mockRejectedValue(timedOut))
+
+        await expect(
+            saveImageToDevice('https://example.com/full.png', 'file.png'),
+        ).rejects.toBe(timedOut)
+
+        expect(mockAnchor.click).not.toHaveBeenCalled()
+        expect(URL.createObjectURL).not.toHaveBeenCalled()
     })
 
     it('throws when the fetch response is not ok, without triggering a download', async () => {

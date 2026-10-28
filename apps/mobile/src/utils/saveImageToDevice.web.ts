@@ -10,6 +10,9 @@
  limitations under the License
  */
 
+// The signal also aborts blob(), so this must outlast a large video on a slow link.
+const MEDIA_SAVE_TIMEOUT_MS = 120_000
+
 /**
  * Web/extension twin of `saveImageToDevice` (same technique as
  * shareFile.web.ts). There's no filesystem or MediaLibrary on the web —
@@ -23,7 +26,9 @@ export const saveImageToDevice = async (
     url: string,
     filename: string,
 ): Promise<void> => {
-    const response = await fetch(url)
+    const response = await fetch(url, {
+        signal: AbortSignal.timeout(MEDIA_SAVE_TIMEOUT_MS),
+    })
     if (!response.ok) {
         throw new Error(`Failed to fetch media (${response.status})`)
     }

@@ -15,6 +15,7 @@ import { config } from '@perawallet/wallet-core-config'
 import { ensureDeviceInstallationID } from '../device-installation-id'
 
 const MEASUREMENT_PROTOCOL_URL = 'https://www.google-analytics.com/mp/collect'
+const ANALYTICS_SEND_TIMEOUT_MS = 10_000
 
 /**
  * Sends events via GA4's Measurement Protocol (a plain HTTPS POST) instead of
@@ -67,6 +68,7 @@ export class ChromeAnalyticsService implements AnalyticsService {
                     client_id: clientId,
                     events: [{ name: key, params: payload ?? {} }],
                 }),
+                signal: AbortSignal.timeout(ANALYTICS_SEND_TIMEOUT_MS),
             })
         } catch {
             // Best-effort — analytics must never surface an error to the
