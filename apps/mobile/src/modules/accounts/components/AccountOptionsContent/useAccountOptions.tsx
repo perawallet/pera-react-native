@@ -223,7 +223,7 @@ export const useAccountOptions = ({
         })
         onClose()
         const details: SharedAccountDetails = {
-            name: account.name ?? '',
+            name: sheetTitle,
             address,
             participantCount: multisigParameters.addresses.length,
             threshold: multisigParameters.threshold,
@@ -244,6 +244,7 @@ export const useAccountOptions = ({
         address,
         multisigParameters,
         accountChainId,
+        sheetTitle,
     ])
 
     const handleOpenRename = useCallback(async () => {
