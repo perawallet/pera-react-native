@@ -12,6 +12,7 @@
 
 export * from './models'
 export { assessRecipient } from './assess-recipient'
+export { assessRequestAddress } from './assess-request-address'
 export {
     detectSuspectedPoisoning,
     findImitatedAddress,
