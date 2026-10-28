@@ -16,6 +16,9 @@ import { LoadingView } from '@components/LoadingView'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { usePreventScreenCapture } from '@hooks/usePreventScreenCapture'
+import { usePassphraseReach } from '../../hooks'
+import { PassphraseCompatibilityRow } from '../PassphraseCompatibilityRow'
+import { PassphraseReachList } from '../PassphraseReachList'
 import { useViewPassphraseContent } from './useViewPassphraseContent'
 import { useStyles } from './styles'
 
@@ -36,6 +39,8 @@ export const ViewPassphraseContent = ({
     const { wordIndices, isLoading, error } = useViewPassphraseContent({
         address,
     })
+    const { isMultiNetwork, linkedAddresses } = usePassphraseReach({ address })
+    const hasWords = !isLoading && !error && (wordIndices?.length ?? 0) > 0
 
     usePreventScreenCapture(SCREEN_CAPTURE_TAG, true)
 
@@ -133,6 +138,15 @@ export const ViewPassphraseContent = ({
                             })}
                         </PWView>
                     )}
+
+                {hasWords && isMultiNetwork && (
+                    <>
+                        <PassphraseReachList
+                            linkedAddresses={linkedAddresses}
+                        />
+                        <PassphraseCompatibilityRow />
+                    </>
+                )}
             </PWScrollView>
         </PWView>
     )

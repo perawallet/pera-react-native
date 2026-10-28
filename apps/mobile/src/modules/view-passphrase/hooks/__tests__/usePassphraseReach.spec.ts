@@ -58,9 +58,7 @@ vi.mock('@perawallet/wallet-core-chain-contract', async importOriginal => ({
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     chainDisplayNameOf: (chainId: string) =>
-        ({ algorand: 'Algorand', ethereum: 'Ethereum', base: 'Base' })[
-            chainId
-        ],
+        ({ algorand: 'Algorand', ethereum: 'Ethereum', base: 'Base' })[chainId],
     useSwitchedOffChainIds: () => mocks.switchedOff,
 }))
 
@@ -128,7 +126,9 @@ describe('usePassphraseReach', () => {
     })
 
     it('is multi-network for an HD account enabled on Algorand alone, listing only that address', () => {
-        const solo = hdAccount('solo', 0, { algorand: { address: 'ALGO-SOLO' } })
+        const solo = hdAccount('solo', 0, {
+            algorand: { address: 'ALGO-SOLO' },
+        })
         mocks.accounts = [solo]
         mocks.optionsByAccount.set('solo', [
             { chainId: 'algorand', isEnabled: true, address: 'ALGO-SOLO' },
@@ -164,9 +164,10 @@ describe('usePassphraseReach', () => {
             usePassphraseReach({ address: 'ALGO-SIB' }),
         )
 
-        expect(result.current.linkedAddresses.map(row => row.address)).toEqual(
-            ['algorand:ALGO-SIB', 'ethereum:0xsib'],
-        )
+        expect(result.current.linkedAddresses.map(row => row.address)).toEqual([
+            'algorand:ALGO-SIB',
+            'ethereum:0xsib',
+        ])
     })
 
     it('leaves out a chain that is switched off', () => {
@@ -176,9 +177,9 @@ describe('usePassphraseReach', () => {
             usePassphraseReach({ address: 'ALGO-ROOT' }),
         )
 
-        expect(
-            result.current.linkedAddresses.map(row => row.chainId),
-        ).toEqual(['algorand'])
+        expect(result.current.linkedAddresses.map(row => row.chainId)).toEqual([
+            'algorand',
+        ])
     })
 
     it('is single-network when the seed reaches one chain only', () => {

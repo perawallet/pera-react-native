@@ -40,7 +40,9 @@ export const useViewPassphraseFlow = (): UseViewPassphraseFlowResult => {
 
             const ack =
                 await requestBottomSheet<PassphraseAcknowledgeContentResult>({
-                    contents: <PassphraseAcknowledgeContent address={address} />,
+                    contents: (
+                        <PassphraseAcknowledgeContent address={address} />
+                    ),
                     options: {
                         size: 'modal',
                         enablePanDownToClose: true,
