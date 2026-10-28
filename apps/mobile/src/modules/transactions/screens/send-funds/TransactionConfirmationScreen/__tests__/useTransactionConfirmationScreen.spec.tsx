@@ -191,6 +191,15 @@ vi.mock('@hooks/useToast', () => ({
 
 vi.mock('@hooks/useLanguage')
 
+const mockChainName = vi.hoisted(() => ({
+    value: undefined as string | undefined,
+}))
+const mockUseChainNameWhenMultiChain = vi.hoisted(() => vi.fn())
+
+vi.mock('@hooks/useChainNameWhenMultiChain', () => ({
+    useChainNameWhenMultiChain: mockUseChainNameWhenMultiChain,
+}))
+
 vi.mock('@modules/transactions/hooks', async () => {
     const { useSelectedScope } =
         await import('@perawallet/wallet-core-chain-shared')
@@ -293,6 +302,10 @@ describe('useTransactionConfirmationScreen', () => {
 
     beforeEach(() => {
         vi.clearAllMocks()
+        mockChainName.value = undefined
+        mockUseChainNameWhenMultiChain.mockImplementation(
+            () => mockChainName.value,
+        )
         recipientSafety.current = {
             ...recipientSafety.current,
             isConfirmBlocked: false,
@@ -1167,6 +1180,29 @@ describe('useTransactionConfirmationScreen', () => {
             )
 
             expect(result.current.isQuantumFee).toBe(true)
+        })
+    })
+
+    describe('network row', () => {
+        it("names the send's chain when the wallet says to", () => {
+            mockChainName.value = 'Algorand'
+
+            const { result } = renderHook(() =>
+                useTransactionConfirmationScreen(),
+            )
+
+            expect(mockUseChainNameWhenMultiChain).toHaveBeenCalledWith(
+                'algorand',
+            )
+            expect(result.current.networkName).toBe('Algorand')
+        })
+
+        it('has no network to show otherwise', () => {
+            const { result } = renderHook(() =>
+                useTransactionConfirmationScreen(),
+            )
+
+            expect(result.current.networkName).toBeUndefined()
         })
     })
 })

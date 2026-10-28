@@ -30,6 +30,7 @@ export const ethereumChainUi: ChainUi | undefined = {
     sendConfirmation: {
         FeeSection: EthereumSendFeeSection,
     },
+    addressSearchPlaceholder: i18nKey('address_entry.search_placeholder_evm'),
     wrongNetworkAddress: {
         titleKey: i18nKey('address_entry.wrong_network.title.evm'),
         bodyKey: i18nKey('address_entry.wrong_network.body.evm'),
