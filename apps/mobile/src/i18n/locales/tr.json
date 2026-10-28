@@ -501,8 +501,10 @@
         "acknowledge": {
             "title": "Gizli tut. Güvende tut.",
             "description": "Aşağıdakileri onayla ve kabul et:",
+            "scope": "Bu kurtarma passphrase’i tüm ağlardaki hesaplarını kontrol eder: {{networks}}.",
             "row_screen": "Ekranımı kimse görmüyor.",
             "row_share": "Kurtarma passphrase’imi biriyle paylaşırsam tüm fonlarımı kaybetme riskim var.",
+            "row_share_all_networks": "Kurtarma passphrase’imi biriyle paylaşırsam tüm ağlardaki fonlarımı kaybetme riskim var.",
             "row_lose": "Kurtarma passphrase’imi kaybedip cüzdanıma erişimimi de kaybedersem, fonlarım kalıcı olarak kaybolur.",
             "row_pera": "Pera çalışanları kurtarma passphrase’imi ASLA istemez.",
             "cta_reveal": "Kurtarma passphrase’ini göster",
@@ -512,7 +514,14 @@
             "title": "Passphrase",
             "body": "Bu kelimeleri, karşılarındaki numaralara göre doğru sırayla kaydettiğinden emin ol.",
             "error_title": "Passphrase alınamadı",
-            "error_body": "Bir şeyler ters gitti. Lütfen tekrar dene."
+            "error_body": "Bir şeyler ters gitti. Lütfen tekrar dene.",
+            "reach_title": "Bu passphrase şunlara erişim sağlar"
+        },
+        "compatibility": {
+            "title": "Bu passphrase’i başka cüzdanlarda kullanmak",
+            "evm": "Ethereum uyumlu ağlar: MetaMask gibi standart BIP39 cüzdanları bu kelimeleri içe aktarabilir. İlk hesabının adresi aynı olur. Sonradan eklediğin hesaplar, bu cüzdanların varsayılan olarak taramadığı bir türetme yolu kullanabilir.",
+            "algorand": "Algorand: Pera’da ve 24 kelimelik Algorand HD cüzdanlarını destekleyen diğer cüzdanlarda çalışır. 25 kelimelik eski Algorand cüzdanları bunu içe aktaramaz.",
+            "warning": "Bu kelimelere sahip olan herkes tüm ağlardaki fonlarını kontrol eder. Onları asla bir web sitesine girme ve kimseyle paylaşma."
         }
     },
     "reveal_private_key": {

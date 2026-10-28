@@ -501,8 +501,10 @@
         "acknowledge": {
             "title": "Mantenha-a secreta e segura.",
             "description": "Confirme e reconheça o seguinte:",
+            "scope": "Esta passphrase de recuperação controla suas contas em todas as redes: {{networks}}.",
             "row_screen": "Ninguém pode ver a minha tela.",
             "row_share": "Corro o risco de perder todos os meus fundos se eu compartilhar minha passphrase de recuperação com alguém.",
+            "row_share_all_networks": "Corro o risco de perder todos os meus fundos em todas as redes se eu compartilhar minha passphrase de recuperação com alguém.",
             "row_lose": "Meus fundos serão perdidos permanentemente se eu perder minha passphrase de recuperação e perder o acesso à minha wallet.",
             "row_pera": "Funcionários da Pera NUNCA vão pedir minha passphrase de recuperação.",
             "cta_reveal": "Revelar passphrase de recuperação",
@@ -512,7 +514,14 @@
             "title": "Passphrase",
             "body": "Anote estas palavras na ordem correta, usando os números correspondentes.",
             "error_title": "Não foi possível obter a passphrase",
-            "error_body": "Algo deu errado. Tente novamente."
+            "error_body": "Algo deu errado. Tente novamente.",
+            "reach_title": "Esta passphrase dá acesso a"
+        },
+        "compatibility": {
+            "title": "Usar esta passphrase em outras wallets",
+            "evm": "Redes compatíveis com Ethereum: wallets BIP39 padrão, como a MetaMask, podem importar estas palavras. O endereço da sua primeira conta será o mesmo. Contas adicionadas depois podem usar um caminho de derivação que essas wallets não verificam por padrão.",
+            "algorand": "Algorand: funciona na Pera e em outras wallets compatíveis com wallets HD de Algorand de 24 palavras. Wallets de Algorand antigas, de 25 palavras, não conseguem importá-la.",
+            "warning": "Qualquer pessoa que tenha estas palavras controla seus fundos em todas as redes. Nunca as digite em um site nem as compartilhe com ninguém."
         }
     },
     "reveal_private_key": {

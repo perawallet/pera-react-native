@@ -501,8 +501,10 @@
         "acknowledge": {
             "title": "Mantenla en secreto. Mantenla a salvo.",
             "description": "Confirma que reconoces lo siguiente:",
+            "scope": "Esta passphrase de recuperación controla tus cuentas en todas las redes: {{networks}}.",
             "row_screen": "Nadie puede ver mi pantalla.",
             "row_share": "Me arriesgo a perder todos mis fondos si comparto mi passphrase de recuperación con alguien.",
+            "row_share_all_networks": "Me arriesgo a perder todos mis fondos en todas las redes si comparto mi passphrase de recuperación con alguien.",
             "row_lose": "Mis fondos se perderán de forma permanente si pierdo mi passphrase de recuperación y pierdo el acceso a mi wallet.",
             "row_pera": "Los empleados de Pera NUNCA me pedirán mi passphrase de recuperación.",
             "cta_reveal": "Mostrar passphrase de recuperación",
@@ -512,7 +514,14 @@
             "title": "Passphrase",
             "body": "Asegúrate de anotar estas palabras en el orden correcto, usando los números correspondientes.",
             "error_title": "No se pudo obtener la passphrase",
-            "error_body": "Se produjo un error. Vuelve a intentarlo."
+            "error_body": "Se produjo un error. Vuelve a intentarlo.",
+            "reach_title": "Esta passphrase da acceso a"
+        },
+        "compatibility": {
+            "title": "Usar esta passphrase en otras wallets",
+            "evm": "Redes compatibles con Ethereum: las wallets BIP39 estándar, como MetaMask, pueden importar estas palabras. La dirección de tu primera cuenta coincidirá. Las cuentas que agregaste después pueden usar una ruta de derivación que esas wallets no buscan de forma predeterminada.",
+            "algorand": "Algorand: funciona en Pera y en otras wallets compatibles con las wallets HD de Algorand de 24 palabras. Las wallets de Algorand antiguas de 25 palabras no pueden importarla.",
+            "warning": "Cualquiera que tenga estas palabras controla tus fondos en todas las redes. Nunca las introduzcas en un sitio web ni las compartas con nadie."
         }
     },
     "reveal_private_key": {

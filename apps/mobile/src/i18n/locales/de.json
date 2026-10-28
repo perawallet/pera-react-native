@@ -501,8 +501,10 @@
         "acknowledge": {
             "title": "Geheim halten. Sicher aufbewahren.",
             "description": "Bestätige Folgendes:",
+            "scope": "Diese Wiederherstellungsphrase kontrolliert deine Konten in allen Netzwerken: {{networks}}.",
             "row_screen": "Niemand kann meinen Bildschirm sehen.",
             "row_share": "Ich riskiere den Verlust meines gesamten Guthabens, wenn ich meine Wiederherstellungsphrase mit jemandem teile.",
+            "row_share_all_networks": "Ich riskiere den Verlust meines gesamten Guthabens in allen Netzwerken, wenn ich meine Wiederherstellungsphrase mit jemandem teile.",
             "row_lose": "Mein Guthaben ist unwiderruflich verloren, wenn ich meine Wiederherstellungsphrase verliere und den Zugriff auf mein Wallet verliere.",
             "row_pera": "Pera-Mitarbeiter werden NIEMALS nach meiner Wiederherstellungsphrase fragen.",
             "cta_reveal": "Wiederherstellungsphrase anzeigen",
@@ -512,7 +514,14 @@
             "title": "Passphrase",
             "body": "Notiere diese Wörter unbedingt in der richtigen Reihenfolge anhand der entsprechenden Nummern.",
             "error_title": "Passphrase konnte nicht abgerufen werden",
-            "error_body": "Etwas ist schiefgelaufen. Bitte versuche es erneut."
+            "error_body": "Etwas ist schiefgelaufen. Bitte versuche es erneut.",
+            "reach_title": "Diese Passphrase gibt Zugriff auf"
+        },
+        "compatibility": {
+            "title": "Passphrase in anderen Wallets verwenden",
+            "evm": "Ethereum-kompatible Netzwerke: Standard-BIP39-Wallets wie MetaMask können diese Wörter importieren. Die Adresse deines ersten Kontos stimmt überein. Später hinzugefügte Konten verwenden eventuell einen Ableitungspfad, den diese Wallets standardmäßig nicht durchsuchen.",
+            "algorand": "Algorand: funktioniert in Pera und anderen Wallets, die Algorand-HD-Wallets mit 24 Wörtern unterstützen. Ältere Algorand-Wallets mit 25 Wörtern können sie nicht importieren.",
+            "warning": "Wer diese Wörter hat, kontrolliert dein Guthaben in allen Netzwerken. Gib sie niemals auf einer Website ein und teile sie mit niemandem."
         }
     },
     "reveal_private_key": {
