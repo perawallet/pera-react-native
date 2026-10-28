@@ -240,6 +240,7 @@ describe('an account deleted on one device and re-backed-up on another', () => {
                 address: ADDRESS,
                 type: BackupAccountType.watch,
                 needsUpdate: false,
+                chains: [],
             },
         ])
 
