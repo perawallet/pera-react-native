@@ -13,15 +13,12 @@
 import { useMemo } from 'react'
 import {
     accountChainOptions,
-    findAccountByAddressOn,
+    findAccountByAnyChainAddress,
     hdDiscoveryChains,
     hdIndexOf,
     useAccountsStore,
 } from '@perawallet/wallet-core-accounts'
-import {
-    LEGACY_CHAIN_ID,
-    type ChainId,
-} from '@perawallet/wallet-core-chain-contract'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import {
     chainDisplayNameOf,
     useSwitchedOffChainIds,
@@ -36,12 +33,11 @@ export type PassphraseLinkedAddress = {
 }
 
 export type UsePassphraseReachParams = {
-    /** The account's Algorand address, as the view-passphrase flow carries it. */
+    /** Any address the account holds, such as the one the view-passphrase flow carries. */
     address: string
 }
 
 export type UsePassphraseReachResult = {
-    /** Whether the account's words control it on more than one network. */
     isMultiNetwork: boolean
     networkNames: string[]
     linkedAddresses: PassphraseLinkedAddress[]
@@ -57,9 +53,7 @@ export const usePassphraseReach = ({
     address,
 }: UsePassphraseReachParams): UsePassphraseReachResult => {
     const account = useAccountsStore(
-        state =>
-            findAccountByAddressOn(state.accounts, LEGACY_CHAIN_ID, address) ??
-            null,
+        state => findAccountByAnyChainAddress(state.accounts, address) ?? null,
     )
     const switchedOff = useSwitchedOffChainIds()
 

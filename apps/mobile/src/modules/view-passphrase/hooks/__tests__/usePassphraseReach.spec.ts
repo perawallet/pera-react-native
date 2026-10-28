@@ -30,11 +30,15 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
     >()),
     useAccountsStore: (select: (state: { accounts: unknown[] }) => unknown) =>
         select({ accounts: mocks.accounts }),
-    findAccountByAddressOn: (
+    findAccountByAnyChainAddress: (
         accounts: WalletAccount[],
-        _chainId: string,
         address: string,
-    ) => accounts.find(account => account.chains.algorand?.address === address),
+    ) =>
+        accounts.find(account =>
+            Object.values(account.chains).some(
+                entry => entry?.address === address,
+            ),
+        ),
     hdDiscoveryChains: () => mocks.seedChains,
     accountChainOptions: (
         account: WalletAccount,
