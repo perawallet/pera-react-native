@@ -37,6 +37,15 @@ describe('toSiteHost', () => {
         )
     })
 
+    it('reads a host made of a long run of dots in linear time', () => {
+        const dots = '.'.repeat(100_000)
+
+        expect(toSiteHost(`https://a${dots}b`)?.ascii).toBe(`a${dots}b`)
+        expect(toSiteHost(`https://evil.example${dots}`)?.ascii).toBe(
+            'evil.example',
+        )
+    })
+
     it('accepts a bare host', () => {
         expect(toSiteHost('tinyman.org')?.ascii).toBe('tinyman.org')
     })

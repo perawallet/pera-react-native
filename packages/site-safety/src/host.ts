@@ -19,6 +19,14 @@ const SCHEME = /^[a-z][a-z0-9+.-]*:\/\//i
 const IPV4 = /^\d{1,3}(\.\d{1,3}){3}$/
 const ASCII_HOST = /^[a-z0-9_.-]+$/
 
+// A scan, not `/\.+$/`: the input is dApp-supplied, and that regex backtracks
+// quadratically on a long run of dots that isn't at the end.
+const withoutTrailingDots = (value: string): string => {
+    let end = value.length
+    while (end > 0 && value[end - 1] === '.') end--
+    return value.slice(0, end)
+}
+
 /**
  * Both forms of a URL's host. The punycode conversion is done here because
  * React Native's URL polyfill does no IDNA. IP literals, `localhost` and other
@@ -32,9 +40,9 @@ export const toSiteHost = (
     const authority = withoutScheme.split(/[/?#]/)[0] ?? ''
     const hostAndPort = authority.split('@').pop() ?? ''
     if (hostAndPort.startsWith('[')) return undefined
-    const host = (hostAndPort.split(':')[0] ?? '')
-        .toLowerCase()
-        .replace(/\.+$/, '')
+    const host = withoutTrailingDots(
+        (hostAndPort.split(':')[0] ?? '').toLowerCase(),
+    )
     if (!host.includes('.') || IPV4.test(host)) return undefined
 
     try {
