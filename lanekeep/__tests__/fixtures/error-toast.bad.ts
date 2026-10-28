@@ -48,3 +48,7 @@ export async function nestedFunctionInCatch(): Promise<void> {
         later()
     }
 }
+
+export function withAsConst(): void {
+    showToast({ type: 'error' as const, title: 'failed' })
+}

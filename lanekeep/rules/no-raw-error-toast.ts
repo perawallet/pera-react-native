@@ -44,8 +44,13 @@ export default defineRule({
             const [key, value] = ctx.namedChildren(pair)
             if (key === undefined || value === undefined) return false
             if (ctx.text(key) !== 'type') return false
+            const literal =
+                ctx.kind(value) === 'as_expression'
+                    ? (ctx.namedChildren(value)[0] ?? value)
+                    : value
             return (
-                ctx.text(value) === "'error'" || ctx.text(value) === '"error"'
+                ctx.text(literal) === "'error'" ||
+                ctx.text(literal) === '"error"'
             )
         })
         if (!hasErrorType) return

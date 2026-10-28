@@ -20,6 +20,7 @@ describe('pera/no-raw-error-toast', () => {
             'error-toast.bad.ts:34',
             'error-toast.bad.ts:38',
             'error-toast.bad.ts:46',
+            'error-toast.bad.ts:53',
         ])
     })
 
