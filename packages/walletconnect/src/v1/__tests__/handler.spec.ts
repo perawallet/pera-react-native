@@ -1509,6 +1509,22 @@ describe('walletconnect v1 handler behaviour', () => {
         expect((await records())[0].origin).toEqual(origin)
     })
 
+    it('carries the requester origin handed to pair onto the proposal', async () => {
+        const { handler, onProposal } = await setup()
+        await handler.pair(V1_URI, {
+            origin: {
+                source: 'in-app',
+                requesterOrigin: 'https://dapp.example',
+            },
+        })
+        lastConnector().emit('session_request', null, handshake(4160))
+        await flush()
+
+        expect(onProposal.mock.calls[0][0].requesterOrigin).toBe(
+            'https://dapp.example',
+        )
+    })
+
     it('approves without an origin when pair was given none', async () => {
         const { connector, records } = await connect()
 
