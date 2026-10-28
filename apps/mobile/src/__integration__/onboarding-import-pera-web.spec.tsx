@@ -311,9 +311,9 @@ describe('Flow: Pera Web Import — Loading → Result pipeline', () => {
 })
 
 describe('Entry: QR scan → deeplink dispatch → Loading pipeline', () => {
-    // useDeepLink reaches hooks that call useQueryClient. renderHook makes
-    // its own tree so we wrap it with a QueryClientProvider.
-    const hookQueryClient = createTestQueryClient()
+    // useDeepLink reaches hooks that call useQueryClient; a fresh client per
+    // test keeps one test's cache out of the next.
+    let hookQueryClient = createTestQueryClient()
     const HookWrapper = ({ children }: { children: React.ReactNode }) => (
         <ThemeProvider theme={getTestTheme()}>
             <QueryClientProvider client={hookQueryClient}>
@@ -323,6 +323,7 @@ describe('Entry: QR scan → deeplink dispatch → Loading pipeline', () => {
     )
 
     beforeEach(() => {
+        hookQueryClient = createTestQueryClient()
         resetTestKeystore()
         useAccountsStore.getState().setAccounts([])
         useOnboardingStore.getState().reset()

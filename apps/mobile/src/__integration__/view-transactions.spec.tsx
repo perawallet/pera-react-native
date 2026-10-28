@@ -32,7 +32,6 @@ import {
 import { QueryClientProvider } from '@tanstack/react-query'
 import { ThemeProvider } from '@rneui/themed'
 import { http, HttpResponse } from 'msw'
-import { Notifier } from 'react-native-notifier'
 
 import { server } from '@test-utils/msw-server'
 import { createTestQueryClient, getTestTheme } from '@test-utils/render'
@@ -153,7 +152,6 @@ describe('Flow: View transactions → tap into details', () => {
         resetTestKeystore()
         useAccountsStore.getState().setAccounts([ACCOUNT])
         useAccountsStore.getState().setSelectedAccountId(ACCOUNT.id)
-        vi.mocked(Notifier.showNotification).mockClear()
 
         // Account balance row so the history hook has something to
         // anchor its query against.

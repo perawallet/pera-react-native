@@ -13,7 +13,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
-import { Notifier } from 'react-native-notifier'
 import { useCardStore } from '@perawallet/wallet-core-card'
 
 import { server } from '@test-utils/msw-server'
@@ -45,7 +44,6 @@ const renderVerify = () =>
 
 describe('card onboarding — phone verify', () => {
     beforeEach(() => {
-        vi.mocked(Notifier.showNotification).mockClear()
         const store = useCardStore.getState()
         store.resetState()
         store.setPhone({ phoneCountryCode: '44', phoneNumber: '7400846282' })

@@ -94,7 +94,7 @@ const importTestAccount = (): Promise<WalletAccount> =>
 
 const savePin = async (): Promise<void> => {
     const { result: pinHook } = renderHook(() => usePinCode())
-    await waitFor(async () => {
+    await act(async () => {
         await pinHook.current.savePin(TEST_PIN)
         expect(await pinHook.current.checkPinEnabled()).toBe(true)
     })

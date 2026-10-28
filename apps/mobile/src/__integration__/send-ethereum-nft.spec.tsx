@@ -55,7 +55,7 @@ import { kmsCore, SeedScheme } from '@perawallet/wallet-core-kms'
 import { getPendingTransactionRecords } from '@perawallet/wallet-core-transactions'
 import { server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
-import { isElementDisabled } from '@test-utils/rnw'
+import { findEnabledByTestId } from '@test-utils/rnw'
 import {
     resetTestDatabase,
     setupTestDatabase,
@@ -239,16 +239,13 @@ const renderSendConfirmationStack = () =>
     })
 
 const confirmSend = async () => {
-    const confirmButton = await screen.findByTestId(
-        'send_confirm_button',
-        {},
-        { timeout: 5000 },
-    )
-    await waitFor(() => expect(isElementDisabled(confirmButton)).toBe(false))
+    await findEnabledByTestId('send_confirm_button', { timeout: 5000 })
     // Confirm waits on the balance, fee and recipient reads; press until it answers.
     await waitFor(
         () => {
-            fireEvent.click(confirmButton)
+            // A press that lands navigates away, so the button may be gone.
+            const confirmButton = screen.queryByTestId('send_confirm_button')
+            if (confirmButton) fireEvent.click(confirmButton)
             expect(kmsCore.sign).toHaveBeenCalled()
         },
         { timeout: 5000 },
@@ -393,13 +390,9 @@ describe('Flow: send an NFT from an Ethereum account', () => {
         prefillSend(APE_ID, 1)
 
         renderSendConfirmationStack()
-        const confirmButton = await screen.findByTestId(
-            'send_confirm_button',
-            {},
-            { timeout: 5000 },
-        )
+        await screen.findByTestId('send_confirm_button', {}, { timeout: 5000 })
         await waitFor(() => {
-            fireEvent.click(confirmButton)
+            fireEvent.click(screen.getByTestId('send_confirm_button'))
             expect(Notifier.showNotification).toHaveBeenCalledWith(
                 expect.objectContaining({
                     title: 'send_funds.confirmation.fee_unavailable.title',

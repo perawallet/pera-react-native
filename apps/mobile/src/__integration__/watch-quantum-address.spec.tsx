@@ -10,9 +10,8 @@
  limitations under the License
  */
 
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
-import { Notifier } from 'react-native-notifier'
 
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
@@ -23,14 +22,14 @@ import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { useOnboardingStore } from '@modules/onboarding/hooks/useOnboardingStore'
 
-import { isElementDisabled } from '@test-utils/rnw'
+import { getInputErrorMessage, isElementDisabled } from '@test-utils/rnw'
 import { QUANTUM_TEST_ADDRESS } from './__fixtures__/quantum'
 import { addressOf } from './__fixtures__/accounts'
 
 // A quantum-derived address is a standard 58-char Algorand address (Falcon
 // derivation, not ed25519) — the watch flow is address-based and has no
 // quantum-specific branch. Using this fixture as the watch target proves
-// quantum addresses are watchable (FR-6): the resulting account must
+// quantum addresses are watchable: the resulting account must
 // persist with watch custody, NOT a quantum seed.
 const WATCH_TARGET_ADDRESS = QUANTUM_TEST_ADDRESS
 
@@ -43,7 +42,6 @@ describe('watch quantum address', () => {
         resetTestKeystore()
         useAccountsStore.getState().setAccounts([])
         useOnboardingStore.getState().reset()
-        vi.mocked(Notifier.showNotification).mockClear()
     })
 
     it('Given the watch info screen, when the user enters the quantum-derived address and finishes naming, then it persists as a watch account (not quantum)', async () => {
@@ -54,13 +52,7 @@ describe('watch quantum address', () => {
             ],
         })
 
-        // The info screen's CTA carries no testID, so it is found by its label.
-        await waitFor(() =>
-            screen.getByText('onboarding.watch_account.info_button'),
-        )
-        fireEvent.click(
-            screen.getByText('onboarding.watch_account.info_button'),
-        )
+        fireEvent.click(await screen.findByTestId('watch_info_create_button'))
 
         // WatchAccountScreen renders the address input.
         await waitFor(() => screen.getByTestId('watch_account_address_input'))
@@ -135,20 +127,21 @@ describe('watch quantum address', () => {
             ],
         })
 
-        await waitFor(() =>
-            screen.getByText('onboarding.watch_account.info_button'),
-        )
-        fireEvent.click(
-            screen.getByText('onboarding.watch_account.info_button'),
-        )
+        fireEvent.click(await screen.findByTestId('watch_info_create_button'))
 
         await waitFor(() => screen.getByTestId('watch_account_address_input'))
         fireEvent.change(screen.getByTestId('watch_account_address_input'), {
             target: { value: WATCH_TARGET_ADDRESS },
         })
 
-        // The button never enables: the duplicate guard short-circuits
-        // both the validity check and the submit handler.
+        // The submit starts disabled, so only the duplicate error proves the guard ran.
+        await waitFor(() =>
+            expect(
+                getInputErrorMessage(
+                    screen.getByTestId('watch_account_address_input'),
+                ),
+            ).toBeTruthy(),
+        )
         expect(
             isElementDisabled(
                 screen.getByTestId('watch_account_submit_button'),

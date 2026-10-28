@@ -35,6 +35,7 @@ import {
 import {
     buildPaymentTransaction,
     buildTransactionSignRequest,
+    drainPendingSignRequests,
     renderSignReview,
     fireEvent,
     screen,
@@ -53,25 +54,10 @@ import { registerFakeLedgerProvider } from './__fixtures__/ledger'
 // getAddress echoes the same address so connection verification passes.
 const LEDGER_ADDRESS = REVIEW_RECEIVER_ADDRESS
 
-type Deferred<T> = {
-    promise: Promise<T>
-    resolve: (value: T) => void
-    reject: (error: Error) => void
-}
-const createDeferred = <T,>(): Deferred<T> => {
-    let resolveFn!: (value: T) => void
-    let rejectFn!: (error: Error) => void
-    const promise = new Promise<T>((res, rej) => {
-        resolveFn = res
-        rejectFn = rej
-    })
-    return { promise, resolve: resolveFn, reject: rejectFn }
-}
-
-let pendingSignature: Deferred<Uint8Array> | null = null
+let pendingSignature: PromiseWithResolvers<Uint8Array> | null = null
 
 const blockOnSignature = (): Promise<Uint8Array> => {
-    pendingSignature = createDeferred<Uint8Array>()
+    pendingSignature = Promise.withResolvers<Uint8Array>()
     return pendingSignature.promise
 }
 
@@ -110,6 +96,7 @@ describe('Flow: hardware (Ledger) signing review', () => {
         await seedAlgoAsset('mainnet')
         resetTestKeystore()
         useAccountsStore.getState().setAccounts([ledgerAccount])
+        drainPendingSignRequests()
     })
 
     it('surfaces the awaiting-approval overlay on confirm and delivers once the device signs', async () => {
@@ -148,7 +135,7 @@ describe('Flow: hardware (Ledger) signing review', () => {
 
         // Release the device signature → signing completes and the result
         // is delivered to the callback transport.
-        expect(pendingSignature).not.toBeNull()
+        await waitFor(() => expect(pendingSignature).not.toBeNull())
         pendingSignature!.resolve(new Uint8Array(64))
 
         await waitFor(
@@ -213,5 +200,65 @@ describe('Flow: hardware (Ledger) signing review', () => {
         )
         expect(error).not.toHaveBeenCalled()
         expect(approve).not.toHaveBeenCalled()
+    })
+
+    it('Given the device rejected the transaction, when the user taps Retry and the device then signs, then the request is delivered', async () => {
+        const { request, approve, reject, error } = buildTransactionSignRequest(
+            {
+                sourceType: 'webview',
+                txs: [
+                    buildPaymentTransaction({
+                        sender: LEDGER_ADDRESS,
+                        receiver: REVIEW_SIGNER_ADDRESS,
+                    }),
+                ],
+            },
+        )
+
+        const { confirm } = renderSignReview(request)
+
+        await waitFor(
+            () => {
+                expect(screen.getByTestId('signing-confirm-slide')).toBeTruthy()
+            },
+            { timeout: 10_000 },
+        )
+
+        confirm()
+
+        await waitFor(
+            () => {
+                expect(pendingSignature).not.toBeNull()
+            },
+            { timeout: 10_000 },
+        )
+        const rejectedSignature = pendingSignature!
+        rejectedSignature.reject(new LedgerUserRejectedError())
+
+        await waitFor(
+            () => {
+                expect(screen.getByText('ledger.signing.retry')).toBeTruthy()
+            },
+            { timeout: 10_000 },
+        )
+        fireEvent.click(screen.getByText('ledger.signing.retry'))
+
+        await waitFor(
+            () => {
+                expect(pendingSignature).not.toBe(rejectedSignature)
+            },
+            { timeout: 10_000 },
+        )
+        expect(approve).not.toHaveBeenCalled()
+        pendingSignature!.resolve(new Uint8Array(64))
+
+        await waitFor(
+            () => {
+                expect(approve).toHaveBeenCalled()
+            },
+            { timeout: 10_000 },
+        )
+        expect(reject).not.toHaveBeenCalled()
+        expect(error).not.toHaveBeenCalled()
     })
 })

@@ -11,7 +11,13 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { fireEvent, renderHook, screen, waitFor } from '@testing-library/react'
+import {
+    act,
+    fireEvent,
+    renderHook,
+    screen,
+    waitFor,
+} from '@testing-library/react'
 
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
@@ -94,7 +100,7 @@ describe('Flow: PIN lifecycle from Settings → Security', () => {
 
     it('Given a PIN is already configured, when the user flips the PIN toggle OFF, then the PinEditView mounts in verify mode (so the user must prove they know the current PIN before disabling it)', async () => {
         const { result: pinHook } = renderHook(() => usePinCode())
-        await waitFor(async () => {
+        await act(async () => {
             await pinHook.current.savePin(TEST_PIN)
             expect(await pinHook.current.checkPinEnabled()).toBe(true)
         })
@@ -120,7 +126,7 @@ describe('Flow: PIN lifecycle from Settings → Security', () => {
 
     it('Given a PIN is already configured, when the user taps the change-PIN row, then the PinEditView mounts in change_old mode (verify the existing PIN before swapping)', async () => {
         const { result: pinHook } = renderHook(() => usePinCode())
-        await waitFor(async () => {
+        await act(async () => {
             await pinHook.current.savePin(TEST_PIN)
             expect(await pinHook.current.checkPinEnabled()).toBe(true)
         })

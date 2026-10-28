@@ -70,9 +70,7 @@ const renderAlgo25ImportFromOnboarding = () =>
         ],
     })
 
-// Drives the user from the Onboarding screen into the import-options bottom
-// sheet. The intermediate ImportAccountOptions screen was introduced in
-// — tapping "Import account" no longer opens the sheet directly.
+// "Import account" opens the ImportAccountOptions screen, not the sheet directly.
 const openImportOptionsSheet = async () => {
     fireEvent.click(screen.getByTestId('onboarding_import_account_button'))
     await waitFor(() =>

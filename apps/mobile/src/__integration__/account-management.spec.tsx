@@ -12,7 +12,13 @@
 
 import { useEffect } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { fireEvent, renderHook, screen, waitFor } from '@testing-library/react'
+import {
+    act,
+    fireEvent,
+    renderHook,
+    screen,
+    waitFor,
+} from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 import * as Clipboard from 'expo-clipboard'
 import { Notifier } from 'react-native-notifier'
@@ -43,7 +49,10 @@ import {
 import { useKMS, type Algo25KeyResult } from '@perawallet/wallet-core-kms'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { getKeystoreStore } from '@perawallet/wallet-extension-provider'
-import { useNotificationPreferences } from '@perawallet/wallet-core-messages'
+import {
+    useNotificationPreferences,
+    useNotificationsStore,
+} from '@perawallet/wallet-core-messages'
 import { AccountMenu } from '@modules/accounts/components/AccountMenu/AccountMenu'
 import { AccountSelection } from '@modules/accounts'
 import { AccountOptionsContent } from '@modules/accounts/components/AccountOptionsContent'
@@ -84,7 +93,6 @@ const AccountOptionsHost = ({ account }: { account: WalletAccount }) => {
 }
 
 import {
-    closestPressable,
     longPress,
     queryPressableByText,
     waitPastDoublePressGuard,
@@ -110,22 +118,6 @@ const ACCOUNT_B: WalletAccount = {
     name: 'Cold backup',
 }
 
-// Helper: tap the row whose visible text matches the supplied account
-// name. AccountMenu renders each account inside a PWTouchableOpacity
-// (mocked as <button>) wrapping AccountWithBalance — there's no per-row
-// testid in production, so we walk the DOM instead.
-const tapAccountRow = (accountName: string) => {
-    const matches = screen.getAllByText((_, node) =>
-        (node?.textContent ?? '').includes(accountName),
-    )
-    const leaf = matches.find(el => el.children.length === 0) ?? matches[0]
-    const button = closestPressable(leaf)
-    if (!button) {
-        throw new Error(`Row not found for account "${accountName}"`)
-    }
-    fireEvent.click(button)
-}
-
 // i18n falls back to the key string under the integration setup, so buttons
 // are matched by key. (Several remove-flow buttons don't carry testids.)
 const tapButtonByLabel = (i18nKey: string) => {
@@ -141,23 +133,11 @@ const tapOption = (id: string) => {
     fireEvent.click(screen.getByTestId(`account_option_${id}`))
 }
 
-// Notification preferences are persisted via a Zustand store inside
-// `@perawallet/wallet-core-messages`; the store itself isn't re-exported
-// from the package's public entry, so we drive resets through the hook.
-const resetNotificationPreferences = () => {
-    const { result } = renderHook(() => useNotificationPreferences())
-    // Re-enable everything that any prior test disabled so subsequent
-    // tests start with a clean enabled-by-default state.
-    result.current.disabledAccounts.forEach(addr => {
-        result.current.setAccountEnabled(addr, true)
-    })
-}
-
 describe('Flow: Account management', () => {
     beforeEach(() => {
         resetTestKeystore()
         useAccountsStore.getState().setAccounts([])
-        resetNotificationPreferences()
+        useNotificationsStore.getState().resetState()
         vi.mocked(Notifier.showNotification).mockClear()
         vi.mocked(Clipboard.setStringAsync).mockClear()
         // Other tests in this file (rename, remove) also piggyback a
@@ -169,7 +149,6 @@ describe('Flow: Account management', () => {
 
     afterEach(() => {
         useAccountsStore.getState().setAccounts([])
-        resetNotificationPreferences()
         // Reset the card session so an activated state doesn't leak into other
         // tests (it flips the Pera Card row between its activate/connected forms).
         useCardSessionStore.getState().setAuthenticated(false)
@@ -194,7 +173,9 @@ describe('Flow: Account management', () => {
             'AccountMenuHost',
         )
 
-        tapAccountRow(ACCOUNT_B.name as string)
+        fireEvent.click(
+            screen.getByTestId(`account_switcher_row_${addressOf(ACCOUNT_B)}`),
+        )
 
         await waitFor(() => {
             expect(useAccountsStore.getState().selectedAccountId).toBe(
@@ -333,7 +314,7 @@ describe('Flow: Account management', () => {
         // need both present to assert they end up gone.
         const { result: kms } = renderHook(() => useKMS())
         let key: Algo25KeyResult | null = null
-        await waitFor(async () => {
+        await act(async () => {
             key = await kms.current.createAlgo25Key({
                 mnemonicIndices: ALGO25_TEST_MNEMONIC_INDICES,
             })

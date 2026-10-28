@@ -24,7 +24,6 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { useReceiveFundsStore } from '@modules/transactions/hooks/receive-funds/useReceiveFunds'
 
-import { closestPressable } from '@test-utils/rnw'
 import { ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS } from './__fixtures__/onboarding'
 import { addressOf } from './__fixtures__/accounts'
 import {
@@ -116,23 +115,11 @@ describe('Flow: Receive funds', () => {
             additionalScreens: [{ name: 'QRView', component: QRViewScreen }],
         })
 
-        // Each row is a PWTouchableOpacity (mocked as a button) wrapping
-        // AccountWithBalance — it doesn't carry a per-row testid in
-        // production. Find the row by walking the DOM for the leaf-most
-        // span containing the visible name, then click the wrapping
-        // button. (`getAllByText` with a function matcher returns every
-        // ancestor; we narrow to the one with no element descendants.)
-        const matches = screen.getAllByText((_, node) =>
-            (node?.textContent ?? '').includes(
-                SECONDARY_ACCOUNT.name as string,
+        fireEvent.click(
+            screen.getByTestId(
+                `receive_account_row-${addressOf(SECONDARY_ACCOUNT)}`,
             ),
         )
-        const leaf = matches.find(el => el.children.length === 0) ?? matches[0]
-        const secondaryRow = closestPressable(leaf)
-        if (!secondaryRow) {
-            throw new Error('Secondary account row not found')
-        }
-        fireEvent.click(secondaryRow)
 
         // Navigation pushes the QR screen for the picked account; the
         // react-native-qrcode-svg mock renders under the hardcoded testid.
