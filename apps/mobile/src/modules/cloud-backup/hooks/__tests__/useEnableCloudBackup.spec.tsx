@@ -21,12 +21,14 @@ type MutationCallbacks = {
 }
 const {
     showToastMock,
+    errorToastMock,
     resetMock,
     mutateMock,
     finishCameraTabMock,
     capturedOptions,
 } = vi.hoisted(() => ({
     showToastMock: vi.fn(),
+    errorToastMock: vi.fn(),
     finishCameraTabMock: vi.fn(),
     resetMock: vi.fn(),
     mutateMock: vi.fn(),
@@ -47,7 +49,10 @@ vi.mock('@perawallet/wallet-core-backup', () => ({
 }))
 
 vi.mock('@hooks/useToast', () => ({
-    useToast: () => ({ showToast: showToastMock }),
+    useToast: () => ({
+        showToast: showToastMock,
+        errorToast: errorToastMock,
+    }),
 }))
 
 vi.mock('@hooks/useLanguage')
@@ -98,11 +103,9 @@ describe('useEnableCloudBackup', () => {
 
         act(() => capturedOptions.value?.onError?.(new Error('network down')))
 
-        expect(showToastMock).toHaveBeenCalledWith(
-            expect.objectContaining({
-                title: 'cloud_backup.enable.error',
-                type: 'error',
-            }),
+        expect(errorToastMock).toHaveBeenCalledWith(
+            'cloud_backup.enable.error',
+            '',
         )
         expect(resetMock).not.toHaveBeenCalled()
         expect(finishCameraTabMock).not.toHaveBeenCalled()

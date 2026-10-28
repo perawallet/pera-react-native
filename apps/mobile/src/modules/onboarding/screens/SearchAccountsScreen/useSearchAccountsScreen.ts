@@ -54,7 +54,7 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
         useRoute<RouteProp<OnboardingStackParamList, 'SearchAccounts'>>()
     const params = route.params
     const { t } = useLanguage()
-    const { showToast } = useToast()
+    const { showToast, errorToast } = useToast()
     const navigation = useAppNavigation()
     const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const { discoverAccounts } = useAccountDiscovery(scope)
@@ -257,12 +257,11 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
             if ('mode' in params && params.mode === 'import') {
                 cancelImport()
             }
-            // lanekeep-ignore-next-line pera/no-error-toast-in-catch reason: import_account.failed_* names this step; an unrecognized error would fall through showError to the generic errors.general.* copy
-            showToast({
-                type: 'error',
-                title: t('onboarding.import_account.failed_title'),
-                body: t('onboarding.import_account.failed_body'),
-            })
+            // Not showError: an unrecognised error would fall through to generic copy instead of this step's.
+            errorToast(
+                t('onboarding.import_account.failed_title'),
+                t('onboarding.import_account.failed_body'),
+            )
             navigation.goBack()
         }
     }, [
@@ -274,6 +273,7 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
         navigation,
         t,
         showToast,
+        errorToast,
         exitAccountFlow,
         setSelectedAccountId,
         buildHdWalletAccount,

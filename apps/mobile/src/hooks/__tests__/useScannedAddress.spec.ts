@@ -23,7 +23,7 @@ import { registerEthereumChain } from '@test-utils/chain-fixtures'
 import { registerDeeplinkAdapters } from '@test-utils/deeplink-adapters'
 import { useScannedAddress } from '../useScannedAddress'
 
-const mockShowToast = vi.fn()
+const mockErrorToast = vi.fn()
 
 vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({
@@ -33,7 +33,7 @@ vi.mock('@hooks/useLanguage', () => ({
 }))
 
 vi.mock('@hooks/useToast', () => ({
-    useToast: () => ({ showToast: mockShowToast }),
+    useToast: () => ({ errorToast: mockErrorToast }),
 }))
 
 const ALGORAND_ADDRESS =
@@ -57,7 +57,7 @@ describe('useScannedAddress', () => {
         const { result } = renderHook(() => useScannedAddress(CHAIN_IDS))
 
         expect(result.current(ALGORAND_ADDRESS)).toBe(ALGORAND_ADDRESS)
-        expect(mockShowToast).not.toHaveBeenCalled()
+        expect(mockErrorToast).not.toHaveBeenCalled()
     })
 
     it('returns the address a same-chain URI names', () => {
@@ -66,18 +66,16 @@ describe('useScannedAddress', () => {
         expect(result.current(`algorand://${ALGORAND_ADDRESS}?amount=1`)).toBe(
             ALGORAND_ADDRESS,
         )
-        expect(mockShowToast).not.toHaveBeenCalled()
+        expect(mockErrorToast).not.toHaveBeenCalled()
     })
 
     it('names the chain when the address belongs to another one', () => {
         const { result } = renderHook(() => useScannedAddress(CHAIN_IDS))
 
         expect(result.current(ETHEREUM_ADDRESS)).toBeNull()
-        expect(mockShowToast).toHaveBeenCalledWith(
-            expect.objectContaining({
-                type: 'error',
-                body: 'address_entry.other_chain_qr_body:Ethereum',
-            }),
+        expect(mockErrorToast).toHaveBeenCalledWith(
+            expect.any(String),
+            'address_entry.other_chain_qr_body:Ethereum',
             { delayLength: 'short' },
         )
     })
@@ -86,7 +84,7 @@ describe('useScannedAddress', () => {
         const { result } = renderHook(() => useScannedAddress(CHAIN_IDS))
 
         expect(result.current('perawallet://app/home')).toBeNull()
-        expect(mockShowToast).toHaveBeenCalledTimes(1)
+        expect(mockErrorToast).toHaveBeenCalledTimes(1)
     })
 
     // Without the delay the toast animates in while the scanner's native Modal
@@ -96,8 +94,9 @@ describe('useScannedAddress', () => {
 
         result.current('perawallet://app/home')
 
-        expect(mockShowToast).toHaveBeenCalledWith(
-            expect.objectContaining({ type: 'error' }),
+        expect(mockErrorToast).toHaveBeenCalledWith(
+            expect.any(String),
+            expect.any(String),
             { delayLength: 'short' },
         )
     })

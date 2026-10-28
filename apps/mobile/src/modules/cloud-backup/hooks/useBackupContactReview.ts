@@ -69,7 +69,7 @@ const TOAST_KEY: Record<
 
 export const useBackupContactReview = (): UseBackupContactReviewResult => {
     const { t } = useLanguage()
-    const { showToast } = useToast()
+    const { showToast, errorToast } = useToast()
     const { showError } = useErrorToast()
     const busyItems = useBackupSyncActivityStore(state => state.busyItems)
     const storedContacts = useContactsStore(state => state.contacts)
@@ -118,11 +118,7 @@ export const useBackupContactReview = (): UseBackupContactReviewResult => {
                 showError(error)
                 return
             }
-            showToast({
-                title: t(TOAST_KEY[action].error),
-                body: '',
-                type: 'error',
-            })
+            errorToast(t(TOAST_KEY[action].error), '')
         },
     })
 

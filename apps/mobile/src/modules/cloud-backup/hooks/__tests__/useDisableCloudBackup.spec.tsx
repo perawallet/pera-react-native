@@ -19,14 +19,19 @@ type MutationCallbacks<TData> = {
     onSuccess?: (data: TData) => void
     onError?: (error: Error) => void
 }
-const { showToastMock, resetMock, mutateMock, capturedOptions } = vi.hoisted(
-    () => ({
-        showToastMock: vi.fn(),
-        resetMock: vi.fn(),
-        mutateMock: vi.fn(),
-        capturedOptions: { value: null as MutationCallbacks<void> | null },
-    }),
-)
+const {
+    showToastMock,
+    errorToastMock,
+    resetMock,
+    mutateMock,
+    capturedOptions,
+} = vi.hoisted(() => ({
+    showToastMock: vi.fn(),
+    errorToastMock: vi.fn(),
+    resetMock: vi.fn(),
+    mutateMock: vi.fn(),
+    capturedOptions: { value: null as MutationCallbacks<void> | null },
+}))
 
 vi.mock('@react-navigation/native', () => ({
     useNavigation: () => ({ reset: resetMock }),
@@ -40,7 +45,10 @@ vi.mock('@perawallet/wallet-core-backup', () => ({
 }))
 
 vi.mock('@hooks/useToast', () => ({
-    useToast: () => ({ showToast: showToastMock }),
+    useToast: () => ({
+        showToast: showToastMock,
+        errorToast: errorToastMock,
+    }),
 }))
 
 vi.mock('@hooks/useLanguage')
@@ -75,11 +83,9 @@ describe('useDisableCloudBackup', () => {
 
         act(() => capturedOptions.value?.onError?.(new Error('keystore down')))
 
-        expect(showToastMock).toHaveBeenCalledWith(
-            expect.objectContaining({
-                title: 'cloud_backup.turn_off.error',
-                type: 'error',
-            }),
+        expect(errorToastMock).toHaveBeenCalledWith(
+            'cloud_backup.turn_off.error',
+            '',
         )
         expect(resetMock).not.toHaveBeenCalled()
     })

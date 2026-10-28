@@ -69,16 +69,12 @@ const useVerificationPairs = (): VerificationPairs => {
 
 const useWrongAnswerFeedback = (): (() => void) => {
     const { t } = useLanguage()
-    const { showToast } = useToast()
+    const { errorToast } = useToast()
 
     return useCallback(() => {
         void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error)
-        showToast({
-            title: t('cloud_backup.verify.error_message'),
-            body: '',
-            type: 'error',
-        })
-    }, [showToast, t])
+        errorToast(t('cloud_backup.verify.error_message'), '')
+    }, [errorToast, t])
 }
 
 type UseCloudBackupVerifyScreenResult = {

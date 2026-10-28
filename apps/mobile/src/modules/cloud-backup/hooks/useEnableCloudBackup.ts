@@ -25,7 +25,7 @@ type UseEnableCloudBackupResult = {
 
 export const useEnableCloudBackup = (): UseEnableCloudBackupResult => {
     const { t } = useLanguage()
-    const { showToast } = useToast()
+    const { showToast, errorToast } = useToast()
     const navigation =
         useNavigation<NativeStackNavigationProp<CloudBackupStackParamList>>()
     const { finishCameraTab } = useFinishCameraTab()
@@ -44,11 +44,7 @@ export const useEnableCloudBackup = (): UseEnableCloudBackupResult => {
             finishCameraTab()
         },
         onError: () => {
-            showToast({
-                title: t('cloud_backup.enable.error'),
-                body: '',
-                type: 'error',
-            })
+            errorToast(t('cloud_backup.enable.error'), '')
         },
     })
 

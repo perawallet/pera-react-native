@@ -175,8 +175,9 @@ vi.mock('@perawallet/wallet-core-connections', async importOriginal => ({
 }))
 
 const showToast = vi.fn()
+const errorToast = vi.fn()
 vi.mock('@hooks/useToast', () => ({
-    useToast: () => ({ showToast }),
+    useToast: () => ({ showToast, errorToast }),
 }))
 
 type SheetRequest = {
@@ -276,6 +277,7 @@ describe('useConnectionsProvider', () => {
         requestBottomSheet.mockImplementation(() => Promise.resolve(undefined))
         dismissBottomSheet.mockClear()
         showToast.mockClear()
+        errorToast.mockClear()
     })
 
     afterEach(() => {
@@ -712,7 +714,7 @@ describe('useConnectionsProvider', () => {
                 scoped('client-1'),
             )
 
-            const [{ body }] = showToast.mock.calls[0] as [{ body: string }]
+            const [, body] = errorToast.mock.calls[0] as [string, string]
             expect(body).toBe(
                 i18n.t('walletconnect.request.quantum_fee_delivery_failed'),
             )

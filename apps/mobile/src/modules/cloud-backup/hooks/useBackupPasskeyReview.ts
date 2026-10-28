@@ -65,7 +65,7 @@ const TOAST_KEY: Record<
 
 export const useBackupPasskeyReview = (): UseBackupPasskeyReviewResult => {
     const { t } = useLanguage()
-    const { showToast } = useToast()
+    const { showToast, errorToast } = useToast()
     const { showError } = useErrorToast()
     const busyItems = useBackupSyncActivityStore(state => state.busyItems)
     const { passkeys, isLoading } = useProvenPasskeysQuery()
@@ -110,11 +110,7 @@ export const useBackupPasskeyReview = (): UseBackupPasskeyReviewResult => {
                 showError(error)
                 return
             }
-            showToast({
-                title: t(TOAST_KEY[action].error),
-                body: '',
-                type: 'error',
-            })
+            errorToast(t(TOAST_KEY[action].error), '')
         },
     })
 

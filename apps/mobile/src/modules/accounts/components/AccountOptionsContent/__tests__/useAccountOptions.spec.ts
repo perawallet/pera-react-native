@@ -41,7 +41,10 @@ import {
 const { mockCopyToClipboard } = vi.hoisted(() => ({
     mockCopyToClipboard: vi.fn(),
 }))
-const { mockShowToast } = vi.hoisted(() => ({ mockShowToast: vi.fn() }))
+const { mockShowToast, mockErrorToast } = vi.hoisted(() => ({
+    mockShowToast: vi.fn(),
+    mockErrorToast: vi.fn(),
+}))
 const { mockNavigate } = vi.hoisted(() => ({ mockNavigate: vi.fn() }))
 const { mockIsAccountEnabled, mockSetAccountEnabled } = vi.hoisted(() => ({
     mockIsAccountEnabled: vi.fn(() => true),
@@ -129,6 +132,7 @@ vi.mock('@hooks/useClipboard', () => ({
 vi.mock('@hooks/useToast', () => ({
     useToast: () => ({
         showToast: mockShowToast,
+        errorToast: mockErrorToast,
     }),
 }))
 
@@ -1112,11 +1116,9 @@ describe('useAccountOptions', () => {
             })
 
             expect(mockRemoveAccount).not.toHaveBeenCalled()
-            expect(mockShowToast).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    type: 'error',
-                    title: 'cloud_backup.accounts.keep_error',
-                }),
+            expect(mockErrorToast).toHaveBeenCalledWith(
+                'cloud_backup.accounts.keep_error',
+                '',
             )
         })
 
@@ -1156,11 +1158,9 @@ describe('useAccountOptions', () => {
             })
 
             expect(mockRemoveAccount).not.toHaveBeenCalled()
-            expect(mockShowToast).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    type: 'error',
-                    title: 'cloud_backup.accounts.delete_error',
-                }),
+            expect(mockErrorToast).toHaveBeenCalledWith(
+                'cloud_backup.accounts.delete_error',
+                '',
             )
         })
 
@@ -1183,11 +1183,9 @@ describe('useAccountOptions', () => {
             })
 
             expect(mockRemoveAccount).not.toHaveBeenCalled()
-            expect(mockShowToast).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    type: 'error',
-                    title: 'cloud_backup.accounts.delete_error',
-                }),
+            expect(mockErrorToast).toHaveBeenCalledWith(
+                'cloud_backup.accounts.delete_error',
+                '',
             )
         })
 
@@ -1356,11 +1354,10 @@ describe('useAccountOptions', () => {
             await driveFullRemoval(result)
 
             expect(mockRemoveAccount).not.toHaveBeenCalled()
-            expect(mockShowToast).toHaveBeenCalledWith({
-                title: 'account_options.remove_rekey_error_title',
-                body: 'account_options.remove_rekey_error_message',
-                type: 'error',
-            })
+            expect(mockErrorToast).toHaveBeenCalledWith(
+                'account_options.remove_rekey_error_title',
+                'account_options.remove_rekey_error_message',
+            )
         })
 
         it('blocks a rekeyed-to account before touching the backup', async () => {

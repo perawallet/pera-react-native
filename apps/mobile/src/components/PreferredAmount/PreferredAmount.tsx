@@ -18,7 +18,7 @@ import {
 } from '@components/CurrencyAmount'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { usePreferredAmount } from './usePreferredAmount'
-import type { Maybe } from '@perawallet/wallet-core-shared'
+import type { Maybe, Nullable } from '@perawallet/wallet-core-shared'
 import { displayCurrencyToAssetId } from '@perawallet/wallet-core-assets'
 import {
     LEGACY_CHAIN_ID,
@@ -66,6 +66,9 @@ type PrecomputedProps = SharedPreferredProps & {
 
 export type PreferredAmountProps = ConvertProps | PrecomputedProps
 
+// The preferred currency is ALGO or the user's fiat, and only ALGO has an asset id.
+const isFiatCurrency = (assetId: Nullable<string>) => assetId === null
+
 const precisionFor = (density: PreferredAmountDensity) =>
     density === 'compact' ? 'compact' : 'preferredFull'
 
@@ -86,16 +89,18 @@ const ConvertedPreferredAmount = ({
         usdPrice,
         scope,
     )
+    // The preferred/fallback currency is a settings value, so its ALGO ticker is
+    // trusted — translate it into the id-keyed identity.
+    const displayAssetId = displayCurrencyToAssetId(
+        displayCurrency,
+        currencyScope.chainId,
+    )
 
     return (
         <CurrencyAmount
             currency={displayCurrency}
-            // The preferred/fallback currency is a settings value, so its ALGO
-            // ticker is trusted — translate it into the id-keyed identity.
-            assetId={displayCurrencyToAssetId(
-                displayCurrency,
-                currencyScope.chainId,
-            )}
+            assetId={displayAssetId}
+            isFiat={isFiatCurrency(displayAssetId)}
             value={convertedValue}
             {...displayProps}
             isLoading={isPending || displayProps.isLoading}
@@ -111,14 +116,16 @@ const PrecomputedPreferredAmount = ({
 }: PrecomputedProps) => {
     const currencyScope = useSelectedScope(LEGACY_CHAIN_ID)
     const { preferredCurrency } = useCurrency(currencyScope)
+    const assetId = displayCurrencyToAssetId(
+        preferredCurrency,
+        currencyScope.chainId,
+    )
 
     return (
         <CurrencyAmount
             currency={preferredCurrency}
-            assetId={displayCurrencyToAssetId(
-                preferredCurrency,
-                currencyScope.chainId,
-            )}
+            assetId={assetId}
+            isFiat={isFiatCurrency(assetId)}
             value={value}
             {...displayProps}
             precision={precisionFor(density)}

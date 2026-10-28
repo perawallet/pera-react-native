@@ -29,7 +29,7 @@ const mocks = vi.hoisted(() => ({
     hasStrongBiometricOrCredential: true,
     usePasskeyMigrationBanner: vi.fn(),
     requestSheet: vi.fn(),
-    showToast: vi.fn(),
+    errorToast: vi.fn(),
     isCloudBackupEnabled: true,
     isPasskeyBackedUp: vi.fn<(s: unknown, id: string) => boolean>(() => false),
     deletePasskeyFromBackup: vi.fn(async () => 'settled'),
@@ -100,7 +100,7 @@ vi.mock('@hooks/useIsCloudBackupEnabled', () => ({
 }))
 
 vi.mock('@hooks/useToast', () => ({
-    useToast: () => ({ showToast: mocks.showToast }),
+    useToast: () => ({ errorToast: mocks.errorToast }),
 }))
 
 vi.mock('@components/ConfirmActionContent', () => ({
@@ -442,8 +442,9 @@ describe('useSettingsPasskeysScreen', () => {
 
             await requestDelete(backedUpPasskey)
 
-            expect(mocks.showToast).toHaveBeenCalledWith(
-                expect.objectContaining({ type: 'error' }),
+            expect(mocks.errorToast).toHaveBeenCalledWith(
+                'cloud_backup.passkeys.delete_error',
+                '',
             )
             expect(mocks.removePasskey).not.toHaveBeenCalled()
         })

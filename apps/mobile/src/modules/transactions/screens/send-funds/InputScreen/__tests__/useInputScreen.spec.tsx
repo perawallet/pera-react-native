@@ -164,7 +164,7 @@ vi.mock('../../useRecipientPoisoningGate', () => ({
 }))
 
 vi.mock('@hooks/useToast', () => ({
-    useToast: vi.fn(() => ({ showToast: vi.fn() })),
+    useToast: vi.fn(() => ({ errorToast: vi.fn() })),
 }))
 
 vi.mock('@hooks/useLanguage', () => ({
@@ -279,7 +279,7 @@ afterEach(() => {
 })
 
 describe('useInputScreen', () => {
-    const mockShowToast = vi.fn()
+    const mockErrorToast = vi.fn()
 
     beforeEach(() => {
         vi.clearAllMocks()
@@ -289,7 +289,7 @@ describe('useInputScreen', () => {
         mockSendFundsState.destination = undefined
         mockSendFundsState.amount = undefined
         mockSendFundsState.shouldContinueToConfirm = false
-        ;(useToast as Mock).mockReturnValue({ showToast: mockShowToast })
+        ;(useToast as Mock).mockReturnValue({ errorToast: mockErrorToast })
         ;(useSelectedAccount as Mock).mockReturnValue({
             id: 'test-account',
             custody: { kind: 'local', seed: null },
@@ -422,8 +422,9 @@ describe('useInputScreen', () => {
         await act(async () => {
             await result.current.handleNext()
         })
-        expect(mockShowToast).toHaveBeenCalledWith(
-            expect.objectContaining({ type: 'error' }),
+        expect(mockErrorToast).toHaveBeenCalledWith(
+            expect.any(String),
+            expect.any(String),
             expect.anything(),
         )
         expect(mockNavigate).not.toHaveBeenCalled()
@@ -439,7 +440,7 @@ describe('useInputScreen', () => {
         await act(async () => {
             await result.current.handleNext()
         })
-        expect(mockShowToast).not.toHaveBeenCalled()
+        expect(mockErrorToast).not.toHaveBeenCalled()
         expect(mockSetAmount).toHaveBeenCalled()
         expect(mockSetAmount.mock.calls[0][0].toString()).toBe('0')
         expect(mockNavigate).toHaveBeenCalledWith('SelectDestination')
@@ -455,8 +456,9 @@ describe('useInputScreen', () => {
         await act(async () => {
             await result.current.handleNext()
         })
-        expect(mockShowToast).toHaveBeenCalledWith(
-            expect.objectContaining({ type: 'error' }),
+        expect(mockErrorToast).toHaveBeenCalledWith(
+            expect.any(String),
+            expect.any(String),
             expect.anything(),
         )
         expect(mockNavigate).not.toHaveBeenCalled()
@@ -470,8 +472,9 @@ describe('useInputScreen', () => {
         await act(async () => {
             await result.current.handleNext()
         })
-        expect(mockShowToast).toHaveBeenCalledWith(
-            expect.objectContaining({ type: 'error' }),
+        expect(mockErrorToast).toHaveBeenCalledWith(
+            expect.any(String),
+            expect.any(String),
             expect.anything(),
         )
         expect(mockRequestBottomSheet).not.toHaveBeenCalled()
@@ -489,7 +492,7 @@ describe('useInputScreen', () => {
 
         expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
         expect(sheetProps().title).toBe('send_funds.input.min_balance_title')
-        expect(mockShowToast).not.toHaveBeenCalled()
+        expect(mockErrorToast).not.toHaveBeenCalled()
         expect(mockNavigate).not.toHaveBeenCalled()
     })
 
@@ -534,8 +537,9 @@ describe('useInputScreen', () => {
             await result.current.handleNext()
         })
 
-        expect(mockShowToast).toHaveBeenCalledWith(
-            expect.objectContaining({ type: 'error' }),
+        expect(mockErrorToast).toHaveBeenCalledWith(
+            expect.any(String),
+            expect.any(String),
             expect.anything(),
         )
         expect(mockRequestBottomSheet).not.toHaveBeenCalled()
@@ -598,7 +602,7 @@ describe('useInputScreen', () => {
 
         expect(mockSetShouldContinueToConfirm).not.toHaveBeenCalled()
         expect(mockNavigate).not.toHaveBeenCalled()
-        expect(mockShowToast).not.toHaveBeenCalled()
+        expect(mockErrorToast).not.toHaveBeenCalled()
     })
 
     // While the fee lands, the last answer (priced without it) is still shown;
@@ -802,10 +806,9 @@ describe('useInputScreen', () => {
                 await result.current.handleNext()
             })
 
-            expect(mockShowToast).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    title: 'send_funds.input.exceeds_max_title',
-                }),
+            expect(mockErrorToast).toHaveBeenCalledWith(
+                'send_funds.input.exceeds_max_title',
+                expect.any(String),
                 expect.anything(),
             )
             expect(mockSetAmount).not.toHaveBeenCalled()
@@ -865,8 +868,9 @@ describe('useInputScreen', () => {
         await act(async () => {
             await result.current.handleNext()
         })
-        expect(mockShowToast).toHaveBeenCalledWith(
-            expect.objectContaining({ type: 'error' }),
+        expect(mockErrorToast).toHaveBeenCalledWith(
+            expect.any(String),
+            expect.any(String),
             expect.anything(),
         )
         expect(mockNavigate).not.toHaveBeenCalled()

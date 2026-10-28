@@ -89,7 +89,7 @@ export const useSendDestinationRouter = () => {
     const canUseAssetInbox = useCapability({
         chain: { chainId: scope.chainId, capability: 'assetInbox' },
     })
-    const { showToast } = useToast()
+    const { errorToast } = useToast()
     const { t } = useLanguage()
     const { screenRecipient, isScreeningRecipient } =
         useRecipientPoisoningGate()
@@ -102,16 +102,15 @@ export const useSendDestinationRouter = () => {
     // user on a summary screen that can never load.
     const routeToInbox = useCallback(() => {
         if (!canUseAssetInbox || getArc59Config(scope) === null) {
-            showToast({
-                title: t('send_funds.destination.inbox_unavailable_title'),
-                body: t('send_funds.destination.inbox_unavailable_body'),
-                type: 'error',
-            })
+            errorToast(
+                t('send_funds.destination.inbox_unavailable_title'),
+                t('send_funds.destination.inbox_unavailable_body'),
+            )
             return
         }
         setSendMode('sendAssetInbox')
         navigation.navigate('AssetInboxSendSummary')
-    }, [canUseAssetInbox, scope, showToast, t, setSendMode, navigation])
+    }, [canUseAssetInbox, scope, errorToast, t, setSendMode, navigation])
 
     useEffect(() => {
         if (!pendingExternalAddress || !selectedAsset) return
@@ -147,13 +146,12 @@ export const useSendDestinationRouter = () => {
             // never validated, possibly one on another chain.
             if (!addressCodecs.get(scope.chainId).isValid(address)) {
                 setDestination(undefined)
-                showToast({
-                    title: t('send_funds.destination.invalid_address_title'),
-                    body: t('send_funds.destination.invalid_address_body', {
+                errorToast(
+                    t('send_funds.destination.invalid_address_title'),
+                    t('send_funds.destination.invalid_address_body', {
                         chain: getChainDescriptor(scope.chainId).displayName,
                     }),
-                    type: 'error',
-                })
+                )
                 return
             }
 
@@ -232,7 +230,7 @@ export const useSendDestinationRouter = () => {
             navigation,
             routeToInbox,
             scope.chainId,
-            showToast,
+            errorToast,
             t,
             screenRecipient,
         ],

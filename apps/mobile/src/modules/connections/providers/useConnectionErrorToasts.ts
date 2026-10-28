@@ -25,7 +25,7 @@ export const useConnectionErrorToasts = (
     registry: ConnectionRegistryClient,
     proposals: ProposalQueueHandle,
 ): void => {
-    const { showToast } = useToast()
+    const { errorToast } = useToast()
     const { showError } = useErrorToast()
     const { t } = useLanguage()
 
@@ -40,14 +40,9 @@ export const useConnectionErrorToasts = (
                 // toast renders on its own notifier while it is open.
                 const notifier = scannerNotifier.current ?? undefined
                 if (isFeeAdjustmentDeliveryError(error)) {
-                    showToast(
-                        {
-                            title: t('walletconnect.request.error_sheet_title'),
-                            body: t(
-                                'walletconnect.request.quantum_fee_delivery_failed',
-                            ),
-                            type: 'error',
-                        },
+                    errorToast(
+                        t('walletconnect.request.error_sheet_title'),
+                        t('walletconnect.request.quantum_fee_delivery_failed'),
                         { notifier },
                     )
                 } else {
@@ -63,6 +58,6 @@ export const useConnectionErrorToasts = (
                 // to pop a ghost sheet when the bridge revives.
                 if (scope) proposals.closeForScope(scope)
             }),
-        [registry, proposals, showError, showToast, t],
+        [registry, proposals, showError, errorToast, t],
     )
 }

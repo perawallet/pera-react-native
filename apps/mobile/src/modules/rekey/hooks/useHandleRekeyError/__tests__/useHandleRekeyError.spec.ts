@@ -13,11 +13,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
 
-const mockShowToast = vi.fn()
+const mockErrorToast = vi.fn()
 const mockShowError = vi.fn()
 
 vi.mock('@hooks/useToast', () => ({
-    useToast: () => ({ showToast: mockShowToast }),
+    useToast: () => ({ errorToast: mockErrorToast }),
 }))
 
 vi.mock('@hooks/useErrorToast', () => ({
@@ -39,8 +39,9 @@ describe('useHandleRekeyError', () => {
 
         result.current(new RekeyError('user_rejected'))
 
-        expect(mockShowToast).toHaveBeenCalledWith(
-            expect.objectContaining({ type: 'error' }),
+        expect(mockErrorToast).toHaveBeenCalledWith(
+            'rekey.signing.user_rejected_title',
+            'rekey.signing.user_rejected_body',
         )
         expect(mockShowError).not.toHaveBeenCalled()
     })
@@ -55,7 +56,7 @@ describe('useHandleRekeyError', () => {
             cause,
             'rekey.errors.submission_failed.title',
         )
-        expect(mockShowToast).not.toHaveBeenCalled()
+        expect(mockErrorToast).not.toHaveBeenCalled()
     })
 
     it('falls back to the RekeyError itself when no original cause is attached', () => {
@@ -77,6 +78,6 @@ describe('useHandleRekeyError', () => {
         result.current(error)
 
         expect(mockShowError).toHaveBeenCalledWith(error)
-        expect(mockShowToast).not.toHaveBeenCalled()
+        expect(mockErrorToast).not.toHaveBeenCalled()
     })
 })

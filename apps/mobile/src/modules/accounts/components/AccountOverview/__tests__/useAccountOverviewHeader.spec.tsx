@@ -351,6 +351,21 @@ describe('useAccountOverviewHeader', () => {
         expect(result.current.portfolioPreferredValue?.toString()).toBe('3300')
     })
 
+    it('sums unrounded chain values, so sub-cent parts still add up to the total', async () => {
+        registerEthereumChain()
+        await twoChainTotals(
+            { nativeValue: new Decimal('1'), fiatValue: new Decimal('0.006') },
+            { nativeValue: new Decimal('1'), fiatValue: new Decimal('0.006') },
+        )
+
+        const { result } = renderHook(
+            () => useAccountOverviewHeader(twoChainAccount),
+            { wrapper },
+        )
+
+        expect(result.current.portfolioPreferredValue?.toString()).toBe('0.012')
+    })
+
     it('shows the balance, not "get started", for a lone account holding value only on another chain', async () => {
         registerEthereumChain()
         const { useAccountSummaryQuery } =
