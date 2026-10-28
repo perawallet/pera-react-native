@@ -13,16 +13,24 @@
 import { z } from 'zod'
 import { httpsUrlSchema } from '@perawallet/wallet-core-shared'
 
-// GET /v1/auth/settings. We model the country/state lists the signup UI needs
-// plus the per-jurisdiction T&C links used on the address step; the rest of the
-// `links`/`config` blocks are still ignored.
+// GET /v1/auth/settings. We model the country/state lists and the option lists
+// the signup forms need plus the per-jurisdiction T&C links used on the address
+// step; the rest of the `links`/`config` blocks are still ignored. Everything
+// added after the first release is nullish so older environments still parse.
 const supportedCountrySchema = z.object({
     id: z.string(),
     iso3166alpha2: z.string(),
     name: z.string(),
     callingCode: z.string(),
     canSignUp: z.boolean(),
+    cardProvider: z.string().nullish(),
 })
+
+const registrationOptionSchema = z.object({
+    key: z.string(),
+    name: z.string(),
+})
+const registrationOptionListSchema = z.array(registrationOptionSchema).nullish()
 
 const supportedUsStateSchema = z.object({
     id: z.string(),
@@ -40,6 +48,11 @@ const settingsLinkGroupSchema = z
 export const registrationSettingsResponseSchema = z.object({
     countries: z.array(supportedCountrySchema).optional().nullable(),
     usStates: z.array(supportedUsStateSchema).optional().nullable(),
+    occupations: registrationOptionListSchema,
+    sourcesOfWealth: registrationOptionListSchema,
+    businessSectors: registrationOptionListSchema,
+    employmentSectors: registrationOptionListSchema,
+    employmentStatuses: registrationOptionListSchema,
     links: z
         .object({
             us: settingsLinkGroupSchema,
@@ -66,8 +79,16 @@ export const verifyEmailResponseSchema = z.object({
     hasAccount: z.boolean().nullish(),
 })
 
+// POST /v1/auth/register/personal-details (and later form steps): `user.phase`
+// names the step Baanx wants next. Everything is nullish so a body without the
+// user block still reads as "no phase" rather than failing a saved step.
+export const registerStepResponseSchema = z.object({
+    user: z.object({ phase: z.string().nullish() }).nullish(),
+})
+export type RegisterStepApiResponse = z.infer<typeof registerStepResponseSchema>
+
 // POST /v1/auth/register/verification — pre-auth (client key only); returns the
-// Veriff session URL for the onboarding KYC step. The caller hands it to
+// hosted KYC session URL for the onboarding KYC step. The caller hands it to
 // Linking.openURL, so the scheme is gated here.
 export const registerVerificationResponseSchema = z.object({
     sessionUrl: httpsUrlSchema,
@@ -76,39 +97,54 @@ export type RegisterVerificationApiResponse = z.infer<
     typeof registerVerificationResponseSchema
 >
 
+// The KYC poll parses this record every few seconds, so a profile field in a
+// shape we don't expect reads as missing instead of failing the poll.
+const lenient = <T extends z.ZodType>(schema: T) => schema.nullish().catch(null)
+
 // GET /v1/auth/register?onboardingId= — onboarding status. We model the KYC
-// state the verification screen polls plus the profile fields used to prefill
-// the personal-details form on resume; Zod strips the rest.
+// state the verification screen polls, the `phase` that routes the flow, and
+// the profile fields used to prefill the forms on resume; Zod strips the rest.
 export const onboardingDetailsResponseSchema = z.object({
     // Nullish so an absent/null state resolves to `null` via toEnumValueOrNull
     // (same "unknown" bucket as an unmodelled string) instead of throwing.
     verificationState: z.string().nullish(),
-    firstName: z.string().optional().nullable(),
-    lastName: z.string().optional().nullable(),
+    phase: z.string().nullish(),
+    email: lenient(z.string()),
+    countryOfResidence: lenient(z.string()),
+    firstName: lenient(z.string()),
+    lastName: lenient(z.string()),
     /** ISO datetime, e.g. `1997-11-08T00:00:00.000Z`. */
-    dateOfBirth: z.string().optional().nullable(),
+    dateOfBirth: lenient(z.string()),
     /** ISO 3166-1 alpha-2; null until the user provides it. */
-    countryOfNationality: z.string().optional().nullable(),
-    countryOfBirth: z.string().optional().nullable(),
+    countryOfNationality: lenient(z.string()),
+    countryOfBirth: lenient(z.string()),
+    additionalNationalities: lenient(z.array(z.string())),
+    portugalInvestmentScheme: lenient(z.boolean()),
+    occupation: lenient(z.string()),
+    occupationOther: lenient(z.string()),
+    sourceOfWealth: lenient(z.string()),
+    sourceOfWealthOther: lenient(z.string()),
+    businessSector: lenient(z.string()),
+    estimatedAnnualIncome: lenient(z.string()),
+    incomeCountries: lenient(z.array(z.string())),
 })
 export type OnboardingDetailsApiResponse = z.infer<
     typeof onboardingDetailsResponseSchema
 >
 
-// POST /v1/auth/register/address — the final registration step; issues the
-// bearer token the authenticated user endpoints require. `accessToken` is null
-// only when US AND isSameMailingAddress=false (a mailing address is still
-// owed). `user.id` is the permanent userId the consent-link (PATCH) step needs;
-// we model just that field of the larger `user` block.
+// POST /v1/auth/register/address and /mailing-address. Baanx's flow answers
+// with a null token (the session comes from the login after KYC), while its
+// spec text still documents one; both are accepted. `user.id` is the only
+// field of the larger `user` block we read.
 export const addressResponseSchema = z.object({
-    accessToken: z.string().nullable(),
+    accessToken: z.string().nullish(),
     onboardingId: z.string(),
     user: z.object({ id: z.string() }).optional().nullable(),
 })
 export type AddressApiResponse = z.infer<typeof addressResponseSchema>
 
 // POST /v2/consent/onboarding — returns the created consent set's id, which the
-// link (PATCH) step binds to the user once the address step issues the userId.
+// link (PATCH) step binds to the user once the post-KYC login names the userId.
 export const consentResponseSchema = z.object({
     consentSetId: z.string(),
 })

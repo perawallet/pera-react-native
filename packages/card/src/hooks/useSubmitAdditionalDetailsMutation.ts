@@ -14,33 +14,32 @@ import { useMutation } from '@tanstack/react-query'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { logger } from '@perawallet/wallet-core-shared'
 import {
-    linkOnboardingConsent,
-    type LinkOnboardingConsentParams,
+    submitAdditionalDetails,
+    type RegisterStepResult,
 } from '../api/onboarding'
 import { getCardApiError } from '../api/errors'
+import type { AdditionalDetailsInput } from '../models'
 import { toCardMutationResult, type CardMutationResult } from './types'
 
-export type LinkConsentVariables = Omit<
-    LinkOnboardingConsentParams,
-    'scope' | 'signal'
+export type UseSubmitAdditionalDetailsMutationResult = CardMutationResult<
+    AdditionalDetailsInput,
+    RegisterStepResult
 >
 
-export type UseLinkConsentMutationResult =
-    CardMutationResult<LinkConsentVariables>
-
-export const useLinkConsentMutation = (
+export const useSubmitAdditionalDetailsMutation = (
     scope: ChainScope,
-): UseLinkConsentMutationResult => {
-    const mutation = useMutation<void, Error, LinkConsentVariables>({
-        // Step 2 of consent: binds the consent set to the permanent user id the
-        // address step issues. Best-effort — registration is already finalized,
-        // so the screen does not block on a failure here.
-        mutationFn: variables => linkOnboardingConsent({ ...variables, scope }),
-        // An "already linked" 409 is swallowed in the endpoint; anything that
-        // still throws is a real failure worth surfacing for diagnosis.
+): UseSubmitAdditionalDetailsMutationResult => {
+    const mutation = useMutation<
+        RegisterStepResult,
+        Error,
+        AdditionalDetailsInput
+    >({
+        mutationFn: details => submitAdditionalDetails({ details, scope }),
         onError: async error => {
             const apiError = await getCardApiError(error)
-            logger.warn('Card consent link failed', { error: apiError })
+            logger.warn('Card additional details submission failed', {
+                error: apiError,
+            })
         },
         throwOnError: false,
     })

@@ -10,81 +10,33 @@
  limitations under the License
  */
 
-import { PWIcon, PWInput, PWTouchableOpacity, PWView } from '@components/core'
 import type { SupportedCountry } from '@perawallet/wallet-core-card'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import { isoToFlagEmoji } from '../../utils/isoToFlagEmoji'
-import { useStyles } from './styles'
+import {
+    OptionSelectorField,
+    type OptionSelectorFieldProps,
+} from '../OptionSelectorField'
 
-export type CountrySelectorFieldProps = {
-    label: string
-    placeholder: string
+export type CountrySelectorFieldProps = Omit<
+    OptionSelectorFieldProps,
+    'value' | 'spokenValue'
+> & {
     country: Optional<SupportedCountry>
-    onPress: () => void
-    /** When set, shown below the field as a validation error. */
-    errorMessage?: string
-    /** Locks the field: no picker on press and the chevron is hidden. */
-    disabled?: boolean
-    testID?: string
 }
 
-/**
- * A read-only field styled like the email input (label + underline) that opens
- * the country picker on press. Renders the selected country's flag + name, or
- * the placeholder when none is selected. When `disabled`, it's a static display
- * (no press, no chevron) — used to show a server-confirmed value.
- */
+/** An {@link OptionSelectorField} showing the chosen country's flag and name. */
 export const CountrySelectorField = ({
-    label,
-    placeholder,
     country,
-    onPress,
-    errorMessage,
-    disabled = false,
-    testID,
-}: CountrySelectorFieldProps) => {
-    const styles = useStyles()
-
-    const value = country
-        ? `${isoToFlagEmoji(country.iso3166alpha2)}  ${country.name}`
-        : ''
-
-    return (
-        <PWTouchableOpacity
-            onPress={onPress}
-            disabled={disabled}
-            accessibilityRole='button'
-            accessibilityLabel={`${label}, ${country ? country.name : placeholder}`}
-            testID={testID}
-        >
-            <PWView
-                pointerEvents='none'
-                importantForAccessibility='no-hide-descendants'
-                accessibilityElementsHidden
-            >
-                <PWInput
-                    label={label}
-                    labelStyle={styles.label}
-                    value={value}
-                    placeholder={placeholder}
-                    // Always non-typeable (the touchable above owns the tap);
-                    // `isDisabled` additionally dims it, so a server-confirmed
-                    // value reads locked like the text fields beside it.
-                    editable={false}
-                    isDisabled={disabled}
-                    renderErrorMessage={!!errorMessage}
-                    errorMessage={errorMessage}
-                    errorStyle={styles.errorMessage}
-                    rightIcon={
-                        disabled ? undefined : (
-                            <PWIcon
-                                name='chevron-down'
-                                variant='secondary'
-                            />
-                        )
-                    }
-                />
-            </PWView>
-        </PWTouchableOpacity>
-    )
-}
+    ...fieldProps
+}: CountrySelectorFieldProps) => (
+    <OptionSelectorField
+        {...fieldProps}
+        value={
+            country
+                ? `${isoToFlagEmoji(country.iso3166alpha2)}  ${country.name}`
+                : undefined
+        }
+        spokenValue={country?.name}
+    />
+)

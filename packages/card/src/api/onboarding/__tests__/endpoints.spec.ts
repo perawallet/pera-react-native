@@ -22,6 +22,8 @@ import {
     verifyPhone,
     startRegisterVerification,
     fetchOnboardingDetails,
+    submitPersonalDetails,
+    submitAdditionalDetails,
     submitAddress,
     submitMailingAddress,
     submitOnboardingConsent,
@@ -29,7 +31,7 @@ import {
     fetchRegistrationSettings,
     buildOnboardingConsentBody,
 } from '../endpoints'
-import { VerificationState } from '../../../models'
+import { OnboardingPhase, VerificationState } from '../../../models'
 
 const ALGORAND_MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
 
@@ -225,7 +227,7 @@ describe('onboarding endpoints', () => {
 
     it('starts onboarding KYC with the onboarding id and returns the session url', async () => {
         request.mockResolvedValue({
-            data: { sessionUrl: 'https://veriff/session' },
+            data: { sessionUrl: 'https://kyc.example/session' },
         })
 
         const result = await startRegisterVerification({
@@ -233,7 +235,7 @@ describe('onboarding endpoints', () => {
             scope: ALGORAND_MAINNET,
         })
 
-        expect(result).toEqual({ sessionUrl: 'https://veriff/session' })
+        expect(result).toEqual({ sessionUrl: 'https://kyc.example/session' })
         expect(request).toHaveBeenCalledWith(
             expect.objectContaining({
                 method: 'POST',
@@ -253,14 +255,26 @@ describe('onboarding endpoints', () => {
             scope: ALGORAND_MAINNET,
         })
 
-        // Profile fields are null when the record has none yet.
+        // Profile fields are null (lists empty) when the record has none yet.
         expect(result).toEqual({
             verificationState: VerificationState.Pending,
+            phase: null,
+            email: null,
+            countryOfResidence: null,
             firstName: null,
             lastName: null,
             dateOfBirth: null,
             countryOfNationality: null,
             countryOfBirth: null,
+            additionalNationalities: [],
+            portugalInvestmentScheme: null,
+            occupation: null,
+            occupationOther: null,
+            sourceOfWealth: null,
+            sourceOfWealthOther: null,
+            businessSector: null,
+            estimatedAnnualIncome: null,
+            incomeCountries: [],
         })
         expect(request).toHaveBeenCalledWith(
             expect.objectContaining({
@@ -288,7 +302,7 @@ describe('onboarding endpoints', () => {
             scope: ALGORAND_MAINNET,
         })
 
-        expect(result).toEqual({
+        expect(result).toMatchObject({
             verificationState: VerificationState.Verified,
             firstName: 'YASIN',
             lastName: 'ÇALIŞKAN',
@@ -296,6 +310,60 @@ describe('onboarding endpoints', () => {
             countryOfNationality: null,
             countryOfBirth: null,
         })
+    })
+
+    it('maps the phase and the additional-details fields', async () => {
+        request.mockResolvedValue({
+            data: {
+                id: 'ob_1',
+                verificationState: 'UNVERIFIED',
+                phase: 'ADDITIONAL_DETAILS',
+                email: 'john@example.com',
+                countryOfResidence: 'PT',
+                additionalNationalities: ['ES'],
+                portugalInvestmentScheme: false,
+                occupation: 'other_specify_occupation',
+                occupationOther: 'Beekeeper',
+                sourceOfWealth: 'employment_salaried',
+                sourceOfWealthOther: null,
+                businessSector: 'information_and_communication',
+                estimatedAnnualIncome: '30000',
+                incomeCountries: ['PT', 'ES'],
+            },
+        })
+
+        const result = await fetchOnboardingDetails({
+            onboardingId: 'ob_1',
+            scope: ALGORAND_MAINNET,
+        })
+
+        expect(result).toMatchObject({
+            phase: OnboardingPhase.AdditionalDetails,
+            email: 'john@example.com',
+            countryOfResidence: 'PT',
+            additionalNationalities: ['ES'],
+            portugalInvestmentScheme: false,
+            occupation: 'other_specify_occupation',
+            occupationOther: 'Beekeeper',
+            sourceOfWealth: 'employment_salaried',
+            sourceOfWealthOther: null,
+            businessSector: 'information_and_communication',
+            estimatedAnnualIncome: '30000',
+            incomeCountries: ['PT', 'ES'],
+        })
+    })
+
+    it('returns a null phase for one we do not model', async () => {
+        request.mockResolvedValue({
+            data: { id: 'ob_1', phase: 'SOMETHING_NEW' },
+        })
+
+        const result = await fetchOnboardingDetails({
+            onboardingId: 'ob_1',
+            scope: ALGORAND_MAINNET,
+        })
+
+        expect(result.phase).toBeNull()
     })
 
     it('returns null for an unmodelled verification state', async () => {
@@ -309,7 +377,7 @@ describe('onboarding endpoints', () => {
         })
 
         // Never coerce an unknown state to UNVERIFIED: consumers would treat a
-        // progressing user as needing a fresh Veriff session.
+        // progressing user as needing a fresh KYC session.
         expect(result.verificationState).toBeNull()
     })
 
@@ -324,6 +392,102 @@ describe('onboarding endpoints', () => {
         })
 
         expect(result.verificationState).toBeNull()
+    })
+
+    it('submits personal details and returns the phase Baanx asks for next', async () => {
+        request.mockResolvedValue({
+            data: {
+                onboardingId: 'ob_1',
+                user: { id: 'ob_1', phase: 'ADDITIONAL_DETAILS' },
+            },
+        })
+        const details = {
+            onboardingId: 'ob_1',
+            firstName: 'Jane',
+            middleName: 'Ann',
+            lastName: 'Doe',
+            dateOfBirth: '2000-01-01',
+            countryOfNationality: 'PT',
+            countryOfBirth: 'PT',
+            additionalNationalities: ['ES'],
+            portugalInvestmentScheme: false,
+            employmentStatus: 'employed',
+            employmentSector: 'informationTechnology',
+        }
+
+        const result = await submitPersonalDetails({
+            details,
+            scope: ALGORAND_MAINNET,
+        })
+
+        expect(result).toEqual({ phase: OnboardingPhase.AdditionalDetails })
+        expect(request).toHaveBeenCalledWith(
+            expect.objectContaining({
+                method: 'POST',
+                path: '/v1/auth/register/personal-details',
+                data: details,
+            }),
+        )
+    })
+
+    it.each([
+        ['no body', undefined],
+        ['no user block', { success: true }],
+        ['an unmodelled phase', { user: { phase: 'SOMETHING_NEW' } }],
+    ])(
+        'returns a null phase when personal details come back with %s',
+        async (_label, data) => {
+            request.mockResolvedValue({ data })
+
+            const result = await submitPersonalDetails({
+                details: {
+                    onboardingId: 'ob_1',
+                    firstName: 'Jane',
+                    lastName: 'Doe',
+                    dateOfBirth: '2000-01-01',
+                    countryOfNationality: 'GB',
+                    countryOfBirth: 'GB',
+                    employmentStatus: 'employed',
+                    employmentSector: 'retail',
+                },
+                scope: ALGORAND_MAINNET,
+            })
+
+            expect(result).toEqual({ phase: null })
+        },
+    )
+
+    it('submits additional details and returns the next phase', async () => {
+        request.mockResolvedValue({
+            data: {
+                user: { id: 'ob_1', hasTin: true, phase: 'PHYSICAL_ADDRESS' },
+            },
+        })
+        const details = {
+            onboardingId: 'ob_1',
+            tin: '123456789',
+            tinCountry: 'PT',
+            occupation: 'other_specify_occupation',
+            occupationOther: 'Beekeeper',
+            sourceOfWealth: 'employment_salaried',
+            businessSector: 'information_and_communication',
+            estimatedAnnualIncome: '30000',
+            incomeCountries: ['PT', 'ES'],
+        }
+
+        const result = await submitAdditionalDetails({
+            details,
+            scope: ALGORAND_MAINNET,
+        })
+
+        expect(result).toEqual({ phase: OnboardingPhase.PhysicalAddress })
+        expect(request).toHaveBeenCalledWith(
+            expect.objectContaining({
+                method: 'POST',
+                path: '/v1/auth/register/additional-details',
+                data: details,
+            }),
+        )
     })
 
     it('submits address and returns the access token, onboarding id, and user id', async () => {

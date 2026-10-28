@@ -21,28 +21,20 @@ import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { CardOnboardingPersonalDetailsScreen } from '@modules/card/screens/CardOnboardingPersonalDetailsScreen'
 import { CardOnboardingEmailVerifyScreen } from '@modules/card/screens/CardOnboardingEmailVerifyScreen'
 import { CardOnboardingAddressScreen } from '@modules/card/screens/CardOnboardingAddressScreen'
-import { CardOnboardingVerificationScreen } from '@modules/card/screens/CardOnboardingVerificationScreen'
 import { getInputErrorMessage, isElementDisabled } from '@test-utils/rnw'
+import {
+    buildRegistrationSettingsResponse,
+    settingsCountry,
+} from './__fixtures__/cardRegistrationSettings'
 
-const SETTINGS_RESPONSE = {
+const SETTINGS_RESPONSE = buildRegistrationSettingsResponse({
     countries: [
-        {
-            id: 'gb',
-            iso3166alpha2: 'GB',
-            name: 'United Kingdom',
-            callingCode: '44',
-            canSignUp: true,
-        },
-        {
-            id: 'us',
-            iso3166alpha2: 'US',
-            name: 'United States of America',
-            callingCode: '1',
-            canSignUp: true,
-        },
+        settingsCountry('GB', 'United Kingdom', '44'),
+        settingsCountry('US', 'United States of America'),
+        settingsCountry('PT', 'Portugal', '351'),
+        settingsCountry('ES', 'Spain', '34'),
     ],
-    usStates: [],
-}
+})
 
 // The screen reads the onboarding id from the store (no nav params), so seed it.
 const renderFlow = () =>
@@ -59,13 +51,27 @@ const renderFlow = () =>
                     name: 'CardOnboardingAddress',
                     component: CardOnboardingAddressScreen,
                 },
-                {
-                    name: 'CardOnboardingVerification',
-                    component: CardOnboardingVerificationScreen,
-                },
             ],
         },
     )
+
+const pickOption = async (fieldTestId: string, optionKey: string) => {
+    fireEvent.click(screen.getByTestId(fieldTestId))
+    const option = await screen.findByTestId(`card-option-${optionKey}`)
+    fireEvent.click(option)
+    await waitFor(() =>
+        expect(screen.queryByTestId(`card-option-${optionKey}`)).toBeNull(),
+    )
+}
+
+// Employment has no server prefill, so every complete form picks it.
+const pickEmployment = async () => {
+    await pickOption('card-onboarding-employment-status-field', 'employed')
+    await pickOption(
+        'card-onboarding-employment-sector-field',
+        'informationTechnology',
+    )
+}
 
 // Fill only the name + date fields, leaving nationality to the preselect. The
 // form appears once the onboarding record has answered, so wait for it.
@@ -81,6 +87,7 @@ const fillNameAndDob = async () => {
     fireEvent.change(screen.getByTestId('card-onboarding-dob-input'), {
         target: { value: '27021986' },
     })
+    await pickEmployment()
 }
 
 // Fill the name + date fields and pick the UK as nationality so the form validates.
@@ -110,14 +117,13 @@ describe('Flow: Card onboarding — personal details', () => {
                 HttpResponse.json(SETTINGS_RESPONSE, { status: 200 }),
             ),
             // Default: a record with no profile data yet, so the form stays
-            // empty + editable. PENDING because that is the real precondition
-            // for reaching this screen at all: KYC must be submitted first,
-            // and Baanx reviews it asynchronously. Prefill tests override this.
+            // empty and editable. KYC only starts after the forms, so it is
+            // still UNVERIFIED here. Prefill tests override this.
             http.get('*/v1/auth/register', () =>
                 HttpResponse.json(
                     {
                         id: 'mock-onboarding-id',
-                        verificationState: 'PENDING',
+                        verificationState: 'UNVERIFIED',
                         firstName: null,
                         lastName: null,
                         dateOfBirth: null,
@@ -160,7 +166,12 @@ describe('Flow: Card onboarding — personal details', () => {
             dateOfBirth: '1986-02-27',
             countryOfNationality: 'GB',
             countryOfBirth: 'GB',
+            employmentStatus: 'employed',
+            employmentSector: 'informationTechnology',
         })
+        expect(body).not.toHaveProperty('middleName')
+        expect(body).not.toHaveProperty('additionalNationalities')
+        expect(body).not.toHaveProperty('portugalInvestmentScheme')
         // A successful submit advances the flow to the residential-address step.
         await waitFor(() =>
             expect(screen.getByTestId('card-onboarding-address')).toBeTruthy(),
@@ -224,6 +235,8 @@ describe('Flow: Card onboarding — personal details', () => {
         renderFlow()
 
         // The server-confirmed identity fields are populated from the record.
+        await screen.findByTestId('card-onboarding-first-name-input')
+        await pickEmployment()
         await waitFor(() =>
             expect(
                 screen
@@ -238,7 +251,7 @@ describe('Flow: Card onboarding — personal details', () => {
             // Server ISO datetime is shown in the masked DD/MM/YYYY format.
         ).toBe('08/11/1997')
 
-        // Prefill alone makes the form valid — no typing needed.
+        // Prefill plus the employment picks make the form valid, no typing needed.
         const confirm = () =>
             screen.getByTestId('card-onboarding-personal-details-confirm')
         await waitFor(() => expect(isElementDisabled(confirm())).toBe(false))
@@ -294,6 +307,82 @@ describe('Flow: Card onboarding — personal details', () => {
                 countryOfNationality: 'US',
                 ssn: '123456789',
             }),
+        )
+    })
+
+    it('Given a Portugal resident with a middle name and a second nationality, when Continue is pressed, then all of them post', async () => {
+        useCardStore.getState().setCountryIso('PT')
+        let body: Record<string, unknown> | undefined
+        server.use(
+            http.post(
+                '*/v1/auth/register/personal-details',
+                async ({ request }) => {
+                    body = (await request.json()) as Record<string, unknown>
+                    return HttpResponse.json(
+                        { user: { phase: 'ADDITIONAL_DETAILS' } },
+                        { status: 200 },
+                    )
+                },
+            ),
+        )
+
+        renderFlow()
+        await fillNameAndDob()
+        fireEvent.change(
+            screen.getByTestId('card-onboarding-middle-name-input'),
+            { target: { value: 'James' } },
+        )
+        fireEvent.click(screen.getByTestId('card-onboarding-add-nationality'))
+        fireEvent.click(await screen.findByTestId('card-country-ES'))
+        await screen.findByTestId(
+            'card-onboarding-additional-nationality-field-0',
+        )
+        fireEvent.click(
+            screen.getByTestId('card-onboarding-portugal-scheme-checkbox'),
+        )
+
+        const confirm = () =>
+            screen.getByTestId('card-onboarding-personal-details-confirm')
+        await waitFor(() => expect(isElementDisabled(confirm())).toBe(false))
+        fireEvent.click(confirm())
+
+        await waitFor(() =>
+            expect(body).toMatchObject({
+                middleName: 'James',
+                countryOfNationality: 'PT',
+                additionalNationalities: ['ES'],
+                portugalInvestmentScheme: true,
+            }),
+        )
+    })
+
+    it('Given an extra nationality equal to the main one, then the duplicate error shows and Continue stays gated', async () => {
+        renderFlow()
+        await fillNameAndDob()
+
+        fireEvent.click(screen.getByTestId('card-onboarding-add-nationality'))
+        fireEvent.click(await screen.findByTestId('card-country-GB'))
+
+        expect(
+            await screen.findByTestId(
+                'card-onboarding-additional-nationality-error',
+            ),
+        ).toBeTruthy()
+        expect(
+            isElementDisabled(
+                screen.getByTestId('card-onboarding-personal-details-confirm'),
+            ),
+        ).toBe(true)
+
+        fireEvent.click(
+            screen.getByTestId('card-onboarding-remove-nationality-0'),
+        )
+        await waitFor(() =>
+            expect(
+                screen.queryByTestId(
+                    'card-onboarding-additional-nationality-error',
+                ),
+            ).toBeNull(),
         )
     })
 
@@ -361,68 +450,5 @@ describe('Flow: Card onboarding — personal details', () => {
             ).toBeTruthy(),
         )
         expect(submitSpy).not.toHaveBeenCalled()
-    })
-
-    it('Given the KYC was never submitted, then the form is replaced by the verify prompt', async () => {
-        const submitSpy = vi.fn()
-        server.use(
-            http.get('*/v1/auth/register', () =>
-                HttpResponse.json(
-                    {
-                        id: 'mock-onboarding-id',
-                        verificationState: 'UNVERIFIED',
-                        firstName: null,
-                        lastName: null,
-                        dateOfBirth: null,
-                        countryOfNationality: null,
-                    },
-                    { status: 200 },
-                ),
-            ),
-            http.post('*/v1/auth/register/personal-details', () => {
-                submitSpy()
-                return HttpResponse.json({}, { status: 200 })
-            }),
-        )
-
-        renderFlow()
-
-        expect(await screen.findByTestId('card-kyc-required')).toBeTruthy()
-        expect(
-            screen.queryByTestId('card-onboarding-first-name-input'),
-        ).toBeNull()
-        expect(submitSpy).not.toHaveBeenCalled()
-
-        fireEvent.click(screen.getByTestId('card-kyc-required-verify'))
-        await waitFor(() =>
-            expect(
-                screen.getByTestId('card-onboarding-verification'),
-            ).toBeTruthy(),
-        )
-    })
-
-    // The reported bug end to end: Baanx reports PENDING from the moment a
-    // Veriff session is created, so an abandoned check reaches this form and
-    // is only refused at submit time.
-    it('Given Baanx refuses the submit as not verified, then the form is replaced and the address step is never reached', async () => {
-        server.use(
-            http.post('*/v1/auth/register/personal-details', () =>
-                HttpResponse.json(
-                    { message: 'User is not verified' },
-                    { status: 400 },
-                ),
-            ),
-        )
-
-        renderFlow()
-        await fillFormAndPickNationality()
-
-        const confirm = () =>
-            screen.getByTestId('card-onboarding-personal-details-confirm')
-        await waitFor(() => expect(isElementDisabled(confirm())).toBe(false))
-        fireEvent.click(confirm())
-
-        expect(await screen.findByTestId('card-kyc-required')).toBeTruthy()
-        expect(screen.queryByTestId('card-onboarding-address')).toBeNull()
     })
 })

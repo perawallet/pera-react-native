@@ -14,15 +14,15 @@ import { describe, it, expect } from 'vitest'
 import { verificationSessionResponseSchema } from '../schema'
 
 describe('verificationSessionResponseSchema', () => {
-    it('parses an https Veriff session url', () => {
+    it('parses an https KYC session url', () => {
         expect(
             verificationSessionResponseSchema.parse({
-                sessionUrl: 'https://veriff/session',
+                sessionUrl: 'https://kyc.example/session',
             }).sessionUrl,
-        ).toBe('https://veriff/session')
+        ).toBe('https://kyc.example/session')
     })
 
-    it.each(['http://veriff/session', 'javascript:alert(1)', ''])(
+    it.each(['http://kyc.example/session', 'javascript:alert(1)', ''])(
         'rejects a %s session url before it reaches Linking.openURL',
         sessionUrl => {
             expect(() =>

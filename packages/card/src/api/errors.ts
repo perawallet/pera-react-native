@@ -10,8 +10,6 @@
  limitations under the License
  */
 
-import { AppError, ErrorCategory } from '@perawallet/wallet-core-shared'
-
 /** Normalized view of a card/Baanx API failure, used to attribute it to a field. */
 export type CardApiError = {
     /** HTTP status code, when the failure carried an HTTP response. */
@@ -20,6 +18,8 @@ export type CardApiError = {
     code?: string
     /** Human-readable message parsed from the response body, if present. */
     message?: string
+    /** Baanx's login 400 says when it only lacks the 2FA code. */
+    isOtpRequired?: boolean
 }
 
 type BodyReadable = {
@@ -182,16 +182,18 @@ export const getCardApiError = async (
 
     // Baanx wraps the real error as a JSON string inside `message` — unwrap it so
     // callers see the actual status/code/message instead of an opaque blob.
+    const otp = record.isOtpRequired === true ? { isOtpRequired: true } : {}
     const nested = unwrapNestedError(message)
     if (nested) {
         return {
             status: status ?? nested.status,
             code: nested.code ?? code,
             message: nested.message ?? message,
+            ...otp,
         }
     }
 
-    return { status, code, message }
+    return { status, code, message, ...otp }
 }
 
 /** HTTP statuses that mean "this value conflicts with an existing record". */
@@ -204,6 +206,35 @@ export const isConflictError = (apiError: CardApiError): boolean =>
 /** True when the failure looks like a rejected/invalid submission (400/422). */
 export const isInvalidInputError = (apiError: CardApiError): boolean =>
     apiError.status === 400 || apiError.status === 422
+
+/**
+ * Baanx documents a lock after repeated failed logins as a 403 whose message
+ * carries the support address, so a bare 403 (e.g. from a WAF) doesn't count.
+ * A 429 is a rate limit that passes, not a lock.
+ */
+export const isAccountLockedError = (apiError: CardApiError): boolean => {
+    if (apiError.status === 423) return true
+    if (apiError.status !== 403) return false
+    const message = apiError.message ?? ''
+    return /\blocked\b/i.test(message) || message.includes('@')
+}
+
+/**
+ * GET /v1/auth/register stops answering for an onboarding id once Baanx has
+ * turned the record into an account ("Invalid onboarding ID"). Matched on the
+ * message, since a missing route's bare 404 is an outage, not a verdict.
+ */
+export const isOnboardingNotFoundError = (apiError: CardApiError): boolean => {
+    const text =
+        `${apiError.code ?? ''} ${apiError.message ?? ''}`.toLowerCase()
+    // indexOf, not /onboarding.*not found/: the unbounded `.*` is quadratic
+    // on a server message that repeats "onboarding".
+    const onboardingAt = text.indexOf('onboarding')
+    return (
+        text.includes('invalid onboarding id') ||
+        (onboardingAt !== -1 && text.includes('not found', onboardingAt))
+    )
+}
 
 /**
  * A rejected email/password on login. Baanx documents 400 but its dev API
@@ -235,7 +266,7 @@ export const isAlreadyCreatedError = (apiError: CardApiError): boolean =>
     )
 
 /**
- * Baanx's final registration step (address) returns this generic message when
+ * Baanx's address step returns this generic message when
  * the user was already created by an earlier attempt whose response was lost
  * (seen live on the dev env: first call 500s after creating the user, every
  * retry then fails with this text). Matched on text like
@@ -256,24 +287,3 @@ export const isNotVerifiedError = (apiError: CardApiError): boolean =>
     /USER_NOT_VERIFIED|not (been )?verified/i.test(
         `${apiError.code ?? ''} ${apiError.message ?? ''}`,
     )
-
-/**
- * Thrown when a registration step is refused because the user's KYC isn't
- * far enough along. This is the only trustworthy signal that verification is
- * incomplete: Baanx reports `PENDING` from the moment a Veriff session is
- * *created*, so an abandoned session looks submitted right up until a step
- * like personal-details or address rejects it.
- *
- * Lives here (rather than an `api/onboarding/errors.ts`) because the
- * onboarding barrel is wholesale-mocked in tests, which would leave the class
- * undefined and break `instanceof`. Named for the flow, not one step, since
- * both the details and address steps raise it.
- */
-export class OnboardingNotVerifiedError extends AppError {
-    constructor(
-        message = 'Identity verification must be submitted before registration can continue.',
-    ) {
-        super(message, { category: ErrorCategory.ACCOUNTS })
-        this.name = 'OnboardingNotVerifiedError'
-    }
-}

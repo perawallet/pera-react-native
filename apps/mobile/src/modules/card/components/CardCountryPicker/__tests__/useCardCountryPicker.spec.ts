@@ -32,6 +32,7 @@ const makeCountry = (
     id: over.iso3166alpha2,
     callingCode: '0',
     canSignUp: true,
+    cardProvider: null,
     ...over,
 })
 

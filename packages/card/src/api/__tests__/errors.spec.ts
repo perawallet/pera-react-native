@@ -13,6 +13,8 @@
 import { describe, it, expect, vi } from 'vitest'
 import {
     getCardApiError,
+    isAccountLockedError,
+    isOnboardingNotFoundError,
     isConflictError,
     isInvalidInputError,
     isInvalidCredentialsError,
@@ -21,6 +23,69 @@ import {
     isDuplicateError,
     isNotVerifiedError,
 } from '../errors'
+
+describe('isAccountLockedError', () => {
+    it.each([
+        ['a 423', { status: 423 }],
+        ['a 403 that says locked', { status: 403, message: 'Account Locked' }],
+        [
+            'a 403 that carries the support address',
+            {
+                status: 403,
+                message: 'Too many attempts, contact support@cl-cards.com',
+            },
+        ],
+    ])('reads %s as locked', (_label, apiError) => {
+        expect(isAccountLockedError(apiError)).toBe(true)
+    })
+
+    it.each([
+        ['a plain 401', { status: 401 }],
+        ['a 429 rate limit', { status: 429, message: 'Too many requests' }],
+        ['a bare 403', { status: 403, message: 'Forbidden' }],
+        ['a 403 that says unlocked', { status: 403, message: 'Unlocked' }],
+        [
+            'another status that says locked',
+            { status: 400, message: 'user locked' },
+        ],
+    ])('does not read %s as locked', (_label, apiError) => {
+        expect(isAccountLockedError(apiError)).toBe(false)
+    })
+})
+
+describe('isOnboardingNotFoundError', () => {
+    it.each([
+        [
+            'Invalid onboarding ID',
+            { status: 400, message: 'Invalid onboarding ID' },
+        ],
+        [
+            'a 404 that names the onboarding',
+            { status: 404, message: 'Invalid onboarding ID' },
+        ],
+        [
+            'an onboarding record not found',
+            { status: 400, message: 'Onboarding record not found' },
+        ],
+    ])('reads %s as a record turned into an account', (_label, apiError) => {
+        expect(isOnboardingNotFoundError(apiError)).toBe(true)
+    })
+
+    it.each([
+        ['an outage', { status: 503 }],
+        ['a missing route', { status: 404, message: 'Not Found' }],
+        [
+            '"not found" before "onboarding"',
+            { status: 400, message: 'Not found while onboarding' },
+        ],
+        [
+            'a message that only repeats "onboarding"',
+            { status: 400, message: 'onboarding '.repeat(10_000) },
+        ],
+    ])('does not read %s as not found', (_label, apiError) => {
+        expect(isOnboardingNotFoundError(apiError)).toBe(false)
+    })
+})
 
 describe('getCardApiError', () => {
     it('returns an empty result for a non-object error', async () => {
@@ -45,6 +110,20 @@ describe('getCardApiError', () => {
             status: 409,
             code: undefined,
             message: 'That email is already in use',
+        })
+    })
+
+    it('flags a login 400 that only lacks the 2FA code', async () => {
+        const error = {
+            response: { status: 400 },
+            data: { message: 'OTP required', isOtpRequired: true },
+        }
+
+        expect(await getCardApiError(error)).toEqual({
+            status: 400,
+            code: undefined,
+            message: 'OTP required',
+            isOtpRequired: true,
         })
     })
 

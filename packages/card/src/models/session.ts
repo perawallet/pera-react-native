@@ -51,10 +51,15 @@ export type OauthAuthorization = {
     state: string
 }
 
+/**
+ * The register step Baanx expects next. `MailingAddress` means the mailing step
+ * only for US residents; for anyone else every form step is in and KYC is next.
+ */
 export const OnboardingPhase = {
     Account: 'ACCOUNT',
     PhoneNumber: 'PHONE_NUMBER',
     PersonalInformation: 'PERSONAL_INFORMATION',
+    AdditionalDetails: 'ADDITIONAL_DETAILS',
     PhysicalAddress: 'PHYSICAL_ADDRESS',
     MailingAddress: 'MAILING_ADDRESS',
 } as const

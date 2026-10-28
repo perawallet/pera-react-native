@@ -10,25 +10,5 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed'
-
-export const useStyles = makeStyles(theme => ({
-    container: {
-        flex: 1,
-    },
-    content: {
-        flex: 1,
-        paddingHorizontal: theme.spacing.xl,
-    },
-    list: {
-        flex: 1,
-    },
-    row: {
-        paddingVertical: theme.spacing.md,
-    },
-    center: {
-        flex: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-}))
+export { OptionSelectorField } from './OptionSelectorField'
+export type { OptionSelectorFieldProps } from './OptionSelectorField'

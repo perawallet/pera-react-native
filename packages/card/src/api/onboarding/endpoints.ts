@@ -18,18 +18,20 @@ import {
 import { getPeraServicesConfig } from '@perawallet/wallet-core-config'
 import { getCardApiError, isConflictError, isDuplicateError } from '../errors'
 import { getCardTransport } from '../transport'
-import { VerificationState } from '../../models'
+import { OnboardingPhase, VerificationState } from '../../models'
 import type {
+    AdditionalDetailsInput,
     AddressInput,
     MailingAddressInput,
     PersonalDetailsInput,
     RegistrationSettings,
-    VeriffSession,
+    KycSession,
 } from '../../models'
 import {
     addressResponseSchema,
     consentResponseSchema,
     onboardingDetailsResponseSchema,
+    registerStepResponseSchema,
     registerVerificationResponseSchema,
     registrationSettingsResponseSchema,
     sendEmailVerificationResponseSchema,
@@ -131,31 +133,63 @@ export const verifyPhone = async (params: VerifyPhoneParams): Promise<void> => {
     })
 }
 
+export type RegisterStepResult = {
+    /** The step Baanx wants next; null when it sent none we model. */
+    phase: Nullable<OnboardingPhase>
+}
+
+const toRegisterStepResult = (response: unknown): RegisterStepResult => {
+    const parsed = registerStepResponseSchema.safeParse(
+        (response as { data?: unknown } | undefined)?.data,
+    )
+    return {
+        phase: parsed.success
+            ? toEnumValueOrNull(OnboardingPhase, parsed.data.user?.phase)
+            : null,
+    }
+}
+
 export type SubmitPersonalDetailsParams = ScopeParams & {
     details: PersonalDetailsInput
 }
 export const submitPersonalDetails = async (
     params: SubmitPersonalDetailsParams,
-): Promise<void> => {
-    await postRegisterStep(
+): Promise<RegisterStepResult> => {
+    const response = await postRegisterStep(
         '/v1/auth/register/personal-details',
         params.details,
         params,
     )
+    return toRegisterStepResult(response)
+}
+
+export type SubmitAdditionalDetailsParams = ScopeParams & {
+    details: AdditionalDetailsInput
+}
+/** Baanx answers 400 for anyone it didn't ask (non-BoP), and 503 while its lists load. */
+export const submitAdditionalDetails = async (
+    params: SubmitAdditionalDetailsParams,
+): Promise<RegisterStepResult> => {
+    const response = await postRegisterStep(
+        '/v1/auth/register/additional-details',
+        params.details,
+        params,
+    )
+    return toRegisterStepResult(response)
 }
 
 export type StartRegisterVerificationParams = ScopeParams & {
     onboardingId: string
 }
 /**
- * Starts the onboarding KYC session (step 3 of registration, after phone
- * verification). Pre-auth — only the client key is required. The caller opens
- * the returned Veriff `sessionUrl`, then polls `fetchOnboardingDetails` for the
- * `verificationState` to transition.
+ * Starts the onboarding KYC session once every form is in (after the address,
+ * or the mailing address for a US resident shipping elsewhere). Pre-auth: only
+ * the client key is required. The caller opens the returned `sessionUrl`, then
+ * polls `fetchOnboardingDetails` for the `verificationState` to transition.
  */
 export const startRegisterVerification = async (
     params: StartRegisterVerificationParams,
-): Promise<VeriffSession> => {
+): Promise<KycSession> => {
     const response = await getCardTransport().request({
         scope: params.scope,
         method: 'POST',
@@ -175,7 +209,12 @@ export type OnboardingDetails = {
      * consumers can tell "not yet verified" from "unknown server state".
      */
     verificationState: Nullable<VerificationState>
-    /** Profile fields prefilled into the personal-details form when present. */
+    /** The step Baanx expects next; null when absent or unmodelled. */
+    phase: Nullable<OnboardingPhase>
+    email: Nullable<string>
+    /** ISO 3166-1 alpha-2 residence fixed at the email step. */
+    countryOfResidence: Nullable<string>
+    /** Profile fields prefilled into the forms when present. */
     firstName: Nullable<string>
     lastName: Nullable<string>
     /** ISO datetime as returned by Baanx; the date part is the birth date. */
@@ -183,6 +222,18 @@ export type OnboardingDetails = {
     /** ISO 3166-1 alpha-2; null until the user provides it. */
     countryOfNationality: Nullable<string>
     countryOfBirth: Nullable<string>
+    /** ISO 3166-1 alpha-2, besides `countryOfNationality`. */
+    additionalNationalities: string[]
+    portugalInvestmentScheme: Nullable<boolean>
+    /** Keys from the matching GET /v1/auth/settings lists. */
+    occupation: Nullable<string>
+    occupationOther: Nullable<string>
+    sourceOfWealth: Nullable<string>
+    sourceOfWealthOther: Nullable<string>
+    businessSector: Nullable<string>
+    estimatedAnnualIncome: Nullable<string>
+    /** ISO 3166-1 alpha-2. */
+    incomeCountries: string[]
 }
 /** Pre-auth onboarding status — polled for KYC and read to prefill the form. */
 export const fetchOnboardingDetails = async (
@@ -198,25 +249,34 @@ export const fetchOnboardingDetails = async (
     const parsed = onboardingDetailsResponseSchema.parse(response.data)
     return {
         // An unrecognised state maps to null, not UNVERIFIED — coercing would
-        // eventually route a progressing user into re-minting a Veriff session.
+        // eventually route a progressing user into re-minting a KYC session.
         verificationState: toEnumValueOrNull(
             VerificationState,
             parsed.verificationState,
         ),
+        phase: toEnumValueOrNull(OnboardingPhase, parsed.phase),
+        email: parsed.email ?? null,
+        countryOfResidence: parsed.countryOfResidence ?? null,
         firstName: parsed.firstName ?? null,
         lastName: parsed.lastName ?? null,
         dateOfBirth: parsed.dateOfBirth ?? null,
         countryOfNationality: parsed.countryOfNationality ?? null,
         countryOfBirth: parsed.countryOfBirth ?? null,
+        additionalNationalities: parsed.additionalNationalities ?? [],
+        portugalInvestmentScheme: parsed.portugalInvestmentScheme ?? null,
+        occupation: parsed.occupation ?? null,
+        occupationOther: parsed.occupationOther ?? null,
+        sourceOfWealth: parsed.sourceOfWealth ?? null,
+        sourceOfWealthOther: parsed.sourceOfWealthOther ?? null,
+        businessSector: parsed.businessSector ?? null,
+        estimatedAnnualIncome: parsed.estimatedAnnualIncome ?? null,
+        incomeCountries: parsed.incomeCountries ?? [],
     }
 }
 
 export type SubmitAddressParams = ScopeParams & { address: AddressInput }
-// The final registration step. Unlike the other register steps its response
-// matters: it carries the `accessToken` that authenticates the post-onboarding
-// user endpoints plus the permanent `userId` the consent-link step binds to, so
-// we parse and return them rather than discarding the body via `postRegisterStep`.
 export type SubmitAddressResult = {
+    /** Usually null: the session comes from the login once KYC verifies. */
     accessToken: string | null
     onboardingId: string
     /** Permanent user id (`user.id`); null until Baanx returns the user block. */
@@ -234,7 +294,7 @@ export const submitAddress = async (
     })
     const parsed = addressResponseSchema.parse(response.data)
     return {
-        accessToken: parsed.accessToken,
+        accessToken: parsed.accessToken ?? null,
         onboardingId: parsed.onboardingId,
         userId: parsed.user?.id ?? null,
     }
@@ -243,8 +303,7 @@ export const submitAddress = async (
 export type SubmitMailingAddressParams = ScopeParams & {
     address: MailingAddressInput
 }
-// Reached only when the address step was posted with isSameMailingAddress
-// false; Baanx then withholds the token there and issues it here instead.
+// US residents only, after an address posted with isSameMailingAddress false.
 export const submitMailingAddress = async (
     params: SubmitMailingAddressParams,
 ): Promise<SubmitAddressResult> => {
@@ -257,7 +316,7 @@ export const submitMailingAddress = async (
     })
     const parsed = addressResponseSchema.parse(response.data)
     return {
-        accessToken: parsed.accessToken,
+        accessToken: parsed.accessToken ?? null,
         onboardingId: parsed.onboardingId,
         userId: parsed.user?.id ?? null,
     }
@@ -338,7 +397,7 @@ export const buildOnboardingConsentBody = (input: OnboardingConsentInput) => {
 // Step 1 of Baanx's two-step consent flow: create the consent set during
 // registration (before the address step). The tenant id is build-time config
 // (per network), like the Baanx client key. Returns the `consentSetId` the link
-// step (below) binds to the user once the address step issues the userId.
+// step (below) binds to the user once the post-KYC login names the userId.
 export type SubmitOnboardingConsentParams = ScopeParams &
     Omit<OnboardingConsentInput, 'tenantId'>
 export type SubmitOnboardingConsentResult = {
@@ -380,7 +439,7 @@ export const submitOnboardingConsent = async (
 }
 
 // Step 2 of Baanx's two-step consent flow: link the consent set created above to
-// the permanent user id the address step issues. Idempotent — Baanx returns 409
+// the permanent user id, known only once the account exists. Idempotent: Baanx returns 409
 // Conflict if the set is already linked (the desired end state), which we swallow.
 // Deliberately NOT `authenticated`: per the Baanx api-reference
 // (api-reference/consent/link-user-to-consent) this endpoint uses API-key
