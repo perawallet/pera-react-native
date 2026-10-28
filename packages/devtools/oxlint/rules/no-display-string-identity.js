@@ -27,8 +27,30 @@ const unwrapExpression = node => {
     return current
 }
 
+const CASE_NORMALISERS = new Set([
+    'toUpperCase',
+    'toLowerCase',
+    'toLocaleUpperCase',
+    'toLocaleLowerCase',
+    'trim',
+])
+
 const isIdentifier = (node, name) =>
     node.type === 'Identifier' && node.name === name
+
+const isStringLiteral = node =>
+    node.type === 'Literal' && typeof node.value === 'string'
+
+// token['symbol'] reads the same property as token.symbol
+const staticPropertyName = node => {
+    if (node.type !== 'MemberExpression') return undefined
+    if (!node.computed) {
+        return node.property.type === 'Identifier'
+            ? node.property.name
+            : undefined
+    }
+    return isStringLiteral(node.property) ? node.property.value : undefined
+}
 
 const isStaticMember = node =>
     node.type === 'MemberExpression' &&
@@ -37,6 +59,13 @@ const isStaticMember = node =>
 
 const displayStringName = node => {
     const target = unwrapExpression(node)
+    // Normalising case does not make display text an identity
+    if (
+        target.type === 'CallExpression' &&
+        CASE_NORMALISERS.has(staticPropertyName(target.callee))
+    ) {
+        return displayStringName(target.callee.object)
+    }
     if (target.type === 'LogicalExpression') {
         if (target.operator === '??' || target.operator === '||') {
             return (
@@ -49,8 +78,8 @@ const displayStringName = node => {
     let name
     if (target.type === 'Identifier') {
         name = target.name
-    } else if (isStaticMember(target)) {
-        name = target.property.name
+    } else {
+        name = staticPropertyName(target)
     }
     return name !== undefined && DISPLAY_STRING_PROPERTIES.has(name)
         ? name
@@ -60,8 +89,9 @@ const displayStringName = node => {
 const isAlgoTicker = node => {
     const target = unwrapExpression(node)
     return (
-        (target.type === 'Literal' && target.value === 'ALGO') ||
-        isIdentifier(target, 'ALGO_ASSET_NAME')
+        (isStringLiteral(target) && target.value.toUpperCase() === 'ALGO') ||
+        isIdentifier(target, 'ALGO_ASSET_NAME') ||
+        staticPropertyName(target) === 'ALGO_ASSET_NAME'
     )
 }
 

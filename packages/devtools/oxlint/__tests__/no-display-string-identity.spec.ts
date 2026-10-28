@@ -54,6 +54,12 @@ const optionalMember = (object: Node, property: string): Node => ({
     ...member(object, property),
     optional: true,
 })
+const computedMember = (object: Node, property: Node): Node => ({
+    type: 'MemberExpression',
+    object,
+    property,
+    computed: true,
+})
 const newExpr = (callee: Node, args: Node[]): Node => ({
     type: 'NewExpression',
     callee,
@@ -125,6 +131,26 @@ describe(RULE, () => {
             isAlgoAssetName(id('unitName')),
             'unitName',
         ],
+        [
+            'isAlgoAssetName(asset.unitName?.toUpperCase())',
+            isAlgoAssetName(
+                chain(
+                    call(
+                        optionalMember(
+                            member(id('asset'), 'unitName'),
+                            'toUpperCase',
+                        ),
+                        [],
+                    ),
+                ),
+            ),
+            'unitName',
+        ],
+        [
+            "isAlgoAssetName(token['symbol'])",
+            isAlgoAssetName(computedMember(id('token'), lit('symbol'))),
+            'symbol',
+        ],
     ])('reports displayStringIdentity for %s', (_label, node, name) => {
         expect(lint('CallExpression', node)).toHaveBeenCalledExactlyOnceWith({
             node,
@@ -143,6 +169,42 @@ describe(RULE, () => {
             'ALGO_ASSET_NAME !== token.symbol',
             binary('!==', id('ALGO_ASSET_NAME'), member(id('token'), 'symbol')),
             'symbol',
+        ],
+        [
+            'asset.name.toUpperCase() === ALGO',
+            binary(
+                '===',
+                call(member(member(id('asset'), 'name'), 'toUpperCase'), []),
+                lit('ALGO'),
+            ),
+            'name',
+        ],
+        [
+            "x.unitName.toLowerCase() === 'algo'",
+            binary(
+                '===',
+                call(member(member(id('x'), 'unitName'), 'toLowerCase'), []),
+                lit('algo'),
+            ),
+            'unitName',
+        ],
+        [
+            "token['symbol'] === 'ALGO'",
+            binary(
+                '===',
+                computedMember(id('token'), lit('symbol')),
+                lit('ALGO'),
+            ),
+            'symbol',
+        ],
+        [
+            'asset.name === shared.ALGO_ASSET_NAME',
+            binary(
+                '===',
+                member(id('asset'), 'name'),
+                member(id('shared'), 'ALGO_ASSET_NAME'),
+            ),
+            'name',
         ],
     ])('reports displayStringIdentity for %s', (_label, node, name) => {
         expect(lint('BinaryExpression', node)).toHaveBeenCalledExactlyOnceWith({
@@ -231,6 +293,27 @@ describe(RULE, () => {
             binary('===', member(id('token'), 'symbol'), lit('USDC')),
         ],
         [
+            'token.symbol.toUpperCase() === USDC',
+            'BinaryExpression' as const,
+            binary(
+                '===',
+                call(member(member(id('token'), 'symbol'), 'toUpperCase'), []),
+                lit('USDC'),
+            ),
+        ],
+        [
+            'isAlgoAssetName(token.id.toUpperCase())',
+            'CallExpression' as const,
+            isAlgoAssetName(
+                call(member(member(id('token'), 'id'), 'toUpperCase'), []),
+            ),
+        ],
+        [
+            "token[key] === 'ALGO'",
+            'BinaryExpression' as const,
+            binary('===', computedMember(id('token'), id('key')), lit('ALGO')),
+        ],
+        [
             "asset.id === '0'",
             'BinaryExpression' as const,
             binary('===', member(id('asset'), 'id'), lit('0')),
@@ -275,14 +358,17 @@ describe(RULE, () => {
             'extensions/*/src/**',
             'apps/browser/src/**',
         ])
-        expect(root[0].excludeFiles).toEqual(
-            expect.arrayContaining([
-                '**/__tests__/**',
-                'packages/chain-algorand/src/accounts/address-codec.ts',
-                'packages/chain-algorand/src/blockchain/utils/addresses.ts',
-                'packages/site-safety/src/addresses.ts',
-            ]),
-        )
+        expect(root[0].excludeFiles).toEqual([
+            '**/__tests__/**',
+            '**/__mocks__/**',
+            '**/test-utils/**',
+            '**/__integration__/**',
+            '**/*.spec.{ts,tsx}',
+            '**/*.test.{ts,tsx}',
+            'packages/chain-algorand/src/accounts/address-codec.ts',
+            'packages/chain-algorand/src/blockchain/utils/addresses.ts',
+            'packages/site-safety/src/addresses.ts',
+        ])
 
         const mobile = overridesWith(
             readOxlintConfig('apps/mobile/.oxlintrc.json'),
