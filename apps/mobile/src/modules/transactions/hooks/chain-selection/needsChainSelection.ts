@@ -13,9 +13,9 @@
 import type { AccountChainOption } from '@perawallet/wallet-core-accounts'
 
 /**
- * Whether receive asks which chain before the QR: when the account could
- * receive on more than one, or its only option still has to be enabled.
+ * Whether a flow asks which chain first: when the account could use
+ * more than one, or its only option still has to be enabled.
  */
-export const needsReceiveChainSelection = (
+export const needsChainSelection = (
     options: readonly AccountChainOption[],
 ): boolean => options.length > 1 || options.some(option => !option.isEnabled)

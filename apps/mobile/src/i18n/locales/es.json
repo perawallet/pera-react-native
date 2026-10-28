@@ -2722,13 +2722,13 @@
             "cancel": "Cancelar"
         }
     },
+    "chain_selection": {
+        "title": "Elegir red",
+        "add_action": "Añadir"
+    },
     "receive_funds": {
         "account_selection": {
             "title": "Seleccionar cuenta"
-        },
-        "chain_selection": {
-            "title": "Elegir red",
-            "add_action": "Añadir"
         },
         "qrview": {
             "error_title": "Ninguna cuenta seleccionada",
@@ -2846,7 +2846,10 @@
             "title": "Seleccionar activo",
             "search_placeholder": "Buscar por nombre o ID del activo",
             "no_results_title": "No hay activos coincidentes",
-            "no_results_body": "Ningún activo coincide con tu búsqueda"
+            "no_results_body": "Ningún activo coincide con tu búsqueda",
+            "empty_title": "Nada que enviar en {{network}}",
+            "empty_body": "Esta cuenta aún no tiene activos en {{network}}. Recibe algunos para empezar a enviar.",
+            "empty_receive_action": "Recibir"
         },
         "bottom_sheet": {
             "no_account_title": "Ninguna cuenta seleccionada",

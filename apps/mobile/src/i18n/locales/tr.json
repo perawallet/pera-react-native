@@ -2722,13 +2722,13 @@
             "cancel": "İptal"
         }
     },
+    "chain_selection": {
+        "title": "Ağ seç",
+        "add_action": "Ekle"
+    },
     "receive_funds": {
         "account_selection": {
             "title": "Hesap seç"
-        },
-        "chain_selection": {
-            "title": "Ağ seç",
-            "add_action": "Ekle"
         },
         "qrview": {
             "error_title": "Hesap seçilmedi",
@@ -2846,7 +2846,10 @@
             "title": "Varlık seç",
             "search_placeholder": "Varlık adına veya ID’ye göre ara",
             "no_results_title": "Eşleşen varlık yok",
-            "no_results_body": "Arama terimine uyan varlık bulunamadı"
+            "no_results_body": "Arama terimine uyan varlık bulunamadı",
+            "empty_title": "{{network}} ağında gönderilecek bir şey yok",
+            "empty_body": "Bu hesabın {{network}} ağında henüz varlığı yok. Göndermeye başlamak için varlık al.",
+            "empty_receive_action": "Al"
         },
         "bottom_sheet": {
             "no_account_title": "Hesap seçilmedi",
