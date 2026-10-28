@@ -13,11 +13,9 @@
 import { makeStyles } from '@rneui/themed'
 import bootsplashManifest from '@assets/bootsplash/manifest.json'
 
-// The splash screen visually continues the native bootsplash, so its colors
-// must match the bootsplash manifest verbatim and intentionally bypass the
-// theme tokens — switching to dark-mode tokens here would create a seam at
-// hand-off from native to JS.
-const BOOTSPLASH_FOREGROUND = '#000000'
+// The splash continues the native bootsplash: the background is the manifest's
+// and the foreground is `bootsplashContent`, the same in light and dark, so
+// there is no seam at the native-to-JS hand-off.
 const LOGO_SIZE = bootsplashManifest.logo.width
 
 export const useStyles = makeStyles(theme => ({
@@ -49,11 +47,9 @@ export const useStyles = makeStyles(theme => ({
     },
     footerMessage: {
         textAlign: 'center',
-        color: BOOTSPLASH_FOREGROUND,
+        color: theme.colors.bootsplashContent,
     },
     continueButton: {
         alignSelf: 'stretch',
     },
 }))
-
-export const SPINNER_COLOR = BOOTSPLASH_FOREGROUND

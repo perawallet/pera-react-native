@@ -118,7 +118,7 @@ export const QRViewScreen = () => {
                         value={paymentUri}
                         size={qrSize}
                         color='black'
-                        backgroundColor='white'
+                        backgroundColor={theme.colors.qrCodeBg}
                         quietZone={theme.spacing.sm}
                         ecl='H'
                     />

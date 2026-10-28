@@ -43,6 +43,15 @@ describe('colour tokens', () => {
         )
     })
 
+    it.each([
+        'chartAreaFill',
+        'bannerCloseButtonBg',
+        'qrCodeBg',
+        'bootsplashContent',
+    ] as const)('%s is the same in light and dark', token => {
+        expect(darkColorTokens[token]).toBe(lightColorTokens[token])
+    })
+
     it('uses only hex or rgba colour strings', () => {
         const values = [
             ...Object.values(lightColorTokens),
