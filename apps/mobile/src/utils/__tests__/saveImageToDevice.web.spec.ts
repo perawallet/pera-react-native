@@ -59,7 +59,9 @@ describe('saveImageToDevice (web)', () => {
             'collectible_12345.png',
         )
 
-        expect(fetch).toHaveBeenCalledWith('https://example.com/full.png')
+        expect(globalThis.fetch).toHaveBeenCalledWith(
+            'https://example.com/full.png',
+        )
         expect(mockAnchor.href).toBe(mockObjectUrl)
         expect(mockAnchor.download).toBe('collectible_12345.png')
         expect(mockAnchor.click).toHaveBeenCalledTimes(1)

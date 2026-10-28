@@ -24,6 +24,7 @@ export const getImageBase64 = async (
     imageUrl: string,
     _cacheKey: string,
 ): Promise<string> => {
+    // oxlint-disable-next-line no-restricted-globals -- collectible media lives on any host, and queryClient only reaches Pera's backend
     const response = await fetch(imageUrl)
     if (!response.ok) {
         throw new Error(`Failed to fetch image (${response.status})`)

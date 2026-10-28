@@ -19,19 +19,21 @@ import {
     type OxlintOverride,
 } from './helpers.js'
 
-describe('no-restricted-properties', () => {
-    const restricted = (override: OxlintOverride): string[] =>
-        (override.rules['no-restricted-properties'] as unknown[])
-            .slice(1)
-            .map(entry => {
-                const { object, property } = entry as {
-                    object: string
-                    property: string
-                }
-                return `${object}.${property}`
-            })
+const FETCH_PROPERTIES = ['globalThis.fetch', 'window.fetch', 'self.fetch']
 
-    it('keeps Math.random out of the key-handling packages', () => {
+const restricted = (override: OxlintOverride): string[] =>
+    (override.rules['no-restricted-properties'] as unknown[])
+        .slice(1)
+        .map(entry => {
+            const { object, property } = entry as {
+                object: string
+                property: string
+            }
+            return `${object}.${property}`
+        })
+
+describe('no-restricted-properties', () => {
+    it('restricts the fetch properties everywhere, and Math.random too in the key-handling packages, whose override comes later and so restates the fetch ones', () => {
         const root = readOxlintConfig('.oxlintrc.json')
         expect(
             overridesWith(root, 'no-restricted-properties').map(o => [
@@ -39,6 +41,10 @@ describe('no-restricted-properties', () => {
                 restricted(o),
             ]),
         ).toEqual([
+            [
+                ['apps/*/src/**', 'packages/*/src/**', 'extensions/*/src/**'],
+                FETCH_PROPERTIES,
+            ],
             [
                 [
                     'packages/kms/src/**',
@@ -50,12 +56,12 @@ describe('no-restricted-properties', () => {
                     'extensions/provider/src/**',
                     'extensions/passkey-autofill/src/**',
                 ],
-                ['Math.random'],
+                ['Math.random', ...FETCH_PROPERTIES],
             ],
         ])
     })
 
-    it('bans StyleSheet.create in mobile source, and Alert.alert outside developer screens', () => {
+    it('bans StyleSheet.create and the fetch properties in mobile source, and Alert.alert outside developer screens', () => {
         const mobile = readOxlintConfig('apps/mobile/.oxlintrc.json')
         expect(
             overridesWith(mobile, 'no-restricted-properties').map(o => [
@@ -63,10 +69,13 @@ describe('no-restricted-properties', () => {
                 restricted(o),
             ]),
         ).toEqual([
-            [['src/**'], ['StyleSheet.create', 'Alert.alert']],
+            [
+                ['src/**'],
+                ['StyleSheet.create', 'Alert.alert', ...FETCH_PROPERTIES],
+            ],
             [
                 ['src/modules/settings/screens/developer/**'],
-                ['StyleSheet.create'],
+                ['StyleSheet.create', ...FETCH_PROPERTIES],
             ],
         ])
     })
@@ -174,4 +183,92 @@ describe('every pera plugin rule', () => {
             ).toBe(true)
         },
     )
+})
+
+describe('fetch', () => {
+    type Restriction = { message: string }
+    const entries = (override: OxlintOverride, rule: string): unknown[] =>
+        (override.rules[rule] as unknown[]).slice(1)
+    const names = (override: OxlintOverride): string[] =>
+        entries(override, 'no-restricted-globals').map(
+            entry => (entry as { name: string }).name,
+        )
+    const fetchMessage = (config: OxlintConfig): string =>
+        (
+            entries(
+                overridesWith(config, 'no-restricted-globals')[0],
+                'no-restricted-globals',
+            ).find(
+                entry => (entry as { name: string }).name === 'fetch',
+            ) as Restriction
+        ).message
+
+    it('bans the fetch global at error in app, package and extension source, tests aside, with no file-level exemptions', () => {
+        const root = readOxlintConfig('.oxlintrc.json')
+        const overrides = overridesWith(root, 'no-restricted-globals')
+
+        expect(overrides).toHaveLength(1)
+        expect(overrides[0].files).toEqual([
+            'apps/*/src/**',
+            'packages/*/src/**',
+            'extensions/*/src/**',
+        ])
+        expect(
+            (overrides[0].rules['no-restricted-globals'] as unknown[])[0],
+        ).toBe('error')
+        expect(names(overrides[0])).toEqual(['fetch'])
+        expect(overrides[0].excludeFiles).toEqual([
+            '**/__tests__/**',
+            '**/__mocks__/**',
+            '**/test-utils/**',
+            '**/__integration__/**',
+            '**/*.spec.{ts,tsx}',
+            '**/*.test.{ts,tsx}',
+        ])
+    })
+
+    it('bans fetch in mobile source beside chrome, in the one no-restricted-globals override', () => {
+        const root = readOxlintConfig('.oxlintrc.json')
+        const mobile = readOxlintConfig('apps/mobile/.oxlintrc.json')
+        const overrides = overridesWith(mobile, 'no-restricted-globals')
+
+        expect(overrides).toHaveLength(1)
+        expect(overrides[0].files).toEqual(['src/**/*.{ts,tsx}'])
+        expect(overrides[0].excludeFiles).toBeUndefined()
+        expect(
+            (overrides[0].rules['no-restricted-globals'] as unknown[])[0],
+        ).toBe('error')
+        expect(names(overrides[0])).toEqual(['chrome', 'fetch'])
+        expect(fetchMessage(mobile)).toBe(fetchMessage(root))
+    })
+
+    it('restricts globalThis, window and self.fetch at error with the same message in every no-restricted-properties override', () => {
+        for (const path of ['.oxlintrc.json', 'apps/mobile/.oxlintrc.json']) {
+            const config = readOxlintConfig(path)
+            const message = fetchMessage(readOxlintConfig('.oxlintrc.json'))
+            for (const override of overridesWith(
+                config,
+                'no-restricted-properties',
+            )) {
+                expect(
+                    (
+                        override.rules['no-restricted-properties'] as unknown[]
+                    )[0],
+                ).toBe('error')
+                const fetchEntries = entries(
+                    override,
+                    'no-restricted-properties',
+                ).filter(
+                    entry =>
+                        (entry as { property: string }).property === 'fetch',
+                )
+                expect(
+                    fetchEntries.map(entry => (entry as Restriction).message),
+                ).toEqual([message, message, message])
+                expect(restricted(override)).toEqual(
+                    expect.arrayContaining(FETCH_PROPERTIES),
+                )
+            }
+        }
+    })
 })
