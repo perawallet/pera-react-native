@@ -295,7 +295,6 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
             signArbitraryData,
             signAuthData,
             multisigAdaptersFor,
-            allAccounts,
         ],
     )
 

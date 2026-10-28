@@ -34,5 +34,6 @@ export const useDelegatedTransition = (
         )
         if (!account) return null
         return delegateTransitionFor(account, accounts, chainId)
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- chainStates re-runs the memo: delegateTransitionFor reads the chain-state store, not its arguments
     }, [address, accounts, chainId, chainStates])
 }

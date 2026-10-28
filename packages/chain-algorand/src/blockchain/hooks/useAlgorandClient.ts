@@ -27,10 +27,6 @@ export const useAlgorandClient = (signer?: PeraTransactionSigner) => {
 
     return useMemo(() => {
         return createWalletAlgorandClient(network, signer)
-        // customNetwork (the whole object, not a property of it — oxlint's
-        // exhaustive-deps wants the reference itself) is a real dependency:
-        // when `network` is 'custom', getChainConfig reads it, so a
-        // saved config change must re-memoize the client rather than leave a
-        // mounted screen pointed at the old host until it unmounts.
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- getChainConfig reads customNetwork when network is 'custom', so a saved config change must rebuild the client
     }, [network, customNetwork, signer])
 }

@@ -20,13 +20,14 @@ const mocks = vi.hoisted(() => ({
     accounts: [] as WalletAccount[],
     swapChainOf: vi.fn<(account: WalletAccount) => ChainId | undefined>(),
     signable: new Set<string>(),
+    states: {} as Record<string, unknown>,
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAllAccounts: () => mocks.accounts,
     useCapabilityChainResolver: () => mocks.swapChainOf,
     useAccountChainStateStore: (selector: (state: unknown) => unknown) =>
-        selector({ states: {} }),
+        selector({ states: mocks.states }),
     useAccountCapabilityScope: vi.fn(),
     useSelectedAccount: vi.fn(),
     canSignWith: (account: WalletAccount) => mocks.signable.has(account.id),
@@ -41,6 +42,7 @@ const account = (id: string): WalletAccount => ({
 describe('swaps/useSwapSigningAccounts', () => {
     beforeEach(() => {
         mocks.swapChainOf.mockReset()
+        mocks.states = {}
     })
 
     test('keeps signers on a swap chain and drops watch and swap-less accounts', () => {
@@ -66,5 +68,21 @@ describe('swaps/useSwapSigningAccounts', () => {
         const { result } = renderHook(() => useSwapSigningAccounts())
 
         expect(result.current).toEqual([])
+    })
+
+    test('recomputes when a chain-state slice changes', () => {
+        mocks.accounts = [account('signer')]
+        mocks.signable = new Set()
+        mocks.swapChainOf.mockReturnValue('algorand')
+        const { result, rerender } = renderHook(() => useSwapSigningAccounts())
+        expect(result.current).toEqual([])
+
+        mocks.signable = new Set(['signer'])
+        rerender()
+        expect(result.current).toEqual([])
+
+        mocks.states = {}
+        rerender()
+        expect(result.current).toEqual(mocks.accounts)
     })
 })

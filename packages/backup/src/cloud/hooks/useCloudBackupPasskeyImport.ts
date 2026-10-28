@@ -165,7 +165,7 @@ export const useCloudBackupPasskeyImport = (
             })
             return result === 'written' ? null : 'pubkey-mismatch'
         },
-        [],
+        [chainId],
     )
 
     const importPasskeys = useCallback<PasskeyImportFn>(

@@ -55,6 +55,7 @@ export const useAuthorityTargets = (
                 ),
             ),
         )
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- chainStates re-runs the memo: the chain's isEligibleTarget reads the chain-state store, not its arguments
     }, [accounts, scope, chainStates, source, category])
 }
 

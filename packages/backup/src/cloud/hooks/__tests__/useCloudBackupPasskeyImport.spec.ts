@@ -12,6 +12,7 @@
 
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { webcrypto } from 'node:crypto'
 import {
     derivePasskeyCredential,
@@ -436,6 +437,22 @@ describe('useCloudBackupPasskeyImport', () => {
                 displayName: 'Alice',
                 createdAtMs: 1,
             })
+        })
+
+        it('resolves the seed on the chain the latest render names', async () => {
+            const { result, rerender } = renderHook(
+                ({ chainId }) =>
+                    useCloudBackupPasskeyImport(chainId, resolveEntropy),
+                { initialProps: { chainId: 'algorand' as ChainId } },
+            )
+            rerender({ chainId: 'ethereum' })
+
+            await result.current.importPasskeys([await withoutSecret()])
+
+            expect(resolveSeedKeyId).toHaveBeenCalledWith(
+                'SEEDADDRESS',
+                'ethereum',
+            )
         })
 
         it('re-derives even when the private key was backed up too', async () => {
