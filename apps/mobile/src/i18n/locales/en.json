@@ -102,6 +102,11 @@
         "search_placeholder": "Search by name or asset ID",
         "no_results": "No assets found",
         "partial_results": "Some networks couldn't be searched, so results may be missing.",
+        "not_listed": {
+            "title": "Not available yet",
+            "body": "Pera doesn't list assets on {{chain}} yet.",
+            "body_all": "Pera doesn't list assets on these networks yet."
+        },
         "opt_in": {
             "failed_title": "Failed to opt-in",
             "success_title": "Opt-in successful",
@@ -434,6 +439,7 @@
         "remove_rekey_error_message": "You can't remove this account before removing its {{count}} rekeyed account(s)",
         "view_private_key": "View private key",
         "networks_title": "Networks",
+        "networks_title_named": "{{name}} on each network",
         "add_network": "Add",
         "add_network_error": "Couldn't add this network",
         "add_network_success": "{{network}} added",
@@ -450,8 +456,7 @@
         "universal_wallet_subtitle": "One passphrase, all networks",
         "viewing": "Viewing",
         "wallet_label": "Wallet #{{number}}",
-        "main_address": "Main Address",
-        "sub_address": "Sub Address",
+        "account_number": "Account #{{number}}",
         "type_universal_wallet": "Universal Wallet",
         "type_algo25": "Algo25 Account",
         "type_watch": "Watch Account",
@@ -501,8 +506,10 @@
         "acknowledge": {
             "title": "Keep it secret. Keep it safe.",
             "description": "Confirm and acknowledge the following:",
+            "scope": "This passphrase controls your accounts on all networks: {{networks}}.",
             "row_screen": "Nobody can see my screen.",
             "row_share": "I risk losing all my funds if I share my recovery passphrase with anyone.",
+            "row_share_all_networks": "I risk losing all my funds on every network if I share my recovery passphrase with anyone.",
             "row_lose": "My funds are permanently lost if I lose my recovery passphrase and lose access to my wallet.",
             "row_pera": "Pera employees will NEVER ask for my recovery passphrase.",
             "cta_reveal": "Reveal Recovery Passphrase",
@@ -512,7 +519,14 @@
             "title": "Passphrase",
             "body": "Make sure to record these words in the correct order, using the corresponding numbers.",
             "error_title": "Could not retrieve passphrase",
-            "error_body": "Something went wrong. Please try again."
+            "error_body": "Something went wrong. Please try again.",
+            "reach_title": "This account's addresses"
+        },
+        "compatibility": {
+            "title": "Using this passphrase in other wallets",
+            "evm": "Ethereum-compatible networks: standard BIP39 wallets such as MetaMask can import these words, and your first account's address will match. Accounts you add later in Pera may not appear in those wallets by default.",
+            "algorand": "Algorand: works in Pera and other wallets that support Algorand 24-word HD wallets. Legacy 25-word Algorand wallets can't import it.",
+            "warning": "Anyone who has these words controls your funds on every network. Never enter them on a website or share them with anyone."
         }
     },
     "reveal_private_key": {
@@ -3367,6 +3381,23 @@
             "show_details": "Show Details",
             "details_title": "Athentication Request Details",
             "details_description": "Review the full metadata of this authentication request before approving."
+        },
+        "address_safety": {
+            "listed_title": "Known scam address",
+            "listed_body": "This request names an address on a public list of addresses used to steal funds. Signing could hand it your assets.",
+            "look_alike_title": "This request names an address that imitates one you know",
+            "look_alike_body": "It starts and ends like an address you know, but the characters in between are different. Scammers create look-alike addresses to trick you. Compare the full addresses below.",
+            "acknowledge": "I understand the risk and want to sign anyway",
+            "role": {
+                "recipient": "Recipient",
+                "token_recipient": "Token recipient",
+                "close_recipient": "Receives the remaining balance",
+                "new_authorizer": "New signing authority",
+                "referenced_account": "Referenced account",
+                "target": "Contract",
+                "spender": "Spender",
+                "operator": "Operator"
+            }
         }
     },
     "site_safety": {

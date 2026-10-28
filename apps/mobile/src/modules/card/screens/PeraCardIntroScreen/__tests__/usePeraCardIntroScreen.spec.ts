@@ -21,16 +21,6 @@ vi.mock('@analytics', async () => {
     return { ...actual, trackEvent: mockTrackEvent }
 })
 
-const mockInfoToast = vi.fn()
-vi.mock('@hooks/useToast', () => ({
-    useToast: () => ({
-        infoToast: mockInfoToast,
-        showToast: vi.fn(),
-        errorToast: vi.fn(),
-        successToast: vi.fn(),
-    }),
-}))
-
 const mockNavigate = vi.fn()
 vi.mock('@hooks/useAppNavigation', () => ({
     useAppNavigation: () => ({ navigate: mockNavigate }),

@@ -1169,7 +1169,7 @@ export const getSheetSections = (): GallerySection[] => [
                     request: () => ({
                         contents: (
                             <GallerySheetBoundary>
-                                <PassphraseAcknowledgeContent />
+                                <PassphraseAcknowledgeContent address={A} />
                             </GallerySheetBoundary>
                         ),
                         options: {

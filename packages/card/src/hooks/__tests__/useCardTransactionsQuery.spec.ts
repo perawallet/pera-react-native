@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+// @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, waitFor, act } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -20,18 +21,12 @@ const { fetchCardTransactions } = vi.hoisted(() => ({
 }))
 vi.mock('../../api/transactions', () => ({ fetchCardTransactions }))
 
-import {
-    type ChainScope,
-    LEGACY_CHAIN_ID,
-} from '@perawallet/wallet-core-chain-contract'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useCardTransactionsQuery } from '../useCardTransactionsQuery'
 
-const SCOPES: ChainScope[] = [
-    { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
-    { chainId: 'ethereum', networkId: 'sepolia' },
-]
+const SCOPE: ChainScope = { chainId: 'ethereum', networkId: 'sepolia' }
 
-describe.each(SCOPES)('useCardTransactionsQuery ($chainId)', SCOPE => {
+describe('useCardTransactionsQuery', () => {
     let queryClient: QueryClient
 
     beforeEach(() => {
@@ -68,6 +63,9 @@ describe.each(SCOPES)('useCardTransactionsQuery ($chainId)', SCOPE => {
         await waitFor(() => expect(result.current.isLoading).toBe(false))
         expect(result.current.transactions.map(t => t.id)).toEqual(['tx_1'])
         expect(result.current.hasNextPage).toBe(true)
+        expect(fetchCardTransactions).toHaveBeenCalledWith(
+            expect.objectContaining({ scope: SCOPE }),
+        )
 
         await act(async () => {
             await result.current.fetchNextPage()

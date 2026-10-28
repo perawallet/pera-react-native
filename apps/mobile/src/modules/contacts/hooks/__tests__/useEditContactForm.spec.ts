@@ -88,21 +88,6 @@ vi.mock('@hooks/useToast', () => ({
     useToast: () => ({ errorToast: errorToastMock }),
 }))
 
-vi.mock('@hooks/useImagePicker', () => ({
-    useImagePicker: () => ({
-        pickFromGallery: vi.fn().mockResolvedValue(null),
-    }),
-}))
-
-vi.mock('@hooks/useNfdResolve', () => ({
-    useNfdResolve: () => ({
-        resolvedAddress: '',
-        isNfdResolved: false,
-        isNfdResolving: false,
-        nfdName: undefined,
-    }),
-}))
-
 // Stub the underlying form hook so tests can control `isValid` / observe
 // `setError` without wrestling with react-hook-form internals. It's a spy so
 // tests can assert which contact the form was seeded from (the prefill).

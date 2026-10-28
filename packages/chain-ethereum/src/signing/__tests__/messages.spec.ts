@@ -32,8 +32,14 @@ import {
     typedDataMessageRequest,
 } from '../messages'
 import {
+    DAI_PERMIT_TYPED_DATA,
+    EIP2612_PERMIT_TYPED_DATA,
     ETHEREUM_SIGNER_ACCOUNT,
     MAIL_TYPED_DATA,
+    PERMIT2_ADDRESS,
+    PERMIT2_SINGLE_NO_DEADLINE_TYPED_DATA,
+    PERMIT_SPENDER,
+    PERMIT_USDC,
     SENDER,
     SIGNER_KEY_PAIR_ID,
     VIEM_HELLO_WORLD,
@@ -356,6 +362,111 @@ describe('ethereumMessageSignerAdapter.plan with a declared EIP712Domain', () =>
             'The typed-data message payload is malformed',
         )
         expect(adapter.describe(request).kind).toBe('raw')
+    })
+})
+
+describe('ethereumMessageSignerAdapter.reviewedAddresses', () => {
+    const typed = (typedData: unknown) =>
+        typedDataMessageRequest(
+            MAINNET,
+            SENDER,
+            typedData as Parameters<typeof typedDataMessageRequest>[2],
+        )
+
+    it('names an EIP-2612 permit’s spender, its token contract and its owner', () => {
+        expect(
+            adapter.reviewedAddresses(typed(EIP2612_PERMIT_TYPED_DATA)),
+        ).toEqual([
+            { address: PERMIT_USDC, role: 'target' },
+            { address: SENDER, role: 'referenced-account' },
+            { address: PERMIT_SPENDER, role: 'spender' },
+        ])
+    })
+
+    it('names the spender of a DAI permit the permit parser does not recognise', () => {
+        const request = typed(DAI_PERMIT_TYPED_DATA)
+
+        expect(adapter.describe(request).spendApproval).toBeUndefined()
+        expect(adapter.reviewedAddresses(request)).toContainEqual({
+            address: PERMIT_SPENDER,
+            role: 'spender',
+        })
+    })
+
+    it('names the spender and nested token of a Permit2 message with no deadline', () => {
+        const request = typed(PERMIT2_SINGLE_NO_DEADLINE_TYPED_DATA)
+
+        expect(adapter.describe(request).spendApproval).toBeUndefined()
+        expect(adapter.reviewedAddresses(request)).toEqual([
+            { address: PERMIT2_ADDRESS, role: 'target' },
+            { address: PERMIT_USDC, role: 'referenced-account' },
+            { address: PERMIT_SPENDER, role: 'spender' },
+        ])
+    })
+
+    it('names an operator, and every address in an array', () => {
+        const request = typed({
+            domain: { name: 'Fixture', chainId: 1 },
+            types: {
+                Grant: [
+                    { name: 'operator', type: 'address' },
+                    { name: 'recipients', type: 'address[]' },
+                ],
+            },
+            primaryType: 'Grant',
+            message: {
+                operator: PERMIT_SPENDER,
+                recipients: [OTHER, PERMIT_USDC],
+            },
+        })
+
+        expect(adapter.reviewedAddresses(request)).toEqual([
+            { address: PERMIT_SPENDER, role: 'operator' },
+            { address: OTHER, role: 'referenced-account' },
+            { address: PERMIT_USDC, role: 'referenced-account' },
+        ])
+    })
+
+    it.each(['constructor', 'toString', 'hasOwnProperty', '__proto__'])(
+        'reads a field named %s as a referenced account',
+        fieldName => {
+            const request = typed({
+                domain: { name: 'Fixture', chainId: 1 },
+                types: { Grant: [{ name: fieldName, type: 'address' }] },
+                primaryType: 'Grant',
+                message: JSON.parse(
+                    JSON.stringify({ [fieldName]: PERMIT_SPENDER }),
+                ),
+            })
+
+            expect(adapter.reviewedAddresses(request)).toEqual([
+                { address: PERMIT_SPENDER, role: 'referenced-account' },
+            ])
+        },
+    )
+
+    it('skips an address field holding something that is not an address', () => {
+        const request = typed({
+            ...DAI_PERMIT_TYPED_DATA,
+            message: { ...DAI_PERMIT_TYPED_DATA.message, spender: 'nobody' },
+        })
+
+        expect(
+            adapter.reviewedAddresses(request).map(({ role }) => role),
+        ).not.toContain('spender')
+    })
+
+    it('names nothing for personal_sign or a payload it cannot read', () => {
+        expect(
+            adapter.reviewedAddresses(personal(toHex(PERMIT_SPENDER))),
+        ).toEqual([])
+        expect(
+            adapter.reviewedAddresses({
+                ...personal('0x'),
+                method: 'eth_signTypedData_v4',
+                payload: { typedData: 'not typed data' },
+            }),
+        ).toEqual([])
     })
 })
 

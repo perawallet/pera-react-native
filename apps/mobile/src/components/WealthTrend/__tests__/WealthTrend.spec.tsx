@@ -53,13 +53,11 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
 describe('WealthTrend', () => {
     it('renders empty when isPending is true', () => {
         vi.mocked(useAccountBalancesHistoryQuery).mockReturnValue({
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            data: undefined as any, // Changed to undefined to match test description, but with 'as any'
-            isPending: true, // Kept as true to match test description
+            data: undefined,
+            isPending: true,
         } as unknown as ReturnType<typeof useAccountBalancesHistoryQuery>)
 
         const { container } = render(<WealthTrend period='one-week' />)
-        // Should render empty fragment when pending
         expect(container.innerHTML).toBe('')
     })
 
@@ -100,7 +98,6 @@ describe('WealthTrend', () => {
         } as unknown as ReturnType<typeof useAccountBalancesHistoryQuery>)
 
         const { container } = render(<WealthTrend period='one-week' />)
-        // Should show percentage value
         expect(container.textContent).toContain('%')
     })
 
@@ -152,27 +149,30 @@ describe('WealthTrend', () => {
         expect(getByTestId('trend-indicator-up')).toBeTruthy()
     })
 
-    it('uses single account when account prop is provided', () => {
-        const mockAccount = {
-            chains: { algorand: { address: 'test-address' } },
-        }
+    it('reads the history of the given account only', () => {
         vi.mocked(useAccountBalancesHistoryQuery).mockReturnValue({
-            data: [
-                {
-                    preferredValue: new Decimal(100),
-                    nativeValue: new Decimal(100),
-                },
-            ],
+            data: [],
             isPending: false,
         } as unknown as ReturnType<typeof useAccountBalancesHistoryQuery>)
 
-        const { container } = render(
+        render(
             <WealthTrend
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                account={mockAccount as any}
+                account={{
+                    id: 'test',
+                    custody: { kind: 'watch' },
+                    chains: { algorand: { address: 'test-address' } },
+                }}
                 period='one-week'
             />,
         )
-        expect(container).toBeTruthy()
+
+        expect(
+            vi.mocked(useAccountBalancesHistoryQuery),
+        ).toHaveBeenLastCalledWith(
+            ['test-address'],
+            'one-week',
+            expect.objectContaining({ chainId: 'algorand' }),
+            true,
+        )
     })
 })

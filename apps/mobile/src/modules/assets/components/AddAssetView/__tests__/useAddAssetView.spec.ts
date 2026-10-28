@@ -24,6 +24,7 @@ import {
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import {
     registerEthereumChain,
+    registerEvmChain,
     restoreAlgorandOnlyChains,
 } from '@test-utils/chain-fixtures'
 import {
@@ -34,6 +35,11 @@ import {
 const ALGORAND_SCOPE = { chainId: 'algorand', networkId: 'mainnet' } as const
 const ETHEREUM_SCOPE = {
     chainId: 'ethereum' as ChainId,
+    networkId: 'mainnet',
+} as const
+
+const BASE_SCOPE = {
+    chainId: 'base' as ChainId,
     networkId: 'mainnet',
 } as const
 
@@ -108,6 +114,8 @@ const { mockUseAssetSearch, defaultSearchResult } = vi.hoisted(() => {
         isLoading: false,
         isError: false,
         error: null as unknown,
+        isUnavailable: false,
+        unavailableReasons: [] as Error[],
         isPaused: false,
         isFetchingNextPage: false,
         hasNextPage: false,
@@ -168,8 +176,12 @@ vi.mock('@hooks/useErrorToast', () => ({
 
 // One `t` across renders, as react-i18next's is, so memoised callbacks that
 // depend on it keep their identity.
+const { mockT } = vi.hoisted(() => ({
+    mockT: vi.fn((key: string, _params?: unknown) => key),
+}))
+
 vi.mock('@hooks/useLanguage', () => {
-    const t = (key: string) => key
+    const t = mockT
     return {
         useLanguage: () => ({
             t,
@@ -419,25 +431,35 @@ describe('useAddAssetView', () => {
                 backendCode: 'chain_not_enabled',
             }),
             true,
+            true,
         ],
         [
             'a network with no Pera services',
             new PeraServiceUnavailableError(ETHEREUM_SCOPE, 'assets'),
             true,
+            false,
         ],
-        ['any other failure', new Error('boom'), false],
-    ])('shows the unavailable state for %s', (_case, error, isRefusal) => {
-        mockSearch({ isError: true, error })
+        ['any other failure', new Error('boom'), false, false],
+    ])(
+        'words the unavailable state for %s',
+        (_case, error, isUnavailable, isNotListed) => {
+            mockSearch({ isError: true, error })
 
-        const { result } = renderHook(() =>
-            useAddAssetView({ chainId: 'algorand' }),
-        )
+            const { result } = renderHook(() =>
+                useAddAssetView({ chainId: 'algorand' }),
+            )
 
-        expect(result.current.isUnavailable).toBe(isRefusal)
-        expect(result.current.unavailableBody).toBe(
-            isRefusal ? 'common.network_unavailable.generic_body' : undefined,
-        )
-    })
+            expect(result.current.isUnavailable).toBe(isUnavailable)
+            // A network with no Pera services keeps the default BetaNet and
+            // custom-node copy; only a backend refusal reads as not listed.
+            expect(result.current.unavailableTitle).toBe(
+                isNotListed ? 'add_asset.not_listed.title' : undefined,
+            )
+            expect(result.current.unavailableBody).toBe(
+                isNotListed ? 'add_asset.not_listed.body' : undefined,
+            )
+        },
+    )
 
     it('is offline when the search query is paused (true-offline regime)', () => {
         mockSearch({ isPaused: true })
@@ -468,6 +490,7 @@ describe('useAddAssetView', () => {
         )
 
         expect(result.current.isUnavailable).toBe(true)
+        expect(result.current.unavailableTitle).toBeUndefined()
         expect(result.current.unavailableBody).toBeUndefined()
         expect(result.current.isError).toBe(false)
         expect(result.current.isOffline).toBe(false)
@@ -662,6 +685,131 @@ describe('useAddAssetView', () => {
                 [ALGORAND_SCOPE],
                 { hasCollectible: true },
             )
+        })
+    })
+
+    describe('on Base, an EVM chain other than Ethereum', () => {
+        const refusal = () =>
+            new PeraNetworkError('client', {
+                status: 422,
+                backendCode: 'chain_not_enabled',
+            })
+
+        beforeEach(() => {
+            registerEvmChain('base')
+            mockGetSelectedAccount.mockReturnValue({
+                ...mockAccount,
+                chains: {
+                    algorand: { address: 'test-address' },
+                    base: { address: '0xbase' },
+                },
+            })
+        })
+
+        it.each([
+            [
+                'the query already knows it',
+                { isUnavailable: true, unavailableReasons: [refusal()] },
+            ],
+            [
+                'its search was just refused',
+                { isError: true, error: refusal() },
+            ],
+        ])(
+            'is unavailable, naming the chain and not loading, when %s',
+            (_case, search) => {
+                mockSearch(search)
+                debounced.heldValue = ''
+
+                const { result } = renderHook(() =>
+                    useAddAssetView({ chainId: 'base' }),
+                )
+                act(() => result.current.handleSearchChange('aero'))
+
+                expect(result.current.selectedChainId).toBe('base')
+                expect(result.current.isUnavailable).toBe(true)
+                expect(result.current.unavailableTitle).toBe(
+                    'add_asset.not_listed.title',
+                )
+                expect(result.current.unavailableBody).toBe(
+                    'add_asset.not_listed.body',
+                )
+                expect(mockT).toHaveBeenCalledWith(
+                    'add_asset.not_listed.body',
+                    {
+                        chain: 'Base',
+                    },
+                )
+                expect(result.current.isLoading).toBe(false)
+                debounced.heldValue = undefined
+            },
+        )
+
+        it('is failed, not unavailable, when the search breaks', () => {
+            mockSearch({
+                isError: true,
+                error: new PeraNetworkError('server', { status: 500 }),
+            })
+
+            const { result } = renderHook(() =>
+                useAddAssetView({ chainId: 'base' }),
+            )
+
+            expect(result.current.isError).toBe(true)
+            expect(result.current.isUnavailable).toBe(false)
+            expect(result.current.unavailableTitle).toBeUndefined()
+            expect(result.current.unavailableBody).toBeUndefined()
+        })
+
+        it('is empty, not unavailable or failed, when nothing matches', () => {
+            mockSearch({ results: [] })
+
+            const { result } = renderHook(() =>
+                useAddAssetView({ chainId: 'base' }),
+            )
+
+            expect(result.current.isUnavailable).toBe(false)
+            expect(result.current.isError).toBe(false)
+            expect(result.current.isLoading).toBe(false)
+            expect(result.current.results).toEqual([])
+        })
+
+        it('words a refusal of every chain as not listed under All, naming no single chain', () => {
+            mockSearch({
+                isUnavailable: true,
+                unavailableReasons: [refusal(), refusal()],
+            })
+
+            const { result } = renderHook(() =>
+                useAddAssetView({ chainId: null }),
+            )
+
+            expect(result.current.selectedChainId).toBeNull()
+            expect(result.current.isUnavailable).toBe(true)
+            expect(result.current.unavailableTitle).toBe(
+                'add_asset.not_listed.title',
+            )
+            expect(result.current.unavailableBody).toBe(
+                'add_asset.not_listed.body_all',
+            )
+        })
+
+        it('keeps the default copy under All when any chain lacks Pera services', () => {
+            mockSearch({
+                isUnavailable: true,
+                unavailableReasons: [
+                    refusal(),
+                    new PeraServiceUnavailableError(BASE_SCOPE, 'assets'),
+                ],
+            })
+
+            const { result } = renderHook(() =>
+                useAddAssetView({ chainId: null }),
+            )
+
+            expect(result.current.isUnavailable).toBe(true)
+            expect(result.current.unavailableTitle).toBeUndefined()
+            expect(result.current.unavailableBody).toBeUndefined()
         })
     })
 })

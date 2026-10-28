@@ -10,8 +10,6 @@
  limitations under the License
  */
 
-// @vitest-environment node
-
 import { describe, test, expect, vi } from 'vitest'
 
 // Argon2id is native-only; mock it to a fixed master key (0x01..0x20) so the

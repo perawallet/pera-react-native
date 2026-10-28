@@ -45,6 +45,7 @@ export const fetchNfdAppId = async ({
         throw new Error(`NFD registry not configured for ${networkId}`)
     }
 
+    // oxlint-disable-next-line no-restricted-globals -- asks NFD's registry directly so Pera's backend cannot vouch for what a name resolves to
     const response = await fetch(
         `${baseUrl}/nfd/${encodeURIComponent(name)}?view=brief`,
         { signal },

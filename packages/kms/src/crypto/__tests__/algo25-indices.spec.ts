@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-// @vitest-environment node
 import { describe, test, expect } from 'vitest'
 import { algo25SeedToIndices, indicesToAlgo25Seed } from '../algo25-utils'
 

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
 import { saveImageToDevice } from '../saveImageToDevice.web'
 
 describe('saveImageToDevice (web)', () => {
@@ -21,8 +21,9 @@ describe('saveImageToDevice (web)', () => {
         click: vi.fn(),
     }
 
+    const { createObjectURL, revokeObjectURL } = URL
+
     beforeEach(() => {
-        vi.clearAllMocks()
         mockAnchor.href = ''
         mockAnchor.download = ''
 
@@ -45,15 +46,25 @@ describe('saveImageToDevice (web)', () => {
         )
     })
 
+    afterEach(() => {
+        URL.createObjectURL = createObjectURL
+        URL.revokeObjectURL = revokeObjectURL
+        vi.restoreAllMocks()
+        vi.unstubAllGlobals()
+    })
+
     it('fetches the media and triggers a download via a temporary anchor', async () => {
         await saveImageToDevice(
             'https://example.com/full.png',
             'collectible_12345.png',
         )
 
-        expect(fetch).toHaveBeenCalledWith('https://example.com/full.png', {
-            signal: expect.anything(),
-        })
+        expect(globalThis.fetch).toHaveBeenCalledWith(
+            'https://example.com/full.png',
+            {
+                signal: expect.anything(),
+            },
+        )
         expect(mockAnchor.href).toBe(mockObjectUrl)
         expect(mockAnchor.download).toBe('collectible_12345.png')
         expect(mockAnchor.click).toHaveBeenCalledTimes(1)
@@ -69,7 +80,9 @@ describe('saveImageToDevice (web)', () => {
         await saveImageToDevice('https://example.com/full.png', 'file.png')
 
         expect(timeout).toHaveBeenCalledWith(120_000)
-        expect(vi.mocked(fetch).mock.calls[0]![1]).toMatchObject({ signal })
+        expect(vi.mocked(globalThis.fetch).mock.calls[0]![1]).toMatchObject({
+            signal,
+        })
     })
 
     it('rejects on a timed-out download without triggering a download', async () => {

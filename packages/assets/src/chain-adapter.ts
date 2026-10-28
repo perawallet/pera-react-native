@@ -17,6 +17,7 @@ import {
     type ChainAssetData,
     type ChainId,
     type ChainScope,
+    toScopeKey,
 } from '@perawallet/wallet-core-chain-contract'
 import {
     AppError,
@@ -30,6 +31,7 @@ import {
 } from '@perawallet/wallet-core-shared'
 import type { Decimal } from 'decimal.js'
 import type { DisplayableAsset, PeraAsset } from './models'
+import { useAssetSearchAvailabilityStore } from './store/search-availability-store'
 
 export type AssetAuthorities = {
     hasFreeze: boolean
@@ -206,9 +208,10 @@ export class AssetSearchUnsupportedError extends AppError {
 /**
  * The scope can't be searched here, so the failure says nothing about what
  * exists: the chain has no search, its network has no Pera services, or the
- * backend hasn't switched the chain on.
+ * backend hasn't switched the chain on. {@link searchAssetsAcrossScopes}
+ * remembers it until relaunch, so the scope isn't asked again.
  */
-export const isAssetSearchUnavailableError = (error: unknown): boolean =>
+export const isAssetSearchUnavailableError = (error: unknown): error is Error =>
     error instanceof AssetSearchUnsupportedError ||
     isPeraServiceUnavailableError(error) ||
     isChainRefusedError(error)
@@ -317,19 +320,32 @@ export const searchAssetsAcrossScopes = async (
     { cursors, ...params }: ScopedAssetSearchParams,
     scopes: readonly ChainScope[],
 ): Promise<ScopedAssetSearchPage> => {
+    const { unavailableSearches, markSearchUnavailable } =
+        useAssetSearchAvailabilityStore.getState()
     const searched = scopes.flatMap((scope, index) => {
         const cursor = cursors ? cursors[index] : undefined
-        return cursor === null
-            ? []
-            : [
-                  {
-                      index,
-                      scope,
-                      page: searchAssets({ ...params, cursor }, scope),
-                  },
-              ]
+        if (cursor === null) return []
+        const remembered = unavailableSearches[toScopeKey(scope)]
+        return [
+            {
+                index,
+                scope,
+                page:
+                    remembered === undefined
+                        ? searchAssets({ ...params, cursor }, scope)
+                        : Promise.reject(remembered),
+            },
+        ]
     })
     const settled = await Promise.allSettled(searched.map(({ page }) => page))
+    settled.forEach((outcome, position) => {
+        if (
+            outcome.status === 'rejected' &&
+            isAssetSearchUnavailableError(outcome.reason)
+        ) {
+            markSearchUnavailable(searched[position]!.scope, outcome.reason)
+        }
+    })
 
     const nextCursors: Nullable<string>[] = scopes.map(() => null)
     const results = searched.flatMap(({ index, scope }, position) => {

@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-// @vitest-environment node
 import { Decimal } from 'decimal.js'
 import { http, HttpResponse } from 'msw'
 import { i18nKey, type ChainId } from '@perawallet/wallet-core-chain-contract'

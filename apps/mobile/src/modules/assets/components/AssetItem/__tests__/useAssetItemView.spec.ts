@@ -10,9 +10,13 @@
  limitations under the License
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import type { DisplayableAsset } from '@perawallet/wallet-core-assets'
+import {
+    registerEthereumChain,
+    restoreAlgorandOnlyChains,
+} from '@test-utils/chain-fixtures'
 import { useAssetItemView } from '../useAssetItemView'
 
 const mockCopyToClipboard = vi.fn()
@@ -140,6 +144,71 @@ describe('useAssetItemView', () => {
                 ),
             )
             expect(result.current.onCopyAssetId).toBeUndefined()
+        })
+    })
+
+    describe('an ERC-20 contract address', () => {
+        const DAI = '0x6B175474E89094C44Da98b954EedeAC495271d0F'
+
+        beforeEach(() => {
+            registerEthereumChain()
+        })
+
+        afterEach(() => {
+            restoreAlgorandOnlyChains()
+        })
+
+        it('shows truncated by the chain codec in the subtitle', () => {
+            const { result } = renderHook(() =>
+                useAssetItemView(make({ assetId: DAI, unitName: 'DAI' }), {
+                    chainId: 'ethereum',
+                }),
+            )
+            expect(result.current.secondaryText).toBe('DAI · 0x6B17...1d0F')
+        })
+
+        it('shows truncated in the fallback title of an unnamed token', () => {
+            const { result } = renderHook(() =>
+                useAssetItemView(make({ assetId: DAI, name: undefined }), {
+                    chainId: 'ethereum',
+                }),
+            )
+            expect(result.current.displayName).toBe('Asset #0x6B17...1d0F')
+        })
+
+        it('leaves a numeric Algorand id as it is', () => {
+            const { result } = renderHook(() =>
+                useAssetItemView(make(), { chainId: 'algorand' }),
+            )
+            expect(result.current.secondaryText).toBe('TST · 123')
+        })
+
+        it('leaves an id that is not an address as it is, such as an NFT token id', () => {
+            const nftId = `${DAI}/1234`
+            const { result } = renderHook(() =>
+                useAssetItemView(make({ assetId: nftId, unitName: 'APE' }), {
+                    chainId: 'ethereum',
+                }),
+            )
+            expect(result.current.secondaryText).toBe(`APE · ${nftId}`)
+        })
+
+        it('leaves the id as it is with no chain', () => {
+            const { result } = renderHook(() =>
+                useAssetItemView(make({ assetId: DAI, unitName: 'DAI' })),
+            )
+            expect(result.current.secondaryText).toBe(`DAI · ${DAI}`)
+        })
+
+        it('still copies the full address on long-press', () => {
+            const { result } = renderHook(() =>
+                useAssetItemView(make({ assetId: DAI }), {
+                    chainId: 'ethereum',
+                    copyableAssetId: true,
+                }),
+            )
+            result.current.onCopyAssetId?.()
+            expect(mockCopyToClipboard).toHaveBeenCalledWith(DAI)
         })
     })
 })

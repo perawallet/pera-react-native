@@ -278,13 +278,12 @@ describe('registerChainAdapters', () => {
     })
 
     it('rehydrates the accounts store only once the adapters are registered', () => {
-        vi.mocked(rehydrateAccountsStore).mockImplementation(async () => {
-            expect(mocks.registerModule).toHaveBeenCalledOnce()
-        })
-
         registerChainAdapters()
 
         expect(rehydrateAccountsStore).toHaveBeenCalledOnce()
+        expect(
+            vi.mocked(rehydrateAccountsStore).mock.invocationCallOrder[0],
+        ).toBeGreaterThan(mocks.registerModule.mock.invocationCallOrder[0])
     })
 
     it('rehydrates the signing store, naming the legacy chain for requests stored without one', () => {

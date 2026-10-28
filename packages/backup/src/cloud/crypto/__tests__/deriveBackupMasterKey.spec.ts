@@ -10,8 +10,6 @@
  limitations under the License
  */
 
-// @vitest-environment node
-
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { bytesToHex } from '@perawallet/wallet-core-shared'
 

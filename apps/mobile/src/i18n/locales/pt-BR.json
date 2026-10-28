@@ -102,6 +102,11 @@
         "search_placeholder": "Buscar por nome ou ID do ativo",
         "no_results": "Nenhum ativo encontrado",
         "partial_results": "Não foi possível pesquisar em algumas redes, então alguns resultados podem estar faltando.",
+        "not_listed": {
+            "title": "Ainda não disponível",
+            "body": "A Pera ainda não lista ativos em {{chain}}.",
+            "body_all": "A Pera ainda não lista ativos nestas redes."
+        },
         "opt_in": {
             "failed_title": "Falha ao adicionar o ativo",
             "success_title": "Ativo adicionado",
@@ -434,6 +439,7 @@
         "remove_rekey_error_message": "Você não pode remover esta conta antes de remover as {{count}} contas com rekey vinculadas a ela",
         "view_private_key": "Ver chave privada",
         "networks_title": "Redes",
+        "networks_title_named": "{{name}} em cada rede",
         "add_network": "Adicionar",
         "add_network_error": "Não foi possível adicionar esta rede",
         "add_network_success": "Rede {{network}} adicionada",
@@ -450,8 +456,7 @@
         "universal_wallet_subtitle": "Uma passphrase, todas as redes",
         "viewing": "Atual",
         "wallet_label": "Wallet nº {{number}}",
-        "main_address": "Endereço principal",
-        "sub_address": "Subendereço",
+        "account_number": "Conta nº {{number}}",
         "type_universal_wallet": "Universal Wallet",
         "type_algo25": "Conta Algo25",
         "type_watch": "Conta de observação",
@@ -501,8 +506,10 @@
         "acknowledge": {
             "title": "Mantenha-a secreta e segura.",
             "description": "Confirme e reconheça o seguinte:",
+            "scope": "Esta passphrase de recuperação controla suas contas em todas as redes: {{networks}}.",
             "row_screen": "Ninguém pode ver a minha tela.",
             "row_share": "Corro o risco de perder todos os meus fundos se eu compartilhar minha passphrase de recuperação com alguém.",
+            "row_share_all_networks": "Corro o risco de perder todos os meus fundos em todas as redes se eu compartilhar minha passphrase de recuperação com alguém.",
             "row_lose": "Meus fundos serão perdidos permanentemente se eu perder minha passphrase de recuperação e perder o acesso à minha wallet.",
             "row_pera": "Funcionários da Pera NUNCA vão pedir minha passphrase de recuperação.",
             "cta_reveal": "Revelar passphrase de recuperação",
@@ -512,7 +519,14 @@
             "title": "Passphrase",
             "body": "Anote estas palavras na ordem correta, usando os números correspondentes.",
             "error_title": "Não foi possível obter a passphrase",
-            "error_body": "Algo deu errado. Tente novamente."
+            "error_body": "Algo deu errado. Tente novamente.",
+            "reach_title": "Endereços desta conta"
+        },
+        "compatibility": {
+            "title": "Usar esta passphrase em outras wallets",
+            "evm": "Redes compatíveis com Ethereum: wallets BIP39 padrão, como a MetaMask, podem importar estas palavras, e o endereço da sua primeira conta será o mesmo. Contas que você adicionar depois na Pera podem não aparecer nessas wallets por padrão.",
+            "algorand": "Algorand: funciona na Pera e em outras wallets compatíveis com wallets HD de Algorand de 24 palavras. Wallets de Algorand antigas, de 25 palavras, não conseguem importá-la.",
+            "warning": "Qualquer pessoa que tenha estas palavras controla seus fundos em todas as redes. Nunca as digite em um site nem as compartilhe com ninguém."
         }
     },
     "reveal_private_key": {
@@ -3384,6 +3398,23 @@
             "show_details": "Mostrar detalhes",
             "details_title": "Detalhes da solicitação de autenticação",
             "details_description": "Revise todos os metadados desta solicitação de autenticação antes de aprovar."
+        },
+        "address_safety": {
+            "listed_title": "Endereço de golpe conhecido",
+            "listed_body": "Esta solicitação inclui um endereço de uma lista pública de endereços usados para roubar fundos. Ao assinar, você pode entregar seus ativos a ele.",
+            "look_alike_title": "Esta solicitação inclui um endereço que imita um que você conhece",
+            "look_alike_body": "Ele começa e termina como um endereço que você conhece, mas os caracteres do meio são diferentes. Golpistas criam endereços parecidos para enganar você. Compare os endereços completos abaixo.",
+            "acknowledge": "Entendo o risco e quero assinar mesmo assim",
+            "role": {
+                "recipient": "Destinatário",
+                "token_recipient": "Destinatário do token",
+                "close_recipient": "Recebe o saldo restante",
+                "new_authorizer": "Nova autoridade de assinatura",
+                "referenced_account": "Conta referenciada",
+                "target": "Contrato",
+                "spender": "Endereço autorizado",
+                "operator": "Operador"
+            }
         }
     },
     "site_safety": {

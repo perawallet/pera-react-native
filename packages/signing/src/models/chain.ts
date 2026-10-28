@@ -10,7 +10,11 @@
  limitations under the License
  */
 
-import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import type {
+    ChainId,
+    ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import {
     isMessageRequest,
     isTransactionRequest,
@@ -37,4 +41,18 @@ export const chainIdOfSignRequest = (request: SignRequest): ChainId => {
                   UnsignedTransactionSignRequest | MessageSignRequest
               >
           ).chainId
+}
+
+/**
+ * The network the request was built for. Undefined for one stamped with a
+ * chain alone (arbitrary and auth data), which names no network.
+ */
+export const scopeOfSignRequest = (
+    request: SignRequest,
+): Optional<ChainScope> => {
+    if (isMessageRequest(request)) return request.message.scope
+    return isTransactionRequest(request) &&
+        isUnsignedTransactionRequest(request)
+        ? request.txs[0]?.scope
+        : undefined
 }

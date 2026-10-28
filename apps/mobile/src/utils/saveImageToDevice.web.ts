@@ -26,6 +26,7 @@ export const saveImageToDevice = async (
     url: string,
     filename: string,
 ): Promise<void> => {
+    // oxlint-disable-next-line no-restricted-globals -- collectible media lives on any host, and queryClient only reaches Pera's backend
     const response = await fetch(url, {
         signal: AbortSignal.timeout(MEDIA_SAVE_TIMEOUT_MS),
     })

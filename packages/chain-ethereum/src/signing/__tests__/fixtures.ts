@@ -162,6 +162,49 @@ export const PERMIT2_SINGLE_TYPED_DATA = {
     },
 }
 
+// DAI's own permit: `holder/expiry/allowed` rather than EIP-2612's names.
+export const DAI_PERMIT_TYPED_DATA = {
+    domain: {
+        name: 'Dai Stablecoin',
+        version: '1',
+        chainId: 1,
+        verifyingContract: '0x6b175474e89094c44da98b954eedeac495271d0f',
+    },
+    types: {
+        Permit: [
+            { name: 'holder', type: 'address' },
+            { name: 'spender', type: 'address' },
+            { name: 'nonce', type: 'uint256' },
+            { name: 'expiry', type: 'uint256' },
+            { name: 'allowed', type: 'bool' },
+        ],
+    },
+    primaryType: 'Permit',
+    message: {
+        holder: SENDER,
+        spender: PERMIT_SPENDER,
+        nonce: '0',
+        expiry: PERMIT_DEADLINE_30D,
+        allowed: true,
+    },
+}
+
+/** A Permit2 `PermitSingle` without its `sigDeadline`, so it reads as no known permit. */
+export const PERMIT2_SINGLE_NO_DEADLINE_TYPED_DATA = {
+    ...PERMIT2_SINGLE_TYPED_DATA,
+    types: {
+        ...PERMIT2_SINGLE_TYPED_DATA.types,
+        PermitSingle: [
+            { name: 'details', type: 'PermitDetails' },
+            { name: 'spender', type: 'address' },
+        ],
+    },
+    message: {
+        details: PERMIT2_SINGLE_TYPED_DATA.message.details,
+        spender: PERMIT_SPENDER,
+    },
+}
+
 export const PERMIT2_SINGLE_UNLIMITED_TYPED_DATA = {
     ...PERMIT2_SINGLE_TYPED_DATA,
     message: {

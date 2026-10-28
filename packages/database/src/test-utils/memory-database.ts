@@ -33,17 +33,24 @@ export const createTestDatabase = ({
     const db: Database = drizzle(
         createDrizzleProxyCallback(async (sql, params, method) => {
             beforeExec?.(sql)
-            if (method === 'run') {
-                sqlite.prepare(sql).run(...params)
-                return []
+            try {
+                if (method === 'run') {
+                    sqlite.prepare(sql).run(...params)
+                    return []
+                }
+
+                const rows = sqlite.prepare(sql).all(...params) as Record<
+                    string,
+                    unknown
+                >[]
+
+                return rows.map(row => Object.values(row))
+            } catch (error) {
+                // better-sqlite3 binds its error class once per process, so under
+                // the vmThreads pool a later spec file gets errors from another
+                // realm that fail `instanceof Error`. Rethrow from this realm.
+                throw new Error((error as Error).message, { cause: error })
             }
-
-            const rows = sqlite.prepare(sql).all(...params) as Record<
-                string,
-                unknown
-            >[]
-
-            return rows.map(row => Object.values(row))
         }),
     )
 

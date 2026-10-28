@@ -20,13 +20,14 @@ import { CLOUD_BACKUP_ONLY } from './src/__tests__/cloudBackupOnly'
 import { testKeystore } from './src/__tests__/secp256k1TestKeyStore'
 
 // In-memory keyValueStorage so importing @perawallet/wallet-core-accounts does
-// not transitively pull in react-native-mmkv (not available under jsdom).
+// not transitively pull in react-native-mmkv, which vitest can't load.
 const kvStore = new Map<string, string>()
 
 // A standalone account's secret format is read from its chain's descriptor, and
 // whether a chain is backed up from its capabilities.
 const chains = createChainRegistry()
 beforeEach(() => {
+    kvStore.clear()
     chains.reset()
     testKeystore.store = undefined
     chains.register(

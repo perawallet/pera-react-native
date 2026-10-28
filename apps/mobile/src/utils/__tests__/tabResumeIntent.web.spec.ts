@@ -77,6 +77,9 @@ describe('tabResumeIntent (web)', () => {
         expect(() =>
             completeTabResume({ title: 'Swap Complete', body: 'done' }),
         ).not.toThrow()
+        // Lets an unhandled rejection surface while this test still runs.
         await new Promise(resolve => setTimeout(resolve, 0))
+
+        expect(mockFinishTabResume).toHaveBeenCalledOnce()
     })
 })

@@ -62,6 +62,7 @@ export class ChromeAnalyticsService implements AnalyticsService {
 
             const url = `${MEASUREMENT_PROTOCOL_URL}?measurement_id=${config.firebaseMeasurementId}&api_secret=${config.gaMeasurementApiSecret}`
 
+            // oxlint-disable-next-line no-restricted-globals -- GA4's Measurement Protocol is a third-party host, and the extension has no analytics client
             await fetch(url, {
                 method: 'POST',
                 body: JSON.stringify({

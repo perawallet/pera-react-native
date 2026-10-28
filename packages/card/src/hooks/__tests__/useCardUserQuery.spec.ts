@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+// @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -18,19 +19,13 @@ import React from 'react'
 const { fetchUser } = vi.hoisted(() => ({ fetchUser: vi.fn() }))
 vi.mock('../../api/user', () => ({ fetchUser }))
 
-import {
-    type ChainScope,
-    LEGACY_CHAIN_ID,
-} from '@perawallet/wallet-core-chain-contract'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useCardUserQuery } from '../useCardUserQuery'
 import { VerificationState } from '../../models'
 
-const SCOPES: ChainScope[] = [
-    { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
-    { chainId: 'ethereum', networkId: 'sepolia' },
-]
+const SCOPE: ChainScope = { chainId: 'ethereum', networkId: 'sepolia' }
 
-describe.each(SCOPES)('useCardUserQuery ($chainId)', SCOPE => {
+describe('useCardUserQuery', () => {
     let queryClient: QueryClient
 
     beforeEach(() => {
@@ -61,6 +56,9 @@ describe.each(SCOPES)('useCardUserQuery ($chainId)', SCOPE => {
         expect(result.current.data?.id).toBe('u1')
         expect(result.current.data?.verificationState).toBe(
             VerificationState.Verified,
+        )
+        expect(fetchUser).toHaveBeenCalledWith(
+            expect.objectContaining({ scope: SCOPE }),
         )
     })
 })

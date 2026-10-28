@@ -20,15 +20,6 @@ import { fakeAccountsChain, TESTNET_SCOPE } from './fakeAccountsChain'
 import { addressOn, authorityOf, hdIndexOf, signingKeyOn } from '../credentials'
 import type { WalletAccount } from '../models'
 
-vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
-    const actual =
-        await importOriginal<typeof import('@perawallet/wallet-core-shared')>()
-    return {
-        ...actual,
-        generateOrderedUniqueId: vi.fn(() => Math.random().toString(36)),
-    }
-})
-
 // The chain's activity probe takes the addresses and answers per address; the
 // fast-lookup shape these specs were written against maps straight onto it.
 const mockFetchAccountFastLookup = vi.fn()

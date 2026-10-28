@@ -35,17 +35,7 @@ vi.mock('@react-navigation/material-top-tabs', () => ({
     })),
 }))
 
-vi.mock('react-native-tab-view', () => ({
-    TabView: () => null,
-    TabBar: () => null,
-    SceneMap: () => null,
-}))
-
 describe('PWTabView', () => {
-    it('provides a navigator factory', () => {
-        expect(PWTabView.createNavigator).toBeDefined()
-    })
-
     it('renders navigator correctly', () => {
         const Tab = PWTabView.createNavigator()
         const { getByText } = render(

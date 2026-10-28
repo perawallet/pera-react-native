@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import * as SplashScreen from 'expo-splash-screen'
 import { useAppBootstrap } from '../useAppBootstrap'
@@ -54,7 +54,6 @@ const mocks = vi.hoisted(() => {
     return {
         provider,
         KeystoreHydrationError,
-        keystoreReady: vi.fn(),
         runKeystoreMaintenance: vi.fn(),
         getProvider: vi.fn(() => provider),
         initializeDatabase: vi.fn(),
@@ -124,16 +123,8 @@ vi.mock('expo-splash-screen', () => ({
     preventAutoHideAsync: vi.fn(),
 }))
 
-vi.mock('./providers/QueryProvider', () => ({
-    queryClient: {},
-}))
-
 vi.mock('../providers/QueryProvider', () => ({
     queryClient: {},
-}))
-
-vi.mock('./bootstrap/passkey-autofill', () => ({
-    runPasskeyAutofillBootstrap: mocks.runPasskeyAutofillBootstrap,
 }))
 
 vi.mock('../bootstrap/passkey-autofill', () => ({
@@ -164,14 +155,6 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     },
 }))
 
-vi.mock('./i18n', () => ({
-    i18n: {
-        get language() {
-            return mocks.i18nLanguage
-        },
-        changeLanguage: mocks.i18nChangeLanguage,
-    },
-}))
 vi.mock('../i18n', () => ({
     i18n: {
         get language() {
@@ -182,10 +165,10 @@ vi.mock('../i18n', () => ({
 }))
 
 // The real `readRemoteConfigWithOverrides` is imported from its own module
-// rather than stubbed: the whole point of item 2a is that bootstrap and the
-// hook share one implementation, so a stub here would test nothing. The
-// package barrel itself can't be `importActual`'d — it pulls the zustand
-// store, which registers itself against the (mocked) shared logger.
+// rather than stubbed: bootstrap and the hook must share one implementation,
+// so a stub here would test nothing. The package barrel itself can't be
+// `importActual`'d — it pulls the zustand store, which registers itself
+// against the (mocked) shared logger.
 vi.mock('@perawallet/wallet-core-remote-config', async () => {
     const { readRemoteConfigWithOverrides } =
         await import('../../../../packages/remote-config/src/utils/readRemoteConfigWithOverrides')
@@ -201,10 +184,6 @@ vi.mock('@perawallet/wallet-core-remote-config', async () => {
     }
 })
 
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    getSelectedScope: (chainId: string) => ({ chainId, networkId: 'mainnet' }),
-}))
-
 vi.mock('@perawallet/wallet-core-shared', () => ({
     logger: {
         error: mocks.loggerError,
@@ -219,12 +198,10 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
 
 describe('useAppBootstrap', () => {
     beforeEach(() => {
-        vi.clearAllMocks()
-        vi.useRealTimers()
+        vi.useFakeTimers()
         mocks.provider.initialize.mockResolvedValue({
             notifications: Promise.resolve({ token: 'fcm-token' }),
         })
-        mocks.keystoreReady.mockResolvedValue(undefined)
         mocks.runKeystoreMaintenance.mockResolvedValue({
             repair: { repaired: 0, failed: 0 },
             passkeySplit: { split: [], normalized: [], failed: [] },
@@ -251,8 +228,12 @@ describe('useAppBootstrap', () => {
         mocks.accountsOnFinishHydration.mockImplementation(() => () => {})
     })
 
+    afterEach(() => {
+        vi.useRealTimers()
+        vi.restoreAllMocks()
+    })
+
     it('bootstraps successfully: bootstrapped true, initError false, persister set, splash hidden', async () => {
-        vi.useFakeTimers()
         const { result } = renderHook(() => useAppBootstrap())
 
         await act(async () => {
@@ -273,7 +254,6 @@ describe('useAppBootstrap', () => {
                 finishHydration = resolve
             }),
         )
-        vi.useFakeTimers()
         const { result } = renderHook(() => useAppBootstrap())
 
         await act(async () => {
@@ -296,7 +276,6 @@ describe('useAppBootstrap', () => {
         const rafSpy = vi
             .spyOn(globalThis, 'requestAnimationFrame')
             .mockImplementation(() => 0 as unknown as number)
-        vi.useFakeTimers()
 
         renderHook(() => useAppBootstrap())
         await act(async () => {
@@ -305,12 +284,10 @@ describe('useAppBootstrap', () => {
 
         expect(rafSpy).toHaveBeenCalled()
         expect(SplashScreen.hideAsync).toHaveBeenCalledTimes(1)
-        rafSpy.mockRestore()
     })
 
     it('hides the splash onto the loading view when an init step never settles', async () => {
         mocks.provider.initialize.mockReturnValue(new Promise(() => {}))
-        vi.useFakeTimers()
         const { result } = renderHook(() => useAppBootstrap())
 
         await act(async () => {
@@ -328,7 +305,6 @@ describe('useAppBootstrap', () => {
 
     it('sets initError and hides splash when provider.initialize() rejects', async () => {
         mocks.provider.initialize.mockRejectedValue(new Error('boom'))
-        vi.useFakeTimers()
         const { result } = renderHook(() => useAppBootstrap())
 
         await act(async () => {
@@ -342,7 +318,6 @@ describe('useAppBootstrap', () => {
 
     it('sets initError when database initialization rejects', async () => {
         mocks.initializeDatabase.mockRejectedValue(new Error('db down'))
-        vi.useFakeTimers()
         const { result } = renderHook(() => useAppBootstrap())
 
         await act(async () => {
@@ -358,7 +333,6 @@ describe('useAppBootstrap', () => {
     // extensions/provider's runKeystoreMaintenance spec); the app only has to
     // wait for it before declaring itself bootstrapped.
     test('waits for keystore maintenance before bootstrapping', async () => {
-        vi.useFakeTimers()
         renderHook(() => useAppBootstrap())
 
         await act(async () => {
@@ -374,7 +348,6 @@ describe('useAppBootstrap', () => {
         mocks.runKeystoreMaintenance.mockRejectedValue(
             new Error('master key unreadable'),
         )
-        vi.useFakeTimers()
         const { result } = renderHook(() => useAppBootstrap())
 
         await act(async () => {
@@ -392,7 +365,6 @@ describe('useAppBootstrap', () => {
         mocks.runKeystoreMaintenance.mockRejectedValue(
             new mocks.KeystoreHydrationError(['k/bad']),
         )
-        vi.useFakeTimers()
         const { result } = renderHook(() => useAppBootstrap())
 
         await act(async () => {
@@ -412,7 +384,6 @@ describe('useAppBootstrap', () => {
             passkeySplit: { split: [], normalized: [], failed: [] },
             failedDecodeIds: ['k/bad', 'k/worse'],
         })
-        vi.useFakeTimers()
         const { result } = renderHook(() => useAppBootstrap())
 
         await act(async () => {
@@ -430,7 +401,6 @@ describe('useAppBootstrap', () => {
         mocks.provider.initialize.mockResolvedValue({
             notifications: Promise.resolve({ token: undefined }),
         })
-        vi.useFakeTimers()
         const { result } = renderHook(() => useAppBootstrap())
 
         await act(async () => {
@@ -448,7 +418,6 @@ describe('useAppBootstrap', () => {
             .mockResolvedValue({
                 notifications: Promise.resolve({ token: 'fcm-token' }),
             })
-        vi.useFakeTimers()
         const { result } = renderHook(() => useAppBootstrap())
 
         await act(async () => {
@@ -473,7 +442,6 @@ describe('useAppBootstrap', () => {
         mocks.i18nLanguage = 'de'
         mocks.settingsState.language = 'de'
         mocks.provider.remoteConfig.getBooleanValue.mockReturnValue(false)
-        vi.useFakeTimers()
 
         const { result } = renderHook(() => useAppBootstrap())
         await act(async () => {
@@ -489,7 +457,6 @@ describe('useAppBootstrap', () => {
         mocks.settingsState.language = 'en'
         mocks.provider.remoteConfig.getBooleanValue.mockReturnValue(true)
         mocks.provider.remoteConfig.getStringValue.mockReturnValue('en')
-        vi.useFakeTimers()
 
         renderHook(() => useAppBootstrap())
         await act(async () => {
@@ -503,7 +470,6 @@ describe('useAppBootstrap', () => {
         mocks.i18nLanguage = 'en'
         mocks.settingsState.language = 'system'
         mocks.provider.remoteConfig.getBooleanValue.mockReturnValue(false)
-        vi.useFakeTimers()
 
         renderHook(() => useAppBootstrap())
         await act(async () => {
@@ -527,7 +493,6 @@ describe('useAppBootstrap', () => {
             finishHydration = () => fn(mocks.settingsState)
             return () => {}
         })
-        vi.useFakeTimers()
 
         const { result } = renderHook(() => useAppBootstrap())
         await act(async () => {
@@ -550,7 +515,6 @@ describe('useAppBootstrap', () => {
     it('bootstraps anyway when settings hydration never finishes', async () => {
         mocks.settingsHasHydrated.mockReturnValue(false)
         mocks.settingsOnFinishHydration.mockImplementation(() => () => {})
-        vi.useFakeTimers()
 
         const { result } = renderHook(() => useAppBootstrap())
         await act(async () => {
@@ -580,7 +544,6 @@ describe('useAppBootstrap', () => {
             enable_language_selection: true,
             active_locales: 'en',
         }
-        vi.useFakeTimers()
 
         renderHook(() => useAppBootstrap())
         await act(async () => {
@@ -601,8 +564,6 @@ describe('useAppBootstrap', () => {
     // and it must land inside the bootstrap gate so the pinned
     // account is selected before the splash lifts.
     it('applies the launch account preference before bootstrap completes', async () => {
-        vi.useFakeTimers()
-
         const { result } = renderHook(() => useAppBootstrap())
         await act(async () => {
             await vi.runAllTimersAsync()
@@ -621,7 +582,6 @@ describe('useAppBootstrap', () => {
                 return () => {}
             },
         )
-        vi.useFakeTimers()
 
         renderHook(() => useAppBootstrap())
         await act(async () => {
@@ -643,7 +603,6 @@ describe('useAppBootstrap', () => {
     it('still completes bootstrap when accounts rehydration never finishes', async () => {
         mocks.accountsHasHydrated.mockReturnValue(false)
         mocks.accountsOnFinishHydration.mockImplementation(() => () => {})
-        vi.useFakeTimers()
 
         const { result } = renderHook(() => useAppBootstrap())
         await act(async () => {
@@ -660,7 +619,6 @@ describe('useAppBootstrap', () => {
             passkeySplit: { split: [], normalized: [], failed: ['cred-1'] },
             failedDecodeIds: [],
         })
-        vi.useFakeTimers()
         renderHook(() => useAppBootstrap())
 
         await act(async () => {

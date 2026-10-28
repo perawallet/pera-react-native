@@ -20,6 +20,7 @@ import { standaloneAccount } from '../../__tests__/algorandAccounts'
 import { decodeFromBase64 } from '@perawallet/wallet-core-shared'
 import type { SignableGroup } from '@perawallet/wallet-core-signing'
 import { reviewerContractTests } from '@perawallet/wallet-core-signing/testing'
+import { algorandAddressCodec } from '../../accounts/address-codec'
 import { algorandReviewerAdapter } from '../adapter'
 import {
     TEST_SUGGESTED_PARAMS,
@@ -97,4 +98,5 @@ reviewerContractTests(() => algorandReviewerAdapter, {
         source: { type: 'local' },
         data: { type: 'arbitrary-data', data: [] },
     } as unknown as SignableGroup,
+    isValidAddress: address => algorandAddressCodec.isValid(address),
 })

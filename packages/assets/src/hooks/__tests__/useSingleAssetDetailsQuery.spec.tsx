@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+// @vitest-environment jsdom
 import {
     toScopeKey,
     type AssetRef,

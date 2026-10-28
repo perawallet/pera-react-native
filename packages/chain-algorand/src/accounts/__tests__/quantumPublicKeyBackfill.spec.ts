@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-// @vitest-environment node
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { generateKey } from 'falcon-1024'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'

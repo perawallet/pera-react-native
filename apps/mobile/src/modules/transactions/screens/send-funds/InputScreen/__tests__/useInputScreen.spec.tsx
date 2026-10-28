@@ -171,7 +171,6 @@ vi.mock('@hooks/useLanguage', () => ({
     useLanguage: vi.fn(() => ({ t: (key: string) => key })),
 }))
 
-// Mock the useSendFunds hook
 const mockSetAmount = vi.fn()
 const mockSetNote = vi.fn()
 const mockSetIsCloseAccount = vi.fn()

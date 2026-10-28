@@ -102,6 +102,11 @@
         "search_placeholder": "Ada veya varlık ID’sine göre ara",
         "no_results": "Varlık bulunamadı",
         "partial_results": "Bazı ağlarda arama yapılamadı, bu yüzden bazı sonuçlar eksik olabilir.",
+        "not_listed": {
+            "title": "Henüz kullanılamıyor",
+            "body": "Pera henüz {{chain}} ağındaki varlıkları listelemiyor.",
+            "body_all": "Pera henüz bu ağlardaki varlıkları listelemiyor."
+        },
         "opt_in": {
             "failed_title": "Opt-in başarısız",
             "success_title": "Opt-in başarılı",
@@ -434,6 +439,7 @@
         "remove_rekey_error_message": "Bu hesabı, ona rekey yapılmış {{count}} hesabı kaldırmadan kaldıramazsın",
         "view_private_key": "Özel anahtarı görüntüle",
         "networks_title": "Ağlar",
+        "networks_title_named": "Her ağda {{name}}",
         "add_network": "Ekle",
         "add_network_error": "Bu ağ eklenemedi",
         "add_network_success": "{{network}} ağı eklendi",
@@ -450,8 +456,7 @@
         "universal_wallet_subtitle": "Tek passphrase, tüm ağlar",
         "viewing": "Görüntüleniyor",
         "wallet_label": "Cüzdan #{{number}}",
-        "main_address": "Ana adres",
-        "sub_address": "Alt adres",
+        "account_number": "Hesap #{{number}}",
         "type_universal_wallet": "Universal Wallet",
         "type_algo25": "Algo25 hesabı",
         "type_watch": "İzleme hesabı",
@@ -501,8 +506,10 @@
         "acknowledge": {
             "title": "Gizli tut. Güvende tut.",
             "description": "Aşağıdakileri onayla ve kabul et:",
+            "scope": "Bu kurtarma passphrase’i tüm ağlardaki hesaplarını kontrol eder: {{networks}}.",
             "row_screen": "Ekranımı kimse görmüyor.",
             "row_share": "Kurtarma passphrase’imi biriyle paylaşırsam tüm fonlarımı kaybetme riskim var.",
+            "row_share_all_networks": "Kurtarma passphrase’imi biriyle paylaşırsam tüm ağlardaki fonlarımı kaybetme riskim var.",
             "row_lose": "Kurtarma passphrase’imi kaybedip cüzdanıma erişimimi de kaybedersem, fonlarım kalıcı olarak kaybolur.",
             "row_pera": "Pera çalışanları kurtarma passphrase’imi ASLA istemez.",
             "cta_reveal": "Kurtarma passphrase’ini göster",
@@ -512,7 +519,14 @@
             "title": "Passphrase",
             "body": "Bu kelimeleri, karşılarındaki numaralara göre doğru sırayla kaydettiğinden emin ol.",
             "error_title": "Passphrase alınamadı",
-            "error_body": "Bir şeyler ters gitti. Lütfen tekrar dene."
+            "error_body": "Bir şeyler ters gitti. Lütfen tekrar dene.",
+            "reach_title": "Bu hesabın adresleri"
+        },
+        "compatibility": {
+            "title": "Bu passphrase’i başka cüzdanlarda kullanmak",
+            "evm": "Ethereum uyumlu ağlar: MetaMask gibi standart BIP39 cüzdanları bu kelimeleri içe aktarabilir ve ilk hesabının adresi aynı olur. Pera’da sonradan eklediğin hesaplar bu cüzdanlarda varsayılan olarak görünmeyebilir.",
+            "algorand": "Algorand: Pera’da ve 24 kelimelik Algorand HD cüzdanlarını destekleyen diğer cüzdanlarda çalışır. 25 kelimelik eski Algorand cüzdanları bunu içe aktaramaz.",
+            "warning": "Bu kelimelere sahip olan herkes tüm ağlardaki fonlarını kontrol eder. Onları asla bir web sitesine girme ve kimseyle paylaşma."
         }
     },
     "reveal_private_key": {
@@ -3367,6 +3381,23 @@
             "show_details": "Detayları göster",
             "details_title": "Kimlik doğrulama isteği detayları",
             "details_description": "Onaylamadan önce bu kimlik doğrulama isteğinin tüm metadata’sını incele."
+        },
+        "address_safety": {
+            "listed_title": "Bilinen dolandırıcılık adresi",
+            "listed_body": "Bu istek, fon çalmak için kullanılan adreslerin yer aldığı herkese açık bir listedeki bir adresi içeriyor. İmzalarsan varlıkların bu adrese geçebilir.",
+            "look_alike_title": "Bu istek, tanıdığın bir adresi taklit eden bir adres içeriyor",
+            "look_alike_body": "Tanıdığın bir adres gibi başlıyor ve bitiyor, ama aradaki karakterler farklı. Dolandırıcılar seni kandırmak için benzer görünen adresler oluşturur. Aşağıdaki tam adresleri karşılaştır.",
+            "acknowledge": "Riski anlıyorum ve yine de imzalamak istiyorum",
+            "role": {
+                "recipient": "Alıcı",
+                "token_recipient": "Token alıcısı",
+                "close_recipient": "Kalan bakiyeyi alır",
+                "new_authorizer": "Yeni imza yetkilisi",
+                "referenced_account": "Başvurulan hesap",
+                "target": "Sözleşme",
+                "spender": "Yetkili adres",
+                "operator": "Operatör"
+            }
         }
     },
     "site_safety": {

@@ -72,6 +72,7 @@ const seedMissingSources = async (
                 deny: splitLines(lists.deny),
                 allow: splitLines(lists.allow),
                 impersonationTargets: splitLines(lists.impersonationTargets),
+                addresses: splitLines(lists.addresses),
             },
         })
         // refreshedAt 0 makes the first online check download a fresh copy.

@@ -10,8 +10,6 @@
  limitations under the License
  */
 
-// @vitest-environment node
-
 import { describe, expect, it, beforeEach, vi } from 'vitest'
 
 type Argon2Params = {

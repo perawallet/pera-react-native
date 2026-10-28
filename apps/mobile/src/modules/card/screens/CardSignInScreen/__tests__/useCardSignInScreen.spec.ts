@@ -127,6 +127,7 @@ describe('useCardSignInScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockRouteParams = undefined
+        mockEscrowCardAddress.value = 'ESCROW_CARD'
     })
 
     it('starts with an invalid form, idle, and no OTP step', () => {
@@ -289,7 +290,6 @@ describe('useCardSignInScreen', () => {
             screen: 'Home',
             params: { screen: 'PeraCardAccount' },
         })
-        mockEscrowCardAddress.value = 'ESCROW_CARD'
     })
 
     it('lands on the wallet home when the backend holds a card made on another device', async () => {
@@ -322,7 +322,6 @@ describe('useCardSignInScreen', () => {
             screen: 'Home',
             params: { screen: 'PeraCardAccount' },
         })
-        mockEscrowCardAddress.value = 'ESCROW_CARD'
     })
 
     it('falls back to the setup checklist when the card lookup fails', async () => {
@@ -352,7 +351,6 @@ describe('useCardSignInScreen', () => {
             params: { screen: 'CardOnboardingStatus', params: {} },
         })
         expect(mockErrorToast).not.toHaveBeenCalled()
-        mockEscrowCardAddress.value = 'ESCROW_CARD'
     })
 
     it('keeps the OTP submit gated until the code is complete', () => {

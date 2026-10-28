@@ -21,7 +21,6 @@ const mockSaveAccount = vi.fn()
 const mockSetSelectedAccountId = vi.fn()
 const mockSetShouldPlayConfetti = vi.fn()
 const mockExitAccountFlow = vi.fn()
-const mockShowToast = vi.fn()
 const mockUpdateAccount = vi.fn()
 const mockTrackEvent = vi.hoisted(() => vi.fn())
 
@@ -54,13 +53,6 @@ vi.mock('@analytics', async () => ({
     trackEvent: mockTrackEvent,
 }))
 
-vi.mock('@hooks/useAppNavigation', () => ({
-    useAppNavigation: () => ({
-        navigate: vi.fn(),
-        replace: vi.fn(),
-    }),
-}))
-
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAllAccounts: () => mockStoredAccounts.accounts,
     useRegisteredChainIds: () => mockRegisteredChainIds.chainIds,
@@ -84,6 +76,23 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
         setSelectedAccountId: mockSetSelectedAccountId,
     }),
     getAccountDisplayName: mockGetAccountDisplayName,
+    isNamedAfterOwnAddress: () => false,
+    accountNumberOf: (account: {
+        custody?: {
+            kind: string
+            seed?: string | null
+            hd?: { account: number; keyIndex: number }
+            accountIndex?: number
+        }
+    }) => {
+        const custody = account.custody
+        if (custody?.kind === 'local' && custody.hd) {
+            return custody.hd.account + custody.hd.keyIndex + 1
+        }
+        return custody?.kind === 'hardware'
+            ? (custody.accountIndex ?? 0) + 1
+            : undefined
+    },
     hdIndexOf: () => undefined,
     signingKeyOn: () => undefined,
     chainAccountOf: (
@@ -103,12 +112,6 @@ const mockShowError = vi.fn()
 vi.mock('@hooks/useErrorToast', () => ({
     useErrorToast: () => ({
         showError: mockShowError,
-    }),
-}))
-
-vi.mock('@hooks/useToast', () => ({
-    useToast: () => ({
-        showToast: mockShowToast,
     }),
 }))
 
@@ -303,6 +306,124 @@ describe('useNameAccountScreen', () => {
 
         expect(result.current.walletDisplay).toBe('My Wallet')
         expect(result.current.account).toBeDefined()
+    })
+
+    describe('pre-filled name', () => {
+        it.each([
+            [
+                'a Universal Wallet account',
+                {
+                    kind: 'local',
+                    seed: 'bip39',
+                    hd: { account: 0, keyIndex: 0 },
+                },
+            ],
+            [
+                'a Ledger account',
+                {
+                    kind: 'hardware',
+                    device: {
+                        manufacturer: 'ledger',
+                        deviceId: 'device-1',
+                        deviceName: 'Nano X',
+                        transportType: 'ble',
+                    },
+                    accountIndex: 0,
+                },
+            ],
+        ])('numbers %s', (_, custody) => {
+            mockRouteParams = {
+                account: {
+                    id: 'numbered',
+                    chains: { algorand: { address: 'ADDR', keyPairId: 'kp' } },
+                    custody,
+                },
+            }
+
+            const { result } = renderHook(() => useNameAccountScreen())
+
+            expect(result.current.walletDisplay).toBe(
+                'account_info.account_number',
+            )
+            expect(result.current.accountTitle).toBe(
+                'account_info.account_number',
+            )
+        })
+
+        it.each([
+            ['an Algo25 account', { kind: 'local', seed: null }],
+            ['a watch account', { kind: 'watch' }],
+        ])('falls back to the address-based name for %s', (_, custody) => {
+            const account = {
+                id: 'unnumbered',
+                chains: { algorand: { address: 'ADDR' } },
+                custody,
+            }
+            mockRouteParams = { account }
+
+            const { result } = renderHook(() => useNameAccountScreen())
+
+            expect(mockGetAccountDisplayName).toHaveBeenCalledWith(
+                account,
+                'algorand',
+            )
+            expect(result.current.walletDisplay).toBe('Account 1')
+        })
+
+        it('saves no name when the numbered name is left unchanged', async () => {
+            mockRouteParams = {
+                account: {
+                    id: 'numbered',
+                    chains: { algorand: { address: 'ADDR', keyPairId: 'kp' } },
+                    custody: {
+                        kind: 'local',
+                        seed: 'bip39',
+                        hd: { account: 1, keyIndex: 0 },
+                    },
+                },
+            }
+            const { result } = renderHook(() => useNameAccountScreen())
+
+            await act(async () => {
+                await result.current.handleFinish()
+            })
+
+            expect(mockSaveAccount).toHaveBeenCalledWith(
+                expect.objectContaining({ id: 'numbered', name: undefined }),
+            )
+        })
+
+        it('saves the numbered name once the user edits it', async () => {
+            mockRouteParams = {
+                account: {
+                    id: 'numbered',
+                    chains: { algorand: { address: 'ADDR', keyPairId: 'kp' } },
+                    custody: {
+                        kind: 'local',
+                        seed: 'bip39',
+                        hd: { account: 1, keyIndex: 0 },
+                    },
+                },
+            }
+            const { result } = renderHook(() => useNameAccountScreen())
+
+            act(() => {
+                result.current.handleNameChange('Savings')
+            })
+            await act(async () => {
+                await result.current.handleFinish()
+            })
+
+            expect(mockSaveAccount).toHaveBeenCalledWith(
+                expect.objectContaining({ id: 'numbered', name: 'Savings' }),
+            )
+        })
+
+        it('offers a wallet name when no account is handed over', () => {
+            const { result } = renderHook(() => useNameAccountScreen())
+
+            expect(result.current.accountTitle).toBe('Wallet 1')
+        })
     })
 
     it('handleNameChange updates walletDisplay', () => {

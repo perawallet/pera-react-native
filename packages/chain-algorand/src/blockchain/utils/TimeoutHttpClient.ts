@@ -233,6 +233,7 @@ export class TimeoutHttpClient implements BaseHTTPClient {
         // signal that is already aborted.
         if (signal.aborted) throw signal.reason
         try {
+            // oxlint-disable-next-line no-restricted-globals -- this is the algod and indexer HTTP client itself
             const res = await fetch(url, { ...init, signal })
             return await TimeoutHttpClient.formatFetchResponse(res)
         } catch (error) {

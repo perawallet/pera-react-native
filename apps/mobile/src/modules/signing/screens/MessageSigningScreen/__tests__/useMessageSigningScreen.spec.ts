@@ -31,6 +31,20 @@ const mockPipeline: MockPipeline = {
 }
 
 const mockSigningStarted = vi.hoisted(() => ({ current: null as unknown }))
+const mockReviewedMessageAddressesOf = vi.hoisted(() =>
+    vi.fn((_request: unknown): unknown[] => []),
+)
+const mockAddressSafety = vi.hoisted(() => ({
+    isConfirmBlocked: false,
+    addresses: undefined as unknown,
+}))
+
+vi.mock('../../../hooks/useRequestAddressSafety', () => ({
+    useRequestAddressSafety: ({ addresses }: { addresses: unknown }) => {
+        mockAddressSafety.addresses = addresses
+        return { isConfirmBlocked: mockAddressSafety.isConfirmBlocked }
+    },
+}))
 
 vi.mock('@perawallet/wallet-core-signing', async importOriginal => {
     const actual =
@@ -38,6 +52,7 @@ vi.mock('@perawallet/wallet-core-signing', async importOriginal => {
     return {
         ...actual,
         useSigningPipeline: () => mockPipeline,
+        reviewedMessageAddressesOf: mockReviewedMessageAddressesOf,
         useLastSigningEvent: () => mockSigningStarted.current,
     }
 })
@@ -55,6 +70,9 @@ describe('useMessageSigningScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockSigningStarted.current = null
+        mockAddressSafety.isConfirmBlocked = false
+        mockAddressSafety.addresses = undefined
+        mockReviewedMessageAddressesOf.mockReturnValue([])
         mockPipeline.isLoading = false
         mockPipeline.currentRequest = {
             id: 'req-1',
@@ -74,6 +92,32 @@ describe('useMessageSigningScreen', () => {
 
         expect(result.current.summary).toBe(SUMMARY)
         expect(result.current.signerAccount).toBe(SIGNER_ACCOUNT)
+    })
+
+    it('checks every address the message names and holds approval until it is acknowledged', () => {
+        const named = [{ address: '0xSPENDER', role: 'spender' }]
+        mockReviewedMessageAddressesOf.mockReturnValue(named)
+        mockAddressSafety.isConfirmBlocked = true
+
+        const { result } = renderHook(() => useMessageSigningScreen())
+        act(() => result.current.handleApprove())
+
+        expect(mockReviewedMessageAddressesOf).toHaveBeenCalledWith({
+            scope: SCOPE,
+        })
+        expect(result.current.reviewedAddresses).toEqual(named)
+        expect(mockAddressSafety.addresses).toEqual(named)
+        expect(result.current.isConfirmBlocked).toBe(true)
+        expect(mockPipeline.next).not.toHaveBeenCalled()
+    })
+
+    it('checks no address for a request that is not a message', () => {
+        mockPipeline.currentRequest = { id: 'req-2', type: 'transactions' }
+
+        const { result } = renderHook(() => useMessageSigningScreen())
+
+        expect(result.current.reviewedAddresses).toEqual([])
+        expect(mockReviewedMessageAddressesOf).not.toHaveBeenCalled()
     })
 
     it("reads the message request's scope", () => {

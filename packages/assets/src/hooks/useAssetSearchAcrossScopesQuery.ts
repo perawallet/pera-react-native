@@ -10,14 +10,19 @@
  limitations under the License
  */
 
+import { useMemo } from 'react'
 import { useInfiniteQuery } from '@tanstack/react-query'
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import {
+    toScopeKey,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import {
     searchAssetsAcrossScopes,
     type ScopedAssetSearchCursors,
     type ScopedAssetSearchResult,
 } from '../chain-adapter'
+import { useAssetSearchAvailabilityStore } from '../store/search-availability-store'
 import { MODULE_PREFIX } from './querykeys'
 
 type UseAssetSearchAcrossScopesQueryOptions = {
@@ -32,6 +37,18 @@ type UseAssetSearchAcrossScopesQueryResult = {
     isError: boolean
     /** The failure behind `isError`, for callers that branch on its kind; null otherwise. */
     error: unknown
+    /**
+     * Every scope's search was found unavailable earlier this session, so the
+     * query doesn't run and nothing is loading.
+     */
+    isUnavailable: boolean
+    /**
+     * Why each searched scope was found unavailable earlier this session, for
+     * callers that word a refusal differently from a missing service. Holds
+     * only the scopes that were, so it is shorter than `scopes` unless
+     * `isUnavailable`.
+     */
+    unavailableReasons: readonly Error[]
     /** True when the query is paused because the device is offline. */
     isPaused: boolean
     isFetchingNextPage: boolean
@@ -57,6 +74,18 @@ export const useAssetSearchAcrossScopesQuery = (
     options?: UseAssetSearchAcrossScopesQueryOptions,
 ): UseAssetSearchAcrossScopesQueryResult => {
     const hasCollectible = options?.hasCollectible ?? false
+    const unavailableSearches = useAssetSearchAvailabilityStore(
+        ({ unavailableSearches }) => unavailableSearches,
+    )
+    const unavailableReasons = useMemo(
+        () =>
+            scopes.flatMap(
+                scope => unavailableSearches[toScopeKey(scope)] ?? [],
+            ),
+        [scopes, unavailableSearches],
+    )
+    const isUnavailable =
+        scopes.length > 0 && unavailableReasons.length === scopes.length
 
     const infiniteQuery = useInfiniteQuery({
         queryKey: getAssetSearchAcrossScopesQueryKey(
@@ -69,7 +98,8 @@ export const useAssetSearchAcrossScopesQuery = (
                 { query, cursors: pageParam, hasCollectible },
                 scopes,
             ),
-        enabled: (options?.enabled ?? true) && scopes.length > 0,
+        enabled:
+            (options?.enabled ?? true) && scopes.length > 0 && !isUnavailable,
         initialPageParam: undefined as Optional<ScopedAssetSearchCursors>,
         getNextPageParam: lastPage => lastPage.nextCursors,
     })
@@ -79,6 +109,8 @@ export const useAssetSearchAcrossScopesQuery = (
         isLoading: infiniteQuery.isLoading,
         isError: infiniteQuery.isError,
         error: infiniteQuery.error ?? null,
+        isUnavailable,
+        unavailableReasons,
         isPaused: infiniteQuery.fetchStatus === 'paused',
         isFetchingNextPage: infiniteQuery.isFetchingNextPage,
         hasNextPage: infiniteQuery.hasNextPage,

@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+// @vitest-environment jsdom
 import { describe, test, expect, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { useContacts } from '../'

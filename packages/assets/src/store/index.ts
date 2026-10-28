@@ -12,3 +12,7 @@
 
 export { useAssetPreferencesStore } from './store'
 export { useCollectiblePreferencesStore } from './collectible-preferences-store'
+export {
+    useAssetSearchAvailabilityStore,
+    type AssetSearchAvailabilityStore,
+} from './search-availability-store'

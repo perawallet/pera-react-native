@@ -64,6 +64,7 @@ export const AssetSearchItem = ({
         <>
             <AssetItemView
                 asset={asset}
+                chainId={scope.chainId}
                 right={action}
                 footer={
                     showsNetwork ? (

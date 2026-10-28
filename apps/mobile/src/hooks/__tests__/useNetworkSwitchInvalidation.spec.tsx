@@ -49,17 +49,13 @@ vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
     }),
 }))
 
-// The global test setup stubs these packages; the release helper needs the
+// The global test setup stubs accounts and assets; the release helper needs the
 // real query-key guards for the previous-network cache release.
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     const actual = await importOriginal<object>()
     return { ...actual }
 })
 vi.mock('@perawallet/wallet-core-assets', async importOriginal => {
-    const actual = await importOriginal<object>()
-    return { ...actual }
-})
-vi.mock('@perawallet/wallet-core-transactions', async importOriginal => {
     const actual = await importOriginal<object>()
     return { ...actual }
 })
@@ -88,7 +84,6 @@ const renderWithClient = () => {
 
 describe('useNetworkSwitchInvalidation', () => {
     beforeEach(() => {
-        vi.clearAllMocks()
         networkState.networkId = 'mainnet'
         mockGetSyncService.mockReturnValue({
             invalidateQueries: mockInvalidateQueries,
