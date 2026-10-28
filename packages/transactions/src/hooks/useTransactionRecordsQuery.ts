@@ -15,6 +15,7 @@ import {
     useInfiniteQuery,
     useQueryClient,
     onlineManager,
+    type InfiniteData,
 } from '@tanstack/react-query'
 import type {
     ChainScope,
@@ -32,7 +33,11 @@ import {
     getPendingTransactionRecords,
     getTransactionHistoryWithPending,
 } from '../pending-history'
-import { transactionQueryKeys } from './querykeys'
+import {
+    consumeFullRefetchRequest,
+    requestFullRefetch,
+    transactionQueryKeys,
+} from './querykeys'
 
 export type UseTransactionRecordsQueryParams = {
     accountAddress: string
@@ -70,6 +75,37 @@ export type UseTransactionRecordsQueryResult = {
 type RecordsPage = {
     records: TransactionRecord[]
     next: Nullable<PageRef>
+    /** Page one only: the newest mined record the backend listed, where a later page-one refresh stops reading. */
+    newestMinedId?: string
+}
+
+type RecordsRead = { page: RecordsPage; hasReachedLoadedPages: boolean }
+
+// Pages a page-one refresh rebuilt, served to TanStack's re-read of the loaded
+// pages without a network call. Keyed by the previous page's `next` object,
+// which TanStack hands back as `pageParam`: a `getNextPageParam` that copies
+// the cursor would turn every hit into a backend read.
+const mergedPagesByCursor = new WeakMap<PageRef, RecordsPage>()
+
+// A record that leaves page one without a replacement (a pruned failed send)
+// stays until a full re-read. `next` is never touched, so every cursor holds.
+const mergeRefreshedFirstPage = (
+    loaded: RecordsPage[],
+    refreshed: RecordsPage,
+): RecordsPage[] => {
+    const loadedIds = new Set(
+        loaded.flatMap(page => page.records.map(r => r.id)),
+    )
+    const refreshedById = new Map(refreshed.records.map(r => [r.id, r]))
+    const added = refreshed.records.filter(r => !loadedIds.has(r.id))
+    return loaded.map((page, index) => ({
+        ...page,
+        records: [
+            ...(index === 0 ? added : []),
+            ...page.records.map(r => refreshedById.get(r.id) ?? r),
+        ],
+        ...(index === 0 && { newestMinedId: refreshed.newestMinedId }),
+    }))
 }
 
 /**
@@ -97,6 +133,11 @@ const unixMsOf = (isoDate?: string): Optional<number> => {
  * History for a chain that keeps no cached rows (see `hasCachedHistoryRows`),
  * read page by page from the chain's `getTransactionHistory` with the wallet's
  * own broadcasts merged into page one.
+ *
+ * A refetch re-reads from the head only as far as the newest record page one
+ * last listed and merges by id, keeping the loaded pages and their cursors; it
+ * re-reads every page only when asked to (see `shouldRefetchAllPages`) or when
+ * the head no longer reaches them.
  */
 export const useTransactionRecordsQuery = ({
     accountAddress,
@@ -127,6 +168,73 @@ export const useTransactionRecordsQuery = ({
         beforeTime,
     })
 
+    // A backend page can be empty and still have a next one, and a filtered
+    // page often is, so a first-page read goes on up to the cap. With
+    // `loadedNewestMinedId` it is a refresh instead: it goes on until the read
+    // that lists that record, so a page of new activity costs one backend read
+    // however sparse the filter.
+    const readPage = async (
+        pageParam: Nullable<PageRef>,
+        signal: AbortSignal,
+        loadedNewestMinedId?: string,
+    ): Promise<RecordsRead> => {
+        let page = pageParam ?? undefined
+        let newestMinedId: Optional<string>
+        const records: TransactionRecord[] = []
+        for (let read = 1; ; read++) {
+            signal.throwIfAborted()
+            const { items, minedItems, next } =
+                await getTransactionHistoryWithPending(
+                    accountAddress,
+                    scope,
+                    page,
+                )
+            // The first read can be empty with a next page, so the newest id
+            // is the first one any read lists.
+            if (pageParam === null) newestMinedId ??= minedItems[0]?.id
+            const loadedAt =
+                loadedNewestMinedId === undefined
+                    ? -1
+                    : minedItems.findIndex(r => r.id === loadedNewestMinedId)
+            const hasReachedLoadedPages = loadedAt !== -1
+            // Mined records from the loaded newest on are already loaded. The
+            // wallet's own sends stay: their status may have changed.
+            const loadedIds = new Set(
+                hasReachedLoadedPages
+                    ? minedItems.slice(loadedAt).map(r => r.id)
+                    : [],
+            )
+            // Mined records only: a wallet send merged into page one can
+            // predate the range while the next page still holds records in it.
+            const isPastRange =
+                fromMs !== undefined &&
+                minedItems.some(
+                    record =>
+                        record.timestamp !== undefined &&
+                        record.timestamp < fromMs,
+                )
+            records.push(
+                ...items.filter(r => !loadedIds.has(r.id)).filter(isKept),
+            )
+            const nextPage = isPastRange ? undefined : next
+            const isDone =
+                loadedNewestMinedId === undefined
+                    ? records.length > 0
+                    : hasReachedLoadedPages
+            if (isDone || !nextPage || read === MAX_RECORD_PAGE_READS) {
+                return {
+                    page: {
+                        records,
+                        next: nextPage ?? null,
+                        ...(newestMinedId !== undefined && { newestMinedId }),
+                    },
+                    hasReachedLoadedPages,
+                }
+            }
+            page = nextPage
+        }
+    }
+
     const query = useInfiniteQuery({
         queryKey,
         queryFn: async ({
@@ -136,6 +244,12 @@ export const useTransactionRecordsQuery = ({
             pageParam: Nullable<PageRef>
             signal: AbortSignal
         }): Promise<RecordsPage> => {
+            const merged = pageParam && mergedPagesByCursor.get(pageParam)
+            if (merged) {
+                mergedPagesByCursor.delete(pageParam)
+                return merged
+            }
+
             if (!onlineManager.isOnline()) {
                 // A refetch rebuilds from page one and stops at the first page
                 // with no cursor, so an offline page here would drop every page
@@ -156,37 +270,47 @@ export const useTransactionRecordsQuery = ({
                 return { records: pending.filter(isKept), next: null }
             }
 
-            // A backend page can be empty and still have a next one, and a
-            // filtered page often is, so read on up to the cap.
-            let page = pageParam ?? undefined
-            for (let read = 1; ; read++) {
-                signal.throwIfAborted()
-                const { items, minedItems, next } =
-                    await getTransactionHistoryWithPending(
-                        accountAddress,
-                        scope,
-                        page,
-                    )
-                // Mined records only: a wallet send merged into page one can
-                // predate the range while the next page still holds records in it.
-                const isPastRange =
-                    fromMs !== undefined &&
-                    minedItems.some(
-                        record =>
-                            record.timestamp !== undefined &&
-                            record.timestamp < fromMs,
-                    )
-                const records = items.filter(isKept)
-                const nextPage = isPastRange ? undefined : next
-                if (
-                    records.length > 0 ||
-                    !nextPage ||
-                    read === MAX_RECORD_PAGE_READS
-                ) {
-                    return { records, next: nextPage ?? null }
-                }
-                page = nextPage
+            if (pageParam !== null) {
+                return (await readPage(pageParam, signal)).page
             }
+
+            const cachedQuery = queryClient
+                .getQueryCache()
+                .find({ queryKey, exact: true })
+            const isFullRefetch =
+                cachedQuery !== undefined &&
+                consumeFullRefetchRequest(cachedQuery)
+            if (isFullRefetch) {
+                // An invalidation landing mid re-read cancels it; the refetch
+                // that replaces it must still be a full one.
+                signal.addEventListener(
+                    'abort',
+                    () => requestFullRefetch(cachedQuery),
+                    { once: true },
+                )
+            }
+            const loaded =
+                queryClient.getQueryData<
+                    InfiniteData<RecordsPage, Nullable<PageRef>>
+                >(queryKey)?.pages
+            // A refresh that was cancelled before its re-read left entries behind.
+            for (const { next } of loaded ?? []) {
+                if (next) mergedPagesByCursor.delete(next)
+            }
+            const { page, hasReachedLoadedPages } = await readPage(
+                null,
+                signal,
+                isFullRefetch ? undefined : loaded?.[0]?.newestMinedId,
+            )
+            if (!loaded || !hasReachedLoadedPages) return page
+
+            const pages = mergeRefreshedFirstPage(loaded, page)
+            pages.forEach(({ next }, index) => {
+                if (next && pages[index + 1]) {
+                    mergedPagesByCursor.set(next, pages[index + 1])
+                }
+            })
+            return pages[0]
         },
         initialPageParam: null as Nullable<PageRef>,
         getNextPageParam: (lastPage: RecordsPage) => lastPage.next ?? undefined,
