@@ -14,7 +14,6 @@ import { renderHook, act } from '@test-utils/render'
 import { waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import {
-    OnboardingNotVerifiedError,
     OnboardingStep,
     type SupportedCountry,
     type SupportedUsState,
@@ -22,8 +21,8 @@ import {
 import { config } from '@perawallet/wallet-core-config'
 
 const mockMutateAsync = vi.fn()
+const mockRefetchRecord = vi.fn()
 const mockConsentMutateAsync = vi.fn()
-const mockLinkMutateAsync = vi.fn()
 const mockSetCountryIso = vi.fn()
 const mockSetAllowMarketing = vi.fn()
 const mockSetAllowSms = vi.fn()
@@ -41,10 +40,6 @@ let mockSettings:
           termsAndConditionsUrls?: { us: string | null; intl: string | null }
       }
     | undefined
-// The gate's own derivation is unit-tested in the card package
-// (useOnboardingKycGate.spec.ts); here only the screen's wiring matters.
-let mockIsKycRequired = false
-const mockMarkServerRefused = vi.fn()
 
 vi.mock('@perawallet/wallet-core-card', async () => {
     const actual = await vi.importActual<
@@ -52,10 +47,6 @@ vi.mock('@perawallet/wallet-core-card', async () => {
     >('@perawallet/wallet-core-card')
     return {
         ...actual,
-        useOnboardingKycGate: () => ({
-            isKycRequired: mockIsKycRequired,
-            markServerRefused: mockMarkServerRefused,
-        }),
         useSubmitAddressMutation: () => ({
             mutate: vi.fn(),
             mutateAsync: mockMutateAsync,
@@ -78,23 +69,13 @@ vi.mock('@perawallet/wallet-core-card', async () => {
             data: null,
             reset: vi.fn(),
         }),
-        useLinkConsentMutation: () => ({
-            mutate: vi.fn(),
-            mutateAsync: mockLinkMutateAsync,
-            isPending: false,
-            isError: false,
-            isSuccess: false,
-            isPaused: false,
-            error: null,
-            data: null,
-            reset: vi.fn(),
-        }),
         useRegistrationSettingsQuery: () => ({
             data: mockSettings,
             isLoading: false,
             isError: false,
             refetch: vi.fn(),
         }),
+        useOnboardingDetailsQuery: () => ({ refetch: mockRefetchRecord }),
         useCardStore: Object.assign(
             (
                 selector: (state: {
@@ -165,6 +146,11 @@ vi.mock('@routes/capabilities', () => ({
     routeCapabilities: mockCapabilities,
 }))
 
+const mockGoToNextStep = vi.fn()
+vi.mock('@modules/card/hooks/useCardOnboardingRouter', () => ({
+    useCardOnboardingRouter: () => ({ goToNextStep: mockGoToNextStep }),
+}))
+
 const mockNavigate = vi.fn()
 vi.mock('@hooks/useAppNavigation', () => ({
     useAppNavigation: () => ({ navigate: mockNavigate }),
@@ -192,6 +178,7 @@ const gb: SupportedCountry = {
     name: 'United Kingdom',
     callingCode: '44',
     canSignUp: true,
+    cardProvider: null,
 }
 const us: SupportedCountry = {
     id: 'us',
@@ -199,6 +186,7 @@ const us: SupportedCountry = {
     name: 'United States',
     callingCode: '1',
     canSignUp: true,
+    cardProvider: null,
 }
 const california: SupportedUsState = {
     id: 'ca',
@@ -216,7 +204,6 @@ describe('useCardOnboardingAddressScreen', () => {
         vi.clearAllMocks()
         Object.assign(mockCapabilities, { inAppWebView: true })
         mockOnboardingId = 'mock-onboarding-id'
-        mockIsKycRequired = false
         mockOnboardingStep = OnboardingStep.EmailSend
         mockCountryIso = 'GB'
         mockAllowMarketing = true
@@ -230,54 +217,11 @@ describe('useCardOnboardingAddressScreen', () => {
             },
         }
         mockMutateAsync.mockResolvedValue({
-            accessToken: 'tok',
+            accessToken: null,
             onboardingId: 'mock-onboarding-id',
-            userId: 'mock-user-id',
+            userId: null,
         })
         mockConsentMutateAsync.mockResolvedValue({ consentSetId: 'cs_1' })
-        mockLinkMutateAsync.mockResolvedValue(undefined)
-    })
-
-    describe('KYC gating', () => {
-        it('surfaces the gate and offers a route back to verification', () => {
-            mockIsKycRequired = true
-            const { result } = renderHook(() =>
-                useCardOnboardingAddressScreen(),
-            )
-
-            expect(result.current.isKycRequired).toBe(true)
-
-            act(() => {
-                result.current.handleVerifyIdentity()
-            })
-            expect(mockNavigate).toHaveBeenCalledWith(
-                'CardOnboardingVerification',
-            )
-        })
-
-        it('marks the gate refused and keeps the user here when the server rejects the submit', async () => {
-            mockMutateAsync.mockRejectedValueOnce(
-                new OnboardingNotVerifiedError(),
-            )
-            const { result } = renderHook(() =>
-                useCardOnboardingAddressScreen(),
-            )
-            fillValidAddress(result)
-
-            await act(async () => {
-                result.current.handleConfirm()
-            })
-
-            expect(mockMarkServerRefused).toHaveBeenCalledTimes(1)
-            expect(mockNavigate).not.toHaveBeenCalledWith(
-                'CardOnboardingStatus',
-            )
-            // Our copy, never Baanx's "User is not verified".
-            expect(mockErrorToast).toHaveBeenCalledWith(
-                'peraCard.kyc_required.title',
-                'peraCard.kyc_required.body',
-            )
-        })
     })
 
     it('starts with an invalid form and is not submitting', () => {
@@ -445,7 +389,7 @@ describe('useCardOnboardingAddressScreen', () => {
         })
     })
 
-    it('submits the address and returns to the setup checklist', async () => {
+    it('submits the address and moves on to identity verification', async () => {
         const { result } = renderHook(() => useCardOnboardingAddressScreen())
         fillValidAddress(result)
 
@@ -454,7 +398,9 @@ describe('useCardOnboardingAddressScreen', () => {
         })
 
         await waitFor(() =>
-            expect(mockNavigate).toHaveBeenCalledWith('CardOnboardingStatus'),
+            expect(mockGoToNextStep).toHaveBeenCalledWith({
+                localStep: OnboardingStep.Verification,
+            }),
         )
         expect(mockErrorToast).not.toHaveBeenCalled()
     })
@@ -486,9 +432,9 @@ describe('useCardOnboardingAddressScreen', () => {
         })
 
         await waitFor(() =>
-            expect(mockNavigate).toHaveBeenCalledWith(
-                'CardOnboardingMailingAddress',
-            ),
+            expect(mockGoToNextStep).toHaveBeenCalledWith({
+                localStep: OnboardingStep.MailingAddress,
+            }),
         )
         expect(mockMutateAsync).toHaveBeenCalledWith(
             expect.objectContaining({
@@ -516,14 +462,26 @@ describe('useCardOnboardingAddressScreen', () => {
                 'Registration is not in the expected phase',
             ),
         )
-        expect(mockNavigate).not.toHaveBeenCalled()
+        expect(mockGoToNextStep).not.toHaveBeenCalled()
     })
 
-    it('routes a duplicate submission to sign-in (registration finished but no session was stored)', async () => {
+    const GONE_RECORD = {
+        data: undefined,
+        error: {
+            response: { status: 404 },
+            data: { message: 'Invalid onboarding ID' },
+        },
+    }
+
+    it("continues from the record's phase when a duplicate means an earlier save already landed", async () => {
         mockMutateAsync.mockRejectedValueOnce({
             response: { status: 409 },
             data: { message: 'Duplicate onboardingId - record already exists' },
         })
+        mockRefetchRecord.mockResolvedValueOnce({
+            data: { phase: 'MAILING_ADDRESS' },
+            error: null,
+        })
         const { result } = renderHook(() => useCardOnboardingAddressScreen())
         fillValidAddress(result)
 
@@ -531,26 +489,72 @@ describe('useCardOnboardingAddressScreen', () => {
             result.current.handleConfirm()
         })
 
-        // The session token only arrives on a successful address response, so
-        // a duplicate retry must send the user to sign in for one — landing on
-        // the checklist tokenless would strand them.
         await waitFor(() =>
-            expect(mockNavigate).toHaveBeenCalledWith('CardSignIn'),
+            expect(mockGoToNextStep).toHaveBeenCalledWith({
+                phase: 'MAILING_ADDRESS',
+                localStep: OnboardingStep.Verification,
+            }),
         )
-        expect(mockInfoToast).toHaveBeenCalledWith(
-            'peraCard.address.already_registered_title',
-            'peraCard.address.already_registered_body',
+        expect(mockNavigate).not.toHaveBeenCalledWith(
+            'CardSignIn',
+            expect.anything(),
         )
-        expect(mockErrorToast).not.toHaveBeenCalled()
+        expect(mockInfoToast).not.toHaveBeenCalled()
     })
 
-    it("routes Baanx's 'Create user failed' to sign-in (user already created on an earlier attempt)", async () => {
-        // Seen live: the first address call created the user but errored, so
-        // every retry fails with this generic text. The account exists, so
-        // signing in is the only way to obtain the session token.
+    it.each([
+        [
+            'a duplicate',
+            {
+                response: { status: 409 },
+                data: {
+                    message: 'Duplicate onboardingId - record already exists',
+                },
+            },
+        ],
+        [
+            "Baanx's 'Create user failed'",
+            {
+                response: { status: 400 },
+                data: { message: 'Create user failed' },
+            },
+        ],
+    ])(
+        'routes %s to sign-in once the record has become an account',
+        async (_label, failure) => {
+            mockMutateAsync.mockRejectedValueOnce(failure)
+            mockRefetchRecord.mockResolvedValueOnce(GONE_RECORD)
+            const { result } = renderHook(() =>
+                useCardOnboardingAddressScreen(),
+            )
+            fillValidAddress(result)
+
+            await act(async () => {
+                result.current.handleConfirm()
+            })
+
+            await waitFor(() =>
+                expect(mockNavigate).toHaveBeenCalledWith('CardSignIn', {
+                    email: undefined,
+                    finishesRegistration: true,
+                }),
+            )
+            expect(mockInfoToast).toHaveBeenCalledWith(
+                'peraCard.address.already_registered_title',
+                'peraCard.address.already_registered_body',
+            )
+            expect(mockErrorToast).not.toHaveBeenCalled()
+        },
+    )
+
+    it('shows the error when the record cannot be read after a duplicate', async () => {
         mockMutateAsync.mockRejectedValueOnce({
-            response: { status: 400 },
-            data: { message: 'Create user failed' },
+            response: { status: 409 },
+            data: { message: 'Duplicate onboardingId - record already exists' },
+        })
+        mockRefetchRecord.mockResolvedValueOnce({
+            data: undefined,
+            error: { response: { status: 503 } },
         })
         const { result } = renderHook(() => useCardOnboardingAddressScreen())
         fillValidAddress(result)
@@ -559,14 +563,12 @@ describe('useCardOnboardingAddressScreen', () => {
             result.current.handleConfirm()
         })
 
-        await waitFor(() =>
-            expect(mockNavigate).toHaveBeenCalledWith('CardSignIn'),
+        await waitFor(() => expect(mockErrorToast).toHaveBeenCalled())
+        expect(mockNavigate).not.toHaveBeenCalledWith(
+            'CardSignIn',
+            expect.anything(),
         )
-        expect(mockInfoToast).toHaveBeenCalledWith(
-            'peraCard.address.already_registered_title',
-            'peraCard.address.already_registered_body',
-        )
-        expect(mockErrorToast).not.toHaveBeenCalled()
+        expect(mockGoToNextStep).not.toHaveBeenCalled()
     })
 
     it('opens the intl Baanx card T&C and Pera platform T&C links', () => {

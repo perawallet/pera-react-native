@@ -156,10 +156,11 @@ describe('Flow: Card sign in', () => {
         )
     })
 
-    it('Given a mid-registration login for an unverified user, when Sign In is pressed, then the KYC entry screen opens', async () => {
+    it('Given a mid-registration login with every form in but KYC not run, when Sign In is pressed, then the KYC entry screen opens', async () => {
         // A mid-onboarding login returns a `phase` but no accessToken and a null
         // verificationState; the app reads the real KYC state from the pre-auth
         // onboarding endpoint, using the login userId as the onboardingId.
+        // Outside the US, MAILING_ADDRESS means every form is in.
         let onboardingQueryId: string | null = null
         server.use(
             http.post('*/v1/auth/login', () =>
@@ -168,7 +169,7 @@ describe('Flow: Card sign in', () => {
                         accessToken: null,
                         userId: 'user-123',
                         isOtpRequired: false,
-                        phase: 'PERSONAL_INFORMATION',
+                        phase: 'MAILING_ADDRESS',
                         verificationState: null,
                     },
                     { status: 200 },

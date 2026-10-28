@@ -32,10 +32,11 @@ export enum CardEvent {
     CreateEmailVerification = 'card_onb_create_emailVerification', // Submitted the email verification code
     CreateEmailVerifySendAgain = 'card_onb_create_emailVerify_resend', // Requested a new email verification code
     CreatePassword = 'card_onboarding_create_createPassword', // Submitted the password form
-    CreateSubmitDocs = 'card_onboarding_create_submitDocs', // Started identity verification (opens Veriff)
+    CreateSubmitDocs = 'card_onboarding_create_submitDocs', // Started identity verification (opens the hosted KYC session)
     CreateLogout = 'card_onboarding_create_logout', // Logged out during onboarding
     CreateVerifyAccountContinue = 'card_onb_create_verifyAcct_continue', // Submitted personal details
     CreateVerifyAccountContinue2 = 'card_onb_create_verifyAcct_continue2', // Submitted residential address
+    CreateAdditionalDetailsContinue = 'card_onb_create_addlDetails_continue', // Submitted additional details (BoP residents)
     CreateConnectWallet = 'card_onboarding_create_connectWallet', // Tapped connect account on the status checklist
     CreateVerifyAccount = 'card_onboarding_create_verifyAccount', // Tapped verify identity on the status checklist
     CreateVerifyAccountSelect = 'card_onb_create_verifyAcct_select', // Picked a funding account in the account sheet

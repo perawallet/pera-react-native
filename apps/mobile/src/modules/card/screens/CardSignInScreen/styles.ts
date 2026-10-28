@@ -41,4 +41,7 @@ export const useStyles = makeStyles(theme => ({
     countdownText: {
         color: theme.colors.textGrayLighter,
     },
+    accountLocked: {
+        color: theme.colors.error,
+    },
 }))

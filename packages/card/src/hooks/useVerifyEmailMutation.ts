@@ -36,16 +36,13 @@ export const useVerifyEmailMutation = (
         VerifyEmailVariables
     >({
         mutationFn: variables => verifyEmail({ ...variables, scope }),
-        // Store the onboarding id every later step requires. The step isn't
-        // advanced here — this runs on the password screen (right after email
-        // verification, before the phone steps); the phone/send and phone/verify
-        // that follow move the step forward. No id is issued when the email
-        // already has an account (`hasAccount`); guard on both so a
-        // contradictory { hasAccount, onboardingId } can't persist a stale id
-        // while the caller routes to sign-in.
-        onSuccess: ({ onboardingId, hasAccount }) => {
+        // Guard on both: a contradictory { hasAccount, onboardingId } must not
+        // persist an id while the caller routes to sign-in. The password is
+        // held, memory only, for the login after KYC verifies.
+        onSuccess: ({ onboardingId, hasAccount }, { password }) => {
             if (onboardingId && !hasAccount) {
                 useCardStore.getState().setOnboardingId(onboardingId)
+                useCardStore.getState().setPassword(password)
             }
         },
         throwOnError: false,

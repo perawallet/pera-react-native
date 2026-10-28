@@ -35,6 +35,30 @@ let mockVerificationState: string | null = null
 let mockOnboardingStep: OnboardingStep = OnboardingStep.Verification
 let mockConnectedAddress: string | null = null
 let mockStoredFundingType: FundingType | null = null
+let mockIsAuthenticated = false
+let mockOnboardingRecord: {
+    phase: string | null
+    email: string | null
+    countryOfResidence?: string | null
+} = {
+    phase: null,
+    email: 'john@example.com',
+}
+let mockStoredCountryIso: string | null = 'GB'
+const mockFinishRegistration = vi.fn()
+const mockTryAgain = vi.fn()
+const FINISH_IDLE = {
+    accountPreparation: 'none',
+    isLoginLocked: false,
+    canTryAgain: false,
+    handleTryAgain: mockTryAgain,
+    handleSignIn: vi.fn(),
+}
+vi.mock('../useFinishRegistrationOnVerified', () => ({
+    useFinishRegistrationOnVerified: (...args: unknown[]) =>
+        mockFinishRegistration(...args),
+}))
+const mockGoToNextStep = vi.fn()
 
 vi.mock('@perawallet/wallet-core-card', async () => {
     const actual = await vi.importActual<
@@ -49,6 +73,8 @@ vi.mock('@perawallet/wallet-core-card', async () => {
             isStateUnknown: mockIsStateUnknown,
             isLoading: mockIsLoading,
             hasPollTimedOut: mockHasPollTimedOut,
+            hasAccountSignal: mockHasAccountSignal,
+            isRecordMissing: mockIsRecordMissing,
             restartPolling: mockRestartPolling,
             refetch: vi.fn(),
         }),
@@ -56,18 +82,26 @@ vi.mock('@perawallet/wallet-core-card', async () => {
             checkFundingAddress: mockCheckFundingAddress,
             isPending: false,
         }),
+        useCardSession: () => ({ isAuthenticated: mockIsAuthenticated }),
+        useOnboardingDetailsQuery: () => ({ data: mockOnboardingRecord }),
         useCardStore: Object.assign(
             (
                 selector: (state: {
                     onboardingId: string | null
                     onboardingStep: OnboardingStep
                     connectedFundingSourceAddress: string | null
+                    countryIso: string | null
+                    contactVerificationId: string | null
+                    email: string | null
                 }) => unknown,
             ) =>
                 selector({
                     onboardingId: 'mock-onboarding-id',
                     onboardingStep: mockOnboardingStep,
                     connectedFundingSourceAddress: mockConnectedAddress,
+                    countryIso: mockStoredCountryIso,
+                    contactVerificationId: 'mock-contact-id',
+                    email: null,
                 }),
             {
                 getState: () => ({
@@ -108,6 +142,8 @@ const mockCheckFundingAddress = vi.fn()
 const mockShowCardError = vi.fn()
 let mockIsStateUnknown = false
 let mockIsLoading = false
+let mockHasAccountSignal = false
+let mockIsRecordMissing = false
 const mockRestartPolling = vi.fn()
 vi.mock('@modules/card/hooks', async () => ({
     // Real support hook (over the mocked webview + capabilities) so the
@@ -116,6 +152,7 @@ vi.mock('@modules/card/hooks', async () => ({
         typeof import('../../../hooks/useOpenCardSupport')
     >('../../../hooks/useOpenCardSupport')),
     useCardOnboardingLogout: () => ({ handleLogout: mockLogout }),
+    useCardOnboardingRouter: () => ({ goToNextStep: mockGoToNextStep }),
     useCardErrorToast: () => mockShowCardError,
     useCardFundingSourcePicker: () => ({
         pickFundingSource: mockPickFundingSource,
@@ -186,11 +223,12 @@ vi.mock('@react-navigation/native', async () => {
 })
 
 const mockErrorToast = vi.fn()
+const mockInfoToast = vi.fn()
 vi.mock('@hooks/useToast', () => ({
     useToast: () => ({
         successToast: vi.fn(),
         errorToast: mockErrorToast,
-        infoToast: vi.fn(),
+        infoToast: mockInfoToast,
         showToast: vi.fn(),
     }),
 }))
@@ -236,6 +274,8 @@ beforeEach(() => {
     mockIsStateUnknown = false
     mockIsLoading = false
     mockOnboardingStep = OnboardingStep.Verification
+    mockHasAccountSignal = false
+    mockIsRecordMissing = false
     mockConnectedAddress = null
     mockStoredFundingType = null
     mockAccounts = []
@@ -246,10 +286,14 @@ beforeEach(() => {
     mockCanCreateCard.mockReturnValue(true)
     mockCanAutoFund.mockReturnValue(true)
     mockIsAutoFundingEnabled = true
+    mockIsAuthenticated = false
+    mockOnboardingRecord = { phase: null, email: 'john@example.com' }
+    mockStoredCountryIso = 'GB'
+    mockFinishRegistration.mockReturnValue(FINISH_IDLE)
 })
 
 describe('useCardOnboardingStatusScreen', () => {
-    it('reports pending while Veriff reviews', () => {
+    it('reports pending while KYC is under review', () => {
         mockVerificationState = 'PENDING'
         const { result } = renderHook(() => useCardOnboardingStatusScreen())
 
@@ -308,7 +352,6 @@ describe('useCardOnboardingStatusScreen', () => {
         const { result } = renderHook(() => useCardOnboardingStatusScreen())
 
         expect(result.current.documentsState).toBe('pending')
-        expect(result.current.isKycSubmitted).toBe(false)
     })
 
     it('keeps an unsubmitted KYC actionable even after the poll gives up', () => {
@@ -332,22 +375,144 @@ describe('useCardOnboardingStatusScreen', () => {
         expect(mockNavigate).toHaveBeenCalledWith('CardOnboardingVerification')
     })
 
-    it('unlocks the details step only once KYC is submitted (PENDING/VERIFIED)', () => {
-        mockVerificationState = 'PENDING'
+    it('locks the documents row until every form is in', () => {
+        mockOnboardingStep = OnboardingStep.Address
+        mockVerificationState = 'UNVERIFIED'
         const { result } = renderHook(() => useCardOnboardingStatusScreen())
 
-        expect(result.current.isKycSubmitted).toBe(true)
+        expect(result.current.areDetailsSubmitted).toBe(false)
+        expect(result.current.documentsState).toBe('locked')
     })
 
-    it('keeps the details step unlocked when a submitted review poll errors', () => {
-        // documentsState becomes 'error' on a PENDING poll failure, but the
-        // underlying KYC state (PENDING) is still submitted.
-        mockVerificationState = 'PENDING'
-        mockHasPollTimedOut = true
+    it("trusts Baanx's phase over the device's step for the details row", () => {
+        mockOnboardingStep = OnboardingStep.Verification
+        mockOnboardingRecord = {
+            phase: 'ADDITIONAL_DETAILS',
+            email: 'john@example.com',
+        }
+        mockVerificationState = 'UNVERIFIED'
         const { result } = renderHook(() => useCardOnboardingStatusScreen())
 
-        expect(result.current.documentsState).toBe('error')
-        expect(result.current.isKycSubmitted).toBe(true)
+        expect(result.current.areDetailsSubmitted).toBe(false)
+    })
+
+    it('marks the details done once the forms are in', () => {
+        mockVerificationState = 'UNVERIFIED'
+        const { result } = renderHook(() => useCardOnboardingStatusScreen())
+
+        expect(result.current.areDetailsSubmitted).toBe(true)
+        expect(result.current.documentsState).toBe('unverified')
+    })
+
+    it('hands the KYC verdict and the email to the finish-registration hook', () => {
+        mockVerificationState = 'VERIFIED'
+        renderHook(() => useCardOnboardingStatusScreen())
+
+        expect(mockFinishRegistration).toHaveBeenLastCalledWith(
+            expect.anything(),
+            {
+                verificationState: 'VERIFIED',
+                areDetailsSubmitted: true,
+                isRegistrationComplete: false,
+                isAuthenticated: false,
+                email: 'john@example.com',
+                hasAccountSignal: false,
+            },
+        )
+    })
+
+    it('tells the finish-registration hook when a verified record still owes forms', () => {
+        mockVerificationState = 'VERIFIED'
+        mockOnboardingRecord = {
+            phase: 'PERSONAL_INFORMATION',
+            email: 'john@example.com',
+        }
+        renderHook(() => useCardOnboardingStatusScreen())
+
+        expect(mockFinishRegistration).toHaveBeenLastCalledWith(
+            expect.anything(),
+            expect.objectContaining({ areDetailsSubmitted: false }),
+        )
+    })
+
+    it('asks for a sign-in, without claiming the identity is verified, when the record went missing', () => {
+        mockIsRecordMissing = true
+        const { result } = renderHook(() => useCardOnboardingStatusScreen())
+
+        expect(result.current.documentsState).toBe('record-missing')
+    })
+
+    it('reads every form as in once the record has become an account', () => {
+        mockOnboardingStep = OnboardingStep.EmailSend
+        mockVerificationState = 'VERIFIED'
+        mockHasAccountSignal = true
+        const { result } = renderHook(() => useCardOnboardingStatusScreen())
+
+        expect(result.current.areDetailsSubmitted).toBe(true)
+    })
+
+    it.each([
+        ['preparing', 'preparing'],
+        ['slow', 'preparing-slow'],
+        ['stalled', 'preparing-stalled'],
+        ['sign-in', 'sign-in-required'],
+    ])(
+        'shows the account as being prepared (%s) while Baanx finishes it',
+        (accountPreparation, documentsState) => {
+            mockVerificationState = 'VERIFIED'
+            mockFinishRegistration.mockReturnValue({
+                ...FINISH_IDLE,
+                accountPreparation,
+            })
+
+            const { result } = renderHook(() => useCardOnboardingStatusScreen())
+
+            expect(result.current.documentsState).toBe(documentsState)
+            expect(result.current.isRegistrationComplete).toBe(false)
+        },
+    )
+
+    it('shows the locked account and offers no retry', () => {
+        mockVerificationState = 'VERIFIED'
+        mockFinishRegistration.mockReturnValue({
+            ...FINISH_IDLE,
+            isLoginLocked: true,
+        })
+
+        const { result } = renderHook(() => useCardOnboardingStatusScreen())
+
+        expect(result.current.documentsState).toBe('account-locked')
+        expect(result.current.canTryAgain).toBe(false)
+    })
+
+    it('passes "Try again" through to the finish-registration hook', () => {
+        mockVerificationState = 'VERIFIED'
+        mockFinishRegistration.mockReturnValue({
+            ...FINISH_IDLE,
+            accountPreparation: 'preparing',
+            canTryAgain: true,
+        })
+        const { result } = renderHook(() => useCardOnboardingStatusScreen())
+
+        act(() => result.current.handleTryAgain())
+
+        expect(result.current.canTryAgain).toBe(true)
+        expect(mockTryAgain).toHaveBeenCalledTimes(1)
+    })
+
+    it("routes by the record's residence when this device holds none", () => {
+        mockStoredCountryIso = null
+        mockOnboardingStep = OnboardingStep.MailingAddress
+        mockOnboardingRecord = {
+            phase: 'MAILING_ADDRESS',
+            email: 'john@example.com',
+            countryOfResidence: 'US',
+        }
+        mockVerificationState = 'UNVERIFIED'
+        const { result } = renderHook(() => useCardOnboardingStatusScreen())
+
+        // A US record still owes its mailing address.
+        expect(result.current.areDetailsSubmitted).toBe(false)
     })
 
     it('redirects a back action to the wallet home once KYC is verified', () => {
@@ -407,43 +572,25 @@ describe('useCardOnboardingStatusScreen', () => {
         })
     })
 
-    it('continues to personal details and advances the stored step', () => {
-        // PENDING is the only state under which the CTA renders at all.
-        mockVerificationState = 'PENDING'
+    it('opens the form the router picks from the phase and the stored step', () => {
+        mockOnboardingStep = OnboardingStep.Address
+        mockOnboardingRecord = {
+            phase: 'PHYSICAL_ADDRESS',
+            email: 'john@example.com',
+        }
+        mockVerificationState = 'UNVERIFIED'
         const { result } = renderHook(() => useCardOnboardingStatusScreen())
 
         act(() => {
             result.current.handleEnterDetails()
         })
 
-        expect(mockSetOnboardingStep).toHaveBeenCalledWith(
-            OnboardingStep.PersonalDetails,
-        )
-        expect(mockNavigate).toHaveBeenCalledWith(
-            'CardOnboardingPersonalDetails',
-        )
+        expect(mockGoToNextStep).toHaveBeenCalledWith({
+            phase: 'PHYSICAL_ADDRESS',
+            localStep: OnboardingStep.Address,
+            verificationState: 'UNVERIFIED',
+        })
     })
-
-    it.each([
-        ['unfetched', null],
-        ['unverified', 'UNVERIFIED'],
-    ])(
-        'refuses to enter details on a %s record: routes to verification without persisting the step',
-        (_label, state) => {
-            mockVerificationState = state
-            const { result } = renderHook(() => useCardOnboardingStatusScreen())
-
-            act(() => {
-                result.current.handleEnterDetails()
-            })
-
-            // Persisting a step Baanx will refuse is its own latent bug.
-            expect(mockSetOnboardingStep).not.toHaveBeenCalled()
-            expect(mockNavigate).toHaveBeenCalledWith(
-                'CardOnboardingVerification',
-            )
-        },
-    )
 
     it('marks registration complete only at the Completed step', () => {
         mockOnboardingStep = OnboardingStep.Address

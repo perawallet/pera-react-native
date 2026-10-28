@@ -15,7 +15,7 @@ import { HTTPError } from 'ky'
 import { ZodError } from 'zod'
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import { getCardTransport } from '../transport'
-import type { CardUser, VeriffSession } from '../../models'
+import type { CardUser, KycSession } from '../../models'
 import { userResponseSchema, verificationSessionResponseSchema } from './schema'
 import { transformUser } from './transformers'
 
@@ -59,13 +59,13 @@ export type FetchVerificationSessionParams = {
 }
 
 /**
- * Starts/returns the Veriff KYC session via GET /v1/user/verification. The
+ * Starts/returns the KYC session via GET /v1/user/verification. The
  * caller opens the returned `sessionUrl`, then polls GET /v1/user for the
  * `verificationState` to transition.
  */
 export const fetchVerificationSession = async (
     params: FetchVerificationSessionParams,
-): Promise<VeriffSession> => {
+): Promise<KycSession> => {
     const response = await getCardTransport().request({
         scope: params.scope,
         method: 'GET',

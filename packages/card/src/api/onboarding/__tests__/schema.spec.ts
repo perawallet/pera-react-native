@@ -16,6 +16,7 @@ import {
     consentResponseSchema,
     onboardingDetailsResponseSchema,
     registerVerificationResponseSchema,
+    registrationSettingsResponseSchema,
 } from '../schema'
 
 describe('addressResponseSchema', () => {
@@ -66,13 +67,13 @@ describe('registerVerificationResponseSchema', () => {
     it('parses the session url and rejects a missing one', () => {
         expect(
             registerVerificationResponseSchema.parse({
-                sessionUrl: 'https://veriff/session',
+                sessionUrl: 'https://kyc.example/session',
             }).sessionUrl,
-        ).toBe('https://veriff/session')
+        ).toBe('https://kyc.example/session')
         expect(() => registerVerificationResponseSchema.parse({})).toThrow()
     })
 
-    it.each(['http://veriff/session', 'javascript:alert(1)'])(
+    it.each(['http://kyc.example/session', 'javascript:alert(1)'])(
         'rejects a %s session url before it reaches Linking.openURL',
         sessionUrl => {
             expect(() =>
@@ -100,5 +101,55 @@ describe('onboardingDetailsResponseSchema', () => {
             dateOfBirth: '1990-01-02T00:00:00.000Z',
             countryOfNationality: 'GB',
         })
+    })
+
+    it('reads a profile field in an unexpected shape as missing, so the poll survives', () => {
+        const parsed = onboardingDetailsResponseSchema.parse({
+            verificationState: 'VERIFIED',
+            phase: 'ACCOUNT',
+            estimatedAnnualIncome: 30000,
+            additionalNationalities: [{ iso: 'PT' }],
+        })
+
+        expect(parsed).toMatchObject({
+            verificationState: 'VERIFIED',
+            phase: 'ACCOUNT',
+            estimatedAnnualIncome: null,
+            additionalNationalities: null,
+        })
+    })
+
+    it('still fails on a verification state it cannot read', () => {
+        expect(() =>
+            onboardingDetailsResponseSchema.parse({ verificationState: 1 }),
+        ).toThrow()
+    })
+})
+
+describe('registrationSettingsResponseSchema', () => {
+    it('parses a settings body from before the option lists and card provider existed', () => {
+        const parsed = registrationSettingsResponseSchema.parse({
+            countries: [
+                {
+                    id: 'gb',
+                    iso3166alpha2: 'GB',
+                    name: 'United Kingdom',
+                    callingCode: '44',
+                    canSignUp: true,
+                },
+            ],
+            usStates: [],
+        })
+
+        expect(parsed.countries?.[0].cardProvider).toBeUndefined()
+        expect(parsed.occupations).toBeUndefined()
+    })
+
+    it('rejects an option without a key', () => {
+        expect(() =>
+            registrationSettingsResponseSchema.parse({
+                occupations: [{ name: 'Engineer' }],
+            }),
+        ).toThrow()
     })
 })
