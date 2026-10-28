@@ -8,6 +8,7 @@ Suite Setup         Start Pera With Wallet
 Suite Teardown      Run Keywords    Reset To Fresh Wallet    AND    Close Pera
 Test Setup          Go Home Without Rekey Sheet
 Test Teardown       Capture Failure Screenshot
+Test Timeout        ${E2E_TEST_TIMEOUT}
 Test Tags           rekey
 
 
@@ -66,10 +67,6 @@ Rekey To Ledger Intro Opens
     Tap    ${TARGET_LEDGER}
     Wait Until Page Contains Element    ${LEDGER_INTRO_START}    timeout=15s
 
-Shared Account Rekey Reaches Target Selection
-    [Tags]    id:rekey.shared.select-target    p2    needs-harness
-    Skip    Needs a shared (multisig) account in the wallet; no fund-free keyword creates one yet.
-
 Rescan Rekeyed Settles Without An Error
     [Documentation]    A fresh account has nothing rekeyed to it, so the empty state is a pass; the
     ...                error state means discovery itself failed.
@@ -81,7 +78,7 @@ Rescan Lists The Account Rekeyed To This One
     Skip Unless Env Set    E2E_REKEY_AUTH_MNEMONIC    E2E_REKEY_AUTH_ADDRESS    E2E_REKEYED_ADDRESS
     Use Account From Environment    E2E_REKEY_AUTH_MNEMONIC    ${REKEY_AUTH_ADDRESS}
     Open Rescan Rekeyed
-    Page Should Contain Element    xpath=//*[@resource-id='rescan' or @name='rescan' or @content-desc='rescan']-rekeyed-row-${REKEYED_ADDRESS}
+    Page Should Contain Element    tid=rescan-rekeyed-row-${REKEYED_ADDRESS}
     Page Should Contain Element    ${RESCAN_SELECT_ALL}
     Page Should Contain Element    ${RESCAN_ADD}
     Page Should Contain Element    ${RESCAN_SKIP}
@@ -99,5 +96,7 @@ Skipping Rescan Adds Nothing And Returns Home
     Page Should Not Contain Element    ${row}
 
 Undo Rekey Confirmation Opens For A Rekeyed Account
-    [Tags]    id:rekey.undo.confirm    p1    needs-funded    needs-testid    excludefromci
-    Skip    The account info card's Undo rekey link has no testID, and reaching it needs an already-rekeyed account.
+    [Tags]    id:rekey.undo.confirm    p1    needs-funded    excludefromci
+    # The Undo rekey link does carry a testID (account_info_undo_rekey_link). What this case
+    # waits on is a rekeyed account, which costs a funded rekey to set up.
+    Skip    Needs an account that is already rekeyed; setting one up costs a funded rekey.

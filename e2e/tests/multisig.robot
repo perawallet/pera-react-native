@@ -10,6 +10,7 @@ Suite Teardown      Run Keywords    Reset To Fresh Wallet    AND    Close Pera
 Test Setup          Go Home
 Test Teardown       Run Keywords    Capture Failure Screenshot
 ...                 AND    Clean Up Test Accounts    ${NAME_MANAGED}
+Test Timeout        ${E2E_TEST_TIMEOUT}
 Test Tags           multisig
 
 
@@ -54,7 +55,7 @@ Introduction Shows Every Time Create Shared Account Is Tapped
 Tapping The Backdrop Dismisses The Introduction
     [Tags]    id:multisig.intro.backdrop-dismiss    p1
     Open Multisig Introduction
-    Tap Screen At    0.5    0.08
+    Close Sheet
     Wait Until Page Does Not Contain Element    ${MULTISIG_INTRO_CONTINUE_BUTTON}    timeout=10s
     Page Should Contain Element    ${ADD_ACCOUNT_CREATE_MULTISIG_BUTTON}
     Page Should Not Contain Element    ${ADD_PARTICIPANT_BUTTON}
@@ -104,9 +105,9 @@ Watch Account Is Refused As A Participant
     Open Create Shared Account
     Open Participant Search
     Input Text    ${ADDRESS_SEARCH_INPUT}    ${WATCH_ADDRESS}
-    Tap    xpath=//*[@resource-id='account_result_row_${WATCH_ADDRESS}' or @name='account_result_row_${WATCH_ADDRESS}' or @content-desc='account_result_row_${WATCH_ADDRESS}']
+    Tap    tid=account_result_row_${WATCH_ADDRESS}
     Wait Until Page Contains    Cannot add watch account    timeout=10s
-    Page Should Not Contain Element    xpath=//*[@resource-id='participant_item_0_${WATCH_ADDRESS}' or @name='participant_item_0_${WATCH_ADDRESS}' or @content-desc='participant_item_0_${WATCH_ADDRESS}']
+    Page Should Not Contain Element    tid=participant_item_0_${WATCH_ADDRESS}
 
 Shared Account Is Refused As A Participant
     [Tags]    id:multisig.participant.reject-shared    p1
@@ -116,7 +117,7 @@ Shared Account Is Refused As A Participant
     ${add}=    Test Id    address-search-add-icon
     Wait Until Page Contains Element    ${add}    timeout=10s
     Tap    ${add}
-    ${added}=    Set Variable    xpath=//*[@resource-id='participant_item_0_${KNOWN_SHARED_ADDRESS}' or @name='participant_item_0_${KNOWN_SHARED_ADDRESS}' or @content-desc='participant_item_0_${KNOWN_SHARED_ADDRESS}']
+    ${added}=    Set Variable    tid=participant_item_0_${KNOWN_SHARED_ADDRESS}
     Wait Until Page Contains Element    xpath=//*[contains(@text,'Cannot add shared account') or contains(@label,'Cannot add shared account') or @content-desc='participant_item_0_${KNOWN_SHARED_ADDRESS}' or @resource-id='participant_item_0_${KNOWN_SHARED_ADDRESS}' or @name='participant_item_0_${KNOWN_SHARED_ADDRESS}']    timeout=20s
     ${plain}=    Run Keyword And Return Status    Page Should Contain Element    ${added}
     # Only the backend's account lookup marks an address as shared; when it answers 404 or fails,
@@ -138,7 +139,7 @@ External Participant Opens Edit Name
     [Tags]    id:multisig.participant.edit    p2
     Open Create Shared Account
     Add Participant    ${PARTICIPANT_1}
-    Tap    xpath=//*[@resource-id='participant_edit_0_${PARTICIPANT_1}' or @name='participant_edit_0_${PARTICIPANT_1}' or @content-desc='participant_edit_0_${PARTICIPANT_1}']
+    Tap    tid=participant_edit_0_${PARTICIPANT_1}
     Wait Until Page Contains Element    ${EDIT_PARTICIPANT_NAME_INPUT}    timeout=15s
 
 Continue Needs Two Participants
@@ -300,8 +301,7 @@ Import Link Offers A Shared Account The Wallet Is Not Part Of
 Import Screen Lists The Participants
     [Tags]    id:multisig.import.participants    p2
     Open Import Link    ${KNOWN_SHARED_ADDRESS}
-    ${count}=    Test Id    import-shared-account-participant-count
-    ${text}=    Get Text    ${count}
+    ${text}=    Listed Participant Count
     Should Be Equal As Integers    ${text}    3
     ${row}=    Test Id    import-participant-row-${PARTICIPANT_1}
     Page Should Contain Element    ${row}

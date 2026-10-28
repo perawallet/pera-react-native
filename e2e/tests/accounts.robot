@@ -8,6 +8,7 @@ Suite Setup         Start Pera With Wallet
 Suite Teardown      Run Keywords    Reset To Fresh Wallet    AND    Close Pera
 Test Setup          Go Home
 Test Teardown       Capture Failure Screenshot
+Test Timeout        ${E2E_TEST_TIMEOUT}
 Test Tags           accounts
 
 
@@ -30,9 +31,7 @@ Menu Tab Lists Core Entries
 
 Menu Opens Settings
     [Tags]    id:accounts.menu.settings    p1
-    Open Menu
-    Tap    ${MENU_SETTINGS_BUTTON}
-    Wait Until Page Contains Element    ${SETTINGS_SECURITY_ITEM}    timeout=20s
+    Open Settings
 
 Account Switcher Offers Add And Search
     [Tags]    id:accounts.switcher.controls    p1
@@ -86,13 +85,7 @@ Rename Saves The New Name
 View Passphrase Reveals The Words
     [Tags]    id:accounts.passphrase.reveal    p0
     Open Account Option    ${OPTION_VIEW_PASSPHRASE}
-    Wait Until Settled    ${PASSPHRASE_ACK_REVEAL}
-    FOR    ${i}    IN RANGE    4
-        ${row_locator}=    Passphrase Ack Row    ${i}
-        Tap    ${row_locator}
-    END
-    Tap    ${PASSPHRASE_ACK_REVEAL}
-    Wait Until Page Contains Element    ${PASSPHRASE_GRID}    timeout=20s
+    Acknowledge And Reveal Passphrase
 
 Switcher Row Selects That Account
     [Tags]    id:accounts.switcher.select    p1

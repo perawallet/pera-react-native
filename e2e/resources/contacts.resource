@@ -7,22 +7,22 @@ Resource            app.resource
 ${FIXTURE_CONTACT_NAME}             AutoTestContact
 ${FIXTURE_CONTACT_ADDRESS}          CBLWUBRWCWNKZ2Y2Q5HFKN7XISNBVAN47422MZOKH5OGCZ3H5JYLTDPLOA
 
-${MENU_CONTACTS_BUTTON}             xpath=//*[@resource-id='menu_contacts_button' or @name='menu_contacts_button' or @content-desc='menu_contacts_button']
-${CONTACTS_SEARCH_INPUT}            xpath=//*[@resource-id='contacts_search_input' or @name='contacts_search_input' or @content-desc='contacts_search_input']
-${CONTACTS_EMPTY_ADD_BUTTON}        xpath=//*[@resource-id='contacts_empty_add_button' or @name='contacts_empty_add_button' or @content-desc='contacts_empty_add_button']
-${ADD_CONTACT_BUTTON}               xpath=//*[@resource-id='add_contact_button' or @name='add_contact_button' or @content-desc='add_contact_button']
-${CONTACT_NAME_INPUT}               xpath=//*[@resource-id='contact_name_input' or @name='contact_name_input' or @content-desc='contact_name_input']
-${CONTACT_ADDRESS_INPUT}            xpath=//*[@resource-id='contact_address_input' or @name='contact_address_input' or @content-desc='contact_address_input']
-${CONTACT_ADD_ADDRESS_BUTTON}       xpath=//*[@resource-id='contact_add_address_button' or @name='contact_add_address_button' or @content-desc='contact_add_address_button']
-${VIEW_CONTACT_SHARE_BUTTON}        xpath=//*[@resource-id='view_contact_share_button' or @name='view_contact_share_button' or @content-desc='view_contact_share_button']
-${VIEW_CONTACT_EDIT_BUTTON}         xpath=//*[@resource-id='view_contact_edit_button' or @name='view_contact_edit_button' or @content-desc='view_contact_edit_button']
-${VIEW_CONTACT_QR_BUTTON}           xpath=//*[@resource-id='view_contact_qr_algorand' or @name='view_contact_qr_algorand' or @content-desc='view_contact_qr_algorand']
-${EDIT_CONTACT_DONE_BUTTON}         xpath=//*[@resource-id='edit_contact_done_button' or @name='edit_contact_done_button' or @content-desc='edit_contact_done_button']
-${EDIT_CONTACT_DELETE_BUTTON}       xpath=//*[@resource-id='edit_contact_delete_button' or @name='edit_contact_delete_button' or @content-desc='edit_contact_delete_button']
-${CONTACT_DELETE_CONFIRM_BUTTON}    xpath=//*[@resource-id='contact_delete_confirm_button' or @name='contact_delete_confirm_button' or @content-desc='contact_delete_confirm_button']
-${CONTACT_DELETE_CANCEL_BUTTON}     xpath=//*[@resource-id='contact_delete_cancel_button' or @name='contact_delete_cancel_button' or @content-desc='contact_delete_cancel_button']
-${CONTACT_QR_COPY_BUTTON}           xpath=//*[@resource-id='contact_qr_copy_button' or @name='contact_qr_copy_button' or @content-desc='contact_qr_copy_button']
-${CONTACT_QR_SHARE_BUTTON}          xpath=//*[@resource-id='contact_qr_share_button' or @name='contact_qr_share_button' or @content-desc='contact_qr_share_button']
+${MENU_CONTACTS_BUTTON}             tid=menu_contacts_button
+${CONTACTS_SEARCH_INPUT}            tid=contacts_search_input
+${CONTACTS_EMPTY_ADD_BUTTON}        tid=contacts_empty_add_button
+${ADD_CONTACT_BUTTON}               tid=add_contact_button
+${CONTACT_NAME_INPUT}               tid=contact_name_input
+${CONTACT_ADDRESS_INPUT}            tid=contact_address_input
+${CONTACT_ADD_ADDRESS_BUTTON}       tid=contact_add_address_button
+${VIEW_CONTACT_SHARE_BUTTON}        tid=view_contact_share_button
+${VIEW_CONTACT_EDIT_BUTTON}         tid=view_contact_edit_button
+${VIEW_CONTACT_QR_BUTTON}           tid=view_contact_qr_algorand
+${EDIT_CONTACT_DONE_BUTTON}         tid=edit_contact_done_button
+${EDIT_CONTACT_DELETE_BUTTON}       tid=edit_contact_delete_button
+${CONTACT_DELETE_CONFIRM_BUTTON}    tid=contact_delete_confirm_button
+${CONTACT_DELETE_CANCEL_BUTTON}     tid=contact_delete_cancel_button
+${CONTACT_QR_COPY_BUTTON}           tid=contact_qr_copy_button
+${CONTACT_QR_SHARE_BUTTON}          tid=contact_qr_share_button
 
 
 *** Keywords ***
@@ -42,7 +42,7 @@ Open Contacts From Menu
 
 Contact Row
     [Arguments]    ${address}
-    RETURN    xpath=//*[@resource-id='contact_row_${address}' or @name='contact_row_${address}' or @content-desc='contact_row_${address}']
+    RETURN    tid=contact_row_${address}
 
 Contact Row Should Be Listed
     [Arguments]    ${address}
@@ -94,7 +94,7 @@ Open Edit Contact
 Search Contacts
     [Arguments]    ${term}
     Tap    ${CONTACTS_SEARCH_INPUT}
-    Input Text    ${CONTACTS_SEARCH_INPUT}    ${term}
+    Type Exactly    ${CONTACTS_SEARCH_INPUT}    ${term}
 
 Contact QR Sheet Should Be Open
     Wait Until Settled    ${CONTACT_QR_COPY_BUTTON}

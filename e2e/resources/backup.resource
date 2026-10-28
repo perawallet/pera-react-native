@@ -11,12 +11,12 @@ Resource            onboarding.resource
 # reminder shows; an unfunded account with nothing rekeyed to it is never reminded.
 ${MNEMONIC_FUNDED}                  %{MNEMONIC_24_FUNDED=}
 
-${BACKUP_BANNER_CTA}                xpath=//*[@resource-id='backup_reminder_banner_cta' or @name='backup_reminder_banner_cta' or @content-desc='backup_reminder_banner_cta']
-${BACKUP_INFO_CONTINUE}             xpath=//*[@resource-id='backup_info_continue' or @name='backup_info_continue' or @content-desc='backup_info_continue']
-${BACKUP_WRITE_DOWN_BEGIN}          xpath=//*[@resource-id='backup_write_down_begin' or @name='backup_write_down_begin' or @content-desc='backup_write_down_begin']
-${BACKUP_MNEMONIC_CONTINUE}         xpath=//*[@resource-id='backup_mnemonic_continue' or @name='backup_mnemonic_continue' or @content-desc='backup_mnemonic_continue']
-${BACKUP_VERIFICATION_NEXT}         xpath=//*[@resource-id='backup_verification_next' or @name='backup_verification_next' or @content-desc='backup_verification_next']
-${BACKUP_SUCCESS_DONE}              xpath=//*[@resource-id='backup_success_done' or @name='backup_success_done' or @content-desc='backup_success_done']
+${BACKUP_BANNER_CTA}                tid=backup_reminder_banner_cta
+${BACKUP_INFO_CONTINUE}             tid=backup_info_continue
+${BACKUP_WRITE_DOWN_BEGIN}          tid=backup_write_down_begin
+${BACKUP_MNEMONIC_CONTINUE}         tid=backup_mnemonic_continue
+${BACKUP_VERIFICATION_NEXT}         tid=backup_verification_next
+${BACKUP_SUCCESS_DONE}              tid=backup_success_done
 # Grid cells and quiz items are PWViews (testID only, so the word stays readable), which Android
 # exposes as resource-id and iOS as name. Quiz options share the item prefix, hence the exclusion.
 ${PASSPHRASE_CELL_ANY}              xpath=//*[starts-with(@resource-id,'passphrase_word_') or starts-with(@name,'passphrase_word_')]
@@ -79,8 +79,10 @@ Open Verification Quiz
     Wait Until Page Contains Element    ${BACKUP_VERIFICATION_NEXT}    timeout=20s
 
 Answer Quiz Correctly
-    [Documentation]    Each item reads "Select word #N" and each option's ID carries its word, so the
-    ...                right option is addressable once N is known. Logging is off throughout.
+    [Documentation]    Each item reads "Select word #N", so the word to pick is known once N is. An
+    ...                option's ID carries its POSITION rather than its word - deliberately, since a
+    ...                word in a testID becomes a resource-id on Android - so the option is matched
+    ...                on what it displays. Logging is off throughout.
     @{items}=    Get WebElements    ${QUIZ_ITEM_ANY}
     ${count}=    Get Length    ${items}
     Should Be True    ${count} > 0    msg=The quiz shows no items, so nothing is verified.
@@ -91,9 +93,10 @@ Answer Quiz Correctly
             ${digits}=    Get Regexp Matches    ${label}    \\d+
             Should Not Be Empty    ${digits}    msg=A quiz label no longer carries the word position.
             ${word}=    Get From List    ${PASSPHRASE}    ${{int($digits[0]) - 1}}
+            ${prefix}=    Set Variable    backup_verification_item_${i}_option_
             # The locator holds a seed word, and a failed tap would print it in the failure message.
             ${tapped}=    Run Keyword And Return Status
-            ...    Tap    xpath=//*[@resource-id='backup_verification_item_${i}_option_${word}' or @name='backup_verification_item_${i}_option_${word}' or @content-desc='backup_verification_item_${i}_option_${word}']
+            ...    Tap    xpath=//*[(starts-with(@resource-id,'${prefix}') or starts-with(@name,'${prefix}')) and (@text='${word}' or @label='${word}' or @name='${word}' or .//*[@text='${word}' or @label='${word}' or @name='${word}'])]
             IF    not ${tapped}    Fail    Could not pick the answer for quiz item ${i}.
         END
     FINALLY

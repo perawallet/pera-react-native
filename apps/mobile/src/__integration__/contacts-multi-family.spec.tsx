@@ -179,7 +179,9 @@ describe('Flow: contacts with an address per chain family', () => {
     it('Given a contact with two addresses, when it is viewed, then each family has its own row with copy and QR', () => {
         const alice = seedBothFamilies()
         const contacts = contactsHook()
-        act(() => contacts.current.setSelectedContact(alice))
+        act(() => {
+            contacts.current.setSelectedContact(alice)
+        })
 
         renderWithNavigation(ViewContactScreen, 'ViewContact')
 

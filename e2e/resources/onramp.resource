@@ -5,13 +5,13 @@ Resource            discover.resource
 
 
 *** Variables ***
-${FUND_TAB}                     xpath=//*[@resource-id='Fund' or @name='Fund' or @content-desc='Fund']
-${ONRAMP_INTRO_START}           xpath=//*[@resource-id='onramp-intro-start-button' or @name='onramp-intro-start-button' or @content-desc='onramp-intro-start-button']
-${ONRAMP_TAB_FUND}              xpath=//*[@resource-id='onramp-tab-fund' or @name='onramp-tab-fund' or @content-desc='onramp-tab-fund']
-${ONRAMP_TAB_HISTORY}           xpath=//*[@resource-id='onramp-tab-history' or @name='onramp-tab-history' or @content-desc='onramp-tab-history']
-${ONRAMP_COUNTRY_CHIP}          xpath=//*[@resource-id='onramp-country-chip' or @name='onramp-country-chip' or @content-desc='onramp-country-chip']
+${FUND_TAB}                     tid=Fund
+${ONRAMP_INTRO_START}           tid=onramp-intro-start-button
+${ONRAMP_TAB_FUND}              tid=onramp-tab-fund
+${ONRAMP_TAB_HISTORY}           tid=onramp-tab-history
+${ONRAMP_COUNTRY_CHIP}          tid=onramp-country-chip
 # Rendered on the history page only; the pager keeps both pages mounted, so visibility is the signal.
-${ONRAMP_HISTORY_FILTER_ALL}    xpath=//*[@resource-id='onramp-history-filter-all' or @name='onramp-history-filter-all' or @content-desc='onramp-history-filter-all']
+${ONRAMP_HISTORY_FILTER_ALL}    tid=onramp-history-filter-all
 
 
 *** Keywords ***
@@ -29,5 +29,5 @@ Acknowledge Onramp Introduction
 
 History Page Should Be Off Screen
     [Documentation]    Off-screen pager pages leave the Android tree but stay in the iOS tree as hidden.
-    ${shown}=    Run Keyword And Return Status    Element Should Be Visible    ${ONRAMP_HISTORY_FILTER_ALL}
+    ${shown}=    Run Keyword And Return Status    Expect Element    ${ONRAMP_HISTORY_FILTER_ALL}    visible    timeout=0s
     Should Not Be True    ${shown}    The history page is still showing.
