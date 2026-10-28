@@ -16,11 +16,13 @@ import {
     addressResponseSchema,
     consentResponseSchema,
     onboardingDetailsResponseSchema,
+    registerStepResponseSchema,
     registerVerificationResponseSchema,
     registrationSettingsResponseSchema,
     type AddressApiResponse,
     type ConsentApiResponse,
     type OnboardingDetailsApiResponse,
+    type RegisterStepApiResponse,
     type RegisterVerificationApiResponse,
     type RegistrationSettingsApiResponse,
 } from './schema'
@@ -36,8 +38,38 @@ export const mockSendPhoneVerification = (): HttpHandler =>
     successPost('*/v1/auth/register/phone/send')
 export const mockVerifyPhone = (): HttpHandler =>
     successPost('*/v1/auth/register/phone/verify')
-export const mockSubmitPersonalDetails = (): HttpHandler =>
-    successPost('*/v1/auth/register/personal-details')
+
+export type MockRegisterStepParams = {
+    response?: RegisterStepApiResponse
+    status?: number
+}
+export const mockSubmitPersonalDetails = ({
+    response = { user: { phase: 'PHYSICAL_ADDRESS' } },
+    status = 200,
+}: MockRegisterStepParams = {}): HttpHandler => {
+    validateMockResponse(
+        registerStepResponseSchema,
+        response,
+        'mockSubmitPersonalDetails',
+    )
+    return http.post('*/v1/auth/register/personal-details', () =>
+        HttpResponse.json(response, { status }),
+    )
+}
+
+export const mockSubmitAdditionalDetails = ({
+    response = { user: { phase: 'PHYSICAL_ADDRESS' } },
+    status = 200,
+}: MockRegisterStepParams = {}): HttpHandler => {
+    validateMockResponse(
+        registerStepResponseSchema,
+        response,
+        'mockSubmitAdditionalDetails',
+    )
+    return http.post('*/v1/auth/register/additional-details', () =>
+        HttpResponse.json(response, { status }),
+    )
+}
 
 // Consent create (step 1) returns the consent set id the link step binds; the
 // body is zod-parsed leniently, so the mock returns a realistic id by default.
@@ -69,14 +101,14 @@ export const mockLinkOnboardingConsent = ({
         HttpResponse.json({ success: true }, { status }),
     )
 
-// Onboarding KYC: pre-auth start (returns the Veriff session URL) + the status
+// Onboarding KYC: pre-auth start (returns the hosted session URL) + the status
 // poll the verification screen watches.
 export type MockStartRegisterVerificationParams = {
     response?: RegisterVerificationApiResponse
     status?: number
 }
 export const mockStartRegisterVerification = ({
-    response = { sessionUrl: 'https://veriff.example/session' },
+    response = { sessionUrl: 'https://kyc.example/session' },
     status = 200,
 }: MockStartRegisterVerificationParams = {}): HttpHandler => {
     validateMockResponse(
@@ -108,15 +140,15 @@ export const mockGetOnboardingDetails = ({
     )
 }
 
-// The address step returns the access token the verification step needs, so the
-// mock returns a token-bearing body by default (overridable per test).
+// Baanx answers the address steps without a token; the session comes from the
+// login after KYC.
 export type MockSubmitAddressParams = {
     response?: AddressApiResponse
     status?: number
 }
 export const mockSubmitAddress = ({
     response = {
-        accessToken: 'mock-access-token',
+        accessToken: null,
         onboardingId: 'mock-onboarding-id',
         user: { id: 'mock-user-id' },
     },
@@ -130,7 +162,7 @@ export const mockSubmitAddress = ({
 
 export const mockSubmitMailingAddress = ({
     response = {
-        accessToken: 'mock-access-token',
+        accessToken: null,
         onboardingId: 'mock-onboarding-id',
         user: { id: 'mock-user-id' },
     },

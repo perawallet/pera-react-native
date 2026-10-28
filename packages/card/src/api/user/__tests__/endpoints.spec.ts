@@ -85,16 +85,16 @@ describe('user endpoints', () => {
         ).rejects.toBeInstanceOf(HTTPError)
     })
 
-    it('fetches the Veriff verification session via GET', async () => {
+    it('fetches the KYC verification session via GET', async () => {
         request.mockResolvedValue({
-            data: { sessionUrl: 'https://veriff/session' },
+            data: { sessionUrl: 'https://kyc.example/session' },
         })
 
         const session = await fetchVerificationSession({
             scope: ALGORAND_MAINNET,
         })
 
-        expect(session.sessionUrl).toBe('https://veriff/session')
+        expect(session.sessionUrl).toBe('https://kyc.example/session')
         expect(request).toHaveBeenCalledWith(
             expect.objectContaining({
                 method: 'GET',

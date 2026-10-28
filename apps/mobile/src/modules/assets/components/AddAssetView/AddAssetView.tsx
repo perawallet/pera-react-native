@@ -115,7 +115,6 @@ export const AddAssetView = ({
                 options={chainOptions}
                 selectedValue={selectedChainId}
                 onSelect={handleSelectChain}
-                contentContainerStyle={styles.chipRow}
                 testID='add_asset_network_filter'
             />
         ) : undefined

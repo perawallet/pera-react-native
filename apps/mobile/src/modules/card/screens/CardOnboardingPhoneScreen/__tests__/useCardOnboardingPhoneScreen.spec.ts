@@ -98,6 +98,7 @@ const uk: SupportedCountry = {
     name: 'United Kingdom',
     callingCode: '44',
     canSignUp: true,
+    cardProvider: null,
 }
 
 const france: SupportedCountry = {
@@ -106,6 +107,7 @@ const france: SupportedCountry = {
     name: 'France',
     callingCode: '33',
     canSignUp: true,
+    cardProvider: null,
 }
 
 beforeEach(() => {

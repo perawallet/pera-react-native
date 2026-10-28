@@ -19,6 +19,8 @@ import {
 } from '../api/onboarding'
 import { cardQueryKeys } from './querykeys'
 
+export type { OnboardingDetails }
+
 type OnboardingDetailsRefetchInterval = UseQueryOptions<
     OnboardingDetails,
     Error,

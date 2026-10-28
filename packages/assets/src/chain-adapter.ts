@@ -24,9 +24,11 @@ import {
     isAlgoAssetName,
     isChainRefusedError,
     isPeraServiceUnavailableError,
+    type HistoryPeriod,
     type Nullable,
     type Optional,
 } from '@perawallet/wallet-core-shared'
+import type { Decimal } from 'decimal.js'
 import type { DisplayableAsset, PeraAsset } from './models'
 
 export type AssetAuthorities = {
@@ -52,6 +54,14 @@ export interface AssetChainDataCodec {
     /** Null when the asset carries nothing the chain keeps. */
     encode(asset: PeraAsset): Nullable<ChainAssetData>
     decode(data: ChainAssetData): Pick<PeraAsset, 'creator'>
+}
+
+/** One point of an asset's price over time. */
+export type PriceHistoryPoint = {
+    /** Unix ms. */
+    timestamp: number
+    /** USD per whole unit. */
+    usdPrice: Decimal
 }
 
 /**
@@ -113,6 +123,17 @@ export interface AssetsChainAdapter {
      * rejects a ref or a scope on another chain.
      */
     getPrices(refs: AssetRef[], scope: ChainScope): Promise<AssetPrice[]>
+    /**
+     * USD per whole unit over `period`, oldest first; `[]` when the source has
+     * no chart for the asset. Absent on a chain with no price history, whose
+     * `priceHistory` capability stays off. Rejects a ref or a scope on another
+     * chain.
+     */
+    getPriceHistory?(
+        ref: AssetRef,
+        period: HistoryPeriod,
+        scope: ChainScope,
+    ): Promise<PriceHistoryPoint[]>
     /** Absent on a chain that keeps no asset data of its own. */
     chainData?: AssetChainDataCodec
 }
@@ -191,6 +212,19 @@ export const isAssetSearchUnavailableError = (error: unknown): boolean =>
     error instanceof AssetSearchUnsupportedError ||
     isPeraServiceUnavailableError(error) ||
     isChainRefusedError(error)
+
+export class AssetPriceHistoryUnsupportedError extends AppError {
+    readonly chainId: ChainId
+
+    constructor(chainId: ChainId) {
+        super(`Price history is not supported on ${chainId}.`, {
+            category: ErrorCategory.ASSETS,
+            recoverable: false,
+        })
+        this.name = 'AssetPriceHistoryUnsupportedError'
+        this.chainId = chainId
+    }
+}
 
 const NO_ASSET_AUTHORITIES: AssetAuthorities = {
     hasFreeze: false,
@@ -327,4 +361,17 @@ export const searchAssetsAcrossScopes = async (
                 : []
         }),
     }
+}
+
+/** Rejects with {@link AssetPriceHistoryUnsupportedError} on a chain that declares no `getPriceHistory`. */
+export const fetchAssetPriceHistory = async (
+    assetId: string,
+    period: HistoryPeriod,
+    scope: ChainScope,
+): Promise<PriceHistoryPoint[]> => {
+    const adapter = assetsAdapterFor(scope)
+    if (!adapter.getPriceHistory) {
+        throw new AssetPriceHistoryUnsupportedError(adapter.chainId)
+    }
+    return adapter.getPriceHistory(assetRefOn(scope, assetId), period, scope)
 }

@@ -30,6 +30,7 @@ import {
     vi,
 } from 'vitest'
 import {
+    act,
     fireEvent,
     renderHook,
     screen,
@@ -99,7 +100,7 @@ const seedRekeyedSource = async (): Promise<{
 }> => {
     const { result: kms } = renderHook(() => useKMS())
     let key: Algo25KeyResult | null = null
-    await waitFor(async () => {
+    await act(async () => {
         key = await kms.current.createAlgo25Key({
             mnemonicIndices: ALGO25_TEST_MNEMONIC_INDICES,
         })

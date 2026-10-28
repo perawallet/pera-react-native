@@ -12,7 +12,10 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { getAlgorandClient } from '../../blockchain'
-import { logger } from '@perawallet/wallet-core-shared'
+import {
+    logger,
+    PeraServiceUnavailableError,
+} from '@perawallet/wallet-core-shared'
 import {
     checkAlgorandActivity,
     fetchAlgorandRekeyedAddresses,
@@ -59,13 +62,29 @@ describe('checkAlgorandActivity', () => {
         )
     })
 
-    it('reads a failed probe as inactive instead of rejecting', async () => {
+    it('rejects a failed probe rather than reading the batch as inactive', async () => {
         vi.spyOn(logger, 'warn').mockImplementation(() => {})
-        mockFetchAccountFastLookup.mockRejectedValue(new Error('offline'))
+        const offline = new Error('offline')
+        mockFetchAccountFastLookup.mockRejectedValue(offline)
 
-        const activity = await checkAlgorandActivity(['A', 'B'], 'mainnet')
+        await expect(checkAlgorandActivity(['A', 'B'], 'mainnet')).rejects.toBe(
+            offline,
+        )
+    })
+})
 
-        expect(activity).toEqual(
+describe('checkAlgorandActivity on a network with no Pera deployment', () => {
+    it('reads the batch as inactive rather than failing every HD search there', async () => {
+        mockFetchAccountFastLookup.mockRejectedValue(
+            new PeraServiceUnavailableError({
+                chainId: 'algorand',
+                networkId: 'mainnet',
+            }),
+        )
+
+        await expect(
+            checkAlgorandActivity(['A', 'B'], 'mainnet'),
+        ).resolves.toEqual(
             new Map([
                 ['A', false],
                 ['B', false],

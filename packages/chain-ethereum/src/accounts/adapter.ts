@@ -15,6 +15,7 @@ import type { ChainContext } from '@perawallet/wallet-core-chain-contract'
 import type { ListedTokens } from '../assets/api/whitelist-cache'
 import type { EvmChain } from '../chains/types'
 import { createEthereumAccountStateOps } from './account-state'
+import { createEthereumBalanceHistoryOps } from './balance-history'
 import { assertEthereumBip44PathMatches } from './bip44'
 import {
     summarizeEthereumChainState,
@@ -40,6 +41,7 @@ export const createEthereumAccountsAdapter = (
     listedTokens?: ListedTokens,
 ): AccountsChainAdapter => ({
     ...createEthereumAccountStateOps(ctx, chain, { listedTokens }),
+    ...createEthereumBalanceHistoryOps(ctx, chain),
     toChainState: toEthereumChainState,
     summarizeChainState: summarizeEthereumChainState,
     hdKeyPairId: (seedKeyId, { account, keyIndex }) =>

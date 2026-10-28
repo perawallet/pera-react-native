@@ -11,4 +11,3 @@
  */
 
 export { AssetGroupRow, type AssetGroupRowProps } from './AssetGroupRow'
-export { ChainLabel, type ChainLabelProps } from './ChainLabel'

@@ -26,6 +26,10 @@ import {
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import type { HdIndex, WalletAccount } from '../../models'
 import {
+    accountsChainAdapters,
+    type AccountsChainAdapter,
+} from '../../chain-adapter'
+import {
     buildTestAccount,
     TEST_CUSTODY,
     testAccount,
@@ -49,6 +53,7 @@ import {
     findHardwareHolder,
     findPathHolder,
     hardwareJoinCandidates,
+    hdDiscoveryChains,
     isEnabledByDefault,
     nextChainPosition,
     preferDefaultChain,
@@ -608,6 +613,62 @@ describe('eligibleChainsInFamily', () => {
         })
 
         expect(eligibleChainsInFamily(hd)).toEqual(['algorand'])
+    })
+})
+
+describe('hdDiscoveryChains', () => {
+    const ALGORAND = 'algorand' as ChainId
+    const capabilitiesOn = Object.fromEntries(
+        CHAIN_CAPABILITIES.map(capability => [capability, true]),
+    ) as ChainCapabilities
+
+    test('lists every registered chain a seed mints on, in registry order', () => {
+        registerChainFamilies()
+
+        expect(hdDiscoveryChains()).toEqual([ALGORAND, ...EVM_CHAINS])
+    })
+
+    test('leaves out a switched-off chain', () => {
+        registerChainFamilies([ALGORAND, ETHEREUM, BASE])
+        getProvider().chains.setCapabilityOverrides(() => ({
+            chainEnabled: { [BASE]: false },
+        }))
+
+        expect(hdDiscoveryChains()).toEqual([ALGORAND, ETHEREUM])
+    })
+
+    test('leaves out a chain with no accounts adapter', () => {
+        registerChainFamilies([ALGORAND])
+        getProvider().chains.register(
+            {
+                id: POLYGON,
+                family: 'evm',
+                signing: {
+                    schemes: ['secp256k1'],
+                    derivationPaths: { secp256k1: () => "m/44'/60'/0'/0/0" },
+                },
+            } as unknown as ChainDescriptor,
+            capabilitiesOn,
+        )
+
+        expect(hdDiscoveryChains()).toEqual([ALGORAND])
+    })
+
+    test('leaves out a chain no seed derivation path reaches', () => {
+        registerChainFamilies([ALGORAND])
+        getProvider().chains.register(
+            {
+                id: POLYGON,
+                family: 'evm',
+                signing: { schemes: ['secp256k1'], derivationPaths: {} },
+            } as unknown as ChainDescriptor,
+            capabilitiesOn,
+        )
+        accountsChainAdapters.register({
+            chainId: POLYGON,
+        } as unknown as AccountsChainAdapter)
+
+        expect(hdDiscoveryChains()).toEqual([ALGORAND])
     })
 })
 

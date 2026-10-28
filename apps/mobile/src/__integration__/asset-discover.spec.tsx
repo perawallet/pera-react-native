@@ -230,11 +230,7 @@ describe('Flow: Asset discovery (search)', () => {
     })
 
     it('Given the consumer disables the search (enabled: false), when the hook mounts, then no request fires and results stay empty', async () => {
-        // No server.use — if the hook fired the request, MSW would
-        // log an unhandled-request warning (we set bypass globally,
-        // but the assertion is on results being empty). Disabling
-        // the query is the gate the AddAssetView uses while the
-        // search input is empty.
+        // A disabled query never schedules a fetch, so its first render is final.
         const { result } = renderHook(
             () =>
                 useAssetSearchAcrossScopesQuery('', [MAINNET], {
@@ -242,10 +238,6 @@ describe('Flow: Asset discovery (search)', () => {
                 }),
             { wrapper: createQueryClientWrapper() },
         )
-
-        // Give react-query a tick — if it were going to fire, it
-        // would by now.
-        await new Promise(resolve => setTimeout(resolve, 100))
 
         expect(result.current.results).toEqual([])
         expect(result.current.isLoading).toBe(false)

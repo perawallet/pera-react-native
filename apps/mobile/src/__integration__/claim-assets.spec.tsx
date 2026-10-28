@@ -21,6 +21,7 @@ import {
     vi,
 } from 'vitest'
 import {
+    act,
     fireEvent,
     renderHook,
     screen,
@@ -29,7 +30,6 @@ import {
 } from '@testing-library/react'
 import { View } from 'react-native'
 import { useNavigation, useRoute } from '@react-navigation/native'
-import { Notifier } from 'react-native-notifier'
 import { Decimal } from 'decimal.js'
 
 import { server, http, HttpResponse } from '@test-utils/msw-server'
@@ -185,7 +185,7 @@ const buildAssetRequest = (
 const seedClaimingAccount = async (): Promise<WalletAccount> => {
     const { result: kms } = renderHook(() => useKMS())
     let keyResult: Algo25KeyResult | null = null
-    await waitFor(async () => {
+    await act(async () => {
         keyResult = await kms.current.createAlgo25Key({
             mnemonicIndices: ALGO25_TEST_MNEMONIC_INDICES,
         })
@@ -209,7 +209,7 @@ const seedClaimingAccount = async (): Promise<WalletAccount> => {
 }
 
 // Counts invocations of the simulate handler below so tests can assert on
-// it directly: the ARC-59 claim/reject builders (Tasks 4-6) attach explicit
+// it directly: the ARC-59 claim/reject builders attach explicit
 // resource refs and call `buildGroup` (no simulate) whenever the inbox
 // address is known, falling back to `buildPopulatedGroup` (one simulate
 // call) only when it is null. Reset per test in `beforeEach`.
@@ -301,7 +301,6 @@ describe('Flow: Inbound ARC-59 asset claim (Requests → Detail → Processing �
         resetTestKeystore()
         useAccountsStore.getState().setAccounts([])
         useClaimAssetsStore.getState().reset()
-        vi.mocked(Notifier.showNotification).mockClear()
         simulateCallCount = 0
 
         // Algod surface for the ARC-59 claim/reject build + sign + submit

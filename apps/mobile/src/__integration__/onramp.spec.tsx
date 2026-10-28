@@ -396,7 +396,7 @@ const seedSignableAccount = async (): Promise<WalletAccount> => {
     resetTestKeystore()
     const { result: kms } = renderHook(() => useKMS())
     let key: Algo25KeyResult | null = null
-    await waitFor(async () => {
+    await act(async () => {
         key = await kms.current.createAlgo25Key({
             mnemonicIndices: ALGO25_TEST_MNEMONIC_INDICES,
         })

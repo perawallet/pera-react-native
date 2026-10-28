@@ -75,6 +75,11 @@ vi.mock('@perawallet/wallet-core-card', async () => {
     }
 })
 
+const mockGoToNextStep = vi.fn()
+vi.mock('@modules/card/hooks/useCardOnboardingRouter', () => ({
+    useCardOnboardingRouter: () => ({ goToNextStep: mockGoToNextStep }),
+}))
+
 const mockNavigate = vi.fn()
 vi.mock('@hooks/useAppNavigation', () => ({
     useAppNavigation: () => ({ navigate: mockNavigate }),
@@ -135,7 +140,7 @@ describe('useCardOnboardingPhoneVerifyScreen', () => {
         expect(result.current.phoneDisplay).toBe('+44 7400846282')
     })
 
-    it('verifies with the stored ids on the valid code and goes to identity verification', async () => {
+    it('verifies with the stored ids on the valid code and moves on to the forms', async () => {
         const { result } = renderVerifyHook()
 
         act(() => result.current.onChangeCode(VALID_CODE))
@@ -150,7 +155,10 @@ describe('useCardOnboardingPhoneVerifyScreen', () => {
             contactVerificationId: 'mock-contact-id',
             verificationCode: VALID_CODE,
         })
-        expect(mockNavigate).toHaveBeenCalledWith('CardOnboardingVerification')
+        // Phone verified: the forms come next, KYC only after them.
+        expect(mockGoToNextStep).toHaveBeenCalledWith({
+            localStep: 'PERSONAL_DETAILS',
+        })
     })
 
     it('flags the code as invalid (no toast) when verification rejects it (422)', async () => {

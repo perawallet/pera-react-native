@@ -23,7 +23,10 @@ import type {
     ChainScope,
     TransactionNative,
 } from '@perawallet/wallet-core-chain-contract'
-import type { TransactionHistoryItem } from '@perawallet/wallet-core-transactions'
+import type {
+    SuspectedPoisoning,
+    TransactionHistoryItem,
+} from '@perawallet/wallet-core-transactions'
 import type { MessagesStackParamList } from '@modules/messages'
 import type { MultisigStackParamList } from '@modules/multisig'
 import type {
@@ -82,6 +85,8 @@ export type RootStackParamList = {
          * `SigningStackParamList['TransactionDetails']`.
          */
         historyTransaction?: TransactionHistoryItem
+        /** Set when the history marked the entry; the screen explains it and guards copying its counterparty. */
+        suspectedPoisoning?: SuspectedPoisoning
         groupId?: string
     }
 } & PeraCardFlowParamList

@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { settleBatch } from '../utils/async'
 import { queryClient } from './query-client'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 
@@ -42,10 +43,10 @@ export type RawFastLookupResponse = {
 /**
  * Single-address on-chain presence probe that DISTINGUISHES "not on chain"
  * (`false`) from "probe unavailable" (network/API failure, which THROWS).
- * {@link fetchAccountFastLookup} deliberately swallows failures as inactive
- * — right for HD onboarding's best-effort batches, wrong for callers that
- * must degrade to a capped scan when the probe is down (Ledger
- * funded-account discovery).
+ * {@link fetchAccountFastLookup} reads a failed lookup as inactive while
+ * others in its batch answer — right for HD onboarding's best-effort batches,
+ * wrong for callers that must degrade to a capped scan when the probe is down
+ * (Ledger funded-account discovery).
  */
 export const fetchAccountExists = async (
     address: string,
@@ -60,29 +61,22 @@ export const fetchAccountExists = async (
     return response.data?.account_exists ?? false
 }
 
+/**
+ * A lookup that fails while others in the batch answer reads as inactive,
+ * mirroring iOS's recoverAccounts, where a failed lookup counts toward the gap.
+ * Rejects when every lookup fails, so an offline batch isn't read as empty.
+ */
 export const fetchAccountFastLookup = async (
     addresses: string[],
     scope: ChainScope,
 ): Promise<AccountFastLookupResponse> => {
-    const tasks = addresses.map(async (address): Promise<AccountFastLookup> => {
-        try {
-            const response = await queryClient<RawFastLookupResponse>({
-                backend: 'pera',
-                scope,
-                method: 'GET',
-                url: getAccountFastLookupEndpointPath(address),
-            })
-            return {
-                address,
-                accountExists: response.data?.account_exists ?? false,
-            }
-        } catch {
-            // Treat any failure (404, network, timeout) as "no activity" —
-            // mirrors iOS's recoverAccounts behavior where a failed lookup
-            // increments the gap counter.
-            return { address, accountExists: false }
-        }
-    })
-
-    return Promise.all(tasks)
+    const exists = await settleBatch(
+        addresses,
+        address => fetchAccountExists(address, scope),
+        false,
+    )
+    return addresses.map((address, i) => ({
+        address,
+        accountExists: exists[i],
+    }))
 }

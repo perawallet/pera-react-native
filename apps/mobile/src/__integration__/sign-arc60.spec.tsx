@@ -12,7 +12,7 @@
 
 // Phase 2 — ARC-60 (Sign-In With Algorand) signing review. Exercises the
 // Arc60SigningScreen happy path (valid SIWA → sign → signature callback) and
-// the verified-origin ↔ SIWA-domain mismatch warning (the M6 webview path).
+// the verified-origin ↔ SIWA-domain mismatch warning on the webview path.
 
 import {
     afterAll,

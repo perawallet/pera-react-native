@@ -29,9 +29,8 @@ import {
     it,
     vi,
 } from 'vitest'
-import { renderHook, screen, waitFor } from '@testing-library/react'
+import { act, renderHook, screen, waitFor } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
-import { Notifier } from 'react-native-notifier'
 
 import { server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
@@ -90,7 +89,7 @@ const RECEIVER_ADDRESS = HD_TEST_ADDRESS
 const seedQuantumSender = async (): Promise<WalletAccount> => {
     const { result: kms } = renderHook(() => useKMS())
     let keyResult: QuantumKeyResult | null = null
-    await waitFor(async () => {
+    await act(async () => {
         keyResult = await kms.current.createQuantumKey({
             chain: algorandQuantumDerivation,
             mnemonicIndices: QUANTUM_TEST_MNEMONIC_INDICES,
@@ -148,7 +147,6 @@ describe('send from quantum account', () => {
         useAccountsStore.getState().setAccounts([])
         useSendFundsStore.getState().reset()
         useRemoteConfigStore.getState().resetState()
-        vi.mocked(Notifier.showNotification).mockClear()
 
         // Enough for the 1-ALGO send + 0.003 quantum fee + MBR.
         server.use(

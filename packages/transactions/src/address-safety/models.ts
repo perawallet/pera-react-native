@@ -14,6 +14,7 @@ import type { Decimal } from 'decimal.js'
 import type {
     ChainId,
     ChainScope,
+    TransactionSummary,
 } from '@perawallet/wallet-core-chain-contract'
 import type { Optional } from '@perawallet/wallet-core-shared'
 
@@ -68,4 +69,33 @@ export type FetchTrustedCounterpartiesParams = {
     accountAddress: string
     scope: ChainScope
     signal?: AbortSignal
+}
+
+/** A history entry as the poisoning check reads it. */
+export type SuspectableEntry = {
+    id: string
+    summary: TransactionSummary
+    /** The address that signed it, when the history says. */
+    initiator?: string
+}
+
+export interface SuspectedPoisoning {
+    transactionId: string
+    counterparty: string
+    /** The known address the counterparty was made to look like. */
+    imitates: KnownAddress
+}
+
+export type FindImitatedAddressInput = {
+    entry: SuspectableEntry
+    accountAddress: string
+    chainId: ChainId
+    knownAddresses: readonly KnownAddress[]
+}
+
+export type DetectSuspectedPoisoningInput = {
+    entries: readonly SuspectableEntry[]
+    accountAddress: string
+    scope: ChainScope
+    knownAddresses: readonly KnownAddress[]
 }

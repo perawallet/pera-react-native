@@ -35,7 +35,7 @@ const IGNORE = /doc-hygiene-ignore-next-line\s+([\w-]+)\s+reason:\s*\S/
 // reality, so they are skipped rather than reported.
 const UNRESOLVABLE = /[<>*{}\[\]…?]|\$\{/
 const REPO_ROOTS =
-    /^(apps|packages|extensions|tools|docs|conformance|specs|patches|\.github|\.claude)\//
+    /^(apps|packages|extensions|tools|docs|conformance|conformance-evm|specs|patches|\.github|\.claude)\//
 
 // A gitignored path is generated (e.g. packages/config/src/generated-env.ts),
 // so whether it exists depends on the last build, not on the doc.

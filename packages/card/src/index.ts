@@ -64,6 +64,8 @@ export {
     isDuplicateError,
     isUserAlreadyCreatedError,
     isNotVerifiedError,
+    isAccountLockedError,
+    isOnboardingNotFoundError,
 } from './api/errors'
 export type { CardApiError } from './api/errors'
 
@@ -80,4 +82,3 @@ export {
 } from './api/card-creation'
 export { CardOrderNotVerifiedError } from './api/card'
 export { CardEscrowNotConfiguredError } from './api/escrow'
-export { OnboardingNotVerifiedError } from './api/errors'

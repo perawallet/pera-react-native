@@ -16,6 +16,7 @@ import { ALGORAND_CHAIN_ID } from '../chain-id'
 import { algorandDescriptor } from '../descriptor'
 import { algorandNetworkOf } from '../network-id'
 import { ASSET_PRICES_MAX_IDS_PER_REQUEST } from '../pricing/endpoints'
+import { fetchPriceHistory } from '../pricing/price-history'
 import { fetchPeraUsdPrices } from '../pricing/provider'
 import {
     fetchAssetAuthorities,
@@ -55,4 +56,10 @@ export const algorandAssetsAdapter: AssetsChainAdapter = {
         searchAssetPage({ ...params, network: algorandNetworkOf(scope) }),
     getPrices: async (refs, scope) =>
         fetchPeraUsdPrices(refs, algorandNetworkOf(scope)),
+    getPriceHistory: async (ref, period, scope) =>
+        fetchPriceHistory(
+            algorandAssetIdOf(ref),
+            period,
+            algorandNetworkOf(scope),
+        ),
 }

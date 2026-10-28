@@ -377,7 +377,7 @@ const run = async (
                     chain,
                     calls[position],
                 )
-                const { maxFeePerGas = 0n } = readEvmTransaction(
+                const { maxFeePerGas } = readEvmTransaction(
                     unsigned,
                     chain,
                 ).transaction

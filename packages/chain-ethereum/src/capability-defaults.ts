@@ -24,6 +24,8 @@ const ENABLED: ReadonlySet<ChainCapability> = new Set<ChainCapability>([
     'assets',
     'assetSearch',
     'pricing',
+    'priceHistory',
+    'balanceHistory',
     'watchAccounts',
     'privateKeys',
     'dappConnect',

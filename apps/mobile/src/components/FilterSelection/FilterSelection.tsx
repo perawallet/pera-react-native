@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import type { ReactNode } from 'react'
 import type { StyleProp, ViewStyle } from 'react-native'
 import { PWScrollView, PWText, PWTouchableOpacity } from '@components/core'
 import { useStyles } from './styles'
@@ -18,8 +17,6 @@ import { useStyles } from './styles'
 export type FilterOption<T> = {
     value: T
     label: string
-    /** Drawn before the label. */
-    icon?: ReactNode
     testID?: string
 }
 
@@ -62,9 +59,8 @@ export const FilterSelection = <T,>({
                         testID={option.testID}
                         style={[styles.chip, isActive && styles.activeChip]}
                     >
-                        {option.icon}
                         <PWText
-                            style={isActive ? styles.activeLabel : undefined}
+                            style={isActive ? styles.activeLabel : styles.label}
                         >
                             {option.label}
                         </PWText>

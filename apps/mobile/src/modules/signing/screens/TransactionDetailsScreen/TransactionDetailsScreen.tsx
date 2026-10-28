@@ -11,11 +11,13 @@
  */
 
 import { PWButton, PWScreen } from '@components/core'
+import { AddressReuseGuardProvider } from '@components/AddressReuseGuard'
 import { ChainNotice } from '@components/ChainNotice'
 import { LoadingView } from '@components/LoadingView'
 import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
 import { ExternalTransactionCallout } from '@modules/signing/components/ExternalTransactionCallout'
+import { SuspectedPoisoningNotice } from '@modules/transactions'
 import { RelatedTransactions } from '@modules/signing/transactions/RelatedTransactions'
 import { TransactionDetailBody } from '@modules/signing/transactions/TransactionDetailBody'
 import { useTransactionDetailsScreen } from './useTransactionDetailsScreen'
@@ -25,33 +27,48 @@ export const TransactionDetailsScreen = () => {
 
     const {
         renderState,
+        scope,
         groupId,
         isExternal,
         notice,
+        suspectedPoisoning,
+        addressReuseGuard,
         handleRelatedTransactionPress,
         handleRetry,
     } = useTransactionDetailsScreen()
 
     if (renderState.kind === 'content') {
         return (
-            <PWScreen testID='transaction_details_screen'>
-                {notice && (
-                    <ChainNotice
-                        {...notice}
-                        testID='transaction_details_notice'
+            <AddressReuseGuardProvider guard={addressReuseGuard}>
+                <PWScreen testID='transaction_details_screen'>
+                    {notice && (
+                        <ChainNotice
+                            {...notice}
+                            testID='transaction_details_notice'
+                        />
+                    )}
+                    {suspectedPoisoning && (
+                        <SuspectedPoisoningNotice
+                            suspectedPoisoning={suspectedPoisoning}
+                            scope={scope}
+                        />
+                    )}
+                    <TransactionDetailBody
+                        transaction={renderState.transaction}
+                        onRelatedTransactionPress={
+                            handleRelatedTransactionPress
+                        }
                     />
-                )}
-                <TransactionDetailBody
-                    transaction={renderState.transaction}
-                    onRelatedTransactionPress={handleRelatedTransactionPress}
-                />
-                {isExternal && <ExternalTransactionCallout />}
-                <RelatedTransactions
-                    groupId={groupId}
-                    currentTransaction={renderState.transaction}
-                    onRelatedTransactionPress={handleRelatedTransactionPress}
-                />
-            </PWScreen>
+                    {isExternal && <ExternalTransactionCallout />}
+                    <RelatedTransactions
+                        groupId={groupId}
+                        currentTransaction={renderState.transaction}
+                        onRelatedTransactionPress={
+                            handleRelatedTransactionPress
+                        }
+                    />
+                </PWScreen>
+            </AddressReuseGuardProvider>
         )
     }
 

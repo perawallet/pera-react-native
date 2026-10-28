@@ -10,13 +10,15 @@
  limitations under the License
  */
 
-import { beforeEach, describe, test, expect } from 'vitest'
+import { afterEach, beforeEach, describe, test, expect } from 'vitest'
 import type {
     ChainCapabilities,
     ChainDescriptor,
     SigningScheme,
 } from '@perawallet/wallet-core-chain-contract'
 import { getProvider } from '@perawallet/wallet-extension-provider'
+import { accountsChainAdapters } from '../../chain-adapter'
+import { fakeAccountsChain } from '../../__tests__/fakeAccountsChain'
 import type { AccountCustody, WalletAccount } from '../../models'
 import {
     credentialScheme,
@@ -234,6 +236,48 @@ describe('usesNonPrimaryScheme', () => {
 
         test("signs with the chain's primary scheme on its own chain", () => {
             expect(credentialScheme(imported, ethereum, [])).toBe('secp256k1')
+        })
+
+        describe('with the chain adapter registered', () => {
+            beforeEach(() => {
+                // Production's Ethereum adapter declares only the BIP-39 kind.
+                accountsChainAdapters.register({
+                    ...fakeAccountsChain().adapter,
+                    chainId: 'ethereum',
+                    localKeyKinds: [
+                        {
+                            seed: 'bip39',
+                            signingScheme: 'secp256k1',
+                            isHd: true,
+                            mnemonicWordCounts: [24],
+                            isAutoDetected: true,
+                        },
+                    ],
+                } as never)
+            })
+
+            afterEach(() => {
+                accountsChainAdapters.reset()
+            })
+
+            test("signs with the chain's raw-key scheme though no standalone kind is declared", () => {
+                expect(credentialScheme(imported, ethereum, [])).toBe(
+                    'secp256k1',
+                )
+            })
+
+            test('keeps an HD key on its seed kind', () => {
+                const hd = {
+                    ...imported,
+                    custody: {
+                        kind: 'local',
+                        seed: 'bip39',
+                        hd: { account: 0, keyIndex: 0 },
+                    },
+                } as WalletAccount
+
+                expect(credentialScheme(hd, ethereum, [])).toBe('secp256k1')
+            })
         })
 
         test('has no scheme on Algorand, where it holds no key', () => {

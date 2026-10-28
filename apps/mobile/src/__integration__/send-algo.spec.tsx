@@ -70,7 +70,7 @@ import {
     mockIndexerSearchForAccounts,
 } from '@perawallet/wallet-core-chain-algorand/test-handlers'
 
-import { isElementDisabled } from '@test-utils/rnw'
+import { isElementDisabled, findEnabledByTestId } from '@test-utils/rnw'
 import {
     ALGO25_TEST_ADDRESS,
     ALGO25_TEST_MNEMONIC_INDICES,
@@ -94,7 +94,7 @@ const RECEIVER_ADDRESS = HD_TEST_ADDRESS
 const seedAlgo25Sender = async (): Promise<WalletAccount> => {
     const { result: kms } = renderHook(() => useKMS())
     let keyResult: Algo25KeyResult | null = null
-    await waitFor(async () => {
+    await act(async () => {
         keyResult = await kms.current.createAlgo25Key({
             mnemonicIndices: ALGO25_TEST_MNEMONIC_INDICES,
         })
@@ -203,19 +203,8 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
 
         // Confirmation screen waits on useAssetsQuery + recipient
         // info. The confirm button only mounts once isReady === true.
-        await waitFor(
-            () => {
-                expect(screen.getByTestId('send_confirm_button')).toBeTruthy()
-            },
-            { timeout: 5000 },
-        )
-        const confirmButton = screen.getByTestId(
-            'send_confirm_button',
-        ) as HTMLButtonElement
-        await waitFor(() => {
-            // Recipient-info pending disables the button until algod
-            // returns the recipient's balance/min-balance.
-            expect(isElementDisabled(confirmButton)).toBe(false)
+        const confirmButton = await findEnabledByTestId('send_confirm_button', {
+            timeout: 5000,
         })
 
         fireEvent.click(confirmButton)
@@ -280,10 +269,8 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
 
         releaseRecipientInfo()
 
-        await waitFor(() => {
-            expect(isElementDisabled(confirmButton)).toBe(false)
-        })
-        expect(confirmButton.getAttribute('data-loading')).toBe('false')
+        const enabledButton = await findEnabledByTestId('send_confirm_button')
+        expect(enabledButton.getAttribute('data-loading')).toBe('false')
     })
 
     it('Given the confirmation screen is mounted with no destination, when the user taps confirm, then an error toast is raised and submission does not happen', async () => {
@@ -333,7 +320,7 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
         // chain throws CannotSignError before algod is hit.
         const { result: kms } = renderHook(() => useKMS())
         let authKey: Algo25KeyResult | null = null
-        await waitFor(async () => {
+        await act(async () => {
             authKey = await kms.current.createAlgo25Key({
                 mnemonicIndices: ALGO25_TEST_MNEMONIC_INDICES,
             })
@@ -406,17 +393,8 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
 
         renderSendConfirmationStack()
 
-        await waitFor(
-            () => {
-                expect(screen.getByTestId('send_confirm_button')).toBeTruthy()
-            },
-            { timeout: 5000 },
-        )
-        const confirmButton = screen.getByTestId(
-            'send_confirm_button',
-        ) as HTMLButtonElement
-        await waitFor(() => {
-            expect(isElementDisabled(confirmButton)).toBe(false)
+        const confirmButton = await findEnabledByTestId('send_confirm_button', {
+            timeout: 5000,
         })
 
         fireEvent.click(confirmButton)
@@ -474,17 +452,8 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
 
         renderSendConfirmationStack()
 
-        await waitFor(
-            () => {
-                expect(screen.getByTestId('send_confirm_button')).toBeTruthy()
-            },
-            { timeout: 5000 },
-        )
-        const confirmButton = screen.getByTestId(
-            'send_confirm_button',
-        ) as HTMLButtonElement
-        await waitFor(() => {
-            expect(isElementDisabled(confirmButton)).toBe(false)
+        const confirmButton = await findEnabledByTestId('send_confirm_button', {
+            timeout: 5000,
         })
 
         fireEvent.click(confirmButton)
@@ -531,17 +500,8 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
 
         renderSendConfirmationStack()
 
-        await waitFor(
-            () => {
-                expect(screen.getByTestId('send_confirm_button')).toBeTruthy()
-            },
-            { timeout: 5000 },
-        )
-        const confirmButton = screen.getByTestId(
-            'send_confirm_button',
-        ) as HTMLButtonElement
-        await waitFor(() => {
-            expect(isElementDisabled(confirmButton)).toBe(false)
+        const confirmButton = await findEnabledByTestId('send_confirm_button', {
+            timeout: 5000,
         })
 
         fireEvent.click(confirmButton)
@@ -597,17 +557,8 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
 
         renderSendConfirmationStack()
 
-        await waitFor(
-            () => {
-                expect(screen.getByTestId('send_confirm_button')).toBeTruthy()
-            },
-            { timeout: 5000 },
-        )
-        const confirmButton = screen.getByTestId(
-            'send_confirm_button',
-        ) as HTMLButtonElement
-        await waitFor(() => {
-            expect(isElementDisabled(confirmButton)).toBe(false)
+        const confirmButton = await findEnabledByTestId('send_confirm_button', {
+            timeout: 5000,
         })
 
         fireEvent.click(confirmButton)
@@ -652,17 +603,8 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
 
         renderSendConfirmationStack()
 
-        await waitFor(
-            () => {
-                expect(screen.getByTestId('send_confirm_button')).toBeTruthy()
-            },
-            { timeout: 5000 },
-        )
-        const confirmButton = screen.getByTestId(
-            'send_confirm_button',
-        ) as HTMLButtonElement
-        await waitFor(() => {
-            expect(isElementDisabled(confirmButton)).toBe(false)
+        const confirmButton = await findEnabledByTestId('send_confirm_button', {
+            timeout: 5000,
         })
 
         fireEvent.click(confirmButton)
@@ -703,17 +645,8 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
         server.use(http.post('*/v2/transactions', sendSpy))
 
         renderSendConfirmationStack()
-        await waitFor(
-            () => {
-                expect(screen.getByTestId('send_confirm_button')).toBeTruthy()
-            },
-            { timeout: 5000 },
-        )
-        const confirmButton = screen.getByTestId(
-            'send_confirm_button',
-        ) as HTMLButtonElement
-        await waitFor(() => {
-            expect(isElementDisabled(confirmButton)).toBe(false)
+        const confirmButton = await findEnabledByTestId('send_confirm_button', {
+            timeout: 5000,
         })
         fireEvent.click(confirmButton)
 
@@ -765,17 +698,8 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
         server.use(http.post('*/v2/transactions', sendSpy))
 
         renderSendConfirmationStack()
-        await waitFor(
-            () => {
-                expect(screen.getByTestId('send_confirm_button')).toBeTruthy()
-            },
-            { timeout: 5000 },
-        )
-        const confirmButton = screen.getByTestId(
-            'send_confirm_button',
-        ) as HTMLButtonElement
-        await waitFor(() => {
-            expect(isElementDisabled(confirmButton)).toBe(false)
+        const confirmButton = await findEnabledByTestId('send_confirm_button', {
+            timeout: 5000,
         })
         fireEvent.click(confirmButton)
 
@@ -854,17 +778,8 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
 
         renderSendConfirmationStack()
 
-        await waitFor(
-            () => {
-                expect(screen.getByTestId('send_confirm_button')).toBeTruthy()
-            },
-            { timeout: 5000 },
-        )
-        const confirmButton = screen.getByTestId(
-            'send_confirm_button',
-        ) as HTMLButtonElement
-        await waitFor(() => {
-            expect(isElementDisabled(confirmButton)).toBe(false)
+        const confirmButton = await findEnabledByTestId('send_confirm_button', {
+            timeout: 5000,
         })
 
         fireEvent.click(confirmButton)

@@ -536,6 +536,27 @@ describe('Ethereum broadcaster adapter', () => {
             ).resolves.toEqual([HASH])
         })
 
+        it.each([
+            'already known',
+            'Known transaction: 0xabc',
+            'AlreadyKnown',
+            'transaction already imported',
+        ])(
+            'accepts a resend of pooled bytes the node refuses as %s',
+            async message => {
+                useRpc({
+                    eth_sendRawTransaction: new EvmRpcErrorFixture(
+                        -32003,
+                        message,
+                    ),
+                })
+
+                await expect(
+                    submitEthereumTransactions(client(), [BYTES], ETHEREUM),
+                ).resolves.toEqual([HASH])
+            },
+        )
+
         it('does not read an unknown-transaction-type refusal as already known', async () => {
             useRpc({
                 eth_sendRawTransaction: new EvmRpcErrorFixture(

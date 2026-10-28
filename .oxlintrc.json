@@ -250,6 +250,21 @@
       "rules": { "pera/no-i18n-key-cast": "off" }
     },
     {
+      "files": ["packages/*/src/**"],
+      "excludeFiles": [
+        "**/__tests__/**",
+        "**/__mocks__/**",
+        "**/test-utils/**",
+        "**/*.spec.{ts,tsx}",
+        "**/*.test.{ts,tsx}",
+        "packages/accounts/src/hd-walk.ts",
+        "packages/chain-algorand/src/accounts/key-derivation.ts",
+        "packages/chain-ethereum/src/accounts/key-derivation.ts",
+        "packages/backup/src/cloud/hooks/useResolveHdSeedForBackup.ts"
+      ],
+      "rules": { "pera/hd-derive-claimed": "error" }
+    },
+    {
       "files": ["**/__tests__/**", "**/*.spec.{ts,tsx}", "**/__integration__/**", "**/vitest*.ts"],
       "rules": { "pera/no-algorand-sdk-imports": "off" }
     }

@@ -196,12 +196,10 @@ describe('Flow: Cloud backup → review actions while offline', () => {
 
         renderWithNavigation(CloudBackupAccountsScreen, 'CloudBackupAccounts')
 
-        const backUpButton = await screen.findByTestId(
-            'cloud_backup_account_back_up',
-        )
+        await screen.findByTestId('cloud_backup_account_back_up')
 
         setConnected(false)
-        fireEvent.click(backUpButton)
+        fireEvent.click(screen.getByTestId('cloud_backup_account_back_up'))
 
         await waitFor(() =>
             expect(toastTitles()).toContain(
@@ -239,10 +237,10 @@ describe('Flow: Cloud backup → review actions while offline', () => {
             'CloudBackupAccountsReview',
         )
 
-        const addButton = await screen.findByTestId('add_from_backup_button')
+        await screen.findByTestId('add_from_backup_button')
 
         setConnected(false)
-        fireEvent.click(addButton)
+        fireEvent.click(screen.getByTestId('add_from_backup_button'))
 
         await waitFor(() =>
             expect(toastTitles()).toContain(

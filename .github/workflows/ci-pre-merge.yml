@@ -55,6 +55,7 @@ jobs:
             packages/*/node_modules
             extensions/*/node_modules
             conformance/node_modules
+            conformance-evm/node_modules
           key: node-modules-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
 
       - name: Install dependencies
@@ -71,6 +72,7 @@ jobs:
             packages/*/node_modules
             extensions/*/node_modules
             conformance/node_modules
+            conformance-evm/node_modules
           key: node-modules-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
 
   audit:
@@ -146,6 +148,7 @@ jobs:
             packages/*/node_modules
             extensions/*/node_modules
             conformance/node_modules
+            conformance-evm/node_modules
           key: node-modules-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
 
       - name: Install dependencies on cache miss
@@ -213,6 +216,7 @@ jobs:
             packages/*/node_modules
             extensions/*/node_modules
             conformance/node_modules
+            conformance-evm/node_modules
           key: node-modules-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
 
       - name: Install dependencies on cache miss
@@ -277,6 +281,7 @@ jobs:
             packages/*/node_modules
             extensions/*/node_modules
             conformance/node_modules
+            conformance-evm/node_modules
           key: node-modules-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
 
       - name: Install dependencies on cache miss
@@ -412,6 +417,7 @@ jobs:
             packages/*/node_modules
             extensions/*/node_modules
             conformance/node_modules
+            conformance-evm/node_modules
           key: node-modules-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
 
       - name: Install dependencies on cache miss
@@ -551,6 +557,7 @@ jobs:
             packages/*/node_modules
             extensions/*/node_modules
             conformance/node_modules
+            conformance-evm/node_modules
           key: node-modules-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
 
       - name: Install dependencies on cache miss

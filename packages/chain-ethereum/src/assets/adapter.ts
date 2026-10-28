@@ -45,6 +45,7 @@ import {
     ASSETS_MAX_IDS,
     ASSETS_SERVICE,
     fetchAssetItems,
+    fetchPriceChart,
     fetchNftItems,
     NFTS_SERVICE,
     PRICES_SERVICE,
@@ -329,6 +330,19 @@ const getPrices =
         return prices.flat()
     }
 
+const getPriceHistory =
+    (
+        ctx: ChainContext,
+        chain: EvmChain,
+    ): NonNullable<AssetsChainAdapter['getPriceHistory']> =>
+    async (ref, period, scope) => {
+        eip155ChainIdOf(scope, chain)
+        const assetId = evmAssetIdOf(chain, ref)
+        if (isEvmNftAssetId(assetId)) return []
+        if (!hasServices(ctx, scope, PRICES_SERVICE)) return []
+        return fetchPriceChart(scope, chain, assetId, { period })
+    }
+
 // A contract address matches from its start only: a short query appears
 // somewhere in most addresses.
 const matchesQuery =
@@ -389,5 +403,6 @@ export const createEthereumAssetsAdapter = (
         },
         search: search(ctx, chain, listedTokens),
         getPrices: getPrices(ctx, chain),
+        getPriceHistory: getPriceHistory(ctx, chain),
     }
 }

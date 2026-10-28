@@ -16,7 +16,6 @@
 
 import {
     afterAll,
-    afterEach,
     beforeAll,
     beforeEach,
     describe,
@@ -125,10 +124,6 @@ describe('Flow: an Ethereum send in history', () => {
     beforeEach(async () => {
         await resetTestDatabase()
         server.use(...evmRpcHandlers({ rpcUrl: RPC_URL }))
-    })
-
-    afterEach(() => {
-        server.resetHandlers()
     })
 
     // The transaction's hash, as the broadcaster reports it.

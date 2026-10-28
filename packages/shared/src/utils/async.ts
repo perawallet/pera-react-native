@@ -100,6 +100,29 @@ export const mapWithConcurrency = async <T, R>(
 }
 
 /**
+ * Runs `read` on every item at once. A read that fails while others answer
+ * resolves to `fallback`; when every read fails, rejects with the first
+ * failure, so an unreachable batch isn't mistaken for one that answered.
+ */
+export const settleBatch = async <T, R>(
+    items: readonly T[],
+    read: (item: T) => Promise<R>,
+    fallback: R,
+): Promise<R[]> => {
+    const reads = await Promise.allSettled(items.map(item => read(item)))
+    const [first] = reads
+    if (
+        first?.status === 'rejected' &&
+        reads.every(result => result.status === 'rejected')
+    ) {
+        throw first.reason
+    }
+    return reads.map(result =>
+        result.status === 'fulfilled' ? result.value : fallback,
+    )
+}
+
+/**
  * The timer is cleared on settle so a fast call does not pin the rejection
  * closure for the full window. Cleaning up a late-resolving resource is the caller's job.
  */

@@ -35,3 +35,16 @@ export {
     type UseTransactionHistoryRowsParams,
     type UseTransactionHistoryRowsResult,
 } from './history/useTransactionHistoryRows'
+export {
+    useKnownAddresses,
+    type UseKnownAddressesParams,
+    type UseKnownAddressesResult,
+} from './address-safety/useKnownAddresses'
+export {
+    useSuspectedAddressReuseGuard,
+    type UseSuspectedAddressReuseGuardParams,
+} from './address-safety/useSuspectedAddressReuseGuard'
+export {
+    useSuspectedPoisoningSheet,
+    type UseSuspectedPoisoningSheetResult,
+} from './address-safety/useSuspectedPoisoningSheet'

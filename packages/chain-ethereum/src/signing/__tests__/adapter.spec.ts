@@ -35,6 +35,15 @@ import {
 
 const KEY_PAIR_ID = 'kms-entry-1'
 
+// `cast wallet sign --no-hash` with the throwaway key 0x11…11 over TRANSFER's
+// digest, recovery byte rewritten from 27 to the key store's 0. Precomputed
+// because the package may import no secp256k1 library, test code included.
+const TRANSFER_DIGEST =
+    '0x82afed965c7aa87b5689c5eb049f2b77e23ae7819f6e081b8a3198c1ed5195f8'
+const THROWAWAY_ADDRESS = '0x19E7E376E7C213B7E7e7e46cc70A5dD086DAff2A'
+const THROWAWAY_SIGNATURE =
+    '0x764d939f4b88606c6685952521906ff0363c6852c1fe2f9d6304119e891a8ec5679ab442427e23a613c49055a2654ee5957443031d6e1e85dc922e8d3083888000'
+
 const unsigned = (
     transaction: TransactionSerializableEIP1559,
     overrides?: Partial<UnsignedTransaction>,
@@ -77,7 +86,7 @@ describe('ethereumPlannerAdapter', () => {
                 requests[0].payload,
                 SIGNING_ACCESS_DOMAIN,
             )
-            const result = assemble(input, [signature({ bytes })])
+            const result = await assemble(input, [signature({ bytes })])
 
             expect(requests).toEqual([
                 {
@@ -98,6 +107,23 @@ describe('ethereumPlannerAdapter', () => {
             expect(result.scope).toEqual(input.scope)
         },
     )
+
+    it("refuses another key's signature labelled as the sender's", async () => {
+        const input = unsigned(TRANSFER)
+        const [request] = plan(input)
+        const bytes = hexToBytes(THROWAWAY_SIGNATURE)
+
+        expect(bytesToHex(request.payload)).toBe(TRANSFER_DIGEST)
+        await expect(assemble(input, [signature({ bytes })])).rejects.toThrow(
+            `The signature recovers to ${THROWAWAY_ADDRESS}, not the sender ${SENDER}`,
+        )
+    })
+
+    it('plans a payload without a priority fee, which defaults to 0', () => {
+        const { maxPriorityFeePerGas: _omitted, ...unpriorited } = TRANSFER
+
+        expect(plan(unsigned(unpriorited))).toHaveLength(1)
+    })
 
     it('gives a device the unsigned EIP-2718 serialization, which hashes to the digest the key signs', () => {
         const [request] = plan(unsigned(TRANSFER))
@@ -129,29 +155,29 @@ describe('ethereumPlannerAdapter', () => {
             SIGNING_ACCESS_DOMAIN,
         )
 
-        const result = assemble(unsigned(untyped), [signature({ bytes })])
+        const result = await assemble(unsigned(untyped), [signature({ bytes })])
 
         expect(request.payload).toEqual(plan(unsigned(TRANSFER))[0].payload)
         expect(bytesToHex(result.bytes)).toBe(VIEM_TRANSFER_NONCE_0)
     })
 
-    it('refuses a transaction for another network', () => {
+    it('refuses a transaction for another network', async () => {
         const input = unsigned(TRANSFER, {
             scope: { chainId: 'ethereum', networkId: 'sepolia' },
         })
         const message = 'The transaction is for EIP-155 chain 1, not sepolia'
 
         expect(() => plan(input)).toThrow(message)
-        expect(() => assemble(input, [signature()])).toThrow(message)
+        await expect(assemble(input, [signature()])).rejects.toThrow(message)
     })
 
-    it('refuses an unknown network', () => {
+    it('refuses an unknown network', async () => {
         const input = unsigned(TRANSFER, {
             scope: { chainId: 'ethereum', networkId: 'custom' },
         })
 
         expect(() => plan(input)).toThrow(UnknownEvmNetworkError)
-        expect(() => assemble(input, [signature()])).toThrow(
+        await expect(assemble(input, [signature()])).rejects.toThrow(
             UnknownEvmNetworkError,
         )
     })
@@ -189,23 +215,44 @@ describe('ethereumPlannerAdapter', () => {
     })
 
     it.each([
+        ['nonce', 'nonce'],
+        ['gas limit', 'gas'],
+        ['max fee per gas', 'maxFeePerGas'],
+    ] as const)(
+        'refuses to plan or assemble without a %s',
+        async (_label, field) => {
+            const { [field]: _omitted, ...incomplete } = TRANSFER
+            const input = unsigned(incomplete)
+            const message =
+                'The EVM transaction needs a nonce, a gas limit and a max fee per gas to be signed'
+
+            expect(() => plan(input)).toThrow(message)
+            await expect(assemble(input, [signature()])).rejects.toThrow(
+                message,
+            )
+        },
+    )
+
+    it.each([
         ['no signatures', []],
         ['two signatures', [signature(), signature()]],
         ['another request index', [signature({ requestIndex: 1 })]],
         ['another signer', [signature({ signer: TRANSFER.to as string })]],
         ['another scheme', [signature({ scheme: 'ed25519' })]],
-    ])('refuses %s', (_label, signatures) => {
-        expect(() => assemble(unsigned(TRANSFER), signatures)).toThrow(
+    ])('refuses %s', async (_label, signatures) => {
+        await expect(assemble(unsigned(TRANSFER), signatures)).rejects.toThrow(
             'An EVM transaction takes exactly one secp256k1 signature, from its sender',
         )
     })
 
-    it('rejects a 64-byte signature from the key store', () => {
-        expect(() =>
+    it('rejects a 64-byte signature from the key store', async () => {
+        await expect(
             assemble(unsigned(TRANSFER), [
                 signature({ bytes: new Uint8Array(64) }),
             ]),
-        ).toThrow('The key store returned a malformed secp256k1 signature')
+        ).rejects.toThrow(
+            'The key store returned a malformed secp256k1 signature',
+        )
     })
 })
 
