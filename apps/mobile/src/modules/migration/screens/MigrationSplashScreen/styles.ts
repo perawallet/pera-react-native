@@ -13,14 +13,12 @@
 import { makeStyles } from '@rneui/themed'
 import bootsplashManifest from '@assets/bootsplash/manifest.json'
 
-// The splash continues the native bootsplash: the background is the manifest's
-// and the foreground is `bootsplashContent`, the same in light and dark, so
-// there is no seam at the native-to-JS hand-off.
 const LOGO_SIZE = bootsplashManifest.logo.width
 
 export const useStyles = makeStyles(theme => ({
     container: {
         flex: 1,
+        // Read from the manifest so there is no seam at the native-to-JS hand-off.
         backgroundColor: bootsplashManifest.background,
     },
     logoLayer: {

@@ -23,6 +23,12 @@ describe('pera/no-color-literals-outside-theme', () => {
             'color-literals.bad.ts:14',
             'color-literals.bad.ts:15',
             'color-literals.bad.ts:18',
+            'color-literals.bad.ts:23',
+            'color-literals.bad.ts:24',
+            'color-literals.bad.ts:25',
+            'color-literals.bad.ts:26',
+            'color-literals.bad.ts:26',
+            'color-literals.bad.ts:27',
         ])
     })
 

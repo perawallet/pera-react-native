@@ -52,6 +52,10 @@ describe('colour tokens', () => {
         expect(darkColorTokens[token]).toBe(lightColorTokens[token])
     })
 
+    it('chartAreaFill is a 6-digit hex, since the native chart appends its own alpha', () => {
+        expect(lightColorTokens.chartAreaFill).toMatch(/^#[0-9A-F]{6}$/i)
+    })
+
     it('uses only hex or rgba colour strings', () => {
         const values = [
             ...Object.values(lightColorTokens),

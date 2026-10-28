@@ -20,4 +20,18 @@ export const useStyles = makeStyles((theme, isActive: boolean) => ({
     },
 }))
 
-export { ACCENT, SWATCHES }
+const TEXT_COLOR = 'white' as const
+const EDGE_COLOR = 'black' satisfies string
+const RIM_COLOR = 'white'
+const GLOW_COLOR = ALPHA > 0 ? 'white' : 'black'
+const TEMPLATE_HEX = `#ff00aa`
+
+export {
+    ACCENT,
+    EDGE_COLOR,
+    GLOW_COLOR,
+    RIM_COLOR,
+    SWATCHES,
+    TEMPLATE_HEX,
+    TEXT_COLOR,
+}
