@@ -16,7 +16,11 @@
 
 import { describe, it, expect, beforeAll, vi } from 'vitest'
 import { Decimal } from 'decimal.js'
-import { resolvePrecision, type PrecisionVariant } from '../precision'
+import {
+    resolveFiatFloor,
+    resolvePrecision,
+    type PrecisionVariant,
+} from '../precision'
 
 // The global vitest.setup mock stubs formatNumber to `String(value)`, which
 // ignores precision entirely — so nothing in the app suite verifies what a
@@ -87,5 +91,14 @@ describe('resolvePrecision + real formatNumber', () => {
 
     it('noDecimal renders whole units with no fraction', () => {
         expect(format('42', 'noDecimal')).toBe('42')
+    })
+
+    it("a fiat floor formats as one cent, keeping a negative amount's minus", () => {
+        const floored = (amount: string) => {
+            const floor = resolveFiatFloor('compact', true, new Decimal(amount))
+            return format(floor?.toString() ?? amount, 'compact')
+        }
+        expect(floored('0.004')).toBe('0.01')
+        expect(floored('-0.004')).toBe('-0.01')
     })
 })

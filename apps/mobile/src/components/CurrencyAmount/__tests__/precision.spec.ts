@@ -16,7 +16,7 @@
 
 import { describe, it, expect } from 'vitest'
 import { Decimal } from 'decimal.js'
-import { resolvePrecision } from '../precision'
+import { resolveFiatFloor, resolvePrecision } from '../precision'
 
 // Literal digit counts (not symbol-relative) so these assertions actually pin
 // the policy: DEFAULT_PRECISION = 2, PREFERRED_MAX_PRECISION = 6. Asserting
@@ -106,5 +106,64 @@ describe('resolvePrecision', () => {
             precision: 2,
             minPrecision: 2,
         })
+    })
+})
+
+describe('resolveFiatFloor', () => {
+    it.each(['0.004', '0.0099'])(
+        'floors a sub-cent fiat compact amount (%s) to 0.01',
+        amount => {
+            expect(
+                resolveFiatFloor(
+                    'compact',
+                    true,
+                    new Decimal(amount),
+                )?.toString(),
+            ).toBe('0.01')
+        },
+    )
+
+    it.each(['-0.004', '-0.0099'])(
+        'keeps the sign of a negative sub-cent fiat amount (%s), flooring it to -0.01',
+        amount => {
+            expect(
+                resolveFiatFloor(
+                    'compact',
+                    true,
+                    new Decimal(amount),
+                )?.toString(),
+            ).toBe('-0.01')
+        },
+    )
+
+    it('leaves a negative amount of a cent or more to the normal rounding', () => {
+        expect(
+            resolveFiatFloor('compact', true, new Decimal('-0.01')),
+        ).toBeNull()
+    })
+
+    it.each(['0.01', '0.025773', '0', '1234.56'])(
+        'leaves %s to the normal compact rounding',
+        amount => {
+            expect(
+                resolveFiatFloor('compact', true, new Decimal(amount)),
+            ).toBeNull()
+        },
+    )
+
+    it('has no floor for an unknown value', () => {
+        expect(resolveFiatFloor('compact', true, null)).toBeNull()
+    })
+
+    it('keeps crypto on the extend-to-first-digit rule', () => {
+        expect(
+            resolveFiatFloor('compact', false, new Decimal('0.004')),
+        ).toBeNull()
+    })
+
+    it('leaves unit prices and detail amounts at their own precision', () => {
+        expect(
+            resolveFiatFloor('preferredFull', true, new Decimal('0.000012')),
+        ).toBeNull()
     })
 })
