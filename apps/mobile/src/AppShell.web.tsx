@@ -35,6 +35,7 @@ import { AppProviders } from '@providers/AppProviders'
 import {
     VaultGate,
     CreatePasswordScreen,
+    PasskeyUnlockSetupScreen,
     useAppLockFromVault,
     useAutoLockActivity,
     useVaultLockState,
@@ -193,6 +194,20 @@ const ShellRouter = (): React.JSX.Element => {
                         }}
                     />
                     {/* A wipe lands here with its success sheet queued. */}
+                    <BottomSheetManager />
+                </>
+            )
+        }
+        case 'passkey-setup': {
+            return (
+                <>
+                    <PasskeyUnlockSetupScreen
+                        onDone={() => {
+                            // no-op: the step clears its session flag, which
+                            // the shell observes and re-routes to onboarding.
+                        }}
+                    />
+                    {/* The password re-check is a sheet; nothing else mounts a manager here. */}
                     <BottomSheetManager />
                 </>
             )

@@ -58,7 +58,11 @@ vi.mock('../PinSecurityPrompt/PinSecurityPrompt', () => ({
 }))
 
 const { mockRouteCapabilities } = vi.hoisted(() => ({
-    mockRouteCapabilities: { pin: true, analyticsConsent: true },
+    mockRouteCapabilities: {
+        pin: true,
+        analyticsConsent: true,
+        vaultSecuritySettings: true,
+    },
 }))
 
 vi.mock('@routes/capabilities', () => ({
@@ -95,6 +99,20 @@ vi.mock('@modules/prompts/hooks/useLegacyQuantumPrompt', () => ({
 
 vi.mock('@modules/prompts/components/LegacyQuantumPrompt', () => ({
     LegacyQuantumPrompt: () => null,
+}))
+
+// Whether the offer is due is usePasskeyUnlockOfferPrompt's job and has its
+// own spec; this file is about the order the queue puts prompts in.
+const { mockUsePasskeyUnlockOfferPrompt } = vi.hoisted(() => ({
+    mockUsePasskeyUnlockOfferPrompt: vi.fn(() => ({ isDue: false })),
+}))
+
+vi.mock('@modules/prompts/hooks/usePasskeyUnlockOfferPrompt', () => ({
+    usePasskeyUnlockOfferPrompt: () => mockUsePasskeyUnlockOfferPrompt(),
+}))
+
+vi.mock('@modules/prompts/components/PasskeyUnlockOfferPrompt', () => ({
+    PasskeyUnlockOfferPrompt: () => null,
 }))
 
 vi.mock('@modules/prompts/components/BannerPrompt', () => ({
@@ -144,6 +162,8 @@ describe('usePromptContainer', () => {
         mockIsLockOverlayVisible.mockReturnValue(false)
         mockRouteCapabilities.pin = true
         mockRouteCapabilities.analyticsConsent = true
+        mockRouteCapabilities.vaultSecuritySettings = true
+        mockUsePasskeyUnlockOfferPrompt.mockReturnValue({ isDue: false })
     })
 
     afterEach(() => {
@@ -158,6 +178,62 @@ describe('usePromptContainer', () => {
     })
 
     describe('ordering', () => {
+        it('ranks the passkey unlock offer below the PIN nudge', async () => {
+            mockUsePasskeyUnlockOfferPrompt.mockReturnValue({ isDue: true })
+            mockGetPreference.mockReturnValue(false)
+
+            const { result } = renderHook(() => usePromptContainer())
+            await act(async () => {})
+            act(() => {
+                vi.advanceTimersByTime(LONG_PROMPT_DISPLAY_DELAY)
+            })
+            expect(result.current.nextPrompt?.id).toBe(
+                UserPreferences._securityPinSetupPrompt,
+            )
+
+            await act(async () => {
+                result.current.hidePrompt(
+                    UserPreferences._securityPinSetupPrompt,
+                )
+            })
+
+            expect(result.current.nextPrompt?.id).toBe(
+                UserPreferences._passkeyUnlockOfferPrompt,
+            )
+        })
+
+        it('never queues the passkey offer where there is no vault security screen', async () => {
+            mockRouteCapabilities.vaultSecuritySettings = false
+            mockRouteCapabilities.pin = false
+            mockUsePasskeyUnlockOfferPrompt.mockReturnValue({ isDue: true })
+            mockGetPreference.mockReturnValue(false)
+
+            const { result } = renderHook(() => usePromptContainer())
+            await act(async () => {})
+            act(() => {
+                vi.advanceTimersByTime(LONG_PROMPT_DISPLAY_DELAY)
+            })
+
+            expect(result.current.nextPrompt).toBeUndefined()
+        })
+
+        it('does not queue the passkey offer once its preference is set', async () => {
+            mockRouteCapabilities.pin = false
+            mockUsePasskeyUnlockOfferPrompt.mockReturnValue({ isDue: true })
+            mockGetPreference.mockImplementation(
+                (key: string) =>
+                    key === UserPreferences._passkeyUnlockOfferPrompt,
+            )
+
+            const { result } = renderHook(() => usePromptContainer())
+            await act(async () => {})
+            act(() => {
+                vi.advanceTimersByTime(LONG_PROMPT_DISPLAY_DELAY)
+            })
+
+            expect(result.current.nextPrompt).toBeUndefined()
+        })
+
         it('shows the highest-priority due prompt first', async () => {
             // Terms and the PIN nudge both due — legally-required copy wins.
             mockUseTermsAcceptance.mockReturnValue({ needsAcceptance: true })

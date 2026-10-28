@@ -4520,7 +4520,6 @@
             "passkey_disable": "Desativar desbloqueio com passkey",
             "passkey_password_placeholder": "Senha da wallet",
             "passkey_error": "Não foi possível ativar o desbloqueio com passkey. Verifique sua senha e tente novamente.",
-            "passkey_enable_error": "Não foi possível ativar o desbloqueio com passkey. Tente novamente.",
             "change_password_title": "Alterar senha",
             "change_password_current_placeholder": "Senha atual",
             "change_password_new_placeholder": "Nova senha",
@@ -4532,6 +4531,26 @@
             "change_password_error_unexpected": "Algo deu errado ao alterar sua senha. Tente novamente.",
             "change_password_success": "Senha alterada com sucesso.",
             "change_password_submit": "Alterar senha"
+        },
+        "passkey_setup": {
+            "title": "Desbloqueie com uma passkey",
+            "offer_title": "Desbloqueie mais rápido da próxima vez",
+            "body": "Desbloqueie a Pera Wallet com Touch ID, Windows Hello, seu celular ou uma chave de segurança em vez de digitar sua senha. Sua senha continua funcionando como alternativa.",
+            "enable_button": "Configurar passkey",
+            "not_now_button": "Agora não",
+            "retry_button": "Tentar novamente",
+            "continue_button": "Continuar",
+            "pending_hint": "Siga as instruções do seu navegador. Pode ser necessário confirmar duas vezes.",
+            "success_title": "O desbloqueio com passkey está ativado",
+            "success_body": "Da próxima vez, desbloqueie a Pera Wallet com sua passkey. Sua senha continua funcionando.",
+            "error_not_saved": "A passkey não foi salva.",
+            "error_prf_unsupported": "Esta passkey não consegue desbloquear a Pera Wallet.",
+            "error_unexpected": "Não foi possível ativar o desbloqueio com passkey.",
+            "hint_not_saved_title": "Tente salvá-la em outro lugar",
+            "hint_not_saved_body": "A janela foi fechada ou seu gerenciador de senhas não conseguiu salvar a passkey. Tente novamente e escolha outra opção na janela do navegador, como Google Password Manager, iCloud Keychain ou uma chave de segurança. Se um gerenciador de senhas continuar assumindo, desative o salvamento de passkeys nas configurações dele.",
+            "hint_prf_title": "Salve em outro lugar",
+            "hint_prf_body": "A passkey foi salva, mas seu gerenciador de senhas ou sua chave de segurança não oferece suporte ao recurso de que a Pera Wallet precisa para desbloquear (PRF). Tente novamente com Google Password Manager, iCloud Keychain ou uma chave de segurança compatível com PRF e depois exclua a passkey não usada.",
+            "reauth_description": "Confirme sua senha para ativar o desbloqueio com passkey."
         },
         "approval": {
             "placeholder": "Área de aprovação — chegando no M4."

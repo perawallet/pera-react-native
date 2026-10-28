@@ -53,6 +53,10 @@ const mocks = vi.hoisted(() => ({
     }),
     setEngineKeySource: vi.fn(),
     requireSessionMasterKey: vi.fn(),
+    passkeySetupPending: false as boolean | null,
+    hydratePasskeySetup: vi
+        .fn<() => Promise<void>>()
+        .mockResolvedValue(undefined),
 }))
 
 vi.mock('@perawallet/wallet-extension-platform-chrome', () => ({
@@ -67,6 +71,11 @@ vi.mock('@modules/vault', () => ({
         isInitialized: mocks.isInitialized,
         isUnlocked: mocks.isUnlocked,
     }),
+    usePasskeySetupStore: (selector: (state: unknown) => unknown) =>
+        selector({
+            isPending: mocks.passkeySetupPending,
+            hydrate: mocks.hydratePasskeySetup,
+        }),
 }))
 
 vi.mock('@hooks/useShowOnboarding', () => ({
@@ -206,6 +215,7 @@ describe('useWebAppShell', () => {
         mocks.isUnlocked = null
         mocks.showOnboarding = false
         mocks.hasAccounts = false
+        mocks.passkeySetupPending = false
         vi.clearAllMocks()
         useDatabaseReadinessStore.getState().resetState()
         mocks.initializeDatabase.mockResolvedValue(undefined)
@@ -214,6 +224,7 @@ describe('useWebAppShell', () => {
         mocks.keystoreReady.mockResolvedValue(undefined)
         mocks.armAutoLock.mockResolvedValue(undefined)
         mocks.getCurrentApproval.mockResolvedValue(null)
+        mocks.hydratePasskeySetup.mockResolvedValue(undefined)
         mocks.platformInitialize.mockResolvedValue({ token: undefined })
         mocks.resealLegacyMaterial.mockResolvedValue({
             resealed: 0,
@@ -624,5 +635,80 @@ describe('useWebAppShell', () => {
         )
 
         warnSpy.mockRestore()
+    })
+
+    describe('passkey setup step', () => {
+        it('routes to passkey-setup while the step is pending, ahead of the bootstrap wait', async () => {
+            mocks.isInitialized = true
+            mocks.isUnlocked = true
+            mocks.passkeySetupPending = true
+            mocks.keystoreReady.mockReturnValue(new Promise(() => undefined))
+
+            const { result } = renderHook(() => useWebAppShell())
+
+            await waitFor(() =>
+                expect(result.current.shellState).toBe('passkey-setup'),
+            )
+        })
+
+        it('hydrates the pending flag once on mount', async () => {
+            mocks.isInitialized = true
+            mocks.isUnlocked = true
+
+            const { rerender } = renderHook(() => useWebAppShell())
+            rerender()
+            rerender()
+
+            await waitFor(() =>
+                expect(mocks.hydratePasskeySetup).toHaveBeenCalledOnce(),
+            )
+        })
+
+        it('stays resolving while the pending flag is unknown', async () => {
+            mocks.isInitialized = true
+            mocks.isUnlocked = true
+            mocks.passkeySetupPending = null
+
+            const { result } = renderHook(() => useWebAppShell())
+
+            await waitFor(() =>
+                expect(mocks.initializeDatabase).toHaveBeenCalledOnce(),
+            )
+            await act(async () => {
+                await Promise.resolve()
+            })
+            expect(result.current.shellState).toBe('resolving')
+        })
+
+        it('moves on to onboarding once the step clears the flag', async () => {
+            mocks.isInitialized = true
+            mocks.isUnlocked = true
+            mocks.showOnboarding = true
+            mocks.passkeySetupPending = true
+
+            const { result, rerender } = renderHook(() => useWebAppShell())
+            await waitFor(() =>
+                expect(result.current.shellState).toBe('passkey-setup'),
+            )
+
+            mocks.passkeySetupPending = false
+            rerender()
+
+            await waitFor(() =>
+                expect(result.current.shellState).toBe('onboarding'),
+            )
+        })
+
+        it('keeps create-password ahead of the step when no vault exists', async () => {
+            mocks.isInitialized = false
+            mocks.isUnlocked = false
+            mocks.passkeySetupPending = true
+
+            const { result } = renderHook(() => useWebAppShell())
+
+            await waitFor(() =>
+                expect(result.current.shellState).toBe('create-password'),
+            )
+        })
     })
 })

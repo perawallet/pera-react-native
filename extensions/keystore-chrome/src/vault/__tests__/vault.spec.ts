@@ -29,6 +29,10 @@ import {
     PBKDF2_ITERATIONS,
 } from '../vault'
 import { getSessionMasterKey } from '../session'
+import {
+    hasRecentPasswordAuth,
+    PASSKEY_ENABLE_REAUTH_WINDOW_MS,
+} from '../password-auth'
 import { deriveArgon2id } from '../argon2'
 import {
     InvalidPasswordError,
@@ -485,7 +489,7 @@ describe('vault', () => {
     })
 
     describe('verifyVaultPassword', () => {
-        it('confirms the password without unlocking or touching the session', async () => {
+        it('confirms the password without unlocking', async () => {
             await createVault('the-password')
             await lockVault()
 
@@ -497,6 +501,59 @@ describe('vault', () => {
         it('returns false rather than throwing on a wrong password', async () => {
             await createVault('the-password')
             expect(await verifyVaultPassword('nope')).toBe(false)
+        })
+    })
+    describe('password auth stamp', () => {
+        it('createVault records that a password was just proven', async () => {
+            await createVault('pw')
+            expect(await hasRecentPasswordAuth()).toBe(true)
+            expect(typeof fake.sessionData.get('vault:password-auth-at')).toBe(
+                'number',
+            )
+        })
+
+        it('lockVault clears the stamp', async () => {
+            await createVault('pw')
+            await lockVault()
+            expect(await hasRecentPasswordAuth()).toBe(false)
+            expect(fake.sessionData.has('vault:password-auth-at')).toBe(false)
+        })
+
+        it('unlockVault stamps again', async () => {
+            await createVault('pw')
+            await lockVault()
+            await unlockVault('pw')
+            expect(await hasRecentPasswordAuth()).toBe(true)
+        })
+
+        it('verifyVaultPassword stamps on a correct password and not on a wrong one', async () => {
+            await createVault('pw')
+            fake.sessionData.delete('vault:password-auth-at')
+            expect(await verifyVaultPassword('nope')).toBe(false)
+            expect(await hasRecentPasswordAuth()).toBe(false)
+            expect(await verifyVaultPassword('pw')).toBe(true)
+            expect(await hasRecentPasswordAuth()).toBe(true)
+        })
+
+        it('destroyVault clears the stamp', async () => {
+            await createVault('pw')
+            await destroyVault()
+            expect(fake.sessionData.has('vault:password-auth-at')).toBe(false)
+        })
+
+        it('expires once the reauth window has passed', async () => {
+            await createVault('pw')
+            fake.sessionData.set(
+                'vault:password-auth-at',
+                Date.now() - PASSKEY_ENABLE_REAUTH_WINDOW_MS - 1,
+            )
+            expect(await hasRecentPasswordAuth()).toBe(false)
+        })
+
+        it('treats a stamp from the future as expired', async () => {
+            await createVault('pw')
+            fake.sessionData.set('vault:password-auth-at', Date.now() + 60_000)
+            expect(await hasRecentPasswordAuth()).toBe(false)
         })
     })
 })

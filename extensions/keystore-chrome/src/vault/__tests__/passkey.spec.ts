@@ -17,17 +17,30 @@ import {
     isPasskeyUnlockSupported,
     isPasskeyUnlockEnabled,
     enablePasskeyUnlock,
+    enablePasskeyUnlockWithSession,
     unlockWithPasskey,
     verifyPasskey,
     disablePasskeyUnlock,
 } from '../passkey'
 import {
+    PasskeyPrfUnsupportedError,
     PasskeyUnlockError,
     VaultCorruptedError,
+    VaultLockedError,
     VaultLockedOutError,
+    VaultReauthRequiredError,
 } from '../../errors'
 import { getSessionMasterKey } from '../session'
-import { createVault, unlockVault, lockVault } from '../vault'
+import {
+    createVault,
+    unlockVault,
+    lockVault,
+    verifyVaultPassword,
+} from '../vault'
+import {
+    hasRecentPasswordAuth,
+    PASSKEY_ENABLE_REAUTH_WINDOW_MS,
+} from '../password-auth'
 import { InvalidPasswordError } from '../../errors'
 import { getLockoutRemainingSeconds, runThrottledAttempt } from '../lockout'
 
@@ -63,6 +76,10 @@ type WebAuthnMockOptions = {
     /** Computes get()'s prf.results.first from the eval.first salt the caller passed. */
     getPrfResultsForSalt?: (salt: Uint8Array) => Uint8Array
     rawId?: Uint8Array
+    /** create() reports prf.enabled false: an authenticator without PRF. Defaults to true. */
+    prfEnabled?: boolean
+    /** get() answers without prf.results, although create() said PRF was enabled. */
+    omitGetPrfResults?: boolean
 }
 
 /**
@@ -94,8 +111,8 @@ const installWebAuthnMocks = (
         type: 'public-key' as const,
         getClientExtensionResults: () => ({
             prf: prfResults
-                ? { enabled: true, results: prfResults }
-                : { enabled: true },
+                ? { enabled: options.prfEnabled ?? true, results: prfResults }
+                : { enabled: options.prfEnabled ?? true },
         }),
         response: {} as AuthenticatorResponse,
         authenticatorAttachment: null,
@@ -154,6 +171,7 @@ const installWebAuthnMocks = (
                     'get() must pass prf.eval.first — the persisted salt',
                 )
             }
+            if (options.omitGetPrfResults) return makeCredential(null)
             const salt = new Uint8Array(saltBuffer as ArrayBuffer)
             const prfBytes = getPrfResultsForSalt(salt)
 
@@ -293,6 +311,14 @@ describe('passkey vault', () => {
     })
 
     describe('enablePasskeyUnlock', () => {
+        it('throws PasskeyPrfUnsupportedError (typed) when the authenticator has no PRF', async () => {
+            installWebAuthnMocks({ prfEnabled: false })
+            await createVault('pw')
+            await expect(enablePasskeyUnlock('pw')).rejects.toBeInstanceOf(
+                PasskeyPrfUnsupportedError,
+            )
+        })
+
         it('throws InvalidPasswordError and writes no blob on wrong password', async () => {
             await createVault('correct-password')
             await expect(
@@ -326,7 +352,93 @@ describe('passkey vault', () => {
         })
     })
 
+    describe('enablePasskeyUnlockWithSession', () => {
+        it('wraps the session master key inside the reauth window without a password', async () => {
+            await createVault('pw')
+            const before = await getSessionMasterKey()
+            await enablePasskeyUnlockWithSession()
+            expect(await isPasskeyUnlockEnabled()).toBe(true)
+            await lockVault()
+            await unlockWithPasskey()
+            expect(await getSessionMasterKey()).toEqual(before)
+        })
+
+        it('throws VaultReauthRequiredError once the window has lapsed and touches no WebAuthn', async () => {
+            const { createMock } = installWebAuthnMocks()
+            await createVault('pw')
+            fake.sessionData.set(
+                'vault:password-auth-at',
+                Date.now() - PASSKEY_ENABLE_REAUTH_WINDOW_MS - 1,
+            )
+            await expect(
+                enablePasskeyUnlockWithSession(),
+            ).rejects.toBeInstanceOf(VaultReauthRequiredError)
+            expect(createMock).not.toHaveBeenCalled()
+            expect(await isPasskeyUnlockEnabled()).toBe(false)
+        })
+
+        it('works again after verifyVaultPassword re-proves the password', async () => {
+            await createVault('pw')
+            fake.sessionData.delete('vault:password-auth-at')
+            await expect(
+                enablePasskeyUnlockWithSession(),
+            ).rejects.toBeInstanceOf(VaultReauthRequiredError)
+            expect(await verifyVaultPassword('pw')).toBe(true)
+            await enablePasskeyUnlockWithSession()
+            expect(await isPasskeyUnlockEnabled()).toBe(true)
+        })
+
+        it('throws VaultLockedError when the vault is locked, before touching WebAuthn', async () => {
+            const { createMock } = installWebAuthnMocks()
+            await createVault('pw')
+            await lockVault()
+            await expect(
+                enablePasskeyUnlockWithSession(),
+            ).rejects.toBeInstanceOf(VaultLockedError)
+            expect(createMock).not.toHaveBeenCalled()
+        })
+
+        it('throws PasskeyPrfUnsupportedError and writes nothing when create() reports no PRF', async () => {
+            installWebAuthnMocks({ prfEnabled: false })
+            await createVault('pw')
+            await expect(
+                enablePasskeyUnlockWithSession(),
+            ).rejects.toBeInstanceOf(PasskeyPrfUnsupportedError)
+            expect(await isPasskeyUnlockEnabled()).toBe(false)
+            expect(fake.data.has('vault:prf-credential-id')).toBe(false)
+        })
+
+        it('throws PasskeyPrfUnsupportedError when the assertion returns no PRF output', async () => {
+            installWebAuthnMocks({ omitGetPrfResults: true })
+            await createVault('pw')
+            await expect(
+                enablePasskeyUnlockWithSession(),
+            ).rejects.toBeInstanceOf(PasskeyPrfUnsupportedError)
+            expect(await isPasskeyUnlockEnabled()).toBe(false)
+        })
+
+        it('propagates a NotAllowedError from create() untouched and writes nothing', async () => {
+            const { createMock } = installWebAuthnMocks()
+            createMock.mockRejectedValueOnce(
+                new DOMException('cancelled', 'NotAllowedError'),
+            )
+            await createVault('pw')
+            await expect(
+                enablePasskeyUnlockWithSession(),
+            ).rejects.toMatchObject({ name: 'NotAllowedError' })
+            expect(await isPasskeyUnlockEnabled()).toBe(false)
+        })
+    })
+
     describe('unlockWithPasskey', () => {
+        it('does not count as a proven password', async () => {
+            await createVault('pw')
+            await enablePasskeyUnlock('pw')
+            await lockVault()
+            await unlockWithPasskey()
+            expect(await hasRecentPasswordAuth()).toBe(false)
+        })
+
         it('enable → lock → unlockWithPasskey restores the same session master key as password unlock', async () => {
             await createVault('test-password')
             const masterKeyAfterCreate = await getSessionMasterKey()
@@ -459,6 +571,14 @@ describe('passkey vault', () => {
     })
 
     describe('verifyPasskey', () => {
+        it('does not count as a proven password', async () => {
+            await createVault('pw')
+            await enablePasskeyUnlock('pw')
+            fake.sessionData.delete('vault:password-auth-at')
+            await verifyPasskey()
+            expect(await hasRecentPasswordAuth()).toBe(false)
+        })
+
         it('resolves without putting the master key in the session', async () => {
             await createVault('test-password')
             await enablePasskeyUnlock('test-password')
