@@ -49,10 +49,11 @@ import translationKeyExists from './lanekeep/rules/translation-key-exists.js'
 import vitestPoolConfig from './lanekeep/rules/vitest-pool-config.js'
 
 export default defineConfig({
-    // Every TS/JS file in the repo. A rule about shipped source narrows itself
-    // with lanekeep/shared/scope.ts; the repo-wide rules need tests and
-    // tooling in view.
-    include: ['**/*.{ts,tsx,mts,cts,js,jsx,mjs,cjs}'],
+    // Every TS/JS file in the repo, plus Python (the e2e harness). A rule about
+    // shipped source narrows itself with lanekeep/shared/scope.ts; the
+    // repo-wide rules need tests and tooling in view. Only no-work-item-refs
+    // declares Python.
+    include: ['**/*.{ts,tsx,mts,cts,js,jsx,mjs,cjs,py}'],
     // lanekeep also skips gitignored files on top of the excludes below, so a generated
     // file like packages/config/src/generated-env.ts can match `include` and still never
     // appear here — expected, not a glob bug.
