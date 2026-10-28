@@ -41,7 +41,6 @@ describe('ARC-90 links through the Algorand adapter', () => {
     describe('Address Actions (Basic Scan)', () => {
         it('parses simple address', () => {
             const result = parseDeeplink(`algorand://${TEST_ADDRESS}`)
-            expect(result).toBeDefined()
             expect(result?.type).toBe(DeeplinkType.ADDRESS_ACTIONS)
             if (result?.type === DeeplinkType.ADDRESS_ACTIONS) {
                 expect(result.address).toBe(TEST_ADDRESS)
@@ -52,7 +51,6 @@ describe('ARC-90 links through the Algorand adapter', () => {
             const result = parseDeeplink(
                 `algorand://${TEST_ADDRESS}?label=My%20Address`,
             )
-            expect(result).toBeDefined()
             expect(result?.type).toBe(DeeplinkType.ADDRESS_ACTIONS)
             if (result?.type === DeeplinkType.ADDRESS_ACTIONS) {
                 expect(result.address).toBe(TEST_ADDRESS)
@@ -66,7 +64,6 @@ describe('ARC-90 links through the Algorand adapter', () => {
             const result = parseDeeplink(
                 `algorand://${TEST_ADDRESS}?amount=1000000`,
             )
-            expect(result).toBeDefined()
             expect(result?.type).toBe(DeeplinkType.TRANSFER)
             if (result?.type === DeeplinkType.TRANSFER) {
                 expect(result.receiverAddress).toBe(TEST_ADDRESS)
@@ -79,7 +76,6 @@ describe('ARC-90 links through the Algorand adapter', () => {
             const result = parseDeeplink(
                 `algorand://${TEST_ADDRESS}?amount=100&note=hello&xnote=secret`,
             )
-            expect(result).toBeDefined()
             expect(result?.type).toBe(DeeplinkType.TRANSFER)
             if (result?.type === DeeplinkType.TRANSFER) {
                 expect(result.note).toBe('hello')
@@ -93,7 +89,6 @@ describe('ARC-90 links through the Algorand adapter', () => {
             const result = parseDeeplink(
                 `algorand://${TEST_ADDRESS}?amount=100&asset=123456`,
             )
-            expect(result).toBeDefined()
             expect(result?.type).toBe(DeeplinkType.TRANSFER)
             if (result?.type === DeeplinkType.TRANSFER) {
                 expect(result.assetRef?.assetId).toBe('123456')
@@ -106,7 +101,6 @@ describe('ARC-90 links through the Algorand adapter', () => {
             const result = parseDeeplink(
                 `algorand://${TEST_ADDRESS}?asset=123456`,
             )
-            expect(result).toBeDefined()
             expect(result?.type).toBe(DeeplinkType.TRANSFER)
             if (result?.type === DeeplinkType.TRANSFER) {
                 expect(result.assetRef?.assetId).toBe('123456')
@@ -123,7 +117,6 @@ describe('ARC-90 links through the Algorand adapter', () => {
             const result = parseDeeplink(
                 `algorand://${TEST_ADDRESS}?amount=0&asset=123456`,
             )
-            expect(result).toBeDefined()
             expect(result?.type).toBe(DeeplinkType.ASSET_OPT_IN)
             if (result?.type === DeeplinkType.ASSET_OPT_IN) {
                 expect(result.assetRef.assetId).toBe('123456')
@@ -195,7 +188,6 @@ describe('ARC-90 links through the Algorand adapter', () => {
             const result = parseDeeplink(
                 `algorand://${TEST_ADDRESS}?type=keyreg&votekey=voteKey123&selkey=selKey123&votefst=1000&votelst=2000&votekd=100&fee=1000`,
             )
-            expect(result).toBeDefined()
             expect(result?.type).toBe(DeeplinkType.CHAIN_ACTION)
             if (result?.type === DeeplinkType.CHAIN_ACTION) {
                 expect(result.chainData.sender).toBe(TEST_ADDRESS)
@@ -212,7 +204,6 @@ describe('ARC-90 links through the Algorand adapter', () => {
             const result = parseDeeplink(
                 `algorand://${TEST_ADDRESS}?type=keyreg&votekey=voteKey123&selkey=selKey123&votefst=1000&votelst=2000&votekdkey=100`,
             )
-            expect(result).toBeDefined()
             if (result?.type === DeeplinkType.CHAIN_ACTION) {
                 expect(result.chainData.voteKeyDilution).toBe('100')
             }
@@ -321,7 +312,6 @@ describe('ARC-90 links through the Algorand adapter', () => {
     describe('Asset Query', () => {
         it('parses asset query to Discover Browser (Explorer)', () => {
             const result = parseDeeplink('algorand://asset/123456')
-            expect(result).toBeDefined()
             expect(result?.type).toBe(DeeplinkType.DISCOVER_BROWSER)
             if (result?.type === DeeplinkType.DISCOVER_BROWSER) {
                 expect(result.url).toBe(
@@ -332,7 +322,6 @@ describe('ARC-90 links through the Algorand adapter', () => {
 
         it('parses asset query with testnet to Discover Browser (Testnet Explorer)', () => {
             const result = parseDeeplink('algorand://net:testnet/asset/123456')
-            expect(result).toBeDefined()
             expect(result?.type).toBe(DeeplinkType.DISCOVER_BROWSER)
             if (result?.type === DeeplinkType.DISCOVER_BROWSER) {
                 expect(result.url).toBe(
@@ -345,7 +334,6 @@ describe('ARC-90 links through the Algorand adapter', () => {
     describe('App Query', () => {
         it('parses app query to Discover Browser (Explorer)', () => {
             const result = parseDeeplink('algorand://app/7890')
-            expect(result).toBeDefined()
             expect(result?.type).toBe(DeeplinkType.DISCOVER_BROWSER)
             if (result?.type === DeeplinkType.DISCOVER_BROWSER) {
                 expect(result.url).toBe(
@@ -356,7 +344,6 @@ describe('ARC-90 links through the Algorand adapter', () => {
 
         it('parses app query with testnet to Discover Browser (Testnet Explorer)', () => {
             const result = parseDeeplink('algorand://net:testnet/app/7890')
-            expect(result).toBeDefined()
             expect(result?.type).toBe(DeeplinkType.DISCOVER_BROWSER)
             if (result?.type === DeeplinkType.DISCOVER_BROWSER) {
                 expect(result.url).toBe(
@@ -367,7 +354,6 @@ describe('ARC-90 links through the Algorand adapter', () => {
 
         it('parses app query with query params', () => {
             const result = parseDeeplink('algorand://app/7890?foo=bar')
-            expect(result).toBeDefined()
             expect(result?.type).toBe(DeeplinkType.DISCOVER_BROWSER)
         })
     })
@@ -387,13 +373,12 @@ describe('ARC-90 links through the Algorand adapter', () => {
             ).toBeNull()
         })
 
-        it('returns null for a gh: genesis hash no network has', () => {
+        it('returns null for an asset link whose gh: genesis hash no network has', () => {
             expect(parseDeeplink('algorand://gh:myrepo/asset/123')).toBeNull()
         })
 
         it('parses asset query with query params', () => {
             const result = parseDeeplink('algorand://asset/123?foo=bar')
-            expect(result).toBeDefined()
             expect(result?.type).toBe(DeeplinkType.DISCOVER_BROWSER)
         })
 
@@ -413,7 +398,6 @@ describe('ARC-90 links through the Algorand adapter', () => {
             const result = parseDeeplink(
                 `algorand://${TEST_ADDRESS}?unknown=param&amount=100`,
             )
-            expect(result).toBeDefined()
             expect(result?.type).toBe(DeeplinkType.TRANSFER)
             // Should still parse valid params
             if (result?.type === DeeplinkType.TRANSFER) {
@@ -423,7 +407,6 @@ describe('ARC-90 links through the Algorand adapter', () => {
 
         it('parses type=appl as ADDRESS_ACTIONS (noop in ARC-90)', () => {
             const result = parseDeeplink(`algorand://${TEST_ADDRESS}?type=appl`)
-            expect(result).toBeDefined()
             expect(result?.type).toBe(DeeplinkType.ADDRESS_ACTIONS)
         })
 
@@ -444,13 +427,13 @@ describe('ARC-90 links through the Algorand adapter', () => {
 
         it('handles empty parameter values in ARC-90', () => {
             const result1 = parseDeeplink('algorand://app/123?foo=')
-            expect(result1).toBeDefined()
+            expect(result1).not.toBeNull()
 
             const result2 = parseDeeplink('algorand://asset/123?foo=')
-            expect(result2).toBeDefined()
+            expect(result2).not.toBeNull()
 
             const result3 = parseDeeplink(`algorand://${TEST_ADDRESS}?foo=`)
-            expect(result3).toBeDefined()
+            expect(result3).not.toBeNull()
         })
     })
 })

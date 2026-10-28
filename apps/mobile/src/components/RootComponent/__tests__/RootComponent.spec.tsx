@@ -26,10 +26,9 @@ import { useLockScreen } from '@modules/security/components/AutoLockGuard/useLoc
 
 // PromptContainer (T&C re-acceptance, PIN setup) must render
 // (a) inside RootContentContainer, above the navigator, and (b) inside
-// AutoLockGuard's children so the lock overlay hides it. A JSX reorder that
-// moves it outside AutoLockGuard would silently reintroduce the orphaned
-// touch-swallowing bug this branch fixed — this test pins that mount point
-// by driving the real AutoLockGuard + PromptContainer + usePromptContainer
+// AutoLockGuard's children so the lock overlay hides it. Mounted outside
+// AutoLockGuard it is orphaned and swallows touches, so this test pins that
+// mount point by driving the real AutoLockGuard + PromptContainer + usePromptContainer
 // through the guard's public hook seams, everything else stubbed inert.
 
 vi.mock('@routes/index', () => ({ MainRoutes: () => null }))
@@ -133,8 +132,8 @@ vi.mock('@modules/onboarding/components/TermsAndConditionsSheet', () => ({
     ),
 }))
 
-// The banner surface is queued by the prompt container now, so it is part of
-// the container's import graph. Stubbed here for the same reason the terms
+// The banner surface is queued by the prompt container, so it is part of the
+// container's import graph. Stubbed here for the same reason the terms
 // prompt is: this file tests the mount point, not what a prompt renders.
 vi.mock('@modules/prompts/hooks/useBannerPrompt', () => ({
     useBannerPrompt: () => ({ isDue: false, isForced: false }),
@@ -207,7 +206,6 @@ describe('RootComponent PromptContainer mount point', () => {
 
     afterEach(() => {
         vi.useRealTimers()
-        vi.clearAllMocks()
     })
 
     it('shows the T&C prompt as soon as the lock guard clears', () => {
@@ -215,10 +213,9 @@ describe('RootComponent PromptContainer mount point', () => {
 
         render(<RootComponent fcmToken={null} />)
 
-        // No display delay for a gate. It holds bottom-sheet presentation from
-        // the moment it is due, so waiting would leave a window where the app
-        // looks usable but silently discards sheets. The reveal
-        // animation carries the beat the delay used to.
+        // No display delay for a gate: it holds bottom-sheet presentation from
+        // the moment it is due, so a delay would leave a window where the app
+        // looks usable but silently discards sheets.
         expect(screen.getByTestId('terms-acceptance-prompt')).toBeTruthy()
     })
 
@@ -253,7 +250,6 @@ describe('RootComponent connections provider mount point', () => {
 
     afterEach(() => {
         vi.useRealTimers()
-        vi.clearAllMocks()
     })
 
     it('wraps the app content in ConnectionsProvider', () => {

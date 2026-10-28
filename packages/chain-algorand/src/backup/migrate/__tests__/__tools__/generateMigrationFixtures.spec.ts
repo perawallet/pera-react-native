@@ -10,11 +10,7 @@
  limitations under the License
  */
 
-// @vitest-environment node
-// This is a fixture-generator tool, not a unit test. It runs Node crypto +
-// xhd-wallet-api derivation, which fails an `instanceof Uint8Array` check
-// inside `@noble/curves` 2.0.1 when running under the default jsdom
-// environment (cross-realm Buffer). Node env avoids the realm mismatch.
+// This is a fixture-generator tool, not a unit test.
 
 import { writeFileSync, mkdirSync } from 'node:fs'
 import { createPrivateKey, createPublicKey } from 'node:crypto'

@@ -207,7 +207,11 @@ describe('useIntegrityAccessSync', () => {
                     useIntegrityAccessStore.getState().snapshot,
                 ).not.toBeNull(),
             )
-            const wait = registeredWaiter()?.()
+            vi.useFakeTimers()
+            let isDone = false
+            void registeredWaiter()?.().then(() => {
+                isDone = true
+            })
 
             // The request reads its bearer from this store, so that is what the wait watches.
             act(() =>
@@ -218,8 +222,11 @@ describe('useIntegrityAccessSync', () => {
                     deviceInstallationId: 'install-1',
                 }),
             )
+            await act(async () => {
+                await vi.advanceTimersByTimeAsync(0)
+            })
 
-            await expect(wait).resolves.toBeUndefined()
+            expect(isDone).toBe(true)
         })
 
         it('does not wait once the worker reported an outage', async () => {

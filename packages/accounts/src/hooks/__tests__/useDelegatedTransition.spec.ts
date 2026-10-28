@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+// @vitest-environment jsdom
 import { act, renderHook } from '@testing-library/react'
 import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import { describe, expect, it, beforeEach, vi } from 'vitest'

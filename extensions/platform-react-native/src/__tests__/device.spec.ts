@@ -25,7 +25,6 @@ vi.mock('@perawallet/wallet-core-config', async () => {
     }
 })
 
-// Mock expo-application
 vi.mock('expo-application', () => ({
     applicationName: 'Pera Wallet',
     applicationId: 'com.algorand.android',
@@ -35,19 +34,16 @@ vi.mock('expo-application', () => ({
     getAndroidId: vi.fn(() => 'unique-android-id'),
 }))
 
-// Mock expo-device
 vi.mock('expo-device', () => ({
     osVersion: '15.0',
     modelId: 'iPhone13,2',
     modelName: 'iPhone 13',
 }))
 
-// Mock expo-localization
 vi.mock('expo-localization', () => ({
     getLocales: vi.fn(() => [{ languageTag: 'en-US', regionCode: 'US' }]),
 }))
 
-// Mock react-native Platform and NativeModules
 vi.mock('react-native', () => ({
     Platform: {
         OS: 'ios',
@@ -101,7 +97,6 @@ describe('RNDeviceInfoStorageService', () => {
         })
 
         it('returns android platform when Platform.OS is android', async () => {
-            // Import and mock Platform directly
             const { Platform } = RN
             const mockPlatform = vi.mocked(Platform)
             mockPlatform.OS = 'android'

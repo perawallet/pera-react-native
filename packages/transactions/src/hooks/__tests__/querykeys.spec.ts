@@ -12,13 +12,8 @@
 
 import { describe, test, expect, vi } from 'vitest'
 
-// This package's vitest.setup.ts mocks @perawallet/wallet-extension-platform-driver
-// but not @perawallet/wallet-extension-provider, so importing the real (unmocked)
-// chain-shared module below — needed to test against the real
-// NETWORK_PARTITIONED_QUERY_MODULES rather than a fabricated one — would otherwise
-// reach getProvider()'s real implementation and fail resolving react-native-mmkv
-// (a native module vitest can't load). Scoped to this file rather than the shared
-// setup: nothing else in this package's suite imports raw chain-shared code.
+// The setup file leaves the provider unmocked; the real chain-shared below would
+// otherwise reach getProvider() and fail to load react-native-mmkv.
 vi.mock('@perawallet/wallet-extension-provider', () => ({
     getProvider: () => ({
         keyValueStorage: {

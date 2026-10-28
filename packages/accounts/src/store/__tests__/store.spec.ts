@@ -59,7 +59,7 @@ const hardwareDetails = {
     accountIndex: 0,
 }
 
-describe('services/accounts/store', () => {
+describe('useAccountsStore', () => {
     let useAccountsStore: typeof import('../store').useAccountsStore
     let fake: FakeAccountsChain
 

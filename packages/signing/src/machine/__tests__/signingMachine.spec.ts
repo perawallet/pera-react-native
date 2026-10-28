@@ -215,20 +215,11 @@ describe('signingMachine', () => {
     })
 
     it('honors USER_REJECTED while still in validating (cancel during analyzer run)', async () => {
-        // Regression: previously USER_REJECTED was only handled in
-        // awaiting_user. A cancel pressed while the analyzer was still
-        // running was silently dropped, leaving the actor alive and the
-        // single-flight queue blocked for every subsequent request.
+        // A dropped cancel would leave the actor alive and block the single-flight queue.
         const slowMachine = signingMachine.provide({
             actors: {
                 analyzerActor: fromPromise(
-                    () =>
-                        new Promise<SignableAnalysis[]>(resolve => {
-                            // Never resolves on its own — only the
-                            // USER_REJECTED transition can move the
-                            // machine out of validating.
-                            setTimeout(() => resolve([mockAnalysis]), 60_000)
-                        }),
+                    () => new Promise<SignableAnalysis[]>(() => {}),
                 ),
                 localKeySignerActor: fromPromise(
                     async (): Promise<SigningResult[]> => [mockSigningResult],

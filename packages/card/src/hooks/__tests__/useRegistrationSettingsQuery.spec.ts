@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+// @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -20,18 +21,12 @@ const { fetchRegistrationSettings } = vi.hoisted(() => ({
 }))
 vi.mock('../../api/onboarding', () => ({ fetchRegistrationSettings }))
 
-import {
-    type ChainScope,
-    LEGACY_CHAIN_ID,
-} from '@perawallet/wallet-core-chain-contract'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useRegistrationSettingsQuery } from '../useRegistrationSettingsQuery'
 
-const SCOPES: ChainScope[] = [
-    { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
-    { chainId: 'ethereum', networkId: 'sepolia' },
-]
+const SCOPE: ChainScope = { chainId: 'ethereum', networkId: 'sepolia' }
 
-describe.each(SCOPES)('useRegistrationSettingsQuery ($chainId)', SCOPE => {
+describe('useRegistrationSettingsQuery', () => {
     let queryClient: QueryClient
 
     beforeEach(() => {
@@ -71,5 +66,8 @@ describe.each(SCOPES)('useRegistrationSettingsQuery ($chainId)', SCOPE => {
 
         await waitFor(() => expect(result.current.isLoading).toBe(false))
         expect(result.current.data?.countries[0].iso3166alpha2).toBe('GB')
+        expect(fetchRegistrationSettings).toHaveBeenCalledWith(
+            expect.objectContaining({ scope: SCOPE }),
+        )
     })
 })

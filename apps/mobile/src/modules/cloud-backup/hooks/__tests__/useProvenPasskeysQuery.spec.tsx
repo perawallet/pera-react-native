@@ -10,10 +10,12 @@
  limitations under the License
  */
 
-import React from 'react'
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import {
+    createQueryClientWrapper,
+    createTestQueryClient,
+} from '@test-utils/render'
 import { useProvenPasskeysQuery } from '../useProvenPasskeysQuery'
 
 const { listPasskeysMock, provenMock } = vi.hoisted(() => ({
@@ -28,15 +30,12 @@ vi.mock('@perawallet/wallet-core-backup', () => ({
 }))
 
 const renderWithClient = () => {
-    const client = new QueryClient({
-        defaultOptions: { queries: { retry: false } },
-    })
-    const wrapper = ({ children }: { children: React.ReactNode }) => (
-        <QueryClientProvider client={client}>{children}</QueryClientProvider>
-    )
+    const client = createTestQueryClient()
     return {
         client,
-        ...renderHook(() => useProvenPasskeysQuery(), { wrapper }),
+        ...renderHook(() => useProvenPasskeysQuery(), {
+            wrapper: createQueryClientWrapper(client),
+        }),
     }
 }
 

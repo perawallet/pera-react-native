@@ -12,7 +12,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { createQueryClientWrapper } from '@test-utils/render'
 import { Decimal } from 'decimal.js'
 import { useAssetsQuery, type PeraAsset } from '@perawallet/wallet-core-assets'
 import {
@@ -95,11 +95,7 @@ const stored = (assets: Partial<PeraAsset>[]) =>
         data: new Map(assets.map(asset => [asset.assetId!, asset])),
     } as ReturnType<typeof useAssetsQuery>)
 
-const wrapper = ({ children }: { children: React.ReactNode }) => (
-    <QueryClientProvider client={new QueryClient()}>
-        {children}
-    </QueryClientProvider>
-)
+const wrapper = createQueryClientWrapper()
 
 const renderRow = (
     { account, item }: HistorySummaryGolden,

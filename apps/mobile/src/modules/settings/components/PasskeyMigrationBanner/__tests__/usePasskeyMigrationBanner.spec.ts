@@ -10,10 +10,13 @@
  limitations under the License
  */
 
-import React from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, renderHook, waitFor } from '@testing-library/react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import type { QueryClient } from '@tanstack/react-query'
+import {
+    createQueryClientWrapper,
+    createTestQueryClient,
+} from '@test-utils/render'
 import type { Passkey } from '@perawallet/wallet-core-passkeys'
 
 const mocks = vi.hoisted(() => ({
@@ -63,15 +66,8 @@ let onRequestDelete: ReturnType<typeof vi.fn>
 let queryClient: QueryClient
 
 const createWrapper = () => {
-    queryClient = new QueryClient({
-        defaultOptions: { queries: { retry: false } },
-    })
-    return ({ children }: { children: React.ReactNode }) =>
-        React.createElement(
-            QueryClientProvider,
-            { client: queryClient },
-            children,
-        )
+    queryClient = createTestQueryClient()
+    return createQueryClientWrapper(queryClient)
 }
 
 const render = ({

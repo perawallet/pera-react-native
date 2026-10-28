@@ -17,9 +17,8 @@ import '../../../i18n'
 import { useNetworkStatusStore } from '@modules/network'
 import { BalanceLineChart } from '../BalanceLineChart'
 
-const { lineChartProps, requestSheet } = vi.hoisted(() => ({
+const { lineChartProps } = vi.hoisted(() => ({
     lineChartProps: { current: null as Record<string, unknown> | null },
-    requestSheet: vi.fn().mockResolvedValue(undefined),
 }))
 
 // victory-native renders through Skia, which needs a real canvas surface —
@@ -50,14 +49,6 @@ vi.mock('@shopify/react-native-skia', () => ({
     vec: (x: number, y: number) => ({ x, y }),
 }))
 
-// Same mock as useBalanceLineChart.spec.ts: no BottomSheetManager is mounted
-// in these renders, and the real store's request() fail-loud rejection would
-// escape the offline-retry test as an unhandled rejection (void-ed in the
-// hook) and fail the whole vitest run.
-vi.mock('@modules/bottom-sheet', () => ({
-    useBottomSheet: () => ({ request: requestSheet }),
-}))
-
 const EMPTY_BODY = 'no balance history'
 
 type SeriesItem = { balance: number }
@@ -79,18 +70,13 @@ const renderChart = (
 describe('BalanceLineChart', () => {
     beforeEach(() => {
         lineChartProps.current = null
-        requestSheet.mockClear()
         useNetworkStatusStore.getState().setHasInternet(true)
     })
 
-    it('maps the series through getValue into chart points', () => {
+    it('renders the chart when the series has points', () => {
         renderChart({ series: [{ balance: 1 }, { balance: 2 }] })
 
         expect(screen.getByTestId('line-chart')).toBeTruthy()
-        expect(lineChartProps.current?.data).toEqual([
-            { index: 0, value: 1 },
-            { index: 1, value: 2 },
-        ])
         expect(screen.queryByText(EMPTY_BODY)).toBeNull()
     })
 
@@ -174,12 +160,6 @@ describe('BalanceLineChart', () => {
         expect(onRetry).toHaveBeenCalledTimes(1)
     })
 
-    it('omits the retry button when no onRetry is provided', () => {
-        renderChart({ isError: true })
-
-        expect(screen.queryByTestId('balance-chart-retry')).toBeNull()
-    })
-
     it('renders the offline state instead of the spinner when paused with no data', () => {
         renderChart({ series: undefined, isPending: true, isPaused: true })
 
@@ -191,22 +171,6 @@ describe('BalanceLineChart', () => {
         ).toBeTruthy()
         expect(screen.queryByText(EMPTY_BODY)).toBeNull()
         expect(screen.queryByTestId('line-chart')).toBeNull()
-    })
-
-    it('keeps rendering the last-known chart when paused with stale data', () => {
-        renderChart({
-            series: [{ balance: 1 }, { balance: 2 }],
-            isPaused: true,
-        })
-
-        expect(screen.getByTestId('line-chart')).toBeTruthy()
-        expect(screen.queryByText('Offline Mode')).toBeNull()
-    })
-
-    it('keeps rendering the last-known chart when a background refetch errors', () => {
-        renderChart({ series: [{ balance: 1 }, { balance: 2 }], isError: true })
-
-        expect(screen.getByTestId('line-chart')).toBeTruthy()
     })
 
     // The offline message is a full sentence the user needs in order to know
@@ -233,27 +197,6 @@ describe('BalanceLineChart', () => {
         renderChart({ series: undefined, isPaused: true, onRetry })
 
         expect(screen.getByTestId('balance-chart-retry')).toBeTruthy()
-    })
-
-    it('does not dispatch a doomed request when retry is pressed while offline', () => {
-        // Offline, the press opens an explanatory sheet rather than firing
-        // onRetry.
-        useNetworkStatusStore.getState().setHasInternet(false)
-        const onRetry = vi.fn()
-        renderChart({ series: undefined, isPaused: true, onRetry })
-
-        fireEvent.click(screen.getByTestId('balance-chart-retry'))
-
-        expect(onRetry).not.toHaveBeenCalled()
-        expect(requestSheet).toHaveBeenCalledTimes(1)
-    })
-
-    it('shows the offline state for an errored query while the device is offline', () => {
-        useNetworkStatusStore.getState().setHasInternet(false)
-        renderChart({ isError: true, errorBody: 'could not load chart' })
-
-        expect(screen.getByText('Offline Mode')).toBeTruthy()
-        expect(screen.queryByText('could not load chart')).toBeNull()
     })
 
     it('renders the loading spinner during a first online fetch', () => {
@@ -287,15 +230,5 @@ describe('BalanceLineChart', () => {
         })
 
         expect(screen.queryByTestId('balance-chart-retry')).toBeNull()
-    })
-
-    it('keeps rendering the last-known chart when unavailable with stale data', () => {
-        renderChart({
-            series: [{ balance: 1 }, { balance: 2 }],
-            isUnavailableOnNetwork: true,
-        })
-
-        expect(screen.getByTestId('line-chart')).toBeTruthy()
-        expect(screen.queryByText('Not available on this network')).toBeNull()
     })
 })

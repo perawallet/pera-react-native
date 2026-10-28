@@ -25,6 +25,7 @@ import {
 
 // Every buffer the real pbkdf2 hands back, so a test can check it was zeroed.
 const pbkdf2Outputs = vi.hoisted((): Uint8Array[] => [])
+const pbkdf2Iterations = vi.hoisted((): number[] => [])
 
 vi.mock('crypto', async importOriginal => {
     const actual = await importOriginal<typeof import('crypto')>()
@@ -39,7 +40,8 @@ vi.mock('crypto', async importOriginal => {
                 digest,
                 callback,
             ]: Parameters<typeof actual.pbkdf2>
-        ) =>
+        ) => {
+            pbkdf2Iterations.push(iterations)
             actual.pbkdf2(
                 password,
                 salt,
@@ -50,7 +52,8 @@ vi.mock('crypto', async importOriginal => {
                     if (derivedKey) pbkdf2Outputs.push(derivedKey)
                     callback(err, derivedKey)
                 },
-            ),
+            )
+        },
     }
 })
 
@@ -67,6 +70,7 @@ describe('pinRecord', () => {
         // Same PIN twice still produces different salts, therefore different hashes.
         expect(a.salt).not.toBe(b.salt)
         expect(a.hash).not.toBe(b.hash)
+        expect(pbkdf2Iterations).toEqual([600_000, 600_000])
     }, 30_000)
 
     test('createPinRecord fills the duress slot with random bytes, flag off', async () => {

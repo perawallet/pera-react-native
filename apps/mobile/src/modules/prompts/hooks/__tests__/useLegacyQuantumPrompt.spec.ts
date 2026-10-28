@@ -11,9 +11,8 @@
  */
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
-import React from 'react'
 import { renderHook, waitFor } from '@testing-library/react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { createQueryClientWrapper } from '@test-utils/render'
 import { type WalletAccount } from '@perawallet/wallet-core-accounts'
 
 const mockUseAllAccounts = vi.fn<() => WalletAccount[]>()
@@ -64,18 +63,6 @@ const canonicalAccount = (id: string, address: string): WalletAccount => ({
     chains: { algorand: { address, keyPairId: `${id}-quantum-pqk1` } },
 })
 
-const buildWrapper = () => {
-    const queryClient = new QueryClient({
-        defaultOptions: { queries: { retry: false } },
-    })
-    return ({ children }: { children: React.ReactNode }) =>
-        React.createElement(
-            QueryClientProvider,
-            { client: queryClient },
-            children,
-        )
-}
-
 describe('useLegacyQuantumPrompt', () => {
     beforeEach(() => {
         mockUseAllAccounts.mockReset()
@@ -87,7 +74,7 @@ describe('useLegacyQuantumPrompt', () => {
         mockUseAllAccounts.mockReturnValue([])
 
         const { result } = renderHook(() => useLegacyQuantumPrompt(), {
-            wrapper: buildWrapper(),
+            wrapper: createQueryClientWrapper(),
         })
 
         expect(result.current.isDue).toBe(false)
@@ -102,7 +89,7 @@ describe('useLegacyQuantumPrompt', () => {
         })
 
         const { result } = renderHook(() => useLegacyQuantumPrompt(), {
-            wrapper: buildWrapper(),
+            wrapper: createQueryClientWrapper(),
         })
 
         expect(result.current.isDue).toBe(false)
@@ -118,7 +105,7 @@ describe('useLegacyQuantumPrompt', () => {
         mockFetchRekeyedAddresses.mockResolvedValue([])
 
         const { result } = renderHook(() => useLegacyQuantumPrompt(), {
-            wrapper: buildWrapper(),
+            wrapper: createQueryClientWrapper(),
         })
 
         expect(result.current.isDue).toBe(true)
@@ -136,7 +123,7 @@ describe('useLegacyQuantumPrompt', () => {
         mockFetchRekeyedAddresses.mockResolvedValue([])
 
         const { result } = renderHook(() => useLegacyQuantumPrompt(), {
-            wrapper: buildWrapper(),
+            wrapper: createQueryClientWrapper(),
         })
 
         expect(result.current.isDue).toBe(true)
@@ -155,7 +142,7 @@ describe('useLegacyQuantumPrompt', () => {
         mockFetchRekeyedAddresses.mockResolvedValue([])
 
         const { result } = renderHook(() => useLegacyQuantumPrompt(), {
-            wrapper: buildWrapper(),
+            wrapper: createQueryClientWrapper(),
         })
 
         await waitFor(() =>
@@ -178,7 +165,7 @@ describe('useLegacyQuantumPrompt', () => {
         )
 
         const { result } = renderHook(() => useLegacyQuantumPrompt(), {
-            wrapper: buildWrapper(),
+            wrapper: createQueryClientWrapper(),
         })
 
         await waitFor(() =>
@@ -203,7 +190,7 @@ describe('useLegacyQuantumPrompt', () => {
         )
 
         const { result } = renderHook(() => useLegacyQuantumPrompt(), {
-            wrapper: buildWrapper(),
+            wrapper: createQueryClientWrapper(),
         })
 
         await waitFor(() =>
@@ -221,7 +208,7 @@ describe('useLegacyQuantumPrompt', () => {
         mockFetchRekeyedAddresses.mockReturnValue(new Promise(() => {}))
 
         const { result } = renderHook(() => useLegacyQuantumPrompt(), {
-            wrapper: buildWrapper(),
+            wrapper: createQueryClientWrapper(),
         })
 
         expect(result.current.shouldUseDependentAwareCopy).toBe(true)

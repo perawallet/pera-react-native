@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+// @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { act, renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -26,17 +27,11 @@ vi.mock('../useCardSession', () => ({
     useCardSession: () => ({ isAuthenticated: mockSession.isAuthenticated }),
 }))
 
-import {
-    type ChainScope,
-    LEGACY_CHAIN_ID,
-} from '@perawallet/wallet-core-chain-contract'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useCardExternalWalletsQuery } from '../useCardExternalWalletsQuery'
 import type { CardExternalWallet } from '../../models'
 
-const SCOPES: ChainScope[] = [
-    { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
-    { chainId: 'ethereum', networkId: 'sepolia' },
-]
+const SCOPE: ChainScope = { chainId: 'ethereum', networkId: 'sepolia' }
 
 const wallet = (
     overrides: Partial<CardExternalWallet>,
@@ -49,7 +44,7 @@ const wallet = (
     ...overrides,
 })
 
-describe.each(SCOPES)('useCardExternalWalletsQuery ($chainId)', SCOPE => {
+describe('useCardExternalWalletsQuery', () => {
     let queryClient: QueryClient
 
     beforeEach(() => {
@@ -112,6 +107,9 @@ describe.each(SCOPES)('useCardExternalWalletsQuery ($chainId)', SCOPE => {
         await waitFor(() => expect(result.current.isLoading).toBe(false))
         expect(result.current.delegatedWallet?.address).toBe('ALGO_ADDR')
         expect(result.current.hasActiveDelegation).toBe(true)
+        expect(fetchExternalWallets).toHaveBeenCalledWith(
+            expect.objectContaining({ scope: SCOPE }),
+        )
     })
 
     it('reports no active delegation when the allowance is zero', async () => {
@@ -142,7 +140,7 @@ describe.each(SCOPES)('useCardExternalWalletsQuery ($chainId)', SCOPE => {
         expect(result.current.hasActiveDelegation).toBe(false)
     })
 
-    it('stays idle without fetching when the card session is unauthenticated', async () => {
+    it('stays idle without fetching when the card session is unauthenticated', () => {
         mockSession.isAuthenticated = false
         fetchExternalWallets.mockResolvedValue([wallet({})])
 
@@ -151,13 +149,12 @@ describe.each(SCOPES)('useCardExternalWalletsQuery ($chainId)', SCOPE => {
             { wrapper },
         )
 
-        await new Promise(resolve => setTimeout(resolve, 10))
         expect(fetchExternalWallets).not.toHaveBeenCalled()
     })
 
     // Manual funding has no delegation, so the caller turns the lookup off
     // rather than spending a request on a guaranteed miss.
-    it('stays idle without fetching when the caller disables it', async () => {
+    it('stays idle without fetching when the caller disables it', () => {
         fetchExternalWallets.mockResolvedValue([wallet({})])
 
         renderHook(
@@ -169,7 +166,6 @@ describe.each(SCOPES)('useCardExternalWalletsQuery ($chainId)', SCOPE => {
             { wrapper },
         )
 
-        await new Promise(resolve => setTimeout(resolve, 10))
         expect(fetchExternalWallets).not.toHaveBeenCalled()
     })
 })

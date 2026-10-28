@@ -260,7 +260,7 @@ describe('algorandAuthority.canSignProgram', () => {
     })
 })
 
-describe('services/accounts/utils - isEligibleRekeyTarget', () => {
+describe('algorandAuthority.isEligibleTarget - standard', () => {
     const src = source('SRC')
 
     test('rejects target equal to source', () => {
@@ -321,7 +321,7 @@ describe('services/accounts/utils - isEligibleRekeyTarget', () => {
     })
 })
 
-describe('services/accounts/utils - isEligibleQuantumRekeyTarget', () => {
+describe('algorandAuthority.isEligibleTarget - quantum', () => {
     const src = source('SRC')
 
     test('accepts a quantum target when quantum targets are enabled (rekey-in migration path)', () => {
@@ -393,7 +393,7 @@ describe('services/accounts/utils - isEligibleQuantumRekeyTarget', () => {
     })
 })
 
-describe('services/accounts/utils - isEligibleLedgerRekeyTarget', () => {
+describe('algorandAuthority.isEligibleTarget - hardware', () => {
     const src = source('SRC')
 
     test('rejects non-hardware targets', () => {
@@ -432,7 +432,7 @@ describe('services/accounts/utils - isEligibleLedgerRekeyTarget', () => {
     })
 })
 
-describe('services/accounts/utils - isEligibleSharedRekeyTarget', () => {
+describe('algorandAuthority.isEligibleTarget - shared', () => {
     const src = source('SRC')
 
     test('rejects non-multisig targets', () => {
@@ -516,7 +516,7 @@ describe('services/accounts/utils - isEligibleSharedRekeyTarget', () => {
     })
 })
 
-describe('services/accounts/utils - getAccountsRekeyedTo', () => {
+describe('algorandAuthority.accountsDelegatedTo', () => {
     test('returns the accounts whose active-network auth-addr is the address', () => {
         const target = quantum({ address: 'PQ' })
         const rekeyed = algo25({ address: 'A' })

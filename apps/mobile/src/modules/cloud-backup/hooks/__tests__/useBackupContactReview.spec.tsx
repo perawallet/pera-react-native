@@ -10,10 +10,9 @@
  limitations under the License
  */
 
-import React from 'react'
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act, waitFor } from '@testing-library/react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { createQueryClientWrapper } from '@test-utils/render'
 import { useBackupContactReview } from '../useBackupContactReview'
 
 const {
@@ -113,19 +112,10 @@ vi.mock('@hooks/useErrorToast', () => ({
 
 vi.mock('@hooks/useLanguage')
 
-const createWrapper = () => {
-    const queryClient = new QueryClient({
-        defaultOptions: { mutations: { retry: false } },
-    })
-    return ({ children }: { children: React.ReactNode }) => (
-        <QueryClientProvider client={queryClient}>
-            {children}
-        </QueryClientProvider>
-    )
-}
-
 const renderReview = () =>
-    renderHook(() => useBackupContactReview(), { wrapper: createWrapper() })
+    renderHook(() => useBackupContactReview(), {
+        wrapper: createQueryClientWrapper(),
+    })
 
 beforeEach(() => {
     vi.clearAllMocks()

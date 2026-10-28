@@ -50,7 +50,7 @@ const LONG_ADDRESS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 const named = (address: string, name?: string): WalletAccount =>
     testAccount('hd', address, name === undefined ? {} : { name })
 
-describe('services/accounts/utils - getAccountDisplayName', () => {
+describe('utils - getAccountDisplayName', () => {
     test('returns the account name when present', () => {
         expect(
             getAccountDisplayName(named(LONG_ADDRESS, 'Named'), FAKE_CHAIN_ID),
@@ -126,7 +126,7 @@ describe('services/accounts/utils - getAccountDisplayName', () => {
     })
 })
 
-describe('services/accounts/utils - isNamedAfterAddress', () => {
+describe('utils - isNamedAfterAddress', () => {
     test.each([
         ['the full address', LONG_ADDRESS],
         ['a legacy 6+6 truncation', 'ABCDEF...UVWXYZ'],
@@ -161,7 +161,7 @@ describe('services/accounts/utils - isNamedAfterAddress', () => {
     })
 })
 
-describe('services/accounts/utils - custody guards', () => {
+describe('utils - custody guards', () => {
     const guards: Record<
         'hardware' | 'multisig' | 'watch',
         (account: WalletAccount) => boolean
@@ -201,7 +201,7 @@ describe('services/accounts/utils - custody guards', () => {
     })
 })
 
-describe('services/accounts/utils - signing capability', () => {
+describe('utils - signing capability', () => {
     test.each([
         ['local', true, true, true],
         ['hd', true, true, true],
@@ -236,7 +236,7 @@ describe('services/accounts/utils - signing capability', () => {
     })
 })
 
-describe('services/accounts/utils - authority wrappers', () => {
+describe('utils - authority wrappers', () => {
     const account = testAccount('local', 'A')
 
     beforeEach(() => {
@@ -299,7 +299,7 @@ describe('services/accounts/utils - authority wrappers', () => {
     })
 })
 
-describe('services/accounts/utils - address lookups', () => {
+describe('utils - address lookups', () => {
     const onFake = testAccount('watch', 'SHARED')
     const onOther = buildTestAccount(TEST_CUSTODY.watch, {
         [OTHER_CHAIN_ID]: { address: 'SHARED' },

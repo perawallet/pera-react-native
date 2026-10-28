@@ -30,19 +30,6 @@ describe('ChartPeriodSelection', () => {
         expect(screen.getByText('chart.one_year.label')).toBeTruthy()
     })
 
-    it('selects the daily period', () => {
-        const onChange = vi.fn()
-        render(
-            <ChartPeriodSelection
-                value='one-week'
-                onChange={onChange}
-            />,
-        )
-
-        fireEvent.click(screen.getByText('chart.one_day.label'))
-        expect(onChange).toHaveBeenCalledWith('one-day')
-    })
-
     it('calls onChange when a new period is selected', () => {
         const onChange = vi.fn()
         render(

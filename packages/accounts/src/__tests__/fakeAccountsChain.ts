@@ -23,7 +23,7 @@ import {
     type KeyDerivation,
     i18nKey,
 } from '@perawallet/wallet-core-chain-contract'
-import { SeedScheme } from '@perawallet/wallet-core-kms'
+import { SeedScheme } from '@perawallet/wallet-core-kms/constants'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import {
     accountKindId,

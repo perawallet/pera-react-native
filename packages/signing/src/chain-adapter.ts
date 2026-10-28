@@ -56,6 +56,7 @@ import type {
     UnsignedTransactionsSignableData,
 } from './pipeline/types'
 import type { PendingWalletConnectHandoff } from './pipeline/walletConnectHandoffs'
+import type { MessageSignerChainAdapter } from './message-signer'
 import { chainIdOfSignRequest } from './models/chain'
 
 export type RequestStructure = 'single' | 'list'
@@ -937,6 +938,9 @@ export interface LocalKeySignerChainAdapter {
 
 export const localKeySignerChainAdapters =
     createChainAdapterRegistry<LocalKeySignerChainAdapter>('local-key signer')
+
+export const messageSignerChainAdapters =
+    createChainAdapterRegistry<MessageSignerChainAdapter>('message signer')
 
 export const localKeySignerAdapterFor = (
     scope: ChainScope,

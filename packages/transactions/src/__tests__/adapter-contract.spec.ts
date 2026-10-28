@@ -30,18 +30,23 @@ const adapter: SendFlowChainAdapter = {
     },
 }
 
-sendFlowContractTests(() => adapter, {
-    inboxSend: {
-        scope: { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const,
-        sender: 'SENDER',
-        receiver: 'RECEIVER',
-        assetId: 1n,
-        amount: 1n,
-        quote: toAssetInboxQuote({ fee: 1 }),
-        senderMinFee: 1000n,
-    },
+describe('an adapter with an asset inbox', () => {
+    sendFlowContractTests(() => adapter, {
+        inboxSend: {
+            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const,
+            sender: 'SENDER',
+            receiver: 'RECEIVER',
+            assetId: 1n,
+            amount: 1n,
+            quote: toAssetInboxQuote({ fee: 1 }),
+            senderMinFee: 1000n,
+        },
+    })
 })
-sendFlowContractTests(
-    () => ({ chainId: 'algorand', buildTransferTxs: async () => [] }),
-    {},
-)
+
+describe('a transfer-only adapter', () => {
+    sendFlowContractTests(
+        () => ({ chainId: 'algorand', buildTransferTxs: async () => [] }),
+        {},
+    )
+})

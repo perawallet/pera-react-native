@@ -12,8 +12,6 @@
 
 // @vitest-environment node
 
-// @vitest-environment node
-
 import { describe, it, expect } from 'vitest'
 import { Decimal } from 'decimal.js'
 import { resolvePrecision } from '../precision'

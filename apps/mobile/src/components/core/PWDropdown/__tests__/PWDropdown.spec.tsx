@@ -16,6 +16,16 @@ import { PWDropdown } from '../PWDropdown'
 import { PWText } from '@components/core/PWText'
 import { LockOverlayProvider } from '@hooks/useIsLockOverlayVisible'
 
+const lockOverlayItems = [{ label: 'Item 1', onPress: vi.fn() }]
+
+const renderWithLockOverlay = (isLockOverlayVisible: boolean) => (
+    <LockOverlayProvider value={isLockOverlayVisible}>
+        <PWDropdown items={lockOverlayItems}>
+            <PWText>Trigger</PWText>
+        </PWDropdown>
+    </LockOverlayProvider>
+)
+
 describe('PWDropdown', () => {
     it('renders trigger and shows items on press', () => {
         const onPressItem = vi.fn()
@@ -30,22 +40,10 @@ describe('PWDropdown', () => {
             </PWDropdown>,
         )
 
-        // Find trigger
-        const trigger = screen.getByText('Trigger')
-        expect(trigger).toBeTruthy()
-
-        // Press trigger to open dropdown
-        fireEvent.click(trigger)
-
-        // Check if modal/items are visible
-        // Note: React Native Modal might be tricky to test with basic render,
-        // but typically RNTL can access modal content if not verifying visibility solely by implementation.
-        // Or we assume it renders.
-        // Since we use RN Modal, we might need to mock it or check if screens contains the text.
+        fireEvent.click(screen.getByText('Trigger'))
 
         expect(screen.getByText('Item 1')).toBeTruthy()
 
-        // Press item
         fireEvent.click(screen.getByText('Item 1'))
 
         expect(onPressItem).toHaveBeenCalled()
@@ -69,15 +67,6 @@ describe('PWDropdown', () => {
     })
 
     it('closes an open menu when the lock overlay goes up', () => {
-        const items = [{ label: 'Item 1', onPress: vi.fn() }]
-        const renderWithLockOverlay = (isLockOverlayVisible: boolean) => (
-            <LockOverlayProvider value={isLockOverlayVisible}>
-                <PWDropdown items={items}>
-                    <PWText>Trigger</PWText>
-                </PWDropdown>
-            </LockOverlayProvider>
-        )
-
         const { rerender } = render(renderWithLockOverlay(false))
         fireEvent.click(screen.getByText('Trigger'))
         expect(screen.getByText('Item 1')).toBeTruthy()
@@ -88,15 +77,6 @@ describe('PWDropdown', () => {
     })
 
     it('does not reopen the menu once the lock overlay clears', () => {
-        const items = [{ label: 'Item 1', onPress: vi.fn() }]
-        const renderWithLockOverlay = (isLockOverlayVisible: boolean) => (
-            <LockOverlayProvider value={isLockOverlayVisible}>
-                <PWDropdown items={items}>
-                    <PWText>Trigger</PWText>
-                </PWDropdown>
-            </LockOverlayProvider>
-        )
-
         const { rerender } = render(renderWithLockOverlay(false))
         fireEvent.click(screen.getByText('Trigger'))
         rerender(renderWithLockOverlay(true))

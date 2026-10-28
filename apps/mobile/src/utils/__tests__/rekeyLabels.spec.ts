@@ -12,8 +12,6 @@
 
 // @vitest-environment node
 
-// @vitest-environment node
-
 import { beforeEach, describe, it, expect, vi } from 'vitest'
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({

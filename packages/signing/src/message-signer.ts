@@ -10,21 +10,24 @@
  limitations under the License
  */
 
-import {
-    createChainAdapterRegistry,
-    type ChainId,
-    type ChainScope,
-    type MessageRequest,
-    type MessageSummary,
-    type Signature,
-    type SignedMessage,
-    type SigningRequest,
+import type {
+    ChainId,
+    ChainScope,
+    MessageRequest,
+    MessageSummary,
+    Signature,
+    SignedMessage,
+    SigningRequest,
 } from '@perawallet/wallet-core-chain-contract'
 import {
     chainAccountOf,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import type { LocalKeySigningDeps, WithChain } from './chain-adapter'
+import {
+    messageSignerChainAdapters,
+    type LocalKeySigningDeps,
+    type WithChain,
+} from './chain-adapter'
 import { CannotSignError } from './pipeline/errors'
 import type {
     AuthData,
@@ -170,8 +173,7 @@ export interface MessageSignerChainAdapter {
     authData?: AuthDataSigner
 }
 
-export const messageSignerChainAdapters =
-    createChainAdapterRegistry<MessageSignerChainAdapter>('message signer')
+export { messageSignerChainAdapters }
 
 /** False on a chain with no message signer: it signs nothing. */
 export const canSignMessage = (

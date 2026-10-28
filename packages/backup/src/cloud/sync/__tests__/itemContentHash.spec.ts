@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-// @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import { accountItemKey, passkeyItemKey } from '../../models'
 import { itemContentHash } from '../itemContentHash'

@@ -105,6 +105,7 @@ const fixtures = (responses: EvmRpcFixtures['responses'] = {}) => [
 const server = setupServer()
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
 afterEach(() => {
+    vi.useRealTimers()
     server.resetHandlers()
     server.events.removeAllListeners()
 })
@@ -169,9 +170,13 @@ describe('fetchAccountState batching', () => {
             )
         })
 
+        // Only the window's timer is faked; msw and viem need the real ones.
+        vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
         const first = ops.fetchAccountState(ACCOUNTS[0]!, SCOPE, HINT)
-        await new Promise(resolve => setTimeout(resolve, 5))
+        await vi.advanceTimersByTimeAsync(5)
         const second = ops.fetchAccountState(ACCOUNTS[1]!, SCOPE, HINT)
+        await vi.advanceTimersByTimeAsync(20)
+        vi.useRealTimers()
         await Promise.all([first, second])
 
         expect(blockReads.reduce((sum, n) => sum + n, 0)).toBe(1)

@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-// @vitest-environment node
 import { beforeEach, describe, expect, it } from 'vitest'
 import { type WalletAccount } from '@perawallet/wallet-core-accounts'
 import { registerAlgorandAccountsAdapter } from '../../../__tests__/backupChainFixtures'

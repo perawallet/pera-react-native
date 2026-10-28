@@ -15,8 +15,7 @@ import {
     ICloudUnavailableError,
     NoBackupCredentialsError,
 } from '@perawallet/wallet-core-backup'
-import { createElement, type ReactNode } from 'react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { createQueryClientWrapper } from '@test-utils/render'
 import { renderHook, waitFor } from '@testing-library/react'
 import { useSaveCredentialsFile } from '../useSaveCredentialsFile'
 
@@ -64,19 +63,10 @@ beforeEach(() => {
     saveCredentialsFile.mockResolvedValue('saved')
 })
 
-const renderSaveHook = () => {
-    const queryClient = new QueryClient({
-        defaultOptions: { mutations: { retry: false } },
+const renderSaveHook = () =>
+    renderHook(() => useSaveCredentialsFile(), {
+        wrapper: createQueryClientWrapper(),
     })
-    return renderHook(() => useSaveCredentialsFile(), {
-        wrapper: ({ children }: { children: ReactNode }) =>
-            createElement(
-                QueryClientProvider,
-                { client: queryClient },
-                children,
-            ),
-    })
-}
 
 const save = async (destination: 'device' | 'icloud' | 'googleDrive') => {
     const { result } = renderSaveHook()

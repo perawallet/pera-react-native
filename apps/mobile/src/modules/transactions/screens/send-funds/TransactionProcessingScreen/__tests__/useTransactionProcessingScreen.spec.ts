@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { renderHook } from '@test-utils/render'
+import { act, renderHook, waitFor } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { Decimal } from 'decimal.js'
 import {
@@ -28,6 +28,9 @@ import {
     useAllAccounts,
     useSelectedAccount,
 } from '@perawallet/wallet-core-accounts'
+import { useAssetsQuery } from '@perawallet/wallet-core-assets'
+import { BackHandler } from 'react-native'
+import { AnalyticsMetadataKey, TransactionsEvent } from '@analytics'
 
 const mockGoBack = vi.fn()
 const mockReplace = vi.fn()
@@ -54,18 +57,31 @@ const {
     mockRegisterTabResume,
     mockClearTabResume,
     mockCompleteTabResume,
+    mockTrackEvent,
     sendFundsState,
+    sendScope,
 } = vi.hoisted(() => ({
     mockExecute: vi.fn(),
     mockOnFinished: vi.fn(),
     mockRegisterTabResume: vi.fn(),
     mockClearTabResume: vi.fn(),
     mockCompleteTabResume: vi.fn(),
+    mockTrackEvent: vi.fn(),
     sendFundsState: {
+        selectedAssetId: '0' as string | undefined,
         amount: undefined as unknown,
+        destination: 'dest-address' as string | undefined,
         note: undefined as string | undefined,
+        sendMode: 'normal' as string,
+        assetInboxQuote: undefined as unknown,
         isCloseAccount: false,
     },
+    sendScope: { chainId: 'algorand', networkId: 'mainnet' },
+}))
+
+vi.mock('@analytics', async () => ({
+    ...(await vi.importActual<object>('@analytics')),
+    trackEvent: mockTrackEvent,
 }))
 
 vi.mock('@utils/tabResumeIntent', () => ({
@@ -109,6 +125,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
             custody: { kind: 'local', seed: null },
         })),
         useAllAccounts: vi.fn(() => []),
+        accountKindIdOf: vi.fn(() => 'standalone'),
         useAccountBalancesInvalidator: vi.fn(() => ({ invalidate: vi.fn() })),
         useAccountAssetBalanceQuery: vi.fn(() => ({ data: null })),
     }
@@ -124,17 +141,8 @@ vi.mock('@perawallet/wallet-core-assets', async importOriginal => {
 })
 
 vi.mock('@modules/transactions/hooks', () => ({
-    useSendScope: () => ({ chainId: 'algorand', networkId: 'mainnet' }),
-    useSendFunds: () => ({
-        selectedAssetId: '0',
-        amount: sendFundsState.amount,
-        destination: 'dest-address',
-        note: sendFundsState.note,
-        sendMode: 'normal' as const,
-        assetInboxQuote: undefined,
-        isCloseAccount: sendFundsState.isCloseAccount,
-        onFinished: mockOnFinished,
-    }),
+    useSendScope: () => sendScope,
+    useSendFunds: () => ({ ...sendFundsState, onFinished: mockOnFinished }),
 }))
 
 vi.mock('@components/core', () => ({
@@ -160,6 +168,14 @@ vi.mock('react-native', () => ({
         addEventListener: vi.fn(() => ({ remove: vi.fn() })),
     },
 }))
+
+const defaultSender = {
+    chains: { algorand: { address: 'test-address' } },
+    name: 'Test',
+    custody: { kind: 'local', seed: null },
+}
+
+const testAsset = { id: '123', name: 'Test Asset' }
 
 const fakeRequest = (id: string = 'req-1') =>
     ({ id, type: 'transactions' }) as never
@@ -191,9 +207,20 @@ describe('useTransactionProcessingScreen', () => {
         useAccountChainStateStore.getState().resetState()
         vi.clearAllMocks()
         signingEventBus.__resetForTests()
-        sendFundsState.amount = undefined
-        sendFundsState.note = undefined
-        sendFundsState.isCloseAccount = false
+        Object.assign(sendFundsState, {
+            selectedAssetId: '0',
+            amount: undefined,
+            destination: 'dest-address',
+            note: undefined,
+            sendMode: 'normal',
+            assetInboxQuote: undefined,
+            isCloseAccount: false,
+        })
+        Object.assign(sendScope, { chainId: 'algorand', networkId: 'mainnet' })
+        vi.mocked(useSelectedAccount).mockReturnValue(defaultSender as never)
+        vi.mocked(useAllAccounts).mockReturnValue([])
+        vi.mocked(useAssetsQuery).mockReturnValue({ data: new Map() } as never)
+        mockExecute.mockResolvedValue('TXID')
     })
 
     it('registers the send to resume in a tab while it signs, and clears it once settled', async () => {
@@ -211,19 +238,19 @@ describe('useTransactionProcessingScreen', () => {
             amount: '1.25',
             note: 'rent',
         })
-        await new Promise(resolve => setTimeout(resolve, 0))
-        expect(mockClearTabResume).toHaveBeenCalledOnce()
+        await waitFor(() => expect(mockClearTabResume).toHaveBeenCalledOnce())
     })
 
     it('hands a sent transaction back to the popup with its success copy', async () => {
         mockExecute.mockResolvedValueOnce('TXID')
 
         renderHook(() => useTransactionProcessingScreen())
-        await new Promise(resolve => setTimeout(resolve, 0))
 
-        expect(mockReplace).toHaveBeenCalledWith('TransactionSuccess', {
-            transactionId: 'TXID',
-        })
+        await waitFor(() =>
+            expect(mockReplace).toHaveBeenCalledWith('TransactionSuccess', {
+                transactionId: 'TXID',
+            }),
+        )
         expect(mockCompleteTabResume).toHaveBeenCalledWith({
             title: 'send_funds.success.title',
             body: 'send_funds.success.subtitle',
@@ -245,10 +272,7 @@ describe('useTransactionProcessingScreen', () => {
 
         renderHook(() => useTransactionProcessingScreen())
 
-        // Allow microtasks to flush
-        await new Promise(resolve => setTimeout(resolve, 0))
-
-        expect(mockGoBack).toHaveBeenCalled()
+        await waitFor(() => expect(mockGoBack).toHaveBeenCalled())
         expect(mockShowToast).not.toHaveBeenCalledWith(
             expect.objectContaining({ type: 'error' }),
         )
@@ -259,13 +283,11 @@ describe('useTransactionProcessingScreen', () => {
 
         renderHook(() => useTransactionProcessingScreen())
 
-        await new Promise(resolve => setTimeout(resolve, 0))
-
+        await waitFor(() => expect(mockGoBack).toHaveBeenCalled())
         expect(mockShowToast).toHaveBeenCalledWith(
             expect.objectContaining({ type: 'error' }),
             expect.anything(),
         )
-        expect(mockGoBack).toHaveBeenCalled()
     })
 
     it('exits the send-funds flow via onFinished when a `proposed` transport-result event is published', () => {
@@ -368,5 +390,129 @@ describe('useTransactionProcessingScreen', () => {
         expect(result.current.isHardwareSender).toBe(false)
         expect(result.current.hardwareDeviceName).toBeNull()
         expect(result.current.ledgerAppName).toBeNull()
+    })
+    it('passes the send form to the send flow', () => {
+        Object.assign(sendFundsState, {
+            selectedAssetId: '123',
+            amount: new Decimal(5),
+            destination: 'DEST_ADDRESS',
+            note: 'Test note',
+        })
+        vi.mocked(useAssetsQuery).mockReturnValue({
+            data: new Map([['123', testAsset]]),
+        } as never)
+
+        renderHook(() => useTransactionProcessingScreen())
+
+        expect(mockExecute).toHaveBeenCalledWith({
+            params: expect.objectContaining({
+                sendMode: 'normal',
+                sender: defaultSender,
+                receiver: 'DEST_ADDRESS',
+                asset: testAsset,
+                amount: new Decimal(5),
+                note: 'Test note',
+                isCloseAccount: false,
+                assetInboxQuote: undefined,
+            }),
+        })
+    })
+
+    // The mount-only submit effect is the whole reason this hook uses an empty
+    // dependency array — a re-run is a duplicate send.
+    it('submits exactly once across re-renders (regression)', async () => {
+        const { rerender } = renderHook(() => useTransactionProcessingScreen())
+        await act(async () => {
+            rerender()
+        })
+
+        expect(mockExecute).toHaveBeenCalledTimes(1)
+    })
+
+    it('calls execute even when data is missing (delegates validation)', () => {
+        vi.mocked(useSelectedAccount).mockReturnValue(null as never)
+        Object.assign(sendFundsState, {
+            selectedAssetId: undefined,
+            destination: undefined,
+        })
+
+        renderHook(() => useTransactionProcessingScreen())
+
+        expect(mockExecute).toHaveBeenCalledWith({
+            params: expect.objectContaining({
+                sendMode: 'normal',
+                sender: null,
+                receiver: undefined,
+                asset: undefined,
+                amount: undefined,
+            }),
+        })
+    })
+
+    it('carries the inbox quote into an asset inbox send', () => {
+        const assetInboxQuote = { opaque: true }
+        Object.assign(sendFundsState, {
+            sendMode: 'sendAssetInbox',
+            assetInboxQuote,
+        })
+
+        renderHook(() => useTransactionProcessingScreen())
+
+        expect(mockExecute).toHaveBeenCalledWith({
+            params: expect.objectContaining({
+                sendMode: 'sendAssetInbox',
+                assetInboxQuote,
+            }),
+        })
+    })
+
+    it("reports the sender's account kind with the completed send", async () => {
+        Object.assign(sendFundsState, {
+            selectedAssetId: '123',
+            amount: new Decimal(5),
+        })
+
+        renderHook(() => useTransactionProcessingScreen())
+
+        await waitFor(() =>
+            expect(mockTrackEvent).toHaveBeenCalledWith(
+                TransactionsEvent.Complete,
+                {
+                    [AnalyticsMetadataKey.AssetId]: '123',
+                    [AnalyticsMetadataKey.Amount]: 5,
+                    [AnalyticsMetadataKey.TransactionId]: 'TXID',
+                    [AnalyticsMetadataKey.AccountType]: 'standalone',
+                    [AnalyticsMetadataKey.ChainId]: 'algorand',
+                },
+            ),
+        )
+    })
+
+    it('reports a non-Algorand send scope chain with the completed send', async () => {
+        sendScope.chainId = 'ethereum'
+        vi.mocked(useSelectedAccount).mockReturnValue({
+            ...defaultSender,
+            chains: { ethereum: { address: '0xTEST' } },
+        } as never)
+
+        renderHook(() => useTransactionProcessingScreen())
+
+        await waitFor(() =>
+            expect(mockTrackEvent).toHaveBeenCalledWith(
+                TransactionsEvent.Complete,
+                expect.objectContaining({
+                    [AnalyticsMetadataKey.ChainId]: 'ethereum',
+                }),
+            ),
+        )
+    })
+
+    it('swallows the hardware back press while sending', () => {
+        renderHook(() => useTransactionProcessingScreen())
+
+        expect(BackHandler.addEventListener).toHaveBeenCalledWith(
+            'hardwareBackPress',
+            expect.any(Function),
+        )
     })
 })
