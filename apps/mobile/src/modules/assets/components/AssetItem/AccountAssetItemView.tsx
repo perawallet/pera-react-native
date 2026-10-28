@@ -117,7 +117,7 @@ export const AccountAssetItemView = ({
     }
 
     if (!asset) {
-        return <AssetRowSkeleton />
+        return <AssetRowSkeleton style={rest.style} />
     }
 
     const balance = (

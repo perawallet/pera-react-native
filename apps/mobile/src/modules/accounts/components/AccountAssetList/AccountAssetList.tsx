@@ -15,10 +15,7 @@ import React, { useCallback } from 'react'
 import type { RefreshControlProps } from 'react-native'
 import { useStyles } from './styles'
 
-import type {
-    AccountHoldingsLiteRow,
-    WalletAccount,
-} from '@perawallet/wallet-core-accounts'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { findNativeAsset } from '@perawallet/wallet-core-assets'
 
 import { EmptyView } from '@components/EmptyView'
@@ -28,13 +25,15 @@ import {
     AssetGroupRow,
     AssetRowSkeleton,
     groupedHoldingItemKey,
-    type GroupedHoldingItem,
 } from '@modules/assets'
 import { useLanguage } from '@hooks/useLanguage'
 import { SwipeableAssetItem } from './SwipeableAssetItem'
 import { BackupReminderBanner } from '../BackupReminderBanner'
 import { LegacyQuantumNotice } from '../LegacyQuantumNotice'
-import { useAccountAssetList } from './useAccountAssetList'
+import {
+    useAccountAssetList,
+    type AccountAssetListItem,
+} from './useAccountAssetList'
 
 export type AccountAssetListProps = {
     account: WalletAccount
@@ -62,7 +61,6 @@ export const AccountAssetList = ({
         setSelectedChainId,
         toggleGroupExpanded,
         convertFiat,
-        isPending,
         isReadOnly,
         canManageAssets,
         listRef,
@@ -76,7 +74,10 @@ export const AccountAssetList = ({
     } = useAccountAssetList({ account, t })
 
     const renderItem = useCallback(
-        ({ item }: { item: AssetListItem }) => {
+        ({ item }: { item: AccountAssetListItem }) => {
+            if (item.kind === 'skeleton') {
+                return <AssetRowSkeleton style={styles.rowItem} />
+            }
             if (item.kind === 'group') {
                 return (
                     <AssetGroupRow
@@ -85,7 +86,7 @@ export const AccountAssetList = ({
                         onToggleExpanded={() =>
                             toggleGroupExpanded(item.group.id)
                         }
-                        style={styles.groupItem}
+                        style={styles.rowItem}
                     />
                 )
             }
@@ -107,7 +108,7 @@ export const AccountAssetList = ({
                 />
             )
         },
-        [renderItemProps, convertFiat, toggleGroupExpanded, styles.groupItem],
+        [renderItemProps, convertFiat, toggleGroupExpanded, styles.rowItem],
     )
 
     const chainFilter =
@@ -180,7 +181,7 @@ export const AccountAssetList = ({
                 getItemType={assetListItemType}
                 scrollEnabled={scrollEnabled}
                 refreshControl={refreshControl}
-                keyExtractor={groupedHoldingItemKey}
+                keyExtractor={accountAssetListItemKey}
                 // Same anchoring hazard as the NFT gallery: FlashList
                 // v2 re-anchors on the previously-first-visible row after every
                 // data change, and a re-sort moves every row, so the anchor drags
@@ -200,9 +201,7 @@ export const AccountAssetList = ({
                 onSearchChange={setSearchFilter}
                 searchAccessory={chainFilter}
                 ListEmptyComponent={
-                    isChainSwitchedOff ? null : isPending ? (
-                        <AssetRowSkeleton count={8} />
-                    ) : (
+                    isChainSwitchedOff ? null : (
                         <EmptyView
                             title={getEmptyTitle()}
                             body={getEmptyBody()}
@@ -214,9 +213,10 @@ export const AccountAssetList = ({
     )
 }
 
-type AssetListItem = GroupedHoldingItem<AccountHoldingsLiteRow>
+const assetListItemType = (item: AccountAssetListItem) => item.kind
 
-const assetListItemType = (item: AssetListItem) => item.kind
+const accountAssetListItemKey = (item: AccountAssetListItem): string =>
+    item.kind === 'skeleton' ? item.id : groupedHoldingItemKey(item)
 
 const ItemSeparator = () => {
     const styles = useStyles()

@@ -11,13 +11,13 @@
  */
 
 import { makeStyles } from '@rneui/themed'
+import { getTypography } from '@theme/typography'
 
 export const useStyles = makeStyles(theme => ({
     container: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: theme.spacing.lg,
-        paddingVertical: theme.spacing.sm,
     },
     // Matches the loaded asset icon (AssetIcon size 'xl').
     icon: {
@@ -25,7 +25,28 @@ export const useStyles = makeStyles(theme => ({
     },
     textColumn: {
         flex: 1,
-        gap: theme.spacing.xs,
+    },
+    // Line boxes take the rendered text's line height, so the row is as tall as
+    // a loaded one at any screen width.
+    primaryLine: {
+        height: getTypography(theme, 'h4').lineHeight,
+        justifyContent: 'center',
+    },
+    secondaryLine: {
+        height: getTypography(theme, 'body').lineHeight,
+        justifyContent: 'center',
+    },
+    amountColumn: {
+        alignItems: 'flex-end',
+        marginLeft: theme.spacing.md,
+    },
+    amountBar: {
+        height: theme.spacing.md,
+        width: theme.spacing['4xl'],
+    },
+    fiatBar: {
+        height: theme.spacing.sm,
+        width: theme.spacing['3xl'],
     },
     nameBar: {
         height: theme.spacing.md,

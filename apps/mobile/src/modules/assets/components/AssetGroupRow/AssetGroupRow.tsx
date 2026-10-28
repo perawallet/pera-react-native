@@ -47,7 +47,7 @@ const AssetGroupRowBase = <T extends GroupableHolding>({
         useAssetGroupRow({ item, convertFiat })
 
     if (!icon) {
-        return <AssetRowSkeleton />
+        return <AssetRowSkeleton style={style} />
     }
 
     return (

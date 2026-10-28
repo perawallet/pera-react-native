@@ -11,49 +11,76 @@
  */
 
 import React from 'react'
+import type { StyleProp, ViewStyle } from 'react-native'
 import { PWSkeleton, PWView } from '@components/core'
 import { useStyles } from './styles'
 
 export type AssetRowSkeletonProps = {
     /** Number of skeleton rows to render. Defaults to a single row. */
     count?: number
+    /** Outer spacing, as the caller gives the loaded row. */
+    style?: StyleProp<ViewStyle>
 }
 
-const SkeletonRow = () => {
+const SkeletonRow = ({ style }: Pick<AssetRowSkeletonProps, 'style'>) => {
     const styles = useStyles()
     return (
-        <PWView style={styles.container}>
+        <PWView style={[styles.container, style]}>
             <PWSkeleton
                 circle
                 height={styles.icon.width}
                 width={styles.icon.width}
             />
             <PWView style={styles.textColumn}>
-                <PWSkeleton
-                    height={styles.nameBar.height}
-                    style={styles.nameBar}
-                />
-                <PWSkeleton
-                    height={styles.subtitleBar.height}
-                    style={styles.subtitleBar}
-                />
+                <PWView style={styles.primaryLine}>
+                    <PWSkeleton
+                        height={styles.nameBar.height}
+                        style={styles.nameBar}
+                    />
+                </PWView>
+                <PWView style={styles.secondaryLine}>
+                    <PWSkeleton
+                        height={styles.subtitleBar.height}
+                        style={styles.subtitleBar}
+                    />
+                </PWView>
+            </PWView>
+            <PWView style={styles.amountColumn}>
+                <PWView style={styles.primaryLine}>
+                    <PWSkeleton
+                        height={styles.amountBar.height}
+                        width={styles.amountBar.width}
+                    />
+                </PWView>
+                <PWView style={styles.secondaryLine}>
+                    <PWSkeleton
+                        height={styles.fiatBar.height}
+                        width={styles.fiatBar.width}
+                    />
+                </PWView>
             </PWView>
         </PWView>
     )
 }
 
 /**
- * Shared loading placeholder for an asset row (icon + name + subtitle), sized
- * to match the loaded `AssetItemView` so swapping skeleton↔content doesn't shift
- * layout. Used by the account asset list, the asset-row metadata-loading state,
- * and the swap asset selection list.
+ * Shared loading placeholder for an asset row (icon, name and subtitle, amount
+ * and fiat value), sized to match the loaded `AssetItemView` so swapping
+ * skeleton↔content doesn't shift layout. Used by the account asset list, the
+ * asset-row metadata-loading state, and the swap asset selection list.
  */
-export const AssetRowSkeleton = ({ count = 1 }: AssetRowSkeletonProps) => {
-    if (count <= 1) return <SkeletonRow />
+export const AssetRowSkeleton = ({
+    count = 1,
+    style,
+}: AssetRowSkeletonProps) => {
+    if (count <= 1) return <SkeletonRow style={style} />
     return (
         <>
             {Array.from({ length: count }, (_, i) => (
-                <SkeletonRow key={i} />
+                <SkeletonRow
+                    key={i}
+                    style={style}
+                />
             ))}
         </>
     )
