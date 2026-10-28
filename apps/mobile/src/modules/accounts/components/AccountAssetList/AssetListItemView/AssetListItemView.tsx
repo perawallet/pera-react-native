@@ -150,6 +150,7 @@ const AssetListItemViewBase = ({
     return (
         <AssetItemView
             asset={asset}
+            chainId={chainId}
             right={balance}
             subtitle={
                 isGroupMember ? <ChainLabel chainId={chainId} /> : undefined
