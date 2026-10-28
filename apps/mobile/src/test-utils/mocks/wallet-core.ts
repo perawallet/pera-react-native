@@ -42,6 +42,8 @@ vi.mock('@perawallet/wallet-core-site-safety', () => ({
     })),
     assessSiteSafety: vi.fn(async () => ({ kind: 'clear' })),
     startPhishingListRefresh: vi.fn(() => () => {}),
+    PHISHING_LIST_STORE_NAME: 'site-safety-phishing-lists-store',
+    usePhishingListStore: { persist: { rehydrate: vi.fn() } },
 }))
 
 vi.mock('@perawallet/wallet-core-walletconnect', async () => {

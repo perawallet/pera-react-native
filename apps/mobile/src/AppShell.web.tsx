@@ -65,6 +65,7 @@ import { IntegrityBanner } from '@components/IntegrityBanner'
 import { IntegrityCheckFrameHost } from '@components/IntegrityCheckFrameHost'
 import { OfflineBanner } from '@components/OfflineBanner'
 import { useNetworkStatusListener } from '@modules/network'
+import { usePhishingListRehydration } from '@modules/site-safety/web'
 import { useNetworkSwitchInvalidation } from '@hooks/useNetworkSwitchInvalidation'
 import { WEB_EXPANDED_CARD_MAX_WIDTH } from '@constants/ui'
 import { subscribeToIntegrityReady } from '@hooks/useIntegrityAccessStore.web'
@@ -316,6 +317,7 @@ const AppShellThemedRoot = (): React.JSX.Element => {
     // without it here the reachability probe never runs and onlineManager
     // keeps whatever seed initNetworkStatus left.
     useNetworkStatusListener()
+    usePhishingListRehydration()
 
     return (
         <SafeAreaProvider>
