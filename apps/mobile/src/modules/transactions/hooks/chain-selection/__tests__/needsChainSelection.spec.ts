@@ -21,9 +21,7 @@ const option = (chainId: string, isEnabled: boolean) => ({
 
 describe('needsChainSelection', () => {
     it('goes straight to the QR for a single enabled chain', () => {
-        expect(needsChainSelection([option('algorand', true)])).toBe(
-            false,
-        )
+        expect(needsChainSelection([option('algorand', true)])).toBe(false)
     })
 
     it('asks when there is more than one chain to receive on', () => {

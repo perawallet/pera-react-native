@@ -139,9 +139,7 @@ describe('Flow: Send starts on the network the user chooses', () => {
 
             fireEvent.click(screen.getByTestId('send_chain_row_algorand'))
 
-            expect(
-                await screen.findByTestId('asset-list-item-0'),
-            ).toBeTruthy()
+            expect(await screen.findByTestId('asset-list-item-0')).toBeTruthy()
             expect(
                 screen.getByTestId(
                     `asset-list-item-${USDC_TEST_ASSET.assetId}`,
@@ -202,18 +200,16 @@ describe('Flow: Send starts on the network the user chooses', () => {
             expect(receive.canSelectAccount).toBe(false)
             await waitFor(() =>
                 expect(
-                    useBottomSheetStore
-                        .getState()
-                        .requests.some(
-                            request =>
-                                (request.contents as { props?: unknown })
-                                    .props !== undefined &&
-                                (
-                                    request.contents as {
-                                        props: { chainId?: string }
-                                    }
-                                ).props.chainId === 'ethereum',
-                        ),
+                    useBottomSheetStore.getState().requests.some(
+                        request =>
+                            (request.contents as { props?: unknown }).props !==
+                                undefined &&
+                            (
+                                request.contents as {
+                                    props: { chainId?: string }
+                                }
+                            ).props.chainId === 'ethereum',
+                    ),
                 ).toBe(true),
             )
         })

@@ -67,7 +67,9 @@ export const ChainSelectionList = ({
                             />
                         )
                     }
-                    onPress={isEnabled ? () => onSelectChain(chainId) : undefined}
+                    onPress={
+                        isEnabled ? () => onSelectChain(chainId) : undefined
+                    }
                     testID={`${testIDPrefix}_row_${chainId}`}
                 />
             ))}
