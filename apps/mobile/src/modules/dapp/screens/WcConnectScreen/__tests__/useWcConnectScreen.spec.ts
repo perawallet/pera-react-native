@@ -12,7 +12,8 @@
 
 import { Linking } from 'react-native'
 import { act, renderHook } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { useSiteSafetyQuery } from '@perawallet/wallet-core-site-safety'
 
 const mocks = vi.hoisted(() => ({
     approve: vi.fn(),
@@ -331,6 +332,66 @@ describe('useWcConnectScreen', () => {
             result.current.handleConnect()
         })
         expect(mocks.approve).toHaveBeenCalledWith(['BBBB'])
+    })
+
+    describe('site safety', () => {
+        afterEach(() => {
+            vi.mocked(useSiteSafetyQuery).mockReturnValue({
+                verdict: { kind: 'clear' },
+                isChecking: false,
+            })
+        })
+
+        it('checks the claimed url and the tab that sent the request', () => {
+            render(proposalApproval({ requesterOrigin: 'https://tab.example' }))
+
+            expect(useSiteSafetyQuery).toHaveBeenLastCalledWith({
+                urls: [PEER.url, 'https://tab.example'],
+                isEnabled: true,
+            })
+        })
+
+        it('cannot connect to a blocked site, even with an account picked', () => {
+            vi.mocked(useSiteSafetyQuery).mockReturnValue({
+                verdict: {
+                    kind: 'blocked',
+                    host: 'dapp.example',
+                    reason: 'phishing-list',
+                },
+                isChecking: false,
+            })
+            const { result } = render()
+
+            act(() => {
+                result.current.toggle('BBBB')
+            })
+            act(() => {
+                result.current.handleConnect()
+            })
+
+            expect(result.current.canConnect).toBe(false)
+            expect(mocks.approve).not.toHaveBeenCalled()
+        })
+
+        it('shows suspicious for a flagged site the registry verifies', () => {
+            vi.mocked(useSiteSafetyQuery).mockReturnValue({
+                verdict: {
+                    kind: 'look-alike',
+                    host: 'dapp.example',
+                    imitates: { name: 'Uniswap', domain: 'uniswap.org' },
+                },
+                isChecking: false,
+            })
+            mocks.useProjectByUrlQuery.mockReturnValue({
+                data: { url: PEER.url, verificationTier: 'verified' },
+            })
+
+            const { result } = render(
+                proposalApproval({ requesterOrigin: 'https://dapp.example' }),
+            )
+
+            expect(result.current.verificationTier).toBe('suspicious')
+        })
     })
 
     it('never approves an empty grant even if the handler is invoked directly', () => {

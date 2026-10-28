@@ -207,6 +207,9 @@ catalogs:
     oxfmt:
       specifier: ^0.73.0
       version: 0.73.0
+    punycode:
+      specifier: ^2.3.1
+      version: 2.3.1
     react-native-mmkv:
       specifier: ^4.2.0
       version: 4.3.2
@@ -521,6 +524,9 @@ importers:
       '@perawallet/wallet-core-shared':
         specifier: workspace:*
         version: link:../../packages/shared
+      '@perawallet/wallet-core-site-safety':
+        specifier: workspace:*
+        version: link:../../packages/site-safety
       '@perawallet/wallet-core-walletconnect':
         specifier: workspace:*
         version: link:../../packages/walletconnect
@@ -744,6 +750,9 @@ importers:
       '@perawallet/wallet-core-signing':
         specifier: workspace:*
         version: link:../../packages/signing
+      '@perawallet/wallet-core-site-safety':
+        specifier: workspace:*
+        version: link:../../packages/site-safety
       '@perawallet/wallet-core-staking':
         specifier: workspace:*
         version: link:../../packages/staking
@@ -4189,6 +4198,67 @@ importers:
       vitest:
         specifier: 'catalog:'
         version: 5.0.3(@types/node@20.19.43)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@2.4.0))(msw@2.15.0(@types/node@20.19.43)(typescript@7.0.2))(vite@8.3.4(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
+
+  packages/site-safety:
+    dependencies:
+      '@babel/runtime':
+        specifier: 'catalog:'
+        version: 7.29.7
+      '@perawallet/wallet-core-database':
+        specifier: workspace:*
+        version: link:../database
+      '@perawallet/wallet-core-shared':
+        specifier: workspace:*
+        version: link:../shared
+      '@perawallet/wallet-extension-provider':
+        specifier: workspace:*
+        version: link:../../extensions/provider
+      '@tanstack/react-query':
+        specifier: 'catalog:'
+        version: 5.101.2(react@19.3.0)
+      drizzle-orm:
+        specifier: 'catalog:'
+        version: 0.45.2(@types/better-sqlite3@7.6.13)(better-sqlite3@13.0.3)(expo-sqlite@58.0.13(expo@58.0.17)(react-native@0.88.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0))
+      punycode:
+        specifier: 'catalog:'
+        version: 2.3.1
+      react:
+        specifier: 19.3.0
+        version: 19.3.0
+      zod:
+        specifier: 'catalog:'
+        version: 4.6.7
+      zustand:
+        specifier: 'catalog:'
+        version: 5.0.14(@types/react@19.3.0)(react@19.3.0)(use-sync-external-store@1.7.0(react@19.3.0))
+    devDependencies:
+      '@perawallet/wallet-core-devtools':
+        specifier: workspace:*
+        version: link:../devtools
+      '@testing-library/react':
+        specifier: 'catalog:'
+        version: 16.3.3(@testing-library/dom@10.4.2)(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      '@types/react':
+        specifier: ~19.3.0
+        version: 19.3.0
+      jsdom:
+        specifier: 'catalog:'
+        version: 30.0.1(@noble/hashes@2.4.0)
+      msw:
+        specifier: 'catalog:'
+        version: 2.15.0(@types/node@26.1.2)(typescript@7.0.2)
+      react-dom:
+        specifier: 19.3.0
+        version: 19.3.0(react@19.3.0)
+      typescript:
+        specifier: 'catalog:'
+        version: 7.0.2
+      vite:
+        specifier: 'catalog:'
+        version: 8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3)
+      vitest:
+        specifier: 'catalog:'
+        version: 5.0.3(@types/node@26.1.2)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@2.4.0))(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
 
   packages/staking:
     dependencies:
@@ -15217,7 +15287,7 @@ snapshots:
       obug: 2.2.1
       std-env: 4.3.0
       tinyrainbow: 3.2.0
-      vitest: 5.0.3(@types/node@20.19.43)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@2.4.0))(msw@2.15.0(@types/node@20.19.43)(typescript@7.0.2))(vite@8.3.4(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
+      vitest: 5.0.3(@types/node@26.1.2)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@2.4.0))(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
 
   '@vitest/istanbul-lib-coverage@1.0.2': {}
 

@@ -28,6 +28,7 @@ import {
 import { createHandlerKit } from '@perawallet/wallet-core-connections/handlerKit'
 import { generateOrderedUniqueId, logger } from '@perawallet/wallet-core-shared'
 import type {
+    Connection,
     ConnectionId,
     ConnectionPeer,
 } from '@perawallet/wallet-extension-connections'
@@ -54,13 +55,17 @@ import {
     EIP1193_SIGNING_METHODS,
 } from './eip1193Protocol'
 import {
+    acknowledgedSiteWarningOf,
     eip1193ConnectionIdOf,
     isEip1193Connection,
+    isWorseSiteWarning,
+    readSiteWarning,
     type DappAccount,
     type DappRequestContext,
     type DappRespond,
     type DappTransport,
     type Eip1193Connection,
+    type SiteWarningLevel,
 } from './models'
 import {
     DAPP_APPROVAL_TTL_MS,
@@ -78,6 +83,12 @@ export type Eip1193HandlerDeps = {
      * of the page's view without the connection being touched.
      */
     getAccounts: (chainId: ChainId) => DappAccount[]
+    /**
+     * The site-safety warning for the page's origin. A site whose warning is
+     * worse than the one accepted at approval sees no accounts and goes back
+     * through an approval, where the warning shows. Absent, every site is clear.
+     */
+    siteWarningOf?: (origin: string) => Promise<SiteWarningLevel>
     now?: () => number
     proposalTtlMs?: number
     requestTtlMs?: number
@@ -164,6 +175,15 @@ export const createEip1193ConnectionHandler = (
 
     const getConnection = (origin: string) =>
         getConnectionById(eip1193ConnectionIdOf(origin))
+
+    const hasNewSiteWarning = async (
+        connection: Connection,
+        origin: string,
+    ): Promise<boolean> =>
+        isWorseSiteWarning(
+            await readSiteWarning(deps.siteWarningOf, origin),
+            acknowledgedSiteWarningOf(connection),
+        )
 
     const scopeOf = (chainId: ChainId): ChainScope => ({
         chainId,
@@ -301,7 +321,11 @@ export const createEip1193ConnectionHandler = (
         }
 
         const existing = await getConnection(origin)
-        if (existing) {
+        const siteWarning = await readSiteWarning(deps.siteWarningOf, origin)
+        const isFlaggedReconnect =
+            existing !== undefined &&
+            isWorseSiteWarning(siteWarning, acknowledgedSiteWarningOf(existing))
+        if (existing && !isFlaggedReconnect) {
             const accounts = reportedAccounts(existing)
             if (accounts.length > 0) {
                 kit.recordActivity(existing.id)
@@ -393,7 +417,10 @@ export const createEip1193ConnectionHandler = (
                     status: 'active',
                     createdAt: existing?.createdAt ?? now(),
                     lastActiveAt: now(),
-                    metadata: { chainId: chain.scope.chainId },
+                    metadata: {
+                        chainId: chain.scope.chainId,
+                        acknowledgedSiteWarning: siteWarning,
+                    },
                     origin: { requesterOrigin: origin },
                 }
                 try {
@@ -433,6 +460,9 @@ export const createEip1193ConnectionHandler = (
                         sanitizeRejectReason(reason),
                     ),
                 )
+                // Turning a flagged site away ends the grant it already held.
+                if (existing && isFlaggedReconnect)
+                    await disconnect(existing.id)
             },
         }
         requireContext().onProposal(proposal)
@@ -939,11 +969,18 @@ export const createEip1193ConnectionHandler = (
             }
             case EIP1193_METHOD.accounts: {
                 const connection = await getConnection(ctx.origin)
+                // A site flagged since its approval sees no accounts until it
+                // is approved again.
+                const isVisible =
+                    connection !== undefined &&
+                    !(await hasNewSiteWarning(connection, ctx.origin))
                 return deliver(
                     respond,
                     jsonRpcResult(
                         request.id,
-                        connection ? reportedAccounts(connection) : [],
+                        connection && isVisible
+                            ? reportedAccounts(connection)
+                            : [],
                     ),
                 )
             }

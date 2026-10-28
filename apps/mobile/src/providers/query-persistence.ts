@@ -47,6 +47,9 @@ export const QUERY_PREFIX_POLICY: Record<string, 'persist' | 'never'> = {
     'cloud-backup': 'never',
     onramp: 'never',
     passkeys: 'never',
+    // Keyed by the hosts of the sites the user connects to; the verdict is
+    // recomputed on device from the stored lists in milliseconds.
+    'site-safety': 'never',
     swaps: 'never',
     transactions: 'never',
     // Everything else is derived from the chain or public catalogs, so a copy
