@@ -18,13 +18,10 @@ import { OfflineTolerantView } from '@components/OfflineTolerantView'
 import { AssetSearchItem } from '@modules/assets/components/AssetSearchItem'
 import { AssetSelectionList } from '@modules/assets/components'
 import type { ScopedAssetSearchResult } from '@perawallet/wallet-core-assets'
-import {
-    assetRefKey,
-    type ChainId,
-} from '@perawallet/wallet-core-chain-contract'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { AddAssetContentVariant } from '@modules/assets/components/AddAssetContent'
-import { useAddAssetView } from './useAddAssetView'
+import { resultKey, useAddAssetView } from './useAddAssetView'
 import { useStyles } from './styles'
 
 type AddAssetScreenProps = {
@@ -34,9 +31,6 @@ type AddAssetScreenProps = {
 
 // AssetSearchItem draws its own full-width separator; render no list divider.
 const NoSeparator = () => null
-
-const resultKey = ({ scope, asset }: ScopedAssetSearchResult): string =>
-    assetRefKey({ chainId: scope.chainId, assetId: asset.assetId })
 
 export const AddAssetView = ({
     variant = 'asset',

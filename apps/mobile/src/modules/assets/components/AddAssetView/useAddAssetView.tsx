@@ -88,8 +88,8 @@ type UseAddAssetViewResult = {
 }
 
 // Keyed by chain too, so an asset id added on one chain never reads as added
-// on another.
-const keyOf = ({ scope, asset }: ScopedAssetSearchResult): string =>
+// on another. The list keys its rows by it as well.
+export const resultKey = ({ scope, asset }: ScopedAssetSearchResult): string =>
     assetRefKey({ chainId: scope.chainId, assetId: asset.assetId })
 
 const withKey = (keys: ReadonlySet<string>, key: string): ReadonlySet<string> =>
@@ -224,11 +224,12 @@ export const useAddAssetView = (
     }, [holdings, recentlyOptedInKeys])
 
     const isOptedIn = useCallback(
-        (result: ScopedAssetSearchResult) => optedInKeys.has(keyOf(result)),
+        (result: ScopedAssetSearchResult) => optedInKeys.has(resultKey(result)),
         [optedInKeys],
     )
     const isOptingIn = useCallback(
-        (result: ScopedAssetSearchResult) => optingInKeys.has(keyOf(result)),
+        (result: ScopedAssetSearchResult) =>
+            optingInKeys.has(resultKey(result)),
         [optingInKeys],
     )
     const addScopeKey = toScopeKey(addScope)
@@ -258,7 +259,7 @@ export const useAddAssetView = (
 
     const handleRequestAdd = useCallback(
         async (result: ScopedAssetSearchResult) => {
-            const key = keyOf(result)
+            const key = resultKey(result)
             if (!canAdd(result) || optingInKeys.has(key)) return
             const { assetId, unitName, name } = result.asset
             let sender: string | undefined
