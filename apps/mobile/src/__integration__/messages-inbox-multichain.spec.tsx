@@ -23,9 +23,11 @@ import {
 import { config } from '@perawallet/wallet-core-config'
 import { useDeviceStore } from '@perawallet/wallet-core-device'
 import { mockInbox } from '@perawallet/wallet-core-messages/test-handlers'
+import { PWButton } from '@components/core'
 import { BottomSheetIdContext } from '@modules/bottom-sheet'
 import { InboxInfoContent } from '@modules/messages/components/InboxInfoContent'
 import { InboxScreen } from '@modules/messages/screens/InboxScreen/InboxScreen'
+import { useMessagesScreen } from '@modules/messages/screens/MessagesScreen/useMessagesScreen'
 import { useWebViewStore } from '@modules/webview'
 
 import { ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS } from './__fixtures__/onboarding'
@@ -72,6 +74,23 @@ const ASA_INBOX = {
     asa_inboxes: [
         { address: HD_TEST_ADDRESS, inbox_address: null, request_count: 2 },
     ],
+}
+
+// The ⓘ lives in the stack header, which the integration navigator drops
+// (setOptions is a no-op). This host runs the real useMessagesScreen and
+// surfaces the same openInboxInfo through a body button, so the sheet opens
+// through the real bottom-sheet manager.
+const MessagesInfoHost = () => {
+    const { activeTab, openInboxInfo } = useMessagesScreen()
+
+    return activeTab === 'Inbox' ? (
+        <PWButton
+            title='info'
+            variant='secondary'
+            onPress={openInboxInfo}
+            testID='messages_info_host_button'
+        />
+    ) : null
 }
 
 const InboxInfoSheet = () => (
@@ -132,5 +151,18 @@ describe('Flow: Messages — inbox across chains', () => {
         expect(useWebViewStore.getState().openWebViews).toEqual([
             expect.objectContaining({ url: config.assetInboxSupportUrl }),
         ])
+    })
+
+    it('Given the Messages screen on its Inbox tab, when the info action fires, then the inbox explainer opens as a sheet', async () => {
+        useAccountsStore.getState().setAccounts([SIGNER])
+        useAccountsStore.getState().setSelectedAccountId(SIGNER.id)
+
+        renderWithNavigation(MessagesInfoHost, 'MessagesHome', {
+            initialParams: { initialTab: 'Inbox' },
+        })
+
+        fireEvent.click(await screen.findByTestId('messages_info_host_button'))
+
+        expect(await screen.findByTestId('inbox_info_content')).toBeTruthy()
     })
 })
