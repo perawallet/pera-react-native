@@ -19,7 +19,7 @@ import noChromeImportsOutsideWeb from './lanekeep/rules/no-chrome-imports-outsid
 import noCrossProtocolImports from './lanekeep/rules/no-cross-protocol-imports.js'
 import noDeepModuleImports from './lanekeep/rules/no-deep-module-imports.js'
 import noEmptyStyleObjects from './lanekeep/rules/no-empty-style-objects.js'
-import noErrorToastInCatch from './lanekeep/rules/no-error-toast-in-catch.js'
+import noRawErrorToast from './lanekeep/rules/no-raw-error-toast.js'
 import i18nKeyExists from './lanekeep/rules/i18n-key-exists.js'
 import noI18nIntegritySuppressions from './lanekeep/rules/no-i18n-integrity-suppressions.js'
 import noKeystoreMetaPackage from './lanekeep/rules/no-keystore-meta-package.js'
@@ -97,7 +97,7 @@ export default defineConfig({
         noTypographyInStyles,
         noEmptyStyleObjects,
         noNumericSizes,
-        noErrorToastInCatch,
+        noRawErrorToast,
         i18nKeyExists,
         errorParamsMatchCopy,
         noUnusedStyleKeys,
