@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import { existsSync, readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import plugin from '../plugin.js'
 import {
@@ -150,4 +152,115 @@ describe('every pera plugin rule', () => {
             ).toBe(true)
         },
     )
+})
+
+describe('no-restricted-globals', () => {
+    const RAW_FETCH_FILES: Record<string, string> = {
+        'apps/mobile/src/utils/getImageBase64.web.ts':
+            "Web twin of the native media download: reads a collectible's image from whichever host serves it, and queryClient only reaches Pera's backend.",
+        'apps/mobile/src/utils/saveImageToDevice.web.ts':
+            "Web twin of the native media save: downloads a collectible's media from whichever host serves it into a Blob, and queryClient only reaches Pera's backend.",
+        'extensions/platform-chrome/src/services/analytics.ts':
+            "Posts to GA4's Measurement Protocol, a third-party host; the extension has no analytics client of its own.",
+        'extensions/platform-react-native/src/services/cloud-file-storage/google-auth.ts':
+            "Exchanges the OAuth code at Google's token endpoint, a third-party host, from platform code with no HTTP client.",
+        'packages/chain-algorand/src/blockchain/utils/TimeoutHttpClient.ts':
+            "Is the algod and indexer HTTP client: algosdk's BaseHTTPClient with a per-method timeout.",
+        'packages/chain-algorand/src/nfd/registry.ts':
+            "Asks NFD's registry directly, never Pera's backend, so the backend cannot vouch for the address a name resolves to.",
+        'packages/site-safety/src/refresh.ts':
+            'Downloads the phishing lists from their publishers with conditional If-None-Match requests, its own timeout and a caller-injectable fetch.',
+    }
+    const ROOT_TEST_GLOBS = [
+        '**/__tests__/**',
+        '**/__mocks__/**',
+        '**/test-utils/**',
+        '**/__integration__/**',
+        '**/*.spec.{ts,tsx}',
+        '**/*.test.{ts,tsx}',
+    ]
+    const MOBILE_TEST_GLOBS = [
+        'src/**/__tests__/**',
+        'src/**/__mocks__/**',
+        'src/**/test-utils/**',
+        'src/**/__integration__/**',
+        'src/**/*.spec.{ts,tsx}',
+        'src/**/*.test.{ts,tsx}',
+    ]
+    const restrictedGlobals = (
+        override: OxlintOverride,
+    ): { name: string; message: string }[] =>
+        (
+            override.rules['no-restricted-globals'] as [
+                string,
+                ...{ name: string; message: string }[],
+            ]
+        ).slice(1)
+    const severity = (override: OxlintOverride): string =>
+        (override.rules['no-restricted-globals'] as unknown[])[0] as string
+
+    it('bans the fetch global at error in app, package and extension source, outside tests and the allowlisted files', () => {
+        const root = readOxlintConfig('.oxlintrc.json')
+        const overrides = overridesWith(root, 'no-restricted-globals')
+
+        expect(overrides).toHaveLength(1)
+        expect(overrides[0].files).toEqual([
+            'apps/*/src/**',
+            'packages/*/src/**',
+            'extensions/*/src/**',
+        ])
+        expect(severity(overrides[0])).toBe('error')
+        expect(restrictedGlobals(overrides[0]).map(g => g.name)).toEqual([
+            'fetch',
+        ])
+        expect(overrides[0].excludeFiles).toEqual([
+            ...ROOT_TEST_GLOBS,
+            ...Object.keys(RAW_FETCH_FILES),
+        ])
+    })
+
+    it('bans fetch in mobile source through its own override after the chrome ban, so allowlisted files keep the chrome ban', () => {
+        const root = readOxlintConfig('.oxlintrc.json')
+        const mobile = readOxlintConfig('apps/mobile/.oxlintrc.json')
+        const overrides = overridesWith(mobile, 'no-restricted-globals')
+
+        expect(overrides).toHaveLength(2)
+        const [chromeOnly, withFetch] = overrides
+        expect(chromeOnly.files).toEqual(['src/**/*.{ts,tsx}'])
+        expect(chromeOnly.excludeFiles).toBeUndefined()
+        expect(restrictedGlobals(chromeOnly).map(g => g.name)).toEqual([
+            'chrome',
+        ])
+
+        expect(withFetch.files).toEqual(['src/**/*.{ts,tsx}'])
+        expect(severity(withFetch)).toBe('error')
+        expect(restrictedGlobals(withFetch).map(g => g.name)).toEqual([
+            'chrome',
+            'fetch',
+        ])
+        expect(restrictedGlobals(withFetch)[0]).toEqual(
+            restrictedGlobals(chromeOnly)[0],
+        )
+        expect(restrictedGlobals(withFetch)[1]).toEqual(
+            restrictedGlobals(
+                overridesWith(root, 'no-restricted-globals')[0],
+            )[0],
+        )
+        expect(withFetch.excludeFiles).toEqual([
+            ...MOBILE_TEST_GLOBS,
+            ...Object.keys(RAW_FETCH_FILES)
+                .filter(path => path.startsWith('apps/mobile/'))
+                .map(path => path.slice('apps/mobile/'.length)),
+        ])
+    })
+
+    it('allowlists only files that still call fetch', () => {
+        const root = join(__dirname, '../../../..')
+        for (const path of Object.keys(RAW_FETCH_FILES)) {
+            expect(existsSync(join(root, path)), path).toBe(true)
+            expect(readFileSync(join(root, path), 'utf8'), path).toMatch(
+                /(^|[^.\w])fetch\(/m,
+            )
+        }
+    })
 })

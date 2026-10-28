@@ -240,6 +240,33 @@
       "rules": { "pera/hook-result-type": "error" }
     },
     {
+      "files": ["apps/*/src/**", "packages/*/src/**", "extensions/*/src/**"],
+      "excludeFiles": [
+        "**/__tests__/**",
+        "**/__mocks__/**",
+        "**/test-utils/**",
+        "**/__integration__/**",
+        "**/*.spec.{ts,tsx}",
+        "**/*.test.{ts,tsx}",
+        "apps/mobile/src/utils/getImageBase64.web.ts",
+        "apps/mobile/src/utils/saveImageToDevice.web.ts",
+        "extensions/platform-chrome/src/services/analytics.ts",
+        "extensions/platform-react-native/src/services/cloud-file-storage/google-auth.ts",
+        "packages/chain-algorand/src/blockchain/utils/TimeoutHttpClient.ts",
+        "packages/chain-algorand/src/nfd/registry.ts",
+        "packages/site-safety/src/refresh.ts"
+      ],
+      "rules": {
+        "no-restricted-globals": [
+          "error",
+          {
+            "name": "fetch",
+            "message": "Request through queryClient from @perawallet/wallet-core-shared, which carries the retries, timeouts and typed errors a raw fetch skips. A file that must call fetch itself (another host's client, platform code with no client) joins this override's excludeFiles, with its reason in packages/devtools/oxlint/__tests__/configs.spec.ts."
+          }
+        ]
+      }
+    },
+    {
       "files": ["packages/*/src/**", "extensions/*/src/**", "apps/browser/src/**"],
       "excludeFiles": ["**/__tests__/**", "**/__mocks__/**", "**/test-utils/**", "**/__integration__/**", "**/*.spec.{ts,tsx}", "**/*.test.{ts,tsx}"],
       "rules": { "no-console": "error" }

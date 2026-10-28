@@ -89,6 +89,32 @@
     {
       "files": ["src/**/*.{ts,tsx}"],
       "excludeFiles": [
+        "src/**/__tests__/**",
+        "src/**/__mocks__/**",
+        "src/**/test-utils/**",
+        "src/**/__integration__/**",
+        "src/**/*.spec.{ts,tsx}",
+        "src/**/*.test.{ts,tsx}",
+        "src/utils/getImageBase64.web.ts",
+        "src/utils/saveImageToDevice.web.ts"
+      ],
+      "rules": {
+        "no-restricted-globals": [
+          "error",
+          {
+            "name": "chrome",
+            "message": "apps/mobile must not reference the ambient chrome global directly — go through a chrome-owning package (e.g. @perawallet/wallet-extension-platform-chrome, @perawallet/wallet-core-browser-runtime, @perawallet/wallet-extension-keystore-chrome) or its typed accessor instead."
+          },
+          {
+            "name": "fetch",
+            "message": "Request through queryClient from @perawallet/wallet-core-shared, which carries the retries, timeouts and typed errors a raw fetch skips. A file that must call fetch itself (another host's client, platform code with no client) joins this override's excludeFiles, with its reason in packages/devtools/oxlint/__tests__/configs.spec.ts."
+          }
+        ]
+      }
+    },
+    {
+      "files": ["src/**/*.{ts,tsx}"],
+      "excludeFiles": [
         "src/modules/settings/screens/developer/**",
         "src/**/__tests__/**",
         "src/**/__mocks__/**",
