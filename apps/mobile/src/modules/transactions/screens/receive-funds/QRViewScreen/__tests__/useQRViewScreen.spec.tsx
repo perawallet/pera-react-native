@@ -66,7 +66,23 @@ vi.mock('@hooks/useClipboard', () => ({
     useClipboard: vi.fn(),
 }))
 
-vi.mock('@hooks/useLanguage')
+const { mockT } = vi.hoisted(() => ({
+    mockT: vi.fn((key: string, _options?: Record<string, unknown>) => key),
+}))
+
+vi.mock('@hooks/useLanguage', () => ({
+    useLanguage: () => ({ t: mockT }),
+}))
+
+// Ethereum has a display name; Algorand is left without one to exercise the fallback.
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
+    chainDisplayNameOf: vi.fn((chainId: string) =>
+        chainId === 'ethereum' ? 'Ethereum' : undefined,
+    ),
+}))
 
 const navigation = vi.hoisted(() => ({
     canGoBack: vi.fn(() => false),
@@ -85,14 +101,8 @@ vi.mock('@utils/shareText', () => ({
     shareText: vi.fn(),
 }))
 
-const ALGORAND_SCOPE: ChainScope = {
-    chainId: 'algorand',
-    networkId: 'mainnet',
-}
-const ETHEREUM_SCOPE: ChainScope = {
-    chainId: 'ethereum',
-    networkId: 'sepolia',
-}
+const ALGORAND_SCOPE: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
+const ETHEREUM_SCOPE: ChainScope = { chainId: 'ethereum', networkId: 'sepolia' }
 
 const ALGORAND_ADDRESS =
     'CBLWUBRWCWNKZ2Y2Q5HFKN7XISNBVAN47422MZOKH5OGCZ3H5JYLTDPLOA'
@@ -234,6 +244,17 @@ describe('useQRViewScreen', () => {
         expect(result.current.receiveCaption).toBe(
             'receive_funds.qrview.receive_on',
         )
+        expect(mockT).toHaveBeenCalledWith('receive_funds.qrview.receive_on', {
+            chain: 'Ethereum',
+        })
+    })
+
+    it('names the chain by its id when it has no display name', () => {
+        renderHook(() => useQRViewScreen())
+
+        expect(mockT).toHaveBeenCalledWith('receive_funds.qrview.receive_on', {
+            chain: 'algorand',
+        })
     })
 
     it('cannot receive when there is no account', () => {
@@ -384,9 +405,7 @@ describe('useQRViewScreen', () => {
         expect(mockTrackScreen).toHaveBeenCalledOnce()
         expect(mockTrackScreen).toHaveBeenCalledWith(
             AnalyticsScreenName.ShowQr,
-            {
-                [AnalyticsMetadataKey.ChainId]: 'algorand',
-            },
+            { [AnalyticsMetadataKey.ChainId]: 'algorand' },
         )
     })
 
@@ -397,9 +416,7 @@ describe('useQRViewScreen', () => {
 
         expect(mockTrackScreen).toHaveBeenCalledWith(
             AnalyticsScreenName.ShowQr,
-            {
-                [AnalyticsMetadataKey.ChainId]: 'ethereum',
-            },
+            { [AnalyticsMetadataKey.ChainId]: 'ethereum' },
         )
     })
 
