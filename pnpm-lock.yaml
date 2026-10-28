@@ -524,6 +524,9 @@ importers:
       '@perawallet/wallet-core-shared':
         specifier: workspace:*
         version: link:../../packages/shared
+      '@perawallet/wallet-core-site-safety':
+        specifier: workspace:*
+        version: link:../../packages/site-safety
       '@perawallet/wallet-core-walletconnect':
         specifier: workspace:*
         version: link:../../packages/walletconnect

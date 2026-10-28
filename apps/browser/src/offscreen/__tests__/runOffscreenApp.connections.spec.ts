@@ -190,6 +190,11 @@ vi.mock('@perawallet/wallet-core-chain-shared', () => ({
         networkId: networkGetState().mode === 'live' ? 'mainnet' : 'testnet',
     }),
 }))
+const siteSafety = vi.hoisted(() => ({
+    assessSiteSafety: vi.fn(),
+    startPhishingListRefresh: vi.fn(() => () => {}),
+}))
+vi.mock('@perawallet/wallet-core-site-safety', () => siteSafety)
 vi.mock('@perawallet/wallet-core-dapp', () => ({
     createDappConnectionHandler,
     createEip1193ConnectionHandler,
@@ -295,6 +300,45 @@ describe('runOffscreenApp connections wiring', () => {
         expect(options.chainId).toBe('algorand')
         expect(options.getNetworkId('algorand')).toBe('mainnet')
         expect(options.getCustomNetworkGenesisHash()).toBe('custom-genesis')
+    })
+
+    it('keeps the phishing lists fresh from this long-lived context', async () => {
+        await boot()
+
+        expect(siteSafety.startPhishingListRefresh).toHaveBeenCalledOnce()
+    })
+
+    it('lets neither dApp handler reconnect a flagged site silently', async () => {
+        await boot()
+        const isSiteFlaggedOf = (handler: { mock: { calls: unknown[][] } }) => {
+            const [options] = handler.mock.calls[0] ?? []
+            return (
+                options as {
+                    isSiteFlagged: (origin: string) => Promise<boolean>
+                }
+            ).isSiteFlagged
+        }
+
+        siteSafety.assessSiteSafety.mockResolvedValue({
+            kind: 'look-alike',
+            host: 'uniswap-app.org',
+            imitates: { name: 'Uniswap', domain: 'uniswap.org' },
+        })
+        expect(
+            await isSiteFlaggedOf(createDappConnectionHandler)(
+                'https://uniswap-app.org',
+            ),
+        ).toBe(true)
+        expect(siteSafety.assessSiteSafety).toHaveBeenCalledWith({
+            urls: ['https://uniswap-app.org'],
+        })
+
+        siteSafety.assessSiteSafety.mockResolvedValue({ kind: 'clear' })
+        expect(
+            await isSiteFlaggedOf(createEip1193ConnectionHandler)(
+                'https://uniswap.org',
+            ),
+        ).toBe(false)
     })
 
     it('registers the chains once, before the database is seeded, sync starts and either handler is built', async () => {

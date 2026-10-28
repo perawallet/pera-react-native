@@ -27,6 +27,7 @@
     "@perawallet/wallet-core-database": "workspace:*",
     "@perawallet/wallet-core-passkeys": "workspace:*",
     "@perawallet/wallet-core-shared": "workspace:*",
+    "@perawallet/wallet-core-site-safety": "workspace:*",
     "@perawallet/wallet-core-walletconnect": "workspace:*",
     "@perawallet/wallet-extension-connections": "workspace:*",
     "@perawallet/wallet-extension-keystore-chrome": "workspace:*",

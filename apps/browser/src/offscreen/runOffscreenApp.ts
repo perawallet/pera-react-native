@@ -66,6 +66,10 @@ import {
     importLegacyConnections,
 } from '@perawallet/wallet-core-walletconnect'
 import { logger } from '@perawallet/wallet-core-shared'
+import {
+    assessSiteSafety,
+    startPhishingListRefresh,
+} from '@perawallet/wallet-core-site-safety'
 import { queryClient } from '@providers/queryClient'
 import { startConnectionsHost } from './connections/connectionsHost'
 import { createDatabaseRecovery } from './databaseRecovery'
@@ -166,6 +170,10 @@ export const runOffscreenApp = async ({
     getSyncService().start()
     logger.info('[offscreen] database host ready, warm polling started')
 
+    // Offscreen is the one long-lived context with the database, so it alone
+    // keeps the phishing lists fresh; approval windows only read them.
+    startPhishingListRefresh()
+
     // Offscreen outlives every UI surface, so it owns the handlers and their
     // sockets. Its provider engine has no key source and cannot open sealed
     // material, so session keys are storage-backed and boot never awaits one.
@@ -176,6 +184,8 @@ export const runOffscreenApp = async ({
     const registry = createConnectionRegistry({ store })
     const getNetworkId = (chainId: ChainId) =>
         getSelectedScope(chainId).networkId
+    const isSiteFlagged = async (origin: string): Promise<boolean> =>
+        (await assessSiteSafety({ urls: [origin] })).kind !== 'clear'
     registry.register(
         createWalletConnectV1Handler({
             chainId: ALGORAND_CHAIN_ID,
@@ -191,6 +201,7 @@ export const runOffscreenApp = async ({
             getCustomNetworkGenesisHash: () =>
                 getCustomNetworkConfig()?.genesisHash,
             getAccounts: () => signingDappAccountsOn(ALGORAND_CHAIN_ID),
+            isSiteFlagged,
         }),
     )
     registry.register(
@@ -201,6 +212,7 @@ export const runOffscreenApp = async ({
                 provider.chains.has(chainId) &&
                 provider.chains.capabilities(chainId).dappConnect,
             getAccounts: signingDappAccountsOn,
+            isSiteFlagged,
         }),
     )
     const connectionsHost = startConnectionsHost({
