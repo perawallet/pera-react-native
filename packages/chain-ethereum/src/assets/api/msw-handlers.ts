@@ -13,12 +13,14 @@
 import { http, HttpResponse, type RequestHandler } from 'msw'
 import {
     ASSETS_PATH,
+    CHART_PATH,
     nftHoldingsPath,
     NFTS_PATH,
     whitelistPath,
 } from './endpoints'
 import type {
     AssetItemResponse,
+    ChartPointResponse,
     NftItemResponse,
     WhitelistItemResponse,
 } from './schema'
@@ -47,6 +49,12 @@ export type PeraEvmAssetFixtures = {
      * null. A number fails every metadata read with that status.
      */
     nfts?: Record<string, NftItemResponse> | number
+    /**
+     * Price charts keyed by lowercase CAIP-19 id, whatever the period; an id
+     * left out answers 404 `chart_not_found`. A number fails every chart read
+     * with that status.
+     */
+    charts?: Record<string, ChartPointResponse[]> | number
 }
 
 const BAYC = '0xbc4ca0eda7647a8ab7c2061c2e118a18a936f13d'
@@ -159,6 +167,7 @@ export const peraEvmAssetHandlers = ({
     assets = {},
     nftHoldings = {},
     nfts = {},
+    charts = {},
 }: PeraEvmAssetFixtures = {}): RequestHandler[] => {
     const base = baseUrl.replace(/\/+$/, '')
     return [
@@ -220,6 +229,22 @@ export const peraEvmAssetHandlers = ({
                 })
             },
         ),
+        http.get(`${base}${CHART_PATH}`, ({ request }) => {
+            const refused = rejectUnauthenticated(request)
+            if (refused) return refused
+            if (typeof charts === 'number') return failWith(charts)
+            const id = new URL(request.url).searchParams.get('id') ?? ''
+            const points = charts[id.toLowerCase()]
+            return points
+                ? HttpResponse.json(points)
+                : HttpResponse.json(
+                      {
+                          error: 'No price chart for this asset',
+                          code: 'chart_not_found',
+                      },
+                      { status: 404 },
+                  )
+        }),
         http.post(`${base}${NFTS_PATH}`, async ({ request }) => {
             const refused = rejectUnauthenticated(request)
             if (refused) return refused

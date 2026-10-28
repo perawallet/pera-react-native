@@ -12,15 +12,7 @@
 
 import type { HistoryPeriod, Optional } from '@perawallet/wallet-core-shared'
 import { useQuery, type RefetchOptions } from '@tanstack/react-query'
-import {
-    fetchAssetPriceHistory,
-    transformAssetPriceHistoryResponse,
-} from '../api'
-import type {
-    AssetPriceHistoryResponse,
-    AssetPriceHistoryResponseItem,
-} from '../api'
-import { useCallback } from 'react'
+import { fetchAssetPriceHistory } from '../chain-adapter'
 import { getAssetPriceHistoryQueryKey } from './querykeys'
 import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
@@ -54,13 +46,12 @@ export const useAssetPriceHistoryQuery = (
         queryKey,
         queryFn: () => fetchAssetPriceHistory(assetID, period, scope),
         enabled: !isUnavailableOnNetwork,
-        select: useCallback(
-            (data: AssetPriceHistoryResponse) =>
-                data?.map((item: AssetPriceHistoryResponseItem) =>
-                    transformAssetPriceHistoryResponse(item),
-                ) ?? [],
-            [],
-        ),
+        // The cache persists, and its serializer keeps Decimals but not Dates.
+        select: points =>
+            points.map(point => ({
+                datetime: new Date(point.timestamp),
+                usdPrice: point.usdPrice,
+            })),
     })
 
     return {

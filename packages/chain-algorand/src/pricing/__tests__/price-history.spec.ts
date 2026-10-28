@@ -23,28 +23,35 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
     }
 })
 
-import { fetchAssetPriceHistory } from '../endpoints'
+import { fetchPriceHistory } from '../price-history'
 
-const ALGORAND_TESTNET = { chainId: 'algorand', networkId: 'testnet' } as const
-
-describe('prices endpoints', () => {
+describe('fetchPriceHistory', () => {
     beforeEach(() => {
         queryClientMock.mockReset()
     })
 
-    test('fetchAssetPriceHistory hits /v1/assets/price-chart/ with asset_id and period', async () => {
-        queryClientMock.mockResolvedValue({
-            data: [],
-        })
+    test('reads /v1/assets/price-chart/ for the asset and period on the network', async () => {
+        queryClientMock.mockResolvedValue({ data: [] })
 
-        await fetchAssetPriceHistory('123', '1D', ALGORAND_TESTNET)
+        await fetchPriceHistory('123', 'one-day', 'testnet')
 
         expect(queryClientMock).toHaveBeenCalledWith(
             expect.objectContaining({
                 url: '/v1/assets/price-chart/',
-                params: { asset_id: '123', period: '1D' },
-                scope: ALGORAND_TESTNET,
+                params: { asset_id: '123', period: 'one-day' },
+                scope: { chainId: 'algorand', networkId: 'testnet' },
             }),
         )
+    })
+
+    test('answers Unix ms timestamps and Decimal USD prices', async () => {
+        queryClientMock.mockResolvedValue({
+            data: [{ datetime: '2025-01-15T12:00:00Z', price: 2.5 }],
+        })
+
+        const [point] = await fetchPriceHistory('123', 'one-day', 'mainnet')
+
+        expect(point?.timestamp).toBe(Date.parse('2025-01-15T12:00:00Z'))
+        expect(point?.usdPrice.toFixed()).toBe('2.5')
     })
 })

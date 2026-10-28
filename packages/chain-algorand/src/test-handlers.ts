@@ -39,7 +39,9 @@ export {
 } from './accounts/portfolio-msw-handlers'
 
 export {
+    mockAssetPriceHistory,
     mockAssetPrices,
+    type MockAssetPriceHistoryParams,
     type MockAssetPricesParams,
 } from './pricing/msw-handlers'
 

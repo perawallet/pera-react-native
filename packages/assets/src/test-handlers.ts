@@ -11,11 +11,6 @@
  */
 
 export {
-    mockAssetPriceHistory,
-    type MockAssetPriceHistoryParams,
-} from './api/prices/msw-handlers'
-
-export {
     mockToggleAssetFavorite,
     mockToggleAssetPriceAlert,
     type MockToggleAssetFavoriteParams,

@@ -46,8 +46,9 @@ export type UsePortfolioViewResult = {
     /** False on a test-tier scope, whose value never counts toward the fiat total. */
     hasFiatTotal: boolean
     /**
-     * Every counted account's chain has balance history. The chart and trend
-     * plot only those chains, so once the total counts another they'd contradict it.
+     * Every counted account is on `scope`'s chain, which has balance history.
+     * The chart and trend plot that chain alone, so once the total counts
+     * another they'd contradict it.
      */
     hasBalanceHistory: boolean
     isPending: boolean
@@ -71,14 +72,14 @@ export const usePortfolioView = (): UsePortfolioViewResult => {
     } = useAccountValueTotalsQuery(accounts, scope)
     const check = useChainCapabilityCheck()
     const registeredChainIds = useRegisteredChainIds()
-    const hasBalanceHistory = accounts.every(account =>
+    const hasBalanceHistory =
+        accounts.every(
+            account =>
+                accountChainIdOf(account, registeredChainIds) === scope.chainId,
+        ) &&
         check({
-            chain: {
-                chainId: accountChainIdOf(account, registeredChainIds),
-                capability: 'balanceHistory',
-            },
-        }),
-    )
+            chain: { chainId: scope.chainId, capability: 'balanceHistory' },
+        })
     const portfolioPreferredValue = useMemo(
         () =>
             usdToPreferred(

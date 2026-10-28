@@ -42,6 +42,7 @@ import {
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { UserPreferences } from '@constants/user-preferences'
 import { ExpandablePanel } from '@components/ExpandablePanel'
+import { useCapability } from '@hooks/useCapability'
 
 export type AssetHoldingsProps = {
     account: WalletAccount
@@ -68,6 +69,9 @@ export const AssetHoldings = ({
 
     const { getPreference } = usePreferences()
     const chartVisible = !!getPreference(UserPreferences.chartVisible)
+    const hasBalanceHistory = useCapability({
+        chain: { chainId: scope.chainId, capability: 'balanceHistory' },
+    })
 
     const { data: assetHolding } = useAccountAssetBalanceQuery(
         account,
@@ -158,21 +162,23 @@ export const AssetHoldings = ({
                     </PWView>
                 </PWView>
 
-                <ExpandablePanel isExpanded={chartVisible}>
-                    <PWView style={styles.chartContainer}>
-                        <AssetWealthChart
-                            account={account}
-                            asset={asset}
-                            scope={scope}
-                            period={period}
-                            onSelectionChanged={setSelectedPoint}
-                        />
-                        <ChartPeriodSelection
-                            value={period}
-                            onChange={setPeriod}
-                        />
-                    </PWView>
-                </ExpandablePanel>
+                {hasBalanceHistory && (
+                    <ExpandablePanel isExpanded={chartVisible}>
+                        <PWView style={styles.chartContainer}>
+                            <AssetWealthChart
+                                account={account}
+                                asset={asset}
+                                scope={scope}
+                                period={period}
+                                onSelectionChanged={setSelectedPoint}
+                            />
+                            <ChartPeriodSelection
+                                value={period}
+                                onChange={setPeriod}
+                            />
+                        </PWView>
+                    </ExpandablePanel>
+                )}
 
                 <AssetActionButtons
                     asset={asset}

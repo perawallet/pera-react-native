@@ -692,6 +692,119 @@ describe('prices', () => {
     })
 })
 
+describe('price history', () => {
+    const ETH_CAIP19 = 'eip155:1/slip44:60'
+    const ETH = ref(ETHEREUM_NATIVE_ASSET.assetId)
+    const point = (datetime: string, price: string) => ({ datetime, price })
+
+    it('reads the token chart by its CAIP-19 id and period, keeping every digit', async () => {
+        const urls = recordRequests()
+        server.use(
+            ...peraEvmAssetHandlers({
+                baseUrl: TEST_PERA_URL,
+                charts: {
+                    [USDC_CAIP19]: [
+                        point(
+                            '2026-10-20T15:00:00Z',
+                            '0.999800000000000000000001',
+                        ),
+                        point(
+                            '2026-10-21T14:03:11Z',
+                            '1.000100000000000000000000',
+                        ),
+                    ],
+                },
+            }),
+        )
+        const adapter = createEthereumAssetsAdapter(
+            testChainContext({ services: ['prices'] }),
+            ETHEREUM,
+        )
+
+        const points = await adapter.getPriceHistory!(
+            ref(USDC),
+            'one-day',
+            SCOPE,
+        )
+
+        expect(
+            points.map(p => [
+                new Date(p.timestamp).toISOString(),
+                p.usdPrice.toFixed(),
+            ]),
+        ).toEqual([
+            ['2026-10-20T15:00:00.000Z', '0.999800000000000000000001'],
+            ['2026-10-21T14:03:11.000Z', '1.0001'],
+        ])
+        const params = new URL(urls[0]!).searchParams
+        expect(params.get('id')).toBe(USDC_CAIP19)
+        expect(params.get('period')).toBe('one-day')
+    })
+
+    it('asks for ETH by its slip44 id', async () => {
+        server.use(
+            ...peraEvmAssetHandlers({
+                baseUrl: TEST_PERA_URL,
+                charts: {
+                    [ETH_CAIP19]: [
+                        point(
+                            '2026-10-21T14:03:11Z',
+                            '2500.120000000000000000000000',
+                        ),
+                    ],
+                },
+            }),
+        )
+        const adapter = createEthereumAssetsAdapter(
+            testChainContext({ services: ['prices'] }),
+            ETHEREUM,
+        )
+
+        const [latest] = await adapter.getPriceHistory!(ETH, 'one-week', SCOPE)
+
+        expect(latest?.usdPrice.toFixed()).toBe('2500.12')
+    })
+
+    it('answers no points for a token the backend has no chart for', async () => {
+        server.use(...peraEvmAssetHandlers({ baseUrl: TEST_PERA_URL }))
+        const adapter = createEthereumAssetsAdapter(
+            testChainContext({ services: ['prices'] }),
+            ETHEREUM,
+        )
+
+        await expect(
+            adapter.getPriceHistory!(ref(USDC), 'one-day', SCOPE),
+        ).resolves.toEqual([])
+    })
+
+    it('rejects on any other failure, so the chart can offer a retry', async () => {
+        server.use(
+            ...peraEvmAssetHandlers({ baseUrl: TEST_PERA_URL, charts: 503 }),
+        )
+        const adapter = createEthereumAssetsAdapter(
+            testChainContext({ services: ['prices'] }),
+            ETHEREUM,
+        )
+
+        await expect(
+            adapter.getPriceHistory!(ref(USDC), 'one-day', SCOPE),
+        ).rejects.toThrow()
+    })
+
+    it('answers no points without a request on a scope without the prices service', async () => {
+        const requests = recordRequests()
+        const adapter = createEthereumAssetsAdapter(
+            testChainContext({ services: ['assets'] }),
+            ETHEREUM,
+        )
+
+        await expect(
+            adapter.getPriceHistory!(ETH, 'one-day', SCOPE),
+        ).resolves.toEqual([])
+        expect(requests).toEqual([])
+    })
+})
+
 describe('optional members', () => {
     it('declares no authorities or search, since ERC-20 has no freeze or clawback and the backend has no EVM token search', () => {
         const adapter = createEthereumAssetsAdapter(

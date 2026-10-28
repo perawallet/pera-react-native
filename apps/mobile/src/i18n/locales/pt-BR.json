@@ -920,7 +920,7 @@
         },
         "network_unavailable": {
             "title": "Não disponível nesta rede",
-            "body": "Isso precisa de Pera services, que não estão disponíveis no BetaNet ou em nós personalizados. Mude para MainNet ou TestNet.",
+            "body": "Os serviços da Pera não estão disponíveis nesta rede.",
             "generic_body": "Este recurso não está disponível no momento."
         },
         "yes": "Sim",

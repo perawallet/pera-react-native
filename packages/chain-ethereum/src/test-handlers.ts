@@ -27,6 +27,10 @@ export {
     type PeraEvmFixtures,
     type ShouldRefreshRequest,
 } from './accounts/msw-handlers'
+export type {
+    BalanceHistoryRequest,
+    BalanceHistoryResponse,
+} from './accounts/balance-history'
 export {
     evmNftItem,
     nativeWhitelistItem,
@@ -41,6 +45,7 @@ export {
 export type { EvmHistoryItemResponse } from './history/api/schema'
 export type {
     AssetItemResponse,
+    ChartPointResponse,
     NftItemResponse,
     WhitelistItemResponse,
 } from './assets/api/schema'

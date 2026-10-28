@@ -251,7 +251,7 @@ describe('Flow: Account list with Ethereum registered', () => {
                 screen.getByTestId('portfolio_total_value').textContent,
             ).toMatch(/3,003\.00/)
         })
-        // Ethereum has no balance history, so a chart would plot only the $3.
+        // The chart plots one chain, so beside a two-chain total it would show only the $3.
         expect(screen.queryByText('portfolio.show_chart')).toBeNull()
         expect(
             screen.queryByTestId('portfolio_total_partial_notice'),

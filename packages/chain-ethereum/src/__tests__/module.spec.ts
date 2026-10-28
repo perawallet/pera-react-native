@@ -41,6 +41,8 @@ const ENABLED = [
     'history',
     'assets',
     'pricing',
+    'priceHistory',
+    'balanceHistory',
     'watchAccounts',
     'privateKeys',
     'dappConnect',
