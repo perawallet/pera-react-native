@@ -17,7 +17,7 @@ const mocks = vi.hoisted(() => ({
     status: 'idle' as const,
     enableWithSession: vi.fn<() => Promise<void>>(),
     recordSkip: vi.fn(),
-    setPending: vi.fn<(isPending: boolean) => Promise<void>>(),
+    clearPending: vi.fn<() => Promise<void>>(),
     setPreference: vi.fn(),
     hasHydrated: true,
     finishHydration: () => {},
@@ -41,8 +41,10 @@ vi.mock(
 )
 vi.mock('../../../hooks/usePasskeySetupStore.web', () => ({
     usePasskeySetupStore: (
-        selector: (state: { setPending: typeof mocks.setPending }) => unknown,
-    ) => selector({ setPending: mocks.setPending }),
+        selector: (state: {
+            clearPending: typeof mocks.clearPending
+        }) => unknown,
+    ) => selector({ clearPending: mocks.clearPending }),
 }))
 vi.mock('@perawallet/wallet-core-settings', () => ({
     usePreferences: () => ({
@@ -66,7 +68,8 @@ describe('usePasskeyUnlockSetupScreen', () => {
     beforeEach(() => {
         mocks.hasHydrated = true
         mocks.enableWithSession.mockResolvedValue(undefined)
-        mocks.setPending.mockResolvedValue(undefined)
+        mocks.clearPending.mockResolvedValue(undefined)
+        mocks.setPreference.mockReset()
         mocks.isPasskeyUnlockEnabled.mockResolvedValue(false)
     })
 
@@ -77,8 +80,19 @@ describe('usePasskeyUnlockSetupScreen', () => {
         renderHook(() => usePasskeyUnlockSetupScreen({ onDone }))
         await act(async () => {})
 
-        expect(mocks.setPending).toHaveBeenCalledWith(false)
+        expect(mocks.clearPending).toHaveBeenCalledTimes(1)
         expect(onDone).toHaveBeenCalledTimes(1)
+    })
+
+    it('stays on the step when the enabled probe fails', async () => {
+        mocks.isPasskeyUnlockEnabled.mockRejectedValue(new Error('storage'))
+        const onDone = vi.fn()
+
+        renderHook(() => usePasskeyUnlockSetupScreen({ onDone }))
+        await act(async () => {})
+
+        expect(mocks.clearPending).not.toHaveBeenCalled()
+        expect(onDone).not.toHaveBeenCalled()
     })
 
     it('stays on the step while passkey unlock is not enabled', async () => {
@@ -87,7 +101,7 @@ describe('usePasskeyUnlockSetupScreen', () => {
         renderHook(() => usePasskeyUnlockSetupScreen({ onDone }))
         await act(async () => {})
 
-        expect(mocks.setPending).not.toHaveBeenCalled()
+        expect(mocks.clearPending).not.toHaveBeenCalled()
         expect(onDone).not.toHaveBeenCalled()
     })
 
@@ -103,8 +117,8 @@ describe('usePasskeyUnlockSetupScreen', () => {
 
     it('handleContinue clears the pending step, then calls onDone', async () => {
         const order: string[] = []
-        mocks.setPending.mockImplementation(async () => {
-            order.push('setPending')
+        mocks.clearPending.mockImplementation(async () => {
+            order.push('clearPending')
         })
         const onDone = vi.fn(() => order.push('onDone'))
         const { result } = renderHook(() =>
@@ -113,8 +127,7 @@ describe('usePasskeyUnlockSetupScreen', () => {
 
         await act(() => result.current.handleContinue())
 
-        expect(mocks.setPending).toHaveBeenCalledWith(false)
-        expect(order).toEqual(['setPending', 'onDone'])
+        expect(order).toEqual(['clearPending', 'onDone'])
     })
 
     it('handleNotNow records the skip, spends the one-time offer, clears the step and calls onDone', async () => {
@@ -122,8 +135,8 @@ describe('usePasskeyUnlockSetupScreen', () => {
         mocks.setPreference.mockImplementation(() => {
             order.push('setPreference')
         })
-        mocks.setPending.mockImplementation(async () => {
-            order.push('setPending')
+        mocks.clearPending.mockImplementation(async () => {
+            order.push('clearPending')
         })
         const onDone = vi.fn()
         const { result } = renderHook(() =>
@@ -137,9 +150,8 @@ describe('usePasskeyUnlockSetupScreen', () => {
             'passkey_unlock_offer_prompt',
             true,
         )
-        expect(mocks.setPending).toHaveBeenCalledWith(false)
         expect(onDone).toHaveBeenCalledTimes(1)
-        expect(order).toEqual(['setPreference', 'setPending'])
+        expect(order).toEqual(['setPreference', 'clearPending'])
     })
 
     it('handleNotNow waits for the settings store to hydrate before writing the preference', async () => {
@@ -164,5 +176,40 @@ describe('usePasskeyUnlockSetupScreen', () => {
             'passkey_unlock_offer_prompt',
             true,
         )
+    })
+    it('a second tap while the first waits on hydration records one skip and leaves once', async () => {
+        mocks.hasHydrated = false
+        const onDone = vi.fn()
+        const { result } = renderHook(() =>
+            usePasskeyUnlockSetupScreen({ onDone }),
+        )
+
+        let first: Promise<void> = Promise.resolve()
+        let second: Promise<void> = Promise.resolve()
+        act(() => {
+            first = result.current.handleNotNow()
+            second = result.current.handleNotNow()
+        })
+        act(() => mocks.finishHydration())
+        await act(() => Promise.all([first, second]))
+
+        expect(mocks.recordSkip).toHaveBeenCalledTimes(1)
+        expect(mocks.clearPending).toHaveBeenCalledTimes(1)
+        expect(onDone).toHaveBeenCalledTimes(1)
+    })
+
+    it('handleNotNow still leaves the step when saving the skip throws', async () => {
+        mocks.setPreference.mockImplementation(() => {
+            throw new Error('settings write failed')
+        })
+        const onDone = vi.fn()
+        const { result } = renderHook(() =>
+            usePasskeyUnlockSetupScreen({ onDone }),
+        )
+
+        await act(() => result.current.handleNotNow())
+
+        expect(mocks.clearPending).toHaveBeenCalledTimes(1)
+        expect(onDone).toHaveBeenCalledTimes(1)
     })
 })

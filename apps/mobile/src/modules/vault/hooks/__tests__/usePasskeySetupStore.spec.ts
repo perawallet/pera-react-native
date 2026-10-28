@@ -88,6 +88,24 @@ describe('usePasskeySetupStore', () => {
         expect(usePasskeySetupStore.getState().isPending).toBeNull()
     })
 
+    it('hydrate falls back to not pending when the flag cannot be read', async () => {
+        mocks.readPasskeySetupPending.mockRejectedValueOnce(new Error('denied'))
+
+        await usePasskeySetupStore.getState().hydrate()
+
+        expect(usePasskeySetupStore.getState().isPending).toBe(false)
+    })
+
+    it('clearPending clears the in-memory flag even when the write fails', async () => {
+        await usePasskeySetupStore.getState().setPending(true)
+        mocks.writePasskeySetupPending.mockRejectedValueOnce(new Error('quota'))
+
+        await usePasskeySetupStore.getState().clearPending()
+
+        expect(mocks.writePasskeySetupPending).toHaveBeenLastCalledWith(false)
+        expect(usePasskeySetupStore.getState().isPending).toBe(false)
+    })
+
     it('resetState returns to unknown', async () => {
         await usePasskeySetupStore.getState().setPending(true)
 

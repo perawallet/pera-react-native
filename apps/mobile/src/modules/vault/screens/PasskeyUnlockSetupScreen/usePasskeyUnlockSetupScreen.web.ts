@@ -16,6 +16,7 @@ import {
     usePreferences,
     useSettingsStore,
 } from '@perawallet/wallet-core-settings'
+import { logger } from '@perawallet/wallet-core-shared'
 import { UserPreferences } from '@constants/user-preferences'
 import { waitForStoreHydration } from '../../../../bootstrap/waitForStoreHydration'
 import {
@@ -43,9 +44,29 @@ export const usePasskeyUnlockSetupScreen = ({
     const { status, enableWithSession, recordSkip } = usePasskeyUnlockSetup({
         screen: 'onboarding',
     })
-    const setPending = usePasskeySetupStore(state => state.setPending)
+    const clearPending = usePasskeySetupStore(state => state.clearPending)
     const { setPreference } = usePreferences()
     const hasProbedEnabledRef = useRef(false)
+    const isLeavingRef = useRef(false)
+
+    // An optional step must never trap the user, and a repeat tap during the
+    // hydration wait must not record a second skip.
+    const leaveOnce = useCallback(
+        async (beforeLeave?: () => Promise<void>): Promise<void> => {
+            if (isLeavingRef.current) return
+            isLeavingRef.current = true
+            try {
+                await beforeLeave?.()
+            } catch (error) {
+                logger.warn('Passkey setup step could not save its choice', {
+                    error,
+                })
+            }
+            await clearPending()
+            onDone()
+        },
+        [clearPending, onDone],
+    )
 
     // Closing the popup on the success view leaves the step pending. Offering
     // it again would run a second enrolment, which the stored credential's
@@ -53,35 +74,36 @@ export const usePasskeyUnlockSetupScreen = ({
     useEffect(() => {
         if (hasProbedEnabledRef.current) return
         hasProbedEnabledRef.current = true
-        void isPasskeyUnlockEnabled().then(async isEnabled => {
-            if (!isEnabled) return
-            await setPending(false)
-            onDone()
-        })
-    }, [setPending, onDone])
+        void isPasskeyUnlockEnabled()
+            .catch(() => false)
+            .then(isEnabled => (isEnabled ? leaveOnce() : undefined))
+    }, [leaveOnce])
 
     const handleEnable = useCallback(
         (): Promise<void> => enableWithSession(),
         [enableWithSession],
     )
 
-    const handleNotNow = useCallback(async (): Promise<void> => {
-        recordSkip()
-        // The step can be the first thing on screen after a popup reopen, and
-        // a preference written before the store rehydrates is overwritten by it.
-        await waitForStoreHydration(
-            useSettingsStore,
-            SETTINGS_HYDRATION_TIMEOUT_MS,
-        )
-        setPreference(UserPreferences._passkeyUnlockOfferPrompt, true)
-        await setPending(false)
-        onDone()
-    }, [recordSkip, setPreference, setPending, onDone])
+    const handleNotNow = useCallback(
+        (): Promise<void> =>
+            leaveOnce(async () => {
+                recordSkip()
+                // The step can be the first thing on screen after a popup
+                // reopen, and a preference written before the store rehydrates
+                // is overwritten by it.
+                await waitForStoreHydration(
+                    useSettingsStore,
+                    SETTINGS_HYDRATION_TIMEOUT_MS,
+                )
+                setPreference(UserPreferences._passkeyUnlockOfferPrompt, true)
+            }),
+        [leaveOnce, recordSkip, setPreference],
+    )
 
-    const handleContinue = useCallback(async (): Promise<void> => {
-        await setPending(false)
-        onDone()
-    }, [setPending, onDone])
+    const handleContinue = useCallback(
+        (): Promise<void> => leaveOnce(),
+        [leaveOnce],
+    )
 
     return { status, handleEnable, handleNotNow, handleContinue }
 }
