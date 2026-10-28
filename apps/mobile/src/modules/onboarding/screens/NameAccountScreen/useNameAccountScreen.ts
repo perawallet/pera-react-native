@@ -16,6 +16,7 @@ import {
     consumePendingAccountRollback,
     chainAccountOf,
     findAccountByAddressOn,
+    getAccountDisplayName,
     preferDefaultChain,
     hdIndexOf,
     isHardwareWalletAccount,
@@ -116,6 +117,12 @@ export const useNameAccountScreen = () => {
     const accountTitle = account
         ? getAccountName(account, chainId)
         : t('onboarding.name_account.wallet_label', { count: numWallets + 1 })
+    // A generated "Account #N" is left unstored, so it follows the language
+    // and isn't backed up as a name the user chose.
+    const generatedTitle =
+        account && accountTitle !== getAccountDisplayName(account, chainId)
+            ? accountTitle
+            : undefined
 
     const [walletDisplay, setWalletDisplay] = useState<string>(accountTitle)
     const [isCreating, setIsCreating] = useState(false)
@@ -168,10 +175,12 @@ export const useNameAccountScreen = () => {
                       )
                     : undefined)
 
+            const name =
+                walletDisplay === generatedTitle ? undefined : walletDisplay
             if (stored) {
-                updateAccount({ ...stored, name: walletDisplay })
+                updateAccount({ ...stored, name })
             } else {
-                await saveAccount({ ...targetAccount, name: walletDisplay })
+                await saveAccount({ ...targetAccount, name })
             }
 
             trackEvent(OnboardingEvent.RegisterAccount, {

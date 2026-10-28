@@ -384,6 +384,55 @@ describe('useNameAccountScreen', () => {
             expect(result.current.walletDisplay).toBe('Account 1')
         })
 
+        it('saves no name when the numbered name is left unchanged', async () => {
+            mockRouteParams = {
+                account: {
+                    id: 'numbered',
+                    chains: { algorand: { address: 'ADDR', keyPairId: 'kp' } },
+                    custody: {
+                        kind: 'local',
+                        seed: 'bip39',
+                        hd: { account: 1, keyIndex: 0 },
+                    },
+                },
+            }
+            const { result } = renderHook(() => useNameAccountScreen())
+
+            await act(async () => {
+                await result.current.handleFinish()
+            })
+
+            expect(mockSaveAccount).toHaveBeenCalledWith(
+                expect.objectContaining({ id: 'numbered', name: undefined }),
+            )
+        })
+
+        it('saves the numbered name once the user edits it', async () => {
+            mockRouteParams = {
+                account: {
+                    id: 'numbered',
+                    chains: { algorand: { address: 'ADDR', keyPairId: 'kp' } },
+                    custody: {
+                        kind: 'local',
+                        seed: 'bip39',
+                        hd: { account: 1, keyIndex: 0 },
+                    },
+                },
+            }
+            const { result } = renderHook(() => useNameAccountScreen())
+
+            act(() => {
+                result.current.handleNameChange('Savings')
+            })
+            await act(async () => {
+                await result.current.handleFinish()
+            })
+
+            expect(mockSaveAccount).toHaveBeenCalledWith(
+                expect.objectContaining({ id: 'numbered', name: 'Savings' }),
+            )
+        })
+
         it('offers a wallet name when no account is handed over', () => {
             const { result } = renderHook(() => useNameAccountScreen())
 
