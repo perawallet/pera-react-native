@@ -198,6 +198,24 @@ describe(RULE, () => {
             'symbol',
         ],
         [
+            'token.symbol!.toLowerCase() === ALGO_ASSET_NAME.toLowerCase()',
+            binary(
+                '===',
+                call(
+                    member(
+                        {
+                            type: 'TSNonNullExpression',
+                            expression: member(id('token'), 'symbol'),
+                        },
+                        'toLowerCase',
+                    ),
+                    [],
+                ),
+                call(member(id('ALGO_ASSET_NAME'), 'toLowerCase'), []),
+            ),
+            'symbol',
+        ],
+        [
             'asset.name === shared.ALGO_ASSET_NAME',
             binary(
                 '===',

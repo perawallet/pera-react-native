@@ -88,6 +88,12 @@ const displayStringName = node => {
 
 const isAlgoTicker = node => {
     const target = unwrapExpression(node)
+    if (
+        target.type === 'CallExpression' &&
+        CASE_NORMALISERS.has(staticPropertyName(target.callee))
+    ) {
+        return isAlgoTicker(target.callee.object)
+    }
     return (
         (isStringLiteral(target) && target.value.toUpperCase() === 'ALGO') ||
         isIdentifier(target, 'ALGO_ASSET_NAME') ||
