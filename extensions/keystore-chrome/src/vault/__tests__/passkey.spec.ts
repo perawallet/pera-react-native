@@ -52,7 +52,7 @@ const recordFailedAttempt = (): Promise<void> =>
         },
         () => true,
     ).catch(() => {})
-import { AUTO_LOCK_ALARM } from '../autolock'
+import { AUTO_LOCK_ALARM, handleAutoLockAlarm } from '../autolock'
 
 vi.mock('../argon2', async importOriginal =>
     (await import('../../test-utils/argon2')).fastArgon2(
@@ -375,6 +375,21 @@ describe('passkey vault', () => {
             ).rejects.toBeInstanceOf(VaultReauthRequiredError)
             expect(createMock).not.toHaveBeenCalled()
             expect(await isPasskeyUnlockEnabled()).toBe(false)
+        })
+
+        it('throws VaultReauthRequiredError after an auto-lock and a passkey unlock inside the window', async () => {
+            await createVault('pw')
+            await enablePasskeyUnlock('pw')
+            const { createMock } = installWebAuthnMocks()
+            await handleAutoLockAlarm({
+                name: AUTO_LOCK_ALARM,
+                scheduledTime: Date.now(),
+            } as chrome.alarms.Alarm)
+            await unlockWithPasskey()
+            await expect(
+                enablePasskeyUnlockWithSession(),
+            ).rejects.toBeInstanceOf(VaultReauthRequiredError)
+            expect(createMock).not.toHaveBeenCalled()
         })
 
         it('works again after verifyVaultPassword re-proves the password', async () => {

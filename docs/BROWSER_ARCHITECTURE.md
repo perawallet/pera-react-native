@@ -125,7 +125,8 @@ blobs below that cost (down to the OWASP 19 MiB / t=2 floor) are re-wrapped on t
 - Autolock alarm + lockout counter (`vault:auto-lock-minutes`, `vault:lockout`).
 - Optional passkey/PRF unwrap path (`vault:wrapped-master-key-prf`, `vault:prf-credential-id`).
 - Passkey unlock can be enabled without the password for ten minutes after one was proven
-  (`vault:password-auth-at`, session); Settings keeps asking for it.
+  (`vault:password-auth-at`, session); Settings keeps asking for it. Every lock clears the proof,
+  the auto-lock alarm included, so a passkey unlock can never enrol another passkey.
 
 ### 3.3 Signing
 
