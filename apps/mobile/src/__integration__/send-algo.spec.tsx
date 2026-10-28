@@ -805,7 +805,9 @@ describe('Flow: save the recipient as a contact from Confirm Transaction', () =>
     const savedContacts = () => useContactsStore.getState().contacts
 
     const resetContacts = () => {
-        act(() => useContactsStore.getState().resetState())
+        act(() => {
+            useContactsStore.getState().resetState()
+        })
     }
 
     // The test navigator drops headers, so this stands in for the back button.
