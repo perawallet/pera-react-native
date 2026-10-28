@@ -18,6 +18,9 @@ export const maxWorkers = Math.max(2, Math.floor(cpuCount / 2))
 export const poolConfig = {
     maxWorkers,
     pool: 'vmThreads',
+    // Recycle a worker past this. Vitest's default, system memory over CPU
+    // count, lets the workers of several turbo tasks outgrow one CI runner.
+    vmMemoryLimit: '1.5GB',
 }
 
 // List first in `setupFiles`: restores the Node globals the VM context lacks.

@@ -122,12 +122,8 @@ it('renders with secondary variant', () => {
 
 ## The mobile Vitest harness
 
-`apps/mobile/vitest.config.ts` defines the `unit` and `integration` projects, plus two small ones:
-`unit-forks` for the forks-only specs, and `unit-covered` for unit specs whose subject the
-integration suite already runs almost line for line. `pnpm --filter mobile test:unit` (and CI's unit
-shards) skips `unit-covered`; `pnpm test` runs it. The list lives in
-`apps/mobile/vitest.integration-covered.json`; regenerate it with `pnpm --filter mobile
-test:integration-covered:update` after the integration suite grows. All four projects start from
+`apps/mobile/vitest.config.ts` defines the `unit` and `integration` projects, plus `unit-forks` for
+the forks-only specs. All three start from
 `apps/mobile/vitest.setup.ts`, which is only an ordered list of imports from
 `apps/mobile/src/test-utils/mocks/`; each module there registers the `vi.mock`s for one concern and
 says why at the top of each mock:

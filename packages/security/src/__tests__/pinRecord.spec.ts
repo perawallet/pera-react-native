@@ -59,6 +59,8 @@ vi.mock('crypto', async importOriginal => {
 
 describe('pinRecord', () => {
     test('createPinRecord produces versioned record with random salt/hash', async () => {
+        pbkdf2Iterations.length = 0
+
         const a = await createPinRecord('123456')
         const b = await createPinRecord('123456')
 
