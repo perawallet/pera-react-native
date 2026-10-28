@@ -69,17 +69,14 @@ const persistFromPeraBackend = async (
         // A failed read leaves each stored group as it was.
         fetchCrossChainAssetGroups(batch, network).catch(() => null),
     ])
-    const groupOf = new Map(
-        groups?.map((group, index) => [batch[index], group]) ?? [],
-    )
     const assets = response.results.map(item => {
         const asset = transformAssetResponse(item)
-        return asset.peraMetadata && groupOf.has(asset.assetId)
+        return asset.peraMetadata && groups?.has(asset.assetId)
             ? {
                   ...asset,
                   peraMetadata: {
                       ...asset.peraMetadata,
-                      crossChainAssetGroup: groupOf.get(asset.assetId),
+                      crossChainAssetGroup: groups.get(asset.assetId),
                   },
               }
             : asset

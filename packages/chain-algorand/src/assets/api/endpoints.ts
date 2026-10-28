@@ -67,36 +67,37 @@ export const fetchAssets = async (
 }
 
 /**
- * Each id's cross-chain group, in request order; at most 500 ids. ALGO is
+ * Each answered id's cross-chain group, keyed by ASA id; at most 500 ids. An id
+ * the answer leaves out is absent, so only that token stays unread. ALGO is
  * `asa:0` on this endpoint.
  */
 export const fetchCrossChainAssetGroups = async (
     assetIDs: string[],
     network: AlgorandNetworkId,
-): Promise<Nullable<AssetGroup>[]> => {
+): Promise<Map<string, Nullable<AssetGroup>>> => {
     const caip2 = algorandDescriptor.networks.find(
         each => each.id === network,
     )?.caip2
     if (!caip2) throw new Error(`${network} has no CAIP-2 id`)
 
-    const ids = assetIDs.map(id => `${caip2}/asa:${id}`)
+    const assetIdOf = new Map(assetIDs.map(id => [`${caip2}/asa:${id}`, id]))
     const { data } = await queryClient<unknown>({
         backend: 'pera',
         scope: algorandScope(network),
         method: 'POST',
         url: '/api/v4/assets/',
         headers: buildIntegrityHeaders(),
-        data: { ids },
+        data: { ids: [...assetIdOf.keys()] },
     })
     const { results } = crossChainAssetGroupsResponseSchema.parse(data)
-    // Position is the only key, so a misaligned answer would group the wrong asset.
-    if (
-        results.length !== ids.length ||
-        results.some((item, index) => item.asset_id !== ids[index])
-    ) {
-        throw new Error('The asset groups answer does not match the request')
-    }
-    return results.map(item => item.cross_chain_asset_group)
+    return new Map(
+        results.flatMap(item => {
+            const assetId = assetIdOf.get(item.asset_id)
+            return assetId === undefined
+                ? []
+                : [[assetId, item.cross_chain_asset_group] as const]
+        }),
+    )
 }
 
 export const fetchAssetDetails = async (

@@ -422,33 +422,38 @@ describe('asset sync queries', () => {
                 recheckUnreadGroup,
             })
 
-        it('rechecks a fresh token no read has answered the group of', async () => {
+        const ageRow = () => db.run(sql`update assets_pera set updated_at = 0`)
+
+        it('rechecks a token no read has answered the group of once its last read is old', async () => {
             await seed()
+            await ageRow()
 
             expect(await recheck()).toEqual(['31566704'])
         })
 
-        it('keeps rechecking after a sync whose group read failed', async () => {
-            await seed()
+        it('waits out the retry TTL after a sync whose group read failed', async () => {
             await seed()
 
-            expect(await recheck()).toEqual(['31566704'])
+            expect(await recheck()).toEqual([])
         })
 
         it('leaves a token whose group was read, even as none', async () => {
             await seed({ crossChainAssetGroup: null })
+            await ageRow()
 
             expect(await recheck()).toEqual([])
         })
 
         it('leaves collectibles alone', async () => {
             await seed({ type: 'collectible' })
+            await ageRow()
 
             expect(await recheck()).toEqual([])
         })
 
         it('does not recheck when the caller omits the flag', async () => {
             await seed()
+            await ageRow()
 
             expect(await recheck(false)).toEqual([])
         })

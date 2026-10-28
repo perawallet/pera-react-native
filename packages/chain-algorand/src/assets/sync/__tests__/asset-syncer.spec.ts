@@ -18,7 +18,10 @@ import {
 
 const fetchAssetsMock = vi.hoisted(() => vi.fn())
 const fetchCrossChainAssetGroupsMock = vi.hoisted(() =>
-    vi.fn(async (ids: string[]) => ids.map(() => null) as unknown[]),
+    vi.fn(
+        async (ids: string[]) =>
+            new Map<string, unknown>(ids.map(id => [id, null])),
+    ),
 )
 const transformAssetResponseMock = vi.hoisted(() => vi.fn(a => a))
 const fetchIndexerAssetDetailsMock = vi.hoisted(() => vi.fn())
@@ -155,10 +158,12 @@ describe('fetchAndPersistAssets', () => {
             )
 
         test("stores each asset's group from the v4 read, null for one in none", async () => {
-            fetchCrossChainAssetGroupsMock.mockResolvedValueOnce([
-                USDC_GROUP,
-                null,
-            ])
+            fetchCrossChainAssetGroupsMock.mockResolvedValueOnce(
+                new Map<string, unknown>([
+                    ['1', USDC_GROUP],
+                    ['2', null],
+                ]),
+            )
 
             await fetchAndPersistAssets(['1', '2'], MAINNET_SCOPE)
 
@@ -167,6 +172,16 @@ describe('fetchAndPersistAssets', () => {
                 'mainnet',
             )
             expect(persisted()).toEqual([USDC_GROUP, null])
+        })
+
+        test('leaves the group of an id the v4 read omits alone', async () => {
+            fetchCrossChainAssetGroupsMock.mockResolvedValueOnce(
+                new Map<string, unknown>([['2', null]]),
+            )
+
+            await fetchAndPersistAssets(['1', '2'], MAINNET_SCOPE)
+
+            expect(persisted()).toEqual([undefined, null])
         })
 
         test('still persists the batch, leaving each stored group alone, when the v4 read fails', async () => {

@@ -238,6 +238,10 @@ async function getStaleArc19CollectibleIds({
     return rows.map(row => row.assetId).filter(id => candidates.has(id))
 }
 
+// A read that keeps failing (outage, a backend without the group route) would
+// otherwise refetch every unread token on each sync pass.
+const UNREAD_GROUP_RETRY_TTL_MS = 60 * 60 * 1000
+
 /**
  * Tokens no group read has answered for yet: rows cached before assets carried
  * their cross-chain group, or whose read failed. A successful read stores the
@@ -262,6 +266,10 @@ async function getUnreadGroupAssetIds({
                 isNotNull(AssetsPeraSchema.peraMetadataJson),
                 // NULL for an absent key; a stored null reads as 'null'.
                 sql`json_type(${AssetsPeraSchema.peraMetadataJson}, '$.crossChainAssetGroup') IS NULL`,
+                lt(
+                    AssetsPeraSchema.updatedAt,
+                    Date.now() - UNREAD_GROUP_RETRY_TTL_MS,
+                ),
                 or(
                     isNull(AssetsPeraSchema.assetType),
                     ne(AssetsPeraSchema.assetType, PeraAssetType.collectible),

@@ -69,7 +69,7 @@ describe('assets endpoints', () => {
         const MAINNET = 'algorand:wGHE2Pwdvd7S12BL5FaOP20EGYesN73k'
         const USDC_GROUP = { id: 'usdc', name: 'USD Coin', symbol: 'USDC' }
 
-        test("posts each id as the network's CAIP-19 and answers the groups in request order", async () => {
+        test("posts each id as the network's CAIP-19 and answers each group by ASA id", async () => {
             queryClientMock.mockResolvedValue({
                 data: {
                     results: [
@@ -100,24 +100,36 @@ describe('assets endpoints', () => {
                     },
                 }),
             )
-            expect(groups).toEqual([USDC_GROUP, null])
+            expect(groups).toEqual(
+                new Map([
+                    ['31566704', USDC_GROUP],
+                    ['7', null],
+                ]),
+            )
         })
 
-        test('rejects an answer that does not line up with the request', async () => {
+        test('leaves out an id the answer omits and ignores one it was not asked for', async () => {
             queryClientMock.mockResolvedValue({
                 data: {
                     results: [
                         {
-                            asset_id: `${MAINNET}/asa:7`,
+                            asset_id: `${MAINNET}/asa:99`,
                             cross_chain_asset_group: USDC_GROUP,
+                        },
+                        {
+                            asset_id: `${MAINNET}/asa:7`,
+                            cross_chain_asset_group: null,
                         },
                     ],
                 },
             })
 
-            await expect(
-                fetchCrossChainAssetGroups(['31566704'], 'mainnet'),
-            ).rejects.toThrow()
+            const groups = await fetchCrossChainAssetGroups(
+                ['31566704', '7'],
+                'mainnet',
+            )
+
+            expect(groups).toEqual(new Map([['7', null]]))
         })
     })
 
