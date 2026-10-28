@@ -134,7 +134,7 @@ describe('Flow: Messages — inbox across chains', () => {
         expect(row.textContent).not.toContain('Algorand')
     })
 
-    it('Given the inbox explainer, when it opens, then it covers Algorand and EVM networks and links to the help article', async () => {
+    it('Given the inbox explainer, when it opens, then it covers Algorand and other networks and links to the help article', async () => {
         useAccountsStore.getState().setAccounts([SIGNER])
 
         renderWithNavigation(InboxInfoSheet, 'InboxInfo')
@@ -144,7 +144,9 @@ describe('Flow: Messages — inbox across chains', () => {
                 screen.getByText('messages.inbox.info.algorand_title'),
             ).toBeTruthy()
         })
-        expect(screen.getByText('messages.inbox.info.evm_title')).toBeTruthy()
+        expect(
+            screen.getByText('messages.inbox.info.other_networks_title'),
+        ).toBeTruthy()
 
         fireEvent.click(screen.getByTestId('inbox_info_learn_more'))
 

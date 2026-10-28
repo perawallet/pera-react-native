@@ -54,10 +54,10 @@ export const InboxInfoContent = () => {
 
                 <PWView style={styles.section}>
                     <PWText variant='h4'>
-                        {t('messages.inbox.info.evm_title')}
+                        {t('messages.inbox.info.other_networks_title')}
                     </PWText>
                     <PWText style={styles.paragraph}>
-                        {t('messages.inbox.info.evm_body')}
+                        {t('messages.inbox.info.other_networks_body')}
                     </PWText>
                     <PWText style={styles.paragraph}>
                         {t('messages.inbox.info.find_tokens_body')}

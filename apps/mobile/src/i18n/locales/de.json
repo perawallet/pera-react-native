@@ -1927,7 +1927,7 @@
         },
         "inbox": {
             "empty_title": "Keine ausstehenden Nachrichten",
-            "empty_body": "Im Posteingang landen Algorand-Assets, die dir gesendet wurden, bevor du dich für sie angemeldet hast. Tokens auf Ethereum, Base und anderen EVM-Netzwerken kommen direkt in deinem Guthaben an.",
+            "empty_body": "Im Posteingang landen Algorand-Assets, die dir gesendet wurden, bevor du dich für sie angemeldet hast, sowie Einladungen zu Gemeinschaftskonten und Signaturanfragen. Tokens in anderen Netzwerken kommen direkt in deinem Guthaben an.",
             "asa_requests_one": "1 eingehendes Asset",
             "asa_requests_other": "{{count}} eingehende Assets",
             "multisig_sign": {
@@ -1943,9 +1943,9 @@
             "info": {
                 "title": "Über den Posteingang",
                 "algorand_title": "Algorand",
-                "algorand_body": "Ein Algorand-Konto muss sich für ein Asset anmelden, bevor es dieses halten kann. Assets, die dir vor deiner Anmeldung gesendet werden, warten hier im Posteingang, bis du sie annimmst oder ablehnst.",
-                "evm_title": "Ethereum, Base und andere EVM-Netzwerke",
-                "evm_body": "EVM-Netzwerke kennen keine Anmeldung für Assets. Tokens, die dir gesendet werden, kommen direkt in deinem Guthaben an und erscheinen nie im Posteingang.",
+                "algorand_body": "Ein Algorand-Konto muss sich für ein Asset anmelden, bevor es dieses halten kann. Assets, die dir vor deiner Anmeldung gesendet werden, warten hier im Posteingang, bis du sie beanspruchst oder ablehnst. Auch Einladungen zu Gemeinschaftskonten und Signaturanfragen kommen hier an.",
+                "other_networks_title": "Andere Netzwerke",
+                "other_networks_body": "Netzwerke wie Ethereum und Base kennen keine Anmeldung für Assets. Tokens, die dir dort gesendet werden, kommen direkt in deinem Guthaben an und erscheinen nie im Posteingang.",
                 "find_tokens_body": "Du findest sie, indem du das Konto öffnest und dir seine Assets in diesem Netzwerk ansiehst.",
                 "learn_more": "Mehr erfahren"
             }

@@ -1935,7 +1935,7 @@
         },
         "inbox": {
             "empty_title": "Aucun message en attente",
-            "empty_body": "La boîte de réception contient les actifs Algorand qui vous ont été envoyés avant que vous n’ayez effectué l’opt-in. Les tokens sur Ethereum, Base et les autres réseaux EVM arrivent directement dans votre solde.",
+            "empty_body": "La boîte de réception contient les actifs Algorand qui vous ont été envoyés avant que vous n’ayez effectué l’opt-in, ainsi que les invitations à des comptes partagés et les demandes de signature. Les tokens sur les autres réseaux arrivent directement dans votre solde.",
             "asa_requests_one": "1 actif entrant",
             "asa_requests_other": "{{count}} actifs entrants",
             "multisig_sign": {
@@ -1951,9 +1951,9 @@
             "info": {
                 "title": "À propos de la boîte de réception",
                 "algorand_title": "Algorand",
-                "algorand_body": "Un compte Algorand doit effectuer un opt-in pour un actif avant de pouvoir le détenir. Les actifs qui vous sont envoyés avant votre opt-in attendent ici, dans la boîte de réception, jusqu’à ce que vous les acceptiez ou les refusiez.",
-                "evm_title": "Ethereum, Base et autres réseaux EVM",
-                "evm_body": "Les réseaux EVM n’ont pas d’opt-in. Les tokens qui vous sont envoyés arrivent directement dans votre solde et n’apparaissent jamais dans la boîte de réception.",
+                "algorand_body": "Un compte Algorand doit effectuer un opt-in pour un actif avant de pouvoir le détenir. Les actifs qui vous sont envoyés avant votre opt-in attendent ici, dans la boîte de réception, jusqu’à ce que vous les réclamiez ou les refusiez. Les invitations à des comptes partagés et les demandes de signature arrivent également ici.",
+                "other_networks_title": "Autres réseaux",
+                "other_networks_body": "Les réseaux comme Ethereum et Base n’ont pas d’opt-in. Les tokens qui vous y sont envoyés arrivent directement dans votre solde et n’apparaissent jamais dans la boîte de réception.",
                 "find_tokens_body": "Pour les voir, ouvrez le compte et consultez ses actifs sur ce réseau.",
                 "learn_more": "En savoir plus"
             }
