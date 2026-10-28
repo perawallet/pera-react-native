@@ -36,10 +36,9 @@ export const NAVIGATION_LOST_REASON =
 // the driver captures *after* seeing LOCALE_TOUR_SHOT, but nothing otherwise
 // stops the app from advancing to the next surface before that capture lands,
 // so a screenshot could show the wrong step. The hold is a safe multiple of
-// that latency. An
-// inbound driver->app ack channel was considered and rejected on the same
-// security grounds that ruled out inbound deeplink listeners; holding here is
-// the only side that can actually keep a surface on screen.
+// that latency. An inbound driver->app ack channel was considered and rejected
+// on the same security grounds that ruled out inbound deeplink listeners;
+// holding here is the only side that can actually keep a surface on screen.
 export const CAPTURE_HOLD_MS = 700
 
 const wait = (ms: number): Promise<void> =>

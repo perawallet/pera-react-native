@@ -61,7 +61,7 @@ const sourcesOfKey = (queryKey: readonly unknown[]): unknown[] =>
  * list, and parsing every metadata blob on the JS thread before telling a
  * collectible from a token would delay first paint on a large account,
  * repeatedly, on every sync invalidation. Same shape as
- * {@link useAccountAssetsQuery}, which does this for the fungible list.
+ * {@link useAccountAssetsQuery}, which takes the same approach for the fungible list.
  */
 export const useAccountCollectiblesQuery = (
     sources: readonly AccountHoldingSource[],

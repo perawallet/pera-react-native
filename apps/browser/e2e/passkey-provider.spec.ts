@@ -317,8 +317,8 @@ test('interception on: create() opens the Pera consent screen; approving returns
     // Deliberately generous: the FIRST passkey on a wallet also mints the
     // PBKDF2-HMAC-SHA512 `pbkdf2-p256` main key every later credential derives
     // from, and that is 210k iterations of pure-JS HMAC by design. It takes
-    // several seconds on a dev laptop and several times that on a CI runner, against
-    // sub-second for every subsequent ceremony (see the get/decline/delete
+    // several seconds on a dev laptop and several times that on a CI runner,
+    // against sub-second for every subsequent ceremony (see the get/decline/delete
     // tests below, which reuse the main key). A tighter budget here fails on
     // slow hardware only, which is the worst kind of flake.
     await expect

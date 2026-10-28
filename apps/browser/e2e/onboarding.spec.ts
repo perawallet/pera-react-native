@@ -120,7 +120,7 @@ test('onboards in the expanded tab: password → create wallet → home', async 
     })
     expect(pageErrors, 'page threw an uncaught error').toEqual([])
 
-    // Regression guard (M3 home-crash): the home screen's corner-radius
+    // Regression guard for the home-crash: the home screen's corner-radius
     // reveal animation (useAccountScreenAnimation) assigns a shared value a
     // couple hundred ms after mount. On web that goes through reanimated's
     // valueSetter, which throws `_getAnimationTimestamp is not a
