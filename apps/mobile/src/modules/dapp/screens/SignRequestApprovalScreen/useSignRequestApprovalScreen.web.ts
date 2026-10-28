@@ -38,6 +38,7 @@ import {
     submitConnectionRequest,
 } from '@perawallet/wallet-core-browser-runtime'
 import { useDatabaseReadinessStore } from '@hooks/useDatabaseReadinessStore.web'
+import { showConfirmedThenClose } from '@hooks/useApprovalConfirmedStore.web'
 import { useLanguage } from '@hooks/useLanguage'
 import { useNetworkSwitchPrompt } from '@modules/connections/web'
 import { useDappRequest } from '../../hooks/useDappRequest.web'
@@ -128,7 +129,9 @@ export const useSignRequestApprovalScreen =
                         requestId,
                         encodeWalletOperationResult(result),
                     )
-                    window.close()
+                    // Awaited so the pipeline holds the review, and with it
+                    // the confirmed control, until the window closes.
+                    await showConfirmedThenClose()
                 },
                 reject: async error => {
                     await declineConnectionRequest(requestId, error)
@@ -161,7 +164,7 @@ export const useSignRequestApprovalScreen =
                             error: rebuildWireError(outcome),
                         }
                     }
-                    window.close()
+                    await showConfirmedThenClose()
                     return { status: 'submitted', txId: outcome.txId }
                 },
             })

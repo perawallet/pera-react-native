@@ -11,7 +11,7 @@
  */
 
 import { act, renderHook } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AppError, ErrorCategory } from '@perawallet/wallet-core-shared'
 import type { WireSubmitFailure } from '@perawallet/wallet-core-browser-runtime'
 
@@ -86,6 +86,8 @@ vi.mock('@perawallet/wallet-core-browser-runtime', () => ({
 vi.mock('@hooks/useLanguage')
 
 import { useDatabaseReadinessStore } from '@hooks/useDatabaseReadinessStore.web'
+import { useApprovalConfirmedStore } from '@hooks/useApprovalConfirmedStore.web'
+import { APPROVAL_SUCCESS_CLOSE_DELAY_MS } from '@constants/ui'
 import { useSignRequestApprovalScreen } from '../useSignRequestApprovalScreen.web'
 
 const SIGNER = {
@@ -172,6 +174,11 @@ describe('useSignRequestApprovalScreen', () => {
 
         closeSpy = vi.fn()
         vi.stubGlobal('close', closeSpy)
+    })
+
+    afterEach(() => {
+        vi.useRealTimers()
+        useApprovalConfirmedStore.getState().resetState()
     })
 
     it('dismiss closes the popup', () => {
@@ -371,11 +378,13 @@ describe('useSignRequestApprovalScreen', () => {
             ).toEqual([SIGNER, AUTH_SIGNER])
         })
 
-        it('respond encodes the result for the wire, delivers it and closes the window', async () => {
+        it('respond delivers the encoded result, shows the confirmed state, then closes after the delay', async () => {
             renderHook(() => useSignRequestApprovalScreen())
             const result = { type: 'sign-transactions', signed: ['STXN'] }
+            vi.useFakeTimers()
 
-            await enqueuedMessage().respond(result)
+            const responded = enqueuedMessage().respond(result)
+            await vi.advanceTimersByTimeAsync(0)
 
             expect(mocks.encodeWalletOperationResult).toHaveBeenCalledWith(
                 result,
@@ -383,7 +392,12 @@ describe('useSignRequestApprovalScreen', () => {
             expect(mocks.resolveConnectionRequest).toHaveBeenCalledWith('cr1', {
                 wire: result,
             })
-            expect(closeSpy).toHaveBeenCalled()
+            expect(useApprovalConfirmedStore.getState().isConfirmed).toBe(true)
+            expect(closeSpy).not.toHaveBeenCalled()
+
+            await vi.advanceTimersByTimeAsync(APPROVAL_SUCCESS_CLOSE_DELAY_MS)
+            await responded
+            expect(closeSpy).toHaveBeenCalledTimes(1)
         })
 
         it('refuses to sign against a connection the user revoked while the window was open', async () => {
@@ -411,21 +425,34 @@ describe('useSignRequestApprovalScreen', () => {
             const enqueuedDeps = () =>
                 mocks.enqueueInboundRequest.mock.calls[0][1]
 
-            it('hands a signed send to the bridge and closes on success', async () => {
+            it('hands a signed send to the bridge and closes after the confirmed state on success', async () => {
                 renderHook(() => useSignRequestApprovalScreen())
                 mocks.submitConnectionRequest.mockResolvedValue({
                     ok: true,
                     txId: '0xh',
                 })
+                vi.useFakeTimers()
 
-                const outcome = await enqueuedDeps().submitSignedSend(SIGNED)
+                const submitted = enqueuedDeps().submitSignedSend(SIGNED)
+                await vi.advanceTimersByTimeAsync(0)
 
                 expect(mocks.submitConnectionRequest).toHaveBeenCalledWith(
                     'cr1',
                     SIGNED,
                 )
-                expect(outcome).toEqual({ status: 'submitted', txId: '0xh' })
-                expect(closeSpy).toHaveBeenCalled()
+                expect(useApprovalConfirmedStore.getState().isConfirmed).toBe(
+                    true,
+                )
+                expect(closeSpy).not.toHaveBeenCalled()
+
+                await vi.advanceTimersByTimeAsync(
+                    APPROVAL_SUCCESS_CLOSE_DELAY_MS,
+                )
+                expect(await submitted).toEqual({
+                    status: 'submitted',
+                    txId: '0xh',
+                })
+                expect(closeSpy).toHaveBeenCalledTimes(1)
             })
 
             it('keeps the window open and names the error on a failed broadcast', async () => {
@@ -474,6 +501,7 @@ describe('useSignRequestApprovalScreen', () => {
                 error,
             )
             expect(closeSpy).toHaveBeenCalled()
+            expect(useApprovalConfirmedStore.getState().isConfirmed).toBe(false)
         })
 
         // Closing on a failed delivery would tell the user the dApp was
