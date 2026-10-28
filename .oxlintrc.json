@@ -231,6 +231,11 @@
     },
     {
       "files": ["packages/*/src/**", "extensions/*/src/**", "apps/browser/src/**"],
+      "excludeFiles": ["**/__tests__/**", "**/__mocks__/**", "**/test-utils/**", "**/__integration__/**", "**/*.spec.{ts,tsx}", "**/*.test.{ts,tsx}", "packages/shared/src/utils/unit-conversion.ts", "packages/shared/src/utils/decimal-config.ts"],
+      "rules": { "pera/no-manual-unit-conversion": "error" }
+    },
+    {
+      "files": ["packages/*/src/**", "extensions/*/src/**", "apps/browser/src/**"],
       "excludeFiles": ["**/__tests__/**", "**/__mocks__/**", "**/test-utils/**", "**/__integration__/**", "**/*.spec.{ts,tsx}", "**/*.test.{ts,tsx}", "**/*.d.ts"],
       "rules": { "import/no-default-export": "error" }
     },
