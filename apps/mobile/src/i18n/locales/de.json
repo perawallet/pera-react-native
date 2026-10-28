@@ -739,6 +739,7 @@
             "available_count_one": "{{count}} aus dem Backup verfügbar",
             "device_title": "Konten",
             "device_subtitle": "Auf diesem Gerät verfügbar",
+            "networks_hint": "Dein Backup enthält alle Netzwerke jedes Kontos.",
             "add_from_backup_title": "Aus Backup hinzufügen",
             "add_from_backup_subtitle": "In deinem Cloud-Backup, nicht auf diesem Gerät",
             "not_backed_up_title": "Nicht gesichert",

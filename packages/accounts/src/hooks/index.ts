@@ -71,6 +71,7 @@ export {
 } from './querykeys'
 export * from './useAccountFundedNetworksQuery'
 export * from './useAccountSummaryQuery'
+export * from './useAccountHoldingsCountQuery'
 export * from './useAccountValueTotalsQuery'
 export * from './useAccountAssetsQuery'
 export * from './useAccountHeldAssetsQuery'

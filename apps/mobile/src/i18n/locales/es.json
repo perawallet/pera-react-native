@@ -747,6 +747,7 @@
             "available_count_one": "{{count}} disponible desde la copia de seguridad",
             "device_title": "Cuentas",
             "device_subtitle": "Disponibles en este dispositivo",
+            "networks_hint": "Tu backup incluye todas las redes de cada cuenta.",
             "add_from_backup_title": "Añadir desde la copia de seguridad",
             "add_from_backup_subtitle": "En tu Cloud Backup, no en este dispositivo",
             "not_backed_up_title": "Sin copia de seguridad",

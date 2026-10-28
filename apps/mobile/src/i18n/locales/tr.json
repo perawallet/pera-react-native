@@ -747,6 +747,7 @@
             "available_count_one": "{{count}} yedekten eklenebilir",
             "device_title": "Hesaplar",
             "device_subtitle": "Bu cihazda mevcut",
+            "networks_hint": "Yedeğin, her hesabın bulunduğu tüm ağları içerir.",
             "add_from_backup_title": "Yedekten ekle",
             "add_from_backup_subtitle": "Cloud Backup'ında var, bu cihazda yok",
             "not_backed_up_title": "Yedeklenmedi",

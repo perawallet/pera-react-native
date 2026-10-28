@@ -19,4 +19,7 @@ export const useStyles = makeStyles(theme => ({
     section: {
         gap: theme.spacing.sm,
     },
+    networksHint: {
+        color: theme.colors.textGray,
+    },
 }))

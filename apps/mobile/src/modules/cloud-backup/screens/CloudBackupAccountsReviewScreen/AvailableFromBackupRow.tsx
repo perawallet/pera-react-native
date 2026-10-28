@@ -11,7 +11,10 @@
  */
 
 import { memo, useCallback } from 'react'
-import type { BackupItemKind } from '@perawallet/wallet-core-backup'
+import type {
+    BackupItemKind,
+    CachedRecordChain,
+} from '@perawallet/wallet-core-backup'
 import { PWButton, PWText } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { BackupAccountRow } from '../../components/BackupAccountRow'
@@ -20,6 +23,7 @@ import { useStyles } from './styles'
 type AvailableFromBackupRowProps = {
     address: string
     type: BackupItemKind | null
+    chains: CachedRecordChain[]
     /** Only a newer version of the app can add it back, so there is no Add. */
     needsUpdate: boolean
     isBusy: boolean
@@ -30,6 +34,7 @@ type AvailableFromBackupRowProps = {
 const AvailableFromBackupRowComponent = ({
     address,
     type,
+    chains,
     needsUpdate,
     isBusy,
     onAdd,
@@ -48,6 +53,7 @@ const AvailableFromBackupRowComponent = ({
         <BackupAccountRow
             address={address}
             accountType={type}
+            backupChains={chains}
             isBackedUp
             action={
                 needsUpdate ? (

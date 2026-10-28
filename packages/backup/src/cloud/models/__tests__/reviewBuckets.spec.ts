@@ -150,7 +150,34 @@ describe('deriveBackupAccountReview', () => {
                     address: 'ALGO',
                     type: chainBackupKind('hdWallet'),
                     needsUpdate: false,
+                    chains: [],
                 },
+            ])
+        })
+
+        it('names every chain a held record carries, so its row can list them', () => {
+            const state = createEmptySyncState('b')
+            state.items[recordKey('ALGO')] = recordOf({
+                pendingImport: true,
+                record: {
+                    formatVersion: 2,
+                    updatedAt: 1,
+                    chains: [
+                        { chain: 'algorand', type: 'algo25', address: 'ALGO' },
+                        {
+                            chain: 'ethereum',
+                            type: 'hdChain',
+                            address: '0xeth',
+                        },
+                    ],
+                },
+            })
+
+            const review = deriveBackupAccountReview(state, [])
+
+            expect(review.availableFromBackup[0]?.chains).toEqual([
+                { chain: 'algorand', address: 'ALGO' },
+                { chain: 'ethereum', address: '0xeth' },
             ])
         })
 
@@ -196,7 +223,7 @@ describe('deriveBackupAccountReview', () => {
 
         const review = deriveBackupAccountReview(state, [['A']])
         expect(review.availableFromBackup).toEqual([
-            { address: 'GONE', type: null, needsUpdate: false },
+            { address: 'GONE', type: null, needsUpdate: false, chains: [] },
         ])
         expect(review.notBackedUp).toEqual(['A'])
     })
@@ -210,7 +237,14 @@ describe('deriveBackupAccountReview', () => {
 
         expect(
             deriveBackupAccountReview(state, []).availableFromBackup,
-        ).toEqual([{ address: 'GONE', type: 'hardware', needsUpdate: false }])
+        ).toEqual([
+            {
+                address: 'GONE',
+                type: 'hardware',
+                needsUpdate: false,
+                chains: [],
+            },
+        ])
     })
 
     /* The chain a restored device walks: a tombstone seeded from the manifest
@@ -267,7 +301,14 @@ describe('deriveBackupAccountReview', () => {
         })
 
         expect(deriveBackupAccountReview(next, []).availableFromBackup).toEqual(
-            [{ address: 'GONE', type: 'watch', needsUpdate: false }],
+            [
+                {
+                    address: 'GONE',
+                    type: 'watch',
+                    needsUpdate: false,
+                    chains: [],
+                },
+            ],
         )
     })
 

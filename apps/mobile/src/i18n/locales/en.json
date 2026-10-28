@@ -747,6 +747,7 @@
             "available_count_one": "{{count}} available from back up",
             "device_title": "Accounts",
             "device_subtitle": "Available on this device",
+            "networks_hint": "Your backup includes every network each account is on.",
             "add_from_backup_title": "Add from Backup",
             "add_from_backup_subtitle": "In your Cloud Backup, not on this device",
             "not_backed_up_title": "Not Backed Up",
