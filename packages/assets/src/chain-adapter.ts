@@ -22,6 +22,7 @@ import {
     AppError,
     ErrorCategory,
     isAlgoAssetName,
+    isChainRefusedError,
     type Nullable,
     type Optional,
 } from '@perawallet/wallet-core-shared'
@@ -260,7 +261,8 @@ export type ScopedAssetSearchPage = {
  * One page from each scope that still has more, concatenated in `scopes`
  * order. A scope whose search fails stops being searched while the others'
  * hits still show; a page with no hits rejects with the first failure, so a
- * failed search never reads as an empty one.
+ * failed search never reads as an empty one. A chain the backend refuses has
+ * nothing to find, so its refusal decides only a page no scope answered.
  */
 export const searchAssetsAcrossScopes = async (
     { cursors, ...params }: ScopedAssetSearchParams,
@@ -287,10 +289,14 @@ export const searchAssetsAcrossScopes = async (
         nextCursors[index] = outcome.value.nextCursor ?? null
         return outcome.value.results.map(asset => ({ scope, asset }))
     })
-    const failure = settled.find(
+    const rejections = settled.filter(
         (outcome): outcome is PromiseRejectedResult =>
             outcome.status === 'rejected',
     )
+    const hasAnswer = rejections.length < settled.length
+    const failure =
+        rejections.find(({ reason }) => !isChainRefusedError(reason)) ??
+        (hasAnswer ? undefined : rejections[0])
     if (results.length === 0 && failure) throw failure.reason
     return {
         results,

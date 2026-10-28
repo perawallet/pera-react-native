@@ -16,6 +16,7 @@ import {
     LEGACY_CHAIN_ID,
     type ChainId,
 } from '@perawallet/wallet-core-chain-contract'
+import { PeraNetworkError } from '@perawallet/wallet-core-shared'
 import {
     AssetSearchUnsupportedError,
     assetsAdapterFor,
@@ -309,6 +310,55 @@ describe('searchAssetsAcrossScopes', () => {
         await expect(
             searchAssetsAcrossScopes({ query: 'usd' }, [ALGORAND, ETHEREUM]),
         ).rejects.toBe(failure)
+    })
+
+    describe('a chain the backend has not switched on', () => {
+        const refusal = () =>
+            new PeraNetworkError('client', {
+                status: 422,
+                backendCode: 'chain_not_enabled',
+            })
+
+        it('finds nothing, rather than failing, while another scope answered', async () => {
+            registerBoth(
+                vi.fn().mockResolvedValue({
+                    results: [],
+                    nextCursor: undefined,
+                }),
+                vi.fn().mockRejectedValue(refusal()),
+            )
+
+            await expect(
+                searchAssetsAcrossScopes({ query: 'zzz' }, [
+                    ALGORAND,
+                    ETHEREUM,
+                ]),
+            ).resolves.toEqual({ results: [], nextCursors: undefined })
+        })
+
+        it('rejects with the refusal when no scope answered', async () => {
+            const first = refusal()
+            registerBoth(
+                vi.fn().mockRejectedValue(first),
+                vi.fn().mockRejectedValue(refusal()),
+            )
+
+            await expect(
+                searchAssetsAcrossScopes({ query: '' }, [ALGORAND, ETHEREUM]),
+            ).rejects.toBe(first)
+        })
+
+        it('gives way to another failure', async () => {
+            const failure = new Error('ethereum down')
+            registerBoth(
+                vi.fn().mockRejectedValue(refusal()),
+                vi.fn().mockRejectedValue(failure),
+            )
+
+            await expect(
+                searchAssetsAcrossScopes({ query: '' }, [ALGORAND, ETHEREUM]),
+            ).rejects.toBe(failure)
+        })
     })
 })
 

@@ -52,6 +52,7 @@ const ETHEREUM_MAINNET: ChainScope = {
     chainId: 'ethereum' as ChainId,
     networkId: 'mainnet',
 }
+const ETHEREUM_ADDRESS = '0x1111111111111111111111111111111111111111'
 const DAI = '0x6B175474E89094C44Da98b954EedeAC495271d0F'
 const ETHEREUM_LISTED: DisplayableAsset[] = [
     { assetId: 'native', name: 'Ether', unitName: 'ETH' },
@@ -65,7 +66,10 @@ describe('Flow: Add Asset with a second chain registered', () => {
                 id: 'watch-1',
                 name: 'Watch',
                 custody: { kind: 'watch' },
-                chains: { algorand: { address: ALGO25_TEST_ADDRESS } },
+                chains: {
+                    algorand: { address: ALGO25_TEST_ADDRESS },
+                    ethereum: { address: ETHEREUM_ADDRESS },
+                },
             },
         ])
         useAccountsStore.getState().setSelectedAccountId('watch-1')
@@ -155,6 +159,25 @@ describe('Flow: Add Asset with a second chain registered', () => {
             expect(screen.getByText('USD Coin')).toBeTruthy()
         })
         expect(screen.queryByText('Dai Stablecoin')).toBeNull()
+    })
+
+    it('Given an account only on Algorand, then Add Asset shows no chips and lists Algorand assets only', async () => {
+        useAccountsStore.getState().setAccounts([
+            {
+                id: 'watch-1',
+                name: 'Watch',
+                custody: { kind: 'watch' },
+                chains: { algorand: { address: ALGO25_TEST_ADDRESS } },
+            },
+        ])
+        renderAddAsset(null)
+
+        await waitFor(() => {
+            expect(screen.getByText('USD Coin')).toBeTruthy()
+        })
+        expect(screen.queryByText('Dai Stablecoin')).toBeNull()
+        expect(screen.queryByTestId('add_asset_network_filter_all')).toBeNull()
+        expect(screen.queryByTestId('chain_label_algorand')).toBeNull()
     })
 
     it('Given Algorand cannot manage assets, when results load, then no row offers the add action', async () => {

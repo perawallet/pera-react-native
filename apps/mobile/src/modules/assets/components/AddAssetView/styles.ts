@@ -34,4 +34,9 @@ export const useStyles = makeStyles(theme => ({
     noteIcon: {
         marginTop: theme.spacing.xs,
     },
+    // Set, so PWScrollView skips the bottom padding it gives a scroll view in
+    // a sheet (xl plus the safe-area inset), a gap under a horizontal row.
+    chipRow: {
+        paddingBottom: 0,
+    },
 }))

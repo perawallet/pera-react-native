@@ -15,9 +15,7 @@ import {
     useAccountAssetsQuery,
     useAccountHoldingSources,
     useAccountsStore,
-    useEnableChain,
     chainAccountOf,
-    eligibleChainsInFamily,
 } from '@perawallet/wallet-core-accounts'
 import {
     useAssetSearchAcrossScopesQuery,
@@ -42,6 +40,7 @@ import { useToast } from '@hooks/useToast'
 import { SEARCH_DEBOUNCE_TIME } from '@constants/ui'
 import type { AddAssetContentVariant } from '@modules/assets/components/AddAssetContent'
 import {
+    isChainRefusedError,
     isIntegrityRequiredError,
     useDebouncedValue,
     type Nullable,
@@ -61,7 +60,7 @@ type UseAddAssetViewOptions = {
 }
 
 type UseAddAssetViewResult = {
-    /** All, where offered, then one per chain that can search assets; empty while there's nothing to pick. */
+    /** All, where offered, then one per account chain that can search assets; empty while there's nothing to pick. */
     chainOptions: FilterOption<Nullable<ChainId>>[]
     /** The chain search runs on; null searches every offered chain. */
     selectedChainId: Nullable<ChainId>
@@ -76,6 +75,8 @@ type UseAddAssetViewResult = {
     isOffline: boolean
     isIntegrityBlocked: boolean
     isUnavailable: boolean
+    /** Set when the backend refuses the chain: the default copy is about BetaNet and custom nodes. */
+    unavailableBody: Optional<string>
     isFetchingNextPage: boolean
     hasNextPage: boolean
     fetchNextPage: () => void
@@ -124,21 +125,23 @@ export const useAddAssetView = (
     const selectedAccount = useAccountsStore(state =>
         state.getSelectedAccount(),
     )
+    const holdingSources = useAccountHoldingSources(selectedAccount)
     // A chain without asset search would only ever show the unavailable state.
     // A switched-off chain reports every capability off, so it's left out too.
     const searchableChainIds = useCapableChainIds('assetSearch')
     const manageableChainIds = useCapableChainIds('manageAssets')
-    // The NFT sheet adds by opting in, so it keeps to chains that can manage
-    // assets.
-    const offeredChainIds = useMemo(
-        () =>
-            hasCollectible
-                ? searchableChainIds.filter(chainId =>
-                      manageableChainIds.includes(chainId),
-                  )
-                : searchableChainIds,
-        [hasCollectible, searchableChainIds, manageableChainIds],
-    )
+    // The account's own chains, as Home's chips are. The NFT sheet adds by
+    // opting in, so it keeps to chains that can manage assets.
+    const offeredChainIds = useMemo(() => {
+        const accountChainIds = new Set(
+            holdingSources.map(({ scope }) => scope.chainId),
+        )
+        return searchableChainIds.filter(
+            chainId =>
+                accountChainIds.has(chainId) &&
+                (!hasCollectible || manageableChainIds.includes(chainId)),
+        )
+    }, [holdingSources, hasCollectible, searchableChainIds, manageableChainIds])
     const isAllOffered = !hasCollectible && offeredChainIds.length > 1
     const chainOptions = useMemo(
         () =>
@@ -180,6 +183,7 @@ export const useAddAssetView = (
     })
     const { hasInternet } = useNetworkStatus()
     const isOffline = isPaused || (isError && !hasInternet)
+    const isChainRefused = isError && isChainRefusedError(error)
     // A typed query still debouncing is about to replace the list, so its
     // stale rows read as loading; clearing goes back to the list already
     // fetched for the empty query.
@@ -195,18 +199,15 @@ export const useAddAssetView = (
     const canManageAssets =
         addChainId !== null && manageableChainIds.includes(addChainId)
     const fallbackChainId = useCapableChainId('assetSearch')
-    // An account not on the chain yet is enabled there on add.
     const addScope = useSelectedScope(addChainId ?? fallbackChainId)
     const selectedAddress = selectedAccount
         ? chainAccountOf(selectedAccount, addScope.chainId)?.address
         : undefined
     const { optIn } = useAssetOptInMutation(addScope)
-    const enableChain = useEnableChain()
     const { showToast } = useToast()
     const { showError } = useErrorToast()
     const { requestByType } = useBottomSheet()
 
-    const holdingSources = useAccountHoldingSources(selectedAccount)
     const searchedSources = useMemo(
         () =>
             holdingSources.filter(({ scope }) =>
@@ -239,37 +240,12 @@ export const useAddAssetView = (
         [canManageAssets, addScopeKey],
     )
 
-    // Starting to add an asset on a chain a local key could be on, but
-    // isn't yet, enables that chain: the user has started using it there.
-    const resolveSender = useCallback(async (): Promise<string | undefined> => {
-        if (selectedAddress || !selectedAccount) return selectedAddress
-        if (
-            selectedAccount.custody.kind !== 'local' ||
-            !eligibleChainsInFamily(selectedAccount).includes(addScope.chainId)
-        ) {
-            return undefined
-        }
-        const account = await enableChain(
-            selectedAccount.id,
-            addScope.chainId,
-            'user',
-        )
-        return chainAccountOf(account, addScope.chainId)?.address
-    }, [selectedAddress, selectedAccount, addScope.chainId, enableChain])
-
     const handleRequestAdd = useCallback(
         async (result: ScopedAssetSearchResult) => {
             const key = resultKey(result)
-            if (!canAdd(result) || optingInKeys.has(key)) return
+            const sender = selectedAddress
+            if (!sender || !canAdd(result) || optingInKeys.has(key)) return
             const { assetId, unitName, name } = result.asset
-            let sender: string | undefined
-            try {
-                sender = await resolveSender()
-            } catch (err) {
-                showError(err, t('add_asset.opt_in.failed_title'))
-                return
-            }
-            if (!sender) return
 
             const confirmation = await requestByType<'asset-opt-in', 'confirm'>(
                 'asset-opt-in',
@@ -310,9 +286,9 @@ export const useAddAssetView = (
             }
         },
         [
+            selectedAddress,
             canAdd,
             optingInKeys,
-            resolveSender,
             addScope,
             requestByType,
             optIn,
@@ -339,7 +315,10 @@ export const useAddAssetView = (
         isError,
         isOffline,
         isIntegrityBlocked: isError && isIntegrityRequiredError(error),
-        isUnavailable: offeredChainIds.length === 0,
+        isUnavailable: offeredChainIds.length === 0 || isChainRefused,
+        unavailableBody: isChainRefused
+            ? t('common.network_unavailable.generic_body')
+            : undefined,
         isFetchingNextPage,
         hasNextPage,
         fetchNextPage,

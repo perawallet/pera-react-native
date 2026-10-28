@@ -190,13 +190,19 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
     class PeraNetworkError extends AppError {
         public readonly kind: string
         public readonly status?: number
+        public readonly backendCode?: string
 
         constructor(
             kind: string,
             {
                 status,
                 originalError,
-            }: { status?: number; originalError?: Error } = {},
+                backendCode,
+            }: {
+                status?: number
+                originalError?: Error
+                backendCode?: string
+            } = {},
         ) {
             super(
                 `[network:${kind}]`,
@@ -209,6 +215,7 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
             )
             this.kind = kind
             this.status = status
+            this.backendCode = backendCode
         }
     }
 
@@ -249,6 +256,13 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
 
     const isPeraNetworkError = (error: unknown): error is PeraNetworkError =>
         error instanceof PeraNetworkError
+
+    // Mirrors packages/shared/src/errors/network.ts.
+    const isChainRefusedError = (error: unknown): boolean =>
+        isPeraNetworkError(error) &&
+        error.status === 422 &&
+        (error.backendCode === 'unknown_chain' ||
+            error.backendCode === 'chain_not_enabled')
 
     // Mirrors packages/shared/src/errors/integrity.ts: a sibling of
     // PeraNetworkError, never an instance of it.
@@ -574,6 +588,7 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
         BlockchainError,
         PeraNetworkError,
         isPeraNetworkError,
+        isChainRefusedError,
         IntegrityRequiredError,
         isIntegrityRequiredError,
         PeraServiceUnavailableError,

@@ -16,7 +16,10 @@ import type { ScopedAssetSearchResult } from '@perawallet/wallet-core-assets'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { useAddAssetView } from '../useAddAssetView'
 import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
-import { IntegrityRequiredError } from '@perawallet/wallet-core-shared'
+import {
+    IntegrityRequiredError,
+    PeraNetworkError,
+} from '@perawallet/wallet-core-shared'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import {
     registerEthereumChain,
@@ -47,15 +50,15 @@ const mockAccount = {
     id: 'test-account',
     name: 'Test Account',
     custody: { kind: 'watch' },
-    chains: { algorand: { address: 'test-address' } },
+    chains: {
+        algorand: { address: 'test-address' },
+        ethereum: { address: '0xtest' },
+    },
 }
 
-const { mockGetSelectedAccount, mockEnableChain, mockEligibleChains } =
-    vi.hoisted(() => ({
-        mockGetSelectedAccount: vi.fn((): unknown => mockAccount),
-        mockEnableChain: vi.fn(),
-        mockEligibleChains: vi.fn((): string[] => ['algorand']),
-    }))
+const { mockGetSelectedAccount } = vi.hoisted(() => ({
+    mockGetSelectedAccount: vi.fn((): unknown => mockAccount),
+}))
 
 const { mockUseAccountAssetsQuery } = vi.hoisted(() => ({
     mockUseAccountAssetsQuery: vi.fn((_sources: unknown) => ({
@@ -78,16 +81,20 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
         useAccountsStore: vi.fn((selector: (state: unknown) => unknown) =>
             selector({ getSelectedAccount: mockGetSelectedAccount }),
         ),
-        useEnableChain: () => mockEnableChain,
-        eligibleChainsInFamily: mockEligibleChains,
+        // Unlike the real hook, keeps chains that aren't registered: the
+        // offered chips must leave those out themselves.
         useAccountHoldingSources: (account: unknown) =>
             account
-                ? [
-                      {
-                          address: 'test-address',
-                          scope: { chainId: 'algorand', networkId: 'mainnet' },
-                      },
-                  ]
+                ? Object.entries(
+                      (
+                          account as {
+                              chains: Record<string, { address: string }>
+                          }
+                      ).chains,
+                  ).map(([chainId, { address }]) => ({
+                      address,
+                      scope: { chainId, networkId: 'mainnet' },
+                  }))
                 : [],
         useAccountAssetsQuery: (sources: unknown) =>
             mockUseAccountAssetsQuery(sources),
@@ -259,111 +266,6 @@ describe('useAddAssetView', () => {
         )
     })
 
-    describe('on an account not yet on the chain', () => {
-        const ethereumOnly = {
-            id: 'eth-account',
-            custody: { kind: 'local', seed: null },
-            chains: { ethereum: { address: '0xabc', keyPairId: 'k' } },
-        }
-
-        beforeEach(() => {
-            mockGetSelectedAccount.mockReturnValue(ethereumOnly)
-        })
-
-        it('enables the chain, then opts in from the address it gets there', async () => {
-            mockEligibleChains.mockReturnValue(['ethereum', 'algorand'])
-            mockEnableChain.mockResolvedValue({
-                ...ethereumOnly,
-                chains: {
-                    ...ethereumOnly.chains,
-                    algorand: { address: 'NEW-ADDR', keyPairId: 'k' },
-                },
-            })
-            mockRequestByType.mockResolvedValueOnce('confirm')
-            const { result } = renderHook(() =>
-                useAddAssetView({ chainId: 'algorand' }),
-            )
-
-            await act(async () => {
-                await result.current.handleRequestAdd(TEST_ASSET)
-            })
-
-            expect(mockEnableChain).toHaveBeenCalledWith(
-                'eth-account',
-                'algorand',
-                'user',
-            )
-            expect(mockRequestByType).toHaveBeenCalledWith(
-                'asset-opt-in',
-                {
-                    assetId: '999',
-                    accountAddress: 'NEW-ADDR',
-                    scope: expect.objectContaining({ chainId: 'algorand' }),
-                },
-                expect.anything(),
-            )
-            expect(mockOptIn).toHaveBeenCalledWith({
-                sender: 'NEW-ADDR',
-                assetId: 999n,
-            })
-        })
-
-        it('adds nothing when the account cannot be on the chain', async () => {
-            mockEligibleChains.mockReturnValue(['ethereum'])
-            const { result } = renderHook(() =>
-                useAddAssetView({ chainId: 'algorand' }),
-            )
-
-            await act(async () => {
-                await result.current.handleRequestAdd(TEST_ASSET)
-            })
-
-            expect(mockEnableChain).not.toHaveBeenCalled()
-            expect(mockRequestByType).not.toHaveBeenCalled()
-        })
-
-        it('leaves a hardware account alone, since a new chain needs its device', async () => {
-            mockEligibleChains.mockReturnValue(['ethereum', 'algorand'])
-            mockGetSelectedAccount.mockReturnValue({
-                ...ethereumOnly,
-                custody: {
-                    kind: 'hardware',
-                    device: { deviceId: 'd' },
-                    accountIndex: 0,
-                },
-            })
-            const { result } = renderHook(() =>
-                useAddAssetView({ chainId: 'algorand' }),
-            )
-
-            await act(async () => {
-                await result.current.handleRequestAdd(TEST_ASSET)
-            })
-
-            expect(mockEnableChain).not.toHaveBeenCalled()
-            expect(mockShowError).not.toHaveBeenCalled()
-        })
-
-        it('shows why when the chain cannot be enabled', async () => {
-            mockEligibleChains.mockReturnValue(['ethereum', 'algorand'])
-            const failure = new Error('derivation failed')
-            mockEnableChain.mockRejectedValue(failure)
-            const { result } = renderHook(() =>
-                useAddAssetView({ chainId: 'algorand' }),
-            )
-
-            await act(async () => {
-                await result.current.handleRequestAdd(TEST_ASSET)
-            })
-
-            expect(mockShowError).toHaveBeenCalledWith(
-                failure,
-                'add_asset.opt_in.failed_title',
-            )
-            expect(mockRequestByType).not.toHaveBeenCalled()
-        })
-    })
-
     it('keeps handleRequestAdd across renders, so the list rows aren’t rebuilt', () => {
         const { result, rerender } = renderHook(() =>
             useAddAssetView({ chainId: 'algorand' }),
@@ -484,6 +386,29 @@ describe('useAddAssetView', () => {
         expect(result.current.isIntegrityBlocked).toBe(isRefusal)
     })
 
+    it.each([
+        [
+            'a chain the backend has not switched on',
+            new PeraNetworkError('client', {
+                status: 422,
+                backendCode: 'chain_not_enabled',
+            }),
+            true,
+        ],
+        ['any other failure', new Error('boom'), false],
+    ])('shows the unavailable state for %s', (_case, error, isRefusal) => {
+        mockSearch({ isError: true, error })
+
+        const { result } = renderHook(() =>
+            useAddAssetView({ chainId: 'algorand' }),
+        )
+
+        expect(result.current.isUnavailable).toBe(isRefusal)
+        expect(result.current.unavailableBody).toBe(
+            isRefusal ? 'common.network_unavailable.generic_body' : undefined,
+        )
+    })
+
     it('is offline when the search query is paused (true-offline regime)', () => {
         mockSearch({ isPaused: true })
 
@@ -513,6 +438,7 @@ describe('useAddAssetView', () => {
         )
 
         expect(result.current.isUnavailable).toBe(true)
+        expect(result.current.unavailableBody).toBeUndefined()
         expect(result.current.isError).toBe(false)
         expect(result.current.isOffline).toBe(false)
         expect(lastSearchedScopes()).toEqual([])
@@ -529,7 +455,23 @@ describe('useAddAssetView', () => {
             expect(result.current.showsNetwork).toBe(false)
         })
 
-        it('offers All, then one chip per chain that can search assets, in registry order', () => {
+        it("offers only the account's chains, so an Algorand-only account gets no chips", () => {
+            registerEthereumChain()
+            mockGetSelectedAccount.mockReturnValue({
+                ...mockAccount,
+                chains: { algorand: { address: 'test-address' } },
+            })
+
+            const { result } = renderHook(() =>
+                useAddAssetView({ chainId: null }),
+            )
+
+            expect(result.current.chainOptions).toEqual([])
+            expect(result.current.selectedChainId).toBe('algorand')
+            expect(lastSearchedScopes()).toEqual([ALGORAND_SCOPE])
+        })
+
+        it('offers All, then one chip per account chain that can search assets, in registry order', () => {
             registerEthereumChain()
 
             const { result } = renderHook(() =>
@@ -673,7 +615,6 @@ describe('useAddAssetView', () => {
                 await result.current.handleRequestAdd(TEST_ASSET)
             })
 
-            expect(mockEnableChain).not.toHaveBeenCalled()
             expect(mockRequestByType).not.toHaveBeenCalled()
         })
 

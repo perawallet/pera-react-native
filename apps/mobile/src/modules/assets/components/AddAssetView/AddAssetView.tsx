@@ -51,6 +51,7 @@ export const AddAssetView = ({
         isOffline,
         isIntegrityBlocked,
         isUnavailable,
+        unavailableBody,
         isFetchingNextPage,
         hasNextPage,
         fetchNextPage,
@@ -103,6 +104,7 @@ export const AddAssetView = ({
                 options={chainOptions}
                 selectedValue={selectedChainId}
                 onSelect={handleSelectChain}
+                contentContainerStyle={styles.chipRow}
                 testID='add_asset_network_filter'
             />
         ) : undefined
@@ -136,6 +138,7 @@ export const AddAssetView = ({
                         isIntegrityBlocked={isIntegrityBlocked}
                         isError={isError}
                         isUnavailable={isUnavailable}
+                        unavailableBody={unavailableBody}
                     >
                         <EmptyView
                             title={t('add_asset.no_results')}

@@ -13,6 +13,7 @@
 import { useCallback } from 'react'
 import {
     getActiveLocale,
+    isChainRefusedError,
     isNotFoundError,
     isPeraNetworkError,
 } from '@perawallet/wallet-core-shared'
@@ -59,22 +60,6 @@ const shouldRecreateDevice = (error: unknown): boolean => isNotFoundError(error)
  */
 const isPushTokenClaimedError = (error: unknown): boolean =>
     isPeraNetworkError(error) && error.status === 400
-
-const DEVICE_CHAIN_REFUSAL_CODES: readonly string[] = [
-    'unknown_chain',
-    'chain_not_enabled',
-]
-
-/**
- * A 422 refusing a chain the request names rejects the whole registration,
- * so a chain the backend doesn't know yet would otherwise keep every other
- * chain's accounts unregistered too.
- */
-const isChainRefusedError = (error: unknown): boolean =>
-    isPeraNetworkError(error) &&
-    error.status === 422 &&
-    error.backendCode !== undefined &&
-    DEVICE_CHAIN_REFUSAL_CODES.includes(error.backendCode)
 
 type RegisterDeviceResult = { createdNew: boolean }
 
@@ -275,6 +260,9 @@ export const useDevice = () => {
                     }
                     return { response }
                 } catch (error) {
+                    // One refused chain rejects the whole registration, so it
+                    // would otherwise keep every other chain's accounts
+                    // unregistered too.
                     if (!isChainRefusedError(error)) throw error
                     let narrowed = withoutNewestChain(accounts)
                     if (
