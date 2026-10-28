@@ -137,6 +137,28 @@ describe('usePortfolioHistoryQuery', () => {
         expect(history).not.toHaveBeenCalled()
     })
 
+    it('drops the cached sum once a chain is switched off, so the chart does not keep drawing it', async () => {
+        history.mockResolvedValue([point(1, '10')])
+        const sources = [{ address: 'ALGO', scope: ALGORAND }]
+        const client = new QueryClient({
+            defaultOptions: { queries: { retry: false } },
+        })
+        const sharedWrapper = ({ children }: { children: React.ReactNode }) =>
+            React.createElement(QueryClientProvider, { client }, children)
+
+        const { result, rerender } = renderHook(
+            () => usePortfolioHistoryQuery(sources, 'one-day', ALGORAND),
+            { wrapper: sharedWrapper },
+        )
+        await waitFor(() => expect(result.current.data).toHaveLength(1))
+
+        chainsWithoutHistory.add(ALGORAND.chainId)
+        rerender()
+
+        expect(result.current.isUnavailableOnNetwork).toBe(true)
+        expect(result.current.data).toEqual([])
+    })
+
     it("is unavailable, not a partial chart, when a chain's network serves no history", async () => {
         history.mockImplementation(async (_addresses, _period, scope) =>
             scope.chainId === ETHEREUM.chainId ? null : [point(1, '10')],

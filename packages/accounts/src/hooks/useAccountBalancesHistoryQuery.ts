@@ -66,7 +66,9 @@ export const useAccountBalancesHistoryQuery = (
     const isUnavailableOnNetwork = isCapabilityOff || query.data === null
 
     return {
-        data: query.data ?? [],
+        // A disabled query keeps its cached (and persisted) points; drop them
+        // so a kill switch takes the chart down.
+        data: isUnavailableOnNetwork ? [] : (query.data ?? []),
         isPending: isUnavailableOnNetwork ? false : query.isPending,
         isSuccess: query.isSuccess,
         isError: query.isError,

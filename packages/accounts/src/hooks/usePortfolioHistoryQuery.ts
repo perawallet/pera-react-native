@@ -104,7 +104,9 @@ export const usePortfolioHistoryQuery = (
     const isUnavailableOnNetwork = isCapabilityOff || combined.hasSourceMissing
 
     return {
-        data: combined.data,
+        // A disabled query keeps its cached (and persisted) points; the chart
+        // draws data ahead of the unavailable state, so a kill switch must drop them.
+        data: isUnavailableOnNetwork ? [] : combined.data,
         isPending:
             isUnavailableOnNetwork || groups.length === 0
                 ? false
