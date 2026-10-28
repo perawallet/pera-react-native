@@ -13,11 +13,6 @@ ${SETTINGS_DELETE_ALL_SUCCESS}      tid=settings_delete_all_success_bottom_sheet
 
 
 *** Keywords ***
-Theme Should Be Selected
-    [Documentation]    PWRadioButton reports its selection as accessibilityState.checked.
-    [Arguments]    ${theme}
-    Switch Should Be    settings_theme_${theme}_radio    ${True}
-
 Select Theme
     [Arguments]    ${theme}
     Open Settings

@@ -5,6 +5,7 @@ Documentation       Shared session, wallet and fixture keywords. The platform ad
 Library             libraries/PeraAppiumLibrary.py    run_on_failure=Nothing    AS    AppiumLibrary
 Library             libraries/NavTrace.py
 Library             String
+Library             OperatingSystem
 Resource            platforms/${PLATFORM}.resource
 
 
@@ -29,8 +30,11 @@ ${MENU_SETTINGS_BUTTON}         tid=menu_settings_button
 ${SETTINGS_SCREEN}              tid=settings_screen
 ${SETTINGS_SECURITY_ITEM}       tid=settings_item_security
 ${DELETE_ALL_SUCCESS_SHEET}     tid=settings_delete_all_success_bottom_sheet
-# Screens that can show a recovery phrase: the import word fields, the backup grid and quiz.
-${SECRET_SCREEN}                xpath=//*[starts-with(@name,'import_account_word_input_') or starts-with(@content-desc,'import_account_word_input_') or starts-with(@resource-id,'import_account_word_input_') or starts-with(@name,'passphrase_word_') or starts-with(@resource-id,'passphrase_word_') or starts-with(@name,'backup_verification_item_') or starts-with(@content-desc,'backup_verification_item_') or starts-with(@resource-id,'backup_verification_item_') or @name='paste-link-input' or @resource-id='paste-link-input']
+# Screens that can show a recovery phrase or a private key, matched on their containers so a
+# half-drawn one counts too. The view-passphrase sheet draws its own words rather than through
+# PassphraseGrid. Android blacks these screens out itself; iOS does not, since prevent-screen-capture
+# there stops recording rather than a driver's screenshot.
+${SECRET_SCREEN}                xpath=//*[starts-with(@name,'import_account_word_input_') or starts-with(@content-desc,'import_account_word_input_') or starts-with(@resource-id,'import_account_word_input_') or starts-with(@name,'passphrase_word_') or starts-with(@content-desc,'passphrase_word_') or starts-with(@resource-id,'passphrase_word_') or starts-with(@name,'backup_verification_item_') or starts-with(@content-desc,'backup_verification_item_') or starts-with(@resource-id,'backup_verification_item_') or starts-with(@name,'view_passphrase_bottom_sheet') or starts-with(@content-desc,'view_passphrase_bottom_sheet') or starts-with(@resource-id,'view_passphrase_bottom_sheet') or starts-with(@name,'reveal_private_key_bottom_sheet') or starts-with(@content-desc,'reveal_private_key_bottom_sheet') or starts-with(@resource-id,'reveal_private_key_bottom_sheet') or starts-with(@name,'cloud_backup_verify_item_') or starts-with(@content-desc,'cloud_backup_verify_item_') or starts-with(@resource-id,'cloud_backup_verify_item_') or @name='paste-link-input' or @resource-id='paste-link-input']
 # Onboarding (no wallet) or Home (wallet); either means the app has rendered.
 ${FIRST_SCREEN}                 xpath=//*[@name='onboarding_create_wallet_button' or @content-desc='onboarding_create_wallet_button' or @resource-id='onboarding_create_wallet_button' or @name='tab_menu_button' or @content-desc='Menu' or @resource-id='tab_menu_button' or @name='numpad_key_1' or @content-desc='numpad_key_1' or @resource-id='numpad_key_1']
 ${PIN_PAD_KEY}                  tid=numpad_key_1
@@ -172,22 +176,79 @@ Tap
     [Documentation]    Retries only a stale or briefly missing element (a re-render between the wait and
     ...                the click): that tap never landed. Any other error may follow a tap that did
     ...                land, and retrying it could toggle a switch twice.
+    ...
+    ...                Six attempts rather than three: a sheet animating in replaces its own
+    ...                elements for longer than the 0.6s three allowed, even after waiting for the
+    ...                element to settle. Staleness is the one error that says for certain the tap
+    ...                did not land, so there is nothing to double by being patient with it.
     [Arguments]    ${locator}
-    FOR    ${attempt}    IN RANGE    3
+    FOR    ${attempt}    IN RANGE    6
         TRY
             Click Element    ${locator}
             RETURN
         EXCEPT    StaleElementReferenceException*    type=GLOB    AS    ${error}
-            Sleep    0.2s
+            Sleep    0.4s
         EXCEPT    *did not match any elements*    type=GLOB    AS    ${error}
             Wait Until Page Contains Element    ${locator}    timeout=5s
         END
     END
     Fail    ${locator} kept going stale: ${error}
 
+Tap Until
+    [Documentation]    Tap, and tap again if the screen it should have opened does not arrive.
+    ...
+    ...                A tap that silently does nothing is this suite's most common failure: the
+    ...                failure screenshot shows the button on screen and enabled, and waiting longer
+    ...                finds nothing because nothing was ever on the way. One run sat 75s for a
+    ...                screen that a second tap opened at once. So spend the budget on taps rather
+    ...                than on waiting, and say in the log when one had to be repeated - a screen
+    ...                that regularly needs the second tap is worth knowing about, not absorbing.
+    [Arguments]    ${locator}    ${anchor}    ${timeout}=15s
+    FOR    ${attempt}    IN RANGE    3
+        Tap    ${locator}
+        ${arrived}=    Run Keyword And Return Status
+        ...    Wait Until Page Contains Element    ${anchor}    timeout=${timeout}
+        IF    ${arrived}    RETURN
+        # A tap that took the control off screen was acted on, so there is nothing to tap again:
+        # the retry finds nothing and fails saying the control went missing, which describes the
+        # tap landing rather than the screen that never came. Stop here and say that instead.
+        ${still_offered}=    Run Keyword And Return Status
+        ...    Page Should Contain Element    ${locator}
+        IF    not ${still_offered}
+            Fail    ${locator} was acted on - it is gone from the screen - but ${anchor} did not follow within ${timeout}.
+        END
+        Log    ${locator} did not bring up ${anchor} in ${timeout}; tapping it again.    level=WARN
+    END
+    Fail    ${locator} did not bring up ${anchor} over three taps.
+
+Type Exactly
+    [Documentation]    Types into a field and confirms the field holds exactly that before moving on.
+    ...
+    ...                XCUITest's typing drops and doubles characters under load: a search for
+    ...                "AutoTestContact" went in as "AuoTestContactt", and the case then reported
+    ...                that the contact was missing - which was true of what had actually been
+    ...                searched for. A probe typing the same string by hand came back clean, so it
+    ...                is intermittent and only the field can say when it happened.
+    ...
+    ...                Logs what landed, so never type a recovery phrase through this.
+    [Arguments]    ${locator}    ${text}
+    FOR    ${attempt}    IN RANGE    3
+        Clear Text    ${locator}
+        Input Text    ${locator}    ${text}
+        ${landed}=    Get Text    ${locator}
+        IF    $landed == $text    RETURN
+        Log    ${locator} took "${landed}" rather than "${text}"; typing it again.    level=WARN
+    END
+    Fail    ${locator} kept mistyping "${text}": the field holds "${landed}".
+
 Capture Failure Screenshot
     [Documentation]    Test Teardown for every suite. Skips the screenshot while a recovery phrase can
     ...                be on screen: Android blacks those screens out, but iOS does not.
+    ...
+    ...                Pass the path. Called with no arguments the keyword reports success and writes
+    ...                nothing, so every failure this suite has ever had came without a picture - and
+    ...                a message like "neither the disclaimer nor the project page appeared" is a
+    ...                description of two absences, which is the least useful thing a failure can say.
     IF    '${TEST STATUS}' != 'FAIL'    RETURN
     # Get Webelements raises when nothing matches, which is the usual, screenshot-safe case.
     TRY
@@ -201,7 +262,14 @@ Capture Failure Screenshot
     IF    $secret
         Log    Screenshot skipped: a recovery phrase may be on screen.    level=WARN
     ELSE
-        Run Keyword And Ignore Error    Capture Page Screenshot
+        ${name}=    Evaluate    re.sub(r'[^A-Za-z0-9]+', '-', $TEST_NAME).strip('-')    modules=re
+        Run Keyword And Ignore Error    Capture Page Screenshot    ${OUTPUT DIR}/failed-${name}.png
+        # Android blacks out capture-protected screens, so the picture of a failure on one is a
+        # black rectangle that proves only which screens those are. The tree is the only evidence
+        # left there, and it is safe to keep for exactly the reason the screenshot was: this runs
+        # only where no recovery phrase was found on screen.
+        ${source}=    Run Keyword And Ignore Error    Get Source
+        Run Keyword And Ignore Error    Create File    ${OUTPUT DIR}/failed-${name}.xml    ${source}[1]
     END
 
 Reset To Fresh Wallet

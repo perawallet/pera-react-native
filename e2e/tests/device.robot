@@ -19,8 +19,7 @@ Denied Camera Shows The Scanner's Permission State
     Go Home
     Tap    ${QR_SCANNER_BUTTON}
     Wait Until Page Contains Element    ${CAMERA_DENIED_TITLE}    timeout=15s
-    Tap    ${CAMERA_DENIED_CLOSE}
-    Wait Until Page Does Not Contain Element    ${CAMERA_DENIED_TITLE}    timeout=10s
+    Dismiss Camera Denied Sheet
     # Closing the permission sheet leaves the scanner screen itself open, which is
     # capture-protected - the screenshot at this failure was solid black, not a missing Home.
     # The assertion is that the flow gets back to Home, so leave the scanner too.

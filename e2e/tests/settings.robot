@@ -48,11 +48,11 @@ Theme Can Be Switched
     TRY
         FOR    ${theme}    IN    light    dark    system
             Tap    tid=settings_theme_${theme}_radio
-            Switch Should Be    settings_theme_${theme}_radio    ${True}
+            Theme Should Be Selected    ${theme}
         END
     FINALLY
         Tap    tid=settings_theme_${original}_radio
-        Switch Should Be    settings_theme_${original}_radio    ${True}
+        Theme Should Be Selected    ${original}
     END
 
 Notifications Settings Open

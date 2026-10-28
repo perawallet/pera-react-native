@@ -79,6 +79,28 @@ Test Id Starting With
     [Arguments]    ${prefix}
     RETURN    xpath=//*[starts-with(@content-desc,'${prefix}') or starts-with(@resource-id, '${prefix}') or starts-with(@name,'${prefix}')]
 
+Listed Participant Count
+    [Documentation]    The number of signers the import screen is showing, once it is showing them.
+    ...
+    ...                The screen counts as loaded when its footer draws, and the footer draws while
+    ...                the signers are still being resolved - so the count reads 0 for a moment on a
+    ...                screen that is otherwise complete, and a case that read it once reported the
+    ...                app as listing no participants. Wait for the count to leave 0 before reading
+    ...                it. The value is still whatever the app says, so a wrong count still fails.
+    ...
+    ...                A count that stays at 0 is a link that resolved to an empty shared account,
+    ...                which is a different thing from the app miscounting, so it says that instead.
+    ${count}=    Test Id    import-shared-account-participant-count
+    ${text}=    Wait Until Keyword Succeeds    15s    1s    Resolved Participant Count    ${count}
+    RETURN    ${text}
+
+Resolved Participant Count
+    [Arguments]    ${locator}
+    ${text}=    Get Text    ${locator}
+    Should Not Be Equal As Strings    ${text}    0
+    ...    msg=The import link resolved to a shared account with no signers, so there is nothing to list.
+    RETURN    ${text}
+
 Tap Screen At
     [Documentation]    Taps a point given as fractions of the window, for backdrops with no element.
     [Arguments]    ${x_ratio}    ${y_ratio}
@@ -181,8 +203,7 @@ Open Multisig Introduction
 
 Open Create Shared Account
     ${accounts}=    Open Multisig Introduction
-    Tap    ${MULTISIG_INTRO_CONTINUE_BUTTON}
-    Wait Until Page Contains Element    ${ADD_PARTICIPANT_BUTTON}    timeout=15s
+    Tap Until    ${MULTISIG_INTRO_CONTINUE_BUTTON}    ${ADD_PARTICIPANT_BUTTON}
     RETURN    ${accounts}
 
 Register New Account
@@ -285,8 +306,7 @@ Participant Should Be Listed
     Wait Until Page Contains Element    tid=participant_item_${index}_${address}    timeout=10s
 
 Open Set Threshold
-    Tap    ${CREATE_MULTISIG_CONTINUE_BUTTON}
-    Wait Until Page Contains Element    ${SET_THRESHOLD_CONTINUE_BUTTON}    timeout=15s
+    Tap Until    ${CREATE_MULTISIG_CONTINUE_BUTTON}    ${SET_THRESHOLD_CONTINUE_BUTTON}
 
 Threshold Should Be
     [Arguments]    ${expected}
@@ -300,12 +320,11 @@ Participant Count Should Be
     Wait Until Keyword Succeeds    5s    0.2s    Element Text Should Be    ${count}    ${expected}
 
 Open Before You Create
-    Tap    ${SET_THRESHOLD_CONTINUE_BUTTON}
+    Tap Until    ${SET_THRESHOLD_CONTINUE_BUTTON}    ${BEFORE_CREATE_PROCEED_BUTTON}
     Wait Until Settled    ${BEFORE_CREATE_PROCEED_BUTTON}
 
 Open Name Shared Account
-    Tap    ${BEFORE_CREATE_PROCEED_BUTTON}
-    Wait Until Page Contains Element    ${ACCOUNT_FINISH_BUTTON}    timeout=15s
+    Tap Until    ${BEFORE_CREATE_PROCEED_BUTTON}    ${ACCOUNT_FINISH_BUTTON}
 
 Enter Account Name
     [Arguments]    ${name}
@@ -321,14 +340,24 @@ Finish Account
     # rises misses.
     Wait Until Settled    ${ACCOUNT_FINISH_BUTTON}
     Tap    ${ACCOUNT_FINISH_BUTTON}
-    FOR    ${i}    IN RANGE    30
+    # Poll fast. The toast is short-lived, and a two-second gap between looks let it come and
+    # go unseen: the same blocked build then reported SKIP on one run and "Finish did not leave
+    # the name screen" on the next, which made the suite's own results untrustworthy.
+    VAR    ${left}    ${False}
+    VAR    ${blocked}    ${False}
+    FOR    ${i}    IN RANGE    120
         ${left}=    Run Keyword And Return Status
-        ...    Wait Until Page Does Not Contain Element    ${ACCOUNT_FINISH_BUTTON}    timeout=2s
+        ...    Page Should Not Contain Element    ${ACCOUNT_FINISH_BUTTON}
         IF    ${left}    BREAK
-        ${blocked}=    Run Keyword And Return Status    Page Should Contain Text    An error occurred    loglevel=NONE
-        Skip If    ${blocked}    ${CREATION_BLOCKED}
+        ${toast}=    Run Keyword And Return Status
+        ...    Page Should Contain Text    An error occurred    loglevel=NONE
+        IF    ${toast}    VAR    ${blocked}    ${True}
+        IF    ${blocked}    BREAK
+        Sleep    0.5s
     END
-    Should Be True    ${left}    Finish did not leave the name screen.
+    Skip If    ${blocked}    ${CREATION_BLOCKED}
+    Should Be True    ${left}
+    ...    msg=Finish did not leave the name screen in 60s, and no backend error was shown either - so this is neither the known device-registration block nor a slow save.
     Wait Until Page Contains Element    ${MORE_BUTTON}    timeout=30s
 
 Create Shared Account
@@ -433,9 +462,21 @@ Ensure Watch Account
     Wait Until Page Does Not Contain Element    ${ACCOUNT_FINISH_BUTTON}    timeout=30s
 
 Open Import Link
+    [Documentation]    A deeplink is fire-and-forget: it is handed to the OS and nothing reports back
+    ...                whether the app acted on it. One fired at an app still settling after the
+    ...                previous screen left can be dropped, and then the import screen simply never
+    ...                arrives - which is how `Ignoring An Import Adds Nothing` failed, on its second
+    ...                link rather than its first. Re-fire once, at WARN, so a link that needed the
+    ...                second shot shows up in the log instead of being quietly absorbed.
     [Arguments]    ${address}
     Open Deeplink    ${IMPORT_LINK}${address}
-    Wait Until Page Contains Element    ${IMPORT_LOADED}    timeout=20s
+    ${arrived}=    Run Keyword And Return Status
+    ...    Wait Until Page Contains Element    ${IMPORT_LOADED}    timeout=20s
+    IF    not ${arrived}
+        Log    The shared-account import link did not land in 20s; firing it once more.    level=WARN
+        Open Deeplink    ${IMPORT_LINK}${address}
+        Wait Until Page Contains Element    ${IMPORT_LOADED}    timeout=20s
+    END
     ${known}=    Run Keyword And Return Status    Page Should Contain Element    ${IMPORT_IGNORE_BUTTON}
     Skip If    not ${known}
     ...    The backend returned no shared account for ${address}: the import screen shows its error state, so there is nothing to import.

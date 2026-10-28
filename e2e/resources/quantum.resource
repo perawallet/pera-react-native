@@ -42,12 +42,7 @@ Create Quantum Account
 Reveal Passphrase
     [Documentation]    Of the selected account. Test wallets only; never point this at a funded account.
     Open Account Option    ${OPTION_VIEW_PASSPHRASE}
-    Wait Until Settled    ${PASSPHRASE_ACK_REVEAL}
-    FOR    ${row}    IN RANGE    4
-        ${row_locator}=    Passphrase Ack Row    ${row}
-        Tap    ${row_locator}
-    END
-    Tap    ${PASSPHRASE_ACK_REVEAL}
+    Acknowledge And Reveal Passphrase
     ${first_word}=    Indexed Row    ${PASSPHRASE_WORD_ID}    1
     Wait Until Page Contains Element    ${first_word}    timeout=20s
 

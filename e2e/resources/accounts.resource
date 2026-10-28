@@ -49,6 +49,9 @@ ${ALGO_HOLDING_ROW}                 tid=asset_row_0
 ${DRAWER_SEARCH_BUTTON}             tid=account_drawer_search_button
 ${ADD_ACCOUNT_CLOSE_BUTTON}         tid=add_account_close_button
 ${PASSPHRASE_GRID}                  tid=view_passphrase_bottom_sheet_grid
+# The sheet around the grid. It is up while the phrase is still being fetched and while the sheet
+# is showing its error box, neither of which carries a testID of its own.
+${PASSPHRASE_SHEET}                 tid=view_passphrase_bottom_sheet
 ${NODE_CHAIN_NETWORKS}              tid=node_settings_chain_networks
 ${SWITCHER_ROWS}                    xpath=//*[starts-with(@content-desc, 'account_switcher_row_') or starts-with(@resource-id, 'account_switcher_row_') or starts-with(@name,'account_switcher_row_')]
 ${WATCH_INFO_CREATE_BUTTON}         tid=watch_info_create_button
@@ -111,9 +114,16 @@ Add Account To Wallet
     Open Account Switcher
     Tap    ${ACCOUNT_MENU_ADD_BUTTON}
     Wait Until Page Contains Element    ${ADD_ACCOUNT_IMPORT_BUTTON}    timeout=20s
-    ${added}=    Tap If Present    ${ADD_ACCOUNT_ADD_BUTTON}
-    IF    not ${added}    Tap    ${ADD_ACCOUNT_UNIVERSAL_BUTTON}
-    Wait Until Page Contains Element    ${ACCOUNT_FINISH_BUTTON}    timeout=60s
+    ${offered}=    Run Keyword And Return Status
+    ...    Page Should Contain Element    ${ADD_ACCOUNT_ADD_BUTTON}
+    # The tap lands - Click Element reports success and the button is on screen and enabled - and
+    # the screen simply stays. Waiting it out for a minute found nothing on the way; a second tap
+    # opens it at once, and the cases that follow inherited the missing account as their own failure.
+    IF    ${offered}
+        Tap Until    ${ADD_ACCOUNT_ADD_BUTTON}    ${ACCOUNT_FINISH_BUTTON}    timeout=30s
+    ELSE
+        Tap Until    ${ADD_ACCOUNT_UNIVERSAL_BUTTON}    ${ACCOUNT_FINISH_BUTTON}    timeout=30s
+    END
     # The name field takes focus and the keyboard lifts the button; a tap while it moves misses.
     Wait Until Settled    ${ACCOUNT_FINISH_BUTTON}
     Tap    ${ACCOUNT_FINISH_BUTTON}
@@ -235,6 +245,59 @@ Passphrase Ack Row
     ...                concatenated into an xpath, so the index is applied here instead.
     [Arguments]    ${index}
     RETURN    tid=${PASSPHRASE_ACK_ROW_ID}${index}
+
+Acknowledge And Reveal Passphrase
+    [Documentation]    Checks the four acknowledgement rows and opens the passphrase behind them.
+    ...
+    ...                Reveal is disabled until every row is checked, and the tap that followed the
+    ...                fourth row went out before React had re-rendered it: it landed on a disabled
+    ...                button, reported success, and the sheet stayed. "The grid did not appear in
+    ...                20 seconds" was the only thing that said so - and in the accounts suite the
+    ...                two cases after it then failed on the account this one never got to make.
+    ...
+    ...                So wait for the app's own gate instead. If that times out, a row's tap is
+    ...                what went missing, and the failure says that rather than naming the grid.
+    Wait Until Settled    ${PASSPHRASE_ACK_REVEAL}
+    FOR    ${index}    IN RANGE    4
+        ${row}=    Passphrase Ack Row    ${index}
+        Tap    ${row}
+    END
+    Wait Until Keyword Succeeds    10s    0.5s
+    ...    Element Should Be Enabled    ${PASSPHRASE_ACK_REVEAL}
+    Reveal The Passphrase
+
+Reveal The Passphrase
+    [Documentation]    Taps Reveal, and says which of three things went wrong when no grid follows.
+    ...
+    ...                The sheet holding the phrase renders three ways and only one of them is
+    ...                addressable: the grid. While the mnemonic is being fetched it draws a
+    ...                spinner, and when that fails it draws an error box - neither carries a
+    ...                testID. So "the grid did not appear in 20 seconds" covered the flow never
+    ...                opening, the flow opening and failing to produce the phrase, and the tap
+    ...                doing nothing: three bugs in three different places, reported identically.
+    ...
+    ...                The container does carry a testID, which separates them. The grid itself
+    ...                arrives in half a second or not at all - 32 passing runs, none above 0.5s -
+    ...                so a wait that expires is never a slow render, and raising it would only
+    ...                make the wrong answer take longer.
+    FOR    ${attempt}    IN RANGE    3
+        Tap    ${PASSPHRASE_ACK_REVEAL}
+        ${shown}=    Run Keyword And Return Status
+        ...    Wait Until Page Contains Element    ${PASSPHRASE_GRID}    timeout=20s
+        IF    ${shown}    RETURN
+        ${sheet_up}=    Run Keyword And Return Status
+        ...    Page Should Contain Element    ${PASSPHRASE_SHEET}
+        IF    ${sheet_up}
+            Fail    The passphrase sheet opened and showed no words in 20s: the app is still fetching the mnemonic, or has drawn its error box.
+        END
+        ${still_offered}=    Run Keyword And Return Status
+        ...    Page Should Contain Element    ${PASSPHRASE_ACK_REVEAL}
+        IF    not ${still_offered}
+            Fail    Reveal was acted on - the acknowledgement sheet is gone - but no passphrase sheet followed it.
+        END
+        Log    Reveal did not open the passphrase sheet; tapping it again.    level=WARN
+    END
+    Fail    Reveal did not open the passphrase sheet over three taps.
 
 Confirm Removal Until The Sheet Goes
     [Documentation]    Taps Remove until the confirmation sheet leaves.

@@ -94,7 +94,7 @@ Open Edit Contact
 Search Contacts
     [Arguments]    ${term}
     Tap    ${CONTACTS_SEARCH_INPUT}
-    Input Text    ${CONTACTS_SEARCH_INPUT}    ${term}
+    Type Exactly    ${CONTACTS_SEARCH_INPUT}    ${term}
 
 Contact QR Sheet Should Be Open
     Wait Until Settled    ${CONTACT_QR_COPY_BUTTON}

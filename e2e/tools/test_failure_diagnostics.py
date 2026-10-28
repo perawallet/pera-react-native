@@ -30,6 +30,7 @@ Get Webelements
     END
     RETURN    ${{elements}}
 Capture Page Screenshot
+    [Arguments]    ${{path}}
     Create File    {marker}    captured
 ''')
     status = run(str(suite), variable=['PLATFORM:android'], outputdir=str(tmp_path),

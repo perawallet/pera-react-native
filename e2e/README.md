@@ -50,8 +50,9 @@ Each test has a five-minute timeout; override it with `E2E_TEST_TIMEOUT="10 minu
 pip install -r e2e/requirements.txt
 (cd apps/mobile/android && E2E_FIXTURES=1 APP_ENV=development ./gradlew assembleRelease)
 (cd apps/mobile && E2E_FIXTURES=1 APP_ENV=development npx expo run:ios --configuration Release --device <simulator-udid> --no-bundler)
-robot --exclude slow --variable PLATFORM:android --outputdir e2e/results/android e2e/tests
-robot --exclude slow --variable PLATFORM:ios --outputdir e2e/results/ios e2e/tests
+appium &                                     # the suite talks to a device through this
+ANDROID_UDID=emulator-5554 OUT_DIR=e2e/results/android e2e/tools/run.sh android
+IOS_UDID=<simulator-udid>  OUT_DIR=e2e/results/ios     e2e/tools/run.sh ios
 python e2e/tools/parity.py e2e/results/android/output.xml e2e/results/ios/output.xml
 python e2e/tools/flow_diff.py e2e/results/android/nav-flows.json e2e/results/ios/nav-flows.json
 ```
@@ -60,6 +61,14 @@ python e2e/tools/flow_diff.py e2e/results/android/nav-flows.json e2e/results/ios
   the `appiumVersion` in `browserstack-<platform>.yml`, so a case behaves the same on both.
 - Keep the device at its default font and display size. A larger one pushes rows below the fold,
   where UiAutomator does not report them until scrolled to.
+
+`SUITE=contacts` runs one suite instead of all of them.
+
+- Start Appium first. Without it every case fails in `Suite Setup`, and a whole pass finishes in
+  under a minute looking like the suite collapsed rather than like nothing was listening. The same
+  wall of `Parent suite setup failed` is what a device dying mid-pass leaves behind, which is why
+  `e2e/tools/flaky.py` refuses to compare a pass where most cases failed there: those are not verdicts
+  about the cases.
 
 - Set `APP_ENV` explicitly: a local `.env.local` may say `production`, and Metro refuses to bundle
   the hook for production.
@@ -190,8 +199,21 @@ establish platform parity.
 
 Every case carries an `id:<area>.<behaviour>` tag. The ID is what the parity matrix compares across
 platforms, so keep it when renaming a case and never reuse one for a different behaviour.
-`e2e/tools/parity.py` fails unless every scenario passed on both platforms.
-Missing, multiple or duplicate scenario IDs fail validation rather than replacing another result.
+`e2e/tools/parity.py` compares two passes — `parity.py results/final-android results/final-ios`,
+each a pass directory or a single `output.xml`. It fails on a scenario that passed on one platform
+and failed on the other, or that ran on only one. It does not require a pass on both: around fifty
+scenarios per platform skip for reasons the app cannot change, and a gate nobody can get green is
+one everybody learns to route around. Missing, multiple or duplicate scenario IDs fail validation
+rather than replacing another result.
+
+`e2e/tools/flaky.py` takes two or more passes of the same platform and names the cases whose verdict
+changed between them. A case that is green twice is not yet proof of anything, but one that
+changes is a defect in the test, the app, or the device — and worth finding before CI does. A case
+that only ever alternates between passing and skipping is reported apart from those, as
+`CONDITIONAL`: it is the suite stating a condition it ran under, not a verdict that moved.
+
+Compare passes from the same commit. A changed verdict is what flakiness looks like, but it is
+also what a fix looks like, so passes taken either side of one report the repaired cases as flaky.
 
 ## Checking the suite without a device
 

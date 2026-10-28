@@ -212,3 +212,9 @@ Tap Backdrop Above
     VAR    @{point}    ${{ int($width / 2) }}    ${{ int($location['y'] / 2) }}
     # The backdrop's tap recognizer rejects the default press, which is held too long to be a tap.
     AppiumLibrary.Tap    ${point}    duration=50ms
+
+Theme Should Be Selected
+    [Documentation]    iOS has no radio trait: it reads 'radio button, checked' where a switch reads 1.
+    ...                Switch Should Be matches both.
+    [Arguments]    ${theme}
+    Switch Should Be    settings_theme_${theme}_radio    ${True}

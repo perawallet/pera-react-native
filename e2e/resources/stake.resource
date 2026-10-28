@@ -37,17 +37,26 @@ Staking Projects Should Be Listed
 Tap First Project
     [Documentation]    Returns whether the disclaimer showed rather than the project opening directly.
     ...                Once the disclaimer has been accepted the tap goes straight to the project,
-    ...                which is a webview over the network and the slower of the two outcomes; 20s
-    ...                was not enough for it on a cold run.
-    Tap    ${STAKING_FIRST_CARD}
-    FOR    ${i}    IN RANGE    90
-        ${disclaimer}=    Run Keyword And Return Status    Page Should Contain Element    ${STAKING_DISCLAIMER_TITLE}
-        IF    ${disclaimer}    RETURN    ${True}
-        ${project}=    Run Keyword And Return Status    Page Should Contain Element    ${WEBVIEW_CLOSE_BUTTON}
-        IF    ${project}    RETURN    ${False}
-        Sleep    0.5s
+    ...                which is a webview over the network and the slower of the two outcomes.
+    ...
+    ...                A tap straight after closing a project page can do nothing at all: the list is
+    ...                back and the card is on screen - the failure screenshot shows it at the top,
+    ...                fully visible - and the app simply does not act on it. Waiting it out does not
+    ...                help, because there is nothing on the way; one run sat for 75s. So spend the
+    ...                same budget on three taps rather than one, and the webview's own chrome
+    ...                answers within two seconds of a tap that did land.
+    FOR    ${attempt}    IN RANGE    3
+        Tap    ${STAKING_FIRST_CARD}
+        FOR    ${i}    IN RANGE    30
+            ${disclaimer}=    Run Keyword And Return Status    Page Should Contain Element    ${STAKING_DISCLAIMER_TITLE}
+            IF    ${disclaimer}    RETURN    ${True}
+            ${project}=    Run Keyword And Return Status    Page Should Contain Element    ${WEBVIEW_CLOSE_BUTTON}
+            IF    ${project}    RETURN    ${False}
+            Sleep    0.5s
+        END
+        Log    A project tap did nothing in 15s; tapping the card again.    level=WARN
     END
-    Fail    Tapping a project opened neither the disclaimer nor the project page in 45s.
+    Fail    Tapping a project opened neither the disclaimer nor the project page in 45s, over three taps.
 
 Open Disclaimer
     [Documentation]    The disclaimer shows until accepted once per install, so a run after an

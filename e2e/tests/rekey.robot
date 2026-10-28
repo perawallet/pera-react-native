@@ -96,5 +96,7 @@ Skipping Rescan Adds Nothing And Returns Home
     Page Should Not Contain Element    ${row}
 
 Undo Rekey Confirmation Opens For A Rekeyed Account
-    [Tags]    id:rekey.undo.confirm    p1    needs-funded    needs-testid    excludefromci
-    Skip    Reaching the account info card's Undo rekey link (account_info_undo_rekey_link) needs an already-rekeyed account in the wallet, which no fund-free keyword adds.
+    [Tags]    id:rekey.undo.confirm    p1    needs-funded    excludefromci
+    # The Undo rekey link does carry a testID (account_info_undo_rekey_link). What this case
+    # waits on is a rekeyed account, which costs a funded rekey to set up.
+    Skip    Needs an account that is already rekeyed; setting one up costs a funded rekey.
