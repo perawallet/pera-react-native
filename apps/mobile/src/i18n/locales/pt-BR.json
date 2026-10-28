@@ -515,11 +515,11 @@
             "body": "Anote estas palavras na ordem correta, usando os números correspondentes.",
             "error_title": "Não foi possível obter a passphrase",
             "error_body": "Algo deu errado. Tente novamente.",
-            "reach_title": "Esta passphrase dá acesso a"
+            "reach_title": "Endereços desta conta"
         },
         "compatibility": {
             "title": "Usar esta passphrase em outras wallets",
-            "evm": "Redes compatíveis com Ethereum: wallets BIP39 padrão, como a MetaMask, podem importar estas palavras. O endereço da sua primeira conta será o mesmo. Contas adicionadas depois podem usar um caminho de derivação que essas wallets não verificam por padrão.",
+            "evm": "Redes compatíveis com Ethereum: wallets BIP39 padrão, como a MetaMask, podem importar estas palavras, e o endereço da sua primeira conta será o mesmo. Contas que você adicionar depois na Pera podem não aparecer nessas wallets por padrão.",
             "algorand": "Algorand: funciona na Pera e em outras wallets compatíveis com wallets HD de Algorand de 24 palavras. Wallets de Algorand antigas, de 25 palavras, não conseguem importá-la.",
             "warning": "Qualquer pessoa que tenha estas palavras controla seus fundos em todas as redes. Nunca as digite em um site nem as compartilhe com ninguém."
         }

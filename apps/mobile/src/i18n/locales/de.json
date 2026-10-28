@@ -515,11 +515,11 @@
             "body": "Notiere diese Wörter unbedingt in der richtigen Reihenfolge anhand der entsprechenden Nummern.",
             "error_title": "Passphrase konnte nicht abgerufen werden",
             "error_body": "Etwas ist schiefgelaufen. Bitte versuche es erneut.",
-            "reach_title": "Diese Passphrase gibt Zugriff auf"
+            "reach_title": "Adressen dieses Kontos"
         },
         "compatibility": {
             "title": "Passphrase in anderen Wallets verwenden",
-            "evm": "Ethereum-kompatible Netzwerke: Standard-BIP39-Wallets wie MetaMask können diese Wörter importieren. Die Adresse deines ersten Kontos stimmt überein. Später hinzugefügte Konten verwenden eventuell einen Ableitungspfad, den diese Wallets standardmäßig nicht durchsuchen.",
+            "evm": "Ethereum-kompatible Netzwerke: Standard-BIP39-Wallets wie MetaMask können diese Wörter importieren, und die Adresse deines ersten Kontos stimmt überein. Konten, die du später in Pera hinzufügst, erscheinen in diesen Wallets standardmäßig eventuell nicht.",
             "algorand": "Algorand: funktioniert in Pera und anderen Wallets, die Algorand-HD-Wallets mit 24 Wörtern unterstützen. Ältere Algorand-Wallets mit 25 Wörtern können sie nicht importieren.",
             "warning": "Wer diese Wörter hat, kontrolliert dein Guthaben in allen Netzwerken. Gib sie niemals auf einer Website ein und teile sie mit niemandem."
         }

@@ -515,11 +515,11 @@
             "body": "Bu kelimeleri, karşılarındaki numaralara göre doğru sırayla kaydettiğinden emin ol.",
             "error_title": "Passphrase alınamadı",
             "error_body": "Bir şeyler ters gitti. Lütfen tekrar dene.",
-            "reach_title": "Bu passphrase şunlara erişim sağlar"
+            "reach_title": "Bu hesabın adresleri"
         },
         "compatibility": {
             "title": "Bu passphrase’i başka cüzdanlarda kullanmak",
-            "evm": "Ethereum uyumlu ağlar: MetaMask gibi standart BIP39 cüzdanları bu kelimeleri içe aktarabilir. İlk hesabının adresi aynı olur. Sonradan eklediğin hesaplar, bu cüzdanların varsayılan olarak taramadığı bir türetme yolu kullanabilir.",
+            "evm": "Ethereum uyumlu ağlar: MetaMask gibi standart BIP39 cüzdanları bu kelimeleri içe aktarabilir ve ilk hesabının adresi aynı olur. Pera’da sonradan eklediğin hesaplar bu cüzdanlarda varsayılan olarak görünmeyebilir.",
             "algorand": "Algorand: Pera’da ve 24 kelimelik Algorand HD cüzdanlarını destekleyen diğer cüzdanlarda çalışır. 25 kelimelik eski Algorand cüzdanları bunu içe aktaramaz.",
             "warning": "Bu kelimelere sahip olan herkes tüm ağlardaki fonlarını kontrol eder. Onları asla bir web sitesine girme ve kimseyle paylaşma."
         }
