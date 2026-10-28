@@ -10,26 +10,27 @@
  limitations under the License
  */
 
-import { useAccountSummaryQuery } from '@perawallet/wallet-core-accounts'
-import { useNativeAsset } from '@perawallet/wallet-core-assets'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { PWText, PWView } from '@components/core'
 import { AssetAmount } from '@components/AssetAmount'
+import { PreferredAmount } from '@components/PreferredAmount'
 import { useLanguage } from '@hooks/useLanguage'
+import { useAccountSummaryLine } from './useAccountSummaryLine'
 import { useSummaryStyles } from './styles'
 
-/** Reads the same cheap per-account SQL aggregate the account list already
- *  warms, so adding this line costs no extra query. */
-export const AccountSummaryLine = ({ address }: { address: string }) => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
-    const nativeAsset = useNativeAsset(scope)
+type AccountSummaryLineProps = {
+    account: WalletAccount
+    /** The account's backup item key, its Algorand address. */
+    address: string
+}
+
+export const AccountSummaryLine = ({
+    account,
+    address,
+}: AccountSummaryLineProps) => {
     const { t } = useLanguage()
     const styles = useSummaryStyles()
-    const { holdingsCount, portfolioNativeValue } = useAccountSummaryQuery(
-        address,
-        scope,
-    )
+    const { holdingsCount, value } = useAccountSummaryLine(account, address)
 
     return (
         <PWView style={styles.line}>
@@ -41,20 +42,33 @@ export const AccountSummaryLine = ({ address }: { address: string }) => {
                     count: holdingsCount,
                 })}
             </PWText>
-            <PWText
-                variant='body'
-                style={styles.text}
-            >
-                {'・'}
-            </PWText>
-            <AssetAmount
-                asset={nativeAsset}
-                value={portfolioNativeValue}
-                density='compact'
-                variant='body'
-                weight={400}
-                style={styles.text}
-            />
+            {value.kind !== 'none' && (
+                <PWText
+                    variant='body'
+                    style={styles.text}
+                >
+                    {'・'}
+                </PWText>
+            )}
+            {value.kind === 'native' && (
+                <AssetAmount
+                    asset={value.asset}
+                    value={value.value}
+                    density='compact'
+                    variant='body'
+                    weight={400}
+                    style={styles.text}
+                />
+            )}
+            {value.kind === 'fiat' && (
+                <PreferredAmount
+                    value={value.value}
+                    density='compact'
+                    variant='body'
+                    weight={400}
+                    style={styles.text}
+                />
+            )}
         </PWView>
     )
 }

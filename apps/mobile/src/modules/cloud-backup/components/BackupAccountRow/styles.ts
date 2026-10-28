@@ -19,6 +19,13 @@ export const useStyles = makeStyles(theme => ({
         gap: theme.spacing.lg,
         paddingVertical: theme.spacing.lg,
     },
+    main: {
+        flex: 1,
+        minWidth: 0,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.lg,
+    },
     body: {
         flex: 1,
         minWidth: 0,
@@ -32,6 +39,24 @@ export const useStyles = makeStyles(theme => ({
     title: {
         flexShrink: 1,
         color: theme.colors.textMain,
+    },
+    chevronExpanded: {
+        transform: [{ rotate: '180deg' }],
+    },
+    addressPanel: {
+        gap: theme.spacing.sm,
+        padding: theme.spacing.md,
+        marginBottom: theme.spacing.lg,
+        borderRadius: theme.borderRadius.sm,
+        backgroundColor: theme.colors.layerGrayLighter,
+    },
+    addressRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        gap: theme.spacing.md,
+    },
+    addressChainName: {
+        color: theme.colors.textGray,
     },
 }))
 

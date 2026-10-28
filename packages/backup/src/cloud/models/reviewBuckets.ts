@@ -16,7 +16,11 @@ import {
     isContactRecordKey,
     isPasskeyItemKey,
 } from './itemKeys'
-import { isNewerAccountRecord } from './accountRecord'
+import {
+    cachedRecordChains,
+    isNewerAccountRecord,
+    type CachedRecordChain,
+} from './accountRecord'
 import { trackedContactId } from './contactRecord'
 import type { BackupItemKind } from './payloads'
 import type { SyncItemState, SyncState } from './syncState'
@@ -36,6 +40,8 @@ export type BackupAccountReview = ReviewBuckets<{
     type: BackupItemKind | null
     /** A record only a newer version of the app can restore. */
     needsUpdate: boolean
+    /** Empty for an item written before records, which names no chain. */
+    chains: CachedRecordChain[]
 }>
 
 export type BackupContactReview = ReviewBuckets<{
@@ -163,6 +169,7 @@ export const deriveBackupAccountReview = (
             address: item.address as string,
             type: item.accountType ?? null,
             needsUpdate: isNewerAccountRecord(item.record),
+            chains: cachedRecordChains(item.record),
         }),
     )
 

@@ -19,12 +19,22 @@ import {
 import {
     backupItemKindId,
     type BackupItemKind,
+    type CachedRecordChain,
 } from '@perawallet/wallet-core-backup'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
-import { PWIcon, PWRoundIcon, PWText, PWView } from '@components/core'
+import {
+    PWIcon,
+    PWRoundIcon,
+    PWText,
+    PWTouchableOpacity,
+    PWView,
+} from '@components/core'
 import { AccountIcon, accountGlyphFor } from '@components/AccountIcon'
+import { CopyableText } from '@components/CopyableText'
+import { ChainIconStack } from '@modules/chain-ui/icon'
 import { AccountSummaryLine } from './AccountSummaryLine'
+import { useBackupAccountRow } from './useBackupAccountRow'
 import { useStyles } from './styles'
 
 export type BackupAccountRowProps = {
@@ -35,6 +45,9 @@ export type BackupAccountRowProps = {
     /** Picks the glyph for an address held only in the backup; ignored once
      *  `account` is present. */
     accountType?: BackupItemKind | null
+    /** The chains an address held only in the backup restores; ignored once
+     *  `account` is present. */
+    backupChains?: CachedRecordChain[]
     isBackedUp: boolean
     trailing?: ReactNode
     /** Renders under the text column, so a wide control can't squeeze the name. */
@@ -46,12 +59,15 @@ export const BackupAccountRow = ({
     address,
     account,
     accountType,
+    backupChains,
     isBackedUp,
     trailing,
     action,
     testID,
 }: BackupAccountRowProps) => {
     const styles = useStyles()
+    const { isMultichain, chainIds, chains, canExpand, isExpanded, onToggle } =
+        useBackupAccountRow({ address, account, backupChains })
 
     const backupKindId =
         !account && accountType != null
@@ -63,55 +79,106 @@ export const BackupAccountRow = ({
     const backupGlyph = backupGlyphId ? accountGlyphFor(backupGlyphId) : null
 
     return (
-        <PWView
-            style={styles.row}
-            testID={testID}
-        >
-            {account ? (
-                <AccountIcon
-                    account={account}
-                    size='xl'
-                />
-            ) : backupGlyph ? (
-                <PWRoundIcon
-                    icon={backupGlyph.name}
-                    variant={backupGlyph.variant}
-                    size='md'
-                />
-            ) : (
-                <PWRoundIcon
-                    icon='accounts/glyph/unknown-account'
-                    variant='accountNeutral'
-                    size='md'
-                />
-            )}
-            <PWView style={styles.body}>
-                <PWView style={styles.titleRow}>
-                    <PWText
-                        variant='bodyLarge'
-                        numberOfLines={1}
-                        ellipsizeMode='middle'
-                        style={styles.title}
-                    >
-                        {account
-                            ? getAccountDisplayName(account, LEGACY_CHAIN_ID)
-                            : truncateAlgorandAddress(address)}
-                    </PWText>
-                    <PWIcon
-                        name={isBackedUp ? 'cloud-check' : 'cloud-off'}
-                        variant={isBackedUp ? 'positive' : 'error'}
-                        size='sm'
-                        testID={
-                            isBackedUp
-                                ? 'backup_account_row_backed_up'
-                                : 'backup_account_row_not_backed_up'
-                        }
-                    />
-                </PWView>
-                {account != null && <AccountSummaryLine address={address} />}
-                {action}
+        <PWView testID={testID}>
+            <PWView style={styles.row}>
+                <PWTouchableOpacity
+                    style={styles.main}
+                    onPress={onToggle}
+                    disabled={!canExpand}
+                    // react-native-web 0.21 drops accessibilityState; aria-* reaches both.
+                    aria-expanded={canExpand ? isExpanded : undefined}
+                    testID='backup_account_row_toggle'
+                >
+                    {account ? (
+                        <AccountIcon
+                            account={account}
+                            size='xl'
+                        />
+                    ) : backupGlyph ? (
+                        <PWRoundIcon
+                            icon={backupGlyph.name}
+                            variant={backupGlyph.variant}
+                            size='md'
+                        />
+                    ) : (
+                        <PWRoundIcon
+                            icon='accounts/glyph/unknown-account'
+                            variant='accountNeutral'
+                            size='md'
+                        />
+                    )}
+                    <PWView style={styles.body}>
+                        <PWView style={styles.titleRow}>
+                            <PWText
+                                variant='bodyLarge'
+                                numberOfLines={1}
+                                ellipsizeMode='middle'
+                                style={styles.title}
+                            >
+                                {account
+                                    ? getAccountDisplayName(
+                                          account,
+                                          LEGACY_CHAIN_ID,
+                                      )
+                                    : truncateAlgorandAddress(address)}
+                            </PWText>
+                            <PWIcon
+                                name={isBackedUp ? 'cloud-check' : 'cloud-off'}
+                                variant={isBackedUp ? 'positive' : 'error'}
+                                size='sm'
+                                testID={
+                                    isBackedUp
+                                        ? 'backup_account_row_backed_up'
+                                        : 'backup_account_row_not_backed_up'
+                                }
+                            />
+                            {canExpand && (
+                                <PWIcon
+                                    name='chevron-down'
+                                    size='sm'
+                                    variant='secondary'
+                                    style={
+                                        isExpanded
+                                            ? styles.chevronExpanded
+                                            : undefined
+                                    }
+                                />
+                            )}
+                        </PWView>
+                        {isMultichain && chainIds.length > 0 && (
+                            <ChainIconStack chainIds={chainIds} />
+                        )}
+                        {account != null && (
+                            <AccountSummaryLine
+                                account={account}
+                                address={address}
+                            />
+                        )}
+                        {action}
+                    </PWView>
+                </PWTouchableOpacity>
+                {trailing}
             </PWView>
-            {trailing}
+            {isExpanded && (
+                <PWView style={styles.addressPanel}>
+                    {chains.map(chain => (
+                        <CopyableText
+                            key={chain.chainId}
+                            copyValue={chain.copyValue}
+                            style={styles.addressRow}
+                            testID={`backup_account_address_${chain.chainId}`}
+                        >
+                            <PWText
+                                variant='body'
+                                style={styles.addressChainName}
+                            >
+                                {chain.displayName}
+                            </PWText>
+                            <PWText variant='body'>{chain.address}</PWText>
+                        </CopyableText>
+                    ))}
+                </PWView>
+            )}
         </PWView>
     )
 }
