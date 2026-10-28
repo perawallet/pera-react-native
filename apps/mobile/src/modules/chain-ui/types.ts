@@ -39,6 +39,8 @@ export type ChainUi = {
     watchAccountCopy?: WatchAccountCopy
     /** Unset, an address of this family entered elsewhere reads as a search miss. */
     wrongNetworkAddress?: WrongNetworkAddressCopy
+    /** Unset, the address search uses neutral copy that names no address format. */
+    addressSearchPlaceholder?: I18nKey
 }
 
 export type ChainUiRegistry = Partial<Record<ChainFamily, ChainUi>>
