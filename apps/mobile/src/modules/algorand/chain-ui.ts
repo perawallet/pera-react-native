@@ -98,5 +98,8 @@ export const algorandChainUi: ChainUi = {
         titleKey: i18nKey('address_entry.wrong_network.title.algorand'),
         bodyKey: i18nKey('address_entry.wrong_network.body.algorand'),
         sendBodyKey: i18nKey('address_entry.wrong_network.send_body.algorand'),
+        sendOnNetworkBodyKey: i18nKey(
+            'address_entry.wrong_network.send_body_on_network.algorand',
+        ),
     },
 }

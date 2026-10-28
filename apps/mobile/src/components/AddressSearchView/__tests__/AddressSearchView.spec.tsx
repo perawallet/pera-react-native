@@ -71,6 +71,7 @@ vi.mock('@modules/chain-ui', () => ({
             titleKey: `address_entry.wrong_network.title.${family}`,
             bodyKey: `address_entry.wrong_network.body.${family}`,
             sendBodyKey: `address_entry.wrong_network.send_body.${family}`,
+            sendOnNetworkBodyKey: `address_entry.wrong_network.send_body_on_network.${family}`,
         },
     }),
 }))
@@ -434,6 +435,27 @@ describe('AddressSearchView', () => {
             expect(
                 screen.queryByText('address_entry.no_accounts_found'),
             ).toBeNull()
+        })
+
+        it('names the network of an asset found on several chains', () => {
+            render(
+                <AddressSearchView
+                    scope={SCOPE}
+                    onSelected={mockOnSelected}
+                    sendingAssetLabel='USDC'
+                    isSendingMultiChainAsset
+                />,
+            )
+
+            typeAddress()
+
+            expect(
+                screen.getByText(
+                    `address_entry.wrong_network.send_body_on_network.algorand ${JSON.stringify(
+                        { asset: 'USDC', network: 'Algorand' },
+                    )}`,
+                ),
+            ).toBeTruthy()
         })
 
         it('stays neutral when nothing is being sent', () => {

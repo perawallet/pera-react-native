@@ -33,5 +33,8 @@ export const ethereumChainUi: ChainUi | undefined = {
         titleKey: i18nKey('address_entry.wrong_network.title.evm'),
         bodyKey: i18nKey('address_entry.wrong_network.body.evm'),
         sendBodyKey: i18nKey('address_entry.wrong_network.send_body.evm'),
+        sendOnNetworkBodyKey: i18nKey(
+            'address_entry.wrong_network.send_body_on_network.evm',
+        ),
     },
 }

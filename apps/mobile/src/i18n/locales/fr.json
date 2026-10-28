@@ -213,6 +213,10 @@
                 "evm": "Seules les adresses compatibles EVM peuvent être ajoutées ici. Veuillez vérifier l’adresse et réessayer."
             },
             "send_body": {
+                "algorand": "{{asset}} ne peut être envoyé qu’à des adresses Algorand. Veuillez vérifier l’adresse du destinataire ou choisir un actif EVM à envoyer.",
+                "evm": "{{asset}} ne peut être envoyé qu’à des adresses compatibles EVM (commençant par « 0x »). Veuillez vérifier l’adresse du destinataire ou choisir un actif Algorand à envoyer."
+            },
+            "send_body_on_network": {
                 "algorand": "{{asset}} sur {{network}} ne peut être envoyé qu’à des adresses Algorand. Veuillez vérifier l’adresse du destinataire ou choisir un actif EVM à envoyer.",
                 "evm": "{{asset}} sur {{network}} ne peut être envoyé qu’à des adresses compatibles EVM (commençant par « 0x »). Veuillez vérifier l’adresse du destinataire ou choisir un actif Algorand à envoyer."
             }

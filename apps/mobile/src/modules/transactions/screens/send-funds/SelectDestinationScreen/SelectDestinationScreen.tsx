@@ -94,6 +94,9 @@ export const SelectDestinationScreen = () => {
                 scope={scope}
                 showClipboardPaste
                 sendingAssetLabel={selectedAsset.unitName || selectedAsset.name}
+                isSendingMultiChainAsset={
+                    !!selectedAsset.peraMetadata?.crossChainAssetGroup
+                }
             />
         </PWScreen>
     )

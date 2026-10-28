@@ -47,8 +47,10 @@ export type WrongNetworkAddressCopy = {
     titleKey: I18nKey
     /** For a field that takes this family's addresses. */
     bodyKey: I18nKey
-    /** As `bodyKey`, while sending the `{{asset}}` on the `{{network}}` chain. */
+    /** As `bodyKey`, while sending the `{{asset}}`. */
     sendBodyKey: I18nKey
+    /** As `sendBodyKey`, naming the `{{network}}` of an asset found on several. */
+    sendOnNetworkBodyKey: I18nKey
 }
 
 export type AddressSearchViewProps = {
@@ -69,6 +71,8 @@ export type AddressSearchViewProps = {
      * message speaks of sending it; unset, it stays neutral.
      */
     sendingAssetLabel?: string
+    /** The sent asset exists on other chains too, so the message names this one. */
+    isSendingMultiChainAsset?: boolean
 }
 
 export const AddressSearchView = ({
@@ -82,6 +86,7 @@ export const AddressSearchView = ({
     showAddIcon = false,
     showClipboardPaste = false,
     sendingAssetLabel,
+    isSendingMultiChainAsset = false,
 }: AddressSearchViewProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
@@ -255,10 +260,15 @@ export const AddressSearchView = ({
                     title={t(addressCopy.titleKey)}
                     body={
                         sendingAssetLabel
-                            ? t(expectedCopy.sendBodyKey, {
-                                  asset: sendingAssetLabel,
-                                  network: descriptor.displayName,
-                              })
+                            ? t(
+                                  isSendingMultiChainAsset
+                                      ? expectedCopy.sendOnNetworkBodyKey
+                                      : expectedCopy.sendBodyKey,
+                                  {
+                                      asset: sendingAssetLabel,
+                                      network: descriptor.displayName,
+                                  },
+                              )
                             : t(expectedCopy.bodyKey)
                     }
                 />
@@ -270,7 +280,13 @@ export const AddressSearchView = ({
                 body={t('address_entry.no_accounts_body')}
             />
         )
-    }, [t, mismatchedFamily, scope.chainId, sendingAssetLabel])
+    }, [
+        t,
+        mismatchedFamily,
+        scope.chainId,
+        sendingAssetLabel,
+        isSendingMultiChainAsset,
+    ])
 
     const listEmptyComponent = isNfdLoading ? (
         <PWView style={styles.loadingContainer}>
