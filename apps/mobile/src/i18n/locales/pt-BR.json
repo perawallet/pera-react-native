@@ -2673,6 +2673,7 @@
             "error_title": "Nenhuma conta selecionada",
             "error_body": "Nenhuma conta foi selecionada. Selecione uma conta primeiro",
             "chain_unavailable_title": "{{chain}} não está disponível para esta conta",
+            "receive_on": "Use este endereço para receber ativos na rede {{chain}}",
             "copy_address": "Copiar endereço",
             "share": "Compartilhar endereço"
         }

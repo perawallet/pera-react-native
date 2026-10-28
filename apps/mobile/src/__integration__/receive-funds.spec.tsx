@@ -87,6 +87,10 @@ describe('Flow: Receive funds', () => {
         expect(qr.getAttribute('value')).toBe(
             `algorand://${addressOf(PRIMARY_ACCOUNT)}`,
         )
+        expect(screen.getByTestId('chain_icon_algorand')).toBeTruthy()
+        expect(screen.getByTestId('receive_chain_caption').textContent).toBe(
+            'receive_funds.qrview.receive_on',
+        )
         expect(screen.getByTestId('receive_copy_address_button')).toBeTruthy()
         expect(screen.getByTestId('receive_share_address_button')).toBeTruthy()
         expectFlowEvents(analytics, 'receive', 'algorand')

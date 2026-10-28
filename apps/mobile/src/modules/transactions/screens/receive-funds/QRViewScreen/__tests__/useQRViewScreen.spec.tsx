@@ -85,8 +85,14 @@ vi.mock('@utils/shareText', () => ({
     shareText: vi.fn(),
 }))
 
-const ALGORAND_SCOPE: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
-const ETHEREUM_SCOPE: ChainScope = { chainId: 'ethereum', networkId: 'sepolia' }
+const ALGORAND_SCOPE: ChainScope = {
+    chainId: 'algorand',
+    networkId: 'mainnet',
+}
+const ETHEREUM_SCOPE: ChainScope = {
+    chainId: 'ethereum',
+    networkId: 'sepolia',
+}
 
 const ALGORAND_ADDRESS =
     'CBLWUBRWCWNKZ2Y2Q5HFKN7XISNBVAN47422MZOKH5OGCZ3H5JYLTDPLOA'
@@ -219,6 +225,17 @@ describe('useQRViewScreen', () => {
         expect(result.current.canReceive).toBe(true)
     })
 
+    it('names the chain the QR is for', () => {
+        givenAccount(ethereumAccount, ETHEREUM_SCOPE)
+
+        const { result } = renderHook(() => useQRViewScreen())
+
+        expect(result.current.chainId).toBe('ethereum')
+        expect(result.current.receiveCaption).toBe(
+            'receive_funds.qrview.receive_on',
+        )
+    })
+
     it('cannot receive when there is no account', () => {
         givenAccount(undefined, null)
 
@@ -228,6 +245,8 @@ describe('useQRViewScreen', () => {
         expect(result.current.accountName).toBe('')
         expect(result.current.address).toBe('')
         expect(result.current.paymentUri).toBe('')
+        expect(result.current.chainId).toBeUndefined()
+        expect(result.current.receiveCaption).toBe('')
     })
 
     it("explains the account's kind can't use a pinned chain out of its reach", () => {
@@ -365,7 +384,9 @@ describe('useQRViewScreen', () => {
         expect(mockTrackScreen).toHaveBeenCalledOnce()
         expect(mockTrackScreen).toHaveBeenCalledWith(
             AnalyticsScreenName.ShowQr,
-            { [AnalyticsMetadataKey.ChainId]: 'algorand' },
+            {
+                [AnalyticsMetadataKey.ChainId]: 'algorand',
+            },
         )
     })
 
@@ -376,7 +397,9 @@ describe('useQRViewScreen', () => {
 
         expect(mockTrackScreen).toHaveBeenCalledWith(
             AnalyticsScreenName.ShowQr,
-            { [AnalyticsMetadataKey.ChainId]: 'ethereum' },
+            {
+                [AnalyticsMetadataKey.ChainId]: 'ethereum',
+            },
         )
     })
 

@@ -95,6 +95,10 @@ describe('Flow: Receive funds on Ethereum', () => {
             `ethereum:${CHECKSUMMED_ADDRESS}@1`,
         )
         expect(screen.getByText(CHECKSUMMED_ADDRESS)).toBeTruthy()
+        expect(screen.getByTestId('chain_icon_ethereum')).toBeTruthy()
+        expect(screen.getByTestId('receive_chain_caption').textContent).toBe(
+            'receive_funds.qrview.receive_on',
+        )
         expectFlowEvents(analytics, 'receive', 'ethereum')
     })
 

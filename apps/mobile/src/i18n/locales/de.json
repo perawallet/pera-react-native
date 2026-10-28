@@ -2649,6 +2649,7 @@
             "error_title": "Kein Konto ausgewählt",
             "error_body": "Es wurde kein Konto ausgewählt. Bitte wähle zuerst ein Konto aus",
             "chain_unavailable_title": "{{chain}} ist für dieses Konto nicht verfügbar",
+            "receive_on": "Verwende diese Adresse, um Assets auf {{chain}} zu empfangen",
             "copy_address": "Adresse kopieren",
             "share": "Adresse teilen"
         }
