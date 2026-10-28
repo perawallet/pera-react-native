@@ -12,12 +12,14 @@
 
 import { useCallback } from 'react'
 import type { Decimal } from 'decimal.js'
-import type { AssetRef } from '@perawallet/wallet-core-chain-contract'
+import type { AssetRef, ChainId } from '@perawallet/wallet-core-chain-contract'
 import { useBottomSheetStore } from '@modules/bottom-sheet'
 import { useSendFundsStore } from '@modules/transactions'
 
 export type SendFundsDeeplinkPrefill = {
     asset?: AssetRef
+    /** The chain the send runs on when no asset names it; skips Choose Network. */
+    chainId?: ChainId
     destination?: string
     /**
      * Display-units amount, set by callers that already have it. Lands on
@@ -50,6 +52,7 @@ export const useSendFundsDeeplink = (): SendFundsDeeplinkHandler => {
     return useCallback(
         ({
             asset,
+            chainId,
             destination,
             amount,
             amountBaseUnits,
@@ -62,6 +65,7 @@ export const useSendFundsDeeplink = (): SendFundsDeeplinkHandler => {
             sendFundsStore.reset()
             if (destination) sendFundsStore.setDestination(destination)
             if (note) sendFundsStore.setNote(note)
+            if (chainId !== undefined) sendFundsStore.setChainId(chainId)
             if (asset !== undefined) {
                 sendFundsStore.setSelectedAsset(asset)
                 sendFundsStore.setCanSelectAsset(false)

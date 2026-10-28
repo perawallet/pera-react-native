@@ -287,9 +287,10 @@ export const useDeepLink = (): UseDeepLinkResult => {
                 setSelectedAccountId(account.id)
                 openSendFunds(
                     prefill.asset || isFirstChain
-                        ? prefill
+                        ? { ...prefill, chainId }
                         : {
                               ...prefill,
+                              chainId,
                               asset: getChainDescriptor(chainId).nativeAsset
                                   .ref,
                           },
