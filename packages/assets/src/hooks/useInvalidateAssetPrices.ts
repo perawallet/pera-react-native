@@ -42,7 +42,7 @@ export const useInvalidateAssetPrices = () => {
                 },
             })
         } catch (error) {
-            logger.error('Error invalidating asset prices', { error })
+            logger.warn('Error invalidating asset prices', { error })
         }
     }
 

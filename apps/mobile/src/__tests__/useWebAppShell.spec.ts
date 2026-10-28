@@ -269,6 +269,8 @@ describe('useWebAppShell', () => {
                 integrityHeaderEnabled: expect.anything(),
             }),
         )
+
+        infoSpy.mockRestore()
     })
 
     it('still reaches main when platform service init rejects (flags degrade, shell does not)', async () => {

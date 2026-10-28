@@ -194,8 +194,8 @@ describe('useInvalidateAssetPrices', () => {
     })
 
     it('handles errors gracefully', () => {
-        const loggerErrorSpy = vi
-            .spyOn(logger, 'error')
+        const loggerWarnSpy = vi
+            .spyOn(logger, 'warn')
             .mockImplementation(() => {})
 
         // Mock invalidateQueries to throw an error
@@ -210,11 +210,11 @@ describe('useInvalidateAssetPrices', () => {
         // Call the function - it should not throw
         result.current.invalidateAssetPrices()
 
-        expect(loggerErrorSpy).toHaveBeenCalledWith(
+        expect(loggerWarnSpy).toHaveBeenCalledWith(
             'Error invalidating asset prices',
             { error: expect.any(Error) },
         )
 
-        loggerErrorSpy.mockRestore()
+        loggerWarnSpy.mockRestore()
     })
 })

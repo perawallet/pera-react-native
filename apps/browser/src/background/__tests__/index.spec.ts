@@ -122,6 +122,7 @@ describe('background/index onAlarm routing', () => {
         ensureOffscreenDocumentMock.mockClear()
         handleIntegrityAlarmMock.mockClear()
         handleEnrolDeadlineAlarmMock.mockClear()
+        Object.values(loggerMock).forEach(fn => fn.mockClear())
 
         globalThis.chrome = {
             runtime: {
