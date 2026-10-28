@@ -17,10 +17,7 @@ import { Decimal } from 'decimal.js'
 import { useAccountOverviewHeader } from '../useAccountOverviewHeader'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
-import {
-    setCapabilityOverrides,
-    setChainEnabled,
-} from '@test-utils/capability-overrides'
+import { setChainEnabled } from '@test-utils/capability-overrides'
 import { findNativeAsset } from '@perawallet/wallet-core-assets'
 import { registerEthereumChain } from '@test-utils/chain-fixtures'
 import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
@@ -181,33 +178,25 @@ describe('useAccountOverviewHeader', () => {
         expect(result.current.availability.isAvailable).toBe(true)
     })
 
-    it('plots balance history on a chain that has it', () => {
+    it("charts the account's own chain when it is on no other", () => {
         const { result } = renderHook(
             () => useAccountOverviewHeader(mockAccount),
             { wrapper },
         )
 
-        expect(result.current.hasBalanceHistory).toBe(true)
+        expect(result.current.chartSources).toEqual([
+            {
+                address: 'test-address',
+                scope: { chainId: 'algorand', networkId: 'mainnet' },
+            },
+        ])
+        expect(result.current.currencyScope).toEqual({
+            chainId: 'algorand',
+            networkId: 'mainnet',
+        })
     })
 
-    it('hides the chart and trend on a chain with no balance history', () => {
-        registerEthereumChain()
-        setCapabilityOverrides({ balanceHistory: false }, 'ethereum')
-        const ethAccount = {
-            id: 'eth',
-            custody: { kind: 'watch' },
-            chains: { ethereum: { address: `0x${'e'.repeat(40)}` } },
-        } as WalletAccount
-
-        const { result } = renderHook(
-            () => useAccountOverviewHeader(ethAccount),
-            { wrapper },
-        )
-
-        expect(result.current.hasBalanceHistory).toBe(false)
-    })
-
-    it('shows the chart for an account on Ethereum alone', () => {
+    it('charts an account on Ethereum alone', () => {
         registerEthereumChain()
         const ethAccount = {
             id: 'eth',
@@ -220,7 +209,12 @@ describe('useAccountOverviewHeader', () => {
             { wrapper },
         )
 
-        expect(result.current.hasBalanceHistory).toBe(true)
+        expect(result.current.chartSources).toEqual([
+            {
+                address: `0x${'e'.repeat(40)}`,
+                scope: expect.objectContaining({ chainId: 'ethereum' }),
+            },
+        ])
     })
 
     it("shows an Ethereum account's balance in ETH under its chain's name", () => {
@@ -317,6 +311,10 @@ describe('useAccountOverviewHeader', () => {
         )
 
         expect(result.current.hasFiatTotal).toBe(false)
+        // No fiat total, but the chart still plots what the account holds.
+        expect(
+            result.current.chartSources.map(({ scope }) => scope.chainId),
+        ).toEqual(['algorand', 'ethereum'])
     })
 
     it("leaves a switched-off chain's last-synced value out of the total", async () => {
@@ -333,7 +331,9 @@ describe('useAccountOverviewHeader', () => {
         )
 
         expect(result.current.portfolioPreferredValue?.toString()).toBe('300')
-        expect(result.current.hasBalanceHistory).toBe(true)
+        expect(
+            result.current.chartSources.map(({ scope }) => scope.chainId),
+        ).toEqual(['algorand'])
     })
 
     it('sums every listed chain into one fiat total', async () => {
@@ -393,7 +393,7 @@ describe('useAccountOverviewHeader', () => {
         expect(result.current.hasBalance).toBe(true)
     })
 
-    it('hides the chart once the account spans a second chain, which it would leave out', () => {
+    it('charts every chain the total counts once the account spans a second chain', () => {
         registerEthereumChain()
 
         const { result } = renderHook(
@@ -401,8 +401,17 @@ describe('useAccountOverviewHeader', () => {
             { wrapper },
         )
 
-        expect(result.current.hasBalanceHistory).toBe(false)
         expect(result.current.hasFiatTotal).toBe(true)
+        expect(result.current.chartSources).toEqual([
+            {
+                address: 'test-address',
+                scope: { chainId: 'algorand', networkId: 'mainnet' },
+            },
+            {
+                address: ETH_ADDRESS,
+                scope: expect.objectContaining({ chainId: 'ethereum' }),
+            },
+        ])
     })
 
     it('determines hasBalance correctly when balance is greater than zero', () => {
