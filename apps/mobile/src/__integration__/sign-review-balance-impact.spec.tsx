@@ -10,13 +10,13 @@
  limitations under the License
  */
 
-// PoC — the balance-impact summary rendered inside the live review sheet.
+// The balance-impact summary rendered inside the live review sheet.
 // Proves the pipeline → computeBalanceImpact → BalanceImpactSummary path wires
 // up end-to-end: outgoing payments surface under the "you will spend" section.
 // The summary lives on the multi-transaction group view (TransactionListScreen)
 // — a single transaction conveys its impact through the signed header amount —
 // so the group review is what we exercise here. (Integration i18n returns keys
-// verbatim.)
+// verbatim.) A group where nothing changes hands hides the summary entirely.
 
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
@@ -36,6 +36,7 @@ import {
     waitFor,
     REVIEW_SIGNER_ADDRESS,
     seedAlgo25Signer,
+    drainPendingSignRequests,
 } from '@test-utils/signing-review'
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 import {
@@ -52,6 +53,7 @@ describe('Flow: balance-impact summary in the review sheet', () => {
     })
 
     beforeEach(async () => {
+        drainPendingSignRequests()
         await resetTestDatabase()
         await seedAlgoAsset('mainnet')
         resetTestKeystore()
@@ -89,5 +91,34 @@ describe('Flow: balance-impact summary in the review sheet', () => {
             },
             { timeout: 10_000 },
         )
+    })
+
+    it('hides the summary when no assets change hands in the group', async () => {
+        await seedAlgo25Signer()
+        // Two self-payments: the signer is both sender and receiver, so each
+        // nets to zero and no spend/receive movement remains. The group
+        // still renders (transaction count), but the impact section — and
+        // its flanking divider — must not.
+        const selfPayment = () =>
+            buildPaymentTransaction({
+                receiver: REVIEW_SIGNER_ADDRESS,
+                amount: 1_000_000n,
+            })
+        const { request } = buildTransactionSignRequest({
+            txs: [selfPayment(), selfPayment()],
+        })
+
+        renderSignReview(request)
+
+        await waitFor(
+            () => {
+                expect(
+                    screen.getByText('signing.transactions.transactions_count'),
+                ).toBeTruthy()
+            },
+            { timeout: 10_000 },
+        )
+
+        expect(screen.queryByTestId('balance-impact-summary')).toBeNull()
     })
 })

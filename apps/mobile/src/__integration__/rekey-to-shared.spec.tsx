@@ -20,7 +20,13 @@ import {
     vi,
 } from 'vitest'
 import { Decimal } from 'decimal.js'
-import { fireEvent, renderHook, screen, waitFor } from '@testing-library/react'
+import {
+    act,
+    fireEvent,
+    renderHook,
+    screen,
+    waitFor,
+} from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 import { Notifier } from 'react-native-notifier'
 
@@ -72,7 +78,7 @@ const seedRekeyAccounts = async (): Promise<{
 }> => {
     const { result: kms } = renderHook(() => useKMS())
     let key: Algo25KeyResult | null = null
-    await waitFor(async () => {
+    await act(async () => {
         key = await kms.current.createAlgo25Key({
             mnemonicIndices: ALGO25_TEST_MNEMONIC_INDICES,
         })

@@ -60,19 +60,10 @@ import { registerFakeLedgerProvider } from './__fixtures__/ledger'
 
 const LEDGER_ADDRESS = REVIEW_RECEIVER_ADDRESS
 
-type Deferred<T> = { promise: Promise<T>; resolve: (value: T) => void }
-const createDeferred = <T,>(): Deferred<T> => {
-    let resolveFn!: (value: T) => void
-    const promise = new Promise<T>(res => {
-        resolveFn = res
-    })
-    return { promise, resolve: resolveFn }
-}
-
-let pendingSignature: Deferred<Uint8Array> | null = null
+let pendingSignature: PromiseWithResolvers<Uint8Array> | null = null
 
 const blockOnSignature = (): Promise<Uint8Array> => {
-    pendingSignature = createDeferred<Uint8Array>()
+    pendingSignature = Promise.withResolvers<Uint8Array>()
     return pendingSignature.promise
 }
 

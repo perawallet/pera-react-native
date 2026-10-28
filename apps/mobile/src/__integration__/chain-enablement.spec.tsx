@@ -19,7 +19,13 @@ import {
     it,
     vi,
 } from 'vitest'
-import { fireEvent, renderHook, screen, waitFor } from '@testing-library/react'
+import {
+    act,
+    fireEvent,
+    renderHook,
+    screen,
+    waitFor,
+} from '@testing-library/react'
 import { http, type RequestHandler } from 'msw'
 
 import {
@@ -131,7 +137,7 @@ const handlersFor = (activeChains: readonly ChainId[]): RequestHandler[] =>
 const seedEthereumOnlyHdAccount = async (): Promise<WalletAccount> => {
     const { result: kms } = renderHook(() => useKMS())
     let rootKey: HDWalletKeyResult | null = null
-    await waitFor(async () => {
+    await act(async () => {
         rootKey = await kms.current.createHDWalletKey({
             mnemonicIndices: HD_TEST_MNEMONIC_24_INDICES,
         })

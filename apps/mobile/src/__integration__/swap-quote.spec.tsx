@@ -22,7 +22,7 @@ import { renderHook, waitFor } from '@testing-library/react'
 
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { server } from '@test-utils/msw-server'
+import { http, HttpResponse, server } from '@test-utils/msw-server'
 import { createQueryClientWrapper } from '@test-utils/render'
 import {
     mockCreateQuotes,
@@ -290,6 +290,53 @@ describe('Flow: Swap quote (Pera DEX aggregator)', () => {
             },
             { timeout: 5000 },
         )
+        expect(result.current.error).toBeTruthy()
+    })
+
+    it('Given a request that crashes the network layer (transport error, not HTTP error), when the swap quote mutation runs, then the error state surfaces via TanStack Query rather than crashing the consumer', async () => {
+        server.use(
+            mockSwapProviders({
+                response: {
+                    results: [
+                        {
+                            name: 'tinyman_v2',
+                            display_name: 'Tinyman v2',
+                            icon_url: '',
+                        },
+                    ],
+                },
+            }),
+            // HttpResponse.error() simulates a transport failure
+            // (connection reset, DNS failure) — distinct from a
+            // 5xx HTTP response. The mutation's promise rejects
+            // before any response body is parsed.
+            http.post('*/v2/dex-swap/quotes/', () => HttpResponse.error()),
+        )
+
+        const { result } = renderHook(
+            () => useCreateQuotesMutation(useSelectedScope(LEGACY_CHAIN_ID)),
+            {
+                wrapper: createQueryClientWrapper(),
+            },
+        )
+
+        result.current.mutate({
+            swapper_address: SWAPPER_ADDRESS,
+            swap_type: 'fixed-input',
+            asset_in_id: 0,
+            asset_out_id: 31_566_704,
+            amount: '10000000',
+            slippage: '0.01',
+        })
+
+        await waitFor(
+            () => {
+                expect(result.current.isError).toBe(true)
+            },
+            { timeout: 5000 },
+        )
+        // The error itself is non-null — production read sites use
+        // `error.message` for the toast body.
         expect(result.current.error).toBeTruthy()
     })
 })

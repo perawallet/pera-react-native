@@ -18,7 +18,7 @@ import { screen } from '@testing-library/react'
 
 // MenuScreen reaches PWWebView through the @modules/webview barrel; the real
 // component drags in the native provider chain, which doesn't resolve under
-// vitest (same workaround as gift-card-flag.spec.tsx).
+// vitest (same workaround as discover.spec.tsx).
 vi.mock('@modules/webview/components/PWWebView', () => ({
     PWWebView: () => null,
 }))
@@ -166,6 +166,13 @@ describe('Flow: capability gating', () => {
                 )
             },
         )
+    })
+
+    it('hides gift cards while the flag has never been set', () => {
+        renderWithNavigation(MenuScreen, 'Menu')
+
+        expect(screen.getByTestId('menu_contacts_button')).toBeTruthy()
+        expect(screen.queryByText('menu.buy_gift_card')).toBeNull()
     })
 
     describe('Pera Card entry points', () => {

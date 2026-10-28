@@ -43,6 +43,7 @@ import {
     REVIEW_RECEIVER_ADDRESS,
     REVIEW_SIGNER_ADDRESS,
     seedAlgo25Signer,
+    drainPendingSignRequests,
 } from '@test-utils/signing-review'
 import {
     useAccountsStore,
@@ -117,6 +118,7 @@ describe('Flow: multisig signing review (propose)', () => {
     })
 
     beforeEach(async () => {
+        drainPendingSignRequests()
         await resetTestDatabase()
         await seedAlgoAsset('mainnet')
         resetTestKeystore()

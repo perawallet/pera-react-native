@@ -44,7 +44,7 @@ import { kmsCore, SeedScheme } from '@perawallet/wallet-core-kms'
 import { getPendingTransactionRecords } from '@perawallet/wallet-core-transactions'
 import { server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
-import { isElementDisabled } from '@test-utils/rnw'
+import { findEnabledByTestId } from '@test-utils/rnw'
 import {
     resetTestDatabase,
     seedAlgoAsset,
@@ -190,13 +190,9 @@ const renderSendConfirmationStack = () =>
     })
 
 const confirmSend = async () => {
-    await waitFor(
-        () => expect(screen.getByTestId('send_confirm_button')).toBeTruthy(),
-        { timeout: 5000 },
+    fireEvent.click(
+        await findEnabledByTestId('send_confirm_button', { timeout: 5000 }),
     )
-    const confirmButton = screen.getByTestId('send_confirm_button')
-    await waitFor(() => expect(isElementDisabled(confirmButton)).toBe(false))
-    fireEvent.click(confirmButton)
     await waitFor(
         () => expect(screen.getByTestId('send_success')).toBeTruthy(),
         { timeout: 10_000 },
@@ -318,18 +314,11 @@ describe('Flow: send from an Ethereum account', () => {
         useSendFundsStore.getState().setSendMode('normal')
 
         renderSendConfirmationStack()
-        const confirmButton = await screen.findByTestId(
-            'send_confirm_button',
-            {},
-            { timeout: 5000 },
-        )
-        await waitFor(() =>
-            expect(isElementDisabled(confirmButton)).toBe(false),
-        )
+        await findEnabledByTestId('send_confirm_button', { timeout: 5000 })
 
         // Confirm waits on the balance and fee reads; press until it answers.
         await waitFor(() => {
-            fireEvent.click(confirmButton)
+            fireEvent.click(screen.getByTestId('send_confirm_button'))
             expect(Notifier.showNotification).toHaveBeenCalled()
         })
         expect(screen.queryByTestId('send_success')).toBeNull()

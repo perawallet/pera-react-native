@@ -20,7 +20,13 @@ import {
     it,
     vi,
 } from 'vitest'
-import { fireEvent, renderHook, screen, waitFor } from '@testing-library/react'
+import {
+    act,
+    fireEvent,
+    renderHook,
+    screen,
+    waitFor,
+} from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 import { Notifier } from 'react-native-notifier'
 
@@ -44,6 +50,9 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { useKMS, type Algo25KeyResult } from '@perawallet/wallet-core-kms'
 import {
+    AlreadyOptedInError,
+    InsufficientBalanceForOptInError,
+    NonZeroBalanceError,
     useAssetOptInMutation,
     useAssetOptOutMutation,
 } from '@perawallet/wallet-core-transactions'
@@ -80,9 +89,11 @@ const MAINNET_SCOPE = {
 const OptInHost = ({
     sender,
     assetId,
+    onRejected,
 }: {
     sender: WalletAccount
     assetId: string
+    onRejected?: (error: unknown) => void
 }) => {
     const { optIn } = useAssetOptInMutation(MAINNET_SCOPE)
     const { request } = useBottomSheet()
@@ -98,14 +109,10 @@ const OptInHost = ({
             options: { size: 'auto', enablePanDownToClose: true },
         }).then(result => {
             if (result !== 'confirm') return
-            // Swallow rejection at the host boundary — test 2
-            // intentionally drives the mutation into an
-            // `AlreadyOptedInError` and we don't want it surfacing
-            // as an unhandled rejection.
             optIn({
                 sender: addressOf(sender),
                 assetId: BigInt(assetId),
-            }).catch(() => {})
+            }).catch(error => onRejected?.(error))
         })
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
@@ -186,7 +193,7 @@ describe('Flow: Opt into an asset', () => {
         // mutation proceeds.
         const { result: kms } = renderHook(() => useKMS())
         let key: Algo25KeyResult | null = null
-        await waitFor(async () => {
+        await act(async () => {
             key = await kms.current.createAlgo25Key({
                 mnemonicIndices: ALGO25_TEST_MNEMONIC_INDICES,
             })
@@ -285,6 +292,7 @@ describe('Flow: Opt into an asset', () => {
                 },
             }),
         )
+        const onRejected = vi.fn()
         const sendSpy = vi.fn(() =>
             HttpResponse.json({ txId: 'irrelevant' }, { status: 200 }),
         )
@@ -295,6 +303,7 @@ describe('Flow: Opt into an asset', () => {
                 <OptInHost
                     sender={sender}
                     assetId={USDC_TEST_ASSET_ID}
+                    onRejected={onRejected}
                 />
             ),
             'OptInHost',
@@ -306,10 +315,11 @@ describe('Flow: Opt into an asset', () => {
 
         fireEvent.click(screen.getByTestId('opt_in_confirm'))
 
-        // Give the mutation a chance to run. It should throw before
-        // reaching submit. We give the spy a couple of polling ticks
-        // and assert it never fires.
-        await new Promise(resolve => setTimeout(resolve, 500))
+        await waitFor(() =>
+            expect(onRejected).toHaveBeenCalledWith(
+                expect.any(AlreadyOptedInError),
+            ),
+        )
         expect(sendSpy).not.toHaveBeenCalled()
     })
 
@@ -330,6 +340,7 @@ describe('Flow: Opt into an asset', () => {
                 },
             }),
         )
+        const onRejected = vi.fn()
         const sendSpy = vi.fn(() =>
             HttpResponse.json({ txId: 'irrelevant' }, { status: 200 }),
         )
@@ -340,6 +351,7 @@ describe('Flow: Opt into an asset', () => {
                 <OptInHost
                     sender={sender}
                     assetId={USDC_TEST_ASSET_ID}
+                    onRejected={onRejected}
                 />
             ),
             'OptInHost',
@@ -351,8 +363,11 @@ describe('Flow: Opt into an asset', () => {
 
         fireEvent.click(screen.getByTestId('opt_in_confirm'))
 
-        // The balance gate throws before the build/sign/submit step.
-        await new Promise(resolve => setTimeout(resolve, 500))
+        await waitFor(() =>
+            expect(onRejected).toHaveBeenCalledWith(
+                expect.any(InsufficientBalanceForOptInError),
+            ),
+        )
         expect(sendSpy).not.toHaveBeenCalled()
     })
 })
@@ -386,7 +401,7 @@ describe('Flow: Opt out of an asset', () => {
         // Same signing-capable sender as the opt-in suite.
         const { result: kms } = renderHook(() => useKMS())
         let key: Algo25KeyResult | null = null
-        await waitFor(async () => {
+        await act(async () => {
             key = await kms.current.createAlgo25Key({
                 mnemonicIndices: ALGO25_TEST_MNEMONIC_INDICES,
             })
@@ -534,6 +549,7 @@ describe('Flow: Opt out of an asset', () => {
             restriction: null,
         }
 
+        const onRejected = vi.fn()
         const sendSpy = vi.fn(() =>
             HttpResponse.json({ txId: 'unused' }, { status: 200 }),
         )
@@ -545,6 +561,7 @@ describe('Flow: Opt out of an asset', () => {
                     sender={sender}
                     accountBalance={accountBalance}
                     creator={USDC_TEST_ASSET_CREATOR}
+                    onRejected={onRejected}
                 />
             ),
             'OptOutHost',
@@ -555,8 +572,11 @@ describe('Flow: Opt out of an asset', () => {
         })
         fireEvent.click(screen.getByTestId('opt_out_confirm'))
 
-        // No POST should reach algod — the validation throws first.
-        await new Promise(resolve => setTimeout(resolve, 500))
+        await waitFor(() =>
+            expect(onRejected).toHaveBeenCalledWith(
+                expect.any(NonZeroBalanceError),
+            ),
+        )
         expect(sendSpy).not.toHaveBeenCalled()
     })
 })

@@ -20,12 +20,14 @@ import '../i18n'
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
+    act,
     fireEvent,
     renderHook,
     screen,
     waitFor,
     within,
 } from '@testing-library/react'
+import { Notifier } from 'react-native-notifier'
 
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
@@ -69,7 +71,7 @@ import { addressOf, keyPairIdOf } from './__fixtures__/accounts'
 const seedAlgo25Account = async (): Promise<WalletAccount> => {
     const { result: kms } = renderHook(() => useKMS())
     let key: Algo25KeyResult | null = null
-    await waitFor(async () => {
+    await act(async () => {
         key = await kms.current.createAlgo25Key({
             mnemonicIndices: ALGO25_TEST_MNEMONIC_INDICES,
         })
@@ -106,7 +108,7 @@ type SeededHDAccounts = {
 const seedHDWalletAccounts = async (): Promise<SeededHDAccounts> => {
     const { result: kms } = renderHook(() => useKMS())
     let rootKey: HDWalletKeyResult | null = null
-    await waitFor(async () => {
+    await act(async () => {
         rootKey = await kms.current.createHDWalletKey({
             mnemonicIndices: HD_TEST_MNEMONIC_24_INDICES,
         })
@@ -430,11 +432,10 @@ describe('Flow: Account backup', () => {
 
         fireEvent.click(screen.getByTestId('backup_verification_next'))
 
-        // Let any pending state updates settle, then assert: the
-        // success screen never mounted, the verification screen is
-        // still on top, and the backup store stayed empty for this
-        // root.
-        await new Promise(resolve => setTimeout(resolve, 250))
+        // The wrong branch's error toast is the signal the submit has settled.
+        await waitFor(() =>
+            expect(vi.mocked(Notifier.showNotification)).toHaveBeenCalled(),
+        )
         expect(screen.queryByTestId('backup_success_done')).toBeNull()
         expect(screen.getByTestId('backup_verification_next')).toBeTruthy()
         expect(
@@ -452,7 +453,7 @@ describe('Flow: Account backup', () => {
         // upstream WriteDown step having gated first.
         const TEST_PIN = '123456'
         const { result: pinHook } = renderHook(() => usePinCode())
-        await waitFor(async () => {
+        await act(async () => {
             await pinHook.current.savePin(TEST_PIN)
             expect(await pinHook.current.checkPinEnabled()).toBe(true)
         })

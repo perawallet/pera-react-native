@@ -36,7 +36,7 @@ import {
 } from '@perawallet/wallet-core-chain-algorand/test-handlers'
 import { LedgerSelectAccountsScreen, LedgerVerifyScreen } from '@modules/ledger'
 
-import { isElementDisabled } from '@test-utils/rnw'
+import { findEnabledByTestId } from '@test-utils/rnw'
 import { HD_TEST_ADDRESS, ALGO25_TEST_ADDRESS } from './__fixtures__/onboarding'
 import { registerFakeLedgerProvider } from './__fixtures__/ledger'
 import { addressOf } from './__fixtures__/accounts'
@@ -134,14 +134,8 @@ describe('Flow: Ledger rekeyed-account import', () => {
 
         // Verification runs on mount via the fake transport; wait for the
         // add button to become enabled
-        const addBtn = await waitFor(
-            () => {
-                const btn = screen.getByTestId(
-                    'ledger_verify_add_accounts_button',
-                ) as HTMLButtonElement
-                expect(isElementDisabled(btn)).toBe(false)
-                return btn
-            },
+        const addBtn = await findEnabledByTestId(
+            'ledger_verify_add_accounts_button',
             { timeout: 10_000 },
         )
 

@@ -12,7 +12,6 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
-import { Notifier } from 'react-native-notifier'
 import { File } from 'expo-file-system'
 import { server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
@@ -227,7 +226,6 @@ describe('Flow: Cloud backup → Passkeys', () => {
             .getState()
             .setDeviceID(useNetworkStore.getState().mode, DEVICE_ID)
         await deleteBackupKeys().catch(() => undefined)
-        vi.mocked(Notifier.showNotification).mockClear()
         vi.mocked(File.pickFileAsync).mockReset()
     })
 

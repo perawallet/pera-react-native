@@ -10,9 +10,8 @@
  limitations under the License
  */
 
-// migrating from Pera 6 landed the user in a pile of unrelated
-// interruptions — terms, then the PIN screen, then a Pera 7 announcement, then
-// terms again — because each decided independently when to appear.
+// Prompts (terms, PIN setup, announcements) share one queue so they never
+// stack up or repeat, as they would if each decided independently when to appear.
 //
 // These exercise the real queue against the real banner stack (served over
 // MSW), rather than the unit tests' stubbed candidates: ordering across all
