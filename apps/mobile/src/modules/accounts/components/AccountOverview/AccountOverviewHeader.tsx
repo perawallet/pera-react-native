@@ -102,6 +102,7 @@ export const AccountOverviewHeader = ({
                                             : portfolioPreferredValue
                                     }
                                     style={styles.primaryCurrency}
+                                    density='compact'
                                     isLoading={isPending}
                                 />
                             ) : (

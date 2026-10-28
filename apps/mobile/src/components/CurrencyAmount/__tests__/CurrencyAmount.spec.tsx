@@ -16,6 +16,7 @@ import { formatCurrency } from '@perawallet/wallet-core-shared'
 import { CurrencyAmount, getAlgoSymbolWeight } from '../CurrencyAmount'
 import { PREFERRED_MAX_PRECISION } from '../precision'
 import { Decimal } from 'decimal.js'
+import { useSettings } from '@perawallet/wallet-core-settings'
 import type { TypographyVariant } from '@theme/typography'
 
 describe('CurrencyAmount', () => {
@@ -130,6 +131,150 @@ describe('CurrencyAmount', () => {
         expect(vi.mocked(formatCurrency).mock.calls[0][1]).toBe(
             PREFERRED_MAX_PRECISION,
         )
+    })
+})
+
+describe('CurrencyAmount fiat floor', () => {
+    it('shows a sub-cent fiat amount as "< " plus one cent in the given currency', () => {
+        vi.mocked(formatCurrency).mockClear()
+        const { container } = render(
+            <CurrencyAmount
+                value={new Decimal('0.004')}
+                currency='EUR'
+                assetId={null}
+                isFiat
+                precision='compact'
+            />,
+        )
+        const [value, precision, currency, , showSymbol, , minPrecision] =
+            vi.mocked(formatCurrency).mock.calls[0]
+        expect(container.textContent).toMatch(/^< /)
+        expect(value?.toString()).toBe('0.01')
+        expect(precision).toBe(2)
+        expect(minPrecision).toBe(2)
+        expect(currency).toBe('EUR')
+        expect(showSymbol).toBe(true)
+    })
+
+    it('formats the floor in the same locale as any other amount', () => {
+        vi.mocked(formatCurrency).mockClear()
+        render(
+            <CurrencyAmount
+                value={new Decimal('0.004')}
+                currency='EUR'
+                assetId={null}
+                isFiat
+                precision='compact'
+            />,
+        )
+        const floorLocale = vi.mocked(formatCurrency).mock.calls[0][3]
+
+        vi.mocked(formatCurrency).mockClear()
+        render(
+            <CurrencyAmount
+                value={new Decimal('5')}
+                currency='EUR'
+                assetId={null}
+                isFiat
+                precision='compact'
+            />,
+        )
+        expect(vi.mocked(formatCurrency).mock.calls[0][3]).toBe(floorLocale)
+    })
+
+    it('shows a negative sub-cent fiat amount as a lower bound, keeping its sign', () => {
+        vi.mocked(formatCurrency).mockClear()
+        const { container } = render(
+            <CurrencyAmount
+                value={new Decimal('-0.004')}
+                currency='USD'
+                assetId={null}
+                isFiat
+                precision='compact'
+            />,
+        )
+        expect(container.textContent).toMatch(/^> /)
+        expect(vi.mocked(formatCurrency).mock.calls[0][0]?.toString()).toBe(
+            '-0.01',
+        )
+    })
+
+    it('keeps a sub-cent token amount without an asset id on the crypto rule', () => {
+        vi.mocked(formatCurrency).mockClear()
+        const { container } = render(
+            <CurrencyAmount
+                value={new Decimal('0.004')}
+                currency='ETH'
+                assetId={null}
+                precision='compact'
+            />,
+        )
+        expect(container.textContent).not.toMatch(/[<>] /)
+        expect(vi.mocked(formatCurrency).mock.calls[0][0]?.toString()).toBe(
+            '0.004',
+        )
+        expect(vi.mocked(formatCurrency).mock.calls[0][1]).toBe(3)
+    })
+
+    it('rounds a larger fiat amount to 2 dp without the marker', () => {
+        vi.mocked(formatCurrency).mockClear()
+        const { container } = render(
+            <CurrencyAmount
+                value={new Decimal('0.025773')}
+                currency='USD'
+                assetId={null}
+                isFiat
+                precision='compact'
+            />,
+        )
+        const call = vi.mocked(formatCurrency).mock.calls[0]
+        expect(call[0]?.toString()).toBe('0.025773')
+        expect(call[1]).toBe(2)
+        expect(container.textContent).not.toContain('< ')
+    })
+
+    it('keeps a sub-cent ALGO amount on the crypto rule', () => {
+        vi.mocked(formatCurrency).mockClear()
+        const { container } = render(
+            <CurrencyAmount
+                value={new Decimal('0.004')}
+                currency='ALGO'
+                assetId='0'
+                precision='compact'
+            />,
+        )
+        expect(container.textContent).not.toContain('< ')
+        expect(vi.mocked(formatCurrency).mock.calls[0][1]).toBe(3)
+    })
+
+    it('leaves a sub-cent unit price at its detail precision', () => {
+        const { container } = render(
+            <CurrencyAmount
+                value={new Decimal('0.000012')}
+                currency='USD'
+                assetId={null}
+                isFiat
+                precision='preferredFull'
+            />,
+        )
+        expect(container.textContent).not.toContain('< ')
+    })
+
+    it('hides the amount, floor included, in privacy mode', () => {
+        vi.mocked(useSettings).mockReturnValueOnce({
+            privacyMode: true,
+        } as ReturnType<typeof useSettings>)
+        const { container } = render(
+            <CurrencyAmount
+                value={new Decimal('0.004')}
+                currency='USD'
+                assetId={null}
+                isFiat
+                precision='compact'
+            />,
+        )
+        expect(container.textContent).toContain('****')
+        expect(container.textContent).not.toContain('< ')
     })
 })
 
