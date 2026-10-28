@@ -11,8 +11,7 @@
  */
 
 import React from 'react'
-import { makeStyles, useTheme } from '@rneui/themed'
-import type { Theme } from '@rneui/themed'
+import { makeStyles, useTheme, type Theme } from '@rneui/themed'
 
 import {
     PWBadge,

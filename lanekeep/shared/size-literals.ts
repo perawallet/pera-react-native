@@ -67,47 +67,42 @@ interface Leaves {
 
 function scanLeaves(ctx: RuleContext, node: Node, acc: Leaves): void {
     if (!acc.pure) return
-    switch (ctx.kind(node)) {
-        case 'number':
-            return
-        case 'parenthesized_expression':
-        case 'unary_expression': {
-            // `+`/`-` only; `!x`, `typeof x` and friends are not arithmetic.
-            if (ctx.kind(node) === 'unary_expression') {
-                const raw = ctx.text(node)
-                if (raw === undefined || !/^[-+]/.test(raw)) {
-                    acc.pure = false
-                    return
-                }
-            }
-            for (const child of ctx.namedChildren(node)) {
-                scanLeaves(ctx, child, acc)
-            }
-            return
-        }
-        case 'binary_expression': {
-            if (!isArithmeticOperator(ctx, node)) {
-                acc.pure = false
-                return
-            }
-            for (const child of ctx.namedChildren(node)) {
-                scanLeaves(ctx, child, acc)
-            }
-            return
-        }
-        case 'member_expression':
-        case 'subscript_expression': {
-            const raw = ctx.text(node)
-            if (raw !== undefined && TOKEN_READ.test(raw)) {
-                acc.tokens += 1
-                return
-            }
+    const kind = ctx.kind(node)
+    if (kind === 'number') return
+
+    if (kind === 'parenthesized_expression' || kind === 'unary_expression') {
+        // `+`/`-` only; `!x`, `typeof x` and friends are not arithmetic.
+        if (
+            kind === 'unary_expression' &&
+            !/^[-+]/.test(ctx.text(node) ?? '')
+        ) {
             acc.pure = false
             return
         }
-        default:
-            acc.pure = false
+        for (const child of ctx.namedChildren(node)) {
+            scanLeaves(ctx, child, acc)
+        }
+        return
     }
+
+    if (kind === 'binary_expression') {
+        if (!isArithmeticOperator(ctx, node)) {
+            acc.pure = false
+            return
+        }
+        for (const child of ctx.namedChildren(node)) {
+            scanLeaves(ctx, child, acc)
+        }
+        return
+    }
+
+    if (kind === 'member_expression' || kind === 'subscript_expression') {
+        if (TOKEN_READ.test(ctx.text(node) ?? '')) {
+            acc.tokens += 1
+            return
+        }
+    }
+    acc.pure = false
 }
 
 function isArithmeticOperator(ctx: RuleContext, node: Node): boolean {
