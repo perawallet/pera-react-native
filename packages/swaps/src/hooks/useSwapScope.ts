@@ -42,8 +42,6 @@ export const useSwapChainResolver = (): ((
 export const useSwapSigningAccounts = (): WalletAccount[] => {
     const accounts = useAllAccounts()
     const swapChainOf = useSwapChainResolver()
-    // Authority resolution reads the chain-state slices, so a slice write must
-    // recompute the list.
     const chainStates = useAccountChainStateStore(state => state.states)
     return useMemo(
         () =>

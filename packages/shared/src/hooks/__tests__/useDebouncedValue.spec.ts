@@ -89,7 +89,7 @@ describe('useDebouncedValue', () => {
         expect(result.current).toBe('b')
     })
 
-    test('skips the debounce entirely when isEqual returns true', () => {
+    test('keeps the previous reference when isEqual matches', () => {
         const isEqual = (a: { id: number }, b: { id: number }) => a.id === b.id
         const initial = { id: 1 }
         const { result, rerender } = renderHook(
