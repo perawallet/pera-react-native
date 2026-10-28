@@ -120,6 +120,25 @@ describe.each(SCOPES)('useCardWalletHistoryQuery ($chainId)', SCOPE => {
         expect(result.current.hasNextPage).toBe(false)
     })
 
+    it("keeps fetchNextPage's identity across renders", async () => {
+        fetchWalletHistory.mockResolvedValue({
+            items: [entry('a')],
+            page: 0,
+            hasMore: true,
+        })
+        const { result, rerender } = renderHook(
+            () =>
+                useCardWalletHistoryQuery(SCOPE, CardWalletKind.Reward, 'w_1'),
+            { wrapper },
+        )
+        await waitFor(() => expect(result.current.hasNextPage).toBe(true))
+        const first = result.current.fetchNextPage
+
+        rerender()
+
+        expect(result.current.fetchNextPage).toBe(first)
+    })
+
     // A wallet Baanx has not created yet has no id and no history; asking
     // would only produce a request that cannot succeed.
     it('stays idle without a wallet id', () => {

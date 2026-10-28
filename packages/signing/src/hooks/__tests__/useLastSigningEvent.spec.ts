@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { describe, it, expect, afterEach } from 'vitest'
+import { describe, it, expect, afterEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useLastSigningEvent } from '../useLastSigningEvent'
 import { signingEventBus } from '../../pipeline/signingEventBus'
@@ -106,5 +106,45 @@ describe('useLastSigningEvent', () => {
         const second = { type: 'started', request: req('rB') } as StartedEvent
         act(() => signingEventBus.publish(second))
         expect(result.current).toBe(second)
+    })
+
+    it('keeps one bus subscription across re-renders with a fresh inline predicate', () => {
+        const subscribe = vi.spyOn(signingEventBus, 'subscribe')
+        const { rerender } = renderHook(() =>
+            useLastSigningEvent(
+                (e: SigningLifecycleEvent): e is StartedEvent =>
+                    e.type === 'started',
+                'r1',
+            ),
+        )
+
+        rerender()
+        rerender()
+
+        expect(subscribe).toHaveBeenCalledTimes(1)
+        subscribe.mockRestore()
+    })
+
+    it('matches live events with the predicate from the latest render', () => {
+        const { result, rerender } = renderHook(
+            ({ predicate }) => useLastSigningEvent(predicate, 'r1'),
+            {
+                initialProps: {
+                    predicate: isStarted as (
+                        e: SigningLifecycleEvent,
+                    ) => e is StartedEvent | CompletedEvent,
+                },
+            },
+        )
+        rerender({ predicate: isCompleted })
+
+        const completed = {
+            type: 'completed',
+            request: req('r1'),
+            result: { type: 'network', txIds: [] } as never,
+        } as CompletedEvent
+        act(() => signingEventBus.publish(completed))
+
+        expect(result.current).toBe(completed)
     })
 })

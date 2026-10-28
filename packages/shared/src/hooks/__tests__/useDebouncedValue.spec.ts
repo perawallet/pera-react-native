@@ -91,18 +91,52 @@ describe('useDebouncedValue', () => {
 
     test('skips the debounce entirely when isEqual returns true', () => {
         const isEqual = (a: { id: number }, b: { id: number }) => a.id === b.id
+        const initial = { id: 1 }
         const { result, rerender } = renderHook(
             ({ value }) => useDebouncedValue(value, 200, isEqual),
-            { initialProps: { value: { id: 1 } } },
+            { initialProps: { value: initial } },
         )
 
         rerender({ value: { id: 1 } })
         act(() => {
             vi.advanceTimersByTime(1000)
         })
-        // The isEqual short-circuit means the timer is never scheduled,
-        // so debouncedValue stays at the initial reference.
-        expect(result.current).toEqual({ id: 1 })
+        // The timer fires, but the functional update keeps the previous reference.
+        expect(result.current).toBe(initial)
+    })
+
+    test('keeps the settled reference when the value returns to an isEqual match mid-delay', () => {
+        const isEqual = (a: { id: number }, b: { id: number }) => a.id === b.id
+        const initial = { id: 1 }
+        const { result, rerender } = renderHook(
+            ({ value }) => useDebouncedValue(value, 1000, isEqual),
+            { initialProps: { value: initial } },
+        )
+
+        rerender({ value: { id: 2 } })
+        act(() => {
+            vi.advanceTimersByTime(100)
+        })
+        rerender({ value: { id: 1 } })
+        act(() => {
+            vi.advanceTimersByTime(1000)
+        })
+
+        expect(result.current).toBe(initial)
+    })
+
+    test('leaves no timer pending once settled', () => {
+        const { rerender } = renderHook(
+            ({ value }) => useDebouncedValue(value, 200),
+            { initialProps: { value: 'a' } },
+        )
+
+        rerender({ value: 'b' })
+        act(() => {
+            vi.advanceTimersByTime(200)
+        })
+
+        expect(vi.getTimerCount()).toBe(0)
     })
 
     test('still debounces when isEqual returns false', () => {

@@ -21,37 +21,66 @@ import {
     registerFakeAccountsChain,
     seedAuthority,
 } from '../../__tests__/fakeAccountsChain'
-import { useSigningAccounts } from '../useSigningAccounts'
+import { useSigningAccounts, useSigningAccountsOn } from '../useSigningAccounts'
 
 const watch = testAccount('watch', 'W', { id: 'W' })
 const signer = testAccount('local', 'S', { id: 'S' })
 
-describe('useSigningAccounts', () => {
-    beforeEach(() => {
-        useAccountsStore.getState().resetState()
-        useAccountChainStateStore.getState().resetState()
-        useNetworkStore.getState().setMode('live')
-        registerFakeAccountsChain()
-    })
+const resolveRekeyedSigner = () =>
+    vi
+        .mocked(fakeAccountsChain().adapter.resolveSigner)
+        .mockImplementation((account, accounts, scope) => {
+            const auth = accounts.find(
+                a => addressOn(a, scope) === authorityOf(account, scope),
+            )
+            if (auth) return { kind: 'ok', signer: auth }
+            return account.custody.kind === 'watch'
+                ? { kind: 'watch', account }
+                : { kind: 'ok', signer: account }
+        })
 
+beforeEach(() => {
+    useAccountsStore.getState().resetState()
+    useAccountChainStateStore.getState().resetState()
+    useNetworkStore.getState().setMode('live')
+    registerFakeAccountsChain()
+})
+
+describe('useSigningAccounts', () => {
     it('picks up an authority recorded after mount', () => {
         useAccountsStore.getState().setAccounts([watch, signer])
-        vi.mocked(fakeAccountsChain().adapter.resolveSigner).mockImplementation(
-            (account, accounts, scope) => {
-                const auth = accounts.find(
-                    a => addressOn(a, scope) === authorityOf(account, scope),
-                )
-                if (auth) return { kind: 'ok', signer: auth }
-                return account.custody.kind === 'watch'
-                    ? { kind: 'watch', account }
-                    : { kind: 'ok', signer: account }
-            },
-        )
+        resolveRekeyedSigner()
         const { result } = renderHook(() => useSigningAccounts('algorand'))
         expect(result.current).toEqual([signer])
 
         act(() => seedAuthority('W', 'S'))
 
         expect(result.current).toEqual([watch, signer])
+    })
+})
+
+describe('useSigningAccountsOn', () => {
+    it('picks up an authority recorded after mount', () => {
+        useAccountsStore.getState().setAccounts([watch, signer])
+        resolveRekeyedSigner()
+        const { result } = renderHook(() => useSigningAccountsOn(['algorand']))
+        expect(result.current).toEqual([signer])
+
+        act(() => seedAuthority('W', 'S'))
+
+        expect(result.current).toEqual([watch, signer])
+    })
+
+    it('returns the same list across renders given a fresh chainIds array', () => {
+        useAccountsStore.getState().setAccounts([watch, signer])
+        resolveRekeyedSigner()
+        const { result, rerender } = renderHook(() =>
+            useSigningAccountsOn(['algorand']),
+        )
+        const first = result.current
+
+        rerender()
+
+        expect(result.current).toBe(first)
     })
 })
