@@ -23,7 +23,8 @@ import {
     groupedHoldingItemKey,
     type GroupedHoldingItem,
 } from '../../utils/groupedHoldings'
-import { AssetGroupRow, ChainLabel } from '../AssetGroupRow'
+import { AssetGroupRow } from '../AssetGroupRow'
+import { ChainLabel } from '../ChainLabel'
 import { AccountAssetItemView } from '../AssetItem/AccountAssetItemView'
 import { useAccountAssetSelectionList } from './useAccountAssetSelectionList'
 import { useStyles } from './styles'

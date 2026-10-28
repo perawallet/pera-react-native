@@ -72,6 +72,7 @@ export const AssetTransactionList = ({
         isCsvExportVisible,
         handleTransactionPress,
         handleOpenFilter,
+        suspectedPoisoningById,
     } = useAssetTransactionList({ account, asset, scope })
 
     const renderItem = useCallback(
@@ -79,14 +80,18 @@ export const AssetTransactionList = ({
             item.kind === 'header' ? (
                 <TransactionDateHeader title={item.title} />
             ) : item.kind === 'record' ? (
-                <TransactionListItem record={item.record} />
+                <TransactionListItem
+                    record={item.record}
+                    suspectedPoisoning={suspectedPoisoningById.get(item.key)}
+                />
             ) : (
                 <TransactionListItem
                     transaction={item.transaction}
                     onPress={handleTransactionPress}
+                    suspectedPoisoning={suspectedPoisoningById.get(item.key)}
                 />
             ),
-        [handleTransactionPress],
+        [handleTransactionPress, suspectedPoisoningById],
     )
 
     return (

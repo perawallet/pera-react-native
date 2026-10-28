@@ -10,21 +10,16 @@
  limitations under the License
  */
 
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation } from '@tanstack/react-query'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { logger } from '@perawallet/wallet-core-shared'
 import {
     submitMailingAddress,
     type SubmitAddressResult,
 } from '../api/onboarding'
-import {
-    getCardApiError,
-    isNotVerifiedError,
-    OnboardingNotVerifiedError,
-} from '../api/errors'
+import { getCardApiError } from '../api/errors'
 import type { MailingAddressInput } from '../models'
-import { completeCardRegistration } from './completeCardRegistration'
-import { cardQueryKeys } from './querykeys'
+import { finalizeCardRegistration } from './finalizeCardRegistration'
 import { toCardMutationResult, type CardMutationResult } from './types'
 
 export type UseSubmitMailingAddressMutationResult = CardMutationResult<
@@ -35,34 +30,18 @@ export type UseSubmitMailingAddressMutationResult = CardMutationResult<
 export const useSubmitMailingAddressMutation = (
     scope: ChainScope,
 ): UseSubmitMailingAddressMutationResult => {
-    const queryClient = useQueryClient()
-
     const mutation = useMutation<
         SubmitAddressResult,
         Error,
         MailingAddressInput
     >({
-        mutationFn: async address => {
-            try {
-                return await submitMailingAddress({ address, scope })
-            } catch (error) {
-                if (isNotVerifiedError(await getCardApiError(error))) {
-                    throw new OnboardingNotVerifiedError()
-                }
-                throw error
-            }
+        mutationFn: address => submitMailingAddress({ address, scope }),
+        // Same tolerance as the address step: a token, if Baanx sends one.
+        onSuccess: async ({ accessToken, userId }) => {
+            if (accessToken === null) return
+            await finalizeCardRegistration({ accessToken, userId, scope })
         },
-        onSuccess: result => completeCardRegistration({ result, scope }),
-        onError: async (error, variables) => {
-            if (error instanceof OnboardingNotVerifiedError) {
-                void queryClient.invalidateQueries({
-                    queryKey: cardQueryKeys.onboardingDetails(
-                        scope,
-                        variables.onboardingId,
-                    ),
-                })
-                return
-            }
+        onError: async error => {
             const apiError = await getCardApiError(error)
             logger.warn('Card mailing address submission failed', {
                 error: apiError,

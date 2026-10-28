@@ -18,11 +18,11 @@ export const useStyles = makeStyles(theme => ({
         flexDirection: 'row',
         alignItems: 'center',
         gap: theme.spacing.sm,
+        // Any bottom padding opts out of PWScrollView's tab-bar inset padding,
+        // which would leave a gap under a single row of chips.
+        paddingBottom: 0,
     },
     chip: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.xs,
         paddingVertical: theme.spacing.xs,
         paddingHorizontal: theme.spacing.lg,
         borderRadius: theme.borderRadius.full,
@@ -31,6 +31,10 @@ export const useStyles = makeStyles(theme => ({
     },
     activeChip: {
         backgroundColor: theme.colors.layerGrayLighter,
+    },
+    label: {
+        ...getFontWeightVariant(theme, 'body', 500),
+        color: theme.colors.textGrayLighter,
     },
     activeLabel: getFontWeightVariant(theme, 'body', 500),
 }))

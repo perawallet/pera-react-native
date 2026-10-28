@@ -22,6 +22,7 @@ import {
 import { renderHook, act } from '@testing-library/react'
 
 import {
+    unreachableChainsNoteOf,
     useAccountCapabilityScope,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -43,6 +44,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
         typeof import('@perawallet/wallet-core-accounts')
     >()),
     useAccountCapabilityScope: vi.fn(),
+    unreachableChainsNoteOf: vi.fn(() => null),
 }))
 
 const { mockTrackScreen } = vi.hoisted(() => ({ mockTrackScreen: vi.fn() }))
@@ -226,6 +228,39 @@ describe('useQRViewScreen', () => {
         expect(result.current.accountName).toBe('')
         expect(result.current.address).toBe('')
         expect(result.current.paymentUri).toBe('')
+    })
+
+    it("explains the account's kind can't use a pinned chain out of its reach", () => {
+        ;(useReceiveFunds as Mock).mockReturnValue({
+            selectedAccount: algorandAccount,
+            chainId: 'ethereum',
+        })
+        vi.mocked(useAccountCapabilityScope).mockReturnValue(null)
+        vi.mocked(unreachableChainsNoteOf).mockReturnValueOnce(
+            'kind.unreachable_note' as never,
+        )
+
+        const { result } = renderHook(() => useQRViewScreen())
+
+        expect(unreachableChainsNoteOf).toHaveBeenCalledWith(algorandAccount, [
+            'ethereum',
+        ])
+        expect(result.current.canReceive).toBe(false)
+        expect(result.current.emptyTitle).toBe(
+            'receive_funds.qrview.chain_unavailable_title',
+        )
+        expect(result.current.emptyBody).toBe('kind.unreachable_note')
+    })
+
+    it('says no account is selected when there is none', () => {
+        givenAccount(undefined, null)
+
+        const { result } = renderHook(() => useQRViewScreen())
+
+        expect(result.current.emptyTitle).toBe(
+            'receive_funds.qrview.error_title',
+        )
+        expect(result.current.emptyBody).toBe('receive_funds.qrview.error_body')
     })
 
     it('cannot receive when the account has no chain with receive on', () => {

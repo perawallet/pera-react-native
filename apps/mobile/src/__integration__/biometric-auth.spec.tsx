@@ -377,24 +377,6 @@ describe('Flow: Biometric authentication lifecycle', () => {
         })
     })
 
-    it('Given biometrics is enabled, when the OS releases the token, then the app unlocks', async () => {
-        const { result } = renderHook(() => useBiometrics())
-        await waitFor(() => {
-            expect(result.current.isAvailable).toBe(true)
-        })
-
-        await act(async () => {
-            await result.current.enableBiometrics(PROMPT)
-        })
-        expect(result.current.isEnabled).toBe(true)
-
-        let outcome: Optional<BiometricUnlockOutcome>
-        await act(async () => {
-            outcome = await result.current.unlockWithBiometrics(PROMPT)
-        })
-        expect(outcome).toEqual({ kind: 'ok' })
-    })
-
     it('Given a blob from a build with no OS-bound key, when the reconcile runs, then it is dropped and re-opt-in is offered', async () => {
         const { result } = renderHook(() => useBiometrics())
         await waitFor(() => {

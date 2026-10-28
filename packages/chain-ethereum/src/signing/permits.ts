@@ -10,8 +10,7 @@
  limitations under the License
  */
 
-import { Decimal } from 'decimal.js'
-import { getAddress, isAddress, maxUint160 } from 'viem'
+import { getAddress, isAddress } from 'viem'
 import type { TypedDataDefinition, TypedDataParameter } from 'viem'
 import type {
     SpendAllowance,
@@ -20,6 +19,7 @@ import type {
 import { areEvmAddressesEqual } from '../accounts/address-codec'
 import type { EvmChain } from '../chains/types'
 import { isRecord } from './adapter'
+import { toAllowanceAmount } from './allowance'
 
 const PERMIT2_ADDRESS = '0x000000000022D473030F116dDEE9F6B43aC78BA3'
 
@@ -135,10 +135,8 @@ const toAllowance = (
     const assetId = toAddress(token)
     const base = toUint(amount)
     if (assetId === undefined || base === undefined) return undefined
-    return {
-        assetId,
-        ...(base < maxUint160 && { amount: new Decimal(base.toString()) }),
-    }
+    const allowance = toAllowanceAmount(base)
+    return { assetId, ...(allowance && { amount: allowance }) }
 }
 
 type Parsed = {

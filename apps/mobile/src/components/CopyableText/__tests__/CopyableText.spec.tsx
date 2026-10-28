@@ -10,9 +10,10 @@
  limitations under the License
  */
 
-import { render, screen } from '@test-utils/render'
+import { fireEvent, render, screen, waitFor } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { PWText } from '@components/core'
+import { AddressReuseGuardProvider } from '@components/AddressReuseGuard'
 import { CopyableText } from '../CopyableText'
 
 const mockCopyToClipboard = vi.fn()
@@ -36,5 +37,31 @@ describe('CopyableText', () => {
 
         expect(screen.getByTestId('child-text')).toBeTruthy()
         expect(screen.getByText('Asset 12345')).toBeTruthy()
+    })
+
+    it.each([
+        ['allowed', true],
+        ['refused', false],
+    ])('copies on long-press only when reuse is %s', async (_, isAllowed) => {
+        const confirmReuse = vi.fn().mockResolvedValue(isAllowed)
+        render(
+            <AddressReuseGuardProvider guard={{ confirmReuse }}>
+                <CopyableText
+                    copyValue='ADDR'
+                    testID='copyable'
+                >
+                    <PWText>ADDR</PWText>
+                </CopyableText>
+            </AddressReuseGuardProvider>,
+        )
+
+        fireEvent.contextMenu(screen.getByTestId('copyable'))
+
+        await waitFor(() => expect(confirmReuse).toHaveBeenCalledWith('ADDR'))
+        await waitFor(() =>
+            expect(mockCopyToClipboard).toHaveBeenCalledTimes(
+                isAllowed ? 1 : 0,
+            ),
+        )
     })
 })

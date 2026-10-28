@@ -18,11 +18,9 @@ import {
     describe,
     expect,
     it,
-    vi,
 } from 'vitest'
 import { Decimal } from 'decimal.js'
-import { renderHook, screen, waitFor } from '@testing-library/react'
-import { Notifier } from 'react-native-notifier'
+import { act, renderHook, screen, waitFor } from '@testing-library/react'
 
 import { server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
@@ -71,7 +69,7 @@ const RECEIVER_ADDRESS = HD_TEST_ADDRESS
 const seedAlgo25Sender = async (): Promise<WalletAccount> => {
     const { result: kms } = renderHook(() => useKMS())
     let keyResult: Algo25KeyResult | null = null
-    await waitFor(async () => {
+    await act(async () => {
         keyResult = await kms.current.createAlgo25Key({
             mnemonicIndices: ALGO25_TEST_MNEMONIC_INDICES,
         })
@@ -157,7 +155,6 @@ describe('Flow: Send quantum-fee explainer on the confirmation screen', () => {
         useAccountsStore.getState().setAccounts([])
         useSendFundsStore.getState().reset()
         useRemoteConfigStore.getState().resetState()
-        vi.mocked(Notifier.showNotification).mockClear()
 
         // Default algod / indexer responses sufficient for the confirmation
         // screen to settle (asset query + recipient-MBR check).

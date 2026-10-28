@@ -37,6 +37,8 @@ export const QRViewScreen = () => {
         paymentUri,
         canReceive,
         canGoBack,
+        emptyTitle,
+        emptyBody,
         handleBack,
         handleCopyAddress,
         handleShareAddress,
@@ -64,8 +66,8 @@ export const QRViewScreen = () => {
     if (!account || !canReceive) {
         return (
             <EmptyView
-                title={t('receive_funds.qrview.error_title')}
-                body={t('receive_funds.qrview.error_body')}
+                title={emptyTitle}
+                body={emptyBody}
                 button={
                     <PWButton
                         title={t('common.go_back.label')}

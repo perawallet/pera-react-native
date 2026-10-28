@@ -21,6 +21,8 @@ const mocks = vi.hoisted(() => ({
     useDappRequest: vi.fn(),
     useSigningAccounts: vi.fn(),
     useSelectedAccountId: vi.fn(),
+    firstUnreachableChainsNote: vi.fn(),
+    allAccounts: [] as unknown[],
     useApprovalArming: vi.fn(),
     useProjectByUrlQuery: vi.fn(),
     selectedNetworks: {} as Record<string, string>,
@@ -61,9 +63,13 @@ vi.mock('@hooks/useApprovalArming.web', () => ({
     useApprovalArming: mocks.useApprovalArming,
 }))
 
+vi.mock('@hooks/useLanguage')
+
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSigningAccounts: mocks.useSigningAccounts,
     useSelectedAccountId: mocks.useSelectedAccountId,
+    useAllAccounts: () => mocks.allAccounts,
+    firstUnreachableChainsNote: mocks.firstUnreachableChainsNote,
     chainAccountOf: (
         account: { chains: Record<string, unknown> },
         id: string,
@@ -129,6 +135,34 @@ describe('useWcConnectScreen', () => {
         mocks.useApprovalArming.mockReturnValue(true)
         mocks.useProjectByUrlQuery.mockReturnValue({ data: undefined })
         mocks.selectedNetworks = {}
+        mocks.allAccounts = [ACCOUNT_A]
+        mocks.firstUnreachableChainsNote.mockReturnValue(null)
+    })
+
+    it("explains an empty account list with the kind's note for the requested chain", () => {
+        mocks.useSigningAccounts.mockReturnValue([])
+        mocks.firstUnreachableChainsNote.mockReturnValue(
+            'kind.unreachable_note',
+        )
+
+        const { result } = render()
+
+        expect(result.current.accounts).toEqual([])
+        expect(result.current.noAccountsNote).toBe('kind.unreachable_note')
+        expect(mocks.firstUnreachableChainsNote).toHaveBeenCalledWith(
+            [ACCOUNT_A],
+            [result.current.chainId],
+        )
+    })
+
+    it('falls back to the generic copy when no kind says why', () => {
+        mocks.useSigningAccounts.mockReturnValue([])
+
+        const { result } = render()
+
+        expect(result.current.noAccountsNote).toBe(
+            'walletconnect.request.no_accounts',
+        )
     })
 
     it('exposes the proposal peer and its requested methods as the permissions list', () => {

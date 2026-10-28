@@ -80,6 +80,7 @@ import {
     type SendFundsDeeplinkPrefill,
 } from '../handlers'
 import { useDeeplinkErrorHandler } from '../handlers/useDeeplinkErrorHandler'
+import { openCardsDeeplink } from '../handlers/openCardsDeeplink'
 
 type HandleDeepLink = (
     url: string,
@@ -631,9 +632,7 @@ export const useDeepLink = (): UseDeepLinkResult => {
                 }
 
                 case DeeplinkType.CARDS: {
-                    navigateToScreen(replaceCurrentScreen, 'PeraCard', {
-                        screen: 'PeraCardIntro',
-                    })
+                    openCardsDeeplink(parsedData.path, replaceCurrentScreen)
                     break
                 }
 

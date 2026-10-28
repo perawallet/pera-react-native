@@ -26,7 +26,7 @@ export const CardOnboardingStatusScreen = () => {
     const styles = useStyles()
     const {
         documentsState,
-        isKycSubmitted,
+        areDetailsSubmitted,
         isRegistrationComplete,
         isFundsConnected,
         connectedAccount,
@@ -40,6 +40,9 @@ export const CardOnboardingStatusScreen = () => {
         handleEnterDetails,
         handleVerifyIdentity,
         handleRetryStatus,
+        canTryAgain,
+        handleTryAgain,
+        handleSignIn,
         handleConnectAccount,
         handleLogout,
         handleOpenSupport,
@@ -61,15 +64,17 @@ export const CardOnboardingStatusScreen = () => {
                 <PWText variant='h1'>{t('peraCard.setup_status.title')}</PWText>
 
                 <PWView style={styles.checklist}>
+                    <EnterDetailsRow
+                        areDetailsSubmitted={areDetailsSubmitted}
+                        onEnterDetails={handleEnterDetails}
+                    />
                     <DocumentsRow
                         documentsState={documentsState}
                         onRetry={handleRetryStatus}
                         onVerify={handleVerifyIdentity}
-                    />
-                    <EnterDetailsRow
-                        isRegistrationComplete={isRegistrationComplete}
-                        isKycSubmitted={isKycSubmitted}
-                        onEnterDetails={handleEnterDetails}
+                        canTryAgain={canTryAgain}
+                        onTryAgain={handleTryAgain}
+                        onSignIn={handleSignIn}
                     />
                     <ConnectFundsRow
                         isFundsConnected={isFundsConnected}

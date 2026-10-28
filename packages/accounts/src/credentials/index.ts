@@ -45,6 +45,7 @@ export {
     findHardwareHolder,
     findPathHolder,
     hardwareJoinCandidates,
+    hdDiscoveryChains,
     isEnabledByDefault,
     nextChainPosition,
     preferDefaultChain,

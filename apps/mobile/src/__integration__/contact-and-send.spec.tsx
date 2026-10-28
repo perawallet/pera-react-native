@@ -12,7 +12,6 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, renderHook, screen, waitFor } from '@testing-library/react'
-import { Notifier } from 'react-native-notifier'
 
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
@@ -58,7 +57,6 @@ describe('Flow: Contacts → use in send destination picker', () => {
         useAccountsStore.getState().setAccounts([SENDER_ACCOUNT])
         useAccountsStore.getState().setSelectedAccountId(SENDER_ACCOUNT.id)
         resetTestContacts()
-        vi.mocked(Notifier.showNotification).mockClear()
     })
 
     afterEach(() => {

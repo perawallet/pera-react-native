@@ -11,6 +11,7 @@
  */
 
 import { Controller } from 'react-hook-form'
+import { Trans } from 'react-i18next'
 import {
     PWButton,
     PWCodeInput,
@@ -42,6 +43,8 @@ export const CardSignInScreen = () => {
         handleResendOtp,
         handleSignIn,
         handleForgotPassword,
+        isAccountLocked,
+        handleOpenSupport,
     } = useCardSignInScreen()
 
     return (
@@ -109,6 +112,27 @@ export const CardSignInScreen = () => {
                         )}
                     />
                 </PWView>
+
+                {isAccountLocked ? (
+                    <PWText
+                        variant='footnoteMedium'
+                        weight={400}
+                        style={styles.accountLocked}
+                        testID='card-sign-in-account-locked'
+                    >
+                        <Trans
+                            i18nKey='peraCard.sign_in.account_locked'
+                            components={[
+                                <PWText
+                                    key='link'
+                                    variant='linkPositive'
+                                    onPress={handleOpenSupport}
+                                    testID='card-sign-in-account-locked-contact'
+                                />,
+                            ]}
+                        />
+                    </PWText>
+                ) : null}
 
                 <PWText
                     variant='linkPositive'

@@ -10,8 +10,7 @@
  limitations under the License
  */
 
-// LRK-022 cross-cutting coverage: no suite anywhere exercised a rekeyed
-// sender through the interactive review, and none pinned the WC-facing
+// A rekeyed sender through the interactive review, and the WC-facing
 // device-reject contract. Both ride the real signing pipeline via the
 // signing-review harness (callback transport = what the WC handler wires in).
 
@@ -40,6 +39,7 @@ import {
     buildTransactionSignRequest,
     renderSignReview,
     seedAlgo25Signer,
+    drainPendingSignRequests,
     fireEvent,
     screen,
     waitFor,
@@ -65,25 +65,10 @@ const REKEYED_SENDER_ADDRESS = REVIEW_RECEIVER_ADDRESS
 const AUTH_ADDRESS = REVIEW_SIGNER_ADDRESS
 const LEDGER_ADDRESS = REVIEW_RECEIVER_ADDRESS
 
-type Deferred<T> = {
-    promise: Promise<T>
-    resolve: (value: T) => void
-    reject: (error: Error) => void
-}
-const createDeferred = <T,>(): Deferred<T> => {
-    let resolveFn!: (value: T) => void
-    let rejectFn!: (error: Error) => void
-    const promise = new Promise<T>((res, rej) => {
-        resolveFn = res
-        rejectFn = rej
-    })
-    return { promise, resolve: resolveFn, reject: rejectFn }
-}
-
-let pendingSignature: Deferred<Uint8Array> | null = null
+let pendingSignature: PromiseWithResolvers<Uint8Array> | null = null
 
 const blockOnSignature = (): Promise<Uint8Array> => {
-    pendingSignature = createDeferred<Uint8Array>()
+    pendingSignature = Promise.withResolvers<Uint8Array>()
     return pendingSignature.promise
 }
 
@@ -118,6 +103,7 @@ describe('Flow: interactive signing with a rekeyed sender / WC device reject', (
     })
 
     beforeEach(async () => {
+        drainPendingSignRequests()
         await resetTestDatabase()
         await seedAlgoAsset('mainnet')
         resetTestKeystore()
@@ -181,7 +167,7 @@ describe('Flow: interactive signing with a rekeyed sender / WC device reject', (
     })
 
     it('Given a WC request with a Ledger sender, when the device rejects and the user cancels, then the dApp receives the canonical rejection — never the error callback', async () => {
-        // LRK-012 per-feature contract: the WC handler maps `reject` to
+        // The WC handler maps `reject` to
         // connector.rejectRequest (a proper dApp rejection) and `error`
         // to the failure path — a device reject must land on `reject`.
         useAccountsStore.getState().setAccounts([ledgerAccount])

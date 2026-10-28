@@ -14,12 +14,13 @@ import { useCallback, useState } from 'react'
 import {
     getCardApiError,
     isInvalidInputError,
+    OnboardingStep,
     useCardStore,
     useSendPhoneVerificationMutation,
     useVerifyPhoneMutation,
 } from '@perawallet/wallet-core-card'
 import { i18nKey } from '@perawallet/wallet-core-chain-contract'
-import { useCardErrorToast } from '@modules/card/hooks'
+import { useCardErrorToast, useCardOnboardingRouter } from '@modules/card/hooks'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useCountdown } from '@hooks/useCountdown'
 import { useToast } from '@hooks/useToast'
@@ -60,6 +61,7 @@ export const useCardOnboardingPhoneVerifyScreen =
             bodyKey: i18nKey('peraCard.verify_phone.verify_error_body'),
         })
         const navigation = useAppNavigation()
+        const { goToNextStep } = useCardOnboardingRouter()
         const phoneCountryCode = useCardStore(state => state.phoneCountryCode)
         const phoneNumber = useCardStore(state => state.phoneNumber)
         const onboardingId = useCardStore(state => state.onboardingId)
@@ -173,8 +175,9 @@ export const useCardOnboardingPhoneVerifyScreen =
                             contactVerificationId,
                             verificationCode: value,
                         })
-                        // Phone verified: KYC (identity verification) is next.
-                        navigation.navigate('CardOnboardingVerification')
+                        goToNextStep({
+                            localStep: OnboardingStep.PersonalDetails,
+                        })
                     } catch (error) {
                         // A 400/422 means the code itself was wrong/expired —
                         // surface it inline. Anything else (network, 5xx) isn't
@@ -201,6 +204,7 @@ export const useCardOnboardingPhoneVerifyScreen =
                 errorToast,
                 showError,
                 navigation,
+                goToNextStep,
                 t,
             ],
         )

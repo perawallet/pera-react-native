@@ -39,13 +39,16 @@ export type UsePortfolioViewResult = {
     basis: AccountValueBasis
     /** `null` when unknown — renders as a placeholder, not 0. */
     portfolioNativeValue: Nullable<Decimal>
-    /** `null` while any account is unpriced or the rate is unresolved — renders as a placeholder, not 0. */
+    /** `null` when the total is unknown or the rate is unresolved — renders as a placeholder, not 0. */
     portfolioPreferredValue: Nullable<Decimal>
+    /** The `fiat` total is a number that leaves out holdings without a price. */
+    isPreferredValuePartial: boolean
     /** False on a test-tier scope, whose value never counts toward the fiat total. */
     hasFiatTotal: boolean
     /**
-     * Every counted account's chain has balance history. The chart and trend
-     * plot only those chains, so once the total counts another they'd contradict it.
+     * Every counted account is on `scope`'s chain, which has balance history.
+     * The chart and trend plot that chain alone, so once the total counts
+     * another they'd contradict it.
      */
     hasBalanceHistory: boolean
     isPending: boolean
@@ -63,19 +66,20 @@ export const usePortfolioView = (): UsePortfolioViewResult => {
         portfolioNativeValue,
         portfolioUsdValue,
         portfolioFiatValue,
+        isPortfolioFiatValuePartial,
         hasFiatTotal,
         isPending,
     } = useAccountValueTotalsQuery(accounts, scope)
     const check = useChainCapabilityCheck()
     const registeredChainIds = useRegisteredChainIds()
-    const hasBalanceHistory = accounts.every(account =>
+    const hasBalanceHistory =
+        accounts.every(
+            account =>
+                accountChainIdOf(account, registeredChainIds) === scope.chainId,
+        ) &&
         check({
-            chain: {
-                chainId: accountChainIdOf(account, registeredChainIds),
-                capability: 'balanceHistory',
-            },
-        }),
-    )
+            chain: { chainId: scope.chainId, capability: 'balanceHistory' },
+        })
     const portfolioPreferredValue = useMemo(
         () =>
             usdToPreferred(
@@ -90,6 +94,10 @@ export const usePortfolioView = (): UsePortfolioViewResult => {
         basis,
         portfolioNativeValue,
         portfolioPreferredValue,
+        isPreferredValuePartial:
+            basis === 'fiat' &&
+            isPortfolioFiatValuePartial &&
+            portfolioPreferredValue !== null,
         hasFiatTotal,
         hasBalanceHistory,
         isPending,

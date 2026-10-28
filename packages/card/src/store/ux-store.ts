@@ -22,22 +22,31 @@ import {
     type ChainScopeKey,
 } from '@perawallet/wallet-core-chain-contract'
 import { getProvider } from '@perawallet/wallet-extension-provider'
-import { OnboardingStep, type CardUxState } from '../models'
+import {
+    INITIAL_LOGIN_ATTEMPTS,
+    OnboardingStep,
+    type CardUxState,
+} from '../models'
+import { setLoginPassword } from './login-password'
 
 const STORE_NAME = 'card-store'
 
 // Client-only UX state. Server truth (card status, transactions, user) lives
-// in React Query; secrets (PAN/CVV/PIN/tokens) never enter this store.
+// in React Query; secrets (PAN/CVV/PIN/tokens, the onboarding password) never
+// enter this store. It only mirrors whether `login-password` holds a password.
 const initialState = {
     onboardingStep: OnboardingStep.EmailSend,
     email: null,
     countryIso: null,
     verificationCode: null,
+    hasPassword: false,
+    loginAttempts: INITIAL_LOGIN_ATTEMPTS,
     codeVerificationError: null,
     phoneCountryCode: null,
     phoneNumber: null,
     contactVerificationId: null,
     onboardingId: null,
+    verifiedOnboardingId: null,
     consentSetId: null,
     // Consent opt-ins start as "never asked" — the user ticks them on the
     // Set-Password screen (explicit opt-in, committed on success), and they're
@@ -105,12 +114,42 @@ export const useCardStore: UseBoundStore<
             setEmail: email => set({ email }),
             setCountryIso: countryIso => set({ countryIso }),
             setVerificationCode: verificationCode => set({ verificationCode }),
+            setPassword: password => {
+                setLoginPassword(password)
+                set({ hasPassword: password !== null })
+            },
+            recordLoginAttempt: ({ isAutomatic, at }) =>
+                set(state => ({
+                    loginAttempts: {
+                        ...state.loginAttempts,
+                        automatic:
+                            state.loginAttempts.automatic +
+                            (isAutomatic ? 1 : 0),
+                        total: state.loginAttempts.total + 1,
+                        lastAt: at,
+                    },
+                })),
+            markLoginLocked: () => {
+                setLoginPassword(null)
+                set(state => ({
+                    hasPassword: false,
+                    loginAttempts: { ...state.loginAttempts, isLocked: true },
+                }))
+            },
+            clearLoginSecrets: () => {
+                setLoginPassword(null)
+                set({
+                    hasPassword: false,
+                    loginAttempts: INITIAL_LOGIN_ATTEMPTS,
+                })
+            },
             setCodeVerificationError: target =>
                 set({ codeVerificationError: target }),
             setPhone: ({ phoneCountryCode, phoneNumber }) =>
                 set({ phoneCountryCode, phoneNumber }),
             setContactVerificationId: id => set({ contactVerificationId: id }),
             setOnboardingId: id => set({ onboardingId: id }),
+            setVerifiedOnboardingId: id => set({ verifiedOnboardingId: id }),
             setConsentSetId: id => set({ consentSetId: id }),
             setAllowMarketing: allowMarketing => set({ allowMarketing }),
             setAllowSms: allowSms => set({ allowSms }),
@@ -164,33 +203,41 @@ export const useCardStore: UseBoundStore<
                 }),
             // Reset only the onboarding-flow fields (so a fresh sign-up
             // re-locks the setup checklist); card-snapshot/filters stay intact.
-            resetOnboardingProgress: () =>
+            resetOnboardingProgress: () => {
+                setLoginPassword(null)
                 set({
                     onboardingStep: initialState.onboardingStep,
                     email: initialState.email,
                     countryIso: initialState.countryIso,
                     verificationCode: initialState.verificationCode,
+                    hasPassword: initialState.hasPassword,
+                    loginAttempts: initialState.loginAttempts,
                     codeVerificationError: initialState.codeVerificationError,
                     phoneCountryCode: initialState.phoneCountryCode,
                     phoneNumber: initialState.phoneNumber,
                     contactVerificationId: initialState.contactVerificationId,
                     onboardingId: initialState.onboardingId,
+                    verifiedOnboardingId: initialState.verifiedOnboardingId,
                     consentSetId: initialState.consentSetId,
                     allowMarketing: initialState.allowMarketing,
                     allowSms: initialState.allowSms,
                     connectedFundingSourceAddress:
                         initialState.connectedFundingSourceAddress,
                     selectedFundingType: initialState.selectedFundingType,
-                }),
-            resetState: () => set(initialState),
+                })
+            },
+            resetState: () => {
+                setLoginPassword(null)
+                set(initialState)
+            },
         }),
         {
             name: STORE_NAME,
             storage: () => getProvider().keyValueStorage,
             version: 1,
             migrate: migrateCardUxState,
-            // `verificationCode` is intentionally omitted — a transient OTP
-            // that should never be written to disk.
+            // `verificationCode`, `hasPassword` and `loginAttempts` are
+            // intentionally omitted: secrets and their budget never touch disk.
             // `email`, `phoneCountryCode` and `phoneNumber` are likewise
             // omitted: KYC PII must not sit in unencrypted MMKV. The trade-off
             // is that a mid-onboarding resume re-prompts for them.
@@ -203,6 +250,7 @@ export const useCardStore: UseBoundStore<
                 countryIso: state.countryIso,
                 contactVerificationId: state.contactVerificationId,
                 onboardingId: state.onboardingId,
+                verifiedOnboardingId: state.verifiedOnboardingId,
                 consentSetId: state.consentSetId,
                 connectedFundingSourceAddress:
                     state.connectedFundingSourceAddress,

@@ -18,11 +18,13 @@ export { TransactionListItem } from './components/TransactionListItem'
 export { TransactionHistoryLoadState } from './components/TransactionHistoryLoadState'
 export { TransactionHistorySearchOlder } from './components/TransactionHistorySearchOlder'
 export { SendAccountSelectionContent } from './components/send-funds/SendAccountSelectionContent'
+export { SuspectedPoisoningNotice } from './components/address-safety/SuspectedPoisoningNotice'
 export {
     useReceiveFunds,
     useSendAccountResolver,
     useSendFunds,
     useSendFundsStore,
+    useSuspectedAddressReuseGuard,
     useTransactionHistoryRows,
     type SendAccountResolution,
 } from './hooks'

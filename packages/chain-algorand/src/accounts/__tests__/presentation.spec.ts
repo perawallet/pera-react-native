@@ -85,6 +85,8 @@ describe('algorandAccountPresentation.describe', () => {
                 infoBodyKey: 'account_type_info.standard_description',
                 glyph: 'accounts/glyph/algo25-account',
                 supportUrl: config.accountTypeSupportUrl,
+                unreachableChainsNoteKey:
+                    'account_type_info.standard_unreachable_chains_note',
             },
         ],
         [

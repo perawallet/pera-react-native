@@ -28,7 +28,10 @@ import type {
 import { PeraNetworkError } from '@perawallet/wallet-core-shared'
 import { createEthereumAccountStateOps } from '../account-state'
 import { peraEvmHandlers, type ShouldRefreshRequest } from '../msw-handlers'
-import { evmRpcHandlers } from '../../blockchain/msw-handlers'
+import {
+    EvmRpcErrorFixture,
+    evmRpcHandlers,
+} from '../../blockchain/msw-handlers'
 import { PERA_URL } from '../../__tests__/pera-backend'
 import { ETHEREUM } from '../../__tests__/evm-chains'
 
@@ -138,6 +141,59 @@ describe('createEthereumAccountStateOps', () => {
                     ETHEREUM,
                 ).accountExists(ADDRESS, SCOPE),
             ).resolves.toBe(true)
+        })
+    })
+
+    describe('checkActivity', () => {
+        const OTHER: Hex = '0x00000000000000000000000000000000000000bb'
+
+        it('reads an address whose read failed as inactive when another address answered', async () => {
+            server.use(
+                ...evmRpcHandlers({
+                    rpcUrl: RPC_URL,
+                    responses: {
+                        eth_getBalance: params =>
+                            String(params[0]).toLowerCase() === OTHER
+                                ? new EvmRpcErrorFixture(-32_000, 'flaky')
+                                : '0x1',
+                        eth_getTransactionCount: '0x0',
+                    },
+                }),
+            )
+
+            await expect(
+                createEthereumAccountStateOps(
+                    contextWith(),
+                    ETHEREUM,
+                ).checkActivity([ADDRESS, OTHER], SCOPE),
+            ).resolves.toEqual(
+                new Map([
+                    [ADDRESS, true],
+                    [OTHER, false],
+                ]),
+            )
+        })
+
+        it('rejects when no address in the batch could be read', async () => {
+            server.use(
+                ...evmRpcHandlers({
+                    rpcUrl: RPC_URL,
+                    responses: {
+                        eth_getBalance: new EvmRpcErrorFixture(
+                            -32_000,
+                            'offline',
+                        ),
+                        eth_getTransactionCount: '0x0',
+                    },
+                }),
+            )
+
+            await expect(
+                createEthereumAccountStateOps(
+                    contextWith(),
+                    ETHEREUM,
+                ).checkActivity([ADDRESS, OTHER], SCOPE),
+            ).rejects.toThrow()
         })
     })
 

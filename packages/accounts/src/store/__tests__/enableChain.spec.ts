@@ -129,7 +129,10 @@ describe('enableChain', () => {
         expect(
             families.derivations.get(BASE)?.deriveAccount,
         ).toHaveBeenCalledWith(
-            kmsCore,
+            expect.objectContaining({
+                deriveFromSeed: expect.any(Function),
+                getKey: expect.any(Function),
+            }),
             'hd-seed',
             HD_INDEX.account,
             HD_INDEX.keyIndex,

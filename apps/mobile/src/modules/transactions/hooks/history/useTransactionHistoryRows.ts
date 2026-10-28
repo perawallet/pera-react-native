@@ -19,14 +19,19 @@ import {
 } from '@perawallet/wallet-core-shared'
 import {
     hasCachedHistoryRows,
+    summarizeHistoryItem,
+    useSuspectedPoisoningQuery,
     useTransactionHistoryQuery,
     useTransactionRecordsQuery,
+    type SuspectableEntry,
+    type SuspectedPoisoning,
 } from '@perawallet/wallet-core-transactions'
 import {
     buildRecordListRows,
     buildTransactionListRows,
     type TransactionListRow,
 } from '../../utils/transactionListRows'
+import { useKnownAddresses } from '../address-safety/useKnownAddresses'
 
 export type UseTransactionHistoryRowsParams = {
     accountAddress?: string
@@ -62,6 +67,8 @@ export type UseTransactionHistoryRowsResult = {
     retry: () => void
     /** A failed read is being re-requested; the error stays set until it settles. */
     isRetrying: boolean
+    /** Keyed by transaction id; kept apart from `rows` so marking never moves an entry. */
+    suspectedPoisoningById: ReadonlyMap<string, SuspectedPoisoning>
 }
 
 /**
@@ -102,6 +109,38 @@ export const useTransactionHistoryRows = ({
         [isRowCached, transactions, records],
     )
 
+    const entries = useMemo<SuspectableEntry[]>(
+        () =>
+            isRowCached
+                ? transactions.map(transaction => ({
+                      id: transaction.id,
+                      summary: summarizeHistoryItem(
+                          transaction,
+                          accountAddress ?? '',
+                          scope.chainId,
+                      ),
+                  }))
+                : records.map(record => ({
+                      id: record.id,
+                      summary: record.summary,
+                      initiator: record.initiator,
+                  })),
+        [isRowCached, transactions, records, accountAddress, scope.chainId],
+    )
+    const { knownAddresses } = useKnownAddresses({
+        scope,
+        senderAddress: accountAddress,
+        isEnabled: !!accountAddress,
+        isSenderHistoryOnly: true,
+    })
+    const { data: suspectedPoisoningById } = useSuspectedPoisoningQuery({
+        entries,
+        accountAddress,
+        scope,
+        knownAddresses,
+        isEnabled: !!accountAddress,
+    })
+
     const query = isRowCached ? historyQuery : recordsQuery
     // A failed read leaves `hasNextPage` set, so without this a screen reads
     // it as a load still in progress and the skeleton never leaves.
@@ -130,5 +169,6 @@ export const useTransactionHistoryRows = ({
         fetchNextPage,
         retry,
         isRetrying: query.isError && query.isFetching,
+        suspectedPoisoningById,
     }
 }

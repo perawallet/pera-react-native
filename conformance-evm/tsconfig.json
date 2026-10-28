@@ -1,0 +1,54 @@
+{
+    "extends": "@perawallet/wallet-core-devtools/tsconfig/vite.json",
+    "compilerOptions": {
+        "resolveJsonModule": true,
+        // Harness code runs under Node (fetch, node:child_process).
+        "types": ["node"],
+        // Nothing consumes a dist/ from this package; the inherited `outDir` still
+        // makes tsc require one `rootDir` over every input, so it spans the
+        // workspace root that `paths` below reaches into.
+        "declaration": false,
+        "declarationMap": false,
+        "rootDir": "..",
+        // Mirrors vitest.config.ts's resolve.alias: without these, tsc resolves
+        // the deep imports against each package's dist/*.d.ts instead of src.
+        "paths": {
+            "@perawallet/wallet-core-chain-ethereum": [
+                "../packages/chain-ethereum/src"
+            ],
+            "@perawallet/wallet-core-chain-ethereum/*": [
+                "../packages/chain-ethereum/src/*"
+            ],
+            "@perawallet/wallet-core-chain-contract": [
+                "../packages/chain-contract/src"
+            ],
+            "@perawallet/wallet-core-chain-shared": [
+                "../packages/chain-shared/src"
+            ],
+            "@perawallet/wallet-core-accounts": ["../packages/accounts/src"],
+            "@perawallet/wallet-core-accounts/*": [
+                "../packages/accounts/src/*"
+            ],
+            "@perawallet/wallet-core-assets": ["../packages/assets/src"],
+            "@perawallet/wallet-core-assets/*": ["../packages/assets/src/*"],
+            "@perawallet/wallet-core-config": ["../packages/config/src"],
+            "@perawallet/wallet-core-config/*": ["../packages/config/src/*"],
+            "@perawallet/wallet-core-kms": ["../packages/kms/src"],
+            "@perawallet/wallet-core-kms/*": ["../packages/kms/src/*"],
+            "@perawallet/wallet-core-signing": ["../packages/signing/src"],
+            "@perawallet/wallet-core-signing/*": ["../packages/signing/src/*"],
+            "@perawallet/wallet-core-shared": ["../packages/shared/src"],
+            "@perawallet/wallet-core-shared/*": ["../packages/shared/src/*"],
+            "@perawallet/wallet-extension-provider/keystore/shims/secp256k1": [
+                "../extensions/provider/src/keystore/shims/secp256k1/index.ts"
+            ],
+            "@perawallet/wallet-core-transactions": [
+                "../packages/transactions/src"
+            ],
+            "@perawallet/wallet-core-transactions/*": [
+                "../packages/transactions/src/*"
+            ]
+        }
+    },
+    "include": ["src"]
+}

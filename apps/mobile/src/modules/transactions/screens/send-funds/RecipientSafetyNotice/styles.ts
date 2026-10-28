@@ -32,18 +32,8 @@ export const useStyles = makeStyles(theme => ({
     body: {
         color: theme.colors.suspiciousBannerContent,
     },
-    comparison: {
-        gap: theme.spacing.xs,
-    },
     label: {
         color: theme.colors.textGray,
-    },
-    address: {
-        color: theme.colors.textMain,
-    },
-    difference: {
-        color: theme.colors.suspiciousBannerContent,
-        textDecorationLine: 'underline',
     },
     acknowledge: {
         flexDirection: 'row',

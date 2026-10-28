@@ -451,7 +451,8 @@
     },
     "account_type_info": {
         "standard_title": "Cuenta Algo25",
-        "standard_description": "Tu cuenta es una cuenta estándar de Algorand. No se le ha hecho rekey y no está asociada a un dispositivo Ledger. Se añadió a tu wallet con sus claves.",
+        "standard_description": "Tu cuenta es una cuenta estándar de Algorand. No se le ha hecho rekey y no está asociada a un dispositivo Ledger. Se añadió a tu wallet con sus claves. Las cuentas Algo25 solo admiten Algorand. Para usar Ethereum o Base, crea una Wallet universal.",
+        "standard_unreachable_chains_note": "Otras redes no están disponibles para las cuentas Algo25.",
         "ledger_title": "Cuenta Ledger",
         "ledger_description": "Tu cuenta es una cuenta Ledger. Se añadió a tu wallet directamente desde el dispositivo de hardware. Todas las transacciones de esta cuenta deben confirmarse en tu Ledger.",
         "watch_title": "Cuenta de observación",
@@ -919,7 +920,7 @@
         },
         "network_unavailable": {
             "title": "No disponible en esta red",
-            "body": "Esto necesita Pera services, que no están disponibles en BetaNet ni en nodos personalizados. Cambia a MainNet o TestNet.",
+            "body": "Los servicios de Pera no están disponibles en esta red.",
             "generic_body": "Esta función no está disponible en este momento."
         },
         "yes": "Sí",
@@ -1604,7 +1605,8 @@
             "otp_body_with_phone": "Introduce el código de verificación que enviamos a {{phone}} para terminar de iniciar sesión.",
             "otp_invalid": "Ese código no es correcto. Vuelve a intentarlo.",
             "send_again": "Reenviar",
-            "send_again_in": "Reenviar en {{count}}s"
+            "send_again_in": "Reenviar en {{count}}s",
+            "account_locked": "Tu cuenta de Pera Card está bloqueada temporalmente. <0>Contacta con soporte</0> para desbloquearla."
         },
         "forgot_password": {
             "navigation_title": "Restablecer contraseña",
@@ -1711,6 +1713,8 @@
             "navigation_title": "Información personal",
             "first_name_label": "Nombre",
             "first_name_invalid": "Introduce tu nombre",
+            "middle_name_label": "Segundo nombre (opcional)",
+            "middle_name_invalid": "Usa solo letras, espacios, apóstrofos y guiones",
             "last_name_label": "Apellidos",
             "last_name_invalid": "Introduce tus apellidos",
             "dob_label": "Fecha de nacimiento DD/MM/AAAA",
@@ -1721,13 +1725,55 @@
             "nationality_placeholder": "Selecciona la nacionalidad",
             "nationality_required": "Selecciona tu nacionalidad",
             "nationality_picker_title": "Nacionalidad",
+            "additional_nationality_label": "Otra nacionalidad",
+            "add_nationality": "Añadir otra nacionalidad",
+            "remove_nationality": "Eliminar",
+            "additional_nationality_duplicate": "Cada nacionalidad solo se puede añadir una vez",
             "confirm_button": "Continuar",
             "error_title": "Algo salió mal",
             "error_body": "No pudimos guardar tus datos. Vuelve a intentarlo.",
             "birth_country_label": "País de nacimiento",
             "birth_country_placeholder": "Selecciona un país",
             "birth_country_picker_title": "País de nacimiento",
-            "birth_country_required": "Selecciona tu país de nacimiento"
+            "birth_country_required": "Selecciona tu país de nacimiento",
+            "employment_status_label": "Situación laboral",
+            "employment_sector_label": "Sector laboral",
+            "option_placeholder": "Selecciona",
+            "portugal_investment_scheme": "Participo en un programa de inversión de Portugal"
+        },
+        "option_picker": {
+            "search_placeholder": "Buscar",
+            "empty_title": "No se encontraron resultados",
+            "empty_body": "Prueba con otra búsqueda.",
+            "error_title": "No se pudieron cargar las opciones",
+            "error_body": "Comprueba tu conexión y vuelve a intentarlo.",
+            "retry": "Reintentar"
+        },
+        "additional_details": {
+            "navigation_title": "Información adicional",
+            "body": "Necesitamos algunos datos más para cumplir la normativa de tu país de residencia.",
+            "tin_label": "Número de identificación fiscal (NIF)",
+            "tin_invalid": "Introduce tu número de identificación fiscal (máximo 20 caracteres)",
+            "tin_country_label": "País emisor del NIF",
+            "tin_country_unsupported": "Aquí no se pueden usar números fiscales de EE. UU.",
+            "country_placeholder": "Selecciona un país",
+            "option_placeholder": "Selecciona",
+            "occupation_label": "Ocupación",
+            "occupation_other_label": "Tu ocupación",
+            "source_of_wealth_label": "Origen del patrimonio",
+            "source_of_wealth_other_label": "Origen de tu patrimonio",
+            "business_sector_label": "Sector de actividad",
+            "annual_income_label": "Ingresos anuales estimados",
+            "annual_income_invalid": "Introduce tus ingresos anuales estimados (máximo 50 caracteres)",
+            "income_country_label": "País donde obtienes ingresos",
+            "add_income_country": "Añadir otro país",
+            "remove_country": "Eliminar",
+            "income_country_duplicate": "Cada país solo se puede añadir una vez",
+            "confirm_button": "Continuar",
+            "error_title": "Algo salió mal",
+            "error_body": "No pudimos guardar tus datos. Vuelve a intentarlo.",
+            "unavailable_title": "No disponible en este momento",
+            "unavailable_body": "Ahora mismo no podemos guardar estos datos. Vuelve a intentarlo en unos minutos."
         },
         "address": {
             "navigation_title": "Dirección de residencia",
@@ -1774,25 +1820,29 @@
             "error_body": "No pudimos iniciar la verificación. Vuelve a intentarlo.",
             "open_link_error_body": "No pudimos abrir la página de verificación. Vuelve a intentarlo."
         },
-        "kyc_required": {
-            "title": "Termina de verificar tu identidad",
-            "body": "Tu verificación de identidad aún no se ha completado. Verifica tu identidad para continuar con tu solicitud de Pera Card.",
-            "verify_button": "Verificar tu cuenta"
-        },
         "setup_status": {
             "title": "Completa la configuración y empieza a gastar on-chain",
             "documents_title": "Envía tus documentos",
+            "documents_locked_body": "Primero introduce tus datos y después verifica tu identidad.",
             "documents_pending_label": "Pendiente",
+            "documents_preparing_label": "Configurando la cuenta",
             "documents_unverified_body": "Verifica tu cuenta para empezar a gastar on-chain.",
             "documents_verify_button": "Verificar tu cuenta",
             "documents_pending_body": "Se ha enviado tu verificación. Te avisaremos por correo cuando esté completa.",
             "documents_verified_body": "Tu identidad ha sido verificada.",
+            "documents_preparing_body": "Tu identidad está verificada. Estamos configurando tu cuenta, lo que suele tardar unos minutos.",
+            "documents_preparing_slow_body": "Tu identidad está verificada. Está tardando más de lo habitual. Vuelve a intentarlo en unos minutos.",
+            "documents_preparing_stalled_body": "Tu identidad está verificada, pero no pudimos terminar de configurar tu cuenta. Contacta con soporte para completarla.",
+            "documents_record_missing_body": "No pudimos cargar tu registro. Inicia sesión con tu contraseña de Pera Card para continuar.",
+            "documents_account_locked_body": "Tu cuenta de Pera Card está bloqueada temporalmente. Contacta con soporte para desbloquearla.",
             "documents_rejected_body": "No pudimos verificar tu identidad. Contacta con soporte para obtener ayuda.",
             "documents_error_body": "No pudimos comprobar el estado de tu verificación. Vuelve a intentarlo.",
             "documents_retry": "Reintentar",
+            "sign_in_to_finish_title": "Inicia sesión para terminar",
+            "sign_in_to_finish_body": "Tu identidad está verificada. Inicia sesión con tu contraseña de Pera Card para terminar de configurar tu cuenta.",
             "details_title": "Introduce tus datos",
             "details_body": "Verifica tus datos e introduce tu dirección para continuar.",
-            "details_button": "Verificar tu cuenta",
+            "details_button": "Introducir datos",
             "connect_funds_title": "Conectar fondos",
             "connect_funds_body": "Conecta una de tus cuentas de Pera como fuente de financiación para empezar a usar tu Pera Card.",
             "connect_funds_button": "Conectar una cuenta de Pera",
@@ -2388,6 +2438,7 @@
         "last_7_days": "Últimos 7 días",
         "last_30_days": "Últimos 30 días",
         "last_year": "Último año",
+        "partial_total": "Excluye tenencias sin precio",
         "info": {
             "title": "Cómo calculamos el valor del portafolio",
             "body": "El valor total del portafolio se calcula sumando el valor de todos tus activos y el Algo disponible en tus cuentas, excluyendo las cuentas de observación.\n\nLos valores de los activos se calculan a partir de los valores diarios obtenidos de varios socios del ecosistema.  Como algunos valores de activos no están disponibles, el valor total del portafolio debe considerarse una estimación."
@@ -2654,6 +2705,7 @@
         "qrview": {
             "error_title": "Ninguna cuenta seleccionada",
             "error_body": "No se ha seleccionado ninguna cuenta, selecciona una primero",
+            "chain_unavailable_title": "{{chain}} no está disponible para esta cuenta",
             "copy_address": "Copiar dirección",
             "share": "Compartir dirección"
         }
@@ -3178,6 +3230,15 @@
             "deadline_label": "Fecha límite",
             "never": "Nunca"
         },
+        "collection_approval": {
+            "warning": "Esto permite al operador transferir todos los artículos que tienes en esta colección, incluidos los que recibas después, hasta que lo revoques.",
+            "operator_label": "Operador",
+            "operator_caption": "Operador: {{address}}",
+            "collection_label": "Colección"
+        },
+        "token_approval": {
+            "revoke_note": "Esto retira el permiso de la dirección para mover este activo."
+        },
         "arbitrary_data_details": {
             "unnamed": "Alguien",
             "description": "Una solicitud de firma de datos es una petición para firmar datos arbitrarios. Los servicios la usan habitualmente para verificar la propiedad de una cuenta y no conlleva ninguna comisión.",
@@ -3324,6 +3385,8 @@
             "asset_freeze": "Congelación de activo",
             "app_call": "Llamada a app",
             "contract_call": "Llamada a contrato",
+            "approval": "Aprobación",
+            "revoke_approval": "Revocar aprobación",
             "key_registration": "Registro de clave",
             "heartbeat": "Heartbeat",
             "state_proof": "State Proof",
@@ -3483,6 +3546,16 @@
             "speed_up": "Acelerar",
             "cancel": "Cancelar transacción",
             "review_notice": "Reemplaza la transacción {{txId}}"
+        },
+        "suspected_poisoning": {
+            "marker": "Posible envenenamiento de direcciones",
+            "title": "Posible envenenamiento de direcciones",
+            "body": "Esta transferencia no movió nada de valor y viene de una dirección creada para parecerse a una que conoces. Los estafadores envían esto para que su dirección aparezca en tu historial y la copies más adelante. No la copies ni le envíes nada.",
+            "sender_label": "Esta dirección",
+            "reuse_title": "Esta dirección imita a una que conoces",
+            "reuse_body": "Empieza y termina como una dirección que conoces, pero no es la misma. Compara las direcciones completas antes de usarla.",
+            "reuse_confirm": "Continuar de todos modos",
+            "reuse_cancel": "Cancelar"
         }
     },
     "tabbar": {
@@ -3504,6 +3577,7 @@
             "permissions_sign_transaction": "Solicitar la firma de transacciones",
             "permissions_sign_data": "Solicitar la firma de datos arbitrarios",
             "accounts_title": "SELECCIONAR CUENTAS",
+            "no_accounts": "Ninguna de tus cuentas puede conectarse en esta red.",
             "success_sheet_title": "Te has conectado a {{name}}",
             "success_sheet_body": "Vuelve a {{name}} para continuar y finalizar la operación. Puedes ver todas las sesiones conectadas en la página de ajustes correspondiente.",
             "success_sheet_return_to_dapp": "Volver a {{name}}",

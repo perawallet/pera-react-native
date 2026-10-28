@@ -19,6 +19,7 @@ import {
     useSigningAccountsOnOwnChain,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { registerEthereumChain } from '@test-utils/chain-fixtures'
 import { usePortfolioView } from '../usePortfolioView'
 
@@ -53,12 +54,14 @@ vi.mock('@perawallet/wallet-core-currencies', () => ({
 const totals = (
     portfolioUsdValue: Decimal | null,
     portfolioFiatValue: Decimal | null,
+    isPortfolioFiatValuePartial = false,
 ) =>
     ({
         accountValueTotals: new Map(),
         portfolioNativeValue: new Decimal(50),
         portfolioUsdValue,
         portfolioFiatValue,
+        isPortfolioFiatValuePartial,
         isPending: false,
     }) as unknown as ReturnType<typeof useAccountValueTotalsQuery>
 
@@ -88,7 +91,7 @@ describe('usePortfolioView', () => {
         expect(result.current.portfolioPreferredValue).toEqual(new Decimal(60))
     })
 
-    it('leaves the total unknown, not zero, when an account is unpriced', () => {
+    it('leaves the total unknown, not zero, when nothing counted is priced', () => {
         vi.mocked(useAccountValueBasis).mockReturnValue('fiat')
         vi.mocked(useAccountValueTotalsQuery).mockReturnValue(
             totals(new Decimal(10), null),
@@ -97,6 +100,45 @@ describe('usePortfolioView', () => {
         const { result } = renderHook(() => usePortfolioView())
 
         expect(result.current.portfolioPreferredValue).toBeNull()
+        expect(result.current.isPreferredValuePartial).toBe(false)
+    })
+
+    it('flags a fiat total that leaves unpriced holdings out', () => {
+        vi.mocked(useAccountValueBasis).mockReturnValue('fiat')
+        vi.mocked(useAccountValueTotalsQuery).mockReturnValue(
+            totals(new Decimal(10), new Decimal(30), true),
+        )
+
+        const { result } = renderHook(() => usePortfolioView())
+
+        expect(result.current.portfolioPreferredValue).toEqual(new Decimal(60))
+        expect(result.current.isPreferredValuePartial).toBe(true)
+    })
+
+    it('does not flag the single-chain total, which never sums the partial fiat figure', () => {
+        vi.mocked(useAccountValueBasis).mockReturnValue('native')
+        vi.mocked(useAccountValueTotalsQuery).mockReturnValue(
+            totals(new Decimal(10), new Decimal(30), true),
+        )
+
+        const { result } = renderHook(() => usePortfolioView())
+
+        expect(result.current.isPreferredValuePartial).toBe(false)
+    })
+
+    it('does not flag a total the unresolved rate leaves unknown', () => {
+        vi.mocked(useAccountValueBasis).mockReturnValue('fiat')
+        vi.mocked(useAccountValueTotalsQuery).mockReturnValue(
+            totals(new Decimal(10), new Decimal(30), true),
+        )
+        vi.mocked(useCurrency).mockReturnValueOnce({
+            usdToPreferred: () => null,
+        } as unknown as ReturnType<typeof useCurrency>)
+
+        const { result } = renderHook(() => usePortfolioView())
+
+        expect(result.current.portfolioPreferredValue).toBeNull()
+        expect(result.current.isPreferredValuePartial).toBe(false)
     })
 
     it('totals every account that signs on its own chain, Ethereum included', () => {
@@ -135,7 +177,7 @@ describe('usePortfolioView', () => {
         expect(result.current.hasBalanceHistory).toBe(true)
     })
 
-    it('drops the chart once the total counts a chain with no balance history', () => {
+    it('drops the chart once the total counts a chain the chart leaves out', () => {
         registerEthereumChain()
         vi.mocked(useSigningAccountsOnOwnChain).mockReturnValue([
             {

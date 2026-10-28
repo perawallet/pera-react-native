@@ -12,7 +12,9 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { FlashListProps } from '@shopify/flash-list'
+import type { ReactElement } from 'react'
 import { render } from '@test-utils/render'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { PWInBottomSheetContext } from '@components/core/PWBottomSheet/inSheetContext'
 import { AccountPicker } from '../AccountPicker'
 
@@ -30,6 +32,12 @@ vi.mock('@shopify/flash-list', () => {
     }
 })
 /* eslint-enable @typescript-eslint/no-explicit-any, @typescript-eslint/no-require-imports */
+
+const mockSelectableAccountRow = vi.fn((_props: unknown) => null)
+
+vi.mock('@components/SelectableAccountRow', () => ({
+    SelectableAccountRow: (props: unknown) => mockSelectableAccountRow(props),
+}))
 
 vi.mock('@gorhom/bottom-sheet', () => ({
     useBottomSheetScrollableCreator: () => mockScrollableCreator,
@@ -63,5 +71,29 @@ describe('AccountPicker', () => {
 
         expect(capturedProps.renderScrollComponent).toBeUndefined()
         expect(capturedProps.scrollEnabled).toBe(false)
+    })
+
+    it('scopes every row to the chain the picker is for', () => {
+        const account: WalletAccount = {
+            id: 'account-1',
+            custody: { kind: 'watch' },
+            chains: { ethereum: { address: `0x${'b'.repeat(40)}` } },
+        }
+        render(
+            <AccountPicker
+                accounts={[account]}
+                onSelect={vi.fn()}
+                chainId='ethereum'
+            />,
+        )
+
+        const renderItem = capturedProps.renderItem as (info: {
+            item: WalletAccount
+        }) => ReactElement
+        render(renderItem({ item: account }))
+
+        expect(mockSelectableAccountRow).toHaveBeenCalledWith(
+            expect.objectContaining({ account, chainId: 'ethereum' }),
+        )
     })
 })

@@ -13,6 +13,14 @@
 export { ExternalTransactionInfoContent } from './components/ExternalTransactionInfoContent'
 export { GroupDetailHeader } from './screens/GroupDetailScreen/GroupDetailHeader'
 export { SourceMetadataBadge } from './components/SourceMetadataBadge'
+export {
+    CollectionApprovalWarning,
+    type CollectionApprovalWarningProps,
+} from './components/CollectionApprovalWarning'
+export {
+    SpendApprovalWarning,
+    type SpendApprovalWarningProps,
+} from './components/SpendApprovalWarning'
 export { TransactionReviewLayout } from './transactions/TransactionReviewLayout'
 export type {
     DetailBodyProps,

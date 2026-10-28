@@ -107,3 +107,23 @@ describe('useSpendApprovalWarning', () => {
         ).toEqual(['spend', 'unlimited', 'no-expiry'])
     })
 })
+
+// An on-chain allowance has no deadline, and the chain reports an unlimited
+// one the way an unlimited permit is reported: without an amount.
+describe('an unlimited approval sent as a transaction', () => {
+    it('warns that it is unlimited, as an unlimited permit does, and that it never expires', () => {
+        const transaction = approval({
+            allowances: [unlimited('0xusdc')],
+            deadline: undefined,
+            isLongLived: true,
+        })
+        const permit = approval({ allowances: [unlimited('0xusdc')] })
+
+        expect(rowTypes(transaction)).toEqual([
+            'spend',
+            'unlimited',
+            'no-expiry',
+        ])
+        expect(rowTypes(permit)).toContain('unlimited')
+    })
+})

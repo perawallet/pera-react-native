@@ -194,7 +194,7 @@ const rowFor = (name: string): HTMLButtonElement => {
 const seedQuantumSender = async (): Promise<WalletAccount> => {
     const { result: kms } = renderHook(() => useKMS())
     let keyResult: Nullable<QuantumKeyResult> = null
-    await waitFor(async () => {
+    await act(async () => {
         keyResult = await kms.current.createQuantumKey({
             chain: algorandQuantumDerivation,
             mnemonicIndices: QUANTUM_TEST_MNEMONIC_INDICES,

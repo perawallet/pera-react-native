@@ -35,6 +35,12 @@ export type ValuedAccountTotals = {
      * unpriced native balance is `null` regardless of `hasPricing`.
      */
     fiatValue: Nullable<Decimal>
+    /**
+     * USD (display units) of the holdings that have a price; an unpriced
+     * native balance counts 0. Equals `fiatValue` whenever that is known, and
+     * is the priced part of the value when it isn't.
+     */
+    pricedFiatValue: Decimal
 }
 
 /**
@@ -81,5 +87,6 @@ export const valueAccountTotals = (
                 : usdTotal,
         fiatValue:
             nativeUsdPrice === null && !nativeAmount.isZero() ? null : usdTotal,
+        pricedFiatValue: usdTotal,
     }
 }

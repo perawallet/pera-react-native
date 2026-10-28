@@ -21,7 +21,7 @@ import type { IconName } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 
 export type SpendApprovalWarningRow = {
-    type: 'spend' | 'unlimited' | 'no-expiry' | 'long-lived'
+    type: 'spend' | 'unlimited' | 'no-expiry' | 'long-lived' | 'collection'
     icon: IconName
     message: string
     emphasis?: string
@@ -39,7 +39,10 @@ type RowCopy = {
     emphasis?: I18nKey
 }
 
-const ROW_COPY: Record<SpendApprovalWarningRow['type'], RowCopy> = {
+// A collection approval has no allowance; its own hook builds that row.
+type SpendRowType = Exclude<SpendApprovalWarningRow['type'], 'collection'>
+
+const ROW_COPY: Record<SpendRowType, RowCopy> = {
     spend: {
         icon: 'outflow',
         message: i18nKey('signing.spend_approval.spend_warning'),
@@ -66,7 +69,7 @@ export const useSpendApprovalWarning = (
 
     return useMemo(() => {
         const { spender, allowances, deadline, isLongLived } = approval
-        const types: SpendApprovalWarningRow['type'][] = ['spend']
+        const types: SpendRowType[] = ['spend']
         if (allowances.some(allowance => allowance.amount === undefined)) {
             types.push('unlimited')
         }

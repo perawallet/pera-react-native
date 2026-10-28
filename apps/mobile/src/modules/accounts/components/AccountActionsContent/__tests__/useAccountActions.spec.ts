@@ -26,6 +26,8 @@ const {
     mockResolveSender,
     mockPickSender,
     mockSetSelectedAccountId,
+    mockFirstUnreachableChainsNote,
+    accountsRef,
     contactsRef,
 } = vi.hoisted(() => ({
     mockNavigate: vi.fn(),
@@ -36,6 +38,8 @@ const {
     mockResolveSender: vi.fn(),
     mockPickSender: vi.fn(),
     mockSetSelectedAccountId: vi.fn(),
+    mockFirstUnreachableChainsNote: vi.fn(),
+    accountsRef: { accounts: [] as unknown[] },
     contactsRef: { contacts: [] as Contact[] },
 }))
 
@@ -46,6 +50,8 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
     useAccountsStore: {
         getState: () => ({ setSelectedAccountId: mockSetSelectedAccountId }),
     },
+    useAllAccounts: () => accountsRef.accounts,
+    firstUnreachableChainsNote: mockFirstUnreachableChainsNote,
 }))
 
 vi.mock('@hooks/useAppNavigation', () => ({
@@ -85,6 +91,8 @@ describe('useAccountActions', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         contactsRef.contacts = []
+        accountsRef.accounts = [SENDER]
+        mockFirstUnreachableChainsNote.mockReturnValue(null)
         useRemoteConfigStore.getState().resetState()
     })
 
@@ -204,6 +212,50 @@ describe('useAccountActions', () => {
                 }),
             )
             expect(result.current.canSend).toBe(false)
+            expect(result.current.sendUnavailableNote).toBeNull()
+        })
+
+        it("says why send is unavailable when a held account's kind can't reach the chain", () => {
+            mockResolveSender.mockReturnValue({ kind: 'none' })
+            mockFirstUnreachableChainsNote.mockReturnValue(
+                'kind.unreachable_note',
+            )
+            const { result } = renderHook(() =>
+                useAccountActions({
+                    address: ADDRESS,
+                    chainId: 'algorand',
+                    onClose,
+                }),
+            )
+
+            expect(result.current.canSend).toBe(false)
+            expect(result.current.sendUnavailableNote).toBe(
+                'kind.unreachable_note',
+            )
+            expect(mockFirstUnreachableChainsNote).toHaveBeenCalledWith(
+                [SENDER],
+                ['algorand'],
+            )
+        })
+
+        it('gives no note while an account can send on the chain', () => {
+            mockResolveSender.mockReturnValue({
+                kind: 'single',
+                account: SENDER,
+            })
+            mockFirstUnreachableChainsNote.mockReturnValue(
+                'kind.unreachable_note',
+            )
+            const { result } = renderHook(() =>
+                useAccountActions({
+                    address: ADDRESS,
+                    chainId: 'algorand',
+                    onClose,
+                }),
+            )
+
+            expect(result.current.canSend).toBe(true)
+            expect(result.current.sendUnavailableNote).toBeNull()
         })
 
         it('hides send when the chain has send switched off', () => {

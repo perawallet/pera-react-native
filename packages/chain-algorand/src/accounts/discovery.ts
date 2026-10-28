@@ -16,7 +16,11 @@ import type { indexerModels } from 'algosdk'
 import type { GetPublicKey } from '@perawallet/wallet-core-accounts'
 import { getAlgorandClient } from '../blockchain'
 import { ALGORAND_HD_DERIVATION_TYPE } from './constants'
-import { fetchAccountFastLookup, logger } from '@perawallet/wallet-core-shared'
+import {
+    fetchAccountFastLookup,
+    isPeraServiceUnavailableError,
+    logger,
+} from '@perawallet/wallet-core-shared'
 import { existsOnChain } from './endpoints'
 import { type AlgorandNetworkId, algorandScope } from '../network-id'
 
@@ -53,24 +57,19 @@ export async function checkAlgorandActivity(
         }
         return activityMap
     } catch (error) {
-        // Degrading silently is deliberate here: this is the hot path during
-        // onboarding, so a failed probe marks the batch inactive and lets the
-        // gap limit advance the scan. The rekeyed scan surfaces failures instead.
-        //
         // Trap: the probe is the Pera backend, not the indexer, so on a network
-        // with no Pera deployment it throws before a socket opens and every
-        // address reports as non-existent, indistinguishable from an empty
-        // result. The indexer could answer the same question there.
-        logger.warn('Pera fast-lookup failed; treating batch as inactive', {
+        // with no Pera deployment it throws before a socket opens. That batch
+        // reads as inactive, as rejecting would fail every HD search there; the
+        // indexer could answer the same question.
+        if (isPeraServiceUnavailableError(error)) {
+            return new Map(addresses.map(address => [address, false]))
+        }
+        logger.warn('Pera fast-lookup failed', {
             source: 'account-discovery.checkActivityBatch',
             batchSize: addresses.length,
             error,
         })
-        const activityMap = new Map<string, boolean>()
-        for (const address of addresses) {
-            activityMap.set(address, false)
-        }
-        return activityMap
+        throw error
     }
 }
 

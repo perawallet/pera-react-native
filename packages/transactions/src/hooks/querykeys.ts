@@ -98,6 +98,18 @@ export const transactionQueryKeys = {
             { accountAddress, scope },
         ] as const,
 
+    /** `candidates` are sorted `<transaction id>:<imitated address>` pairs. */
+    suspectedPoisoning: (
+        accountAddress: string,
+        scope: ChainScope,
+        candidates: readonly string[],
+    ) =>
+        [
+            MODULE_PREFIX,
+            'suspected-poisoning',
+            { accountAddress, scope, candidates },
+        ] as const,
+
     addressPoisoning: (recipient: string, scope: ChainScope) =>
         [MODULE_PREFIX, 'address-poisoning', { recipient, scope }] as const,
 

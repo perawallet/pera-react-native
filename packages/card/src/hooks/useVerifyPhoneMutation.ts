@@ -13,8 +13,6 @@
 import { useMutation } from '@tanstack/react-query'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { verifyPhone, type VerifyPhoneParams } from '../api/onboarding'
-import { OnboardingStep } from '../models'
-import { useCardStore } from '../store'
 import { toCardMutationResult, type CardMutationResult } from './types'
 
 export type VerifyPhoneVariables = Omit<VerifyPhoneParams, 'scope' | 'signal'>
@@ -27,13 +25,6 @@ export const useVerifyPhoneMutation = (
 ): UseVerifyPhoneMutationResult => {
     const mutation = useMutation<void, Error, VerifyPhoneVariables>({
         mutationFn: variables => verifyPhone({ ...variables, scope }),
-        // Phone verified (the last step before KYC): advance to the
-        // verification step so the setup checklist unlocks.
-        onSuccess: () => {
-            useCardStore
-                .getState()
-                .setOnboardingStep(OnboardingStep.Verification)
-        },
         throwOnError: false,
     })
 

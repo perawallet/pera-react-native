@@ -94,6 +94,70 @@ describe('discoverAccounts', () => {
         expect(hdIndexOf(accounts[1])?.keyIndex).toBe(2)
     })
 
+    it('finds every account of a seed holding more than fifty, with no cap on the search', async () => {
+        const ACTIVE_ACCOUNTS = 60
+        const isActive = (address: string) => {
+            const [, account, keyIndex] = address.split('_').map(Number)
+            return account < ACTIVE_ACCOUNTS && keyIndex === 0
+        }
+        mockFetchAccountFastLookup.mockImplementation(
+            async (addresses: string[]) =>
+                addresses.map(address => ({
+                    address,
+                    accountExists: isActive(address),
+                })),
+        )
+
+        const accounts = await discoverAccounts({
+            scope: TESTNET_SCOPE,
+            getPublicKey: createMockGetPublicKey(),
+            walletKeyId: 'test-wallet',
+        })
+
+        expect(accounts.map(account => hdIndexOf(account))).toEqual(
+            Array.from({ length: ACTIVE_ACCOUNTS }, (_, account) => ({
+                account,
+                keyIndex: 0,
+            })),
+        )
+    })
+
+    it('keeps the accounts found before a later batch of the same account index rejects', async () => {
+        mockFetchAccountFastLookup.mockImplementation(
+            async (addresses: string[]) => {
+                if (addresses.includes('ADDRESS_0_5')) {
+                    throw new Error('offline')
+                }
+                return addresses.map(address => ({
+                    address,
+                    accountExists: address.startsWith('ADDRESS_0_'),
+                }))
+            },
+        )
+
+        const accounts = await discoverAccounts({
+            scope: TESTNET_SCOPE,
+            getPublicKey: createMockGetPublicKey(),
+            walletKeyId: 'test-wallet',
+        })
+
+        expect(accounts.map(account => hdIndexOf(account))).toEqual(
+            [0, 1, 2, 3, 4].map(keyIndex => ({ account: 0, keyIndex })),
+        )
+    })
+
+    it('returns nothing when every activity probe rejects, rather than the first account', async () => {
+        mockFetchAccountFastLookup.mockRejectedValue(new Error('offline'))
+
+        const accounts = await discoverAccounts({
+            scope: TESTNET_SCOPE,
+            getPublicKey: createMockGetPublicKey(),
+            walletKeyId: 'test-wallet',
+        })
+
+        expect(accounts).toEqual([])
+    })
+
     it('should sort accounts by account index first, then by key index', async () => {
         mockFetchAccountFastLookup.mockResolvedValue([
             { address: 'ADDRESS_1_0', accountExists: true },

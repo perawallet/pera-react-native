@@ -18,6 +18,7 @@ import React from 'react'
 const { clearCardSession } = vi.hoisted(() => ({ clearCardSession: vi.fn() }))
 vi.mock('../../session', () => ({ clearCardSession }))
 
+import { useCardStore } from '../../store'
 import { useCardLogout } from '../useCardLogout'
 
 describe('useCardLogout', () => {
@@ -36,13 +37,15 @@ describe('useCardLogout', () => {
             children,
         )
 
-    it('clears the session and invalidates card queries', async () => {
+    it('clears the session, the in-memory password and invalidates card queries', async () => {
+        useCardStore.getState().setPassword('pw')
         const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries')
 
         const { result } = renderHook(() => useCardLogout(), { wrapper })
         await result.current.logout()
 
         expect(clearCardSession).toHaveBeenCalledTimes(1)
+        expect(useCardStore.getState().hasPassword).toBe(false)
         expect(invalidateSpy).toHaveBeenCalledWith(
             expect.objectContaining({ predicate: expect.any(Function) }),
         )

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { act, fireEvent } from '@testing-library/react'
+import { act, fireEvent, screen, waitFor } from '@testing-library/react'
 import { DOUBLE_PRESS_GUARD_MS } from '@components/core/PWTouchableOpacity/PWTouchableOpacity'
 
 // react-native-web renders pressables as <div>s and reports `disabled` through
@@ -18,6 +18,18 @@ import { DOUBLE_PRESS_GUARD_MS } from '@components/core/PWTouchableOpacity/PWTou
 export const isElementDisabled = (element: Element): boolean =>
     element.getAttribute('aria-disabled') === 'true' ||
     (element as HTMLButtonElement).disabled === true
+
+// Re-queries on every poll: a layout that remounts the subtree leaves an
+// earlier reference detached, still reporting the disabled state it had.
+export const findEnabledByTestId = (
+    testId: string,
+    options?: { timeout?: number },
+): Promise<HTMLElement> =>
+    waitFor(() => {
+        const element = screen.getByTestId(testId)
+        expect(isElementDisabled(element)).toBe(false)
+        return element
+    }, options)
 
 // Pressables likewise render as focusable <div>s rather than <button>s, and
 // only carry role="button" when the component sets an accessibilityRole.

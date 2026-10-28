@@ -12,11 +12,20 @@
 
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { buildIntegrityHeaders } from '@perawallet/wallet-core-app-integrity'
-import { queryClient, type Nullable } from '@perawallet/wallet-core-shared'
+import { Decimal } from 'decimal.js'
+import type { PriceHistoryPoint } from '@perawallet/wallet-core-assets'
+import {
+    CHART_QUERY_TIMEOUT_MS,
+    isPeraNetworkError,
+    queryClient,
+    type HistoryPeriod,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import { eip155ChainIdOf, toCaip19 } from '../../blockchain/utils/caip19'
 import type { EvmChain } from '../../chains/types'
 import {
     assetsResponseSchema,
+    chartResponseSchema,
     nftHoldingsPageSchema,
     nftItemSchema,
     nftsResponseSchema,
@@ -36,6 +45,8 @@ export const ASSETS_MAX_IDS = 500
 
 export const whitelistPath = (eip155ChainId: number | string): string =>
     `/api/v3/evm/${eip155ChainId}/tokens/`
+
+export const CHART_PATH = '/api/v4/assets/chart/'
 
 export const NFTS_PATH = '/api/v4/nfts/'
 // The backend rejects a request naming more ids than this (422).
@@ -186,4 +197,49 @@ export const fetchNftItems = async (
         )
     }
     return items
+}
+
+/**
+ * A period, or a range of whole UTC days (`YYYY-MM-DD`, `to` inclusive) whose
+ * buckets sit on whole hours or days. Only range mode lines up with balance
+ * history's grid times; period mode buckets from the request's second.
+ */
+export type ChartQuery =
+    | { period: HistoryPeriod }
+    | { from: string; to: string; interval: 'hourly' | 'daily' }
+
+/**
+ * Oldest first; `[]` for a token the backend has no chart for. Rejects with a
+ * `PeraNetworkError` on any other failed request.
+ */
+export const fetchPriceChart = async (
+    scope: ChainScope,
+    chain: EvmChain,
+    assetId: string,
+    query: ChartQuery,
+): Promise<PriceHistoryPoint[]> => {
+    try {
+        const { data } = await queryClient<unknown>({
+            backend: 'pera',
+            service: PRICES_SERVICE,
+            scope,
+            method: 'GET',
+            url: CHART_PATH,
+            params: { id: toCaip19(assetId, scope, chain), ...query },
+            headers: buildIntegrityHeaders(),
+            timeout: CHART_QUERY_TIMEOUT_MS,
+        })
+        return chartResponseSchema.parse(data).map(point => ({
+            timestamp: Date.parse(point.datetime),
+            usdPrice: new Decimal(point.price),
+        }))
+    } catch (error) {
+        if (
+            isPeraNetworkError(error) &&
+            error.backendCode === 'chart_not_found'
+        ) {
+            return []
+        }
+        throw error
+    }
 }

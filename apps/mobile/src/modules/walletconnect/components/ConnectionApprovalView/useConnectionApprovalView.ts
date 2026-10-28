@@ -10,8 +10,9 @@
  limitations under the License
  */
 
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import {
+    firstUnreachableChainsNote,
     signingAddressesOn,
     useAccountValueTotalsQuery,
     useAllAccounts,
@@ -21,6 +22,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import {
     LEGACY_CHAIN_ID,
+    i18nKey,
     type ChainId,
 } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
@@ -87,6 +89,8 @@ export type UseConnectionApprovalViewResult = {
     /** False when the peer url fails the https gate, so it renders unlinked. */
     canOpenPeerUrl: boolean
     handlePressUrl: () => void
+    /** Shown in place of the account list when no account can connect. */
+    noAccountsNote: string
     /** Undefined when the peer's origin is attested or carries no verdict. */
     originWarning?: ConnectionOriginWarning
     /** Host of the transport-attested origin, for display. */
@@ -160,6 +164,16 @@ export const useConnectionApprovalView = (
         signingAccounts,
         accountValueTotals,
         scope.chainId,
+    )
+    const noAccountsNote = useMemo(
+        () =>
+            t(
+                firstUnreachableChainsNote(
+                    accounts,
+                    proposal.requested.chains,
+                ) ?? i18nKey('walletconnect.request.no_accounts'),
+            ),
+        [accounts, proposal.requested.chains, t],
     )
     const [selectedAccounts, setSelectedAccounts] = useState<string[]>([])
     const [isConnecting, setIsConnecting] = useState(false)
@@ -326,6 +340,7 @@ export const useConnectionApprovalView = (
         peerUrlLabel: toPeerHostLabel(proposal.peer.url),
         canOpenPeerUrl: toValidatedBrowserUrl(proposal.peer.url) !== null,
         handlePressUrl,
+        noAccountsNote,
         originWarning: proposal.peer.verification
             ? ORIGIN_WARNINGS[proposal.peer.verification.status]
             : undefined,

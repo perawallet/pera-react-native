@@ -51,6 +51,7 @@ export const SigningAccountDisplay = ({
             </PWText>
             <AccountWithBalance
                 account={signingAccount}
+                chainId={scope.chainId}
                 style={styles.accountBalance}
             />
         </PWView>

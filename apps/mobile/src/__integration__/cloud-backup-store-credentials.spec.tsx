@@ -57,7 +57,7 @@ const PHRASE = [
 
 const seedPin = async (): Promise<void> => {
     const { result } = renderHook(() => usePinCode())
-    await waitFor(async () => {
+    await act(async () => {
         await result.current.savePin(TEST_PIN)
         expect(await result.current.checkPinEnabled()).toBe(true)
     })

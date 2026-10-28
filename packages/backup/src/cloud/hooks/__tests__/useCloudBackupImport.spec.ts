@@ -35,6 +35,7 @@ const {
     hasSeedWithEntropyMock,
     seedReferenceMock,
     deriveHdAccountMock,
+    deriveClaimedHdKeyMock,
     deriveMultisigAddressMock,
     isValidAddressMock,
     callOrder,
@@ -65,6 +66,14 @@ const {
         hasSeedWithEntropyMock: vi.fn(() => false),
         seedReferenceMock: vi.fn(),
         deriveHdAccountMock: vi.fn(),
+        deriveClaimedHdKeyMock: vi.fn(
+            (
+                _chainId: string,
+                _seedKeyId: string,
+                _index: unknown,
+                derive: () => Promise<unknown>,
+            ) => derive(),
+        ),
         deriveMultisigAddressMock: vi.fn(),
         isValidAddressMock: vi.fn((_address?: string) => true),
         callOrder: [] as string[],
@@ -106,6 +115,7 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
     return {
         buildAccount,
         withEnablement,
+        deriveClaimedHdKey: deriveClaimedHdKeyMock,
         chainAccountOf: (account: WalletAccount, chainId: string) =>
             account.chains[chainId as 'algorand'],
         hasCustody: (account: WalletAccount, kind: string) =>
@@ -937,6 +947,14 @@ describe('useCloudBackupImport', () => {
         expect(persistHDMasterKeyMock).toHaveBeenCalledTimes(1)
         expect(summary.imported).toBe(2)
         expect(summary.failed).toEqual([])
+        // Claimed, so a discovery walk on the same seed can't drop a child
+        // before its account is stored.
+        expect(
+            deriveClaimedHdKeyMock.mock.calls.map(([, , index]) => index),
+        ).toEqual([
+            { account: 0, keyIndex: 0 },
+            { account: 0, keyIndex: 1 },
+        ])
     })
 
     test('reuses an HD seed the wallet already holds instead of minting a second root', async () => {

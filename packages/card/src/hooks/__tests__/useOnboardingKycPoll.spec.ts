@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { renderHook, act } from '@testing-library/react'
+import { renderHook, act, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import {
     type ChainScope,
@@ -18,7 +18,9 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 
 type MockQuery = {
-    state: { data?: { verificationState: string | null } }
+    state: {
+        data?: { verificationState: string | null; phase?: string | null }
+    }
 }
 type MockQueryOptions = {
     onboardingId: string | null
@@ -34,11 +36,13 @@ let mockErrorUpdatedAt = 0
 let mockQueryScope: ChainScope | undefined
 let mockQueryOptions: MockQueryOptions | undefined
 let mockOnboardingStep = 'VERIFICATION'
+let mockPhase: string | null = null
+let mockQueryError: unknown = null
 
 const queryData = () =>
     mockVerificationState === undefined
         ? undefined
-        : { verificationState: mockVerificationState }
+        : { verificationState: mockVerificationState, phase: mockPhase }
 
 // Stub the wrapped query and the store directly (the two sibling modules the
 // hook composes) so the poll/give-up mechanics are exercised in isolation.
@@ -57,19 +61,55 @@ vi.mock('../useOnboardingDetailsQuery', () => ({
             refetch: mockRefetch,
             dataUpdatedAt: mockDataUpdatedAt,
             errorUpdatedAt: mockErrorUpdatedAt,
+            error: mockQueryError,
         }
     },
 }))
 
+let mockIsAuthenticated = false
+let mockUserVerificationState: string | undefined
+let mockUserQueryOptions: Omit<MockQueryOptions, 'onboardingId'> | undefined
+vi.mock('../useCardSession', () => ({
+    useCardSession: () => ({ isAuthenticated: mockIsAuthenticated }),
+}))
+vi.mock('../useCardUserQuery', () => ({
+    useCardUserQuery: (
+        _scope: ChainScope,
+        options: Omit<MockQueryOptions, 'onboardingId'>,
+    ) => {
+        mockUserQueryOptions = options
+        return {
+            data:
+                mockUserVerificationState === undefined
+                    ? undefined
+                    : {
+                          id: 'u1',
+                          verificationState: mockUserVerificationState,
+                      },
+            isLoading: false,
+            refetch: mockRefetch,
+            dataUpdatedAt: 0,
+            errorUpdatedAt: 0,
+        }
+    },
+}))
+
+let mockOnboardingId = 'mock-onboarding-id'
+let mockVerifiedOnboardingId: string | null = null
+const mockSetVerifiedOnboardingId = vi.fn()
 vi.mock('../../store', () => ({
     useCardStore: (
         selector: (state: {
             onboardingId: string | null
+            verifiedOnboardingId: string | null
+            setVerifiedOnboardingId: (id: string | null) => void
             onboardingStep: string
         }) => unknown,
     ) =>
         selector({
-            onboardingId: 'mock-onboarding-id',
+            onboardingId: mockOnboardingId,
+            verifiedOnboardingId: mockVerifiedOnboardingId,
+            setVerifiedOnboardingId: mockSetVerifiedOnboardingId,
             onboardingStep: mockOnboardingStep,
         }),
 }))
@@ -98,6 +138,14 @@ beforeEach(() => {
     mockQueryScope = undefined
     mockQueryOptions = undefined
     mockOnboardingStep = 'VERIFICATION'
+    mockPhase = null
+    mockQueryError = null
+    mockVerifiedOnboardingId = null
+    mockOnboardingId = 'mock-onboarding-id'
+    mockIsAuthenticated = false
+    mockUserVerificationState = undefined
+    mockUserQueryOptions = undefined
+    vi.useRealTimers()
 })
 
 describe.each(SCOPES)('useOnboardingKycPoll ($chainId)', SCOPE => {
@@ -111,11 +159,198 @@ describe.each(SCOPES)('useOnboardingKycPoll ($chainId)', SCOPE => {
         expect(scheduledInterval()).not.toBe(false)
     })
 
-    it('stops polling once the decision lands', () => {
-        mockVerificationState = 'VERIFIED'
+    it('polls every 4 s for the first minute, then every 15 s', () => {
+        vi.useFakeTimers()
+        mockVerificationState = 'PENDING'
         renderHook(() => useOnboardingKycPoll(SCOPE))
 
+        expect(scheduledInterval()).toBe(4000)
+
+        vi.advanceTimersByTime(61_000)
+        expect(scheduledInterval()).toBe(15_000)
+    })
+
+    it('restarts the fast cadence when polling is restarted', () => {
+        vi.useFakeTimers()
+        mockVerificationState = 'PENDING'
+        const { result } = renderHook(() => useOnboardingKycPoll(SCOPE))
+        vi.advanceTimersByTime(61_000)
+
+        act(() => {
+            result.current.restartPolling()
+        })
+
+        expect(scheduledInterval()).toBe(4000)
+    })
+
+    it('reads the authenticated user instead of the onboarding record once a session exists', () => {
+        mockIsAuthenticated = true
+        mockVerificationState = 'UNVERIFIED'
+        mockUserVerificationState = 'PENDING'
+
+        const { result } = renderHook(() => useOnboardingKycPoll(SCOPE))
+
+        expect(result.current.verificationState).toBe('PENDING')
+        expect(mockQueryOptions?.enabled).toBe(false)
+        expect(mockUserQueryOptions?.enabled).toBe(true)
+        const interval = mockUserQueryOptions?.refetchInterval
+        expect(
+            typeof interval === 'function'
+                ? interval({
+                      state: { data: { verificationState: 'VERIFIED' } },
+                  })
+                : interval,
+        ).toBe(false)
+    })
+
+    it('keeps watching a verified record until Baanx turns it into an account', () => {
+        mockVerificationState = 'VERIFIED'
+        mockPhase = 'MAILING_ADDRESS'
+        const { result } = renderHook(() => useOnboardingKycPoll(SCOPE))
+
+        expect(scheduledInterval()).not.toBe(false)
+        expect(result.current.hasAccountSignal).toBe(false)
+    })
+
+    it('stops watching a verified record for the account after half an hour', () => {
+        vi.useFakeTimers()
+        mockVerificationState = 'VERIFIED'
+        mockPhase = 'MAILING_ADDRESS'
+        renderHook(() => useOnboardingKycPoll(SCOPE))
+        expect(scheduledInterval()).toBe(4000)
+
+        vi.advanceTimersByTime(30 * 60_000)
+
         expect(scheduledInterval()).toBe(false)
+    })
+
+    it('stops once the verified record says the account exists, and signals it', () => {
+        mockVerificationState = 'VERIFIED'
+        mockPhase = 'ACCOUNT'
+        const { result } = renderHook(() => useOnboardingKycPoll(SCOPE))
+
+        expect(scheduledInterval()).toBe(false)
+        expect(result.current.hasAccountSignal).toBe(true)
+    })
+
+    it('signals the account once a record seen verified no longer resolves', async () => {
+        mockVerifiedOnboardingId = 'mock-onboarding-id'
+        mockVerificationState = 'VERIFIED'
+        mockQueryError = {
+            response: { status: 400 },
+            data: { message: 'Invalid onboarding ID' },
+        }
+        const { result } = renderHook(() => useOnboardingKycPoll(SCOPE))
+
+        await waitFor(() => expect(result.current.hasAccountSignal).toBe(true))
+    })
+
+    it('reads a record seen verified and gone on a cold start as verified, since only a verified record becomes an account', async () => {
+        mockVerifiedOnboardingId = 'mock-onboarding-id'
+        mockVerificationState = undefined
+        mockQueryError = {
+            response: { status: 404 },
+            data: { message: 'Invalid onboarding ID' },
+        }
+        const { result } = renderHook(() => useOnboardingKycPoll(SCOPE))
+        // Held as loading so the row never offers KYC on a gone record.
+        expect(result.current.verificationState).toBeNull()
+        expect(result.current.isLoading).toBe(true)
+
+        await waitFor(() =>
+            expect(result.current.verificationState).toBe('VERIFIED'),
+        )
+        expect(result.current.isLoading).toBe(false)
+        expect(result.current.hasAccountSignal).toBe(true)
+        expect(result.current.isRecordMissing).toBe(false)
+        expect(scheduledInterval()).toBe(false)
+    })
+
+    it('does not trust a gone record this device never saw verified', async () => {
+        // A wrong bridged id or a dropped Veriff-era record answers the same.
+        mockVerificationState = undefined
+        mockQueryError = {
+            response: { status: 404 },
+            data: { message: 'Invalid onboarding ID' },
+        }
+        const { result } = renderHook(() => useOnboardingKycPoll(SCOPE))
+
+        await waitFor(() => expect(result.current.isRecordMissing).toBe(true))
+        expect(result.current.verificationState).toBeNull()
+        expect(result.current.hasAccountSignal).toBe(false)
+        expect(result.current.isLoading).toBe(false)
+    })
+
+    it('polls the new record once a sign-in bridges a new onboarding id', async () => {
+        mockVerificationState = undefined
+        mockQueryError = {
+            response: { status: 404 },
+            data: { message: 'Invalid onboarding ID' },
+        }
+        const { result, rerender } = renderHook(() =>
+            useOnboardingKycPoll(SCOPE),
+        )
+        await waitFor(() => expect(result.current.isRecordMissing).toBe(true))
+
+        mockOnboardingId = 'user-2'
+        mockQueryError = null
+        mockVerificationState = 'PENDING'
+        rerender()
+
+        expect(result.current.isRecordMissing).toBe(false)
+        expect(result.current.verificationState).toBe('PENDING')
+        expect(scheduledInterval()).not.toBe(false)
+    })
+
+    it('forgets a gone record when polling is restarted', async () => {
+        mockVerificationState = undefined
+        mockQueryError = {
+            response: { status: 404 },
+            data: { message: 'Invalid onboarding ID' },
+        }
+        const { result } = renderHook(() => useOnboardingKycPoll(SCOPE))
+        await waitFor(() => expect(result.current.isRecordMissing).toBe(true))
+
+        act(() => {
+            result.current.restartPolling()
+        })
+
+        expect(result.current.isRecordMissing).toBe(false)
+        expect(mockRefetch).toHaveBeenCalled()
+    })
+
+    it('remembers the record it reads as verified', () => {
+        mockVerificationState = 'VERIFIED'
+        mockPhase = 'MAILING_ADDRESS'
+
+        renderHook(() => useOnboardingKycPoll(SCOPE))
+
+        expect(mockSetVerifiedOnboardingId).toHaveBeenCalledWith(
+            'mock-onboarding-id',
+        )
+    })
+
+    it('stops reading a record error as loading once it turns out to be an outage', async () => {
+        mockVerificationState = undefined
+        mockQueryError = { response: { status: 503 } }
+        const { result } = renderHook(() => useOnboardingKycPoll(SCOPE))
+        expect(result.current.isLoading).toBe(true)
+
+        await waitFor(() => expect(result.current.isLoading).toBe(false))
+        expect(result.current.verificationState).toBeNull()
+        expect(result.current.hasAccountSignal).toBe(false)
+    })
+
+    it('does not read an outage as the account existing', async () => {
+        mockVerificationState = 'VERIFIED'
+        mockQueryError = { response: { status: 503 } }
+        const { result } = renderHook(() => useOnboardingKycPoll(SCOPE))
+        await act(async () => {
+            await Promise.resolve()
+        })
+
+        expect(result.current.hasAccountSignal).toBe(false)
+        expect(result.current.verificationState).toBe('VERIFIED')
     })
 
     it('passes the scope and enabled gate through to the query', () => {
@@ -125,10 +360,9 @@ describe.each(SCOPES)('useOnboardingKycPoll ($chainId)', SCOPE => {
         expect(mockQueryScope).toBe(SCOPE)
     })
 
-    // The final address step consumes the onboarding session server-side, so
-    // GET register only answers "Invalid onboarding ID" afterwards. Keeping
-    // the poll running would burn 3 failing calls and flip a PENDING row into
-    // a bogus timed-out error.
+    // Once the account exists the onboarding record is no longer the source
+    // of truth; without a session to read the user instead, polling it would
+    // only burn failing calls and flip a PENDING row into a bogus error.
     it('self-disables once registration completes, even when the caller enables it', () => {
         mockOnboardingStep = 'COMPLETED'
         renderHook(() => useOnboardingKycPoll(SCOPE, { enabled: true }))

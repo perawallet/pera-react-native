@@ -128,15 +128,15 @@ describe("Flow: One account's assets across chains", () => {
         expect(screen.getByTestId('asset_network_filter_all')).toBeTruthy()
         expect(screen.getByTestId('asset_network_filter_algorand')).toBeTruthy()
         expect(screen.getByTestId('asset_network_filter_ethereum')).toBeTruthy()
-        // An svg is the chain's logo; the initials placeholder is a view.
         expect(
             within(
                 screen.getByTestId('asset_network_filter_ethereum'),
-            ).getByTestId('chain_icon_ethereum').tagName,
-        ).toBe('svg')
+            ).queryByTestId('chain_icon_ethereum'),
+        ).toBeNull()
         const group = await screen.findByTestId('asset_group_row_usdc')
         // 2.5 on Algorand plus 1.5 on Ethereum.
         expect(group.textContent).toMatch(/4\.00/)
+        // An svg is the chain's logo; the initials placeholder is a view.
         expect(within(group).getByTestId('chain_icon_ethereum').tagName).toBe(
             'svg',
         )

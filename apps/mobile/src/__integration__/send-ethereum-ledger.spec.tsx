@@ -41,7 +41,7 @@ import {
 } from '@perawallet/wallet-core-chain-ethereum/test-handlers'
 import { server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
-import { isElementDisabled } from '@test-utils/rnw'
+import { findEnabledByTestId } from '@test-utils/rnw'
 import {
     resetTestDatabase,
     setupTestDatabase,
@@ -88,21 +88,8 @@ const DEVICE_SIGNATURES: Record<string, string> = {
         '923c0f4c3ec362322e052c7d1f1d6ea2a364621802f4428c6508a4fe71a655ef332789ab7ace0f5c627bcda10589e4e437c568bfb39cd09f4dc40da8789c05ac01',
 }
 
-type Deferred<T> = {
-    promise: Promise<T>
-    resolve: (value: T) => void
-}
-
-const createDeferred = <T,>(): Deferred<T> => {
-    let resolveFn!: (value: T) => void
-    const promise = new Promise<T>(resolve => {
-        resolveFn = resolve
-    })
-    return { promise, resolve: resolveFn }
-}
-
 // The test releases the device's answer after asserting the approval UI.
-let pendingApproval: Deferred<void> | null = null
+let pendingApproval: PromiseWithResolvers<void> | null = null
 const signedPayloads: Uint8Array[] = []
 
 const signOnDevice = async (
@@ -110,7 +97,7 @@ const signOnDevice = async (
     payload: Uint8Array,
 ): Promise<Uint8Array> => {
     signedPayloads.push(payload)
-    pendingApproval = createDeferred<void>()
+    pendingApproval = Promise.withResolvers<void>()
     await pendingApproval.promise
     const digest = Buffer.from(keccak_256(payload)).toString('hex')
     const signature = DEVICE_SIGNATURES[digest]
@@ -239,14 +226,9 @@ describe('Flow: send ether from a Ledger account', () => {
 
         renderSendConfirmationStack()
 
-        const confirmButton = await waitFor(
-            () => screen.getByTestId('send_confirm_button'),
-            { timeout: 5000 },
+        fireEvent.click(
+            await findEnabledByTestId('send_confirm_button', { timeout: 5000 }),
         )
-        await waitFor(() =>
-            expect(isElementDisabled(confirmButton)).toBe(false),
-        )
-        fireEvent.click(confirmButton)
 
         await waitFor(
             () =>

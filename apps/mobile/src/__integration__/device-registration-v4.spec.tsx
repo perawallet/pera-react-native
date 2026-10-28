@@ -270,6 +270,49 @@ describe('Device registration', () => {
         ])
     })
 
+    it('re-registers with the Ethereum item once discovery enables Ethereum on a registered account', async () => {
+        const bodies: DeviceRegistrationRequest[] = []
+        server.use(
+            http.post('*/api/v4/devices/', async ({ request }) => {
+                bodies.push((await request.json()) as DeviceRegistrationRequest)
+                return HttpResponse.json({ id: 'DEV-1' })
+            }),
+        )
+        const { ethereum, ...algorandOnly } = hdAccountWithEthereum.chains
+        seedAccounts([{ ...hdAccountWithEthereum, chains: algorandOnly }])
+        renderApp()
+        await waitFor(() => expect(bodies.length).toBeGreaterThan(0), {
+            timeout: SLOW_WAIT_TIMEOUT_MS,
+        })
+        const registeredBefore = bodies.length
+        expect(
+            bodies[bodies.length - 1].accounts.map(account => account.chain),
+        ).toEqual([ALGORAND_MAINNET])
+
+        act(() =>
+            seedAccounts([
+                {
+                    ...hdAccountWithEthereum,
+                    chains: {
+                        ...algorandOnly,
+                        ethereum: { ...ethereum!, enabledBy: 'discovery' },
+                    },
+                },
+            ]),
+        )
+
+        await waitFor(
+            () => expect(bodies.length).toBeGreaterThan(registeredBefore),
+            { timeout: SLOW_WAIT_TIMEOUT_MS },
+        )
+        expect(bodies[bodies.length - 1].accounts).toContainEqual({
+            address: ETH_ADDRESS,
+            chain: 'eip155:1',
+            account_type: 'hdWallet',
+            receive_notifications: true,
+        })
+    })
+
     it.each(['unknown_chain', 'chain_not_enabled'])(
         'registers the Algorand accounts again when the backend refuses a chain with %s',
         async code => {
