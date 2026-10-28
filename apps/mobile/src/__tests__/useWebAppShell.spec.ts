@@ -254,6 +254,23 @@ describe('useWebAppShell', () => {
         expect(mocks.platformInitialize).toHaveBeenCalledOnce()
     })
 
+    it('logs the resolved config under keys the logger does not redact', () => {
+        const infoSpy = vi.spyOn(logger, 'info').mockImplementation(() => {})
+        mocks.surface = 'popup'
+        mocks.isInitialized = true
+        mocks.isUnlocked = false
+
+        renderHook(() => useWebAppShell())
+
+        expect(infoSpy).toHaveBeenCalledWith(
+            'Web shell config',
+            expect.objectContaining({
+                appEnvironment: expect.anything(),
+                integrityHeaderEnabled: expect.anything(),
+            }),
+        )
+    })
+
     it('still reaches main when platform service init rejects (flags degrade, shell does not)', async () => {
         mocks.surface = 'popup'
         mocks.isInitialized = true

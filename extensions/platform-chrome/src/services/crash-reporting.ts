@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+/* oxlint-disable no-console -- the crash reporter the shared logger reports into; its pre-init fallback cannot route back through the logger */
+
 import * as Sentry from '@sentry/browser'
 import type { CrashReportingService } from '@perawallet/wallet-extension-platform'
 import { config, isDebug } from '@perawallet/wallet-core-config'

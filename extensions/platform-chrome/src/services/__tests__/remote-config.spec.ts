@@ -38,6 +38,7 @@ const configMock = vi.hoisted(() => ({
 }))
 vi.mock('@perawallet/wallet-core-config', () => configMock)
 
+import { logger } from '@perawallet/wallet-core-shared'
 import {
     RemoteConfigDefaults,
     remoteConfigDefaultsRegistry,
@@ -62,6 +63,20 @@ describe('ChromeRemoteConfigService', () => {
             RemoteConfigDefaults.terms_version,
         )
         expect(mockFetchAndActivate).not.toHaveBeenCalled()
+    })
+
+    it('leaves a warning when the fetch fails', async () => {
+        getFirebaseAppMock.mockReturnValue({ name: '[DEFAULT]' })
+        mockFetchAndActivate.mockRejectedValueOnce(new Error('blocked'))
+        const warn = vi.spyOn(logger, 'warn').mockImplementation(() => {})
+
+        await new ChromeRemoteConfigService().initializeRemoteConfig()
+
+        expect(warn).toHaveBeenCalledWith(
+            '[pera] Remote Config fetch failed; using cached/defaults',
+            { error: expect.any(Error) },
+        )
+        warn.mockRestore()
     })
 
     it('falls back for unknown keys with no Firebase app', () => {
@@ -157,10 +172,8 @@ describe('ChromeRemoteConfigService', () => {
 
         it('warns only, in a dev build', async () => {
             configMock.isDebug = true
-            const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-            const error = vi
-                .spyOn(console, 'error')
-                .mockImplementation(() => {})
+            const warn = vi.spyOn(logger, 'warn').mockImplementation(() => {})
+            const error = vi.spyOn(logger, 'error').mockImplementation(() => {})
             getFirebaseAppMock.mockReturnValue(null)
 
             await new ChromeRemoteConfigService().initializeRemoteConfig()
@@ -171,10 +184,8 @@ describe('ChromeRemoteConfigService', () => {
 
         it('escalates to an error in a shipped build', async () => {
             configMock.isDebug = false
-            const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-            const error = vi
-                .spyOn(console, 'error')
-                .mockImplementation(() => {})
+            const warn = vi.spyOn(logger, 'warn').mockImplementation(() => {})
+            const error = vi.spyOn(logger, 'error').mockImplementation(() => {})
             getFirebaseAppMock.mockReturnValue(null)
 
             await new ChromeRemoteConfigService().initializeRemoteConfig()

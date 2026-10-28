@@ -102,6 +102,28 @@ describe('pera/no-hardcoded-ui-strings', () => {
     })
 })
 
+describe('no-console', () => {
+    it('blocks console calls in package, extension and browser-app source, tests aside', () => {
+        const root = readOxlintConfig('.oxlintrc.json')
+        const mobile = readOxlintConfig(
+            'apps/mobile/.oxlintrc.json',
+        ) as unknown as { rules: Record<string, string> }
+        const overrides = overridesWith(root, 'no-console')
+
+        expect(overrides).toHaveLength(1)
+        expect(overrides[0].files).toEqual([
+            'packages/*/src/**',
+            'extensions/*/src/**',
+            'apps/browser/src/**',
+        ])
+        expect(overrides[0].rules['no-console']).toBe('error')
+        expect(overrides[0].excludeFiles).toEqual(
+            expect.arrayContaining(['**/__tests__/**', '**/*.spec.{ts,tsx}']),
+        )
+        expect(mobile.rules['no-console']).toBe('warn')
+    })
+})
+
 describe('every pera plugin rule', () => {
     type Config = {
         rules?: Record<string, string>

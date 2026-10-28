@@ -23,6 +23,7 @@ import {
 } from '@perawallet/wallet-core-browser-runtime'
 import { algorandDescriptor } from '@perawallet/wallet-core-chain-algorand/descriptor'
 import { config } from '@perawallet/wallet-core-config'
+import { logger } from '@perawallet/wallet-core-shared'
 import { installConnectModalPairRoute } from './connect-modal-pair'
 import {
     CONNECTIONS_HEARTBEAT_ALARM,
@@ -66,16 +67,16 @@ installIntegrityEnrolment()
 installIntegrityControlRoute()
 
 chrome.runtime.onInstalled.addListener(details => {
-    console.info('[pera] extension installed:', details.reason)
+    logger.info('[pera] extension installed', { reason: details.reason })
     void ensureDeviceInstallationID()
 })
 
 // The SW (esbuild) and the popup (Metro) can bake *different* config from the
 // same zip; logging the resolved identity on both sides makes that comparable.
-console.info('[pera] service worker config', {
+logger.info('[pera] service worker config', {
     appEnvironment: config.appEnvironment,
     build: config.appBuildNumber || '(local)',
-    integrityBearer: config.webIntegrityBearerEnabled,
+    integrityHeaderEnabled: config.webIntegrityBearerEnabled,
 })
 
 // onInstalled fires only on install/update; onStartup is what brings the DB
@@ -83,7 +84,7 @@ console.info('[pera] service worker config', {
 chrome.runtime.onStartup.addListener(() => {
     // Rethrows when no document exists; log rather than leave an unhandled rejection.
     void ensureOffscreenDocument().catch((error: unknown) => {
-        console.error('[pera] onStartup ensure-offscreen failed:', error)
+        logger.error('[pera] onStartup ensure-offscreen failed', { error })
     })
 })
 
@@ -98,9 +99,9 @@ chrome.alarms.onAlarm.addListener(alarm => {
             )
             .catch((error: unknown) => {
                 // A best-effort sweep nobody awaits: log rather than leave an unhandled rejection.
-                console.error(
-                    '[pera] connections heartbeat ensure-offscreen/reconnect failed:',
-                    error,
+                logger.error(
+                    '[pera] connections heartbeat ensure-offscreen/reconnect failed',
+                    { error },
                 )
             })
         return
@@ -119,7 +120,7 @@ chrome.alarms.onAlarm.addListener(alarm => {
 // Re-ensured on every SW wake so the DB host exists before a UI context asks.
 // Not fatal on failure: UI contexts re-ask via ensure-offscreen.
 void ensureOffscreenDocument().catch((error: unknown) => {
-    console.error('[pera] startup ensure-offscreen failed:', error)
+    logger.error('[pera] startup ensure-offscreen failed', { error })
 })
 
 // Every SW wake re-checks the token, so a popup opening after an eviction

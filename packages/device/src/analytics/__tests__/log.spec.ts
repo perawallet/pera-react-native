@@ -11,6 +11,7 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { logger } from '@perawallet/wallet-core-shared'
 
 const providerLogEvent = vi.fn()
 let currentMode: 'live' | 'developer' = 'live'
@@ -75,23 +76,29 @@ describe('logEvent (base)', () => {
     })
 
     it('never throws when the underlying logEvent fails', () => {
-        const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+        const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => {})
         providerLogEvent.mockImplementationOnce(() => {
             throw new Error('analytics backend exploded')
         })
 
         expect(() => logEvent('some_event')).not.toThrow()
-        expect(warnSpy).toHaveBeenCalled()
+        expect(warnSpy).toHaveBeenCalledWith(
+            '[analytics] Failed to track event',
+            { error: expect.any(Error) },
+        )
 
         warnSpy.mockRestore()
     })
 
     it('never throws when the provider itself is unavailable', () => {
-        const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+        const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => {})
         throwOnGetProvider = true
 
         expect(() => logEvent('some_event')).not.toThrow()
-        expect(warnSpy).toHaveBeenCalled()
+        expect(warnSpy).toHaveBeenCalledWith(
+            '[analytics] Failed to track event',
+            { error: expect.any(Error) },
+        )
         expect(providerLogEvent).not.toHaveBeenCalled()
 
         warnSpy.mockRestore()
@@ -116,7 +123,7 @@ describe('createBaseLogger', () => {
     })
 
     it('swallows errors from the bound analytics instance', () => {
-        const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+        const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => {})
         const analytics = {
             initializeAnalytics: vi.fn(),
             logEvent: vi.fn(() => {
@@ -127,7 +134,10 @@ describe('createBaseLogger', () => {
         const log = createBaseLogger(analytics)
 
         expect(() => log('bound_event')).not.toThrow()
-        expect(warnSpy).toHaveBeenCalled()
+        expect(warnSpy).toHaveBeenCalledWith(
+            '[analytics] Failed to track event',
+            { error: expect.any(Error) },
+        )
 
         warnSpy.mockRestore()
     })

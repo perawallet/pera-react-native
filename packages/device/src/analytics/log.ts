@@ -13,6 +13,7 @@
 import type { AnalyticsService } from '@perawallet/wallet-extension-platform'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
+import { logger } from '@perawallet/wallet-core-shared'
 
 const TESTNET_PREFIX = 't_'
 
@@ -48,7 +49,7 @@ const safeLog = (
         // any failure (network store, logEvent) and only log it. The event
         // name is intentionally omitted: some names reference the passphrase
         // backup flow and static analysis flags them as sensitive.
-        console.warn('[analytics] Failed to track event', error)
+        logger.warn('[analytics] Failed to track event', { error })
     }
 }
 
@@ -68,6 +69,6 @@ export const logEvent: LogEventFn = (name, payload) => {
     try {
         safeLog(getProvider().analytics, name, payload)
     } catch (error) {
-        console.warn('[analytics] Failed to track event', error)
+        logger.warn('[analytics] Failed to track event', { error })
     }
 }

@@ -11,6 +11,7 @@
  */
 
 import { useQueryClient } from '@tanstack/react-query'
+import { logger } from '@perawallet/wallet-core-shared'
 
 export const useInvalidateAssetPrices = () => {
     const queryClient = useQueryClient()
@@ -41,8 +42,7 @@ export const useInvalidateAssetPrices = () => {
                 },
             })
         } catch (error) {
-            // Silently handle any errors during invalidation
-            console.error('Error invalidating asset prices:', error)
+            logger.error('Error invalidating asset prices', { error })
         }
     }
 
