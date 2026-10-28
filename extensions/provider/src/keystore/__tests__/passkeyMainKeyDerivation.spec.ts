@@ -132,7 +132,7 @@ describe('passkey main-key derivation', () => {
     // taken as-is, so the derivation silently moves off the host. The
     // override's derive is stubbed: running its real 210,000 pure-JS
     // iterations would pin nothing more than the call does, and under
-    // coverage on a loaded runner it outran a 30s timeout.
+    // coverage on a loaded runner it can exceed the test timeout.
     it('hands the derivation to a dp256 override instead of the host Subtle', async () => {
         const binding = await createDP256Binding()
         if (!binding) throw new Error('bundled dp256 binding did not load')

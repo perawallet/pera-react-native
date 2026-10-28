@@ -71,8 +71,7 @@ const SCAN = 'android.permission.BLUETOOTH_SCAN'
 const CONNECT = 'android.permission.BLUETOOTH_CONNECT'
 const FINE_LOCATION = 'android.permission.ACCESS_FINE_LOCATION'
 
-// Core check/request/blocked logic was previously untested — only
-// openLocationSettings had coverage (LRK-022 unit gap).
+// Covers the core check/request/blocked logic, beyond openLocationSettings.
 describe('useBlePermissions core permission logic', () => {
     beforeEach(() => {
         vi.clearAllMocks()

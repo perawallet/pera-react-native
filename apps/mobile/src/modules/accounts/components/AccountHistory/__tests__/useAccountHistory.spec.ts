@@ -366,7 +366,7 @@ describe('useAccountHistory', () => {
         })
 
         // A disabled query (no account address resolved yet) reports
-        // isLoading: false with no data, which used to read as "empty".
+        // isLoading: false with no data, which must not read as "empty".
         it('reports initial load, not empty, before the first read resolves', () => {
             vi.mocked(useTransactionHistoryQuery).mockReturnValue({
                 transactions: [],

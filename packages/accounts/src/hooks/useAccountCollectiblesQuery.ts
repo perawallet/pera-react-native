@@ -57,11 +57,11 @@ const sourcesOfKey = (queryKey: readonly unknown[]): unknown[] =>
  * pass and returned as lite rows that defer `PeraAsset` materialization to the
  * rows actually on screen.
  *
- * The gallery previously read every holding, handed all of their ids back as a
- * 15k-parameter `IN (…)` list, and parsed every metadata blob on the JS thread
- * before it could tell a collectible from a token — double-digit seconds to
- * first paint on a large account, repeated on every sync invalidation. Same
- * shape as {@link useAccountAssetsQuery}, which fixed the fungible list.
+ * Reading every holding, handing all of their ids back as a huge `IN (…)`
+ * list, and parsing every metadata blob on the JS thread before telling a
+ * collectible from a token would delay first paint on a large account,
+ * repeatedly, on every sync invalidation. Same shape as
+ * {@link useAccountAssetsQuery}, which does this for the fungible list.
  */
 export const useAccountCollectiblesQuery = (
     sources: readonly AccountHoldingSource[],

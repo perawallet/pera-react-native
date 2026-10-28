@@ -31,7 +31,7 @@ const onStorageKeyChanged = (
 
 /**
  * Typed subscription to chrome.storage.local key changes, for mobile-side
- * web code: apps/mobile compiles without chrome ambient types (they used to
+ * web code: apps/mobile compiles without chrome ambient types (they would
  * leak repo-wide), so chrome.* access stays behind this package.
  */
 export const onLocalStorageKeyChanged = (

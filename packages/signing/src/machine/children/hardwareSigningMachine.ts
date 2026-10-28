@@ -262,7 +262,7 @@ export const hardwareSigningMachine = setup({
         /**
          * Terminal-ish: the parent cannot proceed until ACKNOWLEDGE_ERROR or RETRY
          * arrives. This is the machine-level encoding of the BLE-class teardown
-         * carveout that previously lived as a runtime check in
+         * carveout, so it is not a runtime check in
          * useSigningActorLifecycle.ts.
          */
         error: {

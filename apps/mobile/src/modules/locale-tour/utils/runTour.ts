@@ -32,11 +32,11 @@ const NAVIGATION_LOST_THRESHOLD = 3
 export const NAVIGATION_LOST_REASON =
     'navigation lost — remaining steps unreliable'
 
-// `xcrun simctl io screenshot` measured 170-340ms to produce a file on the
-// reference simulator — the driver captures *after* seeing
-// LOCALE_TOUR_SHOT, but nothing otherwise stops the app from advancing to the
-// next surface before that capture lands, so ~31% of screenshots in that run
-// risked showing the wrong step. 700ms is ~2x the observed worst case. An
+// `xcrun simctl io screenshot` takes a few hundred ms to produce a file —
+// the driver captures *after* seeing LOCALE_TOUR_SHOT, but nothing otherwise
+// stops the app from advancing to the next surface before that capture lands,
+// so a screenshot could show the wrong step. The hold is a safe multiple of
+// that latency. An
 // inbound driver->app ack channel was considered and rejected on the same
 // security grounds that ruled out inbound deeplink listeners; holding here is
 // the only side that can actually keep a surface on screen.

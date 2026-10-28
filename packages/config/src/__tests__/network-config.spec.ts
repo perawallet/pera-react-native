@@ -106,7 +106,7 @@ describe('network-config', () => {
     })
 
     test('networks without a Pera deployment get empty services, never borrowed ones', () => {
-        // betanet's backendUrl used to BE testnet's. Asserting inequality with
+        // betanet's backendUrl must not be testnet's. Asserting inequality with
         // the real testnet value is what makes this test fail if that
         // borrowing ever comes back.
         const testnetBackend = getPeraServicesConfig(

@@ -411,7 +411,7 @@ describe('usePeraCardOverview', () => {
     })
 
     // Rewards are earned on purchases whatever tops the card up, so this has to
-    // work on manual funding too, where the credits section used to be hidden.
+    // work on manual funding too, where the credits section must still show.
     it.each([
         ['reward', 'card_home_rewards'],
         ['credit', 'card_home_refunds'],
