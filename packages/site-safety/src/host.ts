@@ -58,3 +58,81 @@ export const listLookupCandidates = (asciiHost: string): string[] => {
 
 export const isWithinDomain = (asciiHost: string, domain: string): boolean =>
     asciiHost === domain || asciiHost.endsWith(`.${domain}`)
+
+// Suffixes under which anyone can claim a name, so the label left of them is
+// the site's own: free hosting (the usual home of a phishing page) and
+// common second-level country domains. Anything else is read as a one-label TLD.
+const MULTI_LABEL_SUFFIXES: ReadonlySet<string> = new Set([
+    'amplifyapp.com',
+    'azurewebsites.net',
+    'blogspot.com',
+    'cloudfront.net',
+    'duckdns.org',
+    'firebaseapp.com',
+    'fly.dev',
+    'framer.app',
+    'framer.website',
+    'github.io',
+    'gitlab.io',
+    'glitch.me',
+    'herokuapp.com',
+    'netlify.app',
+    'ngrok-free.app',
+    'ngrok.io',
+    'on.fleek.co',
+    'onrender.com',
+    'pages.dev',
+    'r2.dev',
+    'replit.app',
+    'square.site',
+    'surge.sh',
+    'vercel.app',
+    'web.app',
+    'webflow.io',
+    'weebly.com',
+    'wixsite.com',
+    'workers.dev',
+    'ac.uk',
+    'co.uk',
+    'org.uk',
+    'co.jp',
+    'co.kr',
+    'co.in',
+    'co.nz',
+    'co.za',
+    'com.ar',
+    'com.au',
+    'net.au',
+    'org.au',
+    'com.br',
+    'net.br',
+    'com.cn',
+    'com.hk',
+    'com.mx',
+    'com.sg',
+    'com.tr',
+    'com.tw',
+])
+
+const MAX_SUFFIX_LABELS = 3
+
+/** How many trailing labels form the host's public suffix: 1 for `.org`, 2 for `.vercel.app`. */
+export const publicSuffixLabelCount = (asciiHost: string): number => {
+    const labels = asciiHost.split('.')
+    for (let count = MAX_SUFFIX_LABELS; count >= 2; count--) {
+        if (
+            labels.length > count &&
+            MULTI_LABEL_SUFFIXES.has(labels.slice(-count).join('.'))
+        ) {
+            return count
+        }
+    }
+    return 1
+}
+
+/** The public suffix plus one label: `uniswap.org`, `claim.vercel.app`, `uniswap.co.uk`. */
+export const registrableDomainOf = (asciiHost: string): string =>
+    asciiHost
+        .split('.')
+        .slice(-(publicSuffixLabelCount(asciiHost) + 1))
+        .join('.')

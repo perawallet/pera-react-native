@@ -11,7 +11,7 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import { listLookupCandidates, toSiteHost } from '../host'
+import { listLookupCandidates, registrableDomainOf, toSiteHost } from '../host'
 
 describe('toSiteHost', () => {
     it('reads the host of a URL in both forms', () => {
@@ -62,5 +62,18 @@ describe('listLookupCandidates', () => {
             'evil.com',
         ])
         expect(listLookupCandidates('evil.com')).toEqual(['evil.com'])
+    })
+})
+
+describe('registrableDomainOf', () => {
+    it.each([
+        ['app.uniswap.org', 'uniswap.org'],
+        ['uniswap-claim.vercel.app', 'uniswap-claim.vercel.app'],
+        ['a.b.github.io', 'b.github.io'],
+        ['www.uniswap-app.co.uk', 'uniswap-app.co.uk'],
+        ['site.on.fleek.co', 'site.on.fleek.co'],
+        ['vercel.app', 'vercel.app'],
+    ])('reads %s as %s', (host, domain) => {
+        expect(registrableDomainOf(host)).toBe(domain)
     })
 })

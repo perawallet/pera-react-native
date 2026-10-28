@@ -11,17 +11,17 @@
  */
 
 import { toConfusableSkeleton } from './confusables'
-import { isWithinDomain } from './host'
+import { isWithinDomain, publicSuffixLabelCount } from './host'
 import type { ImpersonationTarget, SiteHost } from './models'
 
 // Shorter names are common words: `pact` inside `impact` is no imitation.
 const MIN_CONTAINED_NAME_LENGTH = 5
 const MIN_TYPO_NAME_LENGTH = 6
 
-/** The label left of the TLD: `uniswap` for `app.uniswap.org`. */
+/** The label left of the public suffix: `uniswap` for `app.uniswap.org`. */
 const nameLabelOf = (domain: string): string => {
     const labels = domain.split('.')
-    return labels.at(-2) ?? labels[0] ?? ''
+    return labels.at(-(publicSuffixLabelCount(domain) + 1)) ?? labels[0] ?? ''
 }
 
 const isOneEditApart = (a: string, b: string): boolean => {
@@ -43,36 +43,45 @@ const isOneEditApart = (a: string, b: string): boolean => {
     return edits + (longer.length - j) + (shorter.length - i) <= 1
 }
 
-const imitates = (label: string, name: string): boolean =>
-    label === name ||
-    (name.length >= MIN_CONTAINED_NAME_LENGTH && label.includes(name)) ||
-    (name.length >= MIN_TYPO_NAME_LENGTH && isOneEditApart(label, name))
+const ownDomainsOf = (target: ImpersonationTarget): readonly string[] => [
+    target.domain,
+    ...(target.otherDomains ?? []),
+]
 
 /**
- * The well-known site `host` imitates, if any. A target's own domain and its
- * subdomains, every other target's domain, and list-allowed domains are never
- * flagged.
+ * The well-known site `host` imitates, if any. Any label that reads as a
+ * target's name counts (homoglyphs, punycode, `uniswap.evil.com`). Containing
+ * the name or a one-letter typo counts only in the label left of the public
+ * suffix: `uniswap-claim.vercel.app` is caught, a subdomain such as
+ * `docs-uniswap.example.com` is not. Every target's own domains and
+ * list-allowed domains are never flagged.
  */
 export const findImpersonatedTarget = (
     host: SiteHost,
     targets: readonly ImpersonationTarget[],
     allowDomains: readonly string[],
 ): ImpersonationTarget | undefined => {
-    if (targets.some(target => isWithinDomain(host.ascii, target.domain))) {
-        return undefined
-    }
-    if (allowDomains.some(domain => isWithinDomain(host.ascii, domain))) {
+    const exempt = [...targets.flatMap(ownDomainsOf), ...allowDomains]
+    if (exempt.some(domain => isWithinDomain(host.ascii, domain))) {
         return undefined
     }
 
+    // Labels count the same in both forms: punycode encodes label by label.
     const labels = host.unicode
         .split('.')
-        .slice(0, -1)
+        .slice(0, -publicSuffixLabelCount(host.ascii))
         .map(toConfusableSkeleton)
-        .filter(label => label.length > 0)
+    const registrableLabel = labels.at(-1) ?? ''
 
     return targets.find(target => {
         const name = toConfusableSkeleton(nameLabelOf(target.domain))
-        return name.length > 0 && labels.some(label => imitates(label, name))
+        if (name.length === 0) return false
+        if (labels.some(label => label === name)) return true
+        return (
+            (name.length >= MIN_CONTAINED_NAME_LENGTH &&
+                registrableLabel.includes(name)) ||
+            (name.length >= MIN_TYPO_NAME_LENGTH &&
+                isOneEditApart(registrableLabel, name))
+        )
     })
 }

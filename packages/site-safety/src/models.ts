@@ -43,7 +43,10 @@ export type ActiveGenerations = Partial<Record<PhishingListSourceId, number>>
 
 export type ImpersonationTarget = {
     name: string
+    /** The domain a warning names; it and its subdomains are never flagged. */
     domain: string
+    /** Other domains the same project runs, exempt the same way. */
+    otherDomains?: readonly string[]
 }
 
 export type SiteHost = {

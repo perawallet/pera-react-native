@@ -53,6 +53,25 @@ describe('findImpersonatedTarget', () => {
         expect(imitated('tinyman.org')).toBeUndefined()
     })
 
+    it.each([
+        'developer.algorand.org',
+        'app.algorandtechnologies.com',
+        'curve.finance',
+        'algorand-wc2.vercel.app',
+    ])('never flags the ecosystem site %s', url => {
+        expect(imitated(url)).toBeUndefined()
+    })
+
+    it.each([
+        ['uniswap-claim.vercel.app', 'Uniswap'],
+        ['tinyman-app.netlify.app', 'Tinyman'],
+        ['perawallet-app.github.io', 'Pera Wallet'],
+        ['uniswap-app.co.uk', 'Uniswap'],
+        ['uniswep.pages.dev', 'Uniswap'],
+    ])('flags %s on shared hosting or a two-label suffix', (url, name) => {
+        expect(imitated(url)).toBe(name)
+    })
+
     it('never flags a list-allowed domain', () => {
         expect(imitated('uniswap-fan.example', ['uniswap-fan.example'])).toBe(
             undefined,
