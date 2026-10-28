@@ -45,6 +45,9 @@ tester.run(RULE, preferToError, {
         'const m = f() instanceof Error ? f() : new Error(String(f()))',
         'const m = e[0] instanceof Error ? e[0] : new Error(String(e[0]))',
         'const m = e?.err instanceof Error ? e?.err : new Error(String(e?.err))',
+        'class C { #err = 1; err = 2; f() { return this.#err instanceof Error ? this.err : new Error(String(this.#err)) } }',
+        'class C { #err = 1; err = 2; f() { return this.#err instanceof Error ? this.#err : new Error(String(this.err)) } }',
+        'class C { #message = 1; f(e: unknown) { return e instanceof Error ? e.#message : String(e) } }',
         'class Error {}\nconst m = e instanceof Error ? e : new Error(String(e))',
         `import { String } from './s'\nconst m = e instanceof Error ? e.message : String(e)`,
     ],
@@ -82,6 +85,11 @@ tester.run(RULE, preferToError, {
         {
             code: `import type { T } from '${S}'\nconst m = e instanceof Error ? e : new Error(String(e))`,
             output: `import type { T } from '${S}'\nimport { toError } from '${S}'\nconst m = toError(e)`,
+            errors: [{ messageId: 'error' }],
+        },
+        {
+            code: `import { type toError } from '${S}'\nconst m = e instanceof Error ? e : new Error(String(e))`,
+            output: null,
             errors: [{ messageId: 'error' }],
         },
         {

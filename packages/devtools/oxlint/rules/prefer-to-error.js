@@ -30,8 +30,6 @@ export const TO_ERROR_EXCLUDED_PATHS = [
 const TO_ERROR_SOURCE = '@perawallet/wallet-core-shared'
 const IMPORT_TO_ERROR = `import { toError } from '${TO_ERROR_SOURCE}'`
 
-// Not flagged: `new Error(x)` (undefined gives '' where String gives
-// 'undefined') and `${x}` (throws on a Symbol). Neither equals toError(x).
 const isPlainReference = node =>
     node.type === 'Identifier' ||
     node.type === 'ThisExpression' ||
@@ -47,6 +45,7 @@ const isSameReference = (a, b) => {
     if (a.type === 'Identifier') return a.name === b.name
     if (a.type === 'ThisExpression') return true
     return (
+        a.property.type === b.property.type &&
         a.property.name === b.property.name &&
         isSameReference(a.object, b.object)
     )
@@ -60,6 +59,8 @@ const isStringOf = (node, subject) =>
     isPlainReference(node.arguments[0]) &&
     isSameReference(node.arguments[0], subject)
 
+// Not flagged: `new Error(x)` (undefined gives '' where String gives
+// 'undefined') and `${x}` (throws on a Symbol). Neither equals toError(x).
 const matchToError = node => {
     const { test, consequent, alternate } = node
     if (
@@ -87,6 +88,7 @@ const matchToError = node => {
         consequent.type === 'MemberExpression' &&
         !consequent.computed &&
         !consequent.optional &&
+        consequent.property.type === 'Identifier' &&
         consequent.property.name === 'message' &&
         isPlainReference(consequent.object) &&
         isSameReference(consequent.object, subject) &&
@@ -113,7 +115,8 @@ const isSharedImport = variable =>
     variable.defs.length === 1 &&
     variable.defs[0].type === 'ImportBinding' &&
     variable.defs[0].parent.source.value === TO_ERROR_SOURCE &&
-    variable.defs[0].parent.importKind !== 'type'
+    variable.defs[0].parent.importKind !== 'type' &&
+    variable.defs[0].node.importKind !== 'type'
 
 const importFix = (fixer, program) => {
     const imports = program.body.filter(n => n.type === 'ImportDeclaration')
