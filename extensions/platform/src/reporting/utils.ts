@@ -13,10 +13,9 @@
 import { toError } from '@perawallet/wallet-core-shared'
 import type { CrashReportingService } from './models'
 
-// Mirrors `LogErrorSeverity` in `packages/shared/src/utils/error-report.ts`, whose
-// 'expected' downgrade this router consumes. This extension deliberately does
-// not depend on that package, so nothing checks the two unions against each
-// other — the literals have to be kept in step by hand.
+// Superset of `LogErrorSeverity` in `packages/shared/src/utils/error-report.ts`:
+// the router also takes the non-reportable levels, so it keeps its own union
+// and nothing checks the 'error' | 'critical' | 'expected' literals against it.
 type LogSeverity = 'debug' | 'info' | 'warn' | 'error' | 'critical' | 'expected'
 
 export type ErrorReportPayload = {
