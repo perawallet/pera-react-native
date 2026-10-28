@@ -100,7 +100,7 @@ const AssetListItemViewBase = ({
     }, [asset, holding.assetId, amount])
 
     if (!asset) {
-        return <AssetRowSkeleton />
+        return <AssetRowSkeleton style={style} />
     }
 
     if (collectibleItem) {

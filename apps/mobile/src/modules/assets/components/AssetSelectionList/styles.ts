@@ -15,6 +15,7 @@ import { makeStyles } from '@rneui/themed'
 export const useStyles = makeStyles(theme => ({
     skeletonRow: {
         paddingHorizontal: theme.spacing.lg,
+        paddingVertical: theme.spacing.sm,
     },
     footer: {
         paddingVertical: theme.spacing.lg,
