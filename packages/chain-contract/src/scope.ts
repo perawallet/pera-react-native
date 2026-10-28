@@ -89,6 +89,27 @@ export const queryKeyReferencesScope = (
     )
 }
 
+// A ChainScope has a string `networkId`; an AssetRef shares `chainId` but has
+// none, so a key carrying only an asset isn't taken as that chain's.
+const isScopeOfChain = (part: unknown, chainId: ChainId): boolean =>
+    typeof part === 'object' &&
+    part !== null &&
+    (part as Partial<ChainScope>).chainId === chainId &&
+    typeof (part as Partial<ChainScope>).networkId === 'string'
+
+// Same key shapes as `queryKeyReferencesScope`, matched on any network of the chain.
+export const queryKeyReferencesChain = (
+    queryKey: readonly unknown[],
+    chainId: ChainId,
+): boolean =>
+    queryKey.some(
+        part =>
+            isScopeOfChain(part, chainId) ||
+            (typeof part === 'object' &&
+                part !== null &&
+                isScopeOfChain((part as { scope?: unknown }).scope, chainId)),
+    )
+
 // For persisted store state, which may predate scope keys and hold a bare
 // network. Database rows all hold scope keys; read them with parseScopeKey.
 export const scopeFromNetworkColumn = (value: string): ChainScope => {

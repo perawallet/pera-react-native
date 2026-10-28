@@ -48,6 +48,11 @@ const ALLOWED: readonly Allowed[] = [
         reason: "Compares a query key's scope against whichever scope the caller passes, never a named chain.",
     },
     {
+        file: 'packages/chain-contract/src/scope.ts',
+        text: '(part as Partial<ChainScope>).chainId === chainId',
+        reason: "Compares a query key's scope against whichever chain the caller passes, never a named chain.",
+    },
+    {
         file: 'packages/dapp/src/handler.ts',
         text: 'scope.chainId === deps.chainId',
         reason: 'Matches whichever chain the handler was built for, never a named chain.',
