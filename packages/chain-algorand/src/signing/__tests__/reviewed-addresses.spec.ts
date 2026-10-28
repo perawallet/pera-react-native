@@ -64,6 +64,57 @@ describe('algorandReviewedAddresses', () => {
         ])
     })
 
+    it('names the account a clawback takes the asset from', () => {
+        expect(
+            reviewedOf({
+                assetTransferTransaction: {
+                    amount: 1n,
+                    assetId: 31566704n,
+                    receiver: RECEIVER,
+                    sender: REFERENCED,
+                },
+            }),
+        ).toEqual([
+            { address: RECEIVER, role: 'token-recipient' },
+            { address: REFERENCED, role: 'referenced-account' },
+        ])
+    })
+
+    it('names every authority an asset configuration hands out', () => {
+        expect(
+            reviewedOf({
+                assetConfigTransaction: {
+                    assetId: 31566704n,
+                    params: {
+                        decimals: 6,
+                        total: 1n,
+                        manager: addressOf(6),
+                        reserve: addressOf(7),
+                        freeze: addressOf(8),
+                        clawback: addressOf(9),
+                    },
+                },
+            }),
+        ).toEqual([
+            { address: addressOf(6), role: 'new-authorizer' },
+            { address: addressOf(7), role: 'new-authorizer' },
+            { address: addressOf(8), role: 'new-authorizer' },
+            { address: addressOf(9), role: 'new-authorizer' },
+        ])
+    })
+
+    it('names the account an asset freeze targets', () => {
+        expect(
+            reviewedOf({
+                assetFreezeTransaction: {
+                    address: REFERENCED,
+                    assetId: 31566704n,
+                    newFreezeStatus: true,
+                },
+            }),
+        ).toEqual([{ address: REFERENCED, role: 'referenced-account' }])
+    })
+
     it('names the account a rekey hands signing to', () => {
         expect(
             reviewedOf({

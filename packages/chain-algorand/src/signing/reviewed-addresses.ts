@@ -53,6 +53,29 @@ export const algorandReviewedAddresses = (
                 role: 'close-recipient',
             })
         }
+        if (assetTransfer.sender) {
+            reviewed.push({
+                address: assetTransfer.sender,
+                role: 'referenced-account',
+            })
+        }
+    }
+    // Handing an asset's manager or clawback to a look-alike takes it over as
+    // surely as a rekey takes an account.
+    const params = view.assetConfigTransaction?.params
+    for (const address of [
+        params?.manager,
+        params?.reserve,
+        params?.freeze,
+        params?.clawback,
+    ]) {
+        if (address) reviewed.push({ address, role: 'new-authorizer' })
+    }
+    if (view.assetFreezeTransaction) {
+        reviewed.push({
+            address: view.assetFreezeTransaction.address,
+            role: 'referenced-account',
+        })
     }
     for (const account of view.applicationTransaction?.accounts ?? []) {
         for (const address of addressOfKey(account)) {
