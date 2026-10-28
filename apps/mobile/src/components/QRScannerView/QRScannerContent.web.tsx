@@ -75,7 +75,7 @@ export const QRScannerContent = ({
     const styles = useStyles()
     const { t } = useLanguage()
     const { handleDeepLink, isValidDeepLink, parseDeeplink } = useDeepLink()
-    const { showToast } = useToast()
+    const { errorToast } = useToast()
 
     // Synchronous guard against double-fire, same reasoning as the native
     // hook: a result can arrive while a previous one is still dispatching.
@@ -92,11 +92,7 @@ export const QRScannerContent = ({
                 if (!skipDeepLinkHandler && !isValidDeepLink(value)) {
                     // Toast rather than a blocking error: a near-miss decode
                     // is common, and the re-armed scanner is the retry.
-                    showToast({
-                        title: t('qr_scanner.invalid_code'),
-                        body: '',
-                        type: 'error',
-                    })
+                    errorToast(t('qr_scanner.invalid_code'), '')
                     onRestart()
                     return
                 }
@@ -160,7 +156,7 @@ export const QRScannerContent = ({
             onSuccess,
             onRestart,
             skipDeepLinkHandler,
-            showToast,
+            errorToast,
             t,
         ],
     )

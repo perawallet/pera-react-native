@@ -21,7 +21,7 @@ import { useSendDestinationRouter } from '../useSendDestinationRouter'
 
 const mocks = vi.hoisted(() => ({
     navigate: vi.fn(),
-    showToast: vi.fn(),
+    errorToast: vi.fn(),
     setSendMode: vi.fn(),
     setDestination: vi.fn(),
     isValidAddress: vi.fn<(address: string) => boolean>(),
@@ -79,7 +79,7 @@ vi.mock('../useRecipientPoisoningGate', () => ({
 }))
 
 vi.mock('@hooks/useToast', () => ({
-    useToast: () => ({ showToast: mocks.showToast }),
+    useToast: () => ({ errorToast: mocks.errorToast }),
 }))
 
 describe('useSendDestinationRouter', () => {
@@ -113,11 +113,9 @@ describe('useSendDestinationRouter', () => {
 
         expect(mocks.setDestination).toHaveBeenCalledWith(undefined)
         expect(mocks.navigate).not.toHaveBeenCalled()
-        expect(mocks.showToast).toHaveBeenCalledWith(
-            expect.objectContaining({
-                title: 'send_funds.destination.invalid_address_title',
-                type: 'error',
-            }),
+        expect(mocks.errorToast).toHaveBeenCalledWith(
+            'send_funds.destination.invalid_address_title',
+            expect.any(String),
         )
     })
 
@@ -139,7 +137,7 @@ describe('useSendDestinationRouter', () => {
         await act(() => result.current.resolveDestination(RECEIVER))
 
         expect(mocks.navigate).toHaveBeenCalledWith('AssetInboxSendSummary')
-        expect(mocks.showToast).not.toHaveBeenCalled()
+        expect(mocks.errorToast).not.toHaveBeenCalled()
     })
 
     it('refuses the inbox route with a notice while the assetInbox capability is off', async () => {
@@ -149,8 +147,9 @@ describe('useSendDestinationRouter', () => {
         await act(() => result.current.resolveDestination(RECEIVER))
 
         expect(mocks.navigate).not.toHaveBeenCalled()
-        expect(mocks.showToast).toHaveBeenCalledWith(
-            expect.objectContaining({ type: 'error' }),
+        expect(mocks.errorToast).toHaveBeenCalledWith(
+            'send_funds.destination.inbox_unavailable_title',
+            'send_funds.destination.inbox_unavailable_body',
         )
     })
 

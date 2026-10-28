@@ -140,8 +140,8 @@ export const useToast = () => {
     )
 
     const errorToast = useCallback(
-        (title: string, body: string) => {
-            showToast({ title, body, type: 'error' })
+        (title: string, body: string, options?: ToastOptions) => {
+            showToast({ title, body, type: 'error' }, options)
         },
         [showToast],
     )

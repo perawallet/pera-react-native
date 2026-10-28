@@ -64,13 +64,13 @@ vi.mock('@modules/security', () => ({
 
 vi.mock('@hooks/useLanguage')
 
-const { mockShowToast } = vi.hoisted(() => ({
-    mockShowToast: vi.fn(),
+const { mockErrorToast } = vi.hoisted(() => ({
+    mockErrorToast: vi.fn(),
 }))
 
 vi.mock('@hooks/useToast', () => ({
     useToast: () => ({
-        showToast: mockShowToast,
+        errorToast: mockErrorToast,
     }),
 }))
 
@@ -304,10 +304,9 @@ describe('useSettingsSecurityScreen', () => {
 
             expect(success!).toBe(false)
             // A generic failure shows the generic error toast.
-            expect(mockShowToast).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    title: 'settings.security.biometric_error_title',
-                }),
+            expect(mockErrorToast).toHaveBeenCalledWith(
+                'settings.security.biometric_error_title',
+                'settings.security.biometric_error_message',
             )
         })
 
@@ -329,12 +328,9 @@ describe('useSettingsSecurityScreen', () => {
             })
 
             expect(success!).toBe(false)
-            expect(mockShowToast).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    title: 'settings.security.biometric_weak_title',
-                    body: 'settings.security.biometric_weak_message',
-                    type: 'error',
-                }),
+            expect(mockErrorToast).toHaveBeenCalledWith(
+                'settings.security.biometric_weak_title',
+                'settings.security.biometric_weak_message',
             )
         })
 
@@ -356,12 +352,9 @@ describe('useSettingsSecurityScreen', () => {
             })
 
             expect(success!).toBe(false)
-            expect(mockShowToast).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    title: 'settings.security.biometric_unconfirmed_title',
-                    body: 'settings.security.biometric_unconfirmed_message',
-                    type: 'error',
-                }),
+            expect(mockErrorToast).toHaveBeenCalledWith(
+                'settings.security.biometric_unconfirmed_title',
+                'settings.security.biometric_unconfirmed_message',
             )
         })
     })

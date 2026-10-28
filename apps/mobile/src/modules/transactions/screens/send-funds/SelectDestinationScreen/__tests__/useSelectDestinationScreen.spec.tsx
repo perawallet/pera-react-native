@@ -39,7 +39,7 @@ const ROUTE_KEY = 'select-destination'
 const mockOnFinished = vi.fn()
 const mockSetSendMode = vi.fn()
 const mockSetDestination = vi.fn()
-const mockShowToast = vi.fn()
+const mockErrorToast = vi.fn()
 
 const { mockCanSignWith, mockUseAllAccounts, mockGetArc59Config } = vi.hoisted(
     () => ({
@@ -90,7 +90,7 @@ vi.mock('../../useRecipientPoisoningGate', () => ({
 }))
 
 vi.mock('@hooks/useToast', () => ({
-    useToast: () => ({ showToast: mockShowToast }),
+    useToast: () => ({ errorToast: mockErrorToast }),
 }))
 
 vi.mock('@hooks/useLanguage')
@@ -350,8 +350,9 @@ describe('useSelectDestinationScreen', () => {
 
             expect(mockSetSendMode).not.toHaveBeenCalledWith('sendAssetInbox')
             expect(mockNavigate).not.toHaveBeenCalled()
-            expect(mockShowToast).toHaveBeenCalledWith(
-                expect.objectContaining({ type: 'error' }),
+            expect(mockErrorToast).toHaveBeenCalledWith(
+                'send_funds.destination.inbox_unavailable_title',
+                'send_funds.destination.inbox_unavailable_body',
             )
         })
 
@@ -372,8 +373,9 @@ describe('useSelectDestinationScreen', () => {
 
             expect(mockSetSendMode).not.toHaveBeenCalledWith('sendAssetInbox')
             expect(mockNavigate).not.toHaveBeenCalled()
-            expect(mockShowToast).toHaveBeenCalledWith(
-                expect.objectContaining({ type: 'error' }),
+            expect(mockErrorToast).toHaveBeenCalledWith(
+                'send_funds.destination.inbox_unavailable_title',
+                'send_funds.destination.inbox_unavailable_body',
             )
         })
     })
@@ -598,11 +600,9 @@ describe('useSelectDestinationScreen', () => {
 
             expect(mockSetDestination).not.toHaveBeenCalled()
             expect(mockNavigate).not.toHaveBeenCalled()
-            expect(mockShowToast).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    title: 'send_funds.destination.nfd_mismatch_title',
-                    type: 'error',
-                }),
+            expect(mockErrorToast).toHaveBeenCalledWith(
+                'send_funds.destination.nfd_mismatch_title',
+                expect.any(String),
             )
             expect(result.current.isCheckingExternalOptIn).toBe(false)
         })
@@ -617,10 +617,9 @@ describe('useSelectDestinationScreen', () => {
             })
 
             expect(mockNavigate).not.toHaveBeenCalled()
-            expect(mockShowToast).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    title: 'send_funds.destination.nfd_unavailable_title',
-                }),
+            expect(mockErrorToast).toHaveBeenCalledWith(
+                'send_funds.destination.nfd_unavailable_title',
+                expect.any(String),
             )
         })
     })

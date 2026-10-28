@@ -79,7 +79,7 @@ export const useBackupVerificationScreen =
 
         const markBackupComplete = useMarkMnemonicBackupComplete(scope.chainId)
         const { t } = useLanguage()
-        const { showToast } = useToast()
+        const { errorToast } = useToast()
 
         useEffect(() => {
             trackEvent(OnboardingEvent.VerifyPassphrase)
@@ -95,12 +95,8 @@ export const useBackupVerificationScreen =
             void Haptics.notificationAsync(
                 Haptics.NotificationFeedbackType.Error,
             )
-            showToast({
-                title: t('backup.verification.error_message'),
-                body: '',
-                type: 'error',
-            })
-        }, [showToast, t])
+            errorToast(t('backup.verification.error_message'), '')
+        }, [errorToast, t])
 
         const correctPairs = useMemo(() => picks ?? [], [picks])
 

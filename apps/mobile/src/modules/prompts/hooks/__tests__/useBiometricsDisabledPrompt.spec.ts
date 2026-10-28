@@ -15,7 +15,7 @@ import { renderHook } from '@testing-library/react'
 
 const acknowledgeMock = vi.fn()
 const enableMock = vi.fn()
-const showToastMock = vi.fn()
+const errorToastMock = vi.fn()
 const biometricsState = {
     disabledReason: null as string | null,
 }
@@ -29,7 +29,7 @@ vi.mock('@perawallet/wallet-core-security', () => ({
 }))
 
 vi.mock('@hooks/useToast', () => ({
-    useToast: () => ({ showToast: showToastMock }),
+    useToast: () => ({ errorToast: errorToastMock }),
 }))
 
 import { useBiometricsDisabledPrompt } from '../useBiometricsDisabledPrompt'
@@ -77,7 +77,7 @@ describe('useBiometricsDisabledPrompt', () => {
                 cancelLabel: expect.any(String),
             }),
         )
-        expect(showToastMock).not.toHaveBeenCalled()
+        expect(errorToastMock).not.toHaveBeenCalled()
     })
 
     // The reported bug: with biometrics off at the OS level the enable fails
@@ -90,8 +90,9 @@ describe('useBiometricsDisabledPrompt', () => {
             const { result } = renderHook(() => useBiometricsDisabledPrompt())
             await result.current.enable()
 
-            expect(showToastMock).toHaveBeenCalledWith(
-                expect.objectContaining({ type: 'error' }),
+            expect(errorToastMock).toHaveBeenCalledWith(
+                'security.biometrics_disabled.unavailable_title',
+                'security.biometrics_disabled.unavailable_body',
             )
         },
     )
@@ -127,7 +128,7 @@ describe('useBiometricsDisabledPrompt', () => {
         const { result } = renderHook(() => useBiometricsDisabledPrompt())
         await result.current.enable()
 
-        expect(showToastMock).not.toHaveBeenCalled()
+        expect(errorToastMock).not.toHaveBeenCalled()
     })
 
     // A declined OS prompt is still an answer: the offer is spent before the

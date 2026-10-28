@@ -90,7 +90,7 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
 
 const showToast = vi.fn()
 vi.mock('@hooks/useToast', () => ({
-    useToast: () => ({ showToast }),
+    useToast: () => ({ showToast, errorToast: vi.fn() }),
 }))
 
 const { getActiveConnectionRegistry, useConnectionsStore } =

@@ -46,31 +46,26 @@ export const useScannedAddress = (
     chainIds: readonly ChainId[],
 ): ((url: string) => Nullable<string>) => {
     const { t } = useLanguage()
-    const { showToast } = useToast()
+    const { errorToast } = useToast()
 
     return useCallback(
         (url: string) => {
             const scanned = readScannedAddress(url, chainIds)
             if (scanned.status === 'found') return scanned.address
 
-            showToast(
-                {
-                    title: t('address_entry.invalid_qr_title'),
-                    body:
-                        scanned.status === 'other-chain'
-                            ? t('address_entry.other_chain_qr_body', {
-                                  chain: getProvider().chains.get(
-                                      scanned.chainId,
-                                  ).descriptor.displayName,
-                              })
-                            : t('address_entry.invalid_qr_body'),
-                    type: 'error',
-                },
+            errorToast(
+                t('address_entry.invalid_qr_title'),
+                scanned.status === 'other-chain'
+                    ? t('address_entry.other_chain_qr_body', {
+                          chain: getProvider().chains.get(scanned.chainId)
+                              .descriptor.displayName,
+                      })
+                    : t('address_entry.invalid_qr_body'),
                 { delayLength: 'short' },
             )
 
             return null
         },
-        [chainIds, showToast, t],
+        [chainIds, errorToast, t],
     )
 }

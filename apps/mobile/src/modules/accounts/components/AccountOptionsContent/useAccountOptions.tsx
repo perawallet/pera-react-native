@@ -114,7 +114,7 @@ export const useAccountOptions = ({
     onShowAddress,
 }: UseAccountOptionsParams): UseAccountOptionsResult => {
     const { t } = useLanguage()
-    const { showToast } = useToast()
+    const { showToast, errorToast } = useToast()
     const { isAccountEnabled } = useNotificationPreferences()
     const { toggleAccountNotification, isTogglePending } =
         useAccountNotificationToggle()
@@ -305,15 +305,14 @@ export const useAccountOptions = ({
         )
         if (rekeyedToThisAccount.length === 0) return false
 
-        showToast({
-            title: t('account_options.remove_rekey_error_title'),
-            body: t('account_options.remove_rekey_error_message', {
+        errorToast(
+            t('account_options.remove_rekey_error_title'),
+            t('account_options.remove_rekey_error_message', {
                 count: rekeyedToThisAccount.length,
             }),
-            type: 'error',
-        })
+        )
         return true
-    }, [accounts, scope, address, account.id, showToast, t])
+    }, [accounts, scope, address, account.id, errorToast, t])
 
     const performRemoveAccount = useCallback(() => {
         const hasOtherAccounts = accounts.length > 1
@@ -406,12 +405,12 @@ export const useAccountOptions = ({
             }, choice)
             if (isRecorded === undefined) return
             if (!isRecorded) {
-                showToast({ title: t(errorKey), body: '', type: 'error' })
+                errorToast(t(errorKey), '')
                 return
             }
             finishRemove()
         },
-        [runBackupChoice, showToast, t, finishRemove, address],
+        [runBackupChoice, errorToast, t, finishRemove, address],
     )
 
     const handleDeleteFromBackup = useCallback(() => {

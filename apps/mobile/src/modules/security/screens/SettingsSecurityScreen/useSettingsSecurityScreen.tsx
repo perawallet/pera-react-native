@@ -59,7 +59,7 @@ export const useSettingsSecurityScreen =
             checkDuressPinEnabled,
         } = usePinCode()
         const { setPreference, getPreference } = usePreferences()
-        const { showToast } = useToast()
+        const { errorToast } = useToast()
         const { t } = useLanguage()
         const {
             isEnabled: isBiometricEnabled,
@@ -190,7 +190,7 @@ export const useSettingsSecurityScreen =
                                             'settings.security.biometric_error_message',
                                         ),
                                     }
-                        showToast({ ...toast, type: 'error' })
+                        errorToast(toast.title, toast.body)
                     }
                     return result.ok
                 } else {
@@ -198,7 +198,7 @@ export const useSettingsSecurityScreen =
                     return true
                 }
             },
-            [enableBiometrics, disableBiometrics, showToast, t],
+            [enableBiometrics, disableBiometrics, errorToast, t],
         )
 
         const handleChangePinPress = useCallback(async () => {
@@ -247,13 +247,10 @@ export const useSettingsSecurityScreen =
                 // wipes data, which is catastrophic.
                 const verifyResult = await verifyPin(pin)
                 if (verifyResult.kind === 'ok') {
-                    showToast({
-                        title: t(
-                            'settings.security.duress_pin_matches_regular',
-                        ),
-                        body: '',
-                        type: 'error',
-                    })
+                    errorToast(
+                        t('settings.security.duress_pin_matches_regular'),
+                        '',
+                    )
                     return { ok: false, reason: 'matches-regular-pin' }
                 }
                 // The keystore record is the only source of truth for whether
@@ -263,7 +260,7 @@ export const useSettingsSecurityScreen =
                 setIsDuressPinEnabled(true)
                 return { ok: true }
             },
-            [verifyPin, saveDuressPin, showToast, t],
+            [verifyPin, saveDuressPin, errorToast, t],
         )
 
         const handleDuressPinToggle = useCallback(

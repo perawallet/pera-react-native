@@ -35,7 +35,7 @@ vi.mock('@hooks/useAppNavigation', () => ({
 }))
 
 vi.mock('@hooks/useToast', () => ({
-    useToast: () => ({ showToast: vi.fn() }),
+    useToast: () => ({ showToast: vi.fn(), errorToast: vi.fn() }),
 }))
 
 const mockShowError = vi.fn()
