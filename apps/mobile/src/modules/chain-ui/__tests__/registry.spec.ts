@@ -37,6 +37,15 @@ describe('chainUiFor', () => {
         expect(ui.assetDetails).toBeUndefined()
     })
 
+    it('gives each bundled family its own passphrase explainer paragraph', () => {
+        expect(chainUiFor('algorand').passphraseCompatibilityKey).toBe(
+            'view_passphrase.compatibility.algorand',
+        )
+        expect(chainUiFor('evm').passphraseCompatibilityKey).toBe(
+            'view_passphrase.compatibility.evm',
+        )
+    })
+
     it('returns an entry with no slots for a family nobody registered', () => {
         const ui = chainUiFor('solana' as ChainFamily)
 

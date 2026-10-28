@@ -83,6 +83,9 @@ export const algorandChainUi: ChainUi = {
         Form: AlgorandCustomNodeForm,
     },
     familyLabel: i18nKey('chain_families.algorand'),
+    passphraseCompatibilityKey: i18nKey(
+        'view_passphrase.compatibility.algorand',
+    ),
     accountOptions: {
         ExpandedSection: AlgorandAccountSection,
         useHasExpandedSection: useHasAlgorandAccountSection,
