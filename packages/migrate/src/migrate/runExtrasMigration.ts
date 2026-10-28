@@ -11,7 +11,7 @@
  */
 
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, toError } from '@perawallet/wallet-core-shared'
 import type { WalletConnectV1SessionKeyStore } from '@perawallet/wallet-core-walletconnect'
 import type {
     LegacyMigrationData,
@@ -195,7 +195,7 @@ const captureFailure = (
     step: ExtrasMigrationStepName,
     err: unknown,
 ): void => {
-    const reason = err instanceof Error ? err.message : String(err)
+    const reason = toError(err).message
     logger.error(`Legacy ${step} migration failed`, { error: err })
     result.failed.push({ step, reason })
 }

@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { toError } from '@perawallet/wallet-core-shared'
 import type { CrashReportingService } from './models'
 
 // Mirrors `LogErrorSeverity` in `packages/shared/src/utils/error-report.ts`, whose
@@ -42,7 +43,7 @@ const describeForBreadcrumb = (
     error: unknown,
     groupingKey?: string,
 ): string => {
-    const message = error instanceof Error ? error.message : String(error)
+    const message = toError(error).message
     return groupingKey ? `${groupingKey}: ${message}` : message
 }
 

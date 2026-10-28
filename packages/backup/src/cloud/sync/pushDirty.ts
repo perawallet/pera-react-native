@@ -10,7 +10,11 @@
  limitations under the License
  */
 
-import { isNotFoundError, logger } from '@perawallet/wallet-core-shared'
+import {
+    isNotFoundError,
+    logger,
+    toError,
+} from '@perawallet/wallet-core-shared'
 import {
     UpsertResult,
     type BatchUpsertRequest,
@@ -157,7 +161,7 @@ export const pushDirty = async ({
         } catch (error) {
             logger.warn('pushDirty: delete failed', {
                 key,
-                error: error instanceof Error ? error.message : String(error),
+                error: toError(error).message,
             })
         }
     }
