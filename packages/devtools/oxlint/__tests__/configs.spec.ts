@@ -146,14 +146,14 @@ describe('pera/no-deep-relative-imports', () => {
         expect(overrides[0].rules['pera/no-deep-relative-imports']).toBe(
             'error',
         )
-        expect(overrides[0].excludeFiles).toEqual(
-            expect.arrayContaining([
-                'src/**/__tests__/**',
-                'src/**/__mocks__/**',
-                'src/**/__integration__/**',
-                'src/**/*.spec.{ts,tsx}',
-            ]),
-        )
+        expect(overrides[0].excludeFiles).toEqual([
+            'src/**/__tests__/**',
+            'src/**/__mocks__/**',
+            'src/**/test-utils/**',
+            'src/**/__integration__/**',
+            'src/**/*.spec.{ts,tsx}',
+            'src/**/*.test.{ts,tsx}',
+        ])
         expect(
             overridesWith(root, 'pera/no-deep-relative-imports'),
         ).toHaveLength(0)

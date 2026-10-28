@@ -15,6 +15,7 @@ import { createRequire } from 'node:module'
 import { join } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import {
+    MAX_PARENT_HOPS,
     MOBILE_PATH_ALIASES,
     noDeepRelativeImports,
 } from '../rules/no-deep-relative-imports.js'
@@ -192,6 +193,23 @@ describe('pera/no-deep-relative-imports', () => {
         )
 
         expect(report).not.toHaveBeenCalled()
+    })
+
+    it('flags exactly one hop past MAX_PARENT_HOPS', () => {
+        const file = '/repo/apps/mobile/src/modules/a/b/c/x.ts'
+        const within = lintIn(
+            file,
+            'ImportDeclaration',
+            importFrom(`${'../'.repeat(MAX_PARENT_HOPS)}hooks/useX`),
+        )
+        const beyond = lintIn(
+            file,
+            'ImportDeclaration',
+            importFrom(`${'../'.repeat(MAX_PARENT_HOPS + 1)}hooks/useX`),
+        )
+
+        expect(within).not.toHaveBeenCalled()
+        expect(beyond).toHaveBeenCalledOnce()
     })
 
     it('allows a template literal with an expression', () => {

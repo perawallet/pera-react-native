@@ -21,7 +21,7 @@ export const MAX_PARENT_HOPS = 2
 // Directories relative to apps/mobile. Each resolves identically under Metro
 // (babel module-resolver), tsc paths and vitest, which is what lets the fix
 // rewrite to them; @browser, @packages and @test-utils are left out because
-// Metro cannot resolve them from app source.
+// babel's module-resolver has no alias for them.
 export const MOBILE_PATH_ALIASES = Object.freeze({
     '@analytics': 'src/analytics',
     '@assets': 'assets',
