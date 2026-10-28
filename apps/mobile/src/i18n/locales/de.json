@@ -202,7 +202,21 @@
         "search_placeholder": "Kontoadresse, NFD-Name oder Kurzname",
         "nfd_results": "NFDomains",
         "nfd_resolving": "NFD wird aufgelöst...",
-        "nfd_resolved": "Aufgelöst von {{name}}"
+        "nfd_resolved": "Aufgelöst von {{name}}",
+        "wrong_network": {
+            "title": {
+                "algorand": "Das ist eine Algorand-Adresse",
+                "evm": "Das ist eine Ethereum-Adresse (EVM)"
+            },
+            "body": {
+                "algorand": "Hier können nur Algorand-Adressen hinzugefügt werden. Bitte überprüfe die Adresse und versuche es erneut.",
+                "evm": "Hier können nur EVM-kompatible Adressen hinzugefügt werden. Bitte überprüfe die Adresse und versuche es erneut."
+            },
+            "send_body": {
+                "algorand": "{{asset}} kann nur an Algorand-Adressen gesendet werden. Bitte überprüfe die Empfängeradresse oder wähle ein EVM-Asset zum Senden.",
+                "evm": "{{asset}} kann nur an EVM-kompatible Adressen (beginnend mit „0x“) gesendet werden. Bitte überprüfe die Empfängeradresse oder wähle ein Algorand-Asset zum Senden."
+            }
+        }
     },
     "asset_inbox": {
         "requests": {

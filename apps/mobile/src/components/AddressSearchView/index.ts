@@ -11,5 +11,8 @@
  */
 
 export { AddressSearchView } from './AddressSearchView'
-export type { AddressSearchViewProps } from './AddressSearchView'
+export type {
+    AddressSearchViewProps,
+    WrongNetworkAddressCopy,
+} from './AddressSearchView'
 export type { AddressSearchItem } from './useAddressSearchView'

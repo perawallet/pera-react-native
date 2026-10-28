@@ -94,4 +94,9 @@ export const algorandChainUi: ChainUi = {
         descriptionKey: i18nKey('onboarding.watch_account.description'),
         invalidAddressKey: i18nKey('onboarding.watch_account.invalid_address'),
     },
+    wrongNetworkAddress: {
+        titleKey: i18nKey('address_entry.wrong_network.title.algorand'),
+        bodyKey: i18nKey('address_entry.wrong_network.body.algorand'),
+        sendBodyKey: i18nKey('address_entry.wrong_network.send_body.algorand'),
+    },
 }

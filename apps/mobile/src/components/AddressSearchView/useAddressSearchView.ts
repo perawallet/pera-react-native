@@ -13,12 +13,17 @@
 import { useCallback, useMemo, useState } from 'react'
 import {
     addressCodecs,
+    type ChainFamily,
     type ChainScope,
     i18nKey,
     type I18nKey,
 } from '@perawallet/wallet-core-chain-contract'
 import { getChainDescriptor } from '@perawallet/wallet-core-chain-shared'
-import { useContacts, type Contact } from '@perawallet/wallet-core-contacts'
+import {
+    addressFamilyOf,
+    useContacts,
+    type Contact,
+} from '@perawallet/wallet-core-contacts'
 import {
     addressOn,
     findAddressHolder,
@@ -34,6 +39,7 @@ import {
 import {
     useDebouncedValue,
     type Nullable,
+    type Optional,
 } from '@perawallet/wallet-core-shared'
 import { SEARCH_DEBOUNCE_TIME } from '@constants/ui'
 import { useClipboard } from '@hooks/useClipboard'
@@ -73,6 +79,8 @@ type UseAddressSearchViewResult = {
     matchingItems: AddressSearchItem[]
     hasResults: boolean
     isNfdLoading: boolean
+    /** Set when `value` is a valid address of a family other than the scope's. */
+    mismatchedFamily: Optional<ChainFamily>
 }
 
 export const useAddressSearchView = ({
@@ -107,6 +115,15 @@ export const useAddressSearchView = ({
         [scope.chainId, value],
     )
 
+    // Without this, another family's address falls through to name matching
+    // and reads as a search miss rather than as the wrong network.
+    const mismatchedFamily = useMemo(() => {
+        if (addressIsValid) return undefined
+        const family = addressFamilyOf(value)?.family
+        return family && family !== chainFamily ? family : undefined
+    }, [addressIsValid, value, chainFamily])
+    const isAddress = addressIsValid || !!mismatchedFamily
+
     // Re-read on focus rather than once on mount: the user leaves to copy an
     // address and comes back, which is the whole point of the affordance. Mirrors
     // the native `onResume` re-read.
@@ -139,7 +156,7 @@ export const useAddressSearchView = ({
 
     const matchingAccounts = useMemo(
         () =>
-            addressIsValid
+            isAddress
                 ? []
                 : accounts.filter(a => {
                       const address = addressOn(a, scope)
@@ -156,11 +173,11 @@ export const useAddressSearchView = ({
                                   .includes(value.toLowerCase()))
                       )
                   }),
-        [value, accounts, excludeAddress, accountFilter, addressIsValid, scope],
+        [value, accounts, excludeAddress, accountFilter, isAddress, scope],
     )
 
     const matchingContacts = useMemo(() => {
-        if (addressIsValid) return []
+        if (isAddress) return []
         if (!value.length && !showAllContactsWhenEmpty) return []
         // A contact must not appear under "Contacts" if its address is:
         // - any wallet account (so an account saved as a contact only shows under "My Accounts")
@@ -181,7 +198,7 @@ export const useAddressSearchView = ({
         value,
         findContacts,
         chainFamily,
-        addressIsValid,
+        isAddress,
         showAllContactsWhenEmpty,
         accounts,
         excludeAddress,
@@ -189,6 +206,9 @@ export const useAddressSearchView = ({
     ])
 
     const matchingItems = useMemo(() => {
+        // Even the paste row would hide the mismatch message behind a list.
+        if (mismatchedFamily) return []
+
         const items: AddressSearchItem[] = []
 
         // First row, and deliberately not gated on the query or deduped against
@@ -279,6 +299,7 @@ export const useAddressSearchView = ({
         nfdResults,
         clipboardAddress,
         scope,
+        mismatchedFamily,
     ])
 
     const hasResults = matchingItems.length > 0
@@ -289,5 +310,6 @@ export const useAddressSearchView = ({
         matchingItems,
         hasResults,
         isNfdLoading,
+        mismatchedFamily,
     }
 }

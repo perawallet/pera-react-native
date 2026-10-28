@@ -13,7 +13,7 @@
 import { render, screen, fireEvent } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { AddressSearchView } from '../AddressSearchView'
-import { useContacts } from '@perawallet/wallet-core-contacts'
+import { addressFamilyOf, useContacts } from '@perawallet/wallet-core-contacts'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { useNfdSearchQuery } from '@perawallet/wallet-core-nfd'
 import {
@@ -26,6 +26,7 @@ const SCOPE = { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const
 
 // Mock dependencies
 vi.mock('@perawallet/wallet-core-contacts', () => ({
+    addressFamilyOf: vi.fn(),
     useContacts: vi.fn(),
 }))
 
@@ -54,6 +55,16 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     getChainDescriptor: () => ({ family: 'algorand' }),
+}))
+
+vi.mock('@modules/chain-ui', () => ({
+    chainUiFor: (family: string) => ({
+        wrongNetworkAddress: {
+            titleKey: `address_entry.wrong_network.title.${family}`,
+            bodyKey: `address_entry.wrong_network.body.${family}`,
+            sendBodyKey: `address_entry.wrong_network.send_body.${family}`,
+        },
+    }),
 }))
 
 vi.mock('@perawallet/wallet-core-nfd', () => ({
@@ -372,5 +383,62 @@ describe('AddressSearchView', () => {
             'NFD_ADDRESS_123',
             'alice.algo',
         )
+    })
+
+    describe('address from another network', () => {
+        const EVM_ADDRESS = '0xb0c164986d5d753a88455d5dbf82541573d21d48'
+
+        const typeAddress = () => {
+            const input = screen.getAllByPlaceholderText(
+                'address_entry.search_placeholder',
+            )[1]
+            fireEvent.change(input, { target: { value: EVM_ADDRESS } })
+        }
+
+        beforeEach(() => {
+            vi.mocked(addressFamilyOf).mockReturnValue({
+                family: 'evm',
+                address: EVM_ADDRESS,
+            })
+        })
+
+        it('explains that the asset being sent cannot go to that network', () => {
+            render(
+                <AddressSearchView
+                    scope={SCOPE}
+                    onSelected={mockOnSelected}
+                    sendingAssetLabel='ALGO'
+                />,
+            )
+
+            typeAddress()
+
+            expect(
+                screen.getByText('address_entry.wrong_network.title.evm'),
+            ).toBeTruthy()
+            expect(
+                screen.getByText(
+                    'address_entry.wrong_network.send_body.algorand',
+                ),
+            ).toBeTruthy()
+            expect(
+                screen.queryByText('address_entry.no_accounts_found'),
+            ).toBeNull()
+        })
+
+        it('stays neutral when nothing is being sent', () => {
+            render(
+                <AddressSearchView
+                    scope={SCOPE}
+                    onSelected={mockOnSelected}
+                />,
+            )
+
+            typeAddress()
+
+            expect(
+                screen.getByText('address_entry.wrong_network.body.algorand'),
+            ).toBeTruthy()
+        })
     })
 })

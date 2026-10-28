@@ -93,6 +93,7 @@ export const SelectDestinationScreen = () => {
                 onSelected={handleSelected}
                 scope={scope}
                 showClipboardPaste
+                sendingAssetLabel={selectedAsset.unitName || selectedAsset.name}
             />
         </PWScreen>
     )

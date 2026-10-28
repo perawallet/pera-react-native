@@ -24,6 +24,7 @@ import {
     type AddressSearchItem,
 } from '../useAddressSearchView'
 import {
+    addressFamilyOf,
     useContacts,
     type ContactAddresses,
 } from '@perawallet/wallet-core-contacts'
@@ -36,6 +37,7 @@ import {
 import { useNfdSearchQuery } from '@perawallet/wallet-core-nfd'
 
 vi.mock('@perawallet/wallet-core-contacts', () => ({
+    addressFamilyOf: vi.fn(),
     useContacts: vi.fn(),
 }))
 
@@ -67,7 +69,10 @@ const ALGORAND_SCOPE: ChainScope = {
     chainId: LEGACY_CHAIN_ID,
     networkId: 'mainnet',
 }
-const ETHEREUM_SCOPE: ChainScope = { chainId: 'ethereum', networkId: 'mainnet' }
+const ETHEREUM_SCOPE: ChainScope = {
+    chainId: 'ethereum',
+    networkId: 'mainnet',
+}
 
 vi.mock('@perawallet/wallet-core-nfd', () => ({
     useNfdSearchQuery: vi.fn(() => ({ data: [], isLoading: false })),
@@ -146,6 +151,7 @@ describe('useAddressSearchView', () => {
             isLoading: false,
         } as unknown as ReturnType<typeof useNfdSearchQuery>)
         mockFindContacts.mockReturnValue([])
+        vi.mocked(addressFamilyOf).mockReturnValue(undefined)
     })
 
     it('initializes with empty value and no results', () => {
@@ -918,6 +924,106 @@ describe('useAddressSearchView', () => {
                             .algorand?.address,
                 ),
             ).toEqual(['APPLE1', 'ZEBRA1'])
+        })
+    })
+
+    describe('address from another network', () => {
+        const EVM_ADDRESS = '0xb0c164986d5d753a88455d5dbf82541573d21d48'
+        const ALGORAND_ADDRESS =
+            'PASTEDADDRESS7MED3SEKUENYGEANWZHE4XVZ7JRCHLMVKPXXE3YOBWHOEN'
+
+        it('flags an EVM address entered for an Algorand chain and offers nothing to select', async () => {
+            vi.mocked(useAllAccounts).mockReturnValue([
+                { chains: { algorand: { address: 'ABC123' } }, name: '0xb0c1' },
+            ] as unknown as ReturnType<typeof useAllAccounts>)
+            mockFindContacts.mockReturnValue([
+                { addresses: { algorand: 'CONT123' }, name: '0xb0c1' },
+            ])
+            mockReadText.mockResolvedValue(ALGORAND_ADDRESS)
+            mockIsValidAddress.mockImplementation(
+                addr => addr === ALGORAND_ADDRESS,
+            )
+            vi.mocked(addressFamilyOf).mockImplementation(addr =>
+                addr === EVM_ADDRESS
+                    ? { family: 'evm', address: EVM_ADDRESS }
+                    : undefined,
+            )
+
+            const { result } = renderHook(() =>
+                useAddressSearchView({
+                    scope: ALGORAND_SCOPE,
+                    showClipboardPaste: true,
+                }),
+            )
+            await waitFor(() => {
+                expect(
+                    itemsOfType(result.current.matchingItems, 'paste'),
+                ).toHaveLength(1)
+            })
+
+            act(() => {
+                result.current.setValue(EVM_ADDRESS)
+            })
+
+            expect(result.current.mismatchedFamily).toBe('evm')
+            expect(result.current.matchingItems).toEqual([])
+            expect(result.current.hasResults).toBe(false)
+        })
+
+        it('flags an Algorand address entered for an EVM chain', () => {
+            vi.mocked(addressFamilyOf).mockReturnValue({
+                family: 'algorand',
+                address: ALGORAND_ADDRESS,
+            })
+
+            const { result } = renderHook(() =>
+                useAddressSearchView({ scope: ETHEREUM_SCOPE }),
+            )
+
+            act(() => {
+                result.current.setValue(ALGORAND_ADDRESS)
+            })
+
+            expect(result.current.mismatchedFamily).toBe('algorand')
+            expect(result.current.hasResults).toBe(false)
+        })
+
+        it("does not flag an address in the scope's own family", () => {
+            vi.mocked(useAllAccounts).mockReturnValue([
+                {
+                    chains: { ethereum: { address: EVM_ADDRESS } },
+                    name: 'Main',
+                },
+            ] as unknown as ReturnType<typeof useAllAccounts>)
+            vi.mocked(addressFamilyOf).mockReturnValue({
+                family: 'evm',
+                address: EVM_ADDRESS,
+            })
+
+            const { result } = renderHook(() =>
+                useAddressSearchView({ scope: ETHEREUM_SCOPE }),
+            )
+
+            act(() => {
+                result.current.setValue(EVM_ADDRESS)
+            })
+
+            expect(result.current.mismatchedFamily).toBeUndefined()
+            expect(
+                itemsOfType(result.current.matchingItems, 'account'),
+            ).toHaveLength(1)
+        })
+
+        it('does not flag input that is no address at all', () => {
+            const { result } = renderHook(() =>
+                useAddressSearchView({ scope: ALGORAND_SCOPE }),
+            )
+
+            act(() => {
+                result.current.setValue('0xnot-an-address')
+            })
+
+            expect(result.current.mismatchedFamily).toBeUndefined()
         })
     })
 })
