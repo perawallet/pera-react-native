@@ -408,6 +408,70 @@ describe('useAccountAssetList', () => {
         })
     })
 
+    describe('loading rows', () => {
+        beforeEach(() => {
+            mockAssetsQuery.holdings = []
+            mockAssetsQuery.isPending = true
+        })
+
+        it('lists eight skeleton rows while the holdings read is pending', () => {
+            const { result } = renderHook(() =>
+                useAccountAssetList({ account: mockAccount, t: mockT }),
+            )
+
+            expect(result.current.items).toHaveLength(8)
+            expect(result.current.items.every(i => i.kind === 'skeleton')).toBe(
+                true,
+            )
+            const ids = result.current.items.map(item =>
+                item.kind === 'skeleton' ? item.id : null,
+            )
+            expect(new Set(ids).size).toBe(8)
+        })
+
+        it.each([null, 'algorand', 'ethereum'] as const)(
+            'shows skeleton rows for a pending read under %s',
+            chainId => {
+                registerEthereum()
+                const { result } = renderHook(() =>
+                    useAccountAssetList({ account: twoChainAccount, t: mockT }),
+                )
+
+                act(() => result.current.setSelectedChainId(chainId))
+
+                expect(result.current.selectedChainId).toBe(chainId)
+                expect(result.current.items).toHaveLength(8)
+                expect(
+                    result.current.items.every(i => i.kind === 'skeleton'),
+                ).toBe(true)
+            },
+        )
+
+        it('swaps the skeleton rows for the holdings once they land', () => {
+            const { result, rerender } = renderHook(() =>
+                useAccountAssetList({ account: mockAccount, t: mockT }),
+            )
+
+            mockAssetsQuery.holdings = [makeHolding('123')]
+            mockAssetsQuery.isPending = false
+            rerender({})
+
+            expect(result.current.items.map(item => item.kind)).toEqual([
+                'holding',
+            ])
+        })
+
+        it('lists nothing, not skeletons, when every chain is switched off', () => {
+            const { result } = renderHook(() =>
+                useAccountAssetList({ account: mockAccount, t: mockT }),
+            )
+
+            act(() => setChainEnabled('algorand', false))
+
+            expect(result.current.items).toEqual([])
+        })
+    })
+
     describe('network chips', () => {
         it('offers no chips while the account is on one chain', () => {
             registerEthereum()

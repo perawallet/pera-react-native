@@ -70,10 +70,15 @@ import {
 } from '../ManageAssetsContent'
 import { OptOutConfirmationContent } from './OptOutConfirmationContent'
 
+export type AccountAssetListItem =
+    | GroupedHoldingItem<AccountHoldingsLiteRow>
+    | { kind: 'skeleton'; id: string }
+
 type UseAccountAssetListResult = {
     /** No chain the account holds assets on is available: the header shows the notice, the list stays empty. */
     isChainSwitchedOff: boolean
-    items: GroupedHoldingItem<AccountHoldingsLiteRow>[]
+    /** Eight skeleton rows while the holdings read is pending; empty when every chain is switched off. */
+    items: AccountAssetListItem[]
     /** Empty while the account is on fewer than two chains: nothing to filter. */
     chainFilterOptions: FilterOption<Nullable<ChainId>>[]
     /** The chain the list is narrowed to; `null` is All. */
@@ -81,7 +86,6 @@ type UseAccountAssetListResult = {
     setSelectedChainId: (chainId: Nullable<ChainId>) => void
     toggleGroupExpanded: (groupId: string) => void
     convertFiat: AssetFiatConverter
-    isPending: boolean
     isReadOnly: boolean
     canManageAssets: boolean
     hideZeroBalance: boolean
@@ -106,7 +110,14 @@ type UseAccountAssetListResult = {
     listRef: React.MutableRefObject<PWFlatListRef | null>
 }
 
-const EMPTY_ITEMS: GroupedHoldingItem<AccountHoldingsLiteRow>[] = []
+const EMPTY_ITEMS: AccountAssetListItem[] = []
+
+// Listed as rows, not a ListEmptyComponent: SearchableList centres an empty
+// component in the leftover height, which pushes a tall skeleton up over the chips.
+const ASSET_SKELETON_ITEMS: AccountAssetListItem[] = Array.from(
+    { length: 8 },
+    (_, i) => ({ kind: 'skeleton', id: `asset-skeleton-${i}` }),
+)
 
 // Rows carry base units and parse their metadata lazily; only group members
 // reach this.
@@ -463,13 +474,16 @@ export const useAccountAssetList = ({
 
     return {
         isChainSwitchedOff,
-        items: isChainSwitchedOff ? EMPTY_ITEMS : items,
+        items: isChainSwitchedOff
+            ? EMPTY_ITEMS
+            : isPending
+              ? ASSET_SKELETON_ITEMS
+              : items,
         chainFilterOptions,
         selectedChainId,
         setSelectedChainId,
         toggleGroupExpanded,
         convertFiat,
-        isPending,
         isReadOnly,
         canManageAssets,
         listRef,
