@@ -26,6 +26,7 @@ export const useDelegatedAccount = (
     return useMemo(
         () =>
             address ? getDelegatedAccount(address, accounts, chainId) : null,
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- chainStates re-runs the memo: getDelegatedAccount reads the chain-state store, not its arguments
         [address, accounts, chainId, chainStates],
     )
 }

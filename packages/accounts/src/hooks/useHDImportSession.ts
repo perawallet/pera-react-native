@@ -19,6 +19,7 @@ import {
 } from '@perawallet/wallet-core-kms'
 import { useHDImportSessionStore } from '../import-session'
 import { discoverAccounts } from '../account-discovery'
+import { hdPathKey } from '../hd-walk'
 import {
     accountsChainAdapters,
     deriveHdAccount,
@@ -27,7 +28,7 @@ import {
 import type { LocalAccount } from '../models/accounts'
 import { useAccountsStore, withDefaultChains } from '../store'
 import { HDImportSessionNotFoundError, NoHdSeedError } from '../errors'
-import { hdIndexOf } from '../credentials'
+import { chainAccountOf, findAddressHolder, hdIndexOf } from '../credentials'
 
 export type UseHDImportSessionResult = {
     prepareImport: (params: { mnemonicIndices?: Uint16Array }) => Promise<{
@@ -71,11 +72,29 @@ export const useHDImportSession = (
             const getPublicKey = requirePublicKeyGetter(
                 accountsChainAdapters.get(scope.chainId),
             )(pending.rootKey)
-            return discoverAccounts({
+            const discovered = await discoverAccounts({
                 scope,
                 getPublicKey,
                 walletKeyId: pending.walletKeyId,
             })
+            // Only the indexes the user can pick: one the wallet already holds
+            // is shown disabled, and must not read as declined later.
+            const { accounts } = useAccountsStore.getState()
+            useHDImportSessionStore.getState().recordDiscovered(
+                pending.walletKeyId,
+                discovered.flatMap(account => {
+                    const address = chainAccountOf(
+                        account,
+                        scope.chainId,
+                    )?.address
+                    const isHeld =
+                        address !== undefined &&
+                        findAddressHolder(accounts, scope, address) !==
+                            undefined
+                    return isHeld ? [] : (hdIndexOf(account) ?? [])
+                }),
+            )
+            return discovered
         },
         [scope],
     )
@@ -136,11 +155,25 @@ export const useHDImportSession = (
             const existing = useAccountsStore.getState().accounts
             const next = [...existing, ...committed]
             setAccounts(next)
-            // Not awaited: the other chains' probes shouldn't hold the import.
-            const { discoverChains } = useAccountsStore.getState()
-            for (const account of committed) {
-                void discoverChains(account.id)
-            }
+            const selected = new Set(
+                selectedAccounts.flatMap(account => {
+                    const index = hdIndexOf(account)
+                    return index ? [hdPathKey(index)] : []
+                }),
+            )
+            const declinedIndexes = (pending.discoveredIndexes ?? []).filter(
+                index => !selected.has(hdPathKey(index)),
+            )
+            // Not awaited: the walk across every chain shouldn't hold the import.
+            // It gets its own copy of the root key, as the reset below zeroes the
+            // session's: Algorand probes derive from it in memory rather than save
+            // a key per index, and the walk zeroes it once probing ends.
+            void useAccountsStore
+                .getState()
+                .discoverWalletAccounts(pending.walletKeyId, {
+                    declinedIndexes,
+                    rootKey: new Uint8Array(pending.rootKey),
+                })
 
             useHDImportSessionStore.getState().resetState()
 

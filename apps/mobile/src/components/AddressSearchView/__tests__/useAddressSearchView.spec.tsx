@@ -24,6 +24,7 @@ import {
     type AddressSearchItem,
 } from '../useAddressSearchView'
 import {
+    addressFamilyOf,
     useContacts,
     type ContactAddresses,
 } from '@perawallet/wallet-core-contacts'
@@ -36,6 +37,7 @@ import {
 import { useNfdSearchQuery } from '@perawallet/wallet-core-nfd'
 
 vi.mock('@perawallet/wallet-core-contacts', () => ({
+    addressFamilyOf: vi.fn(),
     useContacts: vi.fn(),
 }))
 
@@ -60,14 +62,42 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     getChainDescriptor: (chainId: string) => ({
         family: chainId === 'ethereum' ? 'evm' : 'algorand',
+        displayName: chainId === 'ethereum' ? 'Ethereum' : 'Algorand',
     }),
+}))
+
+// Echo params so a test can see what reaches the copy.
+vi.mock('@hooks/useLanguage', () => ({
+    useLanguage: () => ({
+        t: (key: string, params?: Record<string, string>) =>
+            params ? `${key} ${JSON.stringify(params)}` : key,
+    }),
+}))
+
+const mockFamiliesWithCopy = new Set(['algorand', 'evm'])
+
+vi.mock('@modules/chain-ui', () => ({
+    chainUiFor: (family: string) => ({
+        wrongNetworkAddress: mockFamiliesWithCopy.has(family)
+            ? {
+                  titleKey: `title.${family}`,
+                  bodyKey: `body.${family}`,
+                  sendBodyKey: `send_body.${family}`,
+                  sendOnNetworkBodyKey: `send_body_on_network.${family}`,
+              }
+            : undefined,
+    }),
+    chainFamilyDisplay: (family: string) => ({ label: `family.${family}` }),
 }))
 
 const ALGORAND_SCOPE: ChainScope = {
     chainId: LEGACY_CHAIN_ID,
     networkId: 'mainnet',
 }
-const ETHEREUM_SCOPE: ChainScope = { chainId: 'ethereum', networkId: 'mainnet' }
+const ETHEREUM_SCOPE: ChainScope = {
+    chainId: 'ethereum',
+    networkId: 'mainnet',
+}
 
 vi.mock('@perawallet/wallet-core-nfd', () => ({
     useNfdSearchQuery: vi.fn(() => ({ data: [], isLoading: false })),
@@ -146,6 +176,7 @@ describe('useAddressSearchView', () => {
             isLoading: false,
         } as unknown as ReturnType<typeof useNfdSearchQuery>)
         mockFindContacts.mockReturnValue([])
+        vi.mocked(addressFamilyOf).mockReturnValue(undefined)
     })
 
     it('initializes with empty value and no results', () => {
@@ -918,6 +949,162 @@ describe('useAddressSearchView', () => {
                             .algorand?.address,
                 ),
             ).toEqual(['APPLE1', 'ZEBRA1'])
+        })
+    })
+
+    describe('address from another network', () => {
+        const EVM_ADDRESS = '0xb0c164986d5d753a88455d5dbf82541573d21d48'
+        const ALGORAND_ADDRESS =
+            'PASTEDADDRESS7MED3SEKUENYGEANWZHE4XVZ7JRCHLMVKPXXE3YOBWHOEN'
+
+        it('flags an EVM address entered for an Algorand chain and offers nothing to select', async () => {
+            vi.mocked(useAllAccounts).mockReturnValue([
+                { chains: { algorand: { address: 'ABC123' } }, name: '0xb0c1' },
+            ] as unknown as ReturnType<typeof useAllAccounts>)
+            mockFindContacts.mockReturnValue([
+                { addresses: { algorand: 'CONT123' }, name: '0xb0c1' },
+            ])
+            mockReadText.mockResolvedValue(ALGORAND_ADDRESS)
+            mockIsValidAddress.mockImplementation(
+                addr => addr === ALGORAND_ADDRESS,
+            )
+            vi.mocked(addressFamilyOf).mockImplementation(addr =>
+                addr === EVM_ADDRESS
+                    ? { family: 'evm', address: EVM_ADDRESS }
+                    : undefined,
+            )
+
+            const { result } = renderHook(() =>
+                useAddressSearchView({
+                    scope: ALGORAND_SCOPE,
+                    showClipboardPaste: true,
+                }),
+            )
+            await waitFor(() => {
+                expect(
+                    itemsOfType(result.current.matchingItems, 'paste'),
+                ).toHaveLength(1)
+            })
+
+            act(() => {
+                result.current.setValue(EVM_ADDRESS)
+            })
+
+            expect(result.current.mismatchedFamily).toBe('evm')
+            expect(result.current.matchingItems).toEqual([])
+            expect(result.current.hasResults).toBe(false)
+        })
+
+        it('flags an Algorand address entered for an EVM chain', () => {
+            vi.mocked(addressFamilyOf).mockReturnValue({
+                family: 'algorand',
+                address: ALGORAND_ADDRESS,
+            })
+
+            const { result } = renderHook(() =>
+                useAddressSearchView({ scope: ETHEREUM_SCOPE }),
+            )
+
+            act(() => {
+                result.current.setValue(ALGORAND_ADDRESS)
+            })
+
+            expect(result.current.mismatchedFamily).toBe('algorand')
+            expect(result.current.hasResults).toBe(false)
+        })
+
+        it("does not flag an address in the scope's own family", () => {
+            vi.mocked(useAllAccounts).mockReturnValue([
+                {
+                    chains: { ethereum: { address: EVM_ADDRESS } },
+                    name: 'Main',
+                },
+            ] as unknown as ReturnType<typeof useAllAccounts>)
+            vi.mocked(addressFamilyOf).mockReturnValue({
+                family: 'evm',
+                address: EVM_ADDRESS,
+            })
+
+            const { result } = renderHook(() =>
+                useAddressSearchView({ scope: ETHEREUM_SCOPE }),
+            )
+
+            act(() => {
+                result.current.setValue(EVM_ADDRESS)
+            })
+
+            expect(result.current.mismatchedFamily).toBeUndefined()
+            expect(
+                itemsOfType(result.current.matchingItems, 'account'),
+            ).toHaveLength(1)
+        })
+
+        describe('message', () => {
+            const enterEvmAddress = (
+                props: Partial<Parameters<typeof useAddressSearchView>[0]>,
+            ) => {
+                vi.mocked(addressFamilyOf).mockReturnValue({
+                    family: 'evm',
+                    address: EVM_ADDRESS,
+                })
+                const { result } = renderHook(() =>
+                    useAddressSearchView({ scope: ALGORAND_SCOPE, ...props }),
+                )
+                act(() => {
+                    result.current.setValue(EVM_ADDRESS)
+                })
+                return result.current.wrongNetworkMessage
+            }
+
+            afterEach(() => {
+                mockFamiliesWithCopy.add('evm')
+            })
+
+            it("titles the address's network and keeps the body neutral when nothing is sent", () => {
+                expect(enterEvmAddress({})).toEqual({
+                    title: 'title.evm',
+                    body: 'body.algorand',
+                })
+            })
+
+            it("names the sent asset and points at the address's family", () => {
+                expect(
+                    enterEvmAddress({ sendingAssetLabel: 'ALGO' })?.body,
+                ).toBe(
+                    `send_body.algorand ${JSON.stringify({
+                        asset: 'ALGO',
+                        network: 'Algorand',
+                        family: 'family.evm',
+                    })}`,
+                )
+            })
+
+            it('names the network of an asset found on several chains', () => {
+                expect(
+                    enterEvmAddress({
+                        sendingAssetLabel: 'USDC',
+                        isSendingMultiChainAsset: true,
+                    })?.body,
+                ).toMatch(/^send_body_on_network\.algorand /)
+            })
+
+            it('has no message when a family registers no copy, so the search miss shows', () => {
+                mockFamiliesWithCopy.delete('evm')
+
+                expect(enterEvmAddress({})).toBeUndefined()
+            })
+        })
+
+        it('does not flag input that is no address at all', () => {
+            const { result } = renderHook(() =>
+                useAddressSearchView({ scope: ALGORAND_SCOPE }),
+            )
+
+            act(() => {
+                result.current.setValue('0xnot-an-address')
+            })
+
+            expect(result.current.mismatchedFamily).toBeUndefined()
         })
     })
 })

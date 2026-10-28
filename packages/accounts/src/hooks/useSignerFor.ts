@@ -26,6 +26,7 @@ export const useSignerFor = (
     const chainStates = useSelectedChainStates(chainId)
     return useMemo(
         () => (address ? getSignerFor(address, accounts, chainId) : null),
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- chainStates re-runs the memo: getSignerFor reads the chain-state store, not its arguments
         [address, accounts, chainId, chainStates],
     )
 }

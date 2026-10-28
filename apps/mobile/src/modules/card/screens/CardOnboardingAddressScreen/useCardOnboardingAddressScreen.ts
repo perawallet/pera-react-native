@@ -18,11 +18,12 @@ import {
     addressSchema,
     getCardApiError,
     isDuplicateError,
+    isOnboardingNotFoundError,
     isUserAlreadyCreatedError,
-    OnboardingNotVerifiedError,
+    OnboardingStep,
+    US_ISO,
     useCardStore,
-    useLinkConsentMutation,
-    useOnboardingKycGate,
+    useOnboardingDetailsQuery,
     useRegistrationSettingsQuery,
     useSubmitAddressMutation,
     useSubmitConsentMutation,
@@ -37,7 +38,7 @@ import { trackEvent, CardEvent } from '@analytics'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { CardCountryPickerContent } from '@modules/card/components/CardCountryPicker'
 import { CardUsStatePickerContent } from '@modules/card/components/CardUsStatePicker'
-import { useCardErrorToast } from '@modules/card/hooks'
+import { useCardErrorToast, useCardOnboardingRouter } from '@modules/card/hooks'
 import { useWebView, withLanguageParam } from '@modules/webview'
 import { routeCapabilities } from '@routes/capabilities'
 import { useAppNavigation } from '@hooks/useAppNavigation'
@@ -46,9 +47,6 @@ import { useLanguage } from '@hooks/useLanguage'
 
 import type { Optional } from '@perawallet/wallet-core-shared'
 import { useCardScope } from '../../hooks/useCardScope'
-
-/** ISO 3166-1 alpha-2 of the United States; the only jurisdiction needing a state. */
-const US_ISO = 'US'
 
 export type UseCardOnboardingAddressScreenResult = {
     control: Control<AddressFormValues>
@@ -82,13 +80,6 @@ export type UseCardOnboardingAddressScreenResult = {
     handleTogglePlatformTerms: () => void
     handleOpenCardTerms: () => void
     handleOpenPlatformTerms: () => void
-    /**
-     * The record's identity check isn't far enough along for Baanx to accept
-     * this step, so the form is replaced by the "finish verifying" view.
-     */
-    isKycRequired: boolean
-    /** Sends the user back to the identity-verification step. */
-    handleVerifyIdentity: () => void
     handleConfirm: () => void
 }
 
@@ -102,29 +93,10 @@ export const useCardOnboardingAddressScreen =
             titleKey: i18nKey('peraCard.address.error_title'),
             bodyKey: i18nKey('peraCard.address.error_body'),
         })
-        // Baanx's own wording for this is "User is not verified", which reads
-        // as an account problem rather than an unfinished step, so this toast
-        // always uses our copy.
-        const showKycError = useCardErrorToast({
-            titleKey: i18nKey('peraCard.kyc_required.title'),
-            bodyKey: i18nKey('peraCard.kyc_required.body'),
-            shouldUseBackendMessage: false,
-        })
+        const { goToNextStep } = useCardOnboardingRouter()
         const { request } = useBottomSheet()
         const { pushWebView } = useWebView()
         const onboardingId = useCardStore(state => state.onboardingId)
-        // Baanx refuses this step on an unverified record just like the
-        // personal-details step, so it shares the same gate.
-        const { isKycRequired, markServerRefused } = useOnboardingKycGate(
-            scope,
-            {
-                onboardingId,
-            },
-        )
-
-        const handleVerifyIdentity = useCallback(() => {
-            navigation.navigate('CardOnboardingVerification')
-        }, [navigation])
 
         const residenceCountryIso = useCardStore(state => state.countryIso)
         const setCountryIso = useCardStore(state => state.setCountryIso)
@@ -145,7 +117,11 @@ export const useCardOnboardingAddressScreen =
         })
         const submitAddress = useSubmitAddressMutation(scope)
         const submitConsent = useSubmitConsentMutation(scope)
-        const linkConsent = useLinkConsentMutation(scope)
+        // Read only on a duplicate, to see where an earlier save left the record.
+        const { refetch: refetchRecord } = useOnboardingDetailsQuery(scope, {
+            onboardingId,
+            enabled: false,
+        })
         const { data: settings } = useRegistrationSettingsQuery(scope)
 
         const [selectedCountry, setSelectedCountry] =
@@ -330,12 +306,14 @@ export const useCardOnboardingAddressScreen =
                     ? { usState: values.usState }
                     : {}),
             }
+            const nextLocalStep = address.isSameMailingAddress
+                ? OnboardingStep.Verification
+                : OnboardingStep.MailingAddress
             try {
-                // Baanx's two-step consent: (1) create the consent set (T&Cs +
-                // marketing) before the address, (2) link it to the user once
-                // the address step issues the userId. Both T&Cs are guaranteed
-                // accepted here — the Continue button gates on them.
-                const { consentSetId } = await submitConsent.mutateAsync({
+                // Baanx's two-step consent: create the set (T&Cs + marketing)
+                // before the address; it is linked to the user once the account
+                // exists after KYC. Continue gates on both T&C boxes.
+                await submitConsent.mutateAsync({
                     onboardingId,
                     policyType: isUsResident ? 'US' : 'global',
                     // Both T&C boxes gate Continue, so they're accepted here.
@@ -346,57 +324,48 @@ export const useCardOnboardingAddressScreen =
                     allowMarketing: allowMarketing ?? false,
                     allowSms: allowSms ?? false,
                 })
-                const { userId, accessToken } =
-                    await submitAddress.mutateAsync(address)
-                // Link best-effort: registration is already finalized (the
-                // address mutation committed the session + marked the step
-                // Completed), so a link hiccup must not strand a registered user
-                // here. Falls back to the id stashed on the first create when a
-                // duplicate retry returned none; failures are logged, not thrown.
-                const consentSetIdToLink =
-                    consentSetId ?? useCardStore.getState().consentSetId
-                if (consentSetIdToLink !== null && userId !== null) {
-                    await linkConsent
-                        .mutateAsync({
-                            consentSetId: consentSetIdToLink,
-                            userId,
-                        })
-                        .catch(() => undefined)
-                }
-                // No token means the mailing address is still owed and Baanx
-                // issues the token on that step. Otherwise registration is done
-                // and the setup checklist takes over at Connect Funds.
-                navigation.navigate(
-                    accessToken === null
-                        ? 'CardOnboardingMailingAddress'
-                        : 'CardOnboardingStatus',
-                )
+                await submitAddress.mutateAsync(address)
+                // The address response names no phase, so the residence and the
+                // mailing toggle decide; a token Baanx sent has already
+                // finished registration, which the router sees as a session.
+                goToNextStep({ localStep: nextLocalStep })
             } catch (error) {
-                // Checked before getCardApiError: the typed error carries no
-                // body, so it would otherwise fall through to the generic
-                // toast and the signal would be lost.
-                if (error instanceof OnboardingNotVerifiedError) {
-                    markServerRefused()
-                    await showKycError(error)
-                    return
-                }
-                // A duplicate means Baanx already completed this registration
-                // on an earlier attempt whose response was lost — so the
-                // session token that only the address response carries was
-                // never stored on this device. Signing in is the only way to
-                // obtain one; continuing to the checklist would strand the
-                // user with locked steps and 401s. Otherwise prefer Baanx's
-                // own message so the real reason shows.
+                // The address step no longer creates the account, so a
+                // duplicate is usually an earlier save whose response was lost,
+                // and the record's phase says what's next. Only a record that's
+                // gone means the registration finished and needs a sign-in.
+                // Otherwise prefer Baanx's own message.
                 const apiError = await getCardApiError(error)
                 if (
                     isDuplicateError(apiError) ||
                     isUserAlreadyCreatedError(apiError)
                 ) {
+                    const { data: record, error: recordError } =
+                        await refetchRecord()
+                    if (record) {
+                        goToNextStep({
+                            phase: record.phase,
+                            localStep: nextLocalStep,
+                        })
+                        return
+                    }
+                    const isRecordGone =
+                        recordError !== null &&
+                        isOnboardingNotFoundError(
+                            await getCardApiError(recordError),
+                        )
+                    if (!isRecordGone) {
+                        await showError(error, apiError)
+                        return
+                    }
                     infoToast(
                         t('peraCard.address.already_registered_title'),
                         t('peraCard.address.already_registered_body'),
                     )
-                    navigation.navigate('CardSignIn')
+                    navigation.navigate('CardSignIn', {
+                        email: useCardStore.getState().email ?? undefined,
+                        finishesRegistration: true,
+                    })
                     return
                 }
                 await showError(error, apiError)
@@ -418,10 +387,7 @@ export const useCardOnboardingAddressScreen =
                 // Re-collected SMS consent is required by Baanx, so it gates
                 // Continue exactly like on the Set-Password screen.
                 (!showsConsentOptIns || allowSms === true),
-            isSubmitting:
-                submitAddress.isPending ||
-                submitConsent.isPending ||
-                linkConsent.isPending,
+            isSubmitting: submitAddress.isPending || submitConsent.isPending,
             selectedCountry,
             isCountryLocked,
             isUsResident,
@@ -441,8 +407,6 @@ export const useCardOnboardingAddressScreen =
             handleTogglePlatformTerms,
             handleOpenCardTerms,
             handleOpenPlatformTerms,
-            isKycRequired,
-            handleVerifyIdentity,
             handleConfirm,
         }
     }

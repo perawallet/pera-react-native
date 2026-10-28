@@ -87,14 +87,17 @@
       }
     },
     {
-      "files": ["src/**/*.tsx"],
+      "files": ["src/**/*.{ts,tsx}"],
       "excludeFiles": [
         "src/modules/settings/screens/developer/**",
         "src/**/__tests__/**",
-        "src/**/*.{spec,test}.tsx"
+        "src/**/__mocks__/**",
+        "src/**/__integration__/**",
+        "src/**/*.{spec,test}.{ts,tsx}",
+        "src/**/*.d.ts"
       ],
       "rules": {
-        "pera/no-hardcoded-ui-strings": "warn"
+        "pera/no-hardcoded-ui-strings": "error"
       }
     },
     {

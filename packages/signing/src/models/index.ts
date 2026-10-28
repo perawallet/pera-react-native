@@ -52,6 +52,14 @@ export type SignRequestSource = {
     description?: string
     url?: string
     icons?: string[]
+    /**
+     * The transport's own check of where the dApp runs (WalletConnect Verify),
+     * taken per request; every other field is what the dApp claims.
+     */
+    verification?: {
+        status: 'valid' | 'mismatch' | 'unknown' | 'scam'
+        verifiedOrigin?: string
+    }
 }
 
 /**

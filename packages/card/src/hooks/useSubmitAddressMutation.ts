@@ -10,19 +10,13 @@
  limitations under the License
  */
 
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation } from '@tanstack/react-query'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { logger } from '@perawallet/wallet-core-shared'
 import { submitAddress, type SubmitAddressResult } from '../api/onboarding'
-import {
-    getCardApiError,
-    isNotVerifiedError,
-    OnboardingNotVerifiedError,
-} from '../api/errors'
-import { OnboardingStep, type AddressInput } from '../models'
-import { useCardStore } from '../store'
-import { completeCardRegistration } from './completeCardRegistration'
-import { cardQueryKeys } from './querykeys'
+import { getCardApiError } from '../api/errors'
+import type { AddressInput } from '../models'
+import { finalizeCardRegistration } from './finalizeCardRegistration'
 import { toCardMutationResult, type CardMutationResult } from './types'
 
 export type UseSubmitAddressMutationResult = CardMutationResult<
@@ -33,48 +27,17 @@ export type UseSubmitAddressMutationResult = CardMutationResult<
 export const useSubmitAddressMutation = (
     scope: ChainScope,
 ): UseSubmitAddressMutationResult => {
-    const queryClient = useQueryClient()
-
     const mutation = useMutation<SubmitAddressResult, Error, AddressInput>({
-        mutationFn: async address => {
-            try {
-                return await submitAddress({ address, scope })
-            } catch (error) {
-                // Typed so the screen can show the "finish verifying" state
-                // instead of Baanx's raw refusal string.
-                if (isNotVerifiedError(await getCardApiError(error))) {
-                    throw new OnboardingNotVerifiedError()
-                }
-                throw error
-            }
+        mutationFn: address => submitAddress({ address, scope }),
+        // Baanx normally answers with no token and the session comes from the
+        // login after KYC; the spec still documents one here, so take it if sent.
+        onSuccess: async ({ accessToken, userId }) => {
+            if (accessToken === null) return
+            await finalizeCardRegistration({ accessToken, userId, scope })
         },
-        onSuccess: async result => {
-            // A US resident shipping the card elsewhere still owes the mailing
-            // address; Baanx withholds the token until that step, which then
-            // completes registration instead of this one.
-            if (result.accessToken === null) {
-                useCardStore
-                    .getState()
-                    .setOnboardingStep(OnboardingStep.MailingAddress)
-                return
-            }
-            await completeCardRegistration({ result, scope })
-        },
-        // Surface Baanx's real (often nested-stringified) error for diagnosis —
-        // the screen only shows a generic toast, so this is where the actual
-        // status/message lands.
-        onError: async (error, variables) => {
-            // The refusal proves our cached KYC state is optimistic, so
-            // refetch the record the screen gates on.
-            if (error instanceof OnboardingNotVerifiedError) {
-                void queryClient.invalidateQueries({
-                    queryKey: cardQueryKeys.onboardingDetails(
-                        scope,
-                        variables.onboardingId,
-                    ),
-                })
-                return
-            }
+        // Surface Baanx's real (often nested-stringified) error for diagnosis:
+        // the screen only shows a generic toast.
+        onError: async error => {
             const apiError = await getCardApiError(error)
             logger.warn('Card address submission failed', { error: apiError })
         },

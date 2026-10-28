@@ -24,15 +24,16 @@ import type {
 import { upsertAssets } from '@perawallet/wallet-core-assets'
 import {
     isPeraNetworkError,
+    settleBatch,
     type Optional,
 } from '@perawallet/wallet-core-shared'
 import type { EvmChainId } from '@perawallet/wallet-core-chain-contract'
 import type { EvmChain } from '../chains/types'
+import { ASSETS_SERVICE, NFTS_SERVICE } from '../assets/api/endpoints'
 import {
-    ASSETS_SERVICE,
-    fetchWhitelist,
-    NFTS_SERVICE,
-} from '../assets/api/endpoints'
+    cachedWhitelist,
+    type ListedTokens,
+} from '../assets/api/whitelist-cache'
 import { isEvmNftAssetId } from '../blockchain/utils/caip19'
 import { createEvmClient } from '../blockchain/utils/createEvmClient'
 import { readBalances, type HolderBalances } from '../blockchain/utils/erc20'
@@ -53,12 +54,6 @@ export type EthereumAccountStateOps = Required<
     >
 > & { readonly chainId: EvmChainId }
 
-// The backend caches the whitelist for the same window, so a fresher read
-// would see the same list.
-const WHITELIST_TTL_MS = 60_000
-
-type WhitelistEntry = { tokenIds: Promise<string[]>; fetchedAt?: number }
-
 type ListedTokenIds = (scope: ChainScope) => Promise<string[]>
 
 const readFootprint = async (
@@ -75,45 +70,13 @@ const readFootprint = async (
     return balance > 0n || nonce > 0
 }
 
-const fetchListedTokenIds =
-    (chain: EvmChain): ListedTokenIds =>
+const listedTokenIds =
+    (listedTokens: ListedTokens): ListedTokenIds =>
     async scope => {
-        const rows = await fetchWhitelist(scope, chain)
+        const rows = await listedTokens(scope)
         // The native row is skipped: eth_getBalance reads it.
         return rows.filter(row => row.type === 'erc20').map(row => row.assetId)
     }
-
-/** Concurrent reads of a scope share one request; a success is reused for the TTL, a failure is not kept. */
-const cachedListedTokenIds = (
-    now: () => number,
-    chain: EvmChain,
-): ListedTokenIds => {
-    const entries = new Map<string, WhitelistEntry>()
-    return scope => {
-        const key = `${scope.chainId}/${scope.networkId}`
-        const cached = entries.get(key)
-        if (
-            cached &&
-            (cached.fetchedAt === undefined ||
-                now() - cached.fetchedAt < WHITELIST_TTL_MS)
-        ) {
-            return cached.tokenIds
-        }
-        const entry: WhitelistEntry = {
-            tokenIds: fetchListedTokenIds(chain)(scope),
-        }
-        entries.set(key, entry)
-        entry.tokenIds.then(
-            () => {
-                entry.fetchedAt = now()
-            },
-            () => {
-                if (entries.get(key) === entry) entries.delete(key)
-            },
-        )
-        return entry.tokenIds
-    }
-}
 
 // Reads arriving within this window share one block and one Multicall3 pass.
 // The syncer awaits a database read before each account, so its reads for one
@@ -363,42 +326,42 @@ const fetchChangeSignal = (
 }
 
 /**
- * `now` is the clock the whitelist cache ages by; `readWindowMs` how long a
- * read waits for others on its scope to share its block and balance pass.
+ * `listedTokens` is the chain's token list, shared with its assets adapter;
+ * without one the ops cache their own, aged by `now`. `readWindowMs` is how
+ * long a read waits for others on its scope to share its block and balance
+ * pass.
  */
 export const createEthereumAccountStateOps = (
     ctx: ChainContext,
     chain: EvmChain,
     {
         now = Date.now,
+        listedTokens = cachedWhitelist(chain, now),
         readWindowMs = ACCOUNT_READ_WINDOW_MS,
-    }: { now?: () => number; readWindowMs?: number } = {},
+    }: {
+        now?: () => number
+        listedTokens?: ListedTokens
+        readWindowMs?: number
+    } = {},
 ): EthereumAccountStateOps => ({
     chainId: chain.row.id,
     fetchAccountState: coalescedAccountReads(
         ctx,
         chain,
-        cachedListedTokenIds(now, chain),
+        listedTokenIds(listedTokens),
         readWindowMs,
     ),
     accountExists: (address, scope) =>
         readFootprint(ctx, chain, address, scope),
-    checkActivity: async (addresses, scope) =>
-        new Map(
-            await Promise.all(
-                addresses.map(
-                    async address =>
-                        [
-                            address,
-                            await readFootprint(
-                                ctx,
-                                chain,
-                                address,
-                                scope,
-                            ).catch(() => false),
-                        ] as const,
-                ),
-            ),
-        ),
+    checkActivity: async (addresses, scope) => {
+        // A failed read beside ones that answered reads as inactive, so one
+        // flaky call doesn't discard the batch's other answers.
+        const active = await settleBatch(
+            addresses,
+            address => readFootprint(ctx, chain, address, scope),
+            false,
+        )
+        return new Map(addresses.map((address, i) => [address, active[i]]))
+    },
     fetchChangeSignal: fetchChangeSignal(ctx, chain),
 })

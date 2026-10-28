@@ -86,16 +86,14 @@ export const useAccountOverviewHeader = (
     const availability = useChainAvailability(scope.chainId)
     const sources = useAccountHoldingSources(account)
     const check = useChainCapabilityCheck()
+    // The chart plots `scope` alone, so an account spanning another chain
+    // would show a chart that contradicts its total.
     const hasBalanceHistory =
         sources.length > 0 &&
-        sources.every(source =>
-            check({
-                chain: {
-                    chainId: source.scope.chainId,
-                    capability: 'balanceHistory',
-                },
-            }),
-        )
+        sources.every(source => source.scope.chainId === scope.chainId) &&
+        check({
+            chain: { chainId: scope.chainId, capability: 'balanceHistory' },
+        })
     // Test-network holdings never count as money (once a second chain is
     // registered), so they stay out of the total.
     const countedSources = useMemo(

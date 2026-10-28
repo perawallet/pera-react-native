@@ -201,7 +201,6 @@ describe('Flow: warn before sending to a look-alike on Ethereum', () => {
     })
 
     afterEach(() => {
-        server.resetHandlers()
         useAccountsStore.getState().setAccounts([])
         useContactsStore.setState({ contacts: [] })
         useSendFundsStore.getState().reset()

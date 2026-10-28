@@ -10,20 +10,12 @@
  limitations under the License
  */
 
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import type { Nullable } from '@perawallet/wallet-core-shared'
-
-export interface AssetGroupMember {
-    scope: ChainScope
-    /** The chain's own asset id, as holdings store it. */
-    assetId: string
-}
-
-/** Per-chain assets the backend curates as one asset, such as one stablecoin on two chains. */
+/**
+ * The backend's curated cross-chain asset group an asset belongs to, such as
+ * one stablecoin on two chains. Members are found by the group on each asset.
+ */
 export interface AssetGroup {
     id: string
     name: string
     symbol: string
-    logoUrl: Nullable<string>
-    members: AssetGroupMember[]
 }

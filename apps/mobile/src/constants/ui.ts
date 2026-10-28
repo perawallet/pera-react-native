@@ -72,6 +72,11 @@ export const TAP_TO_CONFIRM_ARMED_TIMEOUT = 1000
 // Web's floor between the arming and confirming press, so a page-baited
 // double-click cannot sign; native keeps a quick double-tap working.
 export const TAP_TO_CONFIRM_WEB_MIN_CONFIRM_DELAY = 400
+// Web counts from the last tap and must outlast the confirm delay with room to spare.
+export const TAP_TO_CONFIRM_WEB_ARMED_TIMEOUT = 3000
+// How long an extension approval window shows its success state before it
+// closes itself; the dApp already has its answer when this starts.
+export const APPROVAL_SUCCESS_CLOSE_DELAY_MS = 1000
 
 // How long the "back online" confirmation stays before auto-dismissing.
 export const OFFLINE_RECONNECT_DISPLAY_MS = 3000

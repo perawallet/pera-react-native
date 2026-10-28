@@ -22,6 +22,10 @@ import {
     isoDateToDob,
     passwordSetSchema,
     personalDetailsSchema,
+    additionalDetailsSchema,
+    createAdditionalDetailsSchema,
+    ESTIMATED_ANNUAL_INCOME_BANDS,
+    isEstimatedAnnualIncome,
 } from '../onboarding'
 
 const parse = (password: string, confirmPassword = password) =>
@@ -83,10 +87,15 @@ describe('PASSWORD_RULES', () => {
 describe('personalDetailsSchema', () => {
     const valid = {
         firstName: 'John',
+        middleName: '',
         lastName: 'Morgan',
         dateOfBirth: '27/02/1986',
         countryOfNationality: 'GB',
         countryOfBirth: 'GB',
+        additionalNationalities: [],
+        portugalInvestmentScheme: false,
+        employmentStatus: 'employed',
+        employmentSector: 'informationTechnology',
         ssn: '',
     }
 
@@ -95,7 +104,11 @@ describe('personalDetailsSchema', () => {
     })
 
     it('requires a masked SSN for US residents only', () => {
-        const usSchema = createPersonalDetailsSchema({ isUsResident: true })
+        const usSchema = createPersonalDetailsSchema({
+            isUsResident: true,
+            hasEmploymentStatuses: true,
+            hasEmploymentSectors: true,
+        })
         expect(usSchema.safeParse(valid).success).toBe(false)
         expect(
             usSchema.safeParse({ ...valid, ssn: '123-45-678' }).success,
@@ -104,10 +117,68 @@ describe('personalDetailsSchema', () => {
             usSchema.safeParse({ ...valid, ssn: '123-45-6789' }).success,
         ).toBe(true)
         expect(
-            createPersonalDetailsSchema({ isUsResident: false }).safeParse(
-                valid,
-            ).success,
+            createPersonalDetailsSchema({
+                isUsResident: false,
+                hasEmploymentStatuses: true,
+                hasEmploymentSectors: true,
+            }).safeParse(valid).success,
         ).toBe(true)
+    })
+
+    it('accepts a middle name with accents, apostrophes and hyphens, and two more nationalities', () => {
+        expect(
+            personalDetailsSchema.safeParse({
+                ...valid,
+                middleName: "Zoë O’Neil-d'Arc",
+                additionalNationalities: ['ES', 'PT'],
+            }).success,
+        ).toBe(true)
+    })
+
+    it('reports a repeated nationality on the additional nationalities', () => {
+        const result = personalDetailsSchema.safeParse({
+            ...valid,
+            additionalNationalities: ['GB'],
+        })
+
+        expect(result.error?.issues[0]).toMatchObject({
+            path: ['additionalNationalities'],
+            message: 'nationality-duplicate',
+        })
+    })
+
+    it('does not require employment where the environment lists no options', () => {
+        const schema = createPersonalDetailsSchema({
+            isUsResident: false,
+            hasEmploymentStatuses: false,
+            hasEmploymentSectors: false,
+        })
+
+        expect(
+            schema.safeParse({
+                ...valid,
+                employmentStatus: '',
+                employmentSector: '',
+            }).success,
+        ).toBe(true)
+    })
+
+    it('requires each employment field only where its list has options', () => {
+        const schema = createPersonalDetailsSchema({
+            isUsResident: false,
+            hasEmploymentStatuses: true,
+            hasEmploymentSectors: false,
+        })
+
+        const result = schema.safeParse({
+            ...valid,
+            employmentStatus: '',
+            employmentSector: '',
+        })
+
+        expect(result.error?.issues.map(issue => issue.path[0])).toEqual([
+            'employmentStatus',
+        ])
     })
 
     it('accepts a real leap-day date', () => {
@@ -137,6 +208,22 @@ describe('personalDetailsSchema', () => {
         ['future date', { dateOfBirth: '01/01/2999' }],
         ['pre-1900 year (typo guard)', { dateOfBirth: '01/01/0186' }],
         ['short nationality', { countryOfNationality: 'G' }],
+        ['middle name over 50 characters', { middleName: 'A'.repeat(51) }],
+        ['digits in the middle name', { middleName: 'J4mes' }],
+        ['no employment status', { employmentStatus: '' }],
+        ['no employment sector', { employmentSector: '' }],
+        [
+            'three additional nationalities',
+            { additionalNationalities: ['ES', 'FR', 'DE'] },
+        ],
+        [
+            'an additional nationality equal to the main one',
+            { additionalNationalities: ['GB'] },
+        ],
+        [
+            'the same additional nationality twice',
+            { additionalNationalities: ['ES', 'ES'] },
+        ],
     ])('rejects a record with %s', (_label, override) => {
         expect(
             personalDetailsSchema.safeParse({ ...valid, ...override }).success,
@@ -258,5 +345,143 @@ describe('addressSchema', () => {
                 usState: 'CA',
             }).success,
         ).toBe(true)
+    })
+})
+
+describe('EstimatedAnnualIncome', () => {
+    it('lists the four bands in display order', () => {
+        expect(ESTIMATED_ANNUAL_INCOME_BANDS).toEqual([
+            'less_than_20k',
+            'between_20k_and_50k',
+            'between_50k_and_100k',
+            'more_than_100k',
+        ])
+    })
+
+    it.each([
+        ['between_20k_and_50k', true],
+        ['30000', false],
+        [null, false],
+    ])('reads %s as a band: %s', (value, expected) => {
+        expect(isEstimatedAnnualIncome(value)).toBe(expected)
+    })
+})
+
+describe('additionalDetailsSchema', () => {
+    const valid = {
+        tin: '123456789',
+        tinCountry: 'PT',
+        occupation: 'it_or_technology_professional',
+        occupationOther: '',
+        sourceOfWealth: 'employment_salaried',
+        sourceOfWealthOther: '',
+        businessSector: 'information_and_communication',
+        estimatedAnnualIncome: 'between_20k_and_50k',
+        incomeCountries: ['PT'],
+    }
+
+    it('accepts a complete record', () => {
+        expect(additionalDetailsSchema.safeParse(valid).success).toBe(true)
+    })
+
+    it('accepts the "other" occupation and source when the free text is given', () => {
+        expect(
+            additionalDetailsSchema.safeParse({
+                ...valid,
+                occupation: 'other_specify_occupation',
+                occupationOther: 'Beekeeper',
+                sourceOfWealth: 'other_specify_source_of_wealth',
+                sourceOfWealthOther: 'Inheritance',
+                incomeCountries: ['PT', 'ES', 'FR'],
+            }).success,
+        ).toBe(true)
+    })
+
+    it.each([
+        ['an empty TIN', { tin: ' ' }, 'tin'],
+        ['a TIN over 20 characters', { tin: '1'.repeat(21) }, 'tin'],
+        ['a US TIN country', { tinCountry: 'US' }, 'tinCountry'],
+        [
+            'the other occupation without its text',
+            { occupation: 'other_specify_occupation' },
+            'occupationOther',
+        ],
+        [
+            'the other source of wealth without its text',
+            { sourceOfWealth: 'other_specify_source_of_wealth' },
+            'sourceOfWealthOther',
+        ],
+        [
+            'free text over 100 characters',
+            { occupationOther: 'a'.repeat(101) },
+            'occupationOther',
+        ],
+        ['no business sector', { businessSector: '' }, 'businessSector'],
+        [
+            'no income band',
+            { estimatedAnnualIncome: '' },
+            'estimatedAnnualIncome',
+        ],
+        [
+            'an income that is not one of the bands',
+            { estimatedAnnualIncome: '30000' },
+            'estimatedAnnualIncome',
+        ],
+        ['no income country', { incomeCountries: [] }, 'incomeCountries'],
+        [
+            'four income countries',
+            { incomeCountries: ['PT', 'ES', 'FR', 'DE'] },
+            'incomeCountries',
+        ],
+        [
+            'a repeated income country',
+            { incomeCountries: ['PT', 'PT'] },
+            'incomeCountries',
+        ],
+    ])('rejects %s', (_label, override, path) => {
+        const result = additionalDetailsSchema.safeParse({
+            ...valid,
+            ...override,
+        })
+
+        expect(result.success).toBe(false)
+        expect(result.error?.issues[0].path[0]).toBe(path)
+    })
+
+    it('does not require an option where the environment lists none', () => {
+        const schema = createAdditionalDetailsSchema({
+            hasOccupations: false,
+            hasSourcesOfWealth: false,
+            hasBusinessSectors: false,
+        })
+
+        expect(
+            schema.safeParse({
+                ...valid,
+                occupation: '',
+                sourceOfWealth: '',
+                businessSector: '',
+            }).success,
+        ).toBe(true)
+    })
+
+    it('requires each option only where its list has options', () => {
+        const schema = createAdditionalDetailsSchema({
+            hasOccupations: true,
+            hasSourcesOfWealth: false,
+            hasBusinessSectors: true,
+        })
+
+        const result = schema.safeParse({
+            ...valid,
+            occupation: '',
+            sourceOfWealth: '',
+            businessSector: '',
+        })
+
+        expect(result.error?.issues.map(issue => issue.path[0])).toEqual([
+            'occupation',
+            'businessSector',
+        ])
     })
 })

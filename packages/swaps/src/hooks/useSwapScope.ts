@@ -42,8 +42,6 @@ export const useSwapChainResolver = (): ((
 export const useSwapSigningAccounts = (): WalletAccount[] => {
     const accounts = useAllAccounts()
     const swapChainOf = useSwapChainResolver()
-    // Authority resolution reads the chain-state slices, so a slice write must
-    // recompute the list.
     const chainStates = useAccountChainStateStore(state => state.states)
     return useMemo(
         () =>
@@ -54,6 +52,7 @@ export const useSwapSigningAccounts = (): WalletAccount[] => {
                     canSignWith(account, accounts, chainId)
                 )
             }),
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- chainStates re-runs the memo: canSignWith reads the chain-state store, not its arguments
         [accounts, swapChainOf, chainStates],
     )
 }

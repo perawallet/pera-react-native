@@ -73,6 +73,10 @@ export const registerAlgorandAccountsAdapter = (): void => {
     if (!accountsChainAdapters.has('algorand')) {
         accountsChainAdapters.register({
             chainId: 'algorand',
+            hdKeyPairId: (
+                seedKeyId: string,
+                { account, keyIndex }: { account: number; keyIndex: number },
+            ) => `${seedKeyId}-algorand-${account}-${keyIndex}`,
         } as unknown as AccountsChainAdapter)
     }
 }

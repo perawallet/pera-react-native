@@ -25,6 +25,7 @@ import type { NetworkId } from '@perawallet/wallet-core-chain-contract'
 import type { Connection } from '@perawallet/wallet-extension-connections'
 import { JsonRpcErrorCode, type JsonRpcResponse } from '../codec'
 import { createDappConnectionHandler } from '../handler'
+import type { SiteWarningLevel } from '../models'
 import { DAPP_KIND, DAPP_METHODS, DAPP_NOTIFICATIONS } from '../protocol'
 import { FakeDappTransport } from './fake-transport'
 
@@ -91,6 +92,7 @@ const setup = (
         network?: NetworkId
         customGenesisHash?: string
         adapter?: DappRequestChainAdapter | null
+        siteWarningOf?: (origin: string) => Promise<SiteWarningLevel>
     } = {},
 ) => {
     if (overrides.adapter !== null) {
@@ -110,6 +112,7 @@ const setup = (
             { address: ADDR_A, name: 'Main' },
             { address: ADDR_B, name: 'Savings' },
         ],
+        siteWarningOf: overrides.siteWarningOf,
         now: () => now,
         proposalTtlMs: 1_000,
         requestTtlMs: 1_000,
@@ -260,6 +263,139 @@ describe('DappConnectionHandler', () => {
             })
             expect(proposals).toHaveLength(0)
             expect((await store.get(ORIGIN))?.lastActiveAt).toBe(1_000_000)
+        })
+
+        it('sends a flagged site that was already connected back through an approval', async () => {
+            const siteWarningOf = vi.fn(
+                async (): Promise<SiteWarningLevel> => 'blocked',
+            )
+            const { transport, registry, proposals } = setup([connected()], {
+                siteWarningOf,
+            })
+            await registry.initialize()
+
+            void transport.send(ORIGIN, 'connect')
+            await flush()
+
+            expect(siteWarningOf).toHaveBeenCalledWith(ORIGIN)
+            expect(proposals).toHaveLength(1)
+        })
+
+        it('refuses a flagged site a gesture-free reconnect', async () => {
+            const { transport, registry, proposals } = setup([connected()], {
+                siteWarningOf: async () => 'blocked',
+            })
+            await registry.initialize()
+
+            const response = await transport.send(
+                ORIGIN,
+                'connect',
+                undefined,
+                { hasUserActivation: false },
+            )
+
+            expect(errorOf(response)?.code).toBe(JsonRpcErrorCode.Unauthorized)
+            expect(proposals).toHaveLength(0)
+        })
+
+        it('treats a failed site check as flagged', async () => {
+            const { transport, registry, proposals } = setup([connected()], {
+                siteWarningOf: async () => {
+                    throw new Error('lists unavailable')
+                },
+            })
+            await registry.initialize()
+
+            void transport.send(ORIGIN, 'connect')
+            await flush()
+
+            expect(proposals).toHaveLength(1)
+        })
+
+        it('removes the grant of a flagged site the user turns away', async () => {
+            const { transport, registry, proposals, store } = setup(
+                [connected()],
+                { siteWarningOf: async () => 'blocked' },
+            )
+            await registry.initialize()
+            void transport.send(ORIGIN, 'connect')
+            await flush()
+
+            await proposals[0].reject()
+            await flush()
+
+            expect(await store.get(ORIGIN)).toBeUndefined()
+        })
+
+        it('gives a flagged connected site no addresses', async () => {
+            const { transport, registry } = setup([connected()], {
+                siteWarningOf: async () => 'blocked',
+            })
+            await registry.initialize()
+
+            const response = await transport.send(ORIGIN, 'getAddresses')
+
+            expect(errorOf(response)?.code).toBe(JsonRpcErrorCode.Unauthorized)
+        })
+
+        it('keeps giving addresses to a look-alike the user approved', async () => {
+            const { transport, registry, proposals } = setup([], {
+                siteWarningOf: async () => 'look-alike',
+            })
+            await registry.initialize()
+            const pending = transport.send(ORIGIN, 'connect')
+            await flush()
+            await proposals[0].approve([ADDR_A])
+            await pending
+
+            const addresses = await transport.send(ORIGIN, 'getAddresses')
+            const reconnect = await transport.send(
+                ORIGIN,
+                'connect',
+                undefined,
+                { hasUserActivation: false },
+            )
+
+            expect(resultOf(addresses)).toEqual([
+                { address: ADDR_A, name: 'Main' },
+            ])
+            expect(resultOf(reconnect)).toMatchObject({ network: 'mainnet' })
+            expect(proposals).toHaveLength(1)
+        })
+
+        it('hides the addresses of an approved look-alike once it is listed as a scam', async () => {
+            let warning: SiteWarningLevel = 'look-alike'
+            const { transport, registry, proposals } = setup([], {
+                siteWarningOf: async () => warning,
+            })
+            await registry.initialize()
+            const pending = transport.send(ORIGIN, 'connect')
+            await flush()
+            await proposals[0].approve([ADDR_A])
+            await pending
+
+            warning = 'blocked'
+
+            expect(
+                errorOf(await transport.send(ORIGIN, 'getAddresses'))?.code,
+            ).toBe(JsonRpcErrorCode.Unauthorized)
+        })
+
+        it('still reconnects an unflagged site silently', async () => {
+            const { transport, registry, proposals } = setup([connected()], {
+                siteWarningOf: async () => 'clear',
+            })
+            await registry.initialize()
+
+            const response = await transport.send(
+                ORIGIN,
+                'connect',
+                undefined,
+                { hasUserActivation: false },
+            )
+
+            expect(resultOf(response)).toMatchObject({ network: 'mainnet' })
+            expect(proposals).toHaveLength(0)
         })
 
         it("hands back the chain's empty signatures for exactly the accounts it returns, on approve and on reconnect", async () => {

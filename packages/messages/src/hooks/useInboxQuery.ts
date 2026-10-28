@@ -155,11 +155,12 @@ export const useInboxQuery = (scope: ChainScope): UseInboxQueryResult => {
     // doomed Pera request on a non-backed network. Referentially stable so a
     // consumer effect with `refetch` in its deps can't turn into a refetch
     // loop (the notifications focus-refetch did exactly that).
+    const { refetch: refetchQuery } = query
     const refetch = useCallback(async () => {
         if (isUnavailableOnNetwork) return []
-        const { data } = await query.refetch()
+        const { data } = await refetchQuery()
         return data ?? []
-    }, [isUnavailableOnNetwork, query.refetch])
+    }, [isUnavailableOnNetwork, refetchQuery])
 
     return {
         data: query.data ?? [],

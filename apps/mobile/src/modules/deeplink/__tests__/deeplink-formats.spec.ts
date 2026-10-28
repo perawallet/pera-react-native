@@ -156,6 +156,17 @@ vi.mock('@react-navigation/native', () => ({
     },
 }))
 
+// The cards deeplink reads only where this device's card onboarding stands.
+// Stub the package so the real persisted card store stays out of this graph.
+const mockCardOnboarding = vi.hoisted(() => ({
+    onboardingId: null as string | null,
+    onboardingStep: 'EMAIL_SEND',
+}))
+vi.mock('@perawallet/wallet-core-card', () => ({
+    OnboardingStep: { Completed: 'COMPLETED' },
+    useCardStore: { getState: () => mockCardOnboarding },
+}))
+
 vi.mock('@perawallet/wallet-core-shared', async () => {
     const { toBigInt } = await vi.importActual<
         typeof import('@packages/shared/src/utils/unit-conversion')

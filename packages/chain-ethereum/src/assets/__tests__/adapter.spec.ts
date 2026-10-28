@@ -32,13 +32,15 @@ import {
     upsertNodeAssets,
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
+import { PeraServiceUnavailableError } from '@perawallet/wallet-core-shared'
 import { createEthereumAssetsAdapter } from '../adapter'
 import { ETHEREUM } from '../../__tests__/evm-chains'
 
 import { ASSETS_PATH } from '../api/endpoints'
-import type { AssetItemResponse } from '../api/schema'
+import type { AssetItemResponse, WhitelistItemResponse } from '../api/schema'
 import {
     evmNftItem,
+    nativeWhitelistItem,
     peraEvmAssetHandlers,
     unknownAssetItem,
 } from '../api/msw-handlers'
@@ -692,15 +694,291 @@ describe('prices', () => {
     })
 })
 
+describe('price history', () => {
+    const ETH_CAIP19 = 'eip155:1/slip44:60'
+    const ETH = ref(ETHEREUM_NATIVE_ASSET.assetId)
+    const point = (datetime: string, price: string) => ({ datetime, price })
+
+    it('reads the token chart by its CAIP-19 id and period, keeping every digit', async () => {
+        const urls = recordRequests()
+        server.use(
+            ...peraEvmAssetHandlers({
+                baseUrl: TEST_PERA_URL,
+                charts: {
+                    [USDC_CAIP19]: [
+                        point(
+                            '2026-10-20T15:00:00Z',
+                            '0.999800000000000000000001',
+                        ),
+                        point(
+                            '2026-10-21T14:03:11Z',
+                            '1.000100000000000000000000',
+                        ),
+                    ],
+                },
+            }),
+        )
+        const adapter = createEthereumAssetsAdapter(
+            testChainContext({ services: ['prices'] }),
+            ETHEREUM,
+        )
+
+        const points = await adapter.getPriceHistory!(
+            ref(USDC),
+            'one-day',
+            SCOPE,
+        )
+
+        expect(
+            points.map(p => [
+                new Date(p.timestamp).toISOString(),
+                p.usdPrice.toFixed(),
+            ]),
+        ).toEqual([
+            ['2026-10-20T15:00:00.000Z', '0.999800000000000000000001'],
+            ['2026-10-21T14:03:11.000Z', '1.0001'],
+        ])
+        const params = new URL(urls[0]!).searchParams
+        expect(params.get('id')).toBe(USDC_CAIP19)
+        expect(params.get('period')).toBe('one-day')
+    })
+
+    it('asks for ETH by its slip44 id', async () => {
+        server.use(
+            ...peraEvmAssetHandlers({
+                baseUrl: TEST_PERA_URL,
+                charts: {
+                    [ETH_CAIP19]: [
+                        point(
+                            '2026-10-21T14:03:11Z',
+                            '2500.120000000000000000000000',
+                        ),
+                    ],
+                },
+            }),
+        )
+        const adapter = createEthereumAssetsAdapter(
+            testChainContext({ services: ['prices'] }),
+            ETHEREUM,
+        )
+
+        const [latest] = await adapter.getPriceHistory!(ETH, 'one-week', SCOPE)
+
+        expect(latest?.usdPrice.toFixed()).toBe('2500.12')
+    })
+
+    it('answers no points for a token the backend has no chart for', async () => {
+        server.use(...peraEvmAssetHandlers({ baseUrl: TEST_PERA_URL }))
+        const adapter = createEthereumAssetsAdapter(
+            testChainContext({ services: ['prices'] }),
+            ETHEREUM,
+        )
+
+        await expect(
+            adapter.getPriceHistory!(ref(USDC), 'one-day', SCOPE),
+        ).resolves.toEqual([])
+    })
+
+    it('rejects on any other failure, so the chart can offer a retry', async () => {
+        server.use(
+            ...peraEvmAssetHandlers({ baseUrl: TEST_PERA_URL, charts: 503 }),
+        )
+        const adapter = createEthereumAssetsAdapter(
+            testChainContext({ services: ['prices'] }),
+            ETHEREUM,
+        )
+
+        await expect(
+            adapter.getPriceHistory!(ref(USDC), 'one-day', SCOPE),
+        ).rejects.toThrow()
+    })
+
+    it('answers no points without a request on a scope without the prices service', async () => {
+        const requests = recordRequests()
+        const adapter = createEthereumAssetsAdapter(
+            testChainContext({ services: ['assets'] }),
+            ETHEREUM,
+        )
+
+        await expect(
+            adapter.getPriceHistory!(ETH, 'one-day', SCOPE),
+        ).resolves.toEqual([])
+        expect(requests).toEqual([])
+    })
+})
+
 describe('optional members', () => {
-    it('declares no authorities or search, since ERC-20 has no freeze or clawback and the backend has no EVM token search', () => {
+    it('declares no authorities, since ERC-20 has no freeze or clawback', () => {
         const adapter = createEthereumAssetsAdapter(
             testChainContext(),
             ETHEREUM,
         )
 
         expect(adapter.fetchAssetAuthorities).toBeUndefined()
-        expect(adapter.search).toBeUndefined()
+    })
+})
+
+describe('search', () => {
+    const listed = (
+        address: string,
+        name: string,
+        unitName: string,
+    ): WhitelistItemResponse => ({
+        ...unknownAssetItem(`eip155:1/erc20:${address.toLowerCase()}`),
+        type: 'erc20',
+        name,
+        unit_name: unitName,
+        fraction_decimals: 6,
+        logo: `https://pera.test/${unitName}.png`,
+        is_verified: true,
+        verification_tier: 'verified',
+        is_swappable: true,
+        is_fundable: false,
+    })
+    const whitelist = {
+        1: [
+            nativeWhitelistItem(1),
+            listed(USDC, 'USD Coin', 'USDC'),
+            listed(DAI, 'Dai Stablecoin', 'DAI'),
+        ],
+    }
+    const searchWith = (
+        query: string,
+        { hasCollectible = false, services = ['assets'] } = {},
+    ) => {
+        const adapter = createEthereumAssetsAdapter(
+            testChainContext({ services }),
+            ETHEREUM,
+        )
+        return adapter.search!({ query, hasCollectible }, SCOPE)
+    }
+
+    it("lists the native coin first, then the backend's listed tokens, in one page", async () => {
+        server.use(
+            ...peraEvmAssetHandlers({ baseUrl: TEST_PERA_URL, whitelist }),
+        )
+
+        const page = await searchWith('')
+
+        expect(page.results.map(asset => asset.assetId)).toEqual([
+            ETHEREUM_NATIVE_ASSET.assetId,
+            USDC,
+            DAI,
+        ])
+        expect(page.nextCursor).toBeUndefined()
+    })
+
+    it('reads the token list once for the searches that follow within its window', async () => {
+        server.use(
+            ...peraEvmAssetHandlers({ baseUrl: TEST_PERA_URL, whitelist }),
+        )
+        const requests = recordRequests()
+        const adapter = createEthereumAssetsAdapter(
+            testChainContext({ services: ['assets'] }),
+            ETHEREUM,
+        )
+
+        await adapter.search!({ query: 'u' }, SCOPE)
+        await adapter.search!({ query: 'us' }, SCOPE)
+        await adapter.search!({ query: 'usd' }, SCOPE)
+
+        expect(requests).toHaveLength(1)
+    })
+
+    it('searches the token list it was handed, which account sync shares', async () => {
+        const requests = recordRequests()
+        const listedTokens = vi.fn(async () => [
+            {
+                assetId: DAI,
+                type: 'erc20' as const,
+                asset: {
+                    assetId: DAI,
+                    name: 'Dai Stablecoin',
+                    unitName: 'DAI',
+                },
+            },
+        ])
+        const adapter = createEthereumAssetsAdapter(
+            testChainContext({ services: ['assets'] }),
+            ETHEREUM,
+            listedTokens,
+        )
+
+        const page = await adapter.search!({ query: 'dai' }, SCOPE)
+
+        expect(page.results.map(asset => asset.assetId)).toEqual([DAI])
+        expect(listedTokens).toHaveBeenCalledWith(SCOPE)
+        expect(requests).toEqual([])
+    })
+
+    it('matches the name or symbol whatever the case', async () => {
+        server.use(
+            ...peraEvmAssetHandlers({ baseUrl: TEST_PERA_URL, whitelist }),
+        )
+
+        const byName = await searchWith('stablecoin')
+        const bySymbol = await searchWith(' eth ')
+
+        expect(byName.results.map(asset => asset.assetId)).toEqual([DAI])
+        expect(bySymbol.results.map(asset => asset.assetId)).toEqual([
+            ETHEREUM_NATIVE_ASSET.assetId,
+        ])
+    })
+
+    it('matches a contract address by its start, whatever the case', async () => {
+        server.use(
+            ...peraEvmAssetHandlers({ baseUrl: TEST_PERA_URL, whitelist }),
+        )
+
+        const full = await searchWith(USDC.toLowerCase())
+        const prefix = await searchWith('0x6b17')
+        const middle = await searchWith('6eb48')
+
+        expect(full.results.map(asset => asset.assetId)).toEqual([USDC])
+        expect(prefix.results.map(asset => asset.assetId)).toEqual([DAI])
+        expect(middle.results).toEqual([])
+    })
+
+    it('finds nothing for an NFT search, without a request', async () => {
+        const requests = recordRequests()
+
+        const page = await searchWith('', { hasCollectible: true })
+
+        expect(page).toEqual({ results: [], nextCursor: undefined })
+        expect(requests).toEqual([])
+    })
+
+    it('rejects as unavailable without the assets service, without a request', async () => {
+        const requests = recordRequests()
+
+        await expect(
+            searchWith('usd', { services: [] }),
+        ).rejects.toBeInstanceOf(PeraServiceUnavailableError)
+        expect(requests).toEqual([])
+    })
+
+    it('rejects when the backend fails', async () => {
+        server.use(
+            ...peraEvmAssetHandlers({ baseUrl: TEST_PERA_URL, whitelist: 503 }),
+        )
+
+        await expect(searchWith('usd')).rejects.toThrow()
+    })
+
+    it('rejects a scope on another chain before any request', async () => {
+        const requests = recordRequests()
+        const adapter = createEthereumAssetsAdapter(
+            testChainContext({ services: ['assets'] }),
+            ETHEREUM,
+        )
+
+        await expect(
+            adapter.search!(
+                { query: 'usd' },
+                { chainId: 'algorand', networkId: 'mainnet' },
+            ),
+        ).rejects.toThrow()
+        expect(requests).toEqual([])
     })
 })
 

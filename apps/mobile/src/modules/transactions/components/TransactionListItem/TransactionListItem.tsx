@@ -38,6 +38,7 @@ const TransactionListItemView = (props: TransactionListItemProps) => {
         notice,
         handlePress,
         handleLongPress,
+        isSuspectedPoisoning,
     } = useTransactionListItem(props)
 
     const getAmountStyle = (amount: AmountDisplay) => {
@@ -107,6 +108,14 @@ const TransactionListItemView = (props: TransactionListItemProps) => {
                         {...notice}
                         style={styles.notice}
                         testID={`transaction_row_notice_${id}`}
+                    />
+                )}
+                {isSuspectedPoisoning && (
+                    <ChainNotice
+                        kind='warning'
+                        titleKey='transactions.suspected_poisoning.marker'
+                        style={styles.notice}
+                        testID={`transaction_row_suspected_poisoning_${id}`}
                     />
                 )}
             </PWView>

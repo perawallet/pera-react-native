@@ -22,7 +22,7 @@ import { isAssetPriceHistoryQuery } from '@perawallet/wallet-core-assets'
 // laxer policy otherwise rehydrate for up to `reactQueryPersistenceAge`.
 // And when a query key changes shape: entries are stored by key hash, so ones
 // written under the old shape are never read again yet outlive that same age.
-export const PERSISTED_CACHE_BUSTER = 'asset-inbox-native-fields'
+export const PERSISTED_CACHE_BUSTER = 'price-history-points'
 
 /**
  * What each query-key prefix may write to the persisted cache, which is
@@ -47,6 +47,9 @@ export const QUERY_PREFIX_POLICY: Record<string, 'persist' | 'never'> = {
     'cloud-backup': 'never',
     onramp: 'never',
     passkeys: 'never',
+    // Keyed by the hosts of the sites the user connects to; the verdict is
+    // recomputed on device from the stored lists in milliseconds.
+    'site-safety': 'never',
     swaps: 'never',
     transactions: 'never',
     // Keyed by the wallet's addresses, and rebuilt from SQLite on every launch.

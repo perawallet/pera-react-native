@@ -13,22 +13,33 @@
 import { z } from 'zod'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
-// Declared in flow order: KYC (Verification) runs after phone verify and
-// before personal details; address is the final step and issues the session.
+// Declared in flow order, which is the fallback when Baanx sends no `phase`:
+// the forms come first, KYC runs once they are in, and the account (and the
+// session) only exists after KYC verifies.
 export const OnboardingStep = {
     EmailSend: 'EMAIL_SEND',
     EmailVerify: 'EMAIL_VERIFY',
     PhoneSend: 'PHONE_SEND',
     PhoneVerify: 'PHONE_VERIFY',
-    Verification: 'VERIFICATION',
     PersonalDetails: 'PERSONAL_DETAILS',
+    /** BoP residents only; Baanx asks for it through `phase`. */
+    AdditionalDetails: 'ADDITIONAL_DETAILS',
     Address: 'ADDRESS',
-    /** US residents shipping the card elsewhere; the address step withheld the token. */
+    /** US residents shipping the card somewhere other than their residence. */
     MailingAddress: 'MAILING_ADDRESS',
+    Verification: 'VERIFICATION',
     Completed: 'COMPLETED',
 } as const
 export type OnboardingStep =
     (typeof OnboardingStep)[keyof typeof OnboardingStep]
+
+/** Card issuer serving a country's residents, from GET /v1/auth/settings. */
+export const CardProvider = {
+    Monavate: 'monavate',
+    Galileo: 'galileo',
+    ConnectFinancial: 'connect_financial',
+} as const
+export type CardProvider = (typeof CardProvider)[keyof typeof CardProvider]
 
 /** A signup-eligible country from GET /v1/auth/settings. */
 export type SupportedCountry = {
@@ -39,6 +50,17 @@ export type SupportedCountry = {
     /** International dialing code without the leading '+'. */
     callingCode: string
     canSignUp: boolean
+    /** Null when Baanx sends none or a provider we don't model. */
+    cardProvider: Nullable<CardProvider>
+}
+
+/**
+ * A `{ key, name }` choice from GET /v1/auth/settings. The key is what the
+ * register endpoints accept; `name` is Baanx's English label, shown verbatim.
+ */
+export type RegistrationOption = {
+    key: string
+    name: string
 }
 
 /** A US state from GET /v1/auth/settings (US environments only). */
@@ -49,9 +71,22 @@ export type SupportedUsState = {
     canSignUp: boolean
 }
 
+/** The settings lists made of {@link RegistrationOption}s. */
+export type RegistrationOptionList =
+    | 'occupations'
+    | 'sourcesOfWealth'
+    | 'businessSectors'
+    | 'employmentSectors'
+    | 'employmentStatuses'
+
 export type RegistrationSettings = {
     countries: SupportedCountry[]
     usStates: SupportedUsState[]
+    occupations: RegistrationOption[]
+    sourcesOfWealth: RegistrationOption[]
+    businessSectors: RegistrationOption[]
+    employmentSectors: RegistrationOption[]
+    employmentStatuses: RegistrationOption[]
     /** Baanx-hosted T&C URLs by jurisdiction (US vs international). */
     termsAndConditionsUrls: {
         us: Nullable<string>
@@ -70,17 +105,19 @@ export type CurrentRegion = {
 }
 
 /**
- * Veriff KYC session. During onboarding it comes from the pre-auth
- * POST /v1/auth/register/verification; post-login re-verification uses
+ * Hosted KYC (Sumsub) session. Before the account exists it comes from the
+ * pre-auth POST /v1/auth/register/verification; with a session, from
  * GET /v1/user/verification.
  */
-export type VeriffSession = {
+export type KycSession = {
     sessionUrl: string
 }
 
 export type PersonalDetailsInput = {
     onboardingId: string
     firstName: string
+    /** As on the identity document; improves the KYC name match. */
+    middleName?: string
     lastName: string
     /** ISO date, YYYY-MM-DD. */
     dateOfBirth: string
@@ -90,8 +127,47 @@ export type PersonalDetailsInput = {
      * for everyone since the form preselects it from the residence country.
      */
     countryOfBirth: string
+    /** ISO 3166-1 alpha-2, up to two besides `countryOfNationality`. */
+    additionalNationalities?: string[]
+    /** Portugal residents only. */
+    portugalInvestmentScheme?: boolean
+    /**
+     * Keys from `employmentSectors` / `employmentStatuses` in the settings;
+     * omitted when the environment lists none.
+     */
+    employmentSector?: string
+    employmentStatus?: string
     /** US residents only. */
     ssn?: string
+}
+
+/** Occupation key that requires `occupationOther`. */
+export const OTHER_OCCUPATION_KEY = 'other_specify_occupation'
+/** Source-of-wealth key that requires `sourceOfWealthOther`. */
+export const OTHER_SOURCE_OF_WEALTH_KEY = 'other_specify_source_of_wealth'
+
+/** BoP residents only, after personal details (`phase` = `ADDITIONAL_DETAILS`). */
+export type AdditionalDetailsInput = {
+    onboardingId: string
+    /** Tax identification number, at most 20 characters. */
+    tin: string
+    /** ISO 3166-1 alpha-2 of the issuing country; Baanx rejects `US`. */
+    tinCountry: string
+    /**
+     * Keys from the matching GET /v1/auth/settings lists; omitted when the
+     * environment lists none.
+     */
+    occupation?: string
+    /** Only with {@link OTHER_OCCUPATION_KEY}. */
+    occupationOther?: string
+    sourceOfWealth?: string
+    /** Only with {@link OTHER_SOURCE_OF_WEALTH_KEY}. */
+    sourceOfWealthOther?: string
+    businessSector?: string
+    /** One of {@link EstimatedAnnualIncome}. */
+    estimatedAnnualIncome: string
+    /** ISO 3166-1 alpha-2, one to three. */
+    incomeCountries: string[]
 }
 
 export type AddressInput = {
@@ -106,7 +182,7 @@ export type AddressInput = {
     isSameMailingAddress: boolean
 }
 
-/** US residents only; this step issues the session token the address step withheld. */
+/** US residents shipping the card somewhere other than their residence. */
 export type MailingAddressInput = {
     onboardingId: string
     addressLine1: string
@@ -240,9 +316,20 @@ const isValidPastDob = (value: string): boolean => {
     return isRealDate && date.getTime() <= Date.now()
 }
 
+/** Baanx accepts letters, spaces, apostrophes and hyphens in a middle name. */
+const MIDDLE_NAME_REGEX = /^[\p{L}\p{M} '’-]*$/u
+const MIDDLE_NAME_MAX_LENGTH = 50
+const MAX_ADDITIONAL_NATIONALITIES = 2
+
 /** Validation for the personal-details onboarding step. */
 const personalDetailsBaseSchema = z.object({
     firstName: z.string().trim().min(1),
+    /** Optional; empty means none. */
+    middleName: z
+        .string()
+        .trim()
+        .max(MIDDLE_NAME_MAX_LENGTH)
+        .regex(MIDDLE_NAME_REGEX),
     lastName: z.string().trim().min(1),
     /** Display format `DD/MM/YYYY`; converted to ISO before submission. */
     dateOfBirth: z.string().refine(isValidPastDob),
@@ -250,6 +337,14 @@ const personalDetailsBaseSchema = z.object({
     countryOfNationality: z.string().length(2),
     /** ISO 3166-1 alpha-2 of the birth country (required by Baanx for EU/UK). */
     countryOfBirth: z.string().length(2),
+    additionalNationalities: z
+        .array(z.string().length(2))
+        .max(MAX_ADDITIONAL_NATIONALITIES),
+    /** Only sent for Portugal residents. */
+    portugalInvestmentScheme: z.boolean(),
+    /** Empty when the environment lists no options. */
+    employmentStatus: z.string(),
+    employmentSector: z.string(),
     /** Display format `XXX-XX-XXXX`; empty unless the residence is the US. */
     ssn: z.string(),
 })
@@ -258,14 +353,33 @@ const SSN_DISPLAY_PATTERN = /^\d{3}-\d{2}-\d{4}$/
 
 /**
  * Baanx requires the SSN only for US residents, so the requirement is decided
- * by the residence rather than by the record itself.
+ * by the residence rather than by the record itself. Employment is required
+ * only where the environment lists options for it.
  */
 export const createPersonalDetailsSchema = ({
     isUsResident,
+    hasEmploymentStatuses,
+    hasEmploymentSectors,
 }: {
     isUsResident: boolean
+    hasEmploymentStatuses: boolean
+    hasEmploymentSectors: boolean
 }) =>
     personalDetailsBaseSchema.superRefine((values, ctx) => {
+        if (hasEmploymentStatuses && !values.employmentStatus) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ['employmentStatus'],
+                message: 'employment-status-required',
+            })
+        }
+        if (hasEmploymentSectors && !values.employmentSector) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ['employmentSector'],
+                message: 'employment-sector-required',
+            })
+        }
         if (isUsResident && !SSN_DISPLAY_PATTERN.test(values.ssn)) {
             ctx.addIssue({
                 code: z.ZodIssueCode.custom,
@@ -273,10 +387,23 @@ export const createPersonalDetailsSchema = ({
                 message: 'ssn-invalid',
             })
         }
+        const nationalities = [
+            values.countryOfNationality,
+            ...values.additionalNationalities,
+        ]
+        if (new Set(nationalities).size !== nationalities.length) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ['additionalNationalities'],
+                message: 'nationality-duplicate',
+            })
+        }
     })
 
 export const personalDetailsSchema = createPersonalDetailsSchema({
     isUsResident: false,
+    hasEmploymentStatuses: true,
+    hasEmploymentSectors: true,
 })
 
 export type PersonalDetailsFormValues = z.infer<
@@ -359,3 +486,131 @@ export const mailingAddressSchema = z.object({
 })
 
 export type MailingAddressFormValues = z.infer<typeof mailingAddressSchema>
+
+/**
+ * Baanx's annual income bands, in display order and always shown in USD. Its
+ * spec only shows `between_20k_and_50k`; the other keys follow that pattern
+ * and are unconfirmed.
+ */
+export const EstimatedAnnualIncome = {
+    LessThan20k: 'less_than_20k',
+    Between20kAnd50k: 'between_20k_and_50k',
+    Between50kAnd100k: 'between_50k_and_100k',
+    MoreThan100k: 'more_than_100k',
+} as const
+export type EstimatedAnnualIncome =
+    (typeof EstimatedAnnualIncome)[keyof typeof EstimatedAnnualIncome]
+
+export const ESTIMATED_ANNUAL_INCOME_BANDS: readonly EstimatedAnnualIncome[] =
+    Object.values(EstimatedAnnualIncome)
+
+export const isEstimatedAnnualIncome = (
+    value: unknown,
+): value is EstimatedAnnualIncome =>
+    ESTIMATED_ANNUAL_INCOME_BANDS.includes(value as EstimatedAnnualIncome)
+
+// Typed boolean so zod keeps the field a string (TS infers a guard from a bare
+// arrow): the form starts blank until a band is picked.
+export const estimatedAnnualIncomeSchema = z
+    .string()
+    .refine((value): boolean => isEstimatedAnnualIncome(value))
+
+const TIN_MAX_LENGTH = 20
+const OTHER_TEXT_MAX_LENGTH = 100
+const MAX_INCOME_COUNTRIES = 3
+
+const additionalDetailsBaseSchema = z.object({
+    tin: z.string().trim().min(1).max(TIN_MAX_LENGTH),
+    tinCountry: z.string().length(2),
+    /** Option keys; empty when the environment lists no options. */
+    occupation: z.string(),
+    /** Empty unless the occupation is {@link OTHER_OCCUPATION_KEY}. */
+    occupationOther: z.string().trim().max(OTHER_TEXT_MAX_LENGTH),
+    sourceOfWealth: z.string(),
+    /** Empty unless the source is {@link OTHER_SOURCE_OF_WEALTH_KEY}. */
+    sourceOfWealthOther: z.string().trim().max(OTHER_TEXT_MAX_LENGTH),
+    businessSector: z.string(),
+    estimatedAnnualIncome: estimatedAnnualIncomeSchema,
+    incomeCountries: z
+        .array(z.string().length(2))
+        .min(1)
+        .max(MAX_INCOME_COUNTRIES),
+})
+
+/**
+ * Validation for the additional-details onboarding step. Like employment in
+ * personal details, an option is required only where the environment lists
+ * options for it.
+ */
+export const createAdditionalDetailsSchema = ({
+    hasOccupations,
+    hasSourcesOfWealth,
+    hasBusinessSectors,
+}: {
+    hasOccupations: boolean
+    hasSourcesOfWealth: boolean
+    hasBusinessSectors: boolean
+}) =>
+    additionalDetailsBaseSchema.superRefine((values, ctx) => {
+        const requiredOptions = [
+            ['occupation', hasOccupations, 'occupation-required'],
+            ['sourceOfWealth', hasSourcesOfWealth, 'source-of-wealth-required'],
+            ['businessSector', hasBusinessSectors, 'business-sector-required'],
+        ] as const
+        for (const [field, isListed, message] of requiredOptions) {
+            if (isListed && !values[field]) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    path: [field],
+                    message,
+                })
+            }
+        }
+        if (values.tinCountry === US_ISO) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ['tinCountry'],
+                message: 'tin-country-unsupported',
+            })
+        }
+        if (
+            values.occupation === OTHER_OCCUPATION_KEY &&
+            !values.occupationOther
+        ) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ['occupationOther'],
+                message: 'occupation-other-required',
+            })
+        }
+        if (
+            values.sourceOfWealth === OTHER_SOURCE_OF_WEALTH_KEY &&
+            !values.sourceOfWealthOther
+        ) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ['sourceOfWealthOther'],
+                message: 'source-of-wealth-other-required',
+            })
+        }
+        if (
+            new Set(values.incomeCountries).size !==
+            values.incomeCountries.length
+        ) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ['incomeCountries'],
+                message: 'income-country-duplicate',
+            })
+        }
+    })
+
+export const additionalDetailsSchema = createAdditionalDetailsSchema({
+    hasOccupations: true,
+    hasSourcesOfWealth: true,
+    hasBusinessSectors: true,
+})
+
+export type AdditionalDetailsFormValues = z.infer<
+    typeof additionalDetailsBaseSchema
+>

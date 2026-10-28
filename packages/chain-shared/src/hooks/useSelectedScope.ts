@@ -35,6 +35,37 @@ export const useSelectedScope = (chainId: ChainId): ChainScope => {
     return useMemo(() => ({ chainId, networkId }), [chainId, networkId])
 }
 
+const SCOPE_SEPARATOR = '|'
+const FIELD_SEPARATOR = '::'
+
+export const useSelectedScopes = (
+    chainIds: readonly ChainId[],
+): ChainScope[] => {
+    // A primitive, so the list keeps its identity until a chain or a selected
+    // network actually changes.
+    const key = useNetworkStore(state =>
+        chainIds
+            .map(chainId =>
+                [chainId, selectChainNetworkId(state, chainId)].join(
+                    FIELD_SEPARATOR,
+                ),
+            )
+            .join(SCOPE_SEPARATOR),
+    )
+    return useMemo(
+        () =>
+            key
+                ? key.split(SCOPE_SEPARATOR).map(scope => {
+                      const [chainId, networkId] = scope.split(
+                          FIELD_SEPARATOR,
+                      ) as [ChainId, NetworkId]
+                      return { chainId, networkId }
+                  })
+                : [],
+        [key],
+    )
+}
+
 // Chain-agnostic Pera endpoints (banners, inbox, currencies, integrity) route by
 // this deployment, never by a scope: one deployment serves every chain of its tier.
 export const useWalletDeployment = (): WalletMode =>

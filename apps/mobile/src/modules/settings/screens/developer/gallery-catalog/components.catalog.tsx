@@ -51,6 +51,10 @@ import {
     PWTouchableOpacity,
     PWView,
 } from '@components/core'
+import {
+    TAP_TO_CONFIRM_WEB_ARMED_TIMEOUT,
+    TAP_TO_CONFIRM_WEB_MIN_CONFIRM_DELAY,
+} from '@constants/ui'
 import peraTransactionLoading from '@assets/animations/pera-transaction-loading.json'
 
 import { registerPreview } from './registry'
@@ -228,6 +232,20 @@ registerPreview({
                             title='Confirm'
                             armedTitle='Tap again to confirm'
                             onConfirm={() => undefined}
+                        />
+                    ),
+                },
+                {
+                    label: 'minConfirmDelayMs (web)',
+                    node: (
+                        <PWTapToConfirm
+                            title='Confirm (with wait)'
+                            armedTitle='Tap again to confirm'
+                            onConfirm={() => undefined}
+                            minConfirmDelayMs={
+                                TAP_TO_CONFIRM_WEB_MIN_CONFIRM_DELAY
+                            }
+                            armedTimeoutMs={TAP_TO_CONFIRM_WEB_ARMED_TIMEOUT}
                         />
                     ),
                 },

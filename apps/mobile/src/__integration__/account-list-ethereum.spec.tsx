@@ -170,34 +170,38 @@ describe('Flow: Account list with Ethereum registered', () => {
         useAccountsStore.getState().setAccounts([ALGORAND_ACCOUNT])
 
         renderMenu()
-
-        const row = rowOf(ALGORAND_ACCOUNT)
         await waitFor(() => {
-            expect(within(row).getByText('Algo main')).toBeTruthy()
+            expect(
+                within(rowOf(ALGORAND_ACCOUNT)).getByText('Algo main'),
+            ).toBeTruthy()
         })
-        expect(within(row).queryByText('Algorand')).toBeNull()
+        expect(
+            within(rowOf(ALGORAND_ACCOUNT)).queryByText('Algorand'),
+        ).toBeNull()
         expect(screen.getByText('portfolio.show_chart')).toBeTruthy()
     })
 
-    it('Given an Algorand and an Ethereum account, when the list renders, then each row shows its chain badge and its own native balance', async () => {
+    it("Given an Algorand and an Ethereum account, when the list renders, then rows carry no chain badge or native balance, only each account's fiat total", async () => {
         useAccountsStore
             .getState()
             .setAccounts([ALGORAND_ACCOUNT, ETHEREUM_ACCOUNT])
 
         renderMenu()
-
-        const ethRow = rowOf(ETHEREUM_ACCOUNT)
-        const algoRow = rowOf(ALGORAND_ACCOUNT)
-        expect(within(ethRow).getByText('Ethereum')).toBeTruthy()
-        expect(within(algoRow).getByText('Algorand')).toBeTruthy()
         await waitFor(() => {
-            expect(within(ethRow).getByText(/1\.5/)).toBeTruthy()
+            expect(
+                within(rowOf(ETHEREUM_ACCOUNT)).getByText(/3,000\.00/),
+            ).toBeTruthy()
         })
-        // Each row prices its native balance on its own chain.
-        await waitFor(() => {
-            expect(within(ethRow).getByText(/3,000\.00/)).toBeTruthy()
-        })
-        expect(within(algoRow).getByText(/^\$ ?3\.00$/)).toBeTruthy()
+        expect(
+            within(rowOf(ALGORAND_ACCOUNT)).getByText(/^\$ ?3\.00$/),
+        ).toBeTruthy()
+        expect(
+            within(rowOf(ETHEREUM_ACCOUNT)).queryByText('Ethereum'),
+        ).toBeNull()
+        expect(
+            within(rowOf(ALGORAND_ACCOUNT)).queryByText('Algorand'),
+        ).toBeNull()
+        expect(within(rowOf(ETHEREUM_ACCOUNT)).queryByText(/1\.5/)).toBeNull()
     })
 
     it('Given an ALGO preference stored before the upgrade, when a multi-chain list renders, then the Ethereum row and the portfolio total are in fiat', async () => {
@@ -247,7 +251,7 @@ describe('Flow: Account list with Ethereum registered', () => {
                 screen.getByTestId('portfolio_total_value').textContent,
             ).toMatch(/3,003\.00/)
         })
-        // Ethereum has no balance history, so a chart would plot only the $3.
+        // The chart plots one chain, so beside a two-chain total it would show only the $3.
         expect(screen.queryByText('portfolio.show_chart')).toBeNull()
         expect(
             screen.queryByTestId('portfolio_total_partial_notice'),
@@ -262,15 +266,12 @@ describe('Flow: Account list with Ethereum registered', () => {
             .setAccounts([ALGORAND_ACCOUNT, ETHEREUM_ACCOUNT])
 
         renderMenu()
-
-        const ethRow = rowOf(ETHEREUM_ACCOUNT)
         await waitFor(() => {
-            expect(within(ethRow).getByText(/1\.5/)).toBeTruthy()
+            expect(
+                within(rowOf(ETHEREUM_ACCOUNT)).getByText('---'),
+            ).toBeTruthy()
         })
-        await waitFor(() => {
-            expect(within(ethRow).getByText('---')).toBeTruthy()
-        })
-        expect(within(ethRow).queryByText(/0\.00/)).toBeNull()
+        expect(within(rowOf(ETHEREUM_ACCOUNT)).queryByText(/0\.00/)).toBeNull()
         await waitFor(() => {
             expect(
                 screen.getByTestId('portfolio_total_value').textContent,
@@ -289,10 +290,13 @@ describe('Flow: Account list with Ethereum registered', () => {
 
         renderMenu()
 
-        const ethRow = rowOf(ETHEREUM_ACCOUNT)
-        expect(
-            within(ethRow).getByTestId('account_chain_unavailable'),
-        ).toBeTruthy()
+        await waitFor(() => {
+            expect(
+                within(rowOf(ETHEREUM_ACCOUNT)).getByTestId(
+                    'account_chain_unavailable',
+                ),
+            ).toBeTruthy()
+        })
         expect(
             within(rowOf(ALGORAND_ACCOUNT)).queryByTestId(
                 'account_chain_unavailable',

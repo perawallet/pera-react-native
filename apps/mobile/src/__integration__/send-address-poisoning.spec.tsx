@@ -10,18 +10,9 @@
  limitations under the License
  */
 
-import {
-    afterAll,
-    beforeAll,
-    beforeEach,
-    describe,
-    expect,
-    it,
-    vi,
-} from 'vitest'
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { Decimal } from 'decimal.js'
 import { fireEvent, renderHook, screen, waitFor } from '@testing-library/react'
-import { Notifier } from 'react-native-notifier'
 import { Text } from 'react-native'
 
 import { server } from '@test-utils/msw-server'
@@ -158,7 +149,6 @@ describe('Flow: warn before sending to a poisoned address', () => {
         useAccountsStore.getState().setSelectedAccountId(SENDER.id)
         useSendFundsStore.getState().reset()
         resetContacts()
-        vi.mocked(Notifier.showNotification).mockClear()
     })
 
     it('Given a contact, when the user sends ALGO to a look-alike of it, then the warning shows both full addresses and keeps Continue disabled until the user confirms they checked', async () => {

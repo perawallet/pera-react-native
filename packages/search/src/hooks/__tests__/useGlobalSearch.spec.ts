@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { beforeEach, describe, test, expect, vi } from 'vitest'
+import { describe, test, expect, vi } from 'vitest'
 import React from 'react'
 import { act, renderHook, waitFor } from '@testing-library/react'
 import { Decimal } from 'decimal.js'
@@ -38,7 +38,6 @@ const mockUseOwnedAssets = vi.fn<
         isLoading: boolean
     }
 >()
-const mockUseAssetSearchQuery = vi.fn()
 
 vi.mock('@perawallet/wallet-core-accounts', async () => {
     const actual = await vi.importActual<
@@ -49,17 +48,6 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
         useAllAccounts: () => mockAllAccounts(),
         useOwnedAssets: (_scope: unknown, options?: { enabled?: boolean }) =>
             mockUseOwnedAssets(options),
-    }
-})
-
-vi.mock('@perawallet/wallet-core-assets', async () => {
-    const actual = await vi.importActual<
-        typeof import('@perawallet/wallet-core-assets')
-    >('@perawallet/wallet-core-assets')
-    return {
-        ...actual,
-        useAssetSearchQuery: (...args: unknown[]) =>
-            mockUseAssetSearchQuery(...args),
     }
 })
 
@@ -91,107 +79,7 @@ const setOwnedAssets = (assets: PeraAsset[]) => {
     mockUseOwnedAssets.mockReturnValue({ assets, isLoading: false })
 }
 
-const mockAssetSearchQuery = (overrides: {
-    results: unknown[]
-    isLoading: boolean
-    isError: boolean
-    isPaused: boolean
-    hasNextPage: boolean
-    isFetchingNextPage: boolean
-    fetchNextPage: () => void
-    error?: unknown
-}) => mockUseAssetSearchQuery.mockReturnValue(overrides)
-
-beforeEach(() => {
-    mockUseAssetSearchQuery.mockReturnValue({
-        results: [],
-        isLoading: false,
-        isError: false,
-        isPaused: false,
-        isFetchingNextPage: false,
-        hasNextPage: false,
-        fetchNextPage: vi.fn(),
-    })
-})
-
 describe('useGlobalSearch', () => {
-    test('passes through the remote asset query error/paused flags', () => {
-        mockAllAccounts.mockReturnValue([])
-        mockFindContacts.mockReturnValue([])
-        setOwnedAssets([])
-        const failure = new Error('refused')
-        mockAssetSearchQuery({
-            results: [],
-            isLoading: false,
-            isError: true,
-            isPaused: false,
-            hasNextPage: false,
-            isFetchingNextPage: false,
-            fetchNextPage: vi.fn(),
-            error: failure,
-        })
-
-        const { result } = renderHook(
-            () => useGlobalSearch(SCOPE, { debounceMs: 0, scopes: ['assets'] }),
-            { wrapper: makeWrapper() },
-        )
-
-        expect(result.current.isRemoteError).toBe(true)
-        expect(result.current.remoteError).toBe(failure)
-        expect(result.current.isRemotePaused).toBe(false)
-    })
-
-    test('reports remote asset search unavailable when the network has no Pera backend', () => {
-        mockAllAccounts.mockReturnValue([])
-        mockFindContacts.mockReturnValue([])
-        setOwnedAssets([])
-        mockAssetSearchQuery({
-            results: [],
-            isLoading: false,
-            isError: false,
-            isPaused: false,
-            hasNextPage: false,
-            isFetchingNextPage: false,
-            fetchNextPage: vi.fn(),
-            isUnavailableOnNetwork: true,
-        })
-
-        const { result } = renderHook(
-            () =>
-                useGlobalSearch(SCOPE, {
-                    debounceMs: 0,
-                    scopes: ['assets'],
-                    remoteAssets: {},
-                }),
-            { wrapper: makeWrapper() },
-        )
-
-        expect(result.current.isRemoteUnavailableOnNetwork).toBe(true)
-    })
-
-    test('reports remote asset search available for callers that never search remotely', () => {
-        mockAllAccounts.mockReturnValue([])
-        mockFindContacts.mockReturnValue([])
-        setOwnedAssets([])
-        mockAssetSearchQuery({
-            results: [],
-            isLoading: false,
-            isError: false,
-            isPaused: false,
-            hasNextPage: false,
-            isFetchingNextPage: false,
-            fetchNextPage: vi.fn(),
-            isUnavailableOnNetwork: true,
-        })
-
-        const { result } = renderHook(
-            () => useGlobalSearch(SCOPE, { debounceMs: 0, scopes: ['assets'] }),
-            { wrapper: makeWrapper() },
-        )
-
-        expect(result.current.isRemoteUnavailableOnNetwork).toBe(false)
-    })
-
     test('returns empty results with empty query', () => {
         mockAllAccounts.mockReturnValue([makeAccount('ALICE', 'Alice')])
         mockFindContacts.mockReturnValue([])
@@ -207,7 +95,6 @@ describe('useGlobalSearch', () => {
         expect(result.current.results.accounts).toEqual([])
         expect(result.current.results.contacts).toEqual([])
         expect(result.current.results.assets).toEqual([])
-        expect(result.current.results.remoteAssets).toEqual([])
     })
 
     test('scopes option restricts which sections are populated', async () => {
@@ -264,110 +151,7 @@ describe('useGlobalSearch', () => {
         )
     })
 
-    test('searches remote assets on the chain scope it is given', () => {
-        mockAllAccounts.mockReturnValue([])
-        mockFindContacts.mockReturnValue([])
-        setOwnedAssets([])
-
-        renderHook(() => useGlobalSearch(SCOPE, { debounceMs: 0 }), {
-            wrapper: makeWrapper(),
-        })
-
-        const lastCall = mockUseAssetSearchQuery.mock.calls.at(-1)
-        expect(lastCall?.[1]).toEqual(SCOPE)
-    })
-
-    test('remote asset search is disabled by default (enabled=false)', () => {
-        mockAllAccounts.mockReturnValue([])
-        mockFindContacts.mockReturnValue([])
-        setOwnedAssets([])
-
-        renderHook(() => useGlobalSearch(SCOPE, { debounceMs: 0 }), {
-            wrapper: makeWrapper(),
-        })
-
-        expect(mockUseAssetSearchQuery).toHaveBeenCalled()
-        const lastCall =
-            mockUseAssetSearchQuery.mock.calls[
-                mockUseAssetSearchQuery.mock.calls.length - 1
-            ]
-        expect(lastCall?.[2]?.enabled).toBe(false)
-    })
-
-    test('showOnEmptyQuery runs the remote search with no query and surfaces suggestions', () => {
-        mockAllAccounts.mockReturnValue([makeAccount('ALICE', 'Alice')])
-        mockFindContacts.mockReturnValue([])
-        setOwnedAssets([])
-        const suggestions = [
-            {
-                assetId: '31566704',
-                name: 'USD Coin',
-                unitName: 'USDC',
-                peraMetadata: {
-                    logo: null,
-                    verificationTier: 'verified',
-                    type: 'standard_asset',
-                },
-            },
-        ]
-        mockUseAssetSearchQuery.mockReturnValue({
-            results: suggestions,
-            isLoading: false,
-            isError: false,
-            isFetchingNextPage: false,
-            hasNextPage: false,
-            fetchNextPage: vi.fn(),
-        })
-
-        const { result } = renderHook(
-            () =>
-                useGlobalSearch(SCOPE, {
-                    debounceMs: 0,
-                    scopes: ['assets'],
-                    remoteAssets: { showOnEmptyQuery: true },
-                }),
-            { wrapper: makeWrapper() },
-        )
-
-        const lastCall =
-            mockUseAssetSearchQuery.mock.calls[
-                mockUseAssetSearchQuery.mock.calls.length - 1
-            ]
-        expect(lastCall?.[0]).toBe('')
-        expect(lastCall?.[2]?.enabled).toBe(true)
-        expect(result.current.value).toBe('')
-        expect(result.current.results.remoteAssets).toEqual(suggestions)
-        expect(result.current.results.accounts).toEqual([])
-        expect(result.current.hasResults).toBe(true)
-    })
-
-    test('showOnEmptyQuery surfaces the remote loading state for the suggestion fetch', () => {
-        mockAllAccounts.mockReturnValue([])
-        mockFindContacts.mockReturnValue([])
-        setOwnedAssets([])
-        mockUseAssetSearchQuery.mockReturnValue({
-            results: [],
-            isLoading: true,
-            isError: false,
-            isFetchingNextPage: false,
-            hasNextPage: false,
-            fetchNextPage: vi.fn(),
-        })
-
-        const { result } = renderHook(
-            () =>
-                useGlobalSearch(SCOPE, {
-                    debounceMs: 0,
-                    scopes: ['assets'],
-                    remoteAssets: { showOnEmptyQuery: true },
-                }),
-            { wrapper: makeWrapper() },
-        )
-
-        expect(result.current.isLoading).toBe(true)
-    })
-
-    test('does not report loading while debouncing a client-side (no remote) query', () => {
+    test('does not report loading while debouncing a query', () => {
         mockAllAccounts.mockReturnValue([])
         mockFindContacts.mockReturnValue([])
         setOwnedAssets([makeAsset('1', { name: 'USDC', unitName: 'USDC' })])
@@ -378,70 +162,13 @@ describe('useGlobalSearch', () => {
             { wrapper: makeWrapper() },
         )
 
-        // Set a query without advancing the debounce timer: value is updated
-        // but debouncedValue has not caught up, so isDebouncing is true.
+        // No timer advance, so the query is still debouncing.
         act(() => {
             result.current.setValue('usd')
         })
 
-        // No remote fetch will run for a purely in-memory filter, so the
-        // debounce window must not be reported as loading (otherwise the
-        // consumer flashes its skeleton on every keystroke).
         expect(result.current.value).toBe('usd')
         expect(result.current.isLoading).toBe(false)
-    })
-
-    test('remoteAssets option surfaces backend search results', async () => {
-        mockAllAccounts.mockReturnValue([])
-        mockFindContacts.mockReturnValue([])
-        setOwnedAssets([])
-        const remote = [
-            {
-                assetId: '999',
-                name: 'Remote NFT',
-                unitName: undefined,
-                peraMetadata: {
-                    verificationTier: 'verified',
-                    type: 'collectible',
-                    collectible: {
-                        title: 'Remote NFT',
-                        collection: { name: 'Remote Collection' },
-                    },
-                },
-            },
-        ]
-        const fetchNextPage = vi.fn()
-        mockUseAssetSearchQuery.mockReturnValue({
-            results: remote,
-            isLoading: false,
-            isError: false,
-            isFetchingNextPage: false,
-            hasNextPage: true,
-            fetchNextPage,
-        })
-
-        const { result } = renderHook(
-            () =>
-                useGlobalSearch(SCOPE, {
-                    debounceMs: 0,
-                    scopes: ['assets'],
-                    remoteAssets: { hasCollectible: true },
-                }),
-            { wrapper: makeWrapper() },
-        )
-
-        await act(async () => {
-            result.current.setValue('remote')
-        })
-
-        await waitFor(() =>
-            expect(result.current.results.remoteAssets).toEqual(remote),
-        )
-        expect(result.current.hasResults).toBe(true)
-        expect(result.current.hasNextRemotePage).toBe(true)
-
-        result.current.fetchNextRemotePage()
-        expect(fetchNextPage).toHaveBeenCalled()
     })
 
     test('matches accounts by name or address (case-insensitive)', async () => {

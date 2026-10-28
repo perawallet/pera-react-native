@@ -20,6 +20,8 @@ import {
     ne,
     or,
     isNull,
+    isNotNull,
+    sql,
     type SQL,
 } from 'drizzle-orm'
 import type { AnySQLiteColumn } from 'drizzle-orm/sqlite-core'
@@ -236,6 +238,51 @@ async function getStaleArc19CollectibleIds({
     return rows.map(row => row.assetId).filter(id => candidates.has(id))
 }
 
+// A read that keeps failing (outage, a backend without the group route) would
+// otherwise refetch every unread token on each sync pass.
+const UNREAD_GROUP_RETRY_TTL_MS = 60 * 60 * 1000
+
+/**
+ * Tokens no group read has answered for yet: rows cached before assets carried
+ * their cross-chain group, or whose read failed. A successful read stores the
+ * group, null included, so the row stops coming back here. Collectibles are
+ * never grouped, which spares an NFT-heavy wallet a full refetch.
+ */
+async function getUnreadGroupAssetIds({
+    db,
+    assetIds,
+    scopeKey,
+}: {
+    db: Database
+    assetIds: string[]
+    scopeKey: ChainScopeKey
+}): Promise<string[]> {
+    const rows = await db
+        .select({ assetId: AssetsPeraSchema.assetId })
+        .from(AssetsPeraSchema)
+        .where(
+            and(
+                eq(AssetsPeraSchema.scope, scopeKey),
+                isNotNull(AssetsPeraSchema.peraMetadataJson),
+                // NULL for an absent key; a stored null reads as 'null'.
+                sql`json_type(${AssetsPeraSchema.peraMetadataJson}, '$.crossChainAssetGroup') IS NULL`,
+                lt(
+                    AssetsPeraSchema.updatedAt,
+                    Date.now() - UNREAD_GROUP_RETRY_TTL_MS,
+                ),
+                or(
+                    isNull(AssetsPeraSchema.assetType),
+                    ne(AssetsPeraSchema.assetType, PeraAssetType.collectible),
+                ),
+                idPredicate(AssetsPeraSchema.assetId, assetIds),
+            ),
+        )
+        .all()
+
+    const candidates = new Set(assetIds)
+    return rows.map(row => row.assetId).filter(id => candidates.has(id))
+}
+
 /**
  * Held collectibles whose `assets_node.url` was never resolved.
  *
@@ -292,7 +339,9 @@ export async function getCollectibleIdsMissingUrl({
  * `recheckUnclassified` additionally returns assets still awaiting
  * classification — see `getUnclassifiedNftIds`. `recheckArc19` additionally
  * returns ARC19 collectibles due a media re-fetch — see
- * `getStaleArc19CollectibleIds`.
+ * `getStaleArc19CollectibleIds`. `recheckUnreadGroup` additionally returns
+ * tokens no sync has read the cross-chain group of — see
+ * `getUnreadGroupAssetIds`.
  */
 export async function getStaleOrMissingAssetIds({
     db = getDatabase(),
@@ -301,9 +350,11 @@ export async function getStaleOrMissingAssetIds({
     ttlMs,
     recheckUnclassified,
     recheckArc19,
+    recheckUnreadGroup = false,
 }: GetStaleOrMissingAssetIdsParams & {
     recheckUnclassified?: UnclassifiedRecheck
     recheckArc19?: Arc19Recheck
+    recheckUnreadGroup?: boolean
 }): Promise<string[]> {
     const scopeKey = toScopeKey(scope)
     const staleOrMissing = await getStaleOrMissingIdsFromTable({
@@ -332,9 +383,22 @@ export async function getStaleOrMissingAssetIds({
           })
         : []
 
-    return unclassified.length === 0 && arc19.length === 0
+    const unreadGroup = recheckUnreadGroup
+        ? await getUnreadGroupAssetIds({ db, assetIds, scopeKey })
+        : []
+
+    return unclassified.length === 0 &&
+        arc19.length === 0 &&
+        unreadGroup.length === 0
         ? staleOrMissing
-        : [...new Set([...staleOrMissing, ...unclassified, ...arc19])]
+        : [
+              ...new Set([
+                  ...staleOrMissing,
+                  ...unclassified,
+                  ...arc19,
+                  ...unreadGroup,
+              ]),
+          ]
 }
 
 type GetStaleOrMissingPriceAssetIdsParams = GetStaleOrMissingAssetIdsParams & {

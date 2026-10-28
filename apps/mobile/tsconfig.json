@@ -112,6 +112,9 @@
       "@perawallet/wallet-core-nfd/test-handlers": [
         "../../packages/nfd/src/test-handlers.ts"
       ],
+      "@perawallet/wallet-core-site-safety/test-handlers": [
+        "../../packages/site-safety/src/test-handlers.ts"
+      ],
       "@perawallet/wallet-extension-keystore-chrome": [
         "../../extensions/keystore-chrome/src/index.ts"
       ],

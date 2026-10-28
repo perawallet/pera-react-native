@@ -55,7 +55,7 @@ import {
     mockIndexerSearchForAccounts,
 } from '@perawallet/wallet-core-chain-algorand/test-handlers'
 
-import { isElementDisabled } from '@test-utils/rnw'
+import { findEnabledByTestId } from '@test-utils/rnw'
 import { ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS } from './__fixtures__/onboarding'
 import { registerFakeLedgerProvider } from './__fixtures__/ledger'
 
@@ -67,29 +67,13 @@ const NATIVE_ASSET_ID = '0'
 const LEDGER_ADDRESS = HD_TEST_ADDRESS
 const RECEIVER_ADDRESS = ALGO25_TEST_ADDRESS
 
-type Deferred<T> = {
-    promise: Promise<T>
-    resolve: (value: T) => void
-    reject: (reason: unknown) => void
-}
-
-const createDeferred = <T,>(): Deferred<T> => {
-    let resolveFn!: (value: T) => void
-    let rejectFn!: (reason: unknown) => void
-    const promise = new Promise<T>((res, rej) => {
-        resolveFn = res
-        rejectFn = rej
-    })
-    return { promise, resolve: resolveFn, reject: rejectFn }
-}
-
 // Module-scoped so the per-call deferred outlives the closure that
 // `signTransaction` returns from — the test thread reaches into this
 // to release the signing pipeline AFTER asserting the awaiting UI.
-let pendingSignature: Deferred<Uint8Array> | null = null
+let pendingSignature: PromiseWithResolvers<Uint8Array> | null = null
 
 const blockOnSignature = (): Promise<Uint8Array> => {
-    pendingSignature = createDeferred<Uint8Array>()
+    pendingSignature = Promise.withResolvers<Uint8Array>()
     return pendingSignature.promise
 }
 
@@ -224,17 +208,8 @@ describe('Flow: Send ALGO from a Ledger account (Confirmation → Awaiting Appro
 
         renderSendConfirmationStack()
 
-        await waitFor(
-            () => {
-                expect(screen.getByTestId('send_confirm_button')).toBeTruthy()
-            },
-            { timeout: 5000 },
-        )
-        const confirmButton = screen.getByTestId(
-            'send_confirm_button',
-        ) as HTMLButtonElement
-        await waitFor(() => {
-            expect(isElementDisabled(confirmButton)).toBe(false)
+        const confirmButton = await findEnabledByTestId('send_confirm_button', {
+            timeout: 5000,
         })
 
         fireEvent.click(confirmButton)
@@ -291,17 +266,8 @@ describe('Flow: Send ALGO from a Ledger account (Confirmation → Awaiting Appro
 
         renderSendConfirmationStack()
 
-        await waitFor(
-            () => {
-                expect(screen.getByTestId('send_confirm_button')).toBeTruthy()
-            },
-            { timeout: 5000 },
-        )
-        const confirmButton = screen.getByTestId(
-            'send_confirm_button',
-        ) as HTMLButtonElement
-        await waitFor(() => {
-            expect(isElementDisabled(confirmButton)).toBe(false)
+        const confirmButton = await findEnabledByTestId('send_confirm_button', {
+            timeout: 5000,
         })
 
         fireEvent.click(confirmButton)
@@ -377,17 +343,8 @@ describe('Flow: Send ALGO from a Ledger account (Confirmation → Awaiting Appro
 
         renderSendConfirmationStack()
 
-        await waitFor(
-            () => {
-                expect(screen.getByTestId('send_confirm_button')).toBeTruthy()
-            },
-            { timeout: 5000 },
-        )
-        const confirmButton = screen.getByTestId(
-            'send_confirm_button',
-        ) as HTMLButtonElement
-        await waitFor(() => {
-            expect(isElementDisabled(confirmButton)).toBe(false)
+        const confirmButton = await findEnabledByTestId('send_confirm_button', {
+            timeout: 5000,
         })
 
         fireEvent.click(confirmButton)

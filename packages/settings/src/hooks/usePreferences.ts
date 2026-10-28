@@ -15,6 +15,7 @@ import { useSettingsStore } from '../store'
 
 export const usePreferences = () => {
     const preferences = useSettingsStore(state => state.preferences)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- getPreference is a stable store reader of live state; subscribing to preferences is what re-renders consumers after a write
     const getPreference = useCallback(
         useSettingsStore(state => state.getPreference),
         [preferences],

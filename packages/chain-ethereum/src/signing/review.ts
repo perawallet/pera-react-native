@@ -46,7 +46,14 @@ import {
 } from '../transfer/nft-transfer'
 import { nftSendSubtitle, sendSummary } from '../transfer/summary'
 import { readEvmReviewTransaction, readEvmTransaction } from './adapter'
+import type { EvmStandardCall } from './standard-call-types'
 import {
+    approvalWarningOf,
+    decodeEvmStandardCall,
+    standardCallSummary,
+} from './standard-calls'
+import {
+    readEthereumNative,
     toEthereumNative,
     type EthereumTransactionView,
 } from './transaction-view'
@@ -122,8 +129,37 @@ const AUTO_APPROVED_KINDS: ReadonlySet<TransactionSummary['kind']> = new Set([
     'nft-transfer',
 ])
 
-const isAutoApproved = (transaction: ReviewedTransaction): boolean =>
-    AUTO_APPROVED_KINDS.has(transaction.summary.kind)
+const viewOfNative = (
+    transaction: ReviewedTransaction,
+): EthereumTransactionView | undefined => {
+    try {
+        return readEthereumNative(transaction.native)
+    } catch {
+        return undefined
+    }
+}
+
+// A dApp's call recognised from its calldata keeps a contract-call view, so
+// recognition never lets it sign without review; a view that can't be read
+// never does either.
+const isAutoApproved = (transaction: ReviewedTransaction): boolean => {
+    const kind = viewOfNative(transaction)?.kind
+    return (
+        AUTO_APPROVED_KINDS.has(transaction.summary.kind) &&
+        kind !== undefined &&
+        kind !== 'contract-call'
+    )
+}
+
+// The wallet's own calls are explained by the proofs their summaries pass.
+const isRecognising = (context: ReviewContext): boolean =>
+    context.capabilities.contractDecoding && !context.isWalletBuilt
+
+const recognisedCallOf = (
+    transaction: ReviewedTransaction,
+    context: ReviewContext,
+): EvmStandardCall | undefined =>
+    isRecognising(context) ? viewOfNative(transaction)?.call : undefined
 
 const UNKNOWN_CONTRACT_WARNING: ReviewWarning = {
     type: 'unknown-contract',
@@ -153,8 +189,8 @@ type Call = {
 
 const toDecimal = (value: bigint): Decimal => new Decimal(value.toString())
 
-// Stricter than the planner, which signs without a gas limit or max fee: the
-// fee shown is the most the signature authorises, so review needs both.
+// The fee shown is the most the signature authorises, so review needs a gas
+// limit and a max fee, as signing does.
 const readCall = (
     unsigned: UnsignedTransaction,
     chain: EvmChain,
@@ -217,7 +253,11 @@ const readCall = (
 const viewOf = (
     call: Call,
     kind: EthereumTransactionView['kind'],
-    { token, nft }: Pick<EthereumTransactionView, 'token' | 'nft'> = {},
+    {
+        token,
+        nft,
+        call: standard,
+    }: Pick<EthereumTransactionView, 'token' | 'nft' | 'call'> = {},
 ): EthereumTransactionView => ({
     kind,
     from: call.from,
@@ -244,7 +284,13 @@ const viewOf = (
         : { isPreview: true as const }),
     ...(token && { token }),
     ...(nft && { nft }),
+    ...(standard && { call: standard }),
 })
+
+const contractCallView = (call: Call): EthereumTransactionView => {
+    const standard = decodeEvmStandardCall(call)
+    return viewOf(call, 'contract-call', standard && { call: standard })
+}
 
 const nativeAmount = (chain: EvmChain, value: bigint) => ({
     assetRef: chain.descriptor.nativeAsset.ref,
@@ -363,10 +409,9 @@ export const ethereumViewOf = (
 ): Nullable<EthereumTransactionView> => {
     try {
         const call = readCall(unsigned, chain)
-        return viewOf(
-            call,
-            call.to && size(call.data) === 0 ? 'transfer' : 'contract-call',
-        )
+        return call.to && size(call.data) === 0
+            ? viewOf(call, 'transfer')
+            : contractCallView(call)
     } catch {
         return null
     }
@@ -442,19 +487,25 @@ const reviewCall = async (
             native: toEthereumNative(viewOf(call, 'nft-transfer', { nft })),
         }
     }
+    const view = contractCallView(call)
+    const native = toEthereumNative(view)
+    if (view.call && isRecognising(context)) {
+        return { summary: standardCallSummary(view.call, chain), native }
+    }
     const recognised = context.capabilities.contractDecoding
         ? recogniseCall({ to: call.to, data: call.data, value: call.value })
         : undefined
     return {
         summary: recognised ?? ethereumCallSummary(call, chain),
-        native: toEthereumNative(viewOf(call, 'contract-call')),
+        native,
     }
 }
 
 /**
- * Native transfers and the wallet's own token and NFT transfers are explained; every
- * other call is unrecognised unless `recogniseCall` reads it, which it is
- * asked only while `contractDecoding` is on.
+ * Native transfers and the wallet's own token and NFT transfers are explained.
+ * While `contractDecoding` is on, a dApp's standard token transfers and
+ * approvals are read from their calldata; every other call is unrecognised
+ * unless `recogniseCall` reads it, which it is asked only then.
  */
 export const createEthereumReviewer = ({
     chain,
@@ -500,12 +551,18 @@ export const createEthereumReviewer = ({
         },
     },
     warnings: {
-        detect: (_transactions, decoded) =>
+        detect: (_transactions, decoded, context) =>
             decoded.signableAddresses.length === 0
                 ? []
                 : decoded.transactions
                       .filter(t => !isAutoApproved(t))
-                      .map(() => ({ ...UNKNOWN_CONTRACT_WARNING })),
+                      .flatMap(t => {
+                          const standard = recognisedCallOf(t, context)
+                          if (!standard)
+                              return [{ ...UNKNOWN_CONTRACT_WARNING }]
+                          const warning = approvalWarningOf(standard)
+                          return warning ? [warning] : []
+                      }),
     },
     policy: {
         autoApproveLocal: review => review.transactions.every(isAutoApproved),

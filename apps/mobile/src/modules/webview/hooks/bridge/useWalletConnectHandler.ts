@@ -108,9 +108,15 @@ export const useWalletConnectHandler = (
             // trust, since that would expose addresses with no UI. `pair` is
             // bounded like the deeplink path so the page gets a readable error
             // rather than silence.
+            // The webview reports the page's origin itself, so the approval
+            // and later requests can check the site the user is really on.
+            const requesterOrigin = safeOrigin(sourceUrl ?? '') ?? undefined
             void (async () => {
                 const result = await pair(parsed.uri, {
-                    origin: { source: 'in-app' },
+                    origin: {
+                        source: 'in-app',
+                        ...(requesterOrigin ? { requesterOrigin } : {}),
+                    },
                 })
                 if (result.type === 'connect-failed') {
                     // Never log the URI itself: its `key=` param is the

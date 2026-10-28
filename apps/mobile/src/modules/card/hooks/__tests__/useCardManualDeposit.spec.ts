@@ -45,6 +45,7 @@ vi.mock('@perawallet/wallet-core-signing', async () => ({
 
 const SCOPE = { chainId: 'algorand', networkId: 'testnet' }
 vi.mock('../useCardScope', () => ({ useCardScope: () => SCOPE }))
+vi.mock('@hooks/useLanguage')
 
 vi.mock('@tanstack/react-query', async () => ({
     ...(await vi.importActual<object>('@tanstack/react-query')),
@@ -88,7 +89,10 @@ describe('useCardManualDeposit', () => {
         })
         expect(mockSubmit).toHaveBeenCalledWith({
             unsignedTxs: ['FEED_TXN'],
-            source: expect.objectContaining({ name: 'card-add-funds' }),
+            source: {
+                name: 'card-add-funds',
+                description: 'peraCard.signing.add_funds_source_description',
+            },
         })
     })
 

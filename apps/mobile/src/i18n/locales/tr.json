@@ -101,6 +101,7 @@
         "title": "Varlık ekle",
         "search_placeholder": "Ada veya varlık ID’sine göre ara",
         "no_results": "Varlık bulunamadı",
+        "partial_results": "Bazı ağlarda arama yapılamadı, bu yüzden bazı sonuçlar eksik olabilir.",
         "opt_in": {
             "failed_title": "Opt-in başarısız",
             "success_title": "Opt-in başarılı",
@@ -201,7 +202,25 @@
         "search_placeholder": "Hesap adresi, NFD adı veya kısa ad",
         "nfd_results": "NFDomains",
         "nfd_resolving": "NFD çözümleniyor...",
-        "nfd_resolved": "{{name}} üzerinden çözümlendi"
+        "nfd_resolved": "{{name}} üzerinden çözümlendi",
+        "wrong_network": {
+            "title": {
+                "algorand": "Bu bir Algorand adresi",
+                "evm": "Bu bir Ethereum (EVM) adresi"
+            },
+            "body": {
+                "algorand": "Buraya yalnızca Algorand adresleri eklenebilir. Adresi kontrol et ve tekrar dene.",
+                "evm": "Buraya yalnızca EVM uyumlu adresler eklenebilir. Adresi kontrol et ve tekrar dene."
+            },
+            "send_body": {
+                "algorand": "{{asset}} yalnızca Algorand adreslerine gönderilebilir. Alıcı adresini kontrol et veya göndermek için {{family}} üzerinde bir varlık seç.",
+                "evm": "{{asset}} yalnızca EVM uyumlu adreslere (“0x” ile başlayan) gönderilebilir. Alıcı adresini kontrol et veya göndermek için {{family}} üzerinde bir varlık seç."
+            },
+            "send_body_on_network": {
+                "algorand": "{{network}} üzerindeki {{asset}} yalnızca Algorand adreslerine gönderilebilir. Alıcı adresini kontrol et veya göndermek için {{family}} üzerinde bir varlık seç.",
+                "evm": "{{network}} üzerindeki {{asset}} yalnızca EVM uyumlu adreslere (“0x” ile başlayan) gönderilebilir. Alıcı adresini kontrol et veya göndermek için {{family}} üzerinde bir varlık seç."
+            }
+        }
     },
     "asset_inbox": {
         "requests": {
@@ -920,7 +939,7 @@
         },
         "network_unavailable": {
             "title": "Bu ağda kullanılamıyor",
-            "body": "BetaNet veya özel düğümlerde bulunmayan Pera services gerekiyor. MainNet veya TestNet'e geç.",
+            "body": "Pera hizmetleri bu ağda kullanılamıyor.",
             "generic_body": "Bu özellik şu anda kullanılamıyor."
         },
         "yes": "Evet",
@@ -1605,7 +1624,8 @@
             "otp_body_with_phone": "{{phone}} numarasına gönderdiğimiz doğrulama kodunu girerek girişi tamamla.",
             "otp_invalid": "Bu kod doğru değil. Lütfen tekrar dene.",
             "send_again": "Tekrar gönder",
-            "send_again_in": "{{count}} sn içinde tekrar gönder"
+            "send_again_in": "{{count}} sn içinde tekrar gönder",
+            "account_locked": "Pera Card hesabın geçici olarak kilitlendi. Kilidi açmak için <0>destek ekibiyle iletişime geç</0>."
         },
         "forgot_password": {
             "navigation_title": "Şifreyi sıfırla",
@@ -1712,6 +1732,8 @@
             "navigation_title": "Kişisel bilgiler",
             "first_name_label": "Ad",
             "first_name_invalid": "Adını gir",
+            "middle_name_label": "İkinci ad (isteğe bağlı)",
+            "middle_name_invalid": "Yalnızca harf, boşluk, kesme işareti ve kısa çizgi kullan",
             "last_name_label": "Soyad",
             "last_name_invalid": "Soyadını gir",
             "dob_label": "Doğum tarihi GG/AA/YYYY",
@@ -1722,13 +1744,60 @@
             "nationality_placeholder": "Uyruk seç",
             "nationality_required": "Uyruğunu seç",
             "nationality_picker_title": "Uyruk",
+            "additional_nationality_label": "Ek uyruk",
+            "add_nationality": "Başka bir uyruk ekle",
+            "remove_nationality": "Kaldır",
+            "additional_nationality_duplicate": "Her uyruk yalnızca bir kez eklenebilir",
             "confirm_button": "Devam et",
             "error_title": "Bir şeyler ters gitti",
             "error_body": "Bilgilerini kaydedemedik. Lütfen tekrar dene.",
             "birth_country_label": "Doğum Ülkesi",
             "birth_country_placeholder": "Ülke seç",
             "birth_country_picker_title": "Doğum Ülkesi",
-            "birth_country_required": "Lütfen doğum ülkeni seç"
+            "birth_country_required": "Lütfen doğum ülkeni seç",
+            "employment_status_label": "Çalışma durumu",
+            "employment_sector_label": "Çalıştığın sektör",
+            "option_placeholder": "Seç",
+            "portugal_investment_scheme": "Portekiz yatırım programına katılıyorum"
+        },
+        "option_picker": {
+            "search_placeholder": "Ara",
+            "empty_title": "Sonuç bulunamadı",
+            "empty_body": "Farklı bir arama dene.",
+            "error_title": "Seçenekler yüklenemedi",
+            "error_body": "Lütfen bağlantını kontrol edip tekrar dene.",
+            "retry": "Tekrar dene"
+        },
+        "additional_details": {
+            "navigation_title": "Ek bilgiler",
+            "body": "Yaşadığın ülkedeki düzenlemelere uymak için birkaç bilgiye daha ihtiyacımız var.",
+            "tin_label": "Vergi kimlik numarası (TIN)",
+            "tin_invalid": "Vergi kimlik numaranı gir (en fazla 20 karakter)",
+            "tin_country_label": "TIN’i veren ülke",
+            "tin_country_unsupported": "ABD vergi numaraları burada kullanılamaz",
+            "country_placeholder": "Ülke seç",
+            "option_placeholder": "Seç",
+            "occupation_label": "Meslek",
+            "occupation_other_label": "Mesleğin",
+            "source_of_wealth_label": "Varlık kaynağı",
+            "source_of_wealth_other_label": "Varlıklarının kaynağı",
+            "business_sector_label": "İş sektörü",
+            "annual_income_label": "Tahmini yıllık gelir",
+            "annual_income_bands": {
+                "less_than_20k": "$20,000'den az",
+                "between_20k_and_50k": "$20,000 ile $50,000 arası",
+                "between_50k_and_100k": "$50,000 ile $100,000 arası",
+                "more_than_100k": "$100,000'den fazla"
+            },
+            "income_country_label": "Gelir elde ettiğin ülke",
+            "add_income_country": "Başka bir ülke ekle",
+            "remove_country": "Kaldır",
+            "income_country_duplicate": "Her ülke yalnızca bir kez eklenebilir",
+            "confirm_button": "Devam et",
+            "error_title": "Bir şeyler ters gitti",
+            "error_body": "Bilgilerini kaydedemedik. Lütfen tekrar dene.",
+            "unavailable_title": "Şu anda kullanılamıyor",
+            "unavailable_body": "Bu bilgileri şu anda kaydedemiyoruz. Lütfen birkaç dakika sonra tekrar dene."
         },
         "address": {
             "navigation_title": "İkamet adresi",
@@ -1775,25 +1844,29 @@
             "error_body": "Doğrulamayı başlatamadık. Lütfen tekrar dene.",
             "open_link_error_body": "Doğrulama sayfasını açamadık. Lütfen tekrar dene."
         },
-        "kyc_required": {
-            "title": "Kimlik doğrulamanı tamamla",
-            "body": "Kimlik kontrolün henüz tamamlanmadı. Pera Card başvurunu sürdürmek için kimliğini doğrula.",
-            "verify_button": "Hesabını doğrula"
-        },
         "setup_status": {
             "title": "Kurulumu tamamla ve zincir üzerinde harcamaya başla",
             "documents_title": "Belgelerini gönder",
+            "documents_locked_body": "Önce bilgilerini gir, ardından kimliğini doğrula.",
             "documents_pending_label": "Beklemede",
+            "documents_preparing_label": "Hesap hazırlanıyor",
             "documents_unverified_body": "Zincir üzerinde harcamaya başlamak için lütfen hesabını doğrula.",
             "documents_verify_button": "Hesabını doğrula",
             "documents_pending_body": "Doğrulaman gönderildi. Tamamlandığında sana e-posta göndereceğiz.",
             "documents_verified_body": "Kimliğin doğrulandı.",
+            "documents_preparing_body": "Kimliğin doğrulandı. Hesabını hazırlıyoruz, bu genellikle birkaç dakika sürer.",
+            "documents_preparing_slow_body": "Kimliğin doğrulandı. Bu normalden uzun sürüyor. Birkaç dakika sonra tekrar dene.",
+            "documents_preparing_stalled_body": "Kimliğin doğrulandı ancak hesabını hazırlamayı tamamlayamadık. Tamamlamak için destek ekibiyle iletişime geç.",
+            "documents_record_missing_body": "Kaydını yükleyemedik. Devam etmek için Pera Card şifrenle giriş yap.",
+            "documents_account_locked_body": "Pera Card hesabın geçici olarak kilitlendi. Kilidi açmak için destek ekibiyle iletişime geç.",
             "documents_rejected_body": "Kimliğini doğrulayamadık. Yardım için lütfen destek ekibiyle iletişime geç.",
             "documents_error_body": "Doğrulama durumunu kontrol edemedik. Lütfen tekrar dene.",
             "documents_retry": "Tekrar dene",
+            "sign_in_to_finish_title": "Tamamlamak için giriş yap",
+            "sign_in_to_finish_body": "Kimliğin doğrulandı. Hesabını kurmayı tamamlamak için Pera Card şifrenle giriş yap.",
             "details_title": "Bilgilerini gir",
             "details_body": "Devam etmek için bilgilerini doğrula ve adresini gir.",
-            "details_button": "Hesabını doğrula",
+            "details_button": "Bilgilerini gir",
             "connect_funds_title": "Fonları bağla",
             "connect_funds_body": "Pera Card’ını kullanmaya başlamak için Pera hesaplarından birini fonlama kaynağı olarak bağla.",
             "connect_funds_button": "Pera hesabı bağla",
@@ -1829,7 +1902,11 @@
             "step_auto_funding_label": "Bağlı hesaptan otomatik fonlamaya izin ver",
             "proceed_button": "Devam et",
             "standing_authority_title": "Neyi yetkilendiriyorsun",
-            "standing_authority_body": "Bu yetki, sen kapatana kadar geçerli kalır. İşlem başına limiti imzan değil, kart sağlayıcın belirler. Fonlama Tipi’ni Manuel yaparak istediğin zaman durdurabilirsin."
+            "standing_authority_body": "Bu yetki, sen kapatana kadar geçerli kalır. İşlem başına limiti imzan değil, kart sağlayıcın belirler. Fonlama Tipi’ni Manuel yaparak istediğin zaman durdurabilirsin.",
+            "add_funds_source_description": "Pera Card’ına bakiye ekle",
+            "withdraw_request_source_description": "Pera Card’ından para çekme talebi oluştur",
+            "withdraw_source_description": "Pera Card’ından para çek",
+            "withdraw_cancel_source_description": "Pera Card para çekme talebini iptal et"
         },
         "auto_funding_signing": {
             "title": "Otomatik imzalama onay isteği",
@@ -2657,6 +2734,7 @@
             "error_title": "Hesap seçilmedi",
             "error_body": "Hiçbir hesap seçilmedi, lütfen önce bir hesap seç",
             "chain_unavailable_title": "{{chain}} bu hesapta kullanılamıyor",
+            "receive_on": "Bu adresi {{chain}} ağında varlık almak için kullanın",
             "copy_address": "Adresi kopyala",
             "share": "Adresi paylaş"
         }
@@ -3181,6 +3259,15 @@
             "deadline_label": "Son tarih",
             "never": "Hiçbir zaman"
         },
+        "collection_approval": {
+            "warning": "Bu, operatörün bu koleksiyonda sahip olduğun tüm öğeleri, sonradan alacakların dahil, iptal edene kadar transfer etmesine izin verir.",
+            "operator_label": "Operatör",
+            "operator_caption": "Operatör: {{address}}",
+            "collection_label": "Koleksiyon"
+        },
+        "token_approval": {
+            "revoke_note": "Bu, adresin bu varlığı taşıma iznini kaldırır."
+        },
         "arbitrary_data_details": {
             "unnamed": "Birisi",
             "description": "Veri imzalama isteği, serbest verinin imzalanması için yapılan bir istektir. Servisler bunu genellikle bir hesabın sahipliğini doğrulamak için kullanır ve herhangi bir ücret oluşturmaz.",
@@ -3265,6 +3352,26 @@
             "details_description": "Onaylamadan önce bu kimlik doğrulama isteğinin tüm metadata’sını incele."
         }
     },
+    "site_safety": {
+        "checking": "Bu site kontrol ediliyor…",
+        "blocked": {
+            "title": "Bu site bilinen bir dolandırıcılık sitesi",
+            "body": "Herkese açık bir oltalama sitesi listesinde yer alıyor. Burada bağlanman veya imzalaman varlıklarını kaybetmene yol açabilir.",
+            "body_verify": "WalletConnect bu siteyi dolandırıcılık olarak bildiriyor. Burada bağlanman veya imzalaman varlıklarını kaybetmene yol açabilir.",
+            "reject": "Reddet ve geri dön",
+            "continue_anyway": "Yine de devam et",
+            "acknowledge": "Bu sitenin dolandırıcılık olarak bildirildiğini ve varlıklarımı kaybedebileceğimi anlıyorum",
+            "continue": "Bu siteye devam et"
+        },
+        "look_alike": {
+            "title": "Bu site başka bir siteyi taklit ediyor olabilir",
+            "body": "{{name}} ({{domain}}) sitesine benziyor ama farklı bir site. Devam etmeden önce adresi kontrol et.",
+            "body_domain": "{{domain}} sitesine benziyor ama farklı bir site. Devam etmeden önce adresi kontrol et.",
+            "acknowledge": "Bu sitenin {{name}} olmadığını anlıyorum",
+            "continue": "Devam et",
+            "reject": "Reddet"
+        }
+    },
     "transactions": {
         "common": {
             "from": "Gönderen",
@@ -3308,6 +3415,8 @@
             "asset_freeze": "Varlık dondurma",
             "app_call": "Uygulama çağrısı",
             "contract_call": "Sözleşme çağrısı",
+            "approval": "Onay",
+            "revoke_approval": "Onayı iptal et",
             "key_registration": "Anahtar kaydı",
             "heartbeat": "Heartbeat",
             "state_proof": "State Proof",
@@ -3467,6 +3576,16 @@
             "speed_up": "Hızlandır",
             "cancel": "İşlemi iptal et",
             "review_notice": "{{txId}} işleminin yerini alır"
+        },
+        "suspected_poisoning": {
+            "marker": "Şüpheli adres zehirlenmesi",
+            "title": "Şüpheli adres zehirlenmesi",
+            "body": "Bu transfer değerli hiçbir şey taşımadı ve tanıdığın bir adrese benzeyecek şekilde oluşturulmuş bir adresten geliyor. Dolandırıcılar bunu, adresleri geçmişinde görünsün ve daha sonra kopyalansın diye gönderir. Bu adresi kopyalama ve ona gönderim yapma.",
+            "sender_label": "Bu adres",
+            "reuse_title": "Bu adres tanıdığın bir adresi taklit ediyor",
+            "reuse_body": "Tanıdığın bir adres gibi başlayıp bitiyor ama aynı değil. Kullanmadan önce tam adresleri karşılaştır.",
+            "reuse_confirm": "Yine de devam et",
+            "reuse_cancel": "İptal"
         }
     },
     "tabbar": {

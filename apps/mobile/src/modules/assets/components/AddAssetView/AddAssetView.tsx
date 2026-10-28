@@ -12,20 +12,22 @@
 
 import React, { useCallback } from 'react'
 import { PWIcon, PWText, PWView } from '@components/core'
+import { ChainNotice } from '@components/ChainNotice'
 import { EmptyView } from '@components/EmptyView'
 import { FilterSelection } from '@components/FilterSelection'
 import { OfflineTolerantView } from '@components/OfflineTolerantView'
 import { AssetSearchItem } from '@modules/assets/components/AssetSearchItem'
 import { AssetSelectionList } from '@modules/assets/components'
-import type { DisplayableAsset } from '@perawallet/wallet-core-assets'
+import type { ScopedAssetSearchResult } from '@perawallet/wallet-core-assets'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { AddAssetContentVariant } from '@modules/assets/components/AddAssetContent'
-import { useAddAssetView } from './useAddAssetView'
+import { resultKey, useAddAssetView } from './useAddAssetView'
 import { useStyles } from './styles'
 
 type AddAssetScreenProps = {
     variant?: AddAssetContentVariant
-    chainId: ChainId
+    chainId: Nullable<ChainId>
 }
 
 // AssetSearchItem draws its own full-width separator; render no list divider.
@@ -44,36 +46,40 @@ export const AddAssetView = ({
         searchQuery,
         handleSearchChange,
         results,
+        showsNetwork,
         isLoading,
         isError,
         isOffline,
         isIntegrityBlocked,
         isUnavailable,
+        unavailableBody,
         isFetchingNextPage,
         hasNextPage,
         fetchNextPage,
-        optedInAssetIds,
-        optingInAssetIds,
-        canManageAssets,
+        isIncomplete,
+        isOptedIn,
+        isOptingIn,
+        canAdd,
         handleRequestAdd,
         t,
     } = useAddAssetView({ variant, chainId })
 
     const renderItem = useCallback(
-        ({ item }: { item: DisplayableAsset }) => (
+        ({ item }: { item: ScopedAssetSearchResult }) => (
             <AssetSearchItem
-                item={item}
-                isOptedIn={optedInAssetIds.has(item.assetId)}
-                isOptingIn={optingInAssetIds.has(item.assetId)}
-                onAdd={canManageAssets ? handleRequestAdd : undefined}
+                result={item}
+                isOptedIn={isOptedIn(item)}
+                isOptingIn={isOptingIn(item)}
+                onAdd={canAdd(item) ? handleRequestAdd : undefined}
+                showsNetwork={showsNetwork}
             />
         ),
-        [optedInAssetIds, optingInAssetIds, canManageAssets, handleRequestAdd],
+        [isOptedIn, isOptingIn, canAdd, handleRequestAdd, showsNetwork],
     )
 
     const handleEndReached = useCallback(() => {
         if (hasNextPage && !isFetchingNextPage) {
-            fetchNextPage?.()
+            fetchNextPage()
         }
     }, [hasNextPage, isFetchingNextPage, fetchNextPage])
 
@@ -94,6 +100,15 @@ export const AddAssetView = ({
         </PWView>
     ) : undefined
 
+    const incompleteNotice = isIncomplete ? (
+        <ChainNotice
+            kind='warning'
+            titleKey='add_asset.partial_results'
+            style={styles.incompleteNotice}
+            testID='add_asset_partial_results'
+        />
+    ) : undefined
+
     const chainFilter =
         chainOptions.length > 0 ? (
             <FilterSelection
@@ -109,7 +124,7 @@ export const AddAssetView = ({
             <AssetSelectionList
                 data={results}
                 renderItem={renderItem}
-                keyExtractor={item => item.assetId}
+                keyExtractor={resultKey}
                 searchValue={searchQuery}
                 onSearchChange={handleSearchChange}
                 searchPlaceholder={
@@ -123,7 +138,7 @@ export const AddAssetView = ({
                 skeletonCount={5}
                 onEndReached={handleEndReached}
                 isFetchingNextPage={isFetchingNextPage}
-                ListHeaderComponent={collectibleNote}
+                ListHeaderComponent={collectibleNote ?? incompleteNotice}
                 ItemSeparatorComponent={NoSeparator}
                 ListEmptyComponent={
                     // No retry affordance: the search re-runs on the next
@@ -133,6 +148,7 @@ export const AddAssetView = ({
                         isIntegrityBlocked={isIntegrityBlocked}
                         isError={isError}
                         isUnavailable={isUnavailable}
+                        unavailableBody={unavailableBody}
                     >
                         <EmptyView
                             title={t('add_asset.no_results')}

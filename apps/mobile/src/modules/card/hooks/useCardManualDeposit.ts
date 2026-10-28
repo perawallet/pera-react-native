@@ -32,6 +32,8 @@ import {
     toError,
     displayUnitsToBaseUnits,
 } from '@perawallet/wallet-core-shared'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
+import { useLanguage } from '@hooks/useLanguage'
 import { useCardScope } from './useCardScope'
 import { USDC_FALLBACK_DECIMALS } from '../utils/usdc'
 
@@ -60,7 +62,7 @@ export type UseCardManualDepositResult = {
 
 const SOURCE = {
     name: 'card-add-funds',
-    description: 'Add funds to your Pera Card',
+    descriptionKey: i18nKey('peraCard.signing.add_funds_source_description'),
 }
 
 /**
@@ -69,6 +71,7 @@ const SOURCE = {
  * balance the app shows is read straight off that account.
  */
 export const useCardManualDeposit = (): UseCardManualDepositResult => {
+    const { t } = useLanguage()
     const scope = useCardScope()
     const queryClient = useQueryClient()
     const { mutateAsync: submit } = useSubmitAndConfirmMutation(scope)
@@ -118,7 +121,13 @@ export const useCardManualDeposit = (): UseCardManualDepositResult => {
                     transactions,
                 })
 
-                const result = await submit({ unsignedTxs, source: SOURCE })
+                const result = await submit({
+                    unsignedTxs,
+                    source: {
+                        name: SOURCE.name,
+                        description: t(SOURCE.descriptionKey),
+                    },
+                })
 
                 await queryClient.invalidateQueries({
                     queryKey: getOnChainAccountStateQueryKey(
@@ -142,6 +151,7 @@ export const useCardManualDeposit = (): UseCardManualDepositResult => {
             queryClient,
             scope,
             submit,
+            t,
             usdcAssetId,
         ],
     )

@@ -19,10 +19,15 @@ import { CopyableText } from '@components/CopyableText'
 import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
+import { ChainIcon } from '@modules/chain-ui/icon'
 import { useReceiveFunds } from '@modules/transactions/hooks'
 import { useQRViewScreen } from './useQRViewScreen'
 import { useStyles } from './styles'
 import { getTestProps } from '@utils/test-id-helper'
+
+// Drawn over the QR's centre rather than through its logo prop, so the chain's
+// icon keeps ChainIcon's circular clip; ecl 'H' leaves the covered modules recoverable.
+const LOGO_RATIO = 0.2
 
 export const QRViewScreen = () => {
     const { t } = useLanguage()
@@ -35,6 +40,8 @@ export const QRViewScreen = () => {
         accountName,
         address,
         paymentUri,
+        chainId,
+        receiveCaption,
         canReceive,
         canGoBack,
         emptyTitle,
@@ -63,7 +70,7 @@ export const QRViewScreen = () => {
         ),
     })
 
-    if (!account || !canReceive) {
+    if (!account || !canReceive || !chainId) {
         return (
             <EmptyView
                 title={emptyTitle}
@@ -78,6 +85,9 @@ export const QRViewScreen = () => {
             />
         )
     }
+
+    const qrSize = width - theme.spacing['5xl'] * 2
+    const logoSize = Math.round(qrSize * LOGO_RATIO)
 
     return (
         <PWScreen
@@ -106,11 +116,21 @@ export const QRViewScreen = () => {
                     <QRCode
                         {...getTestProps('receive_qr_code')}
                         value={paymentUri}
-                        size={width - theme.spacing['5xl'] * 2}
+                        size={qrSize}
                         color='black'
                         backgroundColor='white'
                         quietZone={theme.spacing.sm}
+                        ecl='H'
                     />
+                    <PWView
+                        style={styles.logo}
+                        pointerEvents='none'
+                    >
+                        <ChainIcon
+                            chainId={chainId}
+                            size={logoSize}
+                        />
+                    </PWView>
                 </PWView>
                 <PWView style={styles.addressContainer}>
                     <CopyableText
@@ -119,6 +139,13 @@ export const QRViewScreen = () => {
                     >
                         <PWText style={styles.address}>{address}</PWText>
                     </CopyableText>
+                    <PWText
+                        variant='caption'
+                        style={styles.caption}
+                        testID='receive_chain_caption'
+                    >
+                        {receiveCaption}
+                    </PWText>
                 </PWView>
             </PWView>
         </PWScreen>

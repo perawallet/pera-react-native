@@ -1204,11 +1204,13 @@ export const createWalletConnectV2Handler = (
         // answer it, and a tracked one would then never be released.
         const { onProposal } = requireContext()
         pendingProposals.set(id, pairingId)
+        const requesterOrigin = pendingOrigins.get(pairingId)?.requesterOrigin
         const proposal: ConnectionProposal = {
             kind: WALLET_CONNECT_V2_KIND,
             proposalId: String(id),
             pairingId,
             peer,
+            ...(requesterOrigin ? { requesterOrigin } : {}),
             requested: {
                 networks,
                 chains: offered.map(({ chain }) => chain.chainId),

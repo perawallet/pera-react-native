@@ -60,6 +60,21 @@ describe('services/settings/usePreferences', () => {
         expect(result.current.getPreference('testKey')).toBe('testValue')
     })
 
+    test('re-renders consumers after a write so they re-read live state', () => {
+        let renders = 0
+        const { result } = renderHook(() => {
+            renders += 1
+            return usePreferences()
+        })
+        const before = renders
+
+        act(() => {
+            result.current.setPreference('testKey', 'testValue')
+        })
+
+        expect(renders).toBeGreaterThan(before)
+    })
+
     test('setPreference adds a new preference', () => {
         const { result } = renderHook(() => usePreferences())
 

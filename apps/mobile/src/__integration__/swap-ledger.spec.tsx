@@ -10,11 +10,9 @@
  limitations under the License
  */
 
-// LRK-022 cross-cutting coverage: the swap suites only exercised the two
-// Pera-API boundaries with local-key senders. These cases drive the full
-// prepare → sign → submit → status flow with a Ledger sender (device-approval
-// overlay to submission — guards the LRK-002/003/012 machine fixes at flow
-// level) and with a rekeyed sender (auth signs, sgnr stamped on the wire).
+// Drives the full prepare → sign → submit → status swap flow with a Ledger
+// sender (device-approval overlay through submission) and with a rekeyed
+// sender (auth signs, sgnr stamped on the wire).
 
 import {
     afterAll,
@@ -74,25 +72,10 @@ const SWAP_ID = '98765'
 const LEDGER_ADDRESS = REVIEW_RECEIVER_ADDRESS
 const AUTH_ADDRESS = REVIEW_SIGNER_ADDRESS
 
-type Deferred<T> = {
-    promise: Promise<T>
-    resolve: (value: T) => void
-    reject: (error: Error) => void
-}
-const createDeferred = <T,>(): Deferred<T> => {
-    let resolveFn!: (value: T) => void
-    let rejectFn!: (error: Error) => void
-    const promise = new Promise<T>((res, rej) => {
-        resolveFn = res
-        rejectFn = rej
-    })
-    return { promise, resolve: resolveFn, reject: rejectFn }
-}
-
-let pendingSignature: Deferred<Uint8Array> | null = null
+let pendingSignature: PromiseWithResolvers<Uint8Array> | null = null
 
 const blockOnSignature = (): Promise<Uint8Array> => {
-    pendingSignature = createDeferred<Uint8Array>()
+    pendingSignature = Promise.withResolvers<Uint8Array>()
     return pendingSignature.promise
 }
 
@@ -275,6 +258,7 @@ describe('Flow: Swap with a Ledger / rekeyed sender through the signing pipeline
         )
         expect(algodBodies).toHaveLength(0)
 
+        await waitFor(() => expect(pendingSignature).not.toBeNull())
         pendingSignature!.resolve(new Uint8Array(64))
         await run
 
@@ -286,7 +270,7 @@ describe('Flow: Swap with a Ledger / rekeyed sender through the signing pipeline
     })
 
     it('Given a Ledger sender, when the device rejects, then the swap resolves as cancelled and the backend never receives a failure report', async () => {
-        // LRK-012 swap contract: an on-device reject is a user cancel —
+        // An on-device reject is a user cancel —
         // reportSwapFailure (status failed/blockchain_error) must stay
         // unreachable, and nothing may reach algod.
         useAccountsStore.getState().setAccounts([ledgerAccount])

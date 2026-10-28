@@ -15,10 +15,7 @@ import {
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import type { Optional } from '@perawallet/wallet-core-shared'
-import type {
-    KnownAddress,
-    RecipientAssessment,
-} from '@perawallet/wallet-core-transactions'
+import type { RecipientAssessment } from '@perawallet/wallet-core-transactions'
 import {
     PWCheckbox,
     PWLoadingIndicator,
@@ -31,9 +28,10 @@ import { InfoCallout } from '@components/InfoCallout'
 import { useLanguage } from '@hooks/useLanguage'
 import { getTestProps } from '@utils/test-id-helper'
 import {
-    diffAddresses,
-    type AddressSegment,
-} from '../../../utils/diffAddresses'
+    ComparedAddress,
+    KNOWN_LABEL_KEYS,
+} from '../../../components/address-safety/ComparedAddress'
+import { diffAddresses } from '../../../utils/diffAddresses'
 import { useStyles } from './styles'
 
 export type RecipientSafetyNoticeProps = {
@@ -43,56 +41,6 @@ export type RecipientSafetyNoticeProps = {
     scope: ChainScope
     isAcknowledged: boolean
     onToggleAcknowledged: () => void
-}
-
-const KNOWN_LABEL_KEYS = {
-    'own-account':
-        'send_funds.recipient_safety.look_alike_known_label_own_account',
-    'watched-account':
-        'send_funds.recipient_safety.look_alike_known_label_watched_account',
-    contact: 'send_funds.recipient_safety.look_alike_known_label_contact',
-    history: 'send_funds.recipient_safety.look_alike_known_label_history',
-} as const satisfies Record<KnownAddress['source'], string>
-
-const ComparedAddress = ({
-    label,
-    segments,
-    testID,
-}: {
-    label: string
-    segments: AddressSegment[]
-    testID: string
-}) => {
-    const styles = useStyles()
-
-    return (
-        <PWView style={styles.comparison}>
-            <PWText
-                variant='caption'
-                style={styles.label}
-            >
-                {label}
-            </PWText>
-            <PWText
-                style={styles.address}
-                {...getTestProps(testID)}
-            >
-                {segments.map((segment, index) => (
-                    <PWText
-                        key={index}
-                        weight={segment.isDifferent ? 700 : undefined}
-                        style={
-                            segment.isDifferent
-                                ? styles.difference
-                                : styles.address
-                        }
-                    >
-                        {segment.text}
-                    </PWText>
-                ))}
-            </PWText>
-        </PWView>
-    )
 }
 
 export const RecipientSafetyNotice = ({

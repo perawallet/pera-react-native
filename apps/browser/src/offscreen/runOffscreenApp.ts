@@ -59,6 +59,7 @@ import {
     createEip1193ConnectionHandler,
     importLegacyDappPermissions,
     type DappAccount,
+    type SiteWarningLevel,
 } from '@perawallet/wallet-core-dapp'
 import {
     createStorageSessionKeyStore,
@@ -66,6 +67,10 @@ import {
     importLegacyConnections,
 } from '@perawallet/wallet-core-walletconnect'
 import { logger } from '@perawallet/wallet-core-shared'
+import {
+    assessSiteSafety,
+    startPhishingListRefresh,
+} from '@perawallet/wallet-core-site-safety'
 import { queryClient } from '@providers/queryClient'
 import { startConnectionsHost } from './connections/connectionsHost'
 import { createDatabaseRecovery } from './databaseRecovery'
@@ -166,6 +171,10 @@ export const runOffscreenApp = async ({
     getSyncService().start()
     logger.info('[offscreen] database host ready, warm polling started')
 
+    // The lists' only writer: UI contexts never seed or prune them, and pick up
+    // the active copy as this context's store write reaches chrome.storage.
+    startPhishingListRefresh()
+
     // Offscreen outlives every UI surface, so it owns the handlers and their
     // sockets. Its provider engine has no key source and cannot open sealed
     // material, so session keys are storage-backed and boot never awaits one.
@@ -176,6 +185,8 @@ export const runOffscreenApp = async ({
     const registry = createConnectionRegistry({ store })
     const getNetworkId = (chainId: ChainId) =>
         getSelectedScope(chainId).networkId
+    const siteWarningOf = async (origin: string): Promise<SiteWarningLevel> =>
+        (await assessSiteSafety({ urls: [origin] })).kind
     registry.register(
         createWalletConnectV1Handler({
             chainId: ALGORAND_CHAIN_ID,
@@ -191,6 +202,7 @@ export const runOffscreenApp = async ({
             getCustomNetworkGenesisHash: () =>
                 getCustomNetworkConfig()?.genesisHash,
             getAccounts: () => signingDappAccountsOn(ALGORAND_CHAIN_ID),
+            siteWarningOf,
         }),
     )
     registry.register(
@@ -201,6 +213,7 @@ export const runOffscreenApp = async ({
                 provider.chains.has(chainId) &&
                 provider.chains.capabilities(chainId).dappConnect,
             getAccounts: signingDappAccountsOn,
+            siteWarningOf,
         }),
     )
     const connectionsHost = startConnectionsHost({

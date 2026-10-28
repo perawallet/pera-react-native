@@ -106,7 +106,6 @@ const setResults = (results: {
         accounts: results.accounts ?? [],
         contacts: [],
         assets: results.assets ?? [],
-        remoteAssets: [],
     })
 }
 

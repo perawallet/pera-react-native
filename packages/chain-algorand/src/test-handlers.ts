@@ -15,7 +15,9 @@ export {
     mockAssetDetails,
     mockPublicAssetDetails,
     mockIndexerAssetDetails,
+    mockCrossChainAssetGroups,
     type MockAssetsParams,
+    type MockCrossChainAssetGroupsParams,
     type MockAssetDetailsParams,
     type MockPublicAssetDetailsParams,
     type MockIndexerAssetDetailsParams,
@@ -39,7 +41,9 @@ export {
 } from './accounts/portfolio-msw-handlers'
 
 export {
+    mockAssetPriceHistory,
     mockAssetPrices,
+    type MockAssetPriceHistoryParams,
     type MockAssetPricesParams,
 } from './pricing/msw-handlers'
 

@@ -15,7 +15,7 @@
 // the engine errors; WalletConnect routes failures to its own error sheet and
 // the request's error callback instead. Covers an analysis-stage rejection
 // (round-trip integrity) and a transport-stage failure (delivery callback
-// throws).
+// throws), which is retryable and so keeps the review open for another try.
 
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
@@ -30,6 +30,7 @@ import {
 import {
     buildPaymentTransaction,
     buildTransactionSignRequest,
+    drainPendingSignRequests,
     renderSignReview,
     screen,
     waitFor,
@@ -63,6 +64,7 @@ describe('Flow: signing error paths', () => {
             }),
         )
         await seedAlgo25Signer()
+        drainPendingSignRequests()
     })
 
     it('shows the signing-failed view when the round-trip integrity check rejects the request', async () => {
@@ -87,5 +89,48 @@ describe('Flow: signing error paths', () => {
             },
             { timeout: 10_000 },
         )
+    })
+
+    it('Given a confirmed webview request, when its delivery callback throws, then the error callback fires, the review stays open and confirming again re-delivers', async () => {
+        const { request, approve, reject, error } = buildTransactionSignRequest(
+            {
+                sourceType: 'webview',
+                txs: [buildPaymentTransaction()],
+            },
+        )
+        approve.mockRejectedValueOnce(new Error('delivery failed'))
+
+        const { confirm } = renderSignReview(request)
+
+        await waitFor(
+            () => {
+                expect(screen.getByTestId('signing-confirm-slide')).toBeTruthy()
+            },
+            { timeout: 10_000 },
+        )
+        confirm()
+
+        await waitFor(
+            () => {
+                expect(error).toHaveBeenCalledWith(
+                    expect.objectContaining({ message: 'delivery failed' }),
+                )
+            },
+            { timeout: 10_000 },
+        )
+        // A delivery failure is retryable, so the review stays up instead of the signing-failed view.
+        expect(screen.queryByText('signing.signing_failed.title')).toBeNull()
+        expect(screen.getByTestId('signing-confirm-slide')).toBeTruthy()
+
+        confirm()
+
+        await waitFor(
+            () => {
+                expect(approve).toHaveBeenCalledTimes(2)
+            },
+            { timeout: 10_000 },
+        )
+        expect(error).toHaveBeenCalledTimes(1)
+        expect(reject).not.toHaveBeenCalled()
     })
 })

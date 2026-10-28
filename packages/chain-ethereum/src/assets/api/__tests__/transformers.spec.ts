@@ -78,6 +78,24 @@ describe('toAssetMetadata', () => {
         expect(asset!.peraMetadata).not.toHaveProperty('isPriceAlertEnabled')
     })
 
+    it("carries the item's cross-chain group, and leaves it unread when the item has none", () => {
+        const group = { id: 'usdc', name: 'USD Coin', symbol: 'USDC' }
+
+        const grouped = toAssetMetadata(
+            USDC,
+            item({ ...usdc, cross_chain_asset_group: group }),
+        )
+        const ungrouped = toAssetMetadata(
+            USDC,
+            item({ ...usdc, cross_chain_asset_group: null }),
+        )
+        const unread = toAssetMetadata(USDC, item(usdc))
+
+        expect(grouped.asset!.peraMetadata?.crossChainAssetGroup).toEqual(group)
+        expect(ungrouped.asset!.peraMetadata?.crossChainAssetGroup).toBeNull()
+        expect(unread.asset!.peraMetadata?.crossChainAssetGroup).toBeUndefined()
+    })
+
     it('reports a suspicious item with no metadata as quarantined', () => {
         expect(
             toAssetMetadata(

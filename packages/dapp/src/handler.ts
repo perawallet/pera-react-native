@@ -47,12 +47,16 @@ import {
     type JsonRpcResponse,
 } from './codec'
 import { sanitizeDappIcons } from './icons'
-import type {
-    DappAccount,
-    DappConnection,
-    DappRequestContext,
-    DappRespond,
-    DappTransport,
+import {
+    acknowledgedSiteWarningOf,
+    isWorseSiteWarning,
+    readSiteWarning,
+    type DappAccount,
+    type DappConnection,
+    type DappRequestContext,
+    type DappRespond,
+    type DappTransport,
+    type SiteWarningLevel,
 } from './models'
 import {
     DAPP_KIND,
@@ -79,6 +83,12 @@ export type DappHandlerDeps = {
      * from the page's view without the connection itself being touched.
      */
     getAccounts: () => DappAccount[]
+    /**
+     * The site-safety warning for the page's origin. A site whose warning is
+     * worse than the one accepted at approval sees no accounts and goes back
+     * through an approval, where the warning shows. Absent, every site is clear.
+     */
+    siteWarningOf?: (origin: string) => Promise<SiteWarningLevel>
     now?: () => number
     proposalTtlMs?: number
     requestTtlMs?: number
@@ -163,6 +173,15 @@ export const createDappConnectionHandler = (
     let unsubscribe: (() => void) | null = null
     const openProposals = new Set<string>()
     const pendingTimers = new Set<ReturnType<typeof setTimeout>>()
+
+    const hasNewSiteWarning = async (
+        connection: Connection,
+        origin: string,
+    ): Promise<boolean> =>
+        isWorseSiteWarning(
+            await readSiteWarning(deps.siteWarningOf, origin),
+            acknowledgedSiteWarningOf(connection),
+        )
 
     const getConnection = async (
         origin: string,
@@ -280,10 +299,18 @@ export const createDappConnectionHandler = (
 
         const params = isRecord(request.params) ? request.params : {}
         const existing = await getConnection(ctx.origin)
+        const siteWarning = await readSiteWarning(
+            deps.siteWarningOf,
+            ctx.origin,
+        )
+        const isFlaggedReconnect =
+            existing !== undefined &&
+            isWorseSiteWarning(siteWarning, acknowledgedSiteWarningOf(existing))
+        const reconnecting = isFlaggedReconnect ? undefined : existing
         // Before any network answer: the wrong-network errors name the wallet's
         // active network, so running them first let an unapproved page read it
         // off a gesture-free connect(). A reconnect still needs no gesture.
-        if (!existing && !ctx.hasUserActivation) {
+        if (!reconnecting && !ctx.hasUserActivation) {
             return release(
                 jsonRpcError(
                     request.id,
@@ -314,15 +341,15 @@ export const createDappConnectionHandler = (
                 ),
             )
         }
-        if (existing) {
+        if (reconnecting) {
             await store().upsert({
-                ...existing,
+                ...reconnecting,
                 lastActiveAt: now(),
             })
             return release(
                 jsonRpcResult(
                     request.id,
-                    connectResult(adapter, existing, network),
+                    connectResult(adapter, reconnecting, network),
                 ),
             )
         }
@@ -380,6 +407,7 @@ export const createDappConnectionHandler = (
                     status: 'active',
                     createdAt: now(),
                     lastActiveAt: now(),
+                    metadata: { acknowledgedSiteWarning: siteWarning },
                 }
                 try {
                     await store().upsert(connection)
@@ -410,6 +438,8 @@ export const createDappConnectionHandler = (
                         sanitizeRejectReason(reason),
                     ),
                 )
+                // Turning a flagged site away ends the grant it already held.
+                if (isFlaggedReconnect) await disconnect(ctx.origin)
             },
         }
         requireContext().onProposal(proposal)
@@ -598,7 +628,13 @@ export const createDappConnectionHandler = (
                 return handleSign(ctx, request, respond, 'sign-data')
             }
             case 'getAddresses': {
-                const connection = await getConnection(ctx.origin)
+                const existing = await getConnection(ctx.origin)
+                // A site flagged since its approval sees no accounts until it
+                // is approved again.
+                const connection =
+                    existing && !(await hasNewSiteWarning(existing, ctx.origin))
+                        ? existing
+                        : undefined
                 return deliver(
                     respond,
                     connection

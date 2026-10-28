@@ -304,13 +304,16 @@ registerPreview({
     id: 'comp-asset-search-item',
     render: () => (
         <AssetSearchItem
-            item={{
-                assetId: MOCK_ASSET_ID,
-                name: 'USD Coin',
-                unitName: 'USDC',
-                peraMetadata: {
-                    logo: 'https://perawallet.app/static/usdc-logo.png',
-                    verificationTier: 'verified',
+            result={{
+                scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' },
+                asset: {
+                    assetId: MOCK_ASSET_ID,
+                    name: 'USD Coin',
+                    unitName: 'USDC',
+                    peraMetadata: {
+                        logo: 'https://perawallet.app/static/usdc-logo.png',
+                        verificationTier: 'verified',
+                    },
                 },
             }}
             isOptedIn={false}

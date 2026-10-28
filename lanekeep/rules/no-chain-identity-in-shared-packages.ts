@@ -48,6 +48,11 @@ const ALLOWED: readonly Allowed[] = [
         reason: "Compares a query key's scope against whichever scope the caller passes, never a named chain.",
     },
     {
+        file: 'packages/chain-contract/src/scope.ts',
+        text: '(part as Partial<ChainScope>).chainId === chainId',
+        reason: "Compares a query key's scope against whichever chain the caller passes, never a named chain.",
+    },
+    {
         file: 'packages/dapp/src/handler.ts',
         text: 'scope.chainId === deps.chainId',
         reason: 'Matches whichever chain the handler was built for, never a named chain.',
@@ -76,6 +81,16 @@ const ALLOWED: readonly Allowed[] = [
         file: 'packages/chain-contract/src/models/domain.ts',
         text: 'ref.chainId === descriptor.id',
         reason: 'Compares against whichever descriptor the caller passes, never a named chain.',
+    },
+    {
+        file: 'apps/mobile/src/modules/accounts/components/AccountOverview/useAccountOverviewHeader.ts',
+        text: 'source.scope.chainId === scope.chainId',
+        reason: "Checks each holding source against whichever chain the account's chart plots, never a named chain.",
+    },
+    {
+        file: 'apps/mobile/src/modules/accounts/components/PortfolioView/usePortfolioView.ts',
+        text: 'accountChainIdOf(account, registeredChainIds) === scope.chainId',
+        reason: 'Checks each account against whichever chain the portfolio chart plots, never a named chain.',
     },
     {
         file: 'packages/chain-contract/src/models/domain.ts',

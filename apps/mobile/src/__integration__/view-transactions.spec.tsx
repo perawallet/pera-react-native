@@ -32,7 +32,6 @@ import {
 import { QueryClientProvider } from '@tanstack/react-query'
 import { ThemeProvider } from '@rneui/themed'
 import { http, HttpResponse } from 'msw'
-import { Notifier } from 'react-native-notifier'
 
 import { server } from '@test-utils/msw-server'
 import { createTestQueryClient, getTestTheme } from '@test-utils/render'
@@ -153,7 +152,6 @@ describe('Flow: View transactions → tap into details', () => {
         resetTestKeystore()
         useAccountsStore.getState().setAccounts([ACCOUNT])
         useAccountsStore.getState().setSelectedAccountId(ACCOUNT.id)
-        vi.mocked(Notifier.showNotification).mockClear()
 
         // Account balance row so the history hook has something to
         // anchor its query against.
@@ -537,21 +535,26 @@ describe('Flow: View transactions → tap into details', () => {
             fee: '1000',
             amount: '500000',
         }
-        const apiSpy = vi.fn(() =>
-            HttpResponse.json(
-                {
-                    current_round: 1100,
-                    next: null,
-                    previous: null,
-                    results: [olderTx],
-                },
-                { status: 200 },
-            ),
-        )
+        // The address-safety check reads this endpoint from the newest page,
+        // so only requests paging past the DB (`before_time`) are the list's.
+        const listPageSpy = vi.fn()
         server.use(
             http.get(
                 `*/v1/accounts/${addressOf(ACCOUNT)}/transactions/`,
-                apiSpy,
+                ({ request }) => {
+                    if (new URL(request.url).searchParams.has('before_time')) {
+                        listPageSpy()
+                    }
+                    return HttpResponse.json(
+                        {
+                            current_round: 1100,
+                            next: null,
+                            previous: null,
+                            results: [olderTx],
+                        },
+                        { status: 200 },
+                    )
+                },
             ),
         )
 
@@ -588,7 +591,7 @@ describe('Flow: View transactions → tap into details', () => {
         // hasNextPage flips on when the DB returned a full page —
         // production gates `handleLoadMore` on this same flag.
         expect(result.current.hasNextPage).toBe(true)
-        expect(apiSpy).not.toHaveBeenCalled()
+        expect(listPageSpy).not.toHaveBeenCalled()
 
         // Trigger the same path the list's onEndReached uses. wrap
         // in act so the resulting state mutations flush.
@@ -601,7 +604,7 @@ describe('Flow: View transactions → tap into details', () => {
         // now includes the older tx.
         await waitFor(
             () => {
-                expect(apiSpy).toHaveBeenCalled()
+                expect(listPageSpy).toHaveBeenCalled()
             },
             { timeout: 5000 },
         )

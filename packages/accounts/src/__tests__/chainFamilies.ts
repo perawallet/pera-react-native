@@ -27,6 +27,7 @@ import {
     accountsChainAdapters,
     type AccountsChainAdapter,
 } from '../chain-adapter'
+import type { HdIndex } from '../models'
 
 export const ALGORAND = 'algorand' as ChainId
 export const EVM_CHAINS = [
@@ -198,7 +199,22 @@ export const registerChainFamilies = (
         accountsChainAdapters.register({
             chainId,
             checkActivity,
+            hdKeyPairId: (seedKeyId: string, { account, keyIndex }: HdIndex) =>
+                familyHdKeyId(seedKeyId, family, account, keyIndex),
         } as unknown as AccountsChainAdapter)
     }
     return families
+}
+
+/** Lets `chainId` derive public keys from an in-memory root key, as Algorand's XHD root does. */
+export const deriveInMemoryOn = (chainId: ChainId) => {
+    const family = EVM_CHAINS.includes(chainId) ? 'evm' : 'algorand'
+    const getPublicKey = vi.fn(async ({ account, keyIndex }: HdIndex) =>
+        familyHdPublicKey(family, account, keyIndex),
+    )
+    const createPublicKeyGetter = vi.fn(() => getPublicKey)
+    Object.assign(accountsChainAdapters.get(chainId), {
+        createPublicKeyGetter,
+    })
+    return { createPublicKeyGetter, getPublicKey }
 }

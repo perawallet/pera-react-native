@@ -19,6 +19,7 @@ import {
 } from '@perawallet/wallet-core-settings'
 import { TAP_TO_CONFIRM_WEB_MIN_CONFIRM_DELAY } from '@constants/ui'
 import { APPROVAL_ARMING_DELAY_MS } from '@hooks/useApprovalArming.web'
+import { useApprovalConfirmedStore } from '@hooks/useApprovalConfirmedStore.web'
 import '../../../i18n'
 import { ConfirmAction } from '../ConfirmAction.web'
 
@@ -77,6 +78,7 @@ describe('ConfirmAction (web)', () => {
 
     afterEach(() => {
         vi.useRealTimers()
+        useApprovalConfirmedStore.getState().resetState()
     })
 
     it('renders the tap surface even when the stored mode is "slide"', () => {
@@ -106,6 +108,33 @@ describe('ConfirmAction (web)', () => {
 
     it('does not confirm before the window is armed', () => {
         const { onConfirm } = renderConfirmAction()
+
+        fireEvent.click(screen.getByTestId('confirm-action'))
+        waitMinConfirmDelay()
+        fireEvent.click(screen.getByTestId('confirm-action'))
+
+        expect(onConfirm).not.toHaveBeenCalled()
+    })
+
+    it('stays armed for a confirming tap a couple of seconds later', () => {
+        const { onConfirm } = renderConfirmAction()
+        armWindow()
+
+        fireEvent.click(screen.getByTestId('confirm-action'))
+        act(() => {
+            vi.advanceTimersByTime(2000)
+        })
+        fireEvent.click(screen.getByTestId('confirm-action'))
+
+        expect(onConfirm).toHaveBeenCalledTimes(1)
+    })
+
+    // The approval window's answer is already delivered; the control holds its
+    // success state until the window closes.
+    it('stops confirming once the approval is confirmed', () => {
+        const { onConfirm } = renderConfirmAction()
+        armWindow()
+        act(() => useApprovalConfirmedStore.getState().setConfirmed())
 
         fireEvent.click(screen.getByTestId('confirm-action'))
         waitMinConfirmDelay()

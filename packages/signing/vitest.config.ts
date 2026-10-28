@@ -53,6 +53,16 @@ export default defineConfig({
                 __dirname,
                 '../deeplinks/src/index.ts',
             ),
+            // Same for connections (connections → signing). Subpath first:
+            // the barrel key prefix-matches it.
+            '@perawallet/wallet-core-connections/dappRequest': path.resolve(
+                __dirname,
+                '../connections/src/dappRequest.ts',
+            ),
+            '@perawallet/wallet-core-connections': path.resolve(
+                __dirname,
+                '../connections/src/index.ts',
+            ),
             // The chain sources above also import signing itself, whose dist
             // turbo builds in parallel with this suite (`test` waits only on
             // `^build`). Constants first: the barrel key prefix-matches it.

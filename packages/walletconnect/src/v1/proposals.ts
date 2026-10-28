@@ -279,11 +279,13 @@ export const createV1ProposalHandlers = (deps: {
         }
         openProposals.set(clientId, proposalId)
 
+        const requesterOrigin = pendingOrigins.get(clientId)?.requesterOrigin
         const proposal: ConnectionProposal = {
             kind: WALLET_CONNECT_V1_KIND,
             proposalId,
             pairingId: clientId,
             peer,
+            ...(requesterOrigin ? { requesterOrigin } : {}),
             requested: {
                 networks: v1NetworksFor(scope, chainId),
                 chains: [scope.chainId],

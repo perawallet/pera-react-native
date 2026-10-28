@@ -17,6 +17,7 @@ import { View } from 'react-native'
 import { http, HttpResponse, server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
+import { mockCreateMultisigAccount } from '@perawallet/wallet-core-multisig/test-handlers'
 import { CreateMultisigScreen } from '@modules/multisig/screens/CreateMultisigScreen/CreateMultisigScreen'
 import { SetThresholdScreen } from '@modules/multisig/screens/SetThresholdScreen/SetThresholdScreen'
 import { NameMultisigScreen } from '@modules/multisig/screens/NameMultisigScreen/NameMultisigScreen'
@@ -47,6 +48,12 @@ import { addressOf } from './__fixtures__/accounts'
 // participants must be real addresses and the expected multisig address is
 // derived the same way the screen derives it.
 const VERSION = 1
+
+const PARTICIPANTS = [
+    ALGO25_TEST_ADDRESS,
+    HD_TEST_ADDRESS,
+    REKEY_TARGET_ADDRESS,
+]
 
 const seedParticipants = (addresses: string[]) => {
     const store = useMultisigCreationStore.getState()
@@ -194,6 +201,69 @@ describe('Flow: Create a multisig account from scratch', () => {
         ).toBe(expectedAddress)
 
         // Finishing resets the navigator onto the wallet home stub.
+        await waitFor(() => screen.getByTestId('create-flow-home'))
+    })
+
+    it('Given seeded participants, when the user completes threshold → naming → finish, then a brand-new multisig account is created (not the import branch) and selected', async () => {
+        // No route params into NameMultisig, so this takes the from-scratch
+        // branch that reads the creation store, unlike the test above.
+        seedParticipants(PARTICIPANTS)
+        server.use(
+            mockCreateMultisigAccount({
+                response: {
+                    custom_id: 'joint-create-1',
+                    creation_datetime: '2024-01-01T00:00:00Z',
+                    address: ALGO25_TEST_ADDRESS,
+                    version: 1,
+                    threshold: 2,
+                    participant_addresses: PARTICIPANTS,
+                },
+            }),
+        )
+
+        renderWithNavigation(CreateMultisigScreen, 'CreateMultisig', {
+            initialParams: { chainId: 'algorand' },
+            additionalScreens: [
+                { name: 'SetThreshold', component: SetThresholdScreen },
+                { name: 'NameMultisig', component: NameMultisigScreen },
+                // exitAccountFlow resets to 'TabBar' once creation finishes.
+                {
+                    name: 'TabBar',
+                    component: () => <View testID='create-flow-home' />,
+                },
+            ],
+        })
+
+        await waitFor(() =>
+            screen.getByTestId('create_multisig_continue_button'),
+        )
+        fireEvent.click(screen.getByTestId('create_multisig_continue_button'))
+
+        await waitFor(() => screen.getByTestId('set_threshold_continue_button'))
+        fireEvent.click(screen.getByTestId('set_threshold_continue_button'))
+
+        await waitFor(() => screen.getByTestId('before_create_proceed_button'))
+        fireEvent.click(screen.getByTestId('before_create_proceed_button'))
+
+        await waitFor(() => screen.getByTestId('name_account_finish_button'))
+        fireEvent.change(screen.getByTestId('name_account_name_input'), {
+            target: { value: 'Team treasury' },
+        })
+        fireEvent.click(screen.getByTestId('name_account_finish_button'))
+
+        await waitFor(() =>
+            expect(useAccountsStore.getState().accounts).toHaveLength(1),
+        )
+        const saved = useAccountsStore.getState().accounts[0]
+        expect(saved.custody).toEqual({ kind: 'multisig' })
+        expect(saved.name).toBe('Team treasury')
+        expect(multisigParametersOf(saved, LEGACY_CHAIN_ID)).toEqual({
+            threshold: 2,
+            addresses: PARTICIPANTS,
+            version: 1,
+        })
+        expect(useAccountsStore.getState().selectedAccountId).toBe(saved.id)
+
         await waitFor(() => screen.getByTestId('create-flow-home'))
     })
 

@@ -48,8 +48,10 @@ import type { EvmChain } from '../chains/types'
 import { ethereumCallSummary } from '../signing/review'
 import { meetsReplacementBump, readReplaceableTransaction } from './replacement'
 
-// Nodes word a resend of a pooled transaction differently.
-const ALREADY_KNOWN = /already known|\bknown transaction|alreadyknown/i
+// Nodes word a resend of a pooled transaction differently; Anvil says
+// "transaction already imported".
+const ALREADY_KNOWN =
+    /already known|\bknown transaction|alreadyknown|already imported/i
 
 /** Resolves false only when the node says it has no such transaction. */
 // How long a receipt is awaited before the reconciler is left to settle the send.

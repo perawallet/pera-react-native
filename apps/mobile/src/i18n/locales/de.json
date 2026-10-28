@@ -98,9 +98,10 @@
         "display_opted_in_nfts_description": "Du kannst NFTs ein- oder ausblenden, für die du angemeldet bist, die du aber nicht besitzt"
     },
     "add_asset": {
-        "title": "Für ein Asset anmelden",
+        "title": "Asset hinzufügen",
         "search_placeholder": "Nach Name oder Asset-ID suchen",
         "no_results": "Keine Assets gefunden",
+        "partial_results": "Einige Netzwerke konnten nicht durchsucht werden, daher fehlen möglicherweise Ergebnisse.",
         "opt_in": {
             "failed_title": "Anmeldung fehlgeschlagen",
             "success_title": "Anmeldung erfolgreich",
@@ -201,7 +202,25 @@
         "search_placeholder": "Kontoadresse, NFD-Name oder Kurzname",
         "nfd_results": "NFDomains",
         "nfd_resolving": "NFD wird aufgelöst...",
-        "nfd_resolved": "Aufgelöst von {{name}}"
+        "nfd_resolved": "Aufgelöst von {{name}}",
+        "wrong_network": {
+            "title": {
+                "algorand": "Das ist eine Algorand-Adresse",
+                "evm": "Das ist eine Ethereum-Adresse (EVM)"
+            },
+            "body": {
+                "algorand": "Hier können nur Algorand-Adressen hinzugefügt werden. Bitte überprüfe die Adresse und versuche es erneut.",
+                "evm": "Hier können nur EVM-kompatible Adressen hinzugefügt werden. Bitte überprüfe die Adresse und versuche es erneut."
+            },
+            "send_body": {
+                "algorand": "{{asset}} kann nur an Algorand-Adressen gesendet werden. Bitte überprüfe die Empfängeradresse oder wähle zum Senden ein Asset auf {{family}}.",
+                "evm": "{{asset}} kann nur an EVM-kompatible Adressen (beginnend mit „0x“) gesendet werden. Bitte überprüfe die Empfängeradresse oder wähle zum Senden ein Asset auf {{family}}."
+            },
+            "send_body_on_network": {
+                "algorand": "{{asset}} auf {{network}} kann nur an Algorand-Adressen gesendet werden. Bitte überprüfe die Empfängeradresse oder wähle zum Senden ein Asset auf {{family}}.",
+                "evm": "{{asset}} auf {{network}} kann nur an EVM-kompatible Adressen (beginnend mit „0x“) gesendet werden. Bitte überprüfe die Empfängeradresse oder wähle zum Senden ein Asset auf {{family}}."
+            }
+        }
     },
     "asset_inbox": {
         "requests": {
@@ -912,7 +931,7 @@
         },
         "network_unavailable": {
             "title": "Auf diesem Netzwerk nicht verfügbar",
-            "body": "Dies erfordert Pera-Services, die auf BetaNet oder benutzerdefinierten Knoten nicht verfügbar sind. Wechsel zu MainNet oder TestNet.",
+            "body": "Pera-Dienste sind in diesem Netzwerk nicht verfügbar.",
             "generic_body": "Diese Funktion ist gerade nicht verfügbar."
         },
         "yes": "Ja",
@@ -1597,7 +1616,8 @@
             "otp_body_with_phone": "Gib den Bestätigungscode ein, den wir an {{phone}} gesendet haben, um die Anmeldung abzuschließen.",
             "otp_invalid": "Dieser Code ist nicht korrekt. Bitte versuche es erneut.",
             "send_again": "Erneut senden",
-            "send_again_in": "Erneut senden in {{count}}s"
+            "send_again_in": "Erneut senden in {{count}}s",
+            "account_locked": "Dein Pera Card-Konto ist vorübergehend gesperrt. <0>Wende dich an den Support</0>, um es zu entsperren."
         },
         "forgot_password": {
             "navigation_title": "Passwort zurücksetzen",
@@ -1704,6 +1724,8 @@
             "navigation_title": "Persönliche Angaben",
             "first_name_label": "Vorname",
             "first_name_invalid": "Gib deinen Vornamen ein",
+            "middle_name_label": "Zweiter Vorname (optional)",
+            "middle_name_invalid": "Verwende nur Buchstaben, Leerzeichen, Apostrophe und Bindestriche",
             "last_name_label": "Nachname",
             "last_name_invalid": "Gib deinen Nachnamen ein",
             "dob_label": "Geburtsdatum TT/MM/JJJJ",
@@ -1714,13 +1736,60 @@
             "nationality_placeholder": "Staatsangehörigkeit auswählen",
             "nationality_required": "Wähle deine Staatsangehörigkeit aus",
             "nationality_picker_title": "Staatsangehörigkeit",
+            "additional_nationality_label": "Weitere Staatsangehörigkeit",
+            "add_nationality": "Weitere Staatsangehörigkeit hinzufügen",
+            "remove_nationality": "Entfernen",
+            "additional_nationality_duplicate": "Jede Staatsangehörigkeit kann nur einmal hinzugefügt werden",
             "confirm_button": "Weiter",
             "error_title": "Etwas ist schiefgelaufen",
             "error_body": "Wir konnten deine Angaben nicht speichern. Bitte versuche es erneut.",
             "birth_country_label": "Geburtsland",
             "birth_country_placeholder": "Land auswählen",
             "birth_country_picker_title": "Geburtsland",
-            "birth_country_required": "Bitte wähle dein Geburtsland"
+            "birth_country_required": "Bitte wähle dein Geburtsland",
+            "employment_status_label": "Beschäftigungsstatus",
+            "employment_sector_label": "Branche",
+            "option_placeholder": "Auswählen",
+            "portugal_investment_scheme": "Ich nehme an einem portugiesischen Investitionsprogramm teil"
+        },
+        "option_picker": {
+            "search_placeholder": "Suchen",
+            "empty_title": "Keine Ergebnisse gefunden",
+            "empty_body": "Versuche eine andere Suche.",
+            "error_title": "Optionen konnten nicht geladen werden",
+            "error_body": "Bitte überprüfe deine Verbindung und versuche es erneut.",
+            "retry": "Erneut versuchen"
+        },
+        "additional_details": {
+            "navigation_title": "Weitere Angaben",
+            "body": "Wir brauchen noch ein paar Angaben, um die Vorschriften in deinem Wohnsitzland zu erfüllen.",
+            "tin_label": "Steuer-Identifikationsnummer (TIN)",
+            "tin_invalid": "Gib deine Steuer-Identifikationsnummer ein (höchstens 20 Zeichen)",
+            "tin_country_label": "Ausstellungsland der TIN",
+            "tin_country_unsupported": "US-Steuernummern können hier nicht verwendet werden",
+            "country_placeholder": "Land auswählen",
+            "option_placeholder": "Auswählen",
+            "occupation_label": "Beruf",
+            "occupation_other_label": "Dein Beruf",
+            "source_of_wealth_label": "Herkunft des Vermögens",
+            "source_of_wealth_other_label": "Herkunft deines Vermögens",
+            "business_sector_label": "Wirtschaftszweig",
+            "annual_income_label": "Geschätztes Jahreseinkommen",
+            "annual_income_bands": {
+                "less_than_20k": "Weniger als $20,000",
+                "between_20k_and_50k": "$20,000 bis $50,000",
+                "between_50k_and_100k": "$50,000 bis $100,000",
+                "more_than_100k": "Mehr als $100,000"
+            },
+            "income_country_label": "Land, in dem du Einkommen erzielst",
+            "add_income_country": "Weiteres Land hinzufügen",
+            "remove_country": "Entfernen",
+            "income_country_duplicate": "Jedes Land kann nur einmal hinzugefügt werden",
+            "confirm_button": "Weiter",
+            "error_title": "Etwas ist schiefgelaufen",
+            "error_body": "Wir konnten deine Angaben nicht speichern. Bitte versuche es erneut.",
+            "unavailable_title": "Gerade nicht verfügbar",
+            "unavailable_body": "Wir können diese Angaben gerade nicht speichern. Bitte versuche es in ein paar Minuten erneut."
         },
         "address": {
             "navigation_title": "Wohnadresse",
@@ -1767,25 +1836,29 @@
             "error_body": "Wir konnten die Verifizierung nicht starten. Bitte versuche es erneut.",
             "open_link_error_body": "Wir konnten die Verifizierungsseite nicht öffnen. Bitte versuche es erneut."
         },
-        "kyc_required": {
-            "title": "Schließe deine Identitätsprüfung ab",
-            "body": "Deine Identitätsprüfung wurde noch nicht abgeschlossen. Verifiziere deine Identität, um mit deinem Pera Card Antrag fortzufahren.",
-            "verify_button": "Konto verifizieren"
-        },
         "setup_status": {
             "title": "Einrichtung abschließen und On-Chain ausgeben",
             "documents_title": "Reiche deine Dokumente ein",
+            "documents_locked_body": "Gib zuerst deine Angaben ein und bestätige dann deine Identität.",
             "documents_pending_label": "Ausstehend",
+            "documents_preparing_label": "Konto wird eingerichtet",
             "documents_unverified_body": "Bitte verifiziere dein Konto, um mit dem On-Chain-Ausgeben zu beginnen.",
             "documents_verify_button": "Konto verifizieren",
             "documents_pending_body": "Deine Verifizierung wurde eingereicht. Wir benachrichtigen dich per E-Mail, sobald sie abgeschlossen ist.",
             "documents_verified_body": "Deine Identität wurde verifiziert.",
+            "documents_preparing_body": "Deine Identität ist bestätigt. Wir richten dein Konto ein, das dauert normalerweise nur ein paar Minuten.",
+            "documents_preparing_slow_body": "Deine Identität ist bestätigt. Das dauert länger als üblich. Versuche es in ein paar Minuten erneut.",
+            "documents_preparing_stalled_body": "Deine Identität ist bestätigt, aber wir konnten die Einrichtung deines Kontos nicht abschließen. Wende dich an den Support, um sie abzuschließen.",
+            "documents_record_missing_body": "Wir konnten deine Registrierung nicht laden. Melde dich mit deinem Pera Card-Passwort an, um fortzufahren.",
+            "documents_account_locked_body": "Dein Pera Card-Konto ist vorübergehend gesperrt. Wende dich an den Support, um es zu entsperren.",
             "documents_rejected_body": "Wir konnten deine Identität nicht verifizieren. Bitte wende dich an den Support.",
             "documents_error_body": "Wir konnten deinen Verifizierungsstatus nicht prüfen. Bitte versuche es erneut.",
             "documents_retry": "Erneut versuchen",
+            "sign_in_to_finish_title": "Melde dich an, um abzuschließen",
+            "sign_in_to_finish_body": "Deine Identität ist bestätigt. Melde dich mit deinem Pera Card-Passwort an, um die Einrichtung deines Kontos abzuschließen.",
             "details_title": "Gib deine Daten ein",
             "details_body": "Bestätige deine Angaben und gib deine Adresse ein, um fortzufahren.",
-            "details_button": "Konto verifizieren",
+            "details_button": "Daten eingeben",
             "connect_funds_title": "Guthaben verbinden",
             "connect_funds_body": "Verbinde eines deiner Pera-Konten als Finanzierungsquelle, um deine Pera Card zu nutzen.",
             "connect_funds_button": "Pera-Konto verbinden",
@@ -1821,7 +1894,11 @@
             "step_auto_funding_label": "Auto-Funding vom verknüpften Konto erlauben",
             "proceed_button": "Fortfahren",
             "standing_authority_title": "Was du autorisierst",
-            "standing_authority_body": "Diese Autorisierung bleibt aktiv, bis du sie deaktivierst. Das Limit pro Transaktion legt dein Kartenanbieter fest, nicht deine Signatur. Du kannst sie jederzeit stoppen, indem du den Finanzierungstyp auf Manuell umstellst."
+            "standing_authority_body": "Diese Autorisierung bleibt aktiv, bis du sie deaktivierst. Das Limit pro Transaktion legt dein Kartenanbieter fest, nicht deine Signatur. Du kannst sie jederzeit stoppen, indem du den Finanzierungstyp auf Manuell umstellst.",
+            "add_funds_source_description": "Guthaben zu deiner Pera Card hinzufügen",
+            "withdraw_request_source_description": "Auszahlung von deiner Pera Card anfordern",
+            "withdraw_source_description": "Von deiner Pera Card auszahlen",
+            "withdraw_cancel_source_description": "Pera Card-Auszahlung abbrechen"
         },
         "auto_funding_signing": {
             "title": "Anfrage zur automatischen Signaturgenehmigung",
@@ -2649,6 +2726,7 @@
             "error_title": "Kein Konto ausgewählt",
             "error_body": "Es wurde kein Konto ausgewählt. Bitte wähle zuerst ein Konto aus",
             "chain_unavailable_title": "{{chain}} ist für dieses Konto nicht verfügbar",
+            "receive_on": "Verwende diese Adresse, um Assets auf {{chain}} zu empfangen",
             "copy_address": "Adresse kopieren",
             "share": "Adresse teilen"
         }
@@ -3173,6 +3251,15 @@
             "deadline_label": "Frist",
             "never": "Nie"
         },
+        "collection_approval": {
+            "warning": "Damit kann der Operator jedes Objekt dieser Sammlung übertragen, das du besitzt, auch künftige, bis du die Freigabe widerrufst.",
+            "operator_label": "Operator",
+            "operator_caption": "Operator: {{address}}",
+            "collection_label": "Sammlung"
+        },
+        "token_approval": {
+            "revoke_note": "Damit verliert die Adresse die Berechtigung, dieses Asset zu bewegen."
+        },
         "arbitrary_data_details": {
             "unnamed": "Jemand",
             "description": "Eine Daten-Signaturanfrage ist eine Anfrage zum Signieren beliebiger Daten. Dies wird häufig von Diensten verwendet, um den Besitz eines Kontos zu überprüfen, verursacht jedoch keine Gebühren.",
@@ -3257,6 +3344,26 @@
             "details_description": "Überprüfe die vollständigen Metadaten dieser Authentifizierungsanfrage, bevor du sie genehmigst."
         }
     },
+    "site_safety": {
+        "checking": "Diese Seite wird geprüft…",
+        "blocked": {
+            "title": "Diese Seite ist als Betrug bekannt",
+            "body": "Sie steht auf einer öffentlichen Liste von Phishing-Seiten. Wenn du dich hier verbindest oder etwas signierst, kannst du dein Guthaben verlieren.",
+            "body_verify": "WalletConnect meldet diese Seite als Betrug. Wenn du dich hier verbindest oder etwas signierst, kannst du dein Guthaben verlieren.",
+            "reject": "Ablehnen und zurück",
+            "continue_anyway": "Trotzdem fortfahren",
+            "acknowledge": "Ich verstehe, dass diese Seite als Betrug gemeldet ist und ich mein Guthaben verlieren kann",
+            "continue": "Zu dieser Seite fortfahren"
+        },
+        "look_alike": {
+            "title": "Diese Seite gibt sich möglicherweise als eine andere aus",
+            "body": "Sie sieht aus wie {{name}} ({{domain}}), ist aber eine andere Seite. Prüfe die Adresse, bevor du fortfährst.",
+            "body_domain": "Sie sieht aus wie {{domain}}, ist aber eine andere Seite. Prüfe die Adresse, bevor du fortfährst.",
+            "acknowledge": "Ich verstehe, dass diese Seite nicht {{name}} ist",
+            "continue": "Fortfahren",
+            "reject": "Ablehnen"
+        }
+    },
     "transactions": {
         "common": {
             "from": "Von",
@@ -3300,6 +3407,8 @@
             "asset_freeze": "Asset-Freeze",
             "app_call": "App-Aufruf",
             "contract_call": "Smart-Contract-Aufruf",
+            "approval": "Freigabe",
+            "revoke_approval": "Freigabe widerrufen",
             "key_registration": "Schlüsselregistrierung",
             "heartbeat": "Heartbeat",
             "state_proof": "State Proof",
@@ -3459,6 +3568,16 @@
             "speed_up": "Beschleunigen",
             "cancel": "Transaktion stornieren",
             "review_notice": "Ersetzt Transaktion {{txId}}"
+        },
+        "suspected_poisoning": {
+            "marker": "Verdacht auf Address Poisoning",
+            "title": "Verdacht auf Address Poisoning",
+            "body": "Diese Überweisung hatte keinen Wert und stammt von einer Adresse, die so gestaltet ist, dass sie wie eine aussieht, die du kennst. Betrüger senden so etwas, damit ihre Adresse in deinem Verlauf auftaucht und später kopiert wird. Kopiere sie nicht und sende nichts an sie.",
+            "sender_label": "Diese Adresse",
+            "reuse_title": "Diese Adresse imitiert eine, die du kennst",
+            "reuse_body": "Sie beginnt und endet wie eine Adresse, die du kennst, ist aber nicht dieselbe. Vergleiche die vollständigen Adressen, bevor du sie verwendest.",
+            "reuse_confirm": "Trotzdem fortfahren",
+            "reuse_cancel": "Abbrechen"
         }
     },
     "tabbar": {

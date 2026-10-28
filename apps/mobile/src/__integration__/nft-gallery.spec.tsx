@@ -26,11 +26,9 @@ import {
     describe,
     expect,
     it,
-    vi,
 } from 'vitest'
 import { Decimal } from 'decimal.js'
 import { act, renderHook, waitFor } from '@testing-library/react'
-import { Notifier } from 'react-native-notifier'
 
 import { http, HttpResponse } from 'msw'
 
@@ -109,7 +107,6 @@ describe('Flow: NFT gallery hook (useAccountNfts)', () => {
         resetTestKeystore()
         useAccountsStore.getState().setAccounts([HOLDER])
         useAccountsStore.getState().setSelectedAccountId(HOLDER.id)
-        vi.mocked(Notifier.showNotification).mockClear()
 
         await seedAlgorandAccountState({
             accountAddress: addressOf(HOLDER),

@@ -25,6 +25,7 @@ import {
     invalidateSpendableBalanceQueries,
     invalidateTransactionQueries,
     invalidateTransactionQueriesForAddresses,
+    invalidateTransactionQueriesForChain,
     invalidateTransactionQueriesForScope,
 } from '@perawallet/wallet-core-transactions'
 import {
@@ -403,18 +404,18 @@ export class SyncService {
      * nothing is open, and never throws.
      */
     private async reconcileSubmissions(): Promise<void> {
-        let settled = 0
         for (const { id } of this.deps.chains.list()) {
             if (this.deps.chains.isSwitchedOff(id)) continue
             if (!broadcasterChainAdapters.has(id)) continue
             const summary = await reconcileOpenSubmissions(id)
-            settled += summary.confirmed + summary.failed
-        }
-        if (settled > 0) {
-            // A settled row changes the pending history row's status, and
-            // history queries are DB-cached with staleTime: Infinity, so a
-            // settle on a no-work tick would otherwise leave a stale row.
-            invalidateTransactionQueries(this.deps.queryClient)
+            if (summary.confirmed + summary.failed > 0) {
+                // A settled row changes the pending history row's status, and
+                // history queries are DB-cached with staleTime: Infinity, so a
+                // settle on a no-work tick would otherwise leave a stale row.
+                // Only the settled chain's: another chain's backend-read
+                // History would refetch for nothing.
+                invalidateTransactionQueriesForChain(this.deps.queryClient, id)
+            }
         }
     }
 
@@ -716,6 +717,7 @@ export class SyncService {
             this.deps.queryClient,
             addresses,
             scope,
+            { shouldRefetchAllPages: true },
         )
     }
 }

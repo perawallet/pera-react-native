@@ -42,7 +42,9 @@ import {
     getAssetInboxSendSummaryQueryKey,
     isAssetInboxQuery,
     transactionQueryKeys,
+    consumeFullRefetchRequest,
     invalidateTransactionQueriesForAddresses,
+    invalidateTransactionQueriesForChain,
     invalidateTransactionQueriesForScope,
 } from '../querykeys'
 
@@ -283,6 +285,87 @@ describe('invalidateTransactionQueriesForScope', () => {
         invalidateTransactionQueriesForScope(queryClient, MAINNET)
 
         expect(queryClient.getQueryState(foreignKey)?.isInvalidated).toBe(false)
+    })
+})
+
+describe('invalidateTransactionQueriesForChain', () => {
+    test("invalidates the chain's queries on every network and leaves other chains alone", () => {
+        const queryClient = new QueryClient()
+        const mainnetKey = transactionQueryKeys.records('0xabc', ETHEREUM, {})
+        const sepoliaKey = transactionQueryKeys.records(
+            '0xabc',
+            { chainId: 'ethereum', networkId: 'sepolia' },
+            {},
+        )
+        const baseKey = transactionQueryKeys.records('0xabc', BASE, {})
+        const algorandKey = transactionQueryKeys.history('ADDR1', MAINNET)
+        const foreignKey = ['accounts', 'balance', { scope: ETHEREUM }]
+        for (const key of [
+            mainnetKey,
+            sepoliaKey,
+            baseKey,
+            algorandKey,
+            foreignKey,
+        ]) {
+            queryClient.setQueryData(key, { value: 1 })
+        }
+
+        invalidateTransactionQueriesForChain(queryClient, 'ethereum')
+
+        expect(queryClient.getQueryState(mainnetKey)?.isInvalidated).toBe(true)
+        expect(queryClient.getQueryState(sepoliaKey)?.isInvalidated).toBe(true)
+        expect(queryClient.getQueryState(baseKey)?.isInvalidated).toBe(false)
+        expect(queryClient.getQueryState(algorandKey)?.isInvalidated).toBe(
+            false,
+        )
+        expect(queryClient.getQueryState(foreignKey)?.isInvalidated).toBe(false)
+    })
+})
+
+describe('shouldRefetchAllPages', () => {
+    const requestedFor = (
+        queryClient: QueryClient,
+        key: readonly unknown[],
+    ): boolean => {
+        const query = queryClient.getQueryCache().find({ queryKey: key })
+        return query !== undefined && consumeFullRefetchRequest(query)
+    }
+
+    test('marks a matched records query once, and only when asked', () => {
+        const queryClient = new QueryClient()
+        const recordsKey = transactionQueryKeys.records('0xabc', ETHEREUM, {})
+        queryClient.setQueryData(recordsKey, { value: 1 })
+
+        invalidateTransactionQueriesForAddresses(
+            queryClient,
+            ['0xabc'],
+            ETHEREUM,
+        )
+        expect(requestedFor(queryClient, recordsKey)).toBe(false)
+
+        invalidateTransactionQueriesForAddresses(
+            queryClient,
+            ['0xabc'],
+            ETHEREUM,
+            { shouldRefetchAllPages: true },
+        )
+        expect(requestedFor(queryClient, recordsKey)).toBe(true)
+        expect(requestedFor(queryClient, recordsKey)).toBe(false)
+    })
+
+    test('leaves cached-row history unmarked', () => {
+        const queryClient = new QueryClient()
+        const historyKey = transactionQueryKeys.history('ADDR1', MAINNET)
+        queryClient.setQueryData(historyKey, { value: 1 })
+
+        invalidateTransactionQueriesForAddresses(
+            queryClient,
+            ['ADDR1'],
+            MAINNET,
+            { shouldRefetchAllPages: true },
+        )
+
+        expect(requestedFor(queryClient, historyKey)).toBe(false)
     })
 })
 

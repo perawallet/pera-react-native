@@ -29,8 +29,11 @@ export {
 export {
     getAccountHoldingsPage,
     getAccountHoldingsLite,
+    getAccountHeldAssets,
     getAccountCollectiblesLite,
     assetFromHoldingLiteRow,
+    type AccountHeldAsset,
+    type GetAccountHeldAssetsParams,
     type AccountCollectibleLiteRow,
     type CollectibleSqlSortMode,
     type AccountHoldingsPageRow,

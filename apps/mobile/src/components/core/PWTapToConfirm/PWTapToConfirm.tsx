@@ -16,6 +16,7 @@ import LottieView from 'lottie-react-native'
 import { PWIcon } from '@components/core/PWIcon'
 import { PWText } from '@components/core/PWText'
 import { PWTouchableOpacity } from '@components/core/PWTouchableOpacity'
+import { TAP_TO_CONFIRM_ARMED_TIMEOUT } from '@constants/ui'
 import peraTransactionLoading from '@assets/animations/pera-transaction-loading.json'
 import { useStyles } from './styles'
 import { usePWTapToConfirm } from './usePWTapToConfirm'
@@ -28,8 +29,13 @@ export type PWTapToConfirmProps = {
     isLoading?: boolean
     isConfirmed?: boolean
     isDisabled?: boolean
-    /** A confirming press sooner than this after the arming one disarms instead. */
+    /**
+     * Wait after each tap before the next one can confirm. A tap inside the
+     * wait restarts it and keeps the button armed; the wait shows as a fill.
+     */
     minConfirmDelayMs?: number
+    /** How long the armed state outlives the last tap. */
+    armedTimeoutMs?: number
     style?: StyleProp<ViewStyle>
     testID?: string
 }
@@ -42,6 +48,7 @@ export const PWTapToConfirm = ({
     isConfirmed = false,
     isDisabled = false,
     minConfirmDelayMs = 0,
+    armedTimeoutMs = TAP_TO_CONFIRM_ARMED_TIMEOUT,
     style,
     testID,
 }: PWTapToConfirmProps) => {
@@ -49,7 +56,9 @@ export const PWTapToConfirm = ({
 
     const {
         handlePress,
+        isWaiting,
         rootAnimatedStyle,
+        waitFillStyle,
         idleLabelStyle,
         armedLabelStyle,
         idleContentStyle,
@@ -61,6 +70,7 @@ export const PWTapToConfirm = ({
         isDisabled,
         isConfirmed,
         minConfirmDelayMs,
+        armedTimeoutMs,
     })
 
     return (
@@ -71,12 +81,20 @@ export const PWTapToConfirm = ({
             // The second tap of a quick double-tap must land; the arm/confirm
             // steps provide their own accidental-tap protection.
             allowRapidPress
+            // Busy rather than disabled: a tap during the wait must still reach
+            // handlePress to restart it.
+            aria-busy={isWaiting}
             testID={testID}
         >
             <Animated.View
                 style={[styles.background, rootAnimatedStyle]}
                 pointerEvents='none'
-            />
+            >
+                <Animated.View
+                    style={[styles.waitFill, waitFillStyle]}
+                    pointerEvents='none'
+                />
+            </Animated.View>
             <Animated.View
                 style={[styles.fillLayer, idleContentStyle]}
                 pointerEvents='none'

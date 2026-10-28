@@ -112,4 +112,34 @@ describe('resolveDisplayableVerificationTier', () => {
             ),
         ).toBe(undefined)
     })
+    describe('with a site warning', () => {
+        it('shows suspicious even when the registry verifies the same origin', () => {
+            expect(
+                resolveDisplayableVerificationTier(
+                    project({ url: 'https://tinyman.org' }),
+                    'https://tinyman.org',
+                    true,
+                ),
+            ).toBe('suspicious')
+        })
+
+        it('shows suspicious for a site the registry does not know', () => {
+            expect(
+                resolveDisplayableVerificationTier(undefined, undefined, true),
+            ).toBe('suspicious')
+        })
+
+        it('leaves the registry tier alone without one', () => {
+            expect(
+                resolveDisplayableVerificationTier(
+                    project({ url: 'https://tinyman.org' }),
+                    'https://tinyman.org',
+                    false,
+                ),
+            ).toBe('verified')
+            expect(
+                resolveDisplayableVerificationTier(undefined, undefined, false),
+            ).toBe(undefined)
+        })
+    })
 })

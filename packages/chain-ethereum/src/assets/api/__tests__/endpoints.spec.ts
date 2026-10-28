@@ -176,10 +176,32 @@ describe('fetchWhitelist', () => {
         const rows = await fetchWhitelist(SCOPE, ETHEREUM)
 
         expect(chainIds).toEqual(['1'])
-        expect(rows).toEqual([
+        expect(rows.map(({ assetId, type }) => ({ assetId, type }))).toEqual([
             { assetId: 'native', type: 'native' },
             { assetId: USDC, type: 'erc20' },
         ])
+    })
+
+    it('carries each row as a search result shows it', async () => {
+        server.use(
+            http.get(`${PERA_URL}/api/v3/evm/:chainId/tokens/`, () =>
+                HttpResponse.json({ results: [usdcRow] }),
+            ),
+        )
+
+        const [row] = await fetchWhitelist(SCOPE, ETHEREUM)
+
+        expect(row?.asset).toEqual({
+            assetId: USDC,
+            name: 'USD Coin',
+            unitName: 'USDC',
+            decimals: 6,
+            peraMetadata: {
+                logo: 'https://pera.test/usdc.png',
+                verificationTier: 'verified',
+                type: 'standard_asset',
+            },
+        })
     })
 
     it('skips a row it cannot use and keeps the rest', async () => {
@@ -207,7 +229,7 @@ describe('fetchWhitelist', () => {
 
         const rows = await fetchWhitelist(SCOPE, ETHEREUM)
 
-        expect(rows).toEqual([
+        expect(rows.map(({ assetId, type }) => ({ assetId, type }))).toEqual([
             { assetId: 'native', type: 'native' },
             { assetId: USDC, type: 'erc20' },
         ])

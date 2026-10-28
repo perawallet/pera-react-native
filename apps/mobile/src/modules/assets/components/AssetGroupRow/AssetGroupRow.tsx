@@ -47,7 +47,7 @@ const AssetGroupRowBase = <T extends GroupableHolding>({
         useAssetGroupRow({ item, convertFiat })
 
     if (!icon) {
-        return <AssetRowSkeleton />
+        return <AssetRowSkeleton style={style} />
     }
 
     return (
@@ -59,7 +59,6 @@ const AssetGroupRowBase = <T extends GroupableHolding>({
             <PWView style={styles.summaryRow}>
                 <AssetIcon
                     asset={icon}
-                    logoUrl={group.logoUrl ?? undefined}
                     size='xl'
                 />
                 <PWView style={styles.info}>

@@ -14,8 +14,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, renderHook } from '@testing-library/react'
 import {
     hasCachedHistoryRows,
+    summarizeHistoryItem,
+    useSuspectedPoisoningQuery,
     useTransactionHistoryQuery,
     useTransactionRecordsQuery,
+    type SuspectedPoisoning,
+    type TransactionHistoryItem,
     type UseTransactionHistoryQueryResult,
     type UseTransactionRecordsQueryResult,
 } from '@perawallet/wallet-core-transactions'
@@ -24,12 +28,19 @@ import type {
     TransactionRecord,
 } from '@perawallet/wallet-core-chain-contract'
 import { PeraServiceUnavailableError } from '@perawallet/wallet-core-shared'
+import { useKnownAddresses } from '../../address-safety/useKnownAddresses'
 import { useTransactionHistoryRows } from '../useTransactionHistoryRows'
 
 vi.mock('@perawallet/wallet-core-transactions', () => ({
     hasCachedHistoryRows: vi.fn(),
+    summarizeHistoryItem: vi.fn(),
+    useSuspectedPoisoningQuery: vi.fn(),
     useTransactionHistoryQuery: vi.fn(),
     useTransactionRecordsQuery: vi.fn(),
+}))
+
+vi.mock('../../address-safety/useKnownAddresses', () => ({
+    useKnownAddresses: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
@@ -75,11 +86,21 @@ const recordsResult = (
 
 const ETH_SCOPE = { chainId: 'ethereum', networkId: 'mainnet' } as const
 
+const KNOWN = [{ address: '0xALICE', source: 'contact' as const }]
+
 describe('useTransactionHistoryRows', () => {
     beforeEach(() => {
         vi.resetAllMocks()
         vi.mocked(useTransactionHistoryQuery).mockReturnValue(historyResult())
         vi.mocked(useTransactionRecordsQuery).mockReturnValue(recordsResult())
+        vi.mocked(useKnownAddresses).mockReturnValue({
+            knownAddresses: KNOWN,
+            isPending: false,
+            hasSenderHistory: true,
+        })
+        vi.mocked(useSuspectedPoisoningQuery).mockReturnValue({
+            data: new Map(),
+        })
     })
 
     it('reads records, with only the records query enabled, on a chain without cached rows', () => {
@@ -223,5 +244,112 @@ describe('useTransactionHistoryRows', () => {
         expect(result.current.isLoadFailed).toBe(true)
         expect(result.current.isLoadUnavailable).toBe(true)
         expect(result.current.isLoadIntegrityBlocked).toBe(false)
+    })
+
+    describe('suspected poisoning', () => {
+        const recordOf = (id: string, timestamp: number) =>
+            ({
+                id,
+                timestamp,
+                initiator: '0xSIGNER',
+                summary: { kind: 'transfer', direction: 'in' },
+            }) as TransactionRecord
+        const RECORDS = [
+            recordOf('0xreal', 1_704_153_600_000),
+            recordOf('0xpoison', 1_704_067_200_000),
+            recordOf('0xolder', 1_704_067_100_000),
+        ]
+        const SUSPECTED: SuspectedPoisoning = {
+            transactionId: '0xpoison',
+            counterparty: '0xALlCE',
+            imitates: KNOWN[0],
+        }
+
+        it("checks the account's records against its known addresses", () => {
+            vi.mocked(hasCachedHistoryRows).mockReturnValue(false)
+            vi.mocked(useTransactionRecordsQuery).mockReturnValue(
+                recordsResult({ records: RECORDS }),
+            )
+
+            renderHook(() =>
+                useTransactionHistoryRows({
+                    accountAddress: '0xabc',
+                    scope: ETH_SCOPE,
+                }),
+            )
+
+            expect(useKnownAddresses).toHaveBeenCalledWith({
+                scope: ETH_SCOPE,
+                senderAddress: '0xabc',
+                isEnabled: true,
+                isSenderHistoryOnly: true,
+            })
+            expect(useSuspectedPoisoningQuery).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    accountAddress: '0xabc',
+                    knownAddresses: KNOWN,
+                    entries: RECORDS.map(({ id, summary, initiator }) => ({
+                        id,
+                        summary,
+                        initiator,
+                    })),
+                }),
+            )
+        })
+
+        it('summarises cached rows for the check', () => {
+            vi.mocked(hasCachedHistoryRows).mockReturnValue(true)
+            const summary = { kind: 'transfer', direction: 'in' }
+            vi.mocked(summarizeHistoryItem).mockReturnValue(summary as never)
+            const transaction = {
+                id: 'TX1',
+                roundTime: 1_704_067_200,
+            } as TransactionHistoryItem
+            vi.mocked(useTransactionHistoryQuery).mockReturnValue(
+                historyResult({ transactions: [transaction] }),
+            )
+
+            renderHook(() =>
+                useTransactionHistoryRows({
+                    accountAddress: 'ALGO',
+                    scope: { chainId: 'algorand', networkId: 'mainnet' },
+                }),
+            )
+
+            expect(summarizeHistoryItem).toHaveBeenCalledWith(
+                transaction,
+                'ALGO',
+                'algorand',
+            )
+            expect(useSuspectedPoisoningQuery).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    entries: [{ id: 'TX1', summary }],
+                }),
+            )
+        })
+
+        it('marks an entry without moving or dropping any row', () => {
+            vi.mocked(hasCachedHistoryRows).mockReturnValue(false)
+            vi.mocked(useTransactionRecordsQuery).mockReturnValue(
+                recordsResult({ records: RECORDS }),
+            )
+            const { result, rerender } = renderHook(() =>
+                useTransactionHistoryRows({
+                    accountAddress: '0xabc',
+                    scope: ETH_SCOPE,
+                }),
+            )
+            const unmarkedRows = result.current.rows
+
+            vi.mocked(useSuspectedPoisoningQuery).mockReturnValue({
+                data: new Map([[SUSPECTED.transactionId, SUSPECTED]]),
+            })
+            rerender()
+
+            expect(result.current.rows).toEqual(unmarkedRows)
+            expect(
+                result.current.suspectedPoisoningById.get('0xpoison'),
+            ).toEqual(SUSPECTED)
+        })
     })
 })

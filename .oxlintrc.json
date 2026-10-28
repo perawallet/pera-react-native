@@ -115,6 +115,8 @@
     "@typescript-eslint/consistent-type-imports": ["error", { "fixStyle": "inline-type-imports", "disallowTypeAnnotations": false }],
     "unicorn/switch-case-braces": "error",
     "unicorn/numeric-separators-style": "error",
+    "react/rules-of-hooks": "error",
+    "react/exhaustive-deps": "error",
     "pera/no-algorand-sdk-imports": "error",
     "pera/no-i18n-key-cast": "error"
   },
@@ -248,6 +250,21 @@
     {
       "files": ["packages/chain-contract/src/models/i18n.ts"],
       "rules": { "pera/no-i18n-key-cast": "off" }
+    },
+    {
+      "files": ["packages/*/src/**"],
+      "excludeFiles": [
+        "**/__tests__/**",
+        "**/__mocks__/**",
+        "**/test-utils/**",
+        "**/*.spec.{ts,tsx}",
+        "**/*.test.{ts,tsx}",
+        "packages/accounts/src/hd-walk.ts",
+        "packages/chain-algorand/src/accounts/key-derivation.ts",
+        "packages/chain-ethereum/src/accounts/key-derivation.ts",
+        "packages/backup/src/cloud/hooks/useResolveHdSeedForBackup.ts"
+      ],
+      "rules": { "pera/hd-derive-claimed": "error" }
     },
     {
       "files": ["**/__tests__/**", "**/*.spec.{ts,tsx}", "**/__integration__/**", "**/vitest*.ts"],

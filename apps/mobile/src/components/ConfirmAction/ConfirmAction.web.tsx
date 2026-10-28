@@ -11,8 +11,12 @@
  */
 
 import { PWTapToConfirm } from '@components/core/PWTapToConfirm'
-import { TAP_TO_CONFIRM_WEB_MIN_CONFIRM_DELAY } from '@constants/ui'
+import {
+    TAP_TO_CONFIRM_WEB_ARMED_TIMEOUT,
+    TAP_TO_CONFIRM_WEB_MIN_CONFIRM_DELAY,
+} from '@constants/ui'
 import { useApprovalArming } from '@hooks/useApprovalArming.web'
+import { useApprovalConfirmedStore } from '@hooks/useApprovalConfirmedStore.web'
 import { useLanguage } from '@hooks/useLanguage'
 import type { ConfirmActionProps } from './ConfirmAction'
 
@@ -23,21 +27,28 @@ import type { ConfirmActionProps } from './ConfirmAction'
 // substitute the tap copy instead of passing `title` through.
 // Armed like any approval-window action (see useApprovalArming): on the
 // extension this control signs, and a page can open the window under the cursor.
+// It also shows the window's delivered approval as confirmed until it closes.
 export const ConfirmAction = ({
     title: _,
     isDisabled = false,
+    isConfirmed = false,
     ...rest
 }: ConfirmActionProps) => {
     const { t } = useLanguage()
     const isArmed = useApprovalArming()
+    const isApprovalConfirmed = useApprovalConfirmedStore(
+        state => state.isConfirmed,
+    )
 
     return (
         <PWTapToConfirm
             title={t('common.tap_to_confirm.label')}
             armedTitle={t('common.tap_to_confirm.tap_again_label')}
             {...rest}
+            isConfirmed={isConfirmed || isApprovalConfirmed}
             isDisabled={isDisabled || !isArmed}
             minConfirmDelayMs={TAP_TO_CONFIRM_WEB_MIN_CONFIRM_DELAY}
+            armedTimeoutMs={TAP_TO_CONFIRM_WEB_ARMED_TIMEOUT}
         />
     )
 }

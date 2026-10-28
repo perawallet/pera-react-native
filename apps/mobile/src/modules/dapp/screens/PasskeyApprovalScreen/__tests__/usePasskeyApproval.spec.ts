@@ -11,7 +11,9 @@
  */
 
 import { act, renderHook } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { APPROVAL_SUCCESS_CLOSE_DELAY_MS } from '@constants/ui'
+import { useApprovalConfirmedStore } from '@hooks/useApprovalConfirmedStore.web'
 
 const mocks = vi.hoisted(() => {
     class SecurityError extends Error {
@@ -129,6 +131,56 @@ describe('usePasskeyApproval', () => {
         mocks.assertCredential.mockResolvedValue(SERIALIZED_CREDENTIAL)
         mocks.resolvePasskey.mockResolvedValue(undefined)
         mocks.rejectPasskey.mockResolvedValue(undefined)
+    })
+
+    afterEach(() => {
+        vi.useRealTimers()
+        useApprovalConfirmedStore.getState().resetState()
+    })
+
+    it('approve() shows the confirmed state after resolving and closes only after the delay', async () => {
+        mocks.useDappRequest.mockReturnValue({
+            requestId: 'pk1',
+            approval: CREATE_APPROVAL,
+            isLoading: false,
+        })
+        vi.useFakeTimers()
+        const { result } = renderHook(() => usePasskeyApproval())
+        let approving: Promise<void> = Promise.resolve()
+
+        await act(async () => {
+            approving = result.current.approve()
+            await vi.advanceTimersByTimeAsync(0)
+        })
+
+        expect(mocks.resolvePasskey).toHaveBeenCalledWith(
+            'pk1',
+            SERIALIZED_CREDENTIAL,
+        )
+        expect(result.current.isConfirmed).toBe(true)
+        expect(result.current.isBusy).toBe(false)
+        expect(window.close).not.toHaveBeenCalled()
+
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(APPROVAL_SUCCESS_CLOSE_DELAY_MS)
+            await approving
+        })
+        expect(window.close).toHaveBeenCalledTimes(1)
+    })
+
+    it('approve() does nothing once the approval is confirmed', async () => {
+        mocks.useDappRequest.mockReturnValue({
+            requestId: 'pk1',
+            approval: CREATE_APPROVAL,
+            isLoading: false,
+        })
+        act(() => useApprovalConfirmedStore.getState().setConfirmed())
+        const { result } = renderHook(() => usePasskeyApproval())
+
+        await act(async () => result.current.approve())
+
+        expect(mocks.createCredential).not.toHaveBeenCalled()
+        expect(mocks.resolvePasskey).not.toHaveBeenCalled()
     })
 
     it('exposes rpId, userName and origin from the pending passkey-create approval', () => {

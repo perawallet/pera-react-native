@@ -1,0 +1,82 @@
+# Six Anvil nodes, one per EVM chain Pera ships, each serving that chain's testnet
+# EIP-155 id so the app's own network-to-chain-id check passes. Ports bind to
+# loopback only: these nodes hold well-known dev keys.
+name: pera-evmnet
+
+x-anvil: &anvil
+  image: ghcr.io/foundry-rs/foundry:v1.5.1@sha256:3a70bfa9bd2c732a767bb60d12c8770b40e8f9b6cca28efc4b12b1be81c7f28e
+  restart: unless-stopped
+  healthcheck:
+    test: ["CMD", "cast", "block-number", "--rpc-url", "http://127.0.0.1:8545"]
+    interval: 2s
+    timeout: 5s
+    retries: 30
+
+services:
+  ethereum:
+    <<: *anvil
+    entrypoint: ["anvil"]
+    container_name: pera_evmnet_ethereum
+    ports:
+      - "127.0.0.1:8545:8545"
+    command:
+      - "--host"
+      - "0.0.0.0"
+      - "--chain-id"
+      - "11155111"
+  base:
+    <<: *anvil
+    entrypoint: ["anvil"]
+    container_name: pera_evmnet_base
+    ports:
+      - "127.0.0.1:8546:8545"
+    command:
+      - "--host"
+      - "0.0.0.0"
+      - "--chain-id"
+      - "84532"
+      - "--optimism"
+  bsc:
+    <<: *anvil
+    entrypoint: ["anvil"]
+    container_name: pera_evmnet_bsc
+    ports:
+      - "127.0.0.1:8547:8545"
+    command:
+      - "--host"
+      - "0.0.0.0"
+      - "--chain-id"
+      - "97"
+  arbitrum:
+    <<: *anvil
+    entrypoint: ["anvil"]
+    container_name: pera_evmnet_arbitrum
+    ports:
+      - "127.0.0.1:8548:8545"
+    command:
+      - "--host"
+      - "0.0.0.0"
+      - "--chain-id"
+      - "421614"
+  avalanche:
+    <<: *anvil
+    entrypoint: ["anvil"]
+    container_name: pera_evmnet_avalanche
+    ports:
+      - "127.0.0.1:8549:8545"
+    command:
+      - "--host"
+      - "0.0.0.0"
+      - "--chain-id"
+      - "43113"
+  polygon:
+    <<: *anvil
+    entrypoint: ["anvil"]
+    container_name: pera_evmnet_polygon
+    ports:
+      - "127.0.0.1:8550:8545"
+    command:
+      - "--host"
+      - "0.0.0.0"
+      - "--chain-id"
+      - "80002"

@@ -71,6 +71,7 @@ import {
     createEvmKeyDerivation,
 } from './accounts'
 import { createEthereumAssetsAdapter } from './assets'
+import { cachedWhitelist } from './assets/api/whitelist-cache'
 import { createEvmNodeEndpointAdapter } from './blockchain/node-endpoint'
 import type { EvmChain } from './chains/types'
 import { createEthereumDappRequestAdapter } from './connect/dappRequestAdapter'
@@ -113,6 +114,8 @@ const buildAdapters = (
     chain: EvmChain,
 ): EvmChainAdapters => {
     const reviewer = createEthereumReviewer({ chain })
+    // Account sync and asset search read the same token list.
+    const listedTokens = cachedWhitelist(chain)
     return {
         addressCodec: createEvmAddressCodec(chain),
         keyDerivation: createEvmKeyDerivation(chain),
@@ -121,8 +124,8 @@ const buildAdapters = (
         signingReviewer: createEvmSigningReviewerAdapter(chain, reviewer),
         localKeySigner: createEvmLocalKeySignerAdapter(chain),
         messageSigner: createEvmMessageSignerAdapter(chain),
-        accounts: createEthereumAccountsAdapter(ctx, chain),
-        assets: createEthereumAssetsAdapter(ctx, chain),
+        accounts: createEthereumAccountsAdapter(ctx, chain, listedTokens),
+        assets: createEthereumAssetsAdapter(ctx, chain, listedTokens),
         transfer: createEvmTransferAdapter(ctx, chain),
         broadcaster: createEvmBroadcasterAdapter(ctx, chain),
         history: createEvmHistoryAdapter(chain),

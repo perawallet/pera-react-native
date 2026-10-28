@@ -76,7 +76,7 @@ describe('fetchAccountFastLookup', () => {
         ])
     })
 
-    test('treats request failures as inactive accounts', async () => {
+    test('reads a failed lookup as inactive when another in the batch answered', async () => {
         queryClientMock.mockImplementation(async ({ url }: { url: string }) => {
             if (url === '/v1/accounts/fast-lookup/ADDR1/') {
                 throw new Error('boom')
@@ -89,6 +89,15 @@ describe('fetchAccountFastLookup', () => {
             { address: 'ADDR1', accountExists: false },
             { address: 'ADDR2', accountExists: true },
         ])
+    })
+
+    test('rejects when every lookup in the batch fails', async () => {
+        const offline = new Error('offline')
+        queryClientMock.mockRejectedValue(offline)
+
+        await expect(
+            fetchAccountFastLookup(['ADDR1', 'ADDR2'], SCOPE),
+        ).rejects.toBe(offline)
     })
 
     test('getAccountFastLookupEndpointPath embeds the address in the URL', () => {

@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { renderHook, waitFor } from '@testing-library/react'
+import { act, renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 import { Decimal } from 'decimal.js'
@@ -103,6 +103,33 @@ describe.each(SCOPES)('useCardWalletBalanceQuery ($chainId)', SCOPE => {
         expect(fetchWalletBalance).toHaveBeenCalledTimes(2)
         expect(result.current.reward.wallet?.balance.toFixed()).toBe('5')
         expect(result.current.credit.wallet?.balance.toFixed()).toBe('9')
+    })
+
+    it("keeps refetch's identity across renders", async () => {
+        fetchWalletBalance.mockResolvedValue(wallet('w_1', '1'))
+        const { result, rerender } = renderHook(
+            () => useCardWalletBalanceQuery(SCOPE, CardWalletKind.Reward),
+            { wrapper },
+        )
+        await waitFor(() => expect(result.current.wallet).not.toBeNull())
+        const first = result.current.refetch
+
+        rerender()
+
+        expect(result.current.refetch).toBe(first)
+    })
+
+    it('refetch requests again', async () => {
+        fetchWalletBalance.mockResolvedValue(wallet('w_1', '1'))
+        const { result } = renderHook(
+            () => useCardWalletBalanceQuery(SCOPE, CardWalletKind.Reward),
+            { wrapper },
+        )
+        await waitFor(() => expect(fetchWalletBalance).toHaveBeenCalledTimes(1))
+
+        act(() => result.current.refetch())
+
+        await waitFor(() => expect(fetchWalletBalance).toHaveBeenCalledTimes(2))
     })
 
     it('stays idle without a Baanx session', () => {

@@ -20,9 +20,14 @@ import {
     vi,
 } from 'vitest'
 import { Decimal } from 'decimal.js'
-import { fireEvent, renderHook, screen, waitFor } from '@testing-library/react'
+import {
+    act,
+    fireEvent,
+    renderHook,
+    screen,
+    waitFor,
+} from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
-import { Notifier } from 'react-native-notifier'
 
 import { server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
@@ -57,7 +62,7 @@ import {
     mockPublicAssetDetails,
 } from '@perawallet/wallet-core-chain-algorand/test-handlers'
 
-import { isElementDisabled } from '@test-utils/rnw'
+import { findEnabledByTestId } from '@test-utils/rnw'
 import {
     ALGO25_TEST_ADDRESS,
     ALGO25_TEST_MNEMONIC_INDICES,
@@ -93,7 +98,7 @@ const NFT_HOLDER_PLACEHOLDER: WalletAccount = {
 const seedSigningHolder = async (): Promise<WalletAccount> => {
     const { result: kms } = renderHook(() => useKMS())
     let key: Algo25KeyResult | null = null
-    await waitFor(async () => {
+    await act(async () => {
         key = await kms.current.createAlgo25Key({
             mnemonicIndices: ALGO25_TEST_MNEMONIC_INDICES,
         })
@@ -140,7 +145,6 @@ describe('Flow: View NFT collectible detail', () => {
             .getState()
             .setSelectedAccountId(NFT_HOLDER_PLACEHOLDER.id)
         useSendFundsStore.getState().reset()
-        vi.mocked(Notifier.showNotification).mockClear()
 
         // Pre-populate the holding so `useAccountAssetBalanceQuery`
         // resolves to a non-zero amount and the screen renders the
@@ -349,17 +353,8 @@ describe('Flow: View NFT collectible detail', () => {
             },
         )
 
-        await waitFor(
-            () => {
-                expect(screen.getByTestId('send_confirm_button')).toBeTruthy()
-            },
-            { timeout: 5000 },
-        )
-        const confirmButton = screen.getByTestId(
-            'send_confirm_button',
-        ) as HTMLButtonElement
-        await waitFor(() => {
-            expect(isElementDisabled(confirmButton)).toBe(false)
+        const confirmButton = await findEnabledByTestId('send_confirm_button', {
+            timeout: 5000,
         })
 
         fireEvent.click(confirmButton)

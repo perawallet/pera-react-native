@@ -50,6 +50,7 @@ import {
     TOPIC as V2_SESSION_TOPIC,
     V2_URI,
 } from '@packages/walletconnect/src/v2/__tests__/fakeWalletKit'
+import { SENDER } from '@packages/chain-ethereum/src/__tests__/testing'
 import {
     useAccountsStore,
     type WalletAccount,
@@ -78,6 +79,7 @@ import {
     evmTransactionReceipt,
 } from '@perawallet/wallet-core-chain-ethereum/test-handlers'
 import { kmsCore } from '@perawallet/wallet-core-kms'
+import { nativeAssetFor, upsertAssets } from '@perawallet/wallet-core-assets'
 import { useSecurityStore } from '@perawallet/wallet-core-security'
 import {
     findTransactionBatch,
@@ -125,8 +127,10 @@ vi.mock('@perawallet/wallet-core-config', async importOriginal => {
     }
 })
 
-const STORED_ETH_ADDRESS = '0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed'
-const CHECKSUMMED_ETH_ADDRESS = '0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed'
+// Hardhat #0, the key the batch's fixture signatures were made with: the
+// planner refuses a signature that doesn't recover to the sender.
+const CHECKSUMMED_ETH_ADDRESS = SENDER
+const STORED_ETH_ADDRESS = SENDER.toLowerCase()
 const ETH_MAINNET = 'eip155:1'
 
 const ALGORAND_ACCOUNT: WalletAccount = {
@@ -571,6 +575,135 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                 })
             })
 
+            describe('an unlimited token approval', () => {
+                const USDC = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
+                const SPENDER = '0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC'
+                // approve(SPENDER, 2^256-1)
+                const APPROVE_DATA = `0x095ea7b3${SPENDER.slice(2).toLowerCase().padStart(64, '0')}${'f'.repeat(64)}`
+
+                const reviewApproval = async () => {
+                    await upsertAssets({
+                        items: [
+                            {
+                                ...nativeAssetFor('ethereum'),
+                                assetId: USDC,
+                                name: 'USD Coin',
+                                unitName: 'USDC',
+                                decimals: 6,
+                            },
+                        ],
+                        scope: { chainId: 'ethereum', networkId: 'mainnet' },
+                    })
+                    const walletKit = await settle()
+                    renderSignReview()
+                    sendTransaction(walletKit, {
+                        from: CHECKSUMMED_ETH_ADDRESS,
+                        to: USDC,
+                        value: '0x0',
+                        data: APPROVE_DATA,
+                    })
+                    const request = await queued()
+                    await waitFor(
+                        () => {
+                            expect(
+                                screen.getAllByTestId(
+                                    'signing_transaction_review',
+                                ),
+                            ).not.toHaveLength(0)
+                        },
+                        { timeout: 5000 },
+                    )
+                    return { walletKit, request }
+                }
+
+                describe('with contractDecoding on', () => {
+                    beforeEach(() => {
+                        // One override per chain, so dappConnect is restated.
+                        setCapabilityOverrides(
+                            { dappConnect: true, contractDecoding: true },
+                            'ethereum',
+                        )
+                    })
+
+                    it('Given a dApp approves a spender for unlimited USDC, when it is reviewed, then it reads as an approval with the unlimited warning and approving it answers the dApp', async () => {
+                        const { walletKit, request } = await reviewApproval()
+
+                        await waitFor(() => {
+                            expect(
+                                screen.getAllByTestId(
+                                    'message-signing-spend-approval-warning',
+                                ),
+                            ).not.toHaveLength(0)
+                        })
+                        expect(
+                            screen.getAllByText(
+                                'transactions.list_item.approval',
+                            ),
+                        ).not.toHaveLength(0)
+                        expect(
+                            screen.getAllByText(
+                                'signing.spend_approval.unlimited',
+                            ),
+                        ).not.toHaveLength(0)
+                        await waitFor(() => {
+                            expect(
+                                screen.getAllByText('USDC'),
+                            ).not.toHaveLength(0)
+                        })
+                        expect(
+                            screen.queryByTestId(
+                                'ethereum_contract_call_warning',
+                            ),
+                        ).toBeNull()
+
+                        fireEvent.click(
+                            screen.getAllByTestId(
+                                'message-signing-spend-approval-warning',
+                            )[0],
+                        )
+                        await waitFor(() => {
+                            expect(
+                                screen.getAllByTestId(
+                                    'message-signing-spend-approval-row-unlimited',
+                                ),
+                            ).not.toHaveLength(0)
+                        })
+
+                        await act(async () => {
+                            await request.approve([], { txIds: [HASH] })
+                        })
+                        await waitFor(() => {
+                            expect(answerOf(walletKit)).toMatchObject({
+                                id: 7,
+                                result: HASH,
+                            })
+                        })
+                    })
+                })
+
+                it('Given contractDecoding is off, when the same approval is reviewed, then it is still an unrecognised contract call', async () => {
+                    await reviewApproval()
+
+                    await waitFor(() => {
+                        expect(
+                            screen.getAllByTestId(
+                                'ethereum_contract_call_warning',
+                            ),
+                        ).not.toHaveLength(0)
+                    })
+                    expect(
+                        screen.getAllByText(
+                            'transactions.list_item.contract_call',
+                        ),
+                    ).not.toHaveLength(0)
+                    expect(
+                        screen.queryByTestId(
+                            'message-signing-spend-approval-warning',
+                        ),
+                    ).toBeNull()
+                })
+            })
+
             it.each([
                 ['a type 0x4 transaction', { type: '0x4' }, -32_602],
                 ['a contract creation', { to: undefined }, -32_602],
@@ -612,14 +745,32 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
             }
             const SWAP = { to: ROUTER, data: '0x5ae401dc', value: '0x0' }
 
-            // Ethereum keys never exist in JS, so every digest gets one real
-            // r‖s‖v: the bytes parse and recover, and differ per transaction.
-            const FIXED_SIGNATURE = Uint8Array.from(
-                Buffer.from(
-                    '923c0f4c3ec362322e052c7d1f1d6ea2a364621802f4428c6508a4fe71a655ef332789ab7ace0f5c627bcda10589e4e437c568bfb39cd09f4dc40da8789c05ac01',
-                    'hex',
-                ),
-            )
+            // Ethereum keys never exist in JS, so the KMS answers with
+            // signatures Hardhat #0 made over these exact digests, in its
+            // r‖s‖recovery encoding. The node fixture (nonce from `sent`, the
+            // default gas and fees) makes each build deterministic; a digest
+            // missing here means the build changed and its signature must be
+            // regenerated.
+            const SENDER_SIGNATURES: Record<string, string> = {
+                // APPROVE at nonce 0.
+                '35d4743dcd74cb81a8555ef7ea473b2ea2bff01f751dcc04670a71a336e5e90f':
+                    'f9c1869252f1cf3b7105548ce092225878351468f96adf3d2a8b60cd1a6ffc96290c1a8c4969a3bdc36d64fc73f0daa0181345e80f6060d6ee454d9bf583185c01',
+                // SWAP at nonce 1.
+                '3927b6f27af213c34d8616b9712f1bc2659609ef63787859d89b1a57416bd901':
+                    '6d8ec16f5cdc77ef3dd518eba38226c07972bdf0d68fcce47433ae2b7cfe84672a6c4268f37cb60d47f49b3e1771aa29570050917796e61b6bac54d9d0339ca201',
+            }
+
+            const signWithSenderKey = async (
+                _keyPairId: string,
+                digest: Uint8Array,
+            ) => {
+                const hex = Buffer.from(digest).toString('hex')
+                const signature = SENDER_SIGNATURES[hex]
+                if (!signature) {
+                    throw new Error(`No fixture signature for digest ${hex}`)
+                }
+                return Uint8Array.from(Buffer.from(signature, 'hex'))
+            }
 
             const sent: string[] = []
 
@@ -763,7 +914,7 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                 await resetTestDatabase()
                 sent.length = 0
                 useSecurityStore.getState().setAppLockActive(false)
-                vi.spyOn(kmsCore, 'sign').mockResolvedValue(FIXED_SIGNATURE)
+                vi.spyOn(kmsCore, 'sign').mockImplementation(signWithSenderKey)
             })
             afterEach(() => {
                 vi.restoreAllMocks()

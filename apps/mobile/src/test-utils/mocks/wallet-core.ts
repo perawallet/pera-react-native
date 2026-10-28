@@ -33,6 +33,19 @@ vi.mock('@perawallet/wallet-core-projects', () => ({
     })),
 }))
 
+// The real check reads SQLite and loads megabytes of bundled lists; specs that
+// exercise it unmock this.
+vi.mock('@perawallet/wallet-core-site-safety', () => ({
+    useSiteSafetyQuery: vi.fn(() => ({
+        verdict: { kind: 'clear' },
+        isChecking: false,
+    })),
+    assessSiteSafety: vi.fn(async () => ({ kind: 'clear' })),
+    startPhishingListRefresh: vi.fn(() => () => {}),
+    PHISHING_LIST_STORE_NAME: 'site-safety-phishing-lists-store',
+    usePhishingListStore: { persist: { rehydrate: vi.fn() } },
+}))
+
 vi.mock('@perawallet/wallet-core-walletconnect', async () => {
     // The deep-link parser is a pure leaf the app needs for real. Loaded by path:
     // the package barrel registers stores at module-eval, which every spec's
@@ -302,14 +315,19 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
         error: null,
         isSuccess: false,
     })),
-    useAssetSearchQuery: vi.fn(() => ({
+    useAssetSearchAcrossScopesQuery: vi.fn(() => ({
         results: [],
         isLoading: false,
         isError: false,
+        error: null,
+        isPaused: false,
         isFetchingNextPage: false,
         hasNextPage: false,
         fetchNextPage: vi.fn(),
+        isIncomplete: false,
     })),
+    // The mocked search never fails, so nothing reaches this.
+    isAssetSearchUnavailableError: () => false,
     AssetSortModes: {
         balanceDesc: 'balanceDesc',
         balanceAsc: 'balanceAsc',

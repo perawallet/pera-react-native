@@ -232,6 +232,33 @@ describe('useWalletConnectHandler', () => {
         })
     })
 
+    it('records the page origin the webview reported as the requester', async () => {
+        const { connect } = render('https://dapp.example/swap?x=1')
+
+        act(() => connect('wc-origin'))
+
+        await waitFor(() => {
+            expect(mockConnect).toHaveBeenCalledWith(WC_URI, {
+                origin: {
+                    source: 'in-app',
+                    requesterOrigin: 'https://dapp.example',
+                },
+            })
+        })
+    })
+
+    it('records no requester when the webview reported no page', async () => {
+        const { connect } = render(null)
+
+        act(() => connect('wc-no-origin'))
+
+        await waitFor(() => {
+            expect(mockConnect).toHaveBeenCalledWith(WC_URI, {
+                origin: { source: 'in-app' },
+            })
+        })
+    })
+
     it('answers the page with a readable error when the pairing outcome times out', async () => {
         vi.useFakeTimers()
         try {

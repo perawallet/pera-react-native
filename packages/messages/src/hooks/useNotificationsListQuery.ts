@@ -120,15 +120,17 @@ export const useNotificationsListQuery =
         // focus with `refetch` in its effect deps, so a per-render identity
         // re-runs the effect after every render the refetch itself causes — an
         // infinite request loop with the refresh spinner pinned.
+        const { fetchNextPage: fetchNextQueryPage, refetch: refetchQuery } =
+            query
         const fetchNextPage = useCallback(() => {
             if (!isEnabled) return
-            void query.fetchNextPage()
-        }, [isEnabled, query.fetchNextPage])
+            void fetchNextQueryPage()
+        }, [isEnabled, fetchNextQueryPage])
 
         const refetch = useCallback(() => {
             if (!isEnabled) return
-            void query.refetch()
-        }, [isEnabled, query.refetch])
+            void refetchQuery()
+        }, [isEnabled, refetchQuery])
 
         return {
             data: query.data ?? [],

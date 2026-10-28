@@ -27,11 +27,14 @@ let instance: Database | null = null
 // The submission ledger, its batches and the reviews that approved them are
 // the only tables not rebuilt by a resync: losing them strands in-flight
 // broadcasts the reconciler would otherwise settle, and batches part-way
-// through their transactions.
+// through their transactions. The phishing lists aren't user data and a resync
+// can't rebuild them; emptied, every site would read as unlisted until the
+// next refresh.
 export const RESET_PRESERVED_TABLES = [
     'submission_attempts',
     'transaction_batches',
     'review_approvals',
+    'phishing_list_domains',
 ] as const
 
 export type InitializeDatabaseOptions = {

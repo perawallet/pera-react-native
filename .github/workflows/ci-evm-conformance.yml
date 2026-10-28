@@ -1,0 +1,121 @@
+name: CI / EVM Conformance
+
+# Runs conformance-evm/ against six local Anvil nodes instead of mocks — see
+# conformance-evm/README.md. Nightly because it needs Docker and booted nodes;
+# also gated on PR to the packages this suite exercises, so a regression is
+# caught before merge rather than the following night.
+#
+# lanekeep's pera/conformance-workflow-paths fails when a workspace dependency
+# in conformance-evm/package.json is missing from `paths`; the packages the
+# suite's vitest.config.ts aliases to source are listed by hand.
+
+on:
+    schedule:
+        # Staggered after the LocalNet conformance run (03:00).
+        - cron: '30 3 * * *'
+    workflow_dispatch: {}
+    pull_request:
+        paths:
+            - 'conformance-evm/**'
+            # The keystore driver and field-diff formatter the harness reuses.
+            - 'conformance/**'
+            - 'packages/chain-ethereum/**'
+            - 'packages/signing/**'
+            - 'packages/kms/**'
+            - 'packages/accounts/**'
+            - 'packages/chain-contract/**'
+            - 'packages/shared/**'
+            - 'packages/assets/**'
+            - 'packages/database/**'
+            # The secp256k1 shim keystore-core signs EVM payloads through.
+            - 'extensions/provider/**'
+            # Aliased to source in conformance-evm/vitest.config.ts.
+            - 'packages/chain-shared/**'
+            - 'packages/config/**'
+            - 'packages/transactions/**'
+            # The Anvil nodes, the Solidity fixtures' build, the runner, and the
+            # OP-stack predeploy capture the Base fee fixtures come from.
+            - 'tools/dev/evmnet*'
+            - 'tools/dev/evm-contracts.sh'
+            - 'tools/dev/conformance-evm.sh'
+            - 'tools/dev/capture-op-predeploys.sh'
+            # A catalog bump of viem, keystore-core or algosdk changes the code under test.
+            - 'pnpm-workspace.yaml'
+            - '.github/workflows/ci-evm-conformance.yml'
+
+# Least-privilege default, matching ci-pre-merge.yml.
+permissions:
+    contents: read
+
+jobs:
+    conformance:
+        name: EVM Conformance
+        runs-on: ubuntu-24.04
+        timeout-minutes: 30
+        permissions:
+            contents: read
+        steps:
+            - name: Checkout
+              uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+              with:
+                  persist-credentials: false
+
+            - name: Install pnpm
+              uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v5.0.0
+
+            # No `cache: pnpm`, as in ci-pre-merge.yml's Setup: node_modules
+            # comes from the copy ci-cache-warm.yml keeps on main.
+            - name: Setup Node
+              uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+              with:
+                  node-version-file: '.tool-versions'
+
+            # Path list and key match ci-cache-warm.yml's save exactly; a
+            # mismatch is a miss on every run.
+            - name: Restore node_modules
+              id: node-modules
+              uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+              with:
+                  path: |
+                      node_modules
+                      apps/*/node_modules
+                      packages/*/node_modules
+                      extensions/*/node_modules
+                      conformance/node_modules
+                      conformance-evm/node_modules
+                  key: node-modules-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+
+            - name: Install dependencies
+              if: steps.node-modules.outputs.cache-hit != 'true'
+              run: pnpm install --frozen-lockfile
+
+            # ubuntu-24.04 runners ship a running Docker daemon; this pulls the
+            # digest-pinned Foundry image the contract check below reuses.
+            - name: Start evmnet
+              run: pnpm evmnet
+
+            # The suite aliases the packages it tests to source, but their own
+            # imports reach other packages' dist/; see conformance/README.md.
+            - name: Build
+              run: pnpm run build
+
+            # Downloads solc inside the Foundry container, so it needs network.
+            - name: Check contract artifacts match their source
+              run: bash tools/dev/evm-contracts.sh check
+
+            - name: Typecheck
+              run: pnpm --filter @perawallet/conformance-evm typecheck
+
+            - name: Run EVM conformance suite
+              run: |
+                  set -euo pipefail
+                  mkdir -p conformance-evm/reports
+                  pnpm test:conformance:evm 2>&1 | tee conformance-evm/reports/output.log
+
+            - name: Upload failure diff
+              if: failure()
+              uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+              with:
+                  name: evm-conformance-diff
+                  path: conformance-evm/reports/
+                  retention-days: 7

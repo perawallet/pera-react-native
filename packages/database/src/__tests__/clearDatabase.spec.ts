@@ -97,7 +97,7 @@ describe('clearDatabase', () => {
         }
     })
 
-    it('keeps the submission ledger, its running batches and their approvals through a recovery reset', async () => {
+    it('keeps the submission ledger, its running batches, their approvals and the phishing lists through a recovery reset', async () => {
         const { db, teardown } = createTestDatabase()
         try {
             await runMigrations(db, migrations)
@@ -110,6 +110,9 @@ describe('clearDatabase', () => {
             await db.run(
                 sql`INSERT INTO review_approvals (id, scope, transactions_json, created_at) VALUES ('t', 'ethereum/mainnet', '[]', 1)`,
             )
+            await db.run(
+                sql`INSERT INTO phishing_list_domains (source, generation, kind, domain) VALUES ('metamask', 1, 'deny', 'phish.example')`,
+            )
 
             await clearDatabase(db, { keep: RESET_PRESERVED_TABLES })
 
@@ -121,6 +124,9 @@ describe('clearDatabase', () => {
             ).toHaveLength(1)
             expect(
                 await db.all(sql`SELECT * FROM review_approvals`),
+            ).toHaveLength(1)
+            expect(
+                await db.all(sql`SELECT * FROM phishing_list_domains`),
             ).toHaveLength(1)
         } finally {
             teardown()

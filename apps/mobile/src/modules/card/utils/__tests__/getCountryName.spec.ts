@@ -25,6 +25,7 @@ const country = (iso3166alpha2: string, name: string): SupportedCountry => ({
     name,
     callingCode: '1',
     canSignUp: true,
+    cardProvider: null,
 })
 
 const COUNTRIES = [country('US', 'United States'), country('DE', 'Germany')]

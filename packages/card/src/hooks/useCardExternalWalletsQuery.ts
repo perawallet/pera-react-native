@@ -66,9 +66,10 @@ export const useCardExternalWalletsQuery = (
         [query.data, address],
     )
 
+    const { refetch: refetchQuery } = query
     const refetch = useCallback(() => {
-        void query.refetch()
-    }, [query.refetch])
+        void refetchQuery()
+    }, [refetchQuery])
 
     return {
         delegatedWallet,

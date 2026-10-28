@@ -13,6 +13,10 @@
 export * from './models'
 export { assessRecipient } from './assess-recipient'
 export {
+    detectSuspectedPoisoning,
+    findImitatedAddress,
+} from './suspected-poisoning'
+export {
     fetchTrustedCounterparties,
     isTrustedTransfer,
     MAX_COUNTERPARTY_HISTORY_PAGES,

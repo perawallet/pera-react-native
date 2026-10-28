@@ -11,21 +11,13 @@
  */
 
 import { useCallback, useMemo } from 'react'
-import {
-    canSignWith,
-    chainAccountOf,
-    useAllAccounts,
-} from '@perawallet/wallet-core-accounts'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import { getChainDescriptor } from '@perawallet/wallet-core-chain-shared'
-import { useContactsStore } from '@perawallet/wallet-core-contacts'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import {
     assessRecipient,
-    useTrustedCounterpartiesQuery,
-    type KnownAddress,
     type RecipientAssessment,
 } from '@perawallet/wallet-core-transactions'
+import { useKnownAddresses } from '../address-safety/useKnownAddresses'
 import { useSendFundsStore } from './useSendFunds'
 
 export type UseRecipientSafetyResult = {
@@ -46,61 +38,15 @@ export const useRecipientSafety = ({
     senderAddress: Optional<string>
     scope: ChainScope
 }): UseRecipientSafetyResult => {
-    const accounts = useAllAccounts()
-    const contacts = useContactsStore(state => state.contacts)
     const isAcknowledged = useSendFundsStore(
         state => state.isRecipientAcknowledged,
     )
     const setIsRecipientAcknowledged = useSendFundsStore(
         state => state.setIsRecipientAcknowledged,
     )
-
-    // Every wallet address is one the user compares by its ends, but only the
-    // ones they sign for vouch for their counterparties: a watched address's
-    // history would make a stranger's payees look trusted.
-    const walletAddresses = useMemo<KnownAddress[]>(
-        () =>
-            accounts.flatMap(account => {
-                const address = chainAccountOf(account, scope.chainId)?.address
-                if (!address) return []
-                return [
-                    {
-                        address,
-                        source: canSignWith(account, accounts, scope.chainId)
-                            ? 'own-account'
-                            : 'watched-account',
-                        name: account.name,
-                    },
-                ]
-            }),
-        [accounts, scope.chainId],
-    )
-
-    const contactAddresses = useMemo<KnownAddress[]>(() => {
-        const { family } = getChainDescriptor(scope.chainId)
-        return contacts.flatMap(contact => {
-            const address = contact.addresses[family]
-            return address
-                ? [{ address, source: 'contact', name: contact.name }]
-                : []
-        })
-    }, [contacts, scope.chainId])
-
-    const accountAddresses = useMemo(
-        () =>
-            walletAddresses.flatMap(({ address, source }) =>
-                source === 'own-account' ? [address] : [],
-            ),
-        [walletAddresses],
-    )
-    const {
-        data: counterparties,
-        isPending,
-        hasSenderHistory,
-    } = useTrustedCounterpartiesQuery({
-        senderAddress,
-        accountAddresses,
+    const { knownAddresses, isPending, hasSenderHistory } = useKnownAddresses({
         scope,
+        senderAddress,
         isEnabled: !!recipient,
     })
 
@@ -109,32 +55,14 @@ export const useRecipientSafety = ({
         const result = assessRecipient({
             recipient,
             chainId: scope.chainId,
-            knownAddresses: [
-                ...walletAddresses,
-                ...contactAddresses,
-                ...counterparties.map(
-                    ({ address, hasBeenPaid }): KnownAddress => ({
-                        address,
-                        source: 'history',
-                        isInboundOnly: !hasBeenPaid,
-                    }),
-                ),
-            ],
+            knownAddresses,
         })
         // Without the sender's history a regular payee looks new, and a false
         // "never sent" notice teaches people to ignore it.
         return result.kind === 'first-send' && !hasSenderHistory
             ? undefined
             : result
-    }, [
-        recipient,
-        isPending,
-        hasSenderHistory,
-        scope.chainId,
-        walletAddresses,
-        contactAddresses,
-        counterparties,
-    ])
+    }, [recipient, isPending, hasSenderHistory, scope.chainId, knownAddresses])
 
     const toggleAcknowledged = useCallback(
         () => setIsRecipientAcknowledged(!isAcknowledged),

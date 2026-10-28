@@ -26,6 +26,7 @@ const SCOPE = { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const
 
 // Mock dependencies
 vi.mock('@perawallet/wallet-core-contacts', () => ({
+    addressFamilyOf: vi.fn(),
     useContacts: vi.fn(),
 }))
 
@@ -55,6 +56,9 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     getChainDescriptor: () => ({ family: 'algorand' }),
 }))
+
+// The real registry loads every chain's UI; the copy is the hook spec's concern.
+vi.mock('@modules/chain-ui', () => ({ chainUiFor: () => ({}) }))
 
 vi.mock('@perawallet/wallet-core-nfd', () => ({
     useNfdSearchQuery: vi.fn(() => ({ data: [], isLoading: false })),
@@ -92,10 +96,14 @@ vi.mock('@components/AccountDisplay', () => ({
         account?.name || null,
 }))
 
+const mockAccountResultRow = vi.fn()
+
 vi.mock('../AccountResultRow', () => ({
     __esModule: true,
-    AccountResultRow: ({ account }: { account: { name: string } }) =>
-        account?.name || null,
+    AccountResultRow: (props: { account: { name: string } }) => {
+        mockAccountResultRow(props)
+        return props.account?.name || null
+    },
 }))
 
 const mockIsValidAddress = vi.fn<(address: string) => boolean>()
@@ -162,6 +170,27 @@ describe('AddressSearchView', () => {
 
         fireEvent.click(screen.getByText('Test Account'))
         expect(mockOnSelected).toHaveBeenCalledWith('ABC123456789')
+    })
+
+    it("scopes account rows to the search's chain, whose address a pick selects", () => {
+        const mockAccount = {
+            chains: { algorand: { address: 'ABC123456789' } },
+            name: 'Test Account',
+        }
+        vi.mocked(useAllAccounts).mockReturnValue([
+            mockAccount,
+        ] as unknown as ReturnType<typeof useAllAccounts>)
+
+        render(
+            <AddressSearchView
+                scope={SCOPE}
+                onSelected={mockOnSelected}
+            />,
+        )
+
+        expect(mockAccountResultRow).toHaveBeenCalledWith(
+            expect.objectContaining({ chainId: SCOPE.chainId }),
+        )
     })
 
     it('shows matching contacts when searching', () => {

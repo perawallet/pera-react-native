@@ -49,6 +49,10 @@ export type AddressSearchViewProps = {
     showAddIcon?: boolean
     /** See {@link UseAddressSearchViewProps.showClipboardPaste}. */
     showClipboardPaste?: boolean
+    /** See {@link UseAddressSearchViewProps.sendingAssetLabel}. */
+    sendingAssetLabel?: string
+    /** See {@link UseAddressSearchViewProps.isSendingMultiChainAsset}. */
+    isSendingMultiChainAsset?: boolean
 }
 
 export const AddressSearchView = ({
@@ -61,17 +65,27 @@ export const AddressSearchView = ({
     showAccountBalance = false,
     showAddIcon = false,
     showClipboardPaste = false,
+    sendingAssetLabel,
+    isSendingMultiChainAsset,
 }: AddressSearchViewProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const { value, setValue, matchingItems, hasResults, isNfdLoading } =
-        useAddressSearchView({
-            scope,
-            excludeAddress,
-            accountFilter,
-            showAllContactsWhenEmpty,
-            showClipboardPaste,
-        })
+    const {
+        value,
+        setValue,
+        matchingItems,
+        hasResults,
+        isNfdLoading,
+        wrongNetworkMessage,
+    } = useAddressSearchView({
+        scope,
+        excludeAddress,
+        accountFilter,
+        showAllContactsWhenEmpty,
+        showClipboardPaste,
+        sendingAssetLabel,
+        isSendingMultiChainAsset,
+    })
 
     const renderItem = useCallback(
         ({ item }: { item: AddressSearchItem }) => {
@@ -113,6 +127,7 @@ export const AddressSearchView = ({
                             <AccountResultRow
                                 account={item.account}
                                 showBalance={showAccountBalance}
+                                chainId={scope.chainId}
                             />
                         </PWTouchableOpacity>
                     )
@@ -217,13 +232,19 @@ export const AddressSearchView = ({
     const keyExtractor = useCallback((item: AddressSearchItem) => item.key, [])
 
     const emptyComponent = useCallback(
-        () => (
-            <EmptyView
-                title={t('address_entry.no_accounts_found')}
-                body={t('address_entry.no_accounts_body')}
-            />
-        ),
-        [t],
+        () =>
+            wrongNetworkMessage ? (
+                <EmptyView
+                    title={wrongNetworkMessage.title}
+                    body={wrongNetworkMessage.body}
+                />
+            ) : (
+                <EmptyView
+                    title={t('address_entry.no_accounts_found')}
+                    body={t('address_entry.no_accounts_body')}
+                />
+            ),
+        [t, wrongNetworkMessage],
     )
 
     const listEmptyComponent = isNfdLoading ? (

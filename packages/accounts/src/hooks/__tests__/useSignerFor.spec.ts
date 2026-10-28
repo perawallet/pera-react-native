@@ -135,6 +135,21 @@ describe('useDelegatedAccount', () => {
         expect(result.current).toBe(auth)
     })
 
+    it('picks up an authority recorded after mount', () => {
+        const auth = held('S')
+        setAccounts([held('A'), auth])
+        const { adapter } = fakeAccountsChain()
+        vi.mocked(adapter.getAuthAccount).mockReturnValue(auth)
+        const { result } = renderHook(() =>
+            useDelegatedAccount('A', 'algorand'),
+        )
+        expect(result.current).toBeNull()
+
+        act(() => seedAuthority('A', 'S'))
+
+        expect(result.current).toBe(auth)
+    })
+
     it('returns null when the account is not rekeyed', () => {
         setAccounts([held('A')])
         const { result } = renderHook(() =>

@@ -1257,6 +1257,25 @@ const openProposal = async (options: OpenProposalOptions = {}) => {
 }
 
 describe('session proposals', () => {
+    it('carries the requester origin handed to pair', async () => {
+        const { requireProposal } = await openProposal({
+            origin: {
+                source: 'in-app',
+                requesterOrigin: 'https://dapp.example',
+            },
+        })
+
+        expect(requireProposal().requesterOrigin).toBe('https://dapp.example')
+    })
+
+    it('has no requester origin when pair was given none', async () => {
+        const { requireProposal } = await openProposal({
+            origin: { source: 'qr' },
+        })
+
+        expect(requireProposal()).not.toHaveProperty('requesterOrigin')
+    })
+
     it('carries the pairing topic and the networks the CAIP-2 chains name', async () => {
         const { pairingId, requireProposal, registry } = await openProposal()
 

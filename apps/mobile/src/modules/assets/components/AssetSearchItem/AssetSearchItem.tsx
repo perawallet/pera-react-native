@@ -10,28 +10,35 @@
  limitations under the License
  */
 
+import { useCallback } from 'react'
 import { PWIcon, PWLoadingIndicator, PWView } from '@components/core'
-import type { DisplayableAsset } from '@perawallet/wallet-core-assets'
+import type { ScopedAssetSearchResult } from '@perawallet/wallet-core-assets'
 // Import the leaf directly (not the AssetItem barrel) so the search row doesn't
 // drag in AccountAssetItemView -> CollectibleListItem -> CollectibleThumbnail.
 import { AssetItemView } from '@modules/assets/components/AssetItem/AssetItemView'
+import { ChainLabel } from '../ChainLabel'
 import { useStyles } from './styles'
 
 type AssetSearchItemProps = {
-    item: DisplayableAsset
+    result: ScopedAssetSearchResult
     isOptedIn: boolean
     isOptingIn: boolean
     /** Omitted where the asset can't be added: the row shows no add action. */
-    onAdd?: (assetId: string) => void
+    onAdd?: (result: ScopedAssetSearchResult) => void
+    /** Names the asset's network, for results that span chains. */
+    showsNetwork?: boolean
 }
 
 export const AssetSearchItem = ({
-    item,
+    result,
     isOptedIn,
     isOptingIn,
     onAdd,
+    showsNetwork = false,
 }: AssetSearchItemProps) => {
     const styles = useStyles()
+    const { asset, scope } = result
+    const handlePress = useCallback(() => onAdd?.(result), [onAdd, result])
 
     const icon = isOptingIn ? (
         <PWLoadingIndicator size='sm' />
@@ -46,7 +53,7 @@ export const AssetSearchItem = ({
             name='plus'
             size='sm'
             variant='primary'
-            testID={`asset_search_item_add_${item.assetId}`}
+            testID={`asset_search_item_add_${asset.assetId}`}
         />
     ) : null
     const action = icon ? (
@@ -56,9 +63,14 @@ export const AssetSearchItem = ({
     return (
         <>
             <AssetItemView
-                asset={item}
+                asset={asset}
                 right={action}
-                onPress={onAdd ? () => onAdd(item.assetId) : undefined}
+                footer={
+                    showsNetwork ? (
+                        <ChainLabel chainId={scope.chainId} />
+                    ) : undefined
+                }
+                onPress={onAdd ? handlePress : undefined}
                 disabled={!onAdd || isOptedIn || isOptingIn}
                 style={styles.container}
             />

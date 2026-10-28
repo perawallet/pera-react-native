@@ -17,6 +17,7 @@ import {
     useAccountCapabilityScope,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { chainDisplayNameOf } from '@perawallet/wallet-core-chain-shared'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import {
@@ -41,6 +42,10 @@ type UseQRViewScreenResult = {
     address: string
     /** What the QR encodes: the chain codec's payment URI for `address`; '' when the account can't receive. */
     paymentUri: string
+    /** The chain the QR is for; undefined when the account can't receive. */
+    chainId: Optional<ChainId>
+    /** Names the chain under the address; '' when the account can't receive. */
+    receiveCaption: string
     /** False when there is no account, its chain has `receive` off, or no codec is registered for it. */
     canReceive: boolean
     /** True when a picker (account or chain) led here, so back returns to it; false when back ends the flow. */
@@ -71,13 +76,22 @@ export const useQRViewScreen = (): UseQRViewScreenResult => {
         chainId,
     )
 
-    const { accountName, address, paymentUri } = useMemo(
-        (): ReceiveTarget =>
+    const receiveTarget = useMemo(
+        () =>
             (selectedAccount && receiveTargetOf(selectedAccount, scope)) ??
-            NO_RECEIVE_TARGET,
+            null,
         [selectedAccount, scope],
     )
+    const { accountName, address, paymentUri } =
+        receiveTarget ?? NO_RECEIVE_TARGET
+    const qrChainId = receiveTarget ? scope?.chainId : undefined
     const canReceive = paymentUri !== ''
+
+    const receiveCaption = qrChainId
+        ? t('receive_funds.qrview.receive_on', {
+              chain: chainDisplayNameOf(qrChainId) ?? qrChainId,
+          })
+        : ''
 
     const { emptyTitle, emptyBody } = useMemo(() => {
         const note =
@@ -142,6 +156,8 @@ export const useQRViewScreen = (): UseQRViewScreenResult => {
         accountName,
         address,
         paymentUri,
+        chainId: qrChainId,
+        receiveCaption,
         canReceive,
         canGoBack: navigation.canGoBack(),
         emptyTitle,

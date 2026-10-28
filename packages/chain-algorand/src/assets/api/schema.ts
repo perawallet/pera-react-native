@@ -142,6 +142,23 @@ export const indexerAssetResponseSchema = z.object({
     'current-round': z.number(),
 })
 
+// The multichain v4 item, read here only for its group: Django's asset
+// endpoints don't carry it.
+export const crossChainAssetGroupsResponseSchema = z.object({
+    results: z.array(
+        z.object({
+            asset_id: z.string(),
+            cross_chain_asset_group: z
+                .object({
+                    id: z.string(),
+                    name: z.string(),
+                    symbol: z.string(),
+                })
+                .nullable(),
+        }),
+    ),
+})
+
 export type PublicAssetResponse = z.infer<typeof publicAssetResponseSchema>
 export type AssetResponse = z.infer<typeof assetResponseSchema>
 export type AssetsResponse = z.infer<typeof assetsResponseSchema>

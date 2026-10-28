@@ -14,10 +14,9 @@ export { AccountAssetSelectionList } from './components/AccountAssetSelectionLis
 export { AddAssetContent } from './components/AddAssetContent'
 export {
     AssetGroupRow,
-    ChainLabel,
     type AssetGroupRowProps,
-    type ChainLabelProps,
 } from './components/AssetGroupRow'
+export { ChainLabel, type ChainLabelProps } from './components/ChainLabel'
 export { AccountAssetItemView, AssetItemView } from './components/AssetItem'
 export { AssetNameBadge } from './components/AssetNameBadge'
 export { AssetRowSkeleton } from './components/AssetRowSkeleton'
@@ -49,6 +48,7 @@ export {
     type GroupedHoldingItem,
     type GroupedHoldingMember,
 } from './utils/groupedHoldings'
+export { toChainFilterOptions } from './utils/toChainFilterOptions'
 export type {
     AssetAboutParams,
     AssetAboutDisplay,

@@ -16,6 +16,7 @@ import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { ConnectionProposal } from '@perawallet/wallet-core-connections'
 import { PWButton, PWFlatList, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
+import { SiteSafetyGate } from '@modules/site-safety'
 import { useStyles } from '@components/ConnectionApproval/styles'
 import { ConnectionApprovalAccountRow } from './ConnectionApprovalAccountRow'
 import { ConnectionApprovalViewHeader } from './ConnectionApprovalViewHeader'
@@ -45,6 +46,7 @@ export const ConnectionApprovalView = ({
         noAccountsNote,
         originWarning,
         verifiedOriginLabel,
+        siteSafety,
     } = useConnectionApprovalView(proposal)
 
     const renderAccountRow = useCallback(
@@ -59,7 +61,10 @@ export const ConnectionApprovalView = ({
     )
 
     return (
-        <>
+        <SiteSafetyGate
+            gate={siteSafety}
+            onReject={() => void handleCancel()}
+        >
             <PWFlatList
                 style={styles.container}
                 contentContainerStyle={styles.contentContainer}
@@ -77,6 +82,7 @@ export const ConnectionApprovalView = ({
                         onPressUrl={handlePressUrl}
                         originWarning={originWarning}
                         verifiedOriginLabel={verifiedOriginLabel}
+                        hasSiteWarning={siteSafety.verdict.kind !== 'clear'}
                     />
                 }
                 ListEmptyComponent={
@@ -106,11 +112,14 @@ export const ConnectionApprovalView = ({
                     title={t('common.connect.label')}
                     onPress={() => void handleConnect()}
                     style={styles.connectButton}
-                    isDisabled={!selectedAccounts.length}
+                    isDisabled={
+                        !selectedAccounts.length ||
+                        !siteSafety.isApprovalAllowed
+                    }
                     isLoading={isConnecting}
                     testID='wc_connect_button'
                 />
             </PWView>
-        </>
+        </SiteSafetyGate>
     )
 }

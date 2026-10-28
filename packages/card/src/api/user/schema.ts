@@ -30,7 +30,7 @@ export const userResponseSchema = z.object({
 })
 export type UserApiResponse = z.infer<typeof userResponseSchema>
 
-// GET /v1/user/verification — starts/returns the Veriff KYC session URL. The
+// GET /v1/user/verification: starts/returns the KYC session URL. The
 // caller hands it to Linking.openURL, so the scheme is gated here.
 export const verificationSessionResponseSchema = z.object({
     sessionUrl: httpsUrlSchema,

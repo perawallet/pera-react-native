@@ -40,21 +40,19 @@ import { trackEvent, AssetDetailsEvent, AnalyticsMetadataKey } from '@analytics'
 import { useAssetOptOutMutation } from '@perawallet/wallet-core-transactions'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import {
-    chainDisplayNameOf,
     useIsChainSwitchedOff,
     useSelectedScope,
 } from '@perawallet/wallet-core-chain-shared'
 import type { FilterOption } from '@components/FilterSelection'
 import { useCapability } from '@hooks/useCapability'
-import { useCapableChainId } from '@hooks/useCapableChainIds'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useModalState, type ModalState } from '@hooks/useModalState'
 import { useToast } from '@hooks/useToast'
 import { SEARCH_DEBOUNCE_TIME_SHORT } from '@constants/ui'
 import { useBottomSheet } from '@modules/bottom-sheet'
-import { ChainIcon } from '@modules/chain-ui/icon'
 import {
     AddAssetContent,
+    toChainFilterOptions,
     useAssetListFiatConverter,
     useGroupedHoldings,
     type AssetFiatConverter,
@@ -71,12 +69,15 @@ import {
 } from '../ManageAssetsContent'
 import { OptOutConfirmationContent } from './OptOutConfirmationContent'
 
-const CHAIN_CHIP_ICON_SIZE = 16
+export type AccountAssetListItem =
+    | GroupedHoldingItem<AccountHoldingsLiteRow>
+    | { kind: 'skeleton'; id: string }
 
 type UseAccountAssetListResult = {
     /** No chain the account holds assets on is available: the header shows the notice, the list stays empty. */
     isChainSwitchedOff: boolean
-    items: GroupedHoldingItem<AccountHoldingsLiteRow>[]
+    /** Eight skeleton rows while the holdings read is pending; empty when every chain is switched off. */
+    items: AccountAssetListItem[]
     /** Empty while the account is on fewer than two chains: nothing to filter. */
     chainFilterOptions: FilterOption<Nullable<ChainId>>[]
     /** The chain the list is narrowed to; `null` is All. */
@@ -84,7 +85,6 @@ type UseAccountAssetListResult = {
     setSelectedChainId: (chainId: Nullable<ChainId>) => void
     toggleGroupExpanded: (groupId: string) => void
     convertFiat: AssetFiatConverter
-    isPending: boolean
     isReadOnly: boolean
     canManageAssets: boolean
     hideZeroBalance: boolean
@@ -109,15 +109,27 @@ type UseAccountAssetListResult = {
     listRef: React.MutableRefObject<PWFlatListRef | null>
 }
 
-const EMPTY_ITEMS: GroupedHoldingItem<AccountHoldingsLiteRow>[] = []
+const EMPTY_ITEMS: AccountAssetListItem[] = []
 
-// Rows carry base units and parse their metadata lazily; only group members
-// reach this.
+// Listed as rows, not a ListEmptyComponent: SearchableList centres an empty
+// component in the leftover height, which pushes a tall skeleton up over the chips.
+const ASSET_SKELETON_ITEMS: AccountAssetListItem[] = Array.from(
+    { length: 8 },
+    (_, i) => ({ kind: 'skeleton', id: `asset-skeleton-${i}` }),
+)
+
+// Rows carry base units and parse their metadata lazily; the SQL-read group id
+// keeps that parse to group members.
 const homeHoldingAdapter: GroupableHoldingAdapter<AccountHoldingsLiteRow> = {
     assetOf: holding => assetFromHoldingLiteRow(holding, holding.scope.chainId),
     displayAmountOf: (holding, asset) =>
         baseUnitsToDisplayUnits(holding.amount, asset.decimals),
     usdPriceOf: holding => holding.usdPrice,
+    groupOf: holding =>
+        holding.crossChainAssetGroupId === null
+            ? null
+            : (assetFromHoldingLiteRow(holding, holding.scope.chainId)
+                  ?.peraMetadata?.crossChainAssetGroup ?? null),
 }
 
 type UseAccountAssetListParams = {
@@ -141,8 +153,6 @@ export const useAccountAssetList = ({
             chain: { chainId: scope.chainId, capability: 'manageAssets' },
         }) && !isOwnChainSwitchedOff
     const { request: requestBottomSheet } = useBottomSheet()
-    // Assets are added on the manageAssets chain, not necessarily the account's own.
-    const addAssetChainId = useCapableChainId('manageAssets')
 
     const sources = useAccountHoldingSources(account)
     // A primitive, so the row press handler keeps its identity across renders.
@@ -177,27 +187,14 @@ export const useAccountAssetList = ({
         [sources, selectedChainId],
     )
     const chainFilterOptions = useMemo(
-        (): FilterOption<Nullable<ChainId>>[] =>
-            sources.length < 2
-                ? []
-                : [
-                      {
-                          value: null,
-                          label: t('account_details.assets.network_filter_all'),
-                          testID: 'asset_network_filter_all',
-                      },
-                      ...sources.map(({ scope: { chainId } }) => ({
-                          value: chainId,
-                          label: chainDisplayNameOf(chainId) ?? chainId,
-                          icon: (
-                              <ChainIcon
-                                  chainId={chainId}
-                                  size={CHAIN_CHIP_ICON_SIZE}
-                              />
-                          ),
-                          testID: `asset_network_filter_${chainId}`,
-                      })),
-                  ],
+        () =>
+            toChainFilterOptions(
+                sources.map(({ scope: { chainId } }) => chainId),
+                {
+                    allLabel: t('account_details.assets.network_filter_all'),
+                    testIDPrefix: 'asset_network_filter',
+                },
+            ),
         [sources, t],
     )
 
@@ -381,14 +378,14 @@ export const useAccountAssetList = ({
             [AnalyticsMetadataKey.ChainId]: scope.chainId,
         })
         void requestBottomSheet<void>({
-            contents: <AddAssetContent chainId={addAssetChainId} />,
+            contents: <AddAssetContent chainId={selectedChainId} />,
             options: {
                 size: 'modal',
                 enablePanDownToClose: true,
                 autoCreateContainer: false,
             },
         })
-    }, [requestBottomSheet, addAssetChainId, scope.chainId])
+    }, [requestBottomSheet, selectedChainId, scope.chainId])
 
     const handleOpenManage = useCallback(async () => {
         trackEvent(AssetDetailsEvent.ManageAsset, {
@@ -472,13 +469,16 @@ export const useAccountAssetList = ({
 
     return {
         isChainSwitchedOff,
-        items: isChainSwitchedOff ? EMPTY_ITEMS : items,
+        items: isChainSwitchedOff
+            ? EMPTY_ITEMS
+            : isPending
+              ? ASSET_SKELETON_ITEMS
+              : items,
         chainFilterOptions,
         selectedChainId,
         setSelectedChainId,
         toggleGroupExpanded,
         convertFiat,
-        isPending,
         isReadOnly,
         canManageAssets,
         listRef,

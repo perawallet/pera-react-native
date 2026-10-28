@@ -101,6 +101,7 @@
         "title": "Ajouter un actif",
         "search_placeholder": "Rechercher par nom ou ID d’actif",
         "no_results": "Aucun actif trouvé",
+        "partial_results": "Certains réseaux n’ont pas pu être consultés, des résultats peuvent donc manquer.",
         "opt_in": {
             "failed_title": "Échec de l’ajout",
             "success_title": "Ajout réussi",
@@ -201,7 +202,25 @@
         "search_placeholder": "Adresse du compte, nom NFD ou nom court",
         "nfd_results": "NFDomains",
         "nfd_resolving": "Résolution du NFD...",
-        "nfd_resolved": "Résolu depuis {{name}}"
+        "nfd_resolved": "Résolu depuis {{name}}",
+        "wrong_network": {
+            "title": {
+                "algorand": "Il s’agit d’une adresse Algorand",
+                "evm": "Il s’agit d’une adresse Ethereum (EVM)"
+            },
+            "body": {
+                "algorand": "Seules les adresses Algorand peuvent être ajoutées ici. Veuillez vérifier l’adresse et réessayer.",
+                "evm": "Seules les adresses compatibles EVM peuvent être ajoutées ici. Veuillez vérifier l’adresse et réessayer."
+            },
+            "send_body": {
+                "algorand": "{{asset}} ne peut être envoyé qu’à des adresses Algorand. Veuillez vérifier l’adresse du destinataire ou choisir un actif sur {{family}} à envoyer.",
+                "evm": "{{asset}} ne peut être envoyé qu’à des adresses compatibles EVM (commençant par « 0x »). Veuillez vérifier l’adresse du destinataire ou choisir un actif sur {{family}} à envoyer."
+            },
+            "send_body_on_network": {
+                "algorand": "{{asset}} sur {{network}} ne peut être envoyé qu’à des adresses Algorand. Veuillez vérifier l’adresse du destinataire ou choisir un actif sur {{family}} à envoyer.",
+                "evm": "{{asset}} sur {{network}} ne peut être envoyé qu’à des adresses compatibles EVM (commençant par « 0x »). Veuillez vérifier l’adresse du destinataire ou choisir un actif sur {{family}} à envoyer."
+            }
+        }
     },
     "asset_inbox": {
         "requests": {
@@ -920,7 +939,7 @@
         },
         "network_unavailable": {
             "title": "Non disponible sur ce réseau",
-            "body": "Ceci nécessite Pera services, qui ne sont pas disponibles sur BetaNet ni sur les nœuds personnalisés. Basculez vers MainNet ou TestNet.",
+            "body": "Les services Pera ne sont pas disponibles sur ce réseau.",
             "generic_body": "Cette fonctionnalité n’est pas disponible pour le moment."
         },
         "yes": "Oui",
@@ -1605,7 +1624,8 @@
             "otp_body_with_phone": "Saisissez le code de vérification que nous avons envoyé au {{phone}} pour terminer la connexion.",
             "otp_invalid": "Ce code est incorrect. Veuillez réessayer.",
             "send_again": "Renvoyer",
-            "send_again_in": "Renvoyer dans {{count}} s"
+            "send_again_in": "Renvoyer dans {{count}} s",
+            "account_locked": "Votre compte Pera Card est temporairement verrouillé. <0>Contactez le support</0> pour le déverrouiller."
         },
         "forgot_password": {
             "navigation_title": "Réinitialiser le mot de passe",
@@ -1712,6 +1732,8 @@
             "navigation_title": "Informations personnelles",
             "first_name_label": "Prénom",
             "first_name_invalid": "Saisissez votre prénom",
+            "middle_name_label": "Deuxième prénom (facultatif)",
+            "middle_name_invalid": "Utilisez uniquement des lettres, des espaces, des apostrophes et des traits d’union",
             "last_name_label": "Nom",
             "last_name_invalid": "Saisissez votre nom",
             "dob_label": "Date de naissance JJ/MM/AAAA",
@@ -1722,13 +1744,60 @@
             "nationality_placeholder": "Sélectionner une nationalité",
             "nationality_required": "Sélectionnez votre nationalité",
             "nationality_picker_title": "Nationalité",
+            "additional_nationality_label": "Autre nationalité",
+            "add_nationality": "Ajouter une autre nationalité",
+            "remove_nationality": "Supprimer",
+            "additional_nationality_duplicate": "Chaque nationalité ne peut être ajoutée qu’une seule fois",
             "confirm_button": "Continuer",
             "error_title": "Une erreur est survenue",
             "error_body": "Nous n’avons pas pu enregistrer vos informations. Veuillez réessayer.",
             "birth_country_label": "Pays de naissance",
             "birth_country_placeholder": "Sélectionnez un pays",
             "birth_country_picker_title": "Pays de naissance",
-            "birth_country_required": "Veuillez sélectionner votre pays de naissance"
+            "birth_country_required": "Veuillez sélectionner votre pays de naissance",
+            "employment_status_label": "Situation professionnelle",
+            "employment_sector_label": "Secteur d’emploi",
+            "option_placeholder": "Sélectionner",
+            "portugal_investment_scheme": "Je participe à un programme d’investissement au Portugal"
+        },
+        "option_picker": {
+            "search_placeholder": "Rechercher",
+            "empty_title": "Aucun résultat",
+            "empty_body": "Essayez une autre recherche.",
+            "error_title": "Impossible de charger les options",
+            "error_body": "Veuillez vérifier votre connexion et réessayer.",
+            "retry": "Réessayer"
+        },
+        "additional_details": {
+            "navigation_title": "Informations complémentaires",
+            "body": "Nous avons besoin de quelques informations supplémentaires pour respecter la réglementation de votre pays de résidence.",
+            "tin_label": "Numéro d’identification fiscale (NIF)",
+            "tin_invalid": "Saisissez votre numéro d’identification fiscale (20 caractères maximum)",
+            "tin_country_label": "Pays émetteur du NIF",
+            "tin_country_unsupported": "Les numéros fiscaux américains ne sont pas acceptés ici",
+            "country_placeholder": "Sélectionnez un pays",
+            "option_placeholder": "Sélectionner",
+            "occupation_label": "Profession",
+            "occupation_other_label": "Votre profession",
+            "source_of_wealth_label": "Origine du patrimoine",
+            "source_of_wealth_other_label": "Origine de votre patrimoine",
+            "business_sector_label": "Secteur d’activité",
+            "annual_income_label": "Revenu annuel estimé",
+            "annual_income_bands": {
+                "less_than_20k": "Moins de $20,000",
+                "between_20k_and_50k": "De $20,000 à $50,000",
+                "between_50k_and_100k": "De $50,000 à $100,000",
+                "more_than_100k": "Plus de $100,000"
+            },
+            "income_country_label": "Pays où vous percevez des revenus",
+            "add_income_country": "Ajouter un autre pays",
+            "remove_country": "Supprimer",
+            "income_country_duplicate": "Chaque pays ne peut être ajouté qu’une seule fois",
+            "confirm_button": "Continuer",
+            "error_title": "Une erreur est survenue",
+            "error_body": "Nous n’avons pas pu enregistrer vos informations. Veuillez réessayer.",
+            "unavailable_title": "Indisponible pour le moment",
+            "unavailable_body": "Nous ne pouvons pas enregistrer ces informations pour le moment. Veuillez réessayer dans quelques minutes."
         },
         "address": {
             "navigation_title": "Adresse de résidence",
@@ -1775,25 +1844,29 @@
             "error_body": "Nous n’avons pas pu démarrer la vérification. Veuillez réessayer.",
             "open_link_error_body": "Nous n’avons pas pu ouvrir la page de vérification. Veuillez réessayer."
         },
-        "kyc_required": {
-            "title": "Terminez la vérification de votre identité",
-            "body": "Votre vérification d’identité n’est pas encore terminée. Vérifiez votre identité pour poursuivre votre demande de Pera Card.",
-            "verify_button": "Vérifier votre compte"
-        },
         "setup_status": {
             "title": "Terminez la configuration et commencez à payer on-chain",
             "documents_title": "Envoyez vos documents",
+            "documents_locked_body": "Saisissez d’abord vos informations, puis vérifiez votre identité.",
             "documents_pending_label": "En attente",
+            "documents_preparing_label": "Configuration du compte",
             "documents_unverified_body": "Veuillez vérifier votre compte pour commencer à payer on-chain.",
             "documents_verify_button": "Vérifier votre compte",
             "documents_pending_body": "Votre vérification a été envoyée. Nous vous enverrons un e-mail dès qu’elle sera terminée.",
             "documents_verified_body": "Votre identité a été vérifiée.",
+            "documents_preparing_body": "Votre identité est vérifiée. Nous configurons votre compte, ce qui prend généralement quelques minutes.",
+            "documents_preparing_slow_body": "Votre identité est vérifiée. Cela prend plus de temps que d’habitude. Réessayez dans quelques minutes.",
+            "documents_preparing_stalled_body": "Votre identité est vérifiée, mais nous n’avons pas pu terminer la configuration de votre compte. Contactez le support pour la finaliser.",
+            "documents_record_missing_body": "Nous n’avons pas pu charger votre inscription. Connectez-vous avec votre mot de passe Pera Card pour continuer.",
+            "documents_account_locked_body": "Votre compte Pera Card est temporairement verrouillé. Contactez le support pour le déverrouiller.",
             "documents_rejected_body": "Nous n’avons pas pu vérifier votre identité. Veuillez contacter le support pour obtenir de l’aide.",
             "documents_error_body": "Nous n’avons pas pu vérifier l’état de votre vérification. Veuillez réessayer.",
             "documents_retry": "Réessayer",
+            "sign_in_to_finish_title": "Connectez-vous pour terminer",
+            "sign_in_to_finish_body": "Votre identité est vérifiée. Connectez-vous avec votre mot de passe Pera Card pour terminer la configuration de votre compte.",
             "details_title": "Saisissez vos informations",
             "details_body": "Vérifiez vos informations et saisissez votre adresse pour continuer.",
-            "details_button": "Vérifier votre compte",
+            "details_button": "Saisir vos informations",
             "connect_funds_title": "Connecter des fonds",
             "connect_funds_body": "Connectez l’un de vos comptes Pera comme source de financement pour commencer à utiliser votre Pera Card.",
             "connect_funds_button": "Connecter un compte Pera",
@@ -1829,7 +1902,11 @@
             "step_auto_funding_label": "Autoriser le financement automatique depuis le compte lié",
             "proceed_button": "Continuer",
             "standing_authority_title": "Ce que vous autorisez",
-            "standing_authority_body": "Cette autorisation reste active jusqu’à ce que vous la désactiviez. Le plafond par transaction est fixé par le fournisseur de votre carte, pas par votre signature. Vous pouvez l’arrêter à tout moment en passant le type de financement sur Manuel."
+            "standing_authority_body": "Cette autorisation reste active jusqu’à ce que vous la désactiviez. Le plafond par transaction est fixé par le fournisseur de votre carte, pas par votre signature. Vous pouvez l’arrêter à tout moment en passant le type de financement sur Manuel.",
+            "add_funds_source_description": "Ajouter des fonds à votre Pera Card",
+            "withdraw_request_source_description": "Demander un retrait de votre Pera Card",
+            "withdraw_source_description": "Retirer de votre Pera Card",
+            "withdraw_cancel_source_description": "Annuler un retrait de Pera Card"
         },
         "auto_funding_signing": {
             "title": "Demande d’approbation de signature automatique",
@@ -2657,6 +2734,7 @@
             "error_title": "Aucun compte sélectionné",
             "error_body": "Aucun compte n’a été sélectionné, veuillez d’abord sélectionner un compte",
             "chain_unavailable_title": "{{chain}} n’est pas disponible pour ce compte",
+            "receive_on": "Utilisez cette adresse pour recevoir des actifs sur {{chain}}",
             "copy_address": "Copier l’adresse",
             "share": "Partager l’adresse"
         }
@@ -3181,6 +3259,15 @@
             "deadline_label": "Date limite",
             "never": "Jamais"
         },
+        "collection_approval": {
+            "warning": "Cela permet à l'opérateur de transférer tous les éléments que vous détenez dans cette collection, y compris ceux que vous recevrez plus tard, jusqu'à ce que vous révoquiez cette autorisation.",
+            "operator_label": "Opérateur",
+            "operator_caption": "Opérateur : {{address}}",
+            "collection_label": "Collection"
+        },
+        "token_approval": {
+            "revoke_note": "Cela retire à l'adresse l'autorisation de déplacer cet actif."
+        },
         "arbitrary_data_details": {
             "unnamed": "Quelqu’un",
             "description": "Une demande de signature de données est une demande de signature de données arbitraires. Elle est couramment utilisée par les services pour vérifier la propriété d’un compte et n’entraîne aucuns frais.",
@@ -3265,6 +3352,26 @@
             "details_description": "Examinez toutes les métadonnées de cette demande d’authentification avant de l’approuver."
         }
     },
+    "site_safety": {
+        "checking": "Vérification de ce site…",
+        "blocked": {
+            "title": "Ce site est une arnaque connue",
+            "body": "Il figure sur une liste publique de sites d’hameçonnage. Vous connecter ou signer ici pourrait vous faire perdre vos fonds.",
+            "body_verify": "WalletConnect signale ce site comme une arnaque. Vous connecter ou signer ici pourrait vous faire perdre vos fonds.",
+            "reject": "Refuser et revenir",
+            "continue_anyway": "Continuer quand même",
+            "acknowledge": "Je comprends que ce site est signalé comme une arnaque et que je pourrais perdre mes fonds",
+            "continue": "Continuer vers ce site"
+        },
+        "look_alike": {
+            "title": "Ce site imite peut-être un autre site",
+            "body": "Il ressemble à {{name}} ({{domain}}), mais c’est un autre site. Vérifiez l’adresse avant de continuer.",
+            "body_domain": "Il ressemble à {{domain}}, mais c’est un autre site. Vérifiez l’adresse avant de continuer.",
+            "acknowledge": "Je comprends que ce site n’est pas {{name}}",
+            "continue": "Continuer",
+            "reject": "Refuser"
+        }
+    },
     "transactions": {
         "common": {
             "from": "De",
@@ -3308,6 +3415,8 @@
             "asset_freeze": "Gel d’actif",
             "app_call": "Appel d’application",
             "contract_call": "Appel de contrat",
+            "approval": "Autorisation",
+            "revoke_approval": "Révoquer l'autorisation",
             "key_registration": "Enregistrement de clé",
             "heartbeat": "Heartbeat",
             "state_proof": "State Proof",
@@ -3467,6 +3576,16 @@
             "speed_up": "Accélérer",
             "cancel": "Annuler la transaction",
             "review_notice": "Remplace la transaction {{txId}}"
+        },
+        "suspected_poisoning": {
+            "marker": "Empoisonnement d’adresse suspecté",
+            "title": "Empoisonnement d’adresse suspecté",
+            "body": "Ce transfert n’a rien transféré de valeur et provient d’une adresse conçue pour ressembler à une adresse que vous connaissez. Les escrocs envoient ce type de transfert pour que leur adresse apparaisse dans votre historique et soit copiée plus tard. Ne la copiez pas et n’y envoyez rien.",
+            "sender_label": "Cette adresse",
+            "reuse_title": "Cette adresse imite une adresse que vous connaissez",
+            "reuse_body": "Elle commence et se termine comme une adresse que vous connaissez, mais ce n’est pas la même. Comparez les adresses complètes avant de l’utiliser.",
+            "reuse_confirm": "Continuer quand même",
+            "reuse_cancel": "Annuler"
         }
     },
     "tabbar": {

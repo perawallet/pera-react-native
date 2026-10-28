@@ -64,6 +64,8 @@ export type ConnectionApprovalViewHeaderProps = {
     originWarning?: ConnectionOriginWarning
     /** Host of the transport-attested origin; `peerUrlLabel` is forgeable. */
     verifiedOriginLabel?: string
+    /** A phishing-list or look-alike hit on any of the proposal's origins. */
+    hasSiteWarning?: boolean
 }
 
 const LABELED_NETWORKS: readonly NetworkId[] = ['mainnet', 'testnet', 'betanet']
@@ -86,6 +88,7 @@ export const ConnectionApprovalViewHeader = ({
     onPressUrl,
     originWarning,
     verifiedOriginLabel,
+    hasSiteWarning = false,
 }: ConnectionApprovalViewHeaderProps) => {
     const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const styles = useStyles()
@@ -105,6 +108,7 @@ export const ConnectionApprovalViewHeader = ({
     const verificationTier = resolveDisplayableVerificationTier(
         project,
         undefined,
+        hasSiteWarning,
     )
 
     const preferredIcon = getPreferredDappIcon(peer.icons)

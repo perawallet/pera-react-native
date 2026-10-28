@@ -37,6 +37,11 @@ export const assetItemSchema = z.object({
     is_verified: z.boolean(),
     verification_tier: z.enum(['unverified', 'verified', 'suspicious']),
     explorer_url: z.string().nullable(),
+    // Optional: a source that doesn't carry it leaves the stored group alone.
+    cross_chain_asset_group: z
+        .object({ id: z.string(), name: z.string(), symbol: z.string() })
+        .nullable()
+        .optional(),
 })
 
 export type AssetItemSchemaOutput = z.output<typeof assetItemSchema>
@@ -49,6 +54,8 @@ export const whitelistItemSchema = assetItemSchema.extend({
 })
 
 export type WhitelistItemResponse = z.input<typeof whitelistItemSchema>
+
+export type WhitelistItemSchemaOutput = z.output<typeof whitelistItemSchema>
 
 export const assetsResponseSchema = z.object({
     results: z.array(assetItemSchema),
@@ -138,3 +145,14 @@ export const nftHoldingsPageSchema = z.object({
 export const nftsResponseSchema = z.object({
     results: z.array(z.unknown()),
 })
+
+export const chartPointSchema = z.object({
+    /** UTC, to the second. */
+    datetime: z.string(),
+    /** USD per whole unit. */
+    price: z.string().regex(/^\d+\.\d{24}$/),
+})
+
+export const chartResponseSchema = z.array(chartPointSchema)
+
+export type ChartPointResponse = z.infer<typeof chartPointSchema>

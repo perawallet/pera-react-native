@@ -88,6 +88,20 @@ describe('import/no-default-export', () => {
     })
 })
 
+describe('pera/no-hardcoded-ui-strings', () => {
+    it('blocks in all mobile source, developer screens aside', () => {
+        const mobile = readOxlintConfig('apps/mobile/.oxlintrc.json')
+        const overrides = overridesWith(mobile, 'pera/no-hardcoded-ui-strings')
+
+        expect(overrides).toHaveLength(1)
+        expect(overrides[0].files).toEqual(['src/**/*.{ts,tsx}'])
+        expect(overrides[0].rules['pera/no-hardcoded-ui-strings']).toBe('error')
+        expect(overrides[0].excludeFiles).toContain(
+            'src/modules/settings/screens/developer/**',
+        )
+    })
+})
+
 describe('every pera plugin rule', () => {
     type Config = {
         rules?: Record<string, string>

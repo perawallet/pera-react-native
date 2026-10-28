@@ -58,8 +58,6 @@ const groupOf = (
         id: 'usdc',
         name: 'USD Coin',
         symbol: 'USDC',
-        logoUrl: null,
-        members: [],
     },
     members,
     amount: null,
