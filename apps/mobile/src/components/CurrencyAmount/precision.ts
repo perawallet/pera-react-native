@@ -10,10 +10,11 @@
  limitations under the License
  */
 
-import { Decimal } from 'decimal.js'
+import type { Decimal } from 'decimal.js'
 import {
     DEFAULT_PRECISION,
     type Maybe,
+    pow10,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 
@@ -111,7 +112,7 @@ export const resolvePrecision = (
     }
 }
 
-const FIAT_DISPLAY_FLOOR = new Decimal(10).pow(-DEFAULT_PRECISION)
+const FIAT_DISPLAY_FLOOR = pow10(-DEFAULT_PRECISION)
 
 /**
  * The smallest fiat amount a `compact` figure shows. A non-zero fiat amount

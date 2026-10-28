@@ -61,6 +61,10 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
     const unitConversion = await vi.importActual<
         typeof import('@packages/shared/src/utils/unit-conversion')
     >('@packages/shared/src/utils/unit-conversion')
+    // The shared 10^n primitive; precision.ts evaluates it at module load.
+    const { pow10 } = await vi.importActual<
+        typeof import('@packages/shared/src/utils/decimal-config')
+    >('@packages/shared/src/utils/decimal-config')
     // json.ts imports only base64-js and decimal.js, and signing's real store
     // persists through these tags.
     const { stringifyTypedJson, parseTypedJson } = await vi.importActual<
@@ -485,6 +489,7 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
         // every precision/formatting assertion.
         DEFAULT_PRECISION: 2,
         ZERO_DECIMAL: new (require('decimal.js').Decimal)(0),
+        pow10,
         ALGO_EXPLORER_URL: 'https://explorer.perawallet.app',
         // Must mirror packages/shared/src/models/base-types.ts — period pills
         // render from this list, so a missing member silently drops a pill.
