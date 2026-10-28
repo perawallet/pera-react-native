@@ -11,7 +11,7 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { renderHook, waitFor } from '@testing-library/react'
+import { act, renderHook, waitFor } from '@testing-library/react'
 import {
     QueryClient,
     QueryClientProvider,
@@ -65,6 +65,50 @@ describe('useListedAddressesQuery', () => {
             '0x00000000000000000000000000000000000000bb',
             SCAM.toLowerCase(),
         ])
+    })
+
+    it('keeps its answer while a new copy of the lists re-checks the same addresses', async () => {
+        const { result } = renderHook(
+            () => useListedAddressesQuery({ addresses: [SCAM] }),
+            { wrapper: createWrapper() },
+        )
+        await waitFor(() => expect(result.current.isListed(SCAM)).toBe(true))
+        vi.mocked(findPhishingListedAddresses).mockReturnValue(
+            new Promise(() => {}),
+        )
+
+        act(() => {
+            usePhishingListStore.getState().activateGeneration('mew-darklist', {
+                generation: 2,
+                refreshedAt: 1,
+                origin: 'downloaded',
+            })
+        })
+
+        await waitFor(() =>
+            expect(findPhishingListedAddresses).toHaveBeenCalledTimes(2),
+        )
+        expect(result.current.isChecking).toBe(false)
+        expect(result.current.isListed(SCAM)).toBe(true)
+    })
+
+    it('never lends one set of addresses the answer for another', async () => {
+        const { result, rerender } = renderHook(
+            ({ addresses }) => useListedAddressesQuery({ addresses }),
+            {
+                wrapper: createWrapper(),
+                initialProps: { addresses: [SCAM] },
+            },
+        )
+        await waitFor(() => expect(result.current.isChecking).toBe(false))
+        vi.mocked(findPhishingListedAddresses).mockReturnValue(
+            new Promise(() => {}),
+        )
+
+        rerender({ addresses: [CLEAN] })
+
+        expect(result.current.isChecking).toBe(true)
+        expect(result.current.isListed(SCAM)).toBe(false)
     })
 
     it('answers while the device is offline', async () => {

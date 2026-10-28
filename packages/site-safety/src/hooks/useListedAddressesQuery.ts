@@ -11,7 +11,7 @@
  */
 
 import { useCallback, useMemo } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, type Query } from '@tanstack/react-query'
 import { toListedAddressKey } from '../addresses'
 import { findPhishingListedAddresses } from '../listedAddresses'
 import { selectActiveGenerations, usePhishingListStore } from '../store/store'
@@ -28,6 +28,23 @@ export type UseListedAddressesQueryResult = {
 }
 
 const NONE: readonly string[] = []
+
+type ListedAddressesKey = ReturnType<typeof siteSafetyQueryKeys.listedAddresses>
+
+// A new copy of the lists re-checks the same addresses in milliseconds; keeping
+// the last answer meanwhile stops an open review's warning and slider flickering.
+// Other addresses never inherit it, or a new request could read as unlisted.
+const keepAnswerForSameAddresses =
+    (keys: readonly string[]) =>
+    (
+        previous: string[] | undefined,
+        previousQuery:
+            | Query<string[], Error, string[], ListedAddressesKey>
+            | undefined,
+    ): string[] | undefined =>
+        previousQuery?.queryKey[2].keys.join('\n') === keys.join('\n')
+            ? previous
+            : undefined
 
 export const useListedAddressesQuery = ({
     addresses,
@@ -58,6 +75,7 @@ export const useListedAddressesQuery = ({
         queryKey: siteSafetyQueryKeys.listedAddresses(keys, generations),
         queryFn: () => findPhishingListedAddresses(keys),
         enabled: isQueryEnabled,
+        placeholderData: keepAnswerForSameAddresses(keys),
         // Local only: it must answer offline, where the default mode pauses.
         networkMode: 'always',
     })
