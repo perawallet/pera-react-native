@@ -88,6 +88,51 @@ describe('useSiteSafetyQuery', () => {
         await waitFor(() => expect(assessSiteSafety).toHaveBeenCalledTimes(2))
     })
 
+    it('keeps the last verdict for the same site while a new copy re-checks it', async () => {
+        let resolveRecheck: (verdict: typeof BLOCKED) => void = () => {}
+        const { result } = renderHook(
+            () => useSiteSafetyQuery({ urls: ['https://phish.example'] }),
+            { wrapper: createWrapper() },
+        )
+        await waitFor(() => expect(result.current.isChecking).toBe(false))
+        vi.mocked(assessSiteSafety).mockReturnValueOnce(
+            new Promise(resolve => {
+                resolveRecheck = resolve
+            }),
+        )
+
+        act(() => {
+            usePhishingListStore.getState().activateGeneration('metamask', {
+                generation: 2,
+                refreshedAt: 1,
+                origin: 'downloaded',
+            })
+        })
+
+        await waitFor(() => expect(assessSiteSafety).toHaveBeenCalledTimes(2))
+        expect(result.current).toEqual({ verdict: BLOCKED, isChecking: false })
+        await act(async () => resolveRecheck(BLOCKED))
+    })
+
+    it('checks a different site from scratch', async () => {
+        const { result, rerender } = renderHook(
+            ({ url }) => useSiteSafetyQuery({ urls: [url] }),
+            {
+                wrapper: createWrapper(),
+                initialProps: { url: 'https://phish.example' },
+            },
+        )
+        await waitFor(() => expect(result.current.isChecking).toBe(false))
+        vi.mocked(assessSiteSafety).mockReturnValueOnce(new Promise(() => {}))
+
+        rerender({ url: 'https://other.example' })
+
+        expect(result.current).toEqual({
+            verdict: { kind: 'clear' },
+            isChecking: true,
+        })
+    })
+
     it('answers while offline', async () => {
         onlineManager.setOnline(false)
 

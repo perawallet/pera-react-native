@@ -11,7 +11,7 @@
  */
 
 import { useMemo } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, type Query } from '@tanstack/react-query'
 import { assessSiteSafety } from '../assess'
 import { toSiteHost } from '../host'
 import type { AssessSiteSafetyParams, SiteSafetyVerdict } from '../models'
@@ -39,6 +39,28 @@ const toAsciiHosts = (urls: readonly string[]): string[] =>
         ),
     ].sort()
 
+type VerdictKey = ReturnType<typeof siteSafetyQueryKeys.verdict>
+
+// A new copy of the lists re-checks the same site in milliseconds; keeping the
+// last verdict meanwhile stops the gate swapping an open review for a spinner.
+// A different site never inherits one: it waits for its own check.
+const keepVerdictForSameSite =
+    (hosts: readonly string[], isFlaggedByWalletConnectVerify: boolean) =>
+    (
+        previous: SiteSafetyVerdict | undefined,
+        previousQuery:
+            | Query<SiteSafetyVerdict, Error, SiteSafetyVerdict, VerdictKey>
+            | undefined,
+    ): SiteSafetyVerdict | undefined => {
+        const key = previousQuery?.queryKey[2]
+        const isSameSite =
+            key !== undefined &&
+            key.isFlaggedByWalletConnectVerify ===
+                isFlaggedByWalletConnectVerify &&
+            key.hosts.join('\n') === hosts.join('\n')
+        return isSameSite ? previous : undefined
+    }
+
 export const useSiteSafetyQuery = ({
     urls,
     isFlaggedByWalletConnectVerify = false,
@@ -62,6 +84,10 @@ export const useSiteSafetyQuery = ({
         queryFn: () =>
             assessSiteSafety({ urls: hosts, isFlaggedByWalletConnectVerify }),
         enabled: isEnabled,
+        placeholderData: keepVerdictForSameSite(
+            hosts,
+            isFlaggedByWalletConnectVerify,
+        ),
         // Local only: it must answer offline, where the default mode pauses.
         networkMode: 'always',
     })
