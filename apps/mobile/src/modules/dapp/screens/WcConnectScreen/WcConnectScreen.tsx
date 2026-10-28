@@ -55,6 +55,7 @@ export const WcConnectScreen = (): React.JSX.Element => {
         canConnect,
         isLoading,
         isConnecting,
+        isConfirmed,
         handleConnect,
         handleCancel,
         peerUrlLabel,
@@ -146,11 +147,15 @@ export const WcConnectScreen = (): React.JSX.Element => {
                         title={t('common.cancel.label')}
                         onPress={handleCancel}
                         style={styles.cancelButton}
+                        isDisabled={isConfirmed}
                         testID='wc-connect-cancel'
                     />
                     <PWButton
                         variant='primary'
-                        title={t('common.connect.label')}
+                        title={
+                            isConfirmed ? undefined : t('common.connect.label')
+                        }
+                        icon={isConfirmed ? 'check' : undefined}
                         onPress={handleConnect}
                         style={styles.connectButton}
                         isDisabled={!canConnect}
