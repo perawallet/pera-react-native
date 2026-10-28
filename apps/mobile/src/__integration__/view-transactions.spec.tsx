@@ -537,21 +537,26 @@ describe('Flow: View transactions → tap into details', () => {
             fee: '1000',
             amount: '500000',
         }
-        const apiSpy = vi.fn(() =>
-            HttpResponse.json(
-                {
-                    current_round: 1100,
-                    next: null,
-                    previous: null,
-                    results: [olderTx],
-                },
-                { status: 200 },
-            ),
-        )
+        // The address-safety check reads this endpoint from the newest page,
+        // so only requests paging past the DB (`before_time`) are the list's.
+        const listPageSpy = vi.fn()
         server.use(
             http.get(
                 `*/v1/accounts/${addressOf(ACCOUNT)}/transactions/`,
-                apiSpy,
+                ({ request }) => {
+                    if (new URL(request.url).searchParams.has('before_time')) {
+                        listPageSpy()
+                    }
+                    return HttpResponse.json(
+                        {
+                            current_round: 1100,
+                            next: null,
+                            previous: null,
+                            results: [olderTx],
+                        },
+                        { status: 200 },
+                    )
+                },
             ),
         )
 
@@ -588,9 +593,7 @@ describe('Flow: View transactions → tap into details', () => {
         // hasNextPage flips on when the DB returned a full page —
         // production gates `handleLoadMore` on this same flag.
         expect(result.current.hasNextPage).toBe(true)
-        // The address-safety check reads this endpoint too, so only calls
-        // after load-more count; the older row below proves the page landed.
-        const callsBeforeLoadMore = apiSpy.mock.calls.length
+        expect(listPageSpy).not.toHaveBeenCalled()
 
         // Trigger the same path the list's onEndReached uses. wrap
         // in act so the resulting state mutations flush.
@@ -603,9 +606,7 @@ describe('Flow: View transactions → tap into details', () => {
         // now includes the older tx.
         await waitFor(
             () => {
-                expect(apiSpy.mock.calls.length).toBeGreaterThan(
-                    callsBeforeLoadMore,
-                )
+                expect(listPageSpy).toHaveBeenCalled()
             },
             { timeout: 5000 },
         )

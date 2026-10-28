@@ -51,6 +51,11 @@ const entry = (id: string, counterparty: string): SuspectableEntry => ({
 
 const LOOK_ALIKE = entry('tx-look-alike', 'LOOK-ALIKE')
 const REAL = entry('tx-real', 'FRIEND')
+const SUSPECTED = {
+    transactionId: LOOK_ALIKE.id,
+    counterparty: 'LOOK-ALIKE',
+    imitates: CONTACT,
+}
 
 const wrapper =
     (queryClient: QueryClient) =>
@@ -141,7 +146,7 @@ describe('useSuspectedPoisoningQuery', () => {
         expect(result.current.data.size).toBe(0)
     })
 
-    it('returns nothing when the check fails', async () => {
+    it('returns nothing when the first check fails', async () => {
         vi.mocked(detectSuspectedPoisoning).mockRejectedValue(
             new Error('offline'),
         )
@@ -150,5 +155,38 @@ describe('useSuspectedPoisoningQuery', () => {
 
         await waitFor(() => expect(detectSuspectedPoisoning).toHaveBeenCalled())
         expect(result.current.data.size).toBe(0)
+    })
+
+    it('re-checks a failed read on the next mount instead of caching it as clean', async () => {
+        vi.mocked(detectSuspectedPoisoning).mockRejectedValueOnce(
+            new Error('offline'),
+        )
+        const first = render([LOOK_ALIKE])
+        await waitFor(() =>
+            expect(queryClient.getQueryCache().getAll()[0]?.state.status).toBe(
+                'error',
+            ),
+        )
+        first.unmount()
+        vi.mocked(detectSuspectedPoisoning).mockResolvedValue([SUSPECTED])
+
+        const { result } = render([LOOK_ALIKE])
+
+        await waitFor(() => expect(result.current.data.size).toBe(1))
+        expect(detectSuspectedPoisoning).toHaveBeenCalledTimes(2)
+    })
+
+    it('keeps the last markers when a re-check fails', async () => {
+        vi.mocked(detectSuspectedPoisoning).mockResolvedValueOnce([SUSPECTED])
+        const { result } = render([LOOK_ALIKE])
+        await waitFor(() => expect(result.current.data.size).toBe(1))
+        vi.mocked(detectSuspectedPoisoning).mockRejectedValue(
+            new Error('offline'),
+        )
+
+        await queryClient.refetchQueries()
+
+        expect(detectSuspectedPoisoning).toHaveBeenCalledTimes(2)
+        expect(result.current.data.get(LOOK_ALIKE.id)).toEqual(SUSPECTED)
     })
 })

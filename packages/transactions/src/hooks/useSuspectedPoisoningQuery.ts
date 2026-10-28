@@ -74,6 +74,8 @@ export const useSuspectedPoisoningQuery = ({
             scope,
             candidateKeys,
         ),
+        // Rethrown, not returned as `[]`: a cached clean result would hide every
+        // marker for the whole stale time, whereas an error keeps the last good data.
         queryFn: async () => {
             try {
                 return await detectSuspectedPoisoning({
@@ -86,7 +88,7 @@ export const useSuspectedPoisoningQuery = ({
                 logger.warn('Could not check history for address poisoning', {
                     error,
                 })
-                return []
+                throw error
             }
         },
         enabled: candidates.length > 0,

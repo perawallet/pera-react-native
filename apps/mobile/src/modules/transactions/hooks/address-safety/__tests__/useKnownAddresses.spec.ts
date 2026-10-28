@@ -73,6 +73,7 @@ describe('useKnownAddresses', () => {
         mocks.counterpartiesQuery.mockClear()
         mocks.accounts = [
             { name: 'Main', chains: { ethereum: { address: '0xOWN' } } },
+            { name: 'Savings', chains: { ethereum: { address: '0xSAVINGS' } } },
             {
                 name: 'Exchange',
                 isWatch: true,
@@ -101,6 +102,7 @@ describe('useKnownAddresses', () => {
 
         expect(result.current.knownAddresses).toEqual([
             { address: '0xOWN', source: 'own-account', name: 'Main' },
+            { address: '0xSAVINGS', source: 'own-account', name: 'Savings' },
             {
                 address: '0xWATCHED',
                 source: 'watched-account',
@@ -123,9 +125,39 @@ describe('useKnownAddresses', () => {
 
         expect(mocks.counterpartiesQuery).toHaveBeenCalledWith(
             expect.objectContaining({
-                accountAddresses: ['0xOWN'],
+                accountAddresses: ['0xOWN', '0xSAVINGS'],
                 isEnabled: false,
             }),
+        )
+    })
+
+    it("reads only the sender's history when asked to", () => {
+        renderHook(() =>
+            useKnownAddresses({
+                scope: ETHEREUM,
+                senderAddress: '0xsavings',
+                isEnabled: true,
+                isSenderHistoryOnly: true,
+            }),
+        )
+
+        expect(mocks.counterpartiesQuery).toHaveBeenCalledWith(
+            expect.objectContaining({ accountAddresses: ['0xSAVINGS'] }),
+        )
+    })
+
+    it('reads no history when the sender is a watched account', () => {
+        renderHook(() =>
+            useKnownAddresses({
+                scope: ETHEREUM,
+                senderAddress: '0xWATCHED',
+                isEnabled: true,
+                isSenderHistoryOnly: true,
+            }),
+        )
+
+        expect(mocks.counterpartiesQuery).toHaveBeenCalledWith(
+            expect.objectContaining({ accountAddresses: [] }),
         )
     })
 })

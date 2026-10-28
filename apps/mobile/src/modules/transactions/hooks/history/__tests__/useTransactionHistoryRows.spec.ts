@@ -282,6 +282,7 @@ describe('useTransactionHistoryRows', () => {
                 scope: ETH_SCOPE,
                 senderAddress: '0xabc',
                 isEnabled: true,
+                isSenderHistoryOnly: true,
             })
             expect(useSuspectedPoisoningQuery).toHaveBeenCalledWith(
                 expect.objectContaining({

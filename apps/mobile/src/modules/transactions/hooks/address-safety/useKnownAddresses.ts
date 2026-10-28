@@ -16,7 +16,10 @@ import {
     chainAccountOf,
     useAllAccounts,
 } from '@perawallet/wallet-core-accounts'
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import {
+    addressCodecs,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import { getChainDescriptor } from '@perawallet/wallet-core-chain-shared'
 import { useContactsStore } from '@perawallet/wallet-core-contacts'
 import type { Optional } from '@perawallet/wallet-core-shared'
@@ -31,6 +34,11 @@ export type UseKnownAddressesParams = {
     senderAddress: Optional<string>
     /** Gates the history read; wallet and contact addresses are always known. */
     isEnabled: boolean
+    /**
+     * Reads only the sender's own history instead of every signing account's,
+     * for screens opened too often to pay a full history read per account.
+     */
+    isSenderHistoryOnly?: boolean
 }
 
 export type UseKnownAddressesResult = {
@@ -44,6 +52,7 @@ export const useKnownAddresses = ({
     scope,
     senderAddress,
     isEnabled,
+    isSenderHistoryOnly = false,
 }: UseKnownAddressesParams): UseKnownAddressesResult => {
     const accounts = useAllAccounts()
     const contacts = useContactsStore(state => state.contacts)
@@ -79,13 +88,17 @@ export const useKnownAddresses = ({
         })
     }, [contacts, scope.chainId])
 
-    const accountAddresses = useMemo(
-        () =>
-            walletAddresses.flatMap(({ address, source }) =>
-                source === 'own-account' ? [address] : [],
-            ),
-        [walletAddresses],
-    )
+    const accountAddresses = useMemo(() => {
+        const codec = addressCodecs.has(scope.chainId)
+            ? addressCodecs.get(scope.chainId)
+            : undefined
+        const isRead = (address: string) =>
+            !isSenderHistoryOnly ||
+            (!!senderAddress && !!codec?.areEqual(address, senderAddress))
+        return walletAddresses.flatMap(({ address, source }) =>
+            source === 'own-account' && isRead(address) ? [address] : [],
+        )
+    }, [walletAddresses, isSenderHistoryOnly, senderAddress, scope.chainId])
     const {
         data: counterparties,
         isPending,

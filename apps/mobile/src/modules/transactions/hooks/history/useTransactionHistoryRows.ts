@@ -131,6 +131,7 @@ export const useTransactionHistoryRows = ({
         scope,
         senderAddress: accountAddress,
         isEnabled: !!accountAddress,
+        isSenderHistoryOnly: true,
     })
     const { data: suspectedPoisoningById } = useSuspectedPoisoningQuery({
         entries,
