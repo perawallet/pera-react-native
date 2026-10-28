@@ -11,28 +11,12 @@
  */
 
 import { renderHook } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { Decimal } from 'decimal.js'
-import {
-    useAssetGroupsQuery,
-    type AssetGroup,
-    type PeraAsset,
-} from '@perawallet/wallet-core-assets'
+import type { AssetGroup, PeraAsset } from '@perawallet/wallet-core-assets'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { GroupableHoldingAdapter } from '../../utils/groupedHoldings'
 import { useGroupedHoldings } from '../useGroupedHoldings'
-
-const mockGroups = vi.hoisted(() => ({ current: [] as unknown[] }))
-
-vi.mock('@perawallet/wallet-core-assets', async importOriginal => ({
-    ...(await importOriginal<
-        typeof import('@perawallet/wallet-core-assets')
-    >()),
-    useAssetGroupsQuery: vi.fn(() => ({
-        groups: mockGroups.current,
-        isPending: false,
-    })),
-}))
 
 vi.mock('@perawallet/wallet-extension-provider', () => ({
     getProvider: () => ({
@@ -48,23 +32,17 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
 const ALGO: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
 const ETH: ChainScope = { chainId: 'ethereum', networkId: 'mainnet' }
 
+const USDC_GROUP: AssetGroup = { id: 'usdc', name: 'USD Coin', symbol: 'USDC' }
+
 type Holding = { scope: ChainScope; assetId: string; amount: Decimal }
+
+const groupOf = vi.fn(() => USDC_GROUP)
 
 const adapter: GroupableHoldingAdapter<Holding> = {
     assetOf: holding => ({ assetId: holding.assetId }) as PeraAsset,
     displayAmountOf: holding => holding.amount,
     usdPriceOf: () => new Decimal(1),
-}
-
-const USDC_GROUP: AssetGroup = {
-    id: 'usdc',
-    name: 'USD Coin',
-    symbol: 'USDC',
-    logoUrl: null,
-    members: [
-        { scope: ALGO, assetId: '31566704' },
-        { scope: ETH, assetId: '0xA0b8' },
-    ],
+    groupOf,
 }
 
 const holdings: Holding[] = [
@@ -83,14 +61,7 @@ const render = (isEnabled = true) =>
     )
 
 describe('useGroupedHoldings', () => {
-    beforeEach(() => {
-        mockGroups.current = []
-        vi.mocked(useAssetGroupsQuery).mockClear()
-    })
-
-    it('folds the members the endpoint groups into one item', () => {
-        mockGroups.current = [USDC_GROUP]
-
+    it('folds the members of one group into one item', () => {
         const { result } = render()
 
         expect(result.current.items).toHaveLength(1)
@@ -98,9 +69,12 @@ describe('useGroupedHoldings', () => {
         expect(group?.kind === 'group' && group.amount?.toString()).toBe('5')
     })
 
-    it('lists every holding as a plain row when the endpoint gives no groups', () => {
-        const { result } = render()
+    it('asks no holding for its group and folds nothing while disabled', () => {
+        groupOf.mockClear()
 
+        const { result } = render(false)
+
+        expect(groupOf).not.toHaveBeenCalled()
         expect(result.current.items).toEqual(
             holdings.map(holding => ({
                 kind: 'holding',
@@ -108,18 +82,5 @@ describe('useGroupedHoldings', () => {
                 isGroupMember: false,
             })),
         )
-    })
-
-    it('sends no request and folds nothing while disabled', () => {
-        mockGroups.current = [USDC_GROUP]
-
-        const { result } = render(false)
-
-        expect(vi.mocked(useAssetGroupsQuery).mock.lastCall?.[0]).toEqual({
-            enabled: false,
-        })
-        expect(
-            result.current.items.every(item => item.kind === 'holding'),
-        ).toBe(true)
     })
 })

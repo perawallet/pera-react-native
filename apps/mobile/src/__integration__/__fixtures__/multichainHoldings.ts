@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-// One account on Algorand and Ethereum holding USDC on both, which the
-// asset-groups endpoint names as one asset.
+// One account on Algorand and Ethereum holding USDC on both, whose synced
+// metadata names the same cross-chain group.
 
 import { Decimal } from 'decimal.js'
 import {
@@ -23,6 +23,7 @@ import {
     nativeAssetFor,
     upsertAssetPrices,
     upsertAssets,
+    type AssetGroup,
 } from '@perawallet/wallet-core-assets'
 import {
     type ChainScope,
@@ -59,25 +60,30 @@ export const TWO_CHAIN_ACCOUNT: WalletAccount = {
     name: 'Both chains',
 }
 
-export const USDC_GROUP = {
+export const USDC_GROUP: AssetGroup = {
     id: 'usdc',
     name: 'USD Coin',
     symbol: 'USDC',
-    logo_url: null,
-    members: [
-        {
-            chain_id: 'algorand:wGHE2Pwdvd7S12BL5FaOP20EGYesN73k',
-            asset_id: USDC_TEST_ASSET.assetId,
-        },
-        { chain_id: 'eip155:1', asset_id: ETH_USDC },
-    ],
 }
 
 // 10 ALGO and 2.5 USDC on Algorand; 1.5 ETH, 1.5 USDC and 7 of the lookalike
 // on Ethereum.
 export const seedHoldings = async () => {
     await seedAlgoAsset('mainnet')
-    await upsertAssets({ items: [USDC_TEST_ASSET], scope: ALGO_SCOPE })
+    await upsertAssets({
+        items: [
+            {
+                ...USDC_TEST_ASSET,
+                peraMetadata: {
+                    isDeleted: false,
+                    verificationTier: 'verified',
+                    ...USDC_TEST_ASSET.peraMetadata,
+                    crossChainAssetGroup: USDC_GROUP,
+                },
+            },
+        ],
+        scope: ALGO_SCOPE,
+    })
     await seedAlgorandAccountState({
         accountAddress: ALGO25_TEST_ADDRESS,
         scope: ALGO_SCOPE,
@@ -106,6 +112,11 @@ export const seedHoldings = async () => {
                 name: 'USD Coin',
                 unitName: 'USDC',
                 decimals: 6,
+                peraMetadata: {
+                    isDeleted: false,
+                    verificationTier: 'verified',
+                    crossChainAssetGroup: USDC_GROUP,
+                },
             },
             {
                 ...ether,

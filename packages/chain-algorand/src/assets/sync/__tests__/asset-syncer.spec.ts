@@ -10,13 +10,19 @@
  limitations under the License
  */
 
-import { describe, test, expect, vi, beforeEach } from 'vitest'
+import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest'
 import {
     type ChainScope,
     LEGACY_CHAIN_ID,
 } from '@perawallet/wallet-core-chain-contract'
 
 const fetchAssetsMock = vi.hoisted(() => vi.fn())
+const fetchCrossChainAssetGroupsMock = vi.hoisted(() =>
+    vi.fn(
+        async (ids: string[]) =>
+            new Map<string, unknown>(ids.map(id => [id, null])),
+    ),
+)
 const transformAssetResponseMock = vi.hoisted(() => vi.fn(a => a))
 const fetchIndexerAssetDetailsMock = vi.hoisted(() => vi.fn())
 const transformIndexerAssetResponseMock = vi.hoisted(() => vi.fn(a => a))
@@ -32,6 +38,7 @@ const getCollectibleIdsMissingUrlMock = vi.hoisted(() =>
 
 vi.mock('../../api', () => ({
     fetchAssets: fetchAssetsMock,
+    fetchCrossChainAssetGroups: fetchCrossChainAssetGroupsMock,
     transformAssetResponse: transformAssetResponseMock,
     fetchIndexerAssetDetails: fetchIndexerAssetDetailsMock,
     transformIndexerAssetResponse: transformIndexerAssetResponseMock,
@@ -46,6 +53,12 @@ vi.mock('@perawallet/wallet-core-assets', async importOriginal => ({
     upsertPeraAssets: upsertPeraAssetsMock,
     getStaleOrMissingAssetIds: getStaleOrMissingAssetIdsMock,
     getCollectibleIdsMissingUrl: getCollectibleIdsMissingUrlMock,
+}))
+
+const canCallIntegrityGuardedRouteMock = vi.hoisted(() => vi.fn(() => true))
+
+vi.mock('@perawallet/wallet-core-app-integrity', () => ({
+    canCallIntegrityGuardedRoute: canCallIntegrityGuardedRouteMock,
 }))
 
 const deviceIdGetMock = vi.hoisted(() => vi.fn(() => null as string | null))
@@ -74,6 +87,7 @@ const ref = (assetId: string) => ({ chainId: 'algorand', assetId }) as const
 describe('fetchAndPersistAssets', () => {
     beforeEach(() => {
         fetchAssetsMock.mockReset()
+        fetchCrossChainAssetGroupsMock.mockClear()
         upsertAssetsMock.mockReset()
         upsertNodeAssetsMock.mockReset()
         upsertPeraAssetsMock.mockReset()
@@ -88,6 +102,7 @@ describe('fetchAndPersistAssets', () => {
         getCollectibleIdsMissingUrlMock.mockResolvedValue([])
         deviceIdGetMock.mockReset()
         deviceIdGetMock.mockReturnValue(null)
+        canCallIntegrityGuardedRouteMock.mockReturnValue(true)
     })
 
     test('device-scoped: passes the network device id to fetchAssets', async () => {
@@ -114,6 +129,88 @@ describe('fetchAndPersistAssets', () => {
             'mainnet',
             null,
         )
+    })
+
+    describe('cross-chain groups', () => {
+        const USDC_GROUP = { id: 'usdc', name: 'USD Coin', symbol: 'USDC' }
+        const STORED = { isDeleted: false, verificationTier: 'verified' }
+
+        beforeEach(() => {
+            fetchAssetsMock.mockResolvedValue({
+                results: [{ asset_id: 1 }, { asset_id: 2 }],
+            })
+            transformAssetResponseMock.mockImplementation(
+                (item: { asset_id: number }) => ({
+                    assetId: `${item.asset_id}`,
+                    peraMetadata: STORED,
+                }),
+            )
+        })
+
+        afterEach(() => {
+            transformAssetResponseMock.mockImplementation(a => a)
+        })
+
+        const persisted = () =>
+            upsertAssetsMock.mock.lastCall?.[0].items.map(
+                (item: { peraMetadata: { crossChainAssetGroup?: unknown } }) =>
+                    item.peraMetadata.crossChainAssetGroup,
+            )
+
+        test("stores each asset's group from the v4 read, null for one in none", async () => {
+            fetchCrossChainAssetGroupsMock.mockResolvedValueOnce(
+                new Map<string, unknown>([
+                    ['1', USDC_GROUP],
+                    ['2', null],
+                ]),
+            )
+
+            await fetchAndPersistAssets(['1', '2'], MAINNET_SCOPE)
+
+            expect(fetchCrossChainAssetGroupsMock).toHaveBeenCalledWith(
+                ['1', '2'],
+                'mainnet',
+            )
+            expect(persisted()).toEqual([USDC_GROUP, null])
+        })
+
+        test('leaves the group of an id the v4 read omits alone', async () => {
+            fetchCrossChainAssetGroupsMock.mockResolvedValueOnce(
+                new Map<string, unknown>([['2', null]]),
+            )
+
+            await fetchAndPersistAssets(['1', '2'], MAINNET_SCOPE)
+
+            expect(persisted()).toEqual([undefined, null])
+        })
+
+        test('still persists the batch, leaving each stored group alone, when the v4 read fails', async () => {
+            fetchCrossChainAssetGroupsMock.mockRejectedValueOnce(
+                new Error('integrity'),
+            )
+
+            await fetchAndPersistAssets(['1', '2'], MAINNET_SCOPE)
+
+            expect(persisted()).toEqual([undefined, undefined])
+        })
+
+        test('rechecks assets no sync has read the group of', async () => {
+            await fetchAndPersistAssets(['1'], MAINNET_SCOPE)
+
+            expect(getStaleOrMissingAssetIdsMock).toHaveBeenCalledWith(
+                expect.objectContaining({ recheckUnreadGroup: true }),
+            )
+        })
+
+        test('skips the unread-group recheck while the group read cannot pass integrity', async () => {
+            canCallIntegrityGuardedRouteMock.mockReturnValue(false)
+
+            await fetchAndPersistAssets(['1'], MAINNET_SCOPE)
+
+            expect(getStaleOrMissingAssetIdsMock).toHaveBeenCalledWith(
+                expect.objectContaining({ recheckUnreadGroup: false }),
+            )
+        })
     })
 
     test('filters out ALGO and short-circuits when the remaining list is empty', async () => {

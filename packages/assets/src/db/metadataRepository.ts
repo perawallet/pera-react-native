@@ -263,6 +263,13 @@ export async function upsertPeraAssets({
                       meta.isPriceAlertEnabled ??
                       existing?.isPriceAlertEnabled ??
                       false,
+                  // Absent means this source doesn't carry the group: keep
+                  // what an earlier read stored, or stay absent so the
+                  // unread-group recheck retries a row whose read failed.
+                  crossChainAssetGroup:
+                      meta.crossChainAssetGroup !== undefined
+                          ? meta.crossChainAssetGroup
+                          : existing?.crossChainAssetGroup,
               }
             : undefined
 

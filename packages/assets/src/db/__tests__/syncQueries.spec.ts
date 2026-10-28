@@ -388,6 +388,77 @@ describe('asset sync queries', () => {
         })
     })
 
+    describe('getStaleOrMissingAssetIds — unread group recheck', () => {
+        // Undefined stands for a row cached before assets carried their group,
+        // or one whose group read failed.
+        const seed = ({
+            type = 'standard_asset',
+            crossChainAssetGroup,
+        }: {
+            type?: PeraAssetType
+            crossChainAssetGroup?: null
+        } = {}) =>
+            upsertAssets({
+                db,
+                items: [
+                    makeAsset({
+                        peraMetadata: {
+                            isDeleted: false,
+                            verificationTier: 'verified',
+                            type,
+                            crossChainAssetGroup,
+                        },
+                    }),
+                ],
+                scope: MAINNET_SCOPE,
+            })
+
+        const recheck = (recheckUnreadGroup = true) =>
+            getStaleOrMissingAssetIds({
+                db,
+                assetIds: ['31566704'],
+                scope: MAINNET_SCOPE,
+                ttlMs: 60_000,
+                recheckUnreadGroup,
+            })
+
+        const ageRow = () => db.run(sql`update assets_pera set updated_at = 0`)
+
+        it('rechecks a token no read has answered the group of once its last read is old', async () => {
+            await seed()
+            await ageRow()
+
+            expect(await recheck()).toEqual(['31566704'])
+        })
+
+        it('waits out the retry TTL after a sync whose group read failed', async () => {
+            await seed()
+
+            expect(await recheck()).toEqual([])
+        })
+
+        it('leaves a token whose group was read, even as none', async () => {
+            await seed({ crossChainAssetGroup: null })
+            await ageRow()
+
+            expect(await recheck()).toEqual([])
+        })
+
+        it('leaves collectibles alone', async () => {
+            await seed({ type: 'collectible' })
+            await ageRow()
+
+            expect(await recheck()).toEqual([])
+        })
+
+        it('does not recheck when the caller omits the flag', async () => {
+            await seed()
+            await ageRow()
+
+            expect(await recheck(false)).toEqual([])
+        })
+    })
+
     describe('getStaleOrMissingAssetIds — ARC19 recheck', () => {
         // ARC19 media is mutable: the manager's acfg re-points the reserve
         // address at a new CID and the backend re-crawls, but only a re-fetch

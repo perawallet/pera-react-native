@@ -599,6 +599,39 @@ describe('account holdings queries', () => {
                 expect(rows.map(r => r.assetId)).toEqual(['0xT'])
             })
 
+            it("reads each row's cross-chain group id without its metadata", async () => {
+                await upsertAssets({
+                    db,
+                    scope: ETH_SCOPE,
+                    items: [
+                        {
+                            ...richAsset('0xT', 'Token'),
+                            peraMetadata: {
+                                isDeleted: false,
+                                verificationTier: 'verified',
+                                crossChainAssetGroup: {
+                                    id: 'usdc',
+                                    name: 'USD Coin',
+                                    symbol: 'USDC',
+                                },
+                            },
+                        },
+                    ],
+                })
+
+                const rows = await getAccountHoldingsLite({
+                    db,
+                    sources: [ETH_SOURCE],
+                })
+
+                expect(
+                    rows.map(r => [r.assetId, r.crossChainAssetGroupId]),
+                ).toEqual([
+                    ['0xE', null],
+                    ['0xT', 'usdc'],
+                ])
+            })
+
             it('returns nothing for no sources', async () => {
                 expect(
                     await getAccountHoldingsLite({ db, sources: [] }),

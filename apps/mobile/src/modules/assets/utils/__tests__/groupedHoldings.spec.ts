@@ -51,6 +51,7 @@ type TestHolding = {
     /** Null stands in for metadata that hasn't synced. */
     decimals: Nullable<number>
     usdPrice: Nullable<Decimal>
+    group: Nullable<AssetGroup>
 }
 
 const adapter: GroupableHoldingAdapter<TestHolding> = {
@@ -64,7 +65,12 @@ const adapter: GroupableHoldingAdapter<TestHolding> = {
     displayAmountOf: (holding, asset) =>
         baseUnitsToDisplayUnits(holding.amount, asset.decimals),
     usdPriceOf: holding => holding.usdPrice,
+    groupOf: holding => holding.group,
 }
+
+const USDC_GROUP: AssetGroup = { id: 'usdc', name: 'USD Coin', symbol: 'USDC' }
+
+const USDC_MEMBER_IDS = new Set(['31566704', '0xA0b8'])
 
 const holding = (
     scope: ChainScope,
@@ -78,29 +84,15 @@ const holding = (
     amount: new Decimal(amount),
     decimals,
     usdPrice,
+    group: USDC_MEMBER_IDS.has(assetId) ? USDC_GROUP : null,
 })
-
-const USDC_GROUP: AssetGroup = {
-    id: 'usdc',
-    name: 'USD Coin',
-    symbol: 'USDC',
-    logoUrl: null,
-    members: [
-        { scope: ALGO_MAINNET, assetId: '31566704' },
-        { scope: ETH_MAINNET, assetId: '0xA0b8' },
-    ],
-}
 
 const build = (
     holdings: TestHolding[],
-    {
-        groups = [USDC_GROUP],
-        expanded = [],
-    }: { groups?: AssetGroup[]; expanded?: string[] } = {},
+    { expanded = [] }: { expanded?: string[] } = {},
 ) =>
     buildGroupedHoldingItems({
         holdings,
-        groups,
         expandedGroupIds: new Set(expanded),
         adapter,
     })
@@ -191,7 +183,7 @@ describe('buildGroupedHoldingItems', () => {
         expect(groupAt(items, 0).isExpanded).toBe(true)
     })
 
-    it('keeps two same-symbol assets no group names as separate rows', () => {
+    it('keeps two same-symbol assets in no group as separate rows', () => {
         const lookalike = holding(ETH_MAINNET, '0xFAKE', '1000000')
 
         expect(describeItems(build([algoUsdc, lookalike]))).toEqual([
@@ -209,27 +201,21 @@ describe('buildGroupedHoldingItems', () => {
 
     it('never folds a test-network holding with a mainnet one', () => {
         const testnetUsdc = holding(ALGO_TESTNET, '31566704', '1')
-        const groupWithTestnet: AssetGroup = {
-            ...USDC_GROUP,
-            members: [
-                ...USDC_GROUP.members,
-                { scope: ALGO_TESTNET, assetId: '31566704' },
-            ],
-        }
 
-        const items = build([testnetUsdc, ethUsdc], {
-            groups: [groupWithTestnet],
-        })
+        const items = build([testnetUsdc, ethUsdc])
 
         expect(describeItems(items)).toEqual(['row:31566704', 'row:0xA0b8'])
     })
 
-    it('maps every holding to a plain row with no groups', () => {
-        const items = build([algoUsdc, ethUsdc], { groups: [] })
+    it('maps every holding to a plain row when none is in a group', () => {
+        const ungrouped = [
+            { ...algoUsdc, group: null },
+            { ...ethUsdc, group: null },
+        ]
 
-        expect(items).toEqual([
-            { kind: 'holding', holding: algoUsdc, isGroupMember: false },
-            { kind: 'holding', holding: ethUsdc, isGroupMember: false },
+        expect(build(ungrouped)).toEqual([
+            { kind: 'holding', holding: ungrouped[0], isGroupMember: false },
+            { kind: 'holding', holding: ungrouped[1], isGroupMember: false },
         ])
     })
 })

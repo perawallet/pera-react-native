@@ -40,6 +40,8 @@ const pickerHoldingAdapter: GroupableHoldingAdapter<ChainAssetBalance> = {
     displayAmountOf: balance => balance.amount,
     usdPriceOf: balance =>
         balance.fiatValue === null ? null : (balance.usdPrice ?? null),
+    groupOf: balance =>
+        balance.asset?.peraMetadata?.crossChainAssetGroup ?? null,
 }
 
 const NO_EXPANDED_GROUPS: ReadonlySet<string> = new Set()

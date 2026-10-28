@@ -11,4 +11,3 @@
  */
 
 export * from './settings'
-export * from './groups'

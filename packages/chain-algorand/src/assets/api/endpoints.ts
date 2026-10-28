@@ -10,11 +10,15 @@
  limitations under the License
  */
 
+import { buildIntegrityHeaders } from '@perawallet/wallet-core-app-integrity'
+import type { AssetGroup } from '@perawallet/wallet-core-assets'
 import { queryClient, type Nullable } from '@perawallet/wallet-core-shared'
+import { algorandDescriptor } from '../../descriptor'
 import { fetchNodeJson } from '../../blockchain/utils/nodeHttp'
 import {
     assetResponseSchema,
     assetsResponseSchema,
+    crossChainAssetGroupsResponseSchema,
     indexerAssetResponseSchema,
     publicAssetResponseSchema,
     type AssetResponse,
@@ -60,6 +64,40 @@ export const fetchAssets = async (
         : await fetchAssetsUnscoped(assetIDs, network)
 
     return assetsResponseSchema.parse(response.data)
+}
+
+/**
+ * Each answered id's cross-chain group, keyed by ASA id; at most 500 ids. An id
+ * the answer leaves out is absent, so only that token stays unread. ALGO is
+ * `asa:0` on this endpoint.
+ */
+export const fetchCrossChainAssetGroups = async (
+    assetIDs: string[],
+    network: AlgorandNetworkId,
+): Promise<Map<string, Nullable<AssetGroup>>> => {
+    const caip2 = algorandDescriptor.networks.find(
+        each => each.id === network,
+    )?.caip2
+    if (!caip2) throw new Error(`${network} has no CAIP-2 id`)
+
+    const assetIdOf = new Map(assetIDs.map(id => [`${caip2}/asa:${id}`, id]))
+    const { data } = await queryClient<unknown>({
+        backend: 'pera',
+        scope: algorandScope(network),
+        method: 'POST',
+        url: '/api/v4/assets/',
+        headers: buildIntegrityHeaders(),
+        data: { ids: [...assetIdOf.keys()] },
+    })
+    const { results } = crossChainAssetGroupsResponseSchema.parse(data)
+    return new Map(
+        results.flatMap(item => {
+            const assetId = assetIdOf.get(item.asset_id)
+            return assetId === undefined
+                ? []
+                : [[assetId, item.cross_chain_asset_group] as const]
+        }),
+    )
 }
 
 export const fetchAssetDetails = async (

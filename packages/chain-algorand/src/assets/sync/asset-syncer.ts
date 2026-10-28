@@ -12,6 +12,7 @@
 
 import {
     fetchAssets,
+    fetchCrossChainAssetGroups,
     fetchIndexerAssetDetails,
     transformAssetResponse,
     transformIndexerAssetResponse,
@@ -23,6 +24,7 @@ import {
     getCollectibleIdsMissingUrl,
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
+import { canCallIntegrityGuardedRoute } from '@perawallet/wallet-core-app-integrity'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 
 import {
@@ -59,12 +61,26 @@ const persistFromPeraBackend = async (
     scope: ChainScope,
     deviceId: Nullable<string>,
 ): Promise<void> => {
-    const response = await fetchAssets(
-        batch,
-        algorandNetworkOf(scope),
-        deviceId,
-    )
-    const assets = response.results.map(transformAssetResponse)
+    const network = algorandNetworkOf(scope)
+    // Only the v4 item carries the group, and it lacks fields Django's has, so
+    // a batch reads both until v4 carries them.
+    const [response, groups] = await Promise.all([
+        fetchAssets(batch, network, deviceId),
+        // A failed read leaves each stored group as it was.
+        fetchCrossChainAssetGroups(batch, network).catch(() => null),
+    ])
+    const assets = response.results.map(item => {
+        const asset = transformAssetResponse(item)
+        return asset.peraMetadata && groups?.has(asset.assetId)
+            ? {
+                  ...asset,
+                  peraMetadata: {
+                      ...asset.peraMetadata,
+                      crossChainAssetGroup: groups.get(asset.assetId),
+                  },
+              }
+            : asset
+    })
     await upsertAssets({ items: assets, scope })
 }
 
@@ -178,6 +194,9 @@ export async function fetchAndPersistAssets(
             hasCollectibleShape: hasAlgorandNftShape,
         },
         recheckArc19: { ttlMs: ARC19_COLLECTIBLE_RECHECK_TTL_MS },
+        // The group read is integrity-guarded; until it can succeed, a recheck
+        // would refetch every unread token on each sync for nothing.
+        recheckUnreadGroup: canCallIntegrityGuardedRoute(),
     })
     if (toFetch.length === 0) return
 

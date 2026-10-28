@@ -410,6 +410,58 @@ describe('asset metadata repository', () => {
         })
     })
 
+    describe('sync merges the cross-chain group by presence', () => {
+        const USDC_GROUP = { id: 'usdc', name: 'USD Coin', symbol: 'USDC' }
+
+        const syncWithGroup = (
+            crossChainAssetGroup?: typeof USDC_GROUP | null,
+        ) =>
+            upsertAssets({
+                db,
+                items: [
+                    makeAsset({
+                        peraMetadata: {
+                            isDeleted: false,
+                            verificationTier: 'verified',
+                            crossChainAssetGroup,
+                        },
+                    }),
+                ],
+                scope: MAINNET_SCOPE,
+            })
+
+        const storedGroup = async () =>
+            (
+                await getAssetsByIds({
+                    db,
+                    assetIds: ['31566704'],
+                    scope: MAINNET_SCOPE,
+                })
+            )[0]?.peraMetadata?.crossChainAssetGroup
+
+        it('keeps the stored group when a source does not carry one', async () => {
+            await syncWithGroup(USDC_GROUP)
+
+            await syncWithGroup(undefined)
+
+            expect(await storedGroup()).toEqual(USDC_GROUP)
+        })
+
+        it('clears the stored group when a source says the asset is in none', async () => {
+            await syncWithGroup(USDC_GROUP)
+
+            await syncWithGroup(null)
+
+            expect(await storedGroup()).toBeNull()
+        })
+
+        it('leaves the group unread when no read has answered for it', async () => {
+            await syncWithGroup(undefined)
+
+            expect(await storedGroup()).toBeUndefined()
+        })
+    })
+
     describe('sync merges device-specific fields by null-ness', () => {
         it('preserves isFavorited and isPriceAlertEnabled when the sync response omits them (null)', async () => {
             // Initial sync stores asset with defaults

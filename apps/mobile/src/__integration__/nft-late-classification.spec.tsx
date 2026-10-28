@@ -76,6 +76,8 @@ const UNCLASSIFIED_ASSET: PeraAsset = {
     peraMetadata: {
         ...NFT_TEST_ASSET.peraMetadata!,
         type: PeraAssetType.standard_asset,
+        // Read as in no group, so the unread-group recheck stays out of the way.
+        crossChainAssetGroup: null,
     },
 }
 

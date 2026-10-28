@@ -30,6 +30,7 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
 
 import {
     fetchAssets,
+    fetchCrossChainAssetGroups,
     fetchAssetDetails,
     fetchPublicAssetDetails,
     fetchIndexerAssetDetails,
@@ -62,6 +63,74 @@ const validAssetsResponse = {
 describe('assets endpoints', () => {
     beforeEach(() => {
         queryClientMock.mockReset()
+    })
+
+    describe('fetchCrossChainAssetGroups', () => {
+        const MAINNET = 'algorand:wGHE2Pwdvd7S12BL5FaOP20EGYesN73k'
+        const USDC_GROUP = { id: 'usdc', name: 'USD Coin', symbol: 'USDC' }
+
+        test("posts each id as the network's CAIP-19 and answers each group by ASA id", async () => {
+            queryClientMock.mockResolvedValue({
+                data: {
+                    results: [
+                        {
+                            asset_id: `${MAINNET}/asa:31566704`,
+                            cross_chain_asset_group: USDC_GROUP,
+                            name: 'USDC',
+                        },
+                        {
+                            asset_id: `${MAINNET}/asa:7`,
+                            cross_chain_asset_group: null,
+                        },
+                    ],
+                },
+            })
+
+            const groups = await fetchCrossChainAssetGroups(
+                ['31566704', '7'],
+                'mainnet',
+            )
+
+            expect(queryClientMock).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    method: 'POST',
+                    url: '/api/v4/assets/',
+                    data: {
+                        ids: [`${MAINNET}/asa:31566704`, `${MAINNET}/asa:7`],
+                    },
+                }),
+            )
+            expect(groups).toEqual(
+                new Map([
+                    ['31566704', USDC_GROUP],
+                    ['7', null],
+                ]),
+            )
+        })
+
+        test('leaves out an id the answer omits and ignores one it was not asked for', async () => {
+            queryClientMock.mockResolvedValue({
+                data: {
+                    results: [
+                        {
+                            asset_id: `${MAINNET}/asa:99`,
+                            cross_chain_asset_group: USDC_GROUP,
+                        },
+                        {
+                            asset_id: `${MAINNET}/asa:7`,
+                            cross_chain_asset_group: null,
+                        },
+                    ],
+                },
+            })
+
+            const groups = await fetchCrossChainAssetGroups(
+                ['31566704', '7'],
+                'mainnet',
+            )
+
+            expect(groups).toEqual(new Map([['7', null]]))
+        })
     })
 
     test('fetchAssets calls /v1/assets/ with comma-joined asset_ids and include_deleted', async () => {

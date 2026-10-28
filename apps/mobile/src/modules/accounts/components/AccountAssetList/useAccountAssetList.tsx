@@ -108,13 +108,18 @@ type UseAccountAssetListResult = {
 
 const EMPTY_ITEMS: GroupedHoldingItem<AccountHoldingsLiteRow>[] = []
 
-// Rows carry base units and parse their metadata lazily; only group members
-// reach this.
+// Rows carry base units and parse their metadata lazily; the SQL-read group id
+// keeps that parse to group members.
 const homeHoldingAdapter: GroupableHoldingAdapter<AccountHoldingsLiteRow> = {
     assetOf: holding => assetFromHoldingLiteRow(holding, holding.scope.chainId),
     displayAmountOf: (holding, asset) =>
         baseUnitsToDisplayUnits(holding.amount, asset.decimals),
     usdPriceOf: holding => holding.usdPrice,
+    groupOf: holding =>
+        holding.crossChainAssetGroupId === null
+            ? null
+            : (assetFromHoldingLiteRow(holding, holding.scope.chainId)
+                  ?.peraMetadata?.crossChainAssetGroup ?? null),
 }
 
 type UseAccountAssetListParams = {

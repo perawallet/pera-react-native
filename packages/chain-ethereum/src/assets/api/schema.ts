@@ -37,6 +37,11 @@ export const assetItemSchema = z.object({
     is_verified: z.boolean(),
     verification_tier: z.enum(['unverified', 'verified', 'suspicious']),
     explorer_url: z.string().nullable(),
+    // Optional: a source that doesn't carry it leaves the stored group alone.
+    cross_chain_asset_group: z
+        .object({ id: z.string(), name: z.string(), symbol: z.string() })
+        .nullable()
+        .optional(),
 })
 
 export type AssetItemSchemaOutput = z.output<typeof assetItemSchema>

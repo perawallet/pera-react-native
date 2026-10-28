@@ -30,6 +30,8 @@ export type GroupableHoldingAdapter<T extends GroupableHolding> = {
     displayAmountOf: (holding: T, asset: PeraAsset) => Decimal
     /** USD per whole unit; null while unpriced. */
     usdPriceOf: (holding: T) => Nullable<Decimal>
+    /** Runs for every holding, so keep it cheap for one in no group. */
+    groupOf: (holding: T) => Nullable<AssetGroup>
 }
 
 export type GroupedHoldingMember<T> = {
@@ -60,7 +62,6 @@ export type AssetGroupItem<T> = Extract<
 
 export type BuildGroupedHoldingItemsParams<T extends GroupableHolding> = {
     holdings: T[]
-    groups: AssetGroup[]
     expandedGroupIds: ReadonlySet<string>
     adapter: GroupableHoldingAdapter<T>
     /** A holding this rejects stays a plain row whatever group it belongs to. */
@@ -82,26 +83,14 @@ export const spansChains = (holdings: readonly GroupableHolding[]): boolean =>
 const holdingKey = (scope: ChainScope, assetId: string): string =>
     `${toScopeKey(scope)}|${assetId}`
 
-const indexGroupMembers = (groups: AssetGroup[]): Map<string, AssetGroup> => {
-    const groupOf = new Map<string, AssetGroup>()
-    for (const group of groups) {
-        for (const member of group.members) {
-            const key = holdingKey(member.scope, member.assetId)
-            if (!groupOf.has(key)) groupOf.set(key, group)
-        }
-    }
-    return groupOf
-}
-
-// Resolved once per holding; the predicate runs only for holdings a group names.
+// Resolved once per holding; the predicate runs only for holdings in a group.
 const collectGroupMembers = <T extends GroupableHolding>(
     holdings: T[],
-    groups: AssetGroup[],
+    adapter: GroupableHoldingAdapter<T>,
     isGroupable: (scope: ChainScope) => boolean,
 ) => {
-    const groupOf = indexGroupMembers(groups)
     const holdingGroups = holdings.map(holding => {
-        const group = groupOf.get(holdingKey(holding.scope, holding.assetId))
+        const group = adapter.groupOf(holding)
         return group && isGroupable(holding.scope) ? group : undefined
     })
     const membersOf = new Map<string, T[]>()
@@ -156,30 +145,19 @@ const sumUsdValue = <T>(
 }
 
 /**
- * Folds holdings the groups name into one group item at the first member's
+ * Folds holdings of one group into one group item at the first member's
  * sorted position, followed by its members when expanded. Only groups with two
  * or more holdings present fold; everything else stays a plain row.
  */
 export const buildGroupedHoldingItems = <T extends GroupableHolding>({
     holdings,
-    groups,
     expandedGroupIds,
     adapter,
     isGroupable = isMainnetScope,
 }: BuildGroupedHoldingItemsParams<T>): GroupedHoldingItem<T>[] => {
-    // The common case, and a list can hold thousands of holdings: skip the
-    // per-holding lookups entirely.
-    if (groups.length === 0) {
-        return holdings.map(holding => ({
-            kind: 'holding',
-            holding,
-            isGroupMember: false,
-        }))
-    }
-
     const { holdingGroups, membersOf } = collectGroupMembers(
         holdings,
-        groups,
+        adapter,
         isGroupable,
     )
 

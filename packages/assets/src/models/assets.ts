@@ -20,6 +20,7 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 
 import type { PeraCollectible } from './collectibles'
+import type { AssetGroup } from './groups'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
 export const PeraAssetVerificationTier = {
@@ -119,6 +120,8 @@ export type PeraAssetMetadata = {
     canClawback?: boolean
     isFavorited?: boolean
     isPriceAlertEnabled?: boolean
+    /** Null when the asset is in no group; absent when no sync has read it yet. */
+    crossChainAssetGroup?: Nullable<AssetGroup>
 }
 
 const legacyScopeKey = (networkId: NetworkId): ChainScopeKey =>

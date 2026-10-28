@@ -187,6 +187,9 @@ async function queryHoldingRows({
             ...peraAssetJoinColumns(),
             isFavorited: AssetsPeraSchema.isFavorited,
             usdPrice: sql<Nullable<string>>`${AssetPricesSchema.usdPrice}`,
+            crossChainAssetGroupId: sql<
+                Nullable<string>
+            >`json_extract(${AssetsPeraSchema.peraMetadataJson}, '$.crossChainAssetGroup.id')`,
         })
         .from(AccountAssetHoldingsSchema)
         .leftJoin(AssetsNodeSchema, holdingJoin(AssetsNodeSchema))
@@ -235,6 +238,11 @@ export type AccountHoldingsLiteRow = PeraAssetJoinRow & {
     isFavorited: boolean
     /** USD price per whole unit, or null until the price syncs. */
     usdPrice: Nullable<Decimal>
+    /**
+     * Read in SQL so a list can find group members without parsing every
+     * row's metadata; null when the asset is in no group.
+     */
+    crossChainAssetGroupId: Nullable<string>
 }
 
 /**
