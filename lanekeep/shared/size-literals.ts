@@ -68,7 +68,7 @@ interface Leaves {
 function scanLeaves(ctx: RuleContext, node: Node, acc: Leaves): void {
     if (!acc.pure) return
     const kind = ctx.kind(node)
-    if (kind === 'number') return
+    if (kind === 'number' || kind === 'comment') return
 
     if (kind === 'parenthesized_expression' || kind === 'unary_expression') {
         // `+`/`-` only; `!x`, `typeof x` and friends are not arithmetic.

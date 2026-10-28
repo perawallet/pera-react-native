@@ -22,13 +22,14 @@ describe('pera/no-numeric-sizes', () => {
             'size-rules.component.bad.tsx:16',
             'size-rules.styles.bad.ts:4',
             'size-rules.styles.bad.ts:5',
-            'size-rules.styles.bad.ts:16',
-            'size-rules.styles.bad.ts:17',
-            'size-rules.styles.bad.ts:18',
             'size-rules.styles.bad.ts:19',
             'size-rules.styles.bad.ts:20',
+            'size-rules.styles.bad.ts:21',
             'size-rules.styles.bad.ts:22',
-            'size-rules.styles.bad.ts:24',
+            'size-rules.styles.bad.ts:23',
+            'size-rules.styles.bad.ts:25',
+            'size-rules.styles.bad.ts:27',
+            'size-rules.styles.bad.ts:30',
         ])
     })
 
@@ -80,10 +81,12 @@ describe('pera/no-typography-in-styles size constants', () => {
         expect(locations(found)).toEqual([
             'size-rules.styles.bad.ts:6',
             'size-rules.styles.bad.ts:7',
+            'size-rules.styles.bad.ts:8',
         ])
         expect(found.map(v => v.message)).toEqual([
             'module constant TAG_FONT_SIZE = 13 sets typography — use getTypography or a PWText variant',
             'module constant ROW_LINE_HEIGHT = 20 sets typography — use getTypography or a PWText variant',
+            'module constant CAPTION_FONT_SIZE = 11 sets typography — use getTypography or a PWText variant',
         ])
     })
 })

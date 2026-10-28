@@ -33,10 +33,8 @@ export const useStyles = makeStyles(theme => ({
         alignItems: 'flex-start',
         gap: theme.spacing.xs,
     },
-    // Wide enough for the flag + a 3-4 digit dial code + the chevron (no `6xl`
-    // token, so compose `5xl` + `lg`).
     callingCode: {
-        // lanekeep-ignore-next-line pera/no-numeric-sizes reason: calling-code column width (112); the scale has no step for it
+        // lanekeep-ignore-next-line pera/no-numeric-sizes reason: wide enough for the flag, a 3-4 digit dial code and the chevron; the scale has no 6xl step
         width: theme.spacing['5xl'] + theme.spacing.lg,
         flexShrink: 0,
     },

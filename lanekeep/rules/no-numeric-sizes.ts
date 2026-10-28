@@ -75,7 +75,7 @@ export default defineRule({
         message:
             'literal numeric size, theme-token arithmetic, or a size constant feeding styles',
         remediation:
-            "Use one theme token at the use site: theme.spacing.*, theme.borderRadius.* or theme.borders.* from apps/mobile/src/theme/theme.ts (a circle's radius is theme.borderRadius.full). A deliberate derivation or a bespoke artwork size keeps its value under a lanekeep suppression that states the reason.",
+            "Use one theme token at the use site: theme.spacing.*, theme.borderRadius.* or theme.borders.* from apps/mobile/src/theme/theme.ts (a circle's radius is theme.borderRadius.full). A deliberate derivation or a bespoke artwork size keeps its value under a suppression comment for this rule whose reason states the derivation or what the value is.",
         examples: {
             bad: 'borderRadius: theme.spacing.xl / 2',
             good: 'borderRadius: theme.borderRadius.full',

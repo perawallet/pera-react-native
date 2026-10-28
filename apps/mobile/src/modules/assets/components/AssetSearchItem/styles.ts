@@ -30,8 +30,7 @@ export const useStyles = makeStyles(theme => ({
     separator: {
         height: theme.borders.sm,
         backgroundColor: theme.colors.layerGrayLighter,
-        // Align under the text: row left-padding + AssetIcon 'xl' (3xl) + itemContainer gap (lg)
-        // lanekeep-ignore-next-line pera/no-numeric-sizes reason: row padding (lg), asset icon (3xl) and row gap (lg)
+        // lanekeep-ignore-next-line pera/no-numeric-sizes reason: aligns under the text, past the row padding (lg), the xl asset icon (3xl) and the item gap (lg)
         marginLeft: theme.spacing.lg + theme.spacing['3xl'] + theme.spacing.lg,
     },
 }))

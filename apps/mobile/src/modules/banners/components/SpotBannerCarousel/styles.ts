@@ -13,8 +13,6 @@
 import { makeStyles } from '@rneui/themed'
 import { getTypography } from '@theme/typography'
 
-// Native parity: 48dp icon on the left, 36dp close circle on the right.
-
 export const useStyles = makeStyles(theme => ({
     // PagerView won't render without an explicit height.
     pager: {

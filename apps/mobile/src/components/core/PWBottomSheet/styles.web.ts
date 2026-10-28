@@ -52,9 +52,7 @@ export const useStyles = makeStyles(
             bottom: 0,
             maxHeight,
             height: isFixed ? maxHeight : undefined,
-            // Stands in for gorhom's handle strip (10px padding around a hidden
-            // indicator), which gives every native sheet this top gap.
-            // lanekeep-ignore-next-line pera/no-numeric-sizes reason: the native sheet handle strip gap (lg + xs)
+            // lanekeep-ignore-next-line pera/no-numeric-sizes reason: stands in for gorhom's handle strip (10px padding around a hidden indicator), the top gap of every native sheet
             paddingTop: theme.spacing.lg + theme.spacing.xs,
             backgroundColor: theme.colors.background,
             borderTopLeftRadius: theme.spacing.xl,

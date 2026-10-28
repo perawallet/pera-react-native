@@ -22,9 +22,7 @@ export const useStyles = makeStyles(theme => ({
     container: {
         flex: 1,
         paddingHorizontal: theme.spacing.xl,
-        // Matches UnlockScreen: fixed padding (not vertical centering) so
-        // the form doesn't jump when the error text appears below it.
-        // lanekeep-ignore-next-line pera/no-numeric-sizes reason: fixed top offset (192) so the form does not jump when text appears below it
+        // lanekeep-ignore-next-line pera/no-numeric-sizes reason: fixed top padding (192), not vertical centering, so the form does not jump when the error or lockout text appears below it
         paddingTop: theme.spacing['5xl'] * 2,
         gap: theme.spacing.lg,
     },
