@@ -12,6 +12,7 @@
 
 import React, { useCallback } from 'react'
 import { PWIcon, PWText, PWView } from '@components/core'
+import { ChainNotice } from '@components/ChainNotice'
 import { EmptyView } from '@components/EmptyView'
 import { FilterSelection } from '@components/FilterSelection'
 import { OfflineTolerantView } from '@components/OfflineTolerantView'
@@ -55,6 +56,7 @@ export const AddAssetView = ({
         isFetchingNextPage,
         hasNextPage,
         fetchNextPage,
+        isIncomplete,
         isOptedIn,
         isOptingIn,
         canAdd,
@@ -65,11 +67,11 @@ export const AddAssetView = ({
     const renderItem = useCallback(
         ({ item }: { item: ScopedAssetSearchResult }) => (
             <AssetSearchItem
-                item={item.asset}
+                result={item}
                 isOptedIn={isOptedIn(item)}
                 isOptingIn={isOptingIn(item)}
-                onAdd={canAdd(item) ? () => handleRequestAdd(item) : undefined}
-                chainId={showsNetwork ? item.scope.chainId : undefined}
+                onAdd={canAdd(item) ? handleRequestAdd : undefined}
+                showsNetwork={showsNetwork}
             />
         ),
         [isOptedIn, isOptingIn, canAdd, handleRequestAdd, showsNetwork],
@@ -96,6 +98,15 @@ export const AddAssetView = ({
                 {t('add_asset.collectible_note')}
             </PWText>
         </PWView>
+    ) : undefined
+
+    const incompleteNotice = isIncomplete ? (
+        <ChainNotice
+            kind='warning'
+            titleKey='add_asset.partial_results'
+            style={styles.incompleteNotice}
+            testID='add_asset_partial_results'
+        />
     ) : undefined
 
     const chainFilter =
@@ -128,7 +139,7 @@ export const AddAssetView = ({
                 skeletonCount={5}
                 onEndReached={handleEndReached}
                 isFetchingNextPage={isFetchingNextPage}
-                ListHeaderComponent={collectibleNote}
+                ListHeaderComponent={collectibleNote ?? incompleteNotice}
                 ItemSeparatorComponent={NoSeparator}
                 ListEmptyComponent={
                     // No retry affordance: the search re-runs on the next

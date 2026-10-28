@@ -12,12 +12,13 @@
 
 import { useCallback, useMemo, useState } from 'react'
 import {
-    useAccountAssetsQuery,
+    useAccountHeldAssetsQuery,
     useAccountHoldingSources,
     useAccountsStore,
     chainAccountOf,
 } from '@perawallet/wallet-core-accounts'
 import {
+    isAssetSearchUnavailableError,
     useAssetSearchAcrossScopesQuery,
     type ScopedAssetSearchResult,
 } from '@perawallet/wallet-core-assets'
@@ -40,7 +41,6 @@ import { useToast } from '@hooks/useToast'
 import { SEARCH_DEBOUNCE_TIME } from '@constants/ui'
 import type { AddAssetContentVariant } from '@modules/assets/components/AddAssetContent'
 import {
-    isChainRefusedError,
     isIntegrityRequiredError,
     useDebouncedValue,
     type Nullable,
@@ -75,11 +75,13 @@ type UseAddAssetViewResult = {
     isOffline: boolean
     isIntegrityBlocked: boolean
     isUnavailable: boolean
-    /** Set when the backend refuses the chain: the default copy is about BetaNet and custom nodes. */
+    /** Set when the search found the chain can't be searched here: the default copy is about BetaNet and custom nodes. */
     unavailableBody: Optional<string>
     isFetchingNextPage: boolean
     hasNextPage: boolean
     fetchNextPage: () => void
+    /** A chain's search failed while others' results show, so some may be missing. */
+    isIncomplete: boolean
     isOptedIn: (result: ScopedAssetSearchResult) => boolean
     isOptingIn: (result: ScopedAssetSearchResult) => boolean
     /** Off: the row offers no add action. */
@@ -178,15 +180,16 @@ export const useAddAssetView = (
         isFetchingNextPage,
         hasNextPage,
         fetchNextPage,
+        isIncomplete,
     } = useAssetSearchAcrossScopesQuery(debouncedQuery, searchScopes, {
         hasCollectible,
     })
     const { hasInternet } = useNetworkStatus()
     const isOffline = isPaused || (isError && !hasInternet)
-    const isChainRefused = isError && isChainRefusedError(error)
-    // A typed query still debouncing is about to replace the list, so its
-    // stale rows read as loading; clearing goes back to the list already
-    // fetched for the empty query.
+    const isSearchUnavailable = isError && isAssetSearchUnavailableError(error)
+    // The list shows skeletons only while it's empty, so this turns a "No
+    // assets found" flash into skeletons; rows already shown stay up. Clearing
+    // goes back to the list fetched for the empty query.
     const isDebouncingTypedQuery =
         searchQuery.length > 0 && searchQuery !== debouncedQuery
 
@@ -208,21 +211,16 @@ export const useAddAssetView = (
     const { showError } = useErrorToast()
     const { requestByType } = useBottomSheet()
 
-    const searchedSources = useMemo(
-        () =>
-            holdingSources.filter(({ scope }) =>
-                searchedChainIds.includes(scope.chainId),
-            ),
-        [holdingSources, searchedChainIds],
-    )
-    const { holdings } = useAccountAssetsQuery(searchedSources)
+    // Every chain the account is on, not just the searched ones, so picking a
+    // chip doesn't start a new read.
+    const { heldAssets } = useAccountHeldAssetsQuery(holdingSources)
     const optedInKeys = useMemo(() => {
         const keys = new Set(recentlyOptedInKeys)
-        for (const { scope, assetId } of holdings) {
+        for (const { scope, assetId } of heldAssets) {
             keys.add(assetRefKey({ chainId: scope.chainId, assetId }))
         }
         return keys
-    }, [holdings, recentlyOptedInKeys])
+    }, [heldAssets, recentlyOptedInKeys])
 
     const isOptedIn = useCallback(
         (result: ScopedAssetSearchResult) => optedInKeys.has(resultKey(result)),
@@ -315,13 +313,14 @@ export const useAddAssetView = (
         isError,
         isOffline,
         isIntegrityBlocked: isError && isIntegrityRequiredError(error),
-        isUnavailable: offeredChainIds.length === 0 || isChainRefused,
-        unavailableBody: isChainRefused
+        isUnavailable: offeredChainIds.length === 0 || isSearchUnavailable,
+        unavailableBody: isSearchUnavailable
             ? t('common.network_unavailable.generic_body')
             : undefined,
         isFetchingNextPage,
         hasNextPage,
         fetchNextPage,
+        isIncomplete,
         isOptedIn,
         isOptingIn,
         canAdd,

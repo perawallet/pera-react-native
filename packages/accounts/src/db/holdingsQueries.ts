@@ -75,6 +75,16 @@ export type GetAccountHoldingsLiteParams = HoldingsReadParams & {
     sources: readonly AccountHoldingSource[]
 }
 
+const isFromSources = (sources: readonly AccountHoldingSource[]) =>
+    or(
+        ...sources.map(({ address, scope }) =>
+            and(
+                eq(AccountAssetHoldingsSchema.accountAddress, address),
+                eq(AccountAssetHoldingsSchema.scope, toScopeKey(scope)),
+            ),
+        ),
+    )!
+
 /**
  * Sorting (favorites first, then value/name with unsynced NULLs last),
  * filtering, searching and windowing all happen in SQL, across every source in
@@ -94,16 +104,7 @@ async function queryHoldingRows({
     limit,
     offset,
 }: GetAccountHoldingsLiteParams) {
-    const conditions = [
-        or(
-            ...sources.map(({ address, scope }) =>
-                and(
-                    eq(AccountAssetHoldingsSchema.accountAddress, address),
-                    eq(AccountAssetHoldingsSchema.scope, toScopeKey(scope)),
-                ),
-            ),
-        )!,
-    ]
+    const conditions = [isFromSources(sources)]
 
     if (hideZeroBalance) {
         conditions.push(ne(AccountAssetHoldingsSchema.amount, new Decimal(0)))
@@ -256,6 +257,38 @@ export async function getAccountHoldingsLite(
     }))
 }
 
+/** An asset an account has a holding row for, on one scope. */
+export type AccountHeldAsset = { scope: ChainScope; assetId: string }
+
+export type GetAccountHeldAssetsParams = {
+    db?: Database
+    sources: readonly AccountHoldingSource[]
+}
+
+/**
+ * Which assets the sources have a holding row for, zero balances included.
+ * Reads only the ids, with no joins or sort, for callers that need membership
+ * rather than rows.
+ */
+export async function getAccountHeldAssets({
+    db = getDatabase(),
+    sources,
+}: GetAccountHeldAssetsParams): Promise<AccountHeldAsset[]> {
+    if (sources.length === 0) return []
+    const rows = await db
+        .select({
+            assetId: AccountAssetHoldingsSchema.assetId,
+            scope: AccountAssetHoldingsSchema.scope,
+        })
+        .from(AccountAssetHoldingsSchema)
+        .where(isFromSources(sources))
+        .all()
+    return rows.map(({ assetId, scope }) => ({
+        assetId,
+        scope: parseScopeKey(scope),
+    }))
+}
+
 /**
  * Call only for rows you actually render — the parse is cached by raw JSON, so
  * scrolling re-renders stay cheap. Null until node metadata has synced.
@@ -341,14 +374,7 @@ export async function getAccountCollectiblesLite({
     ]
 
     const conditions = [
-        or(
-            ...sources.map(({ address, scope }) =>
-                and(
-                    eq(AccountAssetHoldingsSchema.accountAddress, address),
-                    eq(AccountAssetHoldingsSchema.scope, toScopeKey(scope)),
-                ),
-            ),
-        )!,
+        isFromSources(sources),
         eq(AssetsPeraSchema.assetType, PeraAssetType.collectible),
     ]
 

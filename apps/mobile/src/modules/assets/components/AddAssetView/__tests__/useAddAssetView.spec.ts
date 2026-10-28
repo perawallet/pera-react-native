@@ -19,6 +19,7 @@ import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
 import {
     IntegrityRequiredError,
     PeraNetworkError,
+    PeraServiceUnavailableError,
 } from '@perawallet/wallet-core-shared'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import {
@@ -60,9 +61,9 @@ const { mockGetSelectedAccount } = vi.hoisted(() => ({
     mockGetSelectedAccount: vi.fn((): unknown => mockAccount),
 }))
 
-const { mockUseAccountAssetsQuery } = vi.hoisted(() => ({
-    mockUseAccountAssetsQuery: vi.fn((_sources: unknown) => ({
-        holdings: [
+const { mockUseAccountHeldAssetsQuery } = vi.hoisted(() => ({
+    mockUseAccountHeldAssetsQuery: vi.fn((_sources: unknown) => ({
+        heldAssets: [
             {
                 scope: { chainId: 'algorand', networkId: 'mainnet' },
                 assetId: '123',
@@ -96,8 +97,8 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
                       scope: { chainId, networkId: 'mainnet' },
                   }))
                 : [],
-        useAccountAssetsQuery: (sources: unknown) =>
-            mockUseAccountAssetsQuery(sources),
+        useAccountHeldAssetsQuery: (sources: unknown) =>
+            mockUseAccountHeldAssetsQuery(sources),
     }
 })
 
@@ -111,6 +112,7 @@ const { mockUseAssetSearch, defaultSearchResult } = vi.hoisted(() => {
         isFetchingNextPage: false,
         hasNextPage: false,
         fetchNextPage: vi.fn(),
+        isIncomplete: false,
     }
     return {
         defaultSearchResult,
@@ -323,6 +325,20 @@ describe('useAddAssetView', () => {
         expect(result.current.isOptedIn(onAlgorand('999'))).toBe(false)
     })
 
+    it('reads held assets on every chain the account is on, whichever chip is picked', () => {
+        registerEthereumChain()
+        const { result } = renderHook(() =>
+            useAddAssetView({ chainId: 'algorand' }),
+        )
+
+        act(() => result.current.handleSelectChain('ethereum'))
+
+        expect(mockUseAccountHeldAssetsQuery).toHaveBeenLastCalledWith([
+            { address: 'test-address', scope: ALGORAND_SCOPE },
+            { address: '0xtest', scope: ETHEREUM_SCOPE },
+        ])
+    })
+
     describe('while the query debounces', () => {
         afterEach(() => {
             debounced.heldValue = undefined
@@ -352,6 +368,15 @@ describe('useAddAssetView', () => {
 
             expect(result.current.isLoading).toBe(false)
         })
+    })
+
+    it("says when a chain's results are missing because its search failed", () => {
+        mockSearch({ isIncomplete: true, results: [onAlgorand('1')] })
+
+        const { result } = renderHook(() => useAddAssetView({ chainId: null }))
+
+        expect(result.current.isIncomplete).toBe(true)
+        expect(result.current.isError).toBe(false)
     })
 
     it('surfaces the search error', () => {
@@ -393,6 +418,11 @@ describe('useAddAssetView', () => {
                 status: 422,
                 backendCode: 'chain_not_enabled',
             }),
+            true,
+        ],
+        [
+            'a network with no Pera services',
+            new PeraServiceUnavailableError(ETHEREUM_SCOPE, 'assets'),
             true,
         ],
         ['any other failure', new Error('boom'), false],

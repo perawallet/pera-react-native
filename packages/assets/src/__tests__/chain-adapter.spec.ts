@@ -16,7 +16,10 @@ import {
     LEGACY_CHAIN_ID,
     type ChainId,
 } from '@perawallet/wallet-core-chain-contract'
-import { PeraNetworkError } from '@perawallet/wallet-core-shared'
+import {
+    PeraNetworkError,
+    PeraServiceUnavailableError,
+} from '@perawallet/wallet-core-shared'
 import {
     AssetSearchUnsupportedError,
     assetsAdapterFor,
@@ -31,6 +34,7 @@ import {
     nativeAssetFor,
     searchAssets,
     searchAssetsAcrossScopes,
+    isAssetSearchUnavailableError,
     type AssetsChainAdapter,
 } from '../chain-adapter'
 import type { DisplayableAsset } from '../models'
@@ -234,6 +238,7 @@ describe('searchAssetsAcrossScopes', () => {
                 { scope: ETHEREUM, asset: asset('native') },
             ],
             nextCursors: ['A2', null],
+            failedScopes: [],
         })
         expect(algorandSearch).toHaveBeenCalledWith(
             { query: 'usd', cursor: undefined, hasCollectible: false },
@@ -260,6 +265,7 @@ describe('searchAssetsAcrossScopes', () => {
         expect(page).toEqual({
             results: [{ scope: ALGORAND, asset: asset('2') }],
             nextCursors: undefined,
+            failedScopes: [],
         })
         expect(algorandSearch).toHaveBeenCalledWith(
             { query: 'usd', cursor: 'A2', hasCollectible: undefined },
@@ -268,7 +274,7 @@ describe('searchAssetsAcrossScopes', () => {
         expect(ethereumSearch).not.toHaveBeenCalled()
     })
 
-    it("keeps the other scopes' hits when one fails, and stops searching the failed one", async () => {
+    it("keeps the other scopes' hits when one fails, names it, and stops searching it", async () => {
         registerBoth(
             vi.fn().mockRejectedValue(new Error('down')),
             vi.fn().mockResolvedValue({
@@ -285,6 +291,7 @@ describe('searchAssetsAcrossScopes', () => {
         expect(page).toEqual({
             results: [{ scope: ETHEREUM, asset: asset('native') }],
             nextCursors: [null, 'E2'],
+            failedScopes: [ALGORAND],
         })
     })
 
@@ -312,29 +319,42 @@ describe('searchAssetsAcrossScopes', () => {
         ).rejects.toBe(failure)
     })
 
-    describe('a chain the backend has not switched on', () => {
+    describe('a scope that cannot be searched here', () => {
         const refusal = () =>
             new PeraNetworkError('client', {
                 status: 422,
                 backendCode: 'chain_not_enabled',
             })
 
-        it('finds nothing, rather than failing, while another scope answered', async () => {
-            registerBoth(
-                vi.fn().mockResolvedValue({
-                    results: [],
-                    nextCursor: undefined,
-                }),
-                vi.fn().mockRejectedValue(refusal()),
-            )
+        it.each([
+            ['the backend has not switched its chain on', refusal()],
+            [
+                'its network has no Pera services',
+                new PeraServiceUnavailableError(ETHEREUM, 'assets'),
+            ],
+        ])(
+            'finds nothing, rather than failing, when %s and another scope answered',
+            async (_case, unavailable) => {
+                registerBoth(
+                    vi.fn().mockResolvedValue({
+                        results: [],
+                        nextCursor: undefined,
+                    }),
+                    vi.fn().mockRejectedValue(unavailable),
+                )
 
-            await expect(
-                searchAssetsAcrossScopes({ query: 'zzz' }, [
-                    ALGORAND,
-                    ETHEREUM,
-                ]),
-            ).resolves.toEqual({ results: [], nextCursors: undefined })
-        })
+                await expect(
+                    searchAssetsAcrossScopes({ query: 'zzz' }, [
+                        ALGORAND,
+                        ETHEREUM,
+                    ]),
+                ).resolves.toEqual({
+                    results: [],
+                    nextCursors: undefined,
+                    failedScopes: [],
+                })
+            },
+        )
 
         it('rejects with the refusal when no scope answered', async () => {
             const first = refusal()
@@ -359,6 +379,39 @@ describe('searchAssetsAcrossScopes', () => {
                 searchAssetsAcrossScopes({ query: '' }, [ALGORAND, ETHEREUM]),
             ).rejects.toBe(failure)
         })
+    })
+})
+
+describe('isAssetSearchUnavailableError', () => {
+    const ETHEREUM = { chainId: 'ethereum', networkId: 'mainnet' } as const
+
+    it.each([
+        [
+            'a chain with no search',
+            new AssetSearchUnsupportedError('ethereum' as ChainId),
+        ],
+        [
+            'a network with no Pera services',
+            new PeraServiceUnavailableError(ETHEREUM, 'assets'),
+        ],
+        [
+            'a chain the backend has not switched on',
+            new PeraNetworkError('client', {
+                status: 422,
+                backendCode: 'chain_not_enabled',
+            }),
+        ],
+    ])('is true for %s', (_case, error) => {
+        expect(isAssetSearchUnavailableError(error)).toBe(true)
+    })
+
+    it('is false for any other failure', () => {
+        expect(
+            isAssetSearchUnavailableError(
+                new PeraNetworkError('server', { status: 503 }),
+            ),
+        ).toBe(false)
+        expect(isAssetSearchUnavailableError(new Error('down'))).toBe(false)
     })
 })
 

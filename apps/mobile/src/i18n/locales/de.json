@@ -101,6 +101,7 @@
         "title": "Asset hinzufügen",
         "search_placeholder": "Nach Name oder Asset-ID suchen",
         "no_results": "Keine Assets gefunden",
+        "partial_results": "Einige Netzwerke konnten nicht durchsucht werden, daher fehlen möglicherweise Ergebnisse.",
         "opt_in": {
             "failed_title": "Anmeldung fehlgeschlagen",
             "success_title": "Anmeldung erfolgreich",

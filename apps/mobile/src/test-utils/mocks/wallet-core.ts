@@ -311,7 +311,10 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
         isFetchingNextPage: false,
         hasNextPage: false,
         fetchNextPage: vi.fn(),
+        isIncomplete: false,
     })),
+    // The mocked search never fails, so nothing reaches this.
+    isAssetSearchUnavailableError: () => false,
     AssetSortModes: {
         balanceDesc: 'balanceDesc',
         balanceAsc: 'balanceAsc',

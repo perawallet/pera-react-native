@@ -101,6 +101,7 @@
         "title": "Varlık ekle",
         "search_placeholder": "Ada veya varlık ID’sine göre ara",
         "no_results": "Varlık bulunamadı",
+        "partial_results": "Bazı ağlarda arama yapılamadı, bu yüzden bazı sonuçlar eksik olabilir.",
         "opt_in": {
             "failed_title": "Opt-in başarısız",
             "success_title": "Opt-in başarılı",

@@ -101,6 +101,7 @@
         "title": "Add Asset",
         "search_placeholder": "Search by name or asset ID",
         "no_results": "No assets found",
+        "partial_results": "Some networks couldn't be searched, so results may be missing.",
         "opt_in": {
             "failed_title": "Failed to opt-in",
             "success_title": "Opt-in successful",

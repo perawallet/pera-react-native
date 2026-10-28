@@ -32,6 +32,7 @@ import {
     upsertNodeAssets,
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
+import { PeraServiceUnavailableError } from '@perawallet/wallet-core-shared'
 import { createEthereumAssetsAdapter } from '../adapter'
 import { ETHEREUM } from '../../__tests__/evm-chains'
 
@@ -834,12 +835,12 @@ describe('search', () => {
         expect(requests).toEqual([])
     })
 
-    it('finds nothing without the assets service, without a request', async () => {
+    it('rejects as unavailable without the assets service, without a request', async () => {
         const requests = recordRequests()
 
-        const page = await searchWith('usd', { services: [] })
-
-        expect(page).toEqual({ results: [], nextCursor: undefined })
+        await expect(
+            searchWith('usd', { services: [] }),
+        ).rejects.toBeInstanceOf(PeraServiceUnavailableError)
         expect(requests).toEqual([])
     })
 

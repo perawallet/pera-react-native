@@ -27,7 +27,11 @@ import {
     type DisplayableAsset,
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
-import { partition, type Nullable } from '@perawallet/wallet-core-shared'
+import {
+    partition,
+    PeraServiceUnavailableError,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import {
     eip155ChainIdOf,
     InvalidCaip19Error,
@@ -346,8 +350,11 @@ const search =
     ): NonNullable<AssetsChainAdapter['search']> =>
     async ({ query, hasCollectible }, scope) => {
         eip155ChainIdOf(scope, chain)
-        if (hasCollectible || !hasServices(ctx, scope, ASSETS_SERVICE)) {
-            return { results: [], nextCursor: undefined }
+        if (hasCollectible) return { results: [], nextCursor: undefined }
+        // An empty page would read as "No assets found" on a network that
+        // can't be searched at all.
+        if (!hasServices(ctx, scope, ASSETS_SERVICE)) {
+            throw new PeraServiceUnavailableError(scope, ASSETS_SERVICE)
         }
         const assets = (await listedTokens(scope)).map(row => row.asset)
         const needle = query.trim().toLowerCase()

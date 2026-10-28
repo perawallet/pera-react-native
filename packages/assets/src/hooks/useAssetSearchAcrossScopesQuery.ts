@@ -37,6 +37,8 @@ type UseAssetSearchAcrossScopesQueryResult = {
     isFetchingNextPage: boolean
     hasNextPage: boolean
     fetchNextPage: () => void
+    /** A scope's search failed on a page loaded so far, so its hits are missing. */
+    isIncomplete: boolean
 }
 
 const getAssetSearchAcrossScopesQueryKey = (
@@ -46,8 +48,8 @@ const getAssetSearchAcrossScopesQueryKey = (
 ) => [MODULE_PREFIX, 'search-across-scopes', { query, scopes, hasCollectible }]
 
 /**
- * Callers pass only scopes whose chain can search assets: a scope that can't
- * fails its share of every page.
+ * Callers pass only scopes whose chain can search assets; one that can't is
+ * left out of every page, as if it had nothing to find.
  */
 export const useAssetSearchAcrossScopesQuery = (
     query: string,
@@ -81,6 +83,10 @@ export const useAssetSearchAcrossScopesQuery = (
         isFetchingNextPage: infiniteQuery.isFetchingNextPage,
         hasNextPage: infiniteQuery.hasNextPage,
         fetchNextPage: () => void infiniteQuery.fetchNextPage(),
+        isIncomplete:
+            infiniteQuery.data?.pages.some(
+                page => page.failedScopes.length > 0,
+            ) ?? false,
     }
 }
 

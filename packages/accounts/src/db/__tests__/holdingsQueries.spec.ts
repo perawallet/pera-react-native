@@ -32,6 +32,7 @@ import {
 import {
     getAccountHoldingsPage,
     getAccountHoldingsLite,
+    getAccountHeldAssets,
     getAccountCollectiblesLite,
     assetFromHoldingLiteRow,
 } from '../holdingsQueries'
@@ -604,6 +605,71 @@ describe('account holdings queries', () => {
                     await getAccountHoldingsLite({ db, sources: [] }),
                 ).toEqual([])
             })
+        })
+    })
+
+    describe('getAccountHeldAssets', () => {
+        const ETH_SCOPE = { chainId: 'ethereum', networkId: 'mainnet' } as const
+        const TESTNET_SCOPE = {
+            chainId: LEGACY_CHAIN_ID,
+            networkId: 'testnet',
+        } as const
+
+        beforeEach(async () => {
+            await refreshAccountHoldings({
+                db,
+                accountAddress: 'ADDR1',
+                scope: MAINNET_SCOPE,
+                holdings: [
+                    { assetId: '0', amount: new Decimal(5) },
+                    { assetId: '100', amount: new Decimal(0) },
+                ],
+            })
+            await refreshAccountHoldings({
+                db,
+                accountAddress: '0xETH',
+                scope: ETH_SCOPE,
+                holdings: [{ assetId: '0xE', amount: new Decimal(1) }],
+            })
+            await refreshAccountHoldings({
+                db,
+                accountAddress: 'ADDR1',
+                scope: TESTNET_SCOPE,
+                holdings: [{ assetId: '200', amount: new Decimal(1) }],
+            })
+            await refreshAccountHoldings({
+                db,
+                accountAddress: 'ADDR2',
+                scope: MAINNET_SCOPE,
+                holdings: [{ assetId: '300', amount: new Decimal(1) }],
+            })
+        })
+
+        it("returns each source's held asset ids with their scope, zero balances included", async () => {
+            const held = await getAccountHeldAssets({
+                db,
+                sources: [
+                    { address: 'ADDR1', scope: MAINNET_SCOPE },
+                    { address: '0xETH', scope: ETH_SCOPE },
+                ],
+            })
+
+            expect(
+                held
+                    .map(
+                        ({ scope, assetId }) =>
+                            `${scope.chainId}/${scope.networkId}/${assetId}`,
+                    )
+                    .sort(),
+            ).toEqual([
+                'algorand/mainnet/0',
+                'algorand/mainnet/100',
+                'ethereum/mainnet/0xE',
+            ])
+        })
+
+        it('returns nothing for no sources', async () => {
+            expect(await getAccountHeldAssets({ db, sources: [] })).toEqual([])
         })
     })
 

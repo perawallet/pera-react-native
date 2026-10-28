@@ -39,4 +39,8 @@ export const useStyles = makeStyles(theme => ({
     chipRow: {
         paddingBottom: 0,
     },
+    incompleteNotice: {
+        marginHorizontal: theme.spacing.md,
+        marginTop: theme.spacing.sm,
+    },
 }))

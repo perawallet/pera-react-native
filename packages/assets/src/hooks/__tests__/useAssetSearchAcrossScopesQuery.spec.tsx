@@ -125,6 +125,31 @@ describe('useAssetSearchAcrossScopesQuery', () => {
         expect(result.current.results).toEqual([])
     })
 
+    it("is incomplete while a scope's search failed and another's hits show, and complete otherwise", async () => {
+        algorandSearch.mockRejectedValue(new Error('down'))
+        ethereumSearch.mockResolvedValue({
+            results: [asset('native')],
+            nextCursor: undefined,
+        })
+
+        const { result } = renderHook(
+            () => useAssetSearchAcrossScopesQuery('usd', [ALGORAND, ETHEREUM]),
+            { wrapper: createWrapper(queryClient) },
+        )
+
+        await waitFor(() => expect(result.current.results).toHaveLength(1))
+        expect(result.current.isIncomplete).toBe(true)
+        expect(result.current.isError).toBe(false)
+
+        const { result: complete } = renderHook(
+            () => useAssetSearchAcrossScopesQuery('usd', [ETHEREUM]),
+            { wrapper: createWrapper(queryClient) },
+        )
+
+        await waitFor(() => expect(complete.current.results).toHaveLength(1))
+        expect(complete.current.isIncomplete).toBe(false)
+    })
+
     it('runs nothing with no scopes or when disabled', async () => {
         const { result: noScopes } = renderHook(
             () => useAssetSearchAcrossScopesQuery('usd', []),

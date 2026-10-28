@@ -132,6 +132,21 @@ describe('Flow: Add Asset with a second chain registered', () => {
             screen.getByTestId('asset_search_item_add_31566704'),
         ).toBeTruthy()
         expect(screen.queryByTestId(`asset_search_item_add_${DAI}`)).toBeNull()
+        expect(screen.queryByTestId('add_asset_partial_results')).toBeNull()
+    })
+
+    it("Given Add Asset opens on All, when Ethereum's search fails, then Algorand's assets show under a warning that some are missing", async () => {
+        vi.mocked(assetsAdapterFor(ETHEREUM_MAINNET).search!).mockRejectedValue(
+            new Error('Ethereum down'),
+        )
+        renderAddAsset(null)
+
+        await waitFor(() => {
+            expect(screen.getByText('USD Coin')).toBeTruthy()
+        })
+        expect(screen.queryByText('Ether')).toBeNull()
+        expect(screen.getByTestId('add_asset_partial_results')).toBeTruthy()
+        expect(screen.getByText('add_asset.partial_results')).toBeTruthy()
     })
 
     it('Given Add Asset opens on Ethereum, when the user searches and then picks Algorand, then the list follows the chip and the search', async () => {
