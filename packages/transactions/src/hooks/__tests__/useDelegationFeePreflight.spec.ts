@@ -18,7 +18,7 @@ import type {
     ChainId,
     ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
-import { useRekeyFeePreflight } from '../useRekeyFeePreflight'
+import { useDelegationFeePreflight } from '../useDelegationFeePreflight'
 
 const mockUseOnChainAccountStateQuery = vi.fn()
 
@@ -48,10 +48,10 @@ const liveState = (balance: bigint, minBalance: bigint) => ({
     },
 })
 
-const renderPreflight = (feeAlgos: Decimal | undefined) =>
-    renderHook(() => useRekeyFeePreflight(SOURCE_ADDRESS, feeAlgos, SCOPE))
+const renderPreflight = (fee: Decimal | undefined) =>
+    renderHook(() => useDelegationFeePreflight(SOURCE_ADDRESS, fee, SCOPE))
 
-describe('useRekeyFeePreflight', () => {
+describe('useDelegationFeePreflight', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockUseOnChainAccountStateQuery.mockReturnValue({ data: undefined })

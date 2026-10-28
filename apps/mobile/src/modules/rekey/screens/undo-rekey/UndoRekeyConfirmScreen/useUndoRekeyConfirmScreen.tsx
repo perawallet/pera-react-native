@@ -26,9 +26,9 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { config } from '@perawallet/wallet-core-config'
 import {
-    useRekeyFeePreflight,
-    useRekeyTransactionFeeQuery,
-    useSubmitRekeyMutation,
+    useDelegationFeePreflight,
+    useDelegationTransactionFeeQuery,
+    useSubmitDelegationMutation,
 } from '@perawallet/wallet-core-transactions'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useWebView } from '@modules/webview'
@@ -87,25 +87,25 @@ export const useUndoRekeyConfirmScreen =
         const handleRekeyError = useHandleRekeyError()
         const { pushWebView } = useWebView()
         const { request: requestBottomSheet } = useBottomSheet()
-        const { submitAsync, isPending: isSubmitting } = useSubmitRekeyMutation(
-            {
+        const { submitAsync, isPending: isSubmitting } =
+            useSubmitDelegationMutation({
                 scope,
                 signingMetadata: {
                     name: t('rekey.signing.source_name'),
                     description: t('rekey.signing.source_description'),
                 },
-            },
-        )
+            })
         // Undo rekeys the account back to itself, so source and rekey-to
         // address are the same.
-        const { feeAlgos, isPending: feePending } = useRekeyTransactionFeeQuery(
-            sourceAddress,
-            sourceAddress,
-            scope,
-        )
+        const { fee: feeAlgos, isPending: feePending } =
+            useDelegationTransactionFeeQuery(
+                sourceAddress,
+                sourceAddress,
+                scope,
+            )
         // The source pays the undo fee — block before any sign request is
         // created (and before the Ledger device prompt for hardware auths).
-        const { isUnderfunded } = useRekeyFeePreflight(
+        const { isUnderfunded } = useDelegationFeePreflight(
             sourceAddress,
             feeAlgos,
             scope,
@@ -134,7 +134,7 @@ export const useUndoRekeyConfirmScreen =
             try {
                 await submitAsync({
                     sourceAddress,
-                    rekeyToAddress: sourceAddress,
+                    authorityAddress: sourceAddress,
                 })
                 // A multisig propose already handed off via the 'proposed'
                 // event; don't also show the success screen.

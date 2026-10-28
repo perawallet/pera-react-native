@@ -125,7 +125,8 @@ export const useSigningActionButtons = (): UseSigningActionButtonsResult => {
 
     const guardedWarningType = useMemo(() => {
         const presentTypes: GuardedWarningType[] = []
-        if (warnings.some(w => w.type === 'rekey')) presentTypes.push('rekey')
+        if (warnings.some(w => w.type === 'delegation'))
+            presentTypes.push('rekey')
         if (warnings.some(w => w.type === 'asset-freeze'))
             presentTypes.push('asset-freeze')
 

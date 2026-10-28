@@ -46,8 +46,13 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
         mockResolveMinFeeForSender(...args),
 }))
 
+// The fixture chain prices its native asset in 6-decimal base units.
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    getChainDescriptor: () => ({ nativeAsset: { decimals: 6 } }),
+}))
+
 import { sendFlowChainAdapters } from '../../chain-adapter'
-import { useRekeyTransactionFeeQuery } from '../useRekeyTransactionFeeQuery'
+import { useDelegationTransactionFeeQuery } from '../useDelegationTransactionFeeQuery'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 const quantum = (
@@ -97,7 +102,7 @@ beforeEach(() => {
         buildTransferTxs: vi.fn(),
         transactionFee: tx =>
             new Decimal(String((tx as unknown as { fee: bigint }).fee)),
-        rekey: { buildTx: mockBuildRekeyTx },
+        delegation: { buildTx: mockBuildRekeyTx },
     })
     mockUseSuggestedMinFeeQuery.mockReturnValue({
         suggestedMinFee: 1000n,
@@ -114,25 +119,30 @@ beforeEach(() => {
     mockResolveMinFeeForSender.mockReturnValue(1000n)
 })
 
-describe('useRekeyTransactionFeeQuery', () => {
-    it('resolves to feeAlgos derived from the built transaction fee', async () => {
+describe('useDelegationTransactionFeeQuery', () => {
+    it('resolves to a fee derived from the built transaction fee', async () => {
         // The chain adapter returned a 2000 microAlgo fee → 0.002 ALGO.
         mockBuildRekeyTx.mockResolvedValueOnce({ fee: 2000n })
         const { wrapper } = buildWrapper()
 
         const { result } = renderHook(
-            () => useRekeyTransactionFeeQuery('SRC', 'TGT', mockCallerScope()),
+            () =>
+                useDelegationTransactionFeeQuery(
+                    'SRC',
+                    'TGT',
+                    mockCallerScope(),
+                ),
             { wrapper },
         )
 
         await waitFor(() => {
             expect(result.current.isPending).toBe(false)
         })
-        expect(result.current.feeAlgos?.toString()).toBe('0.002')
+        expect(result.current.fee?.toString()).toBe('0.002')
         expect(mockBuildRekeyTx).toHaveBeenCalledWith({
             scope: { chainId: 'algorand', networkId: 'mainnet' },
             sourceAddress: 'SRC',
-            rekeyToAddress: 'TGT',
+            authorityAddress: 'TGT',
             minFee: 1000n,
         })
     })
@@ -142,7 +152,12 @@ describe('useRekeyTransactionFeeQuery', () => {
         const { wrapper } = buildWrapper()
 
         const { result } = renderHook(
-            () => useRekeyTransactionFeeQuery('SRC', 'TGT', mockCallerScope()),
+            () =>
+                useDelegationTransactionFeeQuery(
+                    'SRC',
+                    'TGT',
+                    mockCallerScope(),
+                ),
             { wrapper },
         )
 
@@ -162,7 +177,12 @@ describe('useRekeyTransactionFeeQuery', () => {
         const { wrapper } = buildWrapper()
 
         const { result } = renderHook(
-            () => useRekeyTransactionFeeQuery('SRC', 'TGT', mockCallerScope()),
+            () =>
+                useDelegationTransactionFeeQuery(
+                    'SRC',
+                    'TGT',
+                    mockCallerScope(),
+                ),
             { wrapper },
         )
 
@@ -183,12 +203,17 @@ describe('useRekeyTransactionFeeQuery', () => {
         const { wrapper } = buildWrapper()
 
         const { result } = renderHook(
-            () => useRekeyTransactionFeeQuery('SRC', 'TGT', mockCallerScope()),
+            () =>
+                useDelegationTransactionFeeQuery(
+                    'SRC',
+                    'TGT',
+                    mockCallerScope(),
+                ),
             { wrapper },
         )
 
         await waitFor(() => expect(result.current.isPending).toBe(false))
-        expect(result.current.feeAlgos?.toString()).toBe('0.002')
+        expect(result.current.fee?.toString()).toBe('0.002')
         expect(mockResolveMinFeeForSender).toHaveBeenCalledWith(
             'algorand',
             expect.objectContaining({ suggestedMinFee: 1000n }),
@@ -198,24 +223,26 @@ describe('useRekeyTransactionFeeQuery', () => {
     it('does not run the query when sourceAddress is empty', async () => {
         const { wrapper } = buildWrapper()
         const { result } = renderHook(
-            () => useRekeyTransactionFeeQuery('', 'TGT', mockCallerScope()),
+            () =>
+                useDelegationTransactionFeeQuery('', 'TGT', mockCallerScope()),
             { wrapper },
         )
 
         // No fetch should have been queued.
         expect(mockBuildRekeyTx).not.toHaveBeenCalled()
-        expect(result.current.feeAlgos).toBeUndefined()
+        expect(result.current.fee).toBeUndefined()
     })
 
-    it('does not run the query when rekeyToAddress is empty', async () => {
+    it('does not run the query when authorityAddress is empty', async () => {
         const { wrapper } = buildWrapper()
         const { result } = renderHook(
-            () => useRekeyTransactionFeeQuery('SRC', '', mockCallerScope()),
+            () =>
+                useDelegationTransactionFeeQuery('SRC', '', mockCallerScope()),
             { wrapper },
         )
 
         expect(mockBuildRekeyTx).not.toHaveBeenCalled()
-        expect(result.current.feeAlgos).toBeUndefined()
+        expect(result.current.fee).toBeUndefined()
     })
 
     it('caches per network — a mainnet fee does not satisfy a testnet query', async () => {
@@ -227,22 +254,32 @@ describe('useRekeyTransactionFeeQuery', () => {
         const { wrapper } = buildWrapper()
 
         const { result: mainnet } = renderHook(
-            () => useRekeyTransactionFeeQuery('SRC', 'TGT', mockCallerScope()),
+            () =>
+                useDelegationTransactionFeeQuery(
+                    'SRC',
+                    'TGT',
+                    mockCallerScope(),
+                ),
             { wrapper },
         )
         await waitFor(() => expect(mainnet.current.isPending).toBe(false))
-        expect(mainnet.current.feeAlgos?.toString()).toBe('0.001')
+        expect(mainnet.current.fee?.toString()).toBe('0.001')
 
         mockCallerScope.mockReturnValue({
             chainId: LEGACY_CHAIN_ID,
             networkId: 'testnet',
         } as const)
         const { result: testnet } = renderHook(
-            () => useRekeyTransactionFeeQuery('SRC', 'TGT', mockCallerScope()),
+            () =>
+                useDelegationTransactionFeeQuery(
+                    'SRC',
+                    'TGT',
+                    mockCallerScope(),
+                ),
             { wrapper },
         )
         await waitFor(() => expect(testnet.current.isPending).toBe(false))
-        expect(testnet.current.feeAlgos?.toString()).toBe('0.005')
+        expect(testnet.current.fee?.toString()).toBe('0.005')
         expect(mockBuildRekeyTx).toHaveBeenCalledTimes(2)
     })
 
@@ -255,12 +292,17 @@ describe('useRekeyTransactionFeeQuery', () => {
         const { wrapper } = buildWrapper()
 
         const { result } = renderHook(
-            () => useRekeyTransactionFeeQuery('SRC', 'TGT', mockCallerScope()),
+            () =>
+                useDelegationTransactionFeeQuery(
+                    'SRC',
+                    'TGT',
+                    mockCallerScope(),
+                ),
             { wrapper },
         )
 
         await waitFor(() => expect(result.current.isPending).toBe(false))
-        expect(result.current.feeAlgos?.toString()).toBe('0.003')
+        expect(result.current.fee?.toString()).toBe('0.003')
         expect(mockBuildRekeyTx).toHaveBeenCalledWith(
             expect.objectContaining({ minFee: 3000n }),
         )
@@ -280,12 +322,17 @@ describe('useRekeyTransactionFeeQuery', () => {
         const { wrapper } = buildWrapper()
 
         const { result } = renderHook(
-            () => useRekeyTransactionFeeQuery('SRC', 'TGT', mockCallerScope()),
+            () =>
+                useDelegationTransactionFeeQuery(
+                    'SRC',
+                    'TGT',
+                    mockCallerScope(),
+                ),
             { wrapper },
         )
 
         await waitFor(() => expect(result.current.isPending).toBe(false))
-        expect(result.current.feeAlgos?.toString()).toBe('0.002')
+        expect(result.current.fee?.toString()).toBe('0.002')
     })
 
     it('charges the PQ fee when the sender is currently rekeyed to a quantum auth (undo-rekey)', async () => {
@@ -300,12 +347,17 @@ describe('useRekeyTransactionFeeQuery', () => {
         const { wrapper } = buildWrapper()
 
         const { result } = renderHook(
-            () => useRekeyTransactionFeeQuery('SRC', 'TGT', mockCallerScope()),
+            () =>
+                useDelegationTransactionFeeQuery(
+                    'SRC',
+                    'TGT',
+                    mockCallerScope(),
+                ),
             { wrapper },
         )
 
         await waitFor(() => expect(result.current.isPending).toBe(false))
-        expect(result.current.feeAlgos?.toString()).toBe('0.003')
+        expect(result.current.fee?.toString()).toBe('0.003')
         expect(mockResolveMinFeeForSender).toHaveBeenCalledWith(
             'algorand',
             expect.objectContaining({ senderAddress: 'SRC', accounts }),

@@ -291,13 +291,13 @@ describe('useSwapExecution', () => {
         expect(outcome).toEqual({
             kind: 'error',
             phase: 'prepare',
-            message: 'errors.algod.asset_frozen.body',
-            title: 'errors.algod.asset_frozen.title',
+            message: 'errors.transaction.asset_frozen.body',
+            title: 'errors.transaction.asset_frozen.title',
         })
         expect(result.current.status).toBe('error')
         expect(result.current.error).toEqual({
             phase: 'prepare',
-            message: 'errors.algod.asset_frozen.body',
+            message: 'errors.transaction.asset_frozen.body',
         })
     })
 

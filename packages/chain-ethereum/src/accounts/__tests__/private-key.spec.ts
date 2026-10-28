@@ -113,7 +113,7 @@ describe('revealEthereumPrivateKey', () => {
         const exportSecp256k1Key = vi.fn().mockResolvedValue(key)
 
         const revealed = await revealEthereumPrivateKey(
-            { exportSecp256k1Key },
+            { exportSecp256k1Key } as never,
             'key-id',
             'backup',
         )

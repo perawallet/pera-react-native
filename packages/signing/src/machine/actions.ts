@@ -280,8 +280,8 @@ const buildSourceMetadata = (
     }
 }
 
-const MIXED_SHAPES = 'the request mixes Algorand and chain-neutral transactions'
-const ALGORAND_SHAPE = 'transactions must be sent as chain-neutral transactions'
+const MIXED_SHAPES = 'the request mixes legacy and chain-neutral transactions'
+const LEGACY_SHAPE = 'transactions must be sent as chain-neutral transactions'
 
 const isTransactionsGroup = (group: SignableGroup): boolean =>
     group.data.type === 'transactions'
@@ -425,7 +425,7 @@ const buildSignableGroups = (
             // An empty request is left to the caller's "nothing to sign" refusal.
             if (txs.length === 0) return []
             throw new InvalidSignableDataError(
-                txs.some(isUnsignedTransaction) ? MIXED_SHAPES : ALGORAND_SHAPE,
+                txs.some(isUnsignedTransaction) ? MIXED_SHAPES : LEGACY_SHAPE,
             )
         }
         return buildUnsignedTransactionGroups(
