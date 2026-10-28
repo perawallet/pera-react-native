@@ -308,15 +308,17 @@ describe('runOffscreenApp connections wiring', () => {
         expect(siteSafety.startPhishingListRefresh).toHaveBeenCalledOnce()
     })
 
-    it('lets neither dApp handler reconnect a flagged site silently', async () => {
+    it('hands both dApp handlers the site-safety warning for an origin', async () => {
         await boot()
-        const isSiteFlaggedOf = (handler: { mock: { calls: unknown[][] } }) => {
+        const siteWarningOfHandler = (handler: {
+            mock: { calls: unknown[][] }
+        }) => {
             const [options] = handler.mock.calls[0] ?? []
             return (
                 options as {
-                    isSiteFlagged: (origin: string) => Promise<boolean>
+                    siteWarningOf: (origin: string) => Promise<string>
                 }
-            ).isSiteFlagged
+            ).siteWarningOf
         }
 
         siteSafety.assessSiteSafety.mockResolvedValue({
@@ -325,20 +327,20 @@ describe('runOffscreenApp connections wiring', () => {
             imitates: { name: 'Uniswap', domain: 'uniswap.org' },
         })
         expect(
-            await isSiteFlaggedOf(createDappConnectionHandler)(
+            await siteWarningOfHandler(createDappConnectionHandler)(
                 'https://uniswap-app.org',
             ),
-        ).toBe(true)
+        ).toBe('look-alike')
         expect(siteSafety.assessSiteSafety).toHaveBeenCalledWith({
             urls: ['https://uniswap-app.org'],
         })
 
         siteSafety.assessSiteSafety.mockResolvedValue({ kind: 'clear' })
         expect(
-            await isSiteFlaggedOf(createEip1193ConnectionHandler)(
+            await siteWarningOfHandler(createEip1193ConnectionHandler)(
                 'https://uniswap.org',
             ),
-        ).toBe(false)
+        ).toBe('clear')
     })
 
     it('registers the chains once, before the database is seeded, sync starts and either handler is built', async () => {

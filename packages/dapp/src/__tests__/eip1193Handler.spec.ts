@@ -32,7 +32,11 @@ import {
     EIP1193_ERROR_CODE,
     EIP1193_PERMISSION_METHODS,
 } from '../eip1193Protocol'
-import { eip1193ConnectionIdOf, type Eip1193Connection } from '../models'
+import {
+    eip1193ConnectionIdOf,
+    type Eip1193Connection,
+    type SiteWarningLevel,
+} from '../models'
 import { DAPP_KIND } from '../protocol'
 import { FakeDappTransport } from './fake-transport'
 
@@ -150,7 +154,7 @@ const fakeAdapter = (
 type SetupOptions = {
     networks?: Partial<Record<ChainId, NetworkId>>
     disabled?: ChainId[]
-    isSiteFlagged?: (origin: string) => Promise<boolean>
+    siteWarningOf?: (origin: string) => Promise<SiteWarningLevel>
 }
 
 const setup = (seed: Connection[] = [], options: SetupOptions = {}) => {
@@ -179,7 +183,7 @@ const setup = (seed: Connection[] = [], options: SetupOptions = {}) => {
                 address,
                 name: address,
             })),
-        isSiteFlagged: options.isSiteFlagged,
+        siteWarningOf: options.siteWarningOf,
         now: () => 1_000_000,
         proposalTtlMs: 1_000,
         requestTtlMs: 1_000,
@@ -317,7 +321,10 @@ describe('createEip1193ConnectionHandler', () => {
 
             const connection = await proposal.approve([ADDR_Y, ADDR_GONE])
             expect(connection.id).toBe(ID)
-            expect(connection.metadata).toEqual({ chainId: 'ethereum' })
+            expect(connection.metadata).toEqual({
+                chainId: 'ethereum',
+                acknowledgedSiteWarning: 'clear',
+            })
             expect((await store.get(ID))?.accounts).toEqual([ADDR_Y])
             expect(resultOf(await pending)).toEqual([ADDR_Y])
             expect(notificationsOf(transport, 'accountsChanged')).toEqual([
@@ -394,24 +401,24 @@ describe('createEip1193ConnectionHandler', () => {
         })
 
         it('sends a flagged site that was already connected back through an approval', async () => {
-            const isSiteFlagged = vi.fn(async () => true)
+            const siteWarningOf = vi.fn(async (): Promise<SiteWarningLevel> => 'blocked')
             const { transport, registry, proposals } = setup(
                 [connectedOn('ethereum')],
-                { isSiteFlagged },
+                { siteWarningOf },
             )
             await registry.initialize()
 
             void transport.send(ORIGIN, 'eth_requestAccounts')
             await flush()
 
-            expect(isSiteFlagged).toHaveBeenCalledWith(ORIGIN)
+            expect(siteWarningOf).toHaveBeenCalledWith(ORIGIN)
             expect(proposals).toHaveLength(1)
         })
 
         it('refuses a flagged site a gesture-free reconnect', async () => {
             const { transport, registry, proposals } = setup(
                 [connectedOn('ethereum')],
-                { isSiteFlagged: async () => true },
+                { siteWarningOf: async () => 'blocked' },
             )
             await registry.initialize()
 
@@ -428,10 +435,72 @@ describe('createEip1193ConnectionHandler', () => {
             expect(proposals).toHaveLength(0)
         })
 
+        it('removes the grant of a flagged site the user turns away', async () => {
+            const { transport, registry, proposals, store } = setup(
+                [connectedOn('ethereum')],
+                { siteWarningOf: async () => 'blocked' },
+            )
+            await registry.initialize()
+            void transport.send(ORIGIN, 'eth_requestAccounts')
+            await flush()
+
+            await proposals[0].reject()
+            await flush()
+
+            expect(await store.get(ID)).toBeUndefined()
+            expect(notificationsOf(transport, 'accountsChanged')).toEqual([
+                { origin: ORIGIN, params: [] },
+            ])
+        })
+
+        it('tells a flagged connected site it holds no accounts', async () => {
+            const { transport, registry } = setup([connectedOn('ethereum')], {
+                siteWarningOf: async () => 'blocked',
+            })
+            await registry.initialize()
+
+            expect(
+                resultOf(await transport.send(ORIGIN, 'eth_accounts')),
+            ).toEqual([])
+        })
+
+        it('keeps answering eth_accounts for a look-alike the user approved', async () => {
+            const { transport, registry, proposals } = setup([], {
+                siteWarningOf: async () => 'look-alike',
+            })
+            await registry.initialize()
+            const pending = transport.send(ORIGIN, 'eth_requestAccounts')
+            await flush()
+            await proposals[0].approve([ADDR_X])
+            expect(resultOf(await pending)).toEqual([ADDR_X])
+
+            expect(
+                resultOf(await transport.send(ORIGIN, 'eth_accounts')),
+            ).toEqual([ADDR_X])
+        })
+
+        it('hides the accounts of an approved look-alike once it is listed as a scam', async () => {
+            let warning: SiteWarningLevel = 'look-alike'
+            const { transport, registry, proposals } = setup([], {
+                siteWarningOf: async () => warning,
+            })
+            await registry.initialize()
+            const pending = transport.send(ORIGIN, 'eth_requestAccounts')
+            await flush()
+            await proposals[0].approve([ADDR_X])
+            await pending
+
+            warning = 'blocked'
+
+            expect(
+                resultOf(await transport.send(ORIGIN, 'eth_accounts')),
+            ).toEqual([])
+        })
+
         it('still answers an unflagged connected site silently', async () => {
             const { transport, registry, proposals } = setup(
                 [connectedOn('ethereum')],
-                { isSiteFlagged: async () => false },
+                { siteWarningOf: async () => 'clear' },
             )
             await registry.initialize()
 

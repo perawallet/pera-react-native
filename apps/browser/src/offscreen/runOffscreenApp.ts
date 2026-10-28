@@ -59,6 +59,7 @@ import {
     createEip1193ConnectionHandler,
     importLegacyDappPermissions,
     type DappAccount,
+    type SiteWarningLevel,
 } from '@perawallet/wallet-core-dapp'
 import {
     createStorageSessionKeyStore,
@@ -184,8 +185,8 @@ export const runOffscreenApp = async ({
     const registry = createConnectionRegistry({ store })
     const getNetworkId = (chainId: ChainId) =>
         getSelectedScope(chainId).networkId
-    const isSiteFlagged = async (origin: string): Promise<boolean> =>
-        (await assessSiteSafety({ urls: [origin] })).kind !== 'clear'
+    const siteWarningOf = async (origin: string): Promise<SiteWarningLevel> =>
+        (await assessSiteSafety({ urls: [origin] })).kind
     registry.register(
         createWalletConnectV1Handler({
             chainId: ALGORAND_CHAIN_ID,
@@ -201,7 +202,7 @@ export const runOffscreenApp = async ({
             getCustomNetworkGenesisHash: () =>
                 getCustomNetworkConfig()?.genesisHash,
             getAccounts: () => signingDappAccountsOn(ALGORAND_CHAIN_ID),
-            isSiteFlagged,
+            siteWarningOf,
         }),
     )
     registry.register(
@@ -212,7 +213,7 @@ export const runOffscreenApp = async ({
                 provider.chains.has(chainId) &&
                 provider.chains.capabilities(chainId).dappConnect,
             getAccounts: signingDappAccountsOn,
-            isSiteFlagged,
+            siteWarningOf,
         }),
     )
     const connectionsHost = startConnectionsHost({
