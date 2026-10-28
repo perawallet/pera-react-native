@@ -10,17 +10,19 @@
  limitations under the License
  */
 
-import type { BackupId } from '@perawallet/wallet-core-backup'
+import type {
+    BackupCredentialsFileDestination,
+    BackupId,
+} from '@perawallet/wallet-core-backup'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import type {
     ChooseCloudFile,
     CloudFileReadResult,
     CloudFileSaveResult,
-    CloudFileStore,
 } from '@perawallet/wallet-extension-platform'
 
 /** A local file alongside the cloud drives the platform can reach. */
-export type CredentialsFileSource = 'device' | CloudFileStore
+export type CredentialsFileSource = BackupCredentialsFileDestination
 
 export type SaveResult = CloudFileSaveResult
 export type ReadResult = CloudFileReadResult

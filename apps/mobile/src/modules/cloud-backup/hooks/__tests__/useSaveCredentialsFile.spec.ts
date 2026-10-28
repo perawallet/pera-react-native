@@ -14,18 +14,20 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 import {
     ICloudUnavailableError,
     NoBackupCredentialsError,
+    backupCredentialsFileName,
 } from '@perawallet/wallet-core-backup'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import { createElement, type ReactNode } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { renderHook, waitFor } from '@testing-library/react'
 import { useSaveCredentialsFile } from '../useSaveCredentialsFile'
 
-const { mockShowToast, mockShowError, mockLoggerError, saveCredentialsFile } =
+const { mockShowToast, mockShowError, mockLoggerError, saveToDevice } =
     vi.hoisted(() => ({
         mockShowToast: vi.fn(),
         mockShowError: vi.fn(),
         mockLoggerError: vi.fn(),
-        saveCredentialsFile: vi.fn(),
+        saveToDevice: vi.fn(),
     }))
 
 // errors.ts extends AppError from this package, so the real exports (not the
@@ -52,16 +54,40 @@ vi.mock('@hooks/useErrorToast', () => ({
 vi.mock('@hooks/useLanguage')
 vi.mock('../../storage', async importOriginal => ({
     ...(await importOriginal<Record<string, unknown>>()),
-    saveCredentialsFile,
+    saveToDevice,
 }))
 
 const SALT = 'q311Z4ReDNWpMVuH8XdvSw=='
 const BACKUP_ID = `did:pera:VQBGR${'A'.repeat(53)}`
 const CREDENTIALS = { salt: SALT, backupId: BACKUP_ID }
 
+const cloudSave = () => vi.mocked(getProvider().cloudFileStorage.save)
+
+// The writer a destination goes through: the app's picker for the device,
+// the platform's cloud store for a drive.
+const writerFor = (destination: 'device' | 'icloud' | 'googleDrive') =>
+    destination === 'device' ? saveToDevice : cloudSave()
+
+const expectSavedTo = (destination: 'device' | 'icloud' | 'googleDrive') => {
+    const fileName = backupCredentialsFileName(BACKUP_ID)
+    const contents = expect.stringContaining(SALT)
+    if (destination === 'device') {
+        expect(saveToDevice).toHaveBeenCalledWith(fileName, contents)
+        expect(cloudSave()).not.toHaveBeenCalled()
+    } else {
+        expect(cloudSave()).toHaveBeenCalledWith(
+            destination,
+            fileName,
+            contents,
+        )
+        expect(saveToDevice).not.toHaveBeenCalled()
+    }
+}
+
 beforeEach(() => {
     vi.clearAllMocks()
-    saveCredentialsFile.mockResolvedValue('saved')
+    saveToDevice.mockResolvedValue('saved')
+    cloudSave().mockResolvedValue('saved')
 })
 
 const renderSaveHook = () => {
@@ -89,10 +115,7 @@ describe('useSaveCredentialsFile', () => {
         async destination => {
             await save(destination)
 
-            expect(saveCredentialsFile).toHaveBeenCalledWith(
-                destination,
-                CREDENTIALS,
-            )
+            expectSavedTo(destination)
             expect(mockShowToast).toHaveBeenCalledWith(
                 {
                     title: 'cloud_backup.store_credentials.success',
@@ -115,7 +138,8 @@ describe('useSaveCredentialsFile', () => {
 
         await result.current.saveCredentials('device', incomplete)
 
-        expect(saveCredentialsFile).not.toHaveBeenCalled()
+        expect(saveToDevice).not.toHaveBeenCalled()
+        expect(cloudSave()).not.toHaveBeenCalled()
         expect(mockShowToast).not.toHaveBeenCalled()
         expect(mockShowError).toHaveBeenCalledWith(
             expect.any(NoBackupCredentialsError),
@@ -125,7 +149,7 @@ describe('useSaveCredentialsFile', () => {
     })
 
     test('stays silent when the user backs out inside the destination', async () => {
-        saveCredentialsFile.mockResolvedValueOnce('cancelled')
+        writerFor('googleDrive').mockResolvedValueOnce('cancelled')
 
         await save('googleDrive')
 
@@ -135,7 +159,7 @@ describe('useSaveCredentialsFile', () => {
 
     test('passes a destination error through so it can show its own copy', async () => {
         const error = new ICloudUnavailableError()
-        saveCredentialsFile.mockRejectedValueOnce(error)
+        writerFor('icloud').mockRejectedValueOnce(error)
 
         await save('icloud')
 
@@ -147,7 +171,7 @@ describe('useSaveCredentialsFile', () => {
 
     test('logs a failure without leaking the key', async () => {
         const error = new Error('disk full')
-        saveCredentialsFile.mockRejectedValueOnce(error)
+        writerFor('device').mockRejectedValueOnce(error)
 
         await save('device')
 
@@ -160,7 +184,7 @@ describe('useSaveCredentialsFile', () => {
 
     test('ignores a second call while one is in flight', async () => {
         let finishSave: (value: string) => void = () => {}
-        saveCredentialsFile.mockImplementationOnce(
+        writerFor('device').mockImplementationOnce(
             () =>
                 new Promise(resolve => {
                     finishSave = resolve
@@ -173,12 +197,13 @@ describe('useSaveCredentialsFile', () => {
         finishSave('saved')
         await first
 
-        expect(saveCredentialsFile).toHaveBeenCalledTimes(1)
+        expect(saveToDevice).toHaveBeenCalledTimes(1)
+        expect(cloudSave()).not.toHaveBeenCalled()
     })
 
     test('reports that a cloud save is in flight until it settles', async () => {
         let finishSave: (value: string) => void = () => {}
-        saveCredentialsFile.mockImplementationOnce(
+        writerFor('icloud').mockImplementationOnce(
             () =>
                 new Promise(resolve => {
                     finishSave = resolve
@@ -199,7 +224,7 @@ describe('useSaveCredentialsFile', () => {
 
     test('does not report a device save, whose picker is its own UI', async () => {
         let finishSave: (value: string) => void = () => {}
-        saveCredentialsFile.mockImplementationOnce(
+        writerFor('device').mockImplementationOnce(
             () =>
                 new Promise(resolve => {
                     finishSave = resolve
@@ -209,10 +234,7 @@ describe('useSaveCredentialsFile', () => {
 
         const pending = result.current.saveCredentials('device', CREDENTIALS)
         await waitFor(() =>
-            expect(saveCredentialsFile).toHaveBeenCalledWith(
-                'device',
-                CREDENTIALS,
-            ),
+            expect(saveToDevice).toHaveBeenCalledTimes(1),
         )
 
         expect(result.current.isSaving).toBe(false)
