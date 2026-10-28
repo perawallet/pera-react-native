@@ -74,7 +74,7 @@ export const noManualUnitConversion = {
             unitConstant:
                 '{{name}} as a multiplier or divisor converts units by hand: use baseUnitsToDisplayUnits / displayUnitsToBaseUnits (or microAlgosToAlgos, algosToMicroAlgosBigInt) from @perawallet/wallet-core-shared.',
             stringBigInt:
-                'BigInt from a number\'s string form throws on exponent notation (BigInt("1e+21")): use toBigInt from @perawallet/wallet-core-shared, or BigInt(d.toFixed(0)).',
+                'BigInt from a number\'s string form throws on exponent notation (BigInt("1e+21")): use toBigInt from @perawallet/wallet-core-shared.',
         },
         schema: [],
     },

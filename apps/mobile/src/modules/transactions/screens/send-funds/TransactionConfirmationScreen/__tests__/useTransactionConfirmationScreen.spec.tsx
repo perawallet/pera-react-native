@@ -173,12 +173,8 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
         await vi.importActual<
             typeof import('@packages/shared/src/utils/unit-conversion')
         >('@packages/shared/src/utils/unit-conversion')
-    const { pow10 } = await vi.importActual<
-        typeof import('@packages/shared/src/utils/decimal-config')
-    >('@packages/shared/src/utils/decimal-config')
     const { Decimal: ActualDecimal } = await import('decimal.js')
     return {
-        pow10,
         DEFAULT_PRECISION: 2,
         ZERO_DECIMAL: new ActualDecimal(0),
         formatCurrency: vi.fn(() => '10.00'),

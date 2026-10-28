@@ -10,11 +10,10 @@
  limitations under the License
  */
 
-import type { Decimal } from 'decimal.js'
+import { Decimal } from 'decimal.js'
 import {
     DEFAULT_PRECISION,
     type Maybe,
-    pow10,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 
@@ -112,8 +111,6 @@ export const resolvePrecision = (
     }
 }
 
-const FIAT_DISPLAY_FLOOR = pow10(-DEFAULT_PRECISION)
-
 /**
  * The smallest fiat amount a `compact` figure shows. A non-zero fiat amount
  * under it reads as "< 0.01" instead of extending to its first significant
@@ -126,14 +123,14 @@ export const resolveFiatFloor = (
     isFiat: boolean,
     value: Maybe<Decimal>,
 ): Nullable<Decimal> => {
-    if (
-        variant !== 'compact' ||
-        !isFiat ||
-        value == null ||
-        value.isZero() ||
-        !value.abs().lt(FIAT_DISPLAY_FLOOR)
-    ) {
+    if (variant !== 'compact' || !isFiat || value == null || value.isZero()) {
         return null
     }
-    return value.isNegative() ? FIAT_DISPLAY_FLOOR.neg() : FIAT_DISPLAY_FLOOR
+    // Built on call, from a string, so a spec that mocks the shared package
+    // without the Decimal helpers can still import this module.
+    const floor = new Decimal(`1e-${DEFAULT_PRECISION}`)
+    if (!value.abs().lt(floor)) {
+        return null
+    }
+    return value.isNegative() ? floor.neg() : floor
 }
