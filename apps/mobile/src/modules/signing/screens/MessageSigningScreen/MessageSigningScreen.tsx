@@ -18,6 +18,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { SignedDataWarning } from '@modules/signing/components/SignedDataWarning'
 import { SourceMetadataView } from '@modules/signing/components/SourceMetadataView'
 import { SpendApprovalWarning } from '@modules/signing/components/SpendApprovalWarning'
+import { RequestAddressWarning } from '@modules/signing/components/RequestAddressWarning'
 import { MessageTreeView } from './MessageTreeView'
 import { useStyles } from './styles'
 import { useMessageSigningScreen } from './useMessageSigningScreen'
@@ -32,6 +33,8 @@ export const MessageSigningScreen = () => {
         sourceMetadata,
         verifiedOrigin,
         isPending,
+        reviewedAddresses,
+        isConfirmBlocked,
         handleApprove,
         handleReject,
     } = useMessageSigningScreen()
@@ -46,6 +49,7 @@ export const MessageSigningScreen = () => {
                         title={t('common.slide_to_confirm.label')}
                         onConfirm={handleApprove}
                         isLoading={isPending}
+                        isDisabled={isConfirmBlocked}
                         testID='message-signing-confirm-slide'
                     />
                     <PWButton
@@ -88,6 +92,7 @@ export const MessageSigningScreen = () => {
                             scope={scope}
                         />
                     )}
+                    <RequestAddressWarning addresses={reviewedAddresses} />
                     {summary.kind === 'typed-data' &&
                         (!summary.spendApproval || !scope) && (
                             <InfoCallout

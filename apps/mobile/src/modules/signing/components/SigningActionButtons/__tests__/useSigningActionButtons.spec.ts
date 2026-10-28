@@ -59,6 +59,11 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
     ),
 }))
 
+const mockAddressSafety = vi.hoisted(() => ({ isConfirmBlocked: false }))
+vi.mock('../../../hooks/useRequestAddressSafety', () => ({
+    useRequestAddressSafety: () => mockAddressSafety,
+}))
+
 const mockConfirmQuantumDappUsage = vi.fn()
 vi.mock('@hooks/useQuantumDappWarning', () => ({
     useQuantumDappWarning: () => ({
@@ -125,6 +130,7 @@ describe('useSigningActionButtons', () => {
         ;(getDelegatedUnsignableReason as Mock).mockReturnValue(null)
         mockGetPreference.mockReturnValue(undefined)
         mockConfirmQuantumDappUsage.mockResolvedValue('continue')
+        mockAddressSafety.isConfirmBlocked = false
         setupPipeline()
         ;(useSigningRequest as Mock).mockReturnValue({
             currentRequest: undefined,
@@ -150,6 +156,20 @@ describe('useSigningActionButtons', () => {
 
         expect(mockNext).toHaveBeenCalledTimes(1)
         expect(mockRequestBottomSheet).not.toHaveBeenCalled()
+    })
+
+    it('holds signing while a flagged address waits on acknowledgement', () => {
+        mockAddressSafety.isConfirmBlocked = true
+
+        const { result } = renderHook(() => useSigningActionButtons())
+
+        act(() => {
+            result.current.handleSignAndSend()
+        })
+
+        expect(result.current.isConfirmBlocked).toBe(true)
+        expect(mockNext).not.toHaveBeenCalled()
+        expect(mockConfirmQuantumDappUsage).not.toHaveBeenCalled()
     })
 
     it('opens security guard sheet instead of signing when rekey warnings exist', () => {

@@ -26,6 +26,7 @@ import {
 import {
     messageSignerChainAdapters,
     type LocalKeySigningDeps,
+    type ReviewedAddress,
     type WithChain,
 } from './chain-adapter'
 import { CannotSignError } from './pipeline/errors'
@@ -156,6 +157,12 @@ export interface MessageSignerChainAdapter {
     /** What the review shows. Never throws for a supported method, even on a payload `plan` refuses. */
     describe(request: MessageRequest): MessageSummary
     /**
+     * The addresses the signed message names, read from its schema whether or
+     * not `describe` recognises what it grants. Never throws; `[]` for a
+     * payload it can't read.
+     */
+    reviewedAddresses(request: MessageRequest): ReviewedAddress[]
+    /**
      * The bytes to sign, `requestIndex` 0..n-1 in order, each signer the
      * account's own address on the request's chain.
      * @throws for an unsupported method, a malformed payload, a signer other
@@ -192,6 +199,16 @@ export const signsMessageVerifiably = (
 ): boolean =>
     messageSignerChainAdapters.has(chainId) &&
     messageSignerChainAdapters.get(chainId).signsVerifiably(account, kind)
+
+/** `[]` on a chain with no message signer. */
+export const reviewedMessageAddressesOf = (
+    request: MessageRequest,
+): ReviewedAddress[] =>
+    messageSignerChainAdapters.has(request.scope.chainId)
+        ? messageSignerChainAdapters
+              .get(request.scope.chainId)
+              .reviewedAddresses(request)
+        : []
 
 /** The refusal gate: with no signer registered, nothing is signed or passed through unsigned. */
 export const messageSignerFor = (

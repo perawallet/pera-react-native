@@ -28,14 +28,17 @@ import {
 } from '@perawallet/wallet-core-database'
 import { createTestDatabase } from '@perawallet/wallet-core-database/test-utils'
 import { mockPhishingListSources } from '../api/msw-handlers'
-import { findListedDomains } from '../db/repository'
+import { findListedAddresses, findListedDomains } from '../db/repository'
 import { refreshPhishingLists } from '../refresh'
 import { ensurePhishingListsSeeded } from '../seed'
 import { PHISHING_LIST_SOURCES } from '../sources'
 import { selectActiveGenerations, usePhishingListStore } from '../store/store'
 import {
+    BUNDLED_SCAM_ADDRESS,
+    evmAddressList,
     FIXTURE_SNAPSHOT,
     hostList,
+    mewDarklist,
     metaMaskConfig,
     polkadotList,
 } from './fixtures'
@@ -49,6 +52,8 @@ vi.mock('@perawallet/wallet-core-database', async importOriginal => ({
 const server = setupServer()
 const META_MASK_DENY = [...hostList(50_000, 'mm'), 'fresh-phish.example']
 const POLKADOT_DENY = hostList(20_000, 'dot')
+const FRESH_SCAM_ADDRESS = '0x00000000000000000000000000000000000fffff'
+const DARKLIST = [...evmAddressList(500), FRESH_SCAM_ADDRESS]
 
 const isListed = async (domain: string): Promise<boolean> => {
     const { denied } = await findListedDomains({
@@ -56,6 +61,14 @@ const isListed = async (domain: string): Promise<boolean> => {
         domains: [domain],
     })
     return denied.length > 0
+}
+
+const isAddressListed = async (address: string): Promise<boolean> => {
+    const listed = await findListedAddresses({
+        generations: selectActiveGenerations(usePhishingListStore.getState()),
+        addresses: [address.toLowerCase()],
+    })
+    return listed.length > 0
 }
 
 describe('refreshPhishingLists', () => {
@@ -88,12 +101,19 @@ describe('refreshPhishingLists', () => {
                     etag: '"v1"',
                 },
                 polkadot: { body: polkadotList(POLKADOT_DENY) },
+                'mew-darklist': { body: mewDarklist(DARKLIST) },
             }),
         )
 
         const outcomes = await refreshPhishingLists({ now: () => 1_000 })
 
-        expect(outcomes).toEqual({ metamask: 'updated', polkadot: 'updated' })
+        expect(outcomes).toEqual({
+            metamask: 'updated',
+            polkadot: 'updated',
+            'mew-darklist': 'updated',
+        })
+        expect(await isAddressListed(FRESH_SCAM_ADDRESS)).toBe(true)
+        expect(await isAddressListed(BUNDLED_SCAM_ADDRESS)).toBe(false)
         expect(await isListed('fresh-phish.example')).toBe(true)
         expect(await isListed('bundled-phish.example')).toBe(false)
         expect(usePhishingListStore.getState().sources.metamask).toMatchObject({
@@ -206,9 +226,14 @@ describe('refreshPhishingLists', () => {
             },
         })
 
-        expect(outcomes).toEqual({ metamask: 'failed', polkadot: 'failed' })
+        expect(outcomes).toEqual({
+            metamask: 'failed',
+            polkadot: 'failed',
+            'mew-darklist': 'failed',
+        })
         expect(await isListed('bundled-phish.example')).toBe(true)
         expect(await isListed('bundled-dot.example')).toBe(true)
+        expect(await isAddressListed(BUNDLED_SCAM_ADDRESS)).toBe(true)
     })
 
     it('updates one source when the other fails', async () => {
@@ -216,16 +241,39 @@ describe('refreshPhishingLists', () => {
             ...mockPhishingListSources({
                 metamask: { status: 503 },
                 polkadot: { body: polkadotList(POLKADOT_DENY) },
+                'mew-darklist': { status: 503 },
             }),
         )
 
         const outcomes = await refreshPhishingLists()
 
-        expect(outcomes).toEqual({ metamask: 'failed', polkadot: 'updated' })
+        expect(outcomes).toEqual({
+            metamask: 'failed',
+            polkadot: 'updated',
+            'mew-darklist': 'failed',
+        })
         expect(await isListed('bundled-phish.example')).toBe(true)
         expect(await isListed('dot0.example')).toBe(true)
         expect(await isListed('bundled-dot.example')).toBe(false)
     }, 30_000)
+
+    it('keeps the current darklist when a download is truncated', async () => {
+        server.use(
+            ...mockPhishingListSources({
+                metamask: { status: 304 },
+                polkadot: { status: 304 },
+                'mew-darklist': {
+                    body: mewDarklist([FRESH_SCAM_ADDRESS]),
+                },
+            }),
+        )
+
+        const outcomes = await refreshPhishingLists()
+
+        expect(outcomes['mew-darklist']).toBe('malformed')
+        expect(await isAddressListed(BUNDLED_SCAM_ADDRESS)).toBe(true)
+        expect(await isAddressListed(FRESH_SCAM_ADDRESS)).toBe(false)
+    })
 
     it('only ever requests the fixed source URLs', async () => {
         const fetchSpy = vi.fn(

@@ -3367,6 +3367,23 @@
             "show_details": "Afficher les détails",
             "details_title": "Détails de la demande d’authentification",
             "details_description": "Examinez toutes les métadonnées de cette demande d’authentification avant de l’approuver."
+        },
+        "address_safety": {
+            "listed_title": "Adresse frauduleuse connue",
+            "listed_body": "Cette demande mentionne une adresse figurant sur une liste publique d’adresses utilisées pour voler des fonds. En signant, vous pourriez lui céder vos actifs.",
+            "look_alike_title": "Cette demande mentionne une adresse qui imite une adresse que vous connaissez",
+            "look_alike_body": "Elle commence et se termine comme une adresse que vous connaissez, mais les caractères du milieu sont différents. Les escrocs créent des adresses ressemblantes pour vous tromper. Comparez les adresses complètes ci-dessous.",
+            "acknowledge": "Je comprends le risque et je veux signer quand même",
+            "role": {
+                "recipient": "Destinataire",
+                "token_recipient": "Destinataire du jeton",
+                "close_recipient": "Reçoit le solde restant",
+                "new_authorizer": "Nouvelle autorité de signature",
+                "referenced_account": "Compte référencé",
+                "target": "Contrat",
+                "spender": "Adresse autorisée",
+                "operator": "Opérateur"
+            }
         }
     },
     "site_safety": {

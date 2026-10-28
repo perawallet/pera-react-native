@@ -14,7 +14,7 @@
 // pnpm update:phishing-lists
 import { writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { PHISHING_LIST_SOURCES } from '../src/sources'
+import { isCompleteList, PHISHING_LIST_SOURCES } from '../src/sources'
 import type { PhishingListSnapshot } from '../src/models'
 
 const OUTPUT = resolve(
@@ -32,15 +32,18 @@ const main = async (): Promise<void> => {
             throw new Error(`${source.id}: HTTP ${response.status}`)
         }
         const entries = source.parse(await response.json())
-        if (!entries || entries.deny.length < source.minimumDenyEntries) {
+        if (!entries || !isCompleteList(source, entries)) {
             throw new Error(`${source.id}: malformed or truncated list`)
         }
         sources[source.id] = {
             deny: join(entries.deny),
             allow: join(entries.allow),
             impersonationTargets: join(entries.impersonationTargets),
+            addresses: join(entries.addresses),
         }
-        console.log(`${source.id}: ${entries.deny.length} deny entries`)
+        console.log(
+            `${source.id}: ${entries.deny.length} deny entries, ${entries.addresses.length} addresses`,
+        )
     }
     const snapshot: PhishingListSnapshot = {
         generatedAt: new Date().toISOString(),
