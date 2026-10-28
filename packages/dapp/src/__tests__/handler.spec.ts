@@ -266,7 +266,9 @@ describe('DappConnectionHandler', () => {
         })
 
         it('sends a flagged site that was already connected back through an approval', async () => {
-            const siteWarningOf = vi.fn(async (): Promise<SiteWarningLevel> => 'blocked')
+            const siteWarningOf = vi.fn(
+                async (): Promise<SiteWarningLevel> => 'blocked',
+            )
             const { transport, registry, proposals } = setup([connected()], {
                 siteWarningOf,
             })

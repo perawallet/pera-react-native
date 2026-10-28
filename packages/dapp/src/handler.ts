@@ -632,8 +632,7 @@ export const createDappConnectionHandler = (
                 // A site flagged since its approval sees no accounts until it
                 // is approved again.
                 const connection =
-                    existing &&
-                    !(await hasNewSiteWarning(existing, ctx.origin))
+                    existing && !(await hasNewSiteWarning(existing, ctx.origin))
                         ? existing
                         : undefined
                 return deliver(

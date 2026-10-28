@@ -68,7 +68,9 @@ export const readSiteWarning = async (
 export type DappConnection = Connection & { kind: typeof DAPP_KIND }
 
 /** The site's own chain; its network is whichever one the wallet has selected for it. */
-export type Eip1193ConnectionMetadata = SiteWarningMetadata & { chainId: ChainId }
+export type Eip1193ConnectionMetadata = SiteWarningMetadata & {
+    chainId: ChainId
+}
 
 export type Eip1193Connection = Connection & {
     kind: typeof EIP1193_DAPP_KIND
