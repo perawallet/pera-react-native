@@ -66,7 +66,7 @@ const TOAST_KEY: Record<
 
 export const useBackupAccountReview = (): UseBackupAccountReviewResult => {
     const { t } = useLanguage()
-    const { showToast } = useToast()
+    const { showToast, errorToast } = useToast()
     const { showError } = useErrorToast()
     const busyItems = useBackupSyncActivityStore(state => state.busyItems)
     const accounts = useAccountsStore(state => state.accounts)
@@ -112,11 +112,7 @@ export const useBackupAccountReview = (): UseBackupAccountReviewResult => {
                 showError(error)
                 return
             }
-            showToast({
-                title: t(TOAST_KEY[action].error),
-                body: '',
-                type: 'error',
-            })
+            errorToast(t(TOAST_KEY[action].error), '')
         },
     })
 

@@ -27,10 +27,10 @@ vi.mock('@hooks/useAppNavigation', () => ({
     }),
 }))
 
-const mockShowToast = vi.fn()
+const mockErrorToast = vi.fn()
 vi.mock('@hooks/useToast', () => ({
     useToast: () => ({
-        showToast: mockShowToast,
+        errorToast: mockErrorToast,
     }),
 }))
 
@@ -302,8 +302,9 @@ describe('useUndoRekeyConfirmScreen', () => {
         })
 
         await waitFor(() => {
-            expect(mockShowToast).toHaveBeenCalledWith(
-                expect.objectContaining({ type: 'error' }),
+            expect(mockErrorToast).toHaveBeenCalledWith(
+                'rekey.signing.user_rejected_title',
+                'rekey.signing.user_rejected_body',
             )
         })
         expect(mockShowError).not.toHaveBeenCalled()

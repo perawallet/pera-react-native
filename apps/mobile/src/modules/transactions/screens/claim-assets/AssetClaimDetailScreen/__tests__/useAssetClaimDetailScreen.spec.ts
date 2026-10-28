@@ -33,7 +33,6 @@ const { routeParams, mockRequestBottomSheet } = vi.hoisted(() => ({
 
 const mockPush = vi.fn()
 const mockNavigate = vi.fn()
-const mockShowToast = vi.fn()
 const mockErrorToast = vi.fn()
 
 let mockAssetRequests: unknown[] = []
@@ -74,7 +73,7 @@ vi.mock('@modules/bottom-sheet', () => ({
 }))
 
 vi.mock('@hooks/useToast', () => ({
-    useToast: () => ({ showToast: mockShowToast, errorToast: mockErrorToast }),
+    useToast: () => ({ errorToast: mockErrorToast }),
 }))
 
 const buildRequest = (
@@ -216,7 +215,7 @@ describe('useAssetClaimDetailScreen', () => {
         })
 
         expect(mockPush).not.toHaveBeenCalled()
-        expect(mockShowToast).toHaveBeenCalled()
+        expect(mockErrorToast).toHaveBeenCalled()
     })
 
     describe.each([

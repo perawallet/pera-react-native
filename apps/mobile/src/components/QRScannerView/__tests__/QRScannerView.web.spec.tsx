@@ -98,10 +98,10 @@ vi.mock('@perawallet/wallet-core-browser-runtime', () => ({
     openExpandedTab: (...args: unknown[]) => mockOpenExpandedTab(...args),
 }))
 
-const mockShowToast = vi.fn()
+const mockErrorToast = vi.fn()
 
 vi.mock('@hooks/useToast', () => ({
-    useToast: () => ({ showToast: mockShowToast }),
+    useToast: () => ({ errorToast: mockErrorToast }),
 }))
 
 const PASTED_VALUE = 'ALGO-ADDRESS'
@@ -365,11 +365,9 @@ describe('QRScannerView (web)', () => {
 
             submitPasted(PASTED_VALUE)
 
-            expect(mockShowToast).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    title: 'qr_scanner.invalid_code',
-                    type: 'error',
-                }),
+            expect(mockErrorToast).toHaveBeenCalledWith(
+                'qr_scanner.invalid_code',
+                '',
             )
             expect(mockHandleDeepLink).not.toHaveBeenCalled()
             expect(screen.getByTestId('qr-paste-input')).toBeTruthy()

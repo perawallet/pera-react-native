@@ -28,7 +28,7 @@ type UseRemoveCloudBackupResult = {
 
 export const useRemoveCloudBackup = (): UseRemoveCloudBackupResult => {
     const { t } = useLanguage()
-    const { showToast } = useToast()
+    const { showToast, errorToast } = useToast()
     const goHome = useGoToCloudBackupHome()
 
     const mutation = useRemoveCloudBackupMutation({
@@ -44,11 +44,7 @@ export const useRemoveCloudBackup = (): UseRemoveCloudBackupResult => {
             logger.warn('useRemoveCloudBackup: remove failed', {
                 error: error.message,
             })
-            showToast({
-                title: t('cloud_backup.turn_off_and_remove.error'),
-                body: '',
-                type: 'error',
-            })
+            errorToast(t('cloud_backup.turn_off_and_remove.error'), '')
         },
     })
 

@@ -45,7 +45,7 @@ const FALLBACK_TITLE_KEYS: Record<
  */
 export const useHandleRekeyError = (): UseHandleRekeyErrorResult => {
     const { t } = useLanguage()
-    const { showToast } = useToast()
+    const { errorToast } = useToast()
     const { showError } = useErrorToast()
 
     return useCallback(
@@ -56,11 +56,10 @@ export const useHandleRekeyError = (): UseHandleRekeyErrorResult => {
             }
 
             if (error.reason === 'user_rejected') {
-                showToast({
-                    title: t('rekey.signing.user_rejected_title'),
-                    body: t('rekey.signing.user_rejected_body'),
-                    type: 'error',
-                })
+                errorToast(
+                    t('rekey.signing.user_rejected_title'),
+                    t('rekey.signing.user_rejected_body'),
+                )
                 return
             }
 
@@ -69,6 +68,6 @@ export const useHandleRekeyError = (): UseHandleRekeyErrorResult => {
                 t(FALLBACK_TITLE_KEYS[error.reason]),
             )
         },
-        [t, showToast, showError],
+        [t, errorToast, showError],
     )
 }

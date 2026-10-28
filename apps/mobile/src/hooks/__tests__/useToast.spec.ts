@@ -13,7 +13,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useToast } from '../useToast'
-import { Notifier } from 'react-native-notifier'
+import { Notifier, type NotifierRoot } from 'react-native-notifier'
 
 vi.mock('react-native-notifier', () => ({
     Notifier: {
@@ -203,7 +203,7 @@ describe('useToast', () => {
 
         act(() => {
             result.current.errorToast('T', 'B', {
-                notifier,
+                notifier: notifier as unknown as NotifierRoot,
                 delayLength: 'short',
             })
             vi.advanceTimersByTime(299)

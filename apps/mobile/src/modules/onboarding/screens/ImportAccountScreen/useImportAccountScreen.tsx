@@ -71,7 +71,7 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
         anyChain: 'quantumAccounts',
     })
     const markBackupComplete = useMarkMnemonicBackupComplete(scope.chainId)
-    const { showToast, errorToast } = useToast()
+    const { errorToast } = useToast()
     const { t } = useLanguage()
     const { parseDeeplink } = useDeepLink()
     const { request: requestBottomSheet } = useBottomSheet()
@@ -232,20 +232,18 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
             } catch (e) {
                 logger.error('Import account failed', { error: e })
                 const isDuplicate = e instanceof DuplicateAccountError
-                // lanekeep-ignore-next-line pera/no-error-toast-in-catch reason: on DuplicateAccountError showError resolves to the generic errors.account.generic copy, not the specific import_account.duplicate_account_* strings this needs
-                showToast({
-                    title: t(
+                errorToast(
+                    t(
                         isDuplicate
                             ? 'onboarding.import_account.duplicate_account_title'
                             : 'onboarding.import_account.failed_title',
                     ),
-                    body: t(
+                    t(
                         isDuplicate
                             ? 'onboarding.import_account.duplicate_account_body'
                             : 'onboarding.import_account.failed_body',
                     ),
-                    type: 'error',
-                })
+                )
             } finally {
                 zeroBytes(mnemonicIndices)
                 setProcessing(false)
@@ -257,7 +255,6 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
         markBackupComplete,
         getMnemonicIndices,
         navigation,
-        showToast,
         errorToast,
         t,
     ])

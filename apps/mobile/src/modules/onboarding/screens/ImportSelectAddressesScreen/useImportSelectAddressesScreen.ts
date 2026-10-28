@@ -76,7 +76,7 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
     const importWalletKeyId = isImportMode ? params.walletKeyId : null
 
     const { t } = useLanguage()
-    const { showToast } = useToast()
+    const { errorToast } = useToast()
     const allAccounts = useAllAccounts()
     const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const addressOf = useCallback(
@@ -237,12 +237,10 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
                 // import: the user holds the account, and their retry would
                 // then say "already added".
                 if (!hasCommittedRef.current) {
-                    // lanekeep-ignore-next-line pera/no-error-toast-in-catch reason: import_account.failed_* names this post-commit step; an unrecognized error would fall through showError to the generic errors.general.* copy
-                    showToast({
-                        type: 'error',
-                        title: t('onboarding.import_account.failed_title'),
-                        body: t('onboarding.import_account.failed_body'),
-                    })
+                    errorToast(
+                        t('onboarding.import_account.failed_title'),
+                        t('onboarding.import_account.failed_body'),
+                    )
                     exitFailedAccountFlow()
                     return
                 }
@@ -266,7 +264,7 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
         setSelectedAccountId,
         setAccounts,
         seedIdOf,
-        showToast,
+        errorToast,
         t,
         scope.chainId,
         addressOf,

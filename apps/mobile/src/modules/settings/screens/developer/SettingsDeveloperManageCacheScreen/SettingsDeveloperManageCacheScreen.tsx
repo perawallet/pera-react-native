@@ -31,7 +31,7 @@ import { useStyles } from './styles'
 export const SettingsDeveloperManageCacheScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const { showToast } = useToast()
+    const { showToast, errorToast } = useToast()
     const accounts = useAllAccounts()
     const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const resetBanners = useBannersStore(state => state.resetState)
@@ -56,12 +56,10 @@ export const SettingsDeveloperManageCacheScreen = () => {
                 type: 'success',
             })
         } catch {
-            // lanekeep-ignore-next-line pera/no-error-toast-in-catch reason: refresh_cache_error_* names this dev action; showError would fall through to the generic errors.general.* copy
-            showToast({
-                title: t('settings.developer.refresh_cache_error_title'),
-                body: t('settings.developer.refresh_cache_error_body'),
-                type: 'error',
-            })
+            errorToast(
+                t('settings.developer.refresh_cache_error_title'),
+                t('settings.developer.refresh_cache_error_body'),
+            )
         } finally {
             setIsRefreshing(false)
         }

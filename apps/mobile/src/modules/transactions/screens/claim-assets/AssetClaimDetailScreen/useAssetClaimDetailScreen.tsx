@@ -64,7 +64,7 @@ export const useAssetClaimDetailScreen =
         const accounts = useAllAccounts()
         const { copyToClipboard } = useClipboard()
         const { request: requestBottomSheet } = useBottomSheet()
-        const { showToast, errorToast } = useToast()
+        const { errorToast } = useToast()
         const { t } = useLanguage()
 
         const request = assetRequests[assetIndex] ?? null
@@ -92,13 +92,12 @@ export const useAssetClaimDetailScreen =
 
         const handleClaim = useCallback(() => {
             if (isClaimBlocked) {
-                showToast({
-                    title: t('errors.transaction.title'),
-                    body: t('messages.claim.insufficient_native_claim', {
+                errorToast(
+                    t('errors.transaction.title'),
+                    t('messages.claim.insufficient_native_claim', {
                         symbol: nativeSymbol,
                     }),
-                    type: 'error',
-                })
+                )
                 return
             }
 
@@ -116,8 +115,8 @@ export const useAssetClaimDetailScreen =
             push,
             assetIndex,
             request,
-            showToast,
             t,
+            errorToast,
             isClaimBlocked,
             nativeSymbol,
             scope,

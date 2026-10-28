@@ -58,9 +58,9 @@ vi.mock('@hooks/useErrorToast', () => ({
     useErrorToast: () => ({ showError: mockShowError }),
 }))
 
-const mockShowToast = vi.fn()
+const mockErrorToast = vi.fn()
 vi.mock('@hooks/useToast', () => ({
-    useToast: () => ({ showToast: mockShowToast }),
+    useToast: () => ({ errorToast: mockErrorToast }),
 }))
 
 vi.mock('@hooks/useLanguage')
@@ -266,7 +266,7 @@ describe('useDelegatedSweepSelectScreen', () => {
         ])
         expect(mockNavigate).toHaveBeenCalledWith('TabBar', { screen: 'Home' })
         expect(mockShowError).not.toHaveBeenCalled()
-        expect(mockShowToast).not.toHaveBeenCalled()
+        expect(mockErrorToast).not.toHaveBeenCalled()
     })
 
     it('handleAddSelected shows a toast and does not navigate when nothing was persisted', async () => {
@@ -282,8 +282,9 @@ describe('useDelegatedSweepSelectScreen', () => {
             await result.current.handleAddSelected()
         })
 
-        expect(mockShowToast).toHaveBeenCalledWith(
-            expect.objectContaining({ type: 'error' }),
+        expect(mockErrorToast).toHaveBeenCalledWith(
+            'rekey.rescan.nothing_imported_title',
+            'rekey.rescan.nothing_imported_body',
         )
         expect(mockNavigate).not.toHaveBeenCalled()
     })
