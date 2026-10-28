@@ -72,6 +72,7 @@ vi.mock('@tanstack/react-query', async () => ({
     ...(await vi.importActual<object>('@tanstack/react-query')),
     useQueryClient: () => ({ invalidateQueries: mocks.invalidateQueries }),
 }))
+vi.mock('@hooks/useLanguage')
 vi.mock('../useCardOwnerAccount', () => ({
     useCardOwnerAccount: () => mocks.owner as WalletAccount | null,
 }))
@@ -125,7 +126,11 @@ describe('useCardWithdraw', () => {
         })
         expect(mocks.submit).toHaveBeenCalledWith({
             unsignedTxs: ['REQ'],
-            source: expect.objectContaining({ name: 'card-withdraw-request' }),
+            source: {
+                name: 'card-withdraw-request',
+                description:
+                    'peraCard.signing.withdraw_request_source_description',
+            },
         })
         expect(mocks.invalidatePending).toHaveBeenCalled()
     })
@@ -143,7 +148,10 @@ describe('useCardWithdraw', () => {
         })
         expect(mocks.submit).toHaveBeenCalledWith({
             unsignedTxs: ['WITHDRAW'],
-            source: expect.objectContaining({ name: 'card-withdraw' }),
+            source: {
+                name: 'card-withdraw',
+                description: 'peraCard.signing.withdraw_source_description',
+            },
         })
         expect(mocks.invalidatePending).toHaveBeenCalled()
         // The card balance is read off the escrow account, so it has to be
@@ -165,7 +173,11 @@ describe('useCardWithdraw', () => {
         })
         expect(mocks.submit).toHaveBeenCalledWith({
             unsignedTxs: ['CANCEL'],
-            source: expect.objectContaining({ name: 'card-withdraw-cancel' }),
+            source: {
+                name: 'card-withdraw-cancel',
+                description:
+                    'peraCard.signing.withdraw_cancel_source_description',
+            },
         })
     })
 

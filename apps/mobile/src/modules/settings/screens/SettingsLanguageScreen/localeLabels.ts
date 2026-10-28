@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+/* oxlint-disable pera/no-hardcoded-ui-strings -- language names are endonyms, shown untranslated on purpose */
+
 const LOCALE_LABELS: Readonly<Record<string, string>> = {
     en: 'English',
     de: 'Deutsch',

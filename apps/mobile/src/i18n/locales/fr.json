@@ -1884,7 +1884,11 @@
             "step_auto_funding_label": "Autoriser le financement automatique depuis le compte lié",
             "proceed_button": "Continuer",
             "standing_authority_title": "Ce que vous autorisez",
-            "standing_authority_body": "Cette autorisation reste active jusqu’à ce que vous la désactiviez. Le plafond par transaction est fixé par le fournisseur de votre carte, pas par votre signature. Vous pouvez l’arrêter à tout moment en passant le type de financement sur Manuel."
+            "standing_authority_body": "Cette autorisation reste active jusqu’à ce que vous la désactiviez. Le plafond par transaction est fixé par le fournisseur de votre carte, pas par votre signature. Vous pouvez l’arrêter à tout moment en passant le type de financement sur Manuel.",
+            "add_funds_source_description": "Ajouter des fonds à votre Pera Card",
+            "withdraw_request_source_description": "Demander un retrait de votre Pera Card",
+            "withdraw_source_description": "Retirer de votre Pera Card",
+            "withdraw_cancel_source_description": "Annuler un retrait de Pera Card"
         },
         "auto_funding_signing": {
             "title": "Demande d’approbation de signature automatique",

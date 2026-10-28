@@ -35,6 +35,8 @@ import {
     displayUnitsToBaseUnits,
 } from '@perawallet/wallet-core-shared'
 import { useQueryClient } from '@tanstack/react-query'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
+import { useLanguage } from '@hooks/useLanguage'
 import { useCardScope } from './useCardScope'
 import { USDC_FALLBACK_DECIMALS } from '../utils/usdc'
 import { CardEscrowUnavailableError } from './useCardManualDeposit'
@@ -49,15 +51,19 @@ const ZERO = new Decimal(0)
 const SOURCES = {
     request: {
         name: 'card-withdraw-request',
-        description: 'Request a withdrawal from your Pera Card',
+        descriptionKey: i18nKey(
+            'peraCard.signing.withdraw_request_source_description',
+        ),
     },
     complete: {
         name: 'card-withdraw',
-        description: 'Withdraw from your Pera Card',
+        descriptionKey: i18nKey('peraCard.signing.withdraw_source_description'),
     },
     cancel: {
         name: 'card-withdraw-cancel',
-        description: 'Cancel a Pera Card withdrawal',
+        descriptionKey: i18nKey(
+            'peraCard.signing.withdraw_cancel_source_description',
+        ),
     },
 } as const
 
@@ -86,6 +92,7 @@ export type UseCardWithdrawResult = {
  * has no part in it, and there is one pending request per card at a time.
  */
 export const useCardWithdraw = (): UseCardWithdrawResult => {
+    const { t } = useLanguage()
     const scope = useCardScope()
     const queryClient = useQueryClient()
     const { mutateAsync: submit } = useSubmitAndConfirmMutation(scope)
@@ -169,7 +176,13 @@ export const useCardWithdraw = (): UseCardWithdrawResult => {
                 const { transactions: unsignedTxs } = await assignFeeToGroup({
                     transactions,
                 })
-                await submit({ unsignedTxs, source: SOURCES.request })
+                await submit({
+                    unsignedTxs,
+                    source: {
+                        name: SOURCES.request.name,
+                        description: t(SOURCES.request.descriptionKey),
+                    },
+                })
                 await invalidatePending()
             } catch (error) {
                 throw toError(error)
@@ -184,6 +197,7 @@ export const useCardWithdraw = (): UseCardWithdrawResult => {
             assignFeeToGroup,
             submit,
             invalidatePending,
+            t,
         ],
     )
 
@@ -203,7 +217,13 @@ export const useCardWithdraw = (): UseCardWithdrawResult => {
             const { transactions: unsignedTxs } = await assignFeeToGroup({
                 transactions,
             })
-            await submit({ unsignedTxs, source: SOURCES.complete })
+            await submit({
+                unsignedTxs,
+                source: {
+                    name: SOURCES.complete.name,
+                    description: t(SOURCES.complete.descriptionKey),
+                },
+            })
             await Promise.all([
                 invalidatePending(),
                 queryClient.invalidateQueries({
@@ -230,6 +250,7 @@ export const useCardWithdraw = (): UseCardWithdrawResult => {
         invalidatePending,
         queryClient,
         scope,
+        t,
     ])
 
     const cancel = useCallback<UseCardWithdrawResult['cancel']>(async () => {
@@ -244,14 +265,27 @@ export const useCardWithdraw = (): UseCardWithdrawResult => {
             const { transactions: unsignedTxs } = await assignFeeToGroup({
                 transactions,
             })
-            await submit({ unsignedTxs, source: SOURCES.cancel })
+            await submit({
+                unsignedTxs,
+                source: {
+                    name: SOURCES.cancel.name,
+                    description: t(SOURCES.cancel.descriptionKey),
+                },
+            })
             await invalidatePending()
         } catch (error) {
             throw toError(error)
         } finally {
             setIsCancelling(false)
         }
-    }, [requireCard, buildCancel, assignFeeToGroup, submit, invalidatePending])
+    }, [
+        requireCard,
+        buildCancel,
+        assignFeeToGroup,
+        submit,
+        invalidatePending,
+        t,
+    ])
 
     return {
         pending,
