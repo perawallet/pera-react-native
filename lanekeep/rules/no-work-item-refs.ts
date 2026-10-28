@@ -36,14 +36,17 @@ const NARRATION: readonly RegExp[] = [
 const PR_REFERENCE =
     /\(#\d{3,}\)|\bPR\s?#\d+\b|\b(?:pre|post)-#\d+\b|(?:^|[.:;!?]\s+)#\d{3,}\b/i
 // A bare duration is usually configuration ("a 10s default"); it counts as a
-// measurement only beside a word that marks it as observed.
+// measurement only beside a word that marks it as observed ("takes" needs a
+// "~" estimate, since "takes a 30s timeout" is configuration).
 const MEASURED_TIMING =
-    /\b(?:took|takes|taking|sat|run|measured|observed|outran|overran|p(?:50|90|95|99))\b[^.;]{0,40}?~?\d+(?:\.\d+)?\s?(?:ms|s)\b|~?\b\d+(?:\.\d+)?\s?(?:ms|s)\b[^.;]{0,40}?\b(?:took|sat|run|measured|observed|locally|on a dev laptop|on a loaded runner)\b/i
+    /\b(?:took|sat|measured|observed|outran|overran|p(?:50|90|95|99))\b[^.;]{0,40}?~?\d+(?:\.\d+)?\s?(?:ms|s)\b|\b(?:takes|taking)\s+~\d+(?:\.\d+)?\s?(?:ms|s)\b|~?\b\d+(?:\.\d+)?\s?(?:ms|s)\b[^.;]{0,40}?\b(?:took|sat|measured|observed|locally|on a dev laptop|on a loaded runner)\b/i
 
 // Tree-sitter prefilters with Rust's regex: Unicode `\b`/`\d`, no lookbehind,
 // and flags don't carry over. `check` re-tests in JS, so the gap can drop a
-// report but never add one. Query string literals unescape `\\` and `\"`.
-const PREFILTER = String.raw`(?i:used|previously|renamed|formerly|#\d|\d\s?m?s\b)`
+// report but never add one. The node text is raw, so the duration term also
+// spans a block-comment `*` or docstring indent that `commentProse` collapses.
+// Query string literals unescape `\\` and `\"`.
+const PREFILTER = String.raw`(?i:used|previously|renamed|formerly|#\d|\d[\s*]*m?s\b)`
 const PREDICATE = `${WORK_ITEM.source}|${PREFILTER}`
     .replace(/\\/g, '\\\\')
     .replace(/"/g, '\\"')

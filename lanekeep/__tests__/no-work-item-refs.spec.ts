@@ -26,6 +26,7 @@ describe('pera/no-work-item-refs', () => {
             'narration.bad.ts:13',
             'narration.bad.ts:14',
             'narration.bad.ts:15',
+            'narration.bad.ts:16',
             'refs.bad.mjs:1',
             'refs.bad.ts:1',
             'refs.bad.ts:2',

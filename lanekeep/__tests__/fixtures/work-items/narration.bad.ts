@@ -13,4 +13,8 @@ export const b = 2
 // One run sat 75s for a screen a second tap opened
 // The cold import takes ~5s under coverage
 // p95 was ~2.1s on a Galaxy S22
+/* One run sat
+ * 75
+ * s on CI */
+export const e = 4
 export const c = 3
