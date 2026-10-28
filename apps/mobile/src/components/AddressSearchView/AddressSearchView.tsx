@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback, useMemo } from 'react'
+import { useCallback, useMemo, type ReactNode } from 'react'
 import { addressOn, type WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
@@ -20,6 +20,7 @@ import {
     PWTouchableOpacity,
     PWView,
 } from '@components/core'
+import { ChainBadge } from '@components/ChainBadge'
 import { EmptyView } from '@components/EmptyView'
 import { AddressDisplay } from '@components/AddressDisplay'
 import {
@@ -77,6 +78,8 @@ export const AddressSearchView = ({
         hasResults,
         isNfdLoading,
         wrongNetworkMessage,
+        searchPlaceholder,
+        chainBadgeName,
     } = useAddressSearchView({
         scope,
         excludeAddress,
@@ -86,6 +89,12 @@ export const AddressSearchView = ({
         sendingAssetLabel,
         isSendingMultiChainAsset,
     })
+
+    const chainBadge = useMemo(
+        () =>
+            chainBadgeName ? <ChainBadge name={chainBadgeName} /> : undefined,
+        [chainBadgeName],
+    )
 
     const renderItem = useCallback(
         ({ item }: { item: AddressSearchItem }) => {
@@ -112,6 +121,7 @@ export const AddressSearchView = ({
                                 scope={scope}
                                 address={item.address}
                                 showCopy={false}
+                                trailing={chainBadge}
                                 style={styles.accountDisplay}
                             />
                         </PWTouchableOpacity>
@@ -128,6 +138,7 @@ export const AddressSearchView = ({
                                 account={item.account}
                                 showBalance={showAccountBalance}
                                 chainId={scope.chainId}
+                                badges={chainBadge}
                             />
                         </PWTouchableOpacity>
                     )
@@ -209,6 +220,7 @@ export const AddressSearchView = ({
             showAccountBalance,
             showAddIcon,
             scope,
+            chainBadge,
         ],
     )
 
@@ -247,13 +259,18 @@ export const AddressSearchView = ({
         [t, wrongNetworkMessage],
     )
 
-    const listEmptyComponent = isNfdLoading ? (
-        <PWView style={styles.loadingContainer}>
-            <PWLoadingIndicator />
-        </PWView>
-    ) : (
-        emptyComponent()
-    )
+    // An excluded address (the send's own account) can leave nothing to list
+    // before any query, which isn't a miss to report; other pickers keep it.
+    let listEmptyComponent: ReactNode = null
+    if (isNfdLoading) {
+        listEmptyComponent = (
+            <PWView style={styles.loadingContainer}>
+                <PWLoadingIndicator />
+            </PWView>
+        )
+    } else if (value.length > 0 || !excludeAddress) {
+        listEmptyComponent = emptyComponent()
+    }
 
     return (
         <PWView style={styles.container}>
@@ -263,7 +280,7 @@ export const AddressSearchView = ({
                 renderItem={renderItem}
                 keyExtractor={keyExtractor}
                 searchValue={value}
-                searchPlaceholder={t('address_entry.search_placeholder')}
+                searchPlaceholder={searchPlaceholder}
                 onSearchChange={setValue}
                 SearchInputComponent={SearchInput}
                 ListEmptyComponent={listEmptyComponent}

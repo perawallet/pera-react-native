@@ -41,13 +41,34 @@ const mockSetSendMode = vi.fn()
 const mockSetDestination = vi.fn()
 const mockErrorToast = vi.fn()
 
-const { mockCanSignWith, mockUseAllAccounts, mockGetArc59Config } = vi.hoisted(
-    () => ({
-        mockCanSignWith: vi.fn(),
-        mockUseAllAccounts: vi.fn(),
-        mockGetArc59Config: vi.fn(),
-    }),
-)
+const {
+    mockCanSignWith,
+    mockUseAllAccounts,
+    mockGetArc59Config,
+    mockSendScope,
+    mockSelectedAccount,
+    mockChainName,
+} = vi.hoisted(() => ({
+    mockCanSignWith: vi.fn(),
+    mockUseAllAccounts: vi.fn(),
+    mockGetArc59Config: vi.fn(),
+    mockSendScope: { value: { chainId: 'algorand', networkId: 'testnet' } },
+    mockSelectedAccount: {
+        value: {
+            id: 'sender',
+            custody: { kind: 'watch' },
+            chains: { algorand: { address: 'SENDERADDR' } } as Record<
+                string,
+                { address: string }
+            >,
+        },
+    },
+    mockChainName: { value: undefined as string | undefined },
+}))
+
+vi.mock('@hooks/useChainNameWhenMultiChain', () => ({
+    useChainNameWhenMultiChain: () => mockChainName.value,
+}))
 
 const mockVerifyNameAddress = vi.hoisted(() => vi.fn())
 vi.mock('@perawallet/wallet-core-nfd', () => ({
@@ -97,7 +118,7 @@ vi.mock('@hooks/useLanguage')
 
 vi.mock('@modules/transactions/hooks', () => ({
     useSendFunds: vi.fn(),
-    useSendScope: () => ({ chainId: 'algorand', networkId: 'testnet' }),
+    useSendScope: () => mockSendScope.value,
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
@@ -105,11 +126,11 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAccountBalancesQuery: vi.fn(),
     useAllAccounts: mockUseAllAccounts,
     useOnChainAccountStateQuery: vi.fn(),
-    useSelectedAccount: vi.fn(() => ({
-        id: 'sender',
-        custody: { kind: 'watch' },
-        chains: { algorand: { address: 'SENDERADDR' } },
-    })),
+    useSelectedAccount: () => mockSelectedAccount.value,
+    addressOn: (
+        account: { chains: Record<string, { address: string }> },
+        scope: { chainId: string },
+    ) => account.chains[scope.chainId]?.address,
     findAccountByAddressOn: (
         accounts: { chains: Record<string, { address: string }> }[],
         chainId: string,
@@ -147,6 +168,13 @@ afterEach(() => {
 describe('useSelectDestinationScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        mockSendScope.value = { chainId: 'algorand', networkId: 'testnet' }
+        mockSelectedAccount.value = {
+            id: 'sender',
+            custody: { kind: 'watch' },
+            chains: { algorand: { address: 'SENDERADDR' } },
+        }
+        mockChainName.value = undefined
 
         // Default to a pushed screen so the default header back button applies;
         // the close-control tests flip this to model the pure-NFT flow root.
@@ -621,6 +649,40 @@ describe('useSelectDestinationScreen', () => {
                 'send_funds.destination.nfd_unavailable_title',
                 expect.any(String),
             )
+        })
+    })
+
+    describe('what the picker shows for the send chain', () => {
+        it("excludes the sender's address on the send chain, not its default chain", () => {
+            mockSendScope.value = { chainId: 'ethereum', networkId: 'testnet' }
+            mockSelectedAccount.value = {
+                id: 'sender',
+                custody: { kind: 'watch' },
+                chains: {
+                    algorand: { address: 'SENDERADDR' },
+                    ethereum: { address: '0xSENDER' },
+                },
+            }
+
+            const { result } = renderHook(() => useSelectDestinationScreen())
+
+            expect(result.current.senderAddress).toBe('0xSENDER')
+        })
+
+        it('has no sender address to exclude on a chain the account is not on', () => {
+            mockSendScope.value = { chainId: 'ethereum', networkId: 'testnet' }
+
+            const { result } = renderHook(() => useSelectDestinationScreen())
+
+            expect(result.current.senderAddress).toBeUndefined()
+        })
+
+        it('passes on the chain name the header badge shows', () => {
+            mockChainName.value = 'Ethereum'
+
+            const { result } = renderHook(() => useSelectDestinationScreen())
+
+            expect(result.current.chainBadgeName).toBe('Ethereum')
         })
     })
 })

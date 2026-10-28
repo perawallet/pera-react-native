@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { ReactNode } from 'react'
 import { render, screen, fireEvent } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { AddressSearchView } from '../AddressSearchView'
@@ -58,7 +59,19 @@ vi.mock('@perawallet/wallet-core-chain-shared', () => ({
 }))
 
 // The real registry loads every chain's UI; the copy is the hook spec's concern.
-vi.mock('@modules/chain-ui', () => ({ chainUiFor: () => ({}) }))
+vi.mock('@modules/chain-ui', () => ({
+    chainUiFor: () => ({
+        addressSearchPlaceholder: 'address_entry.search_placeholder',
+    }),
+}))
+
+const mockChainName = vi.hoisted(() => ({
+    value: undefined as string | undefined,
+}))
+
+vi.mock('@hooks/useChainNameWhenMultiChain', () => ({
+    useChainNameWhenMultiChain: () => mockChainName.value,
+}))
 
 vi.mock('@perawallet/wallet-core-nfd', () => ({
     useNfdSearchQuery: vi.fn(() => ({ data: [], isLoading: false })),
@@ -87,7 +100,18 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
 
 vi.mock('@components/AddressDisplay', () => ({
     __esModule: true,
-    AddressDisplay: ({ address }: { address: string }) => address,
+    AddressDisplay: ({
+        address,
+        trailing,
+    }: {
+        address: string
+        trailing?: ReactNode
+    }) => (
+        <>
+            {address}
+            {trailing}
+        </>
+    ),
 }))
 
 vi.mock('@components/AccountDisplay', () => ({
@@ -127,6 +151,7 @@ describe('AddressSearchView', () => {
 
     beforeEach(() => {
         vi.clearAllMocks()
+        mockChainName.value = undefined
 
         vi.mocked(useContacts).mockReturnValue({
             findContacts: mockFindContacts,
@@ -137,7 +162,19 @@ describe('AddressSearchView', () => {
         mockFindContacts.mockReturnValue([])
     })
 
-    it('renders empty view when no matches found and input is empty', () => {
+    it('shows no empty view before typing when an address is excluded', () => {
+        render(
+            <AddressSearchView
+                scope={SCOPE}
+                onSelected={mockOnSelected}
+                excludeAddress='SENDER_ADDRESS_123'
+            />,
+        )
+
+        expect(screen.queryByText('address_entry.no_accounts_found')).toBeNull()
+    })
+
+    it('still shows the empty view before typing when nothing is excluded', () => {
         render(
             <AddressSearchView
                 scope={SCOPE}
@@ -146,7 +183,74 @@ describe('AddressSearchView', () => {
         )
 
         expect(screen.getByText('address_entry.no_accounts_found')).toBeTruthy()
+    })
+
+    it('renders the empty view when the typed query matches nothing', () => {
+        render(
+            <AddressSearchView
+                scope={SCOPE}
+                onSelected={mockOnSelected}
+            />,
+        )
+
+        const input = screen.getAllByPlaceholderText(
+            'address_entry.search_placeholder',
+        )[1]
+        fireEvent.change(input, { target: { value: 'nobody' } })
+
+        expect(screen.getByText('address_entry.no_accounts_found')).toBeTruthy()
         expect(screen.getByText('address_entry.no_accounts_body')).toBeTruthy()
+    })
+
+    it('hands the chain badge to account rows and contact rows when the chain is named', () => {
+        mockChainName.value = 'Ethereum'
+        vi.mocked(useAllAccounts).mockReturnValue([
+            {
+                chains: { algorand: { address: 'ABC123456789' } },
+                name: 'Test Account',
+            },
+        ] as unknown as ReturnType<typeof useAllAccounts>)
+        mockFindContacts.mockReturnValue([
+            { addresses: { algorand: 'CONT12345' }, name: 'Friend' },
+        ])
+
+        render(
+            <AddressSearchView
+                scope={SCOPE}
+                onSelected={mockOnSelected}
+                showAllContactsWhenEmpty
+            />,
+        )
+
+        expect(mockAccountResultRow).toHaveBeenCalledWith(
+            expect.objectContaining({ badges: expect.anything() }),
+        )
+        expect(screen.getAllByText('Ethereum')).toHaveLength(1)
+    })
+
+    it('shows no chain badge when the chain is not named', () => {
+        vi.mocked(useAllAccounts).mockReturnValue([
+            {
+                chains: { algorand: { address: 'ABC123456789' } },
+                name: 'Test Account',
+            },
+        ] as unknown as ReturnType<typeof useAllAccounts>)
+        mockFindContacts.mockReturnValue([
+            { addresses: { algorand: 'CONT12345' }, name: 'Friend' },
+        ])
+
+        render(
+            <AddressSearchView
+                scope={SCOPE}
+                onSelected={mockOnSelected}
+                showAllContactsWhenEmpty
+            />,
+        )
+
+        expect(mockAccountResultRow).toHaveBeenCalledWith(
+            expect.objectContaining({ badges: undefined }),
+        )
+        expect(screen.queryByText('Ethereum')).toBeNull()
     })
 
     it('shows matching accounts when searching', () => {
