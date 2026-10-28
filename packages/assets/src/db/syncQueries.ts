@@ -239,10 +239,10 @@ async function getStaleArc19CollectibleIds({
 }
 
 /**
- * Rows cached before assets carried their cross-chain group, so a held token
- * groups without waiting out the long TTL. Every pera-half write records the
- * group, null included, so a row comes back here once. Collectibles are never
- * grouped, which spares an NFT-heavy wallet a full refetch.
+ * Tokens no group read has answered for yet: rows cached before assets carried
+ * their cross-chain group, or whose read failed. A successful read stores the
+ * group, null included, so the row stops coming back here. Collectibles are
+ * never grouped, which spares an NFT-heavy wallet a full refetch.
  */
 async function getUnreadGroupAssetIds({
     db,

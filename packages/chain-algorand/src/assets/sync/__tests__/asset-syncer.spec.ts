@@ -52,6 +52,12 @@ vi.mock('@perawallet/wallet-core-assets', async importOriginal => ({
     getCollectibleIdsMissingUrl: getCollectibleIdsMissingUrlMock,
 }))
 
+const canCallIntegrityGuardedRouteMock = vi.hoisted(() => vi.fn(() => true))
+
+vi.mock('@perawallet/wallet-core-app-integrity', () => ({
+    canCallIntegrityGuardedRoute: canCallIntegrityGuardedRouteMock,
+}))
+
 const deviceIdGetMock = vi.hoisted(() => vi.fn(() => null as string | null))
 
 vi.mock('@perawallet/wallet-core-device', () => ({
@@ -93,6 +99,7 @@ describe('fetchAndPersistAssets', () => {
         getCollectibleIdsMissingUrlMock.mockResolvedValue([])
         deviceIdGetMock.mockReset()
         deviceIdGetMock.mockReturnValue(null)
+        canCallIntegrityGuardedRouteMock.mockReturnValue(true)
     })
 
     test('device-scoped: passes the network device id to fetchAssets', async () => {
@@ -177,6 +184,16 @@ describe('fetchAndPersistAssets', () => {
 
             expect(getStaleOrMissingAssetIdsMock).toHaveBeenCalledWith(
                 expect.objectContaining({ recheckUnreadGroup: true }),
+            )
+        })
+
+        test('skips the unread-group recheck while the group read cannot pass integrity', async () => {
+            canCallIntegrityGuardedRouteMock.mockReturnValue(false)
+
+            await fetchAndPersistAssets(['1'], MAINNET_SCOPE)
+
+            expect(getStaleOrMissingAssetIdsMock).toHaveBeenCalledWith(
+                expect.objectContaining({ recheckUnreadGroup: false }),
             )
         })
     })

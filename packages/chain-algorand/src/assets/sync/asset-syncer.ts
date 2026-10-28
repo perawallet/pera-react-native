@@ -24,6 +24,7 @@ import {
     getCollectibleIdsMissingUrl,
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
+import { canCallIntegrityGuardedRoute } from '@perawallet/wallet-core-app-integrity'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 
 import {
@@ -196,7 +197,9 @@ export async function fetchAndPersistAssets(
             hasCollectibleShape: hasAlgorandNftShape,
         },
         recheckArc19: { ttlMs: ARC19_COLLECTIBLE_RECHECK_TTL_MS },
-        recheckUnreadGroup: true,
+        // The group read is integrity-guarded; until it can succeed, a recheck
+        // would refetch every unread token on each sync for nothing.
+        recheckUnreadGroup: canCallIntegrityGuardedRoute(),
     })
     if (toFetch.length === 0) return
 

@@ -455,10 +455,10 @@ describe('asset metadata repository', () => {
             expect(await storedGroup()).toBeNull()
         })
 
-        it('records no group as null rather than leaving it unread', async () => {
+        it('leaves the group unread when no read has answered for it', async () => {
             await syncWithGroup(undefined)
 
-            expect(await storedGroup()).toBeNull()
+            expect(await storedGroup()).toBeUndefined()
         })
     })
 

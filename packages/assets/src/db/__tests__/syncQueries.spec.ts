@@ -389,7 +389,15 @@ describe('asset sync queries', () => {
     })
 
     describe('getStaleOrMissingAssetIds — unread group recheck', () => {
-        const seed = (type: PeraAssetType = 'standard_asset') =>
+        // Undefined stands for a row cached before assets carried their group,
+        // or one whose group read failed.
+        const seed = ({
+            type = 'standard_asset',
+            crossChainAssetGroup,
+        }: {
+            type?: PeraAssetType
+            crossChainAssetGroup?: null
+        } = {}) =>
             upsertAssets({
                 db,
                 items: [
@@ -398,17 +406,12 @@ describe('asset sync queries', () => {
                             isDeleted: false,
                             verificationTier: 'verified',
                             type,
+                            crossChainAssetGroup,
                         },
                     }),
                 ],
                 scope: MAINNET_SCOPE,
             })
-
-        // A row cached before assets carried their group.
-        const forgetGroup = () =>
-            db.run(
-                sql`update assets_pera set pera_metadata_json = json_remove(pera_metadata_json, '$.crossChainAssetGroup')`,
-            )
 
         const recheck = (recheckUnreadGroup = true) =>
             getStaleOrMissingAssetIds({
@@ -419,29 +422,33 @@ describe('asset sync queries', () => {
                 recheckUnreadGroup,
             })
 
-        it('rechecks a fresh token no sync has read the group of', async () => {
+        it('rechecks a fresh token no read has answered the group of', async () => {
             await seed()
-            await forgetGroup()
+
+            expect(await recheck()).toEqual(['31566704'])
+        })
+
+        it('keeps rechecking after a sync whose group read failed', async () => {
+            await seed()
+            await seed()
 
             expect(await recheck()).toEqual(['31566704'])
         })
 
         it('leaves a token whose group was read, even as none', async () => {
-            await seed()
+            await seed({ crossChainAssetGroup: null })
 
             expect(await recheck()).toEqual([])
         })
 
         it('leaves collectibles alone', async () => {
-            await seed('collectible')
-            await forgetGroup()
+            await seed({ type: 'collectible' })
 
             expect(await recheck()).toEqual([])
         })
 
         it('does not recheck when the caller omits the flag', async () => {
             await seed()
-            await forgetGroup()
 
             expect(await recheck(false)).toEqual([])
         })
