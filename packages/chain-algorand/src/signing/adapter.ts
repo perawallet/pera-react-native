@@ -79,6 +79,7 @@ import {
 } from './message/messageSigner'
 import { buildSiwxAuthData } from './message/siwx'
 import { resolveMinFeeForSender } from './minFeeResolver'
+import { algorandReviewedAddresses } from './reviewed-addresses'
 import { simulateInnerTransactions } from './simulateImpact'
 import { useAssignFeeToGroup } from './useAssignFeeToGroup'
 import { useMinFeeForSender } from './useMinFeeForSender'
@@ -117,6 +118,7 @@ export const algorandReviewerAdapter: ReviewerChainAdapter = {
     resolveAllSignerAddresses,
     getDelegatedUnsignableReason: getRekeyedUnsignableReason,
     decodeArbitraryDataForDisplay,
+    reviewedAddresses: algorandReviewedAddresses,
     toTransactionNative: transaction => {
         const algorand = readableAlgorandTransaction(transaction)
         const view = algorand && mapToDisplayableTransaction(algorand)
@@ -211,6 +213,8 @@ export const algorandMessageSignerAdapter: MessageSignerChainAdapter = {
     signsVerifiably: account => !isQuantumAccount(account),
     supports: supportsAlgorandMessageMethod,
     describe: describeAlgorandMessage,
+    // Arbitrary data and ARC-60 payloads name no counterparty to check.
+    reviewedAddresses: () => [],
     plan: planAlgorandMessage,
     assemble: assembleAlgorandMessage,
     authData: {

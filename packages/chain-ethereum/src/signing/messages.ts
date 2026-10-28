@@ -15,6 +15,7 @@ import {
     getAddress,
     getTypesForEIP712Domain,
     hexToBytes,
+    isAddress,
     isHex,
     recoverAddress,
     serializeSignature,
@@ -43,6 +44,8 @@ import {
     type MessagePlanContext,
     type MessageSignKind,
     type MessageSignerChainAdapter,
+    type ReviewedAddress,
+    type ReviewedAddressRole,
 } from '@perawallet/wallet-core-signing'
 import { areEvmAddressesEqual } from '../accounts/address-codec'
 import { eip155ChainIdOf } from '../blockchain/utils/caip19'
@@ -248,6 +251,69 @@ const typedDataTree = (typedData: TypedDataDefinition): MessageTreeNode[] => {
     ]
 }
 
+const ROLE_BY_FIELD_NAME: Record<string, ReviewedAddressRole> = {
+    spender: 'spender',
+    operator: 'operator',
+    verifyingContract: 'target',
+}
+
+// Read by the schema like the tree, so a permit the parser doesn't recognise
+// (DAI's `holder/spender/expiry/allowed`, a Permit2 with no readable deadline)
+// still has its spender checked.
+const schemaAddresses = (
+    types: Record<string, readonly TypedDataParameter[]>,
+    name: string,
+    type: string,
+    value: unknown,
+): ReviewedAddress[] => {
+    const element = ARRAY_TYPE.exec(type)?.[1]
+    if (element !== undefined) {
+        const items = Array.isArray(value) ? value : []
+        return items.flatMap(item =>
+            schemaAddresses(types, name, element, item),
+        )
+    }
+    if (types[type]) {
+        const record = isRecord(value) ? value : {}
+        return (types[type] ?? []).flatMap(field =>
+            schemaAddresses(types, field.name, field.type, record[field.name]),
+        )
+    }
+    if (type !== 'address') return []
+    if (typeof value !== 'string' || !isAddress(value, { strict: false })) {
+        return []
+    }
+    return [
+        {
+            address: value,
+            role: ROLE_BY_FIELD_NAME[name] ?? 'referenced-account',
+        },
+    ]
+}
+
+const typedDataAddresses = (payload: unknown): ReviewedAddress[] => {
+    let typedData: TypedDataDefinition
+    try {
+        typedData = readTypedData(payload)
+    } catch {
+        return []
+    }
+    const domain = typedData.domain ?? {}
+    const types = {
+        EIP712Domain: getTypesForEIP712Domain({ domain }),
+        ...(typedData.types as Record<string, readonly TypedDataParameter[]>),
+    }
+    return [
+        ...schemaAddresses(types, 'domain', 'EIP712Domain', domain),
+        ...schemaAddresses(
+            types,
+            'message',
+            typedData.primaryType as string,
+            typedData.message,
+        ),
+    ]
+}
+
 const describePersonalSign = (payload: unknown): MessageSummary => {
     const title = { key: TITLE_KEY }
     let message: Hex
@@ -444,6 +510,11 @@ export const createEvmMessageSignerAdapter = (
     signsVerifiably: (_account, kind) => isSignableKind(kind),
     supports,
     describe: describeWith(chain),
+    // personal_sign is free text, with no schema to say which part is an address.
+    reviewedAddresses: request =>
+        request.method === SIGN_TYPED_DATA_V4
+            ? typedDataAddresses(request.payload)
+            : [],
     plan: planWith(chain),
     assemble: assembleWith(chain),
 })
