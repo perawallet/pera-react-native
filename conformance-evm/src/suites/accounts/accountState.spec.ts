@@ -39,7 +39,11 @@ import { buildTransfer, signAndSend } from '../construction/support'
 const whitelist = { tokens: [] as string[] }
 beforeEach(() => {
     vi.spyOn(endpoints, 'fetchWhitelist').mockImplementation(async () =>
-        whitelist.tokens.map(assetId => ({ assetId, type: 'erc20' as const })),
+        whitelist.tokens.map(assetId => ({
+            assetId,
+            type: 'erc20' as const,
+            asset: { assetId },
+        })),
     )
 })
 
