@@ -138,7 +138,10 @@ describe('useFlaggedPasskeysQuery', () => {
 
     it('re-reads when the passkeys root is invalidated', async () => {
         mocks.readFlaggedPasskeyCredentials
-            .mockResolvedValueOnce({ flagged: [flagged('a')], isComplete: true })
+            .mockResolvedValueOnce({
+                flagged: [flagged('a')],
+                isComplete: true,
+            })
             .mockResolvedValueOnce({ flagged: [], isComplete: true })
         const { queryClient, wrapper } = setup()
 
@@ -163,9 +166,12 @@ describe('useFlaggedPasskeysQuery', () => {
         )
         const { wrapper } = setup()
 
-        const { result, rerender } = renderHook(() => useFlaggedPasskeysQuery(), {
-            wrapper,
-        })
+        const { result, rerender } = renderHook(
+            () => useFlaggedPasskeysQuery(),
+            {
+                wrapper,
+            },
+        )
         const first = result.current.flaggedPasskeys
         rerender()
 

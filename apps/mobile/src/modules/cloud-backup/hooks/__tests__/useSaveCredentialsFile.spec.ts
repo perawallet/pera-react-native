@@ -233,9 +233,7 @@ describe('useSaveCredentialsFile', () => {
         const { result } = renderSaveHook()
 
         const pending = result.current.saveCredentials('device', CREDENTIALS)
-        await waitFor(() =>
-            expect(saveToDevice).toHaveBeenCalledTimes(1),
-        )
+        await waitFor(() => expect(saveToDevice).toHaveBeenCalledTimes(1))
 
         expect(result.current.isSaving).toBe(false)
 

@@ -114,7 +114,9 @@ describe('useSaveBackupCredentialsFileMutation', () => {
             const input = variables(incomplete)
 
             await act(() =>
-                result.current.saveCredentialsFile(input).catch(() => undefined),
+                result.current
+                    .saveCredentialsFile(input)
+                    .catch(() => undefined),
             )
 
             expect(saveToDevice).not.toHaveBeenCalled()
