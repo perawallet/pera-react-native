@@ -78,6 +78,12 @@ export type Eip1193HandlerDeps = {
      * of the page's view without the connection being touched.
      */
     getAccounts: (chainId: ChainId) => DappAccount[]
+    /**
+     * Whether the page's origin is on a phishing list or imitates a known
+     * dApp. A flagged site never reconnects silently: it goes back through an
+     * approval, where the warning shows. Absent, every connected site may.
+     */
+    isSiteFlagged?: (origin: string) => Promise<boolean>
     now?: () => number
     proposalTtlMs?: number
     requestTtlMs?: number
@@ -164,6 +170,11 @@ export const createEip1193ConnectionHandler = (
 
     const getConnection = (origin: string) =>
         getConnectionById(eip1193ConnectionIdOf(origin))
+
+    // A check that fails counts as flagged: the approval it forces is safe.
+    const canReconnectSilently = async (origin: string): Promise<boolean> =>
+        !deps.isSiteFlagged ||
+        !(await deps.isSiteFlagged(origin).catch(() => true))
 
     const scopeOf = (chainId: ChainId): ChainScope => ({
         chainId,
@@ -301,7 +312,7 @@ export const createEip1193ConnectionHandler = (
         }
 
         const existing = await getConnection(origin)
-        if (existing) {
+        if (existing && (await canReconnectSilently(origin))) {
             const accounts = reportedAccounts(existing)
             if (accounts.length > 0) {
                 kit.recordActivity(existing.id)

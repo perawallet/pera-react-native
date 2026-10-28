@@ -91,6 +91,7 @@ const setup = (
         network?: NetworkId
         customGenesisHash?: string
         adapter?: DappRequestChainAdapter | null
+        isSiteFlagged?: (origin: string) => Promise<boolean>
     } = {},
 ) => {
     if (overrides.adapter !== null) {
@@ -110,6 +111,7 @@ const setup = (
             { address: ADDR_A, name: 'Main' },
             { address: ADDR_B, name: 'Savings' },
         ],
+        isSiteFlagged: overrides.isSiteFlagged,
         now: () => now,
         proposalTtlMs: 1_000,
         requestTtlMs: 1_000,
@@ -260,6 +262,68 @@ describe('DappConnectionHandler', () => {
             })
             expect(proposals).toHaveLength(0)
             expect((await store.get(ORIGIN))?.lastActiveAt).toBe(1_000_000)
+        })
+
+        it('sends a flagged site that was already connected back through an approval', async () => {
+            const isSiteFlagged = vi.fn(async () => true)
+            const { transport, registry, proposals } = setup([connected()], {
+                isSiteFlagged,
+            })
+            await registry.initialize()
+
+            void transport.send(ORIGIN, 'connect')
+            await flush()
+
+            expect(isSiteFlagged).toHaveBeenCalledWith(ORIGIN)
+            expect(proposals).toHaveLength(1)
+        })
+
+        it('refuses a flagged site a gesture-free reconnect', async () => {
+            const { transport, registry, proposals } = setup([connected()], {
+                isSiteFlagged: async () => true,
+            })
+            await registry.initialize()
+
+            const response = await transport.send(
+                ORIGIN,
+                'connect',
+                undefined,
+                { hasUserActivation: false },
+            )
+
+            expect(errorOf(response)?.code).toBe(JsonRpcErrorCode.Unauthorized)
+            expect(proposals).toHaveLength(0)
+        })
+
+        it('treats a failed site check as flagged', async () => {
+            const { transport, registry, proposals } = setup([connected()], {
+                isSiteFlagged: async () => {
+                    throw new Error('lists unavailable')
+                },
+            })
+            await registry.initialize()
+
+            void transport.send(ORIGIN, 'connect')
+            await flush()
+
+            expect(proposals).toHaveLength(1)
+        })
+
+        it('still reconnects an unflagged site silently', async () => {
+            const { transport, registry, proposals } = setup([connected()], {
+                isSiteFlagged: async () => false,
+            })
+            await registry.initialize()
+
+            const response = await transport.send(
+                ORIGIN,
+                'connect',
+                undefined,
+                { hasUserActivation: false },
+            )
+
+            expect(resultOf(response)).toMatchObject({ network: 'mainnet' })
+            expect(proposals).toHaveLength(0)
         })
 
         it("hands back the chain's empty signatures for exactly the accounts it returns, on approve and on reconnect", async () => {

@@ -79,6 +79,12 @@ export type DappHandlerDeps = {
      * from the page's view without the connection itself being touched.
      */
     getAccounts: () => DappAccount[]
+    /**
+     * Whether the page's origin is on a phishing list or imitates a known
+     * dApp. A flagged site never reconnects silently: it goes back through an
+     * approval, where the warning shows. Absent, every connected site may.
+     */
+    isSiteFlagged?: (origin: string) => Promise<boolean>
     now?: () => number
     proposalTtlMs?: number
     requestTtlMs?: number
@@ -163,6 +169,11 @@ export const createDappConnectionHandler = (
     let unsubscribe: (() => void) | null = null
     const openProposals = new Set<string>()
     const pendingTimers = new Set<ReturnType<typeof setTimeout>>()
+
+    // A check that fails counts as flagged: the approval it forces is safe.
+    const canReconnectSilently = async (origin: string): Promise<boolean> =>
+        !deps.isSiteFlagged ||
+        !(await deps.isSiteFlagged(origin).catch(() => true))
 
     const getConnection = async (
         origin: string,
@@ -280,10 +291,14 @@ export const createDappConnectionHandler = (
 
         const params = isRecord(request.params) ? request.params : {}
         const existing = await getConnection(ctx.origin)
+        const reconnecting =
+            existing && (await canReconnectSilently(ctx.origin))
+                ? existing
+                : undefined
         // Before any network answer: the wrong-network errors name the wallet's
         // active network, so running them first let an unapproved page read it
         // off a gesture-free connect(). A reconnect still needs no gesture.
-        if (!existing && !ctx.hasUserActivation) {
+        if (!reconnecting && !ctx.hasUserActivation) {
             return release(
                 jsonRpcError(
                     request.id,
@@ -314,15 +329,15 @@ export const createDappConnectionHandler = (
                 ),
             )
         }
-        if (existing) {
+        if (reconnecting) {
             await store().upsert({
-                ...existing,
+                ...reconnecting,
                 lastActiveAt: now(),
             })
             return release(
                 jsonRpcResult(
                     request.id,
-                    connectResult(adapter, existing, network),
+                    connectResult(adapter, reconnecting, network),
                 ),
             )
         }

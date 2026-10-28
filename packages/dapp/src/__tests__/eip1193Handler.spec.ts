@@ -150,6 +150,7 @@ const fakeAdapter = (
 type SetupOptions = {
     networks?: Partial<Record<ChainId, NetworkId>>
     disabled?: ChainId[]
+    isSiteFlagged?: (origin: string) => Promise<boolean>
 }
 
 const setup = (seed: Connection[] = [], options: SetupOptions = {}) => {
@@ -178,6 +179,7 @@ const setup = (seed: Connection[] = [], options: SetupOptions = {}) => {
                 address,
                 name: address,
             })),
+        isSiteFlagged: options.isSiteFlagged,
         now: () => 1_000_000,
         proposalTtlMs: 1_000,
         requestTtlMs: 1_000,
@@ -387,6 +389,59 @@ describe('createEip1193ConnectionHandler', () => {
                 undefined,
                 { hasUserActivation: false },
             )
+            expect(resultOf(response)).toEqual([ADDR_X])
+            expect(proposals).toHaveLength(0)
+        })
+
+        it('sends a flagged site that was already connected back through an approval', async () => {
+            const isSiteFlagged = vi.fn(async () => true)
+            const { transport, registry, proposals } = setup(
+                [connectedOn('ethereum')],
+                { isSiteFlagged },
+            )
+            await registry.initialize()
+
+            void transport.send(ORIGIN, 'eth_requestAccounts')
+            await flush()
+
+            expect(isSiteFlagged).toHaveBeenCalledWith(ORIGIN)
+            expect(proposals).toHaveLength(1)
+        })
+
+        it('refuses a flagged site a gesture-free reconnect', async () => {
+            const { transport, registry, proposals } = setup(
+                [connectedOn('ethereum')],
+                { isSiteFlagged: async () => true },
+            )
+            await registry.initialize()
+
+            const response = await transport.send(
+                ORIGIN,
+                'eth_requestAccounts',
+                undefined,
+                { hasUserActivation: false },
+            )
+
+            expect(errorOf(response)?.code).toBe(
+                EIP1193_ERROR_CODE.unauthorized,
+            )
+            expect(proposals).toHaveLength(0)
+        })
+
+        it('still answers an unflagged connected site silently', async () => {
+            const { transport, registry, proposals } = setup(
+                [connectedOn('ethereum')],
+                { isSiteFlagged: async () => false },
+            )
+            await registry.initialize()
+
+            const response = await transport.send(
+                ORIGIN,
+                'eth_requestAccounts',
+                undefined,
+                { hasUserActivation: false },
+            )
+
             expect(resultOf(response)).toEqual([ADDR_X])
             expect(proposals).toHaveLength(0)
         })
