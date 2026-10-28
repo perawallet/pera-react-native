@@ -27,11 +27,15 @@ import {
     describe,
     expect,
     it,
-    vi,
 } from 'vitest'
-import { fireEvent, renderHook, screen, waitFor } from '@testing-library/react'
+import {
+    act,
+    fireEvent,
+    renderHook,
+    screen,
+    waitFor,
+} from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
-import { Notifier } from 'react-native-notifier'
 import { Decimal } from 'decimal.js'
 
 import { server } from '@test-utils/msw-server'
@@ -180,11 +184,10 @@ describe('Flow: NFT gallery reflects a fresh opt-in across sort modes', () => {
 
         resetTestKeystore()
         useAccountsStore.getState().setAccounts([])
-        vi.mocked(Notifier.showNotification).mockClear()
 
         const { result: kms } = renderHook(() => useKMS())
         let key: Algo25KeyResult | null = null
-        await waitFor(async () => {
+        await act(async () => {
             key = await kms.current.createAlgo25Key({
                 mnemonicIndices: ALGO25_TEST_MNEMONIC_INDICES,
             })

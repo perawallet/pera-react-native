@@ -25,6 +25,7 @@ import {
     waitFor,
     within,
 } from '@testing-library/react'
+import { Notifier } from 'react-native-notifier'
 
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import { server } from '@test-utils/msw-server'
@@ -165,7 +166,7 @@ const TEST_PIN = '123456'
 
 const seedPin = async (): Promise<void> => {
     const { result } = renderHook(() => usePinCode())
-    await waitFor(async () => {
+    await act(async () => {
         await result.current.savePin(TEST_PIN)
         expect(await result.current.checkPinEnabled()).toBe(true)
     })
@@ -327,19 +328,12 @@ describe('cloud backup verification and enable', () => {
         await waitFor(() => expect(attempted).toHaveBeenCalled(), {
             timeout: SLOW_WAIT_TIMEOUT_MS,
         })
-        // Assert the absence explicitly rather than reading the store once:
-        // `isConfigured()` is already false the moment the flow starts, so
-        // a bare expectation passes at t=0 and proves nothing. This fails
-        // if registration ever quietly succeeds.
-        await expect(
-            waitFor(
-                () =>
-                    expect(useCloudBackupStore.getState().isConfigured()).toBe(
-                        true,
-                    ),
-                { timeout: 2000 },
-            ),
-        ).rejects.toThrow()
+        // The failure toast marks the mutation as settled; `isConfigured()` is
+        // false from the start, so reading it earlier would prove nothing.
+        await waitFor(() =>
+            expect(vi.mocked(Notifier.showNotification)).toHaveBeenCalled(),
+        )
+        expect(useCloudBackupStore.getState().isConfigured()).toBe(false)
         expect(await withBackupMnemonicIndices(i => Array.from(i))).toBeNull()
         expect(
             screen.queryByTestId('cloud_backup_store_encryption_key_screen'),

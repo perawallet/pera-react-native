@@ -86,13 +86,13 @@ const asRefusal = (error: unknown): Error =>
               error instanceof Error ? error.message : String(error),
           )
 
-const assembleOrRefuse = (
+const assembleOrRefuse = async (
     adapter: MessageSignerChainAdapter,
     request: MessageRequest,
     signatures: Signature[],
-): SignedMessage => {
+): Promise<SignedMessage> => {
     try {
-        return adapter.assemble(request, signatures)
+        return await adapter.assemble(request, signatures)
     } catch (error) {
         throw asRefusal(error)
     }
@@ -190,7 +190,7 @@ export const signMessageGroupOnDevice = async ({
         },
     )
 
-    const message = assembleOrRefuse(adapter, request, signatures)
+    const message = await assembleOrRefuse(adapter, request, signatures)
     const signedData: SignedData =
         group.data.type === 'auth-data'
             ? { type: 'auth-data', signature: message.signature.bytes }

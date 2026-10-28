@@ -15,6 +15,7 @@ import { useForm, type Control, type FieldErrors } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
     mailingAddressSchema,
+    OnboardingStep,
     useCardStore,
     useSubmitMailingAddressMutation,
     type MailingAddressFormValues,
@@ -24,7 +25,7 @@ import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { CardUsStatePickerContent } from '@modules/card/components/CardUsStatePicker'
-import { useCardErrorToast } from '@modules/card/hooks'
+import { useCardErrorToast, useCardOnboardingRouter } from '@modules/card/hooks'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
@@ -40,16 +41,13 @@ export type UseCardOnboardingMailingAddressScreenResult = {
     handleConfirm: () => void
 }
 
-/**
- * US residents who ship the card somewhere other than their residence. The
- * address step withheld the session token for them, so this submit is the one
- * that completes registration and hands back to the setup checklist.
- */
+/** US residents who ship the card somewhere other than their residence; KYC follows. */
 export const useCardOnboardingMailingAddressScreen =
     (): UseCardOnboardingMailingAddressScreenResult => {
         const scope = useCardScope()
         const { t } = useLanguage()
         const navigation = useAppNavigation()
+        const { goToNextStep } = useCardOnboardingRouter()
         const { errorToast } = useToast()
         const { request } = useBottomSheet()
         const showError = useCardErrorToast({
@@ -118,7 +116,7 @@ export const useCardOnboardingMailingAddressScreen =
                         ? { addressLine2: values.addressLine2 }
                         : {}),
                 })
-                navigation.navigate('CardOnboardingStatus')
+                goToNextStep({ localStep: OnboardingStep.Verification })
             } catch (error) {
                 await showError(error)
             }

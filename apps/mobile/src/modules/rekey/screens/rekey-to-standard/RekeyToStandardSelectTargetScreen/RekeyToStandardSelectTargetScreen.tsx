@@ -18,7 +18,8 @@ import { useRekeyToStandardSelectTargetScreen } from './useRekeyToStandardSelect
 
 export const RekeyToStandardSelectTargetScreen = () => {
     const { t } = useLanguage()
-    const { targets, handleSelect } = useRekeyToStandardSelectTargetScreen()
+    const { targets, chainId, handleSelect } =
+        useRekeyToStandardSelectTargetScreen()
 
     return (
         <PWScreen
@@ -35,6 +36,7 @@ export const RekeyToStandardSelectTargetScreen = () => {
                 onSelect={handleSelect}
                 emptyBody={t('rekey.to_standard.select.empty')}
                 rowTestIDPrefix='rekey-target-row'
+                chainId={chainId}
             />
         </PWScreen>
     )

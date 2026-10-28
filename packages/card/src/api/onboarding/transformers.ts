@@ -10,14 +10,25 @@
  limitations under the License
  */
 
-import type { RegistrationSettings } from '../../models'
+import { toEnumValueOrNull } from '@perawallet/wallet-core-shared'
+import { CardProvider, type RegistrationSettings } from '../../models'
 import type { RegistrationSettingsApiResponse } from './schema'
 
 export const transformRegistrationSettings = (
     response: RegistrationSettingsApiResponse,
 ): RegistrationSettings => ({
-    countries: response.countries ?? [],
+    countries: (response.countries ?? []).map(
+        ({ cardProvider, ...country }) => ({
+            ...country,
+            cardProvider: toEnumValueOrNull(CardProvider, cardProvider),
+        }),
+    ),
     usStates: response.usStates ?? [],
+    occupations: response.occupations ?? [],
+    sourcesOfWealth: response.sourcesOfWealth ?? [],
+    businessSectors: response.businessSectors ?? [],
+    employmentSectors: response.employmentSectors ?? [],
+    employmentStatuses: response.employmentStatuses ?? [],
     termsAndConditionsUrls: {
         us: response.links?.us?.termsAndConditions ?? null,
         intl: response.links?.intl?.termsAndConditions ?? null,

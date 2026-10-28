@@ -26,6 +26,7 @@ export default defineRule({
             '**/packages/*/src/**',
             '**/extensions/*/src/**',
             '**/conformance/src/**',
+            '**/conformance-evm/src/**',
         ],
     },
     // tree-sitter-typescript misparses some `typeof import(...)` type

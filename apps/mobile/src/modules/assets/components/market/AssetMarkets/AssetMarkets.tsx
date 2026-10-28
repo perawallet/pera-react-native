@@ -29,7 +29,7 @@ import {
     AssetNotificationButton,
     AssetTitle,
 } from '@modules/assets/components'
-import { ChainLabel } from '../../AssetGroupRow'
+import { ChainLabel } from '../../ChainLabel'
 import { PreferredAmount } from '@components/PreferredAmount'
 import { AssetPriceChart } from '../AssetPriceChart/AssetPriceChart'
 import { useChartInteraction } from '@hooks/useChartInteraction'
@@ -103,6 +103,9 @@ export const AssetMarkets = ({
     })
 
     const chartVisible = !!getPreference(UserPreferences.chartVisible)
+    const hasPriceHistory = useCapability({
+        chain: { chainId: scope.chainId, capability: 'priceHistory' },
+    })
 
     const {
         data: assetDetails,
@@ -165,7 +168,13 @@ export const AssetMarkets = ({
                         />
                     </PWView>
                 </PWView>
-                {isNetworkLineVisible && <ChainLabel chainId={scope.chainId} />}
+                {isNetworkLineVisible && (
+                    <ChainLabel
+                        chainId={scope.chainId}
+                        size='md'
+                        style={styles.chainLabel}
+                    />
+                )}
                 <PWView style={styles.priceContainer}>
                     <PWView>
                         {selectedPoint ? (
@@ -202,20 +211,22 @@ export const AssetMarkets = ({
                 </PWView>
             </PWView>
 
-            <ExpandablePanel isExpanded={chartVisible}>
-                <PWView style={styles.chartContainer}>
-                    <AssetPriceChart
-                        asset={asset}
-                        scope={scope}
-                        period={period}
-                        onSelectionChanged={handleDataPointSelection}
-                    />
-                    <ChartPeriodSelection
-                        value={period}
-                        onChange={setPeriod}
-                    />
-                </PWView>
-            </ExpandablePanel>
+            {hasPriceHistory && (
+                <ExpandablePanel isExpanded={chartVisible}>
+                    <PWView style={styles.chartContainer}>
+                        <AssetPriceChart
+                            asset={asset}
+                            scope={scope}
+                            period={period}
+                            onSelectionChanged={handleDataPointSelection}
+                        />
+                        <ChartPeriodSelection
+                            value={period}
+                            onChange={setPeriod}
+                        />
+                    </PWView>
+                </ExpandablePanel>
+            )}
 
             {canOpenDiscover && (
                 <PWTouchableOpacity

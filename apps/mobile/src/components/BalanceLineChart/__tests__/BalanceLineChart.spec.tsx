@@ -273,9 +273,7 @@ describe('BalanceLineChart', () => {
 
         expect(screen.getByText('Not available on this network')).toBeTruthy()
         expect(
-            screen.getByText(
-                "This needs Pera services, which aren't available on BetaNet or custom nodes. Switch to MainNet or TestNet.",
-            ),
+            screen.getByText("Pera services aren't available on this network."),
         ).toBeTruthy()
         expect(screen.queryByTestId('line-chart')).toBeNull()
     })

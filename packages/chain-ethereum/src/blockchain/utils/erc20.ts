@@ -12,10 +12,13 @@
 
 import { Decimal } from 'decimal.js'
 import {
+    BaseError,
     decodeFunctionResult,
     encodeFunctionData,
     erc20Abi,
     getAddress,
+    hexToString,
+    IntegerOutOfRangeError,
     multicall3Abi,
     type Address,
     type Hex,
@@ -34,6 +37,54 @@ import { partition } from '@perawallet/wallet-core-shared'
 import type { EvmChain } from '../../chains/types'
 import { createEvmClient } from './createEvmClient'
 
+const bytes32TextAbi = [
+    {
+        type: 'function',
+        name: 'name',
+        stateMutability: 'view',
+        inputs: [],
+        outputs: [{ type: 'bytes32' }],
+    },
+    {
+        type: 'function',
+        name: 'symbol',
+        stateMutability: 'view',
+        inputs: [],
+        outputs: [{ type: 'bytes32' }],
+    },
+] as const
+
+// A bytes32 word read as a string head is an offset far past the safe-integer
+// range, which viem's decoder rejects with this error.
+const isBytes32Text = (error: unknown): boolean =>
+    error instanceof BaseError &&
+    error.walk(cause => cause instanceof IntegerOutOfRangeError) !== null
+
+// MKR and SAI return bytes32 for name and symbol, which the string decoder
+// fails on. Only that failure retries as bytes32: after any other error the
+// retry would decode a string token's ABI head as text.
+const readText = async (
+    client: PublicClient,
+    address: Address,
+    functionName: 'name' | 'symbol',
+): Promise<string> => {
+    try {
+        return await client.readContract({
+            address,
+            abi: erc20Abi,
+            functionName,
+        })
+    } catch (error) {
+        if (!isBytes32Text(error)) throw error
+        const packed = await client
+            .readContract({ address, abi: bytes32TextAbi, functionName })
+            .catch(() => {
+                throw error
+            })
+        return hexToString(packed, { size: 32 })
+    }
+}
+
 /**
  * The contract's own answers, with no Pera opinion: always unverified. The
  * device-local flags stay unset so persisting it keeps the user's own.
@@ -47,8 +98,8 @@ export const readErc20 = async (
     const client = createEvmClient(scope, ctx, chain)
     const address = getAddress(assetId)
     const [name, symbol, decimals, totalSupply] = await Promise.all([
-        client.readContract({ address, abi: erc20Abi, functionName: 'name' }),
-        client.readContract({ address, abi: erc20Abi, functionName: 'symbol' }),
+        readText(client, address, 'name'),
+        readText(client, address, 'symbol'),
         client.readContract({
             address,
             abi: erc20Abi,

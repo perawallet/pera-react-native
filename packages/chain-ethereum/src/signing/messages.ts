@@ -16,6 +16,7 @@ import {
     getTypesForEIP712Domain,
     hexToBytes,
     isHex,
+    recoverAddress,
     serializeSignature,
     toHex,
     validateTypedData,
@@ -54,6 +55,7 @@ import {
 } from '../ledger/messagePayload'
 import { isRecord } from './adapter'
 import {
+    openTaggedDigest,
     personalMessageDigest,
     typedDataDigest,
     type TaggedDigest,
@@ -386,33 +388,47 @@ const planWith =
         ]
     }
 
-const assemble = (
-    request: MessageRequest,
-    signatures: Signature[],
-): SignedMessage => {
-    const [signature] = signatures
-    if (
-        !supports(request.method) ||
-        signatures.length !== 1 ||
-        signature.requestIndex !== 0 ||
-        signature.scheme !== 'secp256k1' ||
-        !areEvmAddressesEqual(signature.signer, request.signer)
-    ) {
-        throw new Error(
-            'An EVM message takes exactly one secp256k1 signature, from its signer',
+const assembleWith =
+    (chain: EvmChain) =>
+    async (
+        request: MessageRequest,
+        signatures: Signature[],
+    ): Promise<SignedMessage> => {
+        const [signature] = signatures
+        if (
+            !supports(request.method) ||
+            signatures.length !== 1 ||
+            signature.requestIndex !== 0 ||
+            signature.scheme !== 'secp256k1' ||
+            !areEvmAddressesEqual(signature.signer, request.signer)
+        ) {
+            throw new Error(
+                'An EVM message takes exactly one secp256k1 signature, from its signer',
+            )
+        }
+        const { tag, digest } = openTaggedDigest(
+            planMessage(request, chain, false).digest,
         )
+        const viemSignature = toViemSignature(signature.bytes, tag)
+        // Signers label signatures with the address they were asked for, not
+        // the key that signed, so only recovery proves whose signature this is.
+        const recovered = await recoverAddress({
+            hash: digest,
+            signature: viemSignature,
+        })
+        if (!areEvmAddressesEqual(recovered, request.signer)) {
+            throw new Error(
+                `The signature recovers to ${recovered}, not the signer ${request.signer}`,
+            )
+        }
+        return {
+            scope: request.scope,
+            signature: {
+                ...signature,
+                bytes: hexToBytes(serializeSignature(viemSignature)),
+            },
+        }
     }
-    const tag = request.method === PERSONAL_SIGN ? 'eip191-message' : 'eip712'
-    return {
-        scope: request.scope,
-        signature: {
-            ...signature,
-            bytes: hexToBytes(
-                serializeSignature(toViemSignature(signature.bytes, tag)),
-            ),
-        },
-    }
-}
 
 export const createEvmMessageSignerAdapter = (
     chain: EvmChain,
@@ -429,5 +445,5 @@ export const createEvmMessageSignerAdapter = (
     supports,
     describe: describeWith(chain),
     plan: planWith(chain),
-    assemble,
+    assemble: assembleWith(chain),
 })

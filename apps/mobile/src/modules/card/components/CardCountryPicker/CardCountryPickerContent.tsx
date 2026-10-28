@@ -10,33 +10,26 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
 import type { SupportedCountry } from '@perawallet/wallet-core-card'
-import {
-    PWButton,
-    PWFlatList,
-    PWLoadingIndicator,
-    PWText,
-    PWTouchableOpacity,
-    PWView,
-} from '@components/core'
-import { SheetHeader } from '@modules/bottom-sheet'
-import { SearchInput } from '@components/SearchInput'
-import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
+import { CardPickerSheetContent } from '../CardPickerSheet'
 import { isoToFlagEmoji } from '../../utils/isoToFlagEmoji'
 import { useCardCountryPicker } from './useCardCountryPicker'
-import { useStyles } from './styles'
 
 export type CardCountryPickerContentProps = {
     /** Sheet header title; defaults to the country-of-residence copy. */
     title?: string
 }
 
+const getKey = (country: SupportedCountry) => country.id
+const getTestID = (country: SupportedCountry) =>
+    `card-country-${country.iso3166alpha2}`
+const getLabel = (country: SupportedCountry) =>
+    `${isoToFlagEmoji(country.iso3166alpha2)}  ${country.name}`
+
 export const CardCountryPickerContent = ({
     title,
 }: CardCountryPickerContentProps) => {
-    const styles = useStyles()
     const { t } = useLanguage()
     const {
         search,
@@ -48,77 +41,29 @@ export const CardCountryPickerContent = ({
         handleSelect,
     } = useCardCountryPicker()
 
-    const renderItem = useCallback(
-        ({ item }: { item: SupportedCountry }) => (
-            <PWTouchableOpacity
-                style={styles.row}
-                onPress={() => handleSelect(item)}
-                testID={`card-country-${item.iso3166alpha2}`}
-            >
-                <PWText variant='body'>
-                    {`${isoToFlagEmoji(item.iso3166alpha2)}  ${item.name}`}
-                </PWText>
-            </PWTouchableOpacity>
-        ),
-        [handleSelect, styles.row],
-    )
-
-    const keyExtractor = useCallback((item: SupportedCountry) => item.id, [])
-
     return (
-        <PWView style={styles.container}>
-            <SheetHeader
-                title={
-                    title ?? t('peraCard.create_account.country_picker_title')
-                }
-            />
-
-            {isError ? (
-                <EmptyView
-                    style={styles.center}
-                    title={t('peraCard.create_account.country_error_title')}
-                    body={t('peraCard.create_account.country_error_body')}
-                    button={
-                        <PWButton
-                            variant='secondary'
-                            title={t('peraCard.create_account.country_retry')}
-                            onPress={refetch}
-                        />
-                    }
-                />
-            ) : isLoading ? (
-                <PWView style={styles.center}>
-                    <PWLoadingIndicator />
-                </PWView>
-            ) : (
-                <PWView style={styles.content}>
-                    <SearchInput
-                        value={search}
-                        onChangeText={setSearch}
-                        placeholder={t(
-                            'peraCard.create_account.country_search_placeholder',
-                        )}
-                    />
-                    <PWFlatList
-                        inBottomSheet
-                        data={countries}
-                        renderItem={renderItem}
-                        keyExtractor={keyExtractor}
-                        style={styles.list}
-                        keyboardShouldPersistTaps='handled'
-                        ListEmptyComponent={
-                            <EmptyView
-                                title={t(
-                                    'peraCard.create_account.country_empty_title',
-                                )}
-                                body={t(
-                                    'peraCard.create_account.country_empty_body',
-                                )}
-                            />
-                        }
-                    />
-                </PWView>
-            )}
-        </PWView>
+        <CardPickerSheetContent
+            title={title ?? t('peraCard.create_account.country_picker_title')}
+            items={countries}
+            search={search}
+            onSearchChange={setSearch}
+            isLoading={isLoading}
+            isError={isError}
+            onRetry={refetch}
+            onSelect={handleSelect}
+            getKey={getKey}
+            getLabel={getLabel}
+            getTestID={getTestID}
+            copy={{
+                searchPlaceholder: t(
+                    'peraCard.create_account.country_search_placeholder',
+                ),
+                emptyTitle: t('peraCard.create_account.country_empty_title'),
+                emptyBody: t('peraCard.create_account.country_empty_body'),
+                errorTitle: t('peraCard.create_account.country_error_title'),
+                errorBody: t('peraCard.create_account.country_error_body'),
+                retry: t('peraCard.create_account.country_retry'),
+            }}
+        />
     )
 }

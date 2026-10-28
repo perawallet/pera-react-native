@@ -10,15 +10,18 @@
  limitations under the License
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
     chainAccountOf,
+    firstUnreachableChainsNote,
+    useAllAccounts,
     useSelectedAccountId,
     useSigningAccounts,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
     LEGACY_CHAIN_ID,
+    i18nKey,
     type ChainId,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
@@ -42,6 +45,7 @@ import {
     toValidatedBrowserUrl,
 } from '@modules/webview'
 import { useApprovalArming } from '@hooks/useApprovalArming.web'
+import { useLanguage } from '@hooks/useLanguage'
 import { toPeerDisplayText, toPeerHostLabel } from '@utils/peerDisplay'
 import { useDappRequest } from '../../hooks/useDappRequest.web'
 
@@ -84,6 +88,8 @@ type UseWcConnectScreenResult = {
     handlePressUrl: () => void
     /** A decision failed to reach the bridge; the button stays spinning by design. */
     deliveryError: boolean
+    /** Shown in place of the account list when no account can connect. */
+    noAccountsNote: string
     siteSafety: UseSiteSafetyGateResult
 }
 
@@ -133,6 +139,16 @@ export const useWcConnectScreen = (): UseWcConnectScreenResult => {
     // Every proposal reaching this window names one chain.
     const chainId = proposal?.requested.chains[0] ?? LEGACY_CHAIN_ID
     const accounts = useSigningAccounts(chainId)
+    const { t } = useLanguage()
+    const allAccounts = useAllAccounts()
+    const noAccountsNote = useMemo(
+        () =>
+            t(
+                firstUnreachableChainsNote(allAccounts, [chainId]) ??
+                    i18nKey('walletconnect.request.no_accounts'),
+            ),
+        [allAccounts, chainId, t],
+    )
     const scope = useSelectedScope(chainId)
     // Only Algorand's Pera backend serves the dApp registry, and it is keyed by
     // url alone, so every chain's proposal is checked against it there.
@@ -233,6 +249,7 @@ export const useWcConnectScreen = (): UseWcConnectScreenResult => {
         canOpenPeerUrl: toValidatedBrowserUrl(proposal?.peer.url) !== null,
         handlePressUrl,
         deliveryError,
+        noAccountsNote,
         siteSafety,
     }
 }

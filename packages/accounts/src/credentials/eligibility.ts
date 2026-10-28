@@ -28,6 +28,7 @@ import {
     getKeystoreStore,
     getProvider,
 } from '@perawallet/wallet-extension-provider'
+import { accountsChainAdapters } from '../chain-adapter'
 import type {
     HardwareWalletAccount,
     HardwareWalletDetails,
@@ -172,6 +173,24 @@ export const eligibleChainsInFamily = (account: WalletAccount): ChainId[] => {
     return eligibleChains(account).filter(id =>
         families.has(chains.get(id).descriptor.family),
     )
+}
+
+/**
+ * The chains an HD wallet's discovery walk probes, in registry order: every
+ * registered chain a BIP39 seed mints on that has an accounts adapter and is
+ * not switched off.
+ */
+export const hdDiscoveryChains = (): ChainId[] => {
+    const { chains } = getProvider()
+    return chains
+        .list()
+        .map(({ id }) => id)
+        .filter(
+            id =>
+                seedMintableScheme(id) !== undefined &&
+                accountsChainAdapters.has(id) &&
+                !chains.isSwitchedOff(id),
+        )
 }
 
 /** Whether the chain is registered and flagged to be enabled on a new account unasked. */

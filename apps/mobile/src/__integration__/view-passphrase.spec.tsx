@@ -98,7 +98,7 @@ const ViewPassphraseHost = ({
 const seedAlgo25Account = async (): Promise<WalletAccount> => {
     const { result: kms } = renderHook(() => useKMS())
     let key: Algo25KeyResult | null = null
-    await waitFor(async () => {
+    await act(async () => {
         key = await kms.current.createAlgo25Key({
             mnemonicIndices: ALGO25_TEST_MNEMONIC_INDICES,
         })
@@ -136,7 +136,7 @@ type SeededHDAccounts = {
 const seedHDWalletAccounts = async (): Promise<SeededHDAccounts> => {
     const { result: kms } = renderHook(() => useKMS())
     let rootKey: HDWalletKeyResult | null = null
-    await waitFor(async () => {
+    await act(async () => {
         rootKey = await kms.current.createHDWalletKey({
             mnemonicIndices: HD_TEST_MNEMONIC_24_INDICES,
         })
@@ -393,7 +393,7 @@ describe('Flow: View account passphrase', () => {
         // 'acknowledge'.
         const TEST_PIN = '123456'
         const { result: pinHook } = renderHook(() => usePinCode())
-        await waitFor(async () => {
+        await act(async () => {
             await pinHook.current.savePin(TEST_PIN)
             expect(await pinHook.current.checkPinEnabled()).toBe(true)
         })
@@ -421,7 +421,7 @@ describe('Flow: View account passphrase', () => {
 
         const TEST_PIN = '123456'
         const { result: pinHook } = renderHook(() => usePinCode())
-        await waitFor(async () => {
+        await act(async () => {
             await pinHook.current.savePin(TEST_PIN)
             expect(await pinHook.current.checkPinEnabled()).toBe(true)
         })

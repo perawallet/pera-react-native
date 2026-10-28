@@ -29,6 +29,8 @@ import {
 import {
     buildPaymentTransaction,
     buildTransactionSignRequest,
+    drainPendingSignRequests,
+    fireEvent,
     renderSignReview,
     screen,
     waitFor,
@@ -37,10 +39,12 @@ import {
     seedAlgo25Signer,
 } from '@test-utils/signing-review'
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
+import { useSettingsStore } from '@perawallet/wallet-core-settings'
 import {
     mockAlgodAccountInformation,
     mockAlgodTransactionParams,
 } from '@perawallet/wallet-core-chain-algorand/test-handlers'
+import { UserPreferences } from '@constants/user-preferences'
 
 const expectWarningPanel = async () => {
     await waitFor(
@@ -72,6 +76,7 @@ describe('Flow: signing review safety warnings', () => {
             }),
         )
         await seedAlgo25Signer()
+        drainPendingSignRequests()
     })
 
     it('surfaces the warning panel for a close-account transaction', async () => {
@@ -107,10 +112,84 @@ describe('Flow: signing review safety warnings', () => {
         await expectWarningPanel()
     })
 
-    // The security-guard *confirm* flow (rekey/asset-freeze → confirm → guard
-    // sheet) passes in isolation but is suite-flaky: the signing-overlay driver
-    // shows the first pending interactive request, and a leftover request from
-    // an earlier same-run test can shadow this one. A clean fix needs
-    // per-test signing-store isolation that doesn't disrupt the actor lifecycle
-    // (a plain store.resetState() does) — tracked in the test plan.
+    const renderRekeyReview = async () => {
+        const built = buildTransactionSignRequest({
+            sourceType: 'webview',
+            txs: [
+                buildPaymentTransaction({ rekeyTo: REVIEW_RECEIVER_ADDRESS }),
+            ],
+        })
+        const { confirm } = renderSignReview(built.request)
+        await waitFor(
+            () => {
+                expect(screen.getByTestId('signing-confirm-slide')).toBeTruthy()
+            },
+            { timeout: 10_000 },
+        )
+        confirm()
+        return built
+    }
+
+    it('Given rekey support is disabled, when the user confirms a rekey and cancels the security guard, then nothing is signed and the review stays open', async () => {
+        useSettingsStore
+            .getState()
+            .setPreference(UserPreferences.rekeySupportEnabled, false)
+
+        const { approve, reject } = await renderRekeyReview()
+
+        await waitFor(
+            () => {
+                expect(
+                    screen.getByText(
+                        'transactions.warning.rekey_confirm_title',
+                    ),
+                ).toBeTruthy()
+            },
+            { timeout: 10_000 },
+        )
+        // The review behind the sheet has its own Cancel; the guard sheet renders last.
+        const cancels = screen.getAllByText('common.cancel.label')
+        fireEvent.click(cancels[cancels.length - 1])
+
+        await waitFor(() => {
+            expect(
+                screen.queryByText('transactions.warning.rekey_confirm_title'),
+            ).toBeNull()
+        })
+        expect(screen.getByTestId('signing-confirm-slide')).toBeTruthy()
+        expect(approve).not.toHaveBeenCalled()
+        expect(reject).not.toHaveBeenCalled()
+    })
+
+    it('Given rekey support is enabled, when the user confirms a rekey and continues past the security guard, then the request is signed and delivered', async () => {
+        useSettingsStore
+            .getState()
+            .setPreference(UserPreferences.rekeySupportEnabled, true)
+
+        const { approve } = await renderRekeyReview()
+
+        await waitFor(
+            () => {
+                expect(
+                    screen.getByText(
+                        'transactions.warning.rekey_are_you_sure_title',
+                    ),
+                ).toBeTruthy()
+            },
+            { timeout: 10_000 },
+        )
+        expect(approve).not.toHaveBeenCalled()
+        fireEvent.click(
+            screen.getByText(
+                'transactions.warning.rekey_are_you_sure_continue',
+            ),
+        )
+
+        await waitFor(
+            () => {
+                expect(approve).toHaveBeenCalled()
+            },
+            { timeout: 10_000 },
+        )
+    })
 })

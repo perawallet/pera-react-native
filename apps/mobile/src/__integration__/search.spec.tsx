@@ -29,7 +29,7 @@ import {
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { useContacts } from '@perawallet/wallet-core-contacts'
+import { useContacts, useContactsStore } from '@perawallet/wallet-core-contacts'
 import {
     resetTestDatabase,
     seedAlgoAsset,
@@ -162,10 +162,9 @@ describe('Flow: Global search', () => {
         fireEvent.click(contactRow)
 
         await waitFor(() => {
-            const { result } = renderHook(() => useContacts())
-            expect(result.current.selectedContact?.addresses.algorand).toBe(
-                HD_TEST_ADDRESS,
-            )
+            expect(
+                useContactsStore.getState().selectedContact?.addresses.algorand,
+            ).toBe(HD_TEST_ADDRESS)
         })
     })
 

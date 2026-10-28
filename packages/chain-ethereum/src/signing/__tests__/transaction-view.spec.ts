@@ -17,6 +17,7 @@ import {
     toEthereumNative,
     type EthereumTransactionView,
 } from '../transaction-view'
+import type { EvmStandardCall } from '../standard-call-types'
 import { SENDER } from './fixtures'
 
 const TOKEN = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
@@ -57,7 +58,80 @@ const NFT_VIEW: EthereumTransactionView = {
     },
 }
 
+const SPENDER = '0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC'
+const CALL_VIEW: EthereumTransactionView = {
+    ...VIEW,
+    kind: 'contract-call',
+    data: '0x095ea7b3',
+    selector: '0x095ea7b3',
+    token: undefined,
+    call: {
+        kind: 'approve',
+        contract: TOKEN,
+        spender: SPENDER,
+        value: new Decimal(5),
+    },
+}
+
+const STANDARD_CALLS: EvmStandardCall[] = [
+    {
+        kind: 'transfer',
+        contract: TOKEN,
+        from: SENDER,
+        to: RECIPIENT,
+        value: new Decimal(5),
+    },
+    {
+        kind: 'transfer-from',
+        contract: TOKEN,
+        from: SPENDER,
+        to: RECIPIENT,
+        value: new Decimal(5),
+    },
+    {
+        kind: 'erc721-safe-transfer',
+        contract: NFT_CONTRACT,
+        from: SENDER,
+        to: RECIPIENT,
+        tokenId: '7',
+    },
+    {
+        kind: 'erc1155-transfer',
+        contract: NFT_CONTRACT,
+        from: SENDER,
+        to: RECIPIENT,
+        items: [{ tokenId: '7', amount: new Decimal(2) }],
+    },
+    {
+        kind: 'approve',
+        contract: TOKEN,
+        spender: SPENDER,
+        value: new Decimal(5),
+    },
+    {
+        kind: 'increase-allowance',
+        contract: TOKEN,
+        spender: SPENDER,
+        value: new Decimal(5),
+    },
+    {
+        kind: 'set-approval-for-all',
+        contract: NFT_CONTRACT,
+        operator: SPENDER,
+        isApproved: true,
+    },
+]
+
 describe('the Ethereum transaction view', () => {
+    it.each(STANDARD_CALLS.map(call => [call.kind, call] as const))(
+        'round-trips a contract call read as %s',
+        (_, call) => {
+            const view = { ...CALL_VIEW, call }
+
+            expect(readEthereumNative(toEthereumNative(view))).toEqual(view)
+        },
+    )
+
     it('round-trips through its native form', () => {
         const native = toEthereumNative(VIEW)
 
@@ -89,6 +163,29 @@ describe('the Ethereum transaction view', () => {
         [
             'an NFT whose token id is not decimal',
             { ...NFT_VIEW, nft: { ...NFT_VIEW.nft, tokenId: '0x7' } },
+        ],
+        [
+            'a standard call on a transfer view',
+            { ...VIEW, call: CALL_VIEW.call },
+        ],
+        [
+            'a standard call of an unknown kind',
+            { ...CALL_VIEW, call: { ...CALL_VIEW.call, kind: 'permit' } },
+        ],
+        [
+            'an approval without a spender',
+            { ...CALL_VIEW, call: { ...CALL_VIEW.call, spender: 'bob' } },
+        ],
+        [
+            'an ERC-1155 transfer with no items',
+            { ...CALL_VIEW, call: { ...STANDARD_CALLS[3], items: [] } },
+        ],
+        [
+            'a collection approval without a flag',
+            {
+                ...CALL_VIEW,
+                call: { ...STANDARD_CALLS[6], isApproved: 'yes' },
+            },
         ],
     ])('refuses a view with %s', (_, transaction) => {
         expect(() =>

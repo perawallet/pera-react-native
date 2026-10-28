@@ -321,16 +321,16 @@ describe('Flow: Settings → Passkeys removal', () => {
             ).toBeTruthy(),
         )
 
-        const flaggedRow = screen.getByTestId(
-            'settings_passkeys_item_flagged-cred',
-        )
-        expect(within(flaggedRow).queryByTestId(/_remove$/)).toBeFalsy()
-
         // The row renders before the migration read settles, and until it
         // does no row offers removal — so wait for the icon, not the row.
         const plainTrash = await within(
             screen.getByTestId('settings_passkeys_item_plain-cred'),
         ).findByTestId(/_remove$/)
+        expect(
+            within(
+                screen.getByTestId('settings_passkeys_item_flagged-cred'),
+            ).queryByTestId(/_remove$/),
+        ).toBeFalsy()
         fireEvent.click(plainTrash)
         await waitFor(() =>
             expect(hasButtonWithLabel('settings.passkeys.remove_confirm')).toBe(

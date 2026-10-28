@@ -138,3 +138,14 @@ export const nftHoldingsPageSchema = z.object({
 export const nftsResponseSchema = z.object({
     results: z.array(z.unknown()),
 })
+
+export const chartPointSchema = z.object({
+    /** UTC, to the second. */
+    datetime: z.string(),
+    /** USD per whole unit. */
+    price: z.string().regex(/^\d+\.\d{24}$/),
+})
+
+export const chartResponseSchema = z.array(chartPointSchema)
+
+export type ChartPointResponse = z.infer<typeof chartPointSchema>

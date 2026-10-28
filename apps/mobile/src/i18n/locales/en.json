@@ -451,7 +451,8 @@
     },
     "account_type_info": {
         "standard_title": "Algo25 Account",
-        "standard_description": "Your account is a standard Algorand account. It has not been rekeyed and it is not associated with a Ledger device. It was added to your wallet with its keys.",
+        "standard_description": "Your account is a standard Algorand account. It has not been rekeyed and it is not associated with a Ledger device. It was added to your wallet with its keys. Algo25 accounts support Algorand only. To use Ethereum or Base, create a Universal Wallet.",
+        "standard_unreachable_chains_note": "Other networks aren't available for Algo25 accounts.",
         "ledger_title": "Ledger account",
         "ledger_description": "Your account is a Ledger account. It was added to your wallet directly from the hardware device. All transactions for this account must be confirmed on your Ledger.",
         "watch_title": "Watch account",
@@ -919,7 +920,7 @@
         },
         "network_unavailable": {
             "title": "Not available on this network",
-            "body": "This needs Pera services, which aren't available on BetaNet or custom nodes. Switch to MainNet or TestNet.",
+            "body": "Pera services aren't available on this network.",
             "generic_body": "This feature isn't available right now."
         },
         "yes": "Yes",
@@ -1604,7 +1605,8 @@
             "otp_body_with_phone": "Enter the verification code we sent to {{phone}} to finish signing in.",
             "otp_invalid": "That code isn't correct. Please try again.",
             "send_again": "Send again",
-            "send_again_in": "Send again in {{count}}s"
+            "send_again_in": "Send again in {{count}}s",
+            "account_locked": "Your Pera Card account is temporarily locked. <0>Contact support</0> to unlock it."
         },
         "forgot_password": {
             "navigation_title": "Reset Password",
@@ -1711,6 +1713,8 @@
             "navigation_title": "Personal Information",
             "first_name_label": "First Name",
             "first_name_invalid": "Enter your first name",
+            "middle_name_label": "Middle Name (optional)",
+            "middle_name_invalid": "Use only letters, spaces, apostrophes and hyphens",
             "last_name_label": "Last Name",
             "last_name_invalid": "Enter your last name",
             "dob_label": "Date of Birth DD/MM/YYYY",
@@ -1721,13 +1725,55 @@
             "nationality_placeholder": "Select nationality",
             "nationality_required": "Select your nationality",
             "nationality_picker_title": "Nationality",
+            "additional_nationality_label": "Additional Nationality",
+            "add_nationality": "Add another nationality",
+            "remove_nationality": "Remove",
+            "additional_nationality_duplicate": "Each nationality can only be added once",
             "confirm_button": "Continue",
             "error_title": "Something went wrong",
             "error_body": "We couldn't save your details. Please try again.",
             "birth_country_label": "Country of Birth",
             "birth_country_placeholder": "Select country",
             "birth_country_picker_title": "Country of Birth",
-            "birth_country_required": "Please select your country of birth"
+            "birth_country_required": "Please select your country of birth",
+            "employment_status_label": "Employment Status",
+            "employment_sector_label": "Employment Sector",
+            "option_placeholder": "Select",
+            "portugal_investment_scheme": "I take part in a Portugal investment scheme"
+        },
+        "option_picker": {
+            "search_placeholder": "Search",
+            "empty_title": "No results found",
+            "empty_body": "Try a different search.",
+            "error_title": "Couldn't load the options",
+            "error_body": "Please check your connection and try again.",
+            "retry": "Try again"
+        },
+        "additional_details": {
+            "navigation_title": "Additional Information",
+            "body": "We need a few more details to meet the regulations where you live.",
+            "tin_label": "Tax Identification Number (TIN)",
+            "tin_invalid": "Enter your tax identification number (up to 20 characters)",
+            "tin_country_label": "TIN Issuing Country",
+            "tin_country_unsupported": "US tax identification numbers can't be used here",
+            "country_placeholder": "Select country",
+            "option_placeholder": "Select",
+            "occupation_label": "Occupation",
+            "occupation_other_label": "Your Occupation",
+            "source_of_wealth_label": "Source of Wealth",
+            "source_of_wealth_other_label": "Your Source of Wealth",
+            "business_sector_label": "Business Sector",
+            "annual_income_label": "Estimated Annual Income",
+            "annual_income_invalid": "Enter your estimated annual income (up to 50 characters)",
+            "income_country_label": "Country Where You Earn Income",
+            "add_income_country": "Add another country",
+            "remove_country": "Remove",
+            "income_country_duplicate": "Each country can only be added once",
+            "confirm_button": "Continue",
+            "error_title": "Something went wrong",
+            "error_body": "We couldn't save your details. Please try again.",
+            "unavailable_title": "Not available right now",
+            "unavailable_body": "We can't save these details at the moment. Please try again in a few minutes."
         },
         "address": {
             "navigation_title": "Residential Address",
@@ -1774,25 +1820,29 @@
             "error_body": "We couldn't start verification. Please try again.",
             "open_link_error_body": "We couldn't open the verification page. Please try again."
         },
-        "kyc_required": {
-            "title": "Finish verifying your identity",
-            "body": "Your identity check hasn't been completed yet. Verify your identity to continue your Pera Card application.",
-            "verify_button": "Verify your Account"
-        },
         "setup_status": {
             "title": "Finish setup and start spending on-chain",
             "documents_title": "Submit Your Documents",
+            "documents_locked_body": "Enter your details first, then verify your identity.",
             "documents_pending_label": "Pending",
+            "documents_preparing_label": "Setting up account",
             "documents_unverified_body": "Please verify your account to begin spending on-chain.",
             "documents_verify_button": "Verify your Account",
             "documents_pending_body": "Your verification has been submitted. We'll email you once it's complete.",
             "documents_verified_body": "Your identity has been verified.",
+            "documents_preparing_body": "Your identity is verified. We're setting up your account, which usually takes a few minutes.",
+            "documents_preparing_slow_body": "Your identity is verified. This is taking longer than usual. Try again in a few minutes.",
+            "documents_preparing_stalled_body": "Your identity is verified, but we couldn't finish setting up your account. Contact support to complete it.",
+            "documents_record_missing_body": "We couldn't load your sign-up. Sign in with your Pera Card password to continue.",
+            "documents_account_locked_body": "Your Pera Card account is temporarily locked. Contact support to unlock it.",
             "documents_rejected_body": "We couldn't verify your identity. Please contact support for help.",
             "documents_error_body": "We couldn't check your verification status. Please try again.",
             "documents_retry": "Try again",
+            "sign_in_to_finish_title": "Sign in to finish",
+            "sign_in_to_finish_body": "Your identity is verified. Sign in with your Pera Card password to finish setting up your account.",
             "details_title": "Enter Your Details",
             "details_body": "Verify your details and enter your address to proceed.",
-            "details_button": "Verify your Account",
+            "details_button": "Enter Your Details",
             "connect_funds_title": "Connect Funds",
             "connect_funds_body": "Connect one of your Pera accounts as a funding source to start using your Pera Card.",
             "connect_funds_button": "Connect a Pera Account",
@@ -2388,6 +2438,7 @@
         "last_7_days": "Last 7 Days",
         "last_30_days": "Last 30 Days",
         "last_year": "Last 1 Year",
+        "partial_total": "Excludes holdings without a price",
         "info": {
             "title": "How we calculate portfolio value",
             "body": "The Total Portfolio Value is calculated by adding up the value of all asset values and Algo available in your accounts, excluding Watch Accounts.\n\nAsset values are calculated based on daily values fetched from several ecosystem partners.  Since some asset values are not available, the Total Portfolio Value should be considered an estimation."
@@ -2654,6 +2705,7 @@
         "qrview": {
             "error_title": "No Account Selected",
             "error_body": "No account has been selected, please select an account first",
+            "chain_unavailable_title": "{{chain}} isn't available for this account",
             "copy_address": "Copy Address",
             "share": "Share Address"
         }
@@ -3178,6 +3230,15 @@
             "deadline_label": "Deadline",
             "never": "Never"
         },
+        "collection_approval": {
+            "warning": "This lets the operator transfer every item you hold in this collection, including ones you get later, until you revoke it.",
+            "operator_label": "Operator",
+            "operator_caption": "Operator: {{address}}",
+            "collection_label": "Collection"
+        },
+        "token_approval": {
+            "revoke_note": "This removes the address's permission to move this asset."
+        },
         "arbitrary_data_details": {
             "unnamed": "Someone",
             "description": "A data signing request is a request to sign arbitrary data. This is a commonly used by services to verify ownership of an account, but it does not incur any fees.",
@@ -3324,6 +3385,8 @@
             "asset_freeze": "Asset Freeze",
             "app_call": "App Call",
             "contract_call": "Contract Call",
+            "approval": "Approval",
+            "revoke_approval": "Revoke Approval",
             "key_registration": "Key Registration",
             "heartbeat": "Heartbeat",
             "state_proof": "State Proof",
@@ -3483,6 +3546,16 @@
             "speed_up": "Speed Up",
             "cancel": "Cancel Transaction",
             "review_notice": "Replaces transaction {{txId}}"
+        },
+        "suspected_poisoning": {
+            "marker": "Suspected address poisoning",
+            "title": "Suspected address poisoning",
+            "body": "This transfer moved nothing of value and comes from an address made to look like one you know. Scammers send these so their address shows up in your history and gets copied later. Don't copy it or send to it.",
+            "sender_label": "This address",
+            "reuse_title": "This address imitates one you know",
+            "reuse_body": "It starts and ends like an address you know, but it isn't the same. Compare the full addresses before you use it.",
+            "reuse_confirm": "Continue anyway",
+            "reuse_cancel": "Cancel"
         }
     },
     "tabbar": {
@@ -3504,6 +3577,7 @@
             "permissions_sign_transaction": "Request transaction signing",
             "permissions_sign_data": "Request arbitrary data signing",
             "accounts_title": "SELECT ACCOUNTS",
+            "no_accounts": "None of your accounts can connect on this network.",
             "success_sheet_title": "You are connected to {{name}}",
             "success_sheet_body": "Please return to {{name}} to continue and finish your operation. You can find all connected Sessions in the dedicated Settings page.",
             "success_sheet_return_to_dapp": "Return to {{name}}",

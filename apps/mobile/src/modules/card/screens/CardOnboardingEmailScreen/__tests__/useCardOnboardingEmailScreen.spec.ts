@@ -118,6 +118,7 @@ const france: SupportedCountry = {
     name: 'France',
     callingCode: '33',
     canSignUp: true,
+    cardProvider: null,
 }
 
 const russia: SupportedCountry = {
@@ -126,6 +127,7 @@ const russia: SupportedCountry = {
     name: 'Russia',
     callingCode: '7',
     canSignUp: false,
+    cardProvider: null,
 }
 
 const selectCountry = async (

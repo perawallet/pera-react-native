@@ -133,6 +133,24 @@ running either. `algorand/algod:nightly` is not a substitute; it still lacks `pq
 this LocalNet instead of a mock. [`conformance/README.md`](conformance/README.md) covers what it
 proves, its prerequisites and its known gaps.
 
+## Local EVM nodes (evmnet)
+
+```sh
+pnpm evmnet          # six Anvil nodes, one per EVM chain on its testnet chain id (ports 8545-8550)
+pnpm evmnet:status
+pnpm evmnet:reset    # recreate every node from a fresh chain
+pnpm evmnet:stop
+```
+
+Docker is the only prerequisite; the Foundry image is pinned by digest in
+`tools/dev/evmnet.compose.yml`.
+
+### EVM conformance suite
+
+`pnpm test:conformance:evm` runs the app's EVM derivation, signing, transfer, fee, submission and
+error-handling code against these nodes, with Foundry's `cast` as the independent oracle.
+[`conformance-evm/README.md`](conformance-evm/README.md) covers what it proves and its known gaps.
+
 ## Workspace layout
 
 ```
@@ -162,6 +180,7 @@ pera-react-native/
 │   ├── provider/            # `getProvider()` accessor used by packages
 │   └── …                    # ledger-*, keystore-chrome, passkey-autofill
 ├── conformance/             # LocalNet conformance suite
+├── conformance-evm/         # EVM conformance suite (Anvil)
 ├── tools/                   # Development and CI scripts
 ├── specs/                   # OpenAPI specifications
 └── docs/                    # Project documentation

@@ -22,6 +22,7 @@ import {
     vi,
 } from 'vitest'
 import {
+    act,
     fireEvent,
     renderHook,
     screen,
@@ -46,7 +47,7 @@ import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { useViewPassphraseFlow } from '@modules/view-passphrase'
 import { BottomSheetManager } from '@modules/bottom-sheet'
 
-import { isElementDisabled } from '@test-utils/rnw'
+import { findEnabledByTestId } from '@test-utils/rnw'
 import {
     QUANTUM_TEST_ADDRESS,
     QUANTUM_TEST_MNEMONIC,
@@ -95,7 +96,7 @@ const ViewPassphraseHost = ({
 const seedQuantumAccount = async (): Promise<WalletAccount> => {
     const { result: kms } = renderHook(() => useKMS())
     let key: QuantumKeyResult | null = null
-    await waitFor(async () => {
+    await act(async () => {
         key = await kms.current.createQuantumKey({
             chain: algorandQuantumDerivation,
             mnemonicIndices: QUANTUM_TEST_MNEMONIC_INDICES,
@@ -142,13 +143,9 @@ const advanceToDisplayedWords = async (): Promise<void> => {
             screen.getByTestId(`passphrase_acknowledge_bottom_sheet_row_${i}`),
         )
     }
-    const revealButton = screen.getByTestId(
-        'passphrase_acknowledge_bottom_sheet_reveal',
-    ) as HTMLButtonElement
-    await waitFor(() => {
-        expect(isElementDisabled(revealButton)).toBe(false)
-    })
-    fireEvent.click(revealButton)
+    fireEvent.click(
+        await findEnabledByTestId('passphrase_acknowledge_bottom_sheet_reveal'),
+    )
     await waitFor(
         () => {
             expect(

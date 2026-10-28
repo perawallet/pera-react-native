@@ -17,7 +17,10 @@ import { Decimal } from 'decimal.js'
 import { useAccountOverviewHeader } from '../useAccountOverviewHeader'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
-import { setChainEnabled } from '@test-utils/capability-overrides'
+import {
+    setCapabilityOverrides,
+    setChainEnabled,
+} from '@test-utils/capability-overrides'
 import { findNativeAsset } from '@perawallet/wallet-core-assets'
 import { registerEthereumChain } from '@test-utils/chain-fixtures'
 import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
@@ -189,6 +192,7 @@ describe('useAccountOverviewHeader', () => {
 
     it('hides the chart and trend on a chain with no balance history', () => {
         registerEthereumChain()
+        setCapabilityOverrides({ balanceHistory: false }, 'ethereum')
         const ethAccount = {
             id: 'eth',
             custody: { kind: 'watch' },
@@ -201,6 +205,22 @@ describe('useAccountOverviewHeader', () => {
         )
 
         expect(result.current.hasBalanceHistory).toBe(false)
+    })
+
+    it('shows the chart for an account on Ethereum alone', () => {
+        registerEthereumChain()
+        const ethAccount = {
+            id: 'eth',
+            custody: { kind: 'watch' },
+            chains: { ethereum: { address: `0x${'e'.repeat(40)}` } },
+        } as WalletAccount
+
+        const { result } = renderHook(
+            () => useAccountOverviewHeader(ethAccount),
+            { wrapper },
+        )
+
+        expect(result.current.hasBalanceHistory).toBe(true)
     })
 
     it("shows an Ethereum account's balance in ETH under its chain's name", () => {
@@ -358,7 +378,7 @@ describe('useAccountOverviewHeader', () => {
         expect(result.current.hasBalance).toBe(true)
     })
 
-    it('hides the chart once the account spans a chain without balance history', () => {
+    it('hides the chart once the account spans a second chain, which it would leave out', () => {
         registerEthereumChain()
 
         const { result } = renderHook(

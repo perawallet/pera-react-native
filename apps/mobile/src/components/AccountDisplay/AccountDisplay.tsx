@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { ReactNode } from 'react'
 import { useTheme } from '@rneui/themed'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
@@ -54,8 +55,12 @@ export type AccountDisplayProps = {
      * NFD) display the account type on the secondary line instead.
      */
     showAccountType?: boolean
+    /** Shows the account type on the secondary line even for a named account, in place of its address or NFD. */
+    alwaysShowAccountType?: boolean
     /** The chain whose name and address to show; defaults to the legacy chain. */
     chainId?: ChainId
+    /** Rendered after the secondary label, on the line under the name; never on the name's line. */
+    badges?: ReactNode
 } & PWViewProps
 
 export const AccountDisplay = ({
@@ -68,7 +73,9 @@ export const AccountDisplay = ({
     noBorder,
     compact = false,
     showAccountType = false,
+    alwaysShowAccountType = false,
     chainId,
+    badges,
     ...rest
 }: AccountDisplayProps) => {
     const { theme } = useTheme()
@@ -84,6 +91,7 @@ export const AccountDisplay = ({
         account,
         compact,
         showAccountType,
+        alwaysShowAccountType,
         iconSize,
         chainId,
     })
@@ -167,16 +175,29 @@ export const AccountDisplay = ({
                         {displayName}
                     </PWText>
                 )}
-                {renderSecondary && (
-                    <PWText
-                        style={styles.addressText}
-                        variant='body'
-                        weight={400}
-                        numberOfLines={1}
-                        ellipsizeMode={showTypeAsSecondary ? 'tail' : 'middle'}
+                {(renderSecondary || !!badges) && (
+                    <PWView
+                        style={styles.secondaryRow}
+                        testID='account_display_secondary_row'
                     >
-                        {secondaryText}
-                    </PWText>
+                        {renderSecondary && (
+                            <PWText
+                                style={[
+                                    styles.addressText,
+                                    styles.secondaryText,
+                                ]}
+                                variant='body'
+                                weight={400}
+                                numberOfLines={1}
+                                ellipsizeMode={
+                                    showTypeAsSecondary ? 'tail' : 'middle'
+                                }
+                            >
+                                {secondaryText}
+                            </PWText>
+                        )}
+                        {badges}
+                    </PWView>
                 )}
             </PWView>
             {showChevron && (

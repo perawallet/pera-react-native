@@ -21,12 +21,12 @@ only.
 
 ## Ownership
 
-| Concern                               | Owner  |
-| ------------------------------------- | ------ |
-| Card issuance, status, PAN, balances  | Baanx  |
-| KYC identity verification             | Veriff |
-| Onboarding form state, funding intent | App    |
-| AutoDraw authorization (LogicSig)     | App    |
+| Concern                               | Owner                 |
+| ------------------------------------- | --------------------- |
+| Card issuance, status, PAN, balances  | Baanx                 |
+| KYC identity verification             | Sumsub, through Baanx |
+| Onboarding form state, funding intent | App                   |
+| AutoDraw authorization (LogicSig)     | App                   |
 
 Only `panLast4` is retained from the PAN. Full card details are fetched
 on demand and never persisted.
@@ -50,21 +50,69 @@ Types are `VIRTUAL`, `PHYSICAL` and `METAL`.
 
 ## Onboarding
 
-The app drives eight steps: `EMAIL_SEND`, `EMAIL_VERIFY`, `PHONE_SEND`,
-`PHONE_VERIFY`, `VERIFICATION`, `PERSONAL_DETAILS`, `ADDRESS`, `COMPLETED`.
+Baanx creates the account only once KYC verifies, and only a verified user can
+log in, so the forms come first and KYC last:
 
-Baanx separately reports a coarser resume point (`ACCOUNT`, `PHONE_NUMBER`,
-`PERSONAL_INFORMATION`, `PHYSICAL_ADDRESS`, `MAILING_ADDRESS`) returned by login
-when a user is mid-signup. The two vocabularies are not 1:1; the server phase
-decides where a returning user resumes.
+1. Email and password (`email/send`, `email/verify`), then phone.
+2. Personal details, with employment status and sector.
+3. Additional details (tax id, occupation, source of wealth, income), only
+   when Baanx asks for them: residents of the EU, Gibraltar, Iceland,
+   Liechtenstein, Norway and the UK.
+4. Address, then a mailing address for a US resident shipping the card
+   elsewhere.
+5. KYC in a hosted Sumsub session, polled until Baanx reports a decision.
+6. Login, which mints the session, then the consent set is linked to the user.
 
-Eligible countries and US states come from `GET /v1/auth/settings`, so
-eligibility changes without a release. US residents also enter their SSN on
-the personal-details step; Baanx requires it for them and takes the nine
-digits without separators. A US resident shipping the card elsewhere unticks
-the same-mailing box on the address step: Baanx then withholds the session
-token from that call and issues it on `POST /v1/auth/register/mailing-address`
-instead, so that step is the one that completes registration.
+Each form response carries Baanx's `phase`, the step it expects next.
+`resolveOnboardingStep` (`packages/card/src/models/onboarding-step.ts`) turns
+it into an `OnboardingStep` and is the only place that decides the order; the
+app's `getOnboardingNextRoute` only maps that step to a screen. The form steps,
+the sign-in resume and the setup checklist all go through it. It falls back to
+the app's own step order when no phase is sent, and a form phase wins over the
+KYC state, so a record verified under an older order still finishes its forms.
+`MAILING_ADDRESS` is a trap: it means the mailing step only for US residents,
+and "every form is in, continue with KYC" for everyone else. The residence
+behind that decision comes from the onboarding record when this device holds
+none (another device, a reinstall).
+
+The checklist screen runs the login once KYC reports `VERIFIED`, using the
+password from `email/verify` or from a mid-onboarding sign-in. That password is
+held in the card store in memory only (never in `partialize`, never in the
+keystore) and cleared once the login settles, on logout, on a fresh sign-up and
+when the onboarding navigator unmounts.
+
+Baanx counts every login that yields no session as a failed attempt and locks
+the account after repeated ones, so a credential call never runs in a loop.
+`loginAttempts` (same lifetime as the password, rules in
+`packages/card/src/models/login-attempts.ts`) allows two automatic logins per
+onboarding session, at least two minutes after the previous login of any kind.
+The first runs on the verdict; a login that answers with a `phase` but no
+token, or fails for a reason that is not the user's, is `not-ready`. From then
+on the app only watches the onboarding record, which costs no credentials, and
+makes the second and last automatic login when the record says the account
+exists (phase `ACCOUNT`, or the record no longer resolves). Meanwhile the
+checklist says the account is being set up (after about ten minutes, that it
+is taking longer than usual, with the support link) and offers "Try again",
+one login per tap within the same spacing. A sign-in that returns a phase
+counts as a login too. A locked answer (423, 429, or any answer that says
+"locked"; Baanx documents a 403 with the support address) stops every retry and
+shows the locked message on the checklist and the sign-in screen.
+
+Only a refused password or a 2FA request sends the user to sign-in, with the
+email prefilled and a `finishesRegistration` flag; that flag is the only way a
+sign-in links the consent set stashed on this device, so a stash left by an
+abandoned sign-up is never bound to another account. Baanx's spec text still says the address step
+can return a token; one is accepted if sent, but the flow never waits for it.
+
+Sumsub returns users to `https://perawallet.app/qr/perawallet/app/cards?path=onboarding-status`
+(configured on Baanx's side). That cards deeplink reopens the checklist while
+an onboarding is in progress on the device, the card home once it is complete,
+and the intro otherwise; any other cards path keeps opening the intro.
+
+Eligible countries, US states and the `{ key, name }` option lists come from
+`GET /v1/auth/settings`, so they change without a release. Option names are
+Baanx's English strings, shown verbatim in every locale. US residents also
+enter their SSN; Baanx takes the nine digits without separators.
 
 ## Funding
 
@@ -186,6 +234,6 @@ can't complete, every entry point falls back to the manual
 
 ## Tests
 
-Seventeen integration specs in `apps/mobile/src/__integration__/` cover the
+The integration specs in `apps/mobile/src/__integration__/` cover the
 flow end to end (`card-onboarding-*`, `card-frozen`, `card-withdraw`,
 `card-funding-type-switch`, `gift-card`). Start there before changing a flow.

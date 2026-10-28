@@ -60,7 +60,7 @@ const mailWithChainId = (chainId: unknown, scope = MAINNET) =>
         domain: { ...MAIL_TYPED_DATA.domain, chainId },
     })
 
-const signAndAssemble = (request: MessageRequest) => {
+const signAndAssemble = async (request: MessageRequest) => {
     const signatures = adapter
         .plan(request, context)
         .map((item): Signature => ({
@@ -69,21 +69,21 @@ const signAndAssemble = (request: MessageRequest) => {
             scheme: item.scheme,
             bytes: vectorSignature(item.payload),
         }))
-    return adapter.assemble(request, signatures)
+    return await adapter.assemble(request, signatures)
 }
 
 describe('ethereumMessageSignerAdapter signatures', () => {
     it.each([
         ['hello world', VIEM_HELLO_WORLD],
         ['Pera', VIEM_PERA],
-    ])('match viem signMessage for %s', (text, expected) => {
-        const signed = signAndAssemble(personal(toHex(text)))
+    ])('match viem signMessage for %s', async (text, expected) => {
+        const signed = await signAndAssemble(personal(toHex(text)))
 
         expect(bytesToHex(signed.signature.bytes)).toBe(expected)
     })
 
-    it('match viem signTypedData', () => {
-        const signed = signAndAssemble(
+    it('match viem signTypedData', async () => {
+        const signed = await signAndAssemble(
             typedDataMessageRequest(MAINNET, SENDER, MAIL_TYPED_DATA),
         )
 
@@ -114,9 +114,9 @@ describe('ethereumMessageSignerAdapter signatures', () => {
         ).toEqual([VIEM_HELLO_WORLD, VIEM_PERA])
     })
 
-    it('serialise 65 bytes with v of 27 or 28', () => {
-        const { bytes } = signAndAssemble(
-            personal(toHex('hello world')),
+    it('serialise 65 bytes with v of 27 or 28', async () => {
+        const { bytes } = (
+            await signAndAssemble(personal(toHex('hello world')))
         ).signature
 
         expect(bytes).toHaveLength(65)
@@ -587,17 +587,33 @@ describe('ethereumMessageSignerAdapter.assemble', () => {
         bytes: vectorSignature(planned.payload),
     }
 
-    it('refuses a 64-byte signature', () => {
-        expect(() =>
+    it('refuses a 64-byte signature', async () => {
+        await expect(async () =>
             adapter.assemble(request, [
                 { ...signature, bytes: signature.bytes.slice(0, 64) },
             ]),
-        ).toThrow()
+        ).rejects.toThrow()
     })
 
-    it('refuses a signature for another request index', () => {
-        expect(() =>
+    it('refuses a signature for another request index', async () => {
+        await expect(async () =>
             adapter.assemble(request, [{ ...signature, requestIndex: 1 }]),
-        ).toThrow('exactly one secp256k1 signature')
+        ).rejects.toThrow('exactly one secp256k1 signature')
     })
+
+    // The signer's key over another message recovers to some other address:
+    // the label alone would pass it off as a signature over this one.
+    it.each([
+        ['personal_sign', personal(toHex('Pera'))],
+        ['EIP-712', typedDataMessageRequest(MAINNET, SENDER, MAIL_TYPED_DATA)],
+    ])(
+        "refuses a %s signature that doesn't recover to the signer",
+        async (_method, other) => {
+            await expect(async () =>
+                adapter.assemble(other, [signature]),
+            ).rejects.toThrow(
+                /^The signature recovers to 0x[0-9a-fA-F]{40}, not the signer /,
+            )
+        },
+    )
 })

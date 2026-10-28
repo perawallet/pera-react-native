@@ -29,6 +29,13 @@ export const useStyles = makeStyles(theme => ({
         ...getTypography(theme, 'footnoteMedium'),
         color: theme.colors.textGrayLighter,
     },
+    inlineLink: {
+        alignSelf: 'flex-start',
+        paddingVertical: theme.spacing.xs,
+    },
+    fieldError: {
+        color: theme.colors.error,
+    },
     // Always-rendered, constant-height error line under the date field so
     // showing/clearing the message never shifts the nationality field below.
     errorMessage: {

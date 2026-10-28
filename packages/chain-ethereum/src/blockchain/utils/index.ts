@@ -14,6 +14,7 @@ export {
     EVM_NFT_STANDARD_LABELS,
     InvalidCaip19Error,
     parseEvmNftAssetId,
+    toEvmNftAssetId,
     UnknownEvmNetworkError,
     type EvmNftStandard,
 } from './caip19'

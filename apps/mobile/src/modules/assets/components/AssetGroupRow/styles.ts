@@ -62,11 +62,6 @@ export const useStyles = makeStyles(theme => ({
         color: theme.colors.positive,
         flexShrink: 1,
     },
-    chainLabel: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.xs,
-    },
     chevronExpanded: {
         transform: [{ rotate: '180deg' }],
     },

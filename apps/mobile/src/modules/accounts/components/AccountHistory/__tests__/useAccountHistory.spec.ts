@@ -105,10 +105,26 @@ vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => {
     }
 })
 
+vi.mock('@modules/transactions/hooks/address-safety/useKnownAddresses', () => ({
+    useKnownAddresses: () => ({
+        knownAddresses: [],
+        isPending: false,
+        hasSenderHistory: true,
+    }),
+}))
+
 vi.mock('@perawallet/wallet-core-transactions', async importOriginal => ({
     ...(await importOriginal<
         typeof import('@perawallet/wallet-core-transactions')
     >()),
+    useSuspectedPoisoningQuery: () => ({ data: new Map() }),
+    // The fixtures carry only what the list reads; the poisoning check is stubbed above.
+    summarizeHistoryItem: () => ({
+        kind: 'chain-specific',
+        title: { key: 'title' },
+        direction: 'none',
+        icon: 'unknown',
+    }),
     useTransactionHistoryQuery: vi.fn(),
     useTransactionRecordsQuery: vi.fn(),
     useCsvExportMutation: vi.fn(),

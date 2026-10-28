@@ -61,6 +61,7 @@ export const WcConnectScreen = (): React.JSX.Element => {
         canOpenPeerUrl,
         handlePressUrl,
         deliveryError,
+        noAccountsNote,
         siteSafety,
     } = useWcConnectScreen()
 
@@ -119,6 +120,14 @@ export const WcConnectScreen = (): React.JSX.Element => {
                             canOpenPeerUrl={canOpenPeerUrl}
                             onPressUrl={handlePressUrl}
                         />
+                    }
+                    ListEmptyComponent={
+                        <PWText
+                            style={styles.noAccounts}
+                            testID='dapp_connect_no_accounts'
+                        >
+                            {noAccountsNote}
+                        </PWText>
                     }
                     showsVerticalScrollIndicator={false}
                 />

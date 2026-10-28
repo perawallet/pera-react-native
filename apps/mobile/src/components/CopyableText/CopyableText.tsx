@@ -16,6 +16,7 @@ import {
     PWTouchableOpacity,
     type PWTouchableOpacityProps,
 } from '@components/core'
+import { useAddressReuseGuard } from '@components/AddressReuseGuard'
 import { useClipboard } from '@hooks/useClipboard'
 
 export type CopyableTextProps = {
@@ -32,13 +33,18 @@ export const CopyableText = ({
     ...rest
 }: CopyableTextProps) => {
     const { copyToClipboard } = useClipboard()
+    const { confirmReuse } = useAddressReuseGuard()
 
     const handleLongPress = useCallback(
         (event: GestureResponderEvent) => {
-            void copyToClipboard(copyValue)
+            void (async () => {
+                if (await confirmReuse(copyValue)) {
+                    await copyToClipboard(copyValue)
+                }
+            })()
             onLongPress?.(event)
         },
-        [copyValue, copyToClipboard, onLongPress],
+        [copyValue, copyToClipboard, confirmReuse, onLongPress],
     )
 
     return (

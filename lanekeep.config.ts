@@ -5,6 +5,7 @@
 import { defineConfig } from 'lanekeep'
 
 import amountTypes from './lanekeep/rules/amount-types.js'
+import conformanceWorkflowPaths from './lanekeep/rules/conformance-workflow-paths.js'
 import copyrightHeader from './lanekeep/rules/copyright-header.js'
 import errorParamsMatchCopy from './lanekeep/rules/error-params-match-copy.js'
 import localeKeyParity from './lanekeep/rules/locale-key-parity.js'
@@ -120,5 +121,6 @@ export default defineConfig({
         amountTypes,
         noSecretInLogs,
         secretBufferZeroed,
+        conformanceWorkflowPaths,
     ],
 })

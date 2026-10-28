@@ -13,6 +13,7 @@
 import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { CardStatus, FundingType, OnboardingStep } from '../../models'
+import { getLoginPassword } from '../login-password'
 
 const ALGORAND_TESTNET = { chainId: 'algorand', networkId: 'testnet' } as const
 const ALGORAND_MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
@@ -100,6 +101,95 @@ describe('useCardStore', () => {
             .getOptions()
             .partialize?.(useCardStore.getState())
         expect(persisted).not.toHaveProperty('verificationCode')
+    })
+
+    test('the password is memory only and cleared when onboarding restarts', async () => {
+        const { useCardStore } = await import('../ux-store')
+        const { result } = renderHook(() => useCardStore())
+
+        act(() => {
+            result.current.setPassword('Correct-Horse-1234')
+        })
+
+        expect(getLoginPassword()).toBe('Correct-Horse-1234')
+        const persisted = (
+            useCardStore as unknown as {
+                persist: {
+                    getOptions: () => {
+                        partialize?: (state: unknown) => Record<string, unknown>
+                    }
+                }
+            }
+        ).persist
+            .getOptions()
+            .partialize?.(useCardStore.getState())
+        expect(persisted).not.toHaveProperty('hasPassword')
+
+        act(() => result.current.resetOnboardingProgress())
+        expect(result.current.hasPassword).toBe(false)
+    })
+
+    test('keeps the verified onboarding id across restarts until onboarding restarts', async () => {
+        const { useCardStore } = await import('../ux-store')
+        const { result } = renderHook(() => useCardStore())
+
+        act(() => result.current.setVerifiedOnboardingId('ob_1'))
+        const persisted = (
+            useCardStore as unknown as {
+                persist: {
+                    getOptions: () => {
+                        partialize?: (state: unknown) => Record<string, unknown>
+                    }
+                }
+            }
+        ).persist
+            .getOptions()
+            .partialize?.(useCardStore.getState())
+        expect(persisted).toHaveProperty('verifiedOnboardingId', 'ob_1')
+
+        act(() => result.current.resetOnboardingProgress())
+        expect(result.current.verifiedOnboardingId).toBeNull()
+    })
+
+    test('the login budget counts attempts, locks, and clears with the password', async () => {
+        const { useCardStore } = await import('../ux-store')
+        const { result } = renderHook(() => useCardStore())
+
+        act(() => {
+            result.current.setPassword('Correct-Horse-1234')
+            result.current.recordLoginAttempt({ isAutomatic: true, at: 1000 })
+            result.current.recordLoginAttempt({ isAutomatic: false, at: 2000 })
+        })
+        expect(result.current.loginAttempts).toEqual({
+            automatic: 1,
+            total: 2,
+            lastAt: 2000,
+            isLocked: false,
+        })
+        const persisted = (
+            useCardStore as unknown as {
+                persist: {
+                    getOptions: () => {
+                        partialize?: (state: unknown) => Record<string, unknown>
+                    }
+                }
+            }
+        ).persist
+            .getOptions()
+            .partialize?.(useCardStore.getState())
+        expect(persisted).not.toHaveProperty('loginAttempts')
+
+        act(() => result.current.markLoginLocked())
+        expect(result.current.loginAttempts.isLocked).toBe(true)
+        expect(result.current.hasPassword).toBe(false)
+
+        act(() => result.current.clearLoginSecrets())
+        expect(result.current.loginAttempts).toEqual({
+            automatic: 0,
+            total: 0,
+            lastAt: null,
+            isLocked: false,
+        })
     })
 
     test('setCodeVerificationError is transient and clears on reset', async () => {

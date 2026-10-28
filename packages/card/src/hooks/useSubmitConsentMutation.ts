@@ -41,8 +41,7 @@ export const useSubmitConsentMutation = (
         SubmitConsentVariables
     >({
         // Step 1 of consent: creates the consent set (T&Cs + marketing) on the
-        // final address step. No step advance — the address mutation owns
-        // completing onboarding.
+        // address step. No step advance; the router owns that.
         mutationFn: variables =>
             submitOnboardingConsent({ ...variables, scope }),
         // Stash the new consent set id so the link step can bind it even on a

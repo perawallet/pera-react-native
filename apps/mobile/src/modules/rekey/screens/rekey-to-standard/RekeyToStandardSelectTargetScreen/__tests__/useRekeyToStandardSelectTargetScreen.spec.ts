@@ -81,6 +81,14 @@ describe('useRekeyToStandardSelectTargetScreen', () => {
         expect(result.current.targets).toEqual([])
     })
 
+    it("scopes the target rows to the chain the new authority's address is on", () => {
+        const { result } = renderHook(() =>
+            useRekeyToStandardSelectTargetScreen(),
+        )
+
+        expect(result.current.chainId).toBe('algorand')
+    })
+
     it('handleSelect navigates to the Confirm screen with source and target addresses', () => {
         registerTargetFixtureChain(
             [{ id: 'fixture-standard', category: 'standard' }],

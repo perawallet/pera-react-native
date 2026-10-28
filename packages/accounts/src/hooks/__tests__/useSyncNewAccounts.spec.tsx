@@ -18,7 +18,13 @@ import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useSyncNewAccounts } from '../useSyncNewAccounts'
 import { useAccountsStore } from '../../store'
 import type { WalletAccount } from '../../models'
-import { testAccount } from '../../__tests__/accountFactory'
+import { buildTestAccount, testAccount } from '../../__tests__/accountFactory'
+import {
+    ALGORAND,
+    BASE,
+    ETHEREUM,
+    registerChainFamilies,
+} from '../../__tests__/chainFamilies'
 
 const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
 
@@ -50,7 +56,7 @@ describe('useSyncNewAccounts', () => {
     it('does not sync the accounts already present at mount', () => {
         useAccountsStore.getState().setAccounts([makeAccount('ADDR1')])
 
-        renderHook(() => useSyncNewAccounts(SCOPE), { wrapper: makeWrapper() })
+        renderHook(() => useSyncNewAccounts(), { wrapper: makeWrapper() })
 
         expect(mockSyncAndEnrichNewAccount).not.toHaveBeenCalled()
     })
@@ -58,7 +64,7 @@ describe('useSyncNewAccounts', () => {
     it('syncs only the addresses added after mount', () => {
         useAccountsStore.getState().setAccounts([makeAccount('ADDR1')])
 
-        renderHook(() => useSyncNewAccounts(SCOPE), { wrapper: makeWrapper() })
+        renderHook(() => useSyncNewAccounts(), { wrapper: makeWrapper() })
 
         act(() => {
             useAccountsStore
@@ -77,7 +83,7 @@ describe('useSyncNewAccounts', () => {
     it('ignores store writes that do not change the address set', () => {
         useAccountsStore.getState().setAccounts([makeAccount('ADDR1')])
 
-        renderHook(() => useSyncNewAccounts(SCOPE), { wrapper: makeWrapper() })
+        renderHook(() => useSyncNewAccounts(), { wrapper: makeWrapper() })
 
         act(() => {
             // Same membership, new array/object references (e.g. a rename or
@@ -93,7 +99,7 @@ describe('useSyncNewAccounts', () => {
             .getState()
             .setAccounts([makeAccount('ADDR1'), makeAccount('ADDR2')])
 
-        renderHook(() => useSyncNewAccounts(SCOPE), { wrapper: makeWrapper() })
+        renderHook(() => useSyncNewAccounts(), { wrapper: makeWrapper() })
 
         act(() => {
             useAccountsStore.getState().setAccounts([makeAccount('ADDR1')])
@@ -115,7 +121,7 @@ describe('useSyncNewAccounts', () => {
     it('does not sync while disabled', () => {
         useAccountsStore.getState().setAccounts([makeAccount('ADDR1')])
 
-        renderHook(() => useSyncNewAccounts(SCOPE, { isEnabled: false }), {
+        renderHook(() => useSyncNewAccounts({ isEnabled: false }), {
             wrapper: makeWrapper(),
         })
 
@@ -132,7 +138,7 @@ describe('useSyncNewAccounts', () => {
         useAccountsStore.getState().setAccounts([makeAccount('ADDR1')])
 
         const { rerender } = renderHook(
-            ({ isEnabled }) => useSyncNewAccounts(SCOPE, { isEnabled }),
+            ({ isEnabled }) => useSyncNewAccounts({ isEnabled }),
             { wrapper: makeWrapper(), initialProps: { isEnabled: false } },
         )
 
@@ -169,5 +175,83 @@ describe('useSyncNewAccounts', () => {
             SCOPE,
             expect.any(QueryClient),
         )
+    })
+
+    describe('across chains', () => {
+        const EVM_ADDRESS = `0x${'ab'.repeat(20)}`
+        const ALGORAND_ADDRESS = 'B'.repeat(58)
+        const scopeOf = (chainId: string): ChainScope => ({
+            chainId: chainId as ChainScope['chainId'],
+            networkId: 'mainnet',
+        })
+        const hdAccount = (chains: Record<string, string>) =>
+            buildTestAccount(
+                {
+                    kind: 'local',
+                    seed: 'bip39',
+                    hd: { account: 0, keyIndex: 0 },
+                },
+                Object.fromEntries(
+                    Object.entries(chains).map(([chainId, address]) => [
+                        chainId,
+                        { address, keyPairId: `${chainId}-key` },
+                    ]),
+                ),
+                { id: 'hd' },
+            )
+
+        beforeEach(() => {
+            registerChainFamilies([ALGORAND, ETHEREUM, BASE])
+        })
+
+        it("syncs a chain added to an existing account on that chain's scope", () => {
+            useAccountsStore
+                .getState()
+                .setAccounts([hdAccount({ [ALGORAND]: ALGORAND_ADDRESS })])
+
+            renderHook(() => useSyncNewAccounts(), { wrapper: makeWrapper() })
+
+            act(() => {
+                useAccountsStore.getState().setAccounts([
+                    hdAccount({
+                        [ALGORAND]: ALGORAND_ADDRESS,
+                        [ETHEREUM]: EVM_ADDRESS,
+                    }),
+                ])
+            })
+
+            expect(mockSyncAndEnrichNewAccount).toHaveBeenCalledExactlyOnceWith(
+                EVM_ADDRESS,
+                scopeOf(ETHEREUM),
+                expect.any(QueryClient),
+            )
+        })
+
+        it('syncs one address added on two chains once per chain', () => {
+            useAccountsStore
+                .getState()
+                .setAccounts([hdAccount({ [ALGORAND]: ALGORAND_ADDRESS })])
+
+            renderHook(() => useSyncNewAccounts(), { wrapper: makeWrapper() })
+
+            act(() => {
+                useAccountsStore.getState().setAccounts([
+                    hdAccount({
+                        [ALGORAND]: ALGORAND_ADDRESS,
+                        [ETHEREUM]: EVM_ADDRESS,
+                        [BASE]: EVM_ADDRESS,
+                    }),
+                ])
+            })
+
+            expect(
+                mockSyncAndEnrichNewAccount.mock.calls.map(
+                    ([address, scope]) => [address, scope],
+                ),
+            ).toEqual([
+                [EVM_ADDRESS, scopeOf(ETHEREUM)],
+                [EVM_ADDRESS, scopeOf(BASE)],
+            ])
+        })
     })
 })

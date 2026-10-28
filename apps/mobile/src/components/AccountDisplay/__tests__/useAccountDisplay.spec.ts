@@ -217,6 +217,25 @@ describe('useAccountDisplay', () => {
         expect(result.current.showTypeAsSecondary).toBe(true)
     })
 
+    it("shows a named account's type in place of its address or NFD when always requested", () => {
+        mockAccountTypeLabel = 'Ledger account'
+        mockNfdNames = [{ name: 'flavortown.algo' }]
+
+        const { result } = renderHook(() =>
+            useAccountDisplay({
+                account: makeAccount('My Wallet'),
+                compact: false,
+                showAccountType: true,
+                alwaysShowAccountType: true,
+                iconSize: 'xl',
+            }),
+        )
+
+        expect(result.current.displayName).toBe('My Wallet')
+        expect(result.current.secondaryText).toBe('Ledger account')
+        expect(result.current.showTypeAsSecondary).toBe(true)
+    })
+
     it('shows the backup badge at the 40px icon formats when backup is required', () => {
         mockShouldPromptBackup = true
 

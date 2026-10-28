@@ -14,7 +14,10 @@ import type {
     ChainScope,
     TransactionNative,
 } from '@perawallet/wallet-core-chain-contract'
-import type { TransactionHistoryItem } from '@perawallet/wallet-core-transactions'
+import type {
+    SuspectedPoisoning,
+    TransactionHistoryItem,
+} from '@perawallet/wallet-core-transactions'
 import type { PeraArbitraryDataMessage } from '@perawallet/wallet-core-signing'
 import type { StackScreenProps } from '@react-navigation/stack'
 
@@ -44,6 +47,8 @@ export type SigningStackParamList = {
          * non-serializability constraint described above.
          */
         historyTransaction?: TransactionHistoryItem
+        /** Set when the history marked the entry; the screen explains it and guards copying its counterparty. */
+        suspectedPoisoning?: SuspectedPoisoning
         groupId?: string
         /**
          * Set by the signing-list / group-detail navigation when the wallet won't

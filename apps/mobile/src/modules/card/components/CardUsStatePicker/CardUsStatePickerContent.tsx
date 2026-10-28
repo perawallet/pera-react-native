@@ -10,25 +10,17 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
 import type { SupportedUsState } from '@perawallet/wallet-core-card'
-import {
-    PWButton,
-    PWFlatList,
-    PWLoadingIndicator,
-    PWText,
-    PWTouchableOpacity,
-    PWView,
-} from '@components/core'
-import { SheetHeader } from '@modules/bottom-sheet'
-import { SearchInput } from '@components/SearchInput'
-import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
+import { CardPickerSheetContent } from '../CardPickerSheet'
 import { useCardUsStatePicker } from './useCardUsStatePicker'
-import { useStyles } from './styles'
+
+const getKey = (state: SupportedUsState) => state.id
+const getLabel = (state: SupportedUsState) => state.name
+const getTestID = (state: SupportedUsState) =>
+    `card-us-state-${state.postalAbbreviation}`
 
 export const CardUsStatePickerContent = () => {
-    const styles = useStyles()
     const { t } = useLanguage()
     const {
         search,
@@ -40,69 +32,29 @@ export const CardUsStatePickerContent = () => {
         handleSelect,
     } = useCardUsStatePicker()
 
-    const renderItem = useCallback(
-        ({ item }: { item: SupportedUsState }) => (
-            <PWTouchableOpacity
-                style={styles.row}
-                onPress={() => handleSelect(item)}
-                testID={`card-us-state-${item.postalAbbreviation}`}
-            >
-                <PWText variant='body'>{item.name}</PWText>
-            </PWTouchableOpacity>
-        ),
-        [handleSelect, styles.row],
-    )
-
-    const keyExtractor = useCallback((item: SupportedUsState) => item.id, [])
-
     return (
-        <PWView style={styles.container}>
-            <SheetHeader title={t('peraCard.address.us_state_picker_title')} />
-
-            {isError ? (
-                <EmptyView
-                    style={styles.center}
-                    title={t('peraCard.address.us_state_error_title')}
-                    body={t('peraCard.address.us_state_error_body')}
-                    button={
-                        <PWButton
-                            variant='secondary'
-                            title={t('peraCard.address.us_state_retry')}
-                            onPress={refetch}
-                        />
-                    }
-                />
-            ) : isLoading ? (
-                <PWView style={styles.center}>
-                    <PWLoadingIndicator />
-                </PWView>
-            ) : (
-                <PWView style={styles.content}>
-                    <SearchInput
-                        value={search}
-                        onChangeText={setSearch}
-                        placeholder={t(
-                            'peraCard.address.us_state_search_placeholder',
-                        )}
-                    />
-                    <PWFlatList
-                        inBottomSheet
-                        data={states}
-                        renderItem={renderItem}
-                        keyExtractor={keyExtractor}
-                        style={styles.list}
-                        keyboardShouldPersistTaps='handled'
-                        ListEmptyComponent={
-                            <EmptyView
-                                title={t(
-                                    'peraCard.address.us_state_empty_title',
-                                )}
-                                body={t('peraCard.address.us_state_empty_body')}
-                            />
-                        }
-                    />
-                </PWView>
-            )}
-        </PWView>
+        <CardPickerSheetContent
+            title={t('peraCard.address.us_state_picker_title')}
+            items={states}
+            search={search}
+            onSearchChange={setSearch}
+            isLoading={isLoading}
+            isError={isError}
+            onRetry={refetch}
+            onSelect={handleSelect}
+            getKey={getKey}
+            getLabel={getLabel}
+            getTestID={getTestID}
+            copy={{
+                searchPlaceholder: t(
+                    'peraCard.address.us_state_search_placeholder',
+                ),
+                emptyTitle: t('peraCard.address.us_state_empty_title'),
+                emptyBody: t('peraCard.address.us_state_empty_body'),
+                errorTitle: t('peraCard.address.us_state_error_title'),
+                errorBody: t('peraCard.address.us_state_error_body'),
+                retry: t('peraCard.address.us_state_retry'),
+            }}
+        />
     )
 }

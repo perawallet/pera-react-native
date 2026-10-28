@@ -33,6 +33,9 @@ export const useStyles = makeStyles(theme => {
         header: {
             paddingVertical: theme.spacing.md,
         },
+        chainLabel: {
+            marginBottom: theme.spacing.sm,
+        },
         assetRow: {
             flexDirection: 'row',
             justifyContent: 'space-between',

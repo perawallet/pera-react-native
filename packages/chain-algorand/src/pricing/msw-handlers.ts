@@ -13,6 +13,10 @@
 import { http, HttpResponse, type HttpHandler } from 'msw'
 import { validateMockResponse } from '@perawallet/wallet-core-shared/test-utils'
 import { assetPricesResponseSchema, type AssetPricesResponse } from './schema'
+import {
+    priceHistoryResponseSchema,
+    type PriceHistoryResponse,
+} from './price-history'
 
 export type MockAssetPricesParams = {
     response: AssetPricesResponse
@@ -25,6 +29,25 @@ export const mockAssetPrices = ({
 }: MockAssetPricesParams): HttpHandler => {
     validateMockResponse(assetPricesResponseSchema, response, 'mockAssetPrices')
     return http.get('*/api/v3/asset-prices', () =>
+        HttpResponse.json(response, { status }),
+    )
+}
+
+export type MockAssetPriceHistoryParams = {
+    response: PriceHistoryResponse
+    status?: number
+}
+
+export const mockAssetPriceHistory = ({
+    response,
+    status = 200,
+}: MockAssetPriceHistoryParams): HttpHandler => {
+    validateMockResponse(
+        priceHistoryResponseSchema,
+        response,
+        'mockAssetPriceHistory',
+    )
+    return http.get('*/v1/assets/price-chart/', () =>
         HttpResponse.json(response, { status }),
     )
 }

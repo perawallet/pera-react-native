@@ -78,6 +78,16 @@ const ALLOWED: readonly Allowed[] = [
         reason: 'Compares against whichever descriptor the caller passes, never a named chain.',
     },
     {
+        file: 'apps/mobile/src/modules/accounts/components/AccountOverview/useAccountOverviewHeader.ts',
+        text: 'source.scope.chainId === scope.chainId',
+        reason: "Checks each holding source against whichever chain the account's chart plots, never a named chain.",
+    },
+    {
+        file: 'apps/mobile/src/modules/accounts/components/PortfolioView/usePortfolioView.ts',
+        text: 'accountChainIdOf(account, registeredChainIds) === scope.chainId',
+        reason: 'Checks each account against whichever chain the portfolio chart plots, never a named chain.',
+    },
+    {
         file: 'packages/chain-contract/src/models/domain.ts',
         text: "'algorand'",
         reason: 'The contract declares one discriminated-union variant per chain family; new chains add variants beside it.',

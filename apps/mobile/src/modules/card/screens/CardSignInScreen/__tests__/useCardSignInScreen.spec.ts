@@ -11,6 +11,7 @@
  */
 
 import { renderHook, act } from '@test-utils/render'
+import { waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { CardEvent } from '@analytics'
 
@@ -20,7 +21,9 @@ vi.mock('@analytics', async () => {
     return { ...actual, trackEvent: mockTrackEvent }
 })
 
-let mockRouteParams: { email?: string } | undefined
+let mockRouteParams:
+    | { email?: string; finishesRegistration?: boolean }
+    | undefined
 vi.mock('@react-navigation/native', async () => {
     const actual = await vi.importActual<object>('@react-navigation/native')
     return { ...actual, useRoute: () => ({ params: mockRouteParams }) }
@@ -52,6 +55,8 @@ vi.mock('@perawallet/wallet-core-card', async () => {
         useCardStore: Object.assign(vi.fn(), {
             getState: () => ({
                 contactVerificationId: 'mock-contact-id',
+                countryIso: 'GB',
+                onboardingStep: 'PHONE_VERIFY',
                 setOnboardingStep: mockSetOnboardingStep,
                 escrowCardAddress: mockEscrowCardAddress.value,
             }),
@@ -210,6 +215,46 @@ describe('useCardSignInScreen', () => {
             params: { screen: 'PeraCardAccount' },
         })
         expect(mockRestoreMutateAsync).not.toHaveBeenCalled()
+        // A plain sign-in never links a stashed consent set.
+        expect(mockMutateAsync).toHaveBeenCalledWith(
+            expect.objectContaining({
+                linkConsent: false,
+                onboardingEmail: undefined,
+            }),
+        )
+    })
+
+    it('asks the login to link the consent for the onboarding email when the sign-in finishes this registration', async () => {
+        mockRouteParams = {
+            email: 'user@example.com',
+            finishesRegistration: true,
+        }
+        mockMutateAsync.mockResolvedValue({
+            accessToken: null,
+            userId: 'user-1',
+            isOtpRequired: true,
+            phoneNumber: null,
+            phase: null,
+            verificationState: null,
+            isLinked: false,
+        })
+        const { result } = renderHook(() => useCardSignInScreen())
+        act(() => {
+            Object.assign(result.current.control._formValues, {
+                email: 'user@example.com',
+                password: 'hunter2hunter22!',
+            })
+        })
+        await act(async () => {
+            result.current.handleSignIn()
+        })
+
+        expect(mockMutateAsync).toHaveBeenCalledWith(
+            expect.objectContaining({
+                linkConsent: true,
+                onboardingEmail: 'user@example.com',
+            }),
+        )
     })
 
     it('resumes the setup checklist when the account has a token but no on-chain card yet', async () => {
@@ -353,9 +398,9 @@ describe('useCardSignInScreen', () => {
             isLinked: false,
         })
 
-        it('resumes on the KYC entry when the server awaits details but KYC never ran', async () => {
+        it('resumes on the KYC entry once every form is in but KYC never ran', async () => {
             mockMutateAsync.mockResolvedValue(
-                midOnboarding('PERSONAL_INFORMATION', 'UNVERIFIED'),
+                midOnboarding('MAILING_ADDRESS', 'UNVERIFIED'),
             )
             const { result } = renderHook(() => useCardSignInScreen())
 
@@ -368,9 +413,9 @@ describe('useCardSignInScreen', () => {
             expect(mockSetOnboardingStep).toHaveBeenCalledWith('VERIFICATION')
         })
 
-        it('resumes on the personal details form once KYC has been submitted', async () => {
+        it('resumes on the personal details form the server is waiting for', async () => {
             mockMutateAsync.mockResolvedValue(
-                midOnboarding('PERSONAL_INFORMATION', 'PENDING'),
+                midOnboarding('PERSONAL_INFORMATION', 'UNVERIFIED'),
             )
             const { result } = renderHook(() => useCardSignInScreen())
 
@@ -385,7 +430,7 @@ describe('useCardSignInScreen', () => {
             )
         })
 
-        it('sends a rejected user to the status checklist without touching the stored step', async () => {
+        it('sends a rejected user to the status checklist', async () => {
             mockMutateAsync.mockResolvedValue(
                 midOnboarding('PHYSICAL_ADDRESS', 'REJECTED'),
             )
@@ -397,7 +442,7 @@ describe('useCardSignInScreen', () => {
                 screen: 'CardOnboarding',
                 params: { screen: 'CardOnboardingStatus', params: {} },
             })
-            expect(mockSetOnboardingStep).not.toHaveBeenCalled()
+            expect(mockSetOnboardingStep).toHaveBeenCalledWith('VERIFICATION')
         })
 
         it('shows the failure toast when login returns neither token, code, nor phase', async () => {
@@ -471,5 +516,26 @@ describe('useCardSignInScreen', () => {
         })
 
         expect(mockSendOtpMutateAsync).not.toHaveBeenCalled()
+    })
+
+    it('shows the locked account instead of a password error when Baanx locks it', async () => {
+        mockMutateAsync.mockRejectedValue({
+            response: { status: 403 },
+            data: { message: 'Account locked. Contact support@baanx.com' },
+        })
+        const { result } = renderHook(() => useCardSignInScreen())
+        act(() => {
+            Object.assign(result.current.control._formValues, {
+                email: 'user@example.com',
+                password: 'hunter2hunter22!',
+            })
+        })
+
+        await act(async () => {
+            result.current.handleSignIn()
+        })
+
+        await waitFor(() => expect(result.current.isAccountLocked).toBe(true))
+        expect(result.current.errors.password).toBeUndefined()
     })
 })

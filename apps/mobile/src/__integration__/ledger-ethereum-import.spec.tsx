@@ -34,7 +34,7 @@ import { evmRpcHandlers } from '@perawallet/wallet-core-chain-ethereum/test-hand
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
-import { isElementDisabled } from '@test-utils/rnw'
+import { findEnabledByTestId } from '@test-utils/rnw'
 import {
     resetTestDatabase,
     seedAlgoAsset,
@@ -144,14 +144,8 @@ const importIndexZero = async () => {
     fireEvent.click(
         screen.getByTestId('ledger_select_accounts_continue_button'),
     )
-    const addButton = await waitFor(
-        () => {
-            const button = screen.getByTestId(
-                'ledger_verify_add_accounts_button',
-            )
-            expect(isElementDisabled(button)).toBe(false)
-            return button
-        },
+    const addButton = await findEnabledByTestId(
+        'ledger_verify_add_accounts_button',
         { timeout: 10_000 },
     )
     fireEvent.click(addButton)

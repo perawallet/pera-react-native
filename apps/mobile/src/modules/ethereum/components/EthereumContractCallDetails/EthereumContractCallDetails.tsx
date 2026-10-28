@@ -33,15 +33,17 @@ export const EthereumContractCallDetails = ({
 }: EthereumContractCallDetailsProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const { view, value } = presentation
+    const { view, value, standardCall } = presentation
 
     return (
         <PWView style={styles.container}>
-            <ChainNotice
-                kind='warning'
-                titleKey='transactions.contract_call.warning'
-                testID='ethereum_contract_call_warning'
-            />
+            {!standardCall && (
+                <ChainNotice
+                    kind='warning'
+                    titleKey='transactions.contract_call.warning'
+                    testID='ethereum_contract_call_warning'
+                />
+            )}
 
             {!!view.to && (
                 <KeyValueRow

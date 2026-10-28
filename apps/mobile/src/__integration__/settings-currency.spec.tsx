@@ -15,12 +15,20 @@ import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 import { getPeraDeploymentConfig } from '@perawallet/wallet-core-config'
 import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
-import { mockListCurrencies } from '@perawallet/wallet-core-currencies/test-handlers'
+import { useCurrenciesStore } from '@perawallet/wallet-core-currencies'
+import {
+    mockGetCurrency,
+    mockListCurrencies,
+} from '@perawallet/wallet-core-currencies/test-handlers'
 import { server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { SettingsCurrencyScreen } from '@modules/settings/screens/SettingsCurrencyScreen/SettingsCurrencyScreen'
 import { JPY_ONLY, USD_EUR_GBP } from './__fixtures__/currencies'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+
+// The radio draws its dot as the only child of its `-radio` circle.
+const isRadioSelected = (testID: string): boolean =>
+    screen.getByTestId(`${testID}-radio`).childElementCount > 0
 
 // The "integration" Vitest project's setup file opts out of the global
 // @perawallet/wallet-core-* mocks — see apps/mobile/vitest.integration-setup.ts.
@@ -28,6 +36,7 @@ import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 describe('Flow: Settings → Currency selection', () => {
     // Default scenario for tests that don't override: list returns USD/EUR/GBP.
     beforeEach(() => {
+        useCurrenciesStore.getState().resetState()
         server.use(mockListCurrencies({ response: USD_EUR_GBP }))
     })
 
@@ -77,6 +86,30 @@ describe('Flow: Settings → Currency selection', () => {
         expect(screen.queryByTestId('settings_currency_item_usd')).toBeFalsy()
         expect(screen.queryByTestId('settings_currency_item_eur')).toBeFalsy()
         expect(screen.queryByTestId('settings_currency_item_algo')).toBeNull()
+    })
+
+    it('Given USD is preferred, when the user picks Euro, then EUR is persisted as the preferred currency and its radio is selected', async () => {
+        server.use(
+            ...USD_EUR_GBP.map(response =>
+                mockGetCurrency({ id: response.currency_id, response }),
+            ),
+        )
+        renderWithNavigation(SettingsCurrencyScreen, 'SettingsCurrency')
+
+        await waitFor(() => {
+            expect(isRadioSelected('settings_currency_item_usd')).toBe(true)
+        })
+
+        fireEvent.click(screen.getByTestId('settings_currency_item_eur'))
+
+        await waitFor(() => {
+            expect(isRadioSelected('settings_currency_item_eur')).toBe(true)
+        })
+        expect(isRadioSelected('settings_currency_item_usd')).toBe(false)
+        expect(useCurrenciesStore.getState()).toMatchObject({
+            preferredCurrency: 'EUR',
+            fallbackCurrency: 'ALGO',
+        })
     })
 
     describe('on a network with no Pera backend of its own', () => {

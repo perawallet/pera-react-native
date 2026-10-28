@@ -12,7 +12,13 @@
 
 import React from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { fireEvent, renderHook, screen, waitFor } from '@testing-library/react'
+import {
+    act,
+    fireEvent,
+    renderHook,
+    screen,
+    waitFor,
+} from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 import { Notifier } from 'react-native-notifier'
 import {
@@ -204,7 +210,7 @@ const decodeAppCall = (signed: Uint8Array) => {
 const seedOwnerAccount = async (): Promise<WalletAccount> => {
     const { result: kms } = renderHook(() => useKMS())
     let keyResult: Algo25KeyResult | null = null
-    await waitFor(async () => {
+    await act(async () => {
         keyResult = await kms.current.createAlgo25Key({
             mnemonicIndices: ALGO25_TEST_MNEMONIC_INDICES,
         })

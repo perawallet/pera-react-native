@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-// Cold start with no connectivity (OFF-009). Two halves, and the distinction
-// between them is the whole point of the ticket:
+// Cold start with no connectivity. Two halves, and the distinction between
+// them is the point:
 //
 //   - previously synced -> SQLite has balances, holdings, prices and
 //     transactions, so every surface renders last-known values. No skeleton
@@ -283,14 +283,14 @@ describe('Flow: Cold start with no connectivity', () => {
         expect(result.current.portfolioNativeValue?.toString()).toBe('10')
 
         // The USD total is NOT 0 — we hold 10 ALGO and simply don't know
-        // what it's worth. Reporting 0 here is the fake number the epic
-        // forbids, and it reaches the user as "$0.00".
+        // what it's worth. Reporting 0 here would be a fake number,
+        // and it reaches the user as "$0.00".
         expect(result.current.portfolioUsdValue).toBeNull()
     })
 
     it('Given a normal online session, when the same surfaces render, then nothing about them changed — real totals, real conversions, and the ordinary empty copy', async () => {
-        // AC #7. Everything this ticket touches has an offline branch; this
-        // pins the online branch so the honesty work can't leak into it.
+        // Every surface above has an offline branch; this pins the online
+        // branch so the offline handling can't leak into it.
         await seedPreviouslySyncedAccount()
         useCurrenciesStore.getState().setPreferredCurrency('EUR')
         server.use(

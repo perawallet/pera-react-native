@@ -13,6 +13,7 @@
 import { useCallback } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { clearCardSession } from '../session'
+import { useCardStore } from '../store'
 import { invalidateCardQueries } from './querykeys'
 
 export type UseCardLogoutResult = {
@@ -24,6 +25,7 @@ export const useCardLogout = (): UseCardLogoutResult => {
 
     const logout = useCallback(async () => {
         await clearCardSession()
+        useCardStore.getState().clearLoginSecrets()
         invalidateCardQueries(queryClient)
     }, [queryClient])
 

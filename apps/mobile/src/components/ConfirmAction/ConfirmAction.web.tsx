@@ -11,7 +11,10 @@
  */
 
 import { PWTapToConfirm } from '@components/core/PWTapToConfirm'
-import { TAP_TO_CONFIRM_WEB_MIN_CONFIRM_DELAY } from '@constants/ui'
+import {
+    TAP_TO_CONFIRM_WEB_ARMED_TIMEOUT,
+    TAP_TO_CONFIRM_WEB_MIN_CONFIRM_DELAY,
+} from '@constants/ui'
 import { useApprovalArming } from '@hooks/useApprovalArming.web'
 import { useLanguage } from '@hooks/useLanguage'
 import type { ConfirmActionProps } from './ConfirmAction'
@@ -38,6 +41,7 @@ export const ConfirmAction = ({
             {...rest}
             isDisabled={isDisabled || !isArmed}
             minConfirmDelayMs={TAP_TO_CONFIRM_WEB_MIN_CONFIRM_DELAY}
+            armedTimeoutMs={TAP_TO_CONFIRM_WEB_ARMED_TIMEOUT}
         />
     )
 }

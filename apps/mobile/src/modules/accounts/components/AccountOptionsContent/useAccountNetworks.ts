@@ -13,6 +13,7 @@
 import { useCallback, useMemo, useState } from 'react'
 import {
     accountChainOptions,
+    unreachableChainsNoteOf,
     useAllAccounts,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -26,7 +27,7 @@ import {
     useSwitchedOffChainIds,
 } from '@perawallet/wallet-core-chain-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
-import type { Optional } from '@perawallet/wallet-core-shared'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import { bottomSheetNotifier } from '@components/core'
 import { useClipboard } from '@hooks/useClipboard'
 import { useEnableChainAction } from '@hooks/useEnableChainAction'
@@ -66,6 +67,8 @@ export type UseAccountNetworksResult = {
     account: WalletAccount
     visibleRows: AccountNetworkRow[]
     hiddenRows: AccountNetworkRow[]
+    /** Why the account's kind is missing from chains that are on; null when it reaches them all. */
+    unreachableChainsNote: Nullable<string>
     handleShowAllNetworks: () => void
     expandedChainId: Optional<ChainId>
     handleToggleExpanded: (chainId: ChainId) => void
@@ -127,6 +130,21 @@ export const useAccountNetworks = ({
             }
         })
     }, [options, checkCapability])
+
+    const unreachableChainsNoteKey = useMemo(
+        () =>
+            unreachableChainsNoteOf(
+                account,
+                getProvider()
+                    .chains.list()
+                    .map(({ id }) => id)
+                    .filter(chainId => !switchedOff.includes(chainId)),
+            ),
+        [account, switchedOff],
+    )
+    const unreachableChainsNote = unreachableChainsNoteKey
+        ? t(unreachableChainsNoteKey)
+        : null
 
     const rowByChain = useMemo(
         () => new Map(rows.map(row => [row.chainId, row])),
@@ -192,6 +210,7 @@ export const useAccountNetworks = ({
         account,
         visibleRows,
         hiddenRows,
+        unreachableChainsNote,
         handleShowAllNetworks,
         expandedChainId,
         handleToggleExpanded,

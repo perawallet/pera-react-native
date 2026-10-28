@@ -15,6 +15,7 @@ import {
     ownAddressOf,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { PWFlatList } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { SelectableAccountRow } from '@components/SelectableAccountRow'
@@ -33,6 +34,8 @@ export type AccountPickerProps = {
      * header and safe-area padding.
      */
     isEmbedded?: boolean
+    /** The chain the pick is for; rows then show that chain's address and balance rather than the whole account's. */
+    chainId?: ChainId
 }
 
 const keyExtractor = (account: WalletAccount) => account.id
@@ -44,12 +47,14 @@ const AccountPickerComponent = ({
     emptyBody,
     rowTestIDPrefix,
     isEmbedded = false,
+    chainId,
 }: AccountPickerProps) => {
     const renderItem = useCallback(
         ({ item }: { item: WalletAccount }) => (
             <SelectableAccountRow
                 account={item}
                 onSelect={onSelect}
+                chainId={chainId}
                 isHighlighted={
                     highlightedAddress != null &&
                     ownAddressOf(item) === highlightedAddress
@@ -61,7 +66,7 @@ const AccountPickerComponent = ({
                 }
             />
         ),
-        [onSelect, highlightedAddress, rowTestIDPrefix],
+        [onSelect, highlightedAddress, rowTestIDPrefix, chainId],
     )
 
     const renderEmpty = useCallback(

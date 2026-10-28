@@ -118,7 +118,6 @@ describe('Flow: History on an Ethereum account', () => {
     })
 
     afterEach(() => {
-        server.resetHandlers()
         useAccountsStore.getState().setAccounts([])
     })
 
