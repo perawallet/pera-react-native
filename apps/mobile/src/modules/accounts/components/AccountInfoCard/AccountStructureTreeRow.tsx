@@ -19,6 +19,7 @@ import {
     PWView,
 } from '@components/core'
 import { AccountIcon } from '@components/AccountIcon'
+import { ChainAddressList } from '@components/ChainAddressList'
 import { CopyableText } from '@components/CopyableText'
 import { useLanguage } from '@hooks/useLanguage'
 import { ChainIconStack } from '@modules/chain-ui/icon'
@@ -140,24 +141,11 @@ export const AccountStructureTreeRow = ({
                     <PWView style={styles.connectorContainer}>
                         {!isLast && <PWView style={styles.connectorSpine} />}
                     </PWView>
-                    <PWView style={styles.addressPanel}>
-                        {row.chains.map(chain => (
-                            <CopyableText
-                                key={chain.chainId}
-                                copyValue={chain.copyValue}
-                                style={styles.addressRow}
-                                testID={`account_structure_address_${chain.chainId}`}
-                            >
-                                <PWText
-                                    variant='body'
-                                    style={styles.addressChainName}
-                                >
-                                    {chain.displayName}
-                                </PWText>
-                                <PWText variant='body'>{chain.address}</PWText>
-                            </CopyableText>
-                        ))}
-                    </PWView>
+                    <ChainAddressList
+                        chains={row.chains}
+                        style={styles.addressPanel}
+                        testIDPrefix='account_structure_address'
+                    />
                 </PWView>
             )}
         </PWView>

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import type { ReactNode } from 'react'
+import { useMemo, type ReactNode } from 'react'
 import {
     accountKindGlyph,
     getAccountDisplayName,
@@ -31,7 +31,7 @@ import {
     PWView,
 } from '@components/core'
 import { AccountIcon, accountGlyphFor } from '@components/AccountIcon'
-import { CopyableText } from '@components/CopyableText'
+import { ChainAddressList } from '@components/ChainAddressList'
 import { ChainIconStack } from '@modules/chain-ui/icon'
 import { AccountSummaryLine } from './AccountSummaryLine'
 import { useBackupAccountRow } from './useBackupAccountRow'
@@ -66,14 +66,16 @@ export const BackupAccountRow = ({
     testID,
 }: BackupAccountRowProps) => {
     const styles = useStyles()
-    const { isMultichain, chainIds, chains, canExpand, isExpanded, onToggle } =
-        useBackupAccountRow({
-            account,
-            // An item written before records names no chain; those were Algorand only.
-            backupChains: backupChains?.length
+    // An item written before records names no chain; those were Algorand only.
+    const recordChains = useMemo(
+        () =>
+            account || backupChains?.length
                 ? backupChains
                 : [{ chain: LEGACY_CHAIN_ID, address }],
-        })
+        [account, backupChains, address],
+    )
+    const { isMultichain, chainIds, chains, canExpand, isExpanded, onToggle } =
+        useBackupAccountRow({ account, backupChains: recordChains })
 
     const backupKindId =
         !account && accountType != null
@@ -87,33 +89,35 @@ export const BackupAccountRow = ({
     return (
         <PWView testID={testID}>
             <PWView style={styles.row}>
-                <PWTouchableOpacity
-                    style={styles.main}
-                    onPress={onToggle}
-                    disabled={!canExpand}
-                    // react-native-web 0.21 drops accessibilityState; aria-* reaches both.
-                    aria-expanded={canExpand ? isExpanded : undefined}
-                    testID='backup_account_row_toggle'
-                >
-                    {account ? (
-                        <AccountIcon
-                            account={account}
-                            size='xl'
-                        />
-                    ) : backupGlyph ? (
-                        <PWRoundIcon
-                            icon={backupGlyph.name}
-                            variant={backupGlyph.variant}
-                            size='md'
-                        />
-                    ) : (
-                        <PWRoundIcon
-                            icon='accounts/glyph/unknown-account'
-                            variant='accountNeutral'
-                            size='md'
-                        />
-                    )}
-                    <PWView style={styles.body}>
+                {account ? (
+                    <AccountIcon
+                        account={account}
+                        size='xl'
+                    />
+                ) : backupGlyph ? (
+                    <PWRoundIcon
+                        icon={backupGlyph.name}
+                        variant={backupGlyph.variant}
+                        size='md'
+                    />
+                ) : (
+                    <PWRoundIcon
+                        icon='accounts/glyph/unknown-account'
+                        variant='accountNeutral'
+                        size='md'
+                    />
+                )}
+                <PWView style={styles.body}>
+                    {/* Only the text toggles: a touchable groups its children
+                        for screen readers, which would swallow `action`. */}
+                    <PWTouchableOpacity
+                        style={styles.toggle}
+                        onPress={onToggle}
+                        disabled={!canExpand}
+                        // react-native-web 0.21 drops accessibilityState; aria-* reaches both.
+                        aria-expanded={canExpand ? isExpanded : undefined}
+                        testID='backup_account_row_toggle'
+                    >
                         <PWView style={styles.titleRow}>
                             <PWText
                                 variant='bodyLarge'
@@ -160,30 +164,17 @@ export const BackupAccountRow = ({
                                 address={address}
                             />
                         )}
-                        {action}
-                    </PWView>
-                </PWTouchableOpacity>
+                    </PWTouchableOpacity>
+                    {action}
+                </PWView>
                 {trailing}
             </PWView>
             {isExpanded && (
-                <PWView style={styles.addressPanel}>
-                    {chains.map(chain => (
-                        <CopyableText
-                            key={chain.chainId}
-                            copyValue={chain.copyValue}
-                            style={styles.addressRow}
-                            testID={`backup_account_address_${chain.chainId}`}
-                        >
-                            <PWText
-                                variant='body'
-                                style={styles.addressChainName}
-                            >
-                                {chain.displayName}
-                            </PWText>
-                            <PWText variant='body'>{chain.address}</PWText>
-                        </CopyableText>
-                    ))}
-                </PWView>
+                <ChainAddressList
+                    chains={chains}
+                    style={styles.addressPanel}
+                    testIDPrefix='backup_account_address'
+                />
             )}
         </PWView>
     )

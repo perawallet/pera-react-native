@@ -19,19 +19,12 @@ import {
 import type { CachedRecordChain } from '@perawallet/wallet-core-backup'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { useSwitchedOffChainIds } from '@perawallet/wallet-core-chain-shared'
+import type { ChainAddress } from '@components/ChainAddressList'
 import { useIsMultichain } from '@modules/accounts'
 import {
     chainAddressCopyValue,
     displayChainOption,
 } from '@utils/chainOptionDisplay'
-
-export type BackupAccountChainAddress = {
-    chainId: ChainId
-    displayName: string
-    /** Truncated by the chain's codec. */
-    address: string
-    copyValue: string
-}
 
 type UseBackupAccountRowParams = {
     account?: WalletAccount
@@ -43,7 +36,7 @@ type UseBackupAccountRowResult = {
     /** More than one chain is active; otherwise the row keeps its single-chain layout. */
     isMultichain: boolean
     chainIds: ChainId[]
-    chains: BackupAccountChainAddress[]
+    chains: ChainAddress[]
     canExpand: boolean
     isExpanded: boolean
     onToggle: () => void
@@ -58,7 +51,7 @@ export const useBackupAccountRow = ({
     const switchedOff = useSwitchedOffChainIds()
     const [isExpanded, setIsExpanded] = useState(false)
 
-    const chains = useMemo((): BackupAccountChainAddress[] => {
+    const chains = useMemo((): ChainAddress[] => {
         const isOn = (chainId: ChainId) => !switchedOff.includes(chainId)
         if (account) {
             return accountChainOptions(account, isOn).flatMap(option =>
@@ -90,10 +83,7 @@ export const useBackupAccountRow = ({
     }
 }
 
-const toChainAddress = (
-    chainId: ChainId,
-    address: string,
-): BackupAccountChainAddress => {
+const toChainAddress = (chainId: ChainId, address: string): ChainAddress => {
     const displayed = displayChainOption({ chainId, isEnabled: true, address })
     return {
         chainId,

@@ -22,7 +22,7 @@ import { useSummaryStyles } from './styles'
 
 type AccountSummaryLineProps = {
     account: WalletAccount
-    /** The account's backup item key, its Algorand address. */
+    /** The account's backup item key. */
     address: string
 }
 

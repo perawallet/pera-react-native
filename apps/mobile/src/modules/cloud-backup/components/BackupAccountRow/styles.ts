@@ -19,16 +19,12 @@ export const useStyles = makeStyles(theme => ({
         gap: theme.spacing.lg,
         paddingVertical: theme.spacing.lg,
     },
-    main: {
-        flex: 1,
-        minWidth: 0,
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.lg,
-    },
     body: {
         flex: 1,
         minWidth: 0,
+        gap: theme.spacing.xs,
+    },
+    toggle: {
         gap: theme.spacing.xs,
     },
     titleRow: {
@@ -44,19 +40,7 @@ export const useStyles = makeStyles(theme => ({
         transform: [{ rotate: '180deg' }],
     },
     addressPanel: {
-        gap: theme.spacing.sm,
-        padding: theme.spacing.md,
         marginBottom: theme.spacing.lg,
-        borderRadius: theme.borderRadius.sm,
-        backgroundColor: theme.colors.layerGrayLighter,
-    },
-    addressRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        gap: theme.spacing.md,
-    },
-    addressChainName: {
-        color: theme.colors.textGray,
     },
 }))
 

@@ -16,7 +16,7 @@ import {
     accountRecordIdentity,
     accountRecordSeedReference,
     accountRecordType,
-    cachedRecordChains,
+    cachedRecordOverview,
     isNewerAccountRecord,
     mergeAccountRecord,
     orderAccountRecordChains,
@@ -182,27 +182,38 @@ describe('isNewerAccountRecord', () => {
     })
 })
 
-describe('cachedRecordChains', () => {
+describe('cachedRecordOverview', () => {
     it('lists each chain the record holds with its address, in record order', () => {
         expect(
-            cachedRecordChains(recordOf([hdWalletEntry, hdChainEntry])),
-        ).toEqual([
-            { chain: 'algorand', address: 'ALGO' },
-            { chain: 'ethereum', address: '0xeth' },
-        ])
+            cachedRecordOverview(recordOf([hdWalletEntry, hdChainEntry])),
+        ).toEqual({
+            needsUpdate: false,
+            chains: [
+                { chain: 'algorand', address: 'ALGO' },
+                { chain: 'ethereum', address: '0xeth' },
+            ],
+        })
     })
 
-    it('still lists the chains of a record a newer client wrote', () => {
+    it("still lists a newer client's chains, and marks the record as needing an update", () => {
         expect(
-            cachedRecordChains(recordOf([hdChainEntry], { formatVersion: 3 })),
-        ).toEqual([{ chain: 'ethereum', address: '0xeth' }])
+            cachedRecordOverview(
+                recordOf([hdChainEntry], { formatVersion: 3 }),
+            ),
+        ).toEqual({
+            needsUpdate: true,
+            chains: [{ chain: 'ethereum', address: '0xeth' }],
+        })
     })
 
     it.each([
         ['is absent', undefined],
         ['is not a record', { chains: 'nope' }],
     ])('is empty when the content %s', (_label, record) => {
-        expect(cachedRecordChains(record)).toEqual([])
+        expect(cachedRecordOverview(record)).toEqual({
+            needsUpdate: false,
+            chains: [],
+        })
     })
 })
 

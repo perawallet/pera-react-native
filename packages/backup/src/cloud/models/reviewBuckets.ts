@@ -17,7 +17,7 @@ import {
     isPasskeyItemKey,
 } from './itemKeys'
 import {
-    cachedRecordChains,
+    cachedRecordOverview,
     isNewerAccountRecord,
     type CachedRecordChain,
 } from './accountRecord'
@@ -168,8 +168,7 @@ export const deriveBackupAccountReview = (
         item => ({
             address: item.address as string,
             type: item.accountType ?? null,
-            needsUpdate: isNewerAccountRecord(item.record),
-            chains: cachedRecordChains(item.record),
+            ...cachedRecordOverview(item.record),
         }),
     )
 

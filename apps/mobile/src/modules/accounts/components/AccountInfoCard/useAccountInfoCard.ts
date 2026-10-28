@@ -44,15 +44,7 @@ import {
     displayChainOption,
 } from '@utils/chainOptionDisplay'
 import type { IconName } from '@components/core'
-
-export type AccountStructureChainAddress = {
-    chainId: ChainId
-    displayName: string
-    /** Truncated by the chain's codec. */
-    address: string
-    /** Normalized by the chain's codec (EIP-55 on EVM) when it parses, for the clipboard. */
-    copyValue: string
-}
+import type { ChainAddress } from '@components/ChainAddressList'
 
 export type AccountStructureRow = {
     account: WalletAccount
@@ -60,7 +52,7 @@ export type AccountStructureRow = {
     isViewing: boolean
     /** Not the sheet's own account, and on at least one shown chain. */
     canExpand: boolean
-    chains: AccountStructureChainAddress[]
+    chains: ChainAddress[]
 }
 
 // Unnamed accounts are stored under one of their addresses, on any chain they

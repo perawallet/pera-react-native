@@ -165,15 +165,26 @@ export type CachedRecordChain = {
     address: string
 }
 
-/** Every chain of cached record content, a newer client's included; empty
- *  when it is not a record. */
-export const cachedRecordChains = (
+/** What a review row shows of cached record content, parsed once. */
+export type CachedRecordOverview = {
+    /** Only a newer client can read the record. */
+    needsUpdate: boolean
+    /** Every chain, a newer client's record included; empty when it is not a record. */
+    chains: CachedRecordChain[]
+}
+
+export const cachedRecordOverview = (
     record: Record<string, unknown> | null | undefined,
-): CachedRecordChain[] => {
+): CachedRecordOverview => {
     const parsed = accountRecordPayloadSchema.safeParse(record)
-    return parsed.success
-        ? parsed.data.chains.map(({ chain, address }) => ({ chain, address }))
-        : []
+    if (!parsed.success) return { needsUpdate: false, chains: [] }
+    return {
+        needsUpdate: !isAccountRecordReadable(parsed.data),
+        chains: parsed.data.chains.map(({ chain, address }) => ({
+            chain,
+            address,
+        })),
+    }
 }
 
 /** True for content cached from a record only a newer client can read; this
