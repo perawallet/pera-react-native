@@ -25,7 +25,13 @@ import {
     vi,
 } from 'vitest'
 import { Decimal } from 'decimal.js'
-import { fireEvent, screen, waitFor } from '@testing-library/react'
+import {
+    act,
+    fireEvent,
+    renderHook,
+    screen,
+    waitFor,
+} from '@testing-library/react'
 import { Notifier } from 'react-native-notifier'
 
 import {
@@ -35,6 +41,8 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { nativeAssetFor, upsertAssets } from '@perawallet/wallet-core-assets'
+import { chainDisplayNameOf } from '@perawallet/wallet-core-chain-shared'
+import { useContacts } from '@perawallet/wallet-core-contacts'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     DEFAULT_EVM_RPC_RESPONSES,
@@ -56,7 +64,7 @@ import { TransactionConfirmationScreen } from '@modules/transactions/screens/sen
 import { TransactionProcessingScreen } from '@modules/transactions/screens/send-funds/TransactionProcessingScreen/TransactionProcessingScreen'
 import { SelectDestinationScreen } from '@modules/transactions/screens/send-funds/SelectDestinationScreen/SelectDestinationScreen'
 import { TransactionSuccessScreen } from '@modules/transactions/routes'
-import { ALGO25_TEST_ADDRESS } from './__fixtures__/onboarding'
+import { ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS } from './__fixtures__/onboarding'
 import {
     recordAnalyticsEvents,
     type AnalyticsRecorder,
@@ -388,5 +396,116 @@ describe('Flow: send from an Ethereum account', () => {
             ),
         )
         expect(useSendFundsStore.getState().destination).toBeUndefined()
+    })
+
+    describe('the recipient picker and review on an Ethereum send', () => {
+        const ETH_TEST_ACCOUNT: WalletAccount = {
+            id: 'eth-test',
+            custody: { kind: 'local', seed: null },
+            chains: {
+                algorand: { address: HD_TEST_ADDRESS, keyPairId: 'k-1' },
+                ethereum: { address: RECEIVER, keyPairId: 'k-2' },
+            },
+            name: 'ETH Test',
+        }
+        const WATCH_ONLY_ACCOUNT: WalletAccount = {
+            id: 'watch-only',
+            custody: { kind: 'watch' },
+            chains: { algorand: { address: 'WATCHONLYADDR' } },
+            name: 'Watch only',
+        }
+        const SENDER_ON_BOTH: WalletAccount = {
+            ...ETHEREUM_SENDER,
+            chains: {
+                algorand: {
+                    address: ALGO25_TEST_ADDRESS,
+                    keyPairId: 'algo-key',
+                },
+                ...ETHEREUM_SENDER.chains,
+            },
+        }
+
+        const seedContacts = () => {
+            const { result } = renderHook(() => useContacts())
+            act(() => {
+                for (const contact of result.current.contacts) {
+                    result.current.deleteContact(contact.id)
+                }
+                result.current.addContact({
+                    name: 'Eth friend',
+                    addresses: { evm: TOKEN },
+                })
+                result.current.addContact({
+                    name: 'Algo friend',
+                    addresses: { algorand: HD_TEST_ADDRESS },
+                })
+            })
+        }
+
+        const sendEther = () => {
+            useAccountsStore
+                .getState()
+                .setAccounts([
+                    SENDER_ON_BOTH,
+                    ETH_TEST_ACCOUNT,
+                    WATCH_ONLY_ACCOUNT,
+                ])
+            useAccountsStore.getState().setSelectedAccountId(SENDER_ON_BOTH.id)
+            useSendFundsStore
+                .getState()
+                .setSelectedAsset({ chainId: 'ethereum', assetId: 'native' })
+            useSendFundsStore.getState().setAmount(new Decimal('0.5'))
+        }
+
+        it('Given an ether send, when the picker opens, then it offers the other accounts by their 0x address under the Ethereum placeholder and badge, and never the sender', async () => {
+            sendEther()
+            seedContacts()
+
+            renderWithNavigation(SelectDestinationScreen, 'SelectDestination')
+
+            const row = await screen.findByTestId(
+                `account_result_row_${RECEIVER}`,
+            )
+            expect(row.textContent).toContain('ETH Test')
+            expect(row.textContent).toContain(RECEIVER.slice(0, 6))
+            expect(row.textContent).not.toContain(HD_TEST_ADDRESS.slice(0, 6))
+            expect(row.textContent).toContain(chainDisplayNameOf('ethereum'))
+            expect(
+                screen.queryByTestId(`account_result_row_${SENDER}`),
+            ).toBeNull()
+            expect(screen.queryByText('Watch only')).toBeNull()
+            // The Ethereum placeholder is what finds the field at all.
+            const fields = screen.getAllByPlaceholderText(
+                'address_entry.search_placeholder_evm',
+            )
+            expect(fields.length).toBeGreaterThan(0)
+            fireEvent.change(fields[fields.length - 1], {
+                target: { value: 'friend' },
+            })
+
+            await waitFor(() =>
+                expect(screen.getByText('Eth friend')).toBeTruthy(),
+            )
+            expect(screen.queryByText('Algo friend')).toBeNull()
+        })
+
+        it('Given an ether send, when the user reviews it, then the review names the network, the sender by its 0x address, and the full recipient address', async () => {
+            sendEther()
+            useSendFundsStore.getState().setDestination(RECEIVER)
+            useSendFundsStore.getState().setSendMode('normal')
+
+            renderSendConfirmationStack()
+
+            const network = await screen.findByTestId('send_confirm_network')
+            expect(network.textContent).toBe(chainDisplayNameOf('ethereum'))
+            expect(screen.getAllByText(RECEIVER).length).toBeGreaterThan(0)
+            const sender = screen
+                .getByText('Eth sender')
+                .closest('div')?.parentElement
+            expect(sender?.textContent).toContain(SENDER.slice(0, 6))
+            expect(sender?.textContent).not.toContain(
+                ALGO25_TEST_ADDRESS.slice(0, 6),
+            )
+        })
     })
 })
