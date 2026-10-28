@@ -232,6 +232,7 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
             } catch (e) {
                 logger.error('Import account failed', { error: e })
                 const isDuplicate = e instanceof DuplicateAccountError
+                // Not showError: it would show the generic account copy, not the duplicate-specific strings.
                 errorToast(
                     t(
                         isDuplicate

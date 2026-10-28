@@ -24,7 +24,6 @@ import { useImportAccountScreen } from '../useImportAccountScreen'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 import { capabilityState } from '@test-utils/capability-mock'
 
-const mockShowToast = vi.fn()
 const mockErrorToast = vi.fn()
 const mockReplace = vi.fn()
 const mockPush = vi.fn()
@@ -155,7 +154,6 @@ vi.mock('@perawallet/wallet-core-kms', () => ({
 
 vi.mock('@hooks/useToast', () => ({
     useToast: vi.fn(() => ({
-        showToast: mockShowToast,
         errorToast: mockErrorToast,
     })),
 }))

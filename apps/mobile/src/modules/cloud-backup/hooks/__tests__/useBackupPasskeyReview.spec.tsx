@@ -239,5 +239,6 @@ describe('useBackupPasskeyReview', () => {
         await waitFor(() => expect(showErrorMock).toHaveBeenCalledTimes(1))
         expect(showErrorMock.mock.calls[0][0]).toBeInstanceOf(NoConnectionError)
         expect(errorToastMock).not.toHaveBeenCalled()
+        expect(showToastMock).not.toHaveBeenCalled()
     })
 })

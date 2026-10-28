@@ -215,7 +215,10 @@ describe('useAssetClaimDetailScreen', () => {
         })
 
         expect(mockPush).not.toHaveBeenCalled()
-        expect(mockErrorToast).toHaveBeenCalled()
+        expect(mockErrorToast).toHaveBeenCalledWith(
+            'errors.transaction.title',
+            expect.stringContaining('messages.claim.insufficient_native_claim'),
+        )
     })
 
     describe.each([

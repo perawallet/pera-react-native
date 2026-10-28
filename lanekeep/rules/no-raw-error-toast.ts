@@ -19,7 +19,7 @@ export default defineRule({
     },
     gates: productionSource({
         fileContains: ['showToast'],
-        // The two hooks are the one place allowed to build the error toast itself.
+        // The two hooks are the only places allowed to build the error toast itself.
         pathNotMatches: [
             'apps/mobile/src/hooks/useErrorToast.ts',
             'apps/mobile/src/hooks/useToast.ts',

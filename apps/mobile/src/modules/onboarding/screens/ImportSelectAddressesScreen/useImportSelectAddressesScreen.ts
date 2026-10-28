@@ -237,6 +237,7 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
                 // import: the user holds the account, and their retry would
                 // then say "already added".
                 if (!hasCommittedRef.current) {
+                    // Not showError: an unrecognised error would fall through to generic copy instead of this step's.
                     errorToast(
                         t('onboarding.import_account.failed_title'),
                         t('onboarding.import_account.failed_body'),
