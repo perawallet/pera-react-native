@@ -13,6 +13,7 @@
 import { useCallback, useMemo } from 'react'
 import { Decimal } from 'decimal.js'
 import {
+    accountValueKey,
     addressOn,
     type AccountHoldingSource,
     type PortfolioValueHistoryItem,
@@ -111,14 +112,16 @@ export const useAccountOverviewHeader = (
         currencyScope,
         availability.isAvailable,
     )
-    // Summed over the chains the list and chart read, not every chain the
-    // account has an entry on: a switched-off chain's last-synced value would
-    // otherwise inflate the headline. One unknown value makes the total unknown.
+    // Summed over the chains the list reads, not every chain the account has
+    // an entry on: a switched-off chain's last-synced value would otherwise
+    // inflate the headline. One unknown value makes the total unknown.
     const portfolioFiatValue = useMemo(
         () =>
             countedSources.reduce<Nullable<Decimal>>((total, source) => {
                 const fiatValue =
-                    accountValueTotals.get(source.address)?.fiatValue ?? null
+                    accountValueTotals.get(
+                        accountValueKey(source.scope.chainId, source.address),
+                    )?.fiatValue ?? null
                 return total === null || fiatValue === null
                     ? null
                     : total.plus(fiatValue)
@@ -129,7 +132,9 @@ export const useAccountOverviewHeader = (
     // The account's own chain is the first source (registry order), and keeps
     // today's native-balance test; any other chain counts once it holds value.
     const isEmptyOnOtherChains = sources.slice(1).every(source => {
-        const nativeValue = accountValueTotals.get(source.address)?.nativeValue
+        const nativeValue = accountValueTotals.get(
+            accountValueKey(source.scope.chainId, source.address),
+        )?.nativeValue
         return nativeValue !== null && (nativeValue?.isZero() ?? true)
     })
     // Show the "get started" empty state only for a lone account with nothing

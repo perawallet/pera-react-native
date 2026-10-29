@@ -29,22 +29,6 @@ export const useStyles = makeStyles(theme => ({
         alignItems: 'center',
         paddingVertical: theme.spacing.sm,
     },
-    addressBlock: {
-        gap: theme.spacing.xs,
-    },
-    addressLabel: {
-        color: theme.colors.textGray,
-    },
-    addressRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: theme.spacing.sm,
-    },
-    addressValue: {
-        color: theme.colors.textMain,
-        flexShrink: 1,
-    },
     divider: {
         height: theme.borders.sm,
         backgroundColor: theme.colors.layerGray,

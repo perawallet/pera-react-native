@@ -39,6 +39,14 @@ export type CardCreateStepRowModel = {
     isBusy: boolean
 }
 
+const stepStatusOf = (
+    index: number,
+    currentStepIndex: number,
+): CardStepStatus => {
+    if (index < currentStepIndex) return 'done'
+    return index === currentStepIndex ? 'active' : 'pending'
+}
+
 type UseCardCreateSigningScreenResult = {
     fundingType: FundingType
     steps: CardCreateStepRowModel[]
@@ -94,12 +102,7 @@ export const useCardCreateSigningScreen =
                 stepIds.map((id, index) => ({
                     id,
                     stepNumber: index + 1,
-                    status:
-                        index < currentStepIndex
-                            ? 'done'
-                            : index === currentStepIndex
-                              ? 'active'
-                              : 'pending',
+                    status: stepStatusOf(index, currentStepIndex),
                     isBusy: isProceeding && index === currentStepIndex,
                 })),
             [stepIds, currentStepIndex, isProceeding],

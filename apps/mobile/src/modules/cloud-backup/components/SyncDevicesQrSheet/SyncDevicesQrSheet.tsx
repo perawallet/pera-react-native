@@ -66,8 +66,8 @@ export const SyncDevicesQrSheet = ({ payload }: SyncDevicesQrSheetProps) => {
                     testID='sync_devices_qr_code'
                     value={payload}
                     size={qrSize}
-                    color='black'
-                    backgroundColor='white'
+                    color={theme.colors.qrCodeFg}
+                    backgroundColor={theme.colors.qrCodeBg}
                     quietZone={theme.spacing.sm}
                 />
                 <PWText

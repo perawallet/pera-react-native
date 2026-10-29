@@ -12,42 +12,9 @@
 
 import { PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import { BalanceImpactRow } from './BalanceImpactRow'
-import {
-    useBalanceImpactSummary,
-    type BalanceImpactItem,
-} from './useBalanceImpactSummary'
+import { useBalanceImpactSummary } from './useBalanceImpactSummary'
 import { useStyles } from './styles'
-
-type SectionProps = {
-    title: string
-    items: BalanceImpactItem[]
-}
-
-const Section = ({ title, items }: SectionProps) => {
-    const styles = useStyles()
-
-    if (items.length === 0) {
-        return null
-    }
-
-    return (
-        <PWView style={styles.section}>
-            <PWText
-                variant='caption'
-                style={styles.sectionTitle}
-            >
-                {title}
-            </PWText>
-            {items.map(item => (
-                <BalanceImpactRow
-                    key={`${title}-${item.assetId}`}
-                    item={item}
-                />
-            ))}
-        </PWView>
-    )
-}
+import { BalanceImpactSection } from './BalanceImpactSection'
 
 export const BalanceImpactSummary = () => {
     const styles = useStyles()
@@ -100,11 +67,11 @@ export const BalanceImpactSummary = () => {
             style={styles.container}
             testID='balance-impact-summary'
         >
-            <Section
+            <BalanceImpactSection
                 title={t('signing.balance_impact.receive_title')}
                 items={receive}
             />
-            <Section
+            <BalanceImpactSection
                 title={t('signing.balance_impact.spend_title')}
                 items={spend}
             />

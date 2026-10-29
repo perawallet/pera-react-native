@@ -312,6 +312,7 @@ export {
     getSubmissionAttemptsAtNonce,
     getSubmissionAttemptsWithHistoryEntry,
     getReplaceableSubmissionAttempt,
+    DELEGATION_SUBMISSION_FLOW,
     LANDABLE_SUBMISSION_STATUSES,
     markSubmissionUnknown,
     OPEN_SUBMISSION_STATUSES,

@@ -25,10 +25,14 @@ import { hdDeriveClaimed } from './rules/hd-derive-claimed.js'
 import { noManualUnitConversion } from './rules/no-manual-unit-conversion.js'
 import { noDisplayStringIdentity } from './rules/no-display-string-identity.js'
 import { fetchHasDeadline } from './rules/fetch-has-deadline.js'
+import { noPackageStoreInternals } from './rules/no-package-store-internals.js'
 import { testIdProp } from './rules/test-id-prop.js'
+import { makeStylesLocation } from './rules/make-styles-location.js'
+import { preferLookupMap } from './rules/prefer-lookup-map.js'
 import { preferToError } from './rules/prefer-to-error.js'
 import { noDeepRelativeImports } from './rules/no-deep-relative-imports.js'
 import { webviewInjectionSerializer } from './rules/webview-injection-serializer.js'
+import { typedDomainErrors } from './rules/typed-domain-errors.js'
 
 // A mobile-source rule needs its own override in apps/mobile/.oxlintrc.json:
 // oxlint resolves an inherited override's globs from the extending config's
@@ -51,9 +55,13 @@ export default {
         'no-manual-unit-conversion': noManualUnitConversion,
         'no-display-string-identity': noDisplayStringIdentity,
         'fetch-has-deadline': fetchHasDeadline,
+        'no-package-store-internals': noPackageStoreInternals,
         'test-id-prop': testIdProp,
+        'make-styles-location': makeStylesLocation,
+        'prefer-lookup-map': preferLookupMap,
         'prefer-to-error': preferToError,
         'no-deep-relative-imports': noDeepRelativeImports,
         'webview-injection-serializer': webviewInjectionSerializer,
+        'typed-domain-errors': typedDomainErrors,
     },
 }

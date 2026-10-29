@@ -17,11 +17,9 @@ import { createAppStackNavigator } from '@routes/createAppStackNavigator'
 import { screenListeners } from '@routes/listeners'
 import { routeCapabilities } from '@routes/capabilities'
 import { VaultSecuritySettingsScreen } from './vault-security'
-import { developerGalleryScreens } from './developer-gallery'
 import { SettingsScreen } from '@modules/settings/screens/SettingsScreen'
 import { SettingsSecurityScreen } from '@modules/security/routes'
 import { SettingsNotificationsScreen } from '@modules/settings/screens/SettingsNotificationsScreen/SettingsNotificationsScreen'
-import { SettingsWalletConnectScreen } from '@modules/settings/screens/SettingsWalletConnectScreen'
 import { SettingsPasskeyScreen } from '@modules/settings/screens/SettingsPasskeysScreen'
 import { SettingsCurrencyScreen } from '@modules/settings/screens/SettingsCurrencyScreen/SettingsCurrencyScreen'
 import { SettingsThemeScreen } from '@modules/settings/screens/SettingsThemeScreen/SettingsThemeScreen'
@@ -29,200 +27,26 @@ import { SettingsLaunchScreen } from '@modules/settings/screens/SettingsLaunchSc
 import { SettingsAdvancedScreen } from '@modules/settings/screens/SettingsAdvancedScreen'
 import { SettingsConfirmationScreen } from '@modules/settings/screens/SettingsConfirmationScreen'
 import { SettingsLanguageScreen } from '@modules/settings/screens/SettingsLanguageScreen'
-import { SettingsDeveloperScreen } from '@modules/settings/screens/developer/SettingsDeveloperScreen'
 import { fullScreenLayout } from '@layouts/index'
-import { SettingsDeveloperNodeSettingsScreen } from '@modules/settings/screens/developer/SettingsDeveloperNodeSettingsScreen/SettingsDeveloperNodeSettingsScreen'
 import type { NavigatorScreenParams } from '@react-navigation/native'
-import type { ConnectionSettingsRow } from '@perawallet/wallet-core-connections'
 import {
     CloudBackupStackNavigator,
     type CloudBackupStackParamList,
 } from '@modules/cloud-backup'
-import { SettingsWalletConnectDetailsScreen } from '@modules/settings/screens/SettingsWalletConnectDetailsScreen/SettingsWalletConnectDetailsScreen'
 import { ConnectionsSettingsScreen } from '@modules/settings/screens/ConnectionsSettingsScreen'
-import { SettingsDebugToolsScreen } from '../screens/developer/SettingsDebugToolsScreen/SettingsDebugToolsScreen'
-import { SettingsDeveloperFeatureFlagsScreen } from '../screens/developer/SettingsDeveloperFeatureFlagsScreen/SettingsDeveloperFeatureFlagsScreen'
-import { SettingsDeveloperManageCacheScreen } from '../screens/developer/SettingsDeveloperManageCacheScreen'
-import { SettingsDeveloperAppIntegrityScreen } from '../screens/developer/SettingsDeveloperAppIntegrityScreen'
-import { SettingsDeveloperMigrationViewerScreen } from '../screens/developer/SettingsDeveloperMigrationViewerScreen'
-import { SettingsDeveloperMigrationInfoScreen } from '../screens/developer/SettingsDeveloperMigrationInfoScreen'
-import { SettingsDeveloperMigrationSimulatorScreen } from '../screens/developer/SettingsDeveloperMigrationSimulatorScreen'
-import { SettingsDeveloperKeystoreMigrationsScreen } from '../screens/developer/SettingsDeveloperKeystoreMigrationsScreen'
 
-import type { GalleryCategoryId } from '@modules/settings/screens/developer/gallery-catalog'
+import {
+    DeveloperSettingsStackNavigator,
+    type DeveloperSettingsStackParamsList,
+} from './DeveloperSettingsStackNavigator'
+import {
+    WalletConnectSettingsStackNavigator,
+    type WalletConnectSettingsStackParamsList,
+} from './WalletConnectSettingsStackNavigator'
 
-export type DeveloperSettingsStackParamsList = {
-    DeveloperSettingsHome: undefined
-    NodeSettings: undefined
-    DebugTools: undefined
-    FeatureFlags: undefined
-    ManageCache: undefined
-    AppIntegrity: undefined
-    Gallery: undefined
-    GalleryCategory: { categoryId: GalleryCategoryId }
-    GalleryPreview: { entryId: string }
-    MigrationViewer: undefined
-    MigrationInfo: undefined
-    MigrationSimulator: undefined
-    KeystoreMigrations: undefined
-}
-
-const DeveloperSettingsStack =
-    createAppStackNavigator<DeveloperSettingsStackParamsList>()
-
-const DeveloperSettingsStackNavigator = () => {
-    return (
-        <DeveloperSettingsStack.Navigator
-            initialRouteName='DeveloperSettingsHome'
-            screenOptions={{
-                headerShown: true,
-                header: (props: NativeStackHeaderProps) => (
-                    <NavigationHeader {...props} />
-                ),
-                ...SCREEN_ANIMATION_CONFIG,
-            }}
-            screenListeners={screenListeners}
-            layout={fullScreenLayout}
-        >
-            <DeveloperSettingsStack.Screen
-                name='DeveloperSettingsHome'
-                options={{
-                    title: 'screens.developer_settings',
-                }}
-                component={SettingsDeveloperScreen}
-            />
-            <DeveloperSettingsStack.Screen
-                name='NodeSettings'
-                options={{
-                    title: 'screens.node_settings',
-                }}
-                component={SettingsDeveloperNodeSettingsScreen}
-            />
-            <DeveloperSettingsStack.Screen
-                name='DebugTools'
-                options={{
-                    title: 'screens.debug_tools',
-                }}
-                component={SettingsDebugToolsScreen}
-            />
-            <DeveloperSettingsStack.Screen
-                name='FeatureFlags'
-                options={{
-                    title: 'screens.feature_flags',
-                }}
-                component={SettingsDeveloperFeatureFlagsScreen}
-            />
-            <DeveloperSettingsStack.Screen
-                name='ManageCache'
-                options={{
-                    title: 'screens.manage_cache',
-                }}
-                component={SettingsDeveloperManageCacheScreen}
-            />
-            <DeveloperSettingsStack.Screen
-                name='AppIntegrity'
-                options={{
-                    title: 'screens.app_integrity',
-                }}
-                component={SettingsDeveloperAppIntegrityScreen}
-            />
-            {developerGalleryScreens && (
-                <>
-                    <DeveloperSettingsStack.Screen
-                        name='Gallery'
-                        options={{
-                            title: 'Screen Gallery',
-                        }}
-                        component={developerGalleryScreens.GalleryScreen}
-                    />
-                    <DeveloperSettingsStack.Screen
-                        name='GalleryCategory'
-                        options={{ title: 'UI Catalog' }}
-                        component={
-                            developerGalleryScreens.GalleryCategoryScreen
-                        }
-                    />
-                    <DeveloperSettingsStack.Screen
-                        name='GalleryPreview'
-                        options={{ title: 'Preview' }}
-                        component={developerGalleryScreens.GalleryPreviewScreen}
-                    />
-                </>
-            )}
-            {routeCapabilities.migrationDevTools && (
-                <>
-                    <DeveloperSettingsStack.Screen
-                        name='MigrationViewer'
-                        options={{
-                            title: 'Migration Viewer',
-                        }}
-                        component={SettingsDeveloperMigrationViewerScreen}
-                    />
-                    <DeveloperSettingsStack.Screen
-                        name='MigrationInfo'
-                        options={{
-                            title: 'Migration reference',
-                        }}
-                        component={SettingsDeveloperMigrationInfoScreen}
-                    />
-                    <DeveloperSettingsStack.Screen
-                        name='MigrationSimulator'
-                        options={{
-                            title: 'Migration simulator',
-                        }}
-                        component={SettingsDeveloperMigrationSimulatorScreen}
-                    />
-                </>
-            )}
-            <DeveloperSettingsStack.Screen
-                name='KeystoreMigrations'
-                options={{
-                    title: 'Keystore Migrations',
-                }}
-                component={SettingsDeveloperKeystoreMigrationsScreen}
-            />
-        </DeveloperSettingsStack.Navigator>
-    )
-}
-
-export type WalletConnectSettingsStackParamsList = {
-    WalletConnectSettingsHome: undefined
-    WalletConnectSettingsDetails: { connection: ConnectionSettingsRow }
-}
-
-const WalletConnectSettingsStack =
-    createAppStackNavigator<WalletConnectSettingsStackParamsList>()
-
-const WalletConnectSettingsStackNavigator = () => {
-    return (
-        <WalletConnectSettingsStack.Navigator
-            initialRouteName='WalletConnectSettingsHome'
-            screenOptions={{
-                headerShown: true,
-                header: (props: NativeStackHeaderProps) => (
-                    <NavigationHeader {...props} />
-                ),
-                ...SCREEN_ANIMATION_CONFIG,
-            }}
-            screenListeners={screenListeners}
-            layout={fullScreenLayout}
-        >
-            <WalletConnectSettingsStack.Screen
-                name='WalletConnectSettingsHome'
-                options={{
-                    title: 'screens.wallet_connect',
-                }}
-                component={SettingsWalletConnectScreen}
-            />
-            <WalletConnectSettingsStack.Screen
-                name='WalletConnectSettingsDetails'
-                options={{
-                    title: 'screens.wallet_connect_details',
-                }}
-                component={SettingsWalletConnectDetailsScreen}
-            />
-        </WalletConnectSettingsStack.Navigator>
-    )
+export type {
+    DeveloperSettingsStackParamsList,
+    WalletConnectSettingsStackParamsList,
 }
 
 export type SettingsStackParamsList = {

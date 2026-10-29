@@ -20,6 +20,7 @@ import {
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { clickThroughPinPrompt, settlePinPrompt } from './pin-prompt'
+import { skipPasskeyUnlockStep } from './passkey-unlock-step'
 
 const dist = path.resolve(
     path.dirname(fileURLToPath(import.meta.url)),
@@ -77,6 +78,7 @@ test('data wipe destroys the vault: both surfaces ask for a new password (no whi
     await page.getByTestId('create-password-input').fill(PASSWORD)
     await page.getByTestId('create-password-confirm-input').fill(PASSWORD)
     await page.getByTestId('create-password-submit').click()
+    await skipPasskeyUnlockStep(page)
 
     await page
         .getByTestId('onboarding_create_wallet_button')
@@ -152,6 +154,7 @@ test('data wipe destroys the vault: both surfaces ask for a new password (no whi
     await popup.getByTestId('create-password-input').fill(NEW_PASSWORD)
     await popup.getByTestId('create-password-confirm-input').fill(NEW_PASSWORD)
     await popup.getByTestId('create-password-submit').click()
+    await skipPasskeyUnlockStep(popup)
     await expect(
         popup.getByTestId('onboarding_create_wallet_button'),
     ).toBeVisible({ timeout: 20_000 })

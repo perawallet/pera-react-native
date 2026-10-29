@@ -156,7 +156,7 @@ const installStubMigrationService = (
 // device step runs last, after accounts) — it swaps to the device registrar +
 // inbox, exactly as RootComponent does behind `!migrationInProgress`.
 
-// Mirrors production's `DeviceRegistrar` in RootComponent.tsx: v3 registers
+// Mirrors production's `DeviceRegistrar` (components/DeviceRegistrar): v3 registers
 // account-type + notification-preference pairs, not bare addresses.
 const InboxWithDeviceRegistration = () => {
     const registrations = useDeviceAccountRegistrations()

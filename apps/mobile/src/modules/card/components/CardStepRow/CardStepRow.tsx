@@ -37,51 +37,62 @@ export const CardStepRow = ({
     const isPending = status === 'pending'
     const isFailed = status === 'failed'
 
+    const bulletStyleByStatus = {
+        pending: styles.bulletPending,
+        active: styles.bulletFilled,
+        done: styles.bulletFilled,
+        failed: styles.bulletFailed,
+    } satisfies Record<CardStepStatus, unknown>
+
+    const renderBulletContent = () => {
+        if (status === 'done') {
+            return (
+                <PWIcon
+                    name='check'
+                    size='xs'
+                    variant='positive'
+                />
+            )
+        }
+        if (isFailed) {
+            return (
+                <PWIcon
+                    name='cross'
+                    size='xs'
+                    variant='negative'
+                    testID={testID ? `${testID}-failed` : undefined}
+                />
+            )
+        }
+        if (isBusy) {
+            return (
+                <PWLoadingIndicator
+                    size='sm'
+                    testID={testID ? `${testID}-spinner` : undefined}
+                />
+            )
+        }
+        return (
+            <PWText
+                variant='bodyLarge'
+                style={
+                    isPending
+                        ? styles.bulletNumberPending
+                        : styles.bulletNumberActive
+                }
+            >
+                {stepNumber}
+            </PWText>
+        )
+    }
+
     return (
         <PWView
             style={styles.row}
             testID={testID}
         >
-            <PWView
-                style={[
-                    styles.bullet,
-                    isFailed
-                        ? styles.bulletFailed
-                        : isPending
-                          ? styles.bulletPending
-                          : styles.bulletFilled,
-                ]}
-            >
-                {status === 'done' ? (
-                    <PWIcon
-                        name='check'
-                        size='xs'
-                        variant='positive'
-                    />
-                ) : isFailed ? (
-                    <PWIcon
-                        name='cross'
-                        size='xs'
-                        variant='negative'
-                        testID={testID ? `${testID}-failed` : undefined}
-                    />
-                ) : isBusy ? (
-                    <PWLoadingIndicator
-                        size='sm'
-                        testID={testID ? `${testID}-spinner` : undefined}
-                    />
-                ) : (
-                    <PWText
-                        variant='bodyLarge'
-                        style={
-                            isPending
-                                ? styles.bulletNumberPending
-                                : styles.bulletNumberActive
-                        }
-                    >
-                        {stepNumber}
-                    </PWText>
-                )}
+            <PWView style={[styles.bullet, bulletStyleByStatus[status]]}>
+                {renderBulletContent()}
             </PWView>
             <PWText
                 variant='bodyLarge'

@@ -25,7 +25,12 @@ import {
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import { getProvider } from '@perawallet/wallet-extension-provider'
-import type { WalletAccount } from '../models'
+import type { AccountHoldingSource } from '../db'
+import {
+    accountValueKey,
+    type AccountValueKey,
+    type WalletAccount,
+} from '../models'
 import {
     accountChainEntries,
     useOtherRegisteredChainIds,
@@ -57,12 +62,12 @@ export type AccountValueTotals = {
     isError: boolean
 }
 
-export type AccountValueTotalsMap = Map<string, AccountValueTotals>
+export type AccountValueTotalsMap = Map<AccountValueKey, AccountValueTotals>
 
 export type UseAccountValueTotalsQueryResult = {
     /**
-     * Keyed by address, one entry per chain an account is on: an account
-     * derived on two chains has two.
+     * One entry per chain an account is on, keyed by `accountValueKey`: EVM
+     * chains share an address, so the chain has to be part of the key.
      */
     accountValueTotals: AccountValueTotalsMap
     /**
@@ -86,6 +91,10 @@ export type UseAccountValueTotalsQueryResult = {
     isPortfolioFiatValuePartial: boolean
     /** False on a test-tier scope, whose value never counts toward the fiat total. */
     hasFiatTotal: boolean
+    /** Every address and scope `portfolioNativeValue` sums over. */
+    nativeTotalSources: AccountHoldingSource[]
+    /** Every address and scope `portfolioFiatValue` sums over. */
+    fiatTotalSources: AccountHoldingSource[]
     isPending: boolean
     isFetched: boolean
     isRefetching: boolean
@@ -103,6 +112,8 @@ const EMPTY_RESULT_BASE = {
     isRefetching: false,
     isError: false,
     isPaused: false,
+    nativeTotalSources: [] as AccountHoldingSource[],
+    fiatTotalSources: [] as AccountHoldingSource[],
 }
 
 /**
@@ -182,6 +193,22 @@ export const useAccountValueTotalsQuery = (
         // `otherNetworksKey` stands in for the network store read above.
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [valuedOn, scope, otherNetworksKey])
+
+    // Their own memos, so a refetch of the values doesn't hand charts new lists.
+    const nativeTotalSources = useMemo(
+        () =>
+            entries
+                .filter(({ isHome }) => isHome)
+                .map(({ address, scope }) => ({ address, scope })),
+        [entries],
+    )
+    const fiatTotalSources = useMemo(
+        () =>
+            entries
+                .filter(entry => entry.hasFiatTotal)
+                .map(({ address, scope }) => ({ address, scope })),
+        [entries],
+    )
 
     const queries = useMemo(() => {
         return entries.map(({ address, scope: accountScope }) => {
@@ -266,7 +293,7 @@ export const useAccountValueTotalsQuery = (
                 }
 
                 return [
-                    address,
+                    accountValueKey(accountScope.chainId, address),
                     {
                         nativeValue,
                         usdValue,
@@ -296,6 +323,8 @@ export const useAccountValueTotalsQuery = (
             isRefetching: results.some(r => r.isRefetching),
             isError: results.some(r => r.isError),
             isPaused: results.some(r => r.isPaused),
+            nativeTotalSources,
+            fiatTotalSources,
         }
         // `results` is read inside but deliberately not a dep — `resultsSig`
         // is its stable stand-in.
@@ -307,5 +336,7 @@ export const useAccountValueTotalsQuery = (
         pricedChainsKey,
         otherChainIds,
         hasFiatTotal,
+        nativeTotalSources,
+        fiatTotalSources,
     ])
 }

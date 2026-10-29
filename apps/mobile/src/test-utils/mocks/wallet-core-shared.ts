@@ -15,11 +15,11 @@ import type { I18nKey } from '@perawallet/wallet-core-chain-contract'
 
 // Mock @perawallet/wallet-core-shared
 vi.mock('@perawallet/wallet-core-shared', async () => {
-    // Real enum, not a hand-copied literal. It used to be duplicated here and in
-    // two deeplink specs, and nothing failed if a copy fell behind — a missing
-    // member just yields undefined, making TITLE_KEY_BY_CATEGORY[undefined]
-    // produce t(undefined) silently. base.ts has no runtime imports, so pulling
-    // it in by module path is side-effect free.
+    // Real enum, not a hand-copied literal: nothing fails if a copy falls
+    // behind — a missing member just yields undefined, making
+    // TITLE_KEY_BY_CATEGORY[undefined] produce t(undefined) silently. base.ts
+    // has no runtime imports, so pulling it in by module path is side-effect
+    // free.
     const { ErrorCategory } = await vi.importActual<
         typeof import('@packages/shared/src/errors/base')
     >('@packages/shared/src/errors/base')

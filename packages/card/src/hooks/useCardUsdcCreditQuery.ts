@@ -13,7 +13,11 @@
 import { useCallback } from 'react'
 import { QueryObserver, useQueryClient } from '@tanstack/react-query'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import {
+    AppError,
+    ErrorCategory,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import { cardAdapterFor } from '../chain-adapter'
 import { getCardSettlementAssetId } from './cardChain'
 import { cardQueryKeys } from './querykeys'
@@ -22,9 +26,11 @@ export const USDC_CREDIT_POLL_INTERVAL_MS = 1500
 /** Generous: a swap lands within a round or two, but the node can lag behind the submit. */
 export const USDC_CREDIT_TIMEOUT_MS = 45_000
 
-export class UsdcCreditTimeoutError extends Error {
+export class UsdcCreditTimeoutError extends AppError {
     constructor() {
-        super('USDC credit not observed in time')
+        super('USDC credit not observed in time', {
+            category: ErrorCategory.TRANSACTIONS,
+        })
         this.name = 'UsdcCreditTimeoutError'
     }
 }

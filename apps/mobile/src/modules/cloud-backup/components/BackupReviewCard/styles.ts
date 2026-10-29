@@ -40,14 +40,6 @@ export const useStyles = makeStyles(theme => ({
     summary: {
         gap: theme.spacing.xs,
     },
-    summaryLine: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.sm,
-    },
-    summaryText: {
-        color: theme.colors.textGray,
-    },
     button: {
         alignSelf: 'flex-start',
     },

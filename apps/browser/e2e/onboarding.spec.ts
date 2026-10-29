@@ -19,6 +19,7 @@ import {
 } from '@playwright/test'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { skipPasskeyUnlockStep } from './passkey-unlock-step'
 
 const dist = path.resolve(
     path.dirname(fileURLToPath(import.meta.url)),
@@ -73,6 +74,7 @@ test('onboards in the expanded tab: password → create wallet → home', async 
     await page.getByTestId('create-password-input').fill(PASSWORD)
     await page.getByTestId('create-password-confirm-input').fill(PASSWORD)
     await page.getByTestId('create-password-submit').click()
+    await skipPasskeyUnlockStep(page)
 
     // --- Onboarding: tap "Create wallet" button ---
     // testID from OnboardingScreen.tsx: 'onboarding_create_wallet_button'
@@ -120,11 +122,11 @@ test('onboards in the expanded tab: password → create wallet → home', async 
     })
     expect(pageErrors, 'page threw an uncaught error').toEqual([])
 
-    // Regression guard (M3 home-crash): the home screen's corner-radius
+    // Regression guard for the home-crash: the home screen's corner-radius
     // reveal animation (useAccountScreenAnimation) assigns a shared value a
     // couple hundred ms after mount. On web that goes through reanimated's
-    // valueSetter, which previously threw `_getAnimationTimestamp is not a
-    // function` because the web-shims/react-native-worklets.js stub never set
+    // valueSetter, which throws `_getAnimationTimestamp is not a
+    // function` unless the web-shims/react-native-worklets.js stub sets
     // that global — an uncaught error with no error boundary in the web tree,
     // which unmounts React's entire root and blanks the screen. Wait past
     // that window and assert the screen is still there with no new errors.

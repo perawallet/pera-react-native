@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import { AppError, ErrorCategory } from '@perawallet/wallet-core-shared'
+
 // Reason codes mirror the legacy native apps' explicit error cases. UI maps
 // each to a localized string under `onboarding.pera_web_import.errors.*`.
 export const PeraWebImportErrorReason = {
@@ -32,11 +34,11 @@ export const PeraWebImportErrorReason = {
 export type PeraWebImportErrorReason =
     (typeof PeraWebImportErrorReason)[keyof typeof PeraWebImportErrorReason]
 
-export class PeraWebImportError extends Error {
+export class PeraWebImportError extends AppError {
     readonly reason: PeraWebImportErrorReason
 
     constructor(reason: PeraWebImportErrorReason, message?: string) {
-        super(message ?? reason)
+        super(message ?? reason, { category: ErrorCategory.STORAGE })
         this.name = 'PeraWebImportError'
         this.reason = reason
     }

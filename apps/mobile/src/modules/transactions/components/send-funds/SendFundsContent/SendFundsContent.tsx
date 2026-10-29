@@ -42,14 +42,17 @@ export const SendFundsContent = ({ asset }: SendFundsContentProps) => {
     const isDarkMode = useIsDarkMode()
     const { selectedAccount, isReady } = useSendFundsContent(asset)
 
-    return (
-        <TransactionErrorBoundary t={t}>
-            {!selectedAccount ? (
+    const renderContent = () => {
+        if (!selectedAccount) {
+            return (
                 <EmptyView
                     title={t('send_funds.bottom_sheet.no_account_title')}
                     body={t('send_funds.bottom_sheet.no_account_body')}
                 />
-            ) : isReady ? (
+            )
+        }
+        if (isReady) {
+            return (
                 <NavigationIndependentTree>
                     {/* Theme the independent tree explicitly: without it React
                         Navigation falls back to DefaultTheme, whose grey
@@ -64,13 +67,18 @@ export const SendFundsContent = ({ asset }: SendFundsContentProps) => {
                         <SendFundsRoutes />
                     </NavigationContainer>
                 </NavigationIndependentTree>
-            ) : (
-                // Asset-scoped entries hold here until the asset query settles
-                // so the initial route is computed from settled data (see
-                // useSendFundsContent). A DB read resolves fast; this keeps the
-                // sheet from flashing an empty scene while it does.
-                <LoadingView variant='circle' />
-            )}
+            )
+        }
+        // Asset-scoped entries hold here until the asset query settles
+        // so the initial route is computed from settled data (see
+        // useSendFundsContent). A DB read resolves fast; this keeps the
+        // sheet from flashing an empty scene while it does.
+        return <LoadingView variant='circle' />
+    }
+
+    return (
+        <TransactionErrorBoundary t={t}>
+            {renderContent()}
         </TransactionErrorBoundary>
     )
 }

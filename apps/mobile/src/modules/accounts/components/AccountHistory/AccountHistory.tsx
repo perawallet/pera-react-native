@@ -22,14 +22,14 @@ import { HistorySkeleton } from './HistorySkeleton'
 import { useStyles } from './styles'
 import { useAccountHistory } from './useAccountHistory'
 import {
-    TransactionListItem,
-    TransactionDateHeader,
+    TransactionHistoryRow,
     TransactionHistoryLoadState,
     TransactionHistorySearchOlder,
     getTransactionRowKey,
     getTransactionRowType,
     type TransactionListRow,
 } from '@modules/transactions'
+import { RowSeparator } from './RowSeparator'
 
 export type AccountHistoryProps = {
     scrollEnabled?: boolean
@@ -65,21 +65,13 @@ export const AccountHistory = ({ scrollEnabled }: AccountHistoryProps) => {
     } = useAccountHistory()
 
     const renderItem = useCallback(
-        ({ item }: { item: TransactionListRow }) =>
-            item.kind === 'header' ? (
-                <TransactionDateHeader title={item.title} />
-            ) : item.kind === 'record' ? (
-                <TransactionListItem
-                    record={item.record}
-                    suspectedPoisoning={suspectedPoisoningById.get(item.key)}
-                />
-            ) : (
-                <TransactionListItem
-                    transaction={item.transaction}
-                    onPress={handleTransactionPress}
-                    suspectedPoisoning={suspectedPoisoningById.get(item.key)}
-                />
-            ),
+        ({ item }: { item: TransactionListRow }) => (
+            <TransactionHistoryRow
+                row={item}
+                onTransactionPress={handleTransactionPress}
+                suspectedPoisoning={suspectedPoisoningById.get(item.key)}
+            />
+        ),
         [handleTransactionPress, suspectedPoisoningById],
     )
 
@@ -184,25 +176,4 @@ export const AccountHistory = ({ scrollEnabled }: AccountHistoryProps) => {
             />
         </PWView>
     )
-}
-
-type RowSeparatorProps = {
-    leadingItem: TransactionListRow
-    trailingItem: TransactionListRow
-}
-
-/**
- * Hairline between two transaction rows only. A date header brings its own
- * rules, so a separator either side of one would double up — the equivalent of
- * `SectionList`'s item-vs-section separator split, which a flat list collapses
- * into a single slot.
- */
-const RowSeparator = ({ leadingItem, trailingItem }: RowSeparatorProps) => {
-    const styles = useStyles()
-
-    if (leadingItem.kind === 'header' || trailingItem.kind === 'header') {
-        return null
-    }
-
-    return <PWView style={styles.separator} />
 }

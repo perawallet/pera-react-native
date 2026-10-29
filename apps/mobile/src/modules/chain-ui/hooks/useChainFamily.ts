@@ -50,11 +50,14 @@ export const chainFamilyDisplay = (
 ): UseChainFamilyResult => {
     const leadChainId = leadChainOf(family)
     const { familyLabel } = chainUiFor(family)
-    const label = familyLabel
-        ? t(familyLabel)
-        : leadChainId
-          ? getProvider().chains.get(leadChainId).descriptor.displayName
-          : family
+    const labelOf = () => {
+        if (familyLabel) return t(familyLabel)
+        if (leadChainId) {
+            return getProvider().chains.get(leadChainId).descriptor.displayName
+        }
+        return family
+    }
+    const label = labelOf()
     const truncate = (address: string) =>
         leadChainId && addressCodecs.has(leadChainId)
             ? addressCodecs.get(leadChainId).truncate(address)
