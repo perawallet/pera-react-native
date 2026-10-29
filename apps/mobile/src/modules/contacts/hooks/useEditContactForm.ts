@@ -26,7 +26,7 @@ import {
 } from '@perawallet/wallet-core-contacts'
 
 import { getBackupSyncManager } from '@perawallet/wallet-core-backup'
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, toError } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { useSingleFlight } from '@hooks/useSingleFlight'
@@ -164,10 +164,7 @@ export const useEditContactForm = (): UseEditContactFormResult => {
                 } catch (error) {
                     logger.warn('useEditContactForm: backup choice failed', {
                         id: targetId,
-                        error:
-                            error instanceof Error
-                                ? error.message
-                                : String(error),
+                        error: toError(error).message,
                     })
                 }
                 if (!isRecorded) {

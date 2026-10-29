@@ -75,8 +75,7 @@ const fail = (error: string): ConnectionsControlResponse => ({
     error,
 })
 
-const describeError = (error: unknown): string =>
-    error instanceof Error ? error.message : String(error)
+const describeError = (error: unknown): string => toError(error).message
 
 const requestKey = (connectionId: string, correlationId: string): string =>
     `${connectionId}:${correlationId}`

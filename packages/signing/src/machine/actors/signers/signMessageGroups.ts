@@ -18,6 +18,7 @@ import type {
     ChainKeyStore,
     ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
+import { toError } from '@perawallet/wallet-core-shared'
 import { signMessages } from '../../../message-signer'
 import {
     CannotSignError,
@@ -85,9 +86,7 @@ export const signMessageGroups = async ({
         } catch (error) {
             if (error instanceof PipelineError) throw error
             // The chain's refusal is a fact about the payload, so a retry can't change it.
-            throw new InvalidSignableDataError(
-                error instanceof Error ? error.message : String(error),
-            )
+            throw new InvalidSignableDataError(toError(error).message)
         }
     }
     return results

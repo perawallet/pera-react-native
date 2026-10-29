@@ -224,7 +224,7 @@ export const signingMachine = setup({
                     }
                 ).output
                 const cause: unknown = out.error.cause
-                return cause instanceof Error ? cause : new Error(String(cause))
+                return toError(cause)
             },
             failedDuringState: () => 'signing' as const,
         }),
