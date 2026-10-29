@@ -169,7 +169,11 @@ const connectSession = async (): Promise<FakeWalletKit> => {
                 requiredNamespaces: {
                     eip155: {
                         chains: [ETH_MAINNET],
-                        methods: ['personal_sign', 'eth_signTypedData_v4'],
+                        methods: [
+                            'personal_sign',
+                            'eth_signTypedData_v4',
+                            'eth_signTypedData',
+                        ],
                         events: [],
                     },
                 },
@@ -300,6 +304,45 @@ describe('Flow: an eip155 dApp asks for a message signature', () => {
                 ...MAIL_TYPED_DATA,
             }),
         ).resolves.toBe(true)
+    })
+
+    it('Given a connected session, when the dApp sends unversioned eth_signTypedData with a v4 object and the user slides to confirm, then the review shows the typed-data warning and the dApp receives a signature viem verifies for the signer', async () => {
+        const walletKit = await connectSession()
+
+        send(walletKit, 'eth_signTypedData', [
+            SENDER,
+            JSON.stringify(MAIL_TYPED_DATA),
+        ])
+        await waitFor(
+            () => expect(screen.getByTestId(CONFIRM_SLIDE)).toBeTruthy(),
+            { timeout: 15_000 },
+        )
+        expect(screen.getByTestId(TYPED_DATA_WARNING)).toBeTruthy()
+        fireEvent.click(screen.getByTestId(CONFIRM_SLIDE))
+
+        const response = await answerOf(walletKit)
+        expect(response.result).toBe(VIEM_MAIL)
+        await expect(
+            verifyTypedData({
+                address: SENDER,
+                signature: response.result,
+                ...MAIL_TYPED_DATA,
+            }),
+        ).resolves.toBe(true)
+    })
+
+    it('Given a connected session, when the dApp sends eth_signTypedData with a v1 array, then it is answered 4200 and no review opens', async () => {
+        const walletKit = await connectSession()
+
+        send(walletKit, 'eth_signTypedData', [
+            [{ type: 'string', name: 'Message', value: 'Hi, Alice!' }],
+            SENDER,
+        ])
+
+        const response = await answerOf(walletKit)
+        expect(response.error).toMatchObject({ code: 4200 })
+        expect(screen.queryByTestId('sign-request-view')).toBeNull()
+        expect(kmsCore.sign).not.toHaveBeenCalled()
     })
 
     it('Given a connected session, when the dApp sends a Permit2 PermitSingle for an unlimited amount, then the review shows the spend-approval warning with the spender and an unlimited amount, and cancelling answers 4001', async () => {

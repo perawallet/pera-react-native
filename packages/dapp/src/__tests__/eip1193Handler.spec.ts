@@ -107,6 +107,7 @@ const fakeAdapter = (
                 'eth_sendTransaction',
                 'personal_sign',
                 'eth_signTypedData_v4',
+                'eth_signTypedData',
                 'wallet_switchEthereumChain',
             ],
             handleRequest: (method, params) => {
@@ -131,6 +132,22 @@ const fakeAdapter = (
                             type: 'sign-typed-data',
                             params,
                         }
+                    }
+                    // Like the Ethereum table: a v1 array is refused per call.
+                    case 'eth_signTypedData': {
+                        return Array.isArray(params) && Array.isArray(params[0])
+                            ? {
+                                  kind: 'refused',
+                                  error: {
+                                      code: EIP_1193_CODE['unsupported-method'],
+                                      message: 'v1 typed data',
+                                  },
+                              }
+                            : {
+                                  kind: 'operation',
+                                  type: 'sign-typed-data',
+                                  params,
+                              }
                     }
                     default: {
                         return { kind: 'unsupported' }
@@ -810,6 +827,7 @@ describe('createEip1193ConnectionHandler', () => {
             ['eth_sendTransaction', 'send-transaction'],
             ['personal_sign', 'sign-message'],
             ['eth_signTypedData_v4', 'sign-typed-data'],
+            ['eth_signTypedData', 'sign-typed-data'],
         ])(
             '%s from a connected site raises one injected request on the site chain',
             async (method, type) => {
@@ -850,6 +868,21 @@ describe('createEip1193ConnectionHandler', () => {
             ])
             await registry.initialize()
             expect(errorOf(await transport.send(ORIGIN, method))?.code).toBe(
+                EIP1193_ERROR_CODE.unsupportedMethod,
+            )
+            expect(messages).toHaveLength(0)
+        })
+
+        it('answers eth_signTypedData with a v1 array with the chain refusal and never raises it', async () => {
+            const { transport, registry, messages } = setup([
+                connectedOn('ethereum'),
+            ])
+            await registry.initialize()
+            const response = await transport.send(ORIGIN, 'eth_signTypedData', [
+                [{ type: 'string', name: 'Message', value: 'Hi' }],
+                ADDR_X,
+            ])
+            expect(errorOf(response)?.code).toBe(
                 EIP1193_ERROR_CODE.unsupportedMethod,
             )
             expect(messages).toHaveLength(0)

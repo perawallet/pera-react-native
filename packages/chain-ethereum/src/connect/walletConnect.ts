@@ -38,6 +38,7 @@ import {
     findEthereumCallBatch,
     readEthereumCallsStatus,
 } from './callBatch/status'
+import { isTypedDataV4Params } from './typedDataVersion'
 
 export const ETHEREUM_CAIP2_NAMESPACE = 'eip155'
 
@@ -45,6 +46,7 @@ export const ETHEREUM_WC_V2_METHOD = {
     sendTransaction: 'eth_sendTransaction',
     personalSign: 'personal_sign',
     signTypedDataV4: 'eth_signTypedData_v4',
+    signTypedData: 'eth_signTypedData',
     switchChain: 'wallet_switchEthereumChain',
     accounts: 'eth_accounts',
     requestAccounts: 'eth_requestAccounts',
@@ -53,6 +55,11 @@ export const ETHEREUM_WC_V2_METHOD = {
     sendCalls: 'wallet_sendCalls',
     getCallsStatus: 'wallet_getCallsStatus',
     showCallsStatus: 'wallet_showCallsStatus',
+    sign: 'eth_sign',
+    signTypedDataV3: 'eth_signTypedData_v3',
+    signTransaction: 'eth_signTransaction',
+    sendRawTransaction: 'eth_sendRawTransaction',
+    getPermissions: 'wallet_getPermissions',
     // Named so it routes `unsupported`, but never listed: no user-added or
     // additional EVM chain.
     addChain: 'wallet_addEthereumChain',
@@ -132,12 +139,22 @@ const SIGNING_METHODS = [
     ETHEREUM_WC_V2_METHOD.sendTransaction,
     ETHEREUM_WC_V2_METHOD.personalSign,
     ETHEREUM_WC_V2_METHOD.signTypedDataV4,
+    ETHEREUM_WC_V2_METHOD.signTypedData,
     ETHEREUM_WC_V2_METHOD.switchChain,
     ETHEREUM_WC_V2_METHOD.sendCalls,
 ] as const
 
-// eth_signTransaction, eth_sendRawTransaction and eth_sign are deliberately
-// absent: they route `unsupported`.
+// Listed so proposals that require them connect; every call answers 4200: no
+// blind signing, signing without sending, raw broadcasts, v3 typed data or
+// EIP-2255 permissions.
+const REFUSED_METHODS: readonly string[] = [
+    ETHEREUM_WC_V2_METHOD.sign,
+    ETHEREUM_WC_V2_METHOD.signTypedDataV3,
+    ETHEREUM_WC_V2_METHOD.signTransaction,
+    ETHEREUM_WC_V2_METHOD.sendRawTransaction,
+    ETHEREUM_WC_V2_METHOD.getPermissions,
+]
+
 const METHODS = [
     ...SIGNING_METHODS,
     ETHEREUM_WC_V2_METHOD.accounts,
@@ -146,7 +163,24 @@ const METHODS = [
     ETHEREUM_WC_V2_METHOD.getCapabilities,
     ETHEREUM_WC_V2_METHOD.getCallsStatus,
     ETHEREUM_WC_V2_METHOD.showCallsStatus,
+    ...REFUSED_METHODS,
 ] as const
+
+const refuseAsUnsupported = (message: string): WalletConnectRequestRoute => ({
+    kind: 'refused',
+    error: { code: EIP_1193_CODE['unsupported-method'], message },
+})
+
+// The route is where the version is known: the validator only sees
+// `sign-typed-data`, and v1 orders its params differently.
+const routeUnversionedTypedData = (
+    params: unknown,
+): WalletConnectRequestRoute =>
+    isTypedDataV4Params(params)
+        ? { kind: 'operation', type: 'sign-typed-data', params }
+        : refuseAsUnsupported(
+              'eth_signTypedData is served only for a v4 typed-data object',
+          )
 
 const invalidParams = (message: string): DappRequestCodedError =>
     new DappRequestCodedError(EIP_1193_CODE['invalid-params'], message)
@@ -220,6 +254,9 @@ const createV2 = (
             case ETHEREUM_WC_V2_METHOD.signTypedDataV4: {
                 return { kind: 'operation', type: 'sign-typed-data', params }
             }
+            case ETHEREUM_WC_V2_METHOD.signTypedData: {
+                return routeUnversionedTypedData(params)
+            }
             case ETHEREUM_WC_V2_METHOD.switchChain: {
                 return routeSwitch(chain, params)
             }
@@ -267,7 +304,9 @@ const createV2 = (
                 }
             }
             default: {
-                return { kind: 'unsupported' }
+                return REFUSED_METHODS.includes(method)
+                    ? refuseAsUnsupported(`Pera does not serve ${method}`)
+                    : { kind: 'unsupported' }
             }
         }
     },

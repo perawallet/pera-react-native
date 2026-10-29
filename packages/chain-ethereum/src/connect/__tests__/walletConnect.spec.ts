@@ -62,11 +62,12 @@ describe('caip2ChainIdFor / networkForCaip2ChainId', () => {
 })
 
 describe('v2.methods', () => {
-    it('is exactly the eleven served methods', () => {
+    it('is exactly the seventeen listed methods', () => {
         expect(v2.methods).toEqual([
             'eth_sendTransaction',
             'personal_sign',
             'eth_signTypedData_v4',
+            'eth_signTypedData',
             'wallet_switchEthereumChain',
             'wallet_sendCalls',
             'eth_accounts',
@@ -75,21 +76,42 @@ describe('v2.methods', () => {
             'wallet_getCapabilities',
             'wallet_getCallsStatus',
             'wallet_showCallsStatus',
+            'eth_sign',
+            'eth_signTypedData_v3',
+            'eth_signTransaction',
+            'eth_sendRawTransaction',
+            'wallet_getPermissions',
         ])
     })
 
     it.each([
+        'eth_sign',
+        'eth_signTypedData_v3',
         'eth_signTransaction',
         'eth_sendRawTransaction',
-        'eth_sign',
-        'wallet_addEthereumChain',
-    ])('never lists %s', method => {
-        expect(v2.methods).not.toContain(method)
-        expect(v2.handleRequest(method, [])).toEqual({ kind: 'unsupported' })
+        'wallet_getPermissions',
+    ])('lists %s and answers every call 4200', method => {
+        expect(v2.methods).toContain(method)
+        expect(v2.signingMethods).not.toContain(method)
+        expect(v2.handleRequest(method, [ADDRESS, '0x00'])).toMatchObject({
+            kind: 'refused',
+            error: { code: 4200 },
+        })
     })
 
-    it('asks the user only for the five signing methods', () => {
-        expect(v2.signingMethods).toEqual(v2.methods.slice(0, 5))
+    it.each([
+        'wallet_addEthereumChain',
+        'eth_signTypedData_v1',
+        'wallet_watchAsset',
+    ])('never lists %s', method => {
+        expect(v2.methods).not.toContain(method)
+        expect(v2.handleRequest(method, [])).toEqual({
+            kind: 'unsupported',
+        })
+    })
+
+    it('asks the user only for the six signing methods', () => {
+        expect(v2.signingMethods).toEqual(v2.methods.slice(0, 6))
     })
 })
 
@@ -126,6 +148,26 @@ describe('v2.handleRequest', () => {
             type: 'sign-typed-data',
             params: typed,
         })
+    })
+
+    it('routes unversioned eth_signTypedData with a v4 object as sign-typed-data, params as sent', () => {
+        const typed = [ADDRESS, '{"types":{}}']
+
+        expect(
+            v2.handleRequest(ETHEREUM_WC_V2_METHOD.signTypedData, typed),
+        ).toEqual({
+            kind: 'operation',
+            type: 'sign-typed-data',
+            params: typed,
+        })
+    })
+
+    it('refuses unversioned eth_signTypedData with a v1 array as 4200', () => {
+        const v1 = [[{ type: 'string', name: 'Message', value: 'Hi' }], ADDRESS]
+
+        expect(
+            v2.handleRequest(ETHEREUM_WC_V2_METHOD.signTypedData, v1),
+        ).toMatchObject({ kind: 'refused', error: { code: 4200 } })
     })
 
     it('answers eth_accounts and eth_requestAccounts with the addresses', () => {
