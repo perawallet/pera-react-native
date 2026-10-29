@@ -27,26 +27,3 @@ export class DeeplinkTimeoutError extends Error {
         this.name = 'DeeplinkTimeoutError'
     }
 }
-
-/**
- * Race a Promise against a timeout. Used to bound network-dependent work
- * inside deeplink handlers (algokit's createTransaction calls
- * `algod.suggestedParams()`; if algod is unreachable this can hang forever
- * with no visible feedback). Throwing surfaces a real error to the
- * dispatcher's catch, which then shows the deeplink error sheet.
- */
-export const withTimeout = <T>(
-    stage: string,
-    ms: number,
-    promise: Promise<T>,
-): Promise<T> => {
-    let timer: ReturnType<typeof setTimeout> | undefined
-    const timeoutPromise = new Promise<never>((_, reject) => {
-        timer = setTimeout(() => {
-            reject(new DeeplinkTimeoutError(stage, ms))
-        }, ms)
-    })
-    return Promise.race([promise, timeoutPromise]).finally(() => {
-        if (timer) clearTimeout(timer)
-    })
-}
