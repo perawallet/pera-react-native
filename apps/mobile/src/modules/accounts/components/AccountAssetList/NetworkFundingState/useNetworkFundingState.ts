@@ -11,7 +11,10 @@
  */
 
 import { useCallback } from 'react'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    useCanSignWith,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import { findNativeAsset } from '@perawallet/wallet-core-assets'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { chainDisplayNameOf } from '@perawallet/wallet-core-chain-shared'
@@ -50,6 +53,8 @@ export const useNetworkFundingState = ({
         account,
         chainId,
     )
+    // A watch account can receive but not sign, as on the asset screen.
+    const canSign = useCanSignWith(account, chainId)
     const network = chainDisplayNameOf(chainId) ?? chainId
     const nativeSymbol = findNativeAsset(chainId)?.unitName ?? ''
 
@@ -75,8 +80,8 @@ export const useNetworkFundingState = ({
             nativeSymbol,
         }),
         canReceive,
-        canBuy,
-        canSwap,
+        canBuy: canBuy && canSign,
+        canSwap: canSwap && canSign,
         handleReceive,
         handleBuy,
         handleSwap,

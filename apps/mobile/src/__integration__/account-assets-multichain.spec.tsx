@@ -51,6 +51,7 @@ import { useAssetListViewStore } from '@modules/accounts/hooks/useAssetListViewS
 import { USDC_TEST_ASSET } from './__fixtures__/assets'
 import {
     ALGO_SCOPE,
+    ETH_ADDRESS,
     ETH_USDC,
     LOOKALIKE,
     seedHoldings,
@@ -112,6 +113,17 @@ const EMPTY_ALGORAND_ACCOUNT: WalletAccount = {
         ...TWO_CHAIN_ACCOUNT.chains,
         algorand: { address: HD_TEST_ADDRESS, keyPairId: 'a2-key' },
     },
+}
+
+// No chain entry holds a key, which is what makes an account unable to sign.
+const WATCH_ACCOUNT: WalletAccount = {
+    id: 'watch-empty-algorand',
+    custody: { kind: 'watch' },
+    chains: {
+        algorand: { address: HD_TEST_ADDRESS },
+        ethereum: { address: ETH_ADDRESS },
+    },
+    name: 'Watching',
 }
 
 const openReceiveFundsOn = vi.fn()
@@ -380,6 +392,33 @@ describe("Flow: One account's assets across chains", () => {
         expect((await screen.findByTestId('tab_bar_stub')).textContent).toBe(
             'Fund',
         )
+    })
+
+    it('Given a watch account on an empty Algorand network, when its Algorand chip is selected, then the prompt offers Receive but no Buy or Swap', async () => {
+        await seedAlgorandAccountState({
+            accountAddress: HD_TEST_ADDRESS,
+            scope: ALGO_SCOPE,
+            nativeBalance: new Decimal(0),
+        })
+        await insertAssetHolding({
+            accountAddress: HD_TEST_ADDRESS,
+            assetId: '0',
+            scope: ALGO_SCOPE,
+            amount: new Decimal(0),
+        })
+        // As at startup: the stored chain state says this account has been read.
+        await hydrateAccountChainStates()
+        useAccountsStore.getState().setAccounts([WATCH_ACCOUNT])
+        renderList(WATCH_ACCOUNT)
+        await screen.findByTestId('asset_network_filter_algorand')
+
+        fireEvent.click(screen.getByTestId('asset_network_filter_algorand'))
+
+        expect(
+            await screen.findByTestId('network_funding_receive_button'),
+        ).toBeTruthy()
+        expect(screen.queryByTestId('network_funding_buy_button')).toBeNull()
+        expect(screen.queryByTestId('network_funding_swap_button')).toBeNull()
     })
 
     it('Given a search by contract address, when it is typed, then the matching holding is found', async () => {

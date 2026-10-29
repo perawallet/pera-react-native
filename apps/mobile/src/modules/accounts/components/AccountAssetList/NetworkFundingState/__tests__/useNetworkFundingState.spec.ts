@@ -30,6 +30,12 @@ const actions = vi.hoisted(() => ({
     canSwap: true,
 }))
 
+const mockCanSign = vi.hoisted(() => ({ current: true }))
+
+vi.mock('@perawallet/wallet-core-accounts', () => ({
+    useCanSignWith: () => mockCanSign.current,
+}))
+
 vi.mock('@analytics', async () => ({
     ...(await vi.importActual<object>('@analytics')),
     trackEvent: mockTrackEvent,
@@ -78,6 +84,7 @@ describe('useNetworkFundingState', () => {
         actions.canReceive = true
         actions.canBuy = true
         actions.canSwap = true
+        mockCanSign.current = true
     })
 
     it('names the network and its native token in the copy', () => {
@@ -127,6 +134,20 @@ describe('useNetworkFundingState', () => {
             [AnalyticsMetadataKey.ChainId]: 'base',
         })
         expect(mockReplace).toHaveBeenCalledWith('TabBar', { screen: 'Swap' })
+    })
+
+    it('offers Receive alone to an account that cannot sign, whatever the network supports', () => {
+        mockCanSign.current = false
+
+        const { result } = renderHook(() =>
+            useNetworkFundingState({ account, chainId: 'base' }),
+        )
+
+        expect(result.current).toMatchObject({
+            canReceive: true,
+            canBuy: false,
+            canSwap: false,
+        })
     })
 
     it('offers only the actions the network supports', () => {
