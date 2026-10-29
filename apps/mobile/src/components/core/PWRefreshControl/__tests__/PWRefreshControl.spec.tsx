@@ -15,10 +15,6 @@ import { render, screen } from '@test-utils/render'
 import { describe, expect, it, vi } from 'vitest'
 import { PWRefreshControl } from '../PWRefreshControl'
 
-vi.mock('@react-native-community/netinfo', () => ({
-    default: { addEventListener: vi.fn() },
-}))
-
 // The global setup stubs RefreshControl to render nothing, which would hide the
 // exact regression this file guards. Render children here so the forwarding is
 // observable.
@@ -34,7 +30,7 @@ vi.mock('react-native', async importOriginal => {
 describe('PWRefreshControl', () => {
     // Android's ScrollView renders a refresh control by cloning the element and
     // passing the scroll view itself as children. Swallowing them drops the whole
-    // list from the tree — the crash behind/4681/4679.
+    // list from the tree.
     it('forwards children through to the underlying control', () => {
         render(
             <PWRefreshControl

@@ -10,8 +10,6 @@
  limitations under the License
  */
 
-// @vitest-environment node
-
 import { describe, expect, it, vi } from 'vitest'
 import { AppError, ErrorCategory } from '@perawallet/wallet-core-shared'
 import { AesGcmOpenError, openAesGcm, sealAesGcm } from '../aesGcm'

@@ -65,7 +65,6 @@ describe('NavigationHeader', () => {
             },
         } as unknown as NavigationHeaderProps
         render(<NavigationHeader {...props} />)
-        // Should not render "Ignored Title" or "Test Screen"
         expect(screen.queryByText('Ignored Title')).toBeNull()
         expect(screen.queryByText('Test Screen')).toBeNull()
     })

@@ -17,7 +17,6 @@ import {
 } from '@perawallet/wallet-core-shared'
 import {
     addressOn,
-    getAccountDisplayName,
     useAccountChainId,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -30,6 +29,7 @@ import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useNfdForAddressQuery } from '@perawallet/wallet-core-nfd'
 import { useShouldPromptMnemonicBackup } from '@perawallet/wallet-core-backup'
 import { useAccountTypeLabel } from '@hooks/useAccountTypeLabel'
+import { useAccountName } from '@hooks/useAccountName'
 
 import type { AccountIconSize } from '@components/AccountIcon'
 
@@ -62,14 +62,12 @@ export const useAccountDisplay = ({
     const accountChainId = useAccountChainId(account, LEGACY_CHAIN_ID)
     const scope = useSelectedScope(chainId ?? accountChainId)
     const fullAddress = account ? addressOn(account, scope) : undefined
+    const { getAccountName } = useAccountName()
     const displayName = useMemo(
-        () =>
-            account
-                ? getAccountDisplayName(account, scope.chainId)
-                : 'No Account',
-        [account, scope.chainId],
+        () => getAccountName(account ?? null, scope.chainId),
+        [getAccountName, account, scope.chainId],
     )
-    // Truncate with the codec getAccountDisplayName uses, so an unnamed account's displayName equals `address`.
+    // Truncate with the same codec as the name's address fallback, so an account shown by its address has displayName equal to `address`.
     const address = useMemo(() => {
         if (!account) return undefined
         const { chainId } = scope

@@ -9,7 +9,6 @@
  See the License for the specific language governing permissions and
  limitations under the License
  */
-// @vitest-environment node
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { buildAccount } from '@perawallet/wallet-core-accounts'
 import { getProvider } from '@perawallet/wallet-extension-provider'

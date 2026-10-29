@@ -183,6 +183,37 @@
       }
     },
     {
+      "files": ["apps/*/src/**", "packages/*/src/**", "extensions/*/src/**"],
+      "excludeFiles": ["**/__tests__/**", "**/__mocks__/**", "**/test-utils/**", "**/__integration__/**", "**/*.spec.{ts,tsx}", "**/*.test.{ts,tsx}"],
+      "rules": {
+        "no-restricted-globals": [
+          "error",
+          {
+            "name": "fetch",
+            "message": "Request through queryClient from @perawallet/wallet-core-shared, which carries the retries, timeouts and typed errors a raw fetch skips. A call that must use fetch itself (another host's client, platform code with no client) takes an oxlint-disable-next-line comment giving its reason."
+          }
+        ],
+        "no-restricted-properties": [
+          "error",
+          {
+            "object": "globalThis",
+            "property": "fetch",
+            "message": "Request through queryClient from @perawallet/wallet-core-shared, which carries the retries, timeouts and typed errors a raw fetch skips. A call that must use fetch itself (another host's client, platform code with no client) takes an oxlint-disable-next-line comment giving its reason."
+          },
+          {
+            "object": "window",
+            "property": "fetch",
+            "message": "Request through queryClient from @perawallet/wallet-core-shared, which carries the retries, timeouts and typed errors a raw fetch skips. A call that must use fetch itself (another host's client, platform code with no client) takes an oxlint-disable-next-line comment giving its reason."
+          },
+          {
+            "object": "self",
+            "property": "fetch",
+            "message": "Request through queryClient from @perawallet/wallet-core-shared, which carries the retries, timeouts and typed errors a raw fetch skips. A call that must use fetch itself (another host's client, platform code with no client) takes an oxlint-disable-next-line comment giving its reason."
+          }
+        ]
+      }
+    },
+    {
       "files": [
         "packages/kms/src/**",
         "packages/signing/src/**",
@@ -201,6 +232,21 @@
             "object": "Math",
             "property": "random",
             "message": "Key-handling code draws randomness from crypto.getRandomValues, as packages/kms/src/crypto/random.ts does, never Math.random."
+          },
+          {
+            "object": "globalThis",
+            "property": "fetch",
+            "message": "Request through queryClient from @perawallet/wallet-core-shared, which carries the retries, timeouts and typed errors a raw fetch skips. A call that must use fetch itself (another host's client, platform code with no client) takes an oxlint-disable-next-line comment giving its reason."
+          },
+          {
+            "object": "window",
+            "property": "fetch",
+            "message": "Request through queryClient from @perawallet/wallet-core-shared, which carries the retries, timeouts and typed errors a raw fetch skips. A call that must use fetch itself (another host's client, platform code with no client) takes an oxlint-disable-next-line comment giving its reason."
+          },
+          {
+            "object": "self",
+            "property": "fetch",
+            "message": "Request through queryClient from @perawallet/wallet-core-shared, which carries the retries, timeouts and typed errors a raw fetch skips. A call that must use fetch itself (another host's client, platform code with no client) takes an oxlint-disable-next-line comment giving its reason."
           }
         ]
       }
@@ -238,6 +284,11 @@
       "files": ["packages/*/src/**", "extensions/*/src/**", "apps/browser/src/**"],
       "excludeFiles": ["**/__tests__/**", "**/__mocks__/**", "**/test-utils/**", "**/__integration__/**", "**/*.spec.{ts,tsx}", "**/*.test.{ts,tsx}", "packages/site-safety/src/addresses.ts"],
       "rules": { "pera/no-display-string-identity": "error" }
+    },
+    {
+      "files": ["packages/*/src/**", "extensions/*/src/**", "apps/browser/src/**"],
+      "excludeFiles": ["**/__tests__/**", "**/__mocks__/**", "**/test-utils/**", "**/__integration__/**", "**/*.spec.{ts,tsx}", "**/*.test.{ts,tsx}"],
+      "rules": { "pera/fetch-has-deadline": "error" }
     },
     {
       "files": ["packages/*/src/**", "extensions/*/src/**", "apps/browser/src/**"],

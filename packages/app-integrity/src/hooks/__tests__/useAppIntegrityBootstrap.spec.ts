@@ -10,8 +10,9 @@
  limitations under the License
  */
 
+// @vitest-environment jsdom
 import { describe, expect, it, vi, beforeEach } from 'vitest'
-import { renderHook, waitFor } from '@testing-library/react'
+import { renderHook } from '@testing-library/react'
 
 const mockMode = vi.hoisted(() => ({ current: 'live' }))
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
@@ -21,18 +22,6 @@ vi.mock('@perawallet/wallet-core-chain-shared', () => ({
 const registerMock = vi.fn()
 vi.mock('../../services/registerAppIntegrity', () => ({
     registerAppIntegrity: (...a: unknown[]) => registerMock(...a),
-}))
-
-vi.mock('@perawallet/wallet-extension-provider', () => ({
-    getProvider: () => ({
-        // Importing the real store triggers zustand persist hydration via
-        // getProvider().keyValueStorage, so this stub must exist.
-        keyValueStorage: {
-            getItem: () => null,
-            setItem: () => {},
-            removeItem: () => {},
-        },
-    }),
 }))
 
 import { useAppIntegrityBootstrap } from '../useAppIntegrityBootstrap'
@@ -47,15 +36,15 @@ describe('useAppIntegrityBootstrap', () => {
 
     it.each(['live', 'developer'])(
         'registers on boot against the %s deployment when there is no valid token',
-        async deployment => {
+        deployment => {
             mockMode.current = deployment
             renderHook(() => useAppIntegrityBootstrap())
-            await waitFor(() => expect(registerMock).toHaveBeenCalledOnce())
+            expect(registerMock).toHaveBeenCalledOnce()
             expect(registerMock).toHaveBeenCalledWith({ deployment })
         },
     )
 
-    it('does not re-register when an unexpired token exists', async () => {
+    it('does not re-register when an unexpired token exists', () => {
         useAppIntegrityStore.getState().setRegistration({
             integrityToken: 'jwt',
             expiresAt: new Date(Date.now() + 86_400_000).toISOString(),
@@ -63,7 +52,6 @@ describe('useAppIntegrityBootstrap', () => {
             deviceInstallationId: 'd1',
         })
         renderHook(() => useAppIntegrityBootstrap())
-        await new Promise(r => setTimeout(r, 10))
         expect(registerMock).not.toHaveBeenCalled()
     })
 })

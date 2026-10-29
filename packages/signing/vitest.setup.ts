@@ -19,49 +19,35 @@ import { registerFakePlannerAdapter } from './src/__tests__/fakePlannerAdapter'
 import { registerFakeReviewerAdapter } from './src/__tests__/fakeReviewerAdapter'
 
 const store = new Map<string, string>()
+const keyValueStorage = {
+    getItem: (key: string) => store.get(key) ?? null,
+    setItem: (key: string, value: string) => store.set(key, value),
+    removeItem: (key: string) => {
+        store.delete(key)
+    },
+}
 
 // One instance for the whole file: the network store's per-chain selection
 // reads it through getProvider().
 const chains = createChainRegistry()
 
 vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
-    WithPlatformExtension: () => ({
-        keyValueStorage: {
-            getItem: (key: string) => store.get(key) ?? null,
-            setItem: (key: string, value: string) => store.set(key, value),
-            removeItem: (key: string) => {
-                store.delete(key)
-            },
-        },
-    }),
-    getPlatformServices: () => ({
-        keyValueStorage: {
-            getItem: (key: string) => store.get(key) ?? null,
-            setItem: (key: string, value: string) => store.set(key, value),
-            removeItem: (key: string) => {
-                store.delete(key)
-            },
-        },
-    }),
+    WithPlatformExtension: () => ({ keyValueStorage }),
+    getPlatformServices: () => ({ keyValueStorage }),
 }))
 
 vi.mock('@perawallet/wallet-extension-provider', () => ({
     // Specs hold no keystore, so a scheme read falls back to custody.
     getKeystoreStore: () => ({ state: { keys: [] } }),
     getProvider: () => ({
-        keyValueStorage: {
-            getItem: (key: string) => store.get(key) ?? null,
-            setItem: (key: string, value: string) => store.set(key, value),
-            removeItem: (key: string) => {
-                store.delete(key)
-            },
-        },
+        keyValueStorage,
         chains,
     }),
 }))
 
 // The machine and hooks resolve the chain through the adapter registries.
 beforeEach(() => {
+    store.clear()
     registerFakeBroadcaster()
     registerFakeReviewerAdapter()
     registerFakePlannerAdapter()

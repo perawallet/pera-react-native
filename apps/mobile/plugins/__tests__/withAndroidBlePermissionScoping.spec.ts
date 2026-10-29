@@ -12,14 +12,7 @@
 
 import { describe, expect, it } from 'vitest'
 import { scopeBlePermissions } from '../withAndroidBlePermissionScoping'
-
-const perm = (name: string, extra: Record<string, string> = {}) => ({
-    $: { 'android:name': name, ...extra },
-})
-
-const manifestWith = (names: string[]) => ({
-    manifest: { 'uses-permission': names.map(name => perm(name)) },
-})
+import { manifestWith } from './manifestFixtures'
 
 describe('scopeBlePermissions', () => {
     it('caps the legacy BLE and location permissions at maxSdkVersion 30', () => {

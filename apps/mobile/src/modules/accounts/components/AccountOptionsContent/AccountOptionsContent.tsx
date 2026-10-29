@@ -45,6 +45,8 @@ export const AccountOptionsContent = ({
     const { t } = useLanguage()
     const { dismiss } = useBottomSheetResult<void>()
     const {
+        sheetTitle,
+        networksTitle,
         topActions,
         sharedAccountOptions,
         networks,
@@ -132,7 +134,12 @@ export const AccountOptionsContent = ({
     return (
         <PWSheetLayout
             horizontalPadding='none'
-            header={<SheetHeader title={account.name} />}
+            header={
+                <SheetHeader
+                    title={sheetTitle}
+                    testID='account_options_header'
+                />
+            }
         >
             <AccountTopActions actions={topActions} />
 
@@ -159,7 +166,7 @@ export const AccountOptionsContent = ({
                 style={styles.networksTitle}
                 testID='account_networks_title'
             >
-                {t('account_options.networks_title')}
+                {networksTitle}
             </PWText>
             <AccountNetworkList
                 networks={networks}

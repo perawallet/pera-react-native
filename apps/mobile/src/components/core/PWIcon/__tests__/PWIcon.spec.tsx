@@ -12,27 +12,14 @@
 
 import { StyleSheet, type StyleProp, type ViewStyle } from 'react-native'
 import { ThemeProvider, type Theme } from '@rneui/themed'
-import { render, screen } from '@test-utils/render'
+import { render } from '@test-utils/render'
 import { describe, it, expect, vi, beforeAll } from 'vitest'
 import { getTheme } from '@theme/theme'
-import { PWIcon } from '../PWIcon'
 import { getIconPixelSize } from '../types'
 
-describe('PWIcon', () => {
-    it('renders the warning glyph (registered for destructive flows)', () => {
-        render(
-            <PWIcon
-                name='warning'
-                testID='warning-icon'
-            />,
-        )
-        expect(screen.getByTestId('warning-icon')).toBeTruthy()
-    })
-})
-
-// The barrel + direct-path mocks above stub out PWIcon entirely (real .svg
-// assets crash under jsdom), so these tests import the real implementation
-// via importActual and spy on the icon leaf to inspect the style it receives.
+// The unit setup stubs PWIcon globally (test-utils/mocks/pw-icon.ts), so these
+// tests load the real implementation via importActual and spy on the icon leaf
+// to inspect the props it receives.
 describe('PWIcon forwarded props', () => {
     const theme = getTheme('light') as Theme
     let RealPWIcon: (typeof import('../PWIcon'))['PWIcon']

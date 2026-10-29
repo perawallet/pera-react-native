@@ -20,44 +20,33 @@ import { useMemo } from 'react'
 import { Decimal } from 'decimal.js'
 import { useSettings } from '@perawallet/wallet-core-settings'
 import {
-    useAccountBalancesHistoryQuery,
-    addressOn,
-    useAccountScope,
-    useAllAccounts,
-    type WalletAccount,
+    type AccountHoldingSource,
+    usePortfolioHistoryQuery,
 } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { PreferredAmount } from '@components/PreferredAmount'
 import { TrendIndicator } from '@components/TrendIndicator'
 
 export type WealthTrendProps = {
-    account?: WalletAccount
+    /** Trended as one summed series. */
+    sources: AccountHoldingSource[]
+    currencyScope: ChainScope
     period: HistoryPeriod
     /** Gate the (slow) history fetch on chart visibility. */
     enabled?: boolean
 }
 
 export const WealthTrend = ({
-    account,
+    sources,
+    currencyScope,
     period,
     enabled = true,
 }: WealthTrendProps) => {
     const styles = useStyles()
     const { privacyMode } = useSettings()
 
-    const accounts = useAllAccounts()
-    // An account's own chain; the whole-wallet view stays on the legacy chain.
-    const scope = useAccountScope(account, LEGACY_CHAIN_ID)
-    const addresses = useMemo(
-        () =>
-            (account ? [account] : accounts).flatMap(
-                (a: WalletAccount) => addressOn(a, scope) ?? [],
-            ),
-        [account, accounts, scope],
-    )
-
     const { data, isPending, isUnavailableOnNetwork } =
-        useAccountBalancesHistoryQuery(addresses, period, scope, enabled)
+        usePortfolioHistoryQuery(sources, period, currencyScope, enabled)
 
     // Trend follows the fiat value, like the chart — the ALGO-denominated
     // value is flat for an all-ALGO account no matter what the price does.

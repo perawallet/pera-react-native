@@ -10,10 +10,15 @@
  limitations under the License
  */
 
+// @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, waitFor, act } from '@testing-library/react'
 import { useCsvExportMutation } from '../useCsvExportMutation'
-import { fetchTransactionsCsv, CsvExportError } from '../../api/csv-export'
+import {
+    fetchTransactionsCsv,
+    CsvExportError,
+    type CsvExportResult,
+} from '../../api/csv-export'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
@@ -147,12 +152,8 @@ describe('useCsvExportMutation', () => {
     })
 
     it('correctly reports loading state', async () => {
-        vi.mocked(fetchTransactionsCsv).mockImplementation(
-            () =>
-                new Promise(resolve =>
-                    setTimeout(() => resolve({} as any), 100),
-                ),
-        )
+        const csv = Promise.withResolvers<CsvExportResult>()
+        vi.mocked(fetchTransactionsCsv).mockReturnValueOnce(csv.promise)
 
         const { result } = renderHook(
             () =>
@@ -170,6 +171,7 @@ describe('useCsvExportMutation', () => {
         })
 
         await waitFor(() => expect(result.current.isLoading).toBe(true))
+        csv.resolve({} as CsvExportResult)
         await waitFor(() => expect(result.current.isLoading).toBe(false))
     })
 

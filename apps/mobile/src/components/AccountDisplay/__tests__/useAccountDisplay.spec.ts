@@ -31,6 +31,8 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal =>
     importOriginal<typeof import('@perawallet/wallet-core-accounts')>(),
 )
 
+vi.mock('@hooks/useLanguage')
+
 vi.mock('@perawallet/wallet-core-nfd', () => ({
     useNfdForAddressQuery: () => ({ data: mockNfdNames }),
 }))
@@ -127,6 +129,34 @@ describe('useAccountDisplay', () => {
 
         expect(result.current.displayName).toBe(truncated)
         expect(result.current.renderSecondary).toBe(false)
+    })
+
+    it('names an unnamed Universal Wallet account by its number and shows its address, not its type, below', () => {
+        mockAccountTypeLabel = 'account_info.type_universal_wallet'
+        const account: WalletAccount = {
+            id: 'account-3',
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account: 0, keyIndex: 0 },
+            },
+            chains: { algorand: { address: ADDRESS, keyPairId: 'key' } },
+        }
+
+        const { result } = renderHook(() =>
+            useAccountDisplay({
+                account,
+                compact: false,
+                showAccountType: true,
+                iconSize: 'xl',
+            }),
+        )
+
+        expect(result.current.displayName).toBe('account_info.account_number')
+        expect(result.current.showTypeAsSecondary).toBe(false)
+        expect(result.current.secondaryText).toBe(
+            truncateAlgorandAddress(ADDRESS),
+        )
     })
 
     it('suppresses the secondary line when it repeats the primary', () => {

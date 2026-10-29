@@ -13,9 +13,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act, waitFor } from '@testing-library/react'
 
-// This screen hook had no spec at all (LRK-022 unit gap): it owns the
-// connect→discover→select handoff, the connecting sheet, and error retry.
-
 const {
     mockDiscover,
     mockNavigate,
@@ -143,6 +140,9 @@ describe('useLedgerFetchAccountsScreen', () => {
         renderHook(() => useLedgerFetchAccountsScreen())
 
         await waitFor(() => expect(mockReplace).toHaveBeenCalledTimes(1))
+        expect(mockDiscover.mock.calls[0][0]).toMatchObject({
+            chainId: 'algorand',
+        })
         expect(mockReplace).toHaveBeenCalledWith('LedgerSelectAccounts', {
             chainId: 'algorand',
             deviceId: 'device-1',
@@ -204,6 +204,17 @@ describe('useLedgerFetchAccountsScreen', () => {
 
         await waitFor(() => expect(result.current.errorPreset).not.toBeNull())
         expect(result.current.errorPreset?.body).toBe('Ethereum')
+    })
+
+    it('stays connecting, with the device name, until discovery reports progress', async () => {
+        mockDiscover.mockReturnValue(new Promise(() => {}))
+
+        const { result } = renderHook(() => useLedgerFetchAccountsScreen())
+
+        await waitFor(() => expect(mockDiscover).toHaveBeenCalled())
+        expect(result.current.connectionStatus).toBe('connecting')
+        expect(result.current.isDiscovering).toBe(false)
+        expect(result.current.deviceName).toBe('Nano X')
     })
 
     it('reports discovery progress while the device probes indices', async () => {

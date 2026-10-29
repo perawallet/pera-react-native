@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Pera Wallet",
   "version": "0.1.0",
-  "description": "Algorand wallet by Pera",
+  "description": "Secure web3 crypto wallet with post-quantum accounts",
   "action": {
     "default_popup": "popup.html",
     "default_title": "Pera Wallet",

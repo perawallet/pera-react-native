@@ -413,7 +413,7 @@ describe('the adapter methods', () => {
         expect(points.map(p => p.usdValue.toFixed())).toEqual(['2', '0'])
     })
 
-    it('answers no points on a chain the backend serves no balance history for', async () => {
+    it('answers no points on a chain the backend serves no balance history for, and no portfolio source at all', async () => {
         server.use(...peraEvmHandlers({ baseUrl: TEST_PERA_URL }))
 
         await expect(
@@ -427,7 +427,7 @@ describe('the adapter methods', () => {
         ).resolves.toEqual([])
         await expect(
             ops().fetchPortfolioHistory!([ALICE], 'one-day', SCOPE),
-        ).resolves.toEqual([])
+        ).resolves.toBeNull()
     })
 
     it('answers no points without a request on a scope missing the assets or prices service', async () => {
@@ -435,7 +435,7 @@ describe('the adapter methods', () => {
 
         await expect(
             ops(['assets']).fetchPortfolioHistory!([ALICE], 'one-day', SCOPE),
-        ).resolves.toEqual([])
+        ).resolves.toBeNull()
         await expect(
             ops(['prices']).fetchHoldingBalanceHistory!(
                 ALICE,

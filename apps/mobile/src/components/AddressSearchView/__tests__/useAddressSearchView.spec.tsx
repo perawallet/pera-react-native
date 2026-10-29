@@ -75,9 +75,20 @@ vi.mock('@hooks/useLanguage', () => ({
 }))
 
 const mockFamiliesWithCopy = new Set(['algorand', 'evm'])
+const mockFamiliesWithPlaceholder = new Set(['algorand', 'evm'])
+const mockChainName = vi.hoisted(() => ({
+    value: undefined as string | undefined,
+}))
+
+vi.mock('@hooks/useChainNameWhenMultiChain', () => ({
+    useChainNameWhenMultiChain: () => mockChainName.value,
+}))
 
 vi.mock('@modules/chain-ui', () => ({
     chainUiFor: (family: string) => ({
+        addressSearchPlaceholder: mockFamiliesWithPlaceholder.has(family)
+            ? `placeholder.${family}`
+            : undefined,
         wrongNetworkAddress: mockFamiliesWithCopy.has(family)
             ? {
                   titleKey: `title.${family}`,
@@ -155,6 +166,7 @@ describe('useAddressSearchView', () => {
 
     beforeEach(() => {
         vi.clearAllMocks()
+        mockChainName.value = undefined
 
         vi.mocked(useContacts).mockReturnValue({
             findContacts: mockFindContacts,
@@ -1106,5 +1118,80 @@ describe('useAddressSearchView', () => {
 
             expect(result.current.mismatchedFamily).toBeUndefined()
         })
+    })
+
+    describe('search placeholder', () => {
+        beforeEach(() => {
+            mockFamiliesWithPlaceholder.clear()
+            mockFamiliesWithPlaceholder.add('algorand')
+            mockFamiliesWithPlaceholder.add('evm')
+        })
+
+        it("is the scope family's own copy", () => {
+            const algorand = renderHook(() =>
+                useAddressSearchView({ scope: ALGORAND_SCOPE }),
+            )
+            const evm = renderHook(() =>
+                useAddressSearchView({ scope: ETHEREUM_SCOPE }),
+            )
+
+            expect(algorand.result.current.searchPlaceholder).toBe(
+                'placeholder.algorand',
+            )
+            expect(evm.result.current.searchPlaceholder).toBe('placeholder.evm')
+        })
+
+        it('falls back to neutral copy for a family with no placeholder', () => {
+            mockFamiliesWithPlaceholder.delete('evm')
+
+            const { result } = renderHook(() =>
+                useAddressSearchView({ scope: ETHEREUM_SCOPE }),
+            )
+
+            expect(result.current.searchPlaceholder).toBe(
+                'address_entry.search_placeholder_neutral',
+            )
+        })
+    })
+
+    describe('chain badge', () => {
+        it('names the chain only when the wallet says to', () => {
+            mockChainName.value = 'Ethereum'
+            const named = renderHook(() =>
+                useAddressSearchView({ scope: ETHEREUM_SCOPE }),
+            )
+            mockChainName.value = undefined
+            const unnamed = renderHook(() =>
+                useAddressSearchView({ scope: ETHEREUM_SCOPE }),
+            )
+
+            expect(named.result.current.chainBadgeName).toBe('Ethereum')
+            expect(unnamed.result.current.chainBadgeName).toBeUndefined()
+        })
+    })
+
+    it('still offers the excluded address when the user enters it', () => {
+        const sender = {
+            chains: { algorand: { address: 'SENDER_ADDR' } },
+            name: 'Sender',
+        }
+        vi.mocked(useAllAccounts).mockReturnValue([
+            sender,
+        ] as unknown as ReturnType<typeof useAllAccounts>)
+        mockIsValidAddress.mockImplementation(a => a === 'SENDER_ADDR')
+
+        const { result } = renderHook(() =>
+            useAddressSearchView({
+                scope: ALGORAND_SCOPE,
+                excludeAddress: 'SENDER_ADDR',
+            }),
+        )
+        act(() => {
+            result.current.setValue('SENDER_ADDR')
+        })
+
+        expect(itemsOfType(result.current.matchingItems, 'account')).toEqual([
+            expect.objectContaining({ account: sender }),
+        ])
     })
 })

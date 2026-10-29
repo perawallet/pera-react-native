@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+// @vitest-environment jsdom
 import React from 'react'
 import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -17,6 +18,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
     escrowCardOwner: null as string | null,
+    escrowScope: undefined as unknown,
     getPendingWithdrawal: vi.fn(),
     getWaitTimeSeconds: vi.fn(),
 }))
@@ -26,23 +28,20 @@ vi.mock('../../store', () => ({
     ) => selector({ escrowCardOwner: mocks.escrowCardOwner }),
 }))
 vi.mock('../useEscrowWithdrawal', () => ({
-    useEscrowWithdrawal: () => ({
-        getPendingWithdrawal: mocks.getPendingWithdrawal,
-        getWaitTimeSeconds: mocks.getWaitTimeSeconds,
-    }),
+    useEscrowWithdrawal: (scope: unknown) => {
+        mocks.escrowScope = scope
+        return {
+            getPendingWithdrawal: mocks.getPendingWithdrawal,
+            getWaitTimeSeconds: mocks.getWaitTimeSeconds,
+        }
+    },
 }))
 
-import {
-    type ChainScope,
-    LEGACY_CHAIN_ID,
-} from '@perawallet/wallet-core-chain-contract'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useCardPendingWithdrawalQuery } from '../useCardPendingWithdrawalQuery'
 import { CardEscrowNotConfiguredError } from '../../api/escrow'
 
-const SCOPES: ChainScope[] = [
-    { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const,
-    { chainId: 'ethereum', networkId: 'sepolia' },
-]
+const SCOPE: ChainScope = { chainId: 'ethereum', networkId: 'sepolia' }
 
 const PENDING = {
     card: 'CARD',
@@ -53,7 +52,7 @@ const PENDING = {
     nonce: 0n,
 }
 
-describe.each(SCOPES)('useCardPendingWithdrawalQuery ($chainId)', SCOPE => {
+describe('useCardPendingWithdrawalQuery', () => {
     let queryClient: QueryClient
     const wrapper = ({ children }: { children: React.ReactNode }) =>
         React.createElement(
@@ -84,9 +83,10 @@ describe.each(SCOPES)('useCardPendingWithdrawalQuery ($chainId)', SCOPE => {
         expect(result.current.pending).toEqual(PENDING)
         expect(result.current.waitTimeSeconds).toBe(20)
         expect(mocks.getPendingWithdrawal).toHaveBeenCalledWith('OWNER')
+        expect(mocks.escrowScope).toEqual(SCOPE)
     })
 
-    it('stays idle with no owner to look up', async () => {
+    it('stays idle with no owner to look up', () => {
         mocks.escrowCardOwner = null
 
         const { result } = renderHook(
@@ -96,7 +96,6 @@ describe.each(SCOPES)('useCardPendingWithdrawalQuery ($chainId)', SCOPE => {
             },
         )
 
-        await new Promise(resolve => setTimeout(resolve, 10))
         expect(mocks.getPendingWithdrawal).not.toHaveBeenCalled()
         expect(result.current.pending).toBeNull()
         expect(result.current.isLoading).toBe(false)

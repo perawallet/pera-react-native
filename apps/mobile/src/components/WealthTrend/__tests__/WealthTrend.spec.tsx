@@ -13,7 +13,11 @@
 import { render } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
 import { WealthTrend } from '../WealthTrend'
-import { useAccountBalancesHistoryQuery } from '@perawallet/wallet-core-accounts'
+import { usePortfolioHistoryQuery } from '@perawallet/wallet-core-accounts'
+import type {
+    ChainId,
+    ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import { Decimal } from 'decimal.js'
 
 vi.mock('@perawallet/wallet-core-settings', () => ({
@@ -42,85 +46,103 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
         >()
     return {
         ...actual,
-        useAccountBalancesHistoryQuery: vi.fn(() => ({
-            data: null,
+        usePortfolioHistoryQuery: vi.fn(() => ({
+            data: [],
             isPending: false,
         })),
-        useAllAccounts: vi.fn(() => []),
     }
 })
 
+const ALGORAND: ChainScope = {
+    chainId: 'algorand' as ChainId,
+    networkId: 'mainnet',
+}
+const SOURCES = [{ address: 'ALGO', scope: ALGORAND }]
+
 describe('WealthTrend', () => {
     it('renders empty when isPending is true', () => {
-        vi.mocked(useAccountBalancesHistoryQuery).mockReturnValue({
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            data: undefined as any, // Changed to undefined to match test description, but with 'as any'
-            isPending: true, // Kept as true to match test description
-        } as unknown as ReturnType<typeof useAccountBalancesHistoryQuery>)
+        vi.mocked(usePortfolioHistoryQuery).mockReturnValue({
+            data: [],
+            isPending: true,
+        } as unknown as ReturnType<typeof usePortfolioHistoryQuery>)
 
-        const { container } = render(<WealthTrend period='one-week' />)
-        // Should render empty fragment when pending
+        const { container } = render(
+            <WealthTrend
+                sources={SOURCES}
+                currencyScope={ALGORAND}
+                period='one-week'
+            />,
+        )
         expect(container.innerHTML).toBe('')
     })
 
     it('renders empty on a network with no Pera backend', () => {
-        vi.mocked(useAccountBalancesHistoryQuery).mockReturnValue({
+        vi.mocked(usePortfolioHistoryQuery).mockReturnValue({
             data: [
                 {
                     preferredValue: new Decimal(100),
-                    nativeValue: new Decimal(100),
                 },
                 {
                     preferredValue: new Decimal(120),
-                    nativeValue: new Decimal(120),
                 },
             ],
             isPending: false,
             isUnavailableOnNetwork: true,
-        } as unknown as ReturnType<typeof useAccountBalancesHistoryQuery>)
+        } as unknown as ReturnType<typeof usePortfolioHistoryQuery>)
 
-        const { container } = render(<WealthTrend period='one-week' />)
+        const { container } = render(
+            <WealthTrend
+                sources={SOURCES}
+                currencyScope={ALGORAND}
+                period='one-week'
+            />,
+        )
 
         expect(container.innerHTML).toBe('')
     })
 
     it('displays positive trend with percentage', () => {
-        vi.mocked(useAccountBalancesHistoryQuery).mockReturnValue({
+        vi.mocked(usePortfolioHistoryQuery).mockReturnValue({
             data: [
                 {
                     preferredValue: new Decimal(100),
-                    nativeValue: new Decimal(100),
                 },
                 {
                     preferredValue: new Decimal(120),
-                    nativeValue: new Decimal(120),
                 },
             ],
             isPending: false,
-        } as unknown as ReturnType<typeof useAccountBalancesHistoryQuery>)
+        } as unknown as ReturnType<typeof usePortfolioHistoryQuery>)
 
-        const { container } = render(<WealthTrend period='one-week' />)
-        // Should show percentage value
+        const { container } = render(
+            <WealthTrend
+                sources={SOURCES}
+                currencyScope={ALGORAND}
+                period='one-week'
+            />,
+        )
         expect(container.textContent).toContain('%')
     })
 
     it('displays negative trend with percentage', () => {
-        vi.mocked(useAccountBalancesHistoryQuery).mockReturnValue({
+        vi.mocked(usePortfolioHistoryQuery).mockReturnValue({
             data: [
                 {
                     preferredValue: new Decimal(100),
-                    nativeValue: new Decimal(100),
                 },
                 {
                     preferredValue: new Decimal(80),
-                    nativeValue: new Decimal(80),
                 },
             ],
             isPending: false,
-        } as unknown as ReturnType<typeof useAccountBalancesHistoryQuery>)
+        } as unknown as ReturnType<typeof usePortfolioHistoryQuery>)
 
         const { container, getByTestId } = render(
-            <WealthTrend period='one-week' />,
+            <WealthTrend
+                sources={SOURCES}
+                currencyScope={ALGORAND}
+                period='one-week'
+            />,
         )
         // Direction is shown by the down arrow; the percentage is absolute.
         expect(getByTestId('trend-indicator-down')).toBeTruthy()
@@ -130,49 +152,50 @@ describe('WealthTrend', () => {
     it('computes the trend from fiat value, not ALGO-denominated value', () => {
         // All-ALGO account during a price rally: the ALGO-denominated value
         // stays flat while the fiat value climbs 8% — the badge must follow fiat.
-        vi.mocked(useAccountBalancesHistoryQuery).mockReturnValue({
+        vi.mocked(usePortfolioHistoryQuery).mockReturnValue({
             data: [
                 {
                     preferredValue: new Decimal(50),
-                    nativeValue: new Decimal(100),
                 },
                 {
                     preferredValue: new Decimal(54),
-                    nativeValue: new Decimal(100),
                 },
             ],
             isPending: false,
-        } as unknown as ReturnType<typeof useAccountBalancesHistoryQuery>)
+        } as unknown as ReturnType<typeof usePortfolioHistoryQuery>)
 
         const { container, getByTestId } = render(
-            <WealthTrend period='one-day' />,
+            <WealthTrend
+                sources={SOURCES}
+                currencyScope={ALGORAND}
+                period='one-day'
+            />,
         )
 
         expect(container.textContent).toContain('8.00%')
         expect(getByTestId('trend-indicator-up')).toBeTruthy()
     })
 
-    it('uses single account when account prop is provided', () => {
-        const mockAccount = {
-            chains: { algorand: { address: 'test-address' } },
-        }
-        vi.mocked(useAccountBalancesHistoryQuery).mockReturnValue({
-            data: [
-                {
-                    preferredValue: new Decimal(100),
-                    nativeValue: new Decimal(100),
-                },
-            ],
+    it('reads the history of exactly the sources it is given', () => {
+        vi.mocked(usePortfolioHistoryQuery).mockReturnValue({
+            data: [],
             isPending: false,
-        } as unknown as ReturnType<typeof useAccountBalancesHistoryQuery>)
+        } as unknown as ReturnType<typeof usePortfolioHistoryQuery>)
 
-        const { container } = render(
+        render(
             <WealthTrend
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                account={mockAccount as any}
-                period='one-week'
+                sources={SOURCES}
+                currencyScope={ALGORAND}
+                period='one-month'
+                enabled={false}
             />,
         )
-        expect(container).toBeTruthy()
+
+        expect(vi.mocked(usePortfolioHistoryQuery)).toHaveBeenLastCalledWith(
+            SOURCES,
+            'one-month',
+            ALGORAND,
+            false,
+        )
     })
 })

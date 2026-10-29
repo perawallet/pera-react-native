@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+// @vitest-environment jsdom
 // Plain-JS spec (not .spec.tsx) deliberately — see react-native-pager-view's
 // sibling spec for why: web-shims/ is untyped JS outside tsc's include glob.
 import React from 'react'
@@ -47,12 +48,19 @@ describe('@shopify/flash-list web shim', () => {
     })
 
     it('defaults onScrollToIndexFailed to a no-op so scrollToIndex without getItemLayout cannot throw', () => {
-        render(<FlashList data={[]} renderItem={() => null} />)
+        render(
+            <FlashList
+                data={[]}
+                renderItem={() => null}
+            />,
+        )
 
         expect(flatListProps.current.onScrollToIndexFailed).toBeTypeOf(
             'function',
         )
-        expect(() => flatListProps.current.onScrollToIndexFailed({})).not.toThrow()
+        expect(() =>
+            flatListProps.current.onScrollToIndexFailed({}),
+        ).not.toThrow()
     })
 
     it('lets a caller-supplied onScrollToIndexFailed override the default', () => {

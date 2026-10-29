@@ -307,27 +307,22 @@ describe('Deeplink Parser - Edge Cases', () => {
     it('handles missing required parameters', () => {
         // Falls back to HOME via old parser
         const result1 = parseDeeplink('perawallet://app/add-contact/')
-        expect(result1).toBeDefined()
         expect(result1?.type).toBe(DeeplinkType.HOME)
 
         const result2 = parseDeeplink('perawallet://app/asset-transfer/')
-        expect(result2).toBeDefined()
         expect(result2?.type).toBe(DeeplinkType.HOME)
     })
 
     it('handles undefined deeplinks', () => {
         const result = parseDeeplink('perawallet://undefined')
         // Returns HOME as graceful fallback for unknown paths
-        expect(result).toBeDefined()
         expect(result?.type).toBe(DeeplinkType.HOME)
     })
 
     it('handles malformed URLs gracefully', () => {
         // Empty deep link returns HOME
-        expect(parseDeeplink('perawallet://')).toBeDefined()
         expect(parseDeeplink('perawallet://')?.type).toBe(DeeplinkType.HOME)
         // Unknown path returns HOME as fallback
-        expect(parseDeeplink('perawallet://app/unknown-path/')).toBeDefined()
         expect(parseDeeplink('perawallet://app/unknown-path/')?.type).toBe(
             DeeplinkType.HOME,
         )

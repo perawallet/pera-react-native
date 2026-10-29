@@ -11,7 +11,10 @@
  */
 
 import { defineConfig } from 'vitest/config'
-import { poolConfig } from '@perawallet/wallet-core-devtools/vitest/pool'
+import {
+    poolConfig,
+    vmGlobalsSetup,
+} from '@perawallet/wallet-core-devtools/vitest/pool'
 
 // Only the runner's pure logic is tested here; the scenarios themselves need a
 // device (Hermes, expo-sqlite, the native keystore).
@@ -20,6 +23,7 @@ export default defineConfig({
         ...poolConfig,
         globals: true,
         environment: 'node',
+        setupFiles: [vmGlobalsSetup],
         include: ['src/**/__tests__/**/*.spec.ts'],
     },
 })

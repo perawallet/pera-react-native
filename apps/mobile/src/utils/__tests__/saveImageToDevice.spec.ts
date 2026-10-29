@@ -12,8 +12,6 @@
 
 // @vitest-environment node
 
-// @vitest-environment node
-
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { File } from 'expo-file-system'
 import * as MediaLibrary from 'expo-media-library/legacy'
@@ -38,7 +36,6 @@ vi.mock('expo-media-library/legacy', () => ({
 
 describe('saveImageToDevice', () => {
     beforeEach(() => {
-        vi.clearAllMocks()
         vi.mocked(MediaLibrary.requestPermissionsAsync).mockResolvedValue({
             status: 'granted',
         } as never)

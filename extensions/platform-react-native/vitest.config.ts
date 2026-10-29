@@ -12,7 +12,10 @@
 
 import { defineConfig } from 'vitest/config'
 import { coverageConfig } from '@perawallet/wallet-core-devtools/vitest/coverage'
-import { poolConfig } from '@perawallet/wallet-core-devtools/vitest/pool'
+import {
+    poolConfig,
+    vmGlobalsSetup,
+} from '@perawallet/wallet-core-devtools/vitest/pool'
 import path from 'path'
 
 export default defineConfig({
@@ -20,8 +23,8 @@ export default defineConfig({
         ...poolConfig,
         coverage: coverageConfig,
         globals: true,
-        environment: 'jsdom',
-        setupFiles: ['./vitest.setup.ts'],
+        environment: 'node',
+        setupFiles: [vmGlobalsSetup, './vitest.setup.ts'],
     },
     resolve: {
         alias: {

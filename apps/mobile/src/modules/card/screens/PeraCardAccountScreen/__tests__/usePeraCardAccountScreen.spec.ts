@@ -17,6 +17,7 @@ const mockState = vi.hoisted(() => ({
     connectedAddress: null as string | null,
     accounts: [] as Array<{
         chains: { algorand: { address: string } }
+        custody?: { kind: 'watch' }
         name?: string
     }>,
 }))
@@ -109,6 +110,22 @@ describe('usePeraCardAccountScreen', () => {
     })
 
     it('labels the linked account when the connected address matches', () => {
+        mockState.connectedAddress = 'ADDR_A'
+
+        const { result } = renderHook(() => usePeraCardAccountScreen())
+
+        expect(result.current.cardDisplay.subtitle).toBe(
+            'peraCard.account.linked_to',
+        )
+    })
+
+    it('labels an unnamed linked account by its display name', () => {
+        mockState.accounts = [
+            {
+                chains: { algorand: { address: 'ADDR_A' } },
+                custody: { kind: 'watch' },
+            },
+        ]
         mockState.connectedAddress = 'ADDR_A'
 
         const { result } = renderHook(() => usePeraCardAccountScreen())

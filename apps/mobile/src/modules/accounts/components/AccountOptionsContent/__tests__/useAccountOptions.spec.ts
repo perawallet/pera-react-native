@@ -136,7 +136,22 @@ vi.mock('@hooks/useToast', () => ({
     }),
 }))
 
-vi.mock('@hooks/useLanguage')
+// Echoes the heading's name so the spec can see it is the sheet title.
+vi.mock('@hooks/useLanguage', () => ({
+    useLanguage: () => ({
+        t: (key: string, params?: Record<string, unknown>) =>
+            key === 'account_options.networks_title_named'
+                ? `${key} ${String(params?.name)}`
+                : key,
+        currentLanguage: 'en',
+        changeLanguage: () => undefined,
+    }),
+}))
+
+let mockIsMultichain = false
+vi.mock('../../../hooks/useIsMultichain', () => ({
+    useIsMultichain: () => mockIsMultichain,
+}))
 
 vi.mock('@hooks/useAppNavigation', () => ({
     useAppNavigation: () => ({
@@ -307,6 +322,58 @@ describe('useAccountOptions', () => {
                     return false
                 }
             }
+        })
+    })
+
+    describe('titles', () => {
+        beforeEach(() => {
+            mockIsMultichain = false
+        })
+
+        const hdAccount = (name?: string): WalletAccount => ({
+            id: 'acc-hd',
+            chains: { algorand: { address: 'HDADDRESS', keyPairId: 'key-hd' } },
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account: 0, keyIndex: 0 },
+            },
+            name,
+        })
+
+        const titlesOf = (account: WalletAccount) => {
+            const { result } = renderHook(() =>
+                useAccountOptions({
+                    account,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
+            )
+            return result.current
+        }
+
+        it('titles an unnamed Universal Wallet account by its number', () => {
+            expect(titlesOf(hdAccount()).sheetTitle).toBe(
+                'account_info.account_number',
+            )
+        })
+
+        it('titles a named account by its name', () => {
+            expect(titlesOf(hdAccount('Savings')).sheetTitle).toBe('Savings')
+        })
+
+        it('heads the networks with the account name when several chains are on', () => {
+            mockIsMultichain = true
+
+            expect(titlesOf(hdAccount('Savings')).networksTitle).toBe(
+                'account_options.networks_title_named Savings',
+            )
+        })
+
+        it('keeps the plain networks heading on a single chain', () => {
+            expect(titlesOf(hdAccount('Savings')).networksTitle).toBe(
+                'account_options.networks_title',
+            )
         })
     })
 
@@ -1282,6 +1349,9 @@ describe('useAccountOptions', () => {
                 enablePanDownToClose: true,
                 autoCreateContainer: false,
             })
+            expect(arg.contents.props.details.name).toBe(
+                result.current.sheetTitle,
+            )
         })
 
         it('closes the options sheet and requests the export-share sheet when pressed', async () => {

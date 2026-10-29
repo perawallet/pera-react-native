@@ -66,6 +66,22 @@ describe('ChromeAnalyticsService', () => {
         })
     })
 
+    it('bounds the send by a 10 s deadline', async () => {
+        configMock.config.firebaseMeasurementId = 'G-TEST123'
+        configMock.config.gaMeasurementApiSecret = 'test-secret'
+        const signal = new AbortController().signal
+        const timeout = vi
+            .spyOn(AbortSignal, 'timeout')
+            .mockReturnValueOnce(signal)
+
+        new ChromeAnalyticsService().logEvent('test_event')
+        await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1))
+
+        expect(timeout).toHaveBeenCalledWith(10_000)
+        expect(fetchMock.mock.calls[0]![1]).toMatchObject({ signal })
+        timeout.mockRestore()
+    })
+
     it('does not send once collection is turned off', async () => {
         configMock.config.firebaseMeasurementId = 'G-TEST123'
         configMock.config.gaMeasurementApiSecret = 'test-secret'

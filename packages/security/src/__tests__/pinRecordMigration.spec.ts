@@ -26,6 +26,10 @@ import {
     LEGACY_DURESS_PIN_RECORD_KEY_ID,
 } from '../constants'
 
+vi.mock('../pbkdf2', async importOriginal =>
+    (await import('./fastPbkdf2')).fastPbkdf2(await importOriginal()),
+)
+
 const encoder = new TextEncoder()
 
 // The legacy v2 shape: same PBKDF2 slot, no duress fields. Built from a v3

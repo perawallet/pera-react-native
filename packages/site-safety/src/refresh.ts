@@ -31,13 +31,13 @@ export const PHISHING_LIST_REFRESH_AGE_MS = 12 * 60 * 60 * 1000
 const DEFAULT_TIMEOUT_MS = 30_000
 
 export type RefreshPhishingListsOptions = {
-    fetch?: typeof fetch
+    fetch?: typeof globalThis.fetch
     now?: () => number
     timeoutMs?: number
 }
 
 type SourceRefreshContext = {
-    fetchImpl: typeof fetch
+    fetchImpl: typeof globalThis.fetch
     now: () => number
     timeoutMs: number
 }
@@ -160,6 +160,7 @@ export const refreshPhishingLists = async (
     options: RefreshPhishingListsOptions = {},
 ): Promise<Record<PhishingListSourceId, PhishingListRefreshOutcome>> => {
     const context: SourceRefreshContext = {
+        // oxlint-disable-next-line no-restricted-globals -- phishing lists come from their publishers, with If-None-Match and their own timeout
         fetchImpl: options.fetch ?? ((input, init) => fetch(input, init)),
         now: options.now ?? Date.now,
         timeoutMs: options.timeoutMs ?? DEFAULT_TIMEOUT_MS,

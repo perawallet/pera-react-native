@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+// @vitest-environment jsdom
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type {
     ChainScope,
