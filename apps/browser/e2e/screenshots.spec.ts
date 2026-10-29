@@ -24,6 +24,7 @@ import {
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { mkdirSync } from 'node:fs'
+import { skipPasskeyUnlockStep } from './passkey-unlock-step'
 
 const dir = path.dirname(fileURLToPath(import.meta.url))
 const dist = path.resolve(dir, '../dist')
@@ -101,6 +102,7 @@ test('captures the key screens', async () => {
     await page.getByTestId('create-password-input').fill(PASSWORD)
     await page.getByTestId('create-password-confirm-input').fill(PASSWORD)
     await page.getByTestId('create-password-submit').click()
+    await skipPasskeyUnlockStep(page)
 
     // --- Onboarding: tap "Create wallet" button ---
     await expect(

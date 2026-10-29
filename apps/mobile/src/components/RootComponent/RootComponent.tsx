@@ -13,39 +13,19 @@
 import { useCallback, useEffect, useRef } from 'react'
 import { AppState } from 'react-native'
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet'
-import {
-    useSelectedScope,
-    useWalletDeployment,
-} from '@perawallet/wallet-core-chain-shared'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { MainRoutes } from '@routes/index'
 import { OverlayErrorFallback } from './OverlayErrorFallback'
-import { useStyles } from './styles'
-import { PWText, PWView } from '@components/core'
 import { OfflineBanner } from '@components/OfflineBanner'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import ErrorBoundary from 'react-native-error-boundary'
-import { useErrorToast } from '@hooks/useErrorToast'
-import { useDeviceRegistration } from '@perawallet/wallet-core-device'
 import {
     useAllAccounts,
     useSyncNewAccounts,
 } from '@perawallet/wallet-core-accounts'
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import { useNeedsMigration } from '@perawallet/wallet-core-migrate'
-import { useNetworkStatusListener } from '@modules/network'
-import { WebViewOverlay } from '@modules/webview/shell'
-import { PromptContainer } from '@modules/prompts'
-import { useLanguage } from '@hooks/useLanguage'
-import { useNetworkLabel } from '@hooks/useNetworkLabel'
-import { useNotificationDeeplinkListener } from '@modules/deeplink/shell'
-import { useDeviceAccountRegistrations } from '@hooks/useDeviceAccountRegistrations'
-import { useNotificationReceivedListener } from '@hooks/useNotificationReceivedListener'
+import { DeviceRegistrar } from '@components/DeviceRegistrar'
 import { useNetworkSwitchInvalidation } from '@hooks/useNetworkSwitchInvalidation'
 import { useImageMemoryRelease } from '@hooks/useImageMemoryRelease'
 import { ConnectionsProvider } from '@modules/connections/shell'
-import { PairingProgressOverlay } from '@modules/walletconnect/shell'
-import { useTokenListener } from '@modules/token'
 import { AutoLockGuard } from '@modules/security/shell'
 import { SigningOverlays } from '@modules/signing/shell'
 import {
@@ -59,8 +39,8 @@ import {
 } from '@utils/app-state'
 import { getSyncService } from '@perawallet/wallet-core-background'
 import { useBackupSyncLifecycle } from '@modules/cloud-backup'
-import { usePhishingListRefresh } from '@modules/site-safety/shell'
 import { config } from '@perawallet/wallet-core-config'
+import { RootContentContainer } from './RootContentContainer'
 
 export type RootComponentProps = {
     fcmToken: Nullable<string>
@@ -71,63 +51,6 @@ export type RootComponentProps = {
 // app. Contain it; OverlayErrorFallback schedules a reset so they come back.
 const handleOverlayError = (error: string | Error) => {
     logger.critical(error, { source: 'RootOverlaysErrorBoundary' })
-}
-
-const RootContentContainer = ({ fcmToken }: RootComponentProps) => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
-    const isLive = useWalletDeployment() === 'live'
-    const insets = useSafeAreaInsets()
-    const styles = useStyles(insets)
-    const { showError } = useErrorToast()
-    const { t } = useLanguage()
-    const networkLabel = useNetworkLabel()
-
-    useNetworkStatusListener()
-    useTokenListener(fcmToken)
-    useNotificationDeeplinkListener()
-    // Refresh the notification badge/inbox as soon as a foreground push lands.
-    useNotificationReceivedListener()
-    usePhishingListRefresh()
-
-    const handleBoundaryError = (error: string | Error) => {
-        logger.critical(error, {
-            source: 'RootComponentErrorBoundary',
-        })
-
-        showError(error, t('errors.general.title'))
-    }
-
-    return (
-        <ErrorBoundary onError={handleBoundaryError}>
-            <PWView style={styles.container}>
-                {!isLive && (
-                    <PWView style={styles.testnetBar}>
-                        <PWText style={styles.testnetText}>
-                            {networkLabel(scope.networkId)}
-                        </PWText>
-                    </PWView>
-                )}
-
-                {/* App.tsx mounts the single GestureHandlerRootView above this tree. */}
-                <PWView style={styles.content}>
-                    <MainRoutes />
-                    <WebViewOverlay />
-                    {/* After WebViewOverlay so a deep-link pairing scrim
-                        paints above the in-app browser too. */}
-                    <PairingProgressOverlay />
-                    {/* Blocking prompts paint above the navigator and tab bar, but
-                        inside AutoLockGuard's children so the lock still hides them. */}
-                    <PromptContainer />
-                </PWView>
-            </PWView>
-        </ErrorBoundary>
-    )
-}
-
-const DeviceRegistrar = () => {
-    const registrations = useDeviceAccountRegistrations()
-    useDeviceRegistration(registrations)
-    return null
 }
 
 export const RootComponent = ({ fcmToken }: RootComponentProps) => {

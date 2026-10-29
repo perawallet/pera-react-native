@@ -28,8 +28,20 @@ export const CardWalletHistoryItem = ({
     entry,
 }: CardWalletHistoryItemProps) => {
     const styles = useStyles()
-    const isDebit = entry.sign === TransactionSign.Debit
-    const isCredit = entry.sign === TransactionSign.Credit
+    const amountPresentationOf = () => {
+        switch (entry.sign) {
+            case TransactionSign.Debit: {
+                return { prefix: '-', style: styles.amountDebit }
+            }
+            case TransactionSign.Credit: {
+                return { prefix: '+', style: styles.amountCredit }
+            }
+            default: {
+                return { prefix: undefined, style: undefined }
+            }
+        }
+    }
+    const amountPresentation = amountPresentationOf()
 
     return (
         <PWView
@@ -58,17 +70,11 @@ export const CardWalletHistoryItem = ({
                 currency={entry.currency}
                 assetId={null}
                 precision='compact'
-                prefix={isDebit ? '-' : isCredit ? '+' : undefined}
+                prefix={amountPresentation.prefix}
                 symbolPosition='end'
                 variant='bodyLarge'
                 weight={500}
-                style={
-                    isDebit
-                        ? styles.amountDebit
-                        : isCredit
-                          ? styles.amountCredit
-                          : undefined
-                }
+                style={amountPresentation.style}
             />
         </PWView>
     )

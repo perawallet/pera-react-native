@@ -26,7 +26,11 @@ import {
     type BackupReviewAction,
 } from '@perawallet/wallet-core-backup'
 import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
-import { NoConnectionError, logger } from '@perawallet/wallet-core-shared'
+import {
+    NoConnectionError,
+    logger,
+    toError,
+} from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { useErrorToast } from '@hooks/useErrorToast'
@@ -106,7 +110,7 @@ export const useBackupAccountReview = (): UseBackupAccountReviewResult => {
             logger.warn('useBackupAccountReview: review action failed', {
                 action,
                 address: id,
-                error: error instanceof Error ? error.message : String(error),
+                error: toError(error).message,
             })
             if (error instanceof NoConnectionError) {
                 showError(error)

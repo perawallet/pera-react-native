@@ -89,6 +89,69 @@ export const CardWalletBalanceScreen = () => {
         )
     }, [isFetchingHistory, styles.loadingFooter])
 
+    const balanceBodyOf = () => {
+        if (!hasBalance) return t(copy.emptyBody)
+        return canWithdraw ? t(copy.body) : t(copy.notWithdrawableBody)
+    }
+
+    const renderBalance = () => {
+        if (isError) {
+            return (
+                <PWView style={styles.status}>
+                    <PWText
+                        variant='body'
+                        style={styles.centeredText}
+                    >
+                        {t('peraCard.credits.error_body')}
+                    </PWText>
+                    <PWButton
+                        variant='link'
+                        title={t('peraCard.credits.retry')}
+                        onPress={refetch}
+                        testID='card-wallet-balance-retry'
+                    />
+                </PWView>
+            )
+        }
+        if (isLoading || balanceDisplay === null) {
+            return <PWSkeleton style={styles.balanceSkeleton} />
+        }
+        return (
+            <>
+                <PWText
+                    variant='h1'
+                    style={styles.balance}
+                    testID='card-wallet-balance-amount'
+                >
+                    {balanceDisplay}{' '}
+                    <PWText
+                        variant='h3'
+                        style={styles.secondaryText}
+                        testID='card-wallet-balance-currency'
+                    >
+                        {currencyDisplay}
+                    </PWText>
+                </PWText>
+                <PWView style={styles.status}>
+                    {!hasBalance && (
+                        <PWText
+                            variant='h3'
+                            style={styles.centeredText}
+                        >
+                            {t(copy.emptyTitle)}
+                        </PWText>
+                    )}
+                    <PWText
+                        variant='body'
+                        style={styles.centeredText}
+                    >
+                        {balanceBodyOf()}
+                    </PWText>
+                </PWView>
+            </>
+        )
+    }
+
     const header = (
         <PWView style={styles.content}>
             <PWView style={styles.heroSection}>
@@ -112,61 +175,7 @@ export const CardWalletBalanceScreen = () => {
                     >
                         {t(copy.balanceLabel)}
                     </PWText>
-                    {isError ? (
-                        <PWView style={styles.status}>
-                            <PWText
-                                variant='body'
-                                style={styles.centeredText}
-                            >
-                                {t('peraCard.credits.error_body')}
-                            </PWText>
-                            <PWButton
-                                variant='link'
-                                title={t('peraCard.credits.retry')}
-                                onPress={refetch}
-                                testID='card-wallet-balance-retry'
-                            />
-                        </PWView>
-                    ) : isLoading || balanceDisplay === null ? (
-                        <PWSkeleton style={styles.balanceSkeleton} />
-                    ) : (
-                        <>
-                            <PWText
-                                variant='h1'
-                                style={styles.balance}
-                                testID='card-wallet-balance-amount'
-                            >
-                                {balanceDisplay}{' '}
-                                <PWText
-                                    variant='h3'
-                                    style={styles.secondaryText}
-                                    testID='card-wallet-balance-currency'
-                                >
-                                    {currencyDisplay}
-                                </PWText>
-                            </PWText>
-                            <PWView style={styles.status}>
-                                {!hasBalance && (
-                                    <PWText
-                                        variant='h3'
-                                        style={styles.centeredText}
-                                    >
-                                        {t(copy.emptyTitle)}
-                                    </PWText>
-                                )}
-                                <PWText
-                                    variant='body'
-                                    style={styles.centeredText}
-                                >
-                                    {!hasBalance
-                                        ? t(copy.emptyBody)
-                                        : canWithdraw
-                                          ? t(copy.body)
-                                          : t(copy.notWithdrawableBody)}
-                                </PWText>
-                            </PWView>
-                        </>
-                    )}
+                    {renderBalance()}
                 </PWView>
             </PWView>
 

@@ -40,7 +40,7 @@ import {
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useNotificationPreferences } from '@perawallet/wallet-core-messages'
 import { getBackupSyncManager } from '@perawallet/wallet-core-backup'
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, toError } from '@perawallet/wallet-core-shared'
 import type { SheetOption } from '@components/SheetOptionRow'
 import { useLanguage } from '@hooks/useLanguage'
 import { useAccountName } from '@hooks/useAccountName'
@@ -407,10 +407,7 @@ export const useAccountOptions = ({
                 } catch (error) {
                     logger.warn('useAccountOptions: backup choice failed', {
                         address: address,
-                        error:
-                            error instanceof Error
-                                ? error.message
-                                : String(error),
+                        error: toError(error).message,
                     })
                     return false
                 }

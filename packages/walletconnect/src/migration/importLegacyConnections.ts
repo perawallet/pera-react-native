@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, toError } from '@perawallet/wallet-core-shared'
 import type {
     ConnectionOrigin,
     ConnectionOriginSource,
@@ -327,8 +327,7 @@ export const importLegacyConnections = async (options: {
             committedClientIds.push(reconstructed.clientId)
         } catch (error) {
             unattempted += 1
-            firstFailure ??=
-                error instanceof Error ? error : new Error(String(error))
+            firstFailure ??= toError(error)
             logger.warn(
                 '[WC migration] failed to import a legacy session; it and its key remain for the next run',
                 { clientId: reconstructed.clientId, error },

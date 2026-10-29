@@ -16,6 +16,7 @@ import { AmountField } from '@components/AmountField'
 import { AssetSelector } from '@components/AssetSelector'
 import { AssetAmount } from '@components/AssetAmount'
 import { PreferredAmount } from '@components/PreferredAmount'
+import { Trans } from 'react-i18next'
 import { useLanguage } from '@hooks/useLanguage'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useStyles } from './styles'
@@ -91,6 +92,63 @@ export const SwapAmountSection = (props: SwapAmountSectionProps) => {
         assetToFiat,
     })
 
+    const renderAmount = () => {
+        if (isPay) {
+            return (
+                <PWInput
+                    variant='h2'
+                    value={displayValue}
+                    onChangeText={handleTextChange}
+                    onFocus={handleFocus}
+                    onBlur={handleBlur}
+                    keyboardType='decimal-pad'
+                    placeholder='0.00'
+                    placeholderTextColor={theme.colors.textGrayLighter}
+                    containerStyle={styles.amountInputContainer}
+                    inputContainerStyle={styles.amountInputInnerContainer}
+                    inputStyle={styles.amountInput}
+                    leftIcon={
+                        isFiatInput && localCurrencySymbol ? (
+                            <PWText
+                                variant='h2'
+                                style={styles.currencyPrefix}
+                            >
+                                {localCurrencySymbol}
+                            </PWText>
+                        ) : undefined
+                    }
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    testID='swap-pay-input'
+                />
+            )
+        }
+        if (isLoading) {
+            return (
+                <PWSkeleton
+                    // lanekeep-ignore-next-line pera/no-numeric-sizes reason: amount skeleton width
+                    width={120}
+                    // lanekeep-ignore-next-line pera/no-numeric-sizes reason: amount skeleton height
+                    height={28}
+                />
+            )
+        }
+        return (
+            <PWText
+                style={
+                    hasPositiveAmount
+                        ? styles.amountText
+                        : styles.amountTextMuted
+                }
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                testID='swap-receive-amount'
+            >
+                {displayValue || '0.00'}
+            </PWText>
+        )
+    }
+
     return (
         <AmountField
             variant={isPay ? 'plain' : 'card'}
@@ -101,66 +159,28 @@ export const SwapAmountSection = (props: SwapAmountSectionProps) => {
                     <PWText
                         variant='body'
                         style={styles.balance}
+                        truncate
                     >
-                        {t('swap.form.balance_label')}
+                        <Trans
+                            i18nKey='swap.form.balance_label'
+                            components={[
+                                <AssetAmount
+                                    key='balance'
+                                    value={balance ?? new Decimal(0)}
+                                    asset={asset}
+                                    symbolPosition={
+                                        isNativeAsset ? 'start' : 'end'
+                                    }
+                                    variant='body'
+                                    style={styles.balance}
+                                    isInline
+                                />,
+                            ]}
+                        />
                     </PWText>
-                    <AssetAmount
-                        value={balance ?? new Decimal(0)}
-                        asset={asset}
-                        symbolPosition={isNativeAsset ? 'start' : 'end'}
-                        variant='body'
-                        style={styles.balance}
-                    />
                 </PWView>
             }
-            amount={
-                isPay ? (
-                    <PWInput
-                        variant='h2'
-                        value={displayValue}
-                        onChangeText={handleTextChange}
-                        onFocus={handleFocus}
-                        onBlur={handleBlur}
-                        keyboardType='decimal-pad'
-                        placeholder='0.00'
-                        placeholderTextColor={theme.colors.textGrayLighter}
-                        containerStyle={styles.amountInputContainer}
-                        inputContainerStyle={styles.amountInputInnerContainer}
-                        inputStyle={styles.amountInput}
-                        leftIcon={
-                            isFiatInput && localCurrencySymbol ? (
-                                <PWText
-                                    variant='h2'
-                                    style={styles.currencyPrefix}
-                                >
-                                    {localCurrencySymbol}
-                                </PWText>
-                            ) : undefined
-                        }
-                        numberOfLines={1}
-                        adjustsFontSizeToFit
-                        testID='swap-pay-input'
-                    />
-                ) : isLoading ? (
-                    <PWSkeleton
-                        width={120}
-                        height={28}
-                    />
-                ) : (
-                    <PWText
-                        style={
-                            hasPositiveAmount
-                                ? styles.amountText
-                                : styles.amountTextMuted
-                        }
-                        numberOfLines={1}
-                        adjustsFontSizeToFit
-                        testID='swap-receive-amount'
-                    >
-                        {displayValue || '0.00'}
-                    </PWText>
-                )
-            }
+            amount={renderAmount()}
             selector={
                 <AssetSelector
                     assetId={assetId}

@@ -12,6 +12,7 @@
 
 import type { Decimal } from 'decimal.js'
 import type { SwapQuote } from '@perawallet/wallet-core-swaps'
+import { AppError, ErrorCategory } from '@perawallet/wallet-core-shared'
 import { algorandDescriptor, isAlgorandNativeAssetId } from '../descriptor'
 import type { PeraDisplayableTransaction } from '../blockchain/models/algosdk-shapes'
 
@@ -22,9 +23,9 @@ import type { PeraDisplayableTransaction } from '../blockchain/models/algosdk-sh
 const NETWORK_FEE_ALLOWANCE_MICRO_ALGO = 100_000n // 0.1 ALGO
 
 /** Thrown when a prepared swap group spends more than the reviewed quote allows. */
-export class SwapQuoteMismatchError extends Error {
+export class SwapQuoteMismatchError extends AppError {
     constructor(message: string) {
-        super(message)
+        super(message, { category: ErrorCategory.TRANSACTIONS })
         this.name = 'SwapQuoteMismatchError'
     }
 }

@@ -156,13 +156,17 @@ const mockCardOnboarding = vi.hoisted(() => ({
 }))
 vi.mock('@perawallet/wallet-core-card', () => ({
     OnboardingStep: { Completed: 'COMPLETED' },
-    useCardStore: { getState: () => mockCardOnboarding },
+    getCardOnboardingProgress: () => mockCardOnboarding,
+    isEscrowCardApproved: () => false,
 }))
 
 vi.mock('@perawallet/wallet-core-shared', async () => {
     const { toBigInt } = await vi.importActual<
         typeof import('@packages/shared/src/utils/unit-conversion')
     >('@packages/shared/src/utils/unit-conversion')
+    const { withTimeout } = await vi.importActual<
+        typeof import('@packages/shared/src/utils/async')
+    >('@packages/shared/src/utils/async')
 
     // Real error classes and enums rather than hand-copied literals: the
     // deeplinks package extends AppError at load. base.ts has no runtime
@@ -179,6 +183,7 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
         ),
         ...errors,
         toBigInt,
+        withTimeout,
     }
 })
 
@@ -216,9 +221,8 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccountId: () => ({
         setSelectedAccountId: mockSetSelectedAccountId,
     }),
-    useAccountsStore: Object.assign(vi.fn(), {
-        getState: () => ({ accounts: mockWalletAccounts }),
-    }),
+    getAllAccounts: () => mockWalletAccounts,
+    getSelectedAccount: () => mockWalletAccounts[0],
     findAccountByAddressOn: (
         accounts: typeof mockWalletAccounts,
         chainId: 'algorand',

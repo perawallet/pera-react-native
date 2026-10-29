@@ -86,6 +86,12 @@ const isSecretOfLiveRecord = (state: SyncState, item: LocalItem): boolean =>
                 cachedRecordSeedReference(tracked.record) === item.address),
     )
 
+const legacyMatcherOf = (key: string): ((key: string) => boolean) | null => {
+    if (isAccountRecordKey(key)) return isAccountItemKey
+    if (isContactRecordKey(key)) return isContactItemKey
+    return null
+}
+
 /**
  * A record this build has not pushed yet, for an account or contact the user
  * deleted from the backup before records existed. Its legacy items are all
@@ -93,11 +99,7 @@ const isSecretOfLiveRecord = (state: SyncState, item: LocalItem): boolean =>
  * "Back up" drops those tombstones, which lets the record go up.
  */
 const isDeletedBeforeRecords = (state: SyncState, item: LocalItem): boolean => {
-    const isLegacyOfItem = isAccountRecordKey(item.key)
-        ? isAccountItemKey
-        : isContactRecordKey(item.key)
-          ? isContactItemKey
-          : null
+    const isLegacyOfItem = legacyMatcherOf(item.key)
     if (!isLegacyOfItem || !item.addresses) return false
     const addresses = new Set(item.addresses)
     const legacy = Object.entries(state.items).filter(

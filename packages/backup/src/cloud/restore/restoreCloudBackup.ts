@@ -11,7 +11,13 @@
  */
 
 import { zeroBytes } from '@perawallet/wallet-core-kms'
-import { isPeraNetworkError, logger } from '@perawallet/wallet-core-shared'
+import {
+    AppError,
+    ErrorCategory,
+    isPeraNetworkError,
+    logger,
+    toError,
+} from '@perawallet/wallet-core-shared'
 import { deleteBackupKeys, persistBackupKeys } from '../credentials/keyStorage'
 import {
     createEmptySyncState,
@@ -55,11 +61,17 @@ export type RestoreErrorCategory =
     | 'INVALID_CREDENTIALS'
     | 'UNKNOWN'
 
-export class CloudBackupRestoreError extends Error {
+export class CloudBackupRestoreError extends AppError {
     readonly category: RestoreErrorCategory
 
     constructor(category: RestoreErrorCategory, cause?: unknown) {
-        super(`Cloud backup restore failed: ${category}`, { cause })
+        super(
+            `Cloud backup restore failed: ${category}`,
+            { category: ErrorCategory.STORAGE },
+            cause instanceof Error ? cause : undefined,
+        )
+        // AppError can't forward { cause } to Error, and serializeError follows only cause.
+        this.cause = cause
         this.name = 'CloudBackupRestoreError'
         this.category = category
     }
@@ -138,10 +150,7 @@ const cleanUpAfterRestoreFailure = async (): Promise<void> => {
         logger.error(
             'restoreCloudBackup: failed to clean up keys after restore error',
             {
-                error:
-                    cleanupError instanceof Error
-                        ? cleanupError.message
-                        : String(cleanupError),
+                error: toError(cleanupError).message,
             },
         )
     }
@@ -158,7 +167,7 @@ const importContactsSafely = async (
         return await importContacts(contacts)
     } catch (error) {
         logger.warn('restoreCloudBackup: contact import failed', {
-            error: error instanceof Error ? error.message : String(error),
+            error: toError(error).message,
         })
         return { imported: 0, failed: [] }
     }
@@ -195,7 +204,7 @@ const importPasskeysSafely = async (
         }
     } catch (error) {
         logger.warn('restoreCloudBackup: passkey import failed', {
-            error: error instanceof Error ? error.message : String(error),
+            error: toError(error).message,
         })
     }
 }
@@ -211,7 +220,7 @@ const importSettingsSafely = (
         importSettings(mergeRemoteSettings(undefined, settings.payload).toApply)
     } catch (error) {
         logger.warn('restoreCloudBackup: settings import failed', {
-            error: error instanceof Error ? error.message : String(error),
+            error: toError(error).message,
         })
     }
 }

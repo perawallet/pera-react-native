@@ -26,7 +26,7 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 
-import type { RekeyToStandardStackParamList } from '../../../routes/rekey-to-standard/types'
+import type { RekeyToStandardStackParamList } from '@modules/rekey/routes/rekey-to-standard/types'
 
 export type UseRekeyToStandardSelectTargetScreenResult = {
     sourceAddress: string

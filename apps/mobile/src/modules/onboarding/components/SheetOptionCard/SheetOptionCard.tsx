@@ -18,7 +18,6 @@ import {
     PWTouchableOpacity,
     PWView,
 } from '@components/core'
-import { getTestProps } from '@utils/test-id-helper'
 import { useStyles } from './styles'
 
 export type SheetOptionCardProps = {
@@ -45,7 +44,7 @@ export const SheetOptionCard = ({
             onPress={onPress}
             disabled={isDisabled}
             style={[styles.card, isDisabled && styles.cardDisabled]}
-            {...getTestProps(testID)}
+            testID={testID}
         >
             <PWView style={styles.content}>
                 <PWView style={styles.header}>

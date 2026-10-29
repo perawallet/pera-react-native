@@ -28,12 +28,31 @@ export const call = (callee: Node, args: Node[]): Node => ({
     arguments: args,
 })
 
+// Links each node to its parent, as the linter does before rules run.
+export const withParents = (node: Node, parent?: Node): Node => {
+    node.parent = parent
+    for (const [key, value] of Object.entries(node)) {
+        if (key === 'parent') continue
+        const children = Array.isArray(value) ? value : [value]
+        for (const child of children) {
+            if (child && typeof child === 'object' && 'type' in child) {
+                withParents(child as Node, node)
+            }
+        }
+    }
+    return node
+}
+
 export type OxlintOverride = {
     files: string[]
     excludeFiles?: string[]
     rules: Record<string, unknown>
 }
-export type OxlintConfig = { plugins?: string[]; overrides: OxlintOverride[] }
+export type OxlintConfig = {
+    plugins?: string[]
+    rules?: Record<string, unknown>
+    overrides: OxlintOverride[]
+}
 
 // Config paths resolve from the repo root, which is 4 levels up from __tests__.
 export const readOxlintConfig = (path: string): OxlintConfig =>

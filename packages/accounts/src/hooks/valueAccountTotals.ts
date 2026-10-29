@@ -72,11 +72,12 @@ export const valueAccountTotals = (
     const price = nativeUsdPrice ?? new Decimal(0)
 
     const usdTotal = nonNativeUsd.plus(nativeAmount.times(price))
-    const nativeValue = !price.isZero()
-        ? nativeAmount.plus(nonNativeUsd.div(price))
-        : isUnconvertibleUnknown && !nonNativeUsd.isZero()
-          ? null
-          : nativeAmount
+    const nativeValueOf = () => {
+        if (!price.isZero()) return nativeAmount.plus(nonNativeUsd.div(price))
+        if (isUnconvertibleUnknown && !nonNativeUsd.isZero()) return null
+        return nativeAmount
+    }
+    const nativeValue = nativeValueOf()
 
     return {
         nativeAmount,

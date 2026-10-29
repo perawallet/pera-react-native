@@ -33,6 +33,7 @@ type Query = Record<string, unknown> & { format?: string }
  * short-circuit on AppError metadata, which would skip the structural status
  * and algod-body classification every node rejection relies on for its copy.
  */
+// oxlint-disable-next-line pera/typed-domain-errors -- implements algosdk's BaseHTTPClientError (see above)
 class TimeoutHttpClientError extends Error implements BaseHTTPClientError {
     constructor(
         message: string,
@@ -127,8 +128,8 @@ export class TimeoutHttpClient implements BaseHTTPClient {
     /**
      * On React Native, `Response.arrayBuffer()` routes through the
      * Blob/FileReader polyfill whose per-char conversion is quadratic on
-     * Hermes — a ~110KB indexer page measured ~19s of JS-thread block and
-     * ~1.5GB of allocations on device. `text()` is native and
+     * Hermes — a ~110KB indexer page blocks the JS thread for many seconds
+     * and allocates over a gigabyte on device. `text()` is native and
      * linear, so known-textual bodies are read as text and re-encoded.
      *
      * The allowlist gates the *text* path, not the binary one: `text()`

@@ -202,13 +202,11 @@ export const useSettingsPasskeysScreen =
             [isProviderActive, isFlagSourceComplete, flaggedIds],
         )
 
-        const notice: PasskeysNotice = !isManaging
-            ? null
-            : !hasHDWallet
-              ? 'hd-wallet'
-              : lacksDeviceAuthentication
-                ? 'biometric'
-                : null
+        const notice = passkeysNoticeOf(
+            isManaging,
+            hasHDWallet,
+            lacksDeviceAuthentication,
+        )
 
         return {
             state,
@@ -230,6 +228,16 @@ export const useSettingsPasskeysScreen =
             onDismissError,
         }
     }
+
+const passkeysNoticeOf = (
+    isManaging: boolean,
+    hasHDWallet: boolean,
+    lacksDeviceAuthentication: boolean,
+): PasskeysNotice => {
+    if (!isManaging) return null
+    if (!hasHDWallet) return 'hd-wallet'
+    return lacksDeviceAuthentication ? 'biometric' : null
+}
 
 const resolveState = (
     status: ReturnType<typeof usePasskeyAutofillStatus>,

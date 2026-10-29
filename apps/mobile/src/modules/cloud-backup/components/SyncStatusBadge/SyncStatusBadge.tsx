@@ -13,7 +13,6 @@
 import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 import { PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import { getTestProps } from '@utils/test-id-helper'
 import type { SyncBadge } from '../../hooks/useBackupSyncStatus'
 import { useStyles } from './styles'
 
@@ -34,7 +33,7 @@ export const SyncStatusBadge = ({ status }: SyncStatusBadgeProps) => {
     return (
         <PWView
             style={styles.container}
-            {...getTestProps(`cloud_backup_sync_status_${status}`)}
+            testID={`cloud_backup_sync_status_${status}`}
         >
             <PWText
                 variant='captionMedium'

@@ -14,7 +14,7 @@ import { useCallback } from 'react'
 import { useMutation, type UseMutationOptions } from '@tanstack/react-query'
 import type { WalletMode } from '@perawallet/wallet-core-chain-contract'
 import { useWalletDeployment } from '@perawallet/wallet-core-chain-shared'
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, toError } from '@perawallet/wallet-core-shared'
 import { destroyBackup } from '../api'
 import { deleteBackupKeys } from '../credentials/keyStorage'
 import { resolveBackupDeviceId } from '../store/resolveBackupDeviceId'
@@ -25,7 +25,7 @@ import { getBackupSyncManager } from '../sync/backupSyncManager'
 
 const warn = (message: string, error: unknown): void => {
     logger.warn(message, {
-        error: error instanceof Error ? error.message : String(error),
+        error: toError(error).message,
     })
 }
 

@@ -27,12 +27,6 @@ export const useStyles = makeStyles(theme => ({
     rowItem: {
         marginVertical: theme.spacing.lg,
     },
-    separator: {
-        height: theme.borders.sm,
-        backgroundColor: theme.colors.layerGrayLighter,
-        // Starts at the text column: the xl asset icon (3xl) plus the row gap (lg).
-        marginLeft: theme.spacing['3xl'] + theme.spacing.lg,
-    },
     headerContainer: {
         marginTop: theme.spacing.sm,
         marginBottom: theme.spacing.md,

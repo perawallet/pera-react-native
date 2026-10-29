@@ -13,7 +13,7 @@
 import { useCallback, useRef } from 'react'
 import {
     NoBackupCredentialsError,
-    useCloudBackupStore,
+    readCloudBackupCredentials,
 } from '@perawallet/wallet-core-backup'
 import { logger, type Optional } from '@perawallet/wallet-core-shared'
 import { useBottomSheet } from '@modules/bottom-sheet'
@@ -58,7 +58,7 @@ export const useStoreBackupCredentials =
                 try {
                     // Both halves, so a backup missing only its salt fails here
                     // rather than after the sheet, the PIN and a cloud sign-in.
-                    const { salt, backupId } = useCloudBackupStore.getState()
+                    const { salt, backupId } = readCloudBackupCredentials()
                     if (!salt || !backupId) {
                         throw new NoBackupCredentialsError()
                     }
@@ -78,7 +78,7 @@ export const useStoreBackupCredentials =
 
                     // Re-reads the store, so a backup deleted while the sheet
                     // and PIN were open is refused by `saveCredentials`.
-                    const current = useCloudBackupStore.getState()
+                    const current = readCloudBackupCredentials()
                     await saveCredentials(destination, {
                         salt: current.salt,
                         backupId: current.backupId,

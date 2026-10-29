@@ -58,7 +58,7 @@ describe('sendFlowFeatureFor', () => {
         )
     })
 
-    it.each(['express', 'assetInbox', 'assetHolding', 'rekey'] as const)(
+    it.each(['express', 'assetInbox', 'assetHolding', 'delegation'] as const)(
         'fails closed when the chain has no %s feature',
         feature => {
             sendFlowChainAdapters.register(bareAdapter())

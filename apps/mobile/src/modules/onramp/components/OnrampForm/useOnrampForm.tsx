@@ -144,12 +144,26 @@ export const useOnrampForm = (
             return
         }
         const violation = getXoLimitViolation(selectedQuote, sourceAmount)
-        const message =
-            violation?.type === 'below'
-                ? t('onramp.form.amount_below_min', { min: violation.min })
-                : violation?.type === 'above'
-                  ? t('onramp.form.amount_above_max', { max: violation.max })
-                  : null
+        const limitMessageOf = () => {
+            if (!violation) return null
+            switch (violation.type) {
+                case 'below': {
+                    return t('onramp.form.amount_below_min', {
+                        min: violation.min,
+                    })
+                }
+                case 'above': {
+                    return t('onramp.form.amount_above_max', {
+                        max: violation.max,
+                    })
+                }
+                default: {
+                    const exhaustive: never = violation
+                    return exhaustive
+                }
+            }
+        }
+        const message = limitMessageOf()
 
         const timeoutId = setTimeout(
             () => setLimitError(message),

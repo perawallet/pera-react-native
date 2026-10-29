@@ -403,9 +403,9 @@ describe('useAccountNfts', () => {
 
     // QA regression: sorting a freshly imported account left the user
     // in the middle of the list. A new sort is a new query key, so the rows go
-    // through a gap before the reordered ones land, and the reset used to be
-    // driven off the rows themselves — so it read that gap as "nothing changed"
-    // and never fired, leaving FlashList to re-anchor on the old top row.
+    // through a gap before the reordered ones land; a reset driven off the rows
+    // themselves reads that gap as "nothing changed" and never fires, leaving
+    // FlashList to re-anchor on the old top row.
     describe('scroll reset when the requested view changes', () => {
         const rows = [makeRow('100', 'Cool NFT'), makeRow('200', 'Zed')]
         const reorderedRows = [

@@ -12,7 +12,9 @@
 
 import { makeStyles } from '@rneui/themed'
 
+// lanekeep-ignore-next-line pera/no-numeric-sizes reason: slide-to-confirm track height
 const TRACK_HEIGHT = 56
+// lanekeep-ignore-next-line pera/no-numeric-sizes reason: slide-to-confirm thumb diameter
 export const THUMB_SIZE = 64
 export const TRACK_INSET = 4
 

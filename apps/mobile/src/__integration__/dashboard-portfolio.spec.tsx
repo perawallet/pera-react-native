@@ -49,6 +49,7 @@ import {
     seedAlgorandAccountState,
 } from '@test-utils/database-setup'
 import {
+    accountValueKey,
     insertAssetHolding,
     useAccountBalancesQuery,
     useAccountsStore,
@@ -251,10 +252,10 @@ describe('Flow: Dashboard portfolio aggregation', () => {
         // accounts — proves the aggregation crosses the per-account
         // boundary rather than collapsing on a single one.
         const totalA = result.current.portfolio.accountValueTotals.get(
-            addressOf(ACCOUNT_A),
+            accountValueKey('algorand', addressOf(ACCOUNT_A)),
         )?.usdValue
         const totalB = result.current.portfolio.accountValueTotals.get(
-            addressOf(ACCOUNT_B),
+            accountValueKey('algorand', addressOf(ACCOUNT_B)),
         )?.usdValue
         expect(totalA).toBeDefined()
         expect(totalB).toBeDefined()
@@ -373,7 +374,7 @@ describe('Flow: Dashboard portfolio aggregation', () => {
             expect(result.current.selected.networkId).toBe(TEST_NETWORK)
             expect(
                 result.current.portfolio.accountValueTotals
-                    .get(addressOf(ACCOUNT_A))
+                    .get(accountValueKey('algorand', addressOf(ACCOUNT_A)))
                     ?.usdValue?.greaterThan(0),
             ).toBe(true)
             expect(result.current.portfolio.hasFiatTotal).toBe(false)
