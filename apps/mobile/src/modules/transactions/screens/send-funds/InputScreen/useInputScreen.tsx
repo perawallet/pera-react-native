@@ -494,7 +494,6 @@ export const useInputScreen = () => {
     )
 
     return {
-        scope,
         asset,
         accountAssetBalance,
         isBalanceReady,

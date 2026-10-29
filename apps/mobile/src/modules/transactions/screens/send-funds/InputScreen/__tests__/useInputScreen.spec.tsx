@@ -323,17 +323,6 @@ describe('useInputScreen', () => {
         expect(result.current.isBalanceReady).toBe(true)
     })
 
-    it("returns the send chain's scope, so the fiat line prices on that chain", () => {
-        mockSendScope.current = { chainId: 'ethereum', networkId: 'mainnet' }
-
-        const { result } = renderHook(() => useInputScreen())
-
-        expect(result.current.scope).toEqual({
-            chainId: 'ethereum',
-            networkId: 'mainnet',
-        })
-    })
-
     it("converts a token's balance with the token's own decimals", () => {
         mockSendFundsState.selectedAssetId = '1'
         spendableOf({ balance: 50, max: 50 })

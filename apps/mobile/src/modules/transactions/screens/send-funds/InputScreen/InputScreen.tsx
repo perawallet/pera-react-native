@@ -43,7 +43,6 @@ export const InputScreen = () => {
     const navigation =
         useNavigation<StackNavigationProp<SendFundsStackParamList>>()
     const {
-        scope,
         asset,
         accountAssetBalance,
         isBalanceReady,
