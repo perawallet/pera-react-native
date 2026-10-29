@@ -29,7 +29,7 @@ import {
     chainDisplayNameOf,
     useSwitchedOffChainIds,
 } from '@perawallet/wallet-core-chain-shared'
-import type { Optional } from '@perawallet/wallet-core-shared'
+import type { Optional, Nullable } from '@perawallet/wallet-core-shared'
 import { useCapableChainId } from '@hooks/useCapableChainIds'
 import { useIsMultichain } from '../../hooks/useIsMultichain'
 import { useLanguage } from '@hooks/useLanguage'
@@ -143,10 +143,12 @@ export const useAccountInfoCard = ({
 
     const structureIcon: IconName = isLedger ? 'ledger' : 'wallet'
 
-    const structureGroup = useMemo<{
-        accounts: WalletAccount[]
-        firstAccount: WalletAccount
-    } | null>(() => {
+    const structureGroup = useMemo<
+        Nullable<{
+            accounts: WalletAccount[]
+            firstAccount: WalletAccount
+        }>
+    >(() => {
         if (isHDWallet && hdSeedGroupIndex >= 0) {
             return hdSeedGroups[hdSeedGroupIndex]
         }

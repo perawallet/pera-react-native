@@ -16,14 +16,16 @@
  * queryClient keeps that error as the PeraNetworkError's `originalError`, so
  * that is the only place the body survives.
  */
-export const readIntegrityErrorCode = (error: unknown): string | undefined => {
+import type { Optional, Nullable, Maybe } from '@perawallet/wallet-core-shared'
+
+export const readIntegrityErrorCode = (error: unknown): Optional<string> => {
     const candidates = [
         error,
-        (error as { originalError?: unknown } | null)?.originalError,
+        (error as Nullable<{ originalError?: unknown }>)?.originalError,
     ]
     for (const candidate of candidates) {
-        const data = (candidate as { data?: unknown } | null)?.data
-        const code = (data as { code?: unknown } | null | undefined)?.code
+        const data = (candidate as Nullable<{ data?: unknown }>)?.data
+        const code = (data as Maybe<{ code?: unknown }>)?.code
         if (typeof code === 'string') return code
     }
     return undefined

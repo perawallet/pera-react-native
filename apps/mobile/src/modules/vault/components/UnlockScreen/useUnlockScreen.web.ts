@@ -11,7 +11,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import {
     InvalidPasswordError,
     PasskeyUnlockError,
@@ -82,7 +82,7 @@ export const useUnlockScreen = (): UseUnlockScreenResult => {
     // rather than the tick count, so it isn't torn down and recreated
     // every second. On performance.now(), like the vault's own lockout, so
     // moving the system clock can't clear the countdown.
-    const [lockoutEndTime, setLockoutEndTime] = useState<number | null>(null)
+    const [lockoutEndTime, setLockoutEndTime] = useState<Nullable<number>>(null)
     const [lockoutSeconds, setLockoutSeconds] = useState(0)
 
     useEffect(() => {

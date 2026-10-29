@@ -18,6 +18,7 @@ import {
     useMarkSignRequestsConfirmedMutation,
     type SignRequestResponse,
 } from '@perawallet/wallet-core-multisig'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import {
     plannerAdapterForScope,
     type HandoffPeerDelivery,
@@ -33,7 +34,7 @@ import { useHandoffResolver } from './useHandoffResolver'
 const handoffKey = (handoff: PendingWalletConnectHandoff): string =>
     handoff.signRequestId
 
-const handoffExpiresAt = (detail: SignRequestResponse): number | null => {
+const handoffExpiresAt = (detail: SignRequestResponse): Nullable<number> => {
     const expiresAt = new Date(detail.expected_expire_datetime).getTime()
     return Number.isNaN(expiresAt) ? null : expiresAt
 }
@@ -165,7 +166,7 @@ export const useWalletConnectHandoffResolver = ({
         (
             outcome: TerminalHandoffOutcome,
             handoff: PendingWalletConnectHandoff,
-            detail: SignRequestResponse | undefined,
+            detail: Optional<SignRequestResponse>,
         ) => {
             // The only local participant allowed to cancel the request on a
             // terminal failure. Prefer the poll, but fall back to the address

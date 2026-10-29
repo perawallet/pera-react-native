@@ -16,6 +16,8 @@
 // and no side-effect imports, so content-wire.ts can bundle this into the
 // content-script build.
 
+import type { Nullable } from '@perawallet/wallet-core-shared'
+
 export const INTEGRITY_CHECK_MESSAGE_TYPE = 'pera:integrity-check'
 export const INTEGRITY_FRAME_MESSAGE_TYPE = 'pera:integrity-frame'
 export const INTEGRITY_CHECK_VERSION = 1
@@ -85,7 +87,7 @@ export type IntegrityControlMessage =
           /** A guarded request was refused while this realm held a token it believed valid. */
           kind: 'token-rejected'
           /** Epoch ms expiry of the refused token, naming it; null when the refusal could not say. */
-          tokenExpiresAt: number | null
+          tokenExpiresAt: Nullable<number>
       }
 
 export type IntegrityEnrolDecision =
@@ -125,7 +127,7 @@ export const buildCheckUrl = ({
 
 export const parseCheckPageMessage = (
     data: unknown,
-): CheckPageMessage | null => {
+): Nullable<CheckPageMessage> => {
     if (!isRecord(data)) return null
     if (data.type !== INTEGRITY_CHECK_MESSAGE_TYPE) return null
     if (data.v !== INTEGRITY_CHECK_VERSION) return null
@@ -201,7 +203,7 @@ export const toCheckPortMessage = (
 
 export const frameEventFor = (
     message: CheckPageMessage,
-): IntegrityFrameEvent | null => {
+): Nullable<IntegrityFrameEvent> => {
     switch (message.event) {
         case 'interactive-required': {
             return 'expand'
@@ -221,7 +223,7 @@ export const frameEventFor = (
 
 export const parseCheckPortMessage = (
     data: unknown,
-): IntegrityCheckPortMessage | null => {
+): Nullable<IntegrityCheckPortMessage> => {
     if (!isRecord(data)) return null
     if (data.v !== INTEGRITY_CHECK_VERSION) return null
     if (typeof data.kid !== 'string') return null
@@ -265,7 +267,7 @@ export const parseCheckPortMessage = (
 
 export const parseIntegrityFrameMessage = (
     data: unknown,
-): IntegrityFrameMessage | null =>
+): Nullable<IntegrityFrameMessage> =>
     isRecord(data) &&
     data.type === INTEGRITY_FRAME_MESSAGE_TYPE &&
     data.v === INTEGRITY_CHECK_VERSION &&
@@ -305,7 +307,7 @@ export const parseIntegrityEnrolDecision = (
 
 export const parseIntegrityControlMessage = (
     message: unknown,
-): IntegrityControlMessage | null => {
+): Nullable<IntegrityControlMessage> => {
     if (!isRecord(message) || message.scope !== INTEGRITY_CONTROL_SCOPE) {
         return null
     }

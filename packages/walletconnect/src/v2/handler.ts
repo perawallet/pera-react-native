@@ -15,7 +15,12 @@ import {
     type ChainId,
     type NetworkId,
 } from '@perawallet/wallet-core-chain-contract'
-import { logger, toError, type Nullable } from '@perawallet/wallet-core-shared'
+import {
+    logger,
+    toError,
+    type Nullable,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
 import type { KeyValueStorageService } from '@perawallet/wallet-extension-platform'
 import {
     connectionScope,
@@ -702,12 +707,12 @@ export const createWalletConnectV2Handler = (
         caip2: string,
     ): Promise<void> => {
         const walletKit = requireClient()
-        const session = walletKit.getActiveSessions()[record.id] as
-            | WalletKitSession
-            | undefined
-        const namespace = session?.namespaces[chain.support.namespace] as
-            | WalletKitSession['namespaces'][string]
-            | undefined
+        const session = walletKit.getActiveSessions()[
+            record.id
+        ] as Optional<WalletKitSession>
+        const namespace = session?.namespaces[
+            chain.support.namespace
+        ] as Optional<WalletKitSession['namespaces'][string]>
         if (!session || !namespace) {
             throw new WalletConnectInvalidSessionError('No session found')
         }
@@ -747,9 +752,9 @@ export const createWalletConnectV2Handler = (
         topic: string,
         support: WalletConnectSupport,
     ): string[] => {
-        const session = client?.getActiveSessions()[topic] as
-            | WalletKitSession
-            | undefined
+        const session = client?.getActiveSessions()[
+            topic
+        ] as Optional<WalletKitSession>
         return session?.namespaces[support.namespace]?.chains ?? []
     }
 
@@ -1065,7 +1070,7 @@ export const createWalletConnectV2Handler = (
     const deliverRejection = async (
         id: number,
         key: 'USER_REJECTED' | ProposalRefusal,
-        reason: string | undefined,
+        reason: Optional<string>,
         pairingId: string,
     ): Promise<void> => {
         try {
@@ -1460,7 +1465,7 @@ export const createWalletConnectV2Handler = (
         if (!stored || !isWalletConnectV2Connection(stored)) return
         const namespace = walletKit.getActiveSessions()[id]?.namespaces[
             chain.support.namespace
-        ] as WalletKitSession['namespaces'][string] | undefined
+        ] as Optional<WalletKitSession['namespaces'][string]>
         if (!namespace) return
         const events = namespace.events ?? []
 

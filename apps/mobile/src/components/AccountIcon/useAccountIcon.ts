@@ -21,6 +21,7 @@ import {
     useDelegatedAccount,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import type { Optional, Nullable } from '@perawallet/wallet-core-shared'
 import type { IconName, PWRoundIconVariant } from '@components/core'
 
 export type AccountDisplayState =
@@ -55,7 +56,7 @@ const isKnownGlyph = (glyphId: string): glyphId is KnownGlyph =>
     Object.hasOwn(GLYPH_TONE, glyphId)
 
 /** The icon for a presentation glyph id; the neutral unknown glyph for an id the app has no icon for. */
-export const accountGlyphFor = (glyphId: string | undefined): AccountGlyph => {
+export const accountGlyphFor = (glyphId: Optional<string>): AccountGlyph => {
     const name = glyphId && isKnownGlyph(glyphId) ? glyphId : FALLBACK_GLYPH
     return { name, variant: GLYPH_TONE[name] }
 }
@@ -82,9 +83,9 @@ export type UseAccountIconOptions = {
 }
 
 export const useAccountIcon = (
-    account: WalletAccount | undefined,
+    account: Optional<WalletAccount>,
     options: UseAccountIconOptions = {},
-): AccountGlyph | null => {
+): Nullable<AccountGlyph> => {
     const { ignoreRekey, displayState, authAccount } = options
     const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const rekeyAccount = useDelegatedAccount(

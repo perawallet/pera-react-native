@@ -16,6 +16,7 @@ import type { HookCollection } from 'before-after-hook'
 import type { KeyStoreState } from '@algorandfoundation/keystore-core'
 import type { ReactNativeKeyStore } from '@algorandfoundation/react-native-keystore'
 import type { MigrationReport } from '@algorandfoundation/provider-migrations'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { subtle } from './keystore/subtle'
 import { createPeraKeystore } from './keystore/createKeystore'
 import {
@@ -188,7 +189,7 @@ export type QuantumMaterialRepairDependencies = {
  * Not `@perawallet/wallet-core-kms`'s `zeroBytes`: importing it here closes
  * the same build-order cycle as `deriveKeygenSeed` above.
  */
-const zeroSensitiveBytes = (buf: Uint8Array | undefined): void => {
+const zeroSensitiveBytes = (buf: Optional<Uint8Array>): void => {
     buf?.fill(0)
 }
 
@@ -240,7 +241,7 @@ export const runQuantumMaterialRepair = (
                     `quantum repair: seed ${parentKeyId} exported no private key`,
                 )
             }
-            let seed: Uint8Array | undefined
+            let seed: Optional<Uint8Array>
             try {
                 seed = deps.deriveKeygenSeed(entropy)
                 await keystore.generate({

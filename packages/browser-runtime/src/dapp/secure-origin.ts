@@ -28,6 +28,8 @@
 //
 // The loopback carve-out mirrors the browser's own secure-context rule so
 // local dapp development against http://localhost keeps working.
+import type { Maybe } from '@perawallet/wallet-core-shared'
+
 const LOOPBACK_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]'])
 
 /**
@@ -35,9 +37,7 @@ const LOOPBACK_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]'])
  * `https:` origin, plus `http:` on loopback. Opaque origins (the literal
  * string `'null'`, from sandboxed/`data:` frames) are always rejected.
  */
-export const isSecureDappOrigin = (
-    origin: string | null | undefined,
-): origin is string => {
+export const isSecureDappOrigin = (origin: Maybe<string>): origin is string => {
     if (!origin || origin === 'null') return false
 
     let parsed: URL

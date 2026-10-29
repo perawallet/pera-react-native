@@ -15,6 +15,8 @@
 // bundle throws before React mounts and the app sits on the splash screen.
 // RN installs `Event` and `EventTarget` before the entry module runs.
 
+import type { Nullable } from '@perawallet/wallet-core-shared'
+
 const defineGlobal = (name: string, value: unknown) => {
     if (name in globalThis) return
     Object.defineProperty(globalThis, name, {
@@ -28,7 +30,7 @@ class MessageEventPolyfill<T = unknown> extends Event {
     readonly data: T
     readonly origin: string
     readonly lastEventId: string
-    readonly source: MessageEventSource | null
+    readonly source: Nullable<MessageEventSource>
     readonly ports: readonly MessagePort[]
 
     constructor(type: string, init: MessageEventInit<T> = {}) {
@@ -43,8 +45,8 @@ class MessageEventPolyfill<T = unknown> extends Event {
 
 // Only MSW's ws() handlers post on it, and the benchmarks register none.
 class BroadcastChannelStub extends EventTarget {
-    onmessage: ((event: MessageEvent) => void) | null = null
-    onmessageerror: ((event: MessageEvent) => void) | null = null
+    onmessage: Nullable<(event: MessageEvent) => void> = null
+    onmessageerror: Nullable<(event: MessageEvent) => void> = null
 
     constructor(readonly name: string) {
         super()

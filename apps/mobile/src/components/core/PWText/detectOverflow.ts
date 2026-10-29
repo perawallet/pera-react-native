@@ -14,6 +14,8 @@
 // fixture data: react-native-web (this repo's unit test renderer) never
 // calls onTextLayout at all, so a render-based test can't exercise it.
 
+import type { Optional, Nullable } from '@perawallet/wallet-core-shared'
+
 export type OverflowLine = { text: string; width: number }
 
 // Rendered ellipsis glyphs across platforms/fonts: U+2026 (…) plus the
@@ -32,7 +34,7 @@ const ELLIPSIS_PATTERN = /(…|\.\.\.)$/
 // screenshot that turns out fine.
 export const isTruncated = (
     lines: readonly OverflowLine[],
-    numberOfLines: number | undefined,
+    numberOfLines: Optional<number>,
 ): boolean => {
     if (numberOfLines === undefined || lines.length === 0) return false
     const lastLine = lines[lines.length - 1]
@@ -43,8 +45,8 @@ export const isTruncated = (
 }
 
 export const isWiderThanParent = (
-    maxLineWidth: number | null,
-    boxWidth: number | null,
+    maxLineWidth: Nullable<number>,
+    boxWidth: Nullable<number>,
 ): boolean => {
     if (maxLineWidth === null || boxWidth === null) return false
     // 1px tolerance for float rounding between the layout and text-layout events.

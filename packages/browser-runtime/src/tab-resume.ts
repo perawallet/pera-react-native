@@ -15,6 +15,8 @@
  * (`expanded.html?flow=resume`). Session storage because the popup and the tab
  * share no memory, and the popup is gone by the time the tab reads it.
  */
+import type { Nullable } from '@perawallet/wallet-core-shared'
+
 export const TAB_RESUME_SESSION_KEY = 'tab-resume:intent'
 
 // Session storage defaults to TRUSTED_CONTEXTS, so content scripts can't read it.
@@ -36,7 +38,7 @@ export const TAB_RESUME_RESULT_SESSION_KEY = 'tab-resume:result'
 export const TAB_RESUME_DONE_SCOPE = 'tab-resume:done'
 
 export const isTabResumeDoneMessage = (message: unknown): boolean =>
-    (message as { scope?: unknown } | null)?.scope === TAB_RESUME_DONE_SCOPE
+    (message as Nullable<{ scope?: unknown }>)?.scope === TAB_RESUME_DONE_SCOPE
 
 /**
  * Stores the popup's toast, then asks the service worker to close this tab and

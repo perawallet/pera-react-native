@@ -12,6 +12,8 @@
 
 // Generous on purpose: a dApp has one request in flight, and two tabs of the
 // same site is the only ordinary reason to exceed it.
+import type { Nullable } from '@perawallet/wallet-core-shared'
+
 export const MAX_PENDING_REQUESTS_PER_PEER = 3
 export const MAX_PENDING_REQUESTS = 8
 
@@ -24,7 +26,7 @@ export type PendingCapacityBreach = 'total' | 'peer'
 export const pendingCapacityBreach = (
     openPeers: Iterable<string>,
     peer: string,
-): PendingCapacityBreach | null => {
+): Nullable<PendingCapacityBreach> => {
     let total = 0
     let forPeer = 0
     for (const open of openPeers) {

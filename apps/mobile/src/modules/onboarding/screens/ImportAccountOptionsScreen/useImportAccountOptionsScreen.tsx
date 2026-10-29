@@ -24,6 +24,7 @@ import {
     type ChainId,
     type I18nKey,
 } from '@perawallet/wallet-core-chain-contract'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import type { IconName } from '@components/core'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useIsCloudBackupAvailable } from '@hooks/useIsCloudBackupAvailable'
@@ -153,7 +154,7 @@ export const useImportAccountOptionsScreen =
         // Asked here because the add-account flow has no chain step; with a
         // single Ledger chain the flow starts on it without asking.
         const chooseLedgerChain = useCallback(async (): Promise<
-            ChainId | undefined
+            Optional<ChainId>
         > => {
             if (ledgerChainIds.length <= 1) return ledgerChainIds[0]
             return requestBottomSheet<ChainId>({

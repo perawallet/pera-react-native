@@ -16,15 +16,16 @@ import {
     type IntegrityAccessState,
     type IntegrityBackoff,
 } from '@perawallet/wallet-core-browser-runtime'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useIntegrityCheckFrameStore } from '@components/IntegrityCheckFrameHost'
 import { useIntegrityAccessState } from '@hooks/useIntegrityAccessState.web'
 import { useIntegrityAccessStore } from '@hooks/useIntegrityAccessStore.web'
 
 export type UseIntegrityAccessDiagnosticsResult = {
     accessState: string
-    cause: string | null
+    cause: Nullable<string>
     /** Both backoffs, raw: this is the line support asks a user to screenshot. */
-    nextAttempt: string | null
+    nextAttempt: Nullable<string>
     onForceEnrol: () => void
     onClearBackoff: () => void
 }
@@ -45,8 +46,8 @@ const describeState = (state: IntegrityAccessState): string => {
 
 const describeBackoff = (
     label: string,
-    backoff: IntegrityBackoff | null,
-): string | null =>
+    backoff: Nullable<IntegrityBackoff>,
+): Nullable<string> =>
     backoff
         ? `${label} ${new Date(backoff.nextAttemptAt).toISOString()} (${backoff.failures})`
         : null

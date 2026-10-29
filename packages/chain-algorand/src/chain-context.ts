@@ -14,9 +14,10 @@ import {
     ChainAdapterNotRegisteredError,
     type ChainContext,
 } from '@perawallet/wallet-core-chain-contract'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { ALGORAND_CHAIN_ID } from './chain-id'
 
-let registered: ChainContext | undefined
+let registered: Optional<ChainContext>
 
 export const setAlgorandChainContext = (ctx: ChainContext): void => {
     registered = ctx

@@ -82,7 +82,7 @@ type UsePeraCardDetailsResult = {
     /** Secure-view image URL once fetched. Cached for the screen visit — it
      * persists across hide so re-revealing is an instant flip with no re-fetch;
      * `null` until the first reveal (and after a load failure). */
-    secureImageUrl: string | null
+    secureImageUrl: Nullable<string>
     /** True when the secure card face should be shown (flipped open): revealed
      * AND the image has finished loading. Drives the flip and the button label. */
     isCardOpen: boolean
@@ -95,7 +95,7 @@ type UsePeraCardDetailsResult = {
     /** Recover if the single-use secure image fails to load: hide it + toast. */
     onSecureImageError: () => void
     /** Connected funding-source address, or `null` if none is stored. */
-    fundingAddress: string | null
+    fundingAddress: Nullable<string>
     onChangeFunding: () => void
     /** Where the Baanx card is on its way to existing (drives the dimmed
      * visual, the issuance notice, and hiding the card-only affordances
@@ -184,7 +184,7 @@ export const usePeraCardDetails = (): UsePeraCardDetailsResult => {
     // Caveat: with on-disk caching off, the OS may still purge the decoded
     // bitmap under memory pressure, so the "instant re-reveal" isn't guaranteed
     // — it then degrades gracefully via the image's onError → failSecureImage.
-    const [secureView, setSecureView] = useState<SecureView | null>(null)
+    const [secureView, setSecureView] = useState<Nullable<SecureView>>(null)
     const [isRevealed, setIsRevealed] = useState(false)
     const secureImageUrl = secureView?.url ?? null
     const isSecureImageLoading = secureView?.isLoading ?? false
@@ -194,7 +194,7 @@ export const usePeraCardDetails = (): UsePeraCardDetailsResult => {
 
     const showError = useCardErrorToast()
 
-    const loadTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+    const loadTimeoutRef = useRef<Nullable<ReturnType<typeof setTimeout>>>(null)
     const clearLoadTimeout = useCallback(() => {
         if (loadTimeoutRef.current != null) {
             clearTimeout(loadTimeoutRef.current)

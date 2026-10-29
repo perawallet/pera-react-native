@@ -15,6 +15,7 @@ import {
     type MnemonicWordAtPosition,
     uniformIntBelow,
 } from '@perawallet/wallet-core-kms'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 const OPTIONS_PER_QUESTION = 3
 
@@ -31,7 +32,7 @@ export type BackupQuizQuestion = {
     position: number
     correctWord: string
     options: string[]
-    selectedWord: string | null
+    selectedWord: Nullable<string>
 }
 
 export type UseBackupQuizResult = {

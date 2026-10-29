@@ -39,7 +39,7 @@ import {
     subscribeToPasskeyChanges,
 } from '@perawallet/wallet-core-passkeys'
 import { getKeystoreStore } from '@perawallet/wallet-extension-provider'
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, type Optional } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { useIsCloudBackupAvailable } from '@hooks/useIsCloudBackupAvailable'
@@ -80,7 +80,7 @@ const stopBackupSync = () => runManagerAction('stop')
 type KeystoreKey = ReturnType<typeof getKeystoreStore>['state']['keys'][number]
 
 const metadataOf = (key: KeystoreKey): Record<string, unknown> =>
-    (key.metadata as Record<string, unknown> | undefined) ?? {}
+    (key.metadata as Optional<Record<string, unknown>>) ?? {}
 
 const counterOf = (key: KeystoreKey): number => {
     const counter = metadataOf(key).counter

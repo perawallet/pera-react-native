@@ -11,5 +11,6 @@
  */
 
 import type { ChainUi } from '@modules/chain-ui'
+import type { Optional } from '@perawallet/wallet-core-shared'
 
-export const ethereumChainUi: ChainUi | undefined = undefined
+export const ethereumChainUi: Optional<ChainUi> = undefined

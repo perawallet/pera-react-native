@@ -16,6 +16,7 @@ import type {
     ChainActionData,
     ChainPaymentData,
 } from '@perawallet/wallet-core-chain-contract'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import type { ChainLinkTarget } from './models'
 
 export const DeeplinkType = {
@@ -274,4 +275,4 @@ export type AnyParsedDeeplink =
 
 export const linkTargetOf = (
     link: AnyParsedDeeplink,
-): ChainLinkTarget | undefined => ('target' in link ? link.target : undefined)
+): Optional<ChainLinkTarget> => ('target' in link ? link.target : undefined)

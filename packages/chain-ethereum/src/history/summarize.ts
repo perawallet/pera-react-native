@@ -18,7 +18,7 @@ import {
     type TransactionSummary,
     i18nKey,
 } from '@perawallet/wallet-core-chain-contract'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import { transactionStatusNotice } from '@perawallet/wallet-core-transactions'
 import {
     areEvmAddressesEqual,
@@ -144,7 +144,7 @@ const summarizeNativeTransfer = (
     item: EvmHistoryItem,
     address: string,
     chain: EvmChain,
-): TransactionSummary | undefined => {
+): Optional<TransactionSummary> => {
     const { from, to } = item
     if (
         from === null ||
@@ -176,7 +176,7 @@ const summarizeTokenTransfer = (
     item: EvmHistoryItem,
     address: string,
     chain: EvmChain,
-): TransactionSummary | undefined => {
+): Optional<TransactionSummary> => {
     const [leg, ...others] = item.token_transfers
     if (
         !leg ||
@@ -235,7 +235,7 @@ const summarizeNftTransfer = (
     item: EvmHistoryItem,
     address: string,
     chain: EvmChain,
-): TransactionSummary | undefined => {
+): Optional<TransactionSummary> => {
     const legs = nftLegsOf(item, address)
     if (
         legs.length === 0 ||

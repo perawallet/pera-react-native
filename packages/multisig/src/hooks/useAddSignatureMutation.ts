@@ -13,7 +13,7 @@
 import { useCallback } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import { addSignature } from '../api/endpoints'
 import type { AddSignatureRequest } from '../api/schema'
 import type { ProposeSignRequestResponse } from '../api/schema'
@@ -33,7 +33,7 @@ type AddSignatureMutationInput = {
 type AddSignatureVariables = AddSignatureMutationInput & { scope: ChainScope }
 
 export type UseAddSignatureMutationResult = {
-    data: ProposeSignRequestResponse | undefined
+    data: Optional<ProposeSignRequestResponse>
     error: Nullable<Error>
     isError: boolean
     isIdle: boolean

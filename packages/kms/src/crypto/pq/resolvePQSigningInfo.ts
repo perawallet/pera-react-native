@@ -11,6 +11,7 @@
  */
 
 import type { Key } from '@algorandfoundation/keystore-core'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { PQSchemeId } from './types'
 import { SeedScheme } from '../../constants'
 import { KeyManagementError } from '../../errors'
@@ -48,7 +49,7 @@ export type PQSigningInfo = { schemeId: PQSchemeId; publicKey: Uint8Array }
 export const resolvePQSigningInfo = (
     keys: readonly Key[],
     keyPairId: string,
-): PQSigningInfo | null => {
+): Nullable<PQSigningInfo> => {
     const seedKey = resolveSeedKeyFrom(keys, keyPairId)
     const isQuantumSeed = seedSchemeOf(seedKey) === SeedScheme.Quantum
 

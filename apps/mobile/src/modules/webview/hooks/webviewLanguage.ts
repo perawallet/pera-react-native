@@ -16,6 +16,8 @@
  * hardcoded before this existed, so keeping it means the no-locale path cannot
  * change what Discover already receives.
  */
+import type { Nullable } from '@perawallet/wallet-core-shared'
+
 export const WEBVIEW_FALLBACK_LANGUAGE = 'en-US'
 
 /**
@@ -30,7 +32,9 @@ export const WEBVIEW_FALLBACK_LANGUAGE = 'en-US'
  * bootstrap that calls `changeLanguage` has run, and an empty `language` would
  * be worse for the web app than a definite default.
  */
-export const resolveWebviewLanguage = (appLocale?: string | null): string => {
+export const resolveWebviewLanguage = (
+    appLocale?: Nullable<string>,
+): string => {
     const trimmed = appLocale?.trim()
     return trimmed ? trimmed : WEBVIEW_FALLBACK_LANGUAGE
 }
@@ -42,6 +46,6 @@ export const resolveWebviewLanguage = (appLocale?: string | null): string => {
  */
 export const withLanguageParam = (
     url: string,
-    appLocale?: string | null,
+    appLocale?: Nullable<string>,
 ): string =>
     `${url}${url.includes('?') ? '&' : '?'}lang=${encodeURIComponent(resolveWebviewLanguage(appLocale))}`

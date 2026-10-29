@@ -27,6 +27,7 @@ import {
     stringifyTypedJson,
     type Nullable,
     toError,
+    type Optional,
 } from '@perawallet/wallet-core-shared'
 import {
     readRemoteConfigWithOverrides,
@@ -65,9 +66,9 @@ export type AppInitError = 'keystore' | 'generic'
 
 export type UseAppBootstrapResult = {
     bootstrapped: boolean
-    persister: Persister | undefined
+    persister: Optional<Persister>
     fcmToken: Nullable<string>
-    initError: AppInitError | null
+    initError: Nullable<AppInitError>
     retryBootstrap: () => void
 }
 
@@ -142,7 +143,7 @@ export const useAppBootstrap = (): UseAppBootstrapResult => {
     const [persister, setPersister] = useState<Persister>()
     const [bootstrapped, setBootstrapped] = useState(false)
     const [fcmToken, setFcmToken] = useState<Nullable<string>>(null)
-    const [initError, setInitError] = useState<AppInitError | null>(null)
+    const [initError, setInitError] = useState<Nullable<AppInitError>>(null)
     const [retryNonce, setRetryNonce] = useState(0)
     const provider = usePeraProvider()
 

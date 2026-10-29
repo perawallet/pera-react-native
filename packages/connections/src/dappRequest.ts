@@ -11,7 +11,7 @@
  */
 
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import {
     createChainAdapterRegistry,
     type ChainId,
@@ -91,7 +91,7 @@ export class PendingRequestCapacityError extends Error {
  */
 export const dappRequestFailureOf = (
     error: Error,
-): DappRequestFailure | undefined => {
+): Optional<DappRequestFailure> => {
     const { failure } = error as { failure?: unknown }
     return DAPP_REQUEST_FAILURES.find(known => known === failure)
 }
@@ -100,7 +100,7 @@ export const dappRequestFailureOf = (
  * The wire code a chain picked for a refusal no {@link DappRequestFailure}
  * names. Structural for the same reason as {@link dappRequestFailureOf}.
  */
-export const dappRequestWireCodeOf = (error: Error): number | undefined => {
+export const dappRequestWireCodeOf = (error: Error): Optional<number> => {
     const { wireCode } = error as { wireCode?: unknown }
     return typeof wireCode === 'number' ? wireCode : undefined
 }
@@ -266,8 +266,8 @@ export interface DappRequestChainAdapter {
      */
     resolveReportedNetwork(
         scope: ChainScope,
-        customGenesisHash: string | undefined,
-    ): NetworkId | undefined
+        customGenesisHash: Optional<string>,
+    ): Optional<NetworkId>
     /**
      * Each address's empty signature on the active network: public data every
      * transport hands a dApp unprompted (WalletConnect's
@@ -280,9 +280,9 @@ export interface DappRequestChainAdapter {
         /** CAIP-2 namespace, v2 only. */
         readonly namespace: string
         /** `null`: this network has no CAIP-2 identity (e.g. a custom node). */
-        caip2ChainIdFor(networkId: NetworkId): string | null
+        caip2ChainIdFor(networkId: NetworkId): Nullable<string>
         /** The network a CAIP-2 chain id names, or `null` for none of ours. */
-        networkForCaip2ChainId(caip2: string): NetworkId | null
+        networkForCaip2ChainId(caip2: string): Nullable<NetworkId>
         toWireResult(result: WalletOperationResult): unknown
         /**
          * Omitted by a namespace whose dApps expect the handler's defaults
@@ -292,7 +292,7 @@ export interface DappRequestChainAdapter {
         /** Omitted by a chain v1 never served. */
         readonly v1?: {
             isChainIdAcceptable(
-                chainId: number | undefined,
+                chainId: Optional<number>,
                 networkId: NetworkId,
             ): boolean
             /** Wildcard already expanded to every network it covers. */

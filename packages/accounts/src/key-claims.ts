@@ -11,11 +11,13 @@
  */
 
 /** Who made a claim, so a walk can tell the claims its own adds made from other flows'. */
+import type { Optional } from '@perawallet/wallet-core-shared'
+
 export type ClaimOwner = object
 
 let activeWalks = 0
 const derivingNow = new Map<string, number>()
-const claimedDuringWalks = new Map<string, Set<ClaimOwner | undefined>>()
+const claimedDuringWalks = new Map<string, Set<Optional<ClaimOwner>>>()
 
 const claim = (keyPairId: string, delta: 1 | -1) => {
     const count = (derivingNow.get(keyPairId) ?? 0) + delta
@@ -39,7 +41,7 @@ const recordDuringWalk = (keyPairId: string, owner?: ClaimOwner) => {
  * `expectedKeyPairId` covers the derivation in flight, before its id is known.
  */
 export const deriveClaimedKey = async <T extends { keyPairId: string }>(
-    expectedKeyPairId: string | undefined,
+    expectedKeyPairId: Optional<string>,
     derive: () => Promise<T>,
     owner?: ClaimOwner,
 ): Promise<T> => {

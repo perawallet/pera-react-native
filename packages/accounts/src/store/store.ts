@@ -32,6 +32,7 @@ import {
     registerStore,
     type WithPersist,
     type Nullable,
+    type Optional,
 } from '@perawallet/wallet-core-shared'
 import {
     addressCodecs,
@@ -137,7 +138,7 @@ const isObject = (value: unknown): value is Record<string, unknown> =>
 /** A record already held only as custody and chain entries, as one for a chain with no accounts adapter can be. */
 const currentShapeOf = (
     raw: PersistedRecord,
-): DecodedAccountRecord | undefined =>
+): Optional<DecodedAccountRecord> =>
     isObject(raw.custody) &&
     typeof raw.custody.kind === 'string' &&
     isObject(raw.chains) &&
@@ -148,14 +149,14 @@ const currentShapeOf = (
           }
         : undefined
 
-const decodeRecord = (raw: PersistedRecord): DecodedAccountRecord | undefined =>
+const decodeRecord = (raw: PersistedRecord): Optional<DecodedAccountRecord> =>
     CHAIN_IDS.flatMap(chainId => {
         if (!accountsChainAdapters.has(chainId)) return []
         const adapter = accountsChainAdapters.get(chainId)
         return adapter.decodeLegacyRecord?.(raw) ?? []
     })[0] ?? currentShapeOf(raw)
 
-const persistedIdOf = (raw: PersistedRecord): string | undefined =>
+const persistedIdOf = (raw: PersistedRecord): Optional<string> =>
     typeof raw.id === 'string' && raw.id !== '' ? raw.id : undefined
 
 /**
@@ -172,7 +173,7 @@ const derivedIdOf = ({ chains }: DecodedAccountRecord): string => {
 
 type MigratedRecord = {
     /** The address the record was persisted under before v5, which selection named. */
-    legacyAddress: string | undefined
+    legacyAddress: Optional<string>
     account: WalletAccount
 }
 
@@ -202,7 +203,7 @@ const liftLegacyAuthority = (
         if (!decoded) continue
         for (const [key, authority] of Object.entries(decoded.byScope) as [
             ChainScopeKey,
-            string | undefined,
+            Optional<string>,
         ][]) {
             if (authority === undefined) continue
             into.authorities[key] = {
@@ -263,7 +264,7 @@ const stripPreV2Custody = (raw: PersistedRecord): PersistedRecord => {
 
 /** The id of the account that held `address` before the migration; `null` when none did. */
 const idForLegacyAddress = (
-    address: Nullable<string> | undefined,
+    address: Optional<Nullable<string>>,
     records: readonly MigratedRecord[],
 ): Nullable<string> => {
     if (!address) return null
@@ -277,7 +278,7 @@ const idForLegacyAddress = (
 // fields came from, so they are at least as recent.
 const mergeAuthorities = (
     lifted: RecordedAuthorities,
-    held: RecordedAuthorities | undefined,
+    held: Optional<RecordedAuthorities>,
 ): RecordedAuthorities => {
     const merged: RecordedAuthorities = { ...lifted }
     for (const [key, entries] of Object.entries(held ?? {}) as [
@@ -316,7 +317,7 @@ const migrateToV5 = (
         lifted,
     )
     const accounts = records.map(record => record.account)
-    const idOf = (address: Nullable<string> | undefined) =>
+    const idOf = (address: Optional<Nullable<string>>) =>
         idForLegacyAddress(address, records)
     const launchAccountId = idOf(state.launchAccountAddress)
     return {
@@ -385,7 +386,7 @@ const chainAddressesOf = (account: WalletAccount): ChainAddress[] =>
 const sharedChainAddress = (
     candidate: readonly ChainAddress[],
     existing: readonly ChainAddress[],
-): ChainAddress | undefined => {
+): Optional<ChainAddress> => {
     const existingByChain = new Map(
         existing.map(({ chainId, address }) => [chainId, address]),
     )
@@ -425,7 +426,7 @@ const resolveDuplicateAccounts = (
     for (const account of accounts) {
         const addresses = chainAddressesOf(account)
         let position = -1
-        let shared: ChainAddress | undefined
+        let shared: Optional<ChainAddress>
         for (const [index, existing] of resolvedAddresses.entries()) {
             shared = sharedChainAddress(addresses, existing)
             if (shared) {
@@ -475,7 +476,7 @@ const rebindToHardware = (
     current: WalletAccount,
     details: HardwareWalletDetails,
     chainId: ChainId,
-): WalletAccount | undefined => {
+): Optional<WalletAccount> => {
     if (!chainAccountOf(current, chainId)) return undefined
     const { accountIndex, ...device } = details
     return buildAccount({
@@ -518,7 +519,7 @@ const removeUnreferencedKey = async (
 const assertExpectedAddress = (
     chainId: ChainId,
     derived: string,
-    expected: string | undefined,
+    expected: Optional<string>,
 ): void => {
     if (expected !== undefined && !isSameAddress(chainId, derived, expected)) {
         throw new AddressMismatchError(expected, derived)
@@ -570,7 +571,7 @@ const standaloneKeysByFamily = (
     return keys
 }
 
-const firstHeldAddress = (account: WalletAccount): string | undefined =>
+const firstHeldAddress = (account: WalletAccount): Optional<string> =>
     CHAIN_IDS.map(id => chainAccountOf(account, id)?.address).find(
         address => address !== undefined,
     )
@@ -782,7 +783,7 @@ const moveToHardware = (
     current: WalletAccount,
     details: HardwareWalletDetails,
     chainId: ChainId,
-    joinId: string | undefined,
+    joinId: Optional<string>,
 ): boolean => {
     if (!chainAccountOf(current, chainId)) return false
     const { accounts, selectedAccountId } = get()
@@ -828,7 +829,7 @@ const hdHolderAt = (
     walletId: string,
     index: HdIndex,
     derived: AccountChains,
-): WalletAccount | undefined =>
+): Optional<WalletAccount> =>
     findPathHolder(accounts, walletId, index) ??
     accounts.find(account => {
         const held = hdIndexOf(account)

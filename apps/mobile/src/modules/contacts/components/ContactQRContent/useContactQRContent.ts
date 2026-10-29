@@ -16,6 +16,7 @@ import {
     type ChainFamily,
 } from '@perawallet/wallet-core-chain-contract'
 import type { Contact } from '@perawallet/wallet-core-contacts'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { useClipboard } from '@hooks/useClipboard'
 import { useLanguage } from '@hooks/useLanguage'
 import { chainFamilyDisplay } from '@modules/chain-ui'
@@ -26,7 +27,7 @@ export type ContactQRFamilyOption = { family: ChainFamily; label: string }
 export type UseContactQRContentResult = {
     /** Empty for a contact with a single address: there is nothing to switch. */
     familyOptions: ContactQRFamilyOption[]
-    selectedFamily: ChainFamily | undefined
+    selectedFamily: Optional<ChainFamily>
     address: string
     shortAddress: string
     selectFamily: (family: ChainFamily) => void

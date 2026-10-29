@@ -11,7 +11,7 @@
  */
 
 import type { IWalletConnectSession } from '@perawallet/walletconnect'
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import type { ConnectionId } from '@perawallet/wallet-extension-connections'
 import {
     connectionScope,
@@ -86,7 +86,7 @@ export const createV1SessionRestorer = (deps: {
 
         // A keystore fault or a failed decrypt is this one session's problem;
         // thrown, it would abort `restore` for every session after it.
-        let key: string | null
+        let key: Nullable<string>
         try {
             key = await sessionKeys.read(connection.id)
         } catch (error) {

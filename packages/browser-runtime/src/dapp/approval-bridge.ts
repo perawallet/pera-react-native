@@ -32,6 +32,7 @@ import {
     type WireWalletOperationResult,
 } from '../connections/protocol'
 import { isTrustedExtensionPageSender } from '@perawallet/wallet-extension-platform-chrome/messaging'
+import type { Optional, Nullable } from '@perawallet/wallet-core-shared'
 import type {
     PasskeyDecision,
     PasskeyCreateApprovalContext,
@@ -163,7 +164,7 @@ const DECISION_KINDS: Record<string, readonly PendingApproval['kind'][]> = {
 const isDecisionKindAllowed = (
     // Undefined reaches here from a malformed message; the switch below
     // answers those with 'unknown kind', so let them through unconstrained.
-    messageKind: string | undefined,
+    messageKind: Optional<string>,
     approvalKind: PendingApproval['kind'],
 ): boolean => {
     const allowed = messageKind ? DECISION_KINDS[messageKind] : undefined
@@ -240,8 +241,8 @@ export class ApprovalWindowBridge implements PasskeyApprovalOpener {
     // The requestId awaiting tryOpenActionPopup(), so a second request racing in
     // routes to the window. Deliberately separate from `surface: 'popup'`, which
     // must only ever mean the popup genuinely opened: get-current-approval trusts it.
-    private popupAttemptRequestId: string | null = null
-    private keepAliveTimer: ReturnType<typeof setInterval> | null = null
+    private popupAttemptRequestId: Nullable<string> = null
+    private keepAliveTimer: Nullable<ReturnType<typeof setInterval>> = null
     private keepAliveSince = 0
     // A submitted send is settled but still owes its window an outcome; an
     // idled worker would drop that reply while the host broadcasts.
@@ -265,7 +266,7 @@ export class ApprovalWindowBridge implements PasskeyApprovalOpener {
         requested: { networks: string[]; chains: ChainId[]; methods: string[] }
         expiresAt: number
         requesterOrigin?: string
-    }): Promise<{ approvedAddresses: string[] } | null> {
+    }): Promise<Nullable<{ approvedAddresses: string[] }>> {
         const decision = this.awaitApproval<{ approvedAddresses: string[] }>({
             ...ctx,
             kind: 'connection-proposal',
@@ -357,7 +358,7 @@ export class ApprovalWindowBridge implements PasskeyApprovalOpener {
     // `finish()` is only ever called for a requestId from the handleMessage case
     // (or window-close path) matching its kind, with the exact `T | null` the
     // caller declares, so the cast back is safe.
-    private awaitApproval<T>(approval: PendingApproval): Promise<T | null> {
+    private awaitApproval<T>(approval: PendingApproval): Promise<Nullable<T>> {
         // Overwriting a colliding requestId would strand the previous `settle`
         // forever; a peer retrying a correlation id reaches this.
         const existing = this.pending.get(approval.requestId)
@@ -367,7 +368,7 @@ export class ApprovalWindowBridge implements PasskeyApprovalOpener {
             )
         }
         this.assertCapacity(capacityKeyFor(approval))
-        return new Promise<T | null>(resolve => {
+        return new Promise<Nullable<T>>(resolve => {
             this.pending.set(approval.requestId, {
                 approval,
                 settle: resolve as Settle,
@@ -485,7 +486,7 @@ export class ApprovalWindowBridge implements PasskeyApprovalOpener {
             height: APPROVAL_WINDOW_HEIGHT,
             focused: true,
         }
-        let win: chrome.windows.Window | undefined
+        let win: Optional<chrome.windows.Window>
         try {
             win = await this.chromeLike.windows
                 .create({
@@ -542,11 +543,11 @@ export class ApprovalWindowBridge implements PasskeyApprovalOpener {
         // Cast away the (options?, callback) overloads: chrome.action.openPopup
         // is a plain namespace function (no `this` binding), so TS's .call()
         // overload resolution otherwise picks the wrong arity.
-        const openPopup = this.chromeLike.action?.openPopup as
-            | (() => Promise<void>)
-            | undefined
+        const openPopup = this.chromeLike.action?.openPopup as Optional<
+            () => Promise<void>
+        >
         if (!openPopup) return false
-        let timer: ReturnType<typeof setTimeout> | undefined
+        let timer: Optional<ReturnType<typeof setTimeout>>
         try {
             return await Promise.race([
                 openPopup.call(this.chromeLike.action).then(() => true),
@@ -568,7 +569,7 @@ export class ApprovalWindowBridge implements PasskeyApprovalOpener {
 
     private handleMessage = (
         message: unknown,
-        sender: chrome.runtime.MessageSender | undefined,
+        sender: Optional<chrome.runtime.MessageSender>,
         sendResponse: (r: unknown) => void,
     ): boolean => {
         const msg = message as {
@@ -590,7 +591,7 @@ export class ApprovalWindowBridge implements PasskeyApprovalOpener {
         if (msg.kind === 'get-current-approval') {
             // No requestId: the popup takes whichever popup-surface approval is
             // pending (at most one exists); entries routed to the window must be skipped.
-            let current: PendingApproval | null = null
+            let current: Nullable<PendingApproval> = null
             for (const e of this.pending.values()) {
                 if (e.surface !== 'popup') continue
                 current = e.approval

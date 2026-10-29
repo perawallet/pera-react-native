@@ -23,7 +23,7 @@ import {
     useNetworkStore,
 } from '@perawallet/wallet-core-chain-shared'
 import { kmsCore } from '@perawallet/wallet-core-kms'
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, type Optional } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import type { AccountChains, ChainAccount, HdIndex } from './models'
 import { seedMintableScheme } from './credentials'
@@ -216,13 +216,13 @@ export async function discoverWalletActivity({
     }
     // Deriving saves the private key, and every chain of a family derives the
     // same key at an index: derive it once and build each chain's address from it.
-    const keys = new Map<string, Promise<DerivedKey | undefined>>()
+    const keys = new Map<string, Promise<Optional<DerivedKey>>>()
 
     const keyAt = (
         chainId: ChainId,
         { account, keyIndex }: HdIndex,
         opts: DeriveOpts,
-    ): Promise<DerivedKey | undefined> => {
+    ): Promise<Optional<DerivedKey>> => {
         const { family } = registry.get(chainId).descriptor
         const id = `${family}:${opts.scheme}:${account}/${keyIndex}`
         let key = keys.get(id)
@@ -241,8 +241,8 @@ export async function discoverWalletActivity({
 
     // Keystore saves are slow on device, so a chain that can derive in memory
     // never goes through one; only the keys the caller adds get saved.
-    const getters = new Map<ChainId, GetPublicKey | undefined>()
-    const inMemoryGetter = (chainId: ChainId): GetPublicKey | undefined => {
+    const getters = new Map<ChainId, Optional<GetPublicKey>>()
+    const inMemoryGetter = (chainId: ChainId): Optional<GetPublicKey> => {
         if (!rootKey) return undefined
         if (!getters.has(chainId)) {
             getters.set(
@@ -258,13 +258,13 @@ export async function discoverWalletActivity({
     const deriveOn = async (
         scope: ChainScope,
         indices: readonly HdIndex[],
-    ): Promise<(ChainAccount | undefined)[]> => {
+    ): Promise<Optional<ChainAccount>[]> => {
         const scheme = seedMintableScheme(scope.chainId)
         if (scheme === undefined) return indices.map(() => undefined)
         const opts = { scheme, networkId: scope.networkId }
         const codec = addressCodecs.get(scope.chainId)
         const getPublicKey = inMemoryGetter(scope.chainId)
-        const entries: (ChainAccount | undefined)[] = []
+        const entries: Optional<ChainAccount>[] = []
         for (const index of indices) {
             if (getPublicKey) {
                 const publicKey = await getPublicKey(index).catch(
@@ -294,8 +294,8 @@ export async function discoverWalletActivity({
 
     const probeChain = async (
         scope: ChainScope,
-        entries: (ChainAccount | undefined)[],
-    ): Promise<(ChainAccount | undefined)[]> => {
+        entries: Optional<ChainAccount>[],
+    ): Promise<Optional<ChainAccount>[]> => {
         const addresses = entries.flatMap(entry =>
             entry ? [entry.address] : [],
         )
@@ -312,7 +312,7 @@ export async function discoverWalletActivity({
     const probe: HdBatchProbe = async indices => {
         const derivedPerChain: {
             scope: ChainScope
-            entries: (ChainAccount | undefined)[]
+            entries: Optional<ChainAccount>[]
         }[] = []
         for (const chainId of chainIds) {
             const scope = {

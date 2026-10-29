@@ -17,6 +17,7 @@ import {
     decodeLongString,
     logger,
     toError,
+    type Nullable,
 } from '@perawallet/wallet-core-shared'
 import {
     type KeyValueStorageService,
@@ -168,7 +169,7 @@ export class RNMigrationService implements MigrationService {
         this.keyValueStorage.removeItem(MIGRATION_STEPS_KEY)
     }
 
-    async getCompletedStepVersions(): Promise<MigrationStepVersions | null> {
+    async getCompletedStepVersions(): Promise<Nullable<MigrationStepVersions>> {
         const raw = this.keyValueStorage.getItem(MIGRATION_STEPS_KEY)
         if (!raw) return null
         try {
@@ -201,7 +202,7 @@ export class RNMigrationService implements MigrationService {
         )
     }
 
-    private readSentinel(): MigrationSentinelValue | null {
+    private readSentinel(): Nullable<MigrationSentinelValue> {
         const raw = this.keyValueStorage.getItem(MIGRATION_SENTINEL_KEY)
         if (!raw) return null
         try {
@@ -273,10 +274,10 @@ interface NativeLegacyMigrationModule {
     resetLegacyData?(): Promise<void>
 }
 
-const getNativeModule = (): NativeLegacyMigrationModule | null =>
+const getNativeModule = (): Nullable<NativeLegacyMigrationModule> =>
     requireOptionalNativeModule<NativeLegacyMigrationModule>('LegacyMigration')
 
-const decodeBase64 = (value: unknown): Uint8Array | null => {
+const decodeBase64 = (value: unknown): Nullable<Uint8Array> => {
     if (value == null) return null
     if (typeof value !== 'string') return null
     return decodeFromBase64(value)
@@ -300,7 +301,7 @@ const decodePerEntry = <Raw, Decoded>(
     return decoded
 }
 
-const decodeAuthPin = (pin: Base64): Uint8Array | null => {
+const decodeAuthPin = (pin: Base64): Nullable<Uint8Array> => {
     try {
         return decodeBase64(pin)
     } catch (err) {
@@ -311,8 +312,8 @@ const decodeAuthPin = (pin: Base64): Uint8Array | null => {
     }
 }
 
-type Base64 = string | null
-type LongString = string | null
+type Base64 = Nullable<string>
+type LongString = Nullable<string>
 
 interface RawLegacyMigrationData {
     schemaVersion: number
@@ -325,7 +326,7 @@ interface RawLegacyMigrationData {
     notificationFilters: string[]
     walletConnectV1: RawLegacyWalletConnectV1Session[]
     walletConnectV2: RawLegacyWalletConnectV2Session[]
-    walletConnectHistoryBlob?: string | null
+    walletConnectHistoryBlob?: Nullable<string>
     passkeys: RawLegacyPasskey[]
     deviceIdentifiers: RawLegacyDeviceIdentifiers
     tooltipPreferences?: Partial<LegacyMigrationData['tooltipPreferences']>
@@ -348,8 +349,8 @@ interface RawLegacyAccount extends Omit<
     'secretKey' | 'authAddress' | 'hdSeedId'
 > {
     secretKey: Base64
-    authAddress?: string | null
-    hdWalletId: string | null
+    authAddress?: Nullable<string>
+    hdWalletId: Nullable<string>
 }
 
 interface RawLegacyHDWallet extends Omit<LegacyHDWallet, 'entropy' | 'keys'> {
@@ -373,12 +374,12 @@ interface RawLegacyWalletConnectV1Session extends Omit<
 > {
     // iOS emits null when the legacy session has no stored date.
     dateTimestampMs: LongString | number | null
-    clientId?: string | null
-    peerId?: string | null
+    clientId?: Nullable<string>
+    peerId?: Nullable<string>
     handshakeId?: LongString | number | null
-    currentKey?: string | null
-    approvedAccounts?: string[] | null
-    chainId?: number | null
+    currentKey?: Nullable<string>
+    approvedAccounts?: Nullable<string[]>
+    chainId?: Nullable<number>
 }
 
 interface RawLegacyWalletConnectV2Session extends Omit<
@@ -397,7 +398,7 @@ interface RawLegacyDeviceIdentifiers extends Omit<
     'lastSeenNotificationId' | 'legacyFallbackDeviceId'
 > {
     lastSeenNotificationId: LongString
-    legacyFallbackDeviceId?: string | null
+    legacyFallbackDeviceId?: Nullable<string>
 }
 
 const decodeLegacyMigrationData = (

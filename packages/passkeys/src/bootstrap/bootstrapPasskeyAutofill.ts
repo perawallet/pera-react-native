@@ -18,7 +18,11 @@ import {
     storage as keystoreStorage,
 } from '@algorandfoundation/react-native-keystore'
 import type { KeyData } from '@algorandfoundation/keystore-core'
-import { logger } from '@perawallet/wallet-core-shared'
+import {
+    logger,
+    type Nullable,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
 import type { PasskeyAutofillService } from '@perawallet/wallet-extension-passkey-autofill'
 
 export interface BootstrapPasskeyAutofillOptions {
@@ -96,7 +100,7 @@ const abortStep = (step: string, err: unknown): never => {
     throw BOOTSTRAP_ABORT
 }
 
-let activeBootstrap: Promise<PasskeyBootstrapOutcome> | null = null
+let activeBootstrap: Nullable<Promise<PasskeyBootstrapOutcome>> = null
 
 /**
  * Bootstraps the native passkey autofill subsystem. Idempotent, and overlapping
@@ -122,7 +126,7 @@ const runBootstrap = async (
 ): Promise<PasskeyBootstrapOutcome> => {
     const { service, intentActions } = options
 
-    let masterKey: Buffer | null = null
+    let masterKey: Nullable<Buffer> = null
     try {
         try {
             masterKey = await readMasterKey()
@@ -242,7 +246,7 @@ const findParentKeyCandidates = (): {
             continue
         }
 
-        const scheme = (record.metadata as { scheme?: unknown } | undefined)
+        const scheme = (record.metadata as Optional<{ scheme?: unknown }>)
             ?.scheme
         if (
             record.type === 'hd-root-key' &&

@@ -14,6 +14,7 @@ import {
     chainRequirementOf,
     DeeplinkType,
 } from '@perawallet/wallet-core-deeplinks'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { CapabilityRequirement } from '@hooks/useCapability'
 import type { RouteCapability } from '@routes/capabilities'
 import { isDevE2eFixtureDeeplink } from './dev-e2e-fixture-parser'
@@ -28,7 +29,7 @@ import type { AppDeeplink } from './types'
  */
 export const DEEPLINK_ROUTE_REQUIREMENTS: Record<
     DeeplinkType,
-    RouteCapability | null
+    Nullable<RouteCapability>
 > = {
     [DeeplinkType.SWAP]: 'swapTab',
     [DeeplinkType.SHARED_ACCOUNT_IMPORT]: 'sharedAccounts',
@@ -64,7 +65,7 @@ export const DEEPLINK_ROUTE_REQUIREMENTS: Record<
 /** The link's route and chain requirements together; null when it needs neither. */
 export const capabilityRequirementForDeeplink = (
     link: AppDeeplink,
-): CapabilityRequirement | null => {
+): Nullable<CapabilityRequirement> => {
     if (isDevLocaleTourDeeplink(link) || isDevE2eFixtureDeeplink(link)) {
         return null
     }

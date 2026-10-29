@@ -20,6 +20,7 @@ import * as Device from 'expo-device'
 import { Platform } from 'react-native'
 import { getLocales } from 'expo-localization'
 import { config } from '@perawallet/wallet-core-config'
+import type { Optional } from '@perawallet/wallet-core-shared'
 
 const buildUserAgent = () => {
     return `${Application.applicationName}/${Application.nativeApplicationVersion}.${Application.nativeBuildVersion} \
@@ -32,8 +33,8 @@ export class RNDeviceInfoStorageService implements DeviceInfoService {
     // rendered row (via currency formatting). The device locale doesn't change
     // while the app is running, so resolve it once and cache it on the
     // (singleton) service instance.
-    private cachedDeviceLocale: string | undefined
-    private cachedDeviceLocales: string[] | undefined
+    private cachedDeviceLocale: Optional<string>
+    private cachedDeviceLocales: Optional<string[]>
 
     async getDeviceInstallationID(): Promise<string> {
         if (Platform.OS === 'ios') {

@@ -12,6 +12,7 @@
 
 import { useQuery } from '@tanstack/react-query'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { checkIsMultisigAddress } from '../api/endpoints'
 import { getMultisigAccountDetailQueryKey } from './querykeys'
 
@@ -26,7 +27,7 @@ export type MultisigAddressCheckResult = {
 }
 
 export type UseIsMultisigAddressQueryResult = {
-    data: MultisigAddressCheckResult | undefined
+    data: Optional<MultisigAddressCheckResult>
     isFetching: boolean
 }
 

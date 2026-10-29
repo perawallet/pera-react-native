@@ -11,6 +11,7 @@
  */
 
 import { FlatList, Text, View } from 'react-native'
+import type { Optional, Nullable } from '@perawallet/wallet-core-shared'
 import { chainsForScale } from '../runner/chainCount'
 import { peakGrowthMb, retainedMb } from '../runner/compare'
 import { heapGrowthPerMinute } from '../runner/heapSeries'
@@ -27,16 +28,16 @@ const verdictColor = (verdict: Verdict): string =>
           ? colors.good
           : colors.neutral
 
-const ms = (value: number | undefined): string =>
+const ms = (value: Optional<number>): string =>
     value === undefined ? '-' : `${value.toFixed(1)} ms`
 
-const mb = (value: number | undefined): string =>
+const mb = (value: Optional<number>): string =>
     value === undefined ? '-' : `${value.toFixed(1)} MB`
 
-const heapPeak = (run: ScenarioRun | null): string =>
+const heapPeak = (run: Nullable<ScenarioRun>): string =>
     mb(run?.heap ? peakGrowthMb(run.heap) : undefined)
 
-const heapKept = (run: ScenarioRun | null): string =>
+const heapKept = (run: Nullable<ScenarioRun>): string =>
     mb(run?.heap ? retainedMb(run.heap) : undefined)
 
 // What the scale covered on this build, which can be less than it asks for.
@@ -94,7 +95,7 @@ const RunRow = ({
     </View>
 )
 
-const errorOf = (row: ComparisonRow): string | undefined =>
+const errorOf = (row: ComparisonRow): Optional<string> =>
     row.current?.error ?? row.baseline?.error
 
 const ComparisonRowView = ({

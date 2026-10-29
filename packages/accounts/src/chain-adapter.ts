@@ -148,11 +148,11 @@ export type DecodedLegacyAuthority = {
 export type AccountMultisigNativeOps = {
     /** `undefined` when a legacy record lacks them. */
     parametersOf(
-        native: ChainAccountNative | undefined,
-    ): MultisigParameters | undefined
+        native: Optional<ChainAccountNative>,
+    ): Optional<MultisigParameters>
     /** `native` with `parameters` stored; every other member of it is kept. */
     withParameters(
-        native: ChainAccountNative | undefined,
+        native: Optional<ChainAccountNative>,
         parameters: MultisigParameters,
     ): ChainAccountNative
 }
@@ -394,13 +394,13 @@ export interface AccountsChainAdapter {
      * chain's. Runs during hydration, so it never throws. Absent on a chain
      * the store never persisted in an older shape.
      */
-    decodeLegacyRecord?(raw: unknown): DecodedAccountRecord | undefined
+    decodeLegacyRecord?(raw: unknown): Optional<DecodedAccountRecord>
     /**
      * The authority a legacy record persisted beside its account fields, or
      * `undefined` when it holds none. Runs during hydration, so it never
      * throws. Absent on a chain whose records never held one.
      */
-    decodeLegacyAuthority?(raw: unknown): DecodedLegacyAuthority | undefined
+    decodeLegacyAuthority?(raw: unknown): Optional<DecodedLegacyAuthority>
     /** Absent on a chain without multisig accounts. */
     readonly multisigNative?: AccountMultisigNativeOps
     /** Absent on a chain whose only software accounts are HD. */
@@ -440,7 +440,7 @@ export interface AccountsChainAdapter {
         account: WalletAccount,
         accounts: WalletAccount[],
         scope: ChainScope,
-    ): WalletAccount | null
+    ): Nullable<WalletAccount>
     /**
      * Fills in record data this chain needs that older records lack, or
      * returns `account` itself. May read the keystore.

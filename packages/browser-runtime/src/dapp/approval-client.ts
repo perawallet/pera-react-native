@@ -18,7 +18,7 @@ import {
     isDappUserRejection,
 } from '@perawallet/wallet-core-connections/dappRequest'
 import type { SerializedCredential } from '@perawallet/wallet-core-passkeys/webauthn'
-import { toError } from '@perawallet/wallet-core-shared'
+import { toError, type Nullable } from '@perawallet/wallet-core-shared'
 import {
     encodeSignedTransactions,
     isWireSignedSendOutcome,
@@ -90,7 +90,7 @@ const deliverDecision = async (
 
 export const getPendingApproval = async (
     requestId: string,
-): Promise<PendingApproval | null> => {
+): Promise<Nullable<PendingApproval>> => {
     const res: unknown = await chrome.runtime.sendMessage({
         scope: DAPP_APPROVAL_SCOPE,
         kind: 'get-approval',
@@ -104,7 +104,9 @@ export const getPendingApproval = async (
 const claimedApprovalPorts: chrome.runtime.Port[] = []
 
 /** Claims the toolbar popup's approval; never call it from the approval window. */
-export const getCurrentApproval = async (): Promise<PendingApproval | null> => {
+export const getCurrentApproval = async (): Promise<
+    Nullable<PendingApproval>
+> => {
     const res: unknown = await chrome.runtime.sendMessage({
         scope: DAPP_APPROVAL_SCOPE,
         kind: 'get-current-approval',

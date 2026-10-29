@@ -18,6 +18,7 @@
 // window.postMessage, so the page-visible shapes match native exactly
 // (see handlers.ts sendMessageToWebview/sendActionToWebview).
 import type WebView from 'react-native-webview'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 import {
     createRequireSecure,
@@ -37,16 +38,16 @@ export const asBridgeWebview = (transport: WebviewBridgeTransport): WebView =>
  * webview object was built from (e.g. to send from a caller that only holds
  * a `WebView | null` ref, like native's webviewRef). Null-safe. */
 export const asBridgeTransport = (
-    webview: WebView | null,
-): WebviewBridgeTransport | null =>
-    (webview as unknown as WebviewBridgeTransport | null) ?? null
+    webview: Nullable<WebView>,
+): Nullable<WebviewBridgeTransport> =>
+    (webview as unknown as Nullable<WebviewBridgeTransport>) ?? null
 
 const transportOf = asBridgeTransport
 
 export const sendMessageToWebview = (
     messageId: string,
     payload: unknown,
-    webview: WebView | null,
+    webview: Nullable<WebView>,
 ): void => {
     transportOf(webview)?.postToWebview({
         id: messageId,
@@ -58,7 +59,7 @@ export const sendMessageToWebview = (
 export const sendNotificationToWebview = (
     method: string,
     params: unknown,
-    webview: WebView | null,
+    webview: Nullable<WebView>,
 ): void => {
     transportOf(webview)?.postToWebview({ jsonrpc: '2.0', method, params })
 }
@@ -68,7 +69,7 @@ export const sendNotificationToWebview = (
 export const sendActionToWebview = (
     action: string,
     payload: unknown,
-    webview: WebView | null,
+    webview: Nullable<WebView>,
 ): void => {
     transportOf(webview)?.postToWebview(JSON.stringify({ action, payload }))
 }
@@ -77,7 +78,7 @@ export const sendErrorToWebview = (
     messageId: string,
     code: JsonRpcErrorCode,
     error: Error | string,
-    webview: WebView | null,
+    webview: Nullable<WebView>,
 ): void => {
     transportOf(webview)?.postToWebview({
         id: messageId,

@@ -11,6 +11,8 @@
  */
 
 /** Normalized view of a card/Baanx API failure, used to attribute it to a field. */
+import type { Optional } from '@perawallet/wallet-core-shared'
+
 export type CardApiError = {
     /** HTTP status code, when the failure carried an HTTP response. */
     status?: number
@@ -33,7 +35,7 @@ type JsonReadable = BodyReadable & {
 }
 
 /** Safely pulls the `response` object off an unknown thrown value. */
-const getResponse = (error: unknown): JsonReadable | undefined => {
+const getResponse = (error: unknown): Optional<JsonReadable> => {
     if (typeof error !== 'object' || error === null) return undefined
     const response = (error as { response?: unknown }).response
     return typeof response === 'object' && response !== null
@@ -42,7 +44,7 @@ const getResponse = (error: unknown): JsonReadable | undefined => {
 }
 
 /** Inlined rather than imported so this normalizer stays self-contained. */
-const getStatus = (error: unknown): number | undefined => {
+const getStatus = (error: unknown): Optional<number> => {
     const status = getResponse(error)?.status
     return typeof status === 'number' ? status : undefined
 }
@@ -71,7 +73,7 @@ const readJsonBody = async (response: JsonReadable): Promise<unknown> => {
 const firstString = (
     body: Record<string, unknown>,
     keys: string[],
-): string | undefined => {
+): Optional<string> => {
     for (const key of keys) {
         const value = body[key]
         if (typeof value === 'string' && value.length > 0) return value
@@ -87,9 +89,7 @@ type NestedError = { status?: number; code?: string; message?: string }
  * when `value` isn't a JSON-object string (the common case), so the caller keeps
  * the original message untouched.
  */
-const unwrapNestedError = (
-    value: string | undefined,
-): NestedError | undefined => {
+const unwrapNestedError = (value: Optional<string>): Optional<NestedError> => {
     if (!value || !value.trimStart().startsWith('{')) return undefined
     let parsed: unknown
     try {

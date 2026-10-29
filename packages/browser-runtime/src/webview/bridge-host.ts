@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import { WEBVIEW_BRIDGE_PORT_PREFIX } from './bridge-wire'
 
 export type DiscoverBridgeHost = {
@@ -39,7 +39,7 @@ export const createDiscoverBridgeHost = (params: {
     onMessage: (data: unknown) => void
     onDisconnect?: () => void
 }): DiscoverBridgeHost => {
-    let activePort: chrome.runtime.Port | null = null
+    let activePort: Nullable<chrome.runtime.Port> = null
 
     const handleConnect = (port: chrome.runtime.Port): void => {
         if (port.name !== `${WEBVIEW_BRIDGE_PORT_PREFIX}${params.token}`) {

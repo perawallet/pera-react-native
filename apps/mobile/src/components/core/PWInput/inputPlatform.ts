@@ -11,7 +11,9 @@
  */
 
 /** Extra style spread into the text input. Native has no focus ring to reset. */
-export const inputFocusRingReset: object | null = null
+import type { Nullable } from '@perawallet/wallet-core-shared'
+
+export const inputFocusRingReset: Nullable<object> = null
 
 /** Native keeps the reveal toggle focus-gated, like the app's other password fields. */
 export const isVisibilityToggleAlwaysMounted = false

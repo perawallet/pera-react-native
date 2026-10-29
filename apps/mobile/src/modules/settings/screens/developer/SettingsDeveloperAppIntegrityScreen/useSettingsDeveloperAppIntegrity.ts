@@ -19,19 +19,19 @@ import {
     useAppIntegrityStore,
     type IntegrityVerification,
 } from '@perawallet/wallet-core-app-integrity'
-import { toError } from '@perawallet/wallet-core-shared'
+import { toError, type Nullable } from '@perawallet/wallet-core-shared'
 
 export type UseSettingsDeveloperAppIntegrityResult = {
     status: string
-    integrityToken: string | null
-    expiresAt: string | null
-    lastError: string | null
+    integrityToken: Nullable<string>
+    expiresAt: Nullable<string>
+    lastError: Nullable<string>
     appEnvironment: string
     platform: string
     isSupported: boolean
     isBusy: boolean
-    verifyResult: IntegrityVerification | null
-    verifyError: string | null
+    verifyResult: Nullable<IntegrityVerification>
+    verifyError: Nullable<string>
     onRunHandshake: () => Promise<void>
     onVerifyToken: () => Promise<void>
     onClear: () => void
@@ -54,8 +54,8 @@ export const useSettingsDeveloperAppIntegrity =
         const [isSupported, setIsSupported] = useState(false)
         const [isVerifying, setIsVerifying] = useState(false)
         const [verifyResult, setVerifyResult] =
-            useState<IntegrityVerification | null>(null)
-        const [verifyError, setVerifyError] = useState<string | null>(null)
+            useState<Nullable<IntegrityVerification>>(null)
+        const [verifyError, setVerifyError] = useState<Nullable<string>>(null)
 
         useEffect(() => {
             let active = true

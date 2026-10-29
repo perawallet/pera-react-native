@@ -12,7 +12,11 @@
 
 import { useCallback } from 'react'
 import { BackHandler, Linking } from 'react-native'
-import { logger } from '@perawallet/wallet-core-shared'
+import {
+    logger,
+    type Optional,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import { isAndroid } from '@utils/platform'
 
 export type ReturnToDappArgs = {
@@ -36,8 +40,8 @@ export type UseReturnToDappResult = {
  * (only `canOpenURL` does); a scheme with no handler rejects.
  */
 export const buildIosBrowserFocusUrl = (
-    browserName: string | undefined,
-): string | null => {
+    browserName: Optional<string>,
+): Nullable<string> => {
     if (!browserName) return null
     const name = browserName.toLowerCase()
 

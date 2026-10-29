@@ -22,7 +22,10 @@ import {
     type CachedRecordChain,
 } from '@perawallet/wallet-core-backup'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
+import {
+    truncateAlgorandAddress,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import {
     PWIcon,
     PWRoundIcon,
@@ -44,7 +47,7 @@ export type BackupAccountRowProps = {
     account?: WalletAccount
     /** Picks the glyph for an address held only in the backup; ignored once
      *  `account` is present. */
-    accountType?: BackupItemKind | null
+    accountType?: Nullable<BackupItemKind>
     /** The chains an address held only in the backup restores; ignored once
      *  `account` is present. */
     backupChains?: CachedRecordChain[]

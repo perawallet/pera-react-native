@@ -15,6 +15,7 @@ import { zeroBytes } from '@perawallet/wallet-core-kms'
 import { algorandAddressOf } from '../../accounts/vocabulary'
 import { algo25SecretKeyToIndices } from './legacyKeyConversion'
 import type { MigrateAccountArgs } from '@perawallet/wallet-core-migrate'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 export const migrateAlgo25Account = async ({
     account,
@@ -23,7 +24,7 @@ export const migrateAlgo25Account = async ({
     if (!account.secretKey)
         throw new Error('Algo25 account is missing secretKey')
 
-    let mnemonicIndices: Uint16Array | null = null
+    let mnemonicIndices: Nullable<Uint16Array> = null
     try {
         mnemonicIndices = algo25SecretKeyToIndices(account.secretKey)
         const created = await importAccount({

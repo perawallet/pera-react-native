@@ -15,13 +15,14 @@ import type {
     ChainFamily,
     ChainId,
 } from '@perawallet/wallet-core-chain-contract'
+import type { Optional } from '@perawallet/wallet-core-shared'
 
 /**
  * The contact entry a linked address fills. Contacts key addresses by family,
  * which only the chain's descriptor knows; no chain is an in-app open, which
  * edits the Algorand entry.
  */
-export const contactFamilyOf = (chainId: ChainId | undefined): ChainFamily =>
+export const contactFamilyOf = (chainId: Optional<ChainId>): ChainFamily =>
     chainId === undefined
         ? 'algorand'
         : getProvider().chains.get(chainId).descriptor.family

@@ -19,6 +19,7 @@ import {
 } from '@perawallet/wallet-core-signing'
 import { useConnectionsStore } from '@perawallet/wallet-core-connections'
 import type { ConnectionOrigin } from '@perawallet/wallet-extension-connections'
+import type { Optional, Nullable } from '@perawallet/wallet-core-shared'
 import { getPreferredDappIcon } from '@modules/walletconnect'
 import { SigningCompletedContent } from '../SigningCompletedContent'
 import type { SigningReturnToDapp } from '../SigningCompletedContent/useSigningCompletedContent'
@@ -28,9 +29,7 @@ import type { SigningReturnToDapp } from '../SigningCompletedContent/useSigningC
  * and connections with no recorded origin. Read off the connection record via
  * `transportId` (the `Connection.id`), not the legacy `dappOrigins` side-table.
  */
-const resolveSessionOrigin = (
-    req: SignRequest,
-): ConnectionOrigin | undefined =>
+const resolveSessionOrigin = (req: SignRequest): Optional<ConnectionOrigin> =>
     req.sourceType === 'walletconnect' && req.transportId
         ? useConnectionsStore
               .getState()
@@ -41,7 +40,7 @@ const resolveSessionOrigin = (
 /** Only external-browser sessions get the "Return to the dApp" hand-off. */
 const resolveReturnToDapp = (
     req: SignRequest,
-): SigningReturnToDapp | undefined => {
+): Optional<SigningReturnToDapp> => {
     const origin = resolveSessionOrigin(req)
     if (origin?.source !== 'external-browser') return undefined
     return {
@@ -55,7 +54,7 @@ const resolveReturnToDapp = (
 // transaction requests; every internal flow owns its own processing/success UI.
 export const useSigningCompletedDriver = (): void => {
     const { request: requestBottomSheet } = useBottomSheet()
-    const openIdRef = useRef<string | null>(null)
+    const openIdRef = useRef<Nullable<string>>(null)
 
     useSigningEvent(
         event => event.type === 'completed',

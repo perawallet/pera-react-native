@@ -48,7 +48,7 @@ export type UseAccountStateQueryResult = {
  * in base units.
  */
 export const useAccountStateQuery = (
-    account: Nullable<WalletAccount> | undefined,
+    account: Optional<Nullable<WalletAccount>>,
     scope: ChainScope,
 ): UseAccountStateQueryResult => {
     const address = (account && addressOn(account, scope)) ?? ''

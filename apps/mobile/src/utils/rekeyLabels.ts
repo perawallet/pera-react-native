@@ -17,9 +17,11 @@
  * in a smaller font. Returns a null qualifier for labels without a
  * parenthetical part.
  */
+import type { Nullable } from '@perawallet/wallet-core-shared'
+
 export const splitAccountTypeLabel = (
     label: string,
-): { main: string; qualifier: string | null } => {
+): { main: string; qualifier: Nullable<string> } => {
     const index = label.indexOf(' (')
     if (index === -1) return { main: label, qualifier: null }
     return {

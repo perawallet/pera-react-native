@@ -11,19 +11,19 @@
  */
 
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
-import { registerStore } from '@perawallet/wallet-core-shared'
+import { registerStore, type Nullable } from '@perawallet/wallet-core-shared'
 
 type PendingRollback = () => Promise<void>
 
 type PendingAccountCreationState = {
-    pendingRollback: PendingRollback | null
+    pendingRollback: Nullable<PendingRollback>
     resetState: () => void
 }
 
 const STORE_NAME = 'pending-account-creation-store'
 
 const initialState = {
-    pendingRollback: null as PendingRollback | null,
+    pendingRollback: null as Nullable<PendingRollback>,
 }
 
 export const usePendingAccountCreationStore: UseBoundStore<

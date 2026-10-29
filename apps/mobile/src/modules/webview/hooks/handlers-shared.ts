@@ -17,7 +17,11 @@ import {
     JsonRpcErrorCode,
     sanitizeErrorForWebview as sanitizeDappError,
 } from '@perawallet/wallet-core-dapp/wire'
-import { logger, bytesToHex } from '@perawallet/wallet-core-shared'
+import {
+    logger,
+    bytesToHex,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import type WebView from 'react-native-webview'
 
 import { toLoadableUrl } from '../components/PWWebView/toLoadableUrl'
@@ -35,8 +39,8 @@ export const sanitizeErrorForWebview = (error: Error): string =>
 export type RequireSecureContext = {
     operation: string
     messageId: string
-    sourceUrl: string | null
-    webview: WebView | null
+    sourceUrl: Nullable<string>
+    webview: Nullable<WebView>
 }
 
 /**
@@ -45,14 +49,14 @@ export type RequireSecureContext = {
  */
 export type WebviewMessageSecurity = {
     securedConnection: boolean
-    sourceUrl: string | null
+    sourceUrl: Nullable<string>
 }
 
 type SendError = (
     messageId: string,
     code: JsonRpcErrorCode,
     error: Error | string,
-    webview: WebView | null,
+    webview: Nullable<WebView>,
 ) => void
 
 /**
@@ -149,7 +153,7 @@ export const isSafeBrowserUrl = (url: string): boolean => {
  * Non-strings must be rejected before normalization: `https://` + a coerced
  * number parses as an IPv4 host and would slip through the gate.
  */
-export const toValidatedBrowserUrl = (raw: unknown): string | null => {
+export const toValidatedBrowserUrl = (raw: unknown): Nullable<string> => {
     if (typeof raw !== 'string') return null
     const trimmed = raw.trim()
     if (!trimmed || trimmed.startsWith('//')) return null
@@ -177,7 +181,7 @@ const BLOCKED_NATIVE_URI_SCHEMES = new Set([
  * no https-only rule). It must carry an explicit scheme: react-native-web
  * resolves a scheme-less string against the current `chrome-extension://` page.
  */
-export const toValidatedNativeUri = (raw: unknown): string | null => {
+export const toValidatedNativeUri = (raw: unknown): Nullable<string> => {
     if (typeof raw !== 'string') return null
     const trimmed = raw.trim()
     const scheme = SCHEME_PATTERN.exec(trimmed)?.[1]?.toLowerCase()
@@ -217,7 +221,7 @@ export const isSafeRelativePath = (path: string): boolean => {
     }
 }
 
-export const safeOrigin = (url: string): string | null => {
+export const safeOrigin = (url: string): Nullable<string> => {
     try {
         const origin = new URL(url).origin
         return origin === 'null' ? null : origin

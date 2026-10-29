@@ -12,14 +12,15 @@
 
 import type { DeviceIdOrigin } from '@perawallet/wallet-core-device'
 import type { LegacyDeviceIdentifiers } from '@perawallet/wallet-extension-platform'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { MigrationDataSection } from '../components/MigrationDataSection'
 import { LegacyVsRnRow } from '../components/LegacyVsRnRow'
 import { MigrationDataRow } from '../components/MigrationDataRow'
 import type { RNMigrationSnapshot } from '../useRNMigrationSnapshot'
 
 const describeDeviceIdOrigin = (
-    id: string | null,
-    origin: DeviceIdOrigin | null,
+    id: Nullable<string>,
+    origin: Nullable<DeviceIdOrigin>,
 ): string => {
     const status =
         origin === 'migrated'

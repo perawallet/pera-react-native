@@ -16,7 +16,7 @@ import type {
     ChainScope,
     I18nKey,
 } from '@perawallet/wallet-core-chain-contract'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { accountsChainAdapters, type AccountKindId } from '../chain-adapter'
 import { hasCustody } from '../credentials/accessors'
@@ -43,7 +43,7 @@ export const accountKindIdOf = (
  * shows with its generic copy.
  */
 export const useAccountPresentation = (
-    account: Nullable<WalletAccount> | undefined,
+    account: Optional<Nullable<WalletAccount>>,
     scope: ChainScope,
 ): Nullable<AccountKindPresentation> => {
     const accounts = useAccountsStore(state => state.accounts)
@@ -66,7 +66,7 @@ export const useAccountPresentation = (
 export const accountKindGlyph = (
     kindId: AccountKindId,
     chainId: ChainId,
-): string | undefined =>
+): Optional<string> =>
     accountPresentationChainAdapters.has(chainId)
         ? accountPresentationChainAdapters
               .get(chainId)

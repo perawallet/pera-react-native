@@ -18,6 +18,7 @@ import {
     useSigningRequest,
 } from '@perawallet/wallet-core-signing'
 import { usePreferences } from '@perawallet/wallet-core-settings'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { TransactionRequestFAQContent } from '../TransactionRequestFAQContent'
 
 const FAQ_SEEN_KEY = 'hasSeenTransactionRequestFAQ'
@@ -32,7 +33,7 @@ export const useTransactionRequestFAQDriver = () => {
     const { request: requestBottomSheet } = useBottomSheet()
     // No app-lock gate: BottomSheetManager holds presentation while the lock
     // overlay is up, so requesting while locked is safe.
-    const openIdRef = useRef<string | null>(null)
+    const openIdRef = useRef<Nullable<string>>(null)
 
     const candidate = pendingSignRequests.find(
         r =>

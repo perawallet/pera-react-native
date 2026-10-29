@@ -60,7 +60,7 @@ export const persistBackupKeys = async ({
     const authSecretKeyCopy = new Uint8Array(authSecretKey)
     const itemKeyCopy = new Uint8Array(itemKey)
     // `commitSecret` zeroes only its own copy, so these are ours to wipe.
-    let mnemonicBytes: Uint8Array | null = null
+    let mnemonicBytes: Nullable<Uint8Array> = null
     try {
         await commitSecret({
             id: CLOUD_BACKUP_ENC_KEY_ID,

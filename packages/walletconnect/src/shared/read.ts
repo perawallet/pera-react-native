@@ -11,10 +11,12 @@
  */
 
 /** Reads one string field off an unvalidated wire object. */
+import type { Optional } from '@perawallet/wallet-core-shared'
+
 export const readString = (
     source: Record<string, unknown>,
     key: string,
-): string | undefined => {
+): Optional<string> => {
     const value = source[key]
     return typeof value === 'string' ? value : undefined
 }

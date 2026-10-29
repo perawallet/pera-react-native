@@ -11,8 +11,10 @@
  */
 
 /** Native no-op: only the extension opens a separate tab for Ledger pairing. */
+import type { Optional } from '@perawallet/wallet-core-shared'
+
 export const useLedgerHandoffTabExit = (): ((
-    currentRouteName: string | undefined,
+    currentRouteName: Optional<string>,
 ) => void) => noop
 
 const noop = (): void => {}

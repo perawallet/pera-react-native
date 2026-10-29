@@ -23,6 +23,7 @@ import {
     type JsonRpcRequest,
     type JsonRpcResponse,
 } from '@perawallet/wallet-core-browser-runtime'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import {
     CHANNEL_HANDSHAKE_EVENT,
     CHANNEL_RELAY_READY_EVENT,
@@ -83,7 +84,7 @@ export type PeraProvider = {
     signTransactions(
         txns: PeraSignTransactionsItem[],
         opts?: { message?: string },
-    ): Promise<(string | null)[]>
+    ): Promise<Nullable<string>[]>
     signData(payload: unknown): Promise<string[]>
     on(event: PeraEvent, handler: (params: unknown) => void): () => void
 }
@@ -221,7 +222,7 @@ const eip1193 = __PERA_SERVES_EVM__
 // concurrent connect() would be refused with InvalidRequest — including when
 // the origin is already connected. React StrictMode's double-invoke makes that
 // a routine call pattern, so share one in-flight promise instead.
-let connectInFlight: Promise<PeraConnectResult> | null = null
+let connectInFlight: Nullable<Promise<PeraConnectResult>> = null
 
 const connect = (options?: PeraConnectOptions): Promise<PeraConnectResult> => {
     if (connectInFlight) return connectInFlight
@@ -251,7 +252,7 @@ const provider: PeraProvider = Object.freeze({
         send(
             'requestTransactionSigning',
             opts === undefined ? { txns } : { txns, opts },
-        ) as Promise<(string | null)[]>,
+        ) as Promise<Nullable<string>[]>,
     signData: payload =>
         send('requestDataSigning', payload) as Promise<string[]>,
     on: (event, handler) => {

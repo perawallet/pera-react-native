@@ -11,6 +11,7 @@
  */
 
 import type WalletConnect from '@perawallet/walletconnect'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { WC_DELIVERY_TIMEOUT_MS } from '../shared/constants'
 import {
     WalletConnectConnectionTimeoutError,
@@ -25,7 +26,7 @@ import { createWalletConnectConnector } from './createConnector'
  * no heartbeat, so a half-open socket is undetectable until a delivery fails.
  */
 export type WalletConnectConnectorRegistry = {
-    get(clientId: string): WalletConnect | undefined
+    get(clientId: string): Optional<WalletConnect>
     /** Called for both freshly created and recovered connectors. */
     register(clientId: string, connector: WalletConnect): void
     /**

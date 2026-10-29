@@ -27,7 +27,7 @@ import {
 import { PinSecurityPrompt } from '../PinSecurityPrompt/PinSecurityPrompt'
 import type { PromptViewProps } from '@modules/prompts/models'
 import { useHasAccounts } from '@perawallet/wallet-core-accounts'
-import type { Optional } from '@perawallet/wallet-core-shared'
+import type { Optional, Nullable } from '@perawallet/wallet-core-shared'
 import {
     useTermsAcceptance,
     TermsAcceptancePrompt,
@@ -83,7 +83,7 @@ export type Prompt = {
     // Nullable: a prompt's own data can empty underneath it (a banner refetch
     // dropping the banner it was showing), and rendering nothing for that frame
     // while it asks to be dismissed beats asserting it cannot happen.
-    component: (props: PromptViewProps) => ReactElement | null
+    component: (props: PromptViewProps) => Nullable<ReactElement>
 }
 
 /** A registry entry plus the condition that makes it due right now. */

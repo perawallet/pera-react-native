@@ -77,7 +77,7 @@ export const applyAppStateToHardwareSessions = (nextState: string): void => {
     for (const parent of actorRefsMap.values()) {
         const child = (
             parent.getSnapshot() as {
-                children?: Record<string, AnyActorRef | undefined>
+                children?: Record<string, Optional<AnyActorRef>>
             }
         ).children?.hardwareChild
         if (!child) continue

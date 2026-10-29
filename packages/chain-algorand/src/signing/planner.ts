@@ -19,7 +19,7 @@ import type {
     UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 import type { MultisigParameters } from '@perawallet/wallet-core-multisig'
-import { encodeToBase64 } from '@perawallet/wallet-core-shared'
+import { encodeToBase64, type Optional } from '@perawallet/wallet-core-shared'
 import { getExpectedGenesisHash } from '../blockchain'
 import {
     encodeSignedTransaction,
@@ -101,9 +101,9 @@ export const readAlgorandTransaction = (
         getExpectedGenesisHash(network),
     )
     const signer =
-        (payload.authorizer as string | undefined) ??
+        (payload.authorizer as Optional<string>) ??
         transaction.sender.toString()
-    const multisig = payload.multisig as MultisigParameters | undefined
+    const multisig = payload.multisig as Optional<MultisigParameters>
     // A participant list of the payload's choosing must be the multisig that
     // actually signs, or its members would sign for someone else.
     if (

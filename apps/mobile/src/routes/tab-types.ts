@@ -18,7 +18,7 @@ import type { Optional } from '@perawallet/wallet-core-shared'
 
 export type TabBarStackParamList = {
     Home: NavigatorScreenParams<AccountStackParamsList>
-    Discover: { path?: string } | undefined
+    Discover: Optional<{ path?: string }>
     Swap: Optional<SwapScreenParams>
     Fund: Optional<OnrampScreenParams>
     Menu: undefined

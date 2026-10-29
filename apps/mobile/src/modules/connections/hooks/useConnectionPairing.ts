@@ -34,7 +34,7 @@ export type UseConnectionPairingResult = {
      * `key=`/`symKey=` is the pairing secret and error-level log context
      * ships to the crash reporter. Empty when nothing claims the URI.
      */
-    describeUri: (uri: string) => Record<string, string | null>
+    describeUri: (uri: string) => Record<string, Nullable<string>>
 }
 
 // The deeplink error sheet keys its "took too long" copy off this error's tag.
@@ -56,7 +56,7 @@ export const useConnectionPairing = (): UseConnectionPairingResult => {
     )
 
     const describeUri = useCallback(
-        (uri: string): Record<string, string | null> =>
+        (uri: string): Record<string, Nullable<string>> =>
             resolveRegistry()?.describeUri(uri) ?? {},
         [resolveRegistry],
     )

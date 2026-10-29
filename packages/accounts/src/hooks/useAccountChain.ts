@@ -21,7 +21,7 @@ import {
     useSelectedScope,
     useSwitchedOffChainIds,
 } from '@perawallet/wallet-core-chain-shared'
-import type { Maybe } from '@perawallet/wallet-core-shared'
+import type { Maybe, Optional } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { chainAccountOf } from '../credentials/accessors'
 import {
@@ -72,7 +72,7 @@ export const accountValueOf = <V>(
     account: WalletAccount,
     chainId: ChainId,
     values: ReadonlyMap<AccountValueKey, V>,
-): V | undefined => {
+): Optional<V> => {
     const address = chainAccountOf(account, chainId)?.address
     return address ? values.get(accountValueKey(chainId, address)) : undefined
 }
@@ -116,7 +116,7 @@ export const useSigningAccountsOnOwnChain = (): WalletAccount[] => {
 }
 
 /** The account's address on its own chain, for keys, copy and testIDs outside a hook. */
-export const ownAddressOf = (account: WalletAccount): string | undefined => {
+export const ownAddressOf = (account: WalletAccount): Optional<string> => {
     const registeredChainIds = getProvider()
         .chains.list()
         .map(({ id }) => id)

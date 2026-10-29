@@ -17,6 +17,7 @@ import {
     type ChainRegistry,
     type WalletMode,
 } from '@perawallet/wallet-core-chain-contract'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 /**
  * The CAIP-2 id the devices API names the chain's network by on this
@@ -27,7 +28,7 @@ export const registrationChainOf = (
     chains: ChainRegistry,
     chainId: ChainId,
     deployment: WalletMode,
-): string | null => {
+): Nullable<string> => {
     if (!chains.has(chainId)) return null
     return (
         defaultNetworkForTier(

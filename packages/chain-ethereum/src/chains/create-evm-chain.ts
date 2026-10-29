@@ -22,6 +22,7 @@ import {
     type ChainNetwork,
     type NetworkId,
 } from '@perawallet/wallet-core-chain-contract'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { ethereumHdPath } from '../accounts/hd-derivation'
 import type { EvmChain, EvmChainRow } from './types'
 
@@ -43,7 +44,7 @@ const networksOf = (row: EvmChainRow): readonly ChainNetwork[] =>
 export const createEvmDescriptor = (row: EvmChainRow): ChainDescriptor => {
     const explorerLink =
         (path: string) =>
-        (networkId: NetworkId, id: string): string | undefined => {
+        (networkId: NetworkId, id: string): Optional<string> => {
             const base = row.explorerBase[networkId]
             return base ? `${base}/${path}/${id}` : undefined
         }
@@ -116,7 +117,7 @@ export const createEvmNativeAsset = (row: EvmChainRow): PeraAsset => ({
  * kept: memoised consumers compare it by identity.
  */
 export const createEvmChain = (row: EvmChainRow): EvmChain => {
-    let nativeAsset: PeraAsset | undefined
+    let nativeAsset: Optional<PeraAsset>
     return {
         row,
         descriptor: createEvmDescriptor(row),

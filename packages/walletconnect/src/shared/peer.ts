@@ -11,6 +11,7 @@
  */
 
 import type { ConnectionPeer } from '@perawallet/wallet-extension-connections'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { readString } from './read'
 
 /** Upper bound on persisted peer icons; a peer's metadata is hostile input. */
@@ -21,7 +22,7 @@ const FALLBACK_PEER_NAME = 'Unknown dApp'
 const readTrimmed = (
     source: Record<string, unknown>,
     key: string,
-): string | undefined => readString(source, key)?.trim() || undefined
+): Optional<string> => readString(source, key)?.trim() || undefined
 
 /**
  * Neither protocol validates the peer's self-description, so every field is

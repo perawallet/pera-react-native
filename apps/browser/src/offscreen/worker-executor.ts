@@ -15,6 +15,7 @@ import {
     type DbMethod,
     type SqlExecutor,
 } from '@perawallet/wallet-extension-platform-chrome'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 type WorkerResponse =
     | { id: number; ok: true; rows: unknown[][] }
@@ -40,7 +41,7 @@ const REQUEST_TIMEOUT_MS = 30_000
 export const createWorkerExecutor = (worker: Worker): SqlExecutor => {
     let nextId = 1
     let isDead = false
-    let deadError: Error | null = null
+    let deadError: Nullable<Error> = null
     const pending = new Map<
         number,
         { resolve: (rows: unknown[][]) => void; reject: (error: Error) => void }

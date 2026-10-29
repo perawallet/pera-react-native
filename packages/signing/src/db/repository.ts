@@ -30,7 +30,10 @@ import {
     stringifyDecimalJson,
     type Database,
 } from '@perawallet/wallet-core-database'
-import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
+import {
+    generateOrderedUniqueId,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import {
     parseScopeKey,
     toScopeKey,
@@ -82,7 +85,7 @@ const fromDb = (row: SubmissionAttemptRow): SubmissionAttempt => ({
 
 type StoredHistoryEntry = { v: number; entry: SubmissionHistoryEntry }
 
-const parseHistoryEntry = (json: string): SubmissionHistoryEntry | null => {
+const parseHistoryEntry = (json: string): Nullable<SubmissionHistoryEntry> => {
     try {
         const stored = parseDecimalJson<StoredHistoryEntry>(json)
         return stored.v === SUBMISSION_HISTORY_ENTRY_VERSION
@@ -409,7 +412,9 @@ export const getReplaceableSubmissionAttempt = async ({
     db = getDatabase(),
     scope,
     txId,
-}: GetReplaceableSubmissionAttemptParams): Promise<ReplaceableSubmissionAttempt | null> => {
+}: GetReplaceableSubmissionAttemptParams): Promise<
+    Nullable<ReplaceableSubmissionAttempt>
+> => {
     const [row] = await db
         .select()
         .from(SubmissionAttemptsSchema)
@@ -685,7 +690,7 @@ export const findTransactionBatch = async ({
     chainId,
     batchId,
     senders,
-}: FindTransactionBatchParams): Promise<TransactionBatch | null> => {
+}: FindTransactionBatchParams): Promise<Nullable<TransactionBatch>> => {
     if (senders.length === 0) return null
     const row = await db
         .select()
@@ -710,7 +715,7 @@ export const getTransactionBatch = async ({
 }: {
     db?: Database
     id: string
-}): Promise<TransactionBatch | null> => {
+}): Promise<Nullable<TransactionBatch>> => {
     const row = await db
         .select()
         .from(TransactionBatchesSchema)
@@ -723,7 +728,7 @@ export type UpdateTransactionBatchParams = {
     db?: Database
     id: string
     txIds: string[]
-    signedRaw: string | null
+    signedRaw: Nullable<string>
     position: number
     outcome: TransactionBatchOutcome
 }
@@ -853,12 +858,14 @@ export const getReviewApproval = async ({
 }: {
     db?: Database
     token: string
-}): Promise<{
-    scope: ChainScope
-    transactions: UnsignedTransaction[]
-    /** Unix ms. */
-    createdAt: number
-} | null> => {
+}): Promise<
+    Nullable<{
+        scope: ChainScope
+        transactions: UnsignedTransaction[]
+        /** Unix ms. */
+        createdAt: number
+    }>
+> => {
     const row = await db
         .select()
         .from(ReviewApprovalsSchema)

@@ -12,7 +12,7 @@
 
 import { Platform } from 'react-native'
 import { requireOptionalNativeModule } from 'expo'
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import { ADULT_AGE } from '@perawallet/wallet-extension-platform'
 import type {
     AgeGateDeviceCapability,
@@ -22,14 +22,14 @@ import type {
 
 export type RawIosAgeResult = {
     status: 'sharing' | 'declined' | 'unknown'
-    lowerBound?: number | null
-    upperBound?: number | null
+    lowerBound?: Nullable<number>
+    upperBound?: Nullable<number>
 }
 
 export type RawAndroidAgeResult = {
-    userStatus?: string | null
-    ageLower?: number | null
-    ageUpper?: number | null
+    userStatus?: Nullable<string>
+    ageLower?: Nullable<number>
+    ageUpper?: Nullable<number>
 }
 
 export type RawNativeAgeResult = RawIosAgeResult | RawAndroidAgeResult
@@ -77,7 +77,7 @@ interface NativePeraAgeGate {
     getDeviceCapability(): Promise<AgeGateDeviceCapability>
 }
 
-const getNativeModule = (): NativePeraAgeGate | null =>
+const getNativeModule = (): Nullable<NativePeraAgeGate> =>
     requireOptionalNativeModule<NativePeraAgeGate>('PeraAgeGate')
 
 export class RNAgeGateService implements AgeGateService {

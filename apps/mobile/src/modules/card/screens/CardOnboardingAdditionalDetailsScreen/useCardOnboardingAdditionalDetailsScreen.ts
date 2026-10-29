@@ -31,7 +31,7 @@ import {
     type SupportedCountry,
 } from '@perawallet/wallet-core-card'
 import { type I18nKey, i18nKey } from '@perawallet/wallet-core-chain-contract'
-import type { Optional } from '@perawallet/wallet-core-shared'
+import type { Optional, Nullable } from '@perawallet/wallet-core-shared'
 import { trackEvent, CardEvent } from '@analytics'
 import {
     useCardErrorToast,
@@ -268,7 +268,7 @@ export const useCardOnboardingAdditionalDetailsScreen =
 
             const prefillOption = (
                 options: RegistrationOption[],
-                key: Optional<string | null>,
+                key: Optional<Nullable<string>>,
                 apply: (option: RegistrationOption) => void,
             ) => {
                 const option = options.find(entry => entry.key === key)

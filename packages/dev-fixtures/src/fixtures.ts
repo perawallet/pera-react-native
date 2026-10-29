@@ -17,6 +17,7 @@ import type { PeraAsset } from '@perawallet/wallet-core-assets'
 import type { Contact } from '@perawallet/wallet-core-contacts'
 import type { ASAInbox } from '@perawallet/wallet-core-messages'
 import type { TransactionHistoryItem } from '@perawallet/wallet-core-transactions'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 export const MOCK_ADDRESS =
     'RP35URKAEVP6PA3WIJGDGA3FZKNV76E7Y2QZPEJ4TDLV72T326B3IOFX7A'
@@ -111,13 +112,13 @@ export type MockNotification = {
     url: string
     creation_datetime: string
     is_unread?: boolean
-    icon?: { logo: string; shape: 'circle' | 'rectangle' } | null
+    icon?: Nullable<{ logo: string; shape: 'circle' | 'rectangle' }>
 }
 
 export type MockNotificationsResponse = {
     results: MockNotification[]
-    next: string | null
-    previous: string | null
+    next: Nullable<string>
+    previous: Nullable<string>
 }
 
 const NOTIFICATION_MESSAGES: string[] = [

@@ -12,7 +12,11 @@
 
 import type WalletConnect from '@perawallet/walletconnect'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import { logger, type Nullable } from '@perawallet/wallet-core-shared'
+import {
+    logger,
+    type Nullable,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
 import type { WalletOperationType } from '@perawallet/wallet-core-connections'
 import {
     connectionScope,
@@ -73,7 +77,7 @@ type ReplayKind = 'answered' | 'in-flight'
 const MIN_TIMESTAMPED_ID = 1e15
 const MAX_TIMESTAMPED_ID = 1e16
 
-const requestAgeMs = (requestId: number): number | undefined =>
+const requestAgeMs = (requestId: number): Optional<number> =>
     requestId >= MIN_TIMESTAMPED_ID && requestId < MAX_TIMESTAMPED_ID
         ? Date.now() - Math.floor(requestId / 1000)
         : undefined

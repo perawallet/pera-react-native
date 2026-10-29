@@ -27,6 +27,7 @@ import {
     useDelegationTransactionFeeQuery,
     useSubmitDelegationMutation,
 } from '@perawallet/wallet-core-transactions'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useWebView } from '@modules/webview'
 import { trackEvent, OnboardingEvent, AnalyticsMetadataKey } from '@analytics'
@@ -65,10 +66,10 @@ export type RekeyConfirmConfig = {
 }
 
 export type UseRekeyConfirmScreenResult = {
-    source: WalletAccount | null
-    target: WalletAccount | null
-    currentAuth: WalletAccount | null
-    feeAlgos: Decimal | undefined
+    source: Nullable<WalletAccount>
+    target: Nullable<WalletAccount>
+    currentAuth: Nullable<WalletAccount>
+    feeAlgos: Optional<Decimal>
     feePending: boolean
     hasPreviousRekey: boolean
     isSubmitting: boolean

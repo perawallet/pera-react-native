@@ -15,7 +15,7 @@ import type {
     ChainScope,
     NetworkId,
 } from '@perawallet/wallet-core-chain-contract'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import type { EvmChain } from '../../chains/types'
 
 export class UnknownEvmNetworkError extends Error {
@@ -48,7 +48,7 @@ export type EvmNftStandard = 'erc721' | 'erc1155'
 export const EVM_NFT_STANDARD_LABELS: Readonly<Record<EvmNftStandard, string>> =
     { erc721: 'ERC-721', erc1155: 'ERC-1155' }
 
-const isNftStandard = (namespace: string | undefined): boolean =>
+const isNftStandard = (namespace: Optional<string>): boolean =>
     namespace === 'erc721' || namespace === 'erc1155'
 
 const MAX_UINT256 = (1n << 256n) - 1n
@@ -85,8 +85,8 @@ export const isEvmNftAssetId = (assetId: string): boolean =>
 
 export const eip155ChainIdOfNetwork = (
     chain: EvmChain,
-    networkId: NetworkId | undefined,
-): number | undefined => {
+    networkId: Optional<NetworkId>,
+): Optional<number> => {
     const nativeRef = chain.descriptor.networks.find(
         n => n.id === networkId,
     )?.nativeRef
@@ -96,7 +96,7 @@ export const eip155ChainIdOfNetwork = (
 export const networkIdOf = (
     chain: EvmChain,
     eip155ChainId: number,
-): NetworkId | undefined =>
+): Optional<NetworkId> =>
     chain.descriptor.networks.find(
         n =>
             n.nativeRef.kind === 'evm' &&

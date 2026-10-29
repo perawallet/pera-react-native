@@ -21,7 +21,7 @@ import {
 } from '@modules/transactions/hooks'
 import { getChainDescriptor } from '@perawallet/wallet-core-chain-shared'
 import { useRoute } from '@react-navigation/native'
-import { generateUniqueId } from '@perawallet/wallet-core-shared'
+import { generateUniqueId, type Optional } from '@perawallet/wallet-core-shared'
 
 type SuccessVariant =
     | 'payment'
@@ -38,7 +38,7 @@ type SuccessRouteParams = {
 type UseTransactionSuccessScreenResult = {
     handleDone: () => void
     /** Undefined on a network with no explorer, such as a custom one, so the CTA is hidden. */
-    handleViewInExplorer: (() => void) | undefined
+    handleViewInExplorer: Optional<() => void>
     variant: SuccessVariant
     /** The send is only broadcast; History shows it confirm or fail. */
     isAwaitingConfirmation: boolean

@@ -50,6 +50,7 @@ import {
     logger,
     type AppError,
     type Nullable,
+    type Optional,
 } from '@perawallet/wallet-core-shared'
 import {
     addressCodecs,
@@ -97,7 +98,7 @@ type UseLedgerVerifyScreenResult = {
     isAddedInHandoffTab: boolean
     handleDone: () => void
     /** Closes a Ledger pairing tab; undefined anywhere else. */
-    handleCancel: (() => void) | undefined
+    handleCancel: Optional<() => void>
     t: (key: string, options?: Record<string, unknown>) => string
 }
 

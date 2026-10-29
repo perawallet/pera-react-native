@@ -16,6 +16,8 @@
 // native's peraConnectJS (apps/mobile/src/modules/webview/components/PWWebView/
 // injected-scripts.ts) — the fallback chain below tolerates connect DOM drift
 // across 1.x versions, so keep all three branches.
+import type { Nullable } from '@perawallet/wallet-core-shared'
+
 export const CONNECT_MODAL_WRAPPER_ID = 'pera-wallet-connect-modal-wrapper'
 
 const WC_SCHEME = 'wc'
@@ -33,8 +35,8 @@ export const isWcUri = (value: unknown): value is string =>
         value.startsWith(`${PERAWALLET_WC_SCHEME}:`))
 
 export const extractUriFromConnectModal = (
-    wrapper: Element | null,
-): string | null => {
+    wrapper: Nullable<Element>,
+): Nullable<string> => {
     if (!wrapper) return null
     // Current (@perawallet/connect >=1.3): the wc URI is set as the 'uri'
     // attribute on the <pera-wallet-connect-modal> custom element itself

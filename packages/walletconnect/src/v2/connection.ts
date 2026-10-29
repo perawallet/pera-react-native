@@ -11,6 +11,7 @@
  */
 
 import type { Connection } from '@perawallet/wallet-extension-connections'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { isStringArray, readString } from '../shared/read'
 import { walletConnectUriTopic, walletConnectUriVersion } from '../shared/uri'
 
@@ -60,7 +61,7 @@ export const isV2PairingUri = (uri: string): boolean =>
  */
 export const describeV2PairingUri = (
     uri: string,
-): Record<string, string | null> => ({
+): Record<string, Nullable<string>> => ({
     version: '2',
     topic: walletConnectUriTopic(uri),
     relay: /[?&]relay-protocol=([^&#]+)/.exec(queryOf(uri))?.[1] ?? null,

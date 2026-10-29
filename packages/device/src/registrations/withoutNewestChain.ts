@@ -11,6 +11,7 @@
  */
 
 import { CHAIN_IDS } from '@perawallet/wallet-core-chain-contract'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { DeviceAccountRegistration } from '../models'
 
 /**
@@ -22,7 +23,7 @@ import type { DeviceAccountRegistration } from '../models'
  */
 export const withoutNewestChain = (
     accounts: readonly DeviceAccountRegistration[],
-): DeviceAccountRegistration[] | null => {
+): Nullable<DeviceAccountRegistration[]> => {
     const held = new Set(accounts.map(account => account.chainId))
     const present = CHAIN_IDS.filter(chainId => held.has(chainId))
     if (present.length <= 1) return null

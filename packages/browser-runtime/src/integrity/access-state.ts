@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { onSessionStorageKeyChanged } from '../storage-events'
 import {
     INTEGRITY_CONTROL_SCOPE,
@@ -60,12 +61,12 @@ export type IntegrityAttemptView = {
 /** The worker's integrity facts, as the UI realm reads them from chrome.storage.session. */
 export type IntegritySnapshot = {
     /** Epoch ms. */
-    tokenExpiresAt: number | null
-    mintBackoff: IntegrityBackoff | null
-    enrolBackoff: IntegrityBackoff | null
-    attempt: IntegrityAttemptView | null
-    enrolNeededAt: number | null
-    lastFailure: IntegrityLastFailure | null
+    tokenExpiresAt: Nullable<number>
+    mintBackoff: Nullable<IntegrityBackoff>
+    enrolBackoff: Nullable<IntegrityBackoff>
+    attempt: Nullable<IntegrityAttemptView>
+    enrolNeededAt: Nullable<number>
+    lastFailure: Nullable<IntegrityLastFailure>
     revocations: number
 }
 
@@ -95,7 +96,7 @@ export type IntegrityAccessState =
           reason: IntegrityDegradedReason
           cause: IntegrityFailureCause
           /** Epoch ms of the worker's next attempt on its own, if it will make one. */
-          nextAttemptAt: number | null
+          nextAttemptAt: Nullable<number>
       }
     | { status: 'offline' }
 
@@ -123,7 +124,7 @@ const VERIFICATION_ATTEST_CODES: Record<string, IntegrityFailureCause> = {
 const degraded = (
     reason: IntegrityDegradedReason,
     cause: IntegrityFailureCause,
-    backoff: IntegrityBackoff | null,
+    backoff: Nullable<IntegrityBackoff>,
 ): IntegrityAccessState => ({
     status: 'degraded',
     reason,
@@ -240,21 +241,21 @@ const deriveUndeferred = (
 const isRecord = (value: unknown): value is Record<string, unknown> =>
     typeof value === 'object' && value !== null
 
-const parseBackoff = (value: unknown): IntegrityBackoff | null =>
+const parseBackoff = (value: unknown): Nullable<IntegrityBackoff> =>
     isRecord(value) &&
     typeof value.failures === 'number' &&
     typeof value.nextAttemptAt === 'number'
         ? { failures: value.failures, nextAttemptAt: value.nextAttemptAt }
         : null
 
-const parseTokenExpiresAt = (value: unknown): number | null => {
+const parseTokenExpiresAt = (value: unknown): Nullable<number> => {
     if (!isRecord(value) || typeof value.expiresAt !== 'string') return null
     const expiresAt = Date.parse(value.expiresAt)
     return Number.isFinite(expiresAt) ? expiresAt : null
 }
 
 // Picks the fields the UI needs; the check token in the same record stays behind.
-const parseAttempt = (value: unknown): IntegrityAttemptView | null =>
+const parseAttempt = (value: unknown): Nullable<IntegrityAttemptView> =>
     isRecord(value) &&
     (value.surface === 'frame' || value.surface === 'tab') &&
     (value.phase === 'checking' ||
@@ -270,7 +271,7 @@ const parseAttempt = (value: unknown): IntegrityAttemptView | null =>
           }
         : null
 
-const parseLastFailure = (value: unknown): IntegrityLastFailure | null => {
+const parseLastFailure = (value: unknown): Nullable<IntegrityLastFailure> => {
     if (
         !isRecord(value) ||
         (value.phase !== 'mint' && value.phase !== 'enrol') ||
@@ -325,7 +326,7 @@ export const onIntegritySnapshotChanged = (
 
 type IntegrityControl =
     | { kind: 'retry'; soft?: boolean }
-    | { kind: 'token-rejected'; tokenExpiresAt: number | null }
+    | { kind: 'token-rejected'; tokenExpiresAt: Nullable<number> }
 
 /** Fire and forget: the worker acts on what it can, and a closed worker wakes on the message. */
 export const sendIntegrityControl = (control: IntegrityControl): void => {

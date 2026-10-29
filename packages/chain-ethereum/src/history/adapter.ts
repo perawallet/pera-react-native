@@ -18,6 +18,7 @@ import type {
     TransactionRecord,
 } from '@perawallet/wallet-core-chain-contract'
 import type { HistoryChainAdapter } from '@perawallet/wallet-core-transactions'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import type { EvmChain } from '../chains/types'
 import { fetchHistoryPage } from './api/endpoints'
 import type { EvmHistoryItem } from './api/schema'
@@ -25,7 +26,7 @@ import { summarizeEthereumHistoryItem } from './summarize'
 
 // A withdrawal row has no hash; its first EIP-4895 index is unique
 // chain-wide. Explorer links must special-case these ids.
-const recordId = (item: EvmHistoryItem): string | undefined =>
+const recordId = (item: EvmHistoryItem): Optional<string> =>
     item.kind === 'withdrawal'
         ? item.withdrawals[0] && `withdrawal:${item.withdrawals[0].index}`
         : (item.hash ?? undefined)

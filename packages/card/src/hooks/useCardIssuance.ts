@@ -139,7 +139,7 @@ export const useCardIssuance = (scope: ChainScope): UseCardIssuanceResult => {
             submittedAt: mutation.state.submittedAt,
         }),
     })
-    const latestAttempt = orderAttempts.reduce<OrderAttempt | undefined>(
+    const latestAttempt = orderAttempts.reduce<Optional<OrderAttempt>>(
         (newest, attempt) =>
             newest === undefined || attempt.submittedAt >= newest.submittedAt
                 ? attempt

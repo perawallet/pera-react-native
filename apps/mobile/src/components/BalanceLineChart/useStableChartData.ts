@@ -11,6 +11,7 @@
  */
 
 import { useMemo, useRef } from 'react'
+import type { Optional } from '@perawallet/wallet-core-shared'
 
 export type ChartDatum = { index: number; value: number }
 
@@ -32,7 +33,7 @@ const haveSameValues = (a: ChartDatum[], b: ChartDatum[]): boolean =>
  * useMemo on `series`.
  */
 export const useStableChartData = <T>(
-    series: T[] | undefined,
+    series: Optional<T[]>,
     getValue: (item: T) => number,
 ): ChartDatum[] => {
     const next = useMemo(

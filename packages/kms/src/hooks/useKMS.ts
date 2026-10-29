@@ -13,7 +13,11 @@
 import { useCallback, useMemo } from 'react'
 import type { Key } from '@algorandfoundation/keystore-core'
 import type { PQSchemeId } from '../crypto/pq/types'
-import { logger } from '@perawallet/wallet-core-shared'
+import {
+    logger,
+    type Optional,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import {
     InvalidKeyError,
     KeyManagementError,
@@ -85,7 +89,7 @@ export const useKMS = () => {
      * Resolves a child keystore id to its parent seed id
      */
     const seedIdOf = useCallback(
-        (childId: string | undefined): string | undefined => {
+        (childId: Optional<string>): Optional<string> => {
             if (!childId) return undefined
             const cached = childToParent.get(childId)
             if (cached !== undefined) return cached
@@ -93,7 +97,7 @@ export const useKMS = () => {
                 k => k.id === childId,
             )
             const parentKeyId = (
-                live?.metadata as Record<string, unknown> | undefined
+                live?.metadata as Optional<Record<string, unknown>>
             )?.parentKeyId
             return typeof parentKeyId === 'string' ? parentKeyId : undefined
         },
@@ -180,7 +184,7 @@ export const useKMS = () => {
     )
 
     const getKey = useCallback(
-        (keyId: string): Key | null => {
+        (keyId: string): Nullable<Key> => {
             const key = keystoreKeys.find(k => k.id === keyId) ?? null
             if (!key) return null
             // Expiry is stamped on the seed (the wallet-domain root). If
@@ -246,7 +250,7 @@ export const useKMS = () => {
      */
     const getPQSigningInfo = (
         keyPairId: string,
-    ): { schemeId: PQSchemeId; publicKey: Uint8Array } | null => {
+    ): Nullable<{ schemeId: PQSchemeId; publicKey: Uint8Array }> => {
         // Resolved through the hook's own `resolveSeedKey` first, purely for
         // the side effects the pure resolver has no business owning: the
         // expiry sweep in `getKey`, and `KeyNotFoundError` for an id that

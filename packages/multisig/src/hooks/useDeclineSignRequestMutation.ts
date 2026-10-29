@@ -13,7 +13,7 @@
 import { useCallback } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import { addSignature } from '../api/endpoints'
 import type { ProposeSignRequestResponse } from '../api/schema'
 import { getSignRequestDetailQueryKey } from './querykeys'
@@ -35,7 +35,7 @@ type DeclineSignRequestVariables = DeclineSignRequestInput & {
 }
 
 export type UseDeclineSignRequestMutationResult = {
-    data: ProposeSignRequestResponse | undefined
+    data: Optional<ProposeSignRequestResponse>
     error: Nullable<Error>
     isError: boolean
     isIdle: boolean

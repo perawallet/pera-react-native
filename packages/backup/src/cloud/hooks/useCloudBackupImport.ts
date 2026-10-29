@@ -50,6 +50,9 @@ import {
     generateOrderedUniqueId,
     logger,
     toError,
+    type Maybe,
+    type Nullable,
+    type Optional,
 } from '@perawallet/wallet-core-shared'
 import {
     backupAdapterFor,
@@ -105,7 +108,7 @@ const XHD_ROOT_LENGTH = 96
 const toFailureReason = (error: unknown): string => toError(error).message
 
 const nameField = (
-    customName: string | null | undefined,
+    customName: Maybe<string>,
 ): { name: string } | Record<string, never> =>
     customName ? { name: customName } : {}
 
@@ -241,7 +244,7 @@ const importFromMnemonic = async (
     { importAccount, updateAccount, scope }: ImportContext,
     seed: LocalKeySeed,
     addressPayload: ChainAddressPayload,
-    secretsPayload: SecretsBackupPayload | null,
+    secretsPayload: Nullable<SecretsBackupPayload>,
 ): Promise<WalletAccount[]> => {
     const { type } = addressPayload
     if (
@@ -471,8 +474,8 @@ const importHdChainAccount = async (
 const importStandaloneKeyAccount = async (
     chainId: ChainId,
     payload: StandaloneKeyAddressPayload,
-    secretsPayload: SecretsBackupPayload | null,
-    groupHolder: WalletAccount | undefined,
+    secretsPayload: Nullable<SecretsBackupPayload>,
+    groupHolder: Optional<WalletAccount>,
 ): Promise<number> => {
     if (
         groupHolder &&
@@ -512,7 +515,7 @@ const importStandaloneKeyAccount = async (
  *  or the slot already holds another address, which then stays as it is. */
 const attachWatchChain = (
     context: ImportContext,
-    holder: WalletAccount | undefined,
+    holder: Optional<WalletAccount>,
     chainId: ChainId,
     address: string,
 ): boolean => {
@@ -540,7 +543,7 @@ const attachWatchChain = (
  *  to read the seed from, so that entry is its own account. */
 const attachHardwareChain = (
     context: ImportContext,
-    groupHolder: WalletAccount | undefined,
+    groupHolder: Optional<WalletAccount>,
     chainId: ChainId,
     payload: HardwareAddressPayload,
 ): boolean => {
@@ -569,7 +572,7 @@ const chainOf = (context: ImportContext, account: PulledAccount): ChainId =>
 const holderOf = (
     context: ImportContext,
     account: PulledAccount,
-): WalletAccount | undefined => {
+): Optional<WalletAccount> => {
     const chainId = chainOf(context, account)
     return useAccountsStore.getState().accounts.find(held => {
         const address = chainAccountOf(held, chainId)?.address
@@ -604,7 +607,7 @@ const importOneAccount = async (
     context: ImportContext,
     account: PulledAccount,
     seedKeyIdByFirstDerivedAddress: Map<string, string>,
-    groupHolder: WalletAccount | undefined,
+    groupHolder: Optional<WalletAccount>,
 ): Promise<number> => {
     const { address, addressPayload, secretsPayload } = account
     const chainId = chainOf(context, account)
@@ -697,7 +700,7 @@ const importChainAccount = async (
     context: ImportContext,
     adapter: BackupChainAdapter,
     addressPayload: ChainAddressPayload,
-    secretsPayload: SecretsBackupPayload | null,
+    secretsPayload: Nullable<SecretsBackupPayload>,
     seedKeyIdByFirstDerivedAddress: Map<string, string>,
 ): Promise<number> => {
     const local = adapter.localKindOf(addressPayload.type)

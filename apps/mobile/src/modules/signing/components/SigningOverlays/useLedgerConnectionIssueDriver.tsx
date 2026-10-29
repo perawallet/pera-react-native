@@ -13,6 +13,7 @@
 import React, { useEffect, useRef } from 'react'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useSigningRequest } from '@perawallet/wallet-core-signing'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { LedgerConnectionIssueContent } from '../LedgerConnectionIssueContent'
 import { useLedgerSigningContent } from '../LedgerSigningContent/useLedgerSigningContent'
 
@@ -38,7 +39,7 @@ export const useLedgerConnectionIssueDriver = () => {
     const { pendingSignRequests } = useSigningRequest()
     const requestId = pendingSignRequests[0]?.id ?? null
     const { request: requestBottomSheet, dismiss } = useBottomSheet()
-    const openIdRef = useRef<string | null>(null)
+    const openIdRef = useRef<Nullable<string>>(null)
 
     useEffect(() => {
         if (!isTroubleshootingVisible) {

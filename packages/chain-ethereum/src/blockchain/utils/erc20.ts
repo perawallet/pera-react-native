@@ -33,7 +33,7 @@ import {
     PeraAssetVerificationTier,
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
-import { partition } from '@perawallet/wallet-core-shared'
+import { partition, type Nullable } from '@perawallet/wallet-core-shared'
 import type { EvmChain } from '../../chains/types'
 import { createEvmClient } from './createEvmClient'
 
@@ -144,7 +144,7 @@ const CALLS_PER_AGGREGATE = 300
 type BalanceCall = {
     holder: Address
     /** Null for the holder's ETH balance. */
-    token: Address | null
+    token: Nullable<Address>
     call: { target: Address; allowFailure: boolean; callData: Hex }
 }
 

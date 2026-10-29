@@ -27,6 +27,7 @@ import { CONNECTIONS_STORAGE_KEY } from '@perawallet/wallet-extension-connection
 import { onLocalStorageKeyChanged } from '@perawallet/wallet-core-browser-runtime'
 import { createRemoteConnectionRegistry } from '@perawallet/wallet-core-browser-runtime/remote-registry'
 import { getProvider } from '@perawallet/wallet-extension-provider'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { createAlgorandDescriptorHandlers } from '@modules/algorand/web'
 import { useConnectionErrorToasts } from './useConnectionErrorToasts'
 import type { ProposalQueueHandle } from './useProposalQueue'
@@ -47,7 +48,7 @@ const getNetworkId = (chainId: ChainId) => getSelectedScope(chainId).networkId
 // (`canHandleUri`/`describeUri` for v1, `methodsFor`/`matchesChainScope` for
 // the injected providers).
 export const useConnectionsProvider = (): ConnectionRegistryClient => {
-    const registryRef = useRef<ConnectionRegistryClient | null>(null)
+    const registryRef = useRef<Nullable<ConnectionRegistryClient>>(null)
     if (!registryRef.current) {
         registryRef.current = createRemoteConnectionRegistry({
             handlers: [

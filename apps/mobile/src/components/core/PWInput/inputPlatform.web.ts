@@ -12,7 +12,9 @@
 
 // RNW doesn't reset the browser's default :focus-visible ring; longhand is
 // required since RNW rejects the `outline` shorthand.
-export const inputFocusRingReset: object | null = {
+import type { Nullable } from '@perawallet/wallet-core-shared'
+
+export const inputFocusRingReset: Nullable<object> = {
     outlineStyle: 'none',
 } as unknown as object
 

@@ -17,11 +17,13 @@
 //
 // Defaults OFF on every failure mode — this is opt-in, and Pera must never
 // silently hijack WebAuthn.
+import type { Optional, Nullable } from '@perawallet/wallet-core-shared'
+
 export const SETTINGS_STORE_KV_KEY = 'kv:settings-store'
 export const WEBAUTHN_TOGGLE_PREFERENCE_KEY = 'webauthnInterceptionEnabled'
 
 export const parseWebauthnInterceptionEnabled = (
-    raw: string | undefined,
+    raw: Optional<string>,
 ): boolean => {
     if (raw === undefined) return false
     let envelope: unknown
@@ -31,9 +33,9 @@ export const parseWebauthnInterceptionEnabled = (
         return false
     }
     const preferences = (
-        envelope as {
+        envelope as Nullable<{
             state?: { preferences?: Record<string, unknown> }
-        } | null
+        }>
     )?.state?.preferences
     return preferences?.[WEBAUTHN_TOGGLE_PREFERENCE_KEY] === true
 }

@@ -17,6 +17,7 @@ import {
     type DatabaseDriver,
     type DatabaseService,
 } from '@perawallet/wallet-extension-platform'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import {
     DB_CONTROL_SCOPE,
     DB_SCOPE,
@@ -50,7 +51,7 @@ const withTimeout = async <T>(
     timeoutMs: number,
     label: string,
 ): Promise<T> => {
-    let timer: ReturnType<typeof setTimeout> | undefined
+    let timer: Optional<ReturnType<typeof setTimeout>>
     try {
         return await Promise.race([
             promise,
@@ -198,7 +199,7 @@ export class ChromeDatabaseService implements DatabaseService {
             chrome.runtime.sendMessage(message),
             this.execTimeoutMs,
             'db exec',
-        )) as DbExecResponse | undefined
+        )) as Optional<DbExecResponse>
         if (!response) throw new Error('db exec got no response')
         if (!response.ok) {
             const message = `db exec failed (${response.code}): ${response.error}`
@@ -234,7 +235,7 @@ export class ChromeDatabaseService implements DatabaseService {
                     }),
                     this.readyPollIntervalMs,
                     'db ping',
-                )) as DbPingResponse | undefined
+                )) as Optional<DbPingResponse>
                 if (pong?.ok && pong.ready) return
             } catch {
                 // No receiver yet, or the ping above timed out — keep

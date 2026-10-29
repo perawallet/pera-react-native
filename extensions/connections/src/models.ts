@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
+
 export type ConnectionId = string
 
 export type ConnectionKind =
@@ -88,7 +90,7 @@ export interface Connection {
 
 /** Minimal synchronous KV surface the store persists through. */
 export interface ConnectionPersistence {
-    getItem(key: string): string | null
+    getItem(key: string): Nullable<string>
     setItem(key: string, value: string): void
     removeItem(key: string): void
     /** Reclaim append-log residue after removing a sensitive value. */
@@ -97,7 +99,7 @@ export interface ConnectionPersistence {
 
 export interface ConnectionStoreAPI {
     list(): Promise<Connection[]>
-    get(id: ConnectionId): Promise<Connection | undefined>
+    get(id: ConnectionId): Promise<Optional<Connection>>
     upsert(connection: Connection): Promise<void>
     remove(id: ConnectionId): Promise<void>
     clear(): Promise<void>

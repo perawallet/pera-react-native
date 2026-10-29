@@ -16,6 +16,8 @@
  * display-unit strings: the record crosses `chrome.storage.session`, and
  * `Decimal` doesn't survive JSON.
  */
+import type { Nullable } from '@perawallet/wallet-core-shared'
+
 export type TabResumeIntent =
     | {
           flow: 'swap'
@@ -46,6 +48,6 @@ export const registerTabResumeIntent = (_intent: TabResumeIntent): void => {}
 
 export const clearTabResumeIntent = (): void => {}
 
-export const peekTabResumeIntent = (): TabResumeIntent | null => null
+export const peekTabResumeIntent = (): Nullable<TabResumeIntent> => null
 
 export const completeTabResume = (_result: TabResumeResult): void => {}

@@ -111,7 +111,7 @@ type UseAccountAssetListResult = {
         /** Opt-out runs on the account's own chain only. */
         isSwipeable: (item: AccountHoldingsLiteRow) => boolean
     }
-    listRef: React.MutableRefObject<PWFlatListRef | null>
+    listRef: React.MutableRefObject<Nullable<PWFlatListRef>>
 }
 
 const EMPTY_ITEMS: AccountAssetListItem[] = []
@@ -268,7 +268,7 @@ export const useAccountAssetList = ({
         setSearchFilter('')
     }, [account.id])
 
-    const listRef = useRef<PWFlatListRef | null>(null)
+    const listRef = useRef<Nullable<PWFlatListRef>>(null)
 
     // One reset for both triggers: switching account or sort re-reads holdings
     // under a new query key, so the rows go through a gap — empty while cold, or

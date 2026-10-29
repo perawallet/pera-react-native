@@ -11,7 +11,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import {
     useCreateAccount,
     useImportAccount,
@@ -75,7 +75,7 @@ export const useMigrationSplashScreen = (): UseMigrationSplashScreenResult => {
         startedRef.current = true
 
         let cancelled = false
-        let successTimer: ReturnType<typeof setTimeout> | null = null
+        let successTimer: Nullable<ReturnType<typeof setTimeout>> = null
 
         const run = async () => {
             let result: MigrationRunResult

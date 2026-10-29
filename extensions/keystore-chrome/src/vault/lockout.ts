@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import { VaultLockedOutError } from '../errors'
 import { LOCKOUT_STORAGE_KEY } from '../storage-keys'
 
@@ -21,7 +22,7 @@ const INITIAL_LOCKOUT_SECONDS = 30
 
 type LockoutRecord = {
     failedAttempts: number
-    lockoutEndTime: number | null
+    lockoutEndTime: Nullable<number>
     /**
      * The same deadline on `performance.now()`'s clock, valid only in the
      * context whose `performance.timeOrigin` wrote it. Moving the system clock
@@ -32,9 +33,9 @@ type LockoutRecord = {
 
 const read = async (): Promise<LockoutRecord> => {
     const stored = await chrome.storage.local.get(LOCKOUT_STORAGE_KEY)
-    const record = stored[LOCKOUT_STORAGE_KEY] as
-        | Partial<LockoutRecord>
-        | undefined
+    const record = stored[LOCKOUT_STORAGE_KEY] as Optional<
+        Partial<LockoutRecord>
+    >
     // Defensive against a partial/malformed stored record (e.g. a future
     // schema change) — fail open on the missing field rather than throw.
     return {

@@ -11,6 +11,8 @@
  */
 
 /** The outer JSON inside the base64-encoded backup file. */
+import type { Nullable } from '@perawallet/wallet-core-shared'
+
 export type SecureBackupEnvelope = {
     version: string
     suite: string
@@ -35,15 +37,15 @@ export type SecureBackupAccountKind =
  */
 export type SecureBackupAccount = {
     address: string
-    name: string | null
+    name: Nullable<string>
     kind: SecureBackupAccountKind
-    privateKey: Uint8Array | null
+    privateKey: Nullable<Uint8Array>
 }
 
 export type SecureBackupPayload = {
     accounts: SecureBackupAccount[]
-    providerName: string | null
-    deviceId: string | null
+    providerName: Nullable<string>
+    deviceId: Nullable<string>
 }
 
 export type SecureBackupImportablePartition = {

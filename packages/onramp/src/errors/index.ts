@@ -17,6 +17,8 @@ import {
     ErrorCategory,
     isPeraNetworkError,
     type Nullable,
+    type Maybe,
+    type Optional,
 } from '@perawallet/wallet-core-shared'
 
 import { parseRampAmount } from '../quotes'
@@ -62,9 +64,9 @@ function isPeraApiException(value: unknown): value is PeraApiException {
 // The shared ky client throws an HTTPError that carries the parsed Pera error
 // body on `.data`. Resolve the exception from either the error itself (if it's
 // already the body) or that `.data` wrapper.
-function resolvePeraApiException(error: unknown): PeraApiException | null {
+function resolvePeraApiException(error: unknown): Nullable<PeraApiException> {
     if (isPeraApiException(error)) return error
-    const data = (error as { data?: unknown } | null | undefined)?.data
+    const data = (error as Maybe<{ data?: unknown }>)?.data
     return isPeraApiException(data) ? data : null
 }
 
@@ -112,7 +114,7 @@ function isDisplayableMessage(message: string): boolean {
 }
 
 /** An amount field that is present but is not a number the UI can render. */
-function isUnusableAmount(raw: string | undefined): boolean {
+function isUnusableAmount(raw: Optional<string>): boolean {
     return raw !== undefined && parseRampAmount(raw) === null
 }
 
@@ -203,9 +205,9 @@ function isBunApiError(value: unknown): value is BunApiError {
     )
 }
 
-function resolveBunApiError(error: unknown): BunApiError | null {
+function resolveBunApiError(error: unknown): Nullable<BunApiError> {
     if (isBunApiError(error)) return error
-    const data = (error as { data?: unknown } | null | undefined)?.data
+    const data = (error as Maybe<{ data?: unknown }>)?.data
     return isBunApiError(data) ? data : null
 }
 

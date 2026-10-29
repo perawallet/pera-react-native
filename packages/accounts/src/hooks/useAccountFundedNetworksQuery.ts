@@ -12,6 +12,7 @@
 
 import { useQuery } from '@tanstack/react-query'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { getAccountFundedNetworks } from '../db'
 import { ensureAccountFetched } from '../sync/account-syncer'
 import { getAccountFundedNetworksQueryKey } from './querykeys'
@@ -35,7 +36,7 @@ export type UseAccountFundedNetworksResult = {
  * polls the network in use.
  */
 export const useAccountFundedNetworksQuery = (
-    address: string | undefined,
+    address: Optional<string>,
     scope: ChainScope,
 ): UseAccountFundedNetworksResult => {
     const query = useQuery({

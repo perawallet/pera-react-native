@@ -18,7 +18,7 @@ import {
     derivedContactId,
     type ContactAddresses,
 } from '@perawallet/wallet-core-contacts'
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import { fetchManifest, readItems } from '../api'
 import {
     parseAccountRecordPayload,
@@ -88,7 +88,7 @@ export type PulledAccount = {
      *  backup's scope chain. */
     chain?: ChainId
     addressPayload: AccountEntryPayload
-    secretsPayload: SecretsBackupPayload | null
+    secretsPayload: Nullable<SecretsBackupPayload>
 }
 
 /** What a tracked item caches about its payload; the key is a hash. */
@@ -121,7 +121,7 @@ export type PullBackupItemsResult = {
     accounts: PulledAccount[]
     contacts: PulledContact[]
     passkeys: PulledPasskey[]
-    settings: PulledSettings | null
+    settings: Nullable<PulledSettings>
     skipped: SkippedItem[]
 }
 
@@ -181,7 +181,7 @@ const decryptItem = (
     item: FetchedItem,
     encryptionKey: Uint8Array,
     backupId: BackupId,
-): string | null => {
+): Nullable<string> => {
     try {
         return decryptItemPayload(item.payload, {
             encryptionKey,
@@ -203,7 +203,7 @@ type CollectedPayloads = {
     contactRecords: ContactRecordPayload[]
     contacts: ContactBackupPayload[]
     passkeys: PulledPasskey[]
-    settings: PulledSettings | null
+    settings: Nullable<PulledSettings>
     trackedByKey: Record<BackupItemKey, TrackedIdentifiers>
     skipped: SkippedItem[]
 }
@@ -262,7 +262,7 @@ const collectItemPayloads = (
     const contacts: ContactBackupPayload[] = []
     const passkeyPayloads: PasskeyBackupPayload[] = []
     const passkeySecrets = new Map<string, PasskeySecretsBackupPayload>()
-    let settings: PulledSettings | null = null
+    let settings: Nullable<PulledSettings> = null
     const trackedByKey: Record<BackupItemKey, TrackedIdentifiers> = {}
     const skipped: SkippedItem[] = []
 

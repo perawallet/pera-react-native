@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import {
     addressCodecs,
     type ChainId,
@@ -37,7 +37,7 @@ const TRUNCATION_SEPARATORS = ['...', '…'] as const
 
 // Split on the first separator by index: a backtracking regex here runs in
 // polynomial time on long names.
-const splitTruncation = (name: string): [string, string] | undefined => {
+const splitTruncation = (name: string): Optional<[string, string]> => {
     const cuts = TRUNCATION_SEPARATORS.flatMap(separator => {
         const at = name.indexOf(separator, 1)
         return at === -1 ? [] : [{ at, separator }]
@@ -81,7 +81,7 @@ export const isNamedAfterOwnAddress = (account: WalletAccount): boolean => {
  * custody with no index. HD accounts sum both axes: the app advances one at a
  * time, so the other is 0 for every account it creates.
  */
-export const accountNumberOf = (account: WalletAccount): number | undefined => {
+export const accountNumberOf = (account: WalletAccount): Optional<number> => {
     const hd = hdIndexOf(account)
     if (hd) return hd.account + hd.keyIndex + 1
     const hardware = hardwareDeviceOf(account)
@@ -164,7 +164,7 @@ export const findAccountByAddressOn = (
     accounts: readonly WalletAccount[],
     chainId: ChainId,
     address: string,
-): WalletAccount | undefined =>
+): Optional<WalletAccount> =>
     accounts.find(account => {
         const held = chainAccountOf(account, chainId)?.address
         return held !== undefined && isSameAddress(chainId, held, address)
@@ -174,7 +174,7 @@ export const findAccountByAddressOn = (
 export const findAccountByAnyChainAddress = (
     accounts: readonly WalletAccount[],
     address: string,
-): WalletAccount | undefined =>
+): Optional<WalletAccount> =>
     accounts.find(account =>
         (Object.keys(account.chains) as ChainId[]).some(chainId => {
             const held = chainAccountOf(account, chainId)?.address

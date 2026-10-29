@@ -26,6 +26,8 @@
  * blank origin line under a page-chosen title is worse than an explicit
  * "unknown" — the caller supplies that copy.
  */
+import type { Optional } from '@perawallet/wallet-core-shared'
+
 const OPAQUE_ORIGIN_SCHEMES = [
     'about:',
     'data:',
@@ -34,7 +36,7 @@ const OPAQUE_ORIGIN_SCHEMES = [
     'file:',
 ]
 
-export const getDisplayHost = (url: string): string | undefined => {
+export const getDisplayHost = (url: string): Optional<string> => {
     const trimmed = url.trim()
     if (!trimmed) return undefined
 
@@ -45,7 +47,7 @@ export const getDisplayHost = (url: string): string | undefined => {
         return undefined
     }
 
-    const hostFrom = (value: string): string | undefined => {
+    const hostFrom = (value: string): Optional<string> => {
         try {
             return new URL(value).hostname || undefined
         } catch {

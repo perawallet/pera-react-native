@@ -25,7 +25,7 @@ import {
     useBarcodeScannerOutput,
     type TargetBarcodeFormat,
 } from 'react-native-vision-camera-barcode-scanner'
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import { isAndroid } from '@utils/platform'
 
 // IMPORTANT: this is the ONLY module that imports
@@ -64,9 +64,8 @@ export const QRCameraScanner = ({
     // Latest measured preview size, used to derive the centre view point for
     // focusTo. Kept in a ref (not state) so measuring the layout doesn't
     // re-render the camera.
-    const previewSizeRef = useRef<{ width: number; height: number } | null>(
-        null,
-    )
+    const previewSizeRef =
+        useRef<Nullable<{ width: number; height: number }>>(null)
 
     const scannerOutput = useBarcodeScannerOutput({
         barcodeFormats: BARCODE_FORMATS,

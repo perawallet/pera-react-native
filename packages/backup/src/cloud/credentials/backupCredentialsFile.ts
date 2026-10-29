@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { assertMaxLength } from '@perawallet/wallet-core-shared'
+import { assertMaxLength, type Nullable } from '@perawallet/wallet-core-shared'
 import {
     decodeBase64Salt,
     isCanonicalArgon2idConfig,
@@ -60,7 +60,7 @@ export const backupCredentialsFileName = (backupId: BackupId): string =>
 /** The address prefix in a credentials file name; `null` for the legacy name. */
 export const backupCredentialsFileAddressPrefix = (
     fileName: string,
-): string | null => FILE_NAME_PATTERN.exec(fileName)?.[1] ?? null
+): Nullable<string> => FILE_NAME_PATTERN.exec(fileName)?.[1] ?? null
 
 export const isBackupCredentialsFileName = (fileName: string): boolean =>
     fileName === LEGACY_BACKUP_CREDENTIALS_FILE_NAME ||

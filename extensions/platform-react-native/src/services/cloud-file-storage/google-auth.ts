@@ -17,6 +17,8 @@ import { config } from '@perawallet/wallet-core-config'
 import {
     createOauthState,
     createPkcePair,
+    type Nullable,
+    type Optional,
 } from '@perawallet/wallet-core-shared'
 
 export const DRIVE_FILE_SCOPE = 'https://www.googleapis.com/auth/drive.file'
@@ -30,14 +32,14 @@ const TOKEN_ENDPOINT = 'https://oauth2.googleapis.com/token'
 
 interface NativePeraGoogleAuth {
     /** iOS: the redirect URL, or null when the user closes the sheet. */
-    authenticate(url: string, callbackScheme: string): Promise<string | null>
+    authenticate(url: string, callbackScheme: string): Promise<Nullable<string>>
     /** Android: an access token for `scope` on an account the user picks, or null when they back out. */
-    authorize(scope: string): Promise<string | null>
+    authorize(scope: string): Promise<Nullable<string>>
     /** Android: drops the token from the device's cache. */
     clearToken(token: string): Promise<null>
 }
 
-const nativeGoogleAuth = (): NativePeraGoogleAuth | null =>
+const nativeGoogleAuth = (): Nullable<NativePeraGoogleAuth> =>
     requireOptionalNativeModule<NativePeraGoogleAuth>('PeraGoogleAuth')
 
 const requireGoogleAuth = (): NativePeraGoogleAuth => {
@@ -80,7 +82,7 @@ const readQuery = (url: string): Record<string, string> => {
     )
 }
 
-const hasDriveScope = (scope: string | undefined): boolean =>
+const hasDriveScope = (scope: Optional<string>): boolean =>
     (scope ?? '').split(' ').includes(DRIVE_FILE_SCOPE)
 
 /**
@@ -88,7 +90,7 @@ const hasDriveScope = (scope: string | undefined): boolean =>
  * redirect to the client id's reversed form. The refresh token Google returns
  * is dropped, so nothing outlives the session.
  */
-const authorizeOnIos = async (): Promise<string | null> => {
+const authorizeOnIos = async (): Promise<Nullable<string>> => {
     const clientId = config.googleIosClientId
     const callbackScheme = clientId.split('.').reverse().join('.')
     const redirectUri = `${callbackScheme}:/oauth2redirect`
@@ -141,7 +143,7 @@ const authorizeOnIos = async (): Promise<string | null> => {
 }
 
 /** A `drive.file` access token, or null when the user backs out. */
-export const authorizeGoogleDrive = (): Promise<string | null> =>
+export const authorizeGoogleDrive = (): Promise<Nullable<string>> =>
     Platform.OS === 'ios'
         ? authorizeOnIos()
         : requireGoogleAuth().authorize(DRIVE_FILE_SCOPE)

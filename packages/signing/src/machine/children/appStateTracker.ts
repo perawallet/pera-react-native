@@ -21,6 +21,8 @@
  * exchange is already frozen — and on Android it only prolongs a session
  * the user has visibly walked away from.
  */
+import type { Nullable } from '@perawallet/wallet-core-shared'
+
 export const HARDWARE_BACKGROUND_GRACE_MS = 15_000
 
 /**
@@ -33,7 +35,7 @@ export const HARDWARE_BACKGROUND_GRACE_MS = 15_000
  * foreground, so whichever order the wake-up races resolve in, the guard
  * sees a non-null value and swallows the stale timeout.
  */
-export const appStateTracker: { backgroundedAt: number | null } = {
+export const appStateTracker: { backgroundedAt: Nullable<number> } = {
     backgroundedAt: null,
 }
 

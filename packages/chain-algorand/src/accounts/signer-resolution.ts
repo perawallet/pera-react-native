@@ -18,6 +18,7 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { hasLocalCoSigner } from './multisig-participants'
 import { algorandAddressOf } from './vocabulary'
 
@@ -82,7 +83,7 @@ export const getAlgorandAuthAccount = (
     account: WalletAccount,
     accounts: WalletAccount[],
     scope: ChainScope,
-): WalletAccount | null => {
+): Nullable<WalletAccount> => {
     const hop = followAuthHop(account, accounts, scope)
     return hop.kind === 'authMissing' ? null : hop.auth
 }
