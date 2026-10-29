@@ -6,7 +6,7 @@
 
 - Use theme tokens only (`theme.colors.*`, `theme.spacing.*`, `theme.borders.*`). No hardcoded colors or values
 - No inline styles; all styles go in `styles.ts` next to the component
-- Export `useStyles` hook from `styles.ts`
+- `makeStyles` is only called in `styles.ts` (or a platform twin such as `styles.web.ts`); export `useStyles` for the folder's main component and `use<Name>Styles` for any other. `pera/make-styles-location` enforces this
 
 ## Components (CRITICAL)
 
