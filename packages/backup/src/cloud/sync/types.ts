@@ -40,7 +40,6 @@ import type {
     SyncState,
 } from '../models'
 import type { Contact } from '@perawallet/wallet-core-contacts'
-import { toError } from '@perawallet/wallet-core-shared'
 import type { ItemKeyHasher } from '../crypto/itemKeyHash'
 import type { PulledAccount } from '../restore'
 
