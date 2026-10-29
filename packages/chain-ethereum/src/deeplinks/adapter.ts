@@ -241,8 +241,8 @@ export const parseEvmPaymentUri = (input: string): DeeplinkParseResult =>
 // mainnet when no network is given.
 const eip155ChainIdOfLink = (
     chain: EvmChain,
-    networkId: NetworkId | undefined,
-): number | undefined => {
+    networkId: Optional<NetworkId>,
+): Optional<number> => {
     if (networkId !== undefined) return eip155ChainIdOfNetwork(chain, networkId)
     const mainnet = chain.descriptor.networks.find(n => n.tier === 'mainnet')
     const eip155ChainId = mainnet && eip155ChainIdOfNetwork(chain, mainnet.id)
