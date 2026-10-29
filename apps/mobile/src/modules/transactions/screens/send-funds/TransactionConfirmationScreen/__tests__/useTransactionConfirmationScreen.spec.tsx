@@ -921,10 +921,7 @@ describe('useTransactionConfirmationScreen', () => {
                 useTransactionConfirmationScreen(),
             )
 
-            expect(chainUiFor).toHaveBeenCalledWith(
-                'evm',
-                result.current.scope.chainId,
-            )
+            expect(chainUiFor).toHaveBeenCalledWith('evm', 'algorand')
             expect(result.current.FeeSection).toBe(FeeSection)
             expect(result.current.TrailingSection).toBe(TrailingSection)
             ;(getChainDescriptor as Mock).mockReturnValue({

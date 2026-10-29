@@ -12,7 +12,7 @@
 
 import { describe, expect, it } from 'vitest'
 import { descriptorContractTests } from '@perawallet/wallet-core-chain-contract/testing'
-import { evmCapabilityDefaults } from '../../capability-defaults'
+import { evmCapabilityDefaultsOf } from '../../capability-defaults'
 import { createEvmChain } from '../create-evm-chain'
 import {
     ETHEREUM_CHAIN_ID,
@@ -24,7 +24,10 @@ import {
 import { ETHEREUM_NATIVE_ASSET } from '../..'
 
 for (const chain of EVM_CHAINS) {
-    descriptorContractTests(chain.descriptor, evmCapabilityDefaults)
+    descriptorContractTests(
+        chain.descriptor,
+        evmCapabilityDefaultsOf(chain.row),
+    )
 }
 
 describe('the EVM chain table', () => {
