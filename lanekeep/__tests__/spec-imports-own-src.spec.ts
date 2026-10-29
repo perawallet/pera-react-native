@@ -23,6 +23,9 @@ const SELFIE_CONFIG = [
     '                __dirname,',
     "                'src/aliased.ts',",
     '            ),',
+    "            '@perawallet/selfie/src-dir': path.resolve(__dirname, 'src'),",
+    "            '@perawallet/selfie/dot-src': path.resolve(__dirname, './src'),",
+    "            '@perawallet/selfie/src-like': path.resolve(__dirname, 'src-old'),",
     "            '@perawallet/selfie/elsewhere': path.resolve(",
     '                __dirname,',
     "                '../other/src/index.ts',",
@@ -55,6 +58,12 @@ const FILES: Record<string, string> = {
     [`${SELFIE}/helpers.ts`]: "export { a } from '@perawallet/selfie'\n",
     [`${SELFIE}/aliased.spec.ts`]:
         "import { a } from '@perawallet/selfie/aliased'\n",
+    [`${SELFIE}/src-dir.spec.ts`]:
+        "import { a } from '@perawallet/selfie/src-dir'\n",
+    [`${SELFIE}/dot-src.spec.ts`]:
+        "import { a } from '@perawallet/selfie/dot-src'\n",
+    [`${SELFIE}/src-like.spec.ts`]:
+        "import { a } from '@perawallet/selfie/src-like'\n",
     [`${SELFIE}/relative.spec.ts`]: "import { a } from '../index'\n",
     [`${SELFIE}/neighbour.spec.ts`]: "import { a } from '@perawallet/other'\n",
     [`${SELFIE}/lookalike.spec.ts`]:
@@ -141,7 +150,7 @@ describe('pera/spec-imports-own-src', () => {
         found = await check(FILES)
     })
 
-    it('reports own-name imports in package and extension test code unless an exact alias points into its src', () => {
+    it('reports own-name imports in package and extension test code unless an exact alias points at its src or into it', () => {
         expect(locations(found)).toEqual([
             'plug.spec.ts:1',
             'bare.spec.ts:1',
@@ -151,6 +160,7 @@ describe('pera/spec-imports-own-src', () => {
             'helpers.ts:1',
             'loaders.spec.ts:1',
             'loaders.spec.ts:2',
+            'src-like.spec.ts:1',
             'subpath.spec.ts:1',
             'type-only.spec.ts:1',
         ])

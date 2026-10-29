@@ -30,14 +30,15 @@ const ALIAS_ENTRY =
 // A commented-out alias must not exempt an import.
 const LINE_COMMENT = /^\s*\/\/.*$/gm
 
-/** The alias keys in `config` whose target lies inside `<dir>/src/`. */
+/** The alias keys in `config` whose target is `<dir>/src` or lies inside it. */
 const ownSrcAliases = (config: string, dir: string): ReadonlySet<string> => {
     const keys = new Set<string>()
     const configPath = `${dir}/vitest.config.ts`
     const live = config.replace(LINE_COMMENT, '')
     for (const [, key, target] of live.matchAll(ALIAS_ENTRY)) {
         if (key === undefined || target === undefined) continue
-        if (resolveRelative(configPath, target).startsWith(`${dir}/src/`)) {
+        const resolved = resolveRelative(configPath, target)
+        if (resolved === `${dir}/src` || resolved.startsWith(`${dir}/src/`)) {
             keys.add(key)
         }
     }
