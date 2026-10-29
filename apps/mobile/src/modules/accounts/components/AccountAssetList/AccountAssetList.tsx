@@ -105,6 +105,7 @@ export const AccountAssetList = ({
                     }
                     isSwipeEnabled={renderItemProps.isSwipeable(row)}
                     isGroupMember={item.isGroupMember}
+                    shouldShowNetwork={renderItemProps.shouldShowNetwork}
                     convertFiat={convertFiat}
                     onPress={renderItemProps.goToAssetScreen}
                     onOptOut={renderItemProps.handleOptOut}

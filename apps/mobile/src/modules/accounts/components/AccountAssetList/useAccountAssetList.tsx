@@ -110,6 +110,8 @@ type UseAccountAssetListResult = {
         handleOptOut: (item: AccountHoldingsLiteRow) => void
         /** Opt-out runs on the account's own chain only. */
         isSwipeable: (item: AccountHoldingsLiteRow) => boolean
+        /** On All, for an account on two or more chains, while a search is typed: each plain row names its network. */
+        shouldShowNetwork: boolean
     }
     listRef: React.MutableRefObject<PWFlatListRef | null>
 }
@@ -477,6 +479,11 @@ export const useAccountAssetList = ({
         [isReadOnly, canManageAssets, scope.chainId],
     )
 
+    const shouldShowNetwork =
+        selectedChainId === null &&
+        sources.length > 1 &&
+        searchFilter.trim().length > 0
+
     const renderItemProps = useMemo(
         () => ({
             isReadOnly,
@@ -484,6 +491,7 @@ export const useAccountAssetList = ({
             goToAssetScreen,
             handleOptOut,
             isSwipeable,
+            shouldShowNetwork,
         }),
         [
             isReadOnly,
@@ -491,6 +499,7 @@ export const useAccountAssetList = ({
             goToAssetScreen,
             handleOptOut,
             isSwipeable,
+            shouldShowNetwork,
         ],
     )
 
