@@ -65,6 +65,8 @@ export type UseAssetGroupRowResult = {
     /** "SYMBOL · id" when every network shares one id, else the symbol alone. */
     subtitle: string
     chainIds: ChainId[]
+    /** The chain of the member `icon` is drawn from. */
+    iconChainId: Nullable<ChainId>
     /** Null value while any member's is unknown. */
     fiat: AssetFiatValue
 }
@@ -130,6 +132,7 @@ export const useAssetGroupRow = <T extends GroupableHolding>({
         isSuspicious: tier === PeraAssetVerificationTier.suspicious,
         subtitle,
         chainIds,
+        iconChainId: members[0]?.holding.scope.chainId ?? null,
         fiat,
     }
 }

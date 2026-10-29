@@ -103,7 +103,10 @@ export const AssetHoldings = ({
             <PWView style={styles.contentContainer}>
                 <PWView style={styles.header}>
                     <PWView style={styles.assetRow}>
-                        <AssetTitle asset={asset} />
+                        <AssetTitle
+                            asset={asset}
+                            chainId={scope.chainId}
+                        />
                         <PWView style={styles.headerIcons}>
                             <AssetNotificationButton
                                 assetId={asset.assetId}
@@ -132,6 +135,7 @@ export const AssetHoldings = ({
 
                     <PWView style={styles.primaryValueContainer}>
                         <AssetAmount
+                            chainId={scope.chainId}
                             variant='h1'
                             value={cryptoAmount}
                             asset={asset}

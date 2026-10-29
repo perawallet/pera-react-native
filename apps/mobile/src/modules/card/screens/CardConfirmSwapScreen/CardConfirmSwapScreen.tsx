@@ -46,6 +46,7 @@ export const CardConfirmSwapScreen = () => {
         steps,
         handleConfirm,
         handleRetryDeposit,
+        chainId,
     } = useCardConfirmSwapScreen()
     const isDepositFailed = step === 'deposit-failed'
     const detailRows = [
@@ -115,6 +116,7 @@ export const CardConfirmSwapScreen = () => {
                 <PWView style={styles.assetGroup}>
                     {sourceAsset && (
                         <AssetIcon
+                            chainId={chainId}
                             asset={sourceAsset}
                             size='sm'
                         />
@@ -133,6 +135,7 @@ export const CardConfirmSwapScreen = () => {
                 <PWView style={styles.assetGroup}>
                     {usdcAsset && (
                         <AssetIcon
+                            chainId={chainId}
                             asset={usdcAsset}
                             size='sm'
                         />

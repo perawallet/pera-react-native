@@ -173,14 +173,17 @@ registerPreview({
         <PWView>
             <AssetIcon
                 asset={mockAsset}
+                chainId={LEGACY_CHAIN_ID}
                 size='sm'
             />
             <AssetIcon
                 asset={mockAsset}
+                chainId={LEGACY_CHAIN_ID}
                 size='md'
             />
             <AssetIcon
                 asset={mockAsset}
+                chainId={LEGACY_CHAIN_ID}
                 size='lg'
             />
         </PWView>
@@ -235,6 +238,7 @@ registerPreview({
     render: () => (
         <AssetTitle
             asset={mockAsset}
+            chainId={LEGACY_CHAIN_ID}
             showId={true}
         />
     ),
@@ -301,7 +305,12 @@ registerPreview({
 
 registerPreview({
     id: 'comp-asset-selection',
-    render: () => <AssetSelection asset={mockAsset} />,
+    render: () => (
+        <AssetSelection
+            asset={mockAsset}
+            chainId={LEGACY_CHAIN_ID}
+        />
+    ),
 })
 
 registerPreview({
@@ -420,7 +429,7 @@ const mockSwapQuote: SwapQuote = {
 
 registerPreview({
     id: 'comp-swap-asset-pair-icon',
-    render: () => <SwapAssetPairIconPreview />,
+    render: () => <SwapAssetPairIconPreview chainId={LEGACY_CHAIN_ID} />,
 })
 
 registerPreview({

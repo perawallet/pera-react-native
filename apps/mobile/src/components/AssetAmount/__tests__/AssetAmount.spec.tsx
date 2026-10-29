@@ -14,6 +14,7 @@ import { render } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { CurrencyAmount } from '@components/CurrencyAmount'
 import { Decimal } from 'decimal.js'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { AssetAmount } from '../AssetAmount'
 
 // Spy on the child to assert what AssetAmount derives from the asset, without
@@ -40,6 +41,7 @@ describe('AssetAmount', () => {
     it('derives the unit and decimals from the asset and renders at assetFull precision', () => {
         render(
             <AssetAmount
+                chainId={LEGACY_CHAIN_ID}
                 asset={{ assetId: '123', unitName: 'USDC', decimals: 6 }}
                 value={new Decimal('1.5')}
             />,
@@ -55,6 +57,7 @@ describe('AssetAmount', () => {
     it("density='compact' renders a fixed 2dp (compact) and omits assetDecimals", () => {
         render(
             <AssetAmount
+                chainId={LEGACY_CHAIN_ID}
                 asset={{ assetId: '123', unitName: 'USDC', decimals: 6 }}
                 value={new Decimal('1.5')}
                 density='compact'
@@ -70,6 +73,7 @@ describe('AssetAmount', () => {
     it("density='significant' renders at significant precision with the asset decimals", () => {
         render(
             <AssetAmount
+                chainId='ethereum'
                 asset={{ assetId: 'native', unitName: 'ETH', decimals: 18 }}
                 value={new Decimal('0.000008523')}
                 density='significant'
@@ -79,12 +83,14 @@ describe('AssetAmount', () => {
             currency: 'ETH',
             precision: 'significant',
             assetDecimals: 18,
+            chainId: 'ethereum',
         })
     })
 
     it("passes Algo's asset id (the glyph decision) along with its unit and decimals", () => {
         render(
             <AssetAmount
+                chainId={LEGACY_CHAIN_ID}
                 asset={{ assetId: '0', unitName: 'ALGO', decimals: 6 }}
                 value={new Decimal('1.5')}
             />,
@@ -99,6 +105,7 @@ describe('AssetAmount', () => {
     it("passes an ALGO-named ASA's real id, so it cannot borrow the glyph", () => {
         render(
             <AssetAmount
+                chainId={LEGACY_CHAIN_ID}
                 asset={{ assetId: '987654321', unitName: 'ALGO', decimals: 6 }}
                 value={new Decimal('1.5')}
             />,
@@ -112,6 +119,7 @@ describe('AssetAmount', () => {
     it("falls back to an empty unit and '' id (asset mode, no glyph) when the asset is missing", () => {
         render(
             <AssetAmount
+                chainId={LEGACY_CHAIN_ID}
                 asset={undefined}
                 value={new Decimal('1.5')}
             />,
@@ -127,6 +135,7 @@ describe('AssetAmount', () => {
     it('forwards display props through to CurrencyAmount', () => {
         render(
             <AssetAmount
+                chainId={LEGACY_CHAIN_ID}
                 asset={{ assetId: '1', unitName: 'X', decimals: 2 }}
                 value={new Decimal('1')}
                 showSymbol

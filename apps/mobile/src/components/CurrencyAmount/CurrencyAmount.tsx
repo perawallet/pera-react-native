@@ -34,11 +34,8 @@ import {
     resolvePrecision,
     type PrecisionVariant,
 } from './precision'
-import { useIsNativeAssetId } from '@perawallet/wallet-core-assets'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-
-const ALGO_SYMBOL = '¦'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import { nativeAssetGlyphOf } from '@modules/chain-ui/icon'
 
 /** U+00A6 Algo glyph is only patched in DMSans 400/500/700 — bump 600 → 700. */
 export const getAlgoSymbolWeight = (
@@ -71,14 +68,20 @@ export type CurrencyAmountProps = {
      */
     currency: string
     /**
-     * On-chain asset id when the amount is an asset amount ('0' for ALGO, ''
-     * for an asset whose id is unknown), or null for a display-currency
-     * amount. Currency identity — the native ALGO glyph, fiat-symbol mapping
-     * — is decided by this id, never by `currency`: an ASA can name itself
-     * "ALGO" or "USD". Chain-sourced unit names MUST come with their asset id;
-     * trusted ALGO-ticker codes translate via `displayCurrencyToAssetId`.
+     * On-chain asset id when the amount is an asset amount (the chain's own
+     * id for its native coin, '' for an asset whose id is unknown), or null for
+     * a display-currency amount. Currency identity — the native-coin glyph,
+     * fiat-symbol mapping — is decided by this id on `chainId`, never by
+     * `currency`: an ASA can name itself "ALGO" or "USD". Chain-sourced unit
+     * names MUST come with their asset id; trusted ALGO-ticker codes translate
+     * via `displayCurrencyToAssetId`.
      */
     assetId: Nullable<string>
+    /**
+     * The chain `assetId` is on; null for a display-currency amount or one
+     * with no single chain, which never draws a native-coin glyph.
+     */
+    chainId: Nullable<ChainId>
     value: Maybe<Decimal>
     /**
      * The amount is money in a fiat currency. Opt-in because a null `assetId`
@@ -113,12 +116,11 @@ export type CurrencyAmountProps = {
     Omit<PWTextProps, 'children' | 'variant'>
 
 export const CurrencyAmount = (props: CurrencyAmountProps) => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const themeStyle = useStyles(props)
-    const isNativeAssetId = useIsNativeAssetId(scope)
     const {
         currency,
         assetId,
+        chainId,
         value,
         isFiat = false,
         precision: precisionVariant,
@@ -147,7 +149,10 @@ export const CurrencyAmount = (props: CurrencyAmountProps) => {
         assetDecimals,
         shownValue,
     )
-    const isAlgo = isNativeAssetId(assetId)
+    const nativeGlyph =
+        chainId === null || assetId === null
+            ? undefined
+            : nativeAssetGlyphOf({ chainId, assetId })
     // Passed explicitly rather than left to formatCurrency's getActiveLocale()
     // default so a mid-session language switch actually invalidates the memo.
     const { currentLanguage } = useLanguage()
@@ -163,7 +168,7 @@ export const CurrencyAmount = (props: CurrencyAmountProps) => {
     const showUnitSymbolStart =
         showSymbol &&
         symbolPosition === 'start' &&
-        !isAlgo &&
+        nativeGlyph === undefined &&
         (isAssetMode || sign != null) &&
         !privacyMode
     const shouldShowSymbolInFormat =
@@ -172,7 +177,7 @@ export const CurrencyAmount = (props: CurrencyAmountProps) => {
         !showUnitSymbolStart &&
         !isAssetMode
 
-    const algoSymbolWeight = getAlgoSymbolWeight(variant, props.weight)
+    const nativeGlyphWeight = getAlgoSymbolWeight(variant, props.weight)
 
     const displayValue = useMemo(() => {
         if (rawValue != null) {
@@ -219,8 +224,8 @@ export const CurrencyAmount = (props: CurrencyAmountProps) => {
         if (!showSymbol || symbolPosition !== 'end' || privacyMode) {
             return null
         }
-        return isAlgo ? '' : ` ${currency}`
-    }, [showSymbol, symbolPosition, privacyMode, isAlgo, currency])
+        return nativeGlyph === undefined ? ` ${currency}` : ''
+    }, [showSymbol, symbolPosition, privacyMode, nativeGlyph, currency])
 
     if (isLoading && isInline) {
         return (
@@ -239,9 +244,10 @@ export const CurrencyAmount = (props: CurrencyAmountProps) => {
             </PWView>
         )
     }
-    const showAlgoIcon = isAlgo && showSymbol && !privacyMode
-    const showAlgoIconStart = showAlgoIcon && symbolPosition === 'start'
-    const showAlgoIconEnd = showAlgoIcon && symbolPosition === 'end'
+    const showNativeGlyph =
+        nativeGlyph !== undefined && showSymbol && !privacyMode
+    const showNativeGlyphStart = showNativeGlyph && symbolPosition === 'start'
+    const showNativeGlyphEnd = showNativeGlyph && symbolPosition === 'end'
 
     if (isInline) {
         // The spaces stand in for the container's gap between the parts.
@@ -250,13 +256,13 @@ export const CurrencyAmount = (props: CurrencyAmountProps) => {
                 variant={variant}
                 {...rest}
             >
-                {showAlgoIconStart && (
+                {showNativeGlyphStart && (
                     <PWText
                         variant={variant}
-                        weight={algoSymbolWeight}
+                        weight={nativeGlyphWeight}
                         style={props.style}
                     >
-                        {`${ALGO_SYMBOL} `}
+                        {`${nativeGlyph.glyph} `}
                     </PWText>
                 )}
                 {showUnitSymbolStart && `${currency} `}
@@ -264,13 +270,13 @@ export const CurrencyAmount = (props: CurrencyAmountProps) => {
                 {sign ? sign : ''}
                 {displayValue}
                 {trailingSymbol}
-                {showAlgoIconEnd && (
+                {showNativeGlyphEnd && (
                     <PWText
                         variant={variant}
-                        weight={algoSymbolWeight}
+                        weight={nativeGlyphWeight}
                         style={props.style}
                     >
-                        {` ${ALGO_SYMBOL}`}
+                        {` ${nativeGlyph.glyph}`}
                     </PWText>
                 )}
             </PWText>
@@ -279,14 +285,14 @@ export const CurrencyAmount = (props: CurrencyAmountProps) => {
 
     return (
         <PWView style={themeStyle.container}>
-            {showAlgoIconStart && (
+            {showNativeGlyphStart && (
                 <PWText
                     variant={variant}
-                    weight={algoSymbolWeight}
+                    weight={nativeGlyphWeight}
                     style={[themeStyle.symbol, props.style]}
-                    accessibilityLabel='Algo'
+                    accessibilityLabel={nativeGlyph.label}
                 >
-                    {ALGO_SYMBOL}
+                    {nativeGlyph.glyph}
                 </PWText>
             )}
             {showUnitSymbolStart && (
@@ -309,14 +315,14 @@ export const CurrencyAmount = (props: CurrencyAmountProps) => {
                     {trailingSymbol}
                 </PWText>
             </PWView>
-            {showAlgoIconEnd && (
+            {showNativeGlyphEnd && (
                 <PWText
                     variant={variant}
-                    weight={algoSymbolWeight}
+                    weight={nativeGlyphWeight}
                     style={[themeStyle.symbol, props.style]}
-                    accessibilityLabel='Algo'
+                    accessibilityLabel={nativeGlyph.label}
                 >
-                    {ALGO_SYMBOL}
+                    {nativeGlyph.glyph}
                 </PWText>
             )}
         </PWView>

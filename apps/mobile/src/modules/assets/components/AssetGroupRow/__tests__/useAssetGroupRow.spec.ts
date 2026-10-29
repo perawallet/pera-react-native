@@ -89,6 +89,7 @@ describe('useAssetGroupRow', () => {
         expect(result.current.fiat.value?.toString()).toBe('8')
         expect(convertFiat.mock.calls[0]?.[0]).toBeNull()
         expect(result.current.chainIds).toEqual(['algorand', 'ethereum'])
+        expect(result.current.iconChainId).toBe('algorand')
         expect(result.current.icon).toBe(USDC)
     })
 
@@ -118,6 +119,17 @@ describe('useAssetGroupRow', () => {
         )
 
         expect(result.current.icon).toBeNull()
+    })
+
+    it('has no icon chain with no members', () => {
+        const { result } = renderHook(() =>
+            useAssetGroupRow({
+                item: groupOf([], null),
+                convertFiat: toEur,
+            }),
+        )
+
+        expect(result.current.iconChainId).toBeNull()
     })
 
     describe('verification badge', () => {

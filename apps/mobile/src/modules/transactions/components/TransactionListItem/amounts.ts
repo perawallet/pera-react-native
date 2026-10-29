@@ -14,6 +14,7 @@ import type { Decimal } from 'decimal.js'
 import type {
     AssetDisplayHint,
     AssetRef,
+    ChainId,
     TransactionSummary,
 } from '@perawallet/wallet-core-chain-contract'
 import { baseUnitsToDisplayUnits } from '@perawallet/wallet-core-shared'
@@ -32,6 +33,8 @@ export type AmountDisplay = {
      * `currency`.
      */
     assetId: string
+    /** The chain `assetId` is on. */
+    chainId: ChainId
     /** Unit name, display text only. */
     currency: string
     /** Also picks the colour; undefined for a zero or unsigned amount. */
@@ -102,6 +105,7 @@ export const toAmountDisplay = (
             safeDecimals(decimals),
         ),
         assetId: amount.assetRef.assetId,
+        chainId: amount.assetRef.chainId,
         currency: storedAsset?.unitName ?? amount.display?.symbol ?? '',
         prefix: amount.prefix,
     }

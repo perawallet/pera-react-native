@@ -40,3 +40,19 @@ export const ethereumChainIcon = (
     chainId: ChainId,
 ): Optional<ComponentType<SvgProps>> =>
     isEvmChainId(chainId) ? EVM_CHAIN_ICONS[chainId] : undefined
+
+// Total, so a chain added without a coin icon fails to compile. L2s that pay
+// gas in ETH draw the ETH coin, not their own logo.
+const EVM_NATIVE_ASSET_ICONS: Record<EvmChainId, ComponentType<SvgProps>> = {
+    ethereum: EthereumIcon,
+    base: EthereumIcon,
+    arbitrum: EthereumIcon,
+    bsc: BscIcon,
+    avalanche: AvalancheIcon,
+    polygon: PolygonIcon,
+}
+
+export const ethereumNativeAssetIcon = (
+    chainId: ChainId,
+): Optional<ComponentType<SvgProps>> =>
+    isEvmChainId(chainId) ? EVM_NATIVE_ASSET_ICONS[chainId] : undefined

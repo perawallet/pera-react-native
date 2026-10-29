@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { PWButton, PWDivider, PWText, PWView } from '@components/core'
 import { KeyValueRow } from '@components/KeyValueRow'
 import { AddressDisplay } from '@components/AddressDisplay'
@@ -86,6 +87,7 @@ export const AssetTransferDisplay = ({
         if (asset) {
             return (
                 <AssetTitle
+                    chainId={LEGACY_CHAIN_ID}
                     asset={asset}
                     nameVariant='body'
                     showId
@@ -143,6 +145,7 @@ export const AssetTransferDisplay = ({
                 {transferType !== 'opt-in' && (asset || isAssetPending) && (
                     <KeyValueRow title={t('transactions.common.amount')}>
                         <AssetAmount
+                            chainId={LEGACY_CHAIN_ID}
                             isLoading={isAssetPending}
                             asset={asset}
                             value={amount}
@@ -170,6 +173,7 @@ export const AssetTransferDisplay = ({
                         title={t('transactions.common.close_amount')}
                     >
                         <AssetAmount
+                            chainId={LEGACY_CHAIN_ID}
                             isLoading={isAssetPending}
                             asset={asset}
                             value={closeAmountValue}

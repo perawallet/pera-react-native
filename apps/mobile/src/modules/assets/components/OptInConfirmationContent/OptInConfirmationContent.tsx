@@ -138,6 +138,7 @@ export const OptInConfirmationContent = ({
                         {t('add_asset.confirmation.fee_label')}
                     </PWText>
                     <AssetAmount
+                        chainId={scope.chainId}
                         asset={nativeAsset}
                         value={resolvedFee}
                         showSymbol

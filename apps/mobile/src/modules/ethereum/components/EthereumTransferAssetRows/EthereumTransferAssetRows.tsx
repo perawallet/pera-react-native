@@ -88,6 +88,7 @@ export const EthereumTransferAssetRows = ({
                     <PWView style={styles.nft}>
                         {!!amount?.asset && (
                             <AssetIcon
+                                chainId={presentation.scope.chainId}
                                 asset={amount.asset}
                                 shape='square'
                                 size='xl'
@@ -141,6 +142,7 @@ export const EthereumTransferAssetRows = ({
                         })}
                     >
                         <AssetAmount
+                            chainId={presentation.scope.chainId}
                             asset={null}
                             value={item.amount}
                             ignorePrivacyMode

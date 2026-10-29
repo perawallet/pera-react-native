@@ -97,6 +97,7 @@ export const PaymentTransactionDisplay = ({
                     title={t('transactions.common.amount')}
                 >
                     <AssetAmount
+                        chainId={scope.chainId}
                         asset={nativeAsset}
                         value={amount}
                         showSymbol
@@ -122,6 +123,7 @@ export const PaymentTransactionDisplay = ({
                         title={t('transactions.common.close_amount')}
                     >
                         <AssetAmount
+                            chainId={scope.chainId}
                             asset={nativeAsset}
                             value={closeAmountValue}
                             showSymbol
