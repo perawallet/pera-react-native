@@ -150,24 +150,34 @@ const dropsComment = (sourceCode, node, member) =>
         .getCommentsInside(node)
         .some(c => c.range[0] < member.range[0] || c.range[1] > member.range[1])
 
-const removeSpecifier = (fixer, sourceCode, specifier) => {
-    const declaration = specifier.parent
-    const { specifiers } = declaration
-    if (specifiers.length === 1) {
-        const end = declaration.range[1]
-        const newline = sourceCode.text[end] === '\n' ? 1 : 0
-        return fixer.removeRange([declaration.range[0], end + newline])
+const removeDeclaration = (fixer, sourceCode, declaration) => {
+    const end = declaration.range[1]
+    const newline = sourceCode.text[end] === '\n' ? 1 : 0
+    return fixer.removeRange([declaration.range[0], end + newline])
+}
+
+// One edit per declaration: separate removals of adjacent specifiers overlap, and oxlint drops every fix.
+const rewriteImport = (fixer, sourceCode, declaration, textOf) => {
+    const named = declaration.specifiers.filter(
+        s => s.type === 'ImportSpecifier',
+    )
+    const kept = named.map(textOf).filter(text => text !== undefined)
+    const last = named.at(-1)
+    if (kept.length > 0) {
+        return fixer.replaceTextRange(
+            [named[0].range[0], last.range[1]],
+            kept.join(', '),
+        )
     }
-    const index = specifiers.indexOf(specifier)
-    return index < specifiers.length - 1
-        ? fixer.removeRange([
-              specifier.range[0],
-              specifiers[index + 1].range[0],
-          ])
-        : fixer.removeRange([
-              specifiers[index - 1].range[1],
-              specifier.range[1],
-          ])
+    if (named.length === declaration.specifiers.length) {
+        return removeDeclaration(fixer, sourceCode, declaration)
+    }
+    // `import Default, { … }` keeps the default and loses the braces.
+    const closingBrace = sourceCode.text.indexOf('}', last.range[1]) + 1
+    return fixer.removeRange([
+        declaration.specifiers[0].range[1],
+        closingBrace,
+    ])
 }
 
 // Aliases the rewrite stops using, and that nothing outside `node` still reads.
@@ -188,18 +198,23 @@ const importsLeftUnused = (sourceCode, node, peeled, alias) => {
 
 // Swaps the specifiers the collapse leaves unused for the alias it needs.
 const collapseImportFixes = (fixer, sourceCode, unused, alias, hasImport) => {
-    if (hasImport) {
-        return unused.map(spec => removeSpecifier(fixer, sourceCode, spec))
-    }
-    if (unused.length === 0) {
+    // Nothing is removed here, so the inserted specifier cannot overlap a removal.
+    if (!hasImport && unused.length === 0) {
         return [aliasImportFix(fixer, sourceCode.ast, alias)]
     }
-    const [renamed, ...removed] = unused
-    const prefix = renamed.importKind === 'type' ? 'type ' : ''
-    return [
-        fixer.replaceText(renamed, `${prefix}${alias}`),
-        ...removed.map(spec => removeSpecifier(fixer, sourceCode, spec)),
-    ]
+    const renamed = hasImport ? undefined : unused[0]
+    const textOf = specifier => {
+        if (specifier === renamed) {
+            const prefix = specifier.importKind === 'type' ? 'type ' : ''
+            return `${prefix}${alias}`
+        }
+        return unused.includes(specifier)
+            ? undefined
+            : sourceCode.getText(specifier)
+    }
+    return [...new Set(unused.map(specifier => specifier.parent))].map(
+        declaration => rewriteImport(fixer, sourceCode, declaration, textOf),
+    )
 }
 
 export const preferNullableAlias = {

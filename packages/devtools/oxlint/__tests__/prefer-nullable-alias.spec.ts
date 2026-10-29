@@ -217,6 +217,31 @@ tester.run(RULE, preferNullableAlias, {
             errors: [{ messageId: 'collapse' }],
         },
         {
+            code: `import type { Maybe, Optional, Nullable } from '${S}'\ntype A = Optional<Nullable<Foo>>`,
+            output: `import type { Maybe } from '${S}'\ntype A = Maybe<Foo>`,
+            errors: [{ messageId: 'collapse' }],
+        },
+        {
+            code: `import type { Maybe } from '${S}'\nimport type { Optional, Nullable } from '${S}'\ntype A = Optional<Nullable<Foo>>`,
+            output: `import type { Maybe } from '${S}'\ntype A = Maybe<Foo>`,
+            errors: [{ messageId: 'collapse' }],
+        },
+        {
+            code: `import type { Maybe, Optional, Nullable, Something } from '${S}'\ntype A = Optional<Nullable<Foo>>`,
+            output: `import type { Maybe, Something } from '${S}'\ntype A = Maybe<Foo>`,
+            errors: [{ messageId: 'collapse' }],
+        },
+        {
+            code: `import type { Optional, Something, Nullable } from '${S}'\ntype A = Optional<Nullable<Foo>>`,
+            output: `import type { Maybe, Something } from '${S}'\ntype A = Maybe<Foo>`,
+            errors: [{ messageId: 'collapse' }],
+        },
+        {
+            code: `import type { Maybe } from '${S}'\nimport shared, { type Optional, type Nullable } from '${S}'\ntype A = Optional<Nullable<Foo>>`,
+            output: `import type { Maybe } from '${S}'\nimport shared from '${S}'\ntype A = Maybe<Foo>`,
+            errors: [{ messageId: 'collapse' }],
+        },
+        {
             code: `import type { Nullable } from '${S}'\ntype A = Nullable<Nullable<Foo>>`,
             output: `import type { Nullable } from '${S}'\ntype A = Nullable<Foo>`,
             errors: [{ messageId: 'collapse', data: { alias: 'Nullable' } }],
