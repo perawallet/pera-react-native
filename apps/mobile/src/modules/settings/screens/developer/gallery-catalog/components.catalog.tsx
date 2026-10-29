@@ -64,11 +64,11 @@ const useLottiePreviewStyles = makeStyles(theme => ({
     media: { width: theme.spacing['4xl'], height: theme.spacing['4xl'] },
 }))
 
-const WithTheme = ({
-    children,
-}: {
+type WithThemeProps = {
     children: (theme: Theme) => React.ReactNode
-}) => {
+}
+
+const WithTheme = ({ children }: WithThemeProps) => {
     const { theme } = useTheme()
     return <>{children(theme)}</>
 }
