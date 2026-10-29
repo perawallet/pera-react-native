@@ -43,13 +43,12 @@ const useOptionPickerCopy = () => {
     }
 }
 
-const SettingsOptionPicker = ({
-    title,
-    list,
-}: {
+type SettingsOptionPickerProps = {
     title: string
     list: RegistrationOptionList
-}) => {
+}
+
+const SettingsOptionPicker = ({ title, list }: SettingsOptionPickerProps) => {
     const copy = useOptionPickerCopy()
     const {
         search,
@@ -79,13 +78,12 @@ const SettingsOptionPicker = ({
     )
 }
 
-const FixedOptionPicker = ({
-    title,
-    options,
-}: {
+type FixedOptionPickerProps = {
     title: string
     options: RegistrationOption[]
-}) => {
+}
+
+const FixedOptionPicker = ({ title, options }: FixedOptionPickerProps) => {
     const copy = useOptionPickerCopy()
     const { resolve } = useBottomSheetResult<RegistrationOption>()
 

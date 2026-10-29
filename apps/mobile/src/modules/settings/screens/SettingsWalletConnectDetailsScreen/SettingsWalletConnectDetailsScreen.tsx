@@ -44,11 +44,11 @@ export type SettingsWalletConnectDetailsScreenProps = NativeStackScreenProps<
     'WalletConnectSettingsDetails'
 >
 
-const ConnectedNetworks = ({
-    networks,
-}: {
+type ConnectedNetworksProps = {
     networks: ConnectedNetworkLabel[]
-}) => {
+}
+
+const ConnectedNetworks = ({ networks }: ConnectedNetworksProps) => {
     const styles = useStyles()
     const textStyleFor = (tone: ConnectedNetworkLabel['tone']) => {
         if (tone === 'mainnet') return styles.mainnetText

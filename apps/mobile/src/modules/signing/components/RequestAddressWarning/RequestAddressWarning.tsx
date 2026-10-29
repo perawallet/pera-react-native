@@ -56,13 +56,12 @@ const ROLE_LABEL_KEYS = {
     operator: 'signing.address_safety.role.operator',
 } as const satisfies Record<ReviewedAddressRole, string>
 
-const ListedAddress = ({
-    flagged,
-    index,
-}: {
+type ListedAddressProps = {
     flagged: FlaggedRequestAddress
     index: number
-}) => {
+}
+
+const ListedAddress = ({ flagged, index }: ListedAddressProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
 
@@ -91,15 +90,17 @@ const ListedAddress = ({
     )
 }
 
+type LookAlikeAddressProps = {
+    flagged: FlaggedRequestAddress
+    index: number
+    chainId: ChainId
+}
+
 const LookAlikeAddress = ({
     flagged,
     index,
     chainId,
-}: {
-    flagged: FlaggedRequestAddress
-    index: number
-    chainId: ChainId
-}) => {
+}: LookAlikeAddressProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
     const comparison = useMemo(() => {

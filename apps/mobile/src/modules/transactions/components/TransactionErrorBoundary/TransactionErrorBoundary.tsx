@@ -22,13 +22,15 @@ export interface TransactionErrorBoundaryProps {
     t: (key: string, options?: Record<string, unknown>) => string
 }
 
+type TransactionErrorFallbackProps = {
+    error: AppError | Error
+    reset: () => void
+}
+
 const TransactionErrorFallback = ({
     error,
     reset,
-}: {
-    error: AppError | Error
-    reset: () => void
-}) => {
+}: TransactionErrorFallbackProps) => {
     const { t } = useLanguage()
     const appError = error instanceof AppError ? error : null
 

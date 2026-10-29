@@ -24,15 +24,17 @@ export interface WalletConnectErrorBoundaryProps {
     t: (key: string, options?: Record<string, unknown>) => string
 }
 
+type WalletConnectErrorFallbackProps = {
+    error: Error
+    reset: () => void
+    children: ReactNode
+}
+
 const WalletConnectErrorFallback = ({
     error,
     reset,
     children,
-}: {
-    error: Error
-    reset: () => void
-    children: ReactNode
-}) => {
+}: WalletConnectErrorFallbackProps) => {
     const { t } = useLanguage()
 
     if (error instanceof WalletConnectError) {

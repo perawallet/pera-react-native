@@ -19,11 +19,11 @@ import { AssetAmount } from '@components/AssetAmount'
 import { KeyValueRow } from '@components/KeyValueRow'
 import { useLanguage } from '@hooks/useLanguage'
 
-export const TransactionFeeRow = ({
-    transaction,
-}: {
+type TransactionFeeRowProps = {
     transaction: AlgorandTransactionView
-}) => {
+}
+
+export const TransactionFeeRow = ({ transaction }: TransactionFeeRowProps) => {
     const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const nativeAsset = useNativeAsset(scope)
     const { t } = useLanguage()

@@ -16,11 +16,13 @@ import { EmptyDataHint } from '../components/EmptyDataHint'
 import { MigrationDataRow } from '../components/MigrationDataRow'
 import { StackedMigrationDataRow } from '../components/StackedMigrationDataRow'
 
+type SchemaReplayResultsSectionProps = {
+    results: Record<string, LegacySchemaReplayResult> | undefined
+}
+
 export const SchemaReplayResultsSection = ({
     results,
-}: {
-    results: Record<string, LegacySchemaReplayResult> | undefined
-}) => {
+}: SchemaReplayResultsSectionProps) => {
     if (!results) return null
     const entries = Object.entries(results)
     return (
@@ -49,13 +51,15 @@ export const SchemaReplayResultsSection = ({
     )
 }
 
+type SchemaReplayResultRowProps = {
+    dbName: string
+    result: LegacySchemaReplayResult
+}
+
 const SchemaReplayResultRow = ({
     dbName,
     result,
-}: {
-    dbName: string
-    result: LegacySchemaReplayResult
-}) => (
+}: SchemaReplayResultRowProps) => (
     <>
         <MigrationDataRow
             label={dbName}

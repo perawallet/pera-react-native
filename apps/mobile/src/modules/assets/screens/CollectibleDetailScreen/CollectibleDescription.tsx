@@ -16,11 +16,13 @@ import { ExpandableText } from '@components/ExpandableText'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 
+type CollectibleDescriptionProps = {
+    description?: string
+}
+
 export const CollectibleDescription = ({
     description,
-}: {
-    description?: string
-}) => {
+}: CollectibleDescriptionProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
 

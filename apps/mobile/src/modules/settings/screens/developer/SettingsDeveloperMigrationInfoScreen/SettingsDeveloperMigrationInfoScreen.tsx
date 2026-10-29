@@ -73,7 +73,9 @@ export const SettingsDeveloperMigrationInfoScreen = () => {
     )
 }
 
-const PlanCard = ({ plan }: { plan: MigrationPlanSummary }) => {
+type PlanCardProps = { plan: MigrationPlanSummary }
+
+const PlanCard = ({ plan }: PlanCardProps) => {
     const styles = useStyles()
     return (
         <PWView style={styles.planCard}>
@@ -109,11 +111,11 @@ const PlanCard = ({ plan }: { plan: MigrationPlanSummary }) => {
     )
 }
 
-const MigrationRow = ({
-    migration,
-}: {
+type MigrationRowProps = {
     migration: BundledMigrationSummary
-}) => {
+}
+
+const MigrationRow = ({ migration }: MigrationRowProps) => {
     const styles = useStyles()
     return (
         <PWView style={styles.migrationRow}>

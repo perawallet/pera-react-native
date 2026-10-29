@@ -19,11 +19,13 @@ import { EmptyDataHint } from '../components/EmptyDataHint'
 import { MigrationDataRow } from '../components/MigrationDataRow'
 import { MigrationDataSubBlock } from '../components/MigrationDataSubBlock'
 
+type WalletConnectV1SectionProps = {
+    sessions: LegacyWalletConnectV1Session[]
+}
+
 export const WalletConnectV1Section = ({
     sessions,
-}: {
-    sessions: LegacyWalletConnectV1Session[]
-}) => {
+}: WalletConnectV1SectionProps) => {
     return (
         <MigrationDataSection
             title='WalletConnect v1'
@@ -112,11 +114,13 @@ export const WalletConnectV1Section = ({
     )
 }
 
+type WalletConnectV2SectionProps = {
+    sessions: LegacyWalletConnectV2Session[]
+}
+
 export const WalletConnectV2Section = ({
     sessions,
-}: {
-    sessions: LegacyWalletConnectV2Session[]
-}) => {
+}: WalletConnectV2SectionProps) => {
     return (
         <MigrationDataSection
             title='WalletConnect v2'

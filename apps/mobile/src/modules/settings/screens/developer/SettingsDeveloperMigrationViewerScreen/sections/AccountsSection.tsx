@@ -35,13 +35,12 @@ const getDisplayType = (account: LegacyAccount): string => {
     return 'algo25'
 }
 
-export const AccountsSection = ({
-    accounts,
-    rn,
-}: {
+type AccountsSectionProps = {
     accounts: LegacyAccount[]
     rn: RNMigrationSnapshot
-}) => {
+}
+
+export const AccountsSection = ({ accounts, rn }: AccountsSectionProps) => {
     return (
         <MigrationDataSection
             title='Accounts'
@@ -68,13 +67,12 @@ export const AccountsSection = ({
     )
 }
 
-const AccountCard = ({
-    account,
-    rn,
-}: {
+type AccountCardProps = {
     account: LegacyAccount
     rn: RNMigrationSnapshot
-}) => {
+}
+
+const AccountCard = ({ account, rn }: AccountCardProps) => {
     const styles = useStyles()
     const [expanded, setExpanded] = useExpandableState(false)
     return (

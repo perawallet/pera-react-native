@@ -22,7 +22,9 @@ type RowTextProps = {
     item: BalanceImpactItem
 }
 
-const Subtitle = ({ children }: { children: string }) => {
+type SubtitleProps = { children: string }
+
+const Subtitle = ({ children }: SubtitleProps) => {
     const styles = useStyles()
     return (
         <PWText

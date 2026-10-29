@@ -39,11 +39,7 @@ export type SignRequestViewProps = {
     request: SignRequest
 }
 
-const SignRequestErrorFallback = ({
-    error,
-    reset,
-    onDismiss,
-}: {
+type SignRequestErrorFallbackProps = {
     error: AppError | Error
     reset: () => void
     /**
@@ -54,7 +50,13 @@ const SignRequestErrorFallback = ({
      * persisted requests that survive restart).
      */
     onDismiss: () => void
-}) => {
+}
+
+const SignRequestErrorFallback = ({
+    error,
+    reset,
+    onDismiss,
+}: SignRequestErrorFallbackProps) => {
     const { t } = useLanguage()
     const appError = error instanceof AppError ? error : null
     const handleGoBack = () => {

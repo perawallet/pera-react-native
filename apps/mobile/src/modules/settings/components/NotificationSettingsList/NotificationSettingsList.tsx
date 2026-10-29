@@ -43,17 +43,19 @@ const iconProps = {
     size: 'lg',
 } as AccountIconProps
 
+type AccountNotificationItemProps = {
+    account: WalletAccount
+    isEnabled: boolean
+    isPending: boolean
+    onToggle: (enabled: boolean) => void
+}
+
 const AccountNotificationItem = ({
     account,
     isEnabled,
     isPending,
     onToggle,
-}: {
-    account: WalletAccount
-    isEnabled: boolean
-    isPending: boolean
-    onToggle: (enabled: boolean) => void
-}) => {
+}: AccountNotificationItemProps) => {
     const styles = useStyles()
 
     const textProps = useMemo<PWTextProps>(

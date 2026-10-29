@@ -22,7 +22,9 @@ export interface AccountErrorBoundaryProps {
     t: (key: string, options?: Record<string, unknown>) => string
 }
 
-const AccountErrorFallback = ({ reset }: { reset: () => void }) => {
+type AccountErrorFallbackProps = { reset: () => void }
+
+const AccountErrorFallback = ({ reset }: AccountErrorFallbackProps) => {
     const { t } = useLanguage()
 
     return (

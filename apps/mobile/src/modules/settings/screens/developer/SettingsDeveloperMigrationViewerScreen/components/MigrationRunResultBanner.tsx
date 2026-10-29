@@ -81,7 +81,9 @@ export const MigrationRunResultBanner = ({
     )
 }
 
-const AccountsResultRows = ({ accounts }: { accounts: MigrationResult }) => (
+type AccountsResultRowsProps = { accounts: MigrationResult }
+
+const AccountsResultRows = ({ accounts }: AccountsResultRowsProps) => (
     <>
         <MigrationDataRow
             label='Imported'
@@ -105,7 +107,9 @@ const AccountsResultRows = ({ accounts }: { accounts: MigrationResult }) => (
     </>
 )
 
-const ExtrasResultRows = ({ extras }: { extras: ExtrasMigrationResult }) => (
+type ExtrasResultRowsProps = { extras: ExtrasMigrationResult }
+
+const ExtrasResultRows = ({ extras }: ExtrasResultRowsProps) => (
     <>
         <MigrationDataRow
             label='preferences'

@@ -24,9 +24,11 @@ export type OnrampAssetPairIconProps = {
     surfaceColor: string
 }
 
+type TokenIconProps = { token: RampToken }
+
 // FIAT tokens (countryCode set) render the round country flag, matching the
 // rest of the onramp UI; crypto tokens render their backend logo.
-const TokenIcon = ({ token }: { token: RampToken }) => {
+const TokenIcon = ({ token }: TokenIconProps) => {
     const { scope } = useOnrampAccount()
     return token.countryCode ? (
         <CircleFlag

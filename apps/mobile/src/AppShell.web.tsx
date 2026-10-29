@@ -290,11 +290,13 @@ const ShellErrorFallback = ({
     )
 }
 
+type WebShellErrorBoundaryProps = {
+    children: React.ReactNode
+}
+
 const WebShellErrorBoundary = ({
     children,
-}: {
-    children: React.ReactNode
-}): React.JSX.Element => {
+}: WebShellErrorBoundaryProps): React.JSX.Element => {
     const { t } = useLanguage()
 
     return (

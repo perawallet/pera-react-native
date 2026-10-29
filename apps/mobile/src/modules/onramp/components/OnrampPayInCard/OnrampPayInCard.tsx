@@ -35,13 +35,12 @@ export type OnrampPayInCardProps = {
     isCancelling?: boolean
 }
 
-const PayInAddressBlock = ({
-    label,
-    value,
-}: {
+type PayInAddressBlockProps = {
     label: string
     value: string
-}) => {
+}
+
+const PayInAddressBlock = ({ label, value }: PayInAddressBlockProps) => {
     const styles = useStyles()
     const { copyToClipboard } = useClipboard()
 

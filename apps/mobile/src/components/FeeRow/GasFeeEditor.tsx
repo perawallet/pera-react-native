@@ -32,16 +32,18 @@ const FEE_PRESET_LABELS: Record<FeePreset, I18nKey> = {
     fast: i18nKey('send_funds.fee.fast'),
 }
 
+type GasFeeEditorProps = Pick<
+    FeeRowProps,
+    'chainId' | 'selectedPreset' | 'onPresetChange' | 'accessory'
+> & { presets: Record<FeePreset, FeePresetEstimate> }
+
 export const GasFeeEditor = ({
     chainId,
     presets,
     selectedPreset,
     onPresetChange,
     accessory,
-}: Pick<
-    FeeRowProps,
-    'chainId' | 'selectedPreset' | 'onPresetChange' | 'accessory'
-> & { presets: Record<FeePreset, FeePresetEstimate> }) => {
+}: GasFeeEditorProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
     const asset = nativeAssetFor(chainId)

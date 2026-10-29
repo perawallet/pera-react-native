@@ -22,7 +22,9 @@ export type StakingErrorBoundaryProps = {
     t: (key: string, options?: Record<string, unknown>) => string
 }
 
-const StakingErrorFallback = ({ reset }: { reset: () => void }) => {
+type StakingErrorFallbackProps = { reset: () => void }
+
+const StakingErrorFallback = ({ reset }: StakingErrorFallbackProps) => {
     const { t } = useLanguage()
 
     return (
