@@ -54,7 +54,8 @@ vi.mock('react-native', () => ({
 
 describe('useAutoLockListener', () => {
     const mockCheckAutoLock = vi.fn()
-    const mockSetAutoLockStartedAt = vi.fn()
+    const mockStartAutoLockTimer = vi.fn()
+    const mockClearAutoLockTimer = vi.fn()
     const mockCheckPinEnabled = vi.fn()
     const mockDeleteAllData = vi.fn()
     let appStateChangeHandler: Nullable<
@@ -72,7 +73,8 @@ describe('useAutoLockListener', () => {
         mockCheckAutoLock.mockResolvedValue(false)
         ;(usePinCode as Mock).mockReturnValue({
             checkAutoLock: mockCheckAutoLock,
-            setAutoLockStartedAt: mockSetAutoLockStartedAt,
+            startAutoLockTimer: mockStartAutoLockTimer,
+            clearAutoLockTimer: mockClearAutoLockTimer,
             checkPinEnabled: mockCheckPinEnabled,
         })
         ;(useDeleteAllData as Mock).mockReturnValue({
@@ -252,7 +254,18 @@ describe('useAutoLockListener', () => {
 
         expect(result.current.isLocked).toBe(false)
         expect(result.current.isChecking).toBe(false)
-        expect(mockSetAutoLockStartedAt).toHaveBeenCalledWith(null)
+        expect(mockClearAutoLockTimer).toHaveBeenCalledOnce()
+    })
+
+    it('starts the auto-lock timer when the app goes to the background', async () => {
+        renderHook(() => useAutoLockListener())
+        await act(async () => {})
+
+        act(() => {
+            appStateChangeHandler?.('background')
+        })
+
+        expect(mockStartAutoLockTimer).toHaveBeenCalledOnce()
     })
 
     it('should delete all data and reset state when handleResetData is called', async () => {
@@ -272,7 +285,7 @@ describe('useAutoLockListener', () => {
         expect(clearAccountsStore).toHaveBeenCalled()
         expect(result.current.isLocked).toBe(false)
         expect(result.current.isChecking).toBe(false)
-        expect(mockSetAutoLockStartedAt).toHaveBeenCalledWith(null)
+        expect(mockClearAutoLockTimer).toHaveBeenCalledOnce()
     })
 
     it('should register AppState listener on mount', () => {
@@ -476,7 +489,8 @@ describe('useAutoLockListener', () => {
         })
 
         expect(mockCheckAutoLock).not.toHaveBeenCalled()
-        expect(mockSetAutoLockStartedAt).not.toHaveBeenCalled()
+        expect(mockStartAutoLockTimer).not.toHaveBeenCalled()
+        expect(mockClearAutoLockTimer).not.toHaveBeenCalled()
     })
 
     it('raises the checking overlay on the first foreground after a cold mount that started backgrounded', async () => {
