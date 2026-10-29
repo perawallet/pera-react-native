@@ -11,17 +11,15 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { fireEvent, renderHook, screen, waitFor } from '@testing-library/react'
+import { fireEvent, screen, waitFor } from '@testing-library/react'
 
 import {
     chainAccountOf,
     hdIndexOf,
     useAccountsStore,
 } from '@perawallet/wallet-core-accounts'
-import { keyDerivations } from '@perawallet/wallet-core-chain-contract'
 import { evmRpcHandlers } from '@perawallet/wallet-core-chain-ethereum/test-handlers'
 import { mockIndexerSearchForAccounts } from '@perawallet/wallet-core-chain-algorand/test-handlers'
-import { kmsCore, useKMS } from '@perawallet/wallet-core-kms'
 import { mockAccountFastLookup } from '@perawallet/wallet-core-shared/test-handlers'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import { server } from '@test-utils/msw-server'
@@ -37,9 +35,9 @@ import { ImportRekeyedAddressesScreen } from '@modules/onboarding/screens/Import
 import { NameAccountScreen } from '@modules/onboarding/screens/NameAccountScreen/NameAccountScreen'
 import { useOnboardingStore } from '@modules/onboarding/hooks/useOnboardingStore'
 
+import { ethereumAddressAt } from './__fixtures__/hd-addresses'
 import {
     HD_TEST_ADDRESS,
-    HD_TEST_MNEMONIC_24_INDICES,
     HD_TEST_MNEMONIC_24_WORDS,
 } from './__fixtures__/onboarding'
 import { SLOW_WAIT_TIMEOUT_MS } from './__fixtures__/timeouts'
@@ -68,30 +66,6 @@ vi.mock('@perawallet/wallet-core-config', async importOriginal => {
 
 // The node the config mock above hands Ethereum.
 const ETHEREUM_RPC_URL = 'https://ethereum.rpc.test/'
-
-// The seed's Ethereum address at an HD index, read through a throwaway copy
-// of the seed: secp256k1 keys derive only inside the keystore.
-const ethereumAddressAt = async (
-    account: number,
-    keyIndex: number,
-): Promise<string> => {
-    const { result: kms } = renderHook(() => useKMS())
-    const rootKey = await waitFor(async () => {
-        const created = await kms.current.createHDWalletKey({
-            mnemonicIndices: HD_TEST_MNEMONIC_24_INDICES,
-        })
-        expect(created).not.toBeNull()
-        return created!
-    })
-    const { address } = await keyDerivations
-        .get('ethereum')
-        .deriveAccount(kmsCore, rootKey.seedKey.id, account, keyIndex, {
-            scheme: 'secp256k1',
-            networkId: 'mainnet',
-        })
-    resetTestKeystore()
-    return address
-}
 
 const renderHDImportFromOnboarding = () =>
     renderWithNavigation(OnboardingScreen, 'Onboarding', {

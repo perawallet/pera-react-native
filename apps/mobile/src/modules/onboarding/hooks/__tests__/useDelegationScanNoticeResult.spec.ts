@@ -77,4 +77,16 @@ describe('useDelegationScanNoticeResult', () => {
             }),
         )
     })
+
+    it("lists each account's address on the scan chain and skips one without", () => {
+        const { result } = renderHook(() => useDelegationScanNoticeResult())
+
+        const addresses = result.current.rekeyScanAddressesOf([
+            { chains: { algorand: { address: 'ALGO_1' } } },
+            { chains: { ethereum: { address: '0xabc' } } },
+            { chains: { algorand: { address: 'ALGO_2' } } },
+        ] as never)
+
+        expect(addresses).toEqual(['ALGO_1', 'ALGO_2'])
+    })
 })

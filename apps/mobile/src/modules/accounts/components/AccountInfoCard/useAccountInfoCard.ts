@@ -210,26 +210,25 @@ export const useAccountInfoCard = ({
         [structureRows],
     )
 
-    // Discovery walks one chain, so the label names the chain it walks. A
+    // Only a Ledger scan walks a single chain, so its label names that chain. A
     // Ledger account on no Ledger chain falls back the way the Ledger flow does.
     const scanChainId: ChainId = hardwareDetails
         ? (ledgerChainOf(account) ?? firstLedgerChainId)
         : LEGACY_CHAIN_ID
-    const scanLabel = isMultichain
-        ? t('account_info.scan_new_accounts', {
-              network: chainDisplayNameOf(scanChainId) ?? scanChainId,
-          })
-        : t('account_info.scan_new_addresses')
+    const scanLabel = isHDWallet
+        ? t('account_info.scan_new_wallet_accounts')
+        : isMultichain
+          ? t('account_info.scan_new_accounts', {
+                network: chainDisplayNameOf(scanChainId) ?? scanChainId,
+            })
+          : t('account_info.scan_new_addresses')
 
     const handleScanAddresses = useCallback(() => {
         if (isHDWallet) {
             onClose()
             navigationRef.navigate('AddAccount', {
                 screen: 'SearchAccounts',
-                params: {
-                    account,
-                    notifyOnEmpty: true,
-                },
+                params: { account },
             })
             return
         }
