@@ -67,19 +67,25 @@ export class PasskeyUnlockError extends AppError {
     }
 }
 
-export class VaultReauthRequiredError extends Error {
+export class VaultReauthRequiredError extends AppError {
     constructor() {
         super(
             'A password must be proven again before passkey unlock can be enabled.',
+            {
+                category: ErrorCategory.KMS,
+            },
         )
         this.name = 'VaultReauthRequiredError'
     }
 }
 
-export class PasskeyPrfUnsupportedError extends Error {
+export class PasskeyPrfUnsupportedError extends AppError {
     constructor() {
         super(
             'PRF extension not supported or not returned by the authenticator.',
+            {
+                category: ErrorCategory.KMS,
+            },
         )
         this.name = 'PasskeyPrfUnsupportedError'
     }
