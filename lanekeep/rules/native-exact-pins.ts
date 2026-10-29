@@ -6,7 +6,7 @@ import { defineRule } from 'lanekeep'
 
 import { jsonLocation, keyLines } from '../shared/locale.js'
 import { resolveRelative } from '../shared/paths.js'
-import { yamlMap } from '../shared/workspace.js'
+import { join, workspaceMembers, yamlMap } from '../shared/workspace.js'
 
 const NITRO =
     'Nitro module: its C++ is generated against one react-native-nitro-modules ABI, which the overrides pin'
@@ -89,15 +89,29 @@ const isExactVersion = (spec: string): boolean =>
 const scalarEntries = (
     raw: string,
     key: string,
-): Map<string, { value: string; line: number }> =>
-    new Map(
-        yamlMap(raw, key)
-            .filter(entry => entry.value !== '')
-            .map(entry => [
-                entry.key,
-                { value: entry.value, line: entry.line },
-            ]),
-    )
+): { key: string; value: string; line: number }[] =>
+    yamlMap(raw, key).filter(entry => entry.value !== '')
+
+/**
+ * The package an override key rewrites: the child of a `parent>child` key,
+ * without its `@<selector>`. A scoped name's own `@` is its first character,
+ * so the selector's `@` is searched for after it.
+ */
+const overrideTarget = (key: string): string => {
+    const child = key.slice(key.lastIndexOf('>') + 1)
+    const at = child.indexOf('@', 1)
+    return at === -1 ? child : child.slice(0, at)
+}
+
+const parseManifest = (raw: string): Record<string, unknown> | undefined => {
+    try {
+        const parsed: unknown = JSON.parse(raw)
+        if (typeof parsed !== 'object' || parsed === null) return undefined
+        return parsed as Record<string, unknown>
+    } catch {
+        return undefined
+    }
+}
 
 export default defineRule({
     id: 'pera/native-exact-pins',
@@ -105,106 +119,110 @@ export default defineRule({
     severity: 'error',
     card: {
         message:
-            'a native module in the mobile app is not pinned to an exact version',
+            'a native module is not pinned to an exact version in a workspace manifest, the catalog or an override',
         remediation:
-            "Pin it to the exact version pnpm-lock.yaml resolves today, not a newer one, then run `pnpm install --lockfile-only` so only specifiers change. A native module moves only with the Expo SDK or its lockstep set, with a device build. A newly added dependency that ships native code goes in this rule's NATIVE_MODULES with its reason.",
+            "Pin it to the exact version pnpm-lock.yaml resolves today, not a newer one, then run `pnpm install --lockfile-only` so only specifiers change. When the app and a workspace package both depend on it, give both `catalog:` so the pin lives once. A native module moves only with the Expo SDK or its lockstep set, with a device build. A newly added dependency that ships native code goes in this rule's NATIVE_MODULES with its reason.",
         examples: {
             bad: '"react-native-gesture-handler": "~3.3.0"',
             good: '"react-native-gesture-handler": "3.3.0"',
         },
     },
     // lanekeep discovers only source files, so the Expo native config anchors
-    // the check and the manifest and workspace file are read relative to it.
+    // the check and the manifests and workspace file are read relative to it.
     gates: { pathMatches: ['**/apps/mobile/app.config.js'] },
     query: '(program) @file',
     check(ctx, m) {
         const file = m.file
         if (file === undefined) return
-        const manifestPath = resolveRelative(ctx.filePath, './package.json')
-        const workspacePath = resolveRelative(
-            ctx.filePath,
-            '../../pnpm-workspace.yaml',
-        )
-        const manifestRaw = ctx.readFile(manifestPath)
-        if (manifestRaw === undefined) return
+        const base = resolveRelative(ctx.filePath, '../..')
+        const workspacePath = join(base, 'pnpm-workspace.yaml')
         const workspaceRaw = ctx.readFile(workspacePath) ?? ''
-
-        let manifest: Record<string, unknown>
-        try {
-            const parsed: unknown = JSON.parse(manifestRaw)
-            if (typeof parsed !== 'object' || parsed === null) {
-                throw new TypeError('manifest is not an object')
-            }
-            manifest = parsed as Record<string, unknown>
-        } catch {
-            ctx.report(file, 'apps/mobile/package.json is not valid JSON')
-            return
-        }
-        const catalog = scalarEntries(workspaceRaw, 'catalog')
-        const overrides = scalarEntries(workspaceRaw, 'overrides')
-        const lines = keyLines(manifestRaw)
+        const catalog = new Map(
+            scalarEntries(workspaceRaw, 'catalog').map(e => [e.key, e]),
+        )
         const reported = new Set<string>()
 
         const emit = (path: string, line: number, message: string): void => {
-            ctx.emitFact({ kind: 'range', json: path, jsonLine: line, message })
-        }
-        // A package can be ranged in the catalog and the override and appear
-        // in two manifest sections; each workspace line is reported once.
-        const emitOnce = (
-            path: string,
-            line: number,
-            message: string,
-        ): void => {
             const key = `${path}:${line}`
             if (reported.has(key)) return
             reported.add(key)
-            emit(path, line, message)
+            ctx.emitFact({ kind: 'range', json: path, jsonLine: line, message })
         }
 
+        // Every importer resolves its own specs, and Metro takes a package's JS
+        // from whichever copy its importer resolved, so a range in any of them
+        // can move JS off the native code autolinked from apps/mobile.
+        const dirs = [
+            'apps/mobile',
+            '',
+            ...workspaceMembers(ctx, base).filter(d => d !== 'apps/mobile'),
+        ]
         const names = new Set<string>()
-        for (const section of SECTIONS) {
-            const deps = manifest[section]
-            if (typeof deps !== 'object' || deps === null) continue
-            for (const [name, spec] of Object.entries(deps)) {
-                if (!isNativeModule(name)) continue
-                names.add(name)
-                if (typeof spec !== 'string') continue
-                if (spec.startsWith('workspace:')) continue
-                const line = lines.get(`${section}.${name}`) ?? 1
-                if (spec === 'catalog:' || spec === 'catalog:default') {
-                    const entry = catalog.get(name)
-                    if (entry !== undefined && !isExactVersion(entry.value)) {
-                        emitOnce(
-                            workspacePath,
-                            entry.line,
-                            `"${name}" is "${entry.value}" in the catalog, not an exact version`,
+        for (const dir of dirs) {
+            const manifestPath = join(
+                dir === '' ? base : join(base, dir),
+                'package.json',
+            )
+            const manifestRaw = ctx.readFile(manifestPath)
+            if (manifestRaw === undefined) continue
+            const manifest = parseManifest(manifestRaw)
+            if (manifest === undefined) {
+                ctx.report(
+                    file,
+                    `${join(dir, 'package.json')} is not valid JSON`,
+                )
+                continue
+            }
+            const lines = keyLines(manifestRaw)
+            for (const section of SECTIONS) {
+                const deps = manifest[section]
+                if (typeof deps !== 'object' || deps === null) continue
+                for (const [name, spec] of Object.entries(deps)) {
+                    if (!isNativeModule(name)) continue
+                    names.add(name)
+                    if (typeof spec !== 'string') continue
+                    if (spec.startsWith('workspace:')) continue
+                    const line = lines.get(`${section}.${name}`) ?? 1
+                    if (spec === 'catalog:' || spec === 'catalog:default') {
+                        const entry = catalog.get(name)
+                        if (
+                            entry !== undefined &&
+                            !isExactVersion(entry.value)
+                        ) {
+                            emit(
+                                workspacePath,
+                                entry.line,
+                                `"${name}" is "${entry.value}" in the catalog, not an exact version`,
+                            )
+                        }
+                    } else if (spec.startsWith('catalog:')) {
+                        emit(
+                            manifestPath,
+                            line,
+                            `"${name}" uses ${spec}, a named catalog this rule does not read`,
+                        )
+                    } else if (!isExactVersion(spec)) {
+                        emit(
+                            manifestPath,
+                            line,
+                            `"${name}" is "${spec}" in ${section}, not an exact version`,
                         )
                     }
-                } else if (spec.startsWith('catalog:')) {
-                    emit(
-                        manifestPath,
-                        line,
-                        `"${name}" uses ${spec}, a named catalog this rule does not read`,
-                    )
-                } else if (!isExactVersion(spec)) {
-                    emit(
-                        manifestPath,
-                        line,
-                        `"${name}" is "${spec}" in ${section}, not an exact version`,
-                    )
                 }
             }
         }
 
-        // pnpm swaps a direct spec for a bare override, so a pin in the
-        // manifest holds only while the override is exact too.
-        for (const name of names) {
-            const entry = overrides.get(name)
-            if (entry === undefined || isExactVersion(entry.value)) continue
-            emitOnce(
+        // pnpm swaps a resolved spec for any override that targets it, bare,
+        // selector-scoped or parent-scoped, so a pin holds only while every
+        // such override is exact too. `-` removes the dependency instead.
+        for (const entry of scalarEntries(workspaceRaw, 'overrides')) {
+            const name = overrideTarget(entry.key)
+            if (!names.has(name)) continue
+            if (entry.value === '-' || isExactVersion(entry.value)) continue
+            emit(
                 workspacePath,
                 entry.line,
-                `"${name}" is overridden to "${entry.value}", not an exact version`,
+                `"${name}" is overridden to "${entry.value}" by "${entry.key}", not an exact version`,
             )
         }
     },

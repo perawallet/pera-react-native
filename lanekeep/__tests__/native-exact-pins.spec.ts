@@ -37,7 +37,7 @@ const check = async (files: Record<string, string>): Promise<Finding[]> =>
             const found: Violation[] = await runner.run()
             return found
                 .map((v): Finding => [
-                    v.file.split('/').pop() ?? v.file,
+                    v.file.slice(dir.length + 1),
                     v.line,
                     v.message,
                 ])
@@ -90,22 +90,22 @@ describe('pera/native-exact-pins', () => {
 
         expect(found).toEqual([
             [
-                'package.json',
+                'apps/mobile/package.json',
                 lineOf(MANIFEST, '"expo-image"'),
                 '"expo-image" is "~58.0.16" in dependencies, not an exact version',
             ],
             [
-                'package.json',
+                'apps/mobile/package.json',
                 lineOf(MANIFEST, '"react-native-gesture-handler"'),
                 '"react-native-gesture-handler" is "~3.3.0" in dependencies, not an exact version',
             ],
             [
-                'package.json',
+                'apps/mobile/package.json',
                 lineOf(MANIFEST, '"react-native-nitro-modules"'),
                 '"react-native-nitro-modules" is "^0.36.0" in dependencies, not an exact version',
             ],
             [
-                'package.json',
+                'apps/mobile/package.json',
                 lineOf(MANIFEST, '"@expo/dom-webview"'),
                 '"@expo/dom-webview" is ">=58.0.0" in devDependencies, not an exact version',
             ],
@@ -124,12 +124,12 @@ describe('pera/native-exact-pins', () => {
                 WORKSPACE.split('\n').lastIndexOf(
                     '  react-native-quick-base64: ^3.0.0',
                 ) + 1,
-                '"react-native-quick-base64" is overridden to "^3.0.0", not an exact version',
+                '"react-native-quick-base64" is overridden to "^3.0.0" by "react-native-quick-base64", not an exact version',
             ],
             [
                 'pnpm-workspace.yaml',
                 lineOf(WORKSPACE, '  react-native-quick-crypto: ^1.0.17'),
-                '"react-native-quick-crypto" is overridden to "^1.0.17", not an exact version',
+                '"react-native-quick-crypto" is overridden to "^1.0.17" by "react-native-quick-crypto", not an exact version',
             ],
         ] satisfies Finding[])
     })
@@ -151,7 +151,8 @@ describe('pera/native-exact-pins', () => {
                 '  react-native-mmkv: 4.3.2',
                 'overrides:',
                 '  react-native-nitro-modules: 0.36.5',
-                "  'react-native-quick-crypto@<2': ^1.0.17",
+                "  'react-native-quick-crypto@<2': 1.1.6",
+                "  '@ledgerhq/react-native-hw-transport-ble>react-native-svg': -",
                 '',
             ].join('\n'),
         })
@@ -159,7 +160,110 @@ describe('pera/native-exact-pins', () => {
         expect(found).toEqual([])
     })
 
-    it('ignores packages that are not native, and native entries apps/mobile does not depend on', async () => {
+    it('reports a ranged selector or parent-scoped override of a native module, keyed on its target', async () => {
+        const workspace = [
+            'overrides:',
+            "  'react-native-quick-crypto@<2': ^1.0.17",
+            "  '@react-native-firebase/app@<28': ^27.0.0",
+            "  '@ledgerhq/react-native-hw-transport-ble>react-native-ble-plx@3': ^3.4.0",
+            "  'react-native-quick-crypto-shim@<2': ^1.0.0",
+            '',
+        ].join('\n')
+        const found = await check({
+            'apps/mobile/package.json': manifest({
+                '@react-native-firebase/app': '27.0.0',
+                'react-native-ble-plx': '3.5.1',
+                'react-native-quick-crypto': '1.1.6',
+            }),
+            'pnpm-workspace.yaml': workspace,
+        })
+
+        expect(found).toEqual([
+            [
+                'pnpm-workspace.yaml',
+                2,
+                '"react-native-quick-crypto" is overridden to "^1.0.17" by "react-native-quick-crypto@<2", not an exact version',
+            ],
+            [
+                'pnpm-workspace.yaml',
+                3,
+                '"@react-native-firebase/app" is overridden to "^27.0.0" by "@react-native-firebase/app@<28", not an exact version',
+            ],
+            [
+                'pnpm-workspace.yaml',
+                4,
+                '"react-native-ble-plx" is overridden to "^3.4.0" by "@ledgerhq/react-native-hw-transport-ble>react-native-ble-plx@3", not an exact version',
+            ],
+        ] satisfies Finding[])
+    })
+
+    it('checks every workspace manifest, not only the app', async () => {
+        const ranged = JSON.stringify(
+            {
+                name: '@perawallet/platform-react-native',
+                dependencies: {
+                    '@expensify/react-native-wallet': '^0.1.41',
+                    'expo-sqlite': 'catalog:',
+                    zod: '^4.6.7',
+                },
+            },
+            null,
+            4,
+        )
+        const found = await check({
+            'apps/mobile/package.json': manifest({
+                '@expensify/react-native-wallet': '0.1.41',
+            }),
+            'extensions/platform-react-native/package.json': ranged,
+            'extensions/provider/package.json': JSON.stringify({
+                name: '@perawallet/provider',
+                dependencies: {
+                    'react-native-mmkv': '4.3.2',
+                    'react-native-quick-crypto': 'catalog:',
+                },
+            }),
+            'pnpm-workspace.yaml': [
+                'packages:',
+                '  - apps/*',
+                '  - extensions/*',
+                '',
+                'catalog:',
+                '  expo-sqlite: ~58.0.13',
+                '  react-native-quick-crypto: 1.1.6',
+                '',
+            ].join('\n'),
+        })
+
+        expect(found).toEqual([
+            [
+                'extensions/platform-react-native/package.json',
+                lineOf(ranged, '"@expensify/react-native-wallet"'),
+                '"@expensify/react-native-wallet" is "^0.1.41" in dependencies, not an exact version',
+            ],
+            [
+                'pnpm-workspace.yaml',
+                6,
+                '"expo-sqlite" is "~58.0.13" in the catalog, not an exact version',
+            ],
+        ] satisfies Finding[])
+    })
+
+    it('reports a malformed workspace manifest on the anchor by its path', async () => {
+        const found = await check({
+            'apps/mobile/package.json': manifest({}),
+            'extensions/provider/package.json': '{ nope',
+            'pnpm-workspace.yaml': 'packages:\n  - extensions/*\n',
+        })
+
+        expect(found.map(f => [f[0], f[2]])).toEqual([
+            [
+                'apps/mobile/app.config.js',
+                'extensions/provider/package.json is not valid JSON',
+            ],
+        ])
+    })
+
+    it('ignores packages that are not native, and native entries no workspace manifest depends on', async () => {
         const found = await check({
             'apps/mobile/package.json': manifest({ zod: '^4.6.7' }),
             'pnpm-workspace.yaml': [
@@ -183,7 +287,7 @@ describe('pera/native-exact-pins', () => {
 
         expect(found).toEqual([
             [
-                'package.json',
+                'apps/mobile/package.json',
                 lineOf(text, '"react-native-mmkv"'),
                 '"react-native-mmkv" uses catalog:native, a named catalog this rule does not read',
             ],
@@ -197,7 +301,10 @@ describe('pera/native-exact-pins', () => {
         })
 
         expect(found.map(f => [f[0], f[2]])).toEqual([
-            ['app.config.js', 'apps/mobile/package.json is not valid JSON'],
+            [
+                'apps/mobile/app.config.js',
+                'apps/mobile/package.json is not valid JSON',
+            ],
         ])
     })
 
@@ -208,7 +315,10 @@ describe('pera/native-exact-pins', () => {
         })
 
         expect(found.map(f => [f[0], f[2]])).toEqual([
-            ['app.config.js', 'apps/mobile/package.json is not valid JSON'],
+            [
+                'apps/mobile/app.config.js',
+                'apps/mobile/package.json is not valid JSON',
+            ],
         ])
     })
 
@@ -228,7 +338,7 @@ describe('pera/native-exact-pins', () => {
 
         expect(found).toEqual([
             [
-                'package.json',
+                'apps/mobile/package.json',
                 lineOf(text, '"react-native-svg"'),
                 '"react-native-svg" is "^15.16.0" in optionalDependencies, not an exact version',
             ],
@@ -249,7 +359,7 @@ describe('pera/native-exact-pins', () => {
 
         expect(found).toEqual([
             [
-                'package.json',
+                'apps/mobile/package.json',
                 lineOf(text, '"react-native-svg"'),
                 '"react-native-svg" is "^15.16.0" in dependencies, not an exact version',
             ],

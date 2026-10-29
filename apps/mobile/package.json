@@ -40,7 +40,7 @@
   "dependencies": {
     "@algorandfoundation/react-native-passkey-autofill": "catalog:",
     "@craftzdog/react-native-buffer": "^6.1.1",
-    "@expensify/react-native-wallet": "0.1.41",
+    "@expensify/react-native-wallet": "catalog:",
     "@expo/app-integrity": "catalog:",
     "@gorhom/bottom-sheet": "^5.2.8",
     "@hookform/resolvers": "^5.4.0",
