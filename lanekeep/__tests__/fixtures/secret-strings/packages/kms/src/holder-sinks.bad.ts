@@ -31,3 +31,16 @@ export const qualifiedSetter = (m: string) => {
     const key = deriveBip39Seed(m)
     setKey(key)
 }
+export const storeUpdater = (m: string) => {
+    const seed = deriveBip39Seed(m)
+    set(() => ({ seed }))
+}
+export const storeUpdaterSpread = (m: string) => {
+    const seed = deriveBip39Seed(m)
+    set(state => ({ ...state, seed }))
+}
+export const stateUpdater = (m: string) => {
+    const [, setSeed] = useState<Uint8Array>()
+    const seed = deriveBip39Seed(m)
+    setSeed(() => seed)
+}

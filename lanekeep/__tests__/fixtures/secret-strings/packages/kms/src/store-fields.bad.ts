@@ -9,3 +9,5 @@ interface ListState {
 }
 type DeepStore = A & B & { secret: string }
 type PlainState = { count: number; seed: string }
+type OptionalState = { seed: Optional<string> }
+type MaybeStore = { mnemonic: Maybe<string> }

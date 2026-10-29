@@ -22,8 +22,13 @@ const HELPER_NAMES = `^(${SCOPED_SECRET_HELPERS.join('|')})$`
 // The repo's byte-to-string encoders. An encoder missing here is a blind spot.
 const STRING_ENCODERS =
     '^(bytesToHex|toHex|encodeToBase64|toBase64|toBase64Url|bytesToBase64Url|entropyToMnemonic)$'
-const STRING_ENCODING = '^(hex|base64|base64url|utf8|utf-8)$'
-const CONVERTING_METHODS = '^(join|toHex|toBase64)$'
+const STRING_ENCODING_PATTERN =
+    '^(hex|base64|base64url|utf8|utf-8|ascii|latin1|binary|ucs2|ucs-2|utf16le|utf-16le)$'
+const CONVERTING_METHODS_PATTERN = '^(join|toHex|toBase64)$'
+const STRING_ENCODING = new RegExp(STRING_ENCODING_PATTERN)
+const CONVERTING_METHODS = new RegExp(CONVERTING_METHODS_PATTERN)
+const STRING_ENCODERS_RE = new RegExp(STRING_ENCODERS)
+const HELPER_NAMES_RE = new RegExp(HELPER_NAMES)
 const DECODER_NAME = /([Dd]ecoder|DECODER)$/
 const COPY_CONSTRUCTORS = new Set([
     'Uint8Array',
@@ -77,9 +82,9 @@ const SOURCES = [
 
 const SINKS = [
     // string conversion
-    `((call_expression function: (member_expression object: (_) @sink property: (property_identifier) @method) arguments: (arguments . (string (string_fragment) @enc) .)) (#eq? @method "toString") (#match? @enc "${STRING_ENCODING}"))`,
+    '((call_expression function: (member_expression object: (_) @sink property: (property_identifier) @method)) (#eq? @method "toString"))',
     `((call_expression function: ${CALLEE} arguments: (arguments (_) @sink)) (#match? @fn "${STRING_ENCODERS}"))`,
-    `((call_expression function: (member_expression object: (_) @sink property: (property_identifier) @method)) (#match? @method "${CONVERTING_METHODS}"))`,
+    `((call_expression function: (member_expression object: (_) @sink property: (property_identifier) @method)) (#match? @method "${CONVERTING_METHODS_PATTERN}"))`,
     '((call_expression function: (member_expression object: (new_expression constructor: (identifier) @ctor) property: (property_identifier) @method) arguments: (arguments (_) @sink)) (#eq? @ctor "TextDecoder") (#eq? @method "decode"))',
     '((call_expression function: (member_expression object: (identifier) @object property: (property_identifier) @method) arguments: (arguments (_) @sink)) (#match? @object "([Dd]ecoder|DECODER)$") (#eq? @method "decode"))',
     '(template_substitution (_) @sink)',
@@ -119,7 +124,6 @@ const unwrap = (ctx: RuleContext, node: Node): Node => {
     return current
 }
 
-/** The name a call or `new` is made through, and the member object when there is one. */
 const calleeOf = (
     ctx: RuleContext,
     call: Node,
@@ -138,7 +142,6 @@ const calleeOf = (
     return undefined
 }
 
-/** The call an argument belongs to. */
 const callOfArgument = (ctx: RuleContext, node: Node): Node | undefined => {
     const list = ctx.parent(node)
     if (list === undefined || ctx.kind(list) !== 'arguments') return undefined
@@ -230,16 +233,15 @@ const isConvertedToString = (ctx: RuleContext, node: Node): boolean => {
         return false
     }
     const method = ctx.text(property) ?? ''
-    if (new RegExp(CONVERTING_METHODS).test(method)) return true
+    if (CONVERTING_METHODS.test(method)) return true
     if (method !== 'toString') return false
     const arg = ctx.namedChildren(call)[1]
     const encoding = arg === undefined ? undefined : ctx.namedChildren(arg)[0]
+    // A bare toString() is a string too: "1,2,3" for a Uint8Array, UTF-8 for a Buffer.
+    if (encoding === undefined) return true
     return (
-        encoding !== undefined &&
         ctx.kind(encoding) === 'string' &&
-        new RegExp(STRING_ENCODING).test(
-            (ctx.text(encoding) ?? '').slice(1, -1),
-        )
+        STRING_ENCODING.test((ctx.text(encoding) ?? '').slice(1, -1))
     )
 }
 
@@ -264,7 +266,7 @@ const classifyArgument = (
     if (callee === undefined) return undefined
     if (ctx.kind(call) === 'new_expression') return 'copy'
     const { name, object, isMember } = callee
-    if (new RegExp(STRING_ENCODERS).test(name)) return 'string'
+    if (STRING_ENCODERS_RE.test(name)) return 'string'
     if (name === 'decode' && isMember && object !== undefined) {
         const objectText = ctx.text(object) ?? ''
         if (
@@ -286,7 +288,6 @@ const classifyArgument = (
 const classifySink = (
     ctx: RuleContext,
     sink: Node,
-    _source: Node,
 ): { cls: SinkClass; held: Node } | undefined => {
     const parent = ctx.parent(sink)
     if (parent === undefined) return undefined
@@ -320,6 +321,9 @@ const classifySink = (
         } else if (kind === 'pair') {
             if (ctx.namedChildren(above).at(-1) !== position) return undefined
             position = above
+        } else if (kind === 'ternary_expression') {
+            if (ctx.namedChildren(above)[0] === position) return undefined
+            position = above
         } else if (kind === 'return_statement') {
             break
         } else if (kind === 'arrow_function') {
@@ -336,23 +340,60 @@ const classifySink = (
     const holder = owner === undefined ? undefined : callOfArgument(ctx, owner)
     const callee = holder === undefined ? undefined : calleeOf(ctx, holder)
     if (callee === undefined) return undefined
-    if (new RegExp(HELPER_NAMES).test(callee.name)) {
+    if (HELPER_NAMES_RE.test(callee.name)) {
         return { cls: 'scope', held: position }
     }
     if (callee.name === 'useMemo') return { cls: 'memo', held: position }
     if (callee.name === 'useState') return { cls: 'state', held: position }
+    // The updater form `set(() => ({ seed }))` writes the store as surely as `set({ seed })`.
+    if (!callee.isMember && callee.name === 'set') {
+        return { cls: 'store', held: position }
+    }
+    if (callee.isMember && callee.name === 'setState') {
+        return { cls: 'store', held: position }
+    }
+    if (
+        !callee.isMember &&
+        /^set[A-Z]/.test(callee.name) &&
+        stateSetterNames(ctx).has(callee.name)
+    ) {
+        return { cls: 'state', held: position }
+    }
     return undefined
+}
+
+const PUBLIC_MATERIAL = /publicKey/i
+
+const isPublicMaterial = (ctx: RuleContext, sink: Node): boolean => {
+    const kind = ctx.kind(sink)
+    if (kind === 'identifier') return PUBLIC_MATERIAL.test(ctx.text(sink) ?? '')
+    if (kind === 'member_expression') {
+        const property = ctx.namedChildren(sink)[1]
+        return (
+            property !== undefined &&
+            PUBLIC_MATERIAL.test(ctx.text(property) ?? '')
+        )
+    }
+    return false
 }
 
 const isHeldSecret = (ctx: RuleContext, value: Node, source: Node): boolean => {
     const node = unwrap(ctx, value)
     const kind = ctx.kind(node)
-    if (kind === 'identifier' || kind === 'subscript_expression') return true
+    if (kind === 'identifier') return !isPublicMaterial(ctx, node)
+    if (kind === 'subscript_expression') return true
     if (kind === 'member_expression') {
+        if (isPublicMaterial(ctx, node)) return false
         const property = ctx.namedChildren(node)[1]
         return !LENGTH_PROPERTIES.has(
             property === undefined ? '' : (ctx.text(property) ?? ''),
         )
+    }
+    if (kind === 'ternary_expression') {
+        return ctx
+            .namedChildren(node)
+            .slice(1)
+            .some(arm => isHeldSecret(ctx, arm, source))
     }
     if (kind === 'call_expression' || kind === 'new_expression') {
         return isCopyForm(ctx, node) || node === source
@@ -360,12 +401,10 @@ const isHeldSecret = (ctx: RuleContext, value: Node, source: Node): boolean => {
     if (kind === 'object') {
         return ctx.namedChildren(node).some(child => {
             const childKind = ctx.kind(child)
-            if (
-                childKind === 'shorthand_property_identifier' ||
-                childKind === 'spread_element'
-            ) {
-                return true
+            if (childKind === 'shorthand_property_identifier') {
+                return !PUBLIC_MATERIAL.test(ctx.text(child) ?? '')
             }
+            if (childKind === 'spread_element') return true
             if (childKind !== 'pair') return false
             const pairValue = ctx.namedChildren(child).at(-1)
             return (
@@ -405,25 +444,10 @@ const isOutsideParamOwner = (
     return owner === undefined || !ctx.ancestors(sink).includes(owner)
 }
 
-const PUBLIC_MATERIAL = /publicKey/i
-
-const isPublicMaterial = (ctx: RuleContext, sink: Node): boolean => {
-    const kind = ctx.kind(sink)
-    if (kind === 'identifier') return PUBLIC_MATERIAL.test(ctx.text(sink) ?? '')
-    if (kind === 'member_expression') {
-        const property = ctx.namedChildren(sink)[1]
-        return (
-            property !== undefined &&
-            PUBLIC_MATERIAL.test(ctx.text(property) ?? '')
-        )
-    }
-    return false
-}
-
 const holdsStringSecret = (annotation: string): boolean => {
     const normalized = annotation.replace(/\s+/g, ' ').trim()
     const unwrapNullable = (type: string): string => {
-        const match = /^Nullable<(.*)>$/.exec(type.trim())
+        const match = /^(?:Nullable|Optional|Maybe)<(.*)>$/.exec(type.trim())
         return match === null ? type.trim() : unwrapNullable(match[1]!)
     }
     return unwrapNullable(normalized)
@@ -469,7 +493,7 @@ export default defineRule({
     checkFlow(ctx: RuleContext, path: FlowPath) {
         if (isOutsideParamOwner(ctx, path.source, path.sink)) return
         if (isPublicMaterial(ctx, path.sink)) return
-        const classified = classifySink(ctx, path.sink, path.source)
+        const classified = classifySink(ctx, path.sink)
         if (classified === undefined) return
         const { cls, held } = classified
         if (cls !== 'string' && !isHeldSecret(ctx, held, path.source)) return

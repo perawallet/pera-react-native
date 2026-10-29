@@ -102,3 +102,19 @@ export const mappedToWords = (m: string) => {
     const idx = mnemonicWordsToIndices(m)
     return Array.from(idx, indexToWord).join(' ')
 }
+export const plainToString = (m: string) => {
+    const seed = deriveBip39Seed(m)
+    return seed.toString()
+}
+export const toAscii = (m: string) => {
+    const seed = deriveBip39Seed(m)
+    return seed.toString('ascii')
+}
+export const toLatin1 = (m: string) => {
+    const seed = deriveBip39Seed(m)
+    return seed.toString('latin1')
+}
+export const toUtf16 = (m: string) => {
+    const seed = deriveBip39Seed(m)
+    return seed.toString('utf16le')
+}

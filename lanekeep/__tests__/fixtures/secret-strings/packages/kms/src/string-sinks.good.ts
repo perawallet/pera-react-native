@@ -1,11 +1,3 @@
-export const plainToString = (m: string) => {
-    const seed = deriveBip39Seed(m)
-    return seed.toString()
-}
-export const otherEncoding = (m: string) => {
-    const seed = deriveBip39Seed(m)
-    return seed.toString('ascii')
-}
 export const nonSecretHex = (id: Uint8Array) => id.toString('hex')
 export const nonSecretBytesToHex = (id: Uint8Array) => bytesToHex(id)
 export const nonSecretJoin = (words: string[]) => words.join(' ')
@@ -28,4 +20,8 @@ export const publicKeyHex = (m: string) => {
 export const aNonDecoderDecode = (m: string) => {
     const seed = deriveBip39Seed(m)
     return codec.decode(seed)
+}
+export const radixToString = (m: string) => {
+    const seed = deriveBip39Seed(m)
+    return seed.length.toString(16)
 }

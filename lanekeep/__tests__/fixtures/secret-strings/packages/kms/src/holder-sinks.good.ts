@@ -1,5 +1,7 @@
-export const zeroableCopy = () =>
-    executeWithMnemonic('id', 'domain', src => setIndices(src.slice()))
+export const zeroableCopy = () => {
+    const [, setIndices] = useState<Uint16Array>()
+    return executeWithMnemonic('id', 'domain', src => setIndices(src.slice()))
+}
 export const notAStateSetter = (m: string) => {
     const seed = deriveBip39Seed(m)
     setRefreshHandler(seed)
@@ -22,4 +24,8 @@ export const handedOffToAStore = (m: string) => {
 export const someOtherSet = (m: string) => {
     const seed = deriveBip39Seed(m)
     registry.set(seed)
+}
+export const updaterWithoutSecret = (m: string) => {
+    const seed = deriveBip39Seed(m)
+    set(state => ({ ...state, size: seed.length }))
 }

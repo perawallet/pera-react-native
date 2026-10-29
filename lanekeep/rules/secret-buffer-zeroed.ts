@@ -3,8 +3,8 @@
  */
 
 import { defineRule } from 'lanekeep'
-import { SECRET_PRODUCERS } from '../shared/secrets.js'
 import { TEST_SUPPORT, productionSource } from '../shared/scope.js'
+import { SECRET_PRODUCERS } from '../shared/secrets.js'
 
 const ACQUIRE = `^(${SECRET_PRODUCERS.join('|')})$`
 const WIPERS = '^(zeroBytes|wipeBytes)$'

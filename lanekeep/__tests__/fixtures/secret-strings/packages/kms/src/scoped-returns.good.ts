@@ -24,3 +24,9 @@ export const copyInsideACallback = (id: string) =>
         return sign(copy)
     })
 export const notAScopedHelper = (b: Uint8Array) => withRetry(() => b)
+export const returnsOnlyThePublicKey = (id: string) =>
+    withExportedKey(id, 'domain', k => ({ publicKey: k.publicKey }))
+export const returnsAPublicKeyMember = (id: string) =>
+    withExportedKey(id, 'domain', k => k.publicKey)
+export const returnsAHandedOffTernary = (id: string) =>
+    withSecret(id, b => (b.length > 0 ? handOffSecret(b.slice()) : null))

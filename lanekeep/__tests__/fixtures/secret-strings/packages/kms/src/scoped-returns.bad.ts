@@ -16,3 +16,5 @@ export const returnsFromABlock = (id: string) =>
 export const returnsAnAwaitedCopy = (id: string) =>
     withSecret(id, async b => await new Uint8Array(b))
 export const returnsInAnArray = (id: string) => withSecret(id, b => [b])
+export const returnsATernary = (id: string) =>
+    withSecret(id, b => (b.length > 0 ? new Uint8Array(b) : null))
