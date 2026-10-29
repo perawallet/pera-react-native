@@ -290,6 +290,7 @@
         "transaction_list": {
             "title": "Transactions",
             "empty_body": "No transactions found",
+            "empty_on_network_body": "No transactions yet on {{network}}",
             "offline_empty_title": "You're offline",
             "offline_empty_body": "No transactions are saved on this device yet. They'll appear once you're back online.",
             "search_paused_body": "No transactions found in recent history.",
@@ -346,6 +347,8 @@
             "empty_body": "You have no assets linked to this account",
             "nomatch_title": "No Matching Assets",
             "nomatch_body": "No assets matched your search term",
+            "funding_title": "Get started on {{network}}",
+            "funding_body": "Deposit funds to start using this network. You'll need some {{nativeSymbol}} on {{network}} to pay network fees.",
             "network_filter_all": "All",
             "see_networks": "See networks",
             "hide_networks": "Hide networks",
