@@ -4555,7 +4555,6 @@
             "passkey_disable": "Passkey ile kilit açmayı devre dışı bırak",
             "passkey_password_placeholder": "Cüzdan şifresi",
             "passkey_error": "Passkey ile kilit açma etkinleştirilemedi. Şifreni kontrol et ve tekrar dene.",
-            "passkey_enable_error": "Passkey ile kilit açma etkinleştirilemedi. Lütfen tekrar dene.",
             "change_password_title": "Şifreyi değiştir",
             "change_password_current_placeholder": "Mevcut şifre",
             "change_password_new_placeholder": "Yeni şifre",
@@ -4567,6 +4566,26 @@
             "change_password_error_unexpected": "Şifren değiştirilirken bir şeyler ters gitti. Lütfen tekrar dene.",
             "change_password_success": "Şifre başarıyla değiştirildi.",
             "change_password_submit": "Şifreyi değiştir"
+        },
+        "passkey_setup": {
+            "title": "Passkey ile kilidi aç",
+            "offer_title": "Bir dahaki sefere kilidi daha hızlı aç",
+            "body": "Şifreni yazmak yerine Pera Wallet’ın kilidini Touch ID, Windows Hello, telefonun ya da bir güvenlik anahtarı ile aç. Şifren yedek olarak çalışmaya devam eder.",
+            "enable_button": "Passkey oluştur",
+            "not_now_button": "Şimdi değil",
+            "retry_button": "Tekrar dene",
+            "continue_button": "Devam et",
+            "pending_hint": "Tarayıcının yönergelerini izle. İki kez onaylaman istenebilir.",
+            "success_title": "Passkey ile kilit açma etkin",
+            "success_body": "Bir dahaki sefere Pera Wallet’ın kilidini passkey’inle aç. Şifren de çalışmaya devam eder.",
+            "error_not_saved": "Passkey kaydedilmedi.",
+            "error_prf_unsupported": "Bu passkey Pera Wallet’ın kilidini açamaz.",
+            "error_unexpected": "Passkey ile kilit açma etkinleştirilemedi.",
+            "hint_not_saved_title": "Başka bir yere kaydetmeyi dene",
+            "hint_not_saved_body": "Pencere kapatıldı ya da şifre yöneticin passkey’i kaydedemedi. Tekrar dene ve tarayıcı penceresinde Google Password Manager, iCloud Keychain veya bir güvenlik anahtarı gibi başka bir seçenek seç. Bir şifre yöneticisi sürekli araya giriyorsa, onun ayarlarından passkey kaydetmeyi kapat.",
+            "hint_prf_title": "Başka bir yere kaydet",
+            "hint_prf_body": "Passkey kaydedildi, ancak şifre yöneticin ya da güvenlik anahtarın Pera Wallet’ın kilit açmak için ihtiyaç duyduğu özelliği (PRF) desteklemiyor. Google Password Manager, iCloud Keychain veya PRF destekleyen bir güvenlik anahtarı ile tekrar dene, ardından kullanılmayan passkey’i sil.",
+            "reauth_description": "Passkey ile kilit açmayı etkinleştirmek için şifreni onayla."
         },
         "approval": {
             "placeholder": "Onay ekranı — M4’te geliyor."

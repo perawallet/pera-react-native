@@ -21,6 +21,8 @@ import {
     PWView,
 } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
+import { PasskeySetupFailure } from '../../components/PasskeyUnlockSetup/PasskeySetupFailure'
+import { isPasskeySetupFailure } from '../../components/PasskeyUnlockSetup/usePasskeyUnlockSetup.web'
 import { PasswordStrengthMeter } from '../../components/PasswordStrengthMeter'
 import { useVaultSecuritySettingsScreen } from './useVaultSecuritySettingsScreen.web'
 import { useStyles } from './styles'
@@ -40,7 +42,7 @@ export const VaultSecuritySettingsScreen = () => {
         handleDisablePasskey,
         isEnablingPasskey,
         hasPasskeyError,
-        hasPasskeyEnableError,
+        passkeySetupStatus,
         currentPassword,
         newPassword,
         confirmNewPassword,
@@ -238,14 +240,11 @@ export const VaultSecuritySettingsScreen = () => {
                                 {t('vault.security.passkey_error')}
                             </PWText>
                         )}
-                        {hasPasskeyEnableError && (
-                            <PWText
-                                testID='passkey-enable-error'
-                                variant='body'
-                                style={styles.errorText}
-                            >
-                                {t('vault.security.passkey_enable_error')}
-                            </PWText>
+                        {isPasskeySetupFailure(passkeySetupStatus) && (
+                            <PasskeySetupFailure
+                                status={passkeySetupStatus}
+                                testID='vault-security-passkey-setup'
+                            />
                         )}
                         <PWButton
                             testID='vault-security-passkey-toggle'
@@ -271,6 +270,14 @@ export const VaultSecuritySettingsScreen = () => {
                                     : handleEnablePasskey())
                             }
                         />
+                        {isEnablingPasskey && (
+                            <PWText
+                                variant='caption'
+                                style={styles.hint}
+                            >
+                                {t('vault.passkey_setup.pending_hint')}
+                            </PWText>
+                        )}
                     </PWView>
                 )}
             </PWView>
