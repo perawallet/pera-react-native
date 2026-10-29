@@ -36,6 +36,13 @@ export {
     type UseTransactionHistoryRowsResult,
 } from './history/useTransactionHistoryRows'
 export {
+    useMergedTransactionHistoryRows,
+    type HistoryFeedProps,
+    type HistoryFeedSource,
+    type UseMergedTransactionHistoryRowsParams,
+    type UseMergedTransactionHistoryRowsResult,
+} from './history/useMergedTransactionHistoryRows'
+export {
     useKnownAddresses,
     type UseKnownAddressesParams,
     type UseKnownAddressesResult,

@@ -291,6 +291,7 @@
             "title": "Transactions",
             "empty_body": "Aucune transaction trouvée",
             "empty_on_network_body": "Aucune transaction pour le moment sur {{network}}",
+            "network_failed": "Impossible de charger les transactions sur {{networks}}",
             "offline_empty_title": "Vous êtes hors ligne",
             "offline_empty_body": "Aucune transaction n’est encore enregistrée sur cet appareil. Elles apparaîtront dès que vous serez de retour en ligne.",
             "search_paused_body": "Aucune transaction trouvée dans l’historique récent.",
