@@ -12,6 +12,7 @@
 
 import { makeStyles } from '@rneui/themed'
 
+// lanekeep-ignore-next-line pera/no-numeric-sizes reason: processing spinner circle diameter
 const SPINNER_CIRCLE_SIZE = 60
 
 export const useStyles = makeStyles(theme => ({
@@ -23,7 +24,7 @@ export const useStyles = makeStyles(theme => ({
     spinnerCircle: {
         width: SPINNER_CIRCLE_SIZE,
         height: SPINNER_CIRCLE_SIZE,
-        borderRadius: SPINNER_CIRCLE_SIZE / 2,
+        borderRadius: theme.borderRadius.full,
         backgroundColor: theme.colors.buttonHelperBg,
         justifyContent: 'center',
         alignItems: 'center',

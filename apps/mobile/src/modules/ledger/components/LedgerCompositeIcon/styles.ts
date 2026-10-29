@@ -29,7 +29,7 @@ export const useStyles = makeStyles(theme => ({
     dot: {
         width: theme.spacing.xs,
         height: theme.spacing.xs,
-        borderRadius: theme.spacing.xs / 2,
+        borderRadius: theme.borderRadius.full,
         backgroundColor: theme.colors.textMain,
     },
 }))

@@ -37,6 +37,7 @@ export const SyncDevicesQrSheet = ({ payload }: SyncDevicesQrSheetProps) => {
 
     usePreventScreenCapture(SCREEN_CAPTURE_TAG, true)
 
+    // lanekeep-ignore-next-line pera/no-numeric-sizes reason: window width minus a 5xl margin on each side
     const qrSize = width - theme.spacing['5xl'] * 2
 
     return (

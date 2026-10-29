@@ -15,7 +15,9 @@ import type { AccountDisplayProps } from './AccountDisplay'
 
 // Card-art thumbnail dims (fixed card ratio — no runtime aspect-ratio
 // derivation, per the project's image-sizing convention).
+// lanekeep-ignore-next-line pera/no-numeric-sizes reason: card thumbnail artwork width, paired with CARD_THUMB_HEIGHT
 const CARD_THUMB_WIDTH = 48
+// lanekeep-ignore-next-line pera/no-numeric-sizes reason: card thumbnail artwork height, paired with CARD_THUMB_WIDTH
 const CARD_THUMB_HEIGHT = 30
 
 export const useStyles = makeStyles(

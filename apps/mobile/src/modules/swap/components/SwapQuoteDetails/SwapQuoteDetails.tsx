@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { useTheme } from '@rneui/themed'
 import { PWSkeleton, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import type { SwapQuote } from '@perawallet/wallet-core-swaps'
@@ -29,6 +30,7 @@ export const SwapQuoteDetails = ({
     isLoading,
 }: SwapQuoteDetailsProps) => {
     const { t } = useLanguage()
+    const { theme } = useTheme()
     const styles = useStyles()
     const {
         rateDisplay,
@@ -60,8 +62,9 @@ export const SwapQuoteDetails = ({
                 </PWText>
                 {isLoading ? (
                     <PWSkeleton
+                        // lanekeep-ignore-next-line pera/no-numeric-sizes reason: quote detail value skeleton width
                         width={140}
-                        height={16}
+                        height={theme.spacing.lg}
                     />
                 ) : (
                     <PWText
@@ -82,8 +85,9 @@ export const SwapQuoteDetails = ({
                 </PWText>
                 {isLoading ? (
                     <PWSkeleton
+                        // lanekeep-ignore-next-line pera/no-numeric-sizes reason: quote detail value skeleton width
                         width={60}
-                        height={16}
+                        height={theme.spacing.lg}
                     />
                 ) : (
                     <PWText
@@ -104,8 +108,9 @@ export const SwapQuoteDetails = ({
                 </PWText>
                 {isLoading ? (
                     <PWSkeleton
+                        // lanekeep-ignore-next-line pera/no-numeric-sizes reason: quote detail value skeleton width
                         width={50}
-                        height={16}
+                        height={theme.spacing.lg}
                     />
                 ) : (
                     <PWText
@@ -126,8 +131,9 @@ export const SwapQuoteDetails = ({
                 </PWText>
                 {isLoading ? (
                     <PWSkeleton
+                        // lanekeep-ignore-next-line pera/no-numeric-sizes reason: quote detail value skeleton width
                         width={80}
-                        height={16}
+                        height={theme.spacing.lg}
                     />
                 ) : (
                     <PWText
@@ -148,8 +154,9 @@ export const SwapQuoteDetails = ({
                 </PWText>
                 {isLoading ? (
                     <PWSkeleton
+                        // lanekeep-ignore-next-line pera/no-numeric-sizes reason: quote detail value skeleton width
                         width={70}
-                        height={16}
+                        height={theme.spacing.lg}
                     />
                 ) : (
                     <PWText

@@ -15,6 +15,7 @@ import { palette } from '@theme/colors'
 
 // The card art is a fixed-ratio brand asset; pin a height (per the project's
 // image-sizing convention — no runtime aspect-ratio derivation).
+// lanekeep-ignore-next-line pera/no-numeric-sizes reason: card artwork height
 const CARD_HEIGHT = 210
 
 export const useStyles = makeStyles(theme => ({
