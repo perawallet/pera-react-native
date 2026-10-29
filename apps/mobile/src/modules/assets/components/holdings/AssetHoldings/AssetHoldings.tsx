@@ -144,6 +144,7 @@ export const AssetHoldings = ({
                             variant='h1'
                             value={cryptoAmount}
                             asset={asset}
+                            shouldFitWidth
                         />
                     </PWTouchableOpacity>
 
