@@ -184,6 +184,28 @@ describe('backup domain errors', () => {
         expect(isExpectedError(error)).toBe(true)
     })
 
+    it('keeps the cause chain of the error the push failed on', () => {
+        const inner = new PeraNetworkError('server', { status: 503 })
+
+        const error = new BackupPushIncompleteError(
+            createEmptySyncState('backup-1'),
+            inner,
+        )
+
+        expect(error.cause).toBe(inner)
+        expect(error.originalError).toBe(inner)
+    })
+
+    it('keeps a non-Error push failure as the cause only', () => {
+        const error = new BackupPushIncompleteError(
+            createEmptySyncState('backup-1'),
+            'text',
+        )
+
+        expect(error.cause).toBe('text')
+        expect(error.originalError).toBeUndefined()
+    })
+
     it('is reported when the push failed on an unexpected error', () => {
         const error = new BackupPushIncompleteError(
             createEmptySyncState('backup-1'),

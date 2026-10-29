@@ -83,6 +83,8 @@ export class BackupPushIncompleteError extends AppError {
             },
             error instanceof Error ? error : undefined,
         )
+        // AppError can't forward { cause } to Error, and serializeError follows only cause.
+        this.cause = error
         this.name = 'BackupPushIncompleteError'
     }
 }
