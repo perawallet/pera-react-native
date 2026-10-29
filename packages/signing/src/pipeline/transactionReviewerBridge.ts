@@ -20,7 +20,7 @@ import {
     type TransactionReviewer,
     type UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
-import { toBigInt } from '@perawallet/wallet-core-shared'
+import { toBigInt, toError } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import {
     reviewerChainAdapters,
@@ -39,9 +39,7 @@ export type GroupReviewer = Pick<
 const toPipelineError = (error: unknown): PipelineError =>
     error instanceof PipelineError
         ? error
-        : new InvalidSignableDataError(
-              error instanceof Error ? error.message : String(error),
-          )
+        : new InvalidSignableDataError(toError(error).message)
 
 const heldAddressesOf = (context: AnalysisContext): string[] =>
     context.accounts.flatMap(

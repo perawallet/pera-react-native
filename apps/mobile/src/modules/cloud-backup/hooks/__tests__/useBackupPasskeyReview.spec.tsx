@@ -91,6 +91,7 @@ vi.mock('../useProvenPasskeysQuery', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-shared', () => ({
+    toError: (e: unknown) => (e instanceof Error ? e : new Error(String(e))),
     logger: { warn: vi.fn() },
     NoConnectionError,
 }))

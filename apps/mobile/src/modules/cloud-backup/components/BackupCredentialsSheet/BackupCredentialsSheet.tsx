@@ -16,7 +16,6 @@ import { PassphraseGrid } from '@components/PassphraseGrid'
 import { useLanguage } from '@hooks/useLanguage'
 import { usePreventScreenCapture } from '@hooks/usePreventScreenCapture'
 import { SheetHeader } from '@modules/bottom-sheet'
-import { getTestProps } from '@utils/test-id-helper'
 
 import { EncryptionKeyField } from '../EncryptionKeyField'
 
@@ -81,7 +80,7 @@ const PassphraseSection = ({ wordIndices, status }: PassphraseSectionProps) => {
                 <PWText
                     variant='bodyLarge'
                     style={styles.errorText}
-                    {...getTestProps('backup_credentials_passphrase_missing')}
+                    testID='backup_credentials_passphrase_missing'
                 >
                     {t('cloud_backup.credentials.passphrase_missing')}
                 </PWText>
@@ -90,9 +89,7 @@ const PassphraseSection = ({ wordIndices, status }: PassphraseSectionProps) => {
                 <PWText
                     variant='bodyLarge'
                     style={styles.errorText}
-                    {...getTestProps(
-                        'backup_credentials_passphrase_unreadable',
-                    )}
+                    testID='backup_credentials_passphrase_unreadable'
                 >
                     {t('cloud_backup.credentials.passphrase_unreadable')}
                 </PWText>

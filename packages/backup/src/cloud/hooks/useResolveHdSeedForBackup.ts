@@ -25,7 +25,7 @@ import {
     useKMS,
     zeroBytes,
 } from '@perawallet/wallet-core-kms'
-import { bytesToHex, logger } from '@perawallet/wallet-core-shared'
+import { bytesToHex, logger, toError } from '@perawallet/wallet-core-shared'
 import { backupAdapterFor, backupSeedReference } from '../../chain-adapter'
 import { useSeedReferencesStore } from '../store/seedReferencesStore'
 import type { SeedSecretsCache, SerializeHdResolver } from '../sync/types'
@@ -154,8 +154,7 @@ export const useResolveHdSeedForBackup = (
                 return { seedFirstDerivedAddress, publicKeyHex, ...resolved }
             } catch (error) {
                 logger.warn('useResolveHdSeedForBackup: resolve failed', {
-                    error:
-                        error instanceof Error ? error.message : String(error),
+                    error: toError(error).message,
                 })
                 return null
             }

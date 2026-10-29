@@ -12,6 +12,7 @@
 
 import { makeStyles } from '@rneui/themed'
 
+// lanekeep-ignore-next-line pera/no-numeric-sizes reason: device icon container size
 const ICON_CONTAINER_SIZE = 40
 
 export const useStyles = makeStyles(theme => ({
@@ -34,7 +35,7 @@ export const useStyles = makeStyles(theme => ({
     iconContainer: {
         width: ICON_CONTAINER_SIZE,
         height: ICON_CONTAINER_SIZE,
-        borderRadius: ICON_CONTAINER_SIZE / 2,
+        borderRadius: theme.borderRadius.full,
         backgroundColor: theme.colors.layerGrayLighter,
         alignItems: 'center',
         justifyContent: 'center',

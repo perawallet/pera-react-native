@@ -22,7 +22,7 @@ import { TransactionErrorBoundary } from '@modules/transactions/components/Trans
 import { useLanguage } from '@hooks/useLanguage'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import { getNavigationTheme } from '@theme/theme'
-import { SendFundsRoutes } from '../../../routes/send-funds'
+import { SendFundsRoutes } from '@modules/transactions/routes/send-funds'
 import { useSendFundsContent } from './useSendFundsContent'
 
 /**

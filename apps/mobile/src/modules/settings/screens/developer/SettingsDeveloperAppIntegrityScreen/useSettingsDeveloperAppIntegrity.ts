@@ -19,6 +19,7 @@ import {
     useAppIntegrityStore,
     type IntegrityVerification,
 } from '@perawallet/wallet-core-app-integrity'
+import { toError } from '@perawallet/wallet-core-shared'
 
 export type UseSettingsDeveloperAppIntegrityResult = {
     status: string
@@ -87,9 +88,7 @@ export const useSettingsDeveloperAppIntegrity =
                     }),
                 )
             } catch (error) {
-                setVerifyError(
-                    error instanceof Error ? error.message : String(error),
-                )
+                setVerifyError(toError(error).message)
             } finally {
                 setIsVerifying(false)
             }

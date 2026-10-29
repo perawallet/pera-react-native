@@ -39,6 +39,7 @@ export const RekeySuccessScreen = ({
     const { t } = useLanguage()
     const { sourceName, handleDone } = useRekeySuccessScreen()
 
+    // lanekeep-ignore-next-line pera/no-numeric-sizes reason: check artwork size (192)
     const checkSize = theme.spacing['5xl'] * 2
 
     return (

@@ -12,7 +12,7 @@
 
 import { useCallback } from 'react'
 import { useContactsStore } from '@perawallet/wallet-core-contacts'
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, toError } from '@perawallet/wallet-core-shared'
 import type { ContactImportFn, ContactImportSummary } from '../sync/types'
 
 export type UseCloudBackupContactImportResult = {
@@ -56,10 +56,7 @@ export const useCloudBackupContactImport =
                     logger.warn('useCloudBackupContactImport: import failed')
                     summary.failed.push({
                         id: contact.id,
-                        reason:
-                            error instanceof Error
-                                ? error.message
-                                : String(error),
+                        reason: toError(error).message,
                     })
                     continue
                 }

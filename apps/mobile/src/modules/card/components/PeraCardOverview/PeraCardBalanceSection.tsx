@@ -24,7 +24,9 @@ import peraCardImage from '@assets/images/pera-card.png'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 
+// lanekeep-ignore-next-line pera/no-numeric-sizes reason: balance skeleton placeholder width
 const BALANCE_SKELETON_WIDTH = 160
+// lanekeep-ignore-next-line pera/no-numeric-sizes reason: balance skeleton placeholder height
 const BALANCE_SKELETON_HEIGHT = 34
 
 type PeraCardBalanceSectionProps = {

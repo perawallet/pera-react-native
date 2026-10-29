@@ -17,7 +17,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { zeroBytes } from '@perawallet/wallet-core-kms'
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, toError } from '@perawallet/wallet-core-shared'
 import { useMnemonicForAddress } from '@modules/backup'
 
 export type UseViewPassphraseContentParams = {
@@ -62,7 +62,7 @@ export const useViewPassphraseContent = ({
         })
             .catch(err => {
                 logger.error('ViewPassphrase: failed to retrieve mnemonic', {
-                    error: err instanceof Error ? err.message : String(err),
+                    error: toError(err).message,
                     stack: err instanceof Error ? err.stack : undefined,
                 })
                 clearIndices()

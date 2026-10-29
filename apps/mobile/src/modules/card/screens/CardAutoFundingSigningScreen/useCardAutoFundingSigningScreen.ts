@@ -19,7 +19,7 @@ import {
     useCardStore,
 } from '@perawallet/wallet-core-card'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
-import { logger, type Nullable } from '@perawallet/wallet-core-shared'
+import { logger, type Nullable, toError } from '@perawallet/wallet-core-shared'
 import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
 import {
     LEGACY_CHAIN_ID,
@@ -122,8 +122,7 @@ export const useCardAutoFundingSigningScreen =
                         finish(FundingType.Manual, true)
                         return
                     }
-                    const normalizedError =
-                        err instanceof Error ? err : new Error(String(err))
+                    const normalizedError = toError(err)
                     // Declining the signing review is a normal user action, so
                     // it stays out of the error logs; everything else (algod
                     // dumps, backend 5xx) is logged in full, because the screen

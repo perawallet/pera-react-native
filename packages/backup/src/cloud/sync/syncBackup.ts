@@ -11,7 +11,11 @@
  */
 
 import { zeroBytes } from '@perawallet/wallet-core-kms'
-import { isNotFoundError, logger } from '@perawallet/wallet-core-shared'
+import {
+    isNotFoundError,
+    logger,
+    toError,
+} from '@perawallet/wallet-core-shared'
 import { batchUpsertItems, deleteItem, fetchManifest, readItems } from '../api'
 import { decryptItemPayload } from '../crypto/itemPayload'
 import { isLegacyItemKey, type Manifest, type SyncState } from '../models'
@@ -94,7 +98,7 @@ export const syncBackup = async (
     // as a delete, so skipping passkeys for this cycle is safe.
     const passkeys = await deps.listPasskeys().catch(error => {
         logger.warn('syncBackup: listPasskeys failed, skipping passkeys', {
-            error: error instanceof Error ? error.message : String(error),
+            error: toError(error).message,
         })
         return []
     })

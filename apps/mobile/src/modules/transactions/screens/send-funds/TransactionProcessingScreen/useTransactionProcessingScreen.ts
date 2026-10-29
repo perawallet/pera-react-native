@@ -46,7 +46,7 @@ import {
     completeTabResume,
     registerTabResumeIntent,
 } from '@utils/tabResumeIntent'
-import type { SendFundsStackParamList } from '../../../routes/send-funds/types'
+import type { SendFundsStackParamList } from '@modules/transactions/routes/send-funds/types'
 
 export type UseTransactionProcessingScreenResult = {
     /** True when the sender is a hardware-wallet account; selects copy. */

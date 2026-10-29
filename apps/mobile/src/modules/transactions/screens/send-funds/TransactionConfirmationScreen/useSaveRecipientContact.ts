@@ -24,7 +24,7 @@ import {
     useContacts,
 } from '@perawallet/wallet-core-contacts'
 import type { Optional } from '@perawallet/wallet-core-shared'
-import type { SendFundsStackParamList } from '../../../routes/send-funds/types'
+import type { SendFundsStackParamList } from '@modules/transactions/routes/send-funds/types'
 
 export type UseSaveRecipientContactResult = {
     /**

@@ -13,6 +13,7 @@
 import { makeStyles } from '@rneui/themed'
 import type { ScaledSize } from 'react-native'
 
+// lanekeep-ignore-next-line pera/no-numeric-sizes reason: time label minimum width
 const TIME_LABEL_MIN_WIDTH = 44
 
 export const useStyles = makeStyles(

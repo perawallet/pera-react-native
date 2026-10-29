@@ -106,6 +106,7 @@ export const VaultSecuritySettingsScreen = () => {
                 </PWText>
                 {autoLockMinutes === null ? (
                     <PWSkeleton
+                        // lanekeep-ignore-next-line pera/no-numeric-sizes reason: autolock dropdown trigger height (44)
                         height={44}
                         style={styles.autolockTrigger}
                     />

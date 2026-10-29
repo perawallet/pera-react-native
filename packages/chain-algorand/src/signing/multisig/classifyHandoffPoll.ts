@@ -15,7 +15,7 @@ import {
     multisigAdapterFor,
     type ParticipantResponse,
 } from '@perawallet/wallet-core-multisig'
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, toError } from '@perawallet/wallet-core-shared'
 import {
     walletConnectHandoffs,
     type HandoffAssemblyContext,
@@ -248,7 +248,7 @@ const cancelBackendRequest = async (
     } catch (error) {
         logger.warn('WC multisig handoff backend cancel failed (non-fatal)', {
             signRequestId: handoff.signRequestId,
-            error: error instanceof Error ? error.message : String(error),
+            error: toError(error).message,
         })
     }
 }
@@ -363,7 +363,7 @@ const deliverReady = async (
     } catch (error) {
         logger.warn('WC multisig handoff mark-confirmed failed (non-fatal)', {
             signRequestId: handoff.signRequestId,
-            error: error instanceof Error ? error.message : String(error),
+            error: toError(error).message,
         })
     }
 

@@ -10,8 +10,6 @@
  limitations under the License
  */
 
-import { createPWTabNavigator } from '@components/core/PWTabView/PWTabView'
-import { useStyles } from './styles'
 import { AssetMarkets } from '@modules/assets/components/market/AssetMarkets'
 import { AssetHoldings } from '@modules/assets/components/holdings/AssetHoldings'
 import { EmptyView } from '@components/EmptyView'
@@ -19,9 +17,10 @@ import { LoadingView } from '@components/LoadingView'
 import { useLanguage } from '@hooks/useLanguage'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import type { AccountStackParamsList } from '@modules/accounts'
-import { PWText, PWView } from '@components/core'
+import { createPWTabNavigator, PWText, PWView } from '@components/core'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
 import { AccountHeaderMenu } from '@components/AccountHeaderMenu'
+import { useStyles } from './styles'
 import { useAssetDetailsScreen } from './useAssetDetailsScreen'
 
 export type AssetDetailsScreenProps = NativeStackScreenProps<

@@ -27,7 +27,7 @@ import {
     LEDGER_CONFIRMATION_TIMEOUT_MS,
     LEDGER_CONNECTION_TIMEOUT_MS,
 } from '@perawallet/wallet-core-ledger'
-import { AppError, withTimeout } from '@perawallet/wallet-core-shared'
+import { AppError, withTimeout, toError } from '@perawallet/wallet-core-shared'
 import {
     authDataMessageRequest,
     messageSignerFor,
@@ -82,9 +82,7 @@ const messageRequestOf = (
 const asRefusal = (error: unknown): Error =>
     error instanceof AppError
         ? error
-        : new InvalidSignableDataError(
-              error instanceof Error ? error.message : String(error),
-          )
+        : new InvalidSignableDataError(toError(error).message)
 
 const assembleOrRefuse = async (
     adapter: MessageSignerChainAdapter,

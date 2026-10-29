@@ -212,6 +212,12 @@
                 "importNames": ["ActivityIndicator"],
                 "message": "Use PWLoadingIndicator from @components/core."
               }
+            ],
+            "patterns": [
+              {
+                "regex": "^@components/core/",
+                "message": "Import from the @components/core barrel, adding any name it lacks to that component's index.ts. Only files inside components/core use subpaths, since the barrel re-exports them."
+              }
             ]
           }
         ],
@@ -246,6 +252,40 @@
                 "importNames": ["useQuery", "useQueries", "useInfiniteQuery", "useSuspenseQuery", "useSuspenseQueries", "useSuspenseInfiniteQuery", "useMutation"],
                 "message": "Put this query or mutation in its domain package as a named use…Query/use…Mutation hook with a declared result type, and call that hook here. useQueryClient stays allowed."
               }
+            ],
+            "patterns": [
+              {
+                "regex": "^@components/core/",
+                "message": "Import from the @components/core barrel, adding any name it lacks to that component's index.ts. Only files inside components/core use subpaths, since the barrel re-exports them."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["src/components/core/**"],
+      "excludeFiles": ["src/**/__tests__/**", "src/**/__mocks__/**", "src/**/test-utils/**", "src/**/__integration__/**", "src/**/*.spec.{ts,tsx}", "src/**/*.test.{ts,tsx}"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              {
+                "name": "zustand/middleware",
+                "importNames": ["persist", "createJSONStorage"],
+                "message": "Persist through guardedPersist from @perawallet/wallet-core-shared, which quarantines state it cannot restore instead of letting the next write erase it."
+              },
+              {
+                "name": "decimal.js",
+                "importNames": ["default"],
+                "message": "Import the named { Decimal } from decimal.js."
+              },
+              {
+                "name": "react-native",
+                "importNames": ["ActivityIndicator"],
+                "message": "Use PWLoadingIndicator from @components/core."
+              }
             ]
           }
         ]
@@ -255,6 +295,11 @@
       "files": ["src/**"],
       "excludeFiles": ["src/**/__tests__/**", "src/**/__mocks__/**", "src/**/test-utils/**", "src/**/__integration__/**", "src/**/*.spec.{ts,tsx}", "src/**/*.test.{ts,tsx}"],
       "rules": { "pera/no-manual-unit-conversion": "error" }
+    },
+    {
+      "files": ["src/**"],
+      "excludeFiles": ["src/**/__tests__/**", "src/**/__mocks__/**", "src/**/test-utils/**", "src/**/__integration__/**", "src/**/*.spec.{ts,tsx}", "src/**/*.test.{ts,tsx}"],
+      "rules": { "pera/no-display-string-identity": "error", "pera/fetch-has-deadline": "error" }
     },
     {
       "files": ["src/**"],
@@ -277,12 +322,27 @@
       "rules": { "pera/hook-result-type": "error" }
     },
     {
+      "files": ["src/**/*.{ts,tsx}"],
+      "excludeFiles": ["src/components/core/**"],
+      "rules": { "pera/test-id-prop": "error" }
+    },
+    {
+      "files": ["src/**"],
+      "excludeFiles": ["src/**/__tests__/**", "src/**/__mocks__/**", "src/**/test-utils/**", "src/**/__integration__/**", "src/**/*.spec.{ts,tsx}", "src/**/*.test.{ts,tsx}"],
+      "rules": { "pera/prefer-to-error": "error" }
+    },
+    {
       "files": ["src/**/__tests__/**", "src/**/*.spec.{ts,tsx}", "src/**/__integration__/**", "src/**/test-utils/**", "vitest*.ts"],
       "rules": { "pera/no-algorand-sdk-imports": "off" }
     },
     {
       "files": ["**/__tests__/**", "**/__mocks__/**", "**/__integration__/**", "**/test-utils/**", "**/*.spec.{ts,tsx,js,jsx}", "**/*.test.{ts,tsx,js,jsx}"],
       "rules": { "no-nested-ternary": "off" }
+    },
+    {
+      "files": ["src/**"],
+      "excludeFiles": ["src/**/__tests__/**", "src/**/__mocks__/**", "src/**/test-utils/**", "src/**/__integration__/**", "src/**/*.spec.{ts,tsx}", "src/**/*.test.{ts,tsx}"],
+      "rules": { "pera/no-deep-relative-imports": "error" }
     }
   ]
 }

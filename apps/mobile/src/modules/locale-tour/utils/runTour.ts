@@ -10,7 +10,9 @@
  limitations under the License
  */
 
-import { drainOverflow } from '@components/core/PWText/overflowRegistry'
+import { toError } from '@perawallet/wallet-core-shared'
+
+import { drainOverflow } from '@components/core'
 
 import { getTourSteps } from './steps'
 import { runTourStep, TOUR_ERROR_MARKER } from './runTourStep'
@@ -75,8 +77,7 @@ export const runTour = async ({
             // marker without throwing; this only guards against an
             // unexpected rejection so one bad surface can never take down
             // the other 189.
-            const reason =
-                error instanceof Error ? error.message : String(error)
+            const reason = toError(error).message
             console.log(`${TOUR_ERROR_MARKER}|${step.id}|${reason}`)
         }
 

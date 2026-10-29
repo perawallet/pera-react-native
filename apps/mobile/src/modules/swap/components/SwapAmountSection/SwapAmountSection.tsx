@@ -16,6 +16,7 @@ import { AmountField } from '@components/AmountField'
 import { AssetSelector } from '@components/AssetSelector'
 import { AssetAmount } from '@components/AssetAmount'
 import { PreferredAmount } from '@components/PreferredAmount'
+import { Trans } from 'react-i18next'
 import { useLanguage } from '@hooks/useLanguage'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useStyles } from './styles'
@@ -125,7 +126,9 @@ export const SwapAmountSection = (props: SwapAmountSectionProps) => {
         if (isLoading) {
             return (
                 <PWSkeleton
+                    // lanekeep-ignore-next-line pera/no-numeric-sizes reason: amount skeleton width
                     width={120}
+                    // lanekeep-ignore-next-line pera/no-numeric-sizes reason: amount skeleton height
                     height={28}
                 />
             )
@@ -156,16 +159,25 @@ export const SwapAmountSection = (props: SwapAmountSectionProps) => {
                     <PWText
                         variant='body'
                         style={styles.balance}
+                        truncate
                     >
-                        {t('swap.form.balance_label')}
+                        <Trans
+                            i18nKey='swap.form.balance_label'
+                            components={[
+                                <AssetAmount
+                                    key='balance'
+                                    value={balance ?? new Decimal(0)}
+                                    asset={asset}
+                                    symbolPosition={
+                                        isNativeAsset ? 'start' : 'end'
+                                    }
+                                    variant='body'
+                                    style={styles.balance}
+                                    isInline
+                                />,
+                            ]}
+                        />
                     </PWText>
-                    <AssetAmount
-                        value={balance ?? new Decimal(0)}
-                        asset={asset}
-                        symbolPosition={isNativeAsset ? 'start' : 'end'}
-                        variant='body'
-                        style={styles.balance}
-                    />
                 </PWView>
             }
             amount={renderAmount()}

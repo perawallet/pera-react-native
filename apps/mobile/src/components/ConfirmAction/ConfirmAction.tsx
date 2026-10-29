@@ -11,13 +11,11 @@
  */
 
 import { useSettings } from '@perawallet/wallet-core-settings'
-// Subpath imports (not the @components/core barrel) so integration tests'
-// PWSlideToConfirm subpath mock still intercepts the slide surface here.
 import {
     PWSlideToConfirm,
     type PWSlideToConfirmProps,
-} from '@components/core/PWSlideToConfirm'
-import { PWTapToConfirm } from '@components/core/PWTapToConfirm'
+    PWTapToConfirm,
+} from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 
 export type ConfirmActionProps = PWSlideToConfirmProps
