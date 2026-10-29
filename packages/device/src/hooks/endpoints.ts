@@ -23,7 +23,10 @@ import type {
     DeviceResponse,
     V3DeviceRegistrationRequest,
 } from '../models'
-import { deviceChainAdapters } from '../registrations/chain-adapter'
+import {
+    deviceChainAdapters,
+    type DeviceRegistrableAccount,
+} from '../registrations/chain-adapter'
 import { registrationChainOf } from '../registrations/registrationChain'
 import { isDeviceRegistrationV4Enabled } from './registrationApi'
 import {
@@ -39,6 +42,27 @@ const V3_DEVICES_PATH = 'api/v3/devices'
 const isOnV3DevicesApi = (chainId: ChainId): boolean =>
     deviceChainAdapters.has(chainId) &&
     deviceChainAdapters.get(chainId).isOnV3DevicesApi === true
+
+/**
+ * Whether registering on `deployment` sends the account's address on `chainId`,
+ * so a push can reach it there. The chain's `notifications` capability plays no
+ * part: a device adapter registers whatever it says.
+ */
+export const isSentInDeviceRegistration = (
+    account: DeviceRegistrableAccount,
+    chainId: ChainId,
+    deployment: WalletMode,
+): boolean => {
+    if (account.chains[chainId] === undefined) return false
+    if (!deviceChainAdapters.has(chainId)) return false
+    if (deviceChainAdapters.get(chainId).accountTypeOf(account) === null) {
+        return false
+    }
+    return isDeviceRegistrationV4Enabled()
+        ? registrationChainOf(getProvider().chains, chainId, deployment) !==
+              null
+        : isOnV3DevicesApi(chainId)
+}
 
 /**
  * Create or update a device. There is no separate update verb: a payload

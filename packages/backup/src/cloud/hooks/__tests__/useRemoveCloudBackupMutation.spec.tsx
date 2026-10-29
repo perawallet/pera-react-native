@@ -27,6 +27,8 @@ const {
     resetSyncActivityMock,
     backupIdMock,
     deviceIdMock,
+    deploymentMock,
+    resolveBackupDeviceIdMock,
 } = vi.hoisted(() => ({
     destroyBackupMock: vi.fn(),
     deleteBackupKeysMock: vi.fn(),
@@ -38,6 +40,8 @@ const {
     resetSyncActivityMock: vi.fn(),
     backupIdMock: { value: 'did:pera:ADDR' as string | null },
     deviceIdMock: { value: 'dev-1' as string | null },
+    deploymentMock: { value: 'live' as 'live' | 'developer' },
+    resolveBackupDeviceIdMock: vi.fn(),
 }))
 
 vi.mock('../../api', () => ({ destroyBackup: destroyBackupMock }))
@@ -76,11 +80,11 @@ vi.mock('../../store/syncActivityStore', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useWalletDeployment: () => 'live',
+    useWalletDeployment: () => deploymentMock.value,
 }))
 
 vi.mock('../../store/resolveBackupDeviceId', () => ({
-    resolveBackupDeviceId: () => deviceIdMock.value,
+    resolveBackupDeviceId: resolveBackupDeviceIdMock,
 }))
 
 import { useRemoveCloudBackupMutation } from '../useRemoveCloudBackupMutation'
@@ -104,6 +108,8 @@ beforeEach(() => {
     deleteBackupKeysMock.mockResolvedValue(undefined)
     backupIdMock.value = 'did:pera:ADDR'
     deviceIdMock.value = 'dev-1'
+    deploymentMock.value = 'live'
+    resolveBackupDeviceIdMock.mockImplementation(() => deviceIdMock.value)
 })
 
 describe('useRemoveCloudBackupMutation', () => {
@@ -184,5 +190,23 @@ describe('useRemoveCloudBackupMutation', () => {
         await waitFor(() => expect(onError).toHaveBeenCalled())
         expect(destroyBackupMock).not.toHaveBeenCalled()
         expect(deleteBackupKeysMock).not.toHaveBeenCalled()
+    })
+
+    test('resolves the device on the deployment it was called with when the deployment changes mid-request', async () => {
+        destroyBackupMock.mockResolvedValue({ backup_id: 'did:pera:ADDR' })
+        const onSuccess = vi.fn()
+
+        const { result, rerender } = renderHook(
+            () => useRemoveCloudBackupMutation({ onSuccess }),
+            { wrapper: createWrapper() },
+        )
+
+        act(() => result.current.mutate())
+        deploymentMock.value = 'developer'
+        rerender()
+
+        await waitFor(() => expect(onSuccess).toHaveBeenCalled())
+        expect(resolveBackupDeviceIdMock).toHaveBeenCalledWith('live')
+        expect(resolveBackupDeviceIdMock).not.toHaveBeenCalledWith('developer')
     })
 })

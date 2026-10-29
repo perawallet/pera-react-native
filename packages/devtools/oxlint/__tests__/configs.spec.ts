@@ -183,6 +183,41 @@ describe('pera/no-hardcoded-ui-strings', () => {
     })
 })
 
+describe('pera/mutation-scope-in-variables', () => {
+    const RULE = 'pera/mutation-scope-in-variables'
+
+    it('blocks in package, extension and browser-app source, tests aside', () => {
+        const root = readOxlintConfig('.oxlintrc.json')
+        const overrides = overridesWith(root, RULE)
+
+        expect(overrides).toHaveLength(1)
+        expect(overrides[0].files).toEqual([
+            'packages/*/src/**',
+            'extensions/*/src/**',
+            'apps/browser/src/**',
+        ])
+        expect(overrides[0].rules[RULE]).toBe('error')
+        expect(overrides[0].excludeFiles).toEqual([
+            '**/__tests__/**',
+            '**/__mocks__/**',
+            '**/test-utils/**',
+            '**/__integration__/**',
+            '**/*.spec.{ts,tsx}',
+            '**/*.test.{ts,tsx}',
+        ])
+    })
+
+    it('blocks in all mobile source, tests aside', () => {
+        const mobile = readOxlintConfig('apps/mobile/.oxlintrc.json')
+        const overrides = overridesWith(mobile, RULE)
+
+        expect(overrides).toHaveLength(1)
+        expect(overrides[0].files).toEqual(['src/**'])
+        expect(overrides[0].rules[RULE]).toBe('error')
+        expect(overrides[0].excludeFiles).toContain('src/**/__tests__/**')
+    })
+})
+
 describe('pera/no-unvalidated-open-url', () => {
     it('blocks in mobile production source through its own override, not the top-level rules', () => {
         const mobile = readOxlintConfig(

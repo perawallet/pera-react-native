@@ -544,10 +544,23 @@ describe('useAccountInfoCard', () => {
             ).toEqual(['algorand'])
         })
 
-        test('uses the plain scan label when one chain is active', () => {
+        test('labels a Universal Wallet scan without a chain name, with one chain or several', () => {
+            const { result: multichain } = render()
+            mockIsMultichain = false
+            const { result: singleChain } = render()
+
+            expect(multichain.current.scanLabel).toBe(
+                'account_info.scan_new_wallet_accounts',
+            )
+            expect(singleChain.current.scanLabel).toBe(
+                'account_info.scan_new_wallet_accounts',
+            )
+        })
+
+        test('keeps the plain scan label on a Ledger account when one chain is active', () => {
             mockIsMultichain = false
 
-            const { result } = render()
+            const { result } = render(ledgerAccount)
 
             expect(result.current.scanLabel).toBe(
                 'account_info.scan_new_addresses',
@@ -571,8 +584,8 @@ describe('useAccountInfoCard', () => {
             expect(singleChain.current.isMultichain).toBe(false)
         })
 
-        test('names the chain a Universal Wallet scan walks', () => {
-            const { result } = render()
+        test("names the Ledger account's chain in its scan label", () => {
+            const { result } = render(ledgerAccount)
 
             expect(result.current.scanLabel).toBe(
                 'account_info.scan_new_accounts (Algorand)',
@@ -699,7 +712,7 @@ describe('useAccountInfoCard', () => {
         expect(onClose).toHaveBeenCalled()
         expect(mockNavigate).toHaveBeenCalledWith('AddAccount', {
             screen: 'SearchAccounts',
-            params: { account: hdAccount, notifyOnEmpty: true },
+            params: { account: hdAccount },
         })
     })
 

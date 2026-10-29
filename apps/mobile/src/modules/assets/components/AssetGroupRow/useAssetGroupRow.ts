@@ -13,13 +13,13 @@
 import { useMemo } from 'react'
 import { Decimal } from 'decimal.js'
 import {
-    findNativeAsset,
     PeraAssetVerificationTier,
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { IconName } from '@components/core'
+import { nativeAssetInfoOf } from '@modules/chain-ui/icon'
 import type {
     AssetFiatConverter,
     AssetFiatValue,
@@ -65,6 +65,10 @@ export type UseAssetGroupRowResult = {
     /** "SYMBOL · id" when every network shares one id, else the symbol alone. */
     subtitle: string
     chainIds: ChainId[]
+    /** The chain of the member `icon` is drawn from. */
+    iconChainId: Nullable<ChainId>
+    /** The most precise member's, so the summed amount loses none of its digits. */
+    decimals: number
     /** Null value while any member's is unknown. */
     fiat: AssetFiatValue
 }
@@ -95,8 +99,10 @@ export const useAssetGroupRow = <T extends GroupableHolding>({
         const tiers = members.map(({ asset, holding }): Nullable<GroupTier> => {
             if (!asset) return null
             const isNative =
-                findNativeAsset(holding.scope.chainId)?.assetId ===
-                holding.assetId
+                nativeAssetInfoOf({
+                    chainId: holding.scope.chainId,
+                    assetId: holding.assetId,
+                }) !== undefined
             return isNative
                 ? 'trusted'
                 : (asset.peraMetadata?.verificationTier ??
@@ -124,12 +130,19 @@ export const useAssetGroupRow = <T extends GroupableHolding>({
             : group.symbol
     }, [members, group.symbol])
 
+    const decimals = useMemo(
+        () => Math.max(0, ...members.map(({ asset }) => asset?.decimals ?? 0)),
+        [members],
+    )
+
     return {
         icon: members[0]?.asset ?? null,
         verificationIcon: tier ? getVerificationIcon(tier) : null,
         isSuspicious: tier === PeraAssetVerificationTier.suspicious,
         subtitle,
         chainIds,
+        iconChainId: members[0]?.holding.scope.chainId ?? null,
+        decimals,
         fiat,
     }
 }

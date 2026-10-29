@@ -78,7 +78,8 @@ vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
 }))
 vi.mock('@perawallet/wallet-core-device', async importOriginal => ({
     ...(await importOriginal<object>()),
-    useDeploymentDeviceID: () => deviceIdMock.value,
+    useDeviceStore: { getState: () => ({}) },
+    deviceIdForDeployment: () => deviceIdMock.value,
 }))
 
 import { applyBackupSettings } from '../../sync/backupSettingsStores'
@@ -283,7 +284,7 @@ describe('useRestoreCloudBackupMutation', () => {
         })
 
         await act(async () => finish())
-        await waitFor(() => expect(result.current.isSuccess).toBe(true))
+        await waitFor(() => expect(setSyncStateMock).toHaveBeenCalled())
         expect(
             useCloudBackupRestoreProgressStore.getState().progress,
         ).toBeNull()
@@ -309,5 +310,76 @@ describe('useRestoreCloudBackupMutation', () => {
         expect(
             useCloudBackupRestoreProgressStore.getState().progress,
         ).toBeNull()
+    })
+
+    test('restores and records the backup under the device it was called with when the device changes mid-request', async () => {
+        let finish!: () => void
+        restoreCloudBackupMock.mockImplementation(
+            () =>
+                new Promise(resolve => {
+                    finish = () => resolve(RESULT)
+                }),
+        )
+        const { result, rerender } = renderRestore()
+
+        act(() => result.current.mutate({ salt: SALT }))
+        deviceIdMock.value = 'device-456'
+        rerender()
+        await waitFor(() => expect(restoreCloudBackupMock).toHaveBeenCalled())
+        await act(async () => finish())
+
+        await waitFor(() => expect(setConfiguredMock).toHaveBeenCalled())
+        expect(restoreCloudBackupMock).toHaveBeenCalledWith(
+            expect.objectContaining({ deviceId: 'device-123' }),
+        )
+        expect(setConfiguredMock).toHaveBeenCalledWith({
+            backupId: 'did:pera:abc',
+            salt: SALT,
+            deviceId: 'device-123',
+        })
+    })
+
+    // The QR scan captures `restore`, then awaits the backup-code sheet before calling it.
+    test('restores with a device id that registered after the callback was captured', async () => {
+        deviceIdMock.value = null
+        const onSuccess = vi.fn()
+        const { result } = renderRestore({ onSuccess })
+        const { mutate: captured } = result.current
+
+        deviceIdMock.value = 'device-123'
+        act(() => captured({ salt: SALT }))
+
+        await waitFor(() => expect(onSuccess).toHaveBeenCalled())
+        expect(restoreCloudBackupMock).toHaveBeenCalledWith(
+            expect.objectContaining({ deviceId: 'device-123' }),
+        )
+    })
+
+    test('keeps the restore callbacks stable when the device id arrives', () => {
+        deviceIdMock.value = null
+        const { result, rerender } = renderRestore()
+        const { mutate, mutateAsync } = result.current
+
+        deviceIdMock.value = 'device-123'
+        rerender()
+
+        expect(result.current.mutate).toBe(mutate)
+        expect(result.current.mutateAsync).toBe(mutateAsync)
+    })
+
+    test('mutateAsync resolves with the restore result on the call-time device', async () => {
+        const { result, rerender } = renderRestore()
+
+        let restored: Promise<unknown> | undefined
+        act(() => {
+            restored = result.current.mutateAsync({ salt: SALT })
+        })
+        deviceIdMock.value = 'device-456'
+        rerender()
+
+        await expect(restored).resolves.toEqual(RESULT)
+        expect(restoreCloudBackupMock).toHaveBeenCalledWith(
+            expect.objectContaining({ deviceId: 'device-123' }),
+        )
     })
 })

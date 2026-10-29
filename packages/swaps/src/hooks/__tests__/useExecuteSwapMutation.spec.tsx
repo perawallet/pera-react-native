@@ -254,4 +254,39 @@ describe('useExecuteSwapMutation', () => {
 
         expect(executeSwap).not.toHaveBeenCalled()
     })
+
+    test('executes on the account, signer and scope it was called with when the selection changes mid-swap', async () => {
+        vi.mocked(executeSwap).mockResolvedValue({
+            kind: 'success',
+            txIds: ['T'],
+        })
+        const original = mockSelectedAccount.current
+        const { result, rerender } = renderHook(
+            () => useExecuteSwapMutation(),
+            { wrapper },
+        )
+
+        let swap: Promise<unknown> | undefined
+        act(() => {
+            swap = result.current.mutateAsync(variables)
+        })
+        mockSelectedAccount.current = account('OTHER', {
+            kind: 'local',
+            seed: null,
+        })
+        mockSwapScope.current = { chainId: 'algorand', networkId: 'mainnet' }
+        rerender()
+        await act(async () => {
+            await swap
+        })
+
+        expect(executeSwap).toHaveBeenCalledWith(
+            {
+                ...variables,
+                account: original,
+                signer: { address: 'signer-of-SELECTED-on-algorand' },
+            },
+            expect.objectContaining({ scope: SCOPE }),
+        )
+    })
 })

@@ -28,7 +28,7 @@ import {
 } from '@perawallet/wallet-core-shared'
 import { getCardSettlementAssetId } from '@perawallet/wallet-core-card'
 import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
-import { i18nKey } from '@perawallet/wallet-core-chain-contract'
+import { i18nKey, type ChainId } from '@perawallet/wallet-core-chain-contract'
 import { useTranslation } from 'react-i18next'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
@@ -48,6 +48,8 @@ import { USDC_DISPLAY_PRECISION } from '../../utils/usdc'
 import { useCardAddFundsSwap } from './useCardAddFundsSwap'
 
 type UseCardAddFundsScreenResult = {
+    /** The chain the card settles on; the source asset's chain. */
+    chainId: ChainId
     /** The account linked to the card; deposits are drawn from it. */
     fundingAccount: Nullable<WalletAccount>
     /** Currently selected source asset (USDC by default). */
@@ -229,6 +231,7 @@ export const useCardAddFundsScreen = (): UseCardAddFundsScreenResult => {
     ])
 
     return {
+        chainId: scope.chainId,
         fundingAccount,
         sourceAsset,
         isUsdc,

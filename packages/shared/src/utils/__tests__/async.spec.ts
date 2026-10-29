@@ -13,6 +13,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import {
     calculateBackoff,
+    createConcurrencyLimit,
     deferToNextCycle,
     isPromiseLike,
     mapWithConcurrency,
@@ -363,6 +364,64 @@ describe('mapWithConcurrency', () => {
             { status: 'fulfilled', value: 1 },
             { status: 'fulfilled', value: 2 },
         ])
+    })
+})
+
+describe('createConcurrencyLimit', () => {
+    const gate = () => {
+        const release: (() => void)[] = []
+        let running = 0
+        let peak = 0
+        const task = (value: number) => async () => {
+            running++
+            peak = Math.max(peak, running)
+            await new Promise<void>(resolve => release.push(resolve))
+            running--
+            return value
+        }
+        const tick = () => new Promise(resolve => setTimeout(resolve, 0))
+        return {
+            task,
+            tick,
+            running: () => running,
+            peak: () => peak,
+            releaseOne: async () => {
+                release.shift()?.()
+                await tick()
+            },
+        }
+    }
+
+    it('caps tasks from separate callers at the limit, admitting one per finish', async () => {
+        const limit = createConcurrencyLimit(2)
+        const { task, tick, running, peak, releaseOne } = gate()
+
+        const first = Promise.all([1, 2, 3].map(n => limit(task(n))))
+        const second = Promise.all([4, 5, 6].map(n => limit(task(n))))
+        await tick()
+        expect(running()).toBe(2)
+
+        await releaseOne()
+        expect(running()).toBe(2)
+
+        for (let i = 0; i < 5; i++) await releaseOne()
+        await expect(first).resolves.toEqual([1, 2, 3])
+        await expect(second).resolves.toEqual([4, 5, 6])
+        expect(peak()).toBe(2)
+    })
+
+    it('frees the slot when a task rejects', async () => {
+        const limit = createConcurrencyLimit(1)
+        const boom = new Error('boom')
+
+        await expect(limit(() => Promise.reject(boom))).rejects.toBe(boom)
+        await expect(limit(async () => 'next')).resolves.toBe('next')
+    })
+
+    it('still runs tasks when the limit is 0', async () => {
+        const limit = createConcurrencyLimit(0)
+
+        await expect(limit(async () => 1)).resolves.toBe(1)
     })
 })
 

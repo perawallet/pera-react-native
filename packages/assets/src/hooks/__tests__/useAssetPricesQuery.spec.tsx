@@ -94,6 +94,7 @@ describe('useAssetPricesQuery', () => {
             },
         )
 
+        expect(result.current.isPending).toBe(true)
         await waitFor(() => expect(result.current.isPending).toBe(false))
 
         expect(result.current.data.size).toBe(2)
@@ -207,7 +208,7 @@ describe('useAssetPricesQuery', () => {
     })
 
     it('respects the enabled parameter', () => {
-        renderHook(
+        const { result } = renderHook(
             () => useAssetPricesQuery(ALGORAND_MAINNET, ['123'], false),
             {
                 wrapper: createWrapper(queryClient),
@@ -215,5 +216,6 @@ describe('useAssetPricesQuery', () => {
         )
 
         expect(mocks.getAssetPricesByIds).not.toHaveBeenCalled()
+        expect(result.current.isPending).toBe(false)
     })
 })

@@ -44,6 +44,8 @@ export const useTransactionDetailQuery = ({
     const algokit = useAlgorandClient()
     const scope = useSelectedScope(ALGORAND_CHAIN_ID)
 
+    const isQueryEnabled = isEnabled && !!transactionId
+
     const query = useQuery({
         queryKey: getTransactionDetailQueryKey(transactionId, scope),
         queryFn: async () => {
@@ -54,12 +56,12 @@ export const useTransactionDetailQuery = ({
                 mapIndexerTxToDisplayableTransaction(response.transaction),
             )
         },
-        enabled: isEnabled && !!transactionId,
+        enabled: isQueryEnabled,
     })
 
     return {
         data: query.data,
-        isPending: query.isPending,
+        isPending: isQueryEnabled && query.isPending,
         isLoading: query.isLoading,
         isSuccess: query.isSuccess,
         isError: query.isError,

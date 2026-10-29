@@ -2739,6 +2739,9 @@ importers:
       '@perawallet/wallet-extension-ledger-shared':
         specifier: workspace:*
         version: link:../../extensions/ledger-shared
+      '@perawallet/wallet-extension-provider':
+        specifier: workspace:*
+        version: link:../../extensions/provider
       decimal.js:
         specifier: 'catalog:'
         version: 10.6.0
@@ -2755,9 +2758,6 @@ importers:
       '@perawallet/wallet-core-devtools':
         specifier: workspace:*
         version: link:../devtools
-      '@perawallet/wallet-extension-provider':
-        specifier: workspace:*
-        version: link:../../extensions/provider
       '@types/node':
         specifier: 'catalog:'
         version: 20.19.43

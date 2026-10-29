@@ -72,10 +72,11 @@ export const useAccountAssetsQuery = (
         search,
     })
     const signature = sourcesSignature(sourcesOfKey(queryKey))
+    const isEnabled = sources.length > 0 && enabled
 
     const query = useQuery({
         queryKey,
-        enabled: sources.length > 0 && enabled,
+        enabled: isEnabled,
         staleTime: Infinity,
         gcTime: HOLDINGS_ROWS_GC_TIME_MS,
         // Same reason as the collectibles read: sort mode, filters
@@ -111,7 +112,7 @@ export const useAccountAssetsQuery = (
 
     return {
         holdings: query.data ?? [],
-        isPending: query.isPending,
+        isPending: isEnabled && query.isPending,
         isPlaceholderData: query.isPlaceholderData,
         isRefetching: query.isRefetching,
         isError: query.isError,

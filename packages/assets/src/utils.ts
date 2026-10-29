@@ -15,6 +15,8 @@ import {
     baseUnitsToDisplayUnits,
     displayUnitsToBaseUnits,
     formatNumber,
+    resolveAssetDisplayPrecision,
+    roundAssetAmountForDisplay,
 } from '@perawallet/wallet-core-shared'
 
 import { type MinimalAsset, type PeraAsset, PeraAssetType } from './models'
@@ -64,10 +66,13 @@ export const formatAssetAmount = (
     asset: Pick<MinimalAsset, 'decimals' | 'unitName'>,
 ): string => {
     const decimals = asset.decimals ?? 0
-    const display = baseUnitsToDisplayUnits(amount, decimals)
+    const display = roundAssetAmountForDisplay(
+        baseUnitsToDisplayUnits(amount, decimals),
+        decimals,
+    )
     const { sign, integer, fraction } = formatNumber(
         display,
-        decimals,
+        resolveAssetDisplayPrecision(display, decimals),
         undefined,
         2,
     )

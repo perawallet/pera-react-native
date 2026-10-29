@@ -60,7 +60,7 @@ export const useAccountFundedNetworksQuery = (
     return {
         fundedNetworks,
         isFunded: fundedNetworks.length > 0,
-        isPending: query.isPending,
+        isPending: !!address && query.isPending,
         isError: query.isError,
     }
 }

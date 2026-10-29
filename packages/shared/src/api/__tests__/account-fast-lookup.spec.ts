@@ -76,7 +76,7 @@ describe('fetchAccountFastLookup', () => {
         ])
     })
 
-    test('reads a failed lookup as inactive when another in the batch answered', async () => {
+    test('leaves a failed lookup out when another in the batch answered', async () => {
         queryClientMock.mockImplementation(async ({ url }: { url: string }) => {
             if (url === '/v1/accounts/fast-lookup/ADDR1/') {
                 throw new Error('boom')
@@ -85,10 +85,7 @@ describe('fetchAccountFastLookup', () => {
         })
 
         const result = await fetchAccountFastLookup(['ADDR1', 'ADDR2'], SCOPE)
-        expect(result).toEqual([
-            { address: 'ADDR1', accountExists: false },
-            { address: 'ADDR2', accountExists: true },
-        ])
+        expect(result).toEqual([{ address: 'ADDR2', accountExists: true }])
     })
 
     test('rejects when every lookup in the batch fails', async () => {

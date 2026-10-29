@@ -84,6 +84,7 @@ export const ArbitraryDataSigningDetailsView = ({
             <PWView style={styles.section}>
                 <KeyValueRow title={t('signing.arbitrary_data_details.amount')}>
                     <AssetAmount
+                        chainId={scope.chainId}
                         asset={nativeAsset}
                         value={new Decimal(0)}
                         showSymbol
@@ -93,6 +94,7 @@ export const ArbitraryDataSigningDetailsView = ({
                 </KeyValueRow>
                 <KeyValueRow title={t('signing.arbitrary_data_details.fee')}>
                     <AssetAmount
+                        chainId={scope.chainId}
                         asset={nativeAsset}
                         value={new Decimal(0)}
                         showSymbol
