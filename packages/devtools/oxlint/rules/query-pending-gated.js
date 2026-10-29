@@ -143,12 +143,11 @@ const pendingLocals = pattern => {
     return locals
 }
 
-const calleeName = callee =>
-    callee.type === 'Identifier'
-        ? callee.name
-        : !callee.computed
-          ? callee.property?.name
-          : undefined
+const calleeName = callee => {
+    if (callee.type === 'Identifier') return callee.name
+    if (callee.computed) return undefined
+    return callee.property?.name
+}
 
 // A React deps list is read for identity, never rendered from.
 const isDependencyEntry = read => {
