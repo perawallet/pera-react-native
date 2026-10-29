@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { afterEach, describe, it, expect, vi, beforeEach } from 'vitest'
 import { act, renderHook } from '@testing-library/react'
 import type {
     MultisigSignRequest,
@@ -81,6 +81,10 @@ describe('useMultisigSignInboxItem', () => {
         vi.useFakeTimers()
         useSignRequestDetailQueryMock.mockReset()
         useSignRequestDetailQueryMock.mockReturnValue({ data: undefined })
+    })
+
+    afterEach(() => {
+        vi.useRealTimers()
     })
 
     it('renders a confirmed request as success without polling for recovery', () => {

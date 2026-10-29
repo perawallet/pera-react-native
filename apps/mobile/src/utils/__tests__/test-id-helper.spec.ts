@@ -12,8 +12,6 @@
 
 // @vitest-environment node
 
-// @vitest-environment node
-
 import { describe, expect, it } from 'vitest'
 import { getTestProps } from '../test-id-helper'
 

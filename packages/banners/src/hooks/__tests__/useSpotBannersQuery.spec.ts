@@ -86,14 +86,12 @@ describe('useSpotBannersQuery', () => {
         expect(result.current.spotBanners).toEqual([])
     })
 
-    it('stays disabled and returns empty when deviceID is null', async () => {
+    it('stays disabled and returns empty when deviceID is null', () => {
         vi.mocked(useDeploymentDeviceID).mockReturnValue(null)
 
         const { result } = renderHook(() => useSpotBannersQuery(), {
             wrapper: createWrapper(),
         })
-
-        await new Promise(resolve => setTimeout(resolve, 50))
 
         expect(fetchSpotBanners).not.toHaveBeenCalled()
         expect(result.current.spotBanners).toEqual([])

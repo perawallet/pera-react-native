@@ -11,7 +11,7 @@
  */
 
 import { Fragment } from 'react'
-import { PWScreen, PWView } from '@components/core'
+import { PWScreen, PWText, PWView } from '@components/core'
 import { ListItemDivider } from '@components/ListItemDivider'
 import { useLanguage } from '@hooks/useLanguage'
 import { BackupReviewCard } from '../../components/BackupReviewCard'
@@ -29,6 +29,7 @@ export const CloudBackupAccountsScreen = () => {
         isBackedUp,
         notBackedUpCount,
         availableFromBackupCount,
+        showsNetworksHint,
         isBusy,
         onBackUp,
         onReview,
@@ -75,6 +76,15 @@ export const CloudBackupAccountsScreen = () => {
                         title={t('cloud_backup.accounts.device_title')}
                         subtitle={t('cloud_backup.accounts.device_subtitle')}
                     />
+                    {showsNetworksHint && (
+                        <PWText
+                            variant='body'
+                            style={styles.networksHint}
+                            testID='cloud_backup_accounts_networks_hint'
+                        >
+                            {t('cloud_backup.accounts.networks_hint')}
+                        </PWText>
+                    )}
                     <PWView>
                         {accounts.map(({ account, address }, index) => (
                             <Fragment key={account.id}>

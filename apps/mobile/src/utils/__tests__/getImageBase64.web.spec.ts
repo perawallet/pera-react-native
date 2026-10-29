@@ -33,7 +33,9 @@ describe('getImageBase64 (web)', () => {
             'unused',
         )
 
-        expect(fetch).toHaveBeenCalledWith('https://example.com/nft.png')
+        expect(globalThis.fetch).toHaveBeenCalledWith(
+            'https://example.com/nft.png',
+        )
         // jsdom's FileReader produces a real data URL; just assert the
         // "data:...;base64," prefix was stripped and something was returned.
         expect(result.length).toBeGreaterThan(0)

@@ -30,7 +30,7 @@ export type UseAccountBalancesHistoryQueryResult = {
     isError: boolean
     isPaused: boolean
     error: Nullable<Error>
-    /** True when the chain has no portfolio history source — this can never succeed here. */
+    /** True when the network has no portfolio history source — this can never succeed here. */
     isUnavailableOnNetwork: boolean
     refetch: (options?: RefetchOptions) => unknown
 }
@@ -43,30 +43,32 @@ export const useAccountBalancesHistoryQuery = (
     enabled = true,
 ): UseAccountBalancesHistoryQueryResult => {
     const { usdToPreferred } = useCurrency(scope)
-    const isUnavailableOnNetwork = !useChainCapability(
-        scope.chainId,
-        'balanceHistory',
-    )
+    const isCapabilityOff = !useChainCapability(scope.chainId, 'balanceHistory')
     const queryKey = getAccountBalancesHistoryQueryKey(addresses, period, scope)
     const query = useQuery({
         queryKey,
         // Gated by callers on chart visibility — this hits a slow network
         // endpoint and is only needed to render the wealth chart/trend.
-        enabled: enabled && addresses.length > 0 && !isUnavailableOnNetwork,
+        enabled: enabled && addresses.length > 0 && !isCapabilityOff,
         queryFn: () => fetchPortfolioHistory(addresses, period, scope),
         select: useCallback(
-            (points: PortfolioHistoryPoint[]): AccountBalanceHistoryItem[] =>
-                points.map(point => ({
+            (
+                points: Nullable<PortfolioHistoryPoint[]>,
+            ): Nullable<AccountBalanceHistoryItem[]> =>
+                points?.map(point => ({
                     datetime: new Date(point.timestamp),
                     preferredValue: usdToPreferred(point.usdValue),
                     nativeValue: point.nativeValue,
-                })),
+                })) ?? null,
             [usdToPreferred],
         ),
     })
+    const isUnavailableOnNetwork = isCapabilityOff || query.data === null
 
     return {
-        data: query.data ?? [],
+        // A disabled query keeps its cached (and persisted) points; drop them
+        // so a kill switch takes the chart down.
+        data: isUnavailableOnNetwork ? [] : (query.data ?? []),
         isPending: isUnavailableOnNetwork ? false : query.isPending,
         isSuccess: query.isSuccess,
         isError: query.isError,
@@ -76,8 +78,6 @@ export const useAccountBalancesHistoryQuery = (
         // The observer's refetch() ignores `enabled` and would still fire the
         // doomed request on a chain without the source.
         refetch: (options?: RefetchOptions) =>
-            isUnavailableOnNetwork
-                ? Promise.resolve(query)
-                : query.refetch(options),
+            isCapabilityOff ? Promise.resolve(query) : query.refetch(options),
     }
 }

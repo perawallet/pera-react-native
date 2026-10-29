@@ -294,9 +294,7 @@ const createFetchClient = () => {
                 statusText: response.statusText,
             }
         } catch (error) {
-            if (config.debugEnabled) {
-                console.log('Query error', error)
-            }
+            logger.debug('Query error', { error })
             // Caller-initiated aborts must keep their identity so TanStack
             // Query's cancellation handling still recognizes them.
             if (error instanceof Error && error.name === 'AbortError') {

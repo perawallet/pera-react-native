@@ -12,5 +12,6 @@
 
 export * from './usePasskeyAutofillService'
 export * from './usePasskeysQuery'
+export * from './useFlaggedPasskeysQuery'
 export * from './useRemovePasskeyMutation'
 export * from './usePasskeyAutofillStatus'

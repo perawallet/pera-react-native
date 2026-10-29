@@ -263,9 +263,19 @@ describe('call batch execution', () => {
         const unlocked = new Promise<void>(resolve => {
             unlock = resolve
         })
+        let reachUnlock = () => {}
+        const reachedUnlock = new Promise<void>(resolve => {
+            reachUnlock = resolve
+        })
 
-        await approve(undefined, { ...deps, whenUnlocked: () => unlocked })
-        await new Promise(resolve => setTimeout(resolve, 100))
+        await approve(undefined, {
+            ...deps,
+            whenUnlocked: () => {
+                reachUnlock()
+                return unlocked
+            },
+        })
+        await reachedUnlock
 
         expect(node.sentCount()).toBe(1)
         expect((await readBatch()).outcome).toBe('running')
@@ -294,9 +304,23 @@ describe('call batch execution', () => {
 
     it('Given a call that is never mined, when its wait runs out, then the batch is left running for the next tick', async () => {
         fakeNode({ isMining: false })
+        const prepared = await prepareEthereumCallBatch(ctx, ETHEREUM, {
+            batchId: 'batch-1',
+            from: SENDER,
+            calls: [APPROVE, SWAP],
+        })
+        const first = await signAsSender(prepared.first)
+        const recorded = await recordTransactionBatch({
+            scope: MAINNET,
+            sender: SENDER,
+            batchId: 'batch-1',
+            approvalToken: APPROVAL.token,
+            payload: PAYLOAD,
+            txIds: [first.id],
+            signedRaw: bytesToHex(first.bytes),
+        })
 
-        await approve()
-        await new Promise(resolve => setTimeout(resolve, 600))
+        await runEthereumCallBatch(ctx, ETHEREUM, recorded, deps)
 
         expect(await readBatch()).toMatchObject({
             outcome: 'running',

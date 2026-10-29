@@ -7,6 +7,7 @@ Suite Setup         Start Pera With Wallet
 Suite Teardown      Run Keywords    Reset To Fresh Wallet    AND    Close Pera
 Test Setup          Go Home
 Test Teardown       Capture Failure Screenshot
+Test Timeout        ${E2E_TEST_TIMEOUT}
 Test Tags           quantum
 
 
@@ -24,10 +25,13 @@ Quantum Import Opens With Its Explanatory Note
     ...                to a quantum import rather than a generic one.
     [Tags]    id:quantum.import.option    p1
     Open Add Account
-    Skip Unless Quantum Create Is Offered
     Tap    ${ADD_ACCOUNT_IMPORT_BUTTON}
     Wait Until Page Contains Element    ${IMPORT_RECOVER_WALLET_BUTTON}    timeout=15s
+    Tap    ${IMPORT_RECOVER_WALLET_BUTTON}
+    Skip Unless Quantum Recover Is Offered
     Tap    ${IMPORT_QUANTUM_BUTTON}
+    Wait Until Page Contains Element    ${IMPORT_INFO_RECOVER_BUTTON}    timeout=15s
+    Tap    ${IMPORT_INFO_RECOVER_BUTTON}
     Wait Until Page Contains Element    ${IMPORT_QUANTUM_NOTE}    timeout=15s
     ${first_field}=    Indexed Row    ${IMPORT_WORD_INPUT_ID}    0
     Page Should Contain Element    ${first_field}

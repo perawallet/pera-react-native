@@ -109,9 +109,11 @@ export const algorandDescriptor: ChainDescriptor = {
         supportsRekey: true,
         hasTokenApproval: false,
         requiresAssetOptIn: true,
+        confirmsOnSubmit: true,
         maxNoteBytes: MAX_TX_NOTE_BYTES,
     },
     explorer: {
+        name: 'Pera Explorer',
         accountUrl: explorerLink('address'),
         transactionUrl: explorerLink('tx'),
         assetUrl: explorerLink('asset'),

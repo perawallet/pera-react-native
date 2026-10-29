@@ -19,45 +19,48 @@ ${OWN}                                  own
 &{CREATED}
 ${IMPORT_LINK}                          perawallet://app/shared-account-import/?address=
 
-${ACCOUNT_SELECTION_BUTTON}             xpath=//*[@resource-id='account_selection_button' or @name='account_selection_button' or @content-desc='account_selection_button']
+${ACCOUNT_SELECTION_BUTTON}             tid=account_selection_button
 ${ACCOUNT_ROW_PREFIX}                   account_switcher_row_
 ${PARTICIPANT_ROW_ANY}                  xpath=//*[starts-with(@resource-id,'participant_item_') or starts-with(@name,'participant_item_') or starts-with(@content-desc,'participant_item_')]
 # Above this many rows the list scrolls and the ones off screen are not in the tree.
 ${PARTICIPANT_ROWS_ALL_VISIBLE}             ${6}
-${ACCOUNT_MENU_ADD_BUTTON}              xpath=//*[@resource-id='account_menu_add_account_button' or @name='account_menu_add_account_button' or @content-desc='account_menu_add_account_button']
-${MORE_BUTTON}                          xpath=//*[@resource-id='more_button' or @name='more_button' or @content-desc='more_button']
-${ADD_ACCOUNT_CREATE_MULTISIG_BUTTON}   xpath=//*[@resource-id='add_account_create_multisig_button' or @name='add_account_create_multisig_button' or @content-desc='add_account_create_multisig_button']
-${ADD_ACCOUNT_SEE_OTHER_OPTIONS}        xpath=//*[@resource-id='add_account_see_other_options_button' or @name='add_account_see_other_options_button' or @content-desc='add_account_see_other_options_button']
-${ADD_ACCOUNT_WATCH_BUTTON}             xpath=//*[@resource-id='add_account_watch_button' or @name='add_account_watch_button' or @content-desc='add_account_watch_button']
-${WATCH_ADDRESS_INPUT}                  xpath=//*[@resource-id='watch_account_address_input' or @name='watch_account_address_input' or @content-desc='watch_account_address_input']
-${WATCH_SUBMIT_BUTTON}                  xpath=//*[@resource-id='watch_account_submit_button' or @name='watch_account_submit_button' or @content-desc='watch_account_submit_button']
+${ACCOUNT_MENU_ADD_BUTTON}              tid=account_menu_add_account_button
+${MORE_BUTTON}                          tid=more_button
+${ADD_ACCOUNT_CREATE_MULTISIG_BUTTON}   tid=add_account_create_multisig_button
+${ADD_ACCOUNT_ADD_BUTTON}               tid=add_account_add_button
+${ADD_ACCOUNT_IMPORT_BUTTON}            tid=add_account_import_button
+${ADD_ACCOUNT_SEE_OTHER_OPTIONS}        tid=add_account_see_other_options_button
+${ADD_ACCOUNT_WATCH_BUTTON}             tid=add_account_watch_button
+${WATCH_ADDRESS_INPUT}                  tid=watch_account_address_input
+${WATCH_SUBMIT_BUTTON}                  tid=watch_account_submit_button
+${WATCH_INFO_CREATE_BUTTON}             tid=watch_info_create_button
 
-${MULTISIG_INTRO_CONTINUE_BUTTON}       xpath=//*[@resource-id='multisig_introduction_continue_button' or @name='multisig_introduction_continue_button' or @content-desc='multisig_introduction_continue_button']
-${ADD_PARTICIPANT_BUTTON}               xpath=//*[@resource-id='add_participant_button' or @name='add_participant_button' or @content-desc='add_participant_button']
-${CREATE_MULTISIG_CONTINUE_BUTTON}      xpath=//*[@resource-id='create_multisig_continue_button' or @name='create_multisig_continue_button' or @content-desc='create_multisig_continue_button']
-${ADDRESS_SEARCH_INPUT}                 xpath=//*[@resource-id='address_search_input' or @name='address_search_input' or @content-desc='address_search_input']
-${EDIT_PARTICIPANT_NAME_INPUT}          xpath=//*[@resource-id='contact_name_input' or @name='contact_name_input' or @content-desc='contact_name_input']
-${SET_THRESHOLD_CONTINUE_BUTTON}        xpath=//*[@resource-id='set_threshold_continue_button' or @name='set_threshold_continue_button' or @content-desc='set_threshold_continue_button']
-${THRESHOLD_DECREMENT_BUTTON}           xpath=//*[@resource-id='threshold_decrement_button' or @name='threshold_decrement_button' or @content-desc='threshold_decrement_button']
-${THRESHOLD_INCREMENT_BUTTON}           xpath=//*[@resource-id='threshold_increment_button' or @name='threshold_increment_button' or @content-desc='threshold_increment_button']
-${BEFORE_CREATE_PROCEED_BUTTON}         xpath=//*[@resource-id='before_create_proceed_button' or @name='before_create_proceed_button' or @content-desc='before_create_proceed_button']
-${BEFORE_CREATE_GO_BACK_BUTTON}         xpath=//*[@resource-id='before_create_go_back_button' or @name='before_create_go_back_button' or @content-desc='before_create_go_back_button']
+${MULTISIG_INTRO_CONTINUE_BUTTON}       tid=multisig_introduction_continue_button
+${ADD_PARTICIPANT_BUTTON}               tid=add_participant_button
+${CREATE_MULTISIG_CONTINUE_BUTTON}      tid=create_multisig_continue_button
+${ADDRESS_SEARCH_INPUT}                 tid=address_search_input
+${EDIT_PARTICIPANT_NAME_INPUT}          tid=contact_name_input
+${SET_THRESHOLD_CONTINUE_BUTTON}        tid=set_threshold_continue_button
+${THRESHOLD_DECREMENT_BUTTON}           tid=threshold_decrement_button
+${THRESHOLD_INCREMENT_BUTTON}           tid=threshold_increment_button
+${BEFORE_CREATE_PROCEED_BUTTON}         tid=before_create_proceed_button
+${BEFORE_CREATE_GO_BACK_BUTTON}         tid=before_create_go_back_button
 
-${ACCOUNT_OPTION_COPY_ADDRESS}          xpath=//*[@resource-id='account_network_algorand_copy' or @name='account_network_algorand_copy' or @content-desc='account_network_algorand_copy']
-${ACCOUNT_ALGORAND_EXPAND}              xpath=//*[@resource-id='account_network_algorand_expand' or @name='account_network_algorand_expand' or @content-desc='account_network_algorand_expand']
-${ACCOUNT_OPTION_SHARED_DETAIL}         xpath=//*[@resource-id='account_option_shared-account-detail' or @name='account_option_shared-account-detail' or @content-desc='account_option_shared-account-detail']
-${ACCOUNT_OPTION_EXPORT}                xpath=//*[@resource-id='account_option_export-share-account' or @name='account_option_export-share-account' or @content-desc='account_option_export-share-account']
-${ACCOUNT_OPTION_REKEY}                 xpath=//*[@resource-id='account_option_rekey-account' or @name='account_option_rekey-account' or @content-desc='account_option_rekey-account']
-${ACCOUNT_OPTION_REMOVE}                xpath=//*[@resource-id='account_option_remove-account' or @name='account_option_remove-account' or @content-desc='account_option_remove-account']
-${REMOVE_ACCOUNT_CONFIRM_BUTTON}        xpath=//*[@resource-id='remove_account_confirm_button' or @name='remove_account_confirm_button' or @content-desc='remove_account_confirm_button']
-${ACCOUNT_TYPE_INFO_BUTTON}             xpath=//*[@resource-id='account-type-info-button' or @name='account-type-info-button' or @content-desc='account-type-info-button']
-${SHARED_ACCOUNT_THRESHOLD}             xpath=//*[@resource-id='shared_account_threshold' or @name='shared_account_threshold' or @content-desc='shared_account_threshold']
-${REKEY_TO_SHARED_START}                xpath=//*[@resource-id='rekey-to-shared-intro-start' or @name='rekey-to-shared-intro-start' or @content-desc='rekey-to-shared-intro-start']
-${REKEY_OPTION_STANDARD}                xpath=//*[@resource-id='rekey_option_standard' or @name='rekey_option_standard' or @content-desc='rekey_option_standard']
-${REKEY_OPTION_LEDGER}                  xpath=//*[@resource-id='rekey_option_ledger' or @name='rekey_option_ledger' or @content-desc='rekey_option_ledger']
+${ACCOUNT_OPTION_COPY_ADDRESS}          tid=account_network_algorand_copy
+${ACCOUNT_ALGORAND_EXPAND}              tid=account_network_algorand_expand
+${ACCOUNT_OPTION_SHARED_DETAIL}         tid=account_option_shared-account-detail
+${ACCOUNT_OPTION_EXPORT}                tid=account_option_export-share-account
+${ACCOUNT_OPTION_REKEY}                 tid=account_option_rekey-account
+${ACCOUNT_OPTION_REMOVE}                tid=account_option_remove-account
+${REMOVE_ACCOUNT_CONFIRM_BUTTON}        tid=remove_account_confirm_button
+${ACCOUNT_TYPE_INFO_BUTTON}             tid=account-type-info-button
+${SHARED_ACCOUNT_THRESHOLD}             tid=shared_account_threshold
+${REKEY_TO_SHARED_START}                tid=rekey-to-shared-intro-start
+${REKEY_OPTION_STANDARD}                tid=rekey_option_standard
+${REKEY_OPTION_LEDGER}                  tid=rekey_option_ledger
 
-${IMPORT_ADD_BUTTON}                    xpath=//*[@resource-id='import-shared-account-add-button' or @name='import-shared-account-add-button' or @content-desc='import-shared-account-add-button']
-${IMPORT_IGNORE_BUTTON}                 xpath=//*[@resource-id='import-shared-account-ignore-button' or @name='import-shared-account-ignore-button' or @content-desc='import-shared-account-ignore-button']
+${IMPORT_ADD_BUTTON}                    tid=import-shared-account-add-button
+${IMPORT_IGNORE_BUTTON}                 tid=import-shared-account-ignore-button
 # The import screen once its lookup has answered: the account, or the error state.
 ${IMPORT_LOADED}                        xpath=//*[@name='import-shared-account-ignore-button' or @content-desc='import-shared-account-ignore-button' or @resource-id='import-shared-account-ignore-button' or @name='import-shared-account-retry' or @content-desc='import-shared-account-retry' or @resource-id='import-shared-account-retry']
 
@@ -70,13 +73,35 @@ Test Id
     ...                or a value whose label is the number it shows. Android exposes that ID as
     ...                resource-id and iOS as name, so one locator covers both.
     [Arguments]    ${id}
-    RETURN    xpath=//*[@resource-id='${id}' or @name='${id}']
+    RETURN    tid=${id}
 
 Test Id Starting With
     [Documentation]    Locator for a labelled view whose ID ends in an address the test cannot know,
     ...                such as the wallet's own account.
     [Arguments]    ${prefix}
     RETURN    xpath=//*[starts-with(@content-desc,'${prefix}') or starts-with(@resource-id, '${prefix}') or starts-with(@name,'${prefix}')]
+
+Listed Participant Count
+    [Documentation]    The number of signers the import screen is showing, once it is showing them.
+    ...
+    ...                The screen counts as loaded when its footer draws, and the footer draws while
+    ...                the signers are still being resolved - so the count reads 0 for a moment on a
+    ...                screen that is otherwise complete, and a case that read it once reported the
+    ...                app as listing no participants. Wait for the count to leave 0 before reading
+    ...                it. The value is still whatever the app says, so a wrong count still fails.
+    ...
+    ...                A count that stays at 0 is a link that resolved to an empty shared account,
+    ...                which is a different thing from the app miscounting, so it says that instead.
+    ${count}=    Test Id    import-shared-account-participant-count
+    ${text}=    Wait Until Keyword Succeeds    15s    1s    Resolved Participant Count    ${count}
+    RETURN    ${text}
+
+Resolved Participant Count
+    [Arguments]    ${locator}
+    ${text}=    Get Text    ${locator}
+    Should Not Be Equal As Strings    ${text}    0
+    ...    msg=The import link resolved to a shared account with no signers, so there is nothing to list.
+    RETURN    ${text}
 
 Tap Screen At
     [Documentation]    Taps a point given as fractions of the window, for backdrops with no element.
@@ -147,7 +172,7 @@ Accounts In Open Menu
 
 Pick Account In Open Menu
     [Arguments]    ${address}
-    Tap    xpath=//*[@resource-id='${ACCOUNT_ROW_PREFIX}${address}' or @name='${ACCOUNT_ROW_PREFIX}${address}' or @content-desc='${ACCOUNT_ROW_PREFIX}${address}']
+    Tap    tid=${ACCOUNT_ROW_PREFIX}${address}
     Wait Until Account Menu Closed
 
 Select Account
@@ -169,19 +194,20 @@ Open Add Account
     Open Account Menu
     ${accounts}=    Accounts In Open Menu
     Tap    ${ACCOUNT_MENU_ADD_BUTTON}
-    Wait Until Page Contains Element    ${ADD_ACCOUNT_CREATE_MULTISIG_BUTTON}    timeout=15s
+    Wait Until Page Contains Element    ${ADD_ACCOUNT_IMPORT_BUTTON}    timeout=15s
     RETURN    ${accounts}
 
 Open Multisig Introduction
     ${accounts}=    Open Add Account
+    Tap    ${ADD_ACCOUNT_ADD_BUTTON}
+    Wait Until Page Contains Element    ${ADD_ACCOUNT_CREATE_MULTISIG_BUTTON}    timeout=15s
     Tap    ${ADD_ACCOUNT_CREATE_MULTISIG_BUTTON}
     Wait Until Settled    ${MULTISIG_INTRO_CONTINUE_BUTTON}
     RETURN    ${accounts}
 
 Open Create Shared Account
     ${accounts}=    Open Multisig Introduction
-    Tap    ${MULTISIG_INTRO_CONTINUE_BUTTON}
-    Wait Until Page Contains Element    ${ADD_PARTICIPANT_BUTTON}    timeout=15s
+    Tap Until    ${MULTISIG_INTRO_CONTINUE_BUTTON}    ${ADD_PARTICIPANT_BUTTON}
     RETURN    ${accounts}
 
 Register New Account
@@ -212,7 +238,7 @@ Remove Account
     Go Home
     Open Account Menu
     ${present}=    Run Keyword And Return Status
-    ...    Page Should Contain Element    xpath=//*[@resource-id='${ACCOUNT_ROW_PREFIX}${address}' or @name='${ACCOUNT_ROW_PREFIX}${address}' or @content-desc='${ACCOUNT_ROW_PREFIX}${address}']
+    ...    Page Should Contain Element    tid=${ACCOUNT_ROW_PREFIX}${address}
     IF    not ${present}
         Close Account Menu
         RETURN
@@ -281,11 +307,10 @@ Add Participants
 
 Participant Should Be Listed
     [Arguments]    ${index}    ${address}
-    Wait Until Page Contains Element    xpath=//*[@resource-id='participant_item_${index}_${address}' or @name='participant_item_${index}_${address}' or @content-desc='participant_item_${index}_${address}']    timeout=10s
+    Wait Until Page Contains Element    tid=participant_item_${index}_${address}    timeout=10s
 
 Open Set Threshold
-    Tap    ${CREATE_MULTISIG_CONTINUE_BUTTON}
-    Wait Until Page Contains Element    ${SET_THRESHOLD_CONTINUE_BUTTON}    timeout=15s
+    Tap Until    ${CREATE_MULTISIG_CONTINUE_BUTTON}    ${SET_THRESHOLD_CONTINUE_BUTTON}
 
 Threshold Should Be
     [Arguments]    ${expected}
@@ -299,12 +324,11 @@ Participant Count Should Be
     Wait Until Keyword Succeeds    5s    0.2s    Element Text Should Be    ${count}    ${expected}
 
 Open Before You Create
-    Tap    ${SET_THRESHOLD_CONTINUE_BUTTON}
+    Tap Until    ${SET_THRESHOLD_CONTINUE_BUTTON}    ${BEFORE_CREATE_PROCEED_BUTTON}
     Wait Until Settled    ${BEFORE_CREATE_PROCEED_BUTTON}
 
 Open Name Shared Account
-    Tap    ${BEFORE_CREATE_PROCEED_BUTTON}
-    Wait Until Page Contains Element    ${ACCOUNT_FINISH_BUTTON}    timeout=15s
+    Tap Until    ${BEFORE_CREATE_PROCEED_BUTTON}    ${ACCOUNT_FINISH_BUTTON}
 
 Enter Account Name
     [Arguments]    ${name}
@@ -320,14 +344,24 @@ Finish Account
     # rises misses.
     Wait Until Settled    ${ACCOUNT_FINISH_BUTTON}
     Tap    ${ACCOUNT_FINISH_BUTTON}
-    FOR    ${i}    IN RANGE    30
+    # Poll fast. The toast is short-lived, and a two-second gap between looks let it come and
+    # go unseen: the same blocked build then reported SKIP on one run and "Finish did not leave
+    # the name screen" on the next, which made the suite's own results untrustworthy.
+    VAR    ${left}    ${False}
+    VAR    ${blocked}    ${False}
+    FOR    ${i}    IN RANGE    120
         ${left}=    Run Keyword And Return Status
-        ...    Wait Until Page Does Not Contain Element    ${ACCOUNT_FINISH_BUTTON}    timeout=2s
+        ...    Page Should Not Contain Element    ${ACCOUNT_FINISH_BUTTON}
         IF    ${left}    BREAK
-        ${blocked}=    Run Keyword And Return Status    Page Should Contain Text    An error occurred    loglevel=NONE
-        Skip If    ${blocked}    ${CREATION_BLOCKED}
+        ${toast}=    Run Keyword And Return Status
+        ...    Page Should Contain Text    An error occurred    loglevel=NONE
+        IF    ${toast}    VAR    ${blocked}    ${True}
+        IF    ${blocked}    BREAK
+        Sleep    0.5s
     END
-    Should Be True    ${left}    Finish did not leave the name screen.
+    Skip If    ${blocked}    ${CREATION_BLOCKED}
+    Should Be True    ${left}
+    ...    msg=Finish did not leave the name screen in 60s, and no backend error was shown either - so this is neither the known device-registration block nor a slow save.
     Wait Until Page Contains Element    ${MORE_BUTTON}    timeout=30s
 
 Create Shared Account
@@ -397,7 +431,7 @@ Start With Shared Account
     IF    $address
         Open Account Menu
         ${present}=    Run Keyword And Return Status
-        ...    Page Should Contain Element    xpath=//*[@resource-id='${ACCOUNT_ROW_PREFIX}${address}' or @name='${ACCOUNT_ROW_PREFIX}${address}' or @content-desc='${ACCOUNT_ROW_PREFIX}${address}']
+        ...    Page Should Contain Element    tid=${ACCOUNT_ROW_PREFIX}${address}
         IF    ${present}
             Pick Account In Open Menu    ${address}
             RETURN    ${address}
@@ -412,13 +446,14 @@ Ensure Watch Account
     ...                in which case the app keeps the submit button disabled.
     Open Add Account
     Tap If Present    ${ADD_ACCOUNT_SEE_OTHER_OPTIONS}
-    Wait Until Page Contains Element    ${ADD_ACCOUNT_WATCH_BUTTON}    timeout=15s
+    # Below the fold at a large font scale, where UiAutomator does not report it until scrolled to.
+    Scroll Until Tappable    ${ADD_ACCOUNT_WATCH_BUTTON}
     # The option opens at the bottom edge, partly under the system navigation bar that takes the tap.
     Swipe By Percent    50    70    50    40
     Wait Until Settled    ${ADD_ACCOUNT_WATCH_BUTTON}
     Tap    ${ADD_ACCOUNT_WATCH_BUTTON}
-    Wait Until Page Contains    Create a Watch Account    timeout=15s
-    Click Text    Create a Watch Account    exact_match=${True}
+    Wait Until Settled    ${WATCH_INFO_CREATE_BUTTON}
+    Tap    ${WATCH_INFO_CREATE_BUTTON}
     Wait Until Page Contains Element    ${WATCH_ADDRESS_INPUT}    timeout=15s
     Input Text    ${WATCH_ADDRESS_INPUT}    ${WATCH_ADDRESS}
     Dismiss Keyboard
@@ -431,9 +466,21 @@ Ensure Watch Account
     Wait Until Page Does Not Contain Element    ${ACCOUNT_FINISH_BUTTON}    timeout=30s
 
 Open Import Link
+    [Documentation]    A deeplink is fire-and-forget: it is handed to the OS and nothing reports back
+    ...                whether the app acted on it. One fired at an app still settling after the
+    ...                previous screen left can be dropped, and then the import screen simply never
+    ...                arrives - which is how `Ignoring An Import Adds Nothing` failed, on its second
+    ...                link rather than its first. Re-fire once, at WARN, so a link that needed the
+    ...                second shot shows up in the log instead of being quietly absorbed.
     [Arguments]    ${address}
     Open Deeplink    ${IMPORT_LINK}${address}
-    Wait Until Page Contains Element    ${IMPORT_LOADED}    timeout=20s
+    ${arrived}=    Run Keyword And Return Status
+    ...    Wait Until Page Contains Element    ${IMPORT_LOADED}    timeout=20s
+    IF    not ${arrived}
+        Log    The shared-account import link did not land in 20s; firing it once more.    level=WARN
+        Open Deeplink    ${IMPORT_LINK}${address}
+        Wait Until Page Contains Element    ${IMPORT_LOADED}    timeout=20s
+    END
     ${known}=    Run Keyword And Return Status    Page Should Contain Element    ${IMPORT_IGNORE_BUTTON}
     Skip If    not ${known}
     ...    The backend returned no shared account for ${address}: the import screen shows its error state, so there is nothing to import.

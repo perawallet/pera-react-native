@@ -39,6 +39,7 @@ export {
     type TransactionsFilterResult,
 } from './components/TransactionsFilterContent'
 export { isLegacyQuantumChild } from './utils/legacyQuantum'
+export { useIsMultichain } from './hooks/useIsMultichain'
 export type { AccountStackParamsList } from './routes/types'
 export type {
     AccountChainSectionProps,

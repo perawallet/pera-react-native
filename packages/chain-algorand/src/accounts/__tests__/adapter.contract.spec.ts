@@ -10,8 +10,6 @@
  limitations under the License
  */
 
-// @vitest-environment node
-// XHD's noble checks reject jsdom's Uint8Array realm.
 import '../../__tests__/registerAlgorandAccounts'
 import { Decimal } from 'decimal.js'
 import { http, HttpResponse } from 'msw'

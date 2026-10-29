@@ -48,6 +48,19 @@ export type RecipientAssessment =
     | { kind: 'look-alike'; knownAddress: KnownAddress }
     | { kind: 'first-send' }
 
+export type RequestAddressAssessment =
+    | { kind: 'listed' }
+    | { kind: 'look-alike'; knownAddress: KnownAddress }
+    | { kind: 'clear' }
+
+export type AssessRequestAddressInput = {
+    address: string
+    chainId: ChainId
+    knownAddresses: readonly KnownAddress[]
+    /** On a downloaded scam-address list. */
+    isListed: boolean
+}
+
 export type AssessRecipientInput = {
     recipient: string
     chainId: ChainId

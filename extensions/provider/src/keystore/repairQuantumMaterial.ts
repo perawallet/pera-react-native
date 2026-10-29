@@ -12,6 +12,7 @@
 
 import type { Key } from '@algorandfoundation/keystore-core'
 import { MATERIAL_PREFIX } from '@algorandfoundation/react-native-keystore'
+import { logger } from '@perawallet/wallet-core-shared'
 import {
     PQ_DERIVATION_LEGACY,
     PQ_DERIVATION_CANONICAL,
@@ -82,8 +83,9 @@ export const repairQuantumMaterial = async (
         const parentKeyId = (child.metadata as { parentKeyId?: string })
             ?.parentKeyId
         if (!parentKeyId) {
-            console.error(
-                `[provider] quantum repair: ${child.id} has no parent seed to re-derive from`,
+            logger.error(
+                '[provider] quantum repair: child has no parent seed to re-derive from',
+                { keyId: child.id },
             )
             result.failed += 1
             continue
@@ -97,8 +99,9 @@ export const repairQuantumMaterial = async (
         ) {
             // Revision 0004 stamps this. Until it has, re-deriving would be a
             // coin flip between two different addresses.
-            console.error(
-                `[provider] quantum repair: ${child.id} has no derivation marker; refusing to re-derive`,
+            logger.error(
+                '[provider] quantum repair: child has no derivation marker; refusing to re-derive',
+                { keyId: child.id },
             )
             result.failed += 1
             continue
@@ -109,9 +112,12 @@ export const repairQuantumMaterial = async (
         try {
             await deps.regenerate(child.id, parentKeyId, derivation)
         } catch (err) {
-            console.error(
-                `[provider] quantum repair: ${child.id} could not be re-minted`,
-                err,
+            logger.error(
+                '[provider] quantum repair: child could not be re-minted',
+                {
+                    keyId: child.id,
+                    error: err,
+                },
             )
             result.failed += 1
             continue
@@ -119,8 +125,9 @@ export const repairQuantumMaterial = async (
 
         const after = deps.keys().find(key => key.id === child.id)?.publicKey
         if (before && after && !bytesEqual(before, after)) {
-            console.error(
-                `[provider] quantum repair: ${child.id} re-derived to a different public key; its address would change`,
+            logger.error(
+                '[provider] quantum repair: child re-derived to a different public key; its address would change',
+                { keyId: child.id },
             )
             result.failed += 1
             continue

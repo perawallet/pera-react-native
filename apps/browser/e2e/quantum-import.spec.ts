@@ -206,7 +206,13 @@ const runQuantumImport = async (
     try {
         const pageErrors = trackPageErrors(page)
         await page
-            .getByTestId('import_account_quantum_button')
+            .getByTestId('import_account_options_recover_wallet_button')
+            .click({ timeout: 20_000 })
+        await page
+            .getByTestId('import_options_quantum_button')
+            .click({ timeout: 20_000 })
+        await page
+            .getByTestId('import_info_recover_button')
             .click({ timeout: 20_000 })
         await enterWordsAndImport(page)
         await finishNaming(page)
@@ -220,7 +226,7 @@ const runQuantumImport = async (
     }
 }
 
-// The path a user with only "Recover a wallet" in front of them takes.
+// The path a user who picks the standard kind for quantum words takes.
 const enterQuantumWordsAsStandard = async (page: Page): Promise<void> => {
     await page
         .getByTestId('import_account_options_recover_wallet_button')
@@ -280,7 +286,7 @@ test('imports both candidates when the existence probe fails', async () => {
     expect(quantumAddresses).toEqual([CANONICAL_ADDRESS, LEGACY_ADDRESS].sort())
 })
 
-test('Recover a wallet with quantum words offers the quantum account instead', async () => {
+test('Recovering as Algo25 with quantum words offers the quantum account instead', async () => {
     const { context, page, readAccounts } = await openImportOptions('canonical')
     try {
         await enterQuantumWordsAsStandard(page)

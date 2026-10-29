@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import {
     PWButton,
     PWCheckbox,
@@ -26,29 +25,22 @@ import { usePassphraseAcknowledgeContent } from './usePassphraseAcknowledgeConte
 import { useStyles } from './styles'
 
 export type PassphraseAcknowledgeContentProps = {
+    address: string
     testID?: string
 }
 
 export type PassphraseAcknowledgeContentResult = 'confirm'
 
-const ACKNOWLEDGE_ROW_KEYS = [
-    i18nKey('view_passphrase.acknowledge.row_screen'),
-    i18nKey('view_passphrase.acknowledge.row_share'),
-    i18nKey('view_passphrase.acknowledge.row_lose'),
-    i18nKey('view_passphrase.acknowledge.row_pera'),
-] as const
-
 export const PassphraseAcknowledgeContent = ({
+    address,
     testID = 'passphrase_acknowledge_bottom_sheet',
 }: PassphraseAcknowledgeContentProps) => {
     const { t } = useLanguage()
     const styles = useStyles()
     const { resolve, dismiss } =
         useBottomSheetResult<PassphraseAcknowledgeContentResult>()
-    const { checked, allChecked, toggle, scrollRef } =
-        usePassphraseAcknowledgeContent({
-            rowCount: ACKNOWLEDGE_ROW_KEYS.length,
-        })
+    const { rowKeys, scopeText, checked, allChecked, toggle, scrollRef } =
+        usePassphraseAcknowledgeContent({ address })
 
     return (
         <PWSheetLayout
@@ -88,8 +80,17 @@ export const PassphraseAcknowledgeContent = ({
                 >
                     {t('view_passphrase.acknowledge.description')}
                 </PWText>
+                {scopeText !== null && (
+                    <PWText
+                        variant='body'
+                        style={styles.scope}
+                        testID={`${testID}_scope`}
+                    >
+                        {scopeText}
+                    </PWText>
+                )}
                 <PWView style={styles.rows}>
-                    {ACKNOWLEDGE_ROW_KEYS.map((key, index) => (
+                    {rowKeys.map((key, index) => (
                         <PWTouchableOpacity
                             key={key}
                             style={[

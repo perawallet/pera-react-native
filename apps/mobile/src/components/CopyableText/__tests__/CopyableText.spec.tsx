@@ -11,7 +11,7 @@
  */
 
 import { fireEvent, render, screen, waitFor } from '@test-utils/render'
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { PWText } from '@components/core'
 import { AddressReuseGuardProvider } from '@components/AddressReuseGuard'
 import { CopyableText } from '../CopyableText'
@@ -23,20 +23,24 @@ vi.mock('@hooks/useClipboard', () => ({
 }))
 
 describe('CopyableText', () => {
-    beforeEach(() => {
-        vi.clearAllMocks()
-    })
-
-    // lanekeep-ignore-next-line pera/no-primitive-retest reason: the one smoke test for a component with no other case
-    it('renders children', () => {
+    it('copies the value on a long press and still calls onLongPress', async () => {
+        const onLongPress = vi.fn()
         render(
-            <CopyableText copyValue='12345'>
-                <PWText testID='child-text'>Asset 12345</PWText>
+            <CopyableText
+                copyValue='12345'
+                onLongPress={onLongPress}
+                testID='copyable'
+            >
+                <PWText>Asset 12345</PWText>
             </CopyableText>,
         )
 
-        expect(screen.getByTestId('child-text')).toBeTruthy()
-        expect(screen.getByText('Asset 12345')).toBeTruthy()
+        fireEvent.contextMenu(screen.getByTestId('copyable'))
+
+        await waitFor(() =>
+            expect(mockCopyToClipboard).toHaveBeenCalledWith('12345'),
+        )
+        expect(onLongPress).toHaveBeenCalledOnce()
     })
 
     it.each([

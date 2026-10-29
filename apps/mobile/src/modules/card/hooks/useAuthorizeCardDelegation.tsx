@@ -13,16 +13,13 @@
 import { useCallback } from 'react'
 import { AUTO_FUNDING_PER_TX_LIMIT_USD } from '@perawallet/wallet-core-card'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import {
-    formatCurrency,
-    truncateAlgorandAddress,
-} from '@perawallet/wallet-core-shared'
+import { formatCurrency } from '@perawallet/wallet-core-shared'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { ConfirmActionContent } from '@components/ConfirmActionContent'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useRequirePinVerification } from '@modules/security'
 import { useLanguage } from '@hooks/useLanguage'
-import { cardAccountAddressOf } from '../utils/cardAccountAddress'
+import { useAccountName } from '@hooks/useAccountName'
 
 export type UseAuthorizeCardDelegationResult = {
     /**
@@ -40,6 +37,7 @@ export type UseAuthorizeCardDelegationResult = {
 export const useAuthorizeCardDelegation =
     (): UseAuthorizeCardDelegationResult => {
         const { t } = useLanguage()
+        const { getAccountName } = useAccountName()
         const { requirePinVerification } = useRequirePinVerification()
         const { request: requestBottomSheet } = useBottomSheet()
 
@@ -63,14 +61,10 @@ export const useAuthorizeCardDelegation =
                                         0,
                                         'USD',
                                     ),
-                                    account:
-                                        account.name ??
-                                        truncateAlgorandAddress(
-                                            cardAccountAddressOf(
-                                                account,
-                                                LEGACY_CHAIN_ID,
-                                            ) ?? '',
-                                        ),
+                                    account: getAccountName(
+                                        account,
+                                        LEGACY_CHAIN_ID,
+                                    ),
                                 },
                             )}
                             confirmLabel={t(
@@ -99,7 +93,7 @@ export const useAuthorizeCardDelegation =
                 await delegate(account)
                 return true
             },
-            [t, requirePinVerification, requestBottomSheet],
+            [t, getAccountName, requirePinVerification, requestBottomSheet],
         )
 
         return { authorizeDelegation }

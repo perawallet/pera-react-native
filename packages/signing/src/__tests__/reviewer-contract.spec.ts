@@ -24,6 +24,7 @@ const FIXTURE_CHAIN_ID = 'fixturehex' as ChainId
 
 type FixtureTxn = {
     sender: string
+    receiver?: string
     fee: bigint
     isRisky?: boolean
     isOpaque?: boolean
@@ -54,6 +55,10 @@ const isOnOtherNetwork = (group: SignableGroup, context: AnalysisContext) =>
 const fixtureReviewer: ReviewerChainAdapter = {
     ...fakeReviewerAdapter(),
     chainId: FIXTURE_CHAIN_ID,
+    reviewedAddresses: native => {
+        const { receiver } = native as unknown as FixtureTxn
+        return receiver ? [{ address: receiver, role: 'recipient' }] : []
+    },
     decoder: {
         decode: async (group, context) => {
             if (isOnOtherNetwork(group, context)) {
@@ -106,7 +111,9 @@ reviewerContractTests(() => fixtureReviewer, {
             },
         ],
     },
-    plainGroup: groupOf(WALLET, [{ sender: WALLET, fee: 3n }]),
+    plainGroup: groupOf(WALLET, [
+        { sender: WALLET, receiver: 'fx03', fee: 3n },
+    ]),
     riskyGroup: groupOf(WALLET, [{ sender: WALLET, fee: 3n, isRisky: true }]),
     foreignGroup: groupOf('fx02', [{ sender: 'fx02', fee: 3n, isRisky: true }]),
     opaqueGroup: groupOf(WALLET, [{ sender: WALLET, fee: 3n, isOpaque: true }]),
@@ -119,4 +126,5 @@ reviewerContractTests(() => fixtureReviewer, {
         source: { type: 'local' },
         data: { type: 'arbitrary-data', data: [] },
     } as unknown as SignableGroup,
+    isValidAddress: address => /^fx\d{2}$/.test(address),
 })

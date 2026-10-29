@@ -366,6 +366,7 @@ vi.mock('@modules/transactions', () => ({
             setDestination: mockSetDestination,
             setSelectedAsset: mockSetSelectedAsset,
             setCanSelectAsset: mockSetCanSelectAsset,
+            setChainId: vi.fn(),
             setNote: mockSetNote,
             setAmount: mockSetAmount,
             setPendingAmountBaseUnits: mockSetPendingAmountBaseUnits,

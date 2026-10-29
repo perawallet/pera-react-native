@@ -24,6 +24,9 @@ export const useStyles = makeStyles(theme => ({
         minWidth: 0,
         gap: theme.spacing.xs,
     },
+    toggle: {
+        gap: theme.spacing.xs,
+    },
     titleRow: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -32,6 +35,12 @@ export const useStyles = makeStyles(theme => ({
     title: {
         flexShrink: 1,
         color: theme.colors.textMain,
+    },
+    chevronExpanded: {
+        transform: [{ rotate: '180deg' }],
+    },
+    addressPanel: {
+        marginBottom: theme.spacing.lg,
     },
 }))
 

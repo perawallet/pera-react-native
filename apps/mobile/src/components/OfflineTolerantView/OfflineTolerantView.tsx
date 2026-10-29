@@ -60,6 +60,8 @@ export type OfflineTolerantViewProps = {
     retryLabel?: string
     /** Replaces the generic `common.error.body` copy on the error arm. */
     errorBody?: string
+    /** Replaces the BetaNet and custom-node title on the unavailable arm. */
+    unavailableTitle?: string
     /** Replaces the BetaNet and custom-node copy on the unavailable arm. */
     unavailableBody?: string
     offlineTestID?: string
@@ -88,6 +90,7 @@ export const OfflineTolerantView = ({
     isRetrying = false,
     retryLabel,
     errorBody,
+    unavailableTitle,
     unavailableBody,
     offlineTestID,
     errorTestID,
@@ -106,7 +109,9 @@ export const OfflineTolerantView = ({
         return (
             <EmptyView
                 icon='globe'
-                title={t('common.network_unavailable.title')}
+                title={
+                    unavailableTitle ?? t('common.network_unavailable.title')
+                }
                 body={unavailableBody ?? t('common.network_unavailable.body')}
                 style={style}
             />

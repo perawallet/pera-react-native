@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+// @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -20,18 +21,12 @@ const { fetchCurrentRegion } = vi.hoisted(() => ({
 }))
 vi.mock('../../api/region', () => ({ fetchCurrentRegion }))
 
-import {
-    type ChainScope,
-    LEGACY_CHAIN_ID,
-} from '@perawallet/wallet-core-chain-contract'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useCurrentRegionQuery } from '../useCurrentRegionQuery'
 
-const SCOPES: ChainScope[] = [
-    { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
-    { chainId: 'ethereum', networkId: 'sepolia' },
-]
+const SCOPE: ChainScope = { chainId: 'ethereum', networkId: 'sepolia' }
 
-describe.each(SCOPES)('useCurrentRegionQuery ($chainId)', SCOPE => {
+describe('useCurrentRegionQuery', () => {
     let queryClient: QueryClient
 
     beforeEach(() => {
@@ -60,5 +55,8 @@ describe.each(SCOPES)('useCurrentRegionQuery ($chainId)', SCOPE => {
 
         await waitFor(() => expect(result.current.isLoading).toBe(false))
         expect(result.current.data?.iso3166alpha2).toBe('GB')
+        expect(fetchCurrentRegion).toHaveBeenCalledWith(
+            expect.objectContaining({ scope: SCOPE }),
+        )
     })
 })

@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-// @vitest-environment node
 import { describe, expect, test } from 'vitest'
 import { createWasmFalconProvider } from '../wasmFalconProvider'
 

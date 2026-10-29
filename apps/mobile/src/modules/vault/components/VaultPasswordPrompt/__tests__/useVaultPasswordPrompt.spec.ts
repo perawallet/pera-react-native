@@ -79,7 +79,13 @@ describe('useVaultPasswordPrompt', () => {
             useVaultPasswordPrompt({ onVerified: vi.fn() }),
         )
 
-        await waitFor(() => expect(result.current.canUsePasskey).toBe(false))
+        await waitFor(() => {
+            expect(mocks.isPasskeyUnlockSupported).toHaveBeenCalled()
+            expect(mocks.isPasskeyUnlockEnabled).toHaveBeenCalled()
+        })
+        await act(async () => {})
+
+        expect(result.current.canUsePasskey).toBe(false)
         expect(mocks.verifyPasskey).not.toHaveBeenCalled()
     })
 
@@ -89,7 +95,13 @@ describe('useVaultPasswordPrompt', () => {
             useVaultPasswordPrompt({ onVerified: vi.fn() }),
         )
 
-        await waitFor(() => expect(result.current.canUsePasskey).toBe(false))
+        await waitFor(() => {
+            expect(mocks.isPasskeyUnlockSupported).toHaveBeenCalled()
+            expect(mocks.isPasskeyUnlockEnabled).toHaveBeenCalled()
+        })
+        await act(async () => {})
+
+        expect(result.current.canUsePasskey).toBe(false)
         expect(mocks.verifyPasskey).not.toHaveBeenCalled()
     })
 

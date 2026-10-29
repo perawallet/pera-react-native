@@ -274,11 +274,8 @@ describe('createLocalKeyStrategy', () => {
         })
 
         test('signs a quantum account through the shared local-key path', async () => {
-            // Quantum accounts are no longer swept into a separate strategy —
-            // createQuantumStrategy/quantumSignerActor are deleted. The
-            // signature scheme (plain sig vs. pqsig) is resolved inside the
-            // injected signTransactions function, so this strategy only
-            // validates that the key is local.
+            // The injected signTransactions picks sig vs. pqsig, so the
+            // strategy only checks that the key is local.
             const group = makeTransactionGroup()
 
             const result = await makeStrategy().sign(group, quantumAccount)

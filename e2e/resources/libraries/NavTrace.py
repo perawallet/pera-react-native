@@ -12,6 +12,7 @@ Flows are written to <outputdir>/nav-flows.json for tools/flow_diff.py.
 
 import base64
 import json
+import math
 import os
 import time
 
@@ -35,9 +36,23 @@ def parse(lines):
         if at < 0:
             continue
         try:
-            events.append(json.loads(line[at + len(TAG):].strip()))
+            event = json.loads(line[at + len(TAG):].strip())
         except ValueError:
             continue
+        if not isinstance(event, dict) or not isinstance(event.get("event"), str):
+            continue
+        timestamp = event.get("t")
+        if not isinstance(timestamp, (int, float)) or isinstance(timestamp, bool) or not math.isfinite(timestamp):
+            continue
+        if event["event"] in {"focus", "blur", "mount", "unmount", "double-open"}:
+            if not isinstance(event.get("screen"), str):
+                continue
+        elif event["event"] == "snapshot":
+            if not isinstance(event.get("screens"), list) or not all(isinstance(s, str) for s in event["screens"]):
+                continue
+        elif event["event"] != "app":
+            continue
+        events.append(event)
     return events
 
 
@@ -47,13 +62,13 @@ def red_flags(events):
     for e in events:
         if e.get("event") == "double-open":
             flags.append(f"double-open: {e['screen']}")
-        if e.get("event") == "snapshot":
+        if e.get("event") == "snapshot" and str(e.get("label", "")).startswith("fixture:"):
             landing = FIXTURE_LANDING.get(e.get("label"), set())
             leaked = [s for s in e.get("screens", []) if not s.startswith("TabBar") and s not in landing]
             if leaked:
                 flags.append(f"leak after {e.get('label')}: {', '.join(sorted(set(leaked)))}")
     for a, b, c in zip(focus, focus[1:], focus[2:]):
-        if a["screen"] == c["screen"] != b["screen"] and c["t"] - a["t"] < BOUNCE_MS:
+        if a["screen"] == c["screen"] != b["screen"] and 0 <= c["t"] - a["t"] < BOUNCE_MS:
             flags.append(f"bounce: {a['screen']} -> {b['screen']} -> back in {c['t'] - a['t']}ms")
     return flags
 
@@ -78,6 +93,7 @@ class NavTrace:
         self.pending = []
         self.tracer_seen = None
         self.last_seq = 0
+        self.last_event = None
 
     def _driver(self):
         try:
@@ -106,17 +122,18 @@ class NavTrace:
             raw = base64.b64decode(driver.pull_file(f"@{bundle}:data/Documents/e2e-nav.log")).decode()
         except Exception:
             return []
-        fresh = []
-        for line in raw.splitlines():
-            events = parse([line])
-            seq = events[0].get("seq", 0) if events else 0
-            if seq > self.last_seq:
-                fresh.append(line)
-                self.last_seq = seq
-        if not fresh and raw and parse(raw.splitlines()[-1:]) and parse(raw.splitlines()[-1:])[0].get("seq", 0) < self.last_seq:
-            # The app restarted and its counter began again: resynchronise on the new run.
+        records = [(line, event) for line in raw.splitlines() for event in parse([line])
+                   if isinstance(event.get("seq"), int) and event["seq"] > 0]
+        # The rolling file can restart and reach the SAME counter before our next pull. Compare
+        # the old counter's event too, instead of detecting restarts only when the counter shrank.
+        previous = next((event for _, event in records if event["seq"] == self.last_seq), None)
+        if records and (records[-1][1]["seq"] < self.last_seq or
+                        (previous is not None and self.last_event is not None and previous != self.last_event)):
             self.last_seq = 0
-            return self._read_ios_file(driver)
+        fresh = [line for line, event in records if event["seq"] > self.last_seq]
+        if records:
+            self.last_event = records[-1][1]
+            self.last_seq = self.last_event["seq"]
         return fresh
 
     def drain_nav_log(self):
@@ -131,8 +148,8 @@ class NavTrace:
         """
         if self.tracer_seen is False:
             return False  # a build without the tracer: don't pay the timeout on every fixture
-        deadline = time.time() + float(timeout)
-        while time.time() < deadline:
+        deadline = time.monotonic() + float(timeout)
+        while time.monotonic() < deadline:
             lines = self._read()
             self.pending.extend(lines)
             for event in parse(lines):

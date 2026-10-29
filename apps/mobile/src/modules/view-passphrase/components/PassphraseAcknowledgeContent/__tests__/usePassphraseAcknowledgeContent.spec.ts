@@ -10,15 +10,79 @@
  limitations under the License
  */
 
-import { describe, it, expect, vi } from 'vitest'
+import { beforeEach, describe, it, expect, vi } from 'vitest'
 import { renderHook, act } from '@test-utils/render'
 import { usePassphraseAcknowledgeContent } from '../usePassphraseAcknowledgeContent'
 
+const ADDRESS = 'ALGO-ADDRESS'
+
+const mocks = vi.hoisted(() => ({
+    reach: {
+        isMultiNetwork: false,
+        networkNames: [] as string[],
+        linkedAddresses: [],
+    },
+}))
+
+vi.mock('../../../hooks', () => ({
+    usePassphraseReach: () => mocks.reach,
+}))
+
+vi.mock('@hooks/useLanguage', () => ({
+    useLanguage: () => ({
+        t: (key: string, options?: { networks?: string }) =>
+            options?.networks ? `${key}:${options.networks}` : key,
+    }),
+}))
+
 describe('usePassphraseAcknowledgeContent', () => {
+    beforeEach(() => {
+        mocks.reach = {
+            isMultiNetwork: false,
+            networkNames: [],
+            linkedAddresses: [],
+        }
+    })
+
+    it('keeps the four single-network rows and no scope line when the passphrase reaches one network', () => {
+        const { result } = renderHook(() =>
+            usePassphraseAcknowledgeContent({ address: ADDRESS }),
+        )
+
+        expect(result.current.rowKeys).toEqual([
+            'view_passphrase.acknowledge.row_screen',
+            'view_passphrase.acknowledge.row_share',
+            'view_passphrase.acknowledge.row_lose',
+            'view_passphrase.acknowledge.row_pera',
+        ])
+        expect(result.current.scopeText).toBeNull()
+    })
+
+    it('words the sharing row for every network and names the networks when the passphrase reaches several', () => {
+        mocks.reach = {
+            isMultiNetwork: true,
+            networkNames: ['Algorand', 'Ethereum', 'Base'],
+            linkedAddresses: [],
+        }
+
+        const { result } = renderHook(() =>
+            usePassphraseAcknowledgeContent({ address: ADDRESS }),
+        )
+
+        expect(result.current.rowKeys).toHaveLength(4)
+        expect(result.current.rowKeys[1]).toBe(
+            'view_passphrase.acknowledge.row_share_all_networks',
+        )
+        expect(result.current.scopeText).toBe(
+            'view_passphrase.acknowledge.scope:Algorand, Ethereum, Base',
+        )
+        expect(result.current.checked).toEqual([false, false, false, false])
+    })
+
     it('initializes with all rows unchecked and allChecked=false', () => {
         const { result } = renderHook(() =>
             usePassphraseAcknowledgeContent({
-                rowCount: 4,
+                address: ADDRESS,
             }),
         )
         expect(result.current.checked).toEqual([false, false, false, false])
@@ -28,7 +92,7 @@ describe('usePassphraseAcknowledgeContent', () => {
     it('toggles only the row at the given index', () => {
         const { result } = renderHook(() =>
             usePassphraseAcknowledgeContent({
-                rowCount: 4,
+                address: ADDRESS,
             }),
         )
 
@@ -41,7 +105,7 @@ describe('usePassphraseAcknowledgeContent', () => {
     it('toggling the same row twice returns it to unchecked', () => {
         const { result } = renderHook(() =>
             usePassphraseAcknowledgeContent({
-                rowCount: 4,
+                address: ADDRESS,
             }),
         )
 
@@ -54,7 +118,7 @@ describe('usePassphraseAcknowledgeContent', () => {
     it('reports allChecked=true only once every row is checked', () => {
         const { result } = renderHook(() =>
             usePassphraseAcknowledgeContent({
-                rowCount: 4,
+                address: ADDRESS,
             }),
         )
 
@@ -72,7 +136,7 @@ describe('usePassphraseAcknowledgeContent', () => {
             const scrollToEnd = vi.fn()
             const hook = renderHook(() =>
                 usePassphraseAcknowledgeContent({
-                    rowCount: 4,
+                    address: ADDRESS,
                 }),
             )
             hook.result.current.scrollRef.current = { scrollToEnd }

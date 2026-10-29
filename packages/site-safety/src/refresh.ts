@@ -22,7 +22,7 @@ import type {
     PhishingListSource,
     PhishingListSourceId,
 } from './models'
-import { PHISHING_LIST_SOURCES } from './sources'
+import { isCompleteList, PHISHING_LIST_SOURCES } from './sources'
 import { usePhishingListStore } from './store/store'
 
 /** A source whose last successful check is older than this is due. */
@@ -31,13 +31,13 @@ export const PHISHING_LIST_REFRESH_AGE_MS = 12 * 60 * 60 * 1000
 const DEFAULT_TIMEOUT_MS = 30_000
 
 export type RefreshPhishingListsOptions = {
-    fetch?: typeof fetch
+    fetch?: typeof globalThis.fetch
     now?: () => number
     timeoutMs?: number
 }
 
 type SourceRefreshContext = {
-    fetchImpl: typeof fetch
+    fetchImpl: typeof globalThis.fetch
     now: () => number
     timeoutMs: number
 }
@@ -93,10 +93,11 @@ const refreshSource = async (
     }
 
     const entries = raw === undefined ? undefined : source.parse(raw)
-    if (!entries || entries.deny.length < source.minimumDenyEntries) {
+    if (!entries || !isCompleteList(source, entries)) {
         logger.warn('[site-safety] phishing list download was malformed', {
             source: source.id,
             denyEntries: entries?.deny.length,
+            addressEntries: entries?.addresses.length,
         })
         return 'malformed'
     }
@@ -159,6 +160,7 @@ export const refreshPhishingLists = async (
     options: RefreshPhishingListsOptions = {},
 ): Promise<Record<PhishingListSourceId, PhishingListRefreshOutcome>> => {
     const context: SourceRefreshContext = {
+        // oxlint-disable-next-line no-restricted-globals -- phishing lists come from their publishers, with If-None-Match and their own timeout
         fetchImpl: options.fetch ?? ((input, init) => fetch(input, init)),
         now: options.now ?? Date.now,
         timeoutMs: options.timeoutMs ?? DEFAULT_TIMEOUT_MS,

@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-// @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import { mnemonicToSeed } from '@scure/bip39'
 import { bytesToHex } from '@noble/hashes/utils.js'

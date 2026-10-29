@@ -59,6 +59,7 @@ import {
 import { bottomSheetNotifier } from '@components/core'
 import type { FeeRowProps } from '@components/FeeRow'
 import { useCapability } from '@hooks/useCapability'
+import { useChainNameWhenMultiChain } from '@hooks/useChainNameWhenMultiChain'
 import { useToast } from '@hooks/useToast'
 import {
     useRecipientSafety,
@@ -83,6 +84,8 @@ type useTransactionConfirmationScreenResult = {
     selectedAccount: Nullable<WalletAccount>
     selectedAssetId: Optional<string>
     scope: ChainScope
+    /** Set when the wallet spans chains, so the review says which network this send is on. */
+    networkName: Optional<string>
     /** Base units of the chain's native asset. */
     feeAmount: Optional<Decimal>
     feePresets: FeeEstimate['presets']
@@ -109,6 +112,7 @@ type useTransactionConfirmationScreenResult = {
 export const useTransactionConfirmationScreen =
     (): useTransactionConfirmationScreenResult => {
         const scope = useSendScope()
+        const networkName = useChainNameWhenMultiChain(scope.chainId)
         const navigation =
             useNavigation<StackNavigationProp<SendFundsStackParamList>>()
         const {
@@ -343,6 +347,7 @@ export const useTransactionConfirmationScreen =
             selectedAccount,
             selectedAssetId,
             scope,
+            networkName,
             feeAmount,
             feePresets,
             isFeePending,

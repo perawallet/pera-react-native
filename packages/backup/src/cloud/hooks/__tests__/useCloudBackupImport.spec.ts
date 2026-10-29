@@ -10,10 +10,11 @@
  limitations under the License
  */
 
+// @vitest-environment jsdom
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
 // Type-only, so it survives the `vi.mock` below and still holds every fixture
-// to the real payload schema — the drift this spec previously hid.
+// to the real payload schema.
 import type { PulledAccount } from '../../restore/pullBackupItems'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 

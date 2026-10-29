@@ -18,7 +18,7 @@
     "ios:fix-development-team": "node scripts/fix-development-team.js",
     "lint": "oxlint --config .oxlintrc.json .",
     "test": "bash ../../tools/dev/rebuild-native.sh && vitest run",
-    "test:unit": "bash ../../tools/dev/rebuild-native.sh && vitest run --project unit",
+    "test:unit": "bash ../../tools/dev/rebuild-native.sh && vitest run --project unit --project unit-forks",
     "test:coverage": "bash ../../tools/dev/rebuild-native.sh && vitest run --coverage",
     "test:integration": "bash ../../tools/dev/rebuild-native.sh && vitest run --project=integration",
     "test:integration:watch": "bash ../../tools/dev/rebuild-native.sh && vitest --project=integration",

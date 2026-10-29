@@ -39,18 +39,19 @@ const HD_OPTIONS: LocalKeyKindOptions = {
         titleKey: i18nKey('fake.recover.title'),
         chipKey: i18nKey('fake.recover.chip'),
         descriptionKey: i18nKey('fake.recover.description'),
-        mnemonicInfoKey: i18nKey('fake.recover.info'),
         isSuggested: true,
+        order: 0,
         analyticsEvent: 'fake_recover',
     },
 }
 
 const EXPLICIT_OPTIONS: LocalKeyKindOptions = {
-    import: {
+    recover: {
         id: 'fake_explicit',
-        titleKey: i18nKey('fake.import.title'),
-        descriptionKey: i18nKey('fake.import.description'),
-        icon: 'wallet',
+        titleKey: i18nKey('fake.explicit.title'),
+        descriptionKey: i18nKey('fake.explicit.description'),
+        isSuggested: false,
+        order: 1,
     },
 }
 

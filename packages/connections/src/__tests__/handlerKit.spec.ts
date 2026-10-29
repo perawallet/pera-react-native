@@ -76,10 +76,8 @@ describe('createHandlerKit', () => {
 
     describe('context guard', () => {
         it('throws a default error naming the kind before attach', () => {
-            // Arrange
             const kit = createHandlerKit('test-kind', { logTag: '[test]' })
 
-            // Act & Assert
             expect(() => kit.requireContext()).toThrow(
                 'The test-kind handler was used before initialize()',
             )
@@ -90,26 +88,21 @@ describe('createHandlerKit', () => {
         })
 
         it('throws the injected error when one is given', () => {
-            // Arrange
             class ProtocolError extends Error {}
             const kit = createHandlerKit('test-kind', {
                 logTag: '[test]',
                 notInitializedError: () => new ProtocolError('not ready'),
             })
 
-            // Act & Assert
             expect(() => kit.requireContext()).toThrow(ProtocolError)
         })
 
         it('serves the attached context and store until detach', () => {
-            // Arrange
             const kit = createHandlerKit('test-kind', { logTag: '[test]' })
             const context = makeContext()
 
-            // Act
             kit.attach(context)
 
-            // Assert
             expect(kit.requireContext()).toBe(context)
             expect(kit.store()).toBe(context.store)
             expect(kit.currentContext()).toBe(context)
@@ -122,7 +115,6 @@ describe('createHandlerKit', () => {
 
     describe('reportError', () => {
         it('logs and forwards the error with its scope', () => {
-            // Arrange
             const logError = vi
                 .spyOn(logger, 'error')
                 .mockImplementation(() => {})
@@ -131,10 +123,8 @@ describe('createHandlerKit', () => {
             kit.attach(context)
             const error = new Error('boom')
 
-            // Act
             kit.reportError(error, pairingScope('p1'))
 
-            // Assert
             expect(logError).toHaveBeenCalledWith(error, { pairingId: 'p1' })
             expect(context.onError).toHaveBeenCalledWith(error, {
                 pairingId: 'p1',
@@ -142,16 +132,13 @@ describe('createHandlerKit', () => {
         })
 
         it('wraps a non-Error value', () => {
-            // Arrange
             vi.spyOn(logger, 'error').mockImplementation(() => {})
             const kit = createHandlerKit('test-kind', { logTag: '[test]' })
             const context = makeContext()
             kit.attach(context)
 
-            // Act
             kit.reportError('plain string', connectionScope('c1'))
 
-            // Assert
             const [forwarded, scope] = context.onError.mock.calls[0]
             expect(forwarded).toBeInstanceOf(Error)
             expect(forwarded.message).toBe('plain string')
@@ -159,7 +146,6 @@ describe('createHandlerKit', () => {
         })
 
         it('only logs once detached', () => {
-            // Arrange
             const logError = vi
                 .spyOn(logger, 'error')
                 .mockImplementation(() => {})
@@ -168,10 +154,8 @@ describe('createHandlerKit', () => {
             kit.attach(context)
             kit.detach()
 
-            // Act
             kit.reportError(new Error('late'))
 
-            // Assert
             expect(logError).toHaveBeenCalledOnce()
             expect(context.onError).not.toHaveBeenCalled()
         })
@@ -179,38 +163,31 @@ describe('createHandlerKit', () => {
 
     describe('recordActivity', () => {
         it('stamps lastActiveAt on the stored record', async () => {
-            // Arrange
             vi.spyOn(Date, 'now').mockReturnValue(5_000)
             const store = makeStore([makeConnection({ lastActiveAt: 1 })])
             const kit = createHandlerKit('test-kind', { logTag: '[test]' })
             kit.attach(makeContext(store))
 
-            // Act
             kit.recordActivity('c1')
             await flush()
 
-            // Assert
             expect(store.upsert).toHaveBeenCalledWith(
                 expect.objectContaining({ id: 'c1', lastActiveAt: 5_000 }),
             )
         })
 
         it('does not resurrect a record removed before the stamp', async () => {
-            // Arrange
             const store = makeStore()
             const kit = createHandlerKit('test-kind', { logTag: '[test]' })
             kit.attach(makeContext(store))
 
-            // Act
             kit.recordActivity('gone')
             await flush()
 
-            // Assert
             expect(store.upsert).not.toHaveBeenCalled()
         })
 
         it('logs a failure under the tag and log fields, never throwing', async () => {
-            // Arrange
             const warn = vi.spyOn(logger, 'warn').mockImplementation(() => {})
             const store = makeStore()
             const failure = new Error('db down')
@@ -221,11 +198,9 @@ describe('createHandlerKit', () => {
             })
             kit.attach(makeContext(store))
 
-            // Act
             kit.recordActivity('c1')
             await flush()
 
-            // Assert
             expect(warn).toHaveBeenCalledWith(
                 '[test] failed to record connection activity',
                 { clientId: 'c1', error: failure },
@@ -233,15 +208,13 @@ describe('createHandlerKit', () => {
         })
 
         it('defaults the log fields to the connection id', async () => {
-            // Arrange
             const warn = vi.spyOn(logger, 'warn').mockImplementation(() => {})
             const kit = createHandlerKit('test-kind', { logTag: '[test]' })
 
-            // Act: no context, so the store read itself throws.
+            // No context, so the store read itself throws.
             kit.recordActivity('c1')
             await flush()
 
-            // Assert
             expect(warn).toHaveBeenCalledWith(
                 '[test] failed to record connection activity',
                 expect.objectContaining({ connectionId: 'c1' }),
@@ -253,41 +226,32 @@ describe('createHandlerKit', () => {
         const ORIGIN = { source: 'qr' } as const
 
         it('remembers, replaces and forgets an origin per pairing', () => {
-            // Arrange
             const kit = createHandlerKit('test-kind', { logTag: '[test]' })
 
-            // Act
             kit.pendingOrigins.remember('p1', ORIGIN)
             kit.pendingOrigins.remember('p2', ORIGIN)
             kit.pendingOrigins.forget('p2')
 
-            // Assert
             expect(kit.pendingOrigins.get('p1')).toEqual(ORIGIN)
             expect(kit.pendingOrigins.get('p2')).toBeUndefined()
         })
 
         it('clears an entry when remembered without an origin', () => {
-            // Arrange
             const kit = createHandlerKit('test-kind', { logTag: '[test]' })
             kit.pendingOrigins.remember('p1', ORIGIN)
 
-            // Act
             kit.pendingOrigins.remember('p1')
 
-            // Assert
             expect(kit.pendingOrigins.get('p1')).toBeUndefined()
         })
 
         it('drops every pending origin on detach', () => {
-            // Arrange
             const kit = createHandlerKit('test-kind', { logTag: '[test]' })
             kit.attach(makeContext())
             kit.pendingOrigins.remember('p1', ORIGIN)
 
-            // Act
             kit.detach()
 
-            // Assert
             expect(kit.pendingOrigins.get('p1')).toBeUndefined()
         })
     })

@@ -168,6 +168,12 @@ vi.mock('@perawallet/wallet-extension-provider', async () => {
         await vi.importActual<
             typeof import('@packages/chain-algorand/src/capability-defaults')
         >('@packages/chain-algorand/src/capability-defaults')
+    const { createHardwareWalletRegistry } = await vi.importActual<
+        typeof import('@perawallet/wallet-extension-hardware-wallet')
+    >('@perawallet/wallet-extension-hardware-wallet')
+    const { createConnectionStore } = await vi.importActual<
+        typeof import('@perawallet/wallet-extension-connections')
+    >('@perawallet/wallet-extension-connections')
     // Algorand at its shipped defaults, so a capability gate renders as it does
     // in the app. A spec drives a gate off through the remote-config developer
     // override, or calls `chains.reset()` to start empty.
@@ -268,8 +274,7 @@ vi.mock('@perawallet/wallet-extension-provider', async () => {
         chains,
         // A real (empty) registry, as `WithHardwareWalletExtension` supplies in
         // production, so a spec can register a fake transport through it.
-        hardwareWalletRegistry:
-            require('@perawallet/wallet-extension-hardware-wallet').createHardwareWalletRegistry(),
+        hardwareWalletRegistry: createHardwareWalletRegistry(),
         key: {
             store: {
                 remove: vi.fn(),
@@ -280,18 +285,16 @@ vi.mock('@perawallet/wallet-extension-provider', async () => {
         // Real store over the same in-memory map as `keyValueStorage`, matching
         // production where `WithConnections` persists through `provider.keyValueStorage`.
         connections: {
-            store: require('@perawallet/wallet-extension-connections').createConnectionStore(
-                {
-                    storage: {
-                        getItem: (key: string) => store.get(key) ?? null,
-                        setItem: (key: string, value: string) =>
-                            store.set(key, value),
-                        removeItem: (key: string) => {
-                            store.delete(key)
-                        },
+            store: createConnectionStore({
+                storage: {
+                    getItem: (key: string) => store.get(key) ?? null,
+                    setItem: (key: string, value: string) =>
+                        store.set(key, value),
+                    removeItem: (key: string) => {
+                        store.delete(key)
                     },
                 },
-            ),
+            }),
         },
     }
     return {

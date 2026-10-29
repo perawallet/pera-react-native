@@ -16,6 +16,13 @@ import { registerFakeAssetsAdapter } from '@perawallet/wallet-core-assets/testin
 import { registerFakeAccountsChain } from './src/__tests__/fakeAccountsChain'
 
 const kvStore = new Map<string, string>()
+const keyValueStorage = {
+    getItem: (key: string) => kvStore.get(key) ?? null,
+    setItem: (key: string, value: string) => kvStore.set(key, value),
+    removeItem: (key: string) => {
+        kvStore.delete(key)
+    },
+}
 
 // One instance for the whole file: a store module re-imported after
 // vi.resetModules must see what the test registered.
@@ -28,35 +35,13 @@ const removeKey = vi.fn()
 const keystore = { state: { keys: [] as unknown[] } }
 
 vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
-    WithPlatformExtension: () => ({
-        keyValueStorage: {
-            getItem: (key: string) => kvStore.get(key) ?? null,
-            setItem: (key: string, value: string) => kvStore.set(key, value),
-            removeItem: (key: string) => {
-                kvStore.delete(key)
-            },
-        },
-    }),
-    getPlatformServices: () => ({
-        keyValueStorage: {
-            getItem: (key: string) => kvStore.get(key) ?? null,
-            setItem: (key: string, value: string) => kvStore.set(key, value),
-            removeItem: (key: string) => {
-                kvStore.delete(key)
-            },
-        },
-    }),
+    WithPlatformExtension: () => ({ keyValueStorage }),
+    getPlatformServices: () => ({ keyValueStorage }),
 }))
 
 vi.mock('@perawallet/wallet-extension-provider', () => ({
     getProvider: () => ({
-        keyValueStorage: {
-            getItem: (key: string) => kvStore.get(key) ?? null,
-            setItem: (key: string, value: string) => kvStore.set(key, value),
-            removeItem: (key: string) => {
-                kvStore.delete(key)
-            },
-        },
+        keyValueStorage,
         chains,
         key: { store: { remove: removeKey } },
     }),
@@ -65,6 +50,7 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
 
 // Hooks and the syncer resolve the chain through the registries.
 beforeEach(() => {
+    kvStore.clear()
     removeKey.mockReset()
     keystore.state.keys = []
     chains.reset()

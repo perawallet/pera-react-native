@@ -13,6 +13,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 const mockScopeNetwork = vi.hoisted(() => ({ current: 'mainnet' }))
+const mockSources = vi.hoisted(() => ({ current: [] as unknown[] }))
 
 import { useAccountHistory } from '../useAccountHistory'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
@@ -49,6 +50,7 @@ import {
     PeraServiceUnavailableError,
 } from '@perawallet/wallet-core-shared'
 import { AccountDetailsEvent, AnalyticsMetadataKey } from '@analytics'
+import { useAssetListViewStore } from '../../../hooks/useAssetListViewStore'
 
 const mockTrackEvent = vi.hoisted(() => vi.fn())
 vi.mock('@analytics', async () => ({
@@ -66,7 +68,6 @@ vi.mock('@modules/network', () => ({
     useNetworkStatus: mockUseNetworkStatus,
 }))
 
-// Mock dependencies
 vi.mock('@perawallet/wallet-core-accounts', async () => ({
     // Real enums (models/accounts has no runtime imports): components reached
     // through module barrels read them at import time.
@@ -74,6 +75,7 @@ vi.mock('@perawallet/wallet-core-accounts', async () => ({
         '@packages/accounts/src/models/accounts',
     )),
     useSelectedAccount: vi.fn(),
+    useAccountHoldingSources: () => mockSources.current,
     useAccountScope: (account: { chains: Record<string, unknown> } | null) => ({
         chainId: Object.keys(account?.chains ?? {})[0] ?? 'algorand',
         networkId: mockScopeNetwork.current,
@@ -142,11 +144,10 @@ vi.mock('@hooks/useErrorToast', () => ({
     useErrorToast: vi.fn(),
 }))
 
-vi.mock('@hooks/useNodeErrorMessage', () => ({
-    useNodeErrorMessage: () => ({ getMessage: vi.fn() }),
+const mockT = vi.hoisted(() => vi.fn((key: string) => key))
+vi.mock('@hooks/useLanguage', () => ({
+    useLanguage: () => ({ t: mockT }),
 }))
-
-vi.mock('@hooks/useLanguage')
 
 const mockNavigate = vi.fn()
 vi.mock('@react-navigation/native', () => ({
@@ -217,6 +218,8 @@ describe('useAccountHistory', () => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         vi.mocked(useSelectedAccount).mockReturnValue(mockAccount as any)
         mockScopeNetwork.current = 'mainnet'
+        mockSources.current = []
+        useAssetListViewStore.setState({ selectedChainId: null })
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         vi.mocked(useToast).mockReturnValue({ showToast: mockShowToast } as any)
         vi.mocked(useErrorToast).mockReturnValue({
@@ -640,6 +643,84 @@ describe('useAccountHistory', () => {
         ])
         expect(result.current.isEmpty).toBe(false)
         expect(result.current.isInitialLoad).toBe(false)
+    })
+
+    describe('network chip', () => {
+        const ETH_ADDRESS = `0x${'d'.repeat(40)}`
+        const ETHEREUM_SOURCE = {
+            address: ETH_ADDRESS,
+            scope: { chainId: 'ethereum', networkId: 'mainnet' },
+        }
+
+        beforeEach(() => {
+            registerEthereumChain()
+            vi.mocked(useSelectedAccount).mockReturnValue({
+                id: 'two-chains',
+                custody: { kind: 'watch' },
+                chains: {
+                    algorand: { address: ACCOUNT_ADDRESS },
+                    ethereum: { address: ETH_ADDRESS },
+                },
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            } as any)
+            mockSources.current = [
+                {
+                    address: ACCOUNT_ADDRESS,
+                    scope: { chainId: 'algorand', networkId: 'mainnet' },
+                },
+                ETHEREUM_SOURCE,
+            ]
+        })
+
+        it("reads the selected network's history under its own empty copy", () => {
+            useAssetListViewStore.setState({ selectedChainId: 'ethereum' })
+
+            const { result } = renderHook(() => useAccountHistory())
+
+            expect(useTransactionRecordsQuery).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    accountAddress: ETH_ADDRESS,
+                    scope: ETHEREUM_SOURCE.scope,
+                }),
+            )
+            expect(result.current.networkChainId).toBe('ethereum')
+            expect(result.current.emptyBody).toBe(
+                'asset_details.transaction_list.empty_on_network_body',
+            )
+            expect(mockT).toHaveBeenCalledWith(
+                'asset_details.transaction_list.empty_on_network_body',
+                { network: 'Ethereum' },
+            )
+        })
+
+        it("falls back to the account's own chain when the stored chip names a chain the account doesn't have", () => {
+            useAssetListViewStore.setState({ selectedChainId: 'base' })
+
+            const { result } = renderHook(() => useAccountHistory())
+
+            expect(useTransactionHistoryQuery).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    accountAddress: ACCOUNT_ADDRESS,
+                    scope: { chainId: 'algorand', networkId: 'mainnet' },
+                }),
+            )
+            expect(result.current.networkChainId).toBeNull()
+            expect(result.current.emptyBody).toBe(
+                'asset_details.transaction_list.empty_body',
+            )
+        })
+
+        it("reads the account's own chain on All", () => {
+            const { result } = renderHook(() => useAccountHistory())
+
+            expect(useTransactionHistoryQuery).toHaveBeenCalledWith(
+                expect.objectContaining({ accountAddress: ACCOUNT_ADDRESS }),
+            )
+            expect(result.current.networkChainId).toBeNull()
+            expect(result.current.emptyBody).toBe(
+                'asset_details.transaction_list.empty_body',
+            )
+        })
     })
 
     it('offers to search older history, not a skeleton, once the records search pauses', () => {

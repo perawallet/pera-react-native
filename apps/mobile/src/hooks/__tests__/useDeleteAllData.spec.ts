@@ -120,11 +120,8 @@ describe('useDeleteAllData', () => {
     const mockSavePin = vi.fn().mockResolvedValue(undefined)
 
     beforeEach(() => {
-        vi.clearAllMocks()
-        // `clearAllMocks` clears call history but not a prior test's
-        // `mockReturnValue` — reset explicitly so "no provider mounted" is
-        // this file's default and each test that needs a live registry opts
-        // in for itself.
+        // Call history is cleared between tests but implementations are not,
+        // so "no provider mounted" is restored here as this file's default.
         mockUseOptionalConnectionRegistry.mockReturnValue(null)
         mockGetActiveConnectionRegistry.mockReturnValue(null)
         mockDisconnectAll.mockResolvedValue(undefined)
@@ -165,7 +162,7 @@ describe('useDeleteAllData', () => {
         expect(mockSavePin).toHaveBeenCalledWith(null)
         // Wipe must empty the live DB in place — never close/delete/reopen the
         // connection, which would free the native handle out from under any
-        // in-flight statement and crash libexpo-sqlite.so [PERA crash fix].
+        // in-flight statement and crash libexpo-sqlite.so.
         expect(mockClearDatabase).toHaveBeenCalledTimes(1)
         expect(mockResetLegacyData).toHaveBeenCalledTimes(1)
         expect(clearAllStores).toHaveBeenCalledWith()
@@ -230,7 +227,7 @@ describe('useDeleteAllData', () => {
     })
 
     it('should continue if deleteKey fails', async () => {
-        mockDeleteKey.mockRejectedValue(new Error('Key deletion error'))
+        mockDeleteKey.mockRejectedValueOnce(new Error('Key deletion error'))
 
         const { result } = renderHook(() => useDeleteAllData())
 
@@ -444,10 +441,9 @@ describe('useDeleteAllData', () => {
     })
 
     it('removes the legacy WalletConnect blob, which holds plaintext session keys', async () => {
-        // Nothing else does now: the zustand store that used to register a
-        // `clearStorage` is gone, and the importer deletes the blob only after
-        // a fully clean pass, so an import that never completed would survive
-        // the wipe and re-import into a wallet with none of its accounts.
+        // The importer deletes the blob only after a fully clean pass, so an
+        // import that never completed would survive the wipe and re-import
+        // into a wallet with none of its accounts.
         const { result } = renderHook(() => useDeleteAllData())
 
         await act(async () => {

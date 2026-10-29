@@ -20,18 +20,27 @@ export { TransactionHistorySearchOlder } from './components/TransactionHistorySe
 export { SendAccountSelectionContent } from './components/send-funds/SendAccountSelectionContent'
 export { SuspectedPoisoningNotice } from './components/address-safety/SuspectedPoisoningNotice'
 export {
+    ComparedAddress,
+    KNOWN_LABEL_KEYS,
+    type ComparedAddressProps,
+} from './components/address-safety/ComparedAddress'
+export {
     useReceiveFunds,
     useSendAccountResolver,
     useSendFunds,
     useSendFundsStore,
+    useKnownAddresses,
     useSuspectedAddressReuseGuard,
     useTransactionHistoryRows,
     type SendAccountResolution,
+    type UseKnownAddressesParams,
+    type UseKnownAddressesResult,
 } from './hooks'
 export type {
     SendConfirmationDisplay,
     SendTrailingSectionProps,
 } from './types/send-confirmation-display'
+export { diffAddresses, type AddressSegment } from './utils/diffAddresses'
 export {
     getTransactionRowKey,
     getTransactionRowType,

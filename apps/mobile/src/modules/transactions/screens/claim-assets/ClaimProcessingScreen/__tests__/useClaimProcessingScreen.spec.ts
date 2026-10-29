@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { renderHook } from '@test-utils/render'
+import { renderHook, waitFor } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useClaimProcessingScreen } from '../useClaimProcessingScreen'
 import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
@@ -137,13 +137,11 @@ describe('useClaimProcessingScreen', () => {
         ['Ethereum', { chainId: ETHEREUM_CHAIN_ID, networkId: 'sepolia' }],
     ])(
         'resolves the account and sends on the %s scope it was opened for',
-        async (_, scope) => {
+        (_, scope) => {
             mockRouteParams.scope = scope as ChainScope
             mockExecute.mockResolvedValueOnce('tx-id-123')
 
             renderHook(() => useClaimProcessingScreen())
-
-            await new Promise(resolve => setTimeout(resolve, 0))
 
             expect(mockUseFindAccountByAddress).toHaveBeenCalledWith(
                 'test-address',
@@ -153,125 +151,75 @@ describe('useClaimProcessingScreen', () => {
         },
     )
 
-    describe('claim mode', () => {
-        it('navigates to ClaimSuccess with variant "claim" on successful execution', async () => {
-            mockExecute.mockResolvedValueOnce('tx-id-123')
+    it('passes the claimed amount to the send flow so it can credit optimistically', () => {
+        mockExecute.mockResolvedValueOnce('tx-id-123')
 
-            renderHook(() => useClaimProcessingScreen())
+        renderHook(() => useClaimProcessingScreen())
 
-            await new Promise(resolve => setTimeout(resolve, 0))
+        expect(mockExecute).toHaveBeenCalledWith({
+            params: expect.objectContaining({
+                amount: new Decimal(250),
+            }),
+        })
+    })
 
-            expect(mockReplace).toHaveBeenCalledWith('ClaimSuccess', {
-                transactionId: 'tx-id-123',
-                variant: 'claim',
-            })
+    describe.each([
+        ['claim', 'claimAssetInbox'],
+        ['reject', 'rejectAssetInbox'],
+    ] as const)('%s mode', (mode, sendMode) => {
+        beforeEach(() => {
+            mockRouteParams.mode = mode
         })
 
-        it('passes the claimed amount to the send flow so it can credit optimistically', async () => {
+        it(`asks the send flow for ${sendMode}`, () => {
             mockExecute.mockResolvedValueOnce('tx-id-123')
 
             renderHook(() => useClaimProcessingScreen())
-
-            await new Promise(resolve => setTimeout(resolve, 0))
 
             expect(mockExecute).toHaveBeenCalledWith({
-                params: expect.objectContaining({
-                    sendMode: 'claimAssetInbox',
-                    amount: new Decimal(250),
-                }),
+                params: expect.objectContaining({ sendMode }),
             })
         })
 
-        it('calls navigation.goBack and does not show an error toast when user cancels the signing overlay', async () => {
+        it(`navigates to ClaimSuccess with variant "${mode}" on successful execution`, async () => {
+            mockExecute.mockResolvedValueOnce('tx-id-123')
+
+            renderHook(() => useClaimProcessingScreen())
+
+            await waitFor(() =>
+                expect(mockReplace).toHaveBeenCalledWith('ClaimSuccess', {
+                    transactionId: 'tx-id-123',
+                    variant: mode,
+                }),
+            )
+        })
+
+        it('goes back without an error toast when the user cancels the signing overlay', async () => {
             mockExecute.mockRejectedValueOnce(new UserRejectedSigningError())
 
             renderHook(() => useClaimProcessingScreen())
 
-            await new Promise(resolve => setTimeout(resolve, 0))
-
-            expect(mockGoBack).toHaveBeenCalled()
+            await waitFor(() => expect(mockGoBack).toHaveBeenCalled())
             expect(mockShowError).not.toHaveBeenCalled()
         })
 
-        it('shows an error toast and navigates back when execution fails with a non-cancel error', async () => {
+        it('shows an error toast and goes back when execution fails', async () => {
             const executeError = new Error('Network error')
             mockExecute.mockRejectedValueOnce(executeError)
 
             renderHook(() => useClaimProcessingScreen())
 
-            await new Promise(resolve => setTimeout(resolve, 0))
-
+            await waitFor(() => expect(mockGoBack).toHaveBeenCalled())
             expect(mockShowError).toHaveBeenCalledWith(
                 executeError,
                 undefined,
                 expect.anything(),
             )
-            expect(mockGoBack).toHaveBeenCalled()
-        })
-    })
-
-    describe('reject mode', () => {
-        beforeEach(() => {
-            mockRouteParams.mode = 'reject'
-        })
-
-        it('asks the send flow to reject through the inbox', async () => {
-            mockExecute.mockResolvedValueOnce('tx-id-456')
-
-            renderHook(() => useClaimProcessingScreen())
-
-            await new Promise(resolve => setTimeout(resolve, 0))
-
-            expect(mockExecute).toHaveBeenCalledWith({
-                params: expect.objectContaining({
-                    sendMode: 'rejectAssetInbox',
-                }),
-            })
-        })
-
-        it('navigates to ClaimSuccess with variant "reject" on successful execution', async () => {
-            mockExecute.mockResolvedValueOnce('tx-id-456')
-
-            renderHook(() => useClaimProcessingScreen())
-
-            await new Promise(resolve => setTimeout(resolve, 0))
-
-            expect(mockReplace).toHaveBeenCalledWith('ClaimSuccess', {
-                transactionId: 'tx-id-456',
-                variant: 'reject',
-            })
-        })
-
-        it('calls navigation.goBack and does not show an error toast when user cancels', async () => {
-            mockExecute.mockRejectedValueOnce(new UserRejectedSigningError())
-
-            renderHook(() => useClaimProcessingScreen())
-
-            await new Promise(resolve => setTimeout(resolve, 0))
-
-            expect(mockGoBack).toHaveBeenCalled()
-            expect(mockShowError).not.toHaveBeenCalled()
-        })
-
-        it('shows an error toast and navigates back when execution fails', async () => {
-            const executeError = new Error('Reject failed')
-            mockExecute.mockRejectedValueOnce(executeError)
-
-            renderHook(() => useClaimProcessingScreen())
-
-            await new Promise(resolve => setTimeout(resolve, 0))
-
-            expect(mockShowError).toHaveBeenCalledWith(
-                executeError,
-                undefined,
-                expect.anything(),
-            )
-            expect(mockGoBack).toHaveBeenCalled()
         })
     })
 
     describe('null guard', () => {
-        it('navigates back immediately without calling execute when asset is not found', async () => {
+        it('navigates back immediately without calling execute when asset is not found', () => {
             mockUseClaimAssets.mockReturnValue({
                 assetRequests: [],
                 accountAddress: 'test-address',
@@ -280,18 +228,14 @@ describe('useClaimProcessingScreen', () => {
 
             renderHook(() => useClaimProcessingScreen())
 
-            await new Promise(resolve => setTimeout(resolve, 0))
-
             expect(mockGoBack).toHaveBeenCalled()
             expect(mockExecute).not.toHaveBeenCalled()
         })
 
-        it('navigates back immediately without calling execute when account is not found', async () => {
+        it('navigates back immediately without calling execute when account is not found', () => {
             mockUseFindAccountByAddress.mockReturnValue(undefined)
 
             renderHook(() => useClaimProcessingScreen())
-
-            await new Promise(resolve => setTimeout(resolve, 0))
 
             expect(mockGoBack).toHaveBeenCalled()
             expect(mockExecute).not.toHaveBeenCalled()

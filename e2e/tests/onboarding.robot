@@ -8,6 +8,7 @@ Resource            ../resources/onboarding.resource
 Suite Setup         Open Pera
 Suite Teardown      Run Keywords    Reset To Fresh Wallet    AND    Close Pera
 Test Teardown       Capture Failure Screenshot
+Test Timeout        ${E2E_TEST_TIMEOUT}
 Test Tags           onboarding
 
 
@@ -45,20 +46,31 @@ Import Lists Every Recovery Method
     [Tags]    id:onboarding.import.options    p0    rc
     Start Without Wallet
     Open Import Options From Welcome
-    Page Should Contain Element    ${IMPORT_OPTION_RECOVER_QR}
     Page Should Contain Element    ${IMPORT_OPTION_PAIR_LEDGER}
+    Reveal Other Import Options
     Scroll Until Present    ${IMPORT_OPTION_PERA_WEB}
     Scroll Until Present    ${IMPORT_OPTION_ASB}
+    Scroll Until Present    ${IMPORT_OPTION_RECOVER_QR}
 
 Algorand Secure Backup Option Opens Its Import Flow
     [Tags]    id:onboarding.import.asb-entry    p1
     Start Without Wallet
     Open Import Options From Welcome
-    Scroll Until Present    ${IMPORT_OPTION_ASB}
+    Reveal Other Import Options
+    Scroll Until Tappable    ${IMPORT_OPTION_ASB}
     Tap    ${IMPORT_OPTION_ASB}
     Wait Until Page Contains Element    ${ASB_INFO_CONTINUE}    timeout=20s
     Tap    ${ASB_INFO_CONTINUE}
     Wait Until Page Contains Element    ${ASB_PICK_FILE_BUTTON}    timeout=20s
+
+Pair Ledger Option Opens Its Intro
+    [Documentation]    Stops at the intro: anything past it needs a Ledger over Bluetooth.
+    [Tags]    id:onboarding.import.ledger-entry    p1
+    Start Without Wallet
+    Open Import Options From Welcome
+    Tap    ${IMPORT_OPTION_PAIR_LEDGER}
+    Wait Until Page Contains Element    ${LEDGER_PAIR_START_BUTTON}    timeout=20s
+    Page Should Contain Element    ${LEDGER_PAIR_INFO_BUTTON}
 
 Algo25 Wallet Is Recovered From Its 25 Word Phrase
     [Tags]    id:onboarding.import.algo25    p0    needs-funded    excludefromci
@@ -120,6 +132,8 @@ New Account Is Added To The Existing Wallet
     Start With New Wallet
     Open Add Account
     Tap    ${ADD_ACCOUNT_ADD_BUTTON}
+    Wait Until Page Contains Element    ${ADD_ACCOUNT_MULTICHAIN_BUTTON}    timeout=20s
+    Tap    ${ADD_ACCOUNT_MULTICHAIN_BUTTON}
     Name Account And Finish    ${SECOND_ACCOUNT_NAME}
     Selected Account Should Be Named    ${SECOND_ACCOUNT_NAME}
 
@@ -128,7 +142,7 @@ Algo25 Account Is Created From Other Options
     Start With New Wallet
     Open Add Account
     Reveal Other Add Account Options
-    Scroll Until Present    ${ADD_ACCOUNT_ALGO25_BUTTON}
+    Scroll Until Tappable    ${ADD_ACCOUNT_ALGO25_BUTTON}
     Tap    ${ADD_ACCOUNT_ALGO25_BUTTON}
     Name Account And Finish    ${SECOND_ACCOUNT_NAME}
     Selected Account Should Be Named    ${SECOND_ACCOUNT_NAME}
@@ -151,13 +165,16 @@ Closing Add Account Returns Home
     Page Should Contain Element    ${ACCOUNT_SELECTION_BUTTON}
 
 Watch Account Is Added From An Address
-    [Tags]    id:onboarding.add-account.watch    p1    needs-testid
-    Skip    WatchInfoScreen's Create button has no testID (watch_info_create_button).
+    [Tags]    id:onboarding.add-account.watch    p1
     Start With New Wallet
     Open Add Account
     Reveal Other Add Account Options
+    Scroll Until Tappable    ${ADD_ACCOUNT_WATCH_BUTTON}
+    # The option opens at the bottom edge, partly under the system navigation bar that takes the tap.
+    Swipe By Percent    50    70    50    40
+    Wait Until Settled    ${ADD_ACCOUNT_WATCH_BUTTON}
     Tap    ${ADD_ACCOUNT_WATCH_BUTTON}
-    Wait Until Page Contains Element    ${WATCH_INFO_CREATE_BUTTON}    timeout=15s
+    Wait Until Settled    ${WATCH_INFO_CREATE_BUTTON}
     Tap    ${WATCH_INFO_CREATE_BUTTON}
     Wait Until Page Contains Element    ${WATCH_ADDRESS_INPUT}    timeout=15s
     Input Text    ${WATCH_ADDRESS_INPUT}    ${WATCH_ADDRESS}

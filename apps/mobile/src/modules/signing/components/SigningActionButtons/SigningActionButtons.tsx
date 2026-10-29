@@ -29,6 +29,7 @@ export const SigningActionButtons = () => {
         isMultisigCosign,
         cannotSignNotice,
         cosignSignerAddress,
+        isConfirmBlocked,
     } = useSigningActionButtons()
 
     return (
@@ -49,6 +50,7 @@ export const SigningActionButtons = () => {
                     title={t('common.slide_to_confirm.label')}
                     onConfirm={handleSignAndSend}
                     isLoading={isLoading}
+                    isDisabled={isConfirmBlocked}
                     testID='signing-confirm-slide'
                 />
             )}

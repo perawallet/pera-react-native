@@ -27,4 +27,10 @@ export const siteSafetyQueryKeys = {
             'verdict',
             { hosts, isFlaggedByWalletConnectVerify, generations },
         ] as const,
+
+    /** `keys` are sorted `toListedAddressKey` keys. */
+    listedAddresses: (
+        keys: readonly string[],
+        generations: ActiveGenerations,
+    ) => [MODULE_PREFIX, 'listed-addresses', { keys, generations }] as const,
 }

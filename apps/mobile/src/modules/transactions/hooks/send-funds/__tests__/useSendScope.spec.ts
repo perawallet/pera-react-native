@@ -52,7 +52,26 @@ describe('useSendScope', () => {
         expect(result.current.chainId).toBe('ethereum')
     })
 
-    it("falls back to the account's chain before an asset is picked", () => {
+    it('runs the send on the chosen network before an asset is picked', () => {
+        useSendFundsStore.getState().setChainId('ethereum')
+
+        const { result } = renderHook(() => useSendScope())
+
+        expect(result.current.chainId).toBe('ethereum')
+    })
+
+    it("keeps the selected asset's chain over the chosen network", () => {
+        useSendFundsStore.getState().setChainId('ethereum')
+        useSendFundsStore
+            .getState()
+            .setSelectedAsset({ chainId: 'algorand', assetId: '0' })
+
+        const { result } = renderHook(() => useSendScope())
+
+        expect(result.current.chainId).toBe('algorand')
+    })
+
+    it("falls back to the account's chain before a network or asset is picked", () => {
         const { result } = renderHook(() => useSendScope())
 
         expect(useAccountChainId).toHaveBeenCalledWith(

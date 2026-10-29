@@ -12,9 +12,7 @@
 
 // @vitest-environment node
 
-// @vitest-environment node
-
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import Share from 'react-native-share'
 import { shareText } from '../shareText'
 
@@ -23,10 +21,6 @@ vi.mock('react-native-share', () => ({
 }))
 
 describe('shareText', () => {
-    beforeEach(() => {
-        vi.clearAllMocks()
-    })
-
     it('forwards message, title and url to Share.open with failOnCancel disabled', async () => {
         await shareText({
             message: 'hello',

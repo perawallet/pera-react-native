@@ -81,12 +81,12 @@ describe('operations a chain may leave out', () => {
         ).resolves.toEqual(new Map())
     })
 
-    it('answers empty histories', async () => {
+    it('answers no portfolio history source and an empty holding history', async () => {
         bare()
 
         await expect(
             fetchPortfolioHistory(['ADDR'], 'one-day', MAINNET_SCOPE),
-        ).resolves.toEqual([])
+        ).resolves.toBeNull()
         await expect(
             fetchHoldingBalanceHistory(
                 'ADDR',

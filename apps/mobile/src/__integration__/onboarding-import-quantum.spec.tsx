@@ -70,6 +70,7 @@ const renderQuantumImportFromOnboarding = () =>
                 name: 'ImportAccountOptions',
                 component: ImportAccountOptionsScreen,
             },
+            { name: 'ImportInfo', component: ImportInfoScreen },
             { name: 'ImportAccount', component: ImportAccountScreen },
             { name: 'SearchAccounts', component: SearchAccountsScreen },
             {
@@ -80,13 +81,13 @@ const renderQuantumImportFromOnboarding = () =>
         ],
     })
 
-// Quantum import is an explicit, dedicated entrypoint: unlike "Recover a
-// wallet" it does not open the type-selection sheet or the ImportInfo screen —
-// it navigates straight to the 25-word mnemonic screen with type 'quantum'.
+// Quantum is picked explicitly on the passphrase-type sheet: its 25 words
+// share a count with Algo25, so detection alone would never choose it.
 const openQuantumImportScreen = async () => {
-    fireEvent.click(screen.getByTestId('onboarding_import_account_button'))
-    await waitFor(() => screen.getByTestId('import_account_quantum_button'))
-    fireEvent.click(screen.getByTestId('import_account_quantum_button'))
+    await openImportOptionsSheet()
+    await waitFor(() => screen.getByTestId('import_options_quantum_button'))
+    fireEvent.click(screen.getByTestId('import_options_quantum_button'))
+    await advanceThroughImportInfo()
     await waitFor(() => screen.getByTestId('import_account_word_input_24'))
 }
 

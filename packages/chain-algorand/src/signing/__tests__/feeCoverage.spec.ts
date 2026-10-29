@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-// @vitest-environment node
 import { beforeAll, beforeEach, describe, expect, test, vi } from 'vitest'
 import type { Address, SignedTransaction } from 'algosdk'
 import { generateKey } from 'falcon-1024'

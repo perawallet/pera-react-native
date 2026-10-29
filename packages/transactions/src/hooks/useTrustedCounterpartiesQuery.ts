@@ -68,41 +68,48 @@ export const useTrustedCounterpartiesQuery = ({
 }: {
     senderAddress: Optional<string>
     accountAddresses: readonly string[]
-    scope: ChainScope
+    /** Undefined reads no history. */
+    scope: Optional<ChainScope>
     isEnabled?: boolean
 }): UseTrustedCounterpartiesQueryResult => {
-    const codec = addressCodecs.has(scope.chainId)
-        ? addressCodecs.get(scope.chainId)
-        : undefined
+    const codec =
+        scope && addressCodecs.has(scope.chainId)
+            ? addressCodecs.get(scope.chainId)
+            : undefined
     const isSender = (address: string) =>
         !!senderAddress && !!codec?.areEqual(address, senderAddress)
 
+    const readAddresses = scope ? accountAddresses : []
+    const queries = scope
+        ? readAddresses.map(accountAddress => ({
+              queryKey: transactionQueryKeys.trustedCounterparties(
+                  accountAddress,
+                  scope,
+              ),
+              queryFn: ({ signal }: { signal: AbortSignal }) =>
+                  withDeadline(
+                      deadlineSignal =>
+                          fetchTrustedCounterparties({
+                              accountAddress,
+                              scope,
+                              signal: deadlineSignal,
+                          }),
+                      signal,
+                  ),
+              staleTime: TRUSTED_COUNTERPARTIES_STALE_TIME_MS,
+              enabled: isEnabled,
+              retry: false,
+          }))
+        : []
+
     return useQueries({
-        queries: accountAddresses.map(accountAddress => ({
-            queryKey: transactionQueryKeys.trustedCounterparties(
-                accountAddress,
-                scope,
-            ),
-            queryFn: ({ signal }: { signal: AbortSignal }) =>
-                withDeadline(
-                    deadlineSignal =>
-                        fetchTrustedCounterparties({
-                            accountAddress,
-                            scope,
-                            signal: deadlineSignal,
-                        }),
-                    signal,
-                ),
-            staleTime: TRUSTED_COUNTERPARTIES_STALE_TIME_MS,
-            enabled: isEnabled,
-            retry: false,
-        })),
+        queries,
         // Only the sender's own history holds Confirm. An errored, timed-out
         // or offline-paused read counts as settled with no history, and another
         // account's read can only add what it finds once it lands.
         combine: results => {
             const sender = results.find((_, index) =>
-                isSender(accountAddresses[index]),
+                isSender(readAddresses[index]),
             )
             return {
                 data: results.flatMap(result => result.data ?? []),

@@ -8,24 +8,16 @@ Resource            accounts.resource
 *** Variables ***
 # The name a rename case found, for its teardown to put back.
 ${ORIGINAL_ACCOUNT_NAME}            ${EMPTY}
-${SETTINGS_DELETE_ALL_CONFIRM}      xpath=//*[@resource-id='settings_delete_all_confirm_button' or @name='settings_delete_all_confirm_button' or @content-desc='settings_delete_all_confirm_button']
-${SETTINGS_DELETE_ALL_SUCCESS}      xpath=//*[@resource-id='settings_delete_all_success_bottom_sheet' or @name='settings_delete_all_success_bottom_sheet']
+${SETTINGS_DELETE_ALL_CONFIRM}      tid=settings_delete_all_confirm_button
+${SETTINGS_DELETE_ALL_SUCCESS}      tid=settings_delete_all_success_bottom_sheet
 
 
 *** Keywords ***
-Theme Should Be Selected
-    [Documentation]    PWRadioButton exposes no selected state today, so this cannot pass until it
-    ...                sets accessibilityState={{ selected }} (see the needs-testid tag on its cases).
-    [Arguments]    ${theme}
-    Wait Until Page Contains Element
-    ...    xpath=//*[(@content-desc='settings_theme_${theme}_radio' or @resource-id='settings_theme_${theme}_radio' or @name='settings_theme_${theme}_radio') and @selected='true']
-    ...    timeout=10s
-
 Select Theme
     [Arguments]    ${theme}
     Open Settings
     Open Theme Settings
-    Tap    xpath=//*[@resource-id='settings_theme_${theme}_radio' or @name='settings_theme_${theme}_radio' or @content-desc='settings_theme_${theme}_radio']
+    Tap    tid=settings_theme_${theme}_radio
 
 Restore System Theme
     Capture Failure Screenshot

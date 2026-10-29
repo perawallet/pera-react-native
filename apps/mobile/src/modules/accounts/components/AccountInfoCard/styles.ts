@@ -170,18 +170,6 @@ export const useStyles = makeStyles(theme => ({
     },
     addressPanel: {
         flex: 1,
-        gap: theme.spacing.sm,
-        padding: theme.spacing.md,
-        borderRadius: theme.borderRadius.sm,
-        backgroundColor: theme.colors.layerGrayLighter,
-    },
-    addressRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        gap: theme.spacing.md,
-    },
-    addressChainName: {
-        color: theme.colors.textGray,
     },
     scanButton: {
         backgroundColor: theme.colors.buttonSquareBg,
