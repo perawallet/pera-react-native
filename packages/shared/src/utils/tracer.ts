@@ -22,6 +22,7 @@
  * body; `reset()` re-anchors t0 and re-allows a label.
  */
 
+import { toError } from './errors'
 import { logger } from './logging'
 
 const ENABLED =
@@ -109,7 +110,7 @@ const track = async <T>(
         mark(`${label}:error`, {
             ...meta,
             durationMs: +(monotonic() - start).toFixed(1),
-            message: error instanceof Error ? error.message : String(error),
+            message: toError(error).message,
         })
         throw error
     }

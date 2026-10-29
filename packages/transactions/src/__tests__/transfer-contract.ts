@@ -182,12 +182,17 @@ export const transferContractTests = (
                     true,
                 )
                 for (const preset of FEE_PRESETS) {
-                    const { amount, maxAmount } = presets[preset]
+                    const { amount, maxAmount, estimatedWaitSeconds } =
+                        presets[preset]
                     expect(amount.isInteger() && maxAmount.isInteger()).toBe(
                         true,
                     )
                     expect(amount.gt(0)).toBe(true)
                     expect(maxAmount.gte(amount)).toBe(true)
+                    expect(
+                        Number.isInteger(estimatedWaitSeconds) &&
+                            estimatedWaitSeconds >= 1,
+                    ).toBe(true)
                 }
             }
         })

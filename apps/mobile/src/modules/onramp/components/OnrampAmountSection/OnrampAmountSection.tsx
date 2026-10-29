@@ -73,6 +73,49 @@ export const OnrampAmountSection = (props: OnrampAmountSectionProps) => {
             variant === 'pay' ? props.onAmountTextChange : undefined,
     })
 
+    const renderAmount = () => {
+        if (isPay) {
+            return (
+                <PWInput
+                    variant='h2'
+                    value={inputValue}
+                    onChangeText={handleTextChange}
+                    keyboardType='decimal-pad'
+                    placeholder='0.00'
+                    placeholderTextColor={theme.colors.textGrayLighter}
+                    containerStyle={styles.amountInputContainer}
+                    inputContainerStyle={styles.amountInputInnerContainer}
+                    inputStyle={styles.amountInput}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    testID='onramp-pay-input'
+                />
+            )
+        }
+        if (isReceiveLoading) {
+            return (
+                <PWSkeleton
+                    // lanekeep-ignore-next-line pera/no-numeric-sizes reason: amount skeleton width
+                    width={120}
+                    // lanekeep-ignore-next-line pera/no-numeric-sizes reason: amount skeleton height
+                    height={28}
+                />
+            )
+        }
+        return (
+            <PWText
+                style={
+                    hasReceiveValue ? styles.amountText : styles.amountTextMuted
+                }
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                testID='onramp-receive-amount'
+            >
+                {receiveValue || '0.00'}
+            </PWText>
+        )
+    }
+
     return (
         <AmountField
             variant={isPay ? 'plain' : 'card'}
@@ -80,42 +123,7 @@ export const OnrampAmountSection = (props: OnrampAmountSectionProps) => {
                 isPay ? t('onramp.form.you_pay') : t('onramp.form.you_receive')
             }
             amountSize='h2'
-            amount={
-                isPay ? (
-                    <PWInput
-                        variant='h2'
-                        value={inputValue}
-                        onChangeText={handleTextChange}
-                        keyboardType='decimal-pad'
-                        placeholder='0.00'
-                        placeholderTextColor={theme.colors.textGrayLighter}
-                        containerStyle={styles.amountInputContainer}
-                        inputContainerStyle={styles.amountInputInnerContainer}
-                        inputStyle={styles.amountInput}
-                        numberOfLines={1}
-                        adjustsFontSizeToFit
-                        testID='onramp-pay-input'
-                    />
-                ) : isReceiveLoading ? (
-                    <PWSkeleton
-                        width={120}
-                        height={28}
-                    />
-                ) : (
-                    <PWText
-                        style={
-                            hasReceiveValue
-                                ? styles.amountText
-                                : styles.amountTextMuted
-                        }
-                        numberOfLines={1}
-                        adjustsFontSizeToFit
-                        testID='onramp-receive-amount'
-                    >
-                        {receiveValue || '0.00'}
-                    </PWText>
-                )
-            }
+            amount={renderAmount()}
             selector={
                 <AssetSelector
                     variant={variant}

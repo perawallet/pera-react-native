@@ -15,6 +15,7 @@
 import * as Sentry from '@sentry/browser'
 import type { CrashReportingService } from '@perawallet/wallet-extension-platform'
 import { config, isDebug } from '@perawallet/wallet-core-config'
+import { toError } from '@perawallet/wallet-core-shared'
 
 /**
  * Shapes that must never leave the device. Ordered most-specific first so a
@@ -129,9 +130,7 @@ export class ChromeCrashReportingService implements CrashReportingService {
             console.error('[pera] non-fatal', error)
             return
         }
-        Sentry.captureException(
-            error instanceof Error ? error : new Error(String(error)),
-        )
+        Sentry.captureException(toError(error))
     }
 
     logBreadcrumb(_message: string): void {

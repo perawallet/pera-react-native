@@ -16,6 +16,7 @@ import { PWListItemLayout, PWText, PWView } from '@components/core'
 import { ChainFamilyIcon, useChainFamily } from '@modules/chain-ui'
 import { useStyles } from './styles'
 
+// lanekeep-ignore-next-line pera/no-numeric-sizes reason: chain family icon size
 const FAMILY_ICON_SIZE = 40
 
 export type ContactAddressRowProps = {

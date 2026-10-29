@@ -60,6 +60,7 @@
     "no-loss-of-precision": "error",
     "no-misleading-character-class": "error",
     "no-new-native-nonconstructor": "error",
+    "no-nested-ternary": "error",
     "no-nonoctal-decimal-escape": "error",
     "no-obj-calls": "error",
     "no-prototype-builtins": "error",
@@ -118,6 +119,7 @@
     "react/rules-of-hooks": "error",
     "react/exhaustive-deps": "error",
     "pera/no-algorand-sdk-imports": "error",
+    "pera/prefer-lookup-map": "error",
     "pera/no-i18n-key-cast": "error"
   },
   "overrides": [
@@ -301,9 +303,31 @@
       "rules": { "pera/hook-result-type": "error" }
     },
     {
+      "files": ["apps/*/src/**", "packages/*/src/**", "extensions/*/src/**"],
+      "excludeFiles": [
+        "**/__tests__/**",
+        "**/__mocks__/**",
+        "**/test-utils/**",
+        "**/__integration__/**",
+        "**/*.spec.{ts,tsx}",
+        "**/*.test.{ts,tsx}",
+        "packages/shared/src/**",
+        "packages/chain-contract/src/**",
+        "packages/config/src/**",
+        "apps/browser/src/offscreen/db-worker.ts",
+        "extensions/platform-chrome/src/storage-proxy.ts"
+      ],
+      "rules": { "pera/prefer-to-error": "error" }
+    },
+    {
       "files": ["packages/*/src/**", "extensions/*/src/**", "apps/browser/src/**"],
       "excludeFiles": ["**/__tests__/**", "**/__mocks__/**", "**/test-utils/**", "**/__integration__/**", "**/*.spec.{ts,tsx}", "**/*.test.{ts,tsx}"],
       "rules": { "no-console": "error" }
+    },
+    {
+      "files": ["packages/*/src/**", "extensions/*/src/**"],
+      "excludeFiles": ["**/__tests__/**", "**/__mocks__/**", "**/test-utils/**", "**/__integration__/**", "**/*.spec.{ts,tsx}", "**/*.test.{ts,tsx}"],
+      "rules": { "pera/typed-domain-errors": "error" }
     },
     {
       "files": ["packages/chain-algorand/**"],
@@ -335,6 +359,10 @@
     {
       "files": ["**/__tests__/**", "**/*.spec.{ts,tsx}", "**/__integration__/**", "**/vitest*.ts"],
       "rules": { "pera/no-algorand-sdk-imports": "off" }
+    },
+    {
+      "files": ["**/__tests__/**", "**/__mocks__/**", "**/__integration__/**", "**/test-utils/**", "**/*.spec.{ts,tsx,js}", "**/*.test.{ts,tsx,js}", "apps/browser/e2e/**"],
+      "rules": { "no-nested-ternary": "off" }
     }
   ]
 }

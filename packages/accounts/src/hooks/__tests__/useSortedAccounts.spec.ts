@@ -18,14 +18,16 @@ import {
     CHAIN_CAPABILITIES,
     type ChainCapabilities,
     type ChainDescriptor,
+    type ChainId,
 } from '@perawallet/wallet-core-chain-contract'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { useSortedAccounts } from '../useSortedAccounts'
 import { useAccountsStore } from '../../store'
-import type {
-    WalletAccount,
-    AccountBalances,
-    AccountBalance,
+import {
+    accountValueKey,
+    type WalletAccount,
+    type AccountBalance,
+    type AccountValueKey,
 } from '../../models'
 import { testAccount } from '../../__tests__/accountFactory'
 import { FAKE_CHAIN_ID } from '../../__tests__/fakeAccountsChain'
@@ -42,6 +44,9 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
         createPersistStorage: createMockPersistStorage,
     }
 })
+
+const valueKey = (address: string, chainId: ChainId = FAKE_CHAIN_ID) =>
+    accountValueKey(chainId, address)
 
 // Ids equal addresses so one string names an account in every assertion.
 const makeAccount = (address: string, name?: string): WalletAccount =>
@@ -67,10 +72,10 @@ describe('useSortedAccounts', () => {
     const accountC = makeAccount('ADDR_C', 'Charlie')
     const accounts = [accountB, accountC, accountA]
 
-    const balances: AccountBalances = new Map([
-        ['ADDR_A', makeBalance(100)],
-        ['ADDR_B', makeBalance(50)],
-        ['ADDR_C', makeBalance(200)],
+    const balances = new Map<AccountValueKey, AccountBalance>([
+        [valueKey('ADDR_A'), makeBalance(100)],
+        [valueKey('ADDR_B'), makeBalance(50)],
+        [valueKey('ADDR_C'), makeBalance(200)],
     ])
 
     beforeEach(() => {
@@ -136,9 +141,18 @@ describe('useSortedAccounts', () => {
     test('sorts by nativeValue even when fiatValue is unknown', () => {
         useAccountsStore.setState({ sortMode: 'balanceDesc' })
         const withNullFiat = new Map([
-            ['ADDR_A', { nativeValue: new Decimal(100), fiatValue: null }],
-            ['ADDR_B', { nativeValue: new Decimal(50), fiatValue: null }],
-            ['ADDR_C', { nativeValue: new Decimal(200), fiatValue: null }],
+            [
+                valueKey('ADDR_A'),
+                { nativeValue: new Decimal(100), fiatValue: null },
+            ],
+            [
+                valueKey('ADDR_B'),
+                { nativeValue: new Decimal(50), fiatValue: null },
+            ],
+            [
+                valueKey('ADDR_C'),
+                { nativeValue: new Decimal(200), fiatValue: null },
+            ],
         ])
         const { result } = renderHook(() =>
             useSortedAccounts(accounts, withNullFiat, FAKE_CHAIN_ID),
@@ -190,8 +204,8 @@ describe('useSortedAccounts', () => {
 
     test('handles accounts without balance data in balance sort', () => {
         useAccountsStore.setState({ sortMode: 'balanceAsc' })
-        const partialBalances: AccountBalances = new Map([
-            ['ADDR_A', makeBalance(100)],
+        const partialBalances = new Map<AccountValueKey, AccountBalance>([
+            [valueKey('ADDR_A'), makeBalance(100)],
         ])
         const { result } = renderHook(() =>
             useSortedAccounts(accounts, partialBalances, FAKE_CHAIN_ID),
@@ -249,21 +263,24 @@ describe('useSortedAccounts', () => {
         const asaOnly = makeAccount('ADDR_ASA', 'Asa')
         const values = new Map([
             [
-                'ADDR_A',
+                valueKey('ADDR_A'),
                 { nativeValue: new Decimal(1000), fiatValue: new Decimal(100) },
             ],
-            ['ADDR_B', { nativeValue: new Decimal(5000), fiatValue: null }],
-            ['ADDR_ASA', { nativeValue: null, fiatValue: null }],
             [
-                '0xETH',
+                valueKey('ADDR_B'),
+                { nativeValue: new Decimal(5000), fiatValue: null },
+            ],
+            [valueKey('ADDR_ASA'), { nativeValue: null, fiatValue: null }],
+            [
+                valueKey('0xETH', 'ethereum'),
                 { nativeValue: new Decimal(1), fiatValue: new Decimal(3000) },
             ],
             [
-                'ADDR_BOTH',
+                valueKey('ADDR_BOTH'),
                 { nativeValue: new Decimal(10), fiatValue: new Decimal(50) },
             ],
             [
-                '0xBOTH',
+                valueKey('0xBOTH', 'ethereum'),
                 { nativeValue: new Decimal(1), fiatValue: new Decimal(3000) },
             ],
         ])
@@ -319,6 +336,59 @@ describe('useSortedAccounts', () => {
 
                 expect(sortedIds([accountA, ethereumAccount])).toEqual([
                     '0xETH',
+                    'ADDR_A',
+                ])
+            })
+
+            test('ranks an account on two EVM chains at one address by both, not the last chain', () => {
+                getProvider().chains.register(
+                    { id: 'base', networks: [] } as unknown as ChainDescriptor,
+                    ALL_ON,
+                )
+                const evmPair: WalletAccount = {
+                    ...makeAccount('ADDR_PAIR', 'Pat'),
+                    chains: {
+                        algorand: { address: 'ADDR_PAIR' },
+                        ethereum: { address: '0xSHARED' },
+                        base: { address: '0xSHARED' },
+                    },
+                }
+                const pairValues = new Map([
+                    ...values,
+                    [
+                        valueKey('ADDR_PAIR'),
+                        {
+                            nativeValue: new Decimal(1),
+                            fiatValue: new Decimal(1),
+                        },
+                    ],
+                    [
+                        valueKey('0xSHARED', 'ethereum'),
+                        {
+                            nativeValue: new Decimal(1),
+                            fiatValue: new Decimal(4000),
+                        },
+                    ],
+                    [
+                        valueKey('0xSHARED', 'base'),
+                        {
+                            nativeValue: new Decimal(0),
+                            fiatValue: new Decimal(0),
+                        },
+                    ],
+                ])
+                useAccountsStore.setState({ sortMode: 'balanceDesc' })
+
+                const { result } = renderHook(() =>
+                    useSortedAccounts(
+                        [accountA, evmPair],
+                        pairValues,
+                        FAKE_CHAIN_ID,
+                    ),
+                )
+
+                expect(result.current.sortedAccounts.map(a => a.id)).toEqual([
+                    'ADDR_PAIR',
                     'ADDR_A',
                 ])
             })

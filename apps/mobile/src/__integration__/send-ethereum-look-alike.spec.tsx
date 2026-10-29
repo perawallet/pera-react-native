@@ -61,7 +61,8 @@ const { getTheme } = await import('@theme/theme')
 setTestTheme(getTheme('light'))
 const { fireEvent, screen, waitFor } = await import('@testing-library/react')
 const { Decimal } = await import('decimal.js')
-const { useAccountsStore } = await import('@perawallet/wallet-core-accounts')
+const { upsertAccountChainState, useAccountsStore } =
+    await import('@perawallet/wallet-core-accounts')
 const { SeedScheme } = await import('@perawallet/wallet-core-kms')
 const { nativeAssetFor, upsertAssetPrices, upsertAssets } =
     await import('@perawallet/wallet-core-assets')
@@ -179,6 +180,14 @@ describe('Flow: warn before sending to a look-alike on Ethereum', () => {
         await upsertAssetPrices({
             prices: [{ assetId: ether.assetId, usdPrice: new Decimal(3000) }],
             scope: ETH_SCOPE,
+        })
+        // Enough ether for the send and its worst-case fee, so Confirm is
+        // gated by the recipient checks alone.
+        await upsertAccountChainState({
+            accountAddress: SENDER,
+            scope: ETH_SCOPE,
+            nativeBalance: new Decimal('10000000000000000000'),
+            chainData: { family: 'evm', nonce: { latest: 0, pending: 0 } },
         })
         useAccountsStore.getState().setAccounts([ETHEREUM_SENDER])
         useAccountsStore.getState().setSelectedAccountId(ETHEREUM_SENDER.id)

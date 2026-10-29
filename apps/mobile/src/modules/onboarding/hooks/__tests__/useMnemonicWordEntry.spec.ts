@@ -129,8 +129,8 @@ describe('useMnemonicWordEntry — paste distribution', () => {
 
     it('does not consult the clipboard for short single-token inputs even if a mnemonic is on the clipboard', async () => {
         // Regression: iOS autocomplete delivers a whole word in one event,
-        // which previously tripped the clipboard fallback and overwrote every
-        // slot when the user had a mnemonic copied for any reason.
+        // which must not trip the clipboard fallback and overwrite every
+        // slot when the user has a mnemonic copied for any reason.
         vi.mocked(Clipboard.getStringAsync).mockResolvedValue(
             TWELVE_WORDS.join(' '),
         )

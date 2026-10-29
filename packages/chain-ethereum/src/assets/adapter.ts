@@ -179,6 +179,9 @@ const syncAssets =
         for (const batch of partition(stale, ASSETS_MAX_IDS)) {
             const items = await fetchAssetItems(scope, chain, batch)
             const known = items.flatMap((item, index) => {
+                // Left unstored so the next pass retries it: a chain read would
+                // store it without its tier, hiding a suspicious token's warning.
+                if (!item) return []
                 const { assetId, asset, isQuarantined } = toAssetMetadata(
                     batch[index]!,
                     item,
@@ -318,7 +321,7 @@ const getPrices =
             partition([...refById.keys()], ASSETS_MAX_IDS).map(async batch => {
                 const items = await fetchAssetItems(scope, chain, batch)
                 return items.flatMap((item, index) => {
-                    const row = toPriceRow(batch[index]!, item)
+                    const row = item && toPriceRow(batch[index]!, item)
                     return row
                         ? [
                               {

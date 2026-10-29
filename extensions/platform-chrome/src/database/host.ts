@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { toError } from '@perawallet/wallet-core-shared'
 import {
     decodeWireValues,
     encodeWireValues,
@@ -124,8 +125,7 @@ export class DatabaseHost {
                 return {
                     ok: false,
                     code: 'exec-failed',
-                    error:
-                        error instanceof Error ? error.message : String(error),
+                    error: toError(error).message,
                 }
             }
         }

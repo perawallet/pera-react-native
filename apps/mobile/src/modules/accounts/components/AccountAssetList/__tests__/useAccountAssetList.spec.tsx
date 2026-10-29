@@ -1065,4 +1065,57 @@ describe('useAccountAssetList', () => {
             })
         })
     })
+
+    describe('network labels while searching', () => {
+        const renderTwoChains = () => {
+            registerEthereum()
+            return renderHook(() =>
+                useAccountAssetList({ account: twoChainAccount, t: mockT }),
+            )
+        }
+
+        it('shows none while nothing is searched', () => {
+            const { result } = renderTwoChains()
+
+            expect(result.current.renderItemProps.shouldShowNetwork).toBe(false)
+        })
+
+        it('shows them on All once a search is typed', () => {
+            const { result } = renderTwoChains()
+
+            act(() => result.current.setSearchFilter('eth'))
+
+            expect(result.current.renderItemProps.shouldShowNetwork).toBe(true)
+        })
+
+        it('shows none for a whitespace-only search', () => {
+            const { result } = renderTwoChains()
+
+            act(() => result.current.setSearchFilter('   '))
+
+            expect(result.current.renderItemProps.shouldShowNetwork).toBe(false)
+        })
+
+        it('shows none once a single network is selected', () => {
+            const { result } = renderTwoChains()
+
+            act(() => {
+                result.current.setSelectedChainId('ethereum')
+                result.current.setSearchFilter('eth')
+            })
+
+            expect(result.current.renderItemProps.shouldShowNetwork).toBe(false)
+        })
+
+        it('shows none for an account on one chain', () => {
+            registerEthereum()
+            const { result } = renderHook(() =>
+                useAccountAssetList({ account: mockAccount, t: mockT }),
+            )
+
+            act(() => result.current.setSearchFilter('eth'))
+
+            expect(result.current.renderItemProps.shouldShowNetwork).toBe(false)
+        })
+    })
 })

@@ -13,6 +13,7 @@
 import { makeStyles } from '@rneui/themed'
 import type { PWResultViewVariant } from './PWResultView'
 
+// lanekeep-ignore-next-line pera/no-numeric-sizes reason: result icon circle diameter
 const ICON_CIRCLE_SIZE = 64
 
 type StyleProps = { variant: PWResultViewVariant }
@@ -34,7 +35,7 @@ export const useStyles = makeStyles((theme, { variant }: StyleProps) => {
         iconCircle: {
             width: ICON_CIRCLE_SIZE,
             height: ICON_CIRCLE_SIZE,
-            borderRadius: ICON_CIRCLE_SIZE / 2,
+            borderRadius: theme.borderRadius.full,
             backgroundColor: circleBackground,
             justifyContent: 'center',
             alignItems: 'center',

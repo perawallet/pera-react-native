@@ -19,7 +19,7 @@ import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import { AccountDisplay } from '@components/AccountDisplay'
 import { useLanguage } from '@hooks/useLanguage'
-import { useStyles } from './Arc60DataSigningSummaryView.style'
+import { useSummaryViewStyles } from './styles'
 
 export type Arc60DataSigningSummaryViewProps = {
     request: AuthDataSignRequest
@@ -34,7 +34,7 @@ export const Arc60DataSigningSummaryView = ({
     parsed,
     onDetailsPress,
 }: Arc60DataSigningSummaryViewProps) => {
-    const styles = useStyles()
+    const styles = useSummaryViewStyles()
     const { t } = useLanguage()
 
     const siwx = parsed.type === 'siwx' ? parsed.siwx : undefined

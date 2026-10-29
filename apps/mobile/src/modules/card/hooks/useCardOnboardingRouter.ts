@@ -12,8 +12,9 @@
 
 import { useCallback } from 'react'
 import {
+    getCardOnboardingProgress,
     hasCardSession,
-    useCardStore,
+    setCardOnboardingStep,
     type OnboardingPhase,
     type OnboardingStep,
     type VerificationState,
@@ -48,8 +49,8 @@ export const useCardOnboardingRouter = (): UseCardOnboardingRouterResult => {
             localStep,
             verificationState = null,
         }: OnboardingNextStepInput) => {
-            const { countryIso, contactVerificationId, setOnboardingStep } =
-                useCardStore.getState()
+            const { countryIso, contactVerificationId } =
+                getCardOnboardingProgress()
             const route = getOnboardingNextRoute({
                 phase,
                 verificationState,
@@ -58,7 +59,7 @@ export const useCardOnboardingRouter = (): UseCardOnboardingRouterResult => {
                 hasSession: hasCardSession(),
                 hasContactVerificationId: contactVerificationId !== null,
             })
-            setOnboardingStep(route.step)
+            setCardOnboardingStep(route.step)
             navigation.navigate(route.screen)
             return route
         },

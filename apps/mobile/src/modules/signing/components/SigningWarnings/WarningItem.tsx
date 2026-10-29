@@ -34,7 +34,7 @@ type WarningItemProps = {
 
 type AddressWarning = Extract<
     TransactionWarning,
-    { type: 'close-account' | 'close-asset' | 'rekey' | 'asset-freeze' }
+    { type: 'close-account' | 'close-asset' | 'delegation' | 'asset-freeze' }
 >
 
 const getWarningConfig = (type: AddressWarning['type'], isGroup: boolean) => {
@@ -59,7 +59,7 @@ const getWarningConfig = (type: AddressWarning['type'], isGroup: boolean) => {
                 boldKey: null,
             }
         }
-        case 'rekey': {
+        case 'delegation': {
             return {
                 icon: 'rekey' as const,
                 messageKey: isGroup

@@ -12,7 +12,7 @@
 
 import { bytesToHex } from 'viem'
 import { i18nKey } from '@perawallet/wallet-core-chain-contract'
-import type { AccountsChainAdapter } from '@perawallet/wallet-core-accounts'
+import type { PrivateKeyKeystore } from '@perawallet/wallet-core-accounts'
 import {
     AppError,
     ErrorCategory,
@@ -58,7 +58,8 @@ export const parseEthereumPrivateKey = (input: string): Uint8Array => {
 export const formatEthereumPrivateKey = (privateKey: Uint8Array): string =>
     bytesToHex(privateKey)
 
-export const revealEthereumPrivateKey: NonNullable<
-    AccountsChainAdapter['revealPrivateKey']
-> = (keystore, keyPairId, domain) =>
-    keystore.exportSecp256k1Key(keyPairId, domain)
+export const revealEthereumPrivateKey = (
+    keystore: Pick<PrivateKeyKeystore, 'exportSecp256k1Key'>,
+    keyPairId: string,
+    domain: string,
+): Promise<Uint8Array> => keystore.exportSecp256k1Key(keyPairId, domain)

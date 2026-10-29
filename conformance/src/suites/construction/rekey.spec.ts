@@ -78,12 +78,12 @@ describe('rekey construction conformance', () => {
     it('rekey-in: source auth-addr becomes newAuth', async () => {
         const senderBalanceBefore = await balanceOf(source.address)
 
-        // useSubmitRekeyMutation's builder: a 0-amount self-payment carrying
+        // useSubmitDelegationMutation's builder: a 0-amount self-payment carrying
         // rekeyTo, signed by the CURRENT auth (source's own key, pre-rekey).
         const txn = await buildRekeyTx({
             scope,
             sourceAddress: source.address,
-            rekeyToAddress: newAuth.address,
+            authorityAddress: newAuth.address,
             minFee: baseMinFee,
         })
         // An Ed25519 minimum never exceeds the auto-sized fee, so the builder
@@ -173,7 +173,7 @@ describe('rekey construction conformance', () => {
         const txn = await buildRekeyTx({
             scope,
             sourceAddress: source.address,
-            rekeyToAddress: source.address,
+            authorityAddress: source.address,
             minFee: baseMinFee,
         })
         // Still authorized by newAuth until this transaction confirms.

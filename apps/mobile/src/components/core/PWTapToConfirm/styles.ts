@@ -13,7 +13,9 @@
 import { makeStyles } from '@rneui/themed'
 
 // Matches PWSlideToConfirm's track so the two confirm surfaces are interchangeable.
+// lanekeep-ignore-next-line pera/no-numeric-sizes reason: tap-to-confirm track height
 const TRACK_HEIGHT = 56
+// lanekeep-ignore-next-line pera/no-numeric-sizes reason: tap-to-confirm center icon size
 const CENTER_ICON_SIZE = 64
 
 type StyleProps = {

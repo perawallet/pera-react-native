@@ -61,11 +61,11 @@ export const QUERY_PREFIX_POLICY: Record<string, 'persist' | 'never'> = {
     'balance-impact-simulation': 'persist',
     banners: 'persist',
     currencies: 'persist',
+    'delegation-transaction-fee': 'persist',
     multisig: 'persist',
     nfd: 'persist',
     notifications: 'persist',
     projects: 'persist',
-    'rekey-transaction-fee': 'persist',
     staking: 'persist',
     // `onramp` and `swaps` are mixed: their history keys carry an address, but
     // their catalogs are the same global content as the block above. A

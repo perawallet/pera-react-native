@@ -21,8 +21,7 @@ import {
     useDelegatedAccount,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import type { IconName } from '@components/core'
-import type { PWRoundIconVariant } from '@components/core/PWRoundIcon'
+import type { IconName, PWRoundIconVariant } from '@components/core'
 
 export type AccountDisplayState =
     | 'base'
@@ -82,6 +81,14 @@ export type UseAccountIconOptions = {
     authAccount?: WalletAccount
 }
 
+const rekeyedStateOf = (
+    isRekeyed: boolean,
+    canSign: boolean,
+): AccountDisplayState => {
+    if (!isRekeyed) return 'base'
+    return canSign ? 'rekeyedSignable' : 'rekeyedUnsignable'
+}
+
 export const useAccountIcon = (
     account: WalletAccount | undefined,
     options: UseAccountIconOptions = {},
@@ -106,13 +113,7 @@ export const useAccountIcon = (
         if (!account) return null
 
         const isRekeyed = !ignoreRekey && authority !== null
-        const state: AccountDisplayState =
-            displayState ??
-            (isRekeyed
-                ? canSign
-                    ? 'rekeyedSignable'
-                    : 'rekeyedUnsignable'
-                : 'base')
+        const state = displayState ?? rekeyedStateOf(isRekeyed, canSign)
 
         switch (state) {
             case 'rekeyedSignable': {

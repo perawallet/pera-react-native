@@ -164,7 +164,8 @@ const mockCardOnboarding = vi.hoisted(() => ({
 }))
 vi.mock('@perawallet/wallet-core-card', () => ({
     OnboardingStep: { Completed: 'COMPLETED' },
-    useCardStore: { getState: () => mockCardOnboarding },
+    getCardOnboardingProgress: () => mockCardOnboarding,
+    isEscrowCardApproved: () => false,
 }))
 
 vi.mock('@perawallet/wallet-core-shared', async () => {
@@ -232,6 +233,8 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAccountsStore: Object.assign(vi.fn(), {
         getState: () => ({ accounts: mockWalletAccounts }),
     }),
+    getAllAccounts: () => mockWalletAccounts,
+    getSelectedAccount: () => mockWalletAccounts[0],
     findAccountByAddressOn: (
         accounts: typeof mockWalletAccounts,
         chainId: 'algorand',

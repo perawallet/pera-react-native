@@ -22,6 +22,7 @@ import {
     type UnsignedTransactionSignRequest,
     type UnsignedTransactionsSignableData,
 } from '@perawallet/wallet-core-signing'
+import { toError } from '@perawallet/wallet-core-shared'
 import { readAlgorandTransaction } from './planner'
 import type { PeraTransaction } from '../blockchain/models/algosdk-shapes'
 import {
@@ -88,9 +89,7 @@ const readOrRefuse = (
         return readAlgorandTransaction(unsigned)
     } catch (error) {
         if (error instanceof GenesisHashMismatchError) throw error
-        throw new InvalidSignableDataError(
-            error instanceof Error ? error.message : String(error),
-        )
+        throw new InvalidSignableDataError(toError(error).message)
     }
 }
 

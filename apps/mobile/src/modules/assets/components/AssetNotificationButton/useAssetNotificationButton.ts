@@ -14,7 +14,10 @@ import { useCallback } from 'react'
 import { deploymentOf } from '@perawallet/wallet-core-config'
 import { useDeploymentDeviceID } from '@perawallet/wallet-core-device'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
+import {
+    useChainCapability,
+    useIsCapabilityRestricted,
+} from '@perawallet/wallet-core-chain-shared'
 import { useToggleAssetPriceAlertMutation } from '@perawallet/wallet-core-assets'
 import {
     PeraServiceUnavailableError,
@@ -30,12 +33,16 @@ export const useAssetNotificationButton = (
     const deviceId = useDeploymentDeviceID(deploymentOf(scope))
     const { showError } = useErrorToast()
     const hasPriceAlerts = useChainCapability(scope.chainId, 'priceAlerts')
+    // Off for the chain outright hides the control; off only because of the
+    // chain's current network mode keeps it, to explain why.
+    const isRestricted = useIsCapabilityRestricted(scope.chainId, 'priceAlerts')
     const {
         toggleAssetPriceAlert,
         isLoading,
         isUnavailableOnNetwork: isMutationUnavailable,
     } = useToggleAssetPriceAlertMutation({ scope })
     const isUnavailableOnNetwork = isMutationUnavailable || !hasPriceAlerts
+    const isVisible = !isUnavailableOnNetwork || isRestricted
 
     const handleToggleNotifications = useCallback(() => {
         // Stays reachable (not truly disabled) so the tap can explain why,
@@ -63,6 +70,7 @@ export const useAssetNotificationButton = (
 
     return {
         handleToggleNotifications,
+        isVisible,
         isDisabled:
             !deviceId || isNotificationsEnabled === undefined || isLoading,
         isUnavailableOnNetwork,

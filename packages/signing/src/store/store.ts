@@ -85,6 +85,7 @@ const STORE_VERSION = 3
 let unstampedRequestChainId: Optional<ChainId>
 
 // Requests persisted before v3 name the broadcaster transport by its old value.
+// lanekeep-ignore-next-line pera/no-algorand-terms-in-chain-neutral-packages reason: the transport value pre-v3 requests were persisted with
 const PRE_V3_NETWORK_TRANSPORT = 'algod'
 
 const withRenamedTransport = (

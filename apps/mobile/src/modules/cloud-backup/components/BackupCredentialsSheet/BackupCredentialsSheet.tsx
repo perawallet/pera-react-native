@@ -10,96 +10,19 @@
  limitations under the License
  */
 
-import { PWButton, PWSheetLayout, PWText, PWView } from '@components/core'
-import { LoadingView } from '@components/LoadingView'
-import { PassphraseGrid } from '@components/PassphraseGrid'
+import { PWButton, PWSheetLayout, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { usePreventScreenCapture } from '@hooks/usePreventScreenCapture'
 import { SheetHeader } from '@modules/bottom-sheet'
-import { getTestProps } from '@utils/test-id-helper'
 
 import { EncryptionKeyField } from '../EncryptionKeyField'
 
-import {
-    useBackupCredentialsSheet,
-    type PassphraseStatus,
-} from './useBackupCredentialsSheet'
+import { useBackupCredentialsSheet } from './useBackupCredentialsSheet'
 import { useStyles } from './styles'
+import { CredentialAddressSection } from './CredentialAddressSection'
+import { PassphraseSection } from './PassphraseSection'
 
 const SCREEN_CAPTURE_TAG = 'backup-credentials'
-
-type CredentialAddressSectionProps = {
-    address: string
-}
-
-const CredentialAddressSection = ({
-    address,
-}: CredentialAddressSectionProps) => {
-    const { t } = useLanguage()
-    const styles = useStyles()
-
-    return (
-        <PWView style={styles.section}>
-            <PWText
-                variant='body'
-                style={styles.label}
-            >
-                {t('cloud_backup.credentials.credential_address_label')}
-            </PWText>
-            <PWText variant='bodyLarge'>{address}</PWText>
-        </PWView>
-    )
-}
-
-type PassphraseSectionProps = {
-    wordIndices: Uint16Array
-    status: PassphraseStatus
-}
-
-const PassphraseSection = ({ wordIndices, status }: PassphraseSectionProps) => {
-    const { t } = useLanguage()
-    const styles = useStyles()
-
-    return (
-        <PWView style={styles.section}>
-            <PWText
-                variant='body'
-                style={styles.label}
-            >
-                {t('cloud_backup.credentials.passphrase_label')}
-            </PWText>
-            {status === 'loading' && (
-                <PWView style={styles.loading}>
-                    <LoadingView
-                        variant='circle'
-                        size='sm'
-                    />
-                </PWView>
-            )}
-            {status === 'ready' && <PassphraseGrid wordIndices={wordIndices} />}
-            {status === 'unavailable' && (
-                <PWText
-                    variant='bodyLarge'
-                    style={styles.errorText}
-                    {...getTestProps('backup_credentials_passphrase_missing')}
-                >
-                    {t('cloud_backup.credentials.passphrase_missing')}
-                </PWText>
-            )}
-            {status === 'unreadable' && (
-                <PWText
-                    variant='bodyLarge'
-                    style={styles.errorText}
-                    {...getTestProps(
-                        'backup_credentials_passphrase_unreadable',
-                    )}
-                >
-                    {t('cloud_backup.credentials.passphrase_unreadable')}
-                </PWText>
-            )}
-        </PWView>
-    )
-}
 
 export const BackupCredentialsSheet = () => {
     const { t } = useLanguage()

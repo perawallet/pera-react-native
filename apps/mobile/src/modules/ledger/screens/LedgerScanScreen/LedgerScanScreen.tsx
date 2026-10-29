@@ -87,6 +87,13 @@ export const LedgerScanScreen = () => {
         [handleDevicePress],
     )
 
+    const scanErrorKeyOf = () => {
+        if (isUsbOnly) return 'ledger.scan.usb_error'
+        return isBraveBluetoothScanError
+            ? 'ledger.scan.web_ble_brave_error'
+            : 'ledger.scan.error'
+    }
+
     const renderEmptyState = () => {
         if (!error) {
             return null
@@ -127,13 +134,7 @@ export const LedgerScanScreen = () => {
         return (
             <EmptyView
                 icon='warning'
-                body={t(
-                    isUsbOnly
-                        ? 'ledger.scan.usb_error'
-                        : isBraveBluetoothScanError
-                          ? 'ledger.scan.web_ble_brave_error'
-                          : 'ledger.scan.error',
-                )}
+                body={t(scanErrorKeyOf())}
                 button={
                     <PWButton
                         testID='ledger_scan_retry_button'
@@ -142,6 +143,90 @@ export const LedgerScanScreen = () => {
                         variant='link'
                     />
                 }
+            />
+        )
+    }
+
+    const renderBody = () => {
+        if (isBleUnsupported) {
+            return (
+                <EmptyView
+                    icon='warning'
+                    title={t('ledger.scan.web_ble_unsupported_title')}
+                    body={t('ledger.scan.web_ble_unsupported_body')}
+                    button={
+                        <PWButton
+                            testID='ledger_scan_use_usb_button'
+                            title={t('ledger.scan.use_usb')}
+                            onPress={handleUseUsb}
+                            variant='primary'
+                        />
+                    }
+                />
+            )
+        }
+        if (needsManualStart) {
+            return (
+                <EmptyView
+                    icon='ledger'
+                    title={t(
+                        isPopupSurface
+                            ? 'ledger.scan.popup_launch_title'
+                            : 'ledger.scan.web_start_title',
+                    )}
+                    body={t(
+                        isPopupSurface
+                            ? 'ledger.scan.popup_launch_body'
+                            : 'ledger.scan.web_start_body',
+                    )}
+                    button={
+                        <PWButton
+                            testID='ledger_scan_start_button'
+                            title={t(
+                                isPopupSurface
+                                    ? 'ledger.scan.popup_launch_button'
+                                    : 'ledger.scan.web_start_button',
+                            )}
+                            onPress={handleStartScan}
+                            variant='primary'
+                        />
+                    }
+                />
+            )
+        }
+        if (isPermissionDenied) {
+            return (
+                <PWView
+                    style={styles.errorContainer}
+                    testID='ledger_scan_permission_denied'
+                >
+                    <PWText
+                        variant='body'
+                        style={styles.errorText}
+                    >
+                        {t('ledger.instructions.permission_required_message')}
+                    </PWText>
+                    <PWButton
+                        testID='ledger_scan_grant_permission_button'
+                        title={t(
+                            shouldOpenSettings
+                                ? 'ledger.scan.open_settings'
+                                : 'ledger.scan.grant_permission',
+                        )}
+                        onPress={handleRequestPermissions}
+                        variant='link'
+                    />
+                </PWView>
+            )
+        }
+        return (
+            <PWFlatList
+                data={devices}
+                renderItem={renderItem}
+                keyExtractor={item => item.id}
+                ListEmptyComponent={renderEmptyState}
+                contentContainerStyle={styles.listContent}
+                showsVerticalScrollIndicator={false}
             />
         )
     }
@@ -173,80 +258,7 @@ export const LedgerScanScreen = () => {
                     description={t('ledger.scan.description')}
                 />
 
-                {isBleUnsupported ? (
-                    <EmptyView
-                        icon='warning'
-                        title={t('ledger.scan.web_ble_unsupported_title')}
-                        body={t('ledger.scan.web_ble_unsupported_body')}
-                        button={
-                            <PWButton
-                                testID='ledger_scan_use_usb_button'
-                                title={t('ledger.scan.use_usb')}
-                                onPress={handleUseUsb}
-                                variant='primary'
-                            />
-                        }
-                    />
-                ) : needsManualStart ? (
-                    <EmptyView
-                        icon='ledger'
-                        title={t(
-                            isPopupSurface
-                                ? 'ledger.scan.popup_launch_title'
-                                : 'ledger.scan.web_start_title',
-                        )}
-                        body={t(
-                            isPopupSurface
-                                ? 'ledger.scan.popup_launch_body'
-                                : 'ledger.scan.web_start_body',
-                        )}
-                        button={
-                            <PWButton
-                                testID='ledger_scan_start_button'
-                                title={t(
-                                    isPopupSurface
-                                        ? 'ledger.scan.popup_launch_button'
-                                        : 'ledger.scan.web_start_button',
-                                )}
-                                onPress={handleStartScan}
-                                variant='primary'
-                            />
-                        }
-                    />
-                ) : isPermissionDenied ? (
-                    <PWView
-                        style={styles.errorContainer}
-                        testID='ledger_scan_permission_denied'
-                    >
-                        <PWText
-                            variant='body'
-                            style={styles.errorText}
-                        >
-                            {t(
-                                'ledger.instructions.permission_required_message',
-                            )}
-                        </PWText>
-                        <PWButton
-                            testID='ledger_scan_grant_permission_button'
-                            title={t(
-                                shouldOpenSettings
-                                    ? 'ledger.scan.open_settings'
-                                    : 'ledger.scan.grant_permission',
-                            )}
-                            onPress={handleRequestPermissions}
-                            variant='link'
-                        />
-                    </PWView>
-                ) : (
-                    <PWFlatList
-                        data={devices}
-                        renderItem={renderItem}
-                        keyExtractor={item => item.id}
-                        ListEmptyComponent={renderEmptyState}
-                        contentContainerStyle={styles.listContent}
-                        showsVerticalScrollIndicator={false}
-                    />
-                )}
+                {renderBody()}
             </PWView>
         </PWScreen>
     )

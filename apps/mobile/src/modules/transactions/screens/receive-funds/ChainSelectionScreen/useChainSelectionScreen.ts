@@ -20,8 +20,8 @@ import { useReceiveFunds } from '@modules/transactions/hooks'
 import {
     useAccountChainSelection,
     type UseAccountChainSelectionResult,
-} from '../../../hooks/chain-selection/useAccountChainSelection'
-import type { ReceiveFundsStackParamList } from '../../../routes/receive-funds/types'
+} from '@modules/transactions/hooks/chain-selection/useAccountChainSelection'
+import type { ReceiveFundsStackParamList } from '@modules/transactions/routes/receive-funds/types'
 
 export type UseChainSelectionScreenResult = UseAccountChainSelectionResult
 

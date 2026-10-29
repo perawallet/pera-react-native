@@ -12,3 +12,4 @@
 
 export { PreferredAmount } from './PreferredAmount'
 export type { PreferredAmountProps } from './PreferredAmount'
+export { usePreferredAmount } from './usePreferredAmount'

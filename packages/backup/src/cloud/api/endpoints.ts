@@ -10,7 +10,12 @@
  limitations under the License
  */
 
-import { isPeraNetworkError, queryClient } from '@perawallet/wallet-core-shared'
+import {
+    AppError,
+    ErrorCategory,
+    isPeraNetworkError,
+    queryClient,
+} from '@perawallet/wallet-core-shared'
 import type {
     BackupId,
     BackupItemKey,
@@ -87,9 +92,11 @@ const HTTP_GONE = 410
  *  that would describe the gap no longer exist. Retrying cannot help — not even
  *  at `from_seq=0`, which is itself rejected once anything has been pruned — so
  *  callers have to rebuild from the manifest instead. */
-export class FromSeqTooOldError extends Error {
+export class FromSeqTooOldError extends AppError {
     constructor(readonly fromSeq: number) {
-        super(`Backup changelog no longer reaches back to seq ${fromSeq}`)
+        super(`Backup changelog no longer reaches back to seq ${fromSeq}`, {
+            category: ErrorCategory.STORAGE,
+        })
         this.name = 'FromSeqTooOldError'
     }
 }

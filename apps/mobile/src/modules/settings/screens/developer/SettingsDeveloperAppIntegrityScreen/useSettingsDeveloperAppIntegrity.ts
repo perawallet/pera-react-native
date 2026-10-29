@@ -14,11 +14,13 @@ import { useCallback, useEffect, useState } from 'react'
 import { useWalletDeployment } from '@perawallet/wallet-core-chain-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import {
+    getStoredIntegrityToken,
     useAppIntegrityRegistration,
     verifyIntegrityToken,
     useAppIntegrityStore,
     type IntegrityVerification,
 } from '@perawallet/wallet-core-app-integrity'
+import { toError } from '@perawallet/wallet-core-shared'
 
 export type UseSettingsDeveloperAppIntegrityResult = {
     status: string
@@ -73,7 +75,7 @@ export const useSettingsDeveloperAppIntegrity =
         const onVerifyToken = useCallback(async () => {
             setVerifyError(null)
             setVerifyResult(null)
-            const token = useAppIntegrityStore.getState().integrityToken
+            const token = getStoredIntegrityToken()
             if (!token) {
                 setVerifyError('No stored integrity token')
                 return
@@ -87,9 +89,7 @@ export const useSettingsDeveloperAppIntegrity =
                     }),
                 )
             } catch (error) {
-                setVerifyError(
-                    error instanceof Error ? error.message : String(error),
-                )
+                setVerifyError(toError(error).message)
             } finally {
                 setIsVerifying(false)
             }

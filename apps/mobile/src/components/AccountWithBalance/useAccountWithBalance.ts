@@ -13,6 +13,7 @@
 import { useMemo } from 'react'
 import { Decimal } from 'decimal.js'
 import {
+    accountValueKey,
     accountValueOf,
     useAccountChainId,
     useAccountHoldingSources,
@@ -99,7 +100,9 @@ export const useAccountWithBalance = (
         )
         if (counted.length === 0) return { kind: 'testOnly' }
         const values = counted.map(source =>
-            accountValueTotals.get(source.address),
+            accountValueTotals.get(
+                accountValueKey(source.scope.chainId, source.address),
+            ),
         )
         if (values.some(value => !value || value.isPending)) {
             return { kind: 'fiat', value: undefined }

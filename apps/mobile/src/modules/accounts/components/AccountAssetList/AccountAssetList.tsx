@@ -35,6 +35,7 @@ import {
     useAccountAssetList,
     type AccountAssetListItem,
 } from './useAccountAssetList'
+import { ItemSeparator } from './ItemSeparator'
 
 export type AccountAssetListProps = {
     account: WalletAccount
@@ -104,6 +105,7 @@ export const AccountAssetList = ({
                     }
                     isSwipeEnabled={renderItemProps.isSwipeable(row)}
                     isGroupMember={item.isGroupMember}
+                    shouldShowNetwork={renderItemProps.shouldShowNetwork}
                     convertFiat={convertFiat}
                     onPress={renderItemProps.goToAssetScreen}
                     onOptOut={renderItemProps.handleOptOut}
@@ -227,9 +229,3 @@ const assetListItemType = (item: AccountAssetListItem) => item.kind
 
 const accountAssetListItemKey = (item: AccountAssetListItem): string =>
     item.kind === 'skeleton' ? item.id : groupedHoldingItemKey(item)
-
-const ItemSeparator = () => {
-    const styles = useStyles()
-
-    return <PWView style={styles.separator} />
-}

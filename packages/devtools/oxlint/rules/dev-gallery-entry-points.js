@@ -10,6 +10,12 @@
  limitations under the License
  */
 
+import {
+    fromAppRoot,
+    resolveSibling,
+    staticSpecifier,
+} from '../shared/import-paths.js'
+
 // Gallery screens reach the app only through their route entry, which
 // metro.config.js stubs out of production builds; the locale tour is stubbed
 // out of non-dev bundles on its own gate. Paths are relative to apps/mobile.
@@ -25,40 +31,10 @@ export const GALLERY_ENTRY_PATHS = [
 const GALLERY_CODE =
     /screens\/developer\/(?:SettingsDeveloperGalleryScreen|GalleryCategoryScreen|GalleryComponentPreviewScreen|gallery-catalog)/
 
-// context.filename is absolute or already relative to apps/mobile,
-// depending on how oxlint is invoked.
-const fromAppRoot = filename => {
-    const at = filename.lastIndexOf('/apps/mobile/')
-    return at === -1 ? filename : filename.slice(at + '/apps/mobile/'.length)
-}
-
 const isEntryPath = file =>
     GALLERY_ENTRY_PATHS.some(path =>
         path.endsWith('.ts') ? file === path : file.startsWith(`${path}/`),
     )
-
-// `specifier` resolved against the directory of `file`, both relative to
-// apps/mobile: `..` pops a segment, `.` is skipped.
-const resolveSibling = (file, specifier) => {
-    const segments = file.split('/').slice(0, -1)
-    for (const part of specifier.split('/')) {
-        if (part === '.' || part === '') continue
-        if (part === '..') segments.pop()
-        else segments.push(part)
-    }
-    return segments.join('/')
-}
-
-// A string literal, or a template without interpolation.
-const staticSpecifier = node => {
-    if (node?.type === 'Literal' && typeof node.value === 'string') {
-        return node.value
-    }
-    if (node?.type === 'TemplateLiteral' && node.expressions.length === 0) {
-        return node.quasis[0]?.value.cooked
-    }
-    return undefined
-}
 
 export const devGalleryEntryPoints = {
     meta: {

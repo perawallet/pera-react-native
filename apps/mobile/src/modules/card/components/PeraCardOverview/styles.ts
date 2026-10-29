@@ -61,21 +61,6 @@ export const useStyles = makeStyles(theme => ({
     rowGroup: {
         gap: theme.spacing.sm,
     },
-    cardRow: {
-        backgroundColor: theme.colors.layerGrayLightest,
-        borderWidth: theme.borders.sm,
-        borderColor: theme.colors.layerGray,
-        borderRadius: theme.spacing.lg,
-        paddingHorizontal: theme.spacing.lg,
-    },
-    rowRight: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.sm,
-    },
-    rowValue: {
-        color: theme.colors.textMain,
-    },
     // Transactions
     sectionHeader: {
         flexDirection: 'row',

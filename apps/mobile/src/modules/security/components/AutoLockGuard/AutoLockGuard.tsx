@@ -12,7 +12,7 @@
 
 import React, { type PropsWithChildren } from 'react'
 import { useAutoLockListener } from './useAutoLockListener'
-import { useStyles } from './AutoLockGuard.style'
+import { useStyles } from './styles'
 import { PWView, PWLoadingOverlay } from '@components/core'
 import { PinEntry } from '../PinEntry'
 import { useLanguage } from '@hooks/useLanguage'

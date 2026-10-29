@@ -12,6 +12,7 @@
 
 import { makeStyles } from '@rneui/themed'
 
+// lanekeep-ignore-next-line pera/no-numeric-sizes reason: sign request container minimum height
 const CONTAINER_MIN_HEIGHT = 500
 
 export const useStyles = makeStyles(theme => ({

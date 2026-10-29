@@ -179,15 +179,12 @@ const parsePermit2 = (
         allowances: records.map(entry =>
             toAllowance(entry.token, entry.amount),
         ),
-        expiry: expiries.reduce<bigint | undefined>(
-            (latest, expiry) =>
-                latest === undefined || expiry === undefined
-                    ? undefined
-                    : expiry > latest
-                      ? expiry
-                      : latest,
-            0n,
-        ),
+        expiry: expiries.reduce<bigint | undefined>((latest, expiry) => {
+            if (latest === undefined || expiry === undefined) {
+                return undefined
+            }
+            return expiry > latest ? expiry : latest
+        }, 0n),
     }
 }
 

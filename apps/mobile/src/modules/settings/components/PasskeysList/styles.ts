@@ -27,8 +27,5 @@ export const useStyles = makeStyles(
             padding: theme.spacing.xl,
             paddingBottom: theme.spacing.xxl + bottomInset,
         },
-        separator: {
-            height: theme.spacing.md,
-        },
     }),
 )

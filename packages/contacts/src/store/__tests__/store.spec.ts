@@ -425,4 +425,28 @@ describe('ContactsStore', () => {
 
         expect(() => registration.clearStorage()).not.toThrow()
     })
+
+    describe('replaceAllContacts', () => {
+        test('replaces the list and clears the selection', async () => {
+            const { useContactsStore, replaceAllContacts } =
+                await import('../index')
+            const alice: Contact = {
+                id: 'id-1',
+                ...algorandContact('Alice', 'ALICE123'),
+            }
+            act(() => {
+                useContactsStore.getState().addContact(alice)
+                useContactsStore.getState().setSelectedContact(alice)
+            })
+            const bob: Contact = {
+                id: 'id-2',
+                ...algorandContact('Bob', 'BOB456'),
+            }
+
+            act(() => replaceAllContacts([bob]))
+
+            expect(useContactsStore.getState().contacts).toEqual([bob])
+            expect(useContactsStore.getState().selectedContact).toBeNull()
+        })
+    })
 })

@@ -42,4 +42,13 @@ describe('UserPreferences', () => {
             UserPreferences.cloudBackupIntroSeen,
         )
     })
+
+    it('resets the passkey unlock offer alongside the other one-time flags', () => {
+        expect(UserPreferences._passkeyUnlockOfferPrompt).toBe(
+            'passkey_unlock_offer_prompt',
+        )
+        expect(OneTimeUserPreferenceFlags).toContain(
+            UserPreferences._passkeyUnlockOfferPrompt,
+        )
+    })
 })

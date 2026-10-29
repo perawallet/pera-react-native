@@ -21,6 +21,8 @@ import {
     PWView,
 } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
+import { PasskeySetupFailure } from '../../components/PasskeyUnlockSetup/PasskeySetupFailure'
+import { isPasskeySetupFailure } from '../../components/PasskeyUnlockSetup/usePasskeyUnlockSetup.web'
 import { PasswordStrengthMeter } from '../../components/PasswordStrengthMeter'
 import { useVaultSecuritySettingsScreen } from './useVaultSecuritySettingsScreen.web'
 import { useStyles } from './styles'
@@ -40,7 +42,7 @@ export const VaultSecuritySettingsScreen = () => {
         handleDisablePasskey,
         isEnablingPasskey,
         hasPasskeyError,
-        hasPasskeyEnableError,
+        passkeySetupStatus,
         currentPassword,
         newPassword,
         confirmNewPassword,
@@ -56,26 +58,43 @@ export const VaultSecuritySettingsScreen = () => {
         handleChangePassword,
     } = useVaultSecuritySettingsScreen()
 
-    const newPasswordError =
-        changePasswordValidationError === 'too_short'
-            ? t('vault.security.change_password_error_too_short')
-            : changePasswordValidationError === 'too_weak'
-              ? t('vault.password_strength.error_too_weak')
-              : undefined
+    const newPasswordErrorOf = () => {
+        switch (changePasswordValidationError) {
+            case 'too_short': {
+                return t('vault.security.change_password_error_too_short')
+            }
+            case 'too_weak': {
+                return t('vault.password_strength.error_too_weak')
+            }
+            default: {
+                return undefined
+            }
+        }
+    }
+    const newPasswordError = newPasswordErrorOf()
 
     const confirmNewPasswordError =
         changePasswordValidationError === 'mismatch'
             ? t('vault.security.change_password_error_mismatch')
             : undefined
 
-    const changePasswordErrorMessage =
-        changePasswordError === 'invalid_current'
-            ? t('vault.security.change_password_error_invalid_current')
-            : changePasswordError === 'corrupted'
-              ? t('vault.security.change_password_error_corrupted')
-              : changePasswordError === 'unexpected'
-                ? t('vault.security.change_password_error_unexpected')
-                : undefined
+    const changePasswordErrorMessageOf = () => {
+        switch (changePasswordError) {
+            case 'invalid_current': {
+                return t('vault.security.change_password_error_invalid_current')
+            }
+            case 'corrupted': {
+                return t('vault.security.change_password_error_corrupted')
+            }
+            case 'unexpected': {
+                return t('vault.security.change_password_error_unexpected')
+            }
+            default: {
+                return undefined
+            }
+        }
+    }
+    const changePasswordErrorMessage = changePasswordErrorMessageOf()
 
     return (
         <PWScreen testID='vault-security-screen'>
@@ -89,6 +108,7 @@ export const VaultSecuritySettingsScreen = () => {
                 </PWText>
                 {autoLockMinutes === null ? (
                     <PWSkeleton
+                        // lanekeep-ignore-next-line pera/no-numeric-sizes reason: autolock dropdown trigger height (44)
                         height={44}
                         style={styles.autolockTrigger}
                     />
@@ -237,14 +257,11 @@ export const VaultSecuritySettingsScreen = () => {
                                 {t('vault.security.passkey_error')}
                             </PWText>
                         )}
-                        {hasPasskeyEnableError && (
-                            <PWText
-                                testID='passkey-enable-error'
-                                variant='body'
-                                style={styles.errorText}
-                            >
-                                {t('vault.security.passkey_enable_error')}
-                            </PWText>
+                        {isPasskeySetupFailure(passkeySetupStatus) && (
+                            <PasskeySetupFailure
+                                status={passkeySetupStatus}
+                                testID='vault-security-passkey-setup'
+                            />
                         )}
                         <PWButton
                             testID='vault-security-passkey-toggle'
@@ -270,6 +287,14 @@ export const VaultSecuritySettingsScreen = () => {
                                     : handleEnablePasskey())
                             }
                         />
+                        {isEnablingPasskey && (
+                            <PWText
+                                variant='caption'
+                                style={styles.hint}
+                            >
+                                {t('vault.passkey_setup.pending_hint')}
+                            </PWText>
+                        )}
                     </PWView>
                 )}
             </PWView>
