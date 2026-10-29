@@ -15,13 +15,19 @@ import { Decimal } from 'decimal.js'
 import { getAddress } from 'viem'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { evmHistoryItem, evmNftTransferLeg } from '../api/msw-handlers'
-import { evmHistoryItemSchema, type EvmHistoryItem } from '../api/schema'
+import {
+    evmHistoryItemSchema,
+    type EvmHistoryItem,
+    type EvmHistoryItemResponse,
+} from '../api/schema'
 import { summarizeEthereumHistoryItem } from '../summarize'
 import { ETHEREUM } from '../../__tests__/evm-chains'
 
 const SCOPE: ChainScope = { chainId: 'ethereum', networkId: 'mainnet' }
 const ME = '0x00000000000000000000000000000000000000aa'
 const PEER = '0x00000000000000000000000000000000000000bb'
+const CONTRACT = '0x00000000000000000000000000000000000000cc'
+const OTHER = '0x00000000000000000000000000000000000000dd'
 const USDC = '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48'
 const USDC_CHECKSUMMED = getAddress(USDC)
 const ETH_ID = 'eip155:1/slip44:60'
@@ -30,7 +36,17 @@ const USDC_ID = `eip155:1/erc20:${USDC}`
 const row = (overrides: Parameters<typeof evmHistoryItem>[0]): EvmHistoryItem =>
     evmHistoryItemSchema.parse(evmHistoryItem(overrides))
 
-const leg = (from: string, to: string, value = '250') => ({
+const leg = (
+    from: string,
+    to: string,
+    value = '250',
+    details: Partial<
+        Pick<
+            EvmHistoryItemResponse['token_transfers'][number],
+            'token_symbol' | 'token_decimals'
+        >
+    > = {},
+) => ({
     asset_id: USDC_ID,
     contract: USDC,
     from,
@@ -39,7 +55,17 @@ const leg = (from: string, to: string, value = '250') => ({
     token_name: null,
     token_symbol: null,
     token_decimals: null,
+    ...details,
 })
+
+const internal = (
+    from: string,
+    to: string,
+    value: string,
+    status: 'success' | 'failed' = 'success',
+) => ({ from, to, value, status })
+
+const NATIVE = { chainId: 'ethereum', assetId: 'native' }
 
 const summarize = (item: EvmHistoryItem, address = ME) =>
     summarizeEthereumHistoryItem(item, address, SCOPE, ETHEREUM)
@@ -496,5 +522,394 @@ describe('summarizeEthereumHistoryItem', () => {
             expect(parsed.data?.nft_transfers).toEqual([])
             expect(summarize(parsed.data!).kind).toBe('transfer')
         })
+
+        it('reads an NFT sold for ETH paid internally as a contract call', () => {
+            const summary = summarize(
+                row({
+                    from: ME,
+                    to: CONTRACT,
+                    value: '0',
+                    method: 'swapNFTsForToken',
+                    nft_transfers: [
+                        evmNftTransferLeg({ from: ME, to: CONTRACT }),
+                    ],
+                    internal_transfers: [internal(CONTRACT, ME, '900')],
+                    balance_impacts: [{ asset_id: ETH_ID, amount: '850' }],
+                }),
+            )
+
+            expect(summary.kind).toBe('contract-call')
+            expect(
+                summary.balanceChanges?.map(c => [
+                    c.assetRef.assetId,
+                    c.value.toFixed(),
+                ]),
+            ).toEqual([
+                ['native', '850'],
+                [APE, '-1'],
+            ])
+        })
+    })
+
+    describe('internal transfers', () => {
+        const paidByContract = {
+            from: PEER,
+            to: CONTRACT,
+            value: '0',
+            method: 'execTransaction',
+            internal_transfers: [internal(CONTRACT, ME, '700')],
+            balance_impacts: [],
+        }
+
+        it('shows ETH a contract call paid us through an internal transfer', () => {
+            const summary = summarize(row(paidByContract))
+
+            expect(summary.kind).toBe('contract-call')
+            expect(summary.counterparty).toBe(getAddress(PEER))
+            expect(summary.balanceChanges).toEqual([
+                { assetRef: NATIVE, value: new Decimal(700) },
+            ])
+        })
+
+        it("keeps the backend's native impact over the internal transfers", () => {
+            const summary = summarize(
+                row({
+                    ...paidByContract,
+                    balance_impacts: [{ asset_id: ETH_ID, amount: '650' }],
+                }),
+            )
+
+            expect(summary.balanceChanges).toEqual([
+                { assetRef: NATIVE, value: new Decimal(650) },
+            ])
+        })
+
+        it('puts the derived ETH ahead of the token impacts', () => {
+            const summary = summarize(
+                row({
+                    ...paidByContract,
+                    balance_impacts: [{ asset_id: USDC_ID, amount: '250' }],
+                }),
+            )
+
+            expect(summary.balanceChanges).toEqual([
+                { assetRef: NATIVE, value: new Decimal(700) },
+                {
+                    assetRef: {
+                        chainId: 'ethereum',
+                        assetId: USDC_CHECKSUMMED,
+                    },
+                    value: new Decimal(250),
+                },
+            ])
+        })
+
+        it('counts the value the row paid us and the ETH we passed on', () => {
+            const summary = summarize(
+                row({
+                    from: PEER,
+                    to: ME,
+                    method: 'forward',
+                    value: '1000',
+                    internal_transfers: [internal(ME, OTHER, '400')],
+                }),
+            )
+
+            expect(summary.kind).toBe('contract-call')
+            expect(summary.balanceChanges).toEqual([
+                { assetRef: NATIVE, value: new Decimal(600) },
+            ])
+        })
+
+        it.each([
+            [
+                'a failed internal leg',
+                {
+                    ...paidByContract,
+                    internal_transfers: [
+                        internal(CONTRACT, ME, '700', 'failed'),
+                    ],
+                },
+            ],
+            ['a failed row', { ...paidByContract, status: 'failed' as const }],
+            [
+                'a row the address sent',
+                { ...paidByContract, from: ME, method: 'claim' },
+            ],
+        ])('moves no ETH for %s', (_, overrides) => {
+            const summary = summarize(row(overrides))
+
+            expect(summary.balanceChanges).toEqual([])
+        })
+
+        it('reads a token call that also pays us ETH as a contract call', () => {
+            const summary = summarize(
+                row({
+                    from: ME,
+                    to: USDC,
+                    value: '0',
+                    method: 'withdraw',
+                    token_transfers: [leg(ME, OTHER)],
+                    internal_transfers: [internal(USDC, ME, '250')],
+                }),
+            )
+
+            expect(summary.kind).toBe('contract-call')
+        })
+
+        it('reads an ETH send refunded in part as a contract call', () => {
+            const summary = summarize(
+                row({
+                    from: ME,
+                    to: CONTRACT,
+                    value: '1000',
+                    method: null,
+                    internal_transfers: [internal(CONTRACT, ME, '100')],
+                    balance_impacts: [{ asset_id: ETH_ID, amount: '-946' }],
+                }),
+            )
+
+            expect(summary.kind).toBe('contract-call')
+            expect(summary.balanceChanges).toEqual([
+                { assetRef: NATIVE, value: new Decimal(-946) },
+            ])
+        })
+
+        it.each([
+            ['a leg from and to us', [internal(ME, ME, '500')]],
+            [
+                'legs in and out that cancel',
+                [internal(CONTRACT, ME, '500'), internal(ME, OTHER, '500')],
+            ],
+        ])('keeps a token receive a transfer with %s', (_, legs) => {
+            const summary = summarize(
+                row({
+                    token_transfers: [leg(PEER, ME)],
+                    internal_transfers: legs,
+                }),
+            )
+
+            expect(summary.kind).toBe('token-transfer')
+        })
+
+        it('adds no ETH line when the internal legs net to zero', () => {
+            const summary = summarize(
+                row({
+                    ...paidByContract,
+                    internal_transfers: [
+                        internal(CONTRACT, ME, '500'),
+                        internal(ME, OTHER, '500'),
+                    ],
+                }),
+            )
+
+            expect(summary.balanceChanges).toEqual([])
+        })
+
+        describe.each([
+            ['leave out the top-level call', () => []],
+            [
+                'list the top-level call',
+                (from: string, to: string, value: string) => [
+                    internal(from, to, value),
+                ],
+            ],
+        ])('when the internal transfers %s', (_, topLevelOf) => {
+            it('reads a plain ETH receive as a transfer of its value', () => {
+                const summary = summarize(
+                    row({
+                        from: PEER,
+                        to: ME,
+                        value: '1000',
+                        internal_transfers: topLevelOf(PEER, ME, '1000'),
+                    }),
+                )
+
+                expect(summary).toMatchObject({
+                    kind: 'transfer',
+                    direction: 'in',
+                    amount: { assetRef: NATIVE, value: new Decimal(1000) },
+                })
+            })
+
+            it('reads a plain ETH send as a transfer of its value', () => {
+                const summary = summarize(
+                    row({
+                        from: ME,
+                        to: PEER,
+                        value: '1000',
+                        internal_transfers: topLevelOf(ME, PEER, '1000'),
+                    }),
+                )
+
+                expect(summary).toMatchObject({
+                    kind: 'transfer',
+                    direction: 'out',
+                    amount: { assetRef: NATIVE, value: new Decimal(1000) },
+                })
+            })
+
+            it('counts the value a call paid us once', () => {
+                const summary = summarize(
+                    row({
+                        from: PEER,
+                        to: ME,
+                        method: 'forward',
+                        value: '1000',
+                        internal_transfers: [
+                            ...topLevelOf(PEER, ME, '1000'),
+                            internal(ME, OTHER, '400'),
+                        ],
+                    }),
+                )
+
+                expect(summary.balanceChanges).toEqual([
+                    { assetRef: NATIVE, value: new Decimal(600) },
+                ])
+            })
+        })
+
+        it('drops an unreadable internal transfer, not the row', () => {
+            const parsed = evmHistoryItemSchema.safeParse(
+                evmHistoryItem({
+                    ...paidByContract,
+                    internal_transfers: [
+                        { from: 'nope', to: ME, value: '1', status: 'success' },
+                        internal(CONTRACT, ME, '700'),
+                    ],
+                }),
+            )
+
+            expect(parsed.success).toBe(true)
+            expect(parsed.data?.internal_transfers).toHaveLength(1)
+        })
+
+        it('reads a row without internal transfers', () => {
+            const { internal_transfers: _omitted, ...wire } = evmHistoryItem()
+
+            const parsed = evmHistoryItemSchema.safeParse(wire)
+
+            expect(parsed.success).toBe(true)
+            expect(parsed.data?.internal_transfers).toEqual([])
+        })
+    })
+
+    describe('token details', () => {
+        it("names a received token with the history's symbol and decimals", () => {
+            const summary = summarize(
+                row({
+                    token_transfers: [
+                        leg(PEER, ME, '250000000', {
+                            token_symbol: 'USDC',
+                            token_decimals: 6,
+                        }),
+                    ],
+                }),
+            )
+
+            expect(summary.kind).toBe('token-transfer')
+            expect(summary.amount?.value).toEqual(new Decimal('250000000'))
+            expect(summary.amount?.display).toEqual({
+                symbol: 'USDC',
+                decimals: 6,
+            })
+        })
+
+        it('names the token line of a swap', () => {
+            const summary = summarize(
+                row({
+                    from: ME,
+                    to: CONTRACT,
+                    value: '1000',
+                    method: 'swapExactETHForTokens',
+                    token_transfers: [
+                        leg(CONTRACT, ME, '250', {
+                            token_symbol: 'USDC',
+                            token_decimals: 6,
+                        }),
+                    ],
+                    balance_impacts: [
+                        { asset_id: ETH_ID, amount: '-1046' },
+                        { asset_id: USDC_ID, amount: '250' },
+                    ],
+                }),
+            )
+
+            expect(summary.balanceChanges?.[1]?.display).toEqual({
+                symbol: 'USDC',
+                decimals: 6,
+            })
+            expect(summary.balanceChanges?.[0]?.display).toBeUndefined()
+        })
+
+        it('gives no hint without decimals', () => {
+            const summary = summarize(
+                row({
+                    token_transfers: [
+                        leg(PEER, ME, '250', {
+                            token_symbol: 'USDC',
+                            token_decimals: null,
+                        }),
+                    ],
+                }),
+            )
+
+            expect(summary.amount?.display).toBeUndefined()
+        })
+
+        it('keeps the decimals when the symbol is missing', () => {
+            const summary = summarize(
+                row({
+                    token_transfers: [
+                        leg(PEER, ME, '250', {
+                            token_symbol: null,
+                            token_decimals: 6,
+                        }),
+                    ],
+                }),
+            )
+
+            expect(summary.amount?.display).toEqual({ symbol: '', decimals: 6 })
+        })
+
+        it.each([5, { name: 'USDC' }])(
+            'reads a token row whose symbol is %j, naming it by decimals only',
+            symbol => {
+                const parsed = evmHistoryItemSchema.safeParse({
+                    ...evmHistoryItem(),
+                    token_transfers: [
+                        {
+                            ...leg(PEER, ME),
+                            token_symbol: symbol,
+                            token_decimals: 6,
+                        },
+                    ],
+                })
+
+                expect(parsed.success).toBe(true)
+                const summary = summarize(parsed.data!)
+                expect(summary.amount?.display).toEqual({
+                    symbol: '',
+                    decimals: 6,
+                })
+            },
+        )
+
+        it.each([-1, 256, '6', 1.5, undefined])(
+            'reads a token row whose decimals are %s, without a hint',
+            decimals => {
+                const parsed = evmHistoryItemSchema.safeParse({
+                    ...evmHistoryItem(),
+                    token_transfers: [
+                        { ...leg(PEER, ME), token_decimals: decimals },
+                    ],
+                })
+
+                expect(parsed.success).toBe(true)
+                const summary = summarize(parsed.data!)
+                expect(summary.kind).toBe('token-transfer')
+                expect(summary.amount?.display).toBeUndefined()
+            },
+        )
     })
 })

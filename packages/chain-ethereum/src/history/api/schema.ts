@@ -28,14 +28,37 @@ const nftTransferSchema = z.object({
 })
 
 // Legs are checked one by one, so an unreadable leg drops itself, not the row.
-const nftTransfersSchema = z.array(z.unknown()).transform(legs =>
-    legs.flatMap(leg => {
-        const parsed = nftTransferSchema.safeParse(leg)
-        return parsed.success ? [parsed.data] : []
-    }),
-)
+const readableLegs = <Leg extends z.ZodType>(leg: Leg) =>
+    z.array(z.unknown()).transform(legs =>
+        legs.flatMap(candidate => {
+            const parsed = leg.safeParse(candidate)
+            return parsed.success ? [parsed.data] : []
+        }),
+    )
+
+const nftTransfersSchema = readableLegs(nftTransferSchema)
+
+const tokenTransferSchema = z.object({
+    contract: address,
+    from: address,
+    to: address,
+    value: amount,
+    token_symbol: z.string().nullable().catch(null),
+    // ERC-20 `decimals` is a uint8.
+    token_decimals: z.number().int().min(0).max(255).nullable().catch(null),
+})
+
+const internalTransferSchema = z.object({
+    from: address,
+    /** Null when the call created a contract. */
+    to: address.nullable(),
+    /** Wei. */
+    value: amount,
+    status: z.enum(['success', 'failed']),
+})
 
 export type EvmNftTransfer = z.output<typeof nftTransferSchema>
+export type EvmTokenTransfer = z.output<typeof tokenTransferSchema>
 
 /** Only the fields the adapter reads; the full wire shape is `EvmHistoryItemResponse`. */
 export const evmHistoryItemSchema = z.object({
@@ -50,14 +73,8 @@ export const evmHistoryItemSchema = z.object({
     fee: amount.nullable(),
     status: z.enum(['success', 'failed']),
     method: z.string().nullable(),
-    token_transfers: z.array(
-        z.object({
-            contract: address,
-            from: address,
-            to: address,
-            value: amount,
-        }),
-    ),
+    token_transfers: z.array(tokenTransferSchema),
+    internal_transfers: readableLegs(internalTransferSchema).catch([]),
     nft_transfers: nftTransfersSchema,
     withdrawals: z.array(z.object({ index: z.number().int().min(0) })),
     balance_impacts: z.array(
