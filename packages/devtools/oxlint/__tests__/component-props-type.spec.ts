@@ -11,7 +11,10 @@
  */
 
 import { describe, expect, it, vi } from 'vitest'
-import { componentPropsType } from '../rules/component-props-type.js'
+import {
+    COMPONENT_WRAPPERS,
+    componentPropsType,
+} from '../rules/component-props-type.js'
 import { call, id, member, type Node } from './helpers.js'
 
 type Visitors = Partial<Record<string, (node: Node) => void>>
@@ -134,19 +137,6 @@ describe('pera/component-props-type', () => {
             ),
         ],
         [
-            'memo(arrow)',
-            'VariableDeclarator',
-            declarator('Foo', call(id('memo'), [arrow([inline()])])),
-        ],
-        [
-            'React.memo(arrow)',
-            'VariableDeclarator',
-            declarator(
-                'Foo',
-                call(member(id('React'), 'memo'), [arrow([inline()])]),
-            ),
-        ],
-        [
             'memo(forwardRef(arrow))',
             'VariableDeclarator',
             declarator(
@@ -156,6 +146,21 @@ describe('pera/component-props-type', () => {
         ],
     ])('reports %s typed with an inline literal', (_label, visitor, node) => {
         expect(lint(visitor, node as Node)).toHaveBeenCalledOnce()
+    })
+
+    it.each(COMPONENT_WRAPPERS)('reports a bare %s(arrow) call', wrapper => {
+        const node = declarator('Foo', call(id(wrapper), [arrow([inline()])]))
+
+        expect(lint('VariableDeclarator', node)).toHaveBeenCalledOnce()
+    })
+
+    it.each(COMPONENT_WRAPPERS)('reports a React.%s(arrow) call', wrapper => {
+        const node = declarator(
+            'Foo',
+            call(member(id('React'), wrapper), [arrow([inline()])]),
+        )
+
+        expect(lint('VariableDeclarator', node)).toHaveBeenCalledOnce()
     })
 
     it('reports on the props annotation, naming the component and the type to declare', () => {
@@ -244,6 +249,11 @@ describe('pera/component-props-type', () => {
             'a SCREAMING_CASE name',
             'VariableDeclarator',
             declarator('FOO_BAR', arrow([inline()])),
+        ],
+        [
+            'an anonymous function declaration',
+            'FunctionDeclaration',
+            { type: 'FunctionDeclaration', id: null, params: [inline()] },
         ],
         [
             'a function declaration with a camelCase name',
