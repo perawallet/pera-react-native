@@ -103,6 +103,12 @@ export type CurrencyAmountProps = {
     ignorePrivacyMode?: boolean
     variant?: TypographyVariant
     style?: StyleProp<TextStyle>
+    /**
+     * Renders text runs only, for nesting inside a parent `PWText` (e.g. a
+     * `<Trans>` slot). A View nested in Text escapes the parent's truncation
+     * and sits off the baseline on Android, so the parent owns truncation.
+     */
+    isInline?: boolean
 } & PrecisionProps &
     Omit<PWTextProps, 'children' | 'variant'>
 
@@ -127,6 +133,7 @@ export const CurrencyAmount = (props: CurrencyAmountProps) => {
         rawValue,
         ignorePrivacyMode = false,
         variant = 'body',
+        isInline = false,
         ...rest
     } = props
 
@@ -215,6 +222,16 @@ export const CurrencyAmount = (props: CurrencyAmountProps) => {
         return isAlgo ? '' : ` ${currency}`
     }, [showSymbol, symbolPosition, privacyMode, isAlgo, currency])
 
+    if (isLoading && isInline) {
+        return (
+            <PWText
+                variant={variant}
+                {...rest}
+            >
+                {UNKNOWN_AMOUNT_PLACEHOLDER}
+            </PWText>
+        )
+    }
     if (isLoading) {
         return (
             <PWView style={themeStyle.container}>
@@ -225,6 +242,40 @@ export const CurrencyAmount = (props: CurrencyAmountProps) => {
     const showAlgoIcon = isAlgo && showSymbol && !privacyMode
     const showAlgoIconStart = showAlgoIcon && symbolPosition === 'start'
     const showAlgoIconEnd = showAlgoIcon && symbolPosition === 'end'
+
+    if (isInline) {
+        // The spaces stand in for the container's gap between the parts.
+        return (
+            <PWText
+                variant={variant}
+                {...rest}
+            >
+                {showAlgoIconStart && (
+                    <PWText
+                        variant={variant}
+                        weight={algoSymbolWeight}
+                        style={props.style}
+                    >
+                        {`${ALGO_SYMBOL} `}
+                    </PWText>
+                )}
+                {showUnitSymbolStart && `${currency} `}
+                {prefix ? prefix : ''}
+                {sign ? sign : ''}
+                {displayValue}
+                {trailingSymbol}
+                {showAlgoIconEnd && (
+                    <PWText
+                        variant={variant}
+                        weight={algoSymbolWeight}
+                        style={props.style}
+                    >
+                        {` ${ALGO_SYMBOL}`}
+                    </PWText>
+                )}
+            </PWText>
+        )
+    }
 
     return (
         <PWView style={themeStyle.container}>

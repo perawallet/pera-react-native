@@ -30,10 +30,9 @@ const KNOWN_RAMP_TOKEN_ASSETS: Readonly<Record<string, KnownAssetKey>> = {
     USDC_ALGORAND: 'USDC',
 }
 
-// A numeric id is an on-chain id and wins; the ticker is trusted only when the
-// provider gives a code instead. That fallback assumes the provider names its
-// own listings honestly, which holds for a brokered provider list and never
-// for an on-chain unit name.
+// A numeric id is an on-chain id and wins; otherwise the catalogue id, which
+// this adapter requests ALGO by, identifies it. The symbol is display text and
+// never does.
 export const isAlgorandNativeRampToken = (
     token: RampTokenIdentity,
 ): boolean => {
@@ -42,7 +41,7 @@ export const isAlgorandNativeRampToken = (
     }
     return /^\d+$/.test(token.id)
         ? isAlgorandNativeAssetId(token.id)
-        : isAlgoAssetName(token.id) || isAlgoAssetName(token.symbol)
+        : isAlgoAssetName(token.id)
 }
 
 /** The ASA id a ramp token arrives as on `scope`, as a decimal string; null when it has none there. */

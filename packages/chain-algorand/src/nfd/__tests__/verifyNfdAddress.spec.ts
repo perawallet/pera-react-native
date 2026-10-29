@@ -25,6 +25,7 @@ vi.mock('../../blockchain/utils/nodeHttp', () => ({
     fetchNodeJson: fetchNodeJsonMock,
 }))
 vi.mock('@perawallet/wallet-core-shared', () => ({
+    toError: (e: unknown) => (e instanceof Error ? e : new Error(String(e))),
     logger: loggerMock,
     decodeFromBase64: (base64: string) =>
         new Uint8Array(Buffer.from(base64, 'base64')),

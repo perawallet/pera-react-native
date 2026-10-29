@@ -46,7 +46,11 @@ import {
     zeroBytes,
 } from '@perawallet/wallet-core-kms'
 import { multisigChainAdapters } from '@perawallet/wallet-core-multisig'
-import { generateOrderedUniqueId, logger } from '@perawallet/wallet-core-shared'
+import {
+    generateOrderedUniqueId,
+    logger,
+    toError,
+} from '@perawallet/wallet-core-shared'
 import {
     backupAdapterFor,
     backupChainAdapters,
@@ -98,8 +102,7 @@ type ImportContext = Pick<
 /** XHD root key (`kL || kR || chainCode`) length expected by `persistHDMasterKey`. */
 const XHD_ROOT_LENGTH = 96
 
-const toFailureReason = (error: unknown): string =>
-    error instanceof Error ? error.message : String(error)
+const toFailureReason = (error: unknown): string => toError(error).message
 
 const nameField = (
     customName: string | null | undefined,
