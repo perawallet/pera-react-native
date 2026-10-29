@@ -169,6 +169,8 @@ export const useHDImportSession = (
                 })
             }
 
+            // A single discovery chain derives on the caller's scope, as before.
+            const isMultiChain = hdDiscoveryChains().length > 1
             try {
                 await Promise.all(
                     selectedAccounts.map(async acc => {
@@ -189,15 +191,15 @@ export const useHDImportSession = (
                             if (derivedKeyIds.has(keyPairId)) continue
                             derivedKeyIds.add(keyPairId)
                             await deriveHdAccount(
-                                chainId === scope.chainId
-                                    ? scope
-                                    : {
+                                isMultiChain
+                                    ? {
                                           chainId,
                                           networkId: selectChainNetworkId(
                                               useNetworkStore.getState(),
                                               chainId,
                                           ),
-                                      },
+                                      }
+                                    : scope,
                                 pending.walletKeyId,
                                 index,
                             )
