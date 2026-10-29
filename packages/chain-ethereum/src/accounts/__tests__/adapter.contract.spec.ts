@@ -160,15 +160,16 @@ const suites = (chain: EvmChain): void => {
                 malformed: "m/44'/283'/1'/0/3",
             },
             signers: { signing, watch },
-            // This scope serves no assets or prices, so both answer empty
-            // without a request; balance-history.spec covers the served path.
+            // This scope serves no assets or prices, so both answer without a
+            // request, the portfolio as no source; balance-history.spec
+            // covers the served path.
             history: {
                 addresses: [FUNDED],
                 assetId: USDC,
                 period: 'one-day',
                 currency: 'USD',
                 handlers: [],
-                portfolio: [],
+                portfolio: null,
                 balance: [],
             },
             changeSignal: {

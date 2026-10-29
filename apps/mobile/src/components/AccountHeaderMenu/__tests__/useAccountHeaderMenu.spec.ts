@@ -85,6 +85,33 @@ describe('useAccountHeaderMenu', () => {
         expect(result.current.items[0]?.label).toMatch(CHART_LABEL)
     })
 
+    it.each([
+        [false, 'portfolio.show_chart'],
+        [true, 'portfolio.hide_chart'],
+    ])(
+        'with the chart shown=%s, offers %s under the chart icon and flips the stored preference',
+        (isChartVisible, label) => {
+            const setPreference = vi.fn()
+            ;(usePreferences as Mock).mockReturnValue({
+                getPreference: (key: string) =>
+                    key === UserPreferences.chartVisible
+                        ? isChartVisible
+                        : undefined,
+                setPreference,
+            })
+            const { result } = renderHook(() => useAccountHeaderMenu())
+
+            const toggle = result.current.items[0]
+            expect(toggle).toMatchObject({ label, icon: 'chart' })
+            toggle?.onPress?.()
+
+            expect(setPreference).toHaveBeenCalledWith(
+                UserPreferences.chartVisible,
+                !isChartVisible,
+            )
+        },
+    )
+
     it('drops the chart toggle where no chart renders and keeps the rest', () => {
         const { result } = renderHook(() =>
             useAccountHeaderMenu({ showChartToggle: false }),

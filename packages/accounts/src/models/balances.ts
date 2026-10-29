@@ -90,10 +90,13 @@ export type AccountValues = Map<
     Pick<AccountBalance, 'nativeValue' | 'fiatValue'>
 >
 
-export type AccountBalanceHistoryItem = {
+export type PortfolioValueHistoryItem = {
     datetime: Date
     /** `null` when the preferred-currency rate is unresolved — not 0. */
     preferredValue: Nullable<Decimal>
+}
+
+export type AccountBalanceHistoryItem = PortfolioValueHistoryItem & {
     /** Display units of the chain's native asset. */
     nativeValue: Decimal
 }

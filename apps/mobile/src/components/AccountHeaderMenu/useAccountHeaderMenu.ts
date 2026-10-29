@@ -83,7 +83,7 @@ export const useAccountHeaderMenu = ({
                 label: chartVisible
                     ? t('portfolio.hide_chart')
                     : t('portfolio.show_chart'),
-                icon: chartVisible ? 'text-document' : 'chart',
+                icon: 'chart',
                 onPress: () =>
                     setPreference(UserPreferences.chartVisible, !chartVisible),
             })

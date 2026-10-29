@@ -14,12 +14,10 @@ import React from 'react'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import {
     PWIcon,
-    PWImage,
     PWLoadingOverlay,
     PWScreen,
     PWText,
     PWToolbar,
-    PWTouchableOpacity,
     PWView,
 } from '@components/core'
 import { PanelButton } from '@components/PanelButton'
@@ -28,10 +26,8 @@ import { useAddAccountScreen } from './useAddAccountScreen'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 import { Trans } from 'react-i18next'
-import { MultisigIntroductionDialog } from '@modules/multisig'
 import type { AccountOption } from '@modules/onboarding/types'
-
-import welcomeBackground from '@assets/images/welcome-background.webp'
+import { SeeOtherOptionsButton } from '../../components/SeeOtherOptionsButton'
 
 export const AddAccountScreen = () => {
     const { t } = useLanguage()
@@ -45,9 +41,6 @@ export const AddAccountScreen = () => {
         handleClose,
         handleTermsPress,
         handlePrivacyPress,
-        isMultisigIntroductionVisible,
-        handleCloseMultisigIntroduction,
-        handleContinueMultisigIntroduction,
         isOtherOptionsVisible,
         handleToggleOtherOptions,
     } = useAddAccountScreen()
@@ -81,12 +74,6 @@ export const AddAccountScreen = () => {
 
     return (
         <>
-            <PWView style={styles.imageContainer}>
-                <PWImage
-                    source={welcomeBackground}
-                    style={styles.headerImage}
-                />
-            </PWView>
             <PWScreen
                 horizontalPadding='none'
                 style={styles.screen}
@@ -115,18 +102,12 @@ export const AddAccountScreen = () => {
                     </PWView>
 
                     {!isOtherOptionsVisible && (
-                        <PWTouchableOpacity
-                            style={styles.otherOptionsButton}
-                            onPress={handleToggleOtherOptions}
-                            testID='add_account_see_other_options_button'
-                        >
-                            <PWView style={styles.otherOptionsIconWrapper}>
-                                <PWIcon name='chevron-down' />
-                            </PWView>
-                            <PWText variant='h4'>
-                                {t('onboarding.add_account.see_other_options')}
-                            </PWText>
-                        </PWTouchableOpacity>
+                        <PWView style={styles.otherOptionsContainer}>
+                            <SeeOtherOptionsButton
+                                onPress={handleToggleOtherOptions}
+                                testID='add_account_see_other_options_button'
+                            />
+                        </PWView>
                     )}
 
                     <PWView style={styles.footerContainer}>
@@ -154,12 +135,6 @@ export const AddAccountScreen = () => {
             <PWLoadingOverlay
                 isVisible={isCreatingAccount}
                 title={t(creatingTitleKey)}
-            />
-
-            <MultisigIntroductionDialog
-                isVisible={isMultisigIntroductionVisible}
-                onDismiss={handleCloseMultisigIntroduction}
-                onContinue={handleContinueMultisigIntroduction}
             />
         </>
     )

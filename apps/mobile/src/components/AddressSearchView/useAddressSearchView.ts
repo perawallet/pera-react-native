@@ -43,6 +43,7 @@ import {
 } from '@perawallet/wallet-core-shared'
 import { SEARCH_DEBOUNCE_TIME } from '@constants/ui'
 import { useClipboard } from '@hooks/useClipboard'
+import { useChainNameWhenMultiChain } from '@hooks/useChainNameWhenMultiChain'
 import { useLanguage } from '@hooks/useLanguage'
 import { chainFamilyDisplay, chainUiFor } from '@modules/chain-ui'
 import { useFocusEffect } from '@react-navigation/native'
@@ -104,6 +105,10 @@ type UseAddressSearchViewResult = {
     mismatchedFamily: Optional<ChainFamily>
     /** Unset when either family registers no wrong-network copy. */
     wrongNetworkMessage: Optional<{ title: string; body: string }>
+    /** The scope family's own copy, so the field never names an address format it doesn't take. */
+    searchPlaceholder: string
+    /** Set when rows should name the scope's chain; see {@link useChainNameWhenMultiChain}. */
+    chainBadgeName: Optional<string>
 }
 
 export const useAddressSearchView = ({
@@ -123,6 +128,11 @@ export const useAddressSearchView = ({
     const { readText } = useClipboard()
     const allAccounts = useAllAccounts()
     const chainFamily = getChainDescriptor(scope.chainId).family
+    const chainBadgeName = useChainNameWhenMultiChain(scope.chainId)
+    const searchPlaceholder = t(
+        chainUiFor(chainFamily).addressSearchPlaceholder ??
+            i18nKey('address_entry.search_placeholder_neutral'),
+    )
     const { accountValueTotals } = useAccountValueTotalsQuery(
         allAccounts,
         scope,
@@ -367,5 +377,7 @@ export const useAddressSearchView = ({
         isNfdLoading,
         mismatchedFamily,
         wrongNetworkMessage,
+        searchPlaceholder,
+        chainBadgeName,
     }
 }

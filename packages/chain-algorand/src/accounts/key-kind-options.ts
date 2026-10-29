@@ -22,12 +22,11 @@ const HD_OPTIONS: LocalKeyKindOptions = {
     recover: {
         id: 'hd_wallet',
         titleKey: i18nKey('onboarding.import_options.hd_wallet.title'),
-        chipKey: i18nKey('onboarding.import_options.hd_wallet.chip'),
         descriptionKey: i18nKey(
             'onboarding.import_options.hd_wallet.description',
         ),
-        mnemonicInfoKey: i18nKey('onboarding.import_options.mnemonic_info'),
         isSuggested: true,
+        order: 0,
         analyticsEvent: 'onb_createacc_recover_24',
     },
 }
@@ -38,10 +37,8 @@ const STANDALONE_OPTIONS: LocalKeyKindOptions = {
         titleKey: i18nKey('onboarding.import_options.algo25.title'),
         chipKey: i18nKey('onboarding.import_options.algo25.chip'),
         descriptionKey: i18nKey('onboarding.import_options.algo25.description'),
-        mnemonicInfoKey: i18nKey(
-            'onboarding.import_options.algo25.mnemonic_info',
-        ),
         isSuggested: false,
+        order: 2,
         analyticsEvent: 'onb_createacc_recover_25',
     },
     create: {
@@ -81,13 +78,14 @@ const QUANTUM_OPTIONS: LocalKeyKindOptions = {
         },
         analyticsEvent: 'createacc_quantumAccount_press',
     },
-    import: {
+    recover: {
         id: 'quantum',
-        titleKey: i18nKey('onboarding.import_account_options.quantum_title'),
+        titleKey: i18nKey('onboarding.import_options.quantum.title'),
         descriptionKey: i18nKey(
-            'onboarding.import_account_options.quantum_description',
+            'onboarding.import_options.quantum.description',
         ),
-        icon: 'quantum',
+        isSuggested: false,
+        order: 1,
     },
 }
 

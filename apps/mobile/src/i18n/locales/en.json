@@ -205,6 +205,8 @@
         "no_accounts_found": "No Accounts Found",
         "no_accounts_body": "There are no matching accounts",
         "search_placeholder": "Account address, NFD name, or short name",
+        "search_placeholder_evm": "0x address or account name",
+        "search_placeholder_neutral": "Address or account name",
         "nfd_results": "NFDomains",
         "nfd_resolving": "Resolving NFD...",
         "nfd_resolved": "Resolved from {{name}}",
@@ -288,6 +290,7 @@
         "transaction_list": {
             "title": "Transactions",
             "empty_body": "No transactions found",
+            "empty_on_network_body": "No transactions yet on {{network}}",
             "offline_empty_title": "You're offline",
             "offline_empty_body": "No transactions are saved on this device yet. They'll appear once you're back online.",
             "search_paused_body": "No transactions found in recent history.",
@@ -344,6 +347,8 @@
             "empty_body": "You have no assets linked to this account",
             "nomatch_title": "No Matching Assets",
             "nomatch_body": "No assets matched your search term",
+            "funding_title": "Get started on {{network}}",
+            "funding_body": "Deposit funds to start using this network. You'll need some {{nativeSymbol}} on {{network}} to pay network fees.",
             "network_filter_all": "All",
             "see_networks": "See networks",
             "hide_networks": "Hide networks",
@@ -2176,24 +2181,25 @@
     },
     "onboarding": {
         "import_options": {
-            "title": "Select your passphrase type",
+            "title": "Recover from Passphrase",
             "hd_wallet": {
                 "title": "Universal Wallet",
-                "description": "Wallet that lets you derive new accounts, all using the same passphrase",
-                "chip": "new"
+                "description": "Wallet that lets you create multiple accounts across chains from a single 24-word recovery phrase"
             },
             "algo25": {
-                "title": "ALGO25",
+                "title": "Algo25",
                 "description": "Legacy format that is specific to Algorand ecosystem",
-                "chip": "legacy",
-                "mnemonic_info": "25-word passphrase"
+                "chip": "legacy"
             },
-            "mnemonic_info": "24-word passphrase"
+            "quantum": {
+                "title": "Quantum Account",
+                "description": "Falcon-1024 signatures, natively secured on Algorand"
+            }
         },
         "import_info": {
-            "title": "Recover an Algorand Wallet",
-            "body": "In the following steps, you'll enter your recovery passphrase to recover an Algorand wallet. Have your recovery passphrase handy before you begin.",
-            "button": "Recover an Algorand Wallet"
+            "title": "Recover a Wallet",
+            "body": "In the following steps, you'll enter your recovery passphrase to recover a wallet. Have your recovery passphrase handy before you begin.",
+            "button": "Recover a Wallet"
         },
         "import_account": {
             "title": "Enter your Recovery Passphrase",
@@ -2233,12 +2239,11 @@
             "error_title": "Failed to create account"
         },
         "main_screen": {
-            "welcome": "Welcome to \n Pera Wallet",
-            "new_to_algo": "New to Algorand?",
-            "create_wallet": "Create a new wallet",
-            "already_have_account": "Already have an account?",
-            "import_account": "Import an account",
-            "privacy_agreement": "By creating a wallet, you agree to Pera Wallet's <0>Privacy Policy</0>"
+            "welcome": "Welcome to\nPera Wallet",
+            "new_to_pera": "New to Pera?",
+            "create_wallet": "Create Wallet",
+            "already_have_wallet": "Already have a wallet?",
+            "import_wallet": "Import Wallet"
         },
         "terms_sheet": {
             "title": "Terms and Conditions",
@@ -2278,11 +2283,11 @@
             }
         },
         "add_account": {
-            "title": "Add an\naccount",
+            "title": "Add Account",
             "add_account_option_title": "Add Account",
             "add_account_option_description": "Add a new account to your existing Universal Wallet",
             "import_account_option_title": "Import Account",
-            "import_account_option_description": "Import an existing Algorand account with various methods",
+            "import_account_option_description": "Import an existing account or connect your Ledger",
             "qr_scan_invalid_title": "Invalid QR Code",
             "qr_scan_invalid_body": "This QR code doesn't contain a valid account recovery link",
             "qr_scan_invalid_mnemonic_title": "Invalid Passphrase",
@@ -2294,17 +2299,23 @@
             "create_universal_wallet_option_description": "Wallet that lets you derive new accounts, all using the same 24-word passphrase",
             "create_algo25_option_title": "Create an Algo25 Account",
             "create_algo25_option_description": "Legacy format that is specific to Algorand",
-            "quantum_account_option_title": "Add Quantum Account",
+            "quantum_account_option_title": "Algorand Quantum Account",
             "quantum_account_option_description": "Falcon-1024 signatures, natively secured on Algorand. Your keys, now ready for the post-quantum era.",
             "quantum_account_option_badge": "NEW",
             "quantum_account_option_learn_more": "Learn more",
             "quantum_creating_title": "Creating your Quantum account…",
             "terms_and_privacy": "By adding a wallet, you agree to Pera Wallet's <0>Terms and Conditions</0> and <1>Privacy Policy</1>",
-            "create_multisig_option_title": "Add Shared Account",
-            "create_multisig_option_description": "Create a new shared account with enhanced security that requires multiple signers",
+            "create_multisig_option_title": "Algorand Shared Account",
+            "create_multisig_option_description": "Create a new multi-sig account with enhanced security that requires multiple signers",
             "pera_card_option_title": "Add Pera Card Account",
             "pera_card_option_description": "Spend your crypto in the real world with the Pera Card",
             "see_other_options": "See other options"
+        },
+        "add_account_options": {
+            "title": "Add Account",
+            "multichain_title": "Multichain Account",
+            "multichain_description": "Create a new address across all supported blockchains, linked to your existing recovery phrase",
+            "multichain_new_wallet_description": "Access and manage multiple blockchain networks from a single wallet"
         },
         "import_private_key": {
             "title": "Import private key",
@@ -2317,29 +2328,33 @@
             "backup_not_included": "This account isn't in a cloud backup. To recover it later, use View private key in the account's options and keep the key somewhere safe."
         },
         "import_account_options": {
-            "title": "Import an\naccount",
-            "recover_wallet_title": "Recover a wallet",
-            "recover_wallet_description": "I want to recover an Algorand wallet",
-            "recover_qr_title": "Recover an account with QR code",
-            "recover_qr_description": "I want to recover an Algorand account using a QR code",
+            "title": "Import Account",
+            "onboarding_title": "Import Wallet",
+            "recover_passphrase_title": "Recover from Passphrase",
+            "recover_passphrase_description": "Recover a wallet using passphrase",
+            "recover_qr_title": "Recover from QR Code",
+            "recover_qr_description": "Recover an Algorand wallet using a QR code",
             "private_key_title": "Import a Private Key",
             "private_key_description": "Add an account from its private key",
-            "pair_ledger_title": "Pair Ledger via Bluetooth",
-            "pair_ledger_description": "I want to recover an account that is backed by my Ledger hardware wallet via Bluetooth",
-            "pair_ledger_usb_title": "Pair Ledger via USB",
-            "pair_ledger_usb_description": "I want to recover an account that is backed by my Ledger hardware wallet via USB cable",
+            "pair_ledger_title": "Pair with Ledger",
+            "pair_ledger_description": "Manage your accounts via a paired Ledger device",
             "pair_ledger_unsupported_description": "Not supported by this browser or device",
-            "pera_web_title": "Import from Pera Web",
-            "pera_web_description": "I want to import Algorand accounts from Pera Web",
-            "cloud_backup_title": "Import from Cloud Backup",
-            "cloud_backup_description": "I want to restore my accounts and contacts using my 12-word backup phrase and encryption key",
+            "pera_web_title": "Recover from Legacy Web Wallet",
+            "pera_web_description": "Import Algorand Wallet from Pera Web",
+            "cloud_backup_title": "Recover from Cloud Backup",
+            "cloud_backup_description": "Restore your accounts and contacts on a fresh app or sync with your other devices.",
             "cloud_backup_already_enabled_title": "Cloud Backup is already on",
             "cloud_backup_already_enabled_body": "This device already has a Cloud Backup. Manage it in Settings › Cloud Backup.",
-            "asb_title": "Algorand Secure Backup",
-            "asb_legacy_title": "Legacy Backup",
-            "asb_description": "I want to restore my accounts using an Algorand Secure Backup file and 12-word key",
-            "quantum_title": "Import Quantum account",
-            "quantum_description": "I want to import a Quantum account using its 25-word passphrase"
+            "asb_title": "Recover from Algorand Secure Backup",
+            "asb_legacy_title": "Recover from Legacy Backup",
+            "asb_description": "Restore wallet using an Algorand Secure Backup file and 12-word key"
+        },
+        "ledger_transport_options": {
+            "title": "Pair with Ledger",
+            "ble_title": "Bluetooth",
+            "ble_description": "Connect your Ledger wirelessly via Bluetooth",
+            "usb_title": "USB",
+            "usb_description": "Connect your Ledger directly using a USB cable"
         },
         "asb_import": {
             "info": {
@@ -2937,6 +2952,7 @@
             "amount": "Amount",
             "account": "Account",
             "to": "To",
+            "network": "Network",
             "fee": "Fee",
             "current_balance": "Current Balance",
             "note": "Note",
