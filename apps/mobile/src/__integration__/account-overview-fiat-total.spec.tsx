@@ -95,6 +95,7 @@ const renderOverview = () =>
                     account: ACCOUNT,
                     openSendFunds: noop,
                     openReceiveFunds: noop,
+                    openReceiveFundsOn: noop,
                     openAccountOptions: noop,
                 }}
             >

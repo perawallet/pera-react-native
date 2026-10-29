@@ -18,7 +18,6 @@ import { PWButton, PWSheetLayout, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { usePreventScreenCapture } from '@hooks/usePreventScreenCapture'
 import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
-import { getTestProps } from '@utils/test-id-helper'
 
 import { useStyles } from './styles'
 
@@ -63,7 +62,7 @@ export const SyncDevicesQrSheet = ({ payload }: SyncDevicesQrSheetProps) => {
                     {t('cloud_backup.sync_devices.description')}
                 </PWText>
                 <QRCode
-                    {...getTestProps('sync_devices_qr_code')}
+                    testID='sync_devices_qr_code'
                     value={payload}
                     size={qrSize}
                     color='black'

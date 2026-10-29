@@ -13,7 +13,6 @@
 import { PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { ProjectVerificationIcon } from '@modules/projects'
-import { getTestProps } from '@utils/test-id-helper'
 import { type FlaggedRequestAddress } from '../../../hooks/useRequestAddressSafety'
 import { useStyles } from '../styles'
 import { ROLE_LABEL_KEYS } from '../roleLabelKeys'
@@ -44,7 +43,7 @@ export const ListedAddress = ({ flagged, index }: ListedAddressProps) => {
             </PWView>
             <PWText
                 style={styles.fullAddress}
-                {...getTestProps(`request_address_listed_${index}`)}
+                testID={`request_address_listed_${index}`}
             >
                 {flagged.address}
             </PWText>

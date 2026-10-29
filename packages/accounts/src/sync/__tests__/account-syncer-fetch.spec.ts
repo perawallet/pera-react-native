@@ -12,15 +12,17 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { Decimal } from 'decimal.js'
+import { findNativeAsset } from '@perawallet/wallet-core-assets'
 import { fetchAndPersistAccount, ensureAccountFetched } from '../account-syncer'
 import type { AccountStateSnapshot } from '../../chain-adapter'
-import { getAccountChainState } from '../../store'
+import { getAccountChainState, useHoldingsRefreshStore } from '../../store'
 import {
     fakeAccountsChain,
     MAINNET_SCOPE,
 } from '../../__tests__/fakeAccountsChain'
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
+    findNativeAsset: vi.fn(() => ({ assetId: '0' })),
     fetchAndPersistAssets: vi.fn().mockResolvedValue(undefined),
     fetchAndPersistPrices: vi.fn().mockResolvedValue(undefined),
 }))
@@ -28,8 +30,10 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
 const mockUpsertAccountChainState = vi.fn()
 const mockRefreshAccountHoldings = vi.fn()
 const mockGetAccountChainStateRow = vi.fn()
+const mockInsertAssetHolding = vi.fn()
 
 vi.mock('../../db', () => ({
+    insertAssetHolding: (...args: unknown[]) => mockInsertAssetHolding(...args),
     upsertAccountChainState: (...args: unknown[]) =>
         mockUpsertAccountChainState(...args),
     refreshAccountHoldings: (...args: unknown[]) =>
@@ -73,7 +77,53 @@ describe('fetchAndPersistAccount', () => {
         mockUpsertAccountChainState.mockResolvedValue(undefined)
         mockRefreshAccountHoldings.mockResolvedValue(true)
         mockGetAccountChainStateRow.mockResolvedValue(undefined)
+        mockInsertAssetHolding.mockResolvedValue(undefined)
+        useHoldingsRefreshStore.getState().resetState()
         fetchAccountState().mockResolvedValue(snapshot())
+    })
+
+    it('seeds nothing when the first read succeeds, so a funded account never flashes zero', async () => {
+        await fetchAndPersistAccount('ADDR1', MAINNET_SCOPE)
+
+        expect(mockInsertAssetHolding).not.toHaveBeenCalled()
+    })
+
+    it("seeds the scope's native holding at zero and flags the read when the first read fails", async () => {
+        fetchAccountState().mockRejectedValue(new Error('429'))
+
+        await expect(
+            fetchAndPersistAccount('ADDR1', MAINNET_SCOPE),
+        ).rejects.toThrow('429')
+
+        expect(mockInsertAssetHolding).toHaveBeenCalledWith({
+            accountAddress: 'ADDR1',
+            assetId: '0',
+            scope: MAINNET_SCOPE,
+        })
+        expect(
+            useHoldingsRefreshStore.getState().failed['algorand/mainnet']
+                ?.ADDR1,
+        ).toBe(true)
+    })
+
+    it('still rejects with the read error when the seed itself fails', async () => {
+        fetchAccountState().mockRejectedValue(new Error('429'))
+        mockInsertAssetHolding.mockRejectedValue(new Error('db locked'))
+
+        await expect(
+            fetchAndPersistAccount('ADDR1', MAINNET_SCOPE),
+        ).rejects.toThrow('429')
+    })
+
+    it('seeds nothing for a chain without an assets adapter', async () => {
+        vi.mocked(findNativeAsset).mockReturnValueOnce(undefined)
+        fetchAccountState().mockRejectedValue(new Error('429'))
+
+        await expect(
+            fetchAndPersistAccount('ADDR1', MAINNET_SCOPE),
+        ).rejects.toThrow('429')
+
+        expect(mockInsertAssetHolding).not.toHaveBeenCalled()
     })
 
     it("persists the chain's account state as the chain-state row and holdings", async () => {
@@ -164,6 +214,17 @@ describe('fetchAndPersistAccount', () => {
             ...overrides,
         })
 
+        it('seeds nothing when a read fails, since the stored rows still stand', async () => {
+            mockGetAccountChainStateRow.mockResolvedValue(priorRow())
+            fetchAccountState().mockRejectedValue(new Error('429'))
+
+            await expect(
+                fetchAndPersistAccount('ADDR1', MAINNET_SCOPE),
+            ).rejects.toThrow('429')
+
+            expect(mockInsertAssetHolding).not.toHaveBeenCalled()
+        })
+
         it('reports no change when state and holdings are unchanged', async () => {
             mockGetAccountChainStateRow.mockResolvedValue(priorRow())
             mockRefreshAccountHoldings.mockResolvedValue(false)
@@ -225,6 +286,7 @@ describe('fetchAndPersistAccount', () => {
 describe('ensureAccountFetched', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        mockInsertAssetHolding.mockResolvedValue(undefined)
         mockRefreshAccountHoldings.mockResolvedValue(true)
         fetchAccountState().mockResolvedValue(snapshot())
     })

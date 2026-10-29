@@ -290,6 +290,7 @@
         "transaction_list": {
             "title": "İşlemler",
             "empty_body": "İşlem bulunamadı",
+            "empty_on_network_body": "{{network}} ağında henüz işlem yok",
             "offline_empty_title": "Çevrimdışısın",
             "offline_empty_body": "Bu cihazda henüz kayıtlı işlem yok. Yeniden çevrimiçi olduğunda görünecekler.",
             "search_paused_body": "Yakın geçmişte işlem bulunamadı.",
@@ -346,6 +347,8 @@
             "empty_body": "Bu hesaba bağlı hiç varlığın yok",
             "nomatch_title": "Eşleşen varlık yok",
             "nomatch_body": "Arama terimiyle eşleşen varlık bulunamadı",
+            "funding_title": "{{network}} ağında başla",
+            "funding_body": "Bu ağı kullanmaya başlamak için para yatır. Ağ ücretlerini ödemek için {{network}} ağında biraz {{nativeSymbol}} gerekir.",
             "network_filter_all": "Tümü",
             "see_networks": "Ağları gör",
             "hide_networks": "Ağları gizle",
@@ -3755,8 +3758,7 @@
         "introduction": {
             "title": "Pera’da swap",
             "description": "Pera Wallet, varlıkları takas etmenin kolay ve hızlı bir yolunu sunar. P.E.R.A. sayesinde swap talepleri, mevcut en iyi fiyatı yakalamak için Algorand tabanlı birden fazla merkeziyetsiz borsa arasında akıllıca yönlendirilir.",
-            "powered_by": "Destekleyen: ",
-            "powered_by_brand": "P.E.R.A.",
+            "powered_by": "Destekleyen: <0>P.E.R.A.</0>",
             "start_swapping": "Swap’a başla",
             "terms_agreement": "Devam ederek swap partnerimizin <0>Hizmet Şartları</0> belgesini kabul etmiş olursun"
         },
@@ -3772,7 +3774,7 @@
             "you_pay": "Ödeyeceğin",
             "you_receive": "Alacağın",
             "to": "Hedef",
-            "balance_label": "Bakiye: ",
+            "balance_label": "Bakiye: <0/>",
             "max": "MAKS",
             "select_asset": "Seç"
         },
@@ -3852,7 +3854,7 @@
             },
             "list": {
                 "item": {
-                    "description": "Takas: {{amountIn}} {{unitIn}} → "
+                    "description": "Takas: <0/> → <1/>"
                 },
                 "empty": {
                     "title": "Henüz swap yok",

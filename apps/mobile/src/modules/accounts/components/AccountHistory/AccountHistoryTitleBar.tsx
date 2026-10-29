@@ -11,11 +11,16 @@
  */
 
 import { memo } from 'react'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { PWButton, PWText, PWView } from '@components/core'
+import { ChainLabel } from '@modules/assets'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 
 export type AccountHistoryTitleBarProps = {
+    /** The network the history is narrowed to; labelled under the title. */
+    chainId: Nullable<ChainId>
     isCsvExportVisible: boolean
     isExportingCsv: boolean
     onOpenFilter: () => void
@@ -30,6 +35,7 @@ export type AccountHistoryTitleBarProps = {
  */
 export const AccountHistoryTitleBar = memo(
     ({
+        chainId,
         isCsvExportVisible,
         isExportingCsv,
         onOpenFilter,
@@ -70,6 +76,7 @@ export const AccountHistoryTitleBar = memo(
                         )}
                     </PWView>
                 </PWView>
+                {chainId !== null && <ChainLabel chainId={chainId} />}
             </PWView>
         )
     },

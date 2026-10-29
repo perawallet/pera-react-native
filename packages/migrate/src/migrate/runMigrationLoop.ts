@@ -16,7 +16,7 @@ import {
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, toError } from '@perawallet/wallet-core-shared'
 import type {
     LegacyAccount,
     LegacyHDWallet,
@@ -139,7 +139,7 @@ export const runMigrationLoop = async (
             }
             const route = adapter.classifyAccountRoute(account)
             const errorName = e instanceof Error ? e.name : 'Unknown'
-            const errorMessage = e instanceof Error ? e.message : String(e)
+            const errorMessage = toError(e).message
             const reason = `[${route}] ${errorName}: ${errorMessage}`
             logger.error('Legacy account migration failed', {
                 address: account.address,

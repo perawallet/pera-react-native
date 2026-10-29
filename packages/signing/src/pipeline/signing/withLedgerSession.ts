@@ -27,7 +27,11 @@ import {
     LedgerTimeoutError,
     LEDGER_CONNECTION_TIMEOUT_MS,
 } from '@perawallet/wallet-core-ledger'
-import { withTimeout, type Optional } from '@perawallet/wallet-core-shared'
+import {
+    withTimeout,
+    type Optional,
+    toError,
+} from '@perawallet/wallet-core-shared'
 import type { SigningCallbacks } from '../types'
 import {
     CannotSignError,
@@ -170,7 +174,7 @@ const toClassifiedError = (error: unknown): Error => {
         return error as Error
     }
     return new SigningError(
-        error instanceof Error ? error.message : String(error),
+        toError(error).message,
         error instanceof Error ? error : undefined,
     )
 }

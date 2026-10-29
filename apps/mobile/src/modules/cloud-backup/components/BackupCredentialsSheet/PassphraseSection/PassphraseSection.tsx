@@ -14,7 +14,6 @@ import { PWText, PWView } from '@components/core'
 import { LoadingView } from '@components/LoadingView'
 import { PassphraseGrid } from '@components/PassphraseGrid'
 import { useLanguage } from '@hooks/useLanguage'
-import { getTestProps } from '@utils/test-id-helper'
 
 import { type PassphraseStatus } from '../useBackupCredentialsSheet'
 import { useStyles } from '../styles'
@@ -52,7 +51,7 @@ export const PassphraseSection = ({
                 <PWText
                     variant='bodyLarge'
                     style={styles.errorText}
-                    {...getTestProps('backup_credentials_passphrase_missing')}
+                    testID='backup_credentials_passphrase_missing'
                 >
                     {t('cloud_backup.credentials.passphrase_missing')}
                 </PWText>
@@ -61,9 +60,7 @@ export const PassphraseSection = ({
                 <PWText
                     variant='bodyLarge'
                     style={styles.errorText}
-                    {...getTestProps(
-                        'backup_credentials_passphrase_unreadable',
-                    )}
+                    testID='backup_credentials_passphrase_unreadable'
                 >
                     {t('cloud_backup.credentials.passphrase_unreadable')}
                 </PWText>

@@ -19,7 +19,6 @@ import {
     PWView,
 } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import { getTestProps } from '@utils/test-id-helper'
 import { useRequestAddressSafety } from '../../hooks/useRequestAddressSafety'
 import { useStyles } from './styles'
 import { ListedAddress } from './ListedAddress'
@@ -72,7 +71,7 @@ export const RequestAddressWarning = ({
             {hasListed && (
                 <PWText
                     style={styles.body}
-                    {...getTestProps('request_address_listed_body')}
+                    testID='request_address_listed_body'
                 >
                     {t('signing.address_safety.listed_body')}
                 </PWText>
@@ -81,7 +80,7 @@ export const RequestAddressWarning = ({
             {hasLookAlike && (
                 <PWText
                     style={styles.body}
-                    {...getTestProps('request_address_look_alike_body')}
+                    testID='request_address_look_alike_body'
                 >
                     {t('signing.address_safety.look_alike_body')}
                 </PWText>
@@ -105,7 +104,7 @@ export const RequestAddressWarning = ({
             <PWTouchableOpacity
                 style={styles.acknowledge}
                 onPress={toggleAcknowledged}
-                {...getTestProps('request_address_acknowledge')}
+                testID='request_address_acknowledge'
             >
                 <PWCheckbox
                     checked={isAcknowledged}
