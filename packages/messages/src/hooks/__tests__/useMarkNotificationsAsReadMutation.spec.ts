@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { renderHook, waitFor } from '@testing-library/react'
+import { act, renderHook, waitFor } from '@testing-library/react'
 import { createWrapper } from '@perawallet/wallet-extension-platform/test-utils'
 import { useMarkNotificationsAsReadMutation } from '../useMarkNotificationsAsReadMutation'
 import { updateLastSeenNotification } from '../../api/notifications'
@@ -163,6 +163,33 @@ describe('useMarkNotificationsAsReadMutation', () => {
         const first = result.current.markAsRead
         rerender()
 
+        modeState.current = 'developer'
+        vi.mocked(useDeploymentDeviceID).mockReturnValue('dev-2')
+        rerender()
+
         expect(result.current.markAsRead).toBe(first)
+    })
+
+    it('posts on the deployment and device it was called with when they change mid-request', async () => {
+        vi.mocked(updateLastSeenNotification).mockResolvedValue(undefined)
+        const { result, rerender } = renderHook(
+            () => useMarkNotificationsAsReadMutation(),
+            { wrapper: createWrapper() },
+        )
+
+        act(() => {
+            result.current.markAsRead(12345)
+        })
+        modeState.current = 'developer'
+        vi.mocked(useDeploymentDeviceID).mockReturnValue('dev-2')
+        rerender()
+
+        await waitFor(() => {
+            expect(updateLastSeenNotification).toHaveBeenCalledWith(
+                'live',
+                'test-device-id',
+                12345,
+            )
+        })
     })
 })
