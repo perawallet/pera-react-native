@@ -47,7 +47,7 @@ describe('getImageBase64 (web)', () => {
         vi.unstubAllGlobals()
     })
 
-    it('bounds the download by a 30 s deadline', async () => {
+    it('bounds the download by a 60 s deadline', async () => {
         const signal = new AbortController().signal
         const timeout = vi
             .spyOn(AbortSignal, 'timeout')
@@ -60,7 +60,7 @@ describe('getImageBase64 (web)', () => {
 
         await getImageBase64('https://example.com/nft.png', 'unused')
 
-        expect(timeout).toHaveBeenCalledWith(30_000)
+        expect(timeout).toHaveBeenCalledWith(60_000)
         expect(fetchMock.mock.calls[0]![1]).toMatchObject({ signal })
 
         vi.unstubAllGlobals()

@@ -49,7 +49,7 @@ export const fetchHasDeadline = {
         },
         messages: {
             missingDeadline:
-                "fetch with no deadline can hang its flow forever: pass signal: AbortSignal.timeout(ms) (or the caller's signal), or wrap the call in withTimeout from @perawallet/wallet-core-shared.",
+                "fetch with no deadline can hang its flow forever: pass signal: AbortSignal.timeout(ms) (or the caller's signal); use withTimeout from @perawallet/wallet-core-shared only when no signal can reach the fetch, since it races the promise and leaves the request running.",
         },
         schema: [],
     },

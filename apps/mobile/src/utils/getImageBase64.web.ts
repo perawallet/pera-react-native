@@ -10,7 +10,8 @@
  limitations under the License
  */
 
-const IMAGE_COPY_TIMEOUT_MS = 30_000
+// The signal also aborts blob(), so this must outlast a large animated image on a slow link.
+const IMAGE_COPY_TIMEOUT_MS = 60_000
 
 /**
  * Web/extension twin of `getImageBase64`. expo-file-system's `File`/`Paths`
