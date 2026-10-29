@@ -39,7 +39,7 @@ const SOURCES = [
 
 const onEthereum = (
     assetId: string,
-    verificationTier?: 'verified',
+    verificationTier?: 'verified' | 'suspicious',
 ): ScopedAssetSearchResult => ({
     scope: ETHEREUM_SCOPE,
     asset: {
@@ -177,6 +177,82 @@ describe('useAddAssetToken', () => {
 
         expect(mocks.request).toHaveBeenCalledTimes(1)
         expect(mocks.addToken).not.toHaveBeenCalled()
+    })
+
+    it('gives a suspicious token its own, harder warning', async () => {
+        mocks.request.mockResolvedValueOnce(undefined)
+        const { result } = render()
+
+        await act(async () => {
+            await result.current.handleAddToken(
+                onEthereum('0xBAD', 'suspicious'),
+            )
+        })
+
+        expect(mocks.t).toHaveBeenCalledWith('add_asset.token.suspicious_title')
+        expect(mocks.t).not.toHaveBeenCalledWith(
+            'add_asset.token.unverified_title',
+        )
+        expect(mocks.addToken).not.toHaveBeenCalled()
+    })
+
+    it('adds a token once when it is tapped twice in the same frame', async () => {
+        let finish: () => void = () => undefined
+        mocks.addToken.mockImplementationOnce(
+            () => new Promise<void>(resolve => (finish = resolve)),
+        )
+        const { result } = render()
+        const token = onEthereum('0xUSDC', 'verified')
+
+        await act(async () => {
+            const first = result.current.handleAddToken(token)
+            const second = result.current.handleAddToken(token)
+            finish()
+            await Promise.all([first, second])
+        })
+
+        expect(mocks.addToken).toHaveBeenCalledTimes(1)
+        expect(mocks.showToast).toHaveBeenCalledTimes(1)
+    })
+
+    it('ignores a tap while its warning sheet is open, and allows one after', async () => {
+        let answer: (value: boolean) => void = () => undefined
+        mocks.request.mockImplementationOnce(
+            () => new Promise<boolean>(resolve => (answer = resolve)),
+        )
+        const { result } = render()
+        const token = onEthereum('0xNEW')
+
+        await act(async () => {
+            const first = result.current.handleAddToken(token)
+            await result.current.handleAddToken(token)
+            answer(false)
+            await first
+        })
+        mocks.request.mockResolvedValueOnce(true)
+        await act(async () => {
+            await result.current.handleAddToken(token)
+        })
+
+        expect(mocks.request).toHaveBeenCalledTimes(2)
+        expect(mocks.addToken).toHaveBeenCalledTimes(1)
+    })
+
+    it('removes a token once when Remove is confirmed twice in a row', async () => {
+        mocks.addedTokens.mockReturnValue([
+            { scope: ETHEREUM_SCOPE, assetId: '0xEMPTY', hasBalance: false },
+        ])
+        mocks.request.mockResolvedValue(true)
+        const { result } = render()
+
+        await act(async () => {
+            await Promise.all([
+                result.current.handleRemoveToken(onEthereum('0xEMPTY')),
+                result.current.handleRemoveToken(onEthereum('0xEMPTY')),
+            ])
+        })
+
+        expect(mocks.removeToken).toHaveBeenCalledTimes(1)
     })
 
     it('adds an unverified token once the warning is accepted', async () => {

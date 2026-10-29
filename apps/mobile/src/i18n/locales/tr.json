@@ -136,6 +136,8 @@
             "unverified_title": "Doğrulanmamış token",
             "unverified_body": "Pera, {{assetName}} tokenını doğrulamadı. Herkes istediği ad veya logoyla token oluşturabilir, bu yüzden eklemeden önce kontrat adresini kontrol et.",
             "unverified_confirm": "Yine de ekle",
+            "suspicious_title": "Şüpheli token",
+            "suspicious_body": "Pera, {{assetName}} tokenını şüpheli olarak işaretledi. Başka bir tokenı taklit ediyor ya da bir dolandırıcılığın parçası olabilir. Yalnızca kaynağına güveniyorsan ekle.",
             "remove_title": "{{assetName}} kaldırılsın mı?",
             "remove_body": "Bu hesapta {{chain}} ağında artık görünmeyecek. Zincire hiçbir şey gönderilmez ve istediğin zaman yeniden ekleyebilirsin.",
             "remove_confirm": "Kaldır",

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import React, { useCallback, useMemo, useState } from 'react'
+import React, { useCallback, useMemo, useRef, useState } from 'react'
 import {
     chainAccountOf,
     useAccountAddedTokensQuery,
@@ -59,8 +59,8 @@ export const addsWithoutOptIn = (chainId: ChainId): boolean =>
 export const resultKey = ({ scope, asset }: ScopedAssetSearchResult): string =>
     assetRefKey({ chainId: scope.chainId, assetId: asset.assetId })
 
-const isVerified = ({ asset }: ScopedAssetSearchResult): boolean =>
-    asset.peraMetadata?.verificationTier === PeraAssetVerificationTier.verified
+const tierOf = ({ asset }: ScopedAssetSearchResult) =>
+    asset.peraMetadata?.verificationTier ?? PeraAssetVerificationTier.unverified
 
 const assetLabelOf = ({ asset }: ScopedAssetSearchResult): string =>
     asset.unitName ?? asset.name ?? asset.assetId
@@ -91,6 +91,9 @@ export const useAddAssetToken = (
     const { addToken } = useAddTokenMutation()
     const { removeToken } = useRemoveTokenMutation()
     const { addedTokens } = useAccountAddedTokensQuery(holdingSources)
+    // State only draws the spinner: it lands a render late, so a second tap
+    // in the same frame would read it empty. The ref is the guard.
+    const inFlightKeys = useRef(new Set<string>())
     const [pendingKeys, setPendingKeys] = useState<ReadonlySet<string>>(
         new Set(),
     )
@@ -135,20 +138,35 @@ export const useAddAssetToken = (
 
     // The sheets take display strings, not ids: an unverified token has no
     // stored record yet to read its name back from.
+    // Pera flagged a suspicious token, so it gets its own, harder warning.
     const confirmUnverified = useCallback(
-        (assetName: string) =>
+        (assetName: string, isSuspicious: boolean) =>
             request<boolean>({
                 contents: (
                     <ConfirmActionContent
                         icon='warning'
                         iconVariant='error'
-                        title={t('add_asset.token.unverified_title')}
-                        message={t('add_asset.token.unverified_body', {
-                            assetName,
-                        })}
+                        title={t(
+                            isSuspicious
+                                ? 'add_asset.token.suspicious_title'
+                                : 'add_asset.token.unverified_title',
+                        )}
+                        message={t(
+                            isSuspicious
+                                ? 'add_asset.token.suspicious_body'
+                                : 'add_asset.token.unverified_body',
+                            { assetName },
+                        )}
                         confirmLabel={t('add_asset.token.unverified_confirm')}
                         cancelLabel={t('common.cancel.label')}
-                        testID='add_asset_unverified_token_sheet'
+                        confirmVariant={
+                            isSuspicious ? 'destructive' : 'primary'
+                        }
+                        testID={
+                            isSuspicious
+                                ? 'add_asset_suspicious_token_sheet'
+                                : 'add_asset_unverified_token_sheet'
+                        }
                         confirmTestID='add_asset_unverified_token_confirm'
                     />
                 ),
@@ -184,19 +202,25 @@ export const useAddAssetToken = (
             if (
                 !accountAddress ||
                 !canAddToken(result) ||
-                pendingKeys.has(key)
+                inFlightKeys.current.has(key)
             ) {
                 return
             }
+            // Claimed before the sheet, so a tap while it's open adds nothing.
+            inFlightKeys.current.add(key)
             const assetName = assetLabelOf(result)
-            if (
-                !isVerified(result) &&
-                (await confirmUnverified(assetName)) !== true
-            ) {
-                return
-            }
-            setPendingKeys(prev => withKey(prev, key))
+            const tier = tierOf(result)
             try {
+                if (
+                    tier !== PeraAssetVerificationTier.verified &&
+                    (await confirmUnverified(
+                        assetName,
+                        tier === PeraAssetVerificationTier.suspicious,
+                    )) !== true
+                ) {
+                    return
+                }
+                setPendingKeys(prev => withKey(prev, key))
                 await addToken({
                     accountAddress,
                     scope: result.scope,
@@ -214,13 +238,13 @@ export const useAddAssetToken = (
             } catch (err) {
                 showError(err, t('add_asset.token.add_failed_title'))
             } finally {
+                inFlightKeys.current.delete(key)
                 setPendingKeys(prev => withoutKey(prev, key))
             }
         },
         [
             addressOn,
             canAddToken,
-            pendingKeys,
             confirmUnverified,
             addToken,
             showToast,
@@ -236,15 +260,16 @@ export const useAddAssetToken = (
             if (
                 !accountAddress ||
                 !canRemoveToken(result) ||
-                pendingKeys.has(key)
+                inFlightKeys.current.has(key)
             ) {
                 return
             }
+            inFlightKeys.current.add(key)
             const assetName = assetLabelOf(result)
             const chain = chainNameOf(result.scope.chainId)
-            if ((await confirmRemove(assetName, chain)) !== true) return
-            setPendingKeys(prev => withKey(prev, key))
             try {
+                if ((await confirmRemove(assetName, chain)) !== true) return
+                setPendingKeys(prev => withKey(prev, key))
                 await removeToken({
                     accountAddress,
                     scope: result.scope,
@@ -262,13 +287,13 @@ export const useAddAssetToken = (
             } catch (err) {
                 showError(err, t('add_asset.token.remove_failed_title'))
             } finally {
+                inFlightKeys.current.delete(key)
                 setPendingKeys(prev => withoutKey(prev, key))
             }
         },
         [
             addressOn,
             canRemoveToken,
-            pendingKeys,
             confirmRemove,
             removeToken,
             showToast,

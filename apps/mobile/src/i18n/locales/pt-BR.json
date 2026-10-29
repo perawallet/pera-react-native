@@ -136,6 +136,8 @@
             "unverified_title": "Token não verificado",
             "unverified_body": "A Pera não verificou {{assetName}}. Qualquer pessoa pode criar um token com qualquer nome ou logo, então confira o endereço do contrato antes de adicioná-lo.",
             "unverified_confirm": "Adicionar mesmo assim",
+            "suspicious_title": "Token suspeito",
+            "suspicious_body": "A Pera marcou {{assetName}} como suspeito. Ele pode imitar outro token ou fazer parte de um golpe. Adicione-o só se você confiar na origem dele.",
             "remove_title": "Remover {{assetName}}?",
             "remove_body": "Ele não aparecerá mais nesta conta em {{chain}}. Nada é enviado à blockchain, e você pode adicioná-lo de novo quando quiser.",
             "remove_confirm": "Remover",

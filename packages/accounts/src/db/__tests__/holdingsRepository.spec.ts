@@ -101,6 +101,43 @@ describe('account holdings repository', () => {
             expect(await amountOf()).toBe('0')
         })
 
+        it('writes a zero row for an added token that has no holding row', async () => {
+            await addAccountToken({
+                db,
+                accountAddress: 'A',
+                scope: ETHEREUM,
+                assetId: TOKEN,
+            })
+
+            const changed = await refreshAccountHoldings({
+                db,
+                accountAddress: 'A',
+                holdings: [],
+                scope: ETHEREUM,
+            })
+
+            expect(changed).toBe(true)
+            expect(await amountOf()).toBe('0')
+        })
+
+        it('keeps the balance the chain read for an added token', async () => {
+            await addAccountToken({
+                db,
+                accountAddress: 'A',
+                scope: ETHEREUM,
+                assetId: TOKEN,
+            })
+
+            await refreshAccountHoldings({
+                db,
+                accountAddress: 'A',
+                holdings: [{ assetId: TOKEN, amount: new Decimal(7) }],
+                scope: ETHEREUM,
+            })
+
+            expect(await amountOf()).toBe('7')
+        })
+
         it('brings an added token back to zero once its balance is spent', async () => {
             await addAccountToken({
                 db,

@@ -136,6 +136,8 @@
             "unverified_title": "Unverified token",
             "unverified_body": "Pera hasn't verified {{assetName}}. Anyone can create a token with any name or logo, so check the contract address before you add it.",
             "unverified_confirm": "Add anyway",
+            "suspicious_title": "Suspicious token",
+            "suspicious_body": "Pera has flagged {{assetName}} as suspicious. It may imitate another token or be part of a scam. Add it only if you trust where it came from.",
             "remove_title": "Remove {{assetName}}?",
             "remove_body": "It will no longer show in this account on {{chain}}. Nothing is sent on chain, and you can add it again any time.",
             "remove_confirm": "Remove",
