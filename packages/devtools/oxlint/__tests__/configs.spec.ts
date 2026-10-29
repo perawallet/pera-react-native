@@ -97,6 +97,26 @@ describe('import/no-default-export', () => {
     })
 })
 
+describe('react/no-multi-comp', () => {
+    it('is an error in mobile production source, with stateless components counted', () => {
+        const mobile = readOxlintConfig('apps/mobile/.oxlintrc.json')
+
+        const overrides = overridesWith(mobile, 'react/no-multi-comp')
+
+        expect(overrides).toHaveLength(1)
+        expect(overrides[0].rules['react/no-multi-comp']).toEqual([
+            'error',
+            { ignoreStateless: false },
+        ])
+        expect(overrides[0].excludeFiles).toEqual(
+            expect.arrayContaining([
+                expect.stringMatching(/__tests__/),
+                expect.stringMatching(/__integration__/),
+            ]),
+        )
+    })
+})
+
 describe('no-restricted-imports', () => {
     type RestrictedImports = [string, { paths: unknown[] }]
     const paths = (override: OxlintOverride): unknown[] =>
