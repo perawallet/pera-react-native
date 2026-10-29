@@ -27,6 +27,7 @@ import {
     requireSecure,
     sanitizeErrorForWebview,
     sendActionToWebview,
+    sendMessageToWebview,
     sendNotificationToWebview,
     toValidatedBrowserUrl,
     toValidatedNativeUri,
@@ -100,6 +101,28 @@ describe('sendNotificationToWebview', () => {
                 null,
             ),
         ).not.toThrow()
+    })
+})
+
+describe('sendMessageToWebview', () => {
+    const mockInjectJavaScript = vi.fn()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const mockWebview = { injectJavaScript: mockInjectJavaScript } as any
+
+    it('encodes quotes, a closing script tag and newlines so the page receives the identical payload', () => {
+        const payload = {
+            text: `say "hi" and 'bye'\n</script><script>alert(1)</script>`,
+        }
+
+        sendMessageToWebview('1', payload, mockWebview)
+
+        const injected = mockInjectJavaScript.mock.calls[0][0] as string
+        expect(injected).not.toContain('</script>')
+        expect(injected).not.toMatch(/\n/)
+        const parsed = JSON.parse(
+            injected.replace(/^window\.postMessage\(/, '').replace(/\);$/, ''),
+        )
+        expect(parsed).toEqual({ id: '1', jsonrpc: '2.0', result: payload })
     })
 })
 

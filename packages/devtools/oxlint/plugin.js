@@ -35,6 +35,7 @@ import { loggerStaticMessage } from './rules/logger-static-message.js'
 import { preferLookupMap } from './rules/prefer-lookup-map.js'
 import { preferToError } from './rules/prefer-to-error.js'
 import { noDeepRelativeImports } from './rules/no-deep-relative-imports.js'
+import { webviewInjectionSerializer } from './rules/webview-injection-serializer.js'
 import { typedDomainErrors } from './rules/typed-domain-errors.js'
 
 // A mobile-source rule needs its own override in apps/mobile/.oxlintrc.json:
@@ -68,6 +69,7 @@ export default {
         'prefer-lookup-map': preferLookupMap,
         'prefer-to-error': preferToError,
         'no-deep-relative-imports': noDeepRelativeImports,
+        'webview-injection-serializer': webviewInjectionSerializer,
         'typed-domain-errors': typedDomainErrors,
     },
 }
