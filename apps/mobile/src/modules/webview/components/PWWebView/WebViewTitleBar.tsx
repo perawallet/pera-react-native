@@ -17,7 +17,6 @@ import { PWTouchableOpacity } from '@components/core/PWTouchableOpacity'
 import { PWView } from '@components/core/PWView'
 import { useStyles } from './styles'
 import { PWText } from '@components/core/PWText'
-import { getTestProps } from '@utils/test-id-helper'
 import { getDisplayHost } from './getDisplayHost'
 
 export type WebViewTitleBarProps = {
@@ -49,7 +48,7 @@ export const WebViewTitleBar = ({
         <PWView style={styles.titleBar}>
             <PWView style={styles.titleIconContainer}>
                 <PWTouchableOpacity
-                    {...getTestProps('webview_close_button')}
+                    testID='webview_close_button'
                     onPress={onCloseRequested}
                 >
                     <PWIcon
