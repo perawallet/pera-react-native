@@ -2710,6 +2710,68 @@ describe('SyncService', () => {
                 }
             })
 
+            it('syncs a scope on the tick its wait ends even when the loop timer fires slightly early', async () => {
+                mockAccounts.splice(0)
+                addEthereumAccount('eth', { ethereum: { address: '0xabc' } })
+                const fetchAndPersistAccount = await failEthereumReads()
+                vi.mocked(fetchAndPersistAccount).mockImplementation(
+                    async () => {
+                        await new Promise(resolve => setTimeout(resolve, 100))
+                        throw rateLimited()
+                    },
+                )
+
+                try {
+                    service.start()
+                    await vi.advanceTimersByTimeAsync(150)
+                    expect(await accountReadsOn(ETHEREUM)).toHaveLength(1)
+
+                    // Scope and loop both wait 6 s; the timer lands 50 ms short.
+                    vi.setSystemTime(Date.now() - 50)
+                    await vi.advanceTimersByTimeAsync(2 * POLL_INTERVAL)
+                    expect(await accountReadsOn(ETHEREUM)).toHaveLength(2)
+                } finally {
+                    service.stop()
+                    mockAccounts.push(
+                        {
+                            id: '1',
+                            name: 'Account 1',
+                            custody: { kind: 'watch' },
+                            chains: { algorand: { address: 'ADDR1' } },
+                        },
+                        {
+                            id: '2',
+                            name: 'Account 2',
+                            custody: { kind: 'watch' },
+                            chains: { algorand: { address: 'ADDR2' } },
+                        },
+                    )
+                }
+            })
+
+            it('forgets a backed-off scope once it leaves the synced set, so switching it back on syncs at once and backs off from base', async () => {
+                addEthereumAccount('eth', { ethereum: { address: '0xabc' } })
+                await failEthereumReads()
+
+                service.start()
+                await vi.advanceTimersByTimeAsync(50 + 2 * POLL_INTERVAL)
+                // Ethereum's interval is now 12 s, next due at 18 s.
+                expect(await accountReadsOn(ETHEREUM)).toHaveLength(2)
+
+                mockSwitchedOff.add('ethereum')
+                await vi.advanceTimersByTimeAsync(POLL_INTERVAL)
+                mockSwitchedOff.delete('ethereum')
+                await vi.advanceTimersByTimeAsync(POLL_INTERVAL)
+                expect(await accountReadsOn(ETHEREUM)).toHaveLength(3)
+
+                // That failure starts again from the base step: due 6 s later.
+                await vi.advanceTimersByTimeAsync(POLL_INTERVAL)
+                expect(await accountReadsOn(ETHEREUM)).toHaveLength(3)
+                await vi.advanceTimersByTimeAsync(POLL_INTERVAL)
+                service.stop()
+                expect(await accountReadsOn(ETHEREUM)).toHaveLength(4)
+            })
+
             it('forgets per-scope backoff on reconnect, so the reconnect tick syncs every scope', async () => {
                 addEthereumAccount('eth', { ethereum: { address: '0xabc' } })
                 await failEthereumReads()
