@@ -13,7 +13,7 @@
 import { isHTTPError } from 'ky'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { buildIntegrityHeaders } from '@perawallet/wallet-core-app-integrity'
-import { queryClient } from '@perawallet/wallet-core-shared'
+import { queryClient, type Nullable } from '@perawallet/wallet-core-shared'
 import type {
     CardTransport,
     CardTransportRequest,
@@ -28,19 +28,19 @@ import { baanxDirectRequest } from './baanx-client'
  */
 type RefreshHandler = (scope: ChainScope) => Promise<boolean>
 
-let refreshHandler: RefreshHandler | null = null
+let refreshHandler: Nullable<RefreshHandler> = null
 
-export const setRefreshHandler = (handler: RefreshHandler | null): void => {
+export const setRefreshHandler = (handler: Nullable<RefreshHandler>): void => {
     refreshHandler = handler
 }
 
 /** Drops the stored session once a freshly refreshed token is still rejected. */
 type SessionLostHandler = () => Promise<void>
 
-let sessionLostHandler: SessionLostHandler | null = null
+let sessionLostHandler: Nullable<SessionLostHandler> = null
 
 export const setSessionLostHandler = (
-    handler: SessionLostHandler | null,
+    handler: Nullable<SessionLostHandler>,
 ): void => {
     sessionLostHandler = handler
 }

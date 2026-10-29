@@ -16,6 +16,7 @@ import {
     DEFAULT_ITEMS_PER_PAGE,
     type TransactionHistoryResult,
 } from '@perawallet/wallet-core-transactions'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { fetchNodeJson } from '../../../blockchain/utils/nodeHttp'
 import { transformTransactionHistoryResponse } from '../transformers'
 import {
@@ -189,7 +190,7 @@ const closeAmountLookupSchema = z.object({
 export const fetchIndexerCloseAmount = async (
     txId: string,
     network: AlgorandNetworkId,
-): Promise<string | null> => {
+): Promise<Nullable<string>> => {
     const response = await fetchNodeJson(
         network,
         'indexer',

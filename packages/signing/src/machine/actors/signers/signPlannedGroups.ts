@@ -31,6 +31,7 @@ import {
     isRetryableError,
     logger,
     toError,
+    type Optional,
 } from '@perawallet/wallet-core-shared'
 import { SIGNING_KEY_DOMAIN } from '../../../constants'
 import {
@@ -67,7 +68,7 @@ export const signPlannedGroups = async ({
     const keyFor = (
         request: SigningRequest,
         reviewed: readonly string[],
-    ): string | undefined => {
+    ): Optional<string> => {
         if (
             !reviewed.some(address =>
                 isSameAddress(scope.chainId, address, request.signer),

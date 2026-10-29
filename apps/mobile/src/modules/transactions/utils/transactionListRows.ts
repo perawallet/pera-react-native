@@ -10,7 +10,10 @@
  limitations under the License
  */
 
-import type { TransactionRecord } from '@perawallet/wallet-core-chain-contract'
+import type {
+    ChainId,
+    TransactionRecord,
+} from '@perawallet/wallet-core-chain-contract'
 import {
     formatISODate,
     formatDisplayDate,
@@ -37,6 +40,8 @@ export type TransactionRow = {
     /** Transaction id; also the row key. */
     key: string
     transaction: TransactionHistoryItem
+    /** Set on a list that mixes networks, so the row names its own. */
+    networkChainId?: ChainId
 }
 
 /** A row on a chain that keeps no cached history rows: already summarised. */
@@ -45,7 +50,11 @@ export type TransactionRecordRow = {
     /** Transaction id; also the row key. */
     key: string
     record: TransactionRecord
+    /** See {@link TransactionRow.networkChainId}. */
+    networkChainId?: ChainId
 }
+
+export type TransactionEntryRow = TransactionRow | TransactionRecordRow
 
 export type TransactionListRow =
     | TransactionDateHeaderRow
@@ -121,6 +130,35 @@ export const buildRecordListRows = (
             record,
         }),
     )
+
+/** Unix ms; a record with no timestamp yet is still in flight, so it sorts above everything. */
+export const entryRowTimestampOf = (row: TransactionEntryRow): number =>
+    row.kind === TRANSACTION_ROW_TYPES.transaction
+        ? parseRoundTime(row.transaction.roundTime).getTime()
+        : (row.record.timestamp ?? Number.POSITIVE_INFINITY)
+
+/** Rows from several networks' histories, interleaved newest first under shared date headers. */
+export const buildMergedListRows = (
+    entries: TransactionEntryRow[],
+): TransactionListRow[] => {
+    const timed = entries.map(row => ({
+        row,
+        timestamp: entryRowTimestampOf(row),
+    }))
+    // Not `b - a`: two in-flight records are both Infinity, and Infinity - Infinity is NaN.
+    timed.sort((a, b) => {
+        if (a.timestamp === b.timestamp) return 0
+        return b.timestamp > a.timestamp ? 1 : -1
+    })
+    return groupByDate(
+        timed,
+        ({ timestamp }) =>
+            formatISODate(
+                new Date(Number.isFinite(timestamp) ? timestamp : Date.now()),
+            ),
+        ({ row }) => row,
+    )
+}
 
 /**
  * Recycling pool selector. Date headers and transaction rows have very

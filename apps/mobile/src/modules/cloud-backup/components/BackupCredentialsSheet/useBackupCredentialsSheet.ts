@@ -18,7 +18,7 @@ import {
     withBackupMnemonicIndices,
 } from '@perawallet/wallet-core-backup'
 import { zeroBytes } from '@perawallet/wallet-core-kms'
-import { logger, toError } from '@perawallet/wallet-core-shared'
+import { logger, toError, type Nullable } from '@perawallet/wallet-core-shared'
 import { trackEvent, CloudBackupEvent } from '@analytics'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
 
@@ -52,7 +52,7 @@ export const useBackupCredentialsSheet =
         // has to happen outside React's update queue: a `setState` updater is
         // never invoked on an unmounted component, so zeroing inside one is a
         // no-op exactly when it matters most.
-        const bufferRef = useRef<Uint16Array | null>(null)
+        const bufferRef = useRef<Nullable<Uint16Array>>(null)
         const [wordIndices, setWordIndices] = useState<Uint16Array>(
             () => new Uint16Array(),
         )

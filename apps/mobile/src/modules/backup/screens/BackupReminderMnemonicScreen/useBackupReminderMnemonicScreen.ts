@@ -24,15 +24,15 @@ import {
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { zeroBytes } from '@perawallet/wallet-core-kms'
-import { logger, toError } from '@perawallet/wallet-core-shared'
+import { logger, toError, type Nullable } from '@perawallet/wallet-core-shared'
 import { useRequirePinVerification } from '@modules/security'
 import { useMnemonicForAddress } from '../../hooks'
 import type { BackupStackParamList } from '../../routes/types'
 
 export type UseBackupReminderMnemonicScreenResult = {
-    wordIndices: Uint16Array | null
+    wordIndices: Nullable<Uint16Array>
     isLoading: boolean
-    error: Error | null
+    error: Nullable<Error>
     isPinGateResolved: boolean
     onContinue: () => void
 }
@@ -62,10 +62,10 @@ export const useBackupReminderMnemonicScreen =
         // has to happen outside React's update queue: a `setState` updater is
         // not invoked on an unmounted fiber, so zeroing inside one is a no-op
         // exactly when the unmount cleanup needs it.
-        const bufferRef = useRef<Uint16Array | null>(null)
-        const [indices, setIndices] = useState<Uint16Array | null>(null)
+        const bufferRef = useRef<Nullable<Uint16Array>>(null)
+        const [indices, setIndices] = useState<Nullable<Uint16Array>>(null)
         const [isLoading, setIsLoading] = useState(true)
-        const [error, setError] = useState<Error | null>(null)
+        const [error, setError] = useState<Nullable<Error>>(null)
         const [focusToken, setFocusToken] = useState(0)
 
         // Defense-in-depth: if any caller reaches this screen without going

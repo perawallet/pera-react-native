@@ -10,13 +10,15 @@
  limitations under the License
  */
 
+import type { Optional } from '@perawallet/wallet-core-shared'
+
 // Content scripts land in every user tab and share chrome.runtime.onMessage with
 // the extension's own pages. Their sender.url is the injected WEB PAGE, so gating
 // on the extension origin separates our pages from scripts we shipped into every
 // tab; sender.id guards against a spoofed cross-extension sender. The service
 // worker is served from the same origin, so its messages pass without special-casing.
 export const isTrustedExtensionPageSender = (
-    sender: chrome.runtime.MessageSender | undefined,
+    sender: Optional<chrome.runtime.MessageSender>,
     chromeLike: typeof chrome = chrome,
 ): boolean => {
     if (!sender?.url) return false

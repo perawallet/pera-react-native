@@ -12,12 +12,12 @@
 
 import { useCallback, useRef, useState } from 'react'
 import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import { useDeepLink } from '@modules/deeplink'
 
 type ErrorKind = 'none' | 'invalid' | 'failed'
 
-const ERROR_MESSAGE_KEY_BY_KIND: Record<ErrorKind, I18nKey | null> = {
+const ERROR_MESSAGE_KEY_BY_KIND: Record<ErrorKind, Nullable<I18nKey>> = {
     none: null,
     invalid: i18nKey('paste_link.error_invalid'),
     failed: i18nKey('paste_link.error_failed'),
@@ -31,7 +31,7 @@ export type UsePasteLinkContentResult = {
     // 'failed': isValidDeepLink accepted it but the dispatcher couldn't open
     // it (onError/onConnectionError) — a distinct case that needs distinct
     // copy, since the real reason is a toast the web bottom sheet swallows.
-    errorMessageKey: I18nKey | null
+    errorMessageKey: Nullable<I18nKey>
     setValue: (next: string) => void
     handleSubmit: () => void
 }

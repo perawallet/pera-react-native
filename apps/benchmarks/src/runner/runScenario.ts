@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { toError } from '@perawallet/wallet-core-shared'
+import { toError, type Nullable } from '@perawallet/wallet-core-shared'
 import { collectGarbage, readHeap } from './memory'
 import { summarize } from './stats'
 import type {
@@ -78,7 +78,7 @@ export const runScenario = async (
         collectGarbage()
         const after = readHeap()
 
-        const heap: HeapStats | null =
+        const heap: Nullable<HeapStats> =
             before && after
                 ? {
                       beforeMb: before.usedMb,

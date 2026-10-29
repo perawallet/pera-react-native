@@ -89,7 +89,7 @@ export const UnlockScreen = ({
                             onChangeText={setPassword}
                             secureTextEntry
                             showVisibilityToggle
-                            autoCapitalize='none'
+                            isSensitive
                             autoComplete='current-password'
                             autoFocus
                             blurOnSubmit={false}

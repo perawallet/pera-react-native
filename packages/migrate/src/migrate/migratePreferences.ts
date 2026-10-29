@@ -19,6 +19,7 @@ import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { useCurrenciesStore } from '@perawallet/wallet-core-currencies'
 import { useSettingsStore } from '@perawallet/wallet-core-settings'
 import type { LegacyPreferences } from '@perawallet/wallet-extension-platform'
+import type { Maybe } from '@perawallet/wallet-core-shared'
 import { migrationChainAdapters } from '../chain-adapter'
 
 const SECURITY_PIN_SETUP_PROMPT_KEY = 'security_pin_setup_prompt'
@@ -112,10 +113,7 @@ const applyMiscFlags = (
 ): void => {
     const settings = useSettingsStore.getState()
 
-    const writeIfPresent = (
-        key: string,
-        value: Persistable | null | undefined,
-    ): void => {
+    const writeIfPresent = (key: string, value: Maybe<Persistable>): void => {
         if (value == null) return
         settings.setPreference(`${LEGACY_NAMESPACE}${key}`, value)
     }

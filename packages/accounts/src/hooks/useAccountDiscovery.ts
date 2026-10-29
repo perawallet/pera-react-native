@@ -12,43 +12,18 @@
 
 import { useCallback } from 'react'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import {
-    discoverAccounts as baseDiscoverAccounts,
-    discoverDelegatedAccounts as baseDiscoverDelegatedAccounts,
-} from '../account-discovery'
-import { deriveHdAccount, type GetPublicKey } from '../chain-adapter'
+import type { WalletAccount } from '../models'
+import { discoverDelegatedAccounts as baseDiscoverDelegatedAccounts } from '../account-discovery'
 import { useIsDelegationAvailable } from './useIsDelegationAvailable'
 
-export const useAccountDiscovery = (scope: ChainScope) => {
+export const useAccountDiscovery = (
+    scope: ChainScope,
+): {
+    discoverDelegatedAccounts: (params: {
+        accountAddresses: string[]
+    }) => Promise<WalletAccount[]>
+} => {
     const isDelegationAvailable = useIsDelegationAvailable(scope.chainId)
-
-    const sessionGetPublicKey = useCallback(
-        async (
-            walletKeyId: string,
-            params: Parameters<GetPublicKey>[0],
-        ): Promise<Uint8Array> => {
-            const derived = await deriveHdAccount(scope, walletKeyId, params)
-            return derived.publicKey
-        },
-        [scope],
-    )
-
-    const discoverAccounts = useCallback(
-        async (params: {
-            walletKeyId: string
-            accountGapLimit?: number
-            keyIndexGapLimit?: number
-        }) => {
-            const getPublicKey: GetPublicKey = inner =>
-                sessionGetPublicKey(params.walletKeyId, inner)
-            return baseDiscoverAccounts({
-                ...params,
-                scope,
-                getPublicKey,
-            })
-        },
-        [scope, sessionGetPublicKey],
-    )
 
     // Resolves empty rather than rejecting, so a caller's delegation step is skipped
     // without a failure notice while the capability is off.
@@ -60,8 +35,5 @@ export const useAccountDiscovery = (scope: ChainScope) => {
         [isDelegationAvailable, scope],
     )
 
-    return {
-        discoverAccounts,
-        discoverDelegatedAccounts,
-    }
+    return { discoverDelegatedAccounts }
 }

@@ -11,6 +11,7 @@
  */
 
 import { http, HttpResponse, type RequestHandler } from 'msw'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import {
     peraEvmAssetHandlers,
     rejectUnauthenticated,
@@ -32,7 +33,7 @@ export type ShouldRefreshRequest = {
     chain: string
     account_addresses: string[]
     /** A block number on EVM; null when never synced. */
-    last_refreshed_round: number | null
+    last_refreshed_round: Nullable<number>
 }
 
 export type PeraEvmFixtures = PeraEvmAssetFixtures &

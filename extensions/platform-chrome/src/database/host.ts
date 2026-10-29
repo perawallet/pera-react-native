@@ -10,7 +10,11 @@
  limitations under the License
  */
 
-import { toError } from '@perawallet/wallet-core-shared'
+import {
+    toError,
+    type Optional,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import {
     decodeWireValues,
     encodeWireValues,
@@ -82,7 +86,7 @@ export class DatabaseHost {
         message: unknown,
         sender: chrome.runtime.MessageSender,
         sendResponse: (response?: unknown) => void,
-    ): boolean | undefined => {
+    ): Optional<boolean> => {
         if (!isDbMessage(message)) return undefined
         // Threat model: content scripts share this onMessage listener with
         // every extension page. Trusted senders are our own popup/expanded/
@@ -134,13 +138,13 @@ export class DatabaseHost {
     }
 }
 
-let activeHost: DatabaseHost | null = null
+let activeHost: Nullable<DatabaseHost> = null
 
-export const setActiveDatabaseHost = (host: DatabaseHost | null): void => {
+export const setActiveDatabaseHost = (host: Nullable<DatabaseHost>): void => {
     activeHost = host
 }
 
-export const getActiveDatabaseHost = (): DatabaseHost | null => activeHost
+export const getActiveDatabaseHost = (): Nullable<DatabaseHost> => activeHost
 
 export const startDatabaseHost = (executor: SqlExecutor): DatabaseHost => {
     const host = new DatabaseHost(executor)

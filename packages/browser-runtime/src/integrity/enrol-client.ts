@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { Optional, Nullable } from '@perawallet/wallet-core-shared'
 import {
     INTEGRITY_CHECK_TOKEN_PARAM,
     INTEGRITY_ENROL_SCOPE,
@@ -90,9 +91,9 @@ export const onHostedCheckEnded = (
         void chromeLike.storage.session
             .get(INTEGRITY_ENROL_ATTEMPT_SESSION_KEY)
             .then(stored => {
-                const attempt = stored[INTEGRITY_ENROL_ATTEMPT_SESSION_KEY] as
-                    | { token?: unknown; phase?: unknown }
-                    | undefined
+                const attempt = stored[
+                    INTEGRITY_ENROL_ATTEMPT_SESSION_KEY
+                ] as Optional<{ token?: unknown; phase?: unknown }>
                 const isOver =
                     attempt?.token !== token || attempt.phase === 'done'
                 if (isSubscribed && isOver) listener()
@@ -125,8 +126,8 @@ export const holdIntegrityCheckHost = (
     const token = new URL(url).searchParams.get(INTEGRITY_CHECK_TOKEN_PARAM)
     if (!isCheckToken(token)) return () => {}
     let isReleased = false
-    let port: chrome.runtime.Port | null = null
-    let retry: ReturnType<typeof setTimeout> | undefined
+    let port: Nullable<chrome.runtime.Port> = null
+    let retry: Optional<ReturnType<typeof setTimeout>>
 
     const connect = (): void => {
         try {

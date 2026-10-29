@@ -15,6 +15,7 @@ import {
     scopeKeyLegacyNetworkRecord,
     type ChainScopeKey,
 } from '@perawallet/wallet-core-chain-contract'
+import type { Optional } from '@perawallet/wallet-core-shared'
 
 /** The authority fields an Algorand account record carried before the store kept authority per scope. */
 type LegacyAuthorityRecord = {
@@ -32,7 +33,7 @@ const isPlainObject = (value: unknown): value is Record<string, unknown> =>
  */
 export const decodeAlgorandLegacyAuthority = (
     raw: unknown,
-): DecodedLegacyAuthority | undefined => {
+): Optional<DecodedLegacyAuthority> => {
     if (!isPlainObject(raw)) return undefined
     const { rekeyAddress, rekeyAddressByNetwork } = raw as LegacyAuthorityRecord
     if (isPlainObject(rekeyAddressByNetwork)) {

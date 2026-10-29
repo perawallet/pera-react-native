@@ -27,7 +27,7 @@ import {
     type EvmNftItem,
     type EvmStandardCall,
 } from '@perawallet/wallet-core-chain-ethereum'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import { useBaseUnitsAmount } from '@hooks/useBaseUnitsAmount'
 
 export type EthereumAmount = {
@@ -93,7 +93,7 @@ const isFungibleCandidate = (call: EvmStandardCall): boolean =>
     call.kind === 'approve' ||
     call.kind === 'increase-allowance'
 
-const valueOf = (call: EvmStandardCall): Decimal | undefined =>
+const valueOf = (call: EvmStandardCall): Optional<Decimal> =>
     'value' in call ? call.value : undefined
 
 const nftAssetIdOf = (
@@ -120,7 +120,7 @@ const nftAssetIdOf = (
     }
 }
 
-const collectionNameOf = (asset: Nullable<PeraAsset>): string | undefined =>
+const collectionNameOf = (asset: Nullable<PeraAsset>): Optional<string> =>
     asset?.peraMetadata?.collectible?.collection?.name
 
 // Granting nothing still reads as a grant: a zero `approve` on an ERC-721

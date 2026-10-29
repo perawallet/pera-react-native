@@ -291,6 +291,7 @@
             "title": "Transações",
             "empty_body": "Nenhuma transação encontrada",
             "empty_on_network_body": "Ainda não há transações em {{network}}",
+            "network_failed": "Não foi possível carregar as transações em {{networks}}",
             "offline_empty_title": "Você está offline",
             "offline_empty_body": "Ainda não há transações salvas neste dispositivo. Elas aparecerão quando você voltar a ficar online.",
             "search_paused_body": "Nenhuma transação encontrada no histórico recente.",
@@ -325,7 +326,8 @@
             "suspicious_title": "ASA suspeito",
             "suspicious_description": "Este ASA foi sinalizado como suspeito pelo programa de verificação de ASA da Pera.",
             "learn_more": "Saiba mais sobre a verificação de ASA"
-        }
+        },
+        "copy_full_amount_hint": "Toque e segure para copiar o valor completo"
     },
     "accounts": {
         "legacyQuantum": {
@@ -458,6 +460,7 @@
         "hide_wallet_structure": "Ocultar estrutura da wallet",
         "scan_new_addresses": "Buscar novos endereços",
         "scan_new_accounts": "Buscar novas contas em {{network}}",
+        "scan_new_wallet_accounts": "Buscar novas contas",
         "universal_wallet_subtitle": "Uma passphrase, todas as redes",
         "viewing": "Atual",
         "wallet_label": "Wallet nº {{number}}",
@@ -2236,7 +2239,15 @@
             "no_new_addresses_title": "Nenhum novo endereço encontrado",
             "no_new_addresses_body": "Não encontramos nenhum endereço adicional associado a esta wallet.",
             "rekey_scan_failed_title": "Não foi possível verificar contas com rekey",
-            "rekey_scan_failed_body": "Sua conta foi importada. Não foi possível verificar se outras contas têm rekey para ela — você pode escanear novamente em Configurações."
+            "rekey_scan_failed_body": "Sua conta foi importada. Não foi possível verificar se outras contas têm rekey para ela — você pode escanear novamente em Configurações.",
+            "rekey_rescan_failed_body": "Não foi possível verificar se outras contas têm rekey para esta wallet. Busque novamente para tentar outra vez.",
+            "rescan_found_title": "Busca concluída",
+            "rescan_found_body_one": "1 conta foi adicionada ou atualizada.",
+            "rescan_found_body_other": "{{count}} contas foram adicionadas ou atualizadas.",
+            "rescan_partial_title": "Busca incompleta",
+            "rescan_partial_body": "Algumas verificações não puderam ser concluídas. As contas encontradas até agora foram adicionadas. Busque novamente para encontrar o restante.",
+            "rescan_failed_title": "Não foi possível buscar contas",
+            "rescan_failed_body": "Verifique sua conexão e tente novamente."
         },
         "create_account": {
             "processing": "Configurando sua wallet...",

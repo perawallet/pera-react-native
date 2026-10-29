@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import type { Optional } from '@perawallet/wallet-core-shared'
+
 const MAX_ICONS = 4
 
 // https-only and same-origin as the verified connection origin: an icon URL
@@ -18,7 +20,7 @@ const MAX_ICONS = 4
 export const sanitizeDappIcons = (
     icons: unknown,
     origin: string,
-): string[] | undefined => {
+): Optional<string[]> => {
     if (!Array.isArray(icons)) return undefined
     const kept: string[] = []
     for (const candidate of icons) {

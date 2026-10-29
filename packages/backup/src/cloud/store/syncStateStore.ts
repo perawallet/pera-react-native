@@ -13,19 +13,19 @@
 import { create } from 'zustand'
 import { guardedPersist, registerStore } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
-import type { BaseStoreState } from '@perawallet/wallet-core-shared'
+import type { BaseStoreState, Nullable } from '@perawallet/wallet-core-shared'
 import type { SyncState } from '../models'
 
 const STORE_NAME = 'backup-sync-state-store'
 
-const initialState = { syncState: null as SyncState | null }
+const initialState = { syncState: null as Nullable<SyncState> }
 
 type BackupSyncStateState = BaseStoreState & {
-    syncState: SyncState | null
+    syncState: Nullable<SyncState>
 }
 
 type BackupSyncStateActions = {
-    setSyncState: (syncState: SyncState | null) => void
+    setSyncState: (syncState: Nullable<SyncState>) => void
 }
 
 type BackupSyncStateStore = BackupSyncStateState & BackupSyncStateActions

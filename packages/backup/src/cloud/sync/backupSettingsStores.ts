@@ -27,6 +27,7 @@ import {
     useSettingsStore,
     type ConfirmationMode,
 } from '@perawallet/wallet-core-settings'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import type { BackupSettings } from '../models'
 
 const CONFIRMATION_MODES: ReadonlySet<string> = new Set<ConfirmationMode>([
@@ -46,7 +47,7 @@ const isAccountSortMode = (mode: string): mode is AccountSortMode =>
 const orderAddressOf = (
     account: WalletAccount,
     chainId: ChainId,
-): string | undefined =>
+): Optional<string> =>
     chainAccountOf(account, chainId)?.address ??
     Object.values(account.chains).find(entry => entry?.address)?.address
 

@@ -26,6 +26,7 @@ import type {
     DelegationTxParams,
     TransferTxsParams,
 } from '@perawallet/wallet-core-transactions'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { isAlgorandNativeAssetId } from '../descriptor'
 import { algorandNetworkOf } from '../network-id'
 import type { PeraTransaction } from '../blockchain/models/algosdk-shapes'
@@ -43,7 +44,7 @@ const buildGroup = async (composer: Composer): Promise<PeraTransaction[]> => {
 }
 
 // staticFee only overrides AlgoKit's auto-sizing when the caller passes one.
-const feeOverride = (fee: bigint | undefined) =>
+const feeOverride = (fee: Optional<bigint>) =>
     fee === undefined ? {} : { staticFee: microAlgo(fee) }
 
 export const buildTransferTxs = ({

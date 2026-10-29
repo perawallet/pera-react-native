@@ -23,8 +23,9 @@ import {
     getIframeOrigins,
     getPeraDeploymentConfig,
 } from '@perawallet/wallet-core-config'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
-const safeOrigin = (url: string): string | null => {
+const safeOrigin = (url: string): Nullable<string> => {
     try {
         return new URL(url).origin
     } catch {

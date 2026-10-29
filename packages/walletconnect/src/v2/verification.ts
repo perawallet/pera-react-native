@@ -14,10 +14,11 @@ import type {
     ConnectionPeerVerification,
     ConnectionPeerVerificationStatus,
 } from '@perawallet/wallet-extension-connections'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import type { WalletKitVerifyContext } from './client'
 
 const statusOf = (
-    verified: WalletKitVerifyContext['verified'] | undefined,
+    verified: Optional<WalletKitVerifyContext['verified']>,
 ): ConnectionPeerVerificationStatus => {
     if (verified?.isScam === true) return 'scam'
     if (verified?.validation === 'VALID') return 'valid'
@@ -26,7 +27,7 @@ const statusOf = (
 }
 
 export const toPeerVerification = (
-    context: WalletKitVerifyContext | undefined,
+    context: Optional<WalletKitVerifyContext>,
 ): ConnectionPeerVerification => {
     const verified = context?.verified
     const status = statusOf(verified)

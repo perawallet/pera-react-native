@@ -10,8 +10,10 @@
  limitations under the License
  */
 
+import type { Optional } from '@perawallet/wallet-core-shared'
+
 // Host only: paid node providers carry their API key in the path or query.
-export const endpointHostOf = (url: string | undefined): string | undefined => {
+export const endpointHostOf = (url: Optional<string>): Optional<string> => {
     if (!url) return undefined
     try {
         return new URL(url).host || undefined

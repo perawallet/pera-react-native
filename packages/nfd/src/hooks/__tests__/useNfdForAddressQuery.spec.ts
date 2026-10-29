@@ -96,6 +96,7 @@ describe('useNfdForAddressQuery', () => {
             { wrapper },
         )
 
+        expect(result.current.isPending).toBe(true)
         await waitFor(() => expect(result.current.isPending).toBe(false))
         expect(result.current.data).toEqual([])
     })
@@ -156,7 +157,7 @@ describe('useNfdForAddressQuery', () => {
     })
 
     it('does not query when enabled is false', () => {
-        renderHook(
+        const { result } = renderHook(
             () =>
                 useNfdForAddressQuery(ALGORAND_TESTNET, VALID_ADDRESS, {
                     enabled: false,
@@ -164,6 +165,7 @@ describe('useNfdForAddressQuery', () => {
             { wrapper },
         )
         expect(mockEnqueue).not.toHaveBeenCalled()
+        expect(result.current.isPending).toBe(false)
     })
 
     it('does not query for invalid addresses', () => {

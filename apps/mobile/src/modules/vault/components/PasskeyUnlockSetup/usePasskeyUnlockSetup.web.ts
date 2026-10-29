@@ -19,7 +19,11 @@ import {
     VaultLockedError,
     VaultReauthRequiredError,
 } from '@perawallet/wallet-extension-keystore-chrome'
-import { logger } from '@perawallet/wallet-core-shared'
+import {
+    logger,
+    type Optional,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import {
     AnalyticsMetadataKey as Key,
     trackEvent,
@@ -72,7 +76,7 @@ export const toPasskeySetupFailure = (
 // fields off any error-shaped value rather than relying on instanceof.
 const describeError = (
     error: unknown,
-): { name: string | undefined; message: string } => {
+): { name: Optional<string>; message: string } => {
     if (typeof error === 'object' && error !== null) {
         const { name, message } = error as { name?: unknown; message?: unknown }
         return {
@@ -163,7 +167,7 @@ export const usePasskeyUnlockSetup = ({
     // not a raw exception, so useErrorToast's generic resolution would lose
     // the hint.
     const reportInToast = useCallback(
-        (failure: PasskeyUnlockSetupFailure | null): void => {
+        (failure: Nullable<PasskeyUnlockSetupFailure>): void => {
             if (!failure) {
                 successToast(
                     t('vault.passkey_setup.success_title'),
@@ -200,7 +204,7 @@ export const usePasskeyUnlockSetup = ({
                 setStatus('idle')
                 return
             }
-            let failure: PasskeyUnlockSetupFailure | null = null
+            let failure: Nullable<PasskeyUnlockSetupFailure> = null
             try {
                 await enablePasskeyUnlockWithSession()
             } catch (retryError) {

@@ -13,6 +13,7 @@
 import { base64 } from '@scure/base'
 import { openData, sealData } from '@algorandfoundation/react-native-keystore'
 import type { KeychainStorage } from '@algorandfoundation/react-native-keystore'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import type { PeraMigrationContext } from './types'
 import type { LiftedMaterial } from './canary13'
 
@@ -40,7 +41,7 @@ import type { LiftedMaterial } from './canary13'
 export const placeSecrets = (
     lifted: readonly LiftedMaterial[],
     seeded: readonly (readonly [string, Uint8Array])[] = [],
-): Map<string, Uint8Array> | undefined => {
+): Optional<Map<string, Uint8Array>> => {
     const placements = new Map<string, Uint8Array>(
         seeded.map(([id, bytes]) => [id, bytes]),
     )
@@ -60,7 +61,7 @@ export const placeSecrets = (
  * the heap for the length of a record; leaving them there outlives the reason
  * they were read.
  */
-export const wipeBytes = (bytes: Uint8Array | undefined): void => {
+export const wipeBytes = (bytes: Optional<Uint8Array>): void => {
     bytes?.fill(0)
 }
 
@@ -86,7 +87,7 @@ export const sealAndVerify = async (
     // A write that landed as garbage throws inside `openData` rather than
     // comparing unequal, and the two are the same condition to every caller —
     // so both surface as one message rather than a JSON parse error.
-    let reopened: string | undefined
+    let reopened: Optional<string>
     try {
         const written = storage.getString(key)
         reopened =
@@ -130,7 +131,7 @@ export const holdsSameMaterial = async (
  * meant to own.
  */
 export const createJournal = (storage: KeychainStorage) => {
-    const priors = new Map<string, string | undefined>()
+    const priors = new Map<string, Optional<string>>()
 
     return {
         set: (key: string, value: string): void => {

@@ -23,6 +23,7 @@ import {
     type ContactFormValues,
     type NewContact,
 } from '@perawallet/wallet-core-contacts'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 import { trackEvent, ContactsEvent } from '@analytics'
 import { contactFamilyOf } from '../utils/contactFamily'
@@ -44,7 +45,7 @@ export const useAddContactForm = (): UseAddContactFormResult => {
     const prefillAddress = route.params?.address ?? ''
     const prefillName = route.params?.label ?? ''
     const family = contactFamilyOf(route.params?.chainId)
-    const initialContact = useMemo<NewContact | null>(() => {
+    const initialContact = useMemo<Nullable<NewContact>>(() => {
         if (!prefillAddress && !prefillName) return null
         return { addresses: { [family]: prefillAddress }, name: prefillName }
     }, [family, prefillAddress, prefillName])

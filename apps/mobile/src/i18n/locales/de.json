@@ -291,6 +291,7 @@
             "title": "Transaktionen",
             "empty_body": "Keine Transaktionen gefunden",
             "empty_on_network_body": "Noch keine Transaktionen auf {{network}}",
+            "network_failed": "Transaktionen auf {{networks}} konnten nicht geladen werden",
             "offline_empty_title": "Du bist offline",
             "offline_empty_body": "Auf diesem Gerät sind noch keine Transaktionen gespeichert. Sie erscheinen, sobald du wieder online bist.",
             "search_paused_body": "Keine Transaktionen im jüngsten Verlauf gefunden.",
@@ -325,7 +326,8 @@
             "suspicious_title": "Verdächtiges ASA",
             "suspicious_description": "Dieses ASA wurde vom Pera ASA-Verifizierungsprogramm als verdächtig markiert.",
             "learn_more": "Mehr über die ASA-Verifizierung erfahren"
-        }
+        },
+        "copy_full_amount_hint": "Lange drücken, um den vollen Betrag zu kopieren"
     },
     "accounts": {
         "legacyQuantum": {
@@ -458,6 +460,7 @@
         "hide_wallet_structure": "Wallet-Struktur ausblenden",
         "scan_new_addresses": "Neue Adressen scannen",
         "scan_new_accounts": "Neue {{network}}-Konten scannen",
+        "scan_new_wallet_accounts": "Nach neuen Konten scannen",
         "universal_wallet_subtitle": "Eine Wiederherstellungsphrase, alle Netzwerke",
         "viewing": "Aktuell",
         "wallet_label": "Wallet Nr. {{number}}",
@@ -2224,7 +2227,15 @@
             "no_new_addresses_title": "Keine neuen Adressen gefunden",
             "no_new_addresses_body": "Wir konnten keine weiteren, mit diesem Wallet verbundenen Adressen finden.",
             "rekey_scan_failed_title": "Rekeyed Konten konnten nicht geprüft werden",
-            "rekey_scan_failed_body": "Dein Konto wurde importiert. Wir konnten nicht prüfen, ob andere Konten darauf rekeyed sind — du kannst den Scan in den Einstellungen wiederholen."
+            "rekey_scan_failed_body": "Dein Konto wurde importiert. Wir konnten nicht prüfen, ob andere Konten darauf rekeyed sind — du kannst den Scan in den Einstellungen wiederholen.",
+            "rekey_rescan_failed_body": "Wir konnten nicht prüfen, ob andere Konten auf dieses Wallet rekeyed sind. Scanne erneut, um es noch einmal zu versuchen.",
+            "rescan_found_title": "Scan abgeschlossen",
+            "rescan_found_body_one": "1 Konto wurde hinzugefügt oder aktualisiert.",
+            "rescan_found_body_other": "{{count}} Konten wurden hinzugefügt oder aktualisiert.",
+            "rescan_partial_title": "Scan unvollständig",
+            "rescan_partial_body": "Einige Prüfungen konnten nicht abgeschlossen werden. Bisher gefundene Konten wurden hinzugefügt. Scanne erneut, um den Rest zu finden.",
+            "rescan_failed_title": "Konten konnten nicht gescannt werden",
+            "rescan_failed_body": "Prüfe deine Verbindung und versuche es erneut."
         },
         "create_account": {
             "processing": "Dein Wallet wird eingerichtet...",

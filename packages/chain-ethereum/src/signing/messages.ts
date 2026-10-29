@@ -38,7 +38,10 @@ import {
     type SignedMessage,
     type SigningRequest,
 } from '@perawallet/wallet-core-chain-contract'
-import { decodePrintableUtf8 } from '@perawallet/wallet-core-shared'
+import {
+    decodePrintableUtf8,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
 import {
     CannotSignError,
     type MessagePlanContext,
@@ -126,7 +129,7 @@ const readPersonalSign = (payload: unknown): EthereumPersonalSignPayload => {
 
 const MALFORMED_TYPED_DATA = 'The typed-data message payload is malformed'
 
-export const parseDomainChainId = (chainId: unknown): bigint | undefined => {
+export const parseDomainChainId = (chainId: unknown): Optional<bigint> => {
     if (chainId === undefined) return undefined
     if (
         typeof chainId !== 'number' &&

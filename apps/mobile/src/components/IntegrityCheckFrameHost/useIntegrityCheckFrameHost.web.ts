@@ -24,6 +24,7 @@ import {
     requestIntegrityEnrolment,
     type IntegrityEnrolReason,
 } from '@perawallet/wallet-core-browser-runtime'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useNetworkStatus } from '@hooks/useNetworkStatusStore'
 import { useShowOnboarding } from '@hooks/useShowOnboarding'
 import { useIsOnboarding } from '@modules/onboarding'
@@ -43,9 +44,9 @@ const isConfiguredCheckUrl = (url: string): boolean => {
 
 export type UseIntegrityCheckFrameHostResult = {
     /** The URL to frame, null while there is no frame to show. */
-    url: string | null
+    url: Nullable<string>
     isExpanded: boolean
-    iframeRef: RefObject<HTMLIFrameElement | null>
+    iframeRef: RefObject<Nullable<HTMLIFrameElement>>
     /** Not now: hides the dialog, leaving the attempt and its host port alive for Verify. */
     dismiss: () => void
 }
@@ -69,7 +70,7 @@ export const useIntegrityCheckFrameHost =
             dismiss,
             undismiss,
         } = useIntegrityCheckFrameStore()
-        const iframeRef = useRef<HTMLIFrameElement | null>(null)
+        const iframeRef = useRef<Nullable<HTMLIFrameElement>>(null)
         const wasOnboarding = useRef(isOnboarding)
         const isOnboardingNow = useRef(isOnboarding)
         const isOnlineNow = useRef(hasInternet)

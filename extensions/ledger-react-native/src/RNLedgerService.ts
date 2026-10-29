@@ -51,7 +51,7 @@ interface NativePeraBluetooth {
     requestEnable(): Promise<boolean>
 }
 
-const getNativeBluetoothModule = (): NativePeraBluetooth | null =>
+const getNativeBluetoothModule = (): Nullable<NativePeraBluetooth> =>
     requireOptionalNativeModule<NativePeraBluetooth>('PeraBluetooth')
 
 /**

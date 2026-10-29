@@ -23,6 +23,7 @@ import {
     type DerivedAccount,
 } from '@perawallet/wallet-core-chain-contract'
 import { kmsCore } from '@perawallet/wallet-core-kms'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import type {
     SecureBackupAccount,
     SecureBackupEnvelope,
@@ -61,7 +62,7 @@ export type ImportFromSeed = (params: {
     /** Raw 32- or 64-byte ed25519 key from the backup. */
     privateKey: Uint8Array
     /** Persisted after the import when set. */
-    name?: string | null
+    name?: Nullable<string>
 }) => Promise<WalletAccount>
 
 /** The chain-specific halves of a backup restore; registered by the chain package. */
@@ -91,30 +92,30 @@ export interface BackupChainAdapter {
     serializeAccount(
         account: WalletAccount,
         context: { updatedAt: number; hd?: BackupHdContext },
-    ): AddressBackupPayload | null
+    ): Nullable<AddressBackupPayload>
     /**
      * Decodes an address item's wire `type` into the local key it restores;
      * `undefined` for an item that holds no local key (watch, hardware,
      * multisig, a bare seed) and for a chain kind this chain doesn't define.
      */
-    localKindOf(type: BackupItemKind): BackupLocalKind | undefined
+    localKindOf(type: BackupItemKind): Optional<BackupLocalKind>
     /**
      * Decodes an address item's wire `type` into the kind id the chain's
      * accounts adapter gives the account it restores (`kindIdOf`), which its
      * presentation describes; `undefined` for an item that isn't an account
      * (a bare seed).
      */
-    kindIdOf(type: BackupItemKind): AccountKindId | undefined
+    kindIdOf(type: BackupItemKind): Optional<AccountKindId>
     /** The secrets item a single-key local account's recovery phrase is stored as; `null` for any other account. */
     serializeMnemonicSecret(
         account: WalletAccount,
         mnemonic: string,
-    ): SecretsBackupPayload | null
+    ): Nullable<SecretsBackupPayload>
     /**
      * The id one backup state is kept under for every account the same
      * recovery phrase restores; `null` for an account without one.
      */
-    mnemonicBackupKeyId(account: WalletAccount): string | null
+    mnemonicBackupKeyId(account: WalletAccount): Nullable<string>
     /** Imports one account from its raw ed25519 key and marks it backed up. */
     useImportFromSeed(): ImportFromSeed
     /**
@@ -124,7 +125,7 @@ export interface BackupChainAdapter {
     decodePrivateKey(
         raw: string,
         options?: { allowCommaSeparated?: boolean },
-    ): Uint8Array | null
+    ): Nullable<Uint8Array>
     readonly secureBackup: {
         /** Words in the recovery phrase that opens a secure backup. */
         readonly recoveryWordCount: number
@@ -161,4 +162,4 @@ export const backupSeedReference = (
 export const backupItemKindId = (
     type: BackupItemKind,
     chainId: ChainId,
-): AccountKindId | undefined => backupAdapterFor(chainId).kindIdOf(type)
+): Optional<AccountKindId> => backupAdapterFor(chainId).kindIdOf(type)

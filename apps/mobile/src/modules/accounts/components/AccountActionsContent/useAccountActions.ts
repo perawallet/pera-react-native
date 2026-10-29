@@ -19,7 +19,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { useContacts, type Contact } from '@perawallet/wallet-core-contacts'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useCapability } from '@hooks/useCapability'
@@ -92,7 +92,7 @@ export const useAccountActions = ({
     )
 
     const openSendFrom = useCallback(
-        (sender: WalletAccount | undefined) => {
+        (sender: Optional<WalletAccount>) => {
             // The send runs on the selected account's chain.
             if (sender) setSelectedAccountId(sender.id)
             const sendFundsStore = useSendFundsStore.getState()

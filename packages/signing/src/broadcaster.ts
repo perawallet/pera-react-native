@@ -115,10 +115,10 @@ export interface BroadcasterChainAdapter {
     deriveSubmissionAttemptFromBytes(
         bytesList: readonly Uint8Array[],
     ): DerivedSubmissionAttempt
-    setOnConfirmedHandler(handler: OnConfirmedHandler | null): void
+    setOnConfirmedHandler(handler: Nullable<OnConfirmedHandler>): void
     setSubmissionSettledHandler(
         flow: SubmissionFlow,
-        handler: SubmissionSettledHandler | null,
+        handler: Nullable<SubmissionSettledHandler>,
     ): void
     /**
      * The error a submit fails with when there is no answer within
@@ -154,13 +154,13 @@ export const deriveSubmissionAttemptFromBytes = (
 
 export const setOnConfirmedHandler = (
     chainId: ChainId,
-    handler: OnConfirmedHandler | null,
+    handler: Nullable<OnConfirmedHandler>,
 ) => broadcasterChainAdapters.get(chainId).setOnConfirmedHandler(handler)
 
 export const setSubmissionSettledHandler = (
     chainId: ChainId,
     flow: SubmissionFlow,
-    handler: SubmissionSettledHandler | null,
+    handler: Nullable<SubmissionSettledHandler>,
 ) =>
     broadcasterChainAdapters
         .get(chainId)

@@ -14,6 +14,7 @@ import {
     FAILURE_SIGN_REQUEST_STATUSES,
     type SignRequestStatus,
 } from '@perawallet/wallet-core-multisig'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 export type StatusBannerVariant =
     | 'waiting'
@@ -29,7 +30,7 @@ export type StatusBannerVariant =
  * would promise a submission that can never happen.
  */
 export const getStatusBannerVariant = (
-    status: SignRequestStatus | null,
+    status: Nullable<SignRequestStatus>,
     isFailureWithinRecoveryWindow = false,
     isUndeliverable = false,
 ): StatusBannerVariant => {

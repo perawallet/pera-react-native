@@ -12,6 +12,7 @@
 
 import { useCallback } from 'react'
 import { File } from 'expo-file-system'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 export type PickedBackupFile = {
     name: string
@@ -28,7 +29,7 @@ export type UsePickBackupFileResult = {
      * When `isPopupHandoff` is true this never picks anything: it opens the
      * expanded tab and resolves `null`.
      */
-    pickFile: () => Promise<PickedBackupFile | null>
+    pickFile: () => Promise<Nullable<PickedBackupFile>>
     /**
      * True only in the browser extension's toolbar popup, where `pickFile`
      * hands off to the expanded tab instead of picking. Callers use it to
@@ -44,7 +45,9 @@ export type UsePickBackupFileResult = {
  * instead drives a hidden `<input type="file">` + `FileReader`.
  */
 export const usePickBackupFile = (): UsePickBackupFileResult => {
-    const pickFile = useCallback(async (): Promise<PickedBackupFile | null> => {
+    const pickFile = useCallback(async (): Promise<
+        Nullable<PickedBackupFile>
+    > => {
         // With an options object the picker reports any failure as canceled too.
         const picked = await File.pickFileAsync({ mimeTypes: 'text/plain' })
         if (picked.canceled) return null

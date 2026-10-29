@@ -11,7 +11,8 @@
  */
 
 import { type DisplayableAsset } from '@perawallet/wallet-core-assets'
-import type { Optional } from '@perawallet/wallet-core-shared'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import {
     AssetSelectorContent,
     type AssetSelectorBaseProps,
@@ -28,6 +29,8 @@ export type AssetSelectorProps = AssetSelectorBaseProps &
         | {
               /** Pre-resolved asset, bypassing `useAssetsQuery`. */
               asset: Optional<DisplayableAsset>
+              /** The asset's chain; null draws it as a token. */
+              chainId: Nullable<ChainId>
               /** Label shown next to the icon (e.g. token symbol). */
               label: string
               /** Direct logo URL, forwarded to `AssetIcon`. */

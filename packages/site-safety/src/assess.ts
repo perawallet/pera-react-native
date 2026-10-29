@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, type Optional } from '@perawallet/wallet-core-shared'
 import {
     findAllowedDomains,
     findImpersonationTargetDomains,
@@ -51,9 +51,7 @@ const generationsKeyOf = (generations: ActiveGenerations): string =>
 
 // The allow list and look-alike targets change only with a new copy of the
 // lists, so they are read once per copy rather than on every check.
-let cachedListContext:
-    | { key: string; context: Promise<ListContext> }
-    | undefined
+let cachedListContext: Optional<{ key: string; context: Promise<ListContext> }>
 
 const listContextFor = (
     key: string,
@@ -80,7 +78,7 @@ const listContextFor = (
 const findListedHost = async (
     hosts: readonly SiteHost[],
     generations: ActiveGenerations,
-): Promise<SiteHost | undefined> => {
+): Promise<Optional<SiteHost>> => {
     for (const host of hosts) {
         const { denied, allowed } = await findListedDomains({
             generations,
@@ -95,7 +93,7 @@ const findListedHost = async (
 // lists a site's verdict cannot change, so it is reused until the copy does.
 const MAX_CACHED_VERDICTS = 500
 const cachedVerdicts = new Map<string, SiteSafetyVerdict>()
-let cachedVerdictsKey: string | undefined
+let cachedVerdictsKey: Optional<string>
 
 const rememberVerdict = (
     generationsKey: string,

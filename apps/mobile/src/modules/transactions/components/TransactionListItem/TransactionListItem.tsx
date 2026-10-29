@@ -11,11 +11,13 @@
  */
 
 import { memo } from 'react'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { PWListItemLayout, PWText, PWView } from '@components/core'
 import { ChainNotice } from '@components/ChainNotice'
 import { CurrencyAmount } from '@components/CurrencyAmount'
 import { TransactionIcon } from '@components/TransactionIcon'
 import { useLanguage } from '@hooks/useLanguage'
+import { ChainLabel } from '@modules/assets'
 import { useStyles } from './styles'
 import {
     useTransactionListItem,
@@ -23,9 +25,15 @@ import {
 } from './useTransactionListItem'
 import type { AmountDisplay } from './amounts'
 
-export type TransactionListItemProps = UseTransactionListItemParams
+export type TransactionListItemProps = UseTransactionListItemParams & {
+    /** Labels the row with its network, on a list that mixes them. */
+    networkChainId?: ChainId
+}
 
-const TransactionListItemView = (props: TransactionListItemProps) => {
+const TransactionListItemView = ({
+    networkChainId,
+    ...props
+}: TransactionListItemProps) => {
     const { id } = 'record' in props ? props.record : props.transaction
     const styles = useStyles()
     const { t } = useLanguage()
@@ -64,11 +72,13 @@ const TransactionListItemView = (props: TransactionListItemProps) => {
                 <PWView style={styles.amountContainer}>
                     {amounts.map((amount, index) => (
                         <CurrencyAmount
+                            chainId={amount.chainId}
                             key={index}
                             value={amount.value}
                             currency={amount.currency}
                             assetId={amount.assetId}
                             precision='compact'
+                            assetDecimals={amount.decimals}
                             prefix={amount.prefix}
                             showSymbol
                             symbolPosition='end'
@@ -102,6 +112,12 @@ const TransactionListItemView = (props: TransactionListItemProps) => {
                     >
                         {subtitle}
                     </PWText>
+                )}
+                {networkChainId && (
+                    <ChainLabel
+                        chainId={networkChainId}
+                        style={styles.network}
+                    />
                 )}
                 {notice && (
                     <ChainNotice

@@ -11,11 +11,12 @@
  */
 
 import { create } from 'zustand'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 type IntegrityCheckFrameState = {
-    url: string | null
+    url: Nullable<string>
     /** Epoch milliseconds. */
-    deadlineAt: number | null
+    deadlineAt: Nullable<number>
     /** The check page asks to be shown: an interactive challenge waits for a click. */
     isExpanded: boolean
     // The frame is gone but the host port stays held until the worker ends

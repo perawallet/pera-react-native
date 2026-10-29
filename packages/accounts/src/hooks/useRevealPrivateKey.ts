@@ -12,6 +12,7 @@
 
 import { BACKUP_ACCESS_DOMAIN, useKMS } from '@perawallet/wallet-core-kms'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { accountsChainAdapters } from '../chain-adapter'
 import { standaloneSecretOf } from '../credentials/accessors'
 import { PrivateKeyRevealUnsupportedError } from '../errors'
@@ -26,7 +27,7 @@ export type UseRevealPrivateKeyResult = {
     revealPrivateKey: (
         accountId: string,
         authenticate: () => Promise<boolean>,
-    ) => Promise<Uint8Array | null>
+    ) => Promise<Nullable<Uint8Array>>
 }
 
 export const useRevealPrivateKey = (): UseRevealPrivateKeyResult => {

@@ -36,7 +36,7 @@ import { resolveSwapRouteAssets } from './resolveSwapRouteAssets'
 export type UseSwapScreenResult = {
     /** Null when the selected account is on no chain that has swap. */
     scope: Nullable<ChainScope>
-    initialPayAmount: SwapFormInitialPayAmount | undefined
+    initialPayAmount: Optional<SwapFormInitialPayAmount>
     accountPicker: AccountDrawerPickerProps
 }
 

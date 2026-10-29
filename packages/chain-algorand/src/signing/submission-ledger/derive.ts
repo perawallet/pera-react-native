@@ -11,7 +11,7 @@
  */
 
 import { decodeSignedTransaction } from 'algosdk'
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, type Optional } from '@perawallet/wallet-core-shared'
 import type { DerivedSubmissionAttempt } from '@perawallet/wallet-core-signing'
 import { algorandSubmissionChainData } from './chain-data'
 
@@ -21,7 +21,7 @@ import { algorandSubmissionChainData } from './chain-data'
  * check and leaves the row with a window the reconciler can never evaluate —
  * an open row nothing can ever settle.
  */
-export const toRound = (value: unknown): number | undefined => {
+export const toRound = (value: unknown): Optional<number> => {
     if (value === undefined || value === null) return undefined
     const round = Number(value)
     return Number.isFinite(round) ? round : undefined
@@ -37,7 +37,7 @@ export const deriveSubmissionAttemptFromBytes = (
     bytesList: readonly Uint8Array[],
 ): DerivedSubmissionAttempt => {
     const txIds: string[] = []
-    let lastValid: number | undefined
+    let lastValid: Optional<number>
 
     for (const bytes of bytesList) {
         try {

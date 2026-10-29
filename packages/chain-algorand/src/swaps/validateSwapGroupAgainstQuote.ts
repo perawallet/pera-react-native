@@ -12,7 +12,11 @@
 
 import type { Decimal } from 'decimal.js'
 import type { SwapQuote } from '@perawallet/wallet-core-swaps'
-import { AppError, ErrorCategory } from '@perawallet/wallet-core-shared'
+import {
+    AppError,
+    ErrorCategory,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
 import { algorandDescriptor, isAlgorandNativeAssetId } from '../descriptor'
 import type { PeraDisplayableTransaction } from '../blockchain/models/algosdk-shapes'
 
@@ -37,7 +41,7 @@ const toBig = (value: bigint | number | undefined): bigint => {
 }
 
 /** Ceil a base-unit Decimal to a bigint upper bound (never under-bounds). */
-const ceilToBig = (value: Decimal | undefined): bigint =>
+const ceilToBig = (value: Optional<Decimal>): bigint =>
     value ? BigInt(value.ceil().toFixed(0)) : 0n
 
 /**

@@ -34,6 +34,7 @@ export const PrecomputedPreferredAmount = ({
         <CurrencyAmount
             currency={preferredCurrency}
             assetId={assetId}
+            chainId={currencyScope.chainId}
             isFiat={isFiatCurrency(assetId)}
             value={value}
             {...displayProps}

@@ -28,6 +28,7 @@ import {
     formatRelativeTime,
     formatTimeRemaining,
     truncateAlgorandAddress,
+    type Nullable,
 } from '@perawallet/wallet-core-shared'
 import type { IconName } from '@components/core'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
@@ -45,7 +46,7 @@ type UseMultisigSignInboxItemResult = {
     statusKey: I18nKey
     signedCount: number
     threshold: number
-    timeRemaining: string | null
+    timeRemaining: Nullable<string>
 }
 
 /**

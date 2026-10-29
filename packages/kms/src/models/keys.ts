@@ -11,6 +11,7 @@
  */
 
 import type { Key } from '@algorandfoundation/keystore-core'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { KeyManagementError } from '../errors'
 
 export const AccessControlPermission = {
@@ -110,7 +111,7 @@ export const SECP256K1_DERIVED_KEY_TYPE = 'hd-derived-secp256k1'
 export const SECP256K1_IMPORTED_KEY_TYPE = 'secp256k1'
 export const SECP256K1_KEY_ALGORITHM = 'ECDSA-secp256k1'
 
-export const isSecp256k1Key = (key: Key | undefined): boolean =>
+export const isSecp256k1Key = (key: Optional<Key>): boolean =>
     key?.type === SECP256K1_DERIVED_KEY_TYPE ||
     key?.type === SECP256K1_IMPORTED_KEY_TYPE
 

@@ -20,6 +20,7 @@ import {
     type HardwareSigningOperation,
 } from '@perawallet/wallet-core-signing'
 import { ledgerAppNameFor } from '@perawallet/wallet-core-hardware-wallet'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import {
     getLedgerErrorPresetByKind,
@@ -40,7 +41,7 @@ type HardwareSigningStatus =
  * is a straight projection — no extra timing logic.
  */
 const deriveStatus = (
-    snapshot: HardwareChildSnapshot | null,
+    snapshot: Nullable<HardwareChildSnapshot>,
 ): HardwareSigningStatus => {
     if (!snapshot) return 'idle'
     if (snapshot.matches('error')) return 'error'
@@ -54,13 +55,13 @@ const deriveStatus = (
 export type UseLedgerSigningContentResult = {
     isVisible: boolean
     status: HardwareSigningStatus
-    deviceName: string | null
-    currentTx: number | null
-    totalTxs: number | null
+    deviceName: Nullable<string>
+    currentTx: Nullable<number>
+    totalTxs: Nullable<number>
     operation: HardwareSigningOperation
-    error: LedgerErrorPreset | null
+    error: Nullable<LedgerErrorPreset>
     /** The device app the signing chain opens; null outside a hardware signing. */
-    ledgerAppName: string | null
+    ledgerAppName: Nullable<string>
     onCancel: () => void
     onRetry: () => void
     isTroubleshootingVisible: boolean
@@ -131,7 +132,7 @@ export const useLedgerSigningContent = (): UseLedgerSigningContentResult => {
         [signingChainId],
     )
 
-    const error = useMemo<LedgerErrorPreset | null>(() => {
+    const error = useMemo<Nullable<LedgerErrorPreset>>(() => {
         if (!errorPayload || !ledgerAppName) return null
         return getLedgerErrorPresetByKind(
             errorPayload.kind,

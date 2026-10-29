@@ -13,6 +13,7 @@
 import { sha256 } from '@noble/hashes/sha2.js'
 import { wordlist } from '@scure/bip39/wordlists/english.js'
 import { InvalidKeyDataError } from '@algorandfoundation/keystore-core'
+import type { Optional } from '@perawallet/wallet-core-shared'
 
 const BITS_PER_BYTE = 8
 const BITS_PER_WORD = 11
@@ -85,7 +86,7 @@ export const bip39SeedFromEntropy = async (
         )
     }
     const indices = entropyToIndices(entropy)
-    let mnemonic: Uint8Array<ArrayBuffer> | undefined
+    let mnemonic: Optional<Uint8Array<ArrayBuffer>>
     try {
         mnemonic = indicesToUtf8Bytes(indices)
         const key = await subtle.importKey('raw', mnemonic, 'PBKDF2', false, [

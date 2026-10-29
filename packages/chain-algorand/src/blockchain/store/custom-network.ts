@@ -26,6 +26,7 @@ import {
     type CustomNetwork,
     type CustomNodeAdapter,
 } from '@perawallet/wallet-core-chain-shared'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { ALGORAND_CHAIN_ID } from '../../chain-id'
 import { fetchGenesisFromNode } from '../utils/fetchGenesisFromNode'
 import { algorandScope } from '../../network-id'
@@ -35,7 +36,7 @@ export type AlgorandCustomNetwork = CustomNetwork & CustomNetworkConfig
 /** Returns the stored entry itself, so it is a stable selector. */
 export const selectAlgorandCustomNetwork = (
     state: Parameters<typeof selectCustomNetwork>[0],
-): AlgorandCustomNetwork | undefined => {
+): Optional<AlgorandCustomNetwork> => {
     const entry = selectCustomNetwork(state, LEGACY_CHAIN_ID, CUSTOM_NETWORK_ID)
     return entry !== undefined && isCustomNetworkConfig(entry)
         ? entry
@@ -43,7 +44,7 @@ export const selectAlgorandCustomNetwork = (
 }
 
 /** Non-hook read, for the client factories and resolvers that run outside React. */
-export const getCustomNetworkConfig = (): AlgorandCustomNetwork | undefined =>
+export const getCustomNetworkConfig = (): Optional<AlgorandCustomNetwork> =>
     selectAlgorandCustomNetwork(useNetworkStore.getState())
 
 /**

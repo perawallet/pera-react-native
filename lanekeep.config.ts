@@ -5,12 +5,14 @@
 import { defineConfig } from 'lanekeep'
 
 import amountTypes from './lanekeep/rules/amount-types.js'
+import catalogVersions from './lanekeep/rules/catalog-versions.js'
 import conformanceWorkflowPaths from './lanekeep/rules/conformance-workflow-paths.js'
 import copyrightHeader from './lanekeep/rules/copyright-header.js'
 import domSpecEnvironment from './lanekeep/rules/dom-spec-environment.js'
 import errorParamsMatchCopy from './lanekeep/rules/error-params-match-copy.js'
 import localeKeyParity from './lanekeep/rules/locale-key-parity.js'
 import localePlaceholderSuffix from './lanekeep/rules/locale-placeholder-suffix.js'
+import nativeExactPins from './lanekeep/rules/native-exact-pins.js'
 import noAlgorandAccountVocabulary from './lanekeep/rules/no-algorand-account-vocabulary.js'
 import noAlgorandTermsInChainNeutralPackages from './lanekeep/rules/no-algorand-terms-in-chain-neutral-packages.js'
 import noAssertionlessTest from './lanekeep/rules/no-assertionless-test.js'
@@ -46,6 +48,7 @@ import pqLibrarySeam from './lanekeep/rules/pq-library-seam.js'
 import secp256k1LibrarySeam from './lanekeep/rules/secp256k1-library-seam.js'
 import secretBufferZeroed from './lanekeep/rules/secret-buffer-zeroed.js'
 import specFileSuffix from './lanekeep/rules/spec-file-suffix.js'
+import specImportsOwnSrc from './lanekeep/rules/spec-imports-own-src.js'
 import submissionSeam from './lanekeep/rules/submission-seam.js'
 import translationKeyExists from './lanekeep/rules/translation-key-exists.js'
 import vitestPoolConfig from './lanekeep/rules/vitest-pool-config.js'
@@ -53,8 +56,10 @@ import vitestPoolConfig from './lanekeep/rules/vitest-pool-config.js'
 export default defineConfig({
     // Every TS/JS file in the repo, plus Python (the e2e harness). A rule about
     // shipped source narrows itself with lanekeep/shared/scope.ts; the
-    // repo-wide rules need tests and tooling in view.
-    include: ['**/*.{ts,tsx,mts,cts,js,jsx,mjs,cjs,py}'],
+    // repo-wide rules need tests and tooling in view. pnpm-workspace.yaml is
+    // here only as catalog-versions' anchor; it reads the manifests and the
+    // lockfile from beside it.
+    include: ['**/*.{ts,tsx,mts,cts,js,jsx,mjs,cjs,py}', 'pnpm-workspace.yaml'],
     // lanekeep also skips gitignored files on top of the excludes below, so a generated
     // file like packages/config/src/generated-env.ts can match `include` and still never
     // appear here — expected, not a glob bug.
@@ -128,9 +133,12 @@ export default defineConfig({
         domSpecEnvironment,
         noWorkspaceRequireInTests,
         vitestPoolConfig,
+        specImportsOwnSrc,
         amountTypes,
         noSecretInLogs,
         secretBufferZeroed,
         conformanceWorkflowPaths,
+        nativeExactPins,
+        catalogVersions,
     ],
 })

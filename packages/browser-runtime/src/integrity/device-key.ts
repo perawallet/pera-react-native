@@ -14,6 +14,7 @@ import {
     networkTierForMode,
     type WalletMode,
 } from '@perawallet/wallet-core-chain-contract'
+import type { Optional, Nullable } from '@perawallet/wallet-core-shared'
 
 export const INSTALL_KEY_DB_NAME = 'pera-integrity'
 
@@ -79,9 +80,8 @@ const enrolmentRecordKey = (deployment: WalletMode): string =>
  * always exportable, which is why exportInstallPublicKey below works.
  */
 const loadOrGenerateInstallKey = async (): Promise<CryptoKeyPair> => {
-    const stored = await withStore<CryptoKeyPair | undefined>(
-        'readonly',
-        store => store.get(RECORD_KEY),
+    const stored = await withStore<Optional<CryptoKeyPair>>('readonly', store =>
+        store.get(RECORD_KEY),
     )
     if (stored?.privateKey && stored?.publicKey) return stored
 
@@ -99,7 +99,7 @@ const loadOrGenerateInstallKey = async (): Promise<CryptoKeyPair> => {
 // and the exported public key no longer matches the signing key. Cleared on
 // settle so a failed generation stays retryable and clearInstallKey stays
 // effective on the next call.
-let inFlightInstallKey: Promise<CryptoKeyPair> | null = null
+let inFlightInstallKey: Nullable<Promise<CryptoKeyPair>> = null
 
 export const getOrCreateInstallKey = (): Promise<CryptoKeyPair> => {
     if (inFlightInstallKey) return inFlightInstallKey
@@ -131,11 +131,11 @@ export const getInstallKeyId = async (): Promise<string> => {
 
 export const getEnrolmentMarker = async (
     deployment: WalletMode,
-): Promise<EnrolmentMarker | null> => {
+): Promise<Nullable<EnrolmentMarker>> => {
     const stored = await withStore<unknown>('readonly', store =>
         store.get(enrolmentRecordKey(deployment)),
     )
-    const marker = stored as Partial<EnrolmentMarker> | undefined
+    const marker = stored as Optional<Partial<EnrolmentMarker>>
     return typeof marker?.kid === 'string' &&
         typeof marker.enrolledAt === 'string'
         ? { kid: marker.kid, enrolledAt: marker.enrolledAt }

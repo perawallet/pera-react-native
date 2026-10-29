@@ -160,6 +160,7 @@ const ETHEREUM_METHODS = [
     'eth_sendTransaction',
     'personal_sign',
     'eth_signTypedData_v4',
+    'eth_signTypedData',
     'wallet_switchEthereumChain',
     'wallet_sendCalls',
     'eth_accounts',
@@ -168,6 +169,11 @@ const ETHEREUM_METHODS = [
     'wallet_getCapabilities',
     'wallet_getCallsStatus',
     'wallet_showCallsStatus',
+    'eth_sign',
+    'eth_signTypedData_v3',
+    'eth_signTransaction',
+    'eth_sendRawTransaction',
+    'wallet_getPermissions',
 ]
 
 const IN_APP_ORIGIN: ConnectionOrigin = { source: 'in-app' }
@@ -326,7 +332,7 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
         it('Given an eip155-only proposal, when the sheet opens, then only the Ethereum account is listed and Connect approves its checksummed address', async () => {
             await mountProvider()
             // The approved methods are the requested ones the wallet lists, so
-            // the dApp asks for the whole set and the two it must never get.
+            // the dApp asks for the whole set and two Pera never lists.
             const walletKit = await propose({
                 requiredNamespaces: {
                     eip155: {
@@ -339,8 +345,8 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                     eip155: {
                         chains: [ETH_MAINNET],
                         methods: [
-                            'eth_signTransaction',
-                            'eth_sendRawTransaction',
+                            'wallet_addEthereumChain',
+                            'wallet_watchAsset',
                         ],
                         events: [],
                     },
@@ -401,14 +407,35 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
             ).toEqual(['algorand', 'ethereum'])
         })
 
-        it('Given a settled eip155 session, when the dApp calls methods the wallet does not list, then they are refused with 4200 without a review and eth_chainId is answered', async () => {
+        it('Given a proposal requiring eth_sign and eth_signTypedData_v3, when the user connects, then the session lists both but Settings grants only eth_sendTransaction, and calls to them, eth_signTransaction, eth_sendRawTransaction, wallet_getPermissions and the unlisted wallet_addEthereumChain are answered 4200 without a review while eth_chainId is answered', async () => {
             await mountProvider()
-            const walletKit = await propose(
-                eip155Namespace('requiredNamespaces'),
-            )
+            const walletKit = await propose({
+                requiredNamespaces: {
+                    eip155: {
+                        chains: [ETH_MAINNET],
+                        methods: [
+                            'eth_sendTransaction',
+                            'eth_sign',
+                            'eth_signTypedData_v3',
+                        ],
+                        events: [],
+                    },
+                },
+            })
             await selectRows(ETHEREUM_ACCOUNT)
             await connect(walletKit)
 
+            expect(approvedNamespaces(walletKit).eip155.methods).toEqual([
+                'eth_sendTransaction',
+                'eth_sign',
+                'eth_signTypedData_v3',
+            ])
+            // What Settings lists as granted: never the refused eth_sign.
+            const record =
+                await getProvider().connections.store.get(V2_SESSION_TOPIC)
+            expect(captured.registry!.methodsFor(record!)).toEqual([
+                'eth_sendTransaction',
+            ])
             const send = (id: number, method: string) =>
                 act(() => {
                     walletKit.emit(
@@ -421,26 +448,28 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                         }),
                     )
                 })
-            send(1, 'wallet_addEthereumChain')
-            send(2, 'eth_signTransaction')
-            send(3, 'eth_chainId')
+            send(1, 'eth_sign')
+            send(2, 'eth_signTypedData_v3')
+            send(3, 'eth_signTransaction')
             send(4, 'eth_sendRawTransaction')
-            send(5, 'eth_sign')
+            send(5, 'wallet_getPermissions')
+            send(6, 'wallet_addEthereumChain')
+            send(7, 'eth_chainId')
 
             await waitFor(() => {
-                expect(walletKit.respondSessionRequest).toHaveBeenCalledTimes(5)
+                expect(walletKit.respondSessionRequest).toHaveBeenCalledTimes(7)
             })
             const answers = new Map(
                 (walletKit.respondSessionRequest as Mock).mock.calls.map(
                     ([{ response }]) => [response.id, response],
                 ),
             )
-            for (const id of [1, 2, 4, 5]) {
+            for (const id of [1, 2, 3, 4, 5, 6]) {
                 expect(answers.get(id)).toMatchObject({
                     error: { code: 4200 },
                 })
             }
-            expect(answers.get(3)).toMatchObject({ result: '0x1' })
+            expect(answers.get(7)).toMatchObject({ result: '0x1' })
             expect(pendingSignRequests()).toHaveLength(0)
         })
 
@@ -513,6 +542,32 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                 })
                 const request = await queued()
                 // The broadcaster leg is pinned by the chain's own spec.
+                await act(async () => {
+                    await request.approve([], { txIds: [HASH] })
+                })
+
+                await waitFor(() => {
+                    expect(answerOf(walletKit)).toMatchObject({
+                        id: 7,
+                        result: HASH,
+                    })
+                })
+            })
+
+            it('Given messageSigning is off for Ethereum, when a valid request is approved with a submitted hash, then the dApp still receives that hash', async () => {
+                setCapabilityOverrides(
+                    { dappConnect: true, messageSigning: false },
+                    'ethereum',
+                )
+                const walletKit = await settle()
+
+                sendTransaction(walletKit, {
+                    from: CHECKSUMMED_ETH_ADDRESS,
+                    to: RECIPIENT,
+                    value: '0x1',
+                    gasPrice: '0x3b9aca00',
+                })
+                const request = await queued()
                 await act(async () => {
                     await request.approve([], { txIds: [HASH] })
                 })

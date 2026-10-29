@@ -27,6 +27,7 @@ import {
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { isTrustedWebviewOrigin } from '@modules/webview/hooks/handlers'
+import { webViewScript } from '@modules/webview/utils/webViewScript'
 import { getDisplayHost } from './getDisplayHost'
 import {
     SOCIAL_MEDIA_APP_PROBES,
@@ -166,7 +167,7 @@ export const useWebViewNavigationGuard = ({
                     installedSocialApps.current[socialDeeplink.service] = false
                     if (isWebUrl) {
                         webviewRef?.current?.injectJavaScript(
-                            `window.location.assign(${JSON.stringify(url)});true;`,
+                            webViewScript`window.location.assign(${url});true;`,
                         )
                     }
                 })

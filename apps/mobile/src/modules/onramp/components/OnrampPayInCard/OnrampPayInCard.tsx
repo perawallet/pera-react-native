@@ -27,7 +27,7 @@ export type OnrampPayInCardProps = {
     /** Optional memo/destination tag some chains require alongside the address. */
     payInAddressTag?: Nullable<string>
     /** "{amount} {SRC}" subtext (e.g. "1 SOL"), or null to hide it. */
-    sendToAddressAmount: Nullable<string>
+    sendToAddressAmountLabel: Nullable<string>
     /** Source token logo rendered in the QR center, or null when unavailable. */
     sourceLogo: Nullable<string>
     /** Renders the "Cancel Order" action when provided. */
@@ -38,7 +38,7 @@ export type OnrampPayInCardProps = {
 export const OnrampPayInCard = ({
     payInAddress,
     payInAddressTag,
-    sendToAddressAmount,
+    sendToAddressAmountLabel,
     sourceLogo,
     onCancel,
     isCancelling = false,
@@ -55,13 +55,13 @@ export const OnrampPayInCard = ({
             >
                 {t('onramp.order_review.pay_in_address')}
             </PWText>
-            {sendToAddressAmount !== null && (
+            {sendToAddressAmountLabel !== null && (
                 <PWText
                     variant='footnoteMedium'
                     style={styles.cardSubtext}
                 >
                     {t('onramp.order_review.send_to_address', {
-                        amount: sendToAddressAmount,
+                        amount: sendToAddressAmountLabel,
                     })}
                 </PWText>
             )}

@@ -13,7 +13,11 @@
 import { z } from 'zod'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { buildIntegrityHeaders } from '@perawallet/wallet-core-app-integrity'
-import { partition, queryClient } from '@perawallet/wallet-core-shared'
+import {
+    partition,
+    queryClient,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import { eip155ChainIdOf } from '../blockchain/utils/caip19'
 import type { EvmChain } from '../chains/types'
 
@@ -39,7 +43,7 @@ const requestShouldRefresh = async (
     scope: ChainScope,
     chain: EvmChain,
     addresses: string[],
-    lastBlock: number | null,
+    lastBlock: Nullable<number>,
 ): Promise<ShouldRefreshResponse> => {
     const { data } = await queryClient<unknown>({
         backend: 'pera',
@@ -67,7 +71,7 @@ export const fetchShouldRefresh = async (
     scope: ChainScope,
     chain: EvmChain,
     addresses: string[],
-    lastBlock: number | null,
+    lastBlock: Nullable<number>,
 ): Promise<ShouldRefreshResponse> => {
     const answers = await Promise.all(
         partition(addresses, SHOULD_REFRESH_MAX_ADDRESSES).map(part =>

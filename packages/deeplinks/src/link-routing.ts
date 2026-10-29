@@ -11,6 +11,7 @@
  */
 
 import type { ChainId, NetworkId } from '@perawallet/wallet-core-chain-contract'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { linkTargetOf, type AnyParsedDeeplink } from './links'
 import type { ChainDeeplinkIntent, ChainLinkTarget } from './models'
 import { peraLinkChainFailure } from './pera-link-chain'
@@ -33,7 +34,7 @@ export const isUnsupportedChainLink = (url: string): boolean => {
  * The chain that recognised the link but refuses what it asks for (an EIP-681
  * `approve`), so the caller can say so instead of calling it "not a link".
  */
-export const unsupportedActionChainOf = (url: string): ChainId | undefined => {
+export const unsupportedActionChainOf = (url: string): Optional<ChainId> => {
     const resolution = resolveChainDeeplink(url)
     return resolution.status === 'failed' &&
         resolution.reason === 'unsupported-action'
@@ -52,7 +53,7 @@ export type AddressCandidates = { address: string; chainIds: ChainId[] }
  */
 export const addressCandidatesOf = (
     url: string,
-): AddressCandidates | undefined => {
+): Optional<AddressCandidates> => {
     const resolution = resolveChainDeeplink(url)
     if (resolution.status !== 'resolved') return undefined
     const intents = resolution.intents.filter(
@@ -75,7 +76,7 @@ export const addressCandidatesOf = (
 export const linkNetworkMismatchOf = (
     link: AnyParsedDeeplink,
     selectedNetworkOf: (chainId: ChainId) => NetworkId,
-): ChainLinkTarget | undefined => {
+): Optional<ChainLinkTarget> => {
     const target = linkTargetOf(link)
     if (!target?.networkId) return undefined
     return target.networkId === selectedNetworkOf(target.chainId)

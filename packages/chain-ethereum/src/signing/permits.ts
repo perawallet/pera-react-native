@@ -17,6 +17,7 @@ import type {
     SpendAllowance,
     SpendApproval,
 } from '@perawallet/wallet-core-chain-contract'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { areEvmAddressesEqual } from '../accounts/address-codec'
 import { toEvmNftAssetId } from '../blockchain/utils/caip19'
 import type { EvmChain } from '../chains/types'
@@ -119,7 +120,7 @@ const matches = (
     )
 
 // WalletConnect JSON-parses the payload, so a uint arrives as a string or number.
-const toUint = (value: unknown): bigint | undefined => {
+const toUint = (value: unknown): Optional<bigint> => {
     if (
         typeof value !== 'bigint' &&
         typeof value !== 'number' &&
@@ -135,7 +136,7 @@ const toUint = (value: unknown): bigint | undefined => {
     }
 }
 
-const toAddress = (value: unknown): string | undefined =>
+const toAddress = (value: unknown): Optional<string> =>
     typeof value === 'string' && isAddress(value, { strict: false })
         ? getAddress(value)
         : undefined
@@ -146,7 +147,7 @@ type TokenAllowance = Omit<SpendAllowance, 'assetRef'> & { assetId: string }
 const toAllowance = (
     token: unknown,
     amount: unknown,
-): TokenAllowance | undefined => {
+): Optional<TokenAllowance> => {
     const assetId = toAddress(token)
     const base = toUint(amount)
     if (assetId === undefined || base === undefined) return undefined
@@ -171,9 +172,9 @@ const toNftAllowance = (
 
 type Parsed = {
     spender: unknown
-    allowances: (TokenAllowance | undefined)[]
+    allowances: Optional<TokenAllowance>[]
     /** Unix seconds; undefined when a deadline can't be read. */
-    expiry: bigint | undefined
+    expiry: Optional<bigint>
 }
 
 const parsePermit = (
@@ -247,7 +248,7 @@ const parsePermit2 = (
         allowances: records.map(entry =>
             toAllowance(entry.token, entry.amount),
         ),
-        expiry: expiries.reduce<bigint | undefined>((latest, expiry) => {
+        expiry: expiries.reduce<Optional<bigint>>((latest, expiry) => {
             if (latest === undefined || expiry === undefined) {
                 return undefined
             }
@@ -256,7 +257,7 @@ const parsePermit2 = (
     }
 }
 
-const parseTypedData = (typedData: TypedDataDefinition): Parsed | undefined => {
+const parseTypedData = (typedData: TypedDataDefinition): Optional<Parsed> => {
     const { primaryType, message, domain } = typedData as {
         primaryType: string
         message: Record<string, unknown>
@@ -314,7 +315,7 @@ export const spendApprovalOf = (
     typedData: TypedDataDefinition,
     now: number,
     chain: EvmChain,
-): SpendApproval | undefined => {
+): Optional<SpendApproval> => {
     try {
         const parsed = parseTypedData(typedData)
         const spender = parsed && toAddress(parsed.spender)

@@ -19,7 +19,7 @@ import {
     isEnrolledAsync,
     supportedAuthenticationTypesAsync,
 } from 'expo-local-authentication'
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import type {
     BiometricArmResult,
     BiometricAvailability,
@@ -41,7 +41,7 @@ interface NativePeraBiometricBinding {
     checkBinding(): Promise<string>
     clearBinding(): Promise<void>
     getAvailability(): Promise<string>
-    armBinding(): Promise<{ blob: string; tokenHash: string } | null>
+    armBinding(): Promise<Nullable<{ blob: string; tokenHash: string }>>
     beginUnwrap(prompt: { title: string; cancelLabel: string }): Promise<void>
     finishUnwrap(blob: string): Promise<Uint8Array>
     cancelUnwrap(): Promise<void>
@@ -60,7 +60,7 @@ const asAvailability = (status: string): BiometricAvailability =>
         ? (status as BiometricAvailability)
         : 'unknown'
 
-const getBindingModule = (): NativePeraBiometricBinding | null =>
+const getBindingModule = (): Nullable<NativePeraBiometricBinding> =>
     requireOptionalNativeModule<NativePeraBiometricBinding>(
         'PeraBiometricBinding',
     )
@@ -96,7 +96,7 @@ const UNWRAP_FAILURE_REASONS = [
 const mapUnwrapFailureReason = (
     error: unknown,
 ): BiometricUnwrapFailureReason => {
-    const code = (error as { code?: unknown } | null)?.code
+    const code = (error as Nullable<{ code?: unknown }>)?.code
     return UNWRAP_FAILURE_REASONS.find(reason => reason === code) ?? 'unknown'
 }
 
@@ -204,7 +204,7 @@ export class RNBiometricsService implements BiometricsService {
         }
     }
 
-    async armBiometricBinding(): Promise<BiometricArmResult | null> {
+    async armBiometricBinding(): Promise<Nullable<BiometricArmResult>> {
         const module = getBindingModule()
         if (!module) return null
         try {

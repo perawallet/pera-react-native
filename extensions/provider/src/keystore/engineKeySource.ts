@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import type { Nullable } from '@perawallet/wallet-core-shared'
+
 /**
  * Supplies the raw 32-byte vault master key, or throws when the vault is
  * locked. Registered by the web shell rather than imported: this package
@@ -22,7 +24,7 @@
  */
 export type EngineKeySource = () => Promise<Uint8Array>
 
-let source: EngineKeySource | null = null
+let source: Nullable<EngineKeySource> = null
 
 export const setEngineKeySource = (next: EngineKeySource): void => {
     source = next

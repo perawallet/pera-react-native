@@ -23,6 +23,7 @@ import {
     useNetworkStore,
 } from '@perawallet/wallet-core-chain-shared'
 import type { CustomNetworkConfig } from '@perawallet/wallet-core-config'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { useQueryClient } from '@tanstack/react-query'
 import { isValidEndpoint } from '@modules/settings'
 
@@ -55,9 +56,7 @@ const BLANK_DRAFT: CustomNetworkDraft = {
     genesisId: '',
 }
 
-const toDraft = (
-    config: CustomNetworkConfig | undefined,
-): CustomNetworkDraft =>
+const toDraft = (config: Optional<CustomNetworkConfig>): CustomNetworkDraft =>
     config === undefined
         ? { ...BLANK_DRAFT }
         : {

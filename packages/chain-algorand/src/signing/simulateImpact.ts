@@ -11,6 +11,7 @@
  */
 
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import {
     asAlgosdkTransaction,
     createWalletAlgorandClient,
@@ -36,7 +37,7 @@ type SimulateResponseLike = {
 }
 
 const collectInner = (
-    pending: PendingTxnLike[] | undefined,
+    pending: Optional<PendingTxnLike[]>,
 ): PeraTransaction[] => {
     const out: PeraTransaction[] = []
     for (const node of pending ?? []) {
@@ -63,7 +64,7 @@ const collectInner = (
  * decoded top-level group.
  */
 export const flattenSimulatedInnerTransactions = (
-    response: SimulateResponseLike | undefined,
+    response: Optional<SimulateResponseLike>,
 ): PeraDisplayableTransaction[] => {
     const inner: PeraTransaction[] = []
     for (const group of response?.txnGroups ?? []) {

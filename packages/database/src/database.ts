@@ -15,6 +15,7 @@ import type {
     Database,
     DatabaseService,
 } from '@perawallet/wallet-extension-platform'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { runMigrations, type MigrationRecovery } from './migrator'
 import { migrations } from './migrations'
 
@@ -22,7 +23,7 @@ export type { Database }
 
 const DATABASE_NAME = 'pera.db'
 
-let instance: Database | null = null
+let instance: Nullable<Database> = null
 
 // The submission ledger, its batches and the reviews that approved them are
 // the only tables not rebuilt by a resync: losing them strands in-flight

@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import type { Nullable } from '@perawallet/wallet-core-shared'
+
 export type BiometricType = 'face' | 'fingerprint' | 'biometrics' | null
 
 /**
@@ -192,7 +194,7 @@ export interface BiometricsService {
      * user present, such as the legacy import. Resolves null when no key could
      * be created. Idempotent: it destroys any existing binding first.
      */
-    armBiometricBinding(): Promise<BiometricArmResult | null>
+    armBiometricBinding(): Promise<Nullable<BiometricArmResult>>
     /**
      * Releases the unlock token, which requires a real biometric ceremony
      * against the Secure Enclave or TEE. Returns the token rather than a

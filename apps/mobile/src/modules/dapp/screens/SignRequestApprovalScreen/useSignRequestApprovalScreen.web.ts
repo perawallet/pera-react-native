@@ -21,7 +21,7 @@ import {
     type SignRequest,
 } from '@perawallet/wallet-core-signing'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
-import { AppError } from '@perawallet/wallet-core-shared'
+import { AppError, type Nullable } from '@perawallet/wallet-core-shared'
 import {
     enqueueInboundRequest,
     isConnectionAlive,
@@ -45,8 +45,8 @@ import { useDappRequest } from '../../hooks/useDappRequest.web'
 
 type UseSignRequestApprovalScreenResult = {
     isLoading: boolean
-    error: string | null
-    request: SignRequest | null
+    error: Nullable<string>
+    request: Nullable<SignRequest>
     origin: string
     dismiss: () => void
 }
@@ -80,7 +80,7 @@ export const useSignRequestApprovalScreen =
             state => state.readiness,
         )
         const enqueuedRef = useRef(false)
-        const [error, setError] = useState<string | null>(null)
+        const [error, setError] = useState<Nullable<string>>(null)
 
         useEffect(() => {
             if (enqueuedRef.current) return

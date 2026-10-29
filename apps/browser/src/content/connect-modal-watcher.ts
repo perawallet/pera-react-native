@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { CONNECT_MODAL_WRAPPER_ID } from './connect-modal-uri'
 import { injectExtensionRow } from './connect-modal-row'
 
@@ -52,7 +53,7 @@ export const installConnectModalWatcher = ({
         })
     }
 
-    let observer: MutationObserver | null = null
+    let observer: Nullable<MutationObserver> = null
     const attach = (): void => {
         try {
             observer = new MutationObserver(scheduleProcess)

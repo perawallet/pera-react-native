@@ -37,6 +37,7 @@ export const CardTransactionDetailHeader = ({
                 {title}
             </PWText>
             <CurrencyAmount
+                chainId={null}
                 value={transaction.amountInTransactionCurrency.abs()}
                 currency={transaction.transactionCurrency}
                 assetId={null}

@@ -33,6 +33,7 @@ import {
 import {
     isConnectivityError,
     isPeraNetworkError,
+    type Maybe,
 } from '@perawallet/wallet-core-shared'
 import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
 import { useLanguage } from '@hooks/useLanguage'
@@ -71,7 +72,7 @@ export const resolveCardErrorCopy = (
     error: unknown,
     scope: ChainScope,
     apiError?: CardApiError,
-): CardErrorCopy | null | undefined => {
+): Maybe<CardErrorCopy> => {
     if (error instanceof UserRejectedSigningError) return null
     if (isTimeoutError(error)) {
         return {

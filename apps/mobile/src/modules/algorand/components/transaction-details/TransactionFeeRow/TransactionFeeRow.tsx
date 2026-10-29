@@ -34,6 +34,7 @@ export const TransactionFeeRow = ({ transaction }: TransactionFeeRowProps) => {
             title={t('transactions.common.fee')}
         >
             <AssetAmount
+                chainId={scope.chainId}
                 asset={nativeAsset}
                 value={baseUnitsToDisplayUnits(
                     transaction.fee ?? 0n,

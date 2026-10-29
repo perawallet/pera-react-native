@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import type {
     HardwareWalletDerivedAccount,
     HardwareWalletTransport,
@@ -104,7 +104,7 @@ export const discoverAccounts = async (
         onProgress?.(index)
 
         if (probe) {
-            let exists: boolean | null = null
+            let exists: Nullable<boolean> = null
             try {
                 exists = await probe(account.address)
             } catch (error) {

@@ -12,9 +12,10 @@
 
 import { useCallback } from 'react'
 import * as ImagePicker from 'expo-image-picker'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 export type UseImagePickerResult = {
-    pickFromGallery: () => Promise<string | null>
+    pickFromGallery: () => Promise<Nullable<string>>
 }
 
 /**

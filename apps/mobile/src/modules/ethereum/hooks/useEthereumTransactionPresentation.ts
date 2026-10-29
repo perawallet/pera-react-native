@@ -31,6 +31,7 @@ import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
     baseUnitsToDisplayUnits,
     type Nullable,
+    type Optional,
 } from '@perawallet/wallet-core-shared'
 import type { IconName } from '@components/core'
 import { transactionIconName } from '@components/TransactionIcon'
@@ -235,7 +236,7 @@ export const useEthereumTransactionPresentation = (
             (view.kind === 'token-transfer' || view.kind === 'nft-transfer') &&
             isTokenLoading
 
-        let amount: EthereumAmount | undefined
+        let amount: Optional<EthereumAmount>
         if (view.kind === 'transfer') {
             amount = toEther(view.value)
         } else if (tokenValue) {

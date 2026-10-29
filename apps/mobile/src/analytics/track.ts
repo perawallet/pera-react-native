@@ -16,6 +16,7 @@ import {
     createBaseLogger,
     type LogEventFn,
 } from '@perawallet/wallet-core-device'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import type { AnalyticsEventName } from './events/event-names'
 import type { AnalyticsScreenName } from './events/screen-names'
 import type {
@@ -51,7 +52,7 @@ export type TrackScreenFn = (
 const createTrackEvent =
     (log: LogEventFn): TrackEventFn =>
     (name: AnalyticsEventName, payload?: EventPayload): void => {
-        log(name, payload as Record<string, unknown> | undefined)
+        log(name, payload as Optional<Record<string, unknown>>)
     }
 
 const createTrackScreen =

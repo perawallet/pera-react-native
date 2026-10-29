@@ -18,12 +18,13 @@ import {
 import type { LegacyAccount } from '@perawallet/wallet-extension-platform'
 import type { MigratedAccountPair } from './types'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import type { Optional } from '@perawallet/wallet-core-shared'
 
 /** The address a migrated account holds on the chain Pera 6 data belongs to. */
 export const migratedAddressOf = (
     account: WalletAccount,
     chainId: ChainId,
-): string | undefined => chainAccountOf(account, chainId)?.address
+): Optional<string> => chainAccountOf(account, chainId)?.address
 
 export const addKeylessAccountToStore = (
     account: WalletAccount,

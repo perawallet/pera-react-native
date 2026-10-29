@@ -12,6 +12,7 @@
 
 import { useCallback, useRef } from 'react'
 import { CHART_FOCUS_DEBOUNCE_TIME } from '@constants/ui'
+import type { Optional, Nullable } from '@perawallet/wallet-core-shared'
 
 type ChartPointerEvent = {
     pointerIndex: number
@@ -22,13 +23,13 @@ type ChartPointerEvent = {
 // reports the focused data item (or null when the pointer leaves) at most once
 // per CHART_FOCUS_DEBOUNCE_TIME.
 export const useChartPointerFocus = <T>(
-    data: T[] | undefined,
-    onSelectionChanged: (item: T | null) => void,
+    data: Optional<T[]>,
+    onSelectionChanged: (item: Nullable<T>) => void,
 ): ((event: ChartPointerEvent) => void) => {
     // Refs, not state: gifted-charts samples the pointer on every touch move,
     // so throttle bookkeeping in state re-rendered the chart (and the screen
     // above it) at the sample rate and re-created this callback each time.
-    const lastSentIndex = useRef<number | undefined>(undefined)
+    const lastSentIndex = useRef<Optional<number>>(undefined)
     const lastSentTime = useRef(0)
 
     return useCallback(

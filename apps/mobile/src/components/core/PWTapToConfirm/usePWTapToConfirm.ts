@@ -22,6 +22,7 @@ import {
     type AnimatedStyle,
 } from 'react-native-reanimated'
 import { TAP_TO_CONFIRM_ANIMATION_DURATION } from '@constants/ui'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 // Matches the disabled root's opacity so the wait reads as "not yet pressable".
 const WAITING_LABEL_OPACITY = 0.7
@@ -72,8 +73,8 @@ export const usePWTapToConfirm = ({
     // what lets that second tap through in the first place.
     const isArmedRef = useRef(false)
     const lastTapAtRef = useRef(0)
-    const disarmTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-    const readyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+    const disarmTimerRef = useRef<Nullable<ReturnType<typeof setTimeout>>>(null)
+    const readyTimerRef = useRef<Nullable<ReturnType<typeof setTimeout>>>(null)
     const armedProgress = useSharedValue(0)
     const waitProgress = useSharedValue(0)
     const fillProgress = useSharedValue(0)

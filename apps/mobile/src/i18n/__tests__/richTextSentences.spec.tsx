@@ -14,6 +14,7 @@ import React from 'react'
 import { Decimal } from 'decimal.js'
 import i18next, { type i18n } from 'i18next'
 import { Trans } from 'react-i18next'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { describe, it, expect } from 'vitest'
 import { render, screen } from '@test-utils/render'
 import { PWText } from '@components/core'
@@ -59,6 +60,7 @@ const SwapSentences = ({
                 components={[
                     <AssetAmount
                         key='balance'
+                        chainId={LEGACY_CHAIN_ID}
                         asset={{
                             assetId: '31566704',
                             unitName: 'USDC',
