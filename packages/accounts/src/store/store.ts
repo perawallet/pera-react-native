@@ -729,6 +729,19 @@ const removeUnreferencedKeys = async (
 }
 
 /**
+ * Removes each key no stored account references and no running flow claims:
+ * every flow deriving a key for an account claims it, as it stores the account
+ * only after deriving.
+ */
+export const removeUnclaimedKeys = (
+    keyPairIds: readonly string[],
+): Promise<void> =>
+    removeUnreferencedKeys(
+        useAccountsStore.getState().accounts,
+        keyPairIds.filter(id => !isKeyClaimed(id)),
+    )
+
+/**
  * `draft` with an entry, enabled as `'created'`, on each default chain it is
  * eligible for and lacks. A chain whose entry can't be resolved, or whose
  * address another account holds, is left off; the draft is never written.
@@ -1190,13 +1203,6 @@ export const useAccountsStore: UseBoundStore<
             discoverWalletAccounts: (walletId, options = {}) =>
                 queuedFor(`wallet:${walletId}`, () =>
                     trackWalk(async () => {
-                        // Every flow deriving a key for an account claims it,
-                        // as it stores the account only after deriving.
-                        const removeUnclaimedKeys = (keyPairIds: string[]) =>
-                            removeUnreferencedKeys(
-                                get().accounts,
-                                keyPairIds.filter(id => !isKeyClaimed(id)),
-                            )
                         let probed: ProbedHdIndex[] = []
                         // Only the probes read the root key; the adds derive
                         // through the keystore, so it is zeroed before them.

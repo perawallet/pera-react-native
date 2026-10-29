@@ -19,6 +19,7 @@ import {
     canSignProgram,
     findAccountByAddressOn,
     findAccountByAnyChainAddress,
+    findEntryHolder,
     getAccountDisplayName,
     hasSigningKeys,
     isHardwareWalletAccount,
@@ -413,5 +414,32 @@ describe('utils - address lookups', () => {
     test('falls back to string equality on a chain without a codec', () => {
         expect(isSameAddress(OTHER_CHAIN_ID, 'abc', 'abc')).toBe(true)
         expect(isSameAddress(OTHER_CHAIN_ID, 'abc', 'ABC')).toBe(false)
+    })
+
+    test("finds the stored account holding any entry of the candidate, on that entry's own chain", () => {
+        const candidate = buildTestAccount(TEST_CUSTODY.watch, {
+            [FAKE_CHAIN_ID]: { address: 'CANDIDATE_FAKE' },
+            [OTHER_CHAIN_ID]: { address: 'CANDIDATE_OTHER' },
+        })
+        const holdsOtherEntryOnly = buildTestAccount(TEST_CUSTODY.watch, {
+            [OTHER_CHAIN_ID]: { address: 'CANDIDATE_OTHER' },
+        })
+        const unrelated = testAccount('watch', 'UNRELATED')
+
+        expect(
+            findEntryHolder([unrelated, holdsOtherEntryOnly], candidate),
+        ).toBe(holdsOtherEntryOnly)
+        expect(findEntryHolder([unrelated], candidate)).toBeUndefined()
+    })
+
+    test('does not match an address another chain holds', () => {
+        const candidate = buildTestAccount(TEST_CUSTODY.watch, {
+            [FAKE_CHAIN_ID]: { address: 'SHARED_ADDRESS' },
+        })
+        const onOtherChain = buildTestAccount(TEST_CUSTODY.watch, {
+            [OTHER_CHAIN_ID]: { address: 'SHARED_ADDRESS' },
+        })
+
+        expect(findEntryHolder([onOtherChain], candidate)).toBeUndefined()
     })
 })
