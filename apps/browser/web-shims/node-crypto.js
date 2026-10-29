@@ -143,8 +143,7 @@ export function createHmac(algorithm, key) {
 
 const SUBTLE_DIGEST_BY_HASH = { sha512: 'SHA-512', sha256: 'SHA-256' }
 
-// hasOwn, not `in` or a bare lookup: the digest name comes from the caller, so
-// `constructor` must miss rather than resolve to Object.prototype's.
+// hashName comes from the caller, so a prototype key such as `constructor` must miss.
 function subtleDigestOf(hashName) {
     return Object.hasOwn(SUBTLE_DIGEST_BY_HASH, hashName)
         ? SUBTLE_DIGEST_BY_HASH[hashName]
