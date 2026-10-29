@@ -26,6 +26,7 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
     }
 })
 
+import { clearAllStores } from '@perawallet/wallet-core-shared'
 import {
     useDraftSignRequestStore,
     deleteDraftSignRequest,
@@ -74,6 +75,14 @@ describe('useDraftSignRequestStore', () => {
         expect(draft?.rawTransactionsBase64).toEqual(['rawTx0base64'])
         expect(draft?.proposeType).toBe('async')
         expect(draft?.createdAt).toBeInstanceOf(Date)
+    })
+
+    it('is emptied by a wipe', () => {
+        useDraftSignRequestStore.getState().createDraft(baseInput())
+
+        clearAllStores()
+
+        expect(useDraftSignRequestStore.getState().drafts).toEqual({})
     })
 
     it('createDraft returns a unique id per call', () => {
