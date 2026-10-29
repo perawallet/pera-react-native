@@ -35,7 +35,7 @@ vi.mock('@perawallet/wallet-core-transactions', () => ({
 
 vi.mock('@modules/transactions/hooks', () => ({
     useClaimAssets: () => ({
-        accountAddress: 'ACCOUNT_ADDR',
+        accountAddress: undefined,
         setAccountAddress: mockSetAccountAddress,
         setAssetRequests: mockSetAssetRequests,
     }),
