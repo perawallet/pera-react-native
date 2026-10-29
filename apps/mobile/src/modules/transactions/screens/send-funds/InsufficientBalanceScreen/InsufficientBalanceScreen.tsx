@@ -18,7 +18,7 @@ import {
     type RouteProp,
 } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
-import type { SendFundsStackParamList } from '../../../routes/send-funds/types'
+import type { SendFundsStackParamList } from '@modules/transactions/routes/send-funds/types'
 import { useCallback } from 'react'
 
 export const InsufficientBalanceScreen = () => {

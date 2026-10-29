@@ -19,9 +19,9 @@ export const useStyles = makeStyles(theme => ({
     },
     // Half-gap on each cell's inner edge -> xl between columns, outer edges flush.
     gridColumnLeft: {
-        paddingRight: theme.spacing.xl / 2,
+        paddingRight: theme.spacing.md,
     },
     gridColumnRight: {
-        paddingLeft: theme.spacing.xl / 2,
+        paddingLeft: theme.spacing.md,
     },
 }))

@@ -16,7 +16,7 @@ export const useStyles = makeStyles(theme => ({
     separator: {
         height: theme.borders.sm,
         backgroundColor: theme.colors.layerGrayLighter,
-        // Inset to align with the title: icon width (sm = xxl) + row gap (md).
+        // lanekeep-ignore-next-line pera/no-numeric-sizes reason: aligns with the title, past the icon width (sm = xxl) and the row gap (md)
         marginLeft: theme.spacing.xxl + theme.spacing.md,
     },
 }))

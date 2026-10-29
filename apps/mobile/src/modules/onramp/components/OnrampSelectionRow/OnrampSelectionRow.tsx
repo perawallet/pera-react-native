@@ -66,6 +66,7 @@ export const OnrampSelectionRow = ({
                 {isLoading ? (
                     <PWSkeleton
                         width={skeletonWidth}
+                        // lanekeep-ignore-next-line pera/no-numeric-sizes reason: value skeleton line height
                         height={20}
                     />
                 ) : (

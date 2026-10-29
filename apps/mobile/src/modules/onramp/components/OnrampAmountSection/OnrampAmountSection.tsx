@@ -98,7 +98,9 @@ export const OnrampAmountSection = (props: OnrampAmountSectionProps) => {
                     />
                 ) : isReceiveLoading ? (
                     <PWSkeleton
+                        // lanekeep-ignore-next-line pera/no-numeric-sizes reason: amount skeleton width
                         width={120}
+                        // lanekeep-ignore-next-line pera/no-numeric-sizes reason: amount skeleton height
                         height={28}
                     />
                 ) : (

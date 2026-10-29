@@ -17,6 +17,7 @@ export const useStyles = makeStyles(theme => ({
     listSeparator: {
         height: theme.borders.sm,
         backgroundColor: theme.colors.layerGrayLighter,
+        // lanekeep-ignore-next-line pera/no-numeric-sizes reason: thumbnail width (3xl) plus the row gap (md)
         marginLeft: theme.spacing['3xl'] + theme.spacing.md,
     },
 }))

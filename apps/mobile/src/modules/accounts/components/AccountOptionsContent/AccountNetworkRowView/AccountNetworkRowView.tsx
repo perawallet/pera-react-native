@@ -20,13 +20,14 @@ import {
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import { ChainIcon, chainUiFor } from '@modules/chain-ui'
-import type { AccountChainSectionProps } from '../../../types/account-options-display'
+import type { AccountChainSectionProps } from '@modules/accounts/types/account-options-display'
 import { useStyles } from './styles'
 import type {
     AccountNetworkRow,
     UseAccountNetworksResult,
 } from '../useAccountNetworks'
 
+// lanekeep-ignore-next-line pera/no-numeric-sizes reason: network icon size (40)
 const CHAIN_ICON_SIZE = 40
 
 const useNoExpandedSection = (_props: AccountChainSectionProps) => false

@@ -13,7 +13,7 @@
 import { PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { ProjectVerificationIcon } from '@modules/projects'
-import { type FlaggedRequestAddress } from '../../../hooks/useRequestAddressSafety'
+import { type FlaggedRequestAddress } from '@modules/signing/hooks/useRequestAddressSafety'
 import { useStyles } from '../styles'
 import { ROLE_LABEL_KEYS } from '../roleLabelKeys'
 

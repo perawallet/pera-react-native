@@ -22,7 +22,7 @@ import {
     diffAddresses,
     KNOWN_LABEL_KEYS,
 } from '@modules/transactions'
-import { type FlaggedRequestAddress } from '../../../hooks/useRequestAddressSafety'
+import { type FlaggedRequestAddress } from '@modules/signing/hooks/useRequestAddressSafety'
 import { useStyles } from '../styles'
 import { ROLE_LABEL_KEYS } from '../roleLabelKeys'
 

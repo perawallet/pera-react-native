@@ -15,6 +15,7 @@ import { makeStyles } from '@rneui/themed'
 // Preserves the source aspect ratio of the Ledger searching animation
 // (~137×39) while rendering it at a legible size in the header — matches
 // the constrained content width (see CONTENT_MAX_WIDTH below).
+// lanekeep-ignore-next-line pera/no-numeric-sizes reason: scan animation width
 const ANIMATION_WIDTH = 300
 const ANIMATION_HEIGHT = Math.round((ANIMATION_WIDTH * 39) / 137)
 
@@ -23,6 +24,7 @@ const ANIMATION_HEIGHT = Math.round((ANIMATION_WIDTH * 39) / 137)
 // flex:1 content there spreads fixed-width elements (the header animation)
 // to the literal edges of the viewport instead of reading like a normal,
 // centered desktop page. A no-op in the 360px popup.
+// lanekeep-ignore-next-line pera/no-numeric-sizes reason: readable content column cap on wide screens
 const CONTENT_MAX_WIDTH = 480
 
 export const useStyles = makeStyles(theme => ({

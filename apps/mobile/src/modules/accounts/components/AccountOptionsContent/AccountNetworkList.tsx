@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { useTheme } from '@rneui/themed'
 import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { ChainIcon } from '@modules/chain-ui'
@@ -17,8 +18,6 @@ import { useStyles } from './styles'
 import type { UseAccountNetworksResult } from './useAccountNetworks'
 import { AccountNetworkRowView } from './AccountNetworkRowView'
 import { UnreachableChainsNoteRow } from './UnreachableChainsNoteRow'
-
-const STACKED_CHAIN_ICON_SIZE = 16
 
 export type AccountNetworkListProps = {
     networks: UseAccountNetworksResult
@@ -29,6 +28,7 @@ export const AccountNetworkList = ({
     networks,
     onClose,
 }: AccountNetworkListProps) => {
+    const { theme } = useTheme()
     const styles = useStyles()
     const { t } = useLanguage()
 
@@ -56,7 +56,7 @@ export const AccountNetworkList = ({
                             >
                                 <ChainIcon
                                     chainId={row.chainId}
-                                    size={STACKED_CHAIN_ICON_SIZE}
+                                    size={theme.spacing.lg}
                                 />
                             </PWView>
                         ))}

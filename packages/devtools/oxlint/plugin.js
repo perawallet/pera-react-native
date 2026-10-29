@@ -27,6 +27,7 @@ import { noDisplayStringIdentity } from './rules/no-display-string-identity.js'
 import { fetchHasDeadline } from './rules/fetch-has-deadline.js'
 import { testIdProp } from './rules/test-id-prop.js'
 import { preferToError } from './rules/prefer-to-error.js'
+import { noDeepRelativeImports } from './rules/no-deep-relative-imports.js'
 
 // A mobile-source rule needs its own override in apps/mobile/.oxlintrc.json:
 // oxlint resolves an inherited override's globs from the extending config's
@@ -51,5 +52,6 @@ export default {
         'fetch-has-deadline': fetchHasDeadline,
         'test-id-prop': testIdProp,
         'prefer-to-error': preferToError,
+        'no-deep-relative-imports': noDeepRelativeImports,
     },
 }

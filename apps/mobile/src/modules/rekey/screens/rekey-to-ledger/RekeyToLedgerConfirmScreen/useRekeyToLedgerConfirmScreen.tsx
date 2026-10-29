@@ -14,13 +14,13 @@ import { useRoute, type RouteProp } from '@react-navigation/native'
 import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { config } from '@perawallet/wallet-core-config'
 import { useAppNavigation } from '@hooks/useAppNavigation'
-import type { RekeyWarningCopy } from '../../../components/PreviousRekeyWarningSheet'
+import type { RekeyWarningCopy } from '@modules/rekey/components/PreviousRekeyWarningSheet'
 import {
     useRekeyConfirmScreen,
     type UseRekeyConfirmScreenResult,
-} from '../../../hooks/useRekeyConfirmScreen'
+} from '@modules/rekey/hooks/useRekeyConfirmScreen'
 
-import type { RekeyToLedgerStackParamList } from '../../../routes/rekey-to-ledger/types'
+import type { RekeyToLedgerStackParamList } from '@modules/rekey/routes/rekey-to-ledger/types'
 
 const WARNING_COPY: RekeyWarningCopy = {
     titleKey: i18nKey('rekey.to_ledger.confirm.replace_warning.title'),

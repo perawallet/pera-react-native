@@ -47,7 +47,7 @@ export const useStyles = makeStyles(theme => ({
     skeletonIcon: {
         height: theme.spacing.xxl,
         width: theme.spacing.xxl,
-        borderRadius: theme.spacing.xxl / 2,
+        borderRadius: theme.borderRadius.full,
     },
     skeletonText: {
         flex: 1,
