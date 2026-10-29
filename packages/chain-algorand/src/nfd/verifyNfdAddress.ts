@@ -11,7 +11,11 @@
  */
 
 import { z } from 'zod'
-import { decodeFromBase64, logger } from '@perawallet/wallet-core-shared'
+import {
+    decodeFromBase64,
+    logger,
+    toError,
+} from '@perawallet/wallet-core-shared'
 import { encodeAlgorandAddress } from '../blockchain'
 import { fetchNodeJson } from '../blockchain/utils/nodeHttp'
 import type {
@@ -133,7 +137,7 @@ export const verifyNfdAddress = async ({
         if (error instanceof Error && error.name === 'AbortError') throw error
         logger.warn('NFD verification unavailable', {
             name: normalizedName,
-            error: error instanceof Error ? error.message : String(error),
+            error: toError(error).message,
         })
         return 'unavailable'
     }

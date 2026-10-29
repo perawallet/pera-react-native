@@ -18,6 +18,7 @@ import {
     isDappUserRejection,
 } from '@perawallet/wallet-core-connections/dappRequest'
 import type { SerializedCredential } from '@perawallet/wallet-core-passkeys/webauthn'
+import { toError } from '@perawallet/wallet-core-shared'
 import {
     encodeSignedTransactions,
     isWireSignedSendOutcome,
@@ -64,10 +65,7 @@ const sendDecision = async (
         })
     } catch (cause) {
         // The worker died mid-send, or no listener remains to answer.
-        throw new ApprovalDeliveryError(
-            kind,
-            cause instanceof Error ? cause.message : String(cause),
-        )
+        throw new ApprovalDeliveryError(kind, toError(cause).message)
     }
     const ok =
         typeof response === 'object' &&

@@ -20,6 +20,7 @@ import {
     LimitExceededRpcError,
     NonceTooLowError,
 } from 'viem'
+import { toError } from '@perawallet/wallet-core-shared'
 import { EvmError, type EvmErrorParams } from './EvmError'
 import { EvmErrorCode } from './evmErrorCodes'
 
@@ -142,6 +143,6 @@ export const toEvmError = (error: unknown, nativeSymbol: string): EvmError => {
     return new EvmError(
         code,
         { ...params, symbol: nativeSymbol },
-        error instanceof Error ? error : new Error(String(error)),
+        toError(error),
     )
 }

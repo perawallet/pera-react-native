@@ -22,7 +22,7 @@ import {
     type ConnectionsControlCommand,
 } from '@perawallet/wallet-core-browser-runtime'
 import type { ConnectionPeer } from '@perawallet/wallet-extension-connections'
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, toError } from '@perawallet/wallet-core-shared'
 import { ensureOffscreenDocument } from './offscreen'
 
 export const CONNECTIONS_HEARTBEAT_ALARM = 'pera-connections-heartbeat'
@@ -166,8 +166,7 @@ export const installConnectionsApprovalRouter = ({
                 )
             })
             .catch((error: unknown) => {
-                const { name, message } =
-                    error instanceof Error ? error : new Error(String(error))
+                const { name, message } = toError(error)
                 reportOutcome({ ok: false, name, message })
                 // The bridge has settled and the window counts the send as
                 // handed off, so nothing else answers a send the host refused.

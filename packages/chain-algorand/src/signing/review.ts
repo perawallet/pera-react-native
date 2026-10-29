@@ -27,6 +27,7 @@ import {
 } from '@perawallet/wallet-core-signing'
 import { encodeAlgorandAddress, getExpectedGenesisHash } from '../blockchain'
 import { authorityOf } from '@perawallet/wallet-core-accounts'
+import { toError } from '@perawallet/wallet-core-shared'
 import { algorandAddressOf } from '../accounts/vocabulary'
 import { algorandNetworkOf } from '../network-id'
 import { assertTransactionsMatchNetwork } from './assertTransactionsMatchNetwork'
@@ -41,7 +42,7 @@ const toAnalysisError = (error: unknown): Error => {
     if (error instanceof TransactionRoundTripError) return error
     if (error instanceof GenesisHashMismatchError) return error
     return new AnalysisError(
-        error instanceof Error ? error.message : String(error),
+        toError(error).message,
         error instanceof Error ? error : undefined,
     )
 }
@@ -72,9 +73,7 @@ const algorandTransactionsOf = (
             read = readAlgorandTransaction(unsigned)
         } catch (error) {
             if (error instanceof GenesisHashMismatchError) throw error
-            return refuse(
-                error instanceof Error ? error.message : String(error),
-            )
+            return refuse(toError(error).message)
         }
         const sender = read.transaction.sender.toString()
         const senderAccount = context.accounts.find(
