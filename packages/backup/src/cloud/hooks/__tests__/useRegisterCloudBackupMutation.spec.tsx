@@ -212,4 +212,24 @@ describe('useRegisterCloudBackupMutation', () => {
         await waitFor(() => expect(onError).toHaveBeenCalled())
         expect(setRegistrationMock).not.toHaveBeenCalled()
     })
+
+    test('registers under the device it was called with when the device changes mid-request', async () => {
+        const { result, rerender } = renderHook(
+            () => useRegisterCloudBackupMutation(),
+            { wrapper: createWrapper() },
+        )
+
+        act(() => result.current.mutate())
+        deviceIdMock.mockReturnValue('device-456')
+        rerender()
+
+        await waitFor(() => expect(setRegistrationMock).toHaveBeenCalled())
+        expect(registerCloudBackupMock).toHaveBeenCalledWith(
+            expect.objectContaining({ deviceId: 'device-123' }),
+        )
+        expect(setRegistrationMock).toHaveBeenCalledWith(
+            expect.objectContaining({ deviceId: 'device-123' }),
+            SALT,
+        )
+    })
 })

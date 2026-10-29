@@ -10,8 +10,10 @@
  limitations under the License
  */
 
+import { useCallback } from 'react'
 import { useMutation, type UseMutationOptions } from '@tanstack/react-query'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useWalletDeployment } from '@perawallet/wallet-core-chain-shared'
 import { useDeploymentDeviceID } from '@perawallet/wallet-core-device'
 import {
@@ -37,6 +39,19 @@ export type RestoreCloudBackupVariables = {
     argon2id?: Argon2idConfig
 }
 
+// TanStack swaps a pending mutation's options on every render, so the device ID travels in the variables.
+type RestoreCloudBackupMutationVariables = RestoreCloudBackupVariables & {
+    deviceId: Nullable<string>
+}
+
+export type UseRestoreCloudBackupMutationResult = {
+    mutate: (variables: RestoreCloudBackupVariables) => void
+    mutateAsync: (
+        variables: RestoreCloudBackupVariables,
+    ) => Promise<RestoreCloudBackupResult>
+    isPending: boolean
+}
+
 /**
  * Pulls the remote backup for the phrase held in the restore draft and imports
  * it into the wallet. Rejects with a `CloudBackupRestoreError`; read its
@@ -47,9 +62,9 @@ export const useRestoreCloudBackupMutation = (
     options?: UseMutationOptions<
         RestoreCloudBackupResult,
         Error,
-        RestoreCloudBackupVariables
+        RestoreCloudBackupMutationVariables
     >,
-) => {
+): UseRestoreCloudBackupMutationResult => {
     const deployment = useWalletDeployment()
     const deviceId = useDeploymentDeviceID(deployment)
     const setConfigured = useCloudBackupStore(state => state.setConfigured)
@@ -64,12 +79,13 @@ export const useRestoreCloudBackupMutation = (
         useResolveSeedEntropyForBackup(scope.chainId),
     )
 
-    return useMutation({
+    const { mutate, mutateAsync, isPending } = useMutation({
         throwOnError: false,
         mutationFn: async ({
             salt,
             argon2id,
-        }: RestoreCloudBackupVariables): Promise<RestoreCloudBackupResult> => {
+            deviceId,
+        }: RestoreCloudBackupMutationVariables): Promise<RestoreCloudBackupResult> => {
             if (!deviceId) {
                 throw new Error('Device ID is unavailable')
             }
@@ -104,4 +120,17 @@ export const useRestoreCloudBackupMutation = (
         },
         ...options,
     })
+
+    const restore = useCallback(
+        (variables: RestoreCloudBackupVariables) =>
+            mutate({ ...variables, deviceId }),
+        [mutate, deviceId],
+    )
+    const restoreAsync = useCallback(
+        (variables: RestoreCloudBackupVariables) =>
+            mutateAsync({ ...variables, deviceId }),
+        [mutateAsync, deviceId],
+    )
+
+    return { mutate: restore, mutateAsync: restoreAsync, isPending }
 }
