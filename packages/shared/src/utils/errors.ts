@@ -40,7 +40,7 @@ export const toError = (e: unknown): Error =>
 const ALGORAND_ADDRESS = /[A-Z2-7]{58}/g
 
 /**
- * One-line summary for log messages: `name status url` for an HTTP-shaped
+ * One-line summary for a log context or an error reply: `name status url` for an HTTP-shaped
  * error (ky's `response`/`request`), just the name otherwise. Deliberately
  * omits the error message and masks address-shaped path segments: log lines
  * reach the dev log and crash-reporter breadcrumbs, and backend messages can

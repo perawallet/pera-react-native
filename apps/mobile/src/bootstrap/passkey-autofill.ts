@@ -82,7 +82,11 @@ export const usePasskeyAutofillLifecycle = (): void => {
                         // Skipped this session, but the strict hydration will
                         // fail on these exact records at the next cold start.
                         logger.error(
-                            `Keystore reconcile skipped undecodable records: ${failedIds.join(', ')}`,
+                            'Passkey autofill reconcile skipped undecodable records',
+                            {
+                                step: 'passkeyAutofillReconcile',
+                                recordIds: failedIds,
+                            },
                         )
                     }
                 })

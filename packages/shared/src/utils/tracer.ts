@@ -29,6 +29,8 @@ const ENABLED =
 
 const LOG_PREFIX = '⏱️ [TRACE]'
 
+const MARK_MESSAGE = `${LOG_PREFIX} mark`
+
 const DEFAULT_QUERY_CACHE_WINDOW_MS = 30_000
 
 type Clock = () => number
@@ -65,12 +67,12 @@ let seen = new Set<string>()
 const fmt = (ms: number): string => `${ms.toFixed(1)}ms`
 
 const logLine = (m: Mark): void => {
-    const metaStr = m.meta ? ` ${JSON.stringify(m.meta)}` : ''
-    logger.info(
-        `${LOG_PREFIX} +${fmt(m.delta).padStart(9)}  @${fmt(m.at).padStart(
-            9,
-        )}  ${m.label}${metaStr}`,
-    )
+    logger.info(MARK_MESSAGE, {
+        label: m.label,
+        atMs: +m.at.toFixed(1),
+        deltaMs: +m.delta.toFixed(1),
+        meta: m.meta,
+    })
 }
 
 /** Re-anchor t0 and clear recorded marks — start a fresh profiling session. */

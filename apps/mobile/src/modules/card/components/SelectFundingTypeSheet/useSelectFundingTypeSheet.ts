@@ -129,9 +129,9 @@ export const useSelectFundingTypeSheet =
             // successful switch, so a failed prior Auto leaves it Manual and
             // re-selecting Auto is a real change (recovery).
             if (selectedType === currentType) {
-                logger.info(
-                    `Funding type switch skipped: already ${currentType}`,
-                )
+                logger.info('Funding type switch skipped: already selected', {
+                    fundingType: currentType,
+                })
                 dismiss()
                 return
             }
@@ -184,10 +184,10 @@ export const useSelectFundingTypeSheet =
                 )
                 resolve('applied')
             } catch (error) {
-                logger.error(
-                    `Funding type switch failed: ${describeError(error)}`,
-                    { error },
-                )
+                logger.error('Funding type switch failed', {
+                    error,
+                    errorSummary: describeError(error),
+                })
                 await showError(error)
             } finally {
                 isApplyingRef.current = false

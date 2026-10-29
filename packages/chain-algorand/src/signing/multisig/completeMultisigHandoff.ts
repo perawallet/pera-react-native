@@ -154,7 +154,8 @@ const runBestEffort = async (
     try {
         await run()
     } catch (error) {
-        logger.warn(`Multisig handoff ${label} failed (non-fatal)`, {
+        logger.warn('Multisig handoff step failed (non-fatal)', {
+            step: label,
             error: error instanceof Error ? error.message : String(error),
         })
     }

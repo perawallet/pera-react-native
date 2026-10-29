@@ -75,7 +75,10 @@ const cache = new QueryCache({
             peraBackendUnavailableHandler?.(error)
             return
         }
-        logger.error(`Query failed: ${describeError(error)}`, { error })
+        logger.error('Query failed', {
+            error,
+            errorSummary: describeError(error),
+        })
     },
 })
 
@@ -90,8 +93,9 @@ const mutationCache = new MutationCache({
             peraBackendUnavailableHandler?.(error)
             return
         }
-        logger.error(`Mutation failed: ${describeError(error)}`, {
+        logger.error('Mutation failed', {
             error,
+            errorSummary: describeError(error),
             mutationKey: mutation.options.mutationKey,
         })
     },
