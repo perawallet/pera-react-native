@@ -326,7 +326,8 @@
             "suspicious_title": "Suspicious ASA",
             "suspicious_description": "This ASA has been flagged as suspicious by the Pera ASA Verification program.",
             "learn_more": "Learn more about ASA verification"
-        }
+        },
+        "copy_full_amount_hint": "Long press to copy the full amount"
     },
     "accounts": {
         "legacyQuantum": {

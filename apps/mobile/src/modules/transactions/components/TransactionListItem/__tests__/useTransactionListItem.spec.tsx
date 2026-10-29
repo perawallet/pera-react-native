@@ -134,6 +134,7 @@ describe('useTransactionListItem', () => {
                     value: new Decimal('0.5'),
                     assetId: '0',
                     currency: 'ALGO',
+                    decimals: 6,
                     prefix: '-',
                 },
             ])
