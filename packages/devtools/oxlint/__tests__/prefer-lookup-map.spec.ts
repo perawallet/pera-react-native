@@ -134,6 +134,31 @@ describe(RULE, () => {
             ]),
         ],
         [
+            'a null case with no default',
+            switchOn(id('key'), [
+                bare(lit('a'), lit(null)),
+                bare(lit('b'), lit('B')),
+                bare(lit('c'), lit('C')),
+            ]),
+        ],
+        [
+            'a null default beside non-null cases',
+            switchOn(id('key'), [
+                bare(lit('a'), lit('A')),
+                bare(lit('b'), lit('B')),
+                bare(null, lit(null)),
+            ]),
+        ],
+        [
+            'a null value shared by a key and the default',
+            switchOn(id('key'), [
+                bare(lit('a'), lit('A')),
+                bare(lit('b'), lit('B')),
+                caseOf(lit('c'), []),
+                bare(null, lit(null)),
+            ]),
+        ],
+        [
             'optional-chain member values',
             switchOn(id('key'), [
                 bare(lit('a'), optional(member(id('Colors'), 'primary'))),
@@ -274,6 +299,31 @@ describe(RULE, () => {
                     type: 'TSAsExpression',
                     expression: lit('C'),
                 }),
+            ]),
+        ],
+        [
+            'a null case beside a default',
+            switchOn(id('key'), [
+                bare(lit('a'), lit(null)),
+                bare(lit('b'), lit('B')),
+                bare(null, lit('X')),
+            ]),
+        ],
+        [
+            'a null case beside a default that is grouped with another key',
+            switchOn(id('key'), [
+                bare(lit('a'), lit('A')),
+                braced(lit('b'), lit(null)),
+                caseOf(lit('c'), []),
+                bare(null, lit('X')),
+            ]),
+        ],
+        [
+            'an undefined case beside a default',
+            switchOn(id('key'), [
+                bare(lit('a'), id('undefined')),
+                bare(lit('b'), lit('B')),
+                bare(null, lit('X')),
             ]),
         ],
         [

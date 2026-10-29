@@ -53,6 +53,28 @@ const isConstantValue = (argument, discriminantRoot) => {
     return isStaticMember(argument, discriminantRoot)
 }
 
+const isNullish = argument =>
+    (argument.type === 'Literal' &&
+        argument.value === null &&
+        !argument.regex) ||
+    (argument.type === 'Identifier' && argument.name === 'undefined')
+
+// A keyed case returning null or undefined cannot sit beside a default:
+// `map[k] ?? fallback` would send that key to the fallback. The default's own
+// nullish value is safe.
+const nullishKeyedCaseBesideDefault = cases => {
+    if (!cases.some(c => c.test === null)) return false
+    let groupHasDefault = false
+    for (const c of cases) {
+        if (c.test === null) groupHasDefault = true
+        if (c.consequent.length === 0) continue
+        const [statement] = caseBody(c.consequent)
+        if (!groupHasDefault && isNullish(statement.argument)) return true
+        groupHasDefault = false
+    }
+    return false
+}
+
 const isKeyTest = test =>
     test === null || test.type === 'Literal' || isStaticMember(test, null)
 
@@ -64,7 +86,7 @@ export const preferLookupMap = {
                 'Turn a switch that only returns constants into a typed Record lookup',
         },
         messages: {
-            lookup: 'Every case of this switch only returns a constant: declare a typed Record<Union, Value> and look the value up, turning a default branch into an explicit ?? fallback.',
+            lookup: 'Every case of this switch only returns a constant: declare a typed Record<Union, Value> and look the value up. Turn a default branch into `map[k] ?? fallback`, or `Object.hasOwn(map, k) ? map[k] : fallback` when the key can be a string outside the union, so an Object.prototype key such as `constructor` misses.',
         },
         schema: [],
     },
@@ -86,7 +108,10 @@ export const preferLookupMap = {
                         isConstantValue(body[0].argument, discriminantRoot)
                     )
                 })
-                if (onlyConstantReturns) {
+                if (
+                    onlyConstantReturns &&
+                    !nullishKeyedCaseBesideDefault(node.cases)
+                ) {
                     context.report({ node, messageId: 'lookup' })
                 }
             },
