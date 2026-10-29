@@ -10,12 +10,13 @@
  limitations under the License
  */
 
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { PasskeyUnlockSetupFailure } from './usePasskeyUnlockSetup.web'
 
 // Literal keys, so the unused-translation-key lint can see every one.
 export const PASSKEY_SETUP_FAILURE_COPY: Record<
     PasskeyUnlockSetupFailure,
-    { error: string; hint: { title: string; body: string } | null }
+    { error: string; hint: Nullable<{ title: string; body: string }> }
 > = {
     'not-saved': {
         error: 'vault.passkey_setup.error_not_saved',
