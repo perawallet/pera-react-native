@@ -184,6 +184,51 @@ describe('pera/catalog-versions', () => {
         ])
     })
 
+    it('flags entries in a one-line dependency object and on their field line, at the line of each entry', async () => {
+        const found = await check({
+            [WORKSPACE]: workspaceYaml([
+                '  a: 1.0.0',
+                '  b: 1.0.0',
+                '  react: ^19.0.0',
+                '  c: 1.0.0',
+            ]),
+            'packages/app/package.json': [
+                '{',
+                '    "name": "app",',
+                '    "dependencies": { "a": "^1.0.0",',
+                '        "b": "1.0.0" },',
+                '    "peerDependencies": { "react": "^19.0.0" }',
+                '}',
+                '',
+            ].join('\n'),
+            'packages/min/package.json':
+                '{"name":"min","devDependencies":{"c":"~1.0.0","x":"1.0.0"}}\n',
+        })
+
+        expect(found).toEqual([
+            [
+                'packages/app/package.json',
+                3,
+                "'a' has a catalog entry, so its spec must be 'catalog:', not '^1.0.0'",
+            ],
+            [
+                'packages/app/package.json',
+                4,
+                "'b' has a catalog entry, so its spec must be 'catalog:', not '1.0.0'",
+            ],
+            [
+                'packages/app/package.json',
+                5,
+                "'react' has a catalog entry, so its spec must be 'catalog:', not '^19.0.0'",
+            ],
+            [
+                'packages/min/package.json',
+                1,
+                "'c' has a catalog entry, so its spec must be 'catalog:', not '~1.0.0'",
+            ],
+        ])
+    })
+
     it("flags a catalog entry that differs from its override, at the catalog's line", async () => {
         const found = await check({
             [WORKSPACE]: workspaceYaml(

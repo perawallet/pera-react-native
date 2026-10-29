@@ -11,7 +11,9 @@ catalog:
   # to one version. `follows <entry>`: resolves to the version that entry's
   # resolved release depends on. `hold <version>`: resolves at or below it.
   # The note above a marker is its reason; raise a hold only after redoing the
-  # check that note names.
+  # check that note names. A dependabot PR bumping a held package past its hold
+  # fails Lint until that package is dropped from the PR; a matching `ignore`
+  # entry in .github/dependabot.yml stops the bot proposing it.
 
   "@algorandfoundation/algokit-utils": 9.2.2
   "@algorandfoundation/dp256": 1.1.0

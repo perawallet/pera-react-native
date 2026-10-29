@@ -62,35 +62,59 @@ interface Finding {
     message: string
 }
 
-/** A dependency spec found in a manifest, with its 1-based line. */
-const manifestSpecs = (
-    raw: string,
-): { name: string; spec: string; line: number }[] => {
-    const out: { name: string; spec: string; line: number }[] = []
-    const lines = raw.split('\n')
-    let topIndent = -1
-    let inField = false
-    for (let i = 0; i < lines.length; i++) {
+interface ManifestSpec {
+    name: string
+    spec: string
+    line: number
+}
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+    typeof value === 'object' && value !== null && !Array.isArray(value)
+
+/** The 1-based line of the first `"key":` at or after 0-based line `from`. */
+const keyLine = (
+    lines: readonly string[],
+    key: string,
+    from: number,
+): number | undefined => {
+    const quoted = JSON.stringify(key)
+    for (let i = from; i < lines.length; i++) {
         const text = lines[i] ?? ''
-        const match = /^(\s*)"([^"]+)"\s*:\s*(.*?),?\s*$/.exec(text)
-        if (match === null) continue
-        const indent = (match[1] ?? '').length
-        if (topIndent === -1) topIndent = indent
-        if (indent === topIndent) {
-            const value = match[3] ?? ''
-            inField =
-                DEPENDENCY_FIELDS.has(match[2] ?? '') &&
-                value.startsWith('{') &&
-                !value.endsWith('}')
-        } else if (inField && indent > topIndent) {
-            out.push({
-                name: match[2] ?? '',
-                spec: (match[3] ?? '').replace(/^"|"$/g, ''),
-                line: i + 1,
-            })
+        for (
+            let at = text.indexOf(quoted);
+            at !== -1;
+            at = text.indexOf(quoted, at + 1)
+        ) {
+            const rest = text.slice(at + quoted.length).trimStart()
+            if (rest.startsWith(':')) return i + 1
         }
     }
-    return out
+    return undefined
+}
+
+// Names and specs come from JSON.parse so layout can only move a report's
+// line, never hide it; the line scan just locates each key.
+const manifestSpecs = (raw: string): ManifestSpec[] => {
+    let parsed: unknown
+    try {
+        parsed = JSON.parse(raw)
+    } catch {
+        return []
+    }
+    if (!isRecord(parsed)) return []
+    const lines = raw.split('\n')
+    const out: ManifestSpec[] = []
+    for (const field of DEPENDENCY_FIELDS) {
+        const deps = parsed[field]
+        if (!isRecord(deps)) continue
+        const fieldLine = keyLine(lines, field, 0) ?? 1
+        for (const [name, spec] of Object.entries(deps)) {
+            if (typeof spec !== 'string') continue
+            const line = keyLine(lines, name, fieldLine - 1) ?? fieldLine
+            out.push({ name, spec, line })
+        }
+    }
+    return out.sort((a, b) => a.line - b.line)
 }
 
 const checkCatalogUsage = (
