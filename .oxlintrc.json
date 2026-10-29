@@ -362,6 +362,11 @@
       "rules": { "pera/hd-derive-claimed": "error" }
     },
     {
+      "files": ["packages/security/src/**", "extensions/keystore-chrome/src/vault/**"],
+      "excludeFiles": ["**/__tests__/**", "**/*.spec.{ts,tsx}", "**/*.test.{ts,tsx}"],
+      "rules": { "pera/monotonic-lockout-clock": "error" }
+    },
+    {
       "files": ["**/__tests__/**", "**/*.spec.{ts,tsx}", "**/__integration__/**", "**/vitest*.ts"],
       "rules": { "pera/no-algorand-sdk-imports": "off" }
     },

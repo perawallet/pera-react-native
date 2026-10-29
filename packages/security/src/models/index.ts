@@ -11,6 +11,7 @@
  */
 
 import type { BaseStoreState, Nullable } from '@perawallet/wallet-core-shared'
+import type { AutoLockStart } from '../autoLock'
 import type { LockoutDeadline } from '../lockout'
 
 /**
@@ -41,7 +42,7 @@ export type SecurityState = BaseStoreState & {
     failedAttempts: number
     /** In memory only; the PIN record is the authority it is hydrated from. */
     lockout: Nullable<LockoutDeadline>
-    autoLockStartedAt: Nullable<number>
+    autoLockStartedAt: Nullable<AutoLockStart>
     /**
      * Monotonic counter that AutoLockGuard subscribes to. Any call to
      * `requestLock` increments it, triggering the guard to flip into the
@@ -110,7 +111,7 @@ export type SecurityState = BaseStoreState & {
     setFailedAttempts: (count: number) => void
     resetFailedAttempts: () => void
     setLockout: (lockout: Nullable<LockoutDeadline>) => void
-    setAutoLockStartedAt: (time: Nullable<number>) => void
+    setAutoLockStartedAt: (start: Nullable<AutoLockStart>) => void
     requestLock: () => void
     setAppLockActive: (active: boolean) => void
     setBiometricsEnabled: (enabled: boolean) => void

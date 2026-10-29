@@ -19,6 +19,8 @@ import {
     useAccountHoldingSources,
     useAccountValueBasis,
     useAccountValueTotalsQuery,
+    type AccountHoldingSource,
+    type AccountValueTotalsMap,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
@@ -66,6 +68,38 @@ export type UseAccountWithBalanceResult = {
     crossChainTotal: Optional<CrossChainTotal>
 }
 
+/**
+ * Matches the account overview's headline: test-network holdings stay out,
+ * and one unknown chain makes the total unknown rather than understated.
+ */
+export const crossChainTotalOf = (
+    sources: readonly AccountHoldingSource[],
+    accountValueTotals: AccountValueTotalsMap,
+    usdToPreferred: (usd: Maybe<Decimal>) => Nullable<Decimal>,
+): CrossChainTotal => {
+    if (sources.length === 0) return { kind: 'unavailable' }
+    const counted = sources.filter(
+        source => !isTestTierScope(getProvider().chains, source.scope),
+    )
+    if (counted.length === 0) return { kind: 'testOnly' }
+    const values = counted.map(source =>
+        accountValueTotals.get(
+            accountValueKey(source.scope.chainId, source.address),
+        ),
+    )
+    if (values.some(value => !value || value.isPending)) {
+        return { kind: 'fiat', value: undefined }
+    }
+    const usdTotal = values.reduce<Nullable<Decimal>>(
+        (total, value) =>
+            total === null || !value || value.fiatValue === null
+                ? null
+                : total.plus(value.fiatValue),
+        new Decimal(0),
+    )
+    return { kind: 'fiat', value: usdToPreferred(usdTotal) }
+}
+
 export const useAccountWithBalance = (
     account: WalletAccount,
     chainOverride?: ChainId,
@@ -90,32 +124,13 @@ export const useAccountWithBalance = (
 
     const totals = accountValueOf(account, chainId, accountValueTotals)
 
-    // Matches the account overview's headline: test-network holdings stay out,
-    // and one unknown chain makes the total unknown rather than understated.
-    const crossChainTotal = useMemo((): Optional<CrossChainTotal> => {
-        if (!isChainAgnostic) return undefined
-        if (sources.length === 0) return { kind: 'unavailable' }
-        const counted = sources.filter(
-            source => !isTestTierScope(getProvider().chains, source.scope),
-        )
-        if (counted.length === 0) return { kind: 'testOnly' }
-        const values = counted.map(source =>
-            accountValueTotals.get(
-                accountValueKey(source.scope.chainId, source.address),
-            ),
-        )
-        if (values.some(value => !value || value.isPending)) {
-            return { kind: 'fiat', value: undefined }
-        }
-        const usdTotal = values.reduce<Nullable<Decimal>>(
-            (total, value) =>
-                total === null || !value || value.fiatValue === null
-                    ? null
-                    : total.plus(value.fiatValue),
-            new Decimal(0),
-        )
-        return { kind: 'fiat', value: usdToPreferred(usdTotal) }
-    }, [isChainAgnostic, sources, accountValueTotals, usdToPreferred])
+    const crossChainTotal = useMemo(
+        (): Optional<CrossChainTotal> =>
+            isChainAgnostic
+                ? crossChainTotalOf(sources, accountValueTotals, usdToPreferred)
+                : undefined,
+        [isChainAgnostic, sources, accountValueTotals, usdToPreferred],
+    )
 
     return {
         scope,

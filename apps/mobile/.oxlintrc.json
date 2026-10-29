@@ -327,6 +327,11 @@
       "rules": { "pera/mutation-scope-in-variables": "error" }
     },
     {
+      "files": ["src/modules/vault/**"],
+      "excludeFiles": ["src/**/__tests__/**", "src/**/*.spec.{ts,tsx}"],
+      "rules": { "pera/monotonic-lockout-clock": "error" }
+    },
+    {
       "files": ["src/**/*.tsx"],
       "excludeFiles": ["src/**/__tests__/**", "src/**/__mocks__/**", "src/**/test-utils/**", "src/**/__integration__/**", "src/**/*.spec.{ts,tsx}", "src/**/*.test.{ts,tsx}"],
       "rules": { "pera/component-props-type": "error" }
