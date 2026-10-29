@@ -460,6 +460,7 @@
         "hide_wallet_structure": "Hide wallet structure",
         "scan_new_addresses": "Scan new addresses",
         "scan_new_accounts": "Scan for new {{network}} accounts",
+        "scan_new_wallet_accounts": "Scan for new accounts",
         "universal_wallet_subtitle": "One passphrase, all networks",
         "viewing": "Viewing",
         "wallet_label": "Wallet #{{number}}",
@@ -2234,7 +2235,15 @@
             "no_new_addresses_title": "No new addresses found",
             "no_new_addresses_body": "We didn't find any additional addresses associated with this wallet.",
             "rekey_scan_failed_title": "Couldn't check for rekeyed accounts",
-            "rekey_scan_failed_body": "Your account was imported. We couldn't check whether other accounts are rekeyed to it — you can scan again from Settings."
+            "rekey_scan_failed_body": "Your account was imported. We couldn't check whether other accounts are rekeyed to it — you can scan again from Settings.",
+            "rekey_rescan_failed_body": "We couldn't check whether other accounts are rekeyed to this wallet. Scan again to try once more.",
+            "rescan_found_title": "Scan complete",
+            "rescan_found_body_one": "1 account was added or updated.",
+            "rescan_found_body_other": "{{count}} accounts were added or updated.",
+            "rescan_partial_title": "Scan incomplete",
+            "rescan_partial_body": "Some checks couldn't finish. Accounts found so far were added. Scan again to find the rest.",
+            "rescan_failed_title": "Couldn't scan for accounts",
+            "rescan_failed_body": "Check your connection and try again."
         },
         "create_account": {
             "processing": "Setting up your wallet...",

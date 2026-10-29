@@ -24,6 +24,7 @@ import {
     type LaunchAccountMode,
     type RecordedAuthorities,
     type WalletAccount,
+    type WalletDiscoveryCoverage,
 } from '../models'
 import {
     gateWritesOnHydration,
@@ -90,6 +91,7 @@ import {
 import {
     discoverWalletActivity,
     hdPathKey,
+    type HdProbeOutcome,
     type ProbedHdIndex,
 } from '../hd-walk'
 import { isKeyClaimed, isKeyClaimedByOthers, trackWalk } from '../key-claims'
@@ -542,6 +544,17 @@ const holdsAddressOn = (
         const held = chainAccountOf(account, chainId)?.address
         return held !== undefined && isSameAddress(chainId, held, address)
     })
+
+const coverageOf = (
+    outcomes: Record<HdProbeOutcome, number>,
+    isWalkIncomplete: boolean,
+): WalletDiscoveryCoverage => {
+    if (outcomes.answered + outcomes.partial === 0) return 'unanswered'
+    if (isWalkIncomplete || outcomes.partial + outcomes.failed > 0) {
+        return 'partial'
+    }
+    return 'complete'
+}
 
 const scopeOn = (chainId: ChainId): ChainScope => ({
     chainId,
@@ -1210,6 +1223,12 @@ export const useAccountsStore: UseBoundStore<
                 queuedFor(`wallet:${walletId}`, () =>
                     trackWalk(async () => {
                         let probed: ProbedHdIndex[] = []
+                        const outcomes: Record<HdProbeOutcome, number> = {
+                            answered: 0,
+                            partial: 0,
+                            failed: 0,
+                        }
+                        let isWalkIncomplete = false
                         // Only the probes read the root key; the adds derive
                         // through the keystore, so it is zeroed before them.
                         try {
@@ -1217,6 +1236,9 @@ export const useAccountsStore: UseBoundStore<
                                 walletId,
                                 chainIds: hdDiscoveryChains(),
                                 onUnusedKeys: removeUnclaimedKeys,
+                                onProbeSettled: outcome => {
+                                    outcomes[outcome]++
+                                },
                                 rootKey: options.rootKey,
                                 heldAccountIndex: Math.max(
                                     -1,
@@ -1229,6 +1251,7 @@ export const useAccountsStore: UseBoundStore<
                                 ),
                             })
                         } catch (error) {
+                            isWalkIncomplete = true
                             logger.warn('Wallet discovery failed', { error })
                         } finally {
                             zeroBytes(options.rootKey)
@@ -1284,6 +1307,7 @@ export const useAccountsStore: UseBoundStore<
                                             DuplicateAccountError
                                         )
                                     ) {
+                                        isWalkIncomplete = true
                                         logger.warn(
                                             'Could not add a discovered chain entry',
                                             { chainId, error },
@@ -1315,9 +1339,12 @@ export const useAccountsStore: UseBoundStore<
                                 ),
                             )
                         }
-                        return get().accounts.filter(account =>
-                            changedIds.has(account.id),
-                        )
+                        return {
+                            accounts: get().accounts.filter(account =>
+                                changedIds.has(account.id),
+                            ),
+                            coverage: coverageOf(outcomes, isWalkIncomplete),
+                        }
                     }),
                 ),
             addChainAccount: async (

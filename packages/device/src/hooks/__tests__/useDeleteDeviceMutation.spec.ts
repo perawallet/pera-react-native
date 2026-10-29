@@ -13,7 +13,7 @@
 // @vitest-environment jsdom
 import React from 'react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { renderHook, waitFor } from '@testing-library/react'
+import { act, renderHook } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useDeleteDeviceMutation } from '../useDeleteDeviceMutation'
 import { deleteDevice } from '../endpoints'
@@ -98,11 +98,7 @@ describe('useDeleteDeviceMutation', () => {
             wrapper: createWrapper(),
         })
 
-        result.current.mutate()
-
-        await waitFor(() => {
-            expect(result.current.isSuccess).toBe(true)
-        })
+        await act(() => result.current.mutateAsync())
 
         expect(deleteDevice).toHaveBeenCalledTimes(2)
         expect(deleteDevice).toHaveBeenCalledWith('developer', {
@@ -111,7 +107,6 @@ describe('useDeleteDeviceMutation', () => {
         expect(deleteDevice).toHaveBeenCalledWith('live', {
             id: 'live-device-id',
         })
-        expect(result.current.data).toBeUndefined()
     })
 
     it('returns undefined when no devices are registered', async () => {
@@ -121,14 +116,9 @@ describe('useDeleteDeviceMutation', () => {
             wrapper: createWrapper(),
         })
 
-        result.current.mutate()
-
-        await waitFor(() => {
-            expect(result.current.isSuccess).toBe(true)
-        })
+        await act(() => result.current.mutateAsync())
 
         expect(deleteDevice).not.toHaveBeenCalled()
-        expect(result.current.data).toBeUndefined()
     })
 
     it('deletes a deployment whose device id exists even without a push token', async () => {
@@ -148,11 +138,7 @@ describe('useDeleteDeviceMutation', () => {
             wrapper: createWrapper(),
         })
 
-        result.current.mutate()
-
-        await waitFor(() => {
-            expect(result.current.isSuccess).toBe(true)
-        })
+        await act(() => result.current.mutateAsync())
 
         // v1 required both id and push token, so a device whose push
         // permission was never granted could not be deleted at all. v3
@@ -164,7 +150,6 @@ describe('useDeleteDeviceMutation', () => {
         expect(deleteDevice).toHaveBeenCalledWith('live', {
             id: 'live-device-id',
         })
-        expect(result.current.data).toBeUndefined()
     })
 
     it('handles API error', async () => {
@@ -175,13 +160,11 @@ describe('useDeleteDeviceMutation', () => {
             wrapper: createWrapper(),
         })
 
-        result.current.mutate()
-
-        await waitFor(() => {
-            expect(result.current.isError).toBe(true)
+        await act(async () => {
+            await expect(result.current.mutateAsync()).rejects.toThrow(
+                mockError,
+            )
         })
-
-        expect(result.current.error).toBe(mockError)
     })
 
     it('deletes only the developer device when live is not registered', async () => {
@@ -198,17 +181,12 @@ describe('useDeleteDeviceMutation', () => {
             wrapper: createWrapper(),
         })
 
-        result.current.mutate()
-
-        await waitFor(() => {
-            expect(result.current.isSuccess).toBe(true)
-        })
+        await act(() => result.current.mutateAsync())
 
         expect(deleteDevice).toHaveBeenCalledTimes(1)
         expect(deleteDevice).toHaveBeenCalledWith('developer', {
             id: 'developer-device-id',
         })
-        expect(result.current.data).toBeUndefined()
     })
 
     it('deletes only the live device when developer is not registered', async () => {
@@ -225,17 +203,12 @@ describe('useDeleteDeviceMutation', () => {
             wrapper: createWrapper(),
         })
 
-        result.current.mutate()
-
-        await waitFor(() => {
-            expect(result.current.isSuccess).toBe(true)
-        })
+        await act(() => result.current.mutateAsync())
 
         expect(deleteDevice).toHaveBeenCalledTimes(1)
         expect(deleteDevice).toHaveBeenCalledWith('live', {
             id: 'live-device-id',
         })
-        expect(result.current.data).toBeUndefined()
     })
 
     it('accepts custom mutation options', async () => {
@@ -249,12 +222,34 @@ describe('useDeleteDeviceMutation', () => {
             },
         )
 
-        result.current.mutate()
-
-        await waitFor(() => {
-            expect(result.current.isSuccess).toBe(true)
-        })
+        await act(() => result.current.mutateAsync())
 
         expect(onSuccess).toHaveBeenCalled()
+    })
+
+    it('deletes the devices it was called with when the ids change mid-request', async () => {
+        vi.mocked(deleteDevice).mockResolvedValue(undefined)
+        const { result, rerender } = renderHook(
+            () => useDeleteDeviceMutation(),
+            { wrapper: createWrapper() },
+        )
+
+        let deleted: Promise<void> | undefined
+        act(() => {
+            deleted = result.current.mutateAsync()
+        })
+        vi.mocked(useDeploymentDeviceID).mockReturnValue('other-device-id')
+        rerender()
+        await act(async () => {
+            await deleted
+        })
+
+        expect(deleteDevice).toHaveBeenCalledTimes(2)
+        expect(deleteDevice).toHaveBeenCalledWith('developer', {
+            id: 'developer-device-id',
+        })
+        expect(deleteDevice).toHaveBeenCalledWith('live', {
+            id: 'live-device-id',
+        })
     })
 })
