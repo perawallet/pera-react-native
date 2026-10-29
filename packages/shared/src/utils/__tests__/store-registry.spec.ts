@@ -18,10 +18,6 @@ import {
     resetStoreRegistry,
 } from '../store-registry'
 
-vi.mock('../logging', () => ({
-    logger: { debug: vi.fn() },
-}))
-
 describe('store-registry', () => {
     beforeEach(() => {
         resetStoreRegistry()

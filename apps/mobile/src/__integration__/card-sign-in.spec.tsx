@@ -374,6 +374,16 @@ describe('Flow: Card sign in', () => {
         expect(screen.queryByTestId('home-tab-stub')).toBeNull()
     })
 
+    it('Given the sign-in form, when it renders, then the password field is hardened against keyboard learning but still offered to password managers', () => {
+        renderSignIn()
+
+        const password = screen.getByTestId('card-sign-in-password-input')
+
+        expect(password.getAttribute('spellcheck')).toBe('false')
+        expect(password.getAttribute('autocorrect')).toBe('off')
+        expect(password.getAttribute('autocomplete')).toBe('current-password')
+    })
+
     it('Given wrong credentials, when Sign In is pressed, then an inline error shows on the password field and the flow stays put', async () => {
         server.use(
             http.post('*/v1/auth/login', () =>

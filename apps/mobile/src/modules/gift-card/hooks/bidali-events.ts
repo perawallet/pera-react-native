@@ -12,12 +12,13 @@
 
 import type WebView from 'react-native-webview'
 import type { Nullable } from '@perawallet/wallet-core-shared'
+import { webViewScript } from '@modules/webview'
 
 export const sendBidaliEvent = (
     webviewRef: React.RefObject<Nullable<WebView>>,
     event: 'paymentSent' | 'paymentCancelled',
 ) => {
     webviewRef.current?.injectJavaScript(
-        `window.bidaliProvider.${event}?.(); true;`,
+        webViewScript`window.bidaliProvider[${event}]?.(); true;`,
     )
 }

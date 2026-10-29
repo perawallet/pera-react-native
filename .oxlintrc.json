@@ -330,6 +330,11 @@
       "rules": { "no-console": "error" }
     },
     {
+      "files": ["packages/*/src/**", "extensions/*/src/**", "apps/browser/src/**"],
+      "excludeFiles": ["**/__tests__/**", "**/__mocks__/**", "**/test-utils/**", "**/__integration__/**", "**/*.spec.{ts,tsx}", "**/*.test.{ts,tsx}"],
+      "rules": { "pera/logger-static-message": "error" }
+    },
+    {
       "files": ["packages/*/src/**", "extensions/*/src/**"],
       "excludeFiles": ["**/__tests__/**", "**/__mocks__/**", "**/test-utils/**", "**/__integration__/**", "**/*.spec.{ts,tsx}", "**/*.test.{ts,tsx}"],
       "rules": { "pera/typed-domain-errors": "error" }

@@ -202,8 +202,8 @@ describe('createHandlerKit', () => {
             await flush()
 
             expect(warn).toHaveBeenCalledWith(
-                '[test] failed to record connection activity',
-                { clientId: 'c1', error: failure },
+                'Failed to record connection activity',
+                { handler: '[test]', clientId: 'c1', error: failure },
             )
         })
 
@@ -216,8 +216,11 @@ describe('createHandlerKit', () => {
             await flush()
 
             expect(warn).toHaveBeenCalledWith(
-                '[test] failed to record connection activity',
-                expect.objectContaining({ connectionId: 'c1' }),
+                'Failed to record connection activity',
+                expect.objectContaining({
+                    handler: '[test]',
+                    connectionId: 'c1',
+                }),
             )
         })
     })

@@ -16,9 +16,7 @@ import { getPeraServicesConfig } from '@perawallet/wallet-core-config'
 import { useSelectedChainMode } from '@perawallet/wallet-core-chain-shared'
 import { useAccountBalancesQuery } from '@perawallet/wallet-core-accounts'
 import { useCapability } from '@hooks/useCapability'
-// Imported from the handlers file directly (not the module barrel) so this
-// hook doesn't drag the whole webview stack into its dependency graph.
-import { isTrustedWebviewOrigin } from '@modules/webview'
+import { isTrustedWebviewOrigin, type WebViewScript } from '@modules/webview'
 import { useBidali } from '../../hooks/useBidali'
 import { useBidaliClose } from '../../hooks/useBidaliClose'
 import { useGiftCardScope } from '../../hooks/useGiftCardScope'
@@ -36,7 +34,7 @@ type UseBidaliWebViewScreenResult = {
     /** False when the paying account's chain has gift cards off; the screen then shows an unavailable notice. */
     isAvailable: boolean
     url: string
-    bidaliProviderJS: string
+    bidaliProviderJS: WebViewScript
     onClose: () => void
     handleMessage: (data: unknown) => void
     onShouldStartLoadWithRequest: (request: ShouldStartLoadRequest) => boolean

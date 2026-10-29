@@ -40,7 +40,7 @@ export interface PendingOrigins {
 }
 
 export type HandlerKitOptions = {
-    /** Prefix on the warnings the kit logs, e.g. `[WC v1]`. */
+    /** Logged as `handler` in the kit's warning context, e.g. `[WC v1]`. */
     logTag: string
     /**
      * What a call before `initialize()` throws. Defaults to a plain `Error`;
@@ -100,7 +100,8 @@ export const createHandlerKit = (
             if (!current) return
             await store().upsert({ ...current, lastActiveAt: Date.now() })
         })().catch((error: unknown) => {
-            logger.warn(`${logTag} failed to record connection activity`, {
+            logger.warn('Failed to record connection activity', {
+                handler: logTag,
                 ...activityLogFields(id),
                 error,
             })

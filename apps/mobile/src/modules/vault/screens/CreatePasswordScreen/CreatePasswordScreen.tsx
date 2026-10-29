@@ -101,7 +101,7 @@ export const CreatePasswordScreen = ({
                         showVisibilityToggle
                         errorMessage={passwordError}
                         renderErrorMessage={passwordError !== undefined}
-                        autoCapitalize='none'
+                        isSensitive
                         autoComplete='new-password'
                     />
                     {password.length > 0 && (
@@ -118,7 +118,7 @@ export const CreatePasswordScreen = ({
                         showVisibilityToggle
                         errorMessage={confirmError}
                         renderErrorMessage={validationError === 'mismatch'}
-                        autoCapitalize='none'
+                        isSensitive
                         autoComplete='new-password'
                     />
                     {hasError && (
