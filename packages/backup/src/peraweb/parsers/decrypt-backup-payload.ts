@@ -33,6 +33,9 @@ const isPlainObject = (value: unknown): value is Record<string, unknown> =>
 const isNonEmptyString = (value: unknown): value is string =>
     typeof value === 'string' && value.length > 0
 
+const firstNonEmptyString = (...values: unknown[]): string | null =>
+    values.find(isNonEmptyString) ?? null
+
 /**
  * Normalise a raw account row from the decrypted JSON. Returns null when the
  * shape is missing required fields — the caller silently drops bad rows so
@@ -58,17 +61,9 @@ const parseAccount = (
 
     // Field naming differs between legacy clients (camelCase vs snake_case).
     // Accept both so a backup from any producer round-trips.
-    const accountTypeValue = isNonEmptyString(accountType)
-        ? accountType
-        : isNonEmptyString(account_type)
-          ? account_type
-          : null
+    const accountTypeValue = firstNonEmptyString(accountType, account_type)
 
-    const privateKeyValue = isNonEmptyString(privateKey)
-        ? privateKey
-        : isNonEmptyString(private_key)
-          ? private_key
-          : null
+    const privateKeyValue = firstNonEmptyString(privateKey, private_key)
 
     let decodedPrivateKey: Uint8Array | null = null
     if (privateKeyValue) {

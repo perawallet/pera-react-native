@@ -119,15 +119,19 @@ export const PWScreen = ({
     const renderedHeader =
         header == null ? null : <PWView style={styles.header}>{header}</PWView>
 
-    const renderedBody =
-        children == null ? (
+    const renderBody = () => {
+        if (children == null) {
             // Header + footer only: a flex filler absorbs the free space so the
             // footer sticks to the bottom (no body to push it down otherwise).
-            <PWView style={styles.fixedBody} />
-        ) : scroll === 'auto' ? (
-            isInSheet ? (
-                // gorhom's scrollable cooperates with the sheet pan gesture; the
-                // sheet owns keyboard handling, so no KeyboardAwareScrollView here.
+            return <PWView style={styles.fixedBody} />
+        }
+        if (scroll !== 'auto') {
+            return <PWView style={styles.fixedBody}>{children}</PWView>
+        }
+        if (isInSheet) {
+            // gorhom's scrollable cooperates with the sheet pan gesture; the
+            // sheet owns keyboard handling, so no KeyboardAwareScrollView here.
+            return (
                 <BottomSheetScrollView
                     style={styles.body}
                     contentContainerStyle={styles.scrollContent}
@@ -137,24 +141,25 @@ export const PWScreen = ({
                 >
                     {children}
                 </BottomSheetScrollView>
-            ) : (
-                <KeyboardAwareScrollView
-                    style={styles.body}
-                    contentContainerStyle={styles.scrollContent}
-                    bottomOffset={
-                        footer != null ? footerHeight + theme.spacing.md : 0
-                    }
-                    showsVerticalScrollIndicator={false}
-                    showsHorizontalScrollIndicator={false}
-                    keyboardShouldPersistTaps='handled'
-                    keyboardDismissMode='interactive'
-                >
-                    {children}
-                </KeyboardAwareScrollView>
             )
-        ) : (
-            <PWView style={styles.fixedBody}>{children}</PWView>
+        }
+        return (
+            <KeyboardAwareScrollView
+                style={styles.body}
+                contentContainerStyle={styles.scrollContent}
+                bottomOffset={
+                    footer != null ? footerHeight + theme.spacing.md : 0
+                }
+                showsVerticalScrollIndicator={false}
+                showsHorizontalScrollIndicator={false}
+                keyboardShouldPersistTaps='handled'
+                keyboardDismissMode='interactive'
+            >
+                {children}
+            </KeyboardAwareScrollView>
         )
+    }
+    const renderedBody = renderBody()
 
     const renderedScrollFooter =
         footer == null ? null : (

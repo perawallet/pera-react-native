@@ -12,7 +12,10 @@
 
 import { describe, expect, it, beforeEach } from 'vitest'
 import { useAppIntegrityStore } from '../../store'
-import { getValidIntegrityToken } from '../getValidIntegrityToken'
+import {
+    getStoredIntegrityToken,
+    getValidIntegrityToken,
+} from '../getValidIntegrityToken'
 
 const registration = (expiresAt: string) => ({
     integrityToken: 'attestation-jwt',
@@ -50,5 +53,22 @@ describe('getValidIntegrityToken', () => {
             .setRegistration(registration('not-a-date'))
 
         expect(getValidIntegrityToken()).toBeNull()
+    })
+})
+
+describe('getStoredIntegrityToken', () => {
+    beforeEach(() => {
+        useAppIntegrityStore.getState().resetState()
+    })
+
+    it('returns an expired token', () => {
+        const past = new Date(Date.now() - 60_000).toISOString()
+        useAppIntegrityStore.getState().setRegistration(registration(past))
+
+        expect(getStoredIntegrityToken()).toBe('attestation-jwt')
+    })
+
+    it('returns null when no registration is stored', () => {
+        expect(getStoredIntegrityToken()).toBeNull()
     })
 })

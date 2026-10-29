@@ -13,7 +13,7 @@
 import { useCallback } from 'react'
 import { Linking } from 'react-native'
 import { config } from '@perawallet/wallet-core-config'
-import { useCardStore } from '@perawallet/wallet-core-card'
+import { resetCardOnboardingProgress } from '@perawallet/wallet-core-card'
 import { trackEvent, CardEvent } from '@analytics'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
@@ -35,7 +35,7 @@ export const usePeraCardIntroScreen = (): UsePeraCardIntroScreenResult => {
         trackEvent(CardEvent.OnboardingCreate)
         // Starting a new sign-up: clear any leftover onboarding progress from a
         // prior run so the setup checklist re-locks until this run completes.
-        useCardStore.getState().resetOnboardingProgress()
+        resetCardOnboardingProgress()
         navigation.navigate('PeraCard', {
             screen: 'CardOnboarding',
             params: { screen: 'CardOnboardingEmail' },

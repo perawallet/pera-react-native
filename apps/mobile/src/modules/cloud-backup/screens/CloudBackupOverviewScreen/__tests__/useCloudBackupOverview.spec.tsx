@@ -73,6 +73,9 @@ vi.mock('@perawallet/wallet-core-contacts', async () => ({
 // has to come along or hashing a fixture address throws.
 vi.mock('@perawallet/wallet-core-shared', async () => ({
     ...(await vi.importActual<
+        typeof import('@packages/shared/src/errors/base')
+    >('@packages/shared/src/errors/base')),
+    ...(await vi.importActual<
         typeof import('../../../../../../../../packages/shared/src/utils/strings')
     >('../../../../../../../../packages/shared/src/utils/strings')),
     truncateAlgorandAddress: (v: string) => `truncated(${v})`,

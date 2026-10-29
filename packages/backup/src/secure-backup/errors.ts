@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import { AppError, ErrorCategory } from '@perawallet/wallet-core-shared'
+
 // Reason codes drive UI copy. Keep them stable; locale keys are derived
 // from them in apps/mobile.
 export const SecureBackupErrorReason = {
@@ -26,11 +28,11 @@ export const SecureBackupErrorReason = {
 export type SecureBackupErrorReason =
     (typeof SecureBackupErrorReason)[keyof typeof SecureBackupErrorReason]
 
-export class SecureBackupImportError extends Error {
+export class SecureBackupImportError extends AppError {
     readonly reason: SecureBackupErrorReason
 
     constructor(reason: SecureBackupErrorReason, message?: string) {
-        super(message ?? reason)
+        super(message ?? reason, { category: ErrorCategory.STORAGE })
         this.name = 'SecureBackupImportError'
         this.reason = reason
     }

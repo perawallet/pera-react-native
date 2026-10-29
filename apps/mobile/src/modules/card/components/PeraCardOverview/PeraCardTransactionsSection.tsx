@@ -32,6 +32,37 @@ export const PeraCardTransactionsSection = ({
     const { t } = useLanguage()
     const styles = useStyles()
 
+    const renderTransactions = () => {
+        if (isLoading) return null
+        if (sections.length === 0) {
+            return (
+                <PWText
+                    variant='body'
+                    style={styles.sectionDescription}
+                >
+                    {t('peraCard.account.transactions_empty')}
+                </PWText>
+            )
+        }
+        return sections.map(section => (
+            <PWView key={section.key}>
+                <PWText
+                    variant='footnoteMedium'
+                    style={styles.monthHeader}
+                >
+                    {section.title}
+                </PWText>
+                {section.data.map(transaction => (
+                    <CardTransactionListItem
+                        key={transaction.id}
+                        transaction={transaction}
+                        onPress={onPressTransaction}
+                    />
+                ))}
+            </PWView>
+        ))
+    }
+
     return (
         <PWView style={styles.section}>
             <PWView style={styles.sectionHeader}>
@@ -48,32 +79,7 @@ export const PeraCardTransactionsSection = ({
                 </PWTouchableOpacity>
             </PWView>
 
-            {isLoading ? null : sections.length === 0 ? (
-                <PWText
-                    variant='body'
-                    style={styles.sectionDescription}
-                >
-                    {t('peraCard.account.transactions_empty')}
-                </PWText>
-            ) : (
-                sections.map(section => (
-                    <PWView key={section.key}>
-                        <PWText
-                            variant='footnoteMedium'
-                            style={styles.monthHeader}
-                        >
-                            {section.title}
-                        </PWText>
-                        {section.data.map(transaction => (
-                            <CardTransactionListItem
-                                key={transaction.id}
-                                transaction={transaction}
-                                onPress={onPressTransaction}
-                            />
-                        ))}
-                    </PWView>
-                ))
-            )}
+            {renderTransactions()}
         </PWView>
     )
 }

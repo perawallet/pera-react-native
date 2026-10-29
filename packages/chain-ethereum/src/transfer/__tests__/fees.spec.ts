@@ -23,6 +23,7 @@ import {
 import { setupServer } from 'msw/node'
 import { parseGwei, toHex, type RpcFeeHistory } from 'viem'
 import { estimateL1Fee, estimateOperatorFee } from 'viem/op-stack'
+import { FEE_PRESETS } from '@perawallet/wallet-core-chain-contract'
 import { evmRpcHandlers } from '../../blockchain/msw-handlers'
 import { createEvmClient } from '../../blockchain/utils/createEvmClient'
 import { TEST_RPC_URL, testChainContext } from '../../__tests__/context'
@@ -31,6 +32,7 @@ import {
     ETHEREUM,
     EVM_TEST_CHAINS,
     POLYGON,
+    evmChainOf,
     evmScopeOf,
 } from '../../__tests__/evm-chains'
 import type { EvmChain } from '../../chains/types'
@@ -207,6 +209,40 @@ describe('toEvmFeeEstimate', () => {
             const estimate = toEvmFeeEstimate(fees, preset, ETHEREUM)
 
             expect(estimate.amount).toBe(estimate.presets?.[preset].amount)
+        },
+    )
+
+    it("expects Ethereum's presets to land within a minute, 36 seconds and 12 seconds", () => {
+        const { presets } = toEvmFeeEstimate(fees, 'normal', ETHEREUM)
+
+        expect(presets?.slow.estimatedWaitSeconds).toBe(60)
+        expect(presets?.normal.estimatedWaitSeconds).toBe(36)
+        expect(presets?.fast.estimatedWaitSeconds).toBe(12)
+    })
+
+    it('never expects a sub-second chain to land in under a second', () => {
+        const { presets } = toEvmFeeEstimate(
+            fees,
+            'normal',
+            evmChainOf('arbitrum'),
+        )
+
+        expect(presets?.fast.estimatedWaitSeconds).toBe(1)
+        expect(presets?.slow.estimatedWaitSeconds).toBe(2)
+    })
+
+    it.each(EVM_TEST_CHAINS)(
+        'expects a whole-second wait on $row.id that shortens as the preset speeds up',
+        chain => {
+            const { presets } = toEvmFeeEstimate(fees, 'normal', chain)
+            const waits = FEE_PRESETS.map(
+                preset => presets?.[preset].estimatedWaitSeconds ?? 0,
+            )
+
+            for (const wait of waits) {
+                expect(Number.isInteger(wait) && wait >= 1).toBe(true)
+            }
+            expect(waits).toEqual([...waits].sort((a, b) => b - a))
         },
     )
 })

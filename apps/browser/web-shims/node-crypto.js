@@ -141,14 +141,19 @@ export function createHmac(algorithm, key) {
     return makeHmacObject(getHashFn(algorithm), key)
 }
 
+const SUBTLE_DIGEST_BY_HASH = { sha512: 'SHA-512', sha256: 'SHA-256' }
+
+function subtleDigestOf(hashName) {
+    return Object.hasOwn(SUBTLE_DIGEST_BY_HASH, hashName) ? SUBTLE_DIGEST_BY_HASH[hashName] : null
+}
+
 // Async PBKDF2 matching Node.js callback API.
 // Uses Web Crypto SubtleCrypto.deriveBits which is native-fast in Chrome.
 // digest may be 'sha512' (mnemonic seed derivation) or 'sha256' (keystore).
 export function pbkdf2(password, salt, iterations, keylen, digest, callback) {
     const pwBytes = toUint8(password)
     const saltBytes = toUint8(salt)
-    const hashName = normaliseAlgorithm(digest)
-    const subtleDigest = hashName === 'sha512' ? 'SHA-512' : hashName === 'sha256' ? 'SHA-256' : null
+    const subtleDigest = subtleDigestOf(normaliseAlgorithm(digest))
     if (!subtleDigest) {
         callback(new Error('node-crypto pbkdf2 shim: unsupported digest "' + digest + '"'), null)
         return

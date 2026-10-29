@@ -110,6 +110,8 @@ type UseAccountAssetListResult = {
         handleOptOut: (item: AccountHoldingsLiteRow) => void
         /** Opt-out runs on the account's own chain only. */
         isSwipeable: (item: AccountHoldingsLiteRow) => boolean
+        /** On All, for an account on two or more chains, while a search is typed: each plain row names its network. */
+        shouldShowNetwork: boolean
     }
     listRef: React.MutableRefObject<PWFlatListRef | null>
 }
@@ -122,6 +124,15 @@ const ASSET_SKELETON_ITEMS: AccountAssetListItem[] = Array.from(
     { length: 8 },
     (_, i) => ({ kind: 'skeleton', id: `asset-skeleton-${i}` }),
 )
+
+const visibleItemsOf = (
+    isChainSwitchedOff: boolean,
+    isPending: boolean,
+    items: AccountAssetListItem[],
+): AccountAssetListItem[] => {
+    if (isChainSwitchedOff) return EMPTY_ITEMS
+    return isPending ? ASSET_SKELETON_ITEMS : items
+}
 
 // Rows carry base units and parse their metadata lazily; the SQL-read group id
 // keeps that parse to group members.
@@ -470,6 +481,11 @@ export const useAccountAssetList = ({
         [isReadOnly, canManageAssets, scope.chainId],
     )
 
+    const shouldShowNetwork =
+        selectedChainId === null &&
+        sources.length > 1 &&
+        debouncedSearch.trim().length > 0
+
     const renderItemProps = useMemo(
         () => ({
             isReadOnly,
@@ -477,6 +493,7 @@ export const useAccountAssetList = ({
             goToAssetScreen,
             handleOptOut,
             isSwipeable,
+            shouldShowNetwork,
         }),
         [
             isReadOnly,
@@ -484,16 +501,13 @@ export const useAccountAssetList = ({
             goToAssetScreen,
             handleOptOut,
             isSwipeable,
+            shouldShowNetwork,
         ],
     )
 
     return {
         isChainSwitchedOff,
-        items: isChainSwitchedOff
-            ? EMPTY_ITEMS
-            : isPending
-              ? ASSET_SKELETON_ITEMS
-              : items,
+        items: visibleItemsOf(isChainSwitchedOff, isPending, items),
         chainFilterOptions,
         fundingChainId,
         selectedChainId,

@@ -29,3 +29,7 @@ export const getValidIntegrityToken = (): Nullable<string> => {
         ? integrityToken
         : null
 }
+
+/** The stored token even when expired: a developer screen verifies whatever is held. */
+export const getStoredIntegrityToken = (): Nullable<string> =>
+    useAppIntegrityStore.getState().integrityToken

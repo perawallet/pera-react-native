@@ -83,11 +83,8 @@ export const useAccountHistoryRows = ({
     const selectedSource = useSelectedNetworkSource(sources)
     const isMerged = selectedSource === null && sources.length > 1
     const scope = selectedSource?.scope ?? ownScope
-    const accountAddress = selectedSource
-        ? selectedSource.address
-        : account
-          ? addressOn(account, ownScope)
-          : undefined
+    const ownAddress = account ? addressOn(account, ownScope) : undefined
+    const accountAddress = selectedSource ? selectedSource.address : ownAddress
     const handleSelectChain = useAssetListViewStore(
         state => state.setSelectedChainId,
     )

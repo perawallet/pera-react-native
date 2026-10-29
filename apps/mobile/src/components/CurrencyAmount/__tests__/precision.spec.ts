@@ -14,7 +14,11 @@
 
 import { describe, it, expect } from 'vitest'
 import { Decimal } from 'decimal.js'
-import { resolveFiatFloor, resolvePrecision } from '../precision'
+import {
+    resolveFiatFloor,
+    resolvePrecision,
+    resolveSignificantPrecision,
+} from '../precision'
 
 // Literal digit counts (not symbol-relative) so these assertions actually pin
 // the policy: DEFAULT_PRECISION = 2, PREFERRED_MAX_PRECISION = 6. Asserting
@@ -104,6 +108,34 @@ describe('resolvePrecision', () => {
             precision: 2,
             minPrecision: 2,
         })
+    })
+
+    it('significant → keeps 3 significant digits of a small amount, flooring minPrecision at 2', () => {
+        expect(
+            resolvePrecision('significant', 18, new Decimal('0.000008523')),
+        ).toEqual({ precision: 8, minPrecision: 2 })
+    })
+})
+
+describe('resolveSignificantPrecision', () => {
+    it.each([
+        ['0.000008523', 8],
+        ['0.00001067', 7],
+        ['0.0123', 4],
+        ['1.5', 2],
+        ['0', 2],
+    ])('%s → %i dp', (value, expected) => {
+        expect(resolveSignificantPrecision(new Decimal(value), 18)).toBe(
+            expected,
+        )
+    })
+
+    it('uses 2 dp for an unknown value', () => {
+        expect(resolveSignificantPrecision(null, 18)).toBe(2)
+    })
+
+    it("never goes past the asset's decimals", () => {
+        expect(resolveSignificantPrecision(new Decimal('1e-9'), 6)).toBe(6)
     })
 })
 

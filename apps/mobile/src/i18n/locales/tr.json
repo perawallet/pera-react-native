@@ -2944,7 +2944,11 @@
             "slow": "Yavaş",
             "normal": "Normal",
             "fast": "Hızlı",
-            "max_fee": "Maksimum ücret"
+            "max_fee": "Maksimum ücret",
+            "max_fee_for_preset": "Maksimum ücret ({{preset}})",
+            "max_fee_info": "Ağ ücretleri artarsa ödeyeceğin en yüksek tutar. Genellikle daha az ödersin.",
+            "wait_seconds": "~{{seconds}} sn",
+            "wait_minutes": "~{{minutes}} dk"
         },
         "confirmation": {
             "add_to_contacts": "+ Kişilere ekle",
@@ -2956,6 +2960,7 @@
             "network": "Ağ",
             "fee": "Ücret",
             "current_balance": "Mevcut bakiye",
+            "total": "Toplam",
             "note": "Not",
             "recipient_below_mbr": {
                 "title": "Miktar alıcının minimumunun altında",

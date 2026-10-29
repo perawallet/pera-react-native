@@ -70,6 +70,11 @@ export type UseCsvExportMutationResult = {
     isUnavailableOnNetwork: boolean
 }
 
+const toCsvExportError = (error: Error | null): CsvExportError | null => {
+    if (error instanceof CsvExportError) return error
+    return error ? new CsvExportError(error.message) : null
+}
+
 /**
  * Hook for exporting transaction history to CSV.
  *
@@ -158,12 +163,7 @@ export const useCsvExportMutation = (
         exportCsv,
         isLoading: mutation.isPending,
         isError: mutation.isError,
-        error:
-            mutation.error instanceof CsvExportError
-                ? mutation.error
-                : mutation.error
-                  ? new CsvExportError(mutation.error.message)
-                  : null,
+        error: toCsvExportError(mutation.error),
         isSuccess: mutation.isSuccess,
         result: mutation.data ?? null,
         reset: mutation.reset,

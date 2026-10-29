@@ -146,9 +146,10 @@ export const buildMergedListRows = (
         timestamp: entryRowTimestampOf(row),
     }))
     // Not `b - a`: two in-flight records are both Infinity, and Infinity - Infinity is NaN.
-    timed.sort((a, b) =>
-        a.timestamp === b.timestamp ? 0 : b.timestamp > a.timestamp ? 1 : -1,
-    )
+    timed.sort((a, b) => {
+        if (a.timestamp === b.timestamp) return 0
+        return b.timestamp > a.timestamp ? 1 : -1
+    })
     return groupByDate(
         timed,
         ({ timestamp }) =>

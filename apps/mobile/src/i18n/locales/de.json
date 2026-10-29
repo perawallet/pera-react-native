@@ -2936,7 +2936,11 @@
             "slow": "Langsam",
             "normal": "Normal",
             "fast": "Schnell",
-            "max_fee": "Maximale Gebühr"
+            "max_fee": "Maximale Gebühr",
+            "max_fee_for_preset": "Maximale Gebühr ({{preset}})",
+            "max_fee_info": "Das Maximum, das du zahlst, falls die Netzwerkgebühren steigen. Meist zahlst du weniger.",
+            "wait_seconds": "~{{seconds}} Sek.",
+            "wait_minutes": "~{{minutes}} Min."
         },
         "confirmation": {
             "add_to_contacts": "+ Zu Kontakten hinzufügen",
@@ -2948,6 +2952,7 @@
             "network": "Netzwerk",
             "fee": "Gebühr",
             "current_balance": "Aktuelles Guthaben",
+            "total": "Gesamt",
             "note": "Notiz",
             "recipient_below_mbr": {
                 "title": "Betrag unter Empfänger-Mindestguthaben",

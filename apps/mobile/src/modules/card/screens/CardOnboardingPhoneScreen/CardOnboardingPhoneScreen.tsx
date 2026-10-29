@@ -21,6 +21,7 @@ import {
     PWView,
 } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
+import { fieldErrorMessageOf } from '../../utils/fieldErrorMessage'
 import { isoToFlagEmoji } from '../../utils/isoToFlagEmoji'
 import { useCardOnboardingPhoneScreen } from './useCardOnboardingPhoneScreen'
 import { useStyles } from './styles'
@@ -109,15 +110,13 @@ export const CardOnboardingPhoneScreen = () => {
                                     showErrorOnBlur
                                     renderErrorMessage
                                     errorStyle={styles.errorMessage}
-                                    errorMessage={
-                                        error?.type === 'server'
-                                            ? error.message
-                                            : error && value
-                                              ? t(
-                                                    'peraCard.verify_phone.phone_invalid',
-                                                )
-                                              : undefined
-                                    }
+                                    errorMessage={fieldErrorMessageOf(
+                                        error,
+                                        value,
+                                        t(
+                                            'peraCard.verify_phone.phone_invalid',
+                                        ),
+                                    )}
                                     testID='card-onboarding-phone-input'
                                 />
                             )}
