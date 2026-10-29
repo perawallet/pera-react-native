@@ -188,6 +188,28 @@ describe('pera/no-deep-relative-imports', () => {
     })
 })
 
+describe('pera/webview-injection-serializer', () => {
+    it('blocks in all mobile source, tests aside, from exactly one override', () => {
+        const mobile = readOxlintConfig('apps/mobile/.oxlintrc.json')
+        const overrides = overridesWith(
+            mobile,
+            'pera/webview-injection-serializer',
+        )
+
+        expect(overrides).toHaveLength(1)
+        expect(overrides[0].files).toEqual(['src/**'])
+        expect(overrides[0].rules['pera/webview-injection-serializer']).toBe(
+            'error',
+        )
+        expect(overrides[0].excludeFiles).toEqual(
+            expect.arrayContaining([
+                'src/**/__tests__/**',
+                'src/**/*.spec.{ts,tsx}',
+            ]),
+        )
+    })
+})
+
 describe('no-console', () => {
     it('blocks console calls in package, extension and browser-app source, tests aside', () => {
         const root = readOxlintConfig('.oxlintrc.json')
