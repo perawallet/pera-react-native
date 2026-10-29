@@ -10,13 +10,13 @@
  limitations under the License
  */
 
-export const GATED_QUERY_HOOKS = ['useQuery', 'useInfiniteQuery']
+const GATED_QUERY_HOOKS = ['useQuery', 'useInfiniteQuery']
 
 // isLoading is deliberately not checked: v5 defines it as isPending &&
 // isFetching, so it is already false while a query is disabled or paused.
 
 /** Reading either one says whether a fetch is actually running. */
-export const FETCH_STATE_FLAGS = ['fetchStatus', 'isFetching']
+const FETCH_STATE_FLAGS = ['fetchStatus', 'isFetching']
 
 const FUNCTION_TYPES = [
     'FunctionDeclaration',

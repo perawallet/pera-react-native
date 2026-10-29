@@ -23,7 +23,6 @@ import {
     member,
     overridesWith,
     readOxlintConfig,
-    withParents,
     type Node,
     withParents,
 } from './helpers.js'
