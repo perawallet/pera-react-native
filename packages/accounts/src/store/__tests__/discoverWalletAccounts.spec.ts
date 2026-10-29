@@ -95,7 +95,7 @@ describe('discoverWalletAccounts', () => {
         activeAt(ETHEREUM, [{ account: 0, keyIndex: 0 }])
         state().setAccounts([pathHolder({ account: 0, keyIndex: 0 })])
 
-        const changed = await state().discoverWalletAccounts(SEED)
+        const { accounts: changed } = await state().discoverWalletAccounts(SEED)
 
         expect(changed.map(account => account.id)).toEqual(['holder-0-0'])
         expect(state().accounts).toHaveLength(1)
@@ -179,7 +179,10 @@ describe('discoverWalletAccounts', () => {
         )
         state().setAccounts([pathHolder({ account: 0, keyIndex: 0 }), watcher])
 
-        await expect(state().discoverWalletAccounts(SEED)).resolves.toEqual([])
+        await expect(state().discoverWalletAccounts(SEED)).resolves.toEqual({
+            accounts: [],
+            coverage: 'complete',
+        })
 
         expect(state().accounts[0].chains[ETHEREUM]).toBeUndefined()
         expect(removed()).toContain(familyHdKeyId(SEED, 'evm', 0, 0))
@@ -195,7 +198,10 @@ describe('discoverWalletAccounts', () => {
         )
         state().setAccounts([pathHolder({ account: 0, keyIndex: 0 }), watcher])
 
-        await expect(state().discoverWalletAccounts(SEED)).resolves.toEqual([])
+        await expect(state().discoverWalletAccounts(SEED)).resolves.toEqual({
+            accounts: [],
+            coverage: 'complete',
+        })
 
         expect(
             state().accounts.some(account => hdIndexOf(account)?.account === 2),
@@ -323,14 +329,17 @@ describe('discoverWalletAccounts', () => {
         await walking
     })
 
-    test('resolves to nothing, changing nothing, when every probe fails', async () => {
+    test('resolves to nothing, unanswered, changing nothing, when every probe fails', async () => {
         for (const probe of families.checkActivity.values()) {
             probe.mockRejectedValue(new Error('offline'))
         }
         const holder = pathHolder({ account: 0, keyIndex: 0 })
         state().setAccounts([holder])
 
-        await expect(state().discoverWalletAccounts(SEED)).resolves.toEqual([])
+        await expect(state().discoverWalletAccounts(SEED)).resolves.toEqual({
+            accounts: [],
+            coverage: 'unanswered',
+        })
         expect(state().accounts).toEqual([holder])
     })
 
@@ -344,7 +353,10 @@ describe('discoverWalletAccounts', () => {
         await state().discoverWalletAccounts(SEED)
         const afterFirst = state().accounts
 
-        await expect(state().discoverWalletAccounts(SEED)).resolves.toEqual([])
+        await expect(state().discoverWalletAccounts(SEED)).resolves.toEqual({
+            accounts: [],
+            coverage: 'complete',
+        })
         expect(state().accounts).toEqual(afterFirst)
     })
 
@@ -477,7 +489,10 @@ describe('discoverWalletAccounts', () => {
             throw new Error('adapter broke')
         })
 
-        await expect(state().discoverWalletAccounts(SEED)).resolves.toEqual([])
+        await expect(state().discoverWalletAccounts(SEED)).resolves.toEqual({
+            accounts: [],
+            coverage: 'partial',
+        })
 
         expect(removed()).toEqual(
             expect.arrayContaining([
@@ -485,5 +500,125 @@ describe('discoverWalletAccounts', () => {
                 familyHdKeyId(SEED, 'evm', 0, 0),
             ]),
         )
+    })
+
+    describe('coverage', () => {
+        test('is complete when every probe answers', async () => {
+            activeAt(ALGORAND, [{ account: 0, keyIndex: 0 }])
+            activeAt(ETHEREUM, [])
+            state().setAccounts([pathHolder({ account: 0, keyIndex: 0 })])
+
+            const { coverage } = await state().discoverWalletAccounts(SEED)
+
+            expect(coverage).toBe('complete')
+        })
+
+        test('is partial when the Ethereum probe rejects, keeping what Algorand found, and a rerun adds the rest', async () => {
+            activeAt(ALGORAND, [
+                { account: 0, keyIndex: 0 },
+                { account: 2, keyIndex: 0 },
+            ])
+            families.checkActivity
+                .get(ETHEREUM)!
+                .mockRejectedValue(new Error('rpc down'))
+            state().setAccounts([pathHolder({ account: 0, keyIndex: 0 })])
+
+            const first = await state().discoverWalletAccounts(SEED)
+
+            expect(first.coverage).toBe('partial')
+            const created = state().accounts.find(
+                account => hdIndexOf(account)?.account === 2,
+            )
+            expect(created?.chains[ALGORAND]).toBeDefined()
+            expect(state().accounts[0].chains[ETHEREUM]).toBeUndefined()
+
+            activeAt(ETHEREUM, [{ account: 0, keyIndex: 0 }])
+
+            const second = await state().discoverWalletAccounts(SEED)
+
+            expect(second.coverage).toBe('complete')
+            expect(second.accounts.map(account => account.id)).toEqual([
+                'holder-0-0',
+            ])
+            expect(state().accounts[0].chains[ETHEREUM]?.enabledBy).toBe(
+                'discovery',
+            )
+        })
+
+        test('is partial when an add fails for a reason other than a duplicate', async () => {
+            activeAt(ALGORAND, [{ account: 0, keyIndex: 0 }])
+            activeAt(ETHEREUM, [{ account: 0, keyIndex: 0 }])
+            state().setAccounts([pathHolder({ account: 0, keyIndex: 0 })])
+            const enableChain = vi
+                .spyOn(state(), 'enableChain')
+                .mockRejectedValue(new Error('keystore locked'))
+
+            const result = await state().discoverWalletAccounts(SEED)
+            enableChain.mockRestore()
+
+            expect(result).toEqual({ accounts: [], coverage: 'partial' })
+        })
+    })
+
+    test('leaves every key it derived referenced by an account or removed, across two runs', async () => {
+        activeAt(ALGORAND, [{ account: 0, keyIndex: 0 }])
+        activeAt(ETHEREUM, [
+            { account: 0, keyIndex: 0 },
+            { account: 2, keyIndex: 0 },
+        ])
+        state().setAccounts([pathHolder({ account: 0, keyIndex: 0 })])
+
+        await state().discoverWalletAccounts(SEED)
+        const second = await state().discoverWalletAccounts(SEED)
+
+        expect(second).toEqual({ accounts: [], coverage: 'complete' })
+        const derived = (
+            await Promise.all(
+                [ALGORAND, ETHEREUM].flatMap(chainId =>
+                    vi
+                        .mocked(
+                            families.derivations.get(chainId)!.deriveAccount,
+                        )
+                        .mock.results.map(result => result.value),
+                ),
+            )
+        ).map(({ keyPairId }) => keyPairId as string)
+        const referenced = new Set(
+            state().accounts.flatMap(account =>
+                Object.values(account.chains).flatMap(entry =>
+                    entry?.keyPairId ? [entry.keyPairId] : [],
+                ),
+            ),
+        )
+        for (const keyPairId of new Set(derived)) {
+            expect(
+                referenced.has(keyPairId) || removed().includes(keyPairId),
+            ).toBe(true)
+        }
+    })
+
+    test('queues a second walk behind the first, which then finds nothing new', async () => {
+        activeAt(ALGORAND, [{ account: 0, keyIndex: 0 }])
+        activeAt(ETHEREUM, [{ account: 2, keyIndex: 0 }])
+        state().setAccounts([pathHolder({ account: 0, keyIndex: 0 })])
+        const algorandProbe = families.checkActivity.get(ALGORAND)!
+        const probeActivity = algorandProbe.getMockImplementation()!
+        let resumeWalk: (() => void) | undefined
+        algorandProbe.mockImplementationOnce(async (probed: string[]) => {
+            await new Promise<void>(resolve => {
+                resumeWalk = resolve
+            })
+            return probeActivity(probed)
+        })
+
+        const first = state().discoverWalletAccounts(SEED)
+        await vi.waitFor(() => expect(resumeWalk).toBeDefined())
+        const second = state().discoverWalletAccounts(SEED)
+        resumeWalk!()
+
+        const [firstResult, secondResult] = await Promise.all([first, second])
+        expect(firstResult.accounts).toHaveLength(1)
+        expect(secondResult.accounts).toEqual([])
+        expect(state().accounts).toHaveLength(2)
     })
 })
