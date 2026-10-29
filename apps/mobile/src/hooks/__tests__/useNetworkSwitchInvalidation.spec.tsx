@@ -106,6 +106,14 @@ describe('useNetworkSwitchInvalidation', () => {
         expect(mockInvalidateQueries).not.toHaveBeenCalled()
     })
 
+    it('does not invalidate on a re-render that leaves every network unchanged', () => {
+        const { rerender } = renderWithClient()
+
+        rerender()
+
+        expect(mockInvalidateQueries).not.toHaveBeenCalled()
+    })
+
     it('invalidates exactly once when the network changes', () => {
         const { rerender } = renderWithClient()
 
