@@ -66,6 +66,7 @@ vi.mock('../../api', () => ({
 vi.mock('@perawallet/wallet-core-shared', () => ({
     decodeFromBase64: mocks.decodeFromBase64,
     logger: { warn: mocks.loggerWarn },
+    toError: (e: unknown) => (e instanceof Error ? e : new Error(String(e))),
 }))
 vi.mock('@perawallet/wallet-core-multisig', () => ({
     addSignature: mocks.addSignature,

@@ -53,6 +53,7 @@ export const ContactQRContent = ({
         handleShare,
     } = useContactQRContent(contact, initialFamily)
 
+    // lanekeep-ignore-next-line pera/no-numeric-sizes reason: window width minus a 5xl margin on each side
     const qrSize = width - theme.spacing['5xl'] * 2
 
     return (

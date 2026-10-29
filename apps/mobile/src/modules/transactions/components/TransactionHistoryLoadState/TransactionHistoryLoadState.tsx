@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import type { PWViewProps } from '@components/core/PWView'
+import type { PWViewProps } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { OfflineTolerantView } from '@components/OfflineTolerantView'
 import { useLanguage } from '@hooks/useLanguage'
@@ -28,6 +28,8 @@ export type TransactionHistoryLoadStateProps = {
     onSearchOlder: () => void
     /** Offline with nothing cached: not the same claim as an empty history. */
     isOfflineEmpty: boolean
+    /** Replaces the default empty-history copy. */
+    emptyBody?: string
     /** Renders the empty view's loading state in place of its copy. */
     isLoading?: boolean
     style?: PWViewProps['style']
@@ -44,6 +46,7 @@ export const TransactionHistoryLoadState = ({
     isSearchPaused,
     onSearchOlder,
     isOfflineEmpty,
+    emptyBody,
     isLoading,
     style,
 }: TransactionHistoryLoadStateProps) => {
@@ -84,7 +87,10 @@ export const TransactionHistoryLoadState = ({
                 />
             ) : (
                 <EmptyView
-                    body={t('asset_details.transaction_list.empty_body')}
+                    body={
+                        emptyBody ??
+                        t('asset_details.transaction_list.empty_body')
+                    }
                     isLoading={isLoading}
                     style={style}
                 />

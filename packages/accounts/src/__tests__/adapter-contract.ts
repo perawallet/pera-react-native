@@ -788,11 +788,7 @@ export const accountPresentationContractTests = (
 
             for (const kind of makeAdapter().localKeyKinds) {
                 const options = presentation.keyKindOptions(kind.seed)
-                for (const row of [
-                    options?.recover,
-                    options?.create,
-                    options?.import,
-                ]) {
+                for (const row of [options?.recover, options?.create]) {
                     if (!row) continue
                     expect(isNonEmptyString(row.id)).toBe(true)
                     expect(isNonEmptyString(row.titleKey)).toBe(true)

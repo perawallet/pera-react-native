@@ -50,6 +50,8 @@ export const AccountHistory = ({ scrollEnabled }: AccountHistoryProps) => {
         handleSearchOlder,
         isFetchingNextPage,
         isEmpty,
+        networkChainId,
+        emptyBody,
         isOfflineEmpty,
         isRefreshing,
         handleLoadMore,
@@ -112,6 +114,7 @@ export const AccountHistory = ({ scrollEnabled }: AccountHistoryProps) => {
 
     const titleBar = (
         <AccountHistoryTitleBar
+            chainId={networkChainId}
             isCsvExportVisible={isCsvExportVisible}
             isExportingCsv={isExportingCsv}
             onOpenFilter={handleFilterPress}
@@ -143,6 +146,7 @@ export const AccountHistory = ({ scrollEnabled }: AccountHistoryProps) => {
                             isSearchPaused={isSearchPaused}
                             onSearchOlder={handleSearchOlder}
                             isOfflineEmpty={isOfflineEmpty}
+                            emptyBody={emptyBody}
                             style={styles.emptyView}
                         />
                     )}

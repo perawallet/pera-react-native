@@ -199,6 +199,13 @@ const finishNaming = async (): Promise<void> => {
 const importKeyThroughOptions = async (): Promise<void> => {
     fireEvent.click(
         await waitFor(() =>
+            screen.getByTestId(
+                'import_account_options_see_other_options_button',
+            ),
+        ),
+    )
+    fireEvent.click(
+        await waitFor(() =>
             screen.getByTestId('import_account_options_private_key_button'),
         ),
     )

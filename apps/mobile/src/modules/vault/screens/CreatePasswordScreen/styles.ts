@@ -13,15 +13,16 @@
 import { makeStyles } from '@rneui/themed'
 import { getFontWeightVariant } from '@theme/typography'
 
+// lanekeep-ignore-next-line pera/no-numeric-sizes reason: header artwork width
 const HEADER_IMAGE_WIDTH = 137
+// lanekeep-ignore-next-line pera/no-numeric-sizes reason: header artwork height
 const HEADER_IMAGE_HEIGHT = 217
 
 export const useStyles = makeStyles(theme => ({
     container: {
         flex: 1,
         paddingHorizontal: theme.spacing.xl,
-        // Matches UnlockScreen: fixed padding (not vertical centering) so
-        // the form doesn't jump when the error text appears below it.
+        // lanekeep-ignore-next-line pera/no-numeric-sizes reason: fixed top padding (192), not vertical centering, so the form does not jump when the error or lockout text appears below it
         paddingTop: theme.spacing['5xl'] * 2,
         gap: theme.spacing.lg,
     },

@@ -30,6 +30,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { SwipeableAssetItem } from './SwipeableAssetItem'
 import { BackupReminderBanner } from '../BackupReminderBanner'
 import { LegacyQuantumNotice } from '../LegacyQuantumNotice'
+import { NetworkFundingState } from './NetworkFundingState'
 import {
     useAccountAssetList,
     type AccountAssetListItem,
@@ -57,6 +58,7 @@ export const AccountAssetList = ({
         isChainSwitchedOff,
         items,
         chainFilterOptions,
+        fundingChainId,
         selectedChainId,
         setSelectedChainId,
         toggleGroupExpanded,
@@ -195,6 +197,14 @@ export const AccountAssetList = ({
                 automaticallyAdjustKeyboardInsets
                 contentContainerStyle={styles.rootContainer}
                 ListHeaderComponent={listHeader}
+                ListFooterComponent={
+                    fundingChainId === null ? undefined : (
+                        <NetworkFundingState
+                            account={account}
+                            chainId={fundingChainId}
+                        />
+                    )
+                }
                 searchPlaceholder={t(
                     'account_details.assets.search_placeholder',
                 )}

@@ -38,7 +38,7 @@ export const useStyles = makeStyles((theme, { variant }: StyleProps) => ({
     icon: {
         width: theme.spacing.xl,
         height: theme.spacing.xl,
-        borderRadius: theme.spacing.xl / 2,
+        borderRadius: theme.borderRadius.full,
         flexShrink: 0,
     },
     assetName: {

@@ -21,8 +21,8 @@ import { useSendFunds } from '@modules/transactions/hooks'
 import {
     useAccountChainSelection,
     type UseAccountChainSelectionResult,
-} from '../../../hooks/chain-selection/useAccountChainSelection'
-import type { SendFundsStackParamList } from '../../../routes/send-funds/types'
+} from '@modules/transactions/hooks/chain-selection/useAccountChainSelection'
+import type { SendFundsStackParamList } from '@modules/transactions/routes/send-funds/types'
 
 export const useSendChainSelectionScreen =
     (): UseAccountChainSelectionResult => {

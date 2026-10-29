@@ -16,7 +16,7 @@ import {
     isPasskeyBackedUp,
     useBackupSyncStateStore,
 } from '@perawallet/wallet-core-backup'
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, toError } from '@perawallet/wallet-core-shared'
 import type { Passkey } from '@perawallet/wallet-core-passkeys'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { DeleteFromBackupSheet } from '@modules/cloud-backup'
@@ -76,8 +76,7 @@ export const useRemoveFromBackupChoice = (): RemoveFromBackupChoice => {
             } catch (error) {
                 logger.warn('useRemoveFromBackupChoice: choice failed', {
                     credentialId: passkey.keyId,
-                    error:
-                        error instanceof Error ? error.message : String(error),
+                    error: toError(error).message,
                 })
             }
 

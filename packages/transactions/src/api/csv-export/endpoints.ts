@@ -10,7 +10,10 @@
  limitations under the License
  */
 
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import {
+    addressCodecs,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import {
     AppError,
     ErrorCategory,
@@ -40,6 +43,10 @@ export class CsvExportError extends AppError {
     }
 }
 
+const isValidAccountAddress = (address: string, scope: ChainScope): boolean =>
+    addressCodecs.has(scope.chainId) &&
+    addressCodecs.get(scope.chainId).isValid(address, scope.networkId)
+
 /**
  * Parameters for the fetch CSV endpoint.
  */
@@ -65,10 +72,9 @@ export const fetchTransactionsCsv = async (
     const { accountAddress, scope, dateRange, filename, signal, assetId } =
         params
 
-    // Validate address format (Algorand addresses are 58 characters)
-    if (!accountAddress || accountAddress.length !== 58) {
+    if (!isValidAccountAddress(accountAddress, scope)) {
         throw new CsvExportError(
-            `Invalid account address: ${accountAddress}. Expected 58-character base32 address.`,
+            `Invalid ${scope.chainId} account address: ${accountAddress}`,
         )
     }
 

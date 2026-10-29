@@ -97,7 +97,6 @@ const LEGACY_CHAIN_BASELINE: readonly string[] = [
     'apps/mobile/src/modules/messages/screens/MultisigInvitationNameScreen/useMultisigInvitationNameScreen.ts',
     'apps/mobile/src/modules/messages/screens/NotificationsScreen/useNotificationsScreen.ts',
     'apps/mobile/src/modules/migration/screens/MigrationSplashScreen/useMigrationSplashScreen.ts',
-    'apps/mobile/src/modules/onboarding/components/ImportOptionsContent/ImportOptionsContent.tsx',
     'apps/mobile/src/modules/onboarding/hooks/useDelegationScanNoticeResult.ts',
     'apps/mobile/src/modules/onboarding/routes/add-account.tsx',
     'apps/mobile/src/modules/onboarding/routes/index.tsx',
