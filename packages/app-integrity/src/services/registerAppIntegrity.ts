@@ -12,7 +12,11 @@
 
 import type { WalletMode } from '@perawallet/wallet-core-chain-contract'
 import { getProvider } from '@perawallet/wallet-extension-provider'
-import { isConnectivityError, logger } from '@perawallet/wallet-core-shared'
+import {
+    isConnectivityError,
+    logger,
+    toError,
+} from '@perawallet/wallet-core-shared'
 import { requestChallenge, attestDevice } from '../api/integrity'
 import { useAppIntegrityStore } from '../store'
 import type { AppIntegrityStatus, AttestPayload } from '../models'
@@ -96,7 +100,7 @@ export const registerAppIntegrity = async ({
         })
         return { status: 'success' }
     } catch (error) {
-        const message = error instanceof Error ? error.message : String(error)
+        const message = toError(error).message
         if (isConnectivityError(error)) {
             // The handshake runs once at boot, so it races the network coming
             // up; an offline device retries on the next launch and needs no

@@ -17,7 +17,7 @@ import {
     mnemonicIndexToWord,
     useKMS,
 } from '@perawallet/wallet-core-kms'
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, toError } from '@perawallet/wallet-core-shared'
 import { signingKeyOn } from '@perawallet/wallet-core-accounts'
 import type { SerializeMnemonicResolver } from '../sync/types'
 
@@ -42,8 +42,7 @@ export const useResolveMnemonicForBackup = (
                 )
             } catch (error) {
                 logger.warn('useResolveMnemonicForBackup: resolve failed', {
-                    error:
-                        error instanceof Error ? error.message : String(error),
+                    error: toError(error).message,
                 })
                 return null
             }

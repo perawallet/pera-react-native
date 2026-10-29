@@ -24,6 +24,7 @@ import {
     type TransactionPlanner,
     type UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
+import { toError } from '@perawallet/wallet-core-shared'
 import { recordReviewApproval } from '../db/repository'
 import {
     isInteractiveSource,
@@ -396,9 +397,7 @@ const planSigners = (
         return planner.plan(transaction).map(entry => entry.signer)
     } catch (error) {
         if (error instanceof GenesisHashMismatchError) throw error
-        throw new InvalidSignableDataError(
-            error instanceof Error ? error.message : String(error),
-        )
+        throw new InvalidSignableDataError(toError(error).message)
     }
 }
 
