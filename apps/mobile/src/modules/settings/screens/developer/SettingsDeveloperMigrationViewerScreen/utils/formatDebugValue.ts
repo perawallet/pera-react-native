@@ -10,9 +10,7 @@
  limitations under the License
  */
 
-import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
-
-const ALGORAND_ADDRESS_RE = /^[A-Z2-7]{58}$/
+import { addressCodecs } from '@perawallet/wallet-core-chain-contract'
 
 export const shouldUseStackedLayout = (value: unknown): boolean => {
     if (value instanceof Uint8Array) return true
@@ -42,9 +40,8 @@ export const formatDebugValue = (value: unknown): string => {
     if (typeof value === 'number') return String(value)
     if (typeof value === 'string') {
         if (value.length === 0) return '""'
-        if (ALGORAND_ADDRESS_RE.test(value))
-            return truncateAlgorandAddress(value)
-        return value
+        const codec = addressCodecs.list().find(c => c.isValid(value))
+        return codec ? codec.truncate(value) : value
     }
     if (typeof value === 'object') {
         try {
