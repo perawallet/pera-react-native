@@ -89,6 +89,7 @@ export const PERMIT_NOW_MS = 1_767_225_600_000
 // arrives, so every vector also exercises checksumming and string parsing.
 export const PERMIT_SPENDER = '0x70997970c51812dc3a010c7d01b50e0d17dc79c8'
 export const PERMIT_USDC = '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48'
+export const PERMIT_POSITIONS = '0xc36442b4a4522e871399cd717abdd847ab11fe88'
 export const PERMIT_WETH = '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2'
 export const PERMIT2_ADDRESS = '0x000000000022d473030f116ddee9f6b43ac78ba3'
 /** 30 and 60 days after `PERMIT_NOW_MS`, in Unix seconds. */
@@ -186,6 +187,31 @@ export const DAI_PERMIT_TYPED_DATA = {
         nonce: '0',
         expiry: PERMIT_DEADLINE_30D,
         allowed: true,
+    },
+}
+
+// Uniswap V3 positions NFT's permit (EIP-4494): one token id, not an amount.
+export const ERC721_PERMIT_TYPED_DATA = {
+    domain: {
+        name: 'Uniswap V3 Positions NFT-V1',
+        version: '1',
+        chainId: 1,
+        verifyingContract: PERMIT_POSITIONS,
+    },
+    types: {
+        Permit: [
+            { name: 'spender', type: 'address' },
+            { name: 'tokenId', type: 'uint256' },
+            { name: 'nonce', type: 'uint256' },
+            { name: 'deadline', type: 'uint256' },
+        ],
+    },
+    primaryType: 'Permit',
+    message: {
+        spender: PERMIT_SPENDER,
+        tokenId: '123456',
+        nonce: '0',
+        deadline: PERMIT_DEADLINE_30D,
     },
 }
 

@@ -48,7 +48,7 @@ export const CHAIN_CAPABILITIES = [
     'manageAssets',
     // Importing an account from a raw private key, and revealing it.
     'privateKeys',
-    // Decoding dApp contract calls with bundled ABIs and warning on approvals.
+    // Naming dApp calls on contracts outside the chain's token standards, from bundled ABIs.
     'contractDecoding',
     // Pera-backed slices of broader features whose base data comes from the node.
     'priceHistory',

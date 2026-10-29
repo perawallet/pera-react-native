@@ -154,7 +154,7 @@ const isAutoApproved = (transaction: ReviewedTransaction): boolean => {
 
 // The wallet's own calls are explained by the proofs their summaries pass.
 const isRecognising = (context: ReviewContext): boolean =>
-    context.capabilities.contractDecoding && !context.isWalletBuilt
+    !context.isWalletBuilt
 
 const recognisedCallOf = (
     transaction: ReviewedTransaction,
@@ -503,10 +503,11 @@ const reviewCall = async (
 }
 
 /**
- * Native transfers and the wallet's own token and NFT transfers are explained.
- * While `contractDecoding` is on, a dApp's standard token transfers and
- * approvals are read from their calldata; every other call is unrecognised
- * unless `recogniseCall` reads it, which it is asked only then.
+ * Native transfers and the wallet's own token and NFT transfers are explained
+ * by their proofs. A dApp's standard token transfers and approvals are read
+ * from their calldata whatever the chain's capabilities; any other call is
+ * unrecognised unless `recogniseCall` reads it, which it is asked only while
+ * `contractDecoding` is on.
  */
 export const createEthereumReviewer = ({
     chain,

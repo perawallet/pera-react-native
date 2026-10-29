@@ -19,7 +19,9 @@ import {
     typedDataMessageRequest,
 } from '../messages'
 import {
+    DAI_PERMIT_TYPED_DATA,
     EIP2612_PERMIT_TYPED_DATA,
+    ERC721_PERMIT_TYPED_DATA,
     MAIL_TYPED_DATA,
     PERMIT2_BATCH_TRANSFER_FROM_TYPED_DATA,
     PERMIT2_BATCH_TYPED_DATA,
@@ -29,6 +31,7 @@ import {
     PERMIT2_TRANSFER_FROM_TYPED_DATA,
     PERMIT2_WITNESS_TRANSFER_FROM_TYPED_DATA,
     PERMIT_NOW_MS,
+    PERMIT_POSITIONS,
     PERMIT_SPENDER,
     PERMIT_USDC,
     PERMIT_WETH,
@@ -216,6 +219,59 @@ describe('spend approval recognition', () => {
         ])
     })
 
+    it('reads a DAI-style Permit with allowed true as an unlimited allowance to the spender, its expiry the deadline', () => {
+        expect(describeTyped(DAI_PERMIT_TYPED_DATA).spendApproval).toEqual({
+            spender: getAddress(PERMIT_SPENDER),
+            allowances: [
+                asset(
+                    getAddress(DAI_PERMIT_TYPED_DATA.domain.verifyingContract),
+                ),
+            ],
+            deadline: 1769817600000,
+            isLongLived: false,
+        })
+    })
+
+    it('reads a DAI-style Permit with expiry 0 as never expiring', () => {
+        const typed = edit(DAI_PERMIT_TYPED_DATA, copy => {
+            copy.message.expiry = '0'
+        })
+
+        const approval = describeTyped(typed).spendApproval
+
+        expect(approval).toBeDefined()
+        expect(approval).not.toHaveProperty('deadline')
+        expect(approval?.isLongLived).toBe(true)
+    })
+
+    it.each([false, 'true'])(
+        'adds no approval to a DAI-style Permit unless allowed is true (%s)',
+        allowed => {
+            const typed = edit(DAI_PERMIT_TYPED_DATA, copy => {
+                copy.message.allowed = allowed
+            })
+
+            expect(describeTyped(typed)).not.toHaveProperty('spendApproval')
+        },
+    )
+
+    it('reads an ERC-721 Permit as access to that token id for the spender', () => {
+        expect(describeTyped(ERC721_PERMIT_TYPED_DATA).spendApproval).toEqual({
+            spender: getAddress(PERMIT_SPENDER),
+            allowances: [
+                {
+                    assetRef: {
+                        chainId: 'ethereum',
+                        assetId: `${getAddress(PERMIT_POSITIONS)}/123456`,
+                    },
+                    amount: new Decimal(1),
+                },
+            ],
+            deadline: 1769817600000,
+            isLongLived: false,
+        })
+    })
+
     it('treats amounts of max uint160 and above as unlimited', () => {
         const nearMax = edit(PERMIT2_TRANSFER_FROM_TYPED_DATA, copy => {
             copy.message.permitted.amount = (maxUint160 + 5n).toString()
@@ -279,6 +335,31 @@ describe('spend approval recognition', () => {
                 'a Permit with no verifyingContract',
                 edit(EIP2612_PERMIT_TYPED_DATA, copy => {
                     delete copy.domain.verifyingContract
+                }),
+            ],
+            [
+                'a DAI-style Permit with allowed typed uint256',
+                edit(DAI_PERMIT_TYPED_DATA, copy => {
+                    copy.types.Permit[4].type = 'uint256'
+                }),
+            ],
+            [
+                'an ERC-721 Permit with tokenId and nonce swapped',
+                edit(ERC721_PERMIT_TYPED_DATA, copy => {
+                    const { Permit } = copy.types
+                    ;[Permit[1], Permit[2]] = [Permit[2], Permit[1]]
+                }),
+            ],
+            [
+                'an ERC-721 Permit with no verifyingContract',
+                edit(ERC721_PERMIT_TYPED_DATA, copy => {
+                    delete copy.domain.verifyingContract
+                }),
+            ],
+            [
+                'an ERC-721 Permit whose tokenId is past uint256',
+                edit(ERC721_PERMIT_TYPED_DATA, copy => {
+                    copy.message.tokenId = (maxUint256 + 1n).toString()
                 }),
             ],
             [
