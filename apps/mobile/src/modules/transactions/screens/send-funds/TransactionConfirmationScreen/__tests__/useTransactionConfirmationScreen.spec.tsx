@@ -50,6 +50,7 @@ import {
 } from '@perawallet/wallet-core-chain-shared'
 import { useToast } from '@hooks/useToast'
 import { useSendFunds } from '@modules/transactions/hooks'
+import { useSendTotal } from '../useSendTotal'
 import { capabilityState } from '@test-utils/capability-mock'
 
 const mockNavigate = vi.fn()
@@ -189,7 +190,34 @@ vi.mock('@hooks/useToast', () => ({
     useToast: vi.fn(),
 }))
 
-vi.mock('@hooks/useLanguage')
+// Keys only, unless a spec opts in to see the interpolation params.
+const translation = vi.hoisted(() => ({ echoParams: false }))
+
+vi.mock('@hooks/useLanguage', () => ({
+    useLanguage: () => ({
+        t: (key: string, params?: Record<string, unknown>) =>
+            translation.echoParams && params
+                ? `${key} ${JSON.stringify(params)}`
+                : key,
+        currentLanguage: 'en',
+        changeLanguage: () => undefined,
+    }),
+}))
+
+// The barrel pulls in the component tree; the precision policy is all this needs.
+vi.mock('@components/CurrencyAmount', () =>
+    vi.importActual('@components/CurrencyAmount/precision'),
+)
+
+const SEND_TOTAL = vi.hoisted(() => ({
+    lines: [],
+    preferredValue: undefined,
+    isPending: false,
+}))
+
+vi.mock('../useSendTotal', () => ({
+    useSendTotal: vi.fn(() => SEND_TOTAL),
+}))
 
 const mockChainName = vi.hoisted(() => ({
     value: undefined as string | undefined,
@@ -302,6 +330,7 @@ describe('useTransactionConfirmationScreen', () => {
 
     beforeEach(() => {
         vi.clearAllMocks()
+        translation.echoParams = false
         mockChainName.value = undefined
         mockUseChainNameWhenMultiChain.mockImplementation(
             () => mockChainName.value,
@@ -546,6 +575,7 @@ describe('useTransactionConfirmationScreen', () => {
             act(() => {
                 result.current.handleConfirm()
             })
+            return result
         }
 
         // clearAllMocks keeps a mockReturnValue, so put the planner-fee
@@ -565,19 +595,36 @@ describe('useTransactionConfirmationScreen', () => {
             })
         })
 
-        it("blocks a send whose amount plus the preset's worst-case fee exceeds the native balance", () => {
+        it("reports a send whose amount plus the preset's worst-case fee exceeds the native balance, and won't confirm it", () => {
             ;(useSpendableBalanceQuery as Mock).mockReturnValue({
                 data: { balance: new Decimal(1000), max: new Decimal(1000) },
                 isPending: false,
             })
 
-            confirmNativeSend(new Decimal(600))
+            const result = confirmNativeSend(new Decimal(600))
 
+            expect(result.current.feeShortfall).toEqual({
+                title: 'send_funds.confirmation.fee_shortfall.title',
+                body: 'send_funds.confirmation.fee_shortfall.body',
+            })
             expect(mockNavigate).not.toHaveBeenCalled()
-            expect(mockErrorToast).toHaveBeenCalledWith(
-                'send_funds.confirmation.fee_shortfall.title',
-                expect.any(String),
-                expect.anything(),
+            expect(mockErrorToast).not.toHaveBeenCalled()
+        })
+
+        it('names the native token and the worst-case fee in the shortfall', () => {
+            ;(useSpendableBalanceQuery as Mock).mockReturnValue({
+                data: { balance: new Decimal(1000), max: new Decimal(1000) },
+                isPending: false,
+            })
+            translation.echoParams = true
+
+            const result = confirmNativeSend(new Decimal(600))
+
+            expect(result.current.feeShortfall?.title).toBe(
+                'send_funds.confirmation.fee_shortfall.title {"symbol":"ALGO"}',
+            )
+            expect(result.current.feeShortfall?.body).toBe(
+                'send_funds.confirmation.fee_shortfall.body {"fee":"10.00 ALGO"}',
             )
         })
 
@@ -587,12 +634,57 @@ describe('useTransactionConfirmationScreen', () => {
                 isPending: false,
             })
 
-            confirmNativeSend(new Decimal(500))
+            const result = confirmNativeSend(new Decimal(500))
 
+            expect(result.current.feeShortfall).toBeUndefined()
             expect(mockNavigate).toHaveBeenCalledWith('TransactionProcessing')
         })
 
-        it('blocks a token send when the native balance cannot pay the fee', () => {
+        it('clears the shortfall once a slower preset fits the balance', () => {
+            ;(useSpendableBalanceQuery as Mock).mockReturnValue({
+                data: { balance: new Decimal(1000), max: new Decimal(1000) },
+                isPending: false,
+            })
+            const result = confirmNativeSend(new Decimal(600))
+            expect(result.current.feeShortfall).toBeDefined()
+
+            ;(useSendFeeQuery as Mock).mockReturnValue({
+                ...ETH_FEE,
+                maxFeeAmount: new Decimal(400),
+            })
+            ;(useSendFunds as Mock).mockReturnValue({
+                ...mockSendFundsState,
+                selectedAssetId: '0',
+                amount: new Decimal(600),
+                destination: 'DEST_ADDRESS',
+                feePreset: 'slow',
+            })
+            const { result: slower } = renderHook(() =>
+                useTransactionConfirmationScreen(),
+            )
+
+            expect(slower.current.feeShortfall).toBeUndefined()
+        })
+
+        it('reports no shortfall until the balance has loaded', () => {
+            const result = confirmNativeSend(new Decimal(600))
+
+            expect(result.current.feeShortfall).toBeUndefined()
+        })
+
+        it('totals the send with the fee it will be charged', () => {
+            const result = confirmNativeSend(new Decimal(1))
+
+            expect(result.current.total).toBe(SEND_TOTAL)
+            expect(useSendTotal).toHaveBeenCalledWith({
+                scope: { chainId: 'algorand', networkId: 'mainnet' },
+                asset: expect.objectContaining({ assetId: '0' }),
+                amount: new Decimal(1),
+                feeAmount: ETH_FEE.feeAmount,
+            })
+        })
+
+        it('reports a token send when the native balance cannot pay the fee', () => {
             ;(sendFlowChainAdapters.has as Mock).mockReturnValue(false)
             ;(useSpendableBalanceQuery as Mock).mockReturnValue({
                 data: { balance: new Decimal(100), max: new Decimal(100) },
@@ -616,12 +708,8 @@ describe('useTransactionConfirmationScreen', () => {
                 result.current.handleConfirm()
             })
 
+            expect(result.current.feeShortfall).toBeDefined()
             expect(mockNavigate).not.toHaveBeenCalled()
-            expect(mockErrorToast).toHaveBeenCalledWith(
-                'send_funds.confirmation.fee_shortfall.title',
-                expect.any(String),
-                expect.anything(),
-            )
         })
 
         it('blocks the send when the fee could not be estimated', () => {
@@ -645,6 +733,15 @@ describe('useTransactionConfirmationScreen', () => {
             renderHook(() => useTransactionConfirmationScreen())
 
             expect(useSpendableBalanceQuery).toHaveBeenCalledWith(undefined)
+        })
+
+        it('shows no total or shortfall on a chain with a send-flow adapter', () => {
+            const { result } = renderHook(() =>
+                useTransactionConfirmationScreen(),
+            )
+
+            expect(result.current.total).toBeUndefined()
+            expect(result.current.feeShortfall).toBeUndefined()
         })
     })
 

@@ -52,7 +52,7 @@ import { kmsCore, SeedScheme } from '@perawallet/wallet-core-kms'
 import { getPendingTransactionRecords } from '@perawallet/wallet-core-transactions'
 import { server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
-import { findEnabledByTestId } from '@test-utils/rnw'
+import { findEnabledByTestId, isElementDisabled } from '@test-utils/rnw'
 import {
     resetTestDatabase,
     seedAlgoAsset,
@@ -320,7 +320,7 @@ describe('Flow: send from an Ethereum account', () => {
         })
     })
 
-    it("Given an ether send the balance can't cover with its worst-case fee, when the user confirms, then nothing reaches the node", async () => {
+    it("Given an ether send the balance can't cover with its worst-case fee, when the user reviews it, then the review says so and Confirm stays off", async () => {
         await seedSenderEther('500000000000000000')
         selectSender(ETHEREUM_SENDER)
         useSendFundsStore
@@ -331,15 +331,45 @@ describe('Flow: send from an Ethereum account', () => {
         useSendFundsStore.getState().setSendMode('normal')
 
         renderSendConfirmationStack()
-        await findEnabledByTestId('send_confirm_button', { timeout: 5000 })
 
-        // Confirm waits on the balance and fee reads; press until it answers.
-        await waitFor(() => {
-            fireEvent.click(screen.getByTestId('send_confirm_button'))
-            expect(Notifier.showNotification).toHaveBeenCalled()
-        })
+        expect(
+            await screen.findByTestId('send_fee_shortfall', undefined, {
+                timeout: 5000,
+            }),
+        ).toBeTruthy()
+        const confirm = screen.getByTestId('send_confirm_button')
+        expect(isElementDisabled(confirm)).toBe(true)
+        fireEvent.click(confirm)
         expect(screen.queryByTestId('send_success')).toBeNull()
         expect(sentRawTransactions).toHaveLength(0)
+    })
+
+    it('Given an ether send, when the user reviews it, then each speed shows its wait and the review totals the send with its fee', async () => {
+        selectSender(ETHEREUM_SENDER)
+        useSendFundsStore
+            .getState()
+            .setSelectedAsset({ chainId: 'ethereum', assetId: 'native' })
+        useSendFundsStore.getState().setAmount(new Decimal('0.5'))
+        useSendFundsStore.getState().setDestination(RECEIVER)
+        useSendFundsStore.getState().setSendMode('normal')
+
+        renderSendConfirmationStack()
+
+        for (const preset of ['slow', 'normal', 'fast']) {
+            expect(
+                await screen.findByTestId(`fee_preset_${preset}_wait`),
+            ).toBeTruthy()
+        }
+        expect(screen.getByTestId('fee_max_info')).toBeTruthy()
+        const total = await screen.findByTestId('send_confirm_total')
+        await waitFor(() => expect(total.textContent).toMatch(/0\.5\d*[1-9]/))
+        expect(screen.queryByTestId('send_fee_shortfall')).toBeNull()
+
+        fireEvent.click(screen.getByTestId('fee_preset_slow'))
+
+        await waitFor(() =>
+            expect(useSendFundsStore.getState().feePreset).toBe('slow'),
+        )
     })
 
     it('Given an ERC-20 send, when the user confirms, then a token transfer call reaches the node', async () => {

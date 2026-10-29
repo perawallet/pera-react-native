@@ -40,7 +40,7 @@ import {
     type Nullable,
     type Optional,
     displayUnitsToBaseUnits,
-    formatNumber,
+    formatCurrency,
     ZERO_DECIMAL,
 } from '@perawallet/wallet-core-shared'
 import type {
@@ -57,6 +57,7 @@ import {
     type ChainNotice,
 } from '@perawallet/wallet-core-transactions'
 import { bottomSheetNotifier } from '@components/core'
+import { resolvePrecision } from '@components/CurrencyAmount'
 import type { FeeRowProps } from '@components/FeeRow'
 import { useCapability } from '@hooks/useCapability'
 import { useChainNameWhenMultiChain } from '@hooks/useChainNameWhenMultiChain'
@@ -76,6 +77,7 @@ import type { StackNavigationProp } from '@react-navigation/stack'
 import type { SendFundsStackParamList } from '../../../routes/send-funds/types'
 import { useLanguage } from '@hooks/useLanguage'
 import { NeutralSendFeeSection } from './NeutralSendFeeSection'
+import { useSendTotal, type UseSendTotalResult } from './useSendTotal'
 
 type useTransactionConfirmationScreenResult = {
     asset: Maybe<PeraAsset>
@@ -107,6 +109,10 @@ type useTransactionConfirmationScreenResult = {
     isRecipientInfoPending: boolean
     recipientSafety: UseRecipientSafetyResult
     isSigning: boolean
+    /** The amount plus its fee; set on a chain whose fee is checked against the native balance. */
+    total: Optional<UseSendTotalResult>
+    /** Set while the native balance can't cover the send at the selected preset's worst-case fee. */
+    feeShortfall: Optional<{ title: string; body: string }>
 }
 
 export const useTransactionConfirmationScreen =
@@ -124,7 +130,7 @@ export const useTransactionConfirmationScreen =
             feePreset,
             setFeePreset,
         } = useSendFunds()
-        const { t } = useLanguage()
+        const { t, currentLanguage } = useLanguage()
 
         const assetIDs = useMemo(
             () => (selectedAssetId ? [selectedAssetId] : []),
@@ -244,6 +250,64 @@ export const useTransactionConfirmationScreen =
         const { data: nativeSpendable } =
             useSpendableBalanceQuery(nativeSpendableInput)
 
+        const feeShortfall = useMemo(() => {
+            if (
+                !isFeeCoverageChecked ||
+                !maxFeeAmount ||
+                !nativeSpendable ||
+                !baseUnitAmount ||
+                !selectedAssetId
+            ) {
+                return undefined
+            }
+            const nativeNeeded = isNativeAssetId(selectedAssetId)
+                ? baseUnitAmount.plus(maxFeeAmount)
+                : maxFeeAmount
+            if (!nativeSpendable.max.lt(nativeNeeded)) {
+                return undefined
+            }
+            const maxFee = toWholeUnits(maxFeeAmount, nativeAsset)
+            const { precision, minPrecision } = resolvePrecision(
+                'significant',
+                nativeAsset.decimals,
+                maxFee,
+            )
+            const fee = `${formatCurrency(
+                maxFee,
+                precision,
+                nativeAsset.unitName ?? '',
+                currentLanguage,
+                false,
+                false,
+                minPrecision,
+            )} ${nativeAsset.unitName}`
+            return {
+                title: t('send_funds.confirmation.fee_shortfall.title', {
+                    symbol: nativeAsset.unitName,
+                }),
+                body: t('send_funds.confirmation.fee_shortfall.body', {
+                    fee,
+                }),
+            }
+        }, [
+            isFeeCoverageChecked,
+            maxFeeAmount,
+            nativeSpendable,
+            baseUnitAmount,
+            selectedAssetId,
+            isNativeAssetId,
+            nativeAsset,
+            t,
+            currentLanguage,
+        ])
+
+        const sendTotal = useSendTotal({
+            scope,
+            asset,
+            amount,
+            feeAmount,
+        })
+
         const [isSigning, setIsSigning] = useState(false)
         const isFocused = useIsFocused()
         // Regaining focus after failed signing resets slide-to-confirm.
@@ -286,27 +350,13 @@ export const useTransactionConfirmationScreen =
                     )
                     return
                 }
-                if (!maxFeeAmount || !nativeSpendable || !baseUnitAmount) {
-                    return
-                }
-                const nativeNeeded = isNativeAssetId(selectedAssetId)
-                    ? baseUnitAmount.plus(maxFeeAmount)
-                    : maxFeeAmount
-                if (nativeSpendable.max.lt(nativeNeeded)) {
-                    errorToast(
-                        t('send_funds.confirmation.fee_shortfall.title', {
-                            symbol: nativeAsset.unitName,
-                        }),
-                        t('send_funds.confirmation.fee_shortfall.body', {
-                            fee: `${formatNumber(
-                                toWholeUnits(maxFeeAmount, nativeAsset),
-                                nativeAsset.decimals,
-                            )} ${nativeAsset.unitName}`,
-                        }),
-                        {
-                            notifier: bottomSheetNotifier.current ?? undefined,
-                        },
-                    )
+                // The screen shows the shortfall and disables Confirm.
+                if (
+                    !maxFeeAmount ||
+                    !nativeSpendable ||
+                    !baseUnitAmount ||
+                    feeShortfall
+                ) {
                     return
                 }
             }
@@ -368,5 +418,7 @@ export const useTransactionConfirmationScreen =
             isRecipientInfoPending,
             recipientSafety,
             isSigning,
+            total: isFeeCoverageChecked ? sendTotal : undefined,
+            feeShortfall,
         }
     }

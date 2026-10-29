@@ -20,11 +20,13 @@ import { Decimal } from 'decimal.js'
 import { AccountDisplay } from '@components/AccountDisplay'
 import { QuantumFeeExplainer } from '@modules/transactions/components/QuantumFeeExplainer'
 import { AddressDisplay } from '@components/AddressDisplay'
+import { InfoCallout } from '@components/InfoCallout'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 import { LoadingView } from '@components/LoadingView'
 import { useTransactionConfirmationScreen } from './useTransactionConfirmationScreen'
 import { CloseAccountWarning } from './CloseAccountWarning'
+import { SendTotalRow } from './SendTotalRow'
 import { RecipientWarning } from '../RecipientWarning/RecipientWarning'
 import { RecipientSafetyNotice } from '../RecipientSafetyNotice'
 import { useSaveRecipientContact } from './useSaveRecipientContact'
@@ -60,6 +62,8 @@ export const TransactionConfirmationScreen = () => {
         isRecipientInfoPending,
         recipientSafety,
         isSigning,
+        total,
+        feeShortfall,
     } = useTransactionConfirmationScreen()
     const { canSaveRecipient, saveRecipient } = useSaveRecipientContact(
         destination,
@@ -91,6 +95,15 @@ export const TransactionConfirmationScreen = () => {
                             }
                         />
                     )}
+                    {feeShortfall && (
+                        <InfoCallout
+                            title={feeShortfall.title}
+                            body={feeShortfall.body}
+                            icon='error-circle'
+                            iconVariant='error'
+                            testID='send_fee_shortfall'
+                        />
+                    )}
                     <ConfirmAction
                         title={t('common.slide_to_confirm.label')}
                         onConfirm={handleConfirm}
@@ -98,7 +111,8 @@ export const TransactionConfirmationScreen = () => {
                         isDisabled={
                             !!recipientWarning ||
                             isRecipientInfoPending ||
-                            recipientSafety.isConfirmBlocked
+                            recipientSafety.isConfirmBlocked ||
+                            !!feeShortfall
                         }
                         testID='send_confirm_button'
                     />
@@ -177,6 +191,7 @@ export const TransactionConfirmationScreen = () => {
                         isQuantumFee ? <QuantumFeeExplainer /> : undefined
                     }
                 />
+                {total && <SendTotalRow total={total} />}
                 <PWDivider />
                 {currentBalance && (
                     <KeyValueRow
