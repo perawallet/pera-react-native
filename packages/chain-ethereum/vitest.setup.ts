@@ -37,3 +37,16 @@ vi.mock('@perawallet/wallet-core-app-integrity', () => ({
         'x-app-integrity-token': 'test-integrity-token',
     }),
 }))
+
+// Added tokens live in SQLite, which these specs never open; a spec reading
+// them passes its own `addedTokenIds`.
+vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-accounts')
+    >()),
+    getAddedTokenIdsByAccount: async ({
+        accountAddresses,
+    }: {
+        accountAddresses: readonly string[]
+    }) => new Map(accountAddresses.map(address => [address, []])),
+}))

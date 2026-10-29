@@ -23,6 +23,7 @@ import { SheetHeader } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { useWebView } from '@modules/webview'
 import { config } from '@perawallet/wallet-core-config'
+import { useAsaVerificationInfoContent } from './useAsaVerificationInfoContent'
 import { useStyles } from './styles'
 
 import verificationBadgeLight from '@assets/images/verification-info-badge.png'
@@ -37,6 +38,7 @@ export const AsaVerificationInfoContent = (
     const { theme } = useTheme()
     const { t } = useLanguage()
     const { pushWebView } = useWebView()
+    const { hasAddingNotes, hasOptInNote } = useAsaVerificationInfoContent()
 
     const heroImage =
         theme.mode === 'dark' ? verificationBadgeDark : verificationBadgeLight
@@ -73,6 +75,25 @@ export const AsaVerificationInfoContent = (
                 <PWText style={styles.paragraph}>
                     {t('asa_verification_info.body_3')}
                 </PWText>
+
+                {hasAddingNotes && (
+                    <>
+                        <PWText
+                            variant='h4'
+                            style={styles.sectionTitle}
+                        >
+                            {t('add_asset.info.adding_title')}
+                        </PWText>
+                        {hasOptInNote && (
+                            <PWText style={styles.paragraph}>
+                                {t('add_asset.info.adding_opt_in')}
+                            </PWText>
+                        )}
+                        <PWText style={styles.paragraph}>
+                            {t('add_asset.info.adding_evm')}
+                        </PWText>
+                    </>
+                )}
 
                 <PWButton
                     title={t('asa_verification_info.learn_more')}

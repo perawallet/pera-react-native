@@ -12,12 +12,25 @@
 
 // Add Asset with Ethereum registered beside Algorand: All lists both chains'
 // assets with each row's network, a network chip narrows the list to that
-// chain, and only a chain that can manage assets offers the add action.
+// chain, and each chain offers the add action: Algorand by opt-in, Ethereum by
+// recording the token, with no transaction.
 
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+    afterAll,
+    afterEach,
+    beforeAll,
+    beforeEach,
+    describe,
+    expect,
+    it,
+    vi,
+} from 'vitest'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 
-import { useAccountsStore } from '@perawallet/wallet-core-accounts'
+import {
+    getAddedTokenIdsByAccount,
+    useAccountsStore,
+} from '@perawallet/wallet-core-accounts'
 import {
     assetsAdapterFor,
     type DisplayableAsset,
@@ -30,6 +43,11 @@ import type {
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { setCapabilityOverrides } from '@test-utils/capability-overrides'
+import {
+    resetTestDatabase,
+    setupTestDatabase,
+    teardownTestDatabase,
+} from '@test-utils/database-setup'
 import { server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { AddAssetView } from '@modules/assets/components/AddAssetView'
@@ -56,7 +74,12 @@ const ETHEREUM_ADDRESS = '0x1111111111111111111111111111111111111111'
 const DAI = '0x6B175474E89094C44Da98b954EedeAC495271d0F'
 const ETHEREUM_LISTED: DisplayableAsset[] = [
     { assetId: 'native', name: 'Ether', unitName: 'ETH' },
-    { assetId: DAI, name: 'Dai Stablecoin', unitName: 'DAI' },
+    {
+        assetId: DAI,
+        name: 'Dai Stablecoin',
+        unitName: 'DAI',
+        peraMetadata: { verificationTier: 'verified' },
+    },
 ]
 
 describe('Flow: Add Asset with a second chain registered', () => {
@@ -117,7 +140,7 @@ describe('Flow: Add Asset with a second chain registered', () => {
             'AddAsset',
         )
 
-    it("Given Add Asset opens on All, then it lists both chains' assets, each with its network, and offers adding only on Algorand", async () => {
+    it("Given Add Asset opens on All, then it lists both chains' assets, each with its network, and offers adding on both", async () => {
         renderAddAsset(null)
 
         await waitFor(() => {
@@ -131,7 +154,8 @@ describe('Flow: Add Asset with a second chain registered', () => {
         expect(
             screen.getByTestId('asset_search_item_add_31566704'),
         ).toBeTruthy()
-        expect(screen.queryByTestId(`asset_search_item_add_${DAI}`)).toBeNull()
+        expect(screen.getByTestId(`asset_search_item_add_${DAI}`)).toBeTruthy()
+        expect(screen.queryByTestId('asset_search_item_add_native')).toBeNull()
         expect(screen.queryByTestId('add_asset_partial_results')).toBeNull()
     })
 
@@ -205,5 +229,44 @@ describe('Flow: Add Asset with a second chain registered', () => {
         expect(
             screen.queryByTestId('asset_search_item_add_31566704'),
         ).toBeNull()
+    })
+    describe('with a database to record added tokens', () => {
+        beforeAll(setupTestDatabase)
+        beforeEach(resetTestDatabase)
+        afterAll(teardownTestDatabase)
+
+        it('Given Add Asset opens on Ethereum, when + is tapped on a token, then it is added at once and its check offers Remove', async () => {
+            vi.spyOn(
+                assetsAdapterFor(ETHEREUM_MAINNET),
+                'syncAssets',
+            ).mockResolvedValue(undefined)
+            renderAddAsset('ethereum' as ChainId)
+
+            await waitFor(() => {
+                expect(
+                    screen.getByTestId(`asset_search_item_add_${DAI}`),
+                ).toBeTruthy()
+            })
+            expect(
+                screen.getByPlaceholderText('add_asset.search_placeholder_evm'),
+            ).toBeTruthy()
+
+            fireEvent.click(screen.getByTestId(`asset_search_item_add_${DAI}`))
+
+            await waitFor(() => {
+                expect(
+                    screen.getByTestId(`asset_search_item_remove_${DAI}`),
+                ).toBeTruthy()
+            })
+            expect(
+                screen.queryByTestId(`asset_search_item_add_${DAI}`),
+            ).toBeNull()
+            expect(
+                await getAddedTokenIdsByAccount({
+                    accountAddresses: [ETHEREUM_ADDRESS],
+                    scope: ETHEREUM_MAINNET,
+                }),
+            ).toEqual(new Map([[ETHEREUM_ADDRESS, [DAI]]]))
+        })
     })
 })

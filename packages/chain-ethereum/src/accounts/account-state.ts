@@ -16,10 +16,11 @@ import type {
     ChainContext,
     ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
-import type {
-    AccountChangeSignal,
-    AccountsChainAdapter,
-    AccountStateSnapshot,
+import {
+    getAddedTokenIdsByAccount,
+    type AccountChangeSignal,
+    type AccountsChainAdapter,
+    type AccountStateSnapshot,
 } from '@perawallet/wallet-core-accounts'
 import { upsertAssets } from '@perawallet/wallet-core-assets'
 import {
@@ -55,6 +56,15 @@ export type EthereumAccountStateOps = Required<
 > & { readonly chainId: EvmChainId }
 
 type ListedTokenIds = (scope: ChainScope) => Promise<string[]>
+
+/** The tokens each address added, keyed by the address as asked. */
+type AddedTokenIds = (
+    addresses: string[],
+    scope: ChainScope,
+) => Promise<Map<string, string[]>>
+
+const storedAddedTokenIds: AddedTokenIds = (accountAddresses, scope) =>
+    getAddedTokenIdsByAccount({ accountAddresses, scope })
 
 const readFootprint = async (
     ctx: ChainContext,
@@ -95,6 +105,7 @@ type NftRead = Optional<PromiseSettledResult<NftHoldingsRead>>
 const toSnapshot = (
     nativeAssetId: string,
     { wei, tokens }: HolderBalances,
+    addedTokenIds: ReadonlySet<string>,
     latest: number,
     pending: number,
     blockNumber: bigint,
@@ -107,12 +118,18 @@ const toSnapshot = (
             assetId,
             amount: new Decimal(balance.toString()),
         }))
+    const heldIds = new Set(tokenHoldings.map(({ assetId }) => assetId))
+    // An added token shows at zero too; one whose balanceOf failed reads as 0.
+    const addedHoldings = [...addedTokenIds]
+        .filter(assetId => !heldIds.has(assetId))
+        .map(assetId => ({ assetId, amount: new Decimal(0) }))
     return {
         nativeBalanceBaseUnits: baseUnits,
         chainState: { family: 'evm', nonce: { latest, pending } },
         holdings: [
             { assetId: nativeAssetId, amount: baseUnits },
             ...tokenHoldings,
+            ...addedHoldings,
             ...(nfts?.status === 'fulfilled' ? nfts.value.holdings : []),
         ],
         observedRound: Number(blockNumber),
@@ -160,6 +177,7 @@ const readBatch = async (
     ctx: ChainContext,
     chain: EvmChain,
     listedTokenIds: ListedTokenIds,
+    addedTokenIds: AddedTokenIds,
     scope: ChainScope,
     reads: PendingRead[],
 ): Promise<void> => {
@@ -175,10 +193,28 @@ const readBatch = async (
               ),
           ).then(settled => persistNftReads(scope, settled))
         : Promise.resolve(reads.map(() => undefined))
-    const [blockNumber, tokenIds] = await Promise.all([
+    const [blockNumber, tokenIds, addedByAccount] = await Promise.all([
         client.getBlockNumber(),
         hasWhitelist ? listedTokenIds(scope) : [],
+        addedTokenIds(
+            reads.map(read => read.address),
+            scope,
+        ),
     ])
+    // Checksummed on both sides, so a listed token that was also added is
+    // read once; a stored id that isn't an address is skipped, not thrown.
+    const addedOf = (address: string): ReadonlySet<string> =>
+        new Set(
+            (addedByAccount.get(address) ?? [])
+                .filter(id => isAddress(id))
+                .map(id => getAddress(id)),
+        )
+    const readTokenIds = [
+        ...new Set([
+            ...tokenIds.map(id => getAddress(id)),
+            ...reads.flatMap(read => [...addedOf(read.address)]),
+        ]),
+    ]
     // Issued together, so the batching transport sends the aggregates and
     // every nonce read as one request. Pinning to one block keeps balances,
     // nonces and observedRound from straddling a block boundary.
@@ -186,7 +222,7 @@ const readBatch = async (
         readBalances(
             client,
             reads.map(read => read.address),
-            tokenIds,
+            readTokenIds,
             blockNumber,
         ),
         Promise.allSettled(
@@ -216,6 +252,7 @@ const readBatch = async (
             toSnapshot(
                 chain.nativeAsset.assetId,
                 balances.get(getAddress(read.address))!,
+                addedOf(read.address),
                 latest,
                 pending,
                 blockNumber,
@@ -229,6 +266,7 @@ const coalescedAccountReads = (
     ctx: ChainContext,
     chain: EvmChain,
     listedTokenIds: ListedTokenIds,
+    addedTokenIds: AddedTokenIds,
     windowMs: number,
 ): EthereumAccountStateOps['fetchAccountState'] => {
     const batches = new Map<
@@ -239,11 +277,16 @@ const coalescedAccountReads = (
         const batch = batches.get(key)
         batches.delete(key)
         if (!batch) return
-        readBatch(ctx, chain, listedTokenIds, batch.scope, batch.reads).catch(
-            (error: unknown) => {
-                batch.reads.forEach(read => read.reject(error))
-            },
-        )
+        readBatch(
+            ctx,
+            chain,
+            listedTokenIds,
+            addedTokenIds,
+            batch.scope,
+            batch.reads,
+        ).catch((error: unknown) => {
+            batch.reads.forEach(read => read.reject(error))
+        })
     }
     return (address, scope) =>
         new Promise<AccountStateSnapshot>((resolve, reject) => {
@@ -338,10 +381,12 @@ export const createEthereumAccountStateOps = (
         now = Date.now,
         listedTokens = cachedWhitelist(chain, now),
         readWindowMs = ACCOUNT_READ_WINDOW_MS,
+        addedTokenIds = storedAddedTokenIds,
     }: {
         now?: () => number
         listedTokens?: ListedTokens
         readWindowMs?: number
+        addedTokenIds?: AddedTokenIds
     } = {},
 ): EthereumAccountStateOps => ({
     chainId: chain.row.id,
@@ -349,6 +394,7 @@ export const createEthereumAccountStateOps = (
         ctx,
         chain,
         listedTokenIds(listedTokens),
+        addedTokenIds,
         readWindowMs,
     ),
     accountExists: (address, scope) =>

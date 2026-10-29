@@ -360,6 +360,24 @@ const matchesQuery =
         (asset.assetId !== NATIVE_ASSET_ID &&
             asset.assetId.toLowerCase().startsWith(needle))
 
+// A pasted contract address the list doesn't hold is read from the chain, so
+// any token can be added; one that isn't an ERC-20 finds nothing.
+const unlistedToken = async (
+    ctx: ChainContext,
+    chain: EvmChain,
+    query: string,
+    scope: ChainScope,
+): Promise<DisplayableAsset[]> => {
+    if (!isAddress(query, { strict: false })) return []
+    const tokenId = getAddress(query)
+    if (!isTokenAddress(tokenId)) return []
+    try {
+        return [await readErc20(ctx, chain, tokenId, scope)]
+    } catch {
+        return []
+    }
+}
+
 // The backend has no EVM token search, so its token list, which holds no
 // NFTs, is filtered here in one page.
 const search =
@@ -376,10 +394,26 @@ const search =
         if (!hasServices(ctx, scope, ASSETS_SERVICE)) {
             throw new PeraServiceUnavailableError(scope, ASSETS_SERVICE)
         }
-        const assets = (await listedTokens(scope)).map(row => row.asset)
-        const needle = query.trim().toLowerCase()
+        // The list's native row carries the backend's name for it; every
+        // other screen names it from the chain table.
+        const assets = (await listedTokens(scope)).map(({ asset }) =>
+            asset.assetId === NATIVE_ASSET_ID
+                ? {
+                      ...asset,
+                      name: chain.nativeAsset.name,
+                      unitName: chain.nativeAsset.unitName,
+                  }
+                : asset,
+        )
+        const trimmed = query.trim()
+        const needle = trimmed.toLowerCase()
+        if (!needle) return { results: assets, nextCursor: undefined }
+        const matches = assets.filter(matchesQuery(needle))
         return {
-            results: needle ? assets.filter(matchesQuery(needle)) : assets,
+            results:
+                matches.length > 0
+                    ? matches
+                    : await unlistedToken(ctx, chain, trimmed, scope),
             nextCursor: undefined,
         }
     }

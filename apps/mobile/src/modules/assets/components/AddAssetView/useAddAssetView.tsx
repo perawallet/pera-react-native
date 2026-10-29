@@ -10,15 +10,20 @@
  limitations under the License
  */
 
-import { useCallback, useMemo, useState } from 'react'
+import React, { useCallback, useMemo, useState } from 'react'
 import {
+    useAccountAddedTokensQuery,
     useAccountHeldAssetsQuery,
+    useAddTokenMutation,
+    useRemoveTokenMutation,
     useAccountHoldingSources,
     useAccountsStore,
     chainAccountOf,
 } from '@perawallet/wallet-core-accounts'
 import {
     isAssetSearchUnavailableError,
+    isNativeAssetId,
+    PeraAssetVerificationTier,
     useAssetSearchAcrossScopesQuery,
     type ScopedAssetSearchResult,
 } from '@perawallet/wallet-core-assets'
@@ -29,6 +34,7 @@ import {
     useSelectedScopes,
 } from '@perawallet/wallet-core-chain-shared'
 import { useAssetOptInMutation } from '@perawallet/wallet-core-transactions'
+import { ConfirmActionContent } from '@components/ConfirmActionContent'
 import type { FilterOption } from '@components/FilterSelection'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useNetworkStatus } from '@modules/network'
@@ -50,8 +56,10 @@ import {
 } from '@perawallet/wallet-core-shared'
 import {
     assetRefKey,
+    isEvmChainId,
     toScopeKey,
     type ChainId,
+    type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import { toChainFilterOptions } from '../../utils/toChainFilterOptions'
 
@@ -69,6 +77,7 @@ type UseAddAssetViewResult = {
     handleSelectChain: (chainId: Nullable<ChainId>) => void
     searchQuery: string
     handleSearchChange: (text: string) => void
+    searchPlaceholder: string
     results: ScopedAssetSearchResult[]
     /** The results span chains, so each row names its network. */
     showsNetwork: boolean
@@ -91,6 +100,9 @@ type UseAddAssetViewResult = {
     /** Off: the row offers no add action. */
     canAdd: (result: ScopedAssetSearchResult) => boolean
     handleRequestAdd: (result: ScopedAssetSearchResult) => void
+    /** On for a token added here that holds nothing: its check offers Remove. */
+    canRemove: (result: ScopedAssetSearchResult) => boolean
+    handleRequestRemove: (result: ScopedAssetSearchResult) => void
     t: (key: string, params?: Record<string, string | number>) => string
 }
 
@@ -101,6 +113,20 @@ export const resultKey = ({ scope, asset }: ScopedAssetSearchResult): string =>
 
 const withKey = (keys: ReadonlySet<string>, key: string): ReadonlySet<string> =>
     new Set(keys).add(key)
+
+// EVM chains have no opt-in: adding a token only records that Pera shows it,
+// with no transaction or fee.
+const addsWithoutOptIn = (scope: ChainScope): boolean =>
+    isEvmChainId(scope.chainId)
+
+const isVerified = ({ asset }: ScopedAssetSearchResult): boolean =>
+    asset.peraMetadata?.verificationTier === PeraAssetVerificationTier.verified
+
+const chainNameOf = (chainId: ChainId): string =>
+    chainDisplayNameOf(chainId) ?? chainId
+
+const assetLabelOf = ({ asset }: ScopedAssetSearchResult): string =>
+    asset.unitName ?? asset.name ?? asset.assetId
 
 const withoutKey = (
     keys: ReadonlySet<string>,
@@ -230,7 +256,7 @@ export const useAddAssetView = (
     const { optIn } = useAssetOptInMutation(addScope)
     const { showToast } = useToast()
     const { showError } = useErrorToast()
-    const { requestByType } = useBottomSheet()
+    const { request, requestByType } = useBottomSheet()
 
     // Every chain the account is on, not just the searched ones, so picking a
     // chip doesn't start a new read.
@@ -253,14 +279,171 @@ export const useAddAssetView = (
         [optingInKeys],
     )
     const addScopeKey = toScopeKey(addScope)
+    const addressOn = useCallback(
+        (chainId: ChainId) =>
+            selectedAccount
+                ? chainAccountOf(selectedAccount, chainId)?.address
+                : undefined,
+        [selectedAccount],
+    )
     const canAdd = useCallback(
+        (result: ScopedAssetSearchResult) => {
+            if (addsWithoutOptIn(result.scope)) {
+                return (
+                    addressOn(result.scope.chainId) !== undefined &&
+                    !isNativeAssetId(result.scope.chainId, result.asset.assetId)
+                )
+            }
+            return canManageAssets && toScopeKey(result.scope) === addScopeKey
+        },
+        [addressOn, canManageAssets, addScopeKey],
+    )
+
+    const { addedTokens } = useAccountAddedTokensQuery(holdingSources)
+    const removableKeys = useMemo(
+        () =>
+            new Set(
+                addedTokens
+                    .filter(({ hasBalance }) => !hasBalance)
+                    .map(({ scope, assetId }) =>
+                        assetRefKey({ chainId: scope.chainId, assetId }),
+                    ),
+            ),
+        [addedTokens],
+    )
+    const canRemove = useCallback(
         (result: ScopedAssetSearchResult) =>
-            canManageAssets && toScopeKey(result.scope) === addScopeKey,
-        [canManageAssets, addScopeKey],
+            removableKeys.has(resultKey(result)),
+        [removableKeys],
+    )
+    const { addToken } = useAddTokenMutation()
+    const { removeToken } = useRemoveTokenMutation()
+
+    const handleAddToken = useCallback(
+        async (result: ScopedAssetSearchResult) => {
+            const key = resultKey(result)
+            const accountAddress = addressOn(result.scope.chainId)
+            if (!accountAddress || optingInKeys.has(key)) return
+            const assetName = assetLabelOf(result)
+            if (!isVerified(result)) {
+                const confirmed = await request<boolean>({
+                    contents: (
+                        <ConfirmActionContent
+                            icon='warning'
+                            iconVariant='error'
+                            title={t('add_asset.token.unverified_title')}
+                            message={t('add_asset.token.unverified_body', {
+                                assetName,
+                            })}
+                            confirmLabel={t(
+                                'add_asset.token.unverified_confirm',
+                            )}
+                            cancelLabel={t('common.cancel.label')}
+                            testID='add_asset_unverified_token_sheet'
+                            confirmTestID='add_asset_unverified_token_confirm'
+                        />
+                    ),
+                    options: { size: 'auto', enablePanDownToClose: true },
+                })
+                if (confirmed !== true) return
+            }
+            setOptingInKeys(prev => withKey(prev, key))
+            try {
+                await addToken({
+                    accountAddress,
+                    scope: result.scope,
+                    assetId: result.asset.assetId,
+                })
+                setRecentlyOptedInKeys(prev => withKey(prev, key))
+                showToast({
+                    title: t('add_asset.token.added_title'),
+                    body: t('add_asset.token.added_body', {
+                        assetName,
+                        chain: chainNameOf(result.scope.chainId),
+                    }),
+                    type: 'success',
+                })
+            } catch (err) {
+                showError(err, t('add_asset.token.add_failed_title'))
+            } finally {
+                setOptingInKeys(prev => withoutKey(prev, key))
+            }
+        },
+        [addressOn, optingInKeys, request, t, addToken, showToast, showError],
+    )
+
+    const handleRemoveToken = useCallback(
+        async (result: ScopedAssetSearchResult) => {
+            const key = resultKey(result)
+            const accountAddress = addressOn(result.scope.chainId)
+            if (
+                !accountAddress ||
+                !canRemove(result) ||
+                optingInKeys.has(key)
+            ) {
+                return
+            }
+            const assetName = assetLabelOf(result)
+            const chain = chainNameOf(result.scope.chainId)
+            const confirmed = await request<boolean>({
+                contents: (
+                    <ConfirmActionContent
+                        icon='trash'
+                        iconVariant='error'
+                        title={t('add_asset.token.remove_title', {
+                            assetName,
+                        })}
+                        message={t('add_asset.token.remove_body', { chain })}
+                        confirmLabel={t('add_asset.token.remove_confirm')}
+                        cancelLabel={t('common.cancel.label')}
+                        confirmVariant='destructive'
+                        testID='add_asset_remove_token_sheet'
+                        confirmTestID='add_asset_remove_token_confirm'
+                    />
+                ),
+                options: { size: 'auto', enablePanDownToClose: true },
+            })
+            if (confirmed !== true) return
+            setOptingInKeys(prev => withKey(prev, key))
+            try {
+                await removeToken({
+                    accountAddress,
+                    scope: result.scope,
+                    assetId: result.asset.assetId,
+                })
+                setRecentlyOptedInKeys(prev => withoutKey(prev, key))
+                showToast({
+                    title: t('add_asset.token.removed_title'),
+                    body: t('add_asset.token.removed_body', {
+                        assetName,
+                        chain,
+                    }),
+                    type: 'success',
+                })
+            } catch (err) {
+                showError(err, t('add_asset.token.remove_failed_title'))
+            } finally {
+                setOptingInKeys(prev => withoutKey(prev, key))
+            }
+        },
+        [
+            addressOn,
+            canRemove,
+            optingInKeys,
+            request,
+            t,
+            removeToken,
+            showToast,
+            showError,
+        ],
     )
 
     const handleRequestAdd = useCallback(
         async (result: ScopedAssetSearchResult) => {
+            if (addsWithoutOptIn(result.scope)) {
+                await handleAddToken(result)
+                return
+            }
             const key = resultKey(result)
             const sender = selectedAddress
             if (!sender || !canAdd(result) || optingInKeys.has(key)) return
@@ -305,6 +488,7 @@ export const useAddAssetView = (
             }
         },
         [
+            handleAddToken,
             selectedAddress,
             canAdd,
             optingInKeys,
@@ -321,12 +505,27 @@ export const useAddAssetView = (
         (result: ScopedAssetSearchResult) => void handleRequestAdd(result),
         [handleRequestAdd],
     )
+    const requestRemove = useCallback(
+        (result: ScopedAssetSearchResult) => void handleRemoveToken(result),
+        [handleRemoveToken],
+    )
+
+    // "Asset ID" is Algorand's word; an EVM token is found by its contract.
+    const searchPlaceholderOf = (): string => {
+        if (hasCollectible) return t('add_asset.collectible_search_placeholder')
+        const evmCount = searchedChainIds.filter(isEvmChainId).length
+        if (evmCount === 0) return t('add_asset.search_placeholder')
+        if (evmCount === searchedChainIds.length) {
+            return t('add_asset.search_placeholder_evm')
+        }
+        return t('add_asset.search_placeholder_all')
+    }
 
     const unavailableBodyOf = () => {
         if (!isNotListed) return undefined
         if (selectedChainId === null) return t('add_asset.not_listed.body_all')
         return t('add_asset.not_listed.body', {
-            chain: chainDisplayNameOf(selectedChainId) ?? selectedChainId,
+            chain: chainNameOf(selectedChainId),
         })
     }
 
@@ -336,6 +535,7 @@ export const useAddAssetView = (
         handleSelectChain: setPickedChainId,
         searchQuery,
         handleSearchChange: setSearchQuery,
+        searchPlaceholder: searchPlaceholderOf(),
         results,
         showsNetwork: selectedChainId === null && offeredChainIds.length > 1,
         // Typing on an unavailable chain asks nothing, so nothing loads.
@@ -357,6 +557,8 @@ export const useAddAssetView = (
         isOptingIn,
         canAdd,
         handleRequestAdd: requestAdd,
+        canRemove,
+        handleRequestRemove: requestRemove,
         t,
     }
 }

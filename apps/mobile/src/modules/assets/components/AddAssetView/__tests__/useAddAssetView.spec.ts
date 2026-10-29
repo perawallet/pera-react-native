@@ -67,6 +67,12 @@ const { mockGetSelectedAccount } = vi.hoisted(() => ({
     mockGetSelectedAccount: vi.fn((): unknown => mockAccount),
 }))
 
+const { mockAddToken, mockRemoveToken, mockAddedTokens } = vi.hoisted(() => ({
+    mockAddToken: vi.fn().mockResolvedValue(undefined),
+    mockRemoveToken: vi.fn().mockResolvedValue(undefined),
+    mockAddedTokens: vi.fn((): unknown[] => []),
+}))
+
 const { mockUseAccountHeldAssetsQuery } = vi.hoisted(() => ({
     mockUseAccountHeldAssetsQuery: vi.fn((_sources: unknown) => ({
         heldAssets: [
@@ -105,6 +111,9 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
                 : [],
         useAccountHeldAssetsQuery: (sources: unknown) =>
             mockUseAccountHeldAssetsQuery(sources),
+        useAccountAddedTokensQuery: () => ({ addedTokens: mockAddedTokens() }),
+        useAddTokenMutation: () => ({ addToken: mockAddToken }),
+        useRemoveTokenMutation: () => ({ removeToken: mockRemoveToken }),
     }
 })
 
@@ -142,6 +151,9 @@ const lastSearchedScopes = (): unknown => mockUseAssetSearch.mock.lastCall?.[1]
 
 vi.mock('@perawallet/wallet-core-assets', async importOriginal => ({
     ...(await importOriginal<object>()),
+    // The fixture chains register no assets adapter to read a native id from.
+    isNativeAssetId: (_chainId: string, assetId: string) =>
+        assetId === 'native',
     useAssetSearchAcrossScopesQuery: (
         query: string,
         scopes: unknown,
@@ -219,14 +231,20 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
         debounced.heldValue === undefined ? value : (debounced.heldValue as T),
 }))
 
-const { mockRequestByType } = vi.hoisted(() => ({
+const { mockRequestByType, mockRequest } = vi.hoisted(() => ({
     mockRequestByType: vi.fn(),
+    mockRequest: vi.fn(),
 }))
 
 vi.mock('@modules/bottom-sheet', () => ({
     useBottomSheet: () => ({
+        request: mockRequest,
         requestByType: mockRequestByType,
     }),
+}))
+
+vi.mock('@components/ConfirmActionContent', () => ({
+    ConfirmActionContent: () => null,
 }))
 
 describe('useAddAssetView', () => {
@@ -234,6 +252,7 @@ describe('useAddAssetView', () => {
         vi.clearAllMocks()
         mockUseAssetSearch.mockReturnValue(defaultSearchResult)
         mockGetSelectedAccount.mockReturnValue(mockAccount)
+        mockAddedTokens.mockReturnValue([])
         setHasInternet(true)
     })
 
@@ -630,17 +649,18 @@ describe('useAddAssetView', () => {
             expect(result.current.selectedChainId).toBe('ethereum')
         })
 
-        it('offers adding only on a chain that can manage assets, under All too', () => {
+        it('offers adding on Algorand and on Ethereum, under All too, but never the native coin', () => {
             registerEthereumChain()
             const { result } = renderHook(() =>
                 useAddAssetView({ chainId: null }),
             )
             expect(result.current.canAdd(onAlgorand('999'))).toBe(true)
-            expect(result.current.canAdd(onEthereum('0xToken'))).toBe(false)
+            expect(result.current.canAdd(onEthereum('0xToken'))).toBe(true)
+            expect(result.current.canAdd(onEthereum('native'))).toBe(false)
 
             act(() => result.current.handleSelectChain('ethereum'))
 
-            expect(result.current.canAdd(onEthereum('0xToken'))).toBe(false)
+            expect(result.current.canAdd(onEthereum('0xToken'))).toBe(true)
         })
 
         it('shows an asset as added only on the chain it was added on', async () => {
@@ -684,6 +704,180 @@ describe('useAddAssetView', () => {
                 '',
                 [ALGORAND_SCOPE],
                 { hasCollectible: true },
+            )
+        })
+    })
+
+    describe('adding an EVM token', () => {
+        const verified = (assetId: string): ScopedAssetSearchResult => ({
+            scope: ETHEREUM_SCOPE,
+            asset: {
+                assetId,
+                name: 'USD Coin',
+                unitName: 'USDC',
+                peraMetadata: { verificationTier: 'verified' },
+            },
+        })
+
+        beforeEach(() => {
+            registerEthereumChain()
+        })
+
+        it('adds a verified token at once, with no opt-in, and confirms it', async () => {
+            const { result } = renderHook(() =>
+                useAddAssetView({ chainId: 'ethereum' }),
+            )
+
+            await act(async () => {
+                await result.current.handleRequestAdd(verified('0xUSDC'))
+            })
+
+            expect(mockRequest).not.toHaveBeenCalled()
+            expect(mockRequestByType).not.toHaveBeenCalled()
+            expect(mockOptIn).not.toHaveBeenCalled()
+            expect(mockAddToken).toHaveBeenCalledWith({
+                accountAddress: '0xtest',
+                scope: ETHEREUM_SCOPE,
+                assetId: '0xUSDC',
+            })
+            expect(mockT).toHaveBeenCalledWith('add_asset.token.added_body', {
+                assetName: 'USDC',
+                chain: 'Ethereum',
+            })
+            expect(mockShowToast).toHaveBeenCalledWith(
+                expect.objectContaining({ type: 'success' }),
+            )
+            expect(result.current.isOptedIn(verified('0xUSDC'))).toBe(true)
+        })
+
+        it('warns before adding an unverified token, and adds nothing if declined', async () => {
+            mockRequest.mockResolvedValueOnce(undefined)
+            const { result } = renderHook(() =>
+                useAddAssetView({ chainId: 'ethereum' }),
+            )
+
+            await act(async () => {
+                await result.current.handleRequestAdd(onEthereum('0xNEW'))
+            })
+
+            expect(mockRequest).toHaveBeenCalledTimes(1)
+            expect(mockAddToken).not.toHaveBeenCalled()
+        })
+
+        it('adds an unverified token once the warning is accepted', async () => {
+            mockRequest.mockResolvedValueOnce(true)
+            const { result } = renderHook(() =>
+                useAddAssetView({ chainId: 'ethereum' }),
+            )
+
+            await act(async () => {
+                await result.current.handleRequestAdd(onEthereum('0xNEW'))
+            })
+
+            expect(mockAddToken).toHaveBeenCalledTimes(1)
+        })
+
+        it('shows an error toast when adding fails', async () => {
+            const failure = new Error('offline')
+            mockAddToken.mockRejectedValueOnce(failure)
+            const { result } = renderHook(() =>
+                useAddAssetView({ chainId: 'ethereum' }),
+            )
+
+            await act(async () => {
+                await result.current.handleRequestAdd(verified('0xUSDC'))
+            })
+
+            expect(mockShowError).toHaveBeenCalledWith(
+                failure,
+                'add_asset.token.add_failed_title',
+            )
+            expect(result.current.isOptedIn(verified('0xUSDC'))).toBe(false)
+        })
+
+        it('offers Remove only for an added token that holds nothing', () => {
+            mockAddedTokens.mockReturnValue([
+                {
+                    scope: ETHEREUM_SCOPE,
+                    assetId: '0xEMPTY',
+                    hasBalance: false,
+                },
+                { scope: ETHEREUM_SCOPE, assetId: '0xHELD', hasBalance: true },
+            ])
+            const { result } = renderHook(() =>
+                useAddAssetView({ chainId: 'ethereum' }),
+            )
+
+            expect(result.current.canRemove(onEthereum('0xEMPTY'))).toBe(true)
+            expect(result.current.canRemove(onEthereum('0xHELD'))).toBe(false)
+            expect(result.current.canRemove(onEthereum('0xOTHER'))).toBe(false)
+        })
+
+        it('removes an added token once confirmed', async () => {
+            mockAddedTokens.mockReturnValue([
+                {
+                    scope: ETHEREUM_SCOPE,
+                    assetId: '0xEMPTY',
+                    hasBalance: false,
+                },
+            ])
+            mockRequest.mockResolvedValueOnce(true)
+            const { result } = renderHook(() =>
+                useAddAssetView({ chainId: 'ethereum' }),
+            )
+
+            await act(async () => {
+                await result.current.handleRequestRemove(onEthereum('0xEMPTY'))
+            })
+
+            expect(mockRemoveToken).toHaveBeenCalledWith({
+                accountAddress: '0xtest',
+                scope: ETHEREUM_SCOPE,
+                assetId: '0xEMPTY',
+            })
+            expect(mockShowToast).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    title: 'add_asset.token.removed_title',
+                }),
+            )
+        })
+
+        it('keeps the token when Remove is dismissed', async () => {
+            mockAddedTokens.mockReturnValue([
+                {
+                    scope: ETHEREUM_SCOPE,
+                    assetId: '0xEMPTY',
+                    hasBalance: false,
+                },
+            ])
+            mockRequest.mockResolvedValueOnce(undefined)
+            const { result } = renderHook(() =>
+                useAddAssetView({ chainId: 'ethereum' }),
+            )
+
+            await act(async () => {
+                await result.current.handleRequestRemove(onEthereum('0xEMPTY'))
+            })
+
+            expect(mockRemoveToken).not.toHaveBeenCalled()
+        })
+
+        it('words the search by network: contract address on EVM, asset ID on Algorand, both under All', () => {
+            const { result } = renderHook(() =>
+                useAddAssetView({ chainId: 'ethereum' }),
+            )
+            expect(result.current.searchPlaceholder).toBe(
+                'add_asset.search_placeholder_evm',
+            )
+
+            act(() => result.current.handleSelectChain('algorand'))
+            expect(result.current.searchPlaceholder).toBe(
+                'add_asset.search_placeholder',
+            )
+
+            act(() => result.current.handleSelectChain(null))
+            expect(result.current.searchPlaceholder).toBe(
+                'add_asset.search_placeholder_all',
             )
         })
     })

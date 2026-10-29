@@ -398,3 +398,69 @@ describe('fetchAccountState whitelist reuse', () => {
         expect(state.holdings.map(h => h.assetId)).toEqual(['native', USDC])
     })
 })
+
+describe('fetchAccountState added tokens', () => {
+    const addedFor =
+        (...assetIds: string[]) =>
+        async (addresses: string[]) =>
+            new Map(addresses.map(address => [address, assetIds]))
+
+    it('keeps an added token at zero and reads one off the list', async () => {
+        server.use(
+            ...rpcAtBlock(
+                '0x64',
+                erc20CallResponder({
+                    [USDC]: token(0n),
+                    [DAI]: token(7n),
+                }),
+            ),
+            ...whitelist(USDC),
+        )
+        const ops = createEthereumAccountStateOps(
+            testChainContext({ services: ['assets'] }),
+            ETHEREUM,
+            { addedTokenIds: addedFor(USDC, DAI.toLowerCase()) },
+        )
+
+        const state = await ops.fetchAccountState(ADDRESS, SCOPE, HINT)
+
+        expect(
+            state.holdings.map(h => [h.assetId, h.amount.toFixed()]),
+        ).toEqual([
+            ['native', '1'],
+            [DAI, '7'],
+            [USDC, '0'],
+        ])
+    })
+
+    it('keeps an added token at zero when its balance read reverts', async () => {
+        server.use(...rpcAtBlock('0x64'), ...whitelist())
+        const ops = createEthereumAccountStateOps(
+            testChainContext({ services: ['assets'] }),
+            ETHEREUM,
+            { addedTokenIds: addedFor(getAddress(BROKEN), 'not-an-address') },
+        )
+
+        const state = await ops.fetchAccountState(ADDRESS, SCOPE, HINT)
+
+        expect(state.holdings.map(h => h.assetId)).toEqual([
+            'native',
+            getAddress(BROKEN),
+        ])
+    })
+
+    it('reads added tokens without the Pera token list', async () => {
+        server.use(
+            ...rpcAtBlock('0x64', erc20CallResponder({ [DAI]: token(3n) })),
+        )
+        const ops = createEthereumAccountStateOps(
+            testChainContext(),
+            ETHEREUM,
+            { addedTokenIds: addedFor(DAI) },
+        )
+
+        const state = await ops.fetchAccountState(ADDRESS, SCOPE, HINT)
+
+        expect(state.holdings.map(h => h.assetId)).toEqual(['native', DAI])
+    })
+})

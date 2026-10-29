@@ -100,6 +100,8 @@
     "add_asset": {
         "title": "Varlık ekle",
         "search_placeholder": "Ada veya varlık ID’sine göre ara",
+        "search_placeholder_evm": "Ad, sembol veya kontrat adresine göre ara",
+        "search_placeholder_all": "Ad, sembol, varlık ID’si veya adrese göre ara",
         "no_results": "Varlık bulunamadı",
         "partial_results": "Bazı ağlarda arama yapılamadı, bu yüzden bazı sonuçlar eksik olabilir.",
         "not_listed": {
@@ -126,7 +128,26 @@
         },
         "collectible_title": "NFT’ye opt-in ol",
         "collectible_note": "NFT’yi cüzdanına aktarabilmek için NFT’nin ASA ID’sine opt-in olman gerekir. ASA ID’sini arama çubuğuna yapıştır.",
-        "collectible_search_placeholder": "Varlık ID’si veya NFT adı ara"
+        "collectible_search_placeholder": "Varlık ID’si veya NFT adı ara",
+        "token": {
+            "added_title": "Token eklendi",
+            "added_body": "{{assetName}}, {{chain}} ağına eklendi",
+            "add_failed_title": "Token eklenemedi",
+            "unverified_title": "Doğrulanmamış token",
+            "unverified_body": "Pera, {{assetName}} tokenını doğrulamadı. Herkes istediği ad veya logoyla token oluşturabilir, bu yüzden eklemeden önce kontrat adresini kontrol et.",
+            "unverified_confirm": "Yine de ekle",
+            "remove_title": "{{assetName}} kaldırılsın mı?",
+            "remove_body": "Bu hesapta {{chain}} ağında artık görünmeyecek. Zincire hiçbir şey gönderilmez ve istediğin zaman yeniden ekleyebilirsin.",
+            "remove_confirm": "Kaldır",
+            "removed_title": "Token kaldırıldı",
+            "removed_body": "{{assetName}}, {{chain}} ağından kaldırıldı",
+            "remove_failed_title": "Token kaldırılamadı"
+        },
+        "info": {
+            "adding_title": "Varlık ekleme",
+            "adding_opt_in": "Algorand’da varlık eklemek bir opt-in işlemidir: küçük bir ücreti olan ve opt-out yapana kadar minimum bakiyeyi kilitleyen bir işlem.",
+            "adding_evm": "Ethereum gibi EVM ağlarında token eklemek ücretsizdir ve işlem gerektirmez. Yalnızca Pera’nın bu hesap için hangi token’ları gösterdiğini değiştirir."
+        }
     },
     "asa_verification_info": {
         "title": "ASA doğrulama",
