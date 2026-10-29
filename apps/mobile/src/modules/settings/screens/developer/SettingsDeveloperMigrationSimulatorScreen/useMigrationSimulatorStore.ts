@@ -12,6 +12,7 @@
 
 import type { MigrationPlanSummary } from '@perawallet/wallet-extension-platform'
 import { getProvider } from '@perawallet/wallet-extension-provider'
+import { toError } from '@perawallet/wallet-core-shared'
 import { create } from 'zustand'
 
 export type SimulationOutcome =
@@ -87,8 +88,7 @@ export const useMigrationSimulatorStore = create<MigrationSimulatorStore>()(
                 })
             } catch (err) {
                 set({
-                    loadError:
-                        err instanceof Error ? err : new Error(String(err)),
+                    loadError: toError(err),
                     isLoadingPlans: false,
                     hasLoadedPlans: true,
                 })
@@ -146,10 +146,7 @@ export const useMigrationSimulatorStore = create<MigrationSimulatorStore>()(
                         dbName: plan.dbName,
                         outcome: {
                             kind: 'error',
-                            message:
-                                err instanceof Error
-                                    ? err.message
-                                    : String(err),
+                            message: toError(err).message,
                         },
                     })
                 }
@@ -185,10 +182,7 @@ export const useMigrationSimulatorStore = create<MigrationSimulatorStore>()(
                             dbName: 'pre-6.x accounts',
                             outcome: {
                                 kind: 'error',
-                                message:
-                                    err instanceof Error
-                                        ? err.message
-                                        : String(err),
+                                message: toError(err).message,
                             },
                         },
                     ],
@@ -220,10 +214,7 @@ export const useMigrationSimulatorStore = create<MigrationSimulatorStore>()(
                             dbName: 'reset',
                             outcome: {
                                 kind: 'error',
-                                message:
-                                    err instanceof Error
-                                        ? err.message
-                                        : String(err),
+                                message: toError(err).message,
                             },
                         },
                     ],

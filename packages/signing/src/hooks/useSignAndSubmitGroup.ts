@@ -23,6 +23,7 @@ import {
     ErrorSeverity,
     generateOrderedUniqueId,
     type Nullable,
+    toError,
 } from '@perawallet/wallet-core-shared'
 import { submitAndAutoRefresh } from '../broadcaster'
 import { plannerChainAdapters } from '../chain-adapter'
@@ -141,10 +142,7 @@ export const useSignAndSubmitGroup = (): SignAndSubmitGroupResult => {
                             )
                             resolve({ txIds })
                         } catch (err) {
-                            const error =
-                                err instanceof Error
-                                    ? err
-                                    : new Error(String(err))
+                            const error = toError(err)
                             reject(error)
                             // Rethrow so the callback transport rejects too —
                             // otherwise the machine reaches `completed` and
