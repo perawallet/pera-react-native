@@ -51,16 +51,20 @@ export const resolveWidgetAmounts = (
     const hasFiat =
         !input.isPriceError && (isAlgoPreferred || !input.isRatePending)
     const asOf = input.priceUpdatedAt
+    const algoFiatPrice = () =>
+        isAlgoPreferred
+            ? input.algoUsdPrice
+            : input.usdToPreferred(input.algoUsdPrice)
+    const portfolioValue = () => {
+        if (isAlgoPreferred) return input.portfolioNativeValue
+        return hasFiat ? input.usdToPreferred(input.portfolioUsdValue) : null
+    }
 
     // "1 ALGO = 1 ALGO" says nothing, so an ALGO-preferred user sees the USD price.
     const algoPrice = input.isPricePending
         ? undefined
         : {
-              value: !hasFiat
-                  ? null
-                  : isAlgoPreferred
-                    ? input.algoUsdPrice
-                    : input.usdToPreferred(input.algoUsdPrice),
+              value: hasFiat ? algoFiatPrice() : null,
               currencyCode: isAlgoPreferred ? USD : input.preferredCurrency,
               asOf,
           }
@@ -68,11 +72,7 @@ export const resolveWidgetAmounts = (
     const portfolio = input.isPortfolioPending
         ? undefined
         : {
-              value: isAlgoPreferred
-                  ? input.portfolioNativeValue
-                  : hasFiat
-                    ? input.usdToPreferred(input.portfolioUsdValue)
-                    : null,
+              value: portfolioValue(),
               currencyCode: input.preferredCurrency,
               algoValue: input.portfolioNativeValue,
               asOf,

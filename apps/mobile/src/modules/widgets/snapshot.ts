@@ -229,6 +229,58 @@ const formatAmount = (
     return isAlgoAssetName(currencyCode) ? `${formatted} ALGO` : formatted
 }
 
+const portfolioSection = ({
+    hasAccounts,
+    isPrivacyMode,
+    portfolio,
+    locale,
+}: BuildWidgetSnapshotInput): WidgetSnapshot['portfolio'] => {
+    if (!hasAccounts) return null
+    if (isPrivacyMode) return { state: 'hidden' }
+    if (!portfolio || portfolio.algoValue === null) return null
+    return {
+        state: 'visible',
+        formatted:
+            portfolio.value === null
+                ? null
+                : formatAmount(
+                      portfolio.value,
+                      FIAT_PRECISION,
+                      portfolio.currencyCode,
+                      locale,
+                  ),
+        algoFormatted: formatAmount(
+            portfolio.algoValue,
+            FIAT_PRECISION,
+            'ALGO',
+            locale,
+        ),
+        asOf: portfolio.asOf,
+    }
+}
+
+const nftsSection = (
+    { hasAccounts, isPrivacyMode, nfts }: BuildWidgetSnapshotInput,
+    cached: ReadonlySet<string>,
+): WidgetSnapshot['nfts'] => {
+    if (!hasAccounts) return null
+    if (isPrivacyMode) return { state: 'hidden' }
+    return {
+        state: 'visible',
+        items: (nfts ?? [])
+            .filter(item => cached.has(item.assetId))
+            .slice(0, MAX_WIDGET_NFTS)
+            .map(item => ({
+                assetId: item.assetId,
+                title: item.title,
+                ...(item.collectionName
+                    ? { collectionName: item.collectionName }
+                    : {}),
+                imageKey: item.assetId,
+            })),
+    }
+}
+
 export const buildWidgetSnapshot = (
     input: BuildWidgetSnapshotInput,
 ): WidgetSnapshot | undefined => {
@@ -271,49 +323,8 @@ export const buildWidgetSnapshot = (
                       ),
                       asOf: algoPrice.asOf,
                   },
-        portfolio: !hasAccounts
-            ? null
-            : isPrivacyMode
-              ? { state: 'hidden' }
-              : !portfolio || portfolio.algoValue === null
-                ? null
-                : {
-                      state: 'visible',
-                      formatted:
-                          portfolio.value === null
-                              ? null
-                              : formatAmount(
-                                    portfolio.value,
-                                    FIAT_PRECISION,
-                                    portfolio.currencyCode,
-                                    locale,
-                                ),
-                      algoFormatted: formatAmount(
-                          portfolio.algoValue,
-                          FIAT_PRECISION,
-                          'ALGO',
-                          locale,
-                      ),
-                      asOf: portfolio.asOf,
-                  },
-        nfts: !hasAccounts
-            ? null
-            : isPrivacyMode
-              ? { state: 'hidden' }
-              : {
-                    state: 'visible',
-                    items: (nfts ?? [])
-                        .filter(item => cached.has(item.assetId))
-                        .slice(0, MAX_WIDGET_NFTS)
-                        .map(item => ({
-                            assetId: item.assetId,
-                            title: item.title,
-                            ...(item.collectionName
-                                ? { collectionName: item.collectionName }
-                                : {}),
-                            imageKey: item.assetId,
-                        })),
-                },
+        portfolio: portfolioSection(input),
+        nfts: nftsSection(input, cached),
         backup: hasAccounts ? (backup ?? null) : null,
         receiveTargets: isPrivacyMode ? null : input.receiveTargets,
         inboxFeed: isPrivacyMode ? null : input.inboxFeed,

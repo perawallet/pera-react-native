@@ -19,11 +19,20 @@ import { useLanguage } from '@hooks/useLanguage'
 import {
     LockOverlayProvider,
     LockOverlayStateProvider,
+    type LockOverlayState,
 } from '@hooks/useIsLockOverlayVisible'
 import { LockoutView } from './LockoutView'
 import { useLockScreen } from './useLockScreen'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { FullScreenLoadingView } from '@components/FullScreenLoadingView'
+
+const lockOverlayStateOf = (
+    isLocked: boolean,
+    isChecking: boolean,
+): LockOverlayState => {
+    if (isLocked) return 'locked'
+    return isChecking ? 'checking' : 'none'
+}
 
 export const AutoLockGuard = ({ children }: PropsWithChildren) => {
     const { isLocked, isChecking, unlock, handleResetData } =
@@ -46,11 +55,7 @@ export const AutoLockGuard = ({ children }: PropsWithChildren) => {
     const isGuardActive = showLoadingOverlay || showLockOverlay
     // From the lock itself, not the overlay shown: a locked app mid-check must
     // still read as locked, or an open QR scanner would ride out the check.
-    const lockOverlayState = isLocked
-        ? 'locked'
-        : isChecking
-          ? 'checking'
-          : 'none'
+    const lockOverlayState = lockOverlayStateOf(isLocked, isChecking)
 
     return (
         <>
