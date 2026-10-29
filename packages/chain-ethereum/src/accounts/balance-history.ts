@@ -344,9 +344,9 @@ export const createEthereumBalanceHistoryOps = (
         const unknown = tokenIds.filter(id => !decimals.has(id))
         for (const batch of partition(unknown, ASSETS_MAX_IDS)) {
             const items = await fetchAssetItems(scope, chain, batch)
-            items.forEach(({ fraction_decimals }, index) => {
-                if (fraction_decimals !== null) {
-                    decimals.set(batch[index]!, fraction_decimals)
+            items.forEach((item, index) => {
+                if (item && item.fraction_decimals !== null) {
+                    decimals.set(batch[index]!, item.fraction_decimals)
                 }
             })
         }

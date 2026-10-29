@@ -43,6 +43,7 @@ export const InputScreen = () => {
     const navigation =
         useNavigation<StackNavigationProp<SendFundsStackParamList>>()
     const {
+        scope,
         asset,
         accountAssetBalance,
         isBalanceReady,
@@ -233,6 +234,7 @@ export const InputScreen = () => {
                             }
                             ignorePrivacyMode
                             sourceAssetId={accountAssetBalance?.assetId ?? ''}
+                            scope={scope}
                             showSymbol
                             variant='h1'
                             style={styles.amountPlaceholder}
@@ -271,6 +273,7 @@ export const InputScreen = () => {
 
                 <AccountAssetItemView
                     accountBalance={accountAssetBalance}
+                    scope={scope}
                     style={styles.assetDisplay}
                 />
             </PWView>
