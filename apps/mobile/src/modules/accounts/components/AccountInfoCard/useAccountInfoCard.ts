@@ -215,13 +215,14 @@ export const useAccountInfoCard = ({
     const scanChainId: ChainId = hardwareDetails
         ? (ledgerChainOf(account) ?? firstLedgerChainId)
         : LEGACY_CHAIN_ID
-    const scanLabel = isHDWallet
-        ? t('account_info.scan_new_wallet_accounts')
-        : isMultichain
-          ? t('account_info.scan_new_accounts', {
-                network: chainDisplayNameOf(scanChainId) ?? scanChainId,
-            })
-          : t('account_info.scan_new_addresses')
+    let scanLabel = t('account_info.scan_new_addresses')
+    if (isHDWallet) {
+        scanLabel = t('account_info.scan_new_wallet_accounts')
+    } else if (isMultichain) {
+        scanLabel = t('account_info.scan_new_accounts', {
+            network: chainDisplayNameOf(scanChainId) ?? scanChainId,
+        })
+    }
 
     const handleScanAddresses = useCallback(() => {
         if (isHDWallet) {
