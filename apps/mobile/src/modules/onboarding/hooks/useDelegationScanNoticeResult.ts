@@ -13,6 +13,7 @@
 import { useCallback } from 'react'
 import {
     chainAccountOf,
+    findAddressHolder,
     useAccountDiscovery,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -30,6 +31,11 @@ export type UseDelegationScanNoticeResultResult = {
     ) => Promise<WalletAccount[] | typeof REKEY_SCAN_UNAVAILABLE>
     /** The addresses `scanRekeyed` takes: each account's on the scan's chain; an account without one is skipped. */
     rekeyScanAddressesOf: (accounts: readonly WalletAccount[]) => string[]
+    /** The candidates none of `held` already holds on the scan's chain. */
+    withoutHeld: (
+        candidates: readonly WalletAccount[],
+        held: readonly WalletAccount[],
+    ) => WalletAccount[]
 }
 
 /**
@@ -80,5 +86,22 @@ export const useDelegationScanNoticeResult =
             [scope.chainId],
         )
 
-        return { scanRekeyed, rekeyScanAddressesOf }
+        const withoutHeld = useCallback(
+            (
+                candidates: readonly WalletAccount[],
+                held: readonly WalletAccount[],
+            ) =>
+                candidates.filter(
+                    candidate =>
+                        findAddressHolder(
+                            held,
+                            scope,
+                            chainAccountOf(candidate, scope.chainId)?.address ??
+                                '',
+                        ) === undefined,
+                ),
+            [scope],
+        )
+
+        return { scanRekeyed, rekeyScanAddressesOf, withoutHeld }
     }

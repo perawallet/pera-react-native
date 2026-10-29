@@ -76,7 +76,7 @@ beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
 afterEach(() => server.resetHandlers())
 afterAll(() => server.close())
 
-const rpc = (nonce = '0x0', ethCall = erc20CallResponder({})) =>
+const rpc = (nonce: Hex = '0x0', ethCall = erc20CallResponder({})) =>
     evmRpcHandlers({
         rpcUrl: TEST_RPC_URL,
         responses: {

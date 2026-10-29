@@ -32,17 +32,13 @@ export type UseHdWalletRescanResult = {
     rescanHdWallet: (account: WalletAccount) => Promise<void>
 }
 
-/**
- * Walks the account's seed across every chain, adds what it finds and tells
- * the user the outcome. A persisted seed has no in-memory root key, so each
- * chain derives through the keystore: no unlock beyond the app's own.
- */
+/** A persisted seed has no in-memory root key, so each chain derives through the keystore: no unlock beyond the app's own. */
 export const useHdWalletRescan = (): UseHdWalletRescanResult => {
     const { t } = useLanguage()
     const { showToast, errorToast } = useToast()
     const navigation = useAppNavigation()
     const { exitAccountFlow } = useExitAccountFlow()
-    const { scanRekeyed, rekeyScanAddressesOf } =
+    const { scanRekeyed, rekeyScanAddressesOf, withoutHeld } =
         useDelegationScanNoticeResult()
     const { setSelectedAccountId } = useSelectedAccountId()
     const discoverWalletAccounts = useAccountsStore(
@@ -62,12 +58,16 @@ export const useHdWalletRescan = (): UseHdWalletRescanResult => {
                     throw new Error('Wallet discovery got no answer')
                 }
 
+                const heldAccounts = useAccountsStore.getState().accounts
                 const addresses = rekeyScanAddressesOf(
-                    useAccountsStore
-                        .getState()
-                        .accounts.filter(held => seedOf(held) === walletId),
+                    heldAccounts.filter(held => seedOf(held) === walletId),
                 )
-                const rekeyed = await scanRekeyed(addresses)
+                const scanned = await scanRekeyed(addresses)
+                // The scan lists every account rekeyed to the wallet, held or not; only the unheld are news.
+                const rekeyed =
+                    scanned === REKEY_SCAN_UNAVAILABLE
+                        ? scanned
+                        : withoutHeld(scanned, heldAccounts)
 
                 if (coverage === 'partial') {
                     showToast({
@@ -126,6 +126,7 @@ export const useHdWalletRescan = (): UseHdWalletRescanResult => {
             discoverWalletAccounts,
             scanRekeyed,
             rekeyScanAddressesOf,
+            withoutHeld,
             showToast,
             errorToast,
             t,

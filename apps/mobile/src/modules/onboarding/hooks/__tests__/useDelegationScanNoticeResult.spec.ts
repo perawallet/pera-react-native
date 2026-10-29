@@ -89,4 +89,17 @@ describe('useDelegationScanNoticeResult', () => {
 
         expect(addresses).toEqual(['ALGO_1', 'ALGO_2'])
     })
+
+    it('drops candidates whose scan-chain address a held account already has', () => {
+        const { result } = renderHook(() => useDelegationScanNoticeResult())
+        const held = { chains: { algorand: { address: 'HELD' } } }
+        const fresh = { chains: { algorand: { address: 'FRESH' } } }
+
+        const unheld = result.current.withoutHeld(
+            [{ chains: { algorand: { address: 'HELD' } } }, fresh] as never,
+            [held] as never,
+        )
+
+        expect(unheld).toEqual([fresh])
+    })
 })

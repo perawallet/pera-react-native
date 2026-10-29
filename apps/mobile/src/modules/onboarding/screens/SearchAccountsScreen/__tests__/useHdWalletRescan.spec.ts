@@ -71,6 +71,15 @@ vi.mock('../../../hooks', () => ({
         scanRekeyed: mocks.scanRekeyed,
         rekeyScanAddressesOf: (accounts: WalletAccount[]) =>
             accounts.flatMap(account => account.chains.algorand?.address ?? []),
+        withoutHeld: (candidates: WalletAccount[], held: WalletAccount[]) =>
+            candidates.filter(
+                candidate =>
+                    !held.some(
+                        account =>
+                            account.chains.algorand?.address ===
+                            candidate.chains.algorand?.address,
+                    ),
+            ),
     }),
     useExitAccountFlow: () => ({ exitAccountFlow: mocks.exitAccountFlow }),
 }))
@@ -204,8 +213,30 @@ describe('useHdWalletRescan', () => {
         expect(mocks.goBack).not.toHaveBeenCalled()
     })
 
+    it('treats rekeyed accounts the wallet already holds as nothing new', async () => {
+        const heldRekeyed = hdAccount('held-rekeyed', {
+            algorand: { address: 'REKEYED', keyPairId: 'k9' },
+        })
+        mocks.held.current = [algorandAccount, heldRekeyed]
+        mocks.scanRekeyed.mockResolvedValue([
+            { id: 'candidate', chains: { algorand: { address: 'REKEYED' } } },
+        ])
+
+        await rescan()
+
+        expect(mocks.replace).not.toHaveBeenCalled()
+        expect(mocks.showToast).toHaveBeenCalledExactlyOnceWith(
+            expect.objectContaining({
+                title: 'onboarding.searching_accounts.no_new_addresses_title',
+            }),
+        )
+        expect(mocks.exitAccountFlow).toHaveBeenCalledOnce()
+    })
+
     it('opens the rekeyed picker after selecting the account when rekeyed accounts exist', async () => {
-        const rekeyed = [hdAccount('rekeyed', {})]
+        const rekeyed = [
+            hdAccount('rekeyed', { algorand: { address: 'NEW_REKEYED' } }),
+        ]
         mocks.scanRekeyed.mockResolvedValue(rekeyed)
 
         await rescan()
