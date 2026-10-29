@@ -360,6 +360,8 @@ export interface AccountsChainAdapter {
      * Batch activity probe for HD discovery. Rejects when the batch can't be
      * checked at all, so "no activity" and "unknown" stay apart; the walks read
      * a rejected batch as inactive, so the gap limit still ends the scan.
+     * An address the probe could not check is left out of the map: callers
+     * read it as inactive, and a walk counts that batch as partly answered.
      */
     checkActivity(
         addresses: string[],

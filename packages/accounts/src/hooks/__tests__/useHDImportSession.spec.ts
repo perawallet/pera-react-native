@@ -90,7 +90,7 @@ describe('useHDImportSession', () => {
         useAccountsStore.setState({ accounts: [] })
         discoverWalletAccounts = vi
             .spyOn(useAccountsStore.getState(), 'discoverWalletAccounts')
-            .mockResolvedValue([])
+            .mockResolvedValue({ accounts: [], coverage: 'complete' })
         prepareMock.mockResolvedValue({
             keyId: 'w-1',
             rootKey: new Uint8Array(96).fill(7),
@@ -247,7 +247,7 @@ describe('useHDImportSession', () => {
         })
         discoverWalletAccounts.mockImplementation(async () => {
             order.push('discover')
-            return []
+            return { accounts: [], coverage: 'complete' }
         })
         const { result } = renderHook(() => useHDImportSession(TESTNET_SCOPE))
         await act(async () => {

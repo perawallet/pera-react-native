@@ -1198,6 +1198,8 @@ export const useAccountsStore: UseBoundStore<
                                 keyPairIds.filter(id => !isKeyClaimed(id)),
                             )
                         let probed: ProbedHdIndex[] = []
+                        const outcomes = { answered: 0, partial: 0, failed: 0 }
+                        let isWalkIncomplete = false
                         // Only the probes read the root key; the adds derive
                         // through the keystore, so it is zeroed before them.
                         try {
@@ -1205,6 +1207,9 @@ export const useAccountsStore: UseBoundStore<
                                 walletId,
                                 chainIds: hdDiscoveryChains(),
                                 onUnusedKeys: removeUnclaimedKeys,
+                                onProbeSettled: outcome => {
+                                    outcomes[outcome]++
+                                },
                                 rootKey: options.rootKey,
                                 heldAccountIndex: Math.max(
                                     -1,
@@ -1217,6 +1222,7 @@ export const useAccountsStore: UseBoundStore<
                                 ),
                             })
                         } catch (error) {
+                            isWalkIncomplete = true
                             logger.warn(
                                 `Wallet discovery failed: ${error instanceof Error ? error.message : 'unknown error'}`,
                             )
@@ -1274,6 +1280,7 @@ export const useAccountsStore: UseBoundStore<
                                             DuplicateAccountError
                                         )
                                     ) {
+                                        isWalkIncomplete = true
                                         logger.warn(
                                             `Could not add discovered ${chainId} entry: ${error instanceof Error ? error.message : 'unknown error'}`,
                                         )
@@ -1304,9 +1311,19 @@ export const useAccountsStore: UseBoundStore<
                                 ),
                             )
                         }
-                        return get().accounts.filter(account =>
-                            changedIds.has(account.id),
-                        )
+                        const hasAnswer =
+                            outcomes.answered + outcomes.partial > 0
+                        return {
+                            accounts: get().accounts.filter(account =>
+                                changedIds.has(account.id),
+                            ),
+                            coverage: !hasAnswer
+                                ? 'unanswered'
+                                : isWalkIncomplete ||
+                                    outcomes.partial + outcomes.failed > 0
+                                  ? 'partial'
+                                  : 'complete',
+                        }
                     }),
                 ),
             addChainAccount: async (
