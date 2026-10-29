@@ -107,8 +107,8 @@ export const BalanceLineChart = <T,>({
                         hideAxesAndRules
                         height={CHART_HEIGHT}
                         color={theme.colors.positive}
-                        startFillColor='#28A79B'
-                        endFillColor='#28A79B'
+                        startFillColor={theme.colors.chartAreaFill}
+                        endFillColor={theme.colors.chartAreaFill}
                         startOpacity={0.3}
                         endOpacity={0.0}
                         areaChart

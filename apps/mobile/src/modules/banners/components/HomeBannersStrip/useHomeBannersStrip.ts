@@ -37,12 +37,8 @@ export const useHomeBannersStrip = (): UseHomeBannersStripResult => {
         navigation.navigate('BannersCarouselModal')
     }, [navigation, banners])
 
-    // No auto-open effect here any more. This used to navigate to the carousel
-    // modal the moment banners loaded, with no knowledge of the terms gate or
-    // the PIN prompt, which is how a migrating user met three unrelated
-    // interruptions in whatever order their triggers happened to fire.
-    // The prompt container owns that decision now; this hook is
-    // only the strip, and only opens the modal when the user taps it.
+    // The strip opens the modal only on tap; auto-open is the prompt
+    // container's call, since only it knows the terms gate and the PIN prompt.
 
     // The strip surfaces the first visible banner only — extras are signalled
     // by the "+N" badge and revealed when the user opens the modal carousel.

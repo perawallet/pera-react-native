@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { useTheme } from '@rneui/themed'
 import {
     PWButton,
     PWIcon,
@@ -30,8 +31,8 @@ import type {
     UseAccountNetworksResult,
 } from './useAccountNetworks'
 
+// lanekeep-ignore-next-line pera/no-numeric-sizes reason: network icon size (40)
 const CHAIN_ICON_SIZE = 40
-const STACKED_CHAIN_ICON_SIZE = 16
 
 const useNoExpandedSection = (_props: AccountChainSectionProps) => false
 
@@ -216,6 +217,7 @@ export const AccountNetworkList = ({
     networks,
     onClose,
 }: AccountNetworkListProps) => {
+    const { theme } = useTheme()
     const styles = useStyles()
     const { t } = useLanguage()
 
@@ -243,7 +245,7 @@ export const AccountNetworkList = ({
                             >
                                 <ChainIcon
                                     chainId={row.chainId}
-                                    size={STACKED_CHAIN_ICON_SIZE}
+                                    size={theme.spacing.lg}
                                 />
                             </PWView>
                         ))}

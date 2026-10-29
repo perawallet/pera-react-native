@@ -304,7 +304,7 @@ export class GenesisHashMismatchError extends PipelineError {
         actual: string,
     ) {
         super(
-            `One or more of the transactions target a different Algorand network than the active one (${network}).`,
+            `One or more of the transactions target a different network than the active one (${network}).`,
             undefined,
             { params: { network, index, expected, actual } },
         )

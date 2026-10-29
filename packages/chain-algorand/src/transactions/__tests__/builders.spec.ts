@@ -218,7 +218,7 @@ describe('Algorand transaction builders', () => {
         const params = {
             scope,
             sourceAddress: 'SRC',
-            rekeyToAddress: 'TGT',
+            authorityAddress: 'TGT',
         }
 
         it('keeps the auto-sized transaction when it already pays the minimum', async () => {

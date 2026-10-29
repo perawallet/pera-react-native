@@ -71,7 +71,7 @@ export const aggregateTransactionWarnings = (
         if (signableAddresses.has(authorizer) && tx.rekeyTo?.publicKey) {
             const rekeyTarget = encodeAlgorandAddress(tx.rekeyTo.publicKey)
             warnings.push({
-                type: 'rekey',
+                type: 'delegation',
                 senderAddress: tx.sender,
                 targetAddress: rekeyTarget,
             })

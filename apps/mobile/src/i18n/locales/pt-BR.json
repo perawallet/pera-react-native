@@ -1112,10 +1112,6 @@
                 "title": "Ativo não aceito",
                 "body": "A conta destinatária não adicionou o ativo {{assetId}}. Peça ao destinatário para adicionar o ativo ou envie pela ASA Inbox."
             },
-            "asset_frozen": {
-                "title": "Ativo congelado",
-                "body": "O ativo {{assetId}} está congelado, então esta transferência não pode ser concluída. O gestor de congelamento do ativo precisa descongelá-lo primeiro."
-            },
             "duplicate_txn": {
                 "title": "Já enviada",
                 "body": "Esta transação já foi processada pela rede."
@@ -1259,6 +1255,10 @@
             "not_replaceable": {
                 "title": "Transação não está mais pendente",
                 "body": "Esta transação já foi confirmada ou substituída, então não pode ser acelerada nem cancelada."
+            },
+            "asset_frozen": {
+                "title": "Ativo congelado",
+                "body": "O ativo {{assetId}} está congelado, então esta transferência não pode ser concluída. O gestor de congelamento do ativo precisa descongelá-lo primeiro."
             }
         },
         "kms": {
@@ -3786,8 +3786,7 @@
         "introduction": {
             "title": "Converter na Pera",
             "description": "A Pera Wallet oferece uma forma rápida e fácil de converter ativos. Com o P.E.R.A., as solicitações de conversão são roteadas de forma inteligente entre várias exchanges descentralizadas baseadas em Algorand para garantir o melhor preço disponível.",
-            "powered_by": "Com tecnologia ",
-            "powered_by_brand": "P.E.R.A.",
+            "powered_by": "Com tecnologia <0>P.E.R.A.</0>",
             "start_swapping": "Começar a converter",
             "terms_agreement": "Ao continuar, você concorda com os <0>Termos de Serviço</0> do nosso parceiro de swap"
         },
@@ -3803,7 +3802,7 @@
             "you_pay": "Você paga",
             "you_receive": "Você recebe",
             "to": "Para",
-            "balance_label": "Saldo: ",
+            "balance_label": "Saldo: <0/>",
             "max": "MÁX",
             "select_asset": "Selecionar"
         },
@@ -3883,7 +3882,7 @@
             },
             "list": {
                 "item": {
-                    "description": "Converteu {{amountIn}} {{unitIn}} por "
+                    "description": "Converteu <0/> por <1/>"
                 },
                 "empty": {
                     "title": "Nenhuma conversão ainda",

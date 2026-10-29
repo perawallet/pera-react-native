@@ -242,8 +242,8 @@ export const useTransactionHistoryQuery = (
         }): Promise<TransactionHistoryResult> => {
             // DB pages: the first read and every cursor page after it. Only
             // once SQLite runs dry does pagination cross to the network —
-            // previously page 2 onwards always did, so scrolling back through
-            // already-synced history refetched it over the wire.
+            // crossing earlier would refetch already-synced history over the
+            // wire whenever the user scrolls back through it.
             if (pageParam == null || pageParam.type === 'db') {
                 const rows = await getTransactionHistory({
                     accountAddress,

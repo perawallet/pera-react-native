@@ -22,9 +22,9 @@ import { upsertAssets } from './metadataRepository'
 /**
  * Seeds the native asset row for EVERY scope of the legacy chain.
  *
- * Derived from `LEGACY_SCOPES` rather than a hand-written list: this seed previously
- * named mainnet and testnet literally, so when betanet and the runtime-
- * configurable custom slot were added the row was silently missing for them.
+ * Derived from `LEGACY_SCOPES` rather than a hand-written list: a list naming
+ * only mainnet and testnet would silently miss the row on betanet and the
+ * runtime-configurable custom slot.
  * `useAssetsQuery` reads assets from this table (network-scoped) and only hits
  * the network when explicitly asked to `fetchMissing`, so a missing native row
  * is not merely cosmetic — `InputScreen` gates its whole form on `!asset` and

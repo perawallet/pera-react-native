@@ -12,8 +12,6 @@
 
 import { makeStyles } from '@rneui/themed'
 
-const SEGMENT_HEIGHT = 4
-
 export const useStyles = makeStyles(theme => ({
     container: {
         gap: theme.spacing.xs,
@@ -24,8 +22,8 @@ export const useStyles = makeStyles(theme => ({
     },
     segment: {
         flex: 1,
-        height: SEGMENT_HEIGHT,
-        borderRadius: SEGMENT_HEIGHT / 2,
+        height: theme.spacing.xs,
+        borderRadius: theme.borderRadius.full,
         backgroundColor: theme.colors.layerGray,
     },
     weak: {

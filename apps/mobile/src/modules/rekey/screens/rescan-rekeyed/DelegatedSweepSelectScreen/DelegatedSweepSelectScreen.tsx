@@ -24,7 +24,7 @@ import { EmptyView } from '@components/EmptyView'
 import { LoadingView } from '@components/LoadingView'
 import { ScreenHeader } from '@components/ScreenHeader'
 import { useLanguage } from '@hooks/useLanguage'
-import { RescanCandidateRow } from '../../../components/rescan-rekeyed/RescanCandidateRow'
+import { RescanCandidateRow } from '@modules/rekey/components/rescan-rekeyed/RescanCandidateRow'
 import { useDelegatedSweepSelectScreen } from './useDelegatedSweepSelectScreen'
 import { useStyles } from './styles'
 

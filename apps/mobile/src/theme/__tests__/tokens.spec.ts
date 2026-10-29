@@ -43,6 +43,20 @@ describe('colour tokens', () => {
         )
     })
 
+    it.each([
+        'chartAreaFill',
+        'bannerCloseButtonBg',
+        'qrCodeBg',
+        'qrCodeFg',
+        'bootsplashContent',
+    ] as const)('%s is the same in light and dark', token => {
+        expect(darkColorTokens[token]).toBe(lightColorTokens[token])
+    })
+
+    it('chartAreaFill is a 6-digit hex, since the native chart appends its own alpha', () => {
+        expect(lightColorTokens.chartAreaFill).toMatch(/^#[0-9A-F]{6}$/i)
+    })
+
     it('uses only hex or rgba colour strings', () => {
         const values = [
             ...Object.values(lightColorTokens),

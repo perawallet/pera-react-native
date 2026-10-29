@@ -15,7 +15,7 @@ import { config } from '@perawallet/wallet-core-config'
 import {
     RekeyIntroScreen,
     type RekeyIntroCopy,
-} from '../../../components/RekeyIntroScreen'
+} from '@modules/rekey/components/RekeyIntroScreen'
 
 const INTRO_COPY: RekeyIntroCopy = {
     titleKey: i18nKey('rekey.to_shared.intro.title'),

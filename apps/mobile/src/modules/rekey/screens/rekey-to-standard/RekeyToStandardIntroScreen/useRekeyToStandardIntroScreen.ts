@@ -11,7 +11,7 @@
  */
 
 import { i18nKey } from '@perawallet/wallet-core-chain-contract'
-import type { RekeyIntroCopy } from '../../../components/RekeyIntroScreen'
+import type { RekeyIntroCopy } from '@modules/rekey/components/RekeyIntroScreen'
 
 const COPY: RekeyIntroCopy = {
     titleKey: i18nKey('rekey.to_standard.intro.title'),

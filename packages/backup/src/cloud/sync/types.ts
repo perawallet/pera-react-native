@@ -34,6 +34,7 @@ import type {
     SyncState,
 } from '../models'
 import type { Contact } from '@perawallet/wallet-core-contacts'
+import { toError } from '@perawallet/wallet-core-shared'
 import type { ItemKeyHasher } from '../crypto/itemKeyHash'
 import type { PulledAccount } from '../restore'
 
@@ -66,9 +67,7 @@ export class BackupPushIncompleteError extends Error {
         readonly state: SyncState,
         error: unknown,
     ) {
-        super(
-            `Backup push incomplete: ${error instanceof Error ? error.message : String(error)}`,
-        )
+        super(`Backup push incomplete: ${toError(error).message}`)
         this.name = 'BackupPushIncompleteError'
     }
 }
