@@ -70,7 +70,11 @@ describe('useBackupReminderBanner', () => {
         mockShouldPrompt.mockReturnValue(false)
         const evmOnly: WalletAccount = {
             id: 'evm-account',
-            custody: { kind: 'local', seed: 'bip39' },
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account: 0, keyIndex: 0 },
+            },
             chains: { ethereum: { address: '0xE1', keyPairId: 'kp-evm' } },
         }
 
