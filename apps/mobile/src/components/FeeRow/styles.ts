@@ -41,6 +41,10 @@ export const useStyles = makeStyles(theme => ({
         alignItems: 'flex-end',
         gap: theme.spacing.xs,
     },
+    // alignItems places the text box; a wrapped amount's lines need their own alignment.
+    amountText: {
+        textAlign: 'right',
+    },
     maxFeeRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',

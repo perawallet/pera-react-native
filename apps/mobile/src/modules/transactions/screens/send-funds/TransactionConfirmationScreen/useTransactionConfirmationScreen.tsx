@@ -266,6 +266,7 @@ export const useTransactionConfirmationScreen =
             if (!nativeSpendable.max.lt(nativeNeeded)) {
                 return undefined
             }
+            const unitName = nativeAsset.unitName ?? ''
             const maxFee = toWholeUnits(maxFeeAmount, nativeAsset)
             const { precision, minPrecision } = resolvePrecision(
                 'significant',
@@ -275,15 +276,15 @@ export const useTransactionConfirmationScreen =
             const maxFeeLabel = `${formatCurrency(
                 maxFee,
                 precision,
-                nativeAsset.unitName ?? '',
+                unitName,
                 currentLanguage,
                 false,
                 false,
                 minPrecision,
-            )} ${nativeAsset.unitName}`
+            )} ${unitName}`
             return {
                 title: t('send_funds.confirmation.fee_shortfall.title', {
-                    symbol: nativeAsset.unitName,
+                    symbol: unitName,
                 }),
                 body: t('send_funds.confirmation.fee_shortfall.body', {
                     fee: maxFeeLabel,

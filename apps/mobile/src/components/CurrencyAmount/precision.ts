@@ -97,10 +97,11 @@ export const resolveSignificantPrecision = (
 /**
  * Single source of truth mapping a {@link PrecisionVariant} to the
  * `{ precision, minPrecision }` pair the formatter consumes. `assetDecimals` is
- * consulted only for `assetFull`; when absent it falls back to
+ * consulted only for `assetFull` and `significant`; when absent it falls back to
  * {@link DEFAULT_PRECISION}, matching the legacy `asset?.decimals ?? DEFAULT_PRECISION`.
  * `value` is consulted only for `compact`, whose fixed 2 dp is the one policy
- * that can hide an amount entirely.
+ * that can hide an amount entirely, and `significant`, which falls back to
+ * 2 dp without it.
  *
  * This is the only place precision policy lives. `CurrencyAmount` delegates to
  * it and never branches on asset-vs-preferred itself.

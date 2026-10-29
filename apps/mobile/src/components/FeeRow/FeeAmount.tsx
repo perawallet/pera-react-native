@@ -41,6 +41,7 @@ export const FeeAmount = ({ scope, amount, testID }: FeeAmountProps) => {
                 alignRight
                 ignorePrivacyMode
                 truncate={false}
+                style={styles.amountText}
                 testID={testID}
             />
             <PreferredAmount
@@ -51,7 +52,7 @@ export const FeeAmount = ({ scope, amount, testID }: FeeAmountProps) => {
                 alignRight
                 ignorePrivacyMode
                 truncate={false}
-                style={styles.secondaryText}
+                style={[styles.secondaryText, styles.amountText]}
                 testID={testID ? `${testID}_fiat` : undefined}
             />
         </PWView>
