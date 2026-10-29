@@ -85,6 +85,7 @@ export const baanxDirectRequest = async <TData, TVars = unknown>(
 
     if (req.authenticated && hasSecret(ACCESS_TOKEN_SECRET_ID)) {
         const result = await withSecret(ACCESS_TOKEN_SECRET_ID, bytes =>
+            // lanekeep-ignore-next-line pera/no-secret-strings reason: the Baanx Authorization header is a string
             send(`Bearer ${textDecoder.decode(bytes)}`).then(response =>
                 parseResponse<TData>(response, req.responseType),
             ),

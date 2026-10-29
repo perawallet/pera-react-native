@@ -440,7 +440,7 @@ export default defineRule({
         message:
             'key material becomes a string, or is held in React state, a memo or a store',
         remediation:
-            'Keep the bytes or wordlist indices and convert only at render, or at the boundary that needs a string, inside the scoped helper (withSecret and the like). A buffer that leaves a scoped helper goes through handOffSecret(buffer) to the owner that zeroes it. Where a string is unavoidable (a third-party API that only takes one), suppress that one line with `// lanekeep-ignore-next-line pera/no-secret-strings reason: <the boundary>`.',
+            'Keep the bytes or wordlist indices and convert only at render, or at the boundary that needs a string, inside the scoped helper (withSecret and the like). A buffer that leaves a scoped helper goes through handOffSecret(buffer) to the owner that zeroes it. Where a string is unavoidable (a third-party API that only takes one), suppress that one line with an ignore-next-line directive for this rule whose reason names the boundary. File-scope suppressions are refused.',
         examples: {
             bad: 'withSecret(id, bytes => bytesToHex(bytes))',
             good: 'withSecret(id, bytes => sign(bytes))',

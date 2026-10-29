@@ -58,6 +58,7 @@ export const createKeystoreSessionKeyStore =
         has: clientId => hasSecret(sessionKeySecretRef(clientId)),
         read: clientId =>
             withSecret(sessionKeySecretRef(clientId), bytes =>
+                // lanekeep-ignore-next-line pera/no-secret-strings reason: the WalletConnect v1 connector holds session.key as a hex string
                 decoder.decode(bytes),
             ),
         remove: async clientId => {

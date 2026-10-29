@@ -70,6 +70,7 @@ export const useSyncDevicesQr = (): UseSyncDevicesQrResult => {
             // consumed here and only the ciphertext may leave.
             payload = await withBackupMnemonicIndices(indices =>
                 encryptBackupSyncQr({
+                    // lanekeep-ignore-next-line pera/no-secret-strings reason: the sync QR payload carries the phrase as space-joined words
                     mnemonic: Array.from(indices, mnemonicIndexToWord).join(
                         ' ',
                     ),

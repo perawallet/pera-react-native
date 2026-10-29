@@ -38,6 +38,7 @@ export const useResolveMnemonicForBackup = (
                     keyPairId,
                     BACKUP_ACCESS_DOMAIN,
                     indices =>
+                        // lanekeep-ignore-next-line pera/no-secret-strings reason: the backup payload carries the phrase as space-joined words
                         Array.from(indices, mnemonicIndexToWord).join(' '),
                 )
             } catch (error) {

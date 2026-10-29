@@ -89,6 +89,7 @@ export const refreshSession = async (scope: ChainScope): Promise<boolean> => {
     try {
         const tokens = await withSecret(REFRESH_TOKEN_SECRET_ID, bytes =>
             refreshTokenRequest({
+                // lanekeep-ignore-next-line pera/no-secret-strings reason: the refresh-token request body takes a string
                 refreshToken: textDecoder.decode(bytes),
                 scope,
             }),
