@@ -30,7 +30,8 @@ export const useShouldPromptMnemonicBackup = (
         scope.chainId,
         'mnemonicBackup',
     )
-    // Hooks can't be skipped, so the capability decides what the lookups see: a chain without mnemonic backup has no backup adapter to read.
+    // Hooks can't be skipped, so the capability decides what the lookups see:
+    // a chain without mnemonic backup may register no backup adapter.
     const promptableAccount = canBackUpMnemonic ? account : undefined
     const requiresBackup = useRequiresMnemonicBackup(
         promptableAccount,

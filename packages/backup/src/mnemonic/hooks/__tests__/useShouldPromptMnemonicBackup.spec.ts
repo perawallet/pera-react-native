@@ -90,7 +90,7 @@ describe('useShouldPromptMnemonicBackup', () => {
         useMnemonicBackupStore.getState().resetState()
     })
 
-    const useRealRequiresBackup = async () => {
+    const installRealRequiresBackup = async () => {
         const { useRequiresMnemonicBackup } = await vi.importActual<
             typeof import('../useRequiresMnemonicBackup')
         >('../useRequiresMnemonicBackup')
@@ -203,7 +203,7 @@ describe('useShouldPromptMnemonicBackup', () => {
     })
 
     test('false, and reads no backup adapter, on a chain with mnemonic backup off', async () => {
-        await useRealRequiresBackup()
+        await installRealRequiresBackup()
         mockFundedNetworks.mockReturnValue(fundedOn('mainnet'))
         mockCanBackUpMnemonic.mockReturnValue(false)
 
@@ -223,7 +223,7 @@ describe('useShouldPromptMnemonicBackup', () => {
     })
 
     test('false, without throwing, when the capability is on but the chain registers no backup adapter', async () => {
-        await useRealRequiresBackup()
+        await installRealRequiresBackup()
         mockFundedNetworks.mockReturnValue(fundedOn('mainnet'))
 
         const { result } = renderHook(() =>
@@ -233,7 +233,7 @@ describe('useShouldPromptMnemonicBackup', () => {
     })
 
     test('prompts a funded, never-backed-up Algorand account through the real backup state', async () => {
-        await useRealRequiresBackup()
+        await installRealRequiresBackup()
         mockFundedNetworks.mockReturnValue(fundedOn('mainnet'))
 
         const { result } = renderHook(() =>
