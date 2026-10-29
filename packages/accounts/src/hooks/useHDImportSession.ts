@@ -20,11 +20,11 @@ import {
     prepareHDMasterKey,
     useKMS,
 } from '@perawallet/wallet-core-kms'
-import { useHDImportSessionStore } from '../import-session'
 import {
     selectChainNetworkId,
     useNetworkStore,
 } from '@perawallet/wallet-core-chain-shared'
+import { useHDImportSessionStore } from '../import-session'
 import {
     discoverAccounts,
     discoverWalletCandidates,
@@ -93,8 +93,6 @@ export const useHDImportSession = (
             const chainIds = hdDiscoveryChains()
             let discovered: LocalAccount[]
             if (chainIds.length > 1) {
-                // A key that derives only inside the keystore needs the seed
-                // saved before it can be probed; commit skips saving it again.
                 const needsKeystore = chainIds.some(
                     chainId =>
                         !accountsChainAdapters.get(chainId)
@@ -108,6 +106,17 @@ export const useHDImportSession = (
                         rootKey: new Uint8Array(pending.rootKey),
                         entropy: new Uint8Array(pending.entropy),
                     })
+                    // A cancel or a new prepare that landed during the save found
+                    // nothing marked to remove, so the seed is dropped here.
+                    if (
+                        useHDImportSessionStore.getState().pending
+                            ?.walletKeyId !== pending.walletKeyId
+                    ) {
+                        void removeKeyAndChildren(pending.walletKeyId).catch(
+                            () => undefined,
+                        )
+                        throw new HDImportSessionNotFoundError(walletKeyId)
+                    }
                     useHDImportSessionStore
                         .getState()
                         .markSeedPersisted(pending.walletKeyId)
@@ -141,13 +150,12 @@ export const useHDImportSession = (
             )
             return discovered
         },
-        [scope, persistHDMasterKey],
+        [scope, persistHDMasterKey, removeKeyAndChildren],
     )
 
-    // NOTE: `persistHDMasterKey`'s identity is unstable across renders, so
-    // this `useCallback` is effectively a no-op for memoization purposes.
-    // It is kept for surface consistency with the other functions returned
-    // by this hook, all of which are wrapped in `useCallback`.
+    // NOTE: `persistHDMasterKey`'s identity is unstable across renders, so the
+    // `useCallback`s that depend on it (here and in `discoverImportAccounts`)
+    // don't memoize; they are kept for consistency with the rest of the hook.
     const commitImport = useCallback(
         async ({
             walletKeyId,

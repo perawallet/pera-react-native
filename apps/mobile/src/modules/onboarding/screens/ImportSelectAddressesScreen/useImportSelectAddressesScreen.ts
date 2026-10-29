@@ -158,10 +158,6 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
             try {
                 if (isImportMode && importWalletKeyId) {
                     if (accountsToAdd.length > 0) {
-                        // Commit: persists the keystore root (unless discovery
-                        // already did) and appends the selected accounts to the
-                        // accounts store. After this returns the import session
-                        // is cleared.
                         await commitImport({
                             walletKeyId: importWalletKeyId,
                             selectedAccounts: accountsToAdd,
@@ -171,9 +167,8 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
                     } else {
                         // Re-import path: every selected account was already in
                         // the store, so there's nothing to commit. The session
-                        // still proved possession, so it is cancelled here
-                        // (dropping a seed saved for discovery) and not by the
-                        // beforeRemove listener.
+                        // still proved possession, so it is cancelled here and
+                        // not by the beforeRemove listener.
                         cancelImport()
                         hasCommittedRef.current = true
                     }

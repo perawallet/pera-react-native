@@ -571,6 +571,35 @@ describe('useHDImportSession', () => {
             expect(kmsMock.removeKeyAndChildren).toHaveBeenCalledWith('w-1')
         })
 
+        test('removes a seed whose session was cancelled while it was being saved', async () => {
+            setUpChains()
+            let finishPersist: () => void = () => undefined
+            kmsMock.persistHDMasterKey.mockReturnValueOnce(
+                new Promise<void>(resolve => {
+                    finishPersist = resolve
+                }),
+            )
+            const { result } = renderHook(() => useHDImportSession(MAINNET))
+            await prepare(result)
+
+            let discovery: Promise<LocalAccount[]> = Promise.resolve([])
+            act(() => {
+                discovery = result.current.discoverImportAccounts({
+                    walletKeyId: 'w-1',
+                })
+            })
+            act(() => result.current.cancelImport())
+            expect(kmsMock.removeKeyAndChildren).not.toHaveBeenCalled()
+            finishPersist()
+
+            await expect(discovery).rejects.toBeInstanceOf(
+                HDImportSessionNotFoundError,
+            )
+            expect(
+                kmsMock.removeKeyAndChildren,
+            ).toHaveBeenCalledExactlyOnceWith('w-1')
+        })
+
         test('saves the seed again on commit after a failed commit removed it', async () => {
             const families = setUpChains()
             const { result } = renderHook(() => useHDImportSession(MAINNET))

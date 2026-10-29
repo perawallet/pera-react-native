@@ -11,6 +11,7 @@
  */
 
 import React from 'react'
+import type { LocalAccount } from '@perawallet/wallet-core-accounts'
 import {
     PWView,
     PWText,
@@ -23,8 +24,6 @@ import {
 } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { ScreenHeader } from '@components/ScreenHeader'
-import type { LocalAccount } from '@perawallet/wallet-core-accounts'
-
 import { DiscoveredAccountRow } from './DiscoveredAccountRow'
 import { useStyles } from './styles'
 import { useImportSelectAddressesScreen } from './useImportSelectAddressesScreen'

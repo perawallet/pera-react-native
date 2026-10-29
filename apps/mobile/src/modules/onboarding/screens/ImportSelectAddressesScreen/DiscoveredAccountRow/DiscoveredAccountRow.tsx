@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { useCallback } from 'react'
 import { Trans } from 'react-i18next'
 import type { LocalAccount } from '@perawallet/wallet-core-accounts'
 import { PWText, PWView } from '@components/core'
@@ -38,6 +39,10 @@ export const DiscoveredAccountRow = ({
     const { t } = useLanguage()
     const { title, addressLines, total, testAddress } =
         useDiscoveredAccountRow(account)
+    const handleToggle = useCallback(
+        () => onToggle(account.id),
+        [onToggle, account.id],
+    )
 
     return (
         <SelectableAccountCheckboxRow
@@ -48,7 +53,7 @@ export const DiscoveredAccountRow = ({
             importedLabel={t(
                 'onboarding.import_select_addresses.already_imported',
             )}
-            onToggle={() => onToggle(account.id)}
+            onToggle={handleToggle}
             testID={`import_select_addresses_item_${testAddress}`}
             checkboxTestID={`import_select_addresses_item_checkbox_${testAddress}`}
             details={
