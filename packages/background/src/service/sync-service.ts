@@ -48,6 +48,7 @@ import type { AssetSyncKind } from '../polling'
 import type { SyncServiceDeps } from '../models'
 import { groupAddressesByScope, type ScopeAddresses } from './scope-groups'
 import {
+    isRateLimitError,
     resolveCheckpointRound,
     syncAccountsPhase,
     syncAssetsPhase,
@@ -98,6 +99,14 @@ const CLEAN_OUTCOME: ScopeSyncOutcome = {
     isRateLimited: false,
 }
 
+/** `intervalMs` is a duration; `nextEligibleAt` is epoch ms from `Date.now()`. */
+type ScopeBackoff = { intervalMs: number; nextEligibleAt: number }
+
+const isFailedOutcome = (outcome: ScopeSyncOutcome): boolean =>
+    outcome.hadTotalFailure ||
+    outcome.hadAccountFailure ||
+    outcome.isRateLimited
+
 type ChangeDecision = { changed: boolean; cursor: Nullable<number> }
 
 const isRefusedCredential = (error: unknown): boolean =>
@@ -113,6 +122,9 @@ export class SyncService {
     // config-level problem retrying every tick can't fix. Reset on
     // start()/restart() so a rebuilt or reconfigured session recovers.
     private authRefusedScopes = new Set<ChainScopeKey>()
+    // Pacing for a scope that failed its last pass, so one unhealthy endpoint
+    // costs only its own scope. Cleared on restart() and on reconnect.
+    private scopeBackoffs = new Map<ChainScopeKey, ScopeBackoff>()
     private currentInterval: number
     // Coalesce query invalidations. invalidateAccountQueries fans out to every
     // mounted balance/summary/list query (a wide read each), so firing it
@@ -223,12 +235,14 @@ export class SyncService {
             clearTimeout(this.timer)
             this.timer = null
         }
+        this.scopeBackoffs.clear()
         void this.tick()
     }
 
     restart(): void {
         this.stop()
         this.forceSyncedScopes.clear()
+        this.scopeBackoffs.clear()
         this.currentInterval = this.baseInterval
         this.start()
     }
@@ -337,44 +351,45 @@ export class SyncService {
                     accountsChainAdapters.has(scope.chainId),
             )
 
-            // Scopes sync one after another; one scope's failure never stops
-            // the next, it only feeds the backoff.
-            let shouldBackOff = false
-            for (const group of groups) {
-                try {
-                    const outcome = await this.syncScope(group)
-                    if (outcome.isRateLimited) {
-                        logger.warn('Sync scope rate limited', {
-                            scope: group.scope,
-                        })
-                    }
-                    if (
-                        outcome.hadTotalFailure ||
-                        outcome.hadAccountFailure ||
-                        outcome.isRateLimited
-                    ) {
-                        shouldBackOff = true
-                    }
-                } catch (error) {
-                    logger.warn('Sync scope failed', {
-                        scope: group.scope,
-                        error,
-                    })
-                    shouldBackOff = true
+            // Concurrent, so one scope's timeout doesn't delay another's reads
+            // within this tick.
+            const nowMs = Date.now()
+            const due = groups.filter(({ scope }) =>
+                this.isScopeDue(toScopeKey(scope), nowMs),
+            )
+            const results = await Promise.allSettled(
+                due.map(group => this.syncScope(group)),
+            )
+            const settledAtMs = Date.now()
+            let failedCount = 0
+            results.forEach((result, index) => {
+                if (
+                    this.recordScopeResult(
+                        due[index].scope,
+                        result,
+                        settledAtMs,
+                    )
+                ) {
+                    failedCount++
                 }
-            }
+            })
 
-            // Back off when a scope made no progress, hit a rate limit, or
-            // had an account fetch fail — the frozen cursor means the next
-            // tick re-syncs that scope, so pace those retries. A clean tick,
-            // or one with no work to do, resets to base.
-            this.currentInterval = shouldBackOff
-                ? calculateBackoff(
-                      this.currentInterval,
-                      BACKOFF_MULTIPLIER,
-                      MAX_BACKOFF_INTERVAL,
-                  )
-                : this.baseInterval
+            // The loop backs off only when every scope that ran failed; a
+            // scope that failed alone is paced by its own backoff. A tick that
+            // finds every scope still waiting ran nothing, so it leaves the
+            // interval as it is (a timer firing slightly early must not
+            // reset the loop mid-outage).
+            const isEveryScopeWaiting = groups.length > 0 && due.length === 0
+            if (!isEveryScopeWaiting) {
+                this.currentInterval =
+                    due.length > 0 && failedCount === due.length
+                        ? calculateBackoff(
+                              this.currentInterval,
+                              BACKOFF_MULTIPLIER,
+                              MAX_BACKOFF_INTERVAL,
+                          )
+                        : this.baseInterval
+            }
         } catch (error) {
             logger.warn('Sync tick failed', { error })
             this.currentInterval = calculateBackoff(
@@ -386,6 +401,58 @@ export class SyncService {
             this.syncInProgress = false
             this.scheduleNextTick()
         }
+    }
+
+    private isScopeDue(key: ChainScopeKey, nowMs: number): boolean {
+        const backoff = this.scopeBackoffs.get(key)
+        if (backoff === undefined) return true
+        // A wait longer than the interval itself means the device clock moved
+        // back; without this the scope would stall for the whole skew.
+        if (backoff.nextEligibleAt - nowMs > backoff.intervalMs) return true
+        // `<=`: a scope whose interval equals the loop's is due on the very
+        // tick that the loop timer fires at its `nextEligibleAt`.
+        return backoff.nextEligibleAt <= nowMs
+    }
+
+    /** Returns true when the scope failed. */
+    private recordScopeResult(
+        scope: ChainScope,
+        result: PromiseSettledResult<ScopeSyncOutcome>,
+        nowMs: number,
+    ): boolean {
+        const key = toScopeKey(scope)
+        let isFailed: boolean
+        if (result.status === 'rejected') {
+            isFailed = true
+            if (isRateLimitError(result.reason)) {
+                logger.warn('Sync scope rate limited', { scope })
+            } else {
+                logger.warn('Sync scope failed', {
+                    scope,
+                    error: result.reason,
+                })
+            }
+        } else {
+            if (result.value.isRateLimited) {
+                logger.warn('Sync scope rate limited', { scope })
+            }
+            isFailed = isFailedOutcome(result.value)
+        }
+
+        if (!isFailed) {
+            this.scopeBackoffs.delete(key)
+            return false
+        }
+        const intervalMs = calculateBackoff(
+            this.scopeBackoffs.get(key)?.intervalMs ?? this.baseInterval,
+            BACKOFF_MULTIPLIER,
+            MAX_BACKOFF_INTERVAL,
+        )
+        this.scopeBackoffs.set(key, {
+            intervalMs,
+            nextEligibleAt: nowMs + intervalMs,
+        })
+        return true
     }
 
     /** `delayMs` overrides the current interval without disturbing backoff. */
@@ -491,7 +558,7 @@ export class SyncService {
             // the authRefusedScopes guard above.
             if (cursor === null) return { changed: true, cursor: null }
             if (isRefused) return { changed: false, cursor: null }
-            // Rethrown so the tick backs off — swallowing here kept a
+            // Rethrown so the scope backs off — swallowing here kept a
             // persistently failing signal retrying at the base interval.
             throw error
         }
