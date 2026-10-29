@@ -68,7 +68,7 @@ export default defineRule({
         message:
             'a Zustand store is not registered for the delete-all-data wipe',
         remediation:
-            'Call `registerStore({ name, clearStorage, resetState })` from `@perawallet/wallet-core-shared` at module scope beside the store: `resetState` puts it back to its initial state, `clearStorage` removes its persisted record (`() => {}` for an in-memory store). A store that a wipe would break if reset (device state, a mounted UI host) instead takes a suppression on its declaration line saying what breaks (lanekeep/README.md, "Suppressing"). A store built inside a function is not checked.',
+            'Call `registerStore({ name, clearStorage, resetState })` from `@perawallet/wallet-core-shared` at module scope beside the store, naming the store inside the argument of the call: `resetState` puts it back to its initial state, `clearStorage` removes its persisted record (`() => {}` for an in-memory store). A store that a wipe would break if reset (device state, a mounted UI host) instead takes a suppression on its declaration line saying what breaks (lanekeep/README.md, "Suppressing"). A store built inside a function is not checked.',
         examples: {
             bad: 'export const useDraftStore = create<Draft>()(set => ({ … })) // nothing registers it',
             good: "registerStore({ name: 'draft-store', clearStorage: () => {}, resetState: () => useDraftStore.getState().resetState() })",
