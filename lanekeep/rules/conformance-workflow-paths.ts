@@ -4,6 +4,8 @@
 
 import { defineRule } from 'lanekeep'
 
+import { unquote } from '../shared/yaml.js'
+
 interface Suite {
     manifest: string
     workflow: string
@@ -26,17 +28,6 @@ const dirOf = (path: string): string => path.split('/').slice(0, -1).join('/')
 
 const join = (base: string, path: string): string =>
     base === '' ? path : `${base}/${path}`
-
-const unquote = (raw: string): string => {
-    const value = raw.trim()
-    const quote = value.charAt(0)
-    if (quote === "'" || quote === '"') {
-        const end = value.indexOf(quote, 1)
-        return end === -1 ? value.slice(1) : value.slice(1, end)
-    }
-    const comment = value.indexOf(' #')
-    return (comment === -1 ? value : value.slice(0, comment)).trim()
-}
 
 const indentOf = (line: string): number => line.length - line.trimStart().length
 
