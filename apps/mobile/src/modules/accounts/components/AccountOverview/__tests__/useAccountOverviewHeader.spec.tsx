@@ -15,12 +15,19 @@ import { renderHook, act } from '@testing-library/react'
 import React from 'react'
 import { Decimal } from 'decimal.js'
 import { useAccountOverviewHeader } from '../useAccountOverviewHeader'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    accountValueKey,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { setChainEnabled } from '@test-utils/capability-overrides'
 import { findNativeAsset } from '@perawallet/wallet-core-assets'
-import { registerEthereumChain } from '@test-utils/chain-fixtures'
+import {
+    registerEthereumChain,
+    registerEvmChain,
+} from '@test-utils/chain-fixtures'
 import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
+import { useAssetListViewStore } from '../../../hooks/useAssetListViewStore'
 import {
     AccountOverviewModalContext,
     type UseAccountOverviewModalResult,
@@ -45,7 +52,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
         useAccountValueTotalsQuery: vi.fn(() => ({
             accountValueTotals: new Map([
                 [
-                    'test-address',
+                    actual.accountValueKey('algorand', 'test-address'),
                     {
                         nativeValue: new Decimal('1000'),
                         fiatValue: new Decimal('300'),
@@ -140,7 +147,7 @@ describe('useAccountOverviewHeader', () => {
         vi.mocked(useAccountValueTotalsQuery).mockReturnValue({
             accountValueTotals: new Map([
                 [
-                    'test-address',
+                    accountValueKey('algorand', 'test-address'),
                     {
                         nativeValue: new Decimal('1000'),
                         fiatValue: new Decimal('300'),
@@ -153,6 +160,7 @@ describe('useAccountOverviewHeader', () => {
 
     afterEach(() => {
         act(() => useNetworkStore.getState().setMode('live'))
+        useAssetListViewStore.setState({ selectedChainId: null })
     })
 
     const twoChainTotals = async (
@@ -163,8 +171,8 @@ describe('useAccountOverviewHeader', () => {
             await import('@perawallet/wallet-core-accounts')
         vi.mocked(useAccountValueTotalsQuery).mockReturnValue({
             accountValueTotals: new Map([
-                ['test-address', algo],
-                [ETH_ADDRESS, eth],
+                [accountValueKey('algorand', 'test-address'), algo],
+                [accountValueKey('ethereum', ETH_ADDRESS), eth],
             ]),
             isPending: false,
         } as unknown as ReturnType<typeof useAccountValueTotalsQuery>)
@@ -350,6 +358,66 @@ describe('useAccountOverviewHeader', () => {
         )
 
         expect(result.current.portfolioPreferredValue?.toString()).toBe('3300')
+    })
+
+    describe('with the account on Ethereum and Base at one address', () => {
+        const threeChainAccount = {
+            id: 'three-chains',
+            custody: { kind: 'watch' },
+            chains: {
+                algorand: { address: 'test-address' },
+                ethereum: { address: ETH_ADDRESS },
+                base: { address: ETH_ADDRESS },
+            },
+        } as WalletAccount
+
+        const threeChainTotals = async (base: Decimal) => {
+            const { useAccountValueTotalsQuery } =
+                await import('@perawallet/wallet-core-accounts')
+            const entry = (fiat: Decimal) => ({
+                nativeValue: fiat,
+                fiatValue: fiat,
+            })
+            vi.mocked(useAccountValueTotalsQuery).mockReturnValue({
+                accountValueTotals: new Map([
+                    [
+                        accountValueKey('algorand', 'test-address'),
+                        entry(new Decimal('0.015367')),
+                    ],
+                    [
+                        accountValueKey('ethereum', ETH_ADDRESS),
+                        entry(new Decimal('3.14')),
+                    ],
+                    [accountValueKey('base', ETH_ADDRESS), entry(base)],
+                ]),
+                isPending: false,
+            } as unknown as ReturnType<typeof useAccountValueTotalsQuery>)
+        }
+
+        const totalOf = () =>
+            renderHook(() => useAccountOverviewHeader(threeChainAccount), {
+                wrapper,
+            }).result.current.portfolioPreferredValue?.toString()
+
+        beforeEach(() => {
+            registerEthereumChain()
+            registerEvmChain('base')
+        })
+
+        it('totals every network whatever chip the asset list is on', async () => {
+            await threeChainTotals(new Decimal(0))
+
+            expect(totalOf()).toBe('3.155367')
+
+            useAssetListViewStore.setState({ selectedChainId: 'ethereum' })
+            expect(totalOf()).toBe('3.155367')
+        })
+
+        it('counts value held only on Base once', async () => {
+            await threeChainTotals(new Decimal(2))
+
+            expect(totalOf()).toBe('5.155367')
+        })
     })
 
     it('sums unrounded chain values, so sub-cent parts still add up to the total', async () => {

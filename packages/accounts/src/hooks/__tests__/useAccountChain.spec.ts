@@ -22,7 +22,7 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
-import type { WalletAccount } from '../../models'
+import { accountValueKey, type WalletAccount } from '../../models'
 import { useAccountsStore } from '../../store'
 import { testAccount } from '../../__tests__/accountFactory'
 import {
@@ -97,7 +97,10 @@ describe('ownAddressOf', () => {
 
 describe('accountValueOf', () => {
     it('looks the account up by its address on the given chain only', () => {
-        const values = new Map([[ETH_ADDRESS, new Decimal(3)]])
+        const values = new Map([
+            [accountValueKey('ethereum', ETH_ADDRESS), new Decimal(3)],
+            [accountValueKey('base', ETH_ADDRESS), new Decimal(0)],
+        ])
 
         expect(accountValueOf(ethereumAccount, 'ethereum', values)).toEqual(
             new Decimal(3),

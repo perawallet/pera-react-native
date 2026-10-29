@@ -25,13 +25,20 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
-import type { AccountChains } from '../../models'
+import {
+    accountValueKey,
+    type AccountChains,
+    type AccountValueKey,
+} from '../../models'
 import type { WalletAccount } from '../../models/accounts'
 import { useAccountValueTotalsQuery } from '../useAccountValueTotalsQuery'
 import { testAccount } from '../../__tests__/accountFactory'
 import { TESTNET_SCOPE } from '../../__tests__/fakeAccountsChain'
 
 const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
+
+const valueKey = (address: string, chainId: ChainId = 'algorand') =>
+    accountValueKey(chainId, address)
 
 const mockGetAccountPortfolioTotals = vi.fn()
 const mockEnsureAccountFetched = vi.fn()
@@ -120,11 +127,11 @@ describe('useAccountValueTotalsQuery', () => {
         await waitFor(() => expect(result.current.isPending).toBe(false))
 
         // A1: usd = 20 + 10×2 = 40; native = 10 + 20/2 = 20
-        const a1 = result.current.accountValueTotals.get('A1')
+        const a1 = result.current.accountValueTotals.get(valueKey('A1'))
         expect(a1?.usdValue).toEqual(new Decimal(40))
         expect(a1?.nativeValue).toEqual(new Decimal(20))
         // A2: usd = 4; native = 4/2 = 2
-        const a2 = result.current.accountValueTotals.get('A2')
+        const a2 = result.current.accountValueTotals.get(valueKey('A2'))
         expect(a2?.usdValue).toEqual(new Decimal(4))
         expect(a2?.nativeValue).toEqual(new Decimal(2))
 
@@ -142,7 +149,7 @@ describe('useAccountValueTotalsQuery', () => {
         await waitFor(() => expect(result.current.isPending).toBe(false))
 
         expect(
-            result.current.accountValueTotals.get('A1')?.nativeValue,
+            result.current.accountValueTotals.get(valueKey('A1'))?.nativeValue,
         ).toEqual(new Decimal(7))
     })
 
@@ -189,9 +196,9 @@ describe('useAccountValueTotalsQuery', () => {
             return hook
         }
         const a1 = (r: {
-            current: { accountValueTotals: Map<string, unknown> }
+            current: { accountValueTotals: Map<AccountValueKey, unknown> }
         }) =>
-            r.current.accountValueTotals.get('A1') as {
+            r.current.accountValueTotals.get(valueKey('A1')) as {
                 fiatValue: Decimal | null
                 usdValue: Decimal | null
                 nativeValue: Decimal
@@ -216,8 +223,8 @@ describe('useAccountValueTotalsQuery', () => {
             await waitFor(() => expect(result.current.isPending).toBe(false))
 
             const map = result.current.accountValueTotals
-            expect(map.get('A1')?.fiatValue).toEqual(new Decimal(40))
-            expect(map.get('A2')?.fiatValue).toEqual(new Decimal(4))
+            expect(map.get(valueKey('A1'))?.fiatValue).toEqual(new Decimal(40))
+            expect(map.get(valueKey('A2'))?.fiatValue).toEqual(new Decimal(4))
         })
 
         it('is null when native is held and unpriced, leaving the existing values alone', async () => {
@@ -250,7 +257,7 @@ describe('useAccountValueTotalsQuery', () => {
             )
             await waitFor(() => expect(result.current.isPending).toBe(false))
 
-            const total = result.current.accountValueTotals.get('A1')
+            const total = result.current.accountValueTotals.get(valueKey('A1'))
             expect(total?.usdValue).toEqual(new Decimal(30))
             expect(total?.fiatValue).toBeNull()
         })
@@ -307,13 +314,75 @@ describe('useAccountValueTotalsQuery', () => {
                 scope: expect.objectContaining({ chainId: 'ethereum' }),
             })
             expect(
-                result.current.accountValueTotals.get('0xE')?.fiatValue,
+                result.current.accountValueTotals.get(
+                    valueKey('0xE', 'ethereum'),
+                )?.fiatValue,
             ).toEqual(new Decimal(3000))
             // A1: native 10 + 20/2 = 20 ALGO; the ETH balance doesn't add.
             expect(result.current.portfolioNativeValue).toEqual(new Decimal(20))
             expect(result.current.portfolioUsdValue).toEqual(new Decimal(40))
             expect(result.current.portfolioFiatValue).toEqual(new Decimal(3040))
             expect(result.current.isPortfolioFiatValuePartial).toBe(false)
+        })
+
+        it('keeps an EVM chain sharing its address with another from overwriting it', async () => {
+            getProvider().chains.register(
+                {
+                    id: 'base',
+                    networks: [
+                        {
+                            id: 'mainnet',
+                            tier: 'mainnet',
+                            isDefaultForTier: true,
+                        },
+                    ],
+                } as unknown as ChainDescriptor,
+                ALL_ON,
+            )
+            const sharedAddress: WalletAccount = {
+                ...ethereumAccount,
+                chains: {
+                    ethereum: { address: '0xE' },
+                    base: { address: '0xE' },
+                } as unknown as AccountChains,
+            }
+            mockGetAccountPortfolioTotals.mockImplementation(
+                ({
+                    accountAddress,
+                    scope,
+                }: {
+                    accountAddress: string
+                    scope: ChainScope
+                }) =>
+                    Promise.resolve(
+                        accountAddress === 'A1'
+                            ? totals(10, 20)
+                            : scope.chainId === 'ethereum'
+                              ? totals(1, 0, 3000)
+                              : totals(0, 0, 3000),
+                    ),
+            )
+
+            const { result } = renderHook(
+                () =>
+                    useAccountValueTotalsQuery(
+                        [makeAccount('A1'), sharedAddress],
+                        SCOPE,
+                    ),
+                { wrapper: createWrapper() },
+            )
+            await waitFor(() => expect(result.current.isPending).toBe(false))
+
+            expect(
+                result.current.accountValueTotals.get(
+                    valueKey('0xE', 'ethereum'),
+                )?.fiatValue,
+            ).toEqual(new Decimal(3000))
+            expect(
+                result.current.accountValueTotals.get(valueKey('0xE', 'base'))
+                    ?.fiatValue,
+            ).toEqual(new Decimal(0))
+            expect(result.current.portfolioFiatValue).toEqual(new Decimal(3040))
         })
 
         const renderWithEthereum = async (
@@ -349,7 +418,9 @@ describe('useAccountValueTotalsQuery', () => {
             )
 
             expect(
-                result.current.accountValueTotals.get('0xE')?.fiatValue,
+                result.current.accountValueTotals.get(
+                    valueKey('0xE', 'ethereum'),
+                )?.fiatValue,
             ).toBeNull()
             expect(result.current.portfolioFiatValue).toEqual(new Decimal(40))
             expect(result.current.isPortfolioFiatValuePartial).toBe(true)
@@ -382,7 +453,9 @@ describe('useAccountValueTotalsQuery', () => {
             )
 
             expect(
-                result.current.accountValueTotals.get('0xE')?.fiatValue,
+                result.current.accountValueTotals.get(
+                    valueKey('0xE', 'ethereum'),
+                )?.fiatValue,
             ).toBeNull()
             expect(result.current.portfolioFiatValue).toEqual(new Decimal(65))
             expect(result.current.isPortfolioFiatValuePartial).toBe(true)
@@ -407,11 +480,13 @@ describe('useAccountValueTotalsQuery', () => {
             await waitFor(() => expect(result.current.isPending).toBe(false))
 
             expect(
-                result.current.accountValueTotals.get('A1')?.nativeValue,
+                result.current.accountValueTotals.get(valueKey('A1'))
+                    ?.nativeValue,
             ).toBeNull()
             // No non-native holdings, so nothing is missing from it.
             expect(
-                result.current.accountValueTotals.get('A2')?.nativeValue,
+                result.current.accountValueTotals.get(valueKey('A2'))
+                    ?.nativeValue,
             ).toEqual(new Decimal(5))
             expect(result.current.portfolioNativeValue).toBeNull()
         })
@@ -438,7 +513,9 @@ describe('useAccountValueTotalsQuery', () => {
             await waitFor(() => expect(result.current.isPending).toBe(false))
 
             expect(
-                result.current.accountValueTotals.get('0xE')?.fiatValue,
+                result.current.accountValueTotals.get(
+                    valueKey('0xE', 'ethereum'),
+                )?.fiatValue,
             ).toEqual(new Decimal(3000))
             expect(result.current.portfolioNativeValue).toEqual(new Decimal(20))
             expect(result.current.portfolioFiatValue).toEqual(new Decimal(3040))
@@ -478,9 +555,11 @@ describe('useAccountValueTotalsQuery', () => {
             rerender()
 
             await waitFor(() =>
-                expect(result.current.accountValueTotals.has('0xE')).toBe(
-                    false,
-                ),
+                expect(
+                    result.current.accountValueTotals.has(
+                        valueKey('0xE', 'ethereum'),
+                    ),
+                ).toBe(false),
             )
             expect(result.current.portfolioFiatValue).toEqual(new Decimal(40))
         })
@@ -492,7 +571,8 @@ describe('useAccountValueTotalsQuery', () => {
             )
 
             expect(
-                result.current.accountValueTotals.get('A1')?.fiatValue,
+                result.current.accountValueTotals.get(valueKey('A1'))
+                    ?.fiatValue,
             ).toBeNull()
             expect(result.current.portfolioFiatValue).toEqual(new Decimal(3005))
             expect(result.current.isPortfolioFiatValuePartial).toBe(true)
@@ -588,9 +668,10 @@ describe('useAccountValueTotalsQuery', () => {
             expect(mainnet.portfolioUsdValue).toEqual(new Decimal(40))
             expect(testTier.hasFiatTotal).toBe(false)
             expect(testTier.portfolioUsdValue).toEqual(new Decimal(0))
-            expect(testTier.accountValueTotals.get('E1')?.usdValue).toEqual(
-                new Decimal(40),
-            )
+            expect(
+                testTier.accountValueTotals.get(valueKey('E1', SECOND_CHAIN_ID))
+                    ?.usdValue,
+            ).toEqual(new Decimal(40))
             expect(testTier.portfolioNativeValue).toEqual(new Decimal(20))
         })
 
@@ -635,7 +716,9 @@ describe('useAccountValueTotalsQuery', () => {
                     scope: SECOND_CHAIN_TEST_SCOPE,
                 })
                 expect(
-                    result.current.accountValueTotals.get('E1')?.fiatValue,
+                    result.current.accountValueTotals.get(
+                        valueKey('E1', SECOND_CHAIN_ID),
+                    )?.fiatValue,
                 ).toEqual(new Decimal(40))
                 expect(result.current.portfolioFiatValue).toEqual(
                     new Decimal(40),
@@ -671,7 +754,9 @@ describe('useAccountValueTotalsQuery', () => {
                 )
 
                 expect(
-                    result.current.accountValueTotals.get('E1')?.fiatValue,
+                    result.current.accountValueTotals.get(
+                        valueKey('E1', SECOND_CHAIN_ID),
+                    )?.fiatValue,
                 ).toBeNull()
                 expect(result.current.portfolioFiatValue).toEqual(
                     new Decimal(40),
