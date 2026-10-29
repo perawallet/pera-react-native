@@ -11,7 +11,7 @@
  */
 
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, type Optional } from '@perawallet/wallet-core-shared'
 import { SECONDS_PER_DAY } from '@perawallet/wallet-core-config'
 import type { Database } from '@perawallet/wallet-core-database'
 import {
@@ -163,7 +163,7 @@ export async function backfillSwapAssetFacts({
  * so nothing renders differently.
  */
 async function persistResolvedSwapAssetFacts(
-    db: Database | undefined,
+    db: Optional<Database>,
     scope: ChainScope,
     ids: string[],
 ): Promise<void> {

@@ -16,6 +16,7 @@ import {
     type ChainId,
     type NetworkId,
 } from '@perawallet/wallet-core-chain-contract'
+import type { Optional } from '@perawallet/wallet-core-shared'
 
 export type EndpointOverrideCheck = 'matches' | 'wrong-network' | 'unreachable'
 
@@ -26,7 +27,7 @@ export type EndpointOverrides = Readonly<Partial<Record<NetworkId, string>>>
 export interface NodeEndpointAdapter {
     readonly chainId: ChainId
     /** The URL the network's requests use now, override included; `undefined` when none is configured. */
-    endpointUrl(networkId: NetworkId): string | undefined
+    endpointUrl(networkId: NetworkId): Optional<string>
     /** Present only on chains that accept an override. Never rejects: a failed request resolves `'unreachable'`. */
     checkOverride?(
         networkId: NetworkId,
@@ -41,7 +42,7 @@ export const nodeEndpointAdapters =
 // repoint a network but never add one.
 export const withEndpointOverrides = (
     configured: ChainEndpoints,
-    overrides: EndpointOverrides | undefined,
+    overrides: Optional<EndpointOverrides>,
 ): ChainEndpoints => {
     if (!overrides) return configured
     return Object.fromEntries(

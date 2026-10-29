@@ -20,7 +20,7 @@ import {
     LEGACY_CHAIN_ID,
     i18nKey,
 } from '@perawallet/wallet-core-chain-contract'
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
@@ -34,7 +34,7 @@ type LoadedFile = {
 }
 
 type UseAsbImportBackupScreenResult = {
-    loadedFile: LoadedFile | null
+    loadedFile: Nullable<LoadedFile>
     canContinue: boolean
     /** True when picking hands off to a browser tab instead of opening a picker. */
     isPickFileHandoff: boolean
@@ -55,7 +55,7 @@ export const useAsbImportBackupScreen = (): UseAsbImportBackupScreenResult => {
     const envelope = useAsbImportFlowStore(state => state.envelope)
     const setEnvelope = useAsbImportFlowStore(state => state.setEnvelope)
 
-    const [loadedFile, setLoadedFile] = useState<LoadedFile | null>(null)
+    const [loadedFile, setLoadedFile] = useState<Nullable<LoadedFile>>(null)
 
     // Later flow steps (SelectAccounts cleanup, Result Done) wipe the store
     // to zero decrypted material. If the user navigates back into this screen

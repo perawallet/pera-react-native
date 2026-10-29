@@ -11,7 +11,11 @@
  */
 
 import { sha256 } from '@noble/hashes/sha2.js'
-import { concatBytes, decodeFromBase64 } from '@perawallet/wallet-core-shared'
+import {
+    concatBytes,
+    decodeFromBase64,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
 import {
     Arc60BadJsonError,
     Arc60DomainMismatchError,
@@ -117,8 +121,8 @@ export const buildArc60AuthSigningPayload = (
  * a bare comparison would silently fail open.
  */
 export const parseArc60Timestamp = (
-    value: string | undefined,
-): number | undefined => {
+    value: Optional<string>,
+): Optional<number> => {
     if (value === undefined) {
         return undefined
     }

@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import type { Optional } from '@perawallet/wallet-core-shared'
+
 type Translate = (key: string) => string
 
 type AutoFundingHintParams = {
@@ -36,7 +38,7 @@ export const resolveAutoFundingHint = (
         isAutoUnavailable,
         isLedgerAccount = false,
     }: AutoFundingHintParams,
-): string | undefined => {
+): Optional<string> => {
     if (!isAutoFundingEnabled) {
         return t('peraCard.account.funding_type_auto_coming_soon_hint')
     }

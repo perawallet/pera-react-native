@@ -12,7 +12,11 @@
 
 import { useCallback, useMemo } from 'react'
 import type { Decimal } from 'decimal.js'
-import { ZERO_DECIMAL, type Nullable } from '@perawallet/wallet-core-shared'
+import {
+    ZERO_DECIMAL,
+    type Nullable,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { useNativeAsset } from '@perawallet/wallet-core-assets'
 import {
@@ -56,7 +60,7 @@ type UseOnrampAmountSectionResult = {
     /** Resolved loading flag — only the receive variant can be loading. */
     isReceiveLoading: boolean
     /** FIAT tokens show their round country flag; crypto tokens their logo. */
-    logoUrl: string | undefined
+    logoUrl: Optional<string>
     /** Token-unit amount feeding the fiat row; zero when not computable. */
     fiatBaseAmount: Decimal
     /** ALGO-preferred users see fiat values in USD, like the rest of the app. */

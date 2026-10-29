@@ -19,7 +19,8 @@
   },
   "dependencies": {
     "@algorandfoundation/wallet-provider": "catalog:",
-    "@babel/runtime": "catalog:"
+    "@babel/runtime": "catalog:",
+    "@perawallet/wallet-core-shared": "workspace:*"
   },
   "devDependencies": {
     "typescript": "catalog:",

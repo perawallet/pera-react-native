@@ -18,6 +18,7 @@ import {
     splitP256PublicKey,
     type KeystoreSigner,
 } from '@perawallet/wallet-core-passkeys/webauthn'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { InvalidKeyDataError } from '../keystore/errors'
 import type { Key, KeyStoreState } from '../keystore/types'
 
@@ -94,8 +95,8 @@ export type PasskeyKeyStore = {
     sign: (id: string, data: Uint8Array) => Promise<Uint8Array>
 }
 
-const readMetadataString = (key: Key, field: string): string | undefined => {
-    const value = (key.metadata as Record<string, unknown> | undefined)?.[field]
+const readMetadataString = (key: Key, field: string): Optional<string> => {
+    const value = (key.metadata as Optional<Record<string, unknown>>)?.[field]
     return typeof value === 'string' ? value : undefined
 }
 
@@ -129,7 +130,7 @@ const toFlatXY = (publicKey: Uint8Array): Uint8Array => {
 const entropyChildIdOf = (
     seedKeyId: string,
     keys: readonly Key[],
-): string | undefined =>
+): Optional<string> =>
     keys.find(key => {
         const meta = (key.metadata ?? {}) as {
             parentKeyId?: unknown

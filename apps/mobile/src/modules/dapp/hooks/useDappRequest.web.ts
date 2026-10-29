@@ -20,11 +20,12 @@ import {
     resolveApproval,
     type PendingApproval,
 } from '@perawallet/wallet-core-browser-runtime'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { showConfirmedThenClose } from '@hooks/useApprovalConfirmedStore.web'
 
 type UseDappRequestResult = {
-    requestId: string | null
-    approval: PendingApproval | null
+    requestId: Nullable<string>
+    approval: Nullable<PendingApproval>
     isLoading: boolean
     approve: (addresses: string[]) => Promise<void>
     reject: () => Promise<void>
@@ -36,12 +37,12 @@ type UseDappRequestResult = {
     deliveryError: boolean
 }
 
-const readRequestId = (): string | null =>
+const readRequestId = (): Nullable<string> =>
     new URLSearchParams(window.location.search).get('requestId')
 
 export const useDappRequest = (): UseDappRequestResult => {
-    const [requestId, setRequestId] = useState<string | null>(readRequestId)
-    const [approval, setApproval] = useState<PendingApproval | null>(null)
+    const [requestId, setRequestId] = useState<Nullable<string>>(readRequestId)
+    const [approval, setApproval] = useState<Nullable<PendingApproval>>(null)
     const [isLoading, setIsLoading] = useState(true)
     const [deliveryError, setDeliveryError] = useState(false)
     // Set inside approve()/reject() so a window close after an explicit

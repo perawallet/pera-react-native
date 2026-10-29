@@ -25,6 +25,7 @@ import {
     useDelegatedTransition,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import type { Nullable, Maybe } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import { splitAccountTypeLabel } from '@utils/rekeyLabels'
 
@@ -40,7 +41,7 @@ export type AccountTypeLabel = {
      * Signer qualifier, e.g. "(Signed by a Ledger account)". Non-null only for
      * rekeyed signable accounts.
      */
-    qualifier: string | null
+    qualifier: Nullable<string>
 }
 
 const plain = (label: string): AccountTypeLabel => ({
@@ -55,7 +56,7 @@ const plain = (label: string): AccountTypeLabel => ({
  * the account list so both stay in sync.
  */
 export const useAccountTypeLabel = (
-    account: WalletAccount | null | undefined,
+    account: Maybe<WalletAccount>,
 ): AccountTypeLabel => {
     const { t } = useLanguage()
     const scope = useSelectedScope(LEGACY_CHAIN_ID)

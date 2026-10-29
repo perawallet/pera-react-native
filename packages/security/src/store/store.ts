@@ -19,6 +19,7 @@ import {
     registerStore,
     type WithPersist,
     type Nullable,
+    type Optional,
 } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 
@@ -116,7 +117,7 @@ export const useSecurityStore: UseBoundStore<
                 isBiometricRearmPending: state.isBiometricRearmPending,
             }),
             merge: (persisted, current) => {
-                const stored = persisted as Partial<SecurityState> | undefined
+                const stored = persisted as Optional<Partial<SecurityState>>
                 return {
                     ...current,
                     autoLockStartedAt: parseAutoLockStart(

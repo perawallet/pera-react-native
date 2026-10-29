@@ -16,6 +16,7 @@ import {
     getConsumedExpandedFlow,
 } from '@perawallet/wallet-core-browser-runtime'
 import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import {
     useCameraTabResultStore,
@@ -42,7 +43,7 @@ const COPY_KEYS: Record<CameraTabResult, { title: I18nKey; body: I18nKey }> = {
 }
 
 type UseCameraTabResultResult = {
-    result: CameraTabResult | null
+    result: Nullable<CameraTabResult>
     title: string
     body: string
     closeLabel: string

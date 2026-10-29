@@ -17,14 +17,15 @@ import { PWButton, PWLottie, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import type { HardwareSigningOperation } from '@perawallet/wallet-core-signing'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import animationSourceLight from '@assets/animations/ledger-signing.json'
 import animationSourceDark from '@assets/animations/ledger-signing.dark.json'
 import { useStyles } from './styles'
 
 export type LedgerAwaitingApprovalContentProps = {
-    deviceName: string | null
-    currentTx: number | null
-    totalTxs: number | null
+    deviceName: Nullable<string>
+    currentTx: Nullable<number>
+    totalTxs: Nullable<number>
     operation: HardwareSigningOperation
     onCancel: () => void
 }

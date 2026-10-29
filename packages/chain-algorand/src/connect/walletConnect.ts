@@ -17,7 +17,11 @@ import type {
     WalletConnectV2ChainSupport,
     WalletOperationResult,
 } from '@perawallet/wallet-core-connections'
-import { encodeToBase64, type Nullable } from '@perawallet/wallet-core-shared'
+import {
+    encodeToBase64,
+    type Nullable,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
 import { MAX_TRANSACTION_SIGN_REQUESTS } from '@perawallet/wallet-core-signing/constants'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
 import {
@@ -116,7 +120,7 @@ const getExpectedV1ChainId = (networkId: NetworkId): Nullable<number> =>
  * network with no expected id, is rejected rather than guessed.
  */
 const isV1ChainIdAcceptable = (
-    chainId: number | undefined,
+    chainId: Optional<number>,
     networkId: NetworkId,
 ): boolean => {
     if (chainId === undefined) return false

@@ -12,16 +12,17 @@
 
 import type { ChainSubmissionData } from '@perawallet/wallet-core-chain-contract'
 import type { SubmissionAttempt } from '@perawallet/wallet-core-signing'
+import type { Optional, Nullable } from '@perawallet/wallet-core-shared'
 
 /** Undefined when the round couldn't be decoded, leaving the attempt unevaluatable. */
 export const algorandSubmissionChainData = (
-    lastValid: number | undefined,
-): ChainSubmissionData | undefined =>
+    lastValid: Optional<number>,
+): Optional<ChainSubmissionData> =>
     lastValid === undefined ? undefined : { family: 'algorand', lastValid }
 
 export const lastValidOf = (
     attempt: Pick<SubmissionAttempt, 'chainData'>,
-): number | null =>
+): Nullable<number> =>
     attempt.chainData?.family === 'algorand'
         ? attempt.chainData.lastValid
         : null

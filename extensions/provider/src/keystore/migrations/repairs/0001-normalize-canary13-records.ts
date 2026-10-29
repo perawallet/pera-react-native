@@ -22,6 +22,7 @@ import {
     openData,
     serializeKey,
 } from '@algorandfoundation/react-native-keystore'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import type { PeraMigrationContext } from '../types'
 import { safeErrorMessage, safeWarn } from '../safeLog'
 import {
@@ -80,7 +81,7 @@ export const migration: Migration<PeraMigrationContext> = {
         // and one prompt, and so a rejection is not retried once per record.
         // The scratch takes ownership on first read, so the plaintext master
         // key is zeroed when the runner settles even if this revision throws.
-        let pending: Promise<Uint8Array> | undefined
+        let pending: Optional<Promise<Uint8Array>>
         const unlock = () =>
             (pending ??= context.masterKeyForRead().then(key => {
                 utils.secrets.put('keystore-master-key', key)
@@ -97,11 +98,11 @@ export const migration: Migration<PeraMigrationContext> = {
             if (raw === undefined) continue
 
             const journal = createJournal(storage)
-            const derived: (Uint8Array | undefined)[] = []
+            const derived: Optional<Uint8Array>[] = []
 
             // Hoisted so the `finally` can zero whatever was decrypted, on
             // every exit including the ones that `continue`.
-            let record: Canary13Record | undefined
+            let record: Optional<Canary13Record>
 
             try {
                 try {

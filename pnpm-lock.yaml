@@ -1338,6 +1338,9 @@ importers:
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.29.7
+      '@perawallet/wallet-core-shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
     devDependencies:
       '@perawallet/wallet-core-devtools':
         specifier: workspace:*
@@ -1530,6 +1533,9 @@ importers:
       '@ledgerhq/hw-transport-web-ble':
         specifier: 'catalog:'
         version: 6.35.0
+      '@perawallet/wallet-core-shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
       '@perawallet/wallet-extension-hardware-wallet':
         specifier: workspace:*
         version: link:../hardware-wallet
@@ -1598,6 +1604,9 @@ importers:
       '@algorandfoundation/wallet-provider':
         specifier: 1.0.0-canary.6
         version: 1.0.0-canary.6
+      '@perawallet/wallet-core-shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
       react-native:
         specifier: 0.88.0
         version: 0.88.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0)
@@ -3079,6 +3088,9 @@ importers:
 
   packages/database:
     dependencies:
+      '@perawallet/wallet-core-shared':
+        specifier: workspace:*
+        version: link:../shared
       '@perawallet/wallet-extension-platform':
         specifier: workspace:*
         version: link:../../extensions/platform
@@ -3162,6 +3174,9 @@ importers:
       '@perawallet/wallet-core-messages':
         specifier: workspace:*
         version: link:../messages
+      '@perawallet/wallet-core-shared':
+        specifier: workspace:*
+        version: link:../shared
       '@perawallet/wallet-core-transactions':
         specifier: workspace:*
         version: link:../transactions

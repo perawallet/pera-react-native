@@ -11,7 +11,11 @@
  */
 
 import { create } from 'zustand'
-import { guardedPersist, registerStore } from '@perawallet/wallet-core-shared'
+import {
+    guardedPersist,
+    registerStore,
+    type Maybe,
+} from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import type { MnemonicBackupStore } from '../models'
 
@@ -33,7 +37,7 @@ export const useMnemonicBackupStore = create<MnemonicBackupStore>()(
                     },
                 })
             },
-            isBackedUp: (keyId: string | null | undefined) => {
+            isBackedUp: (keyId: Maybe<string>) => {
                 if (!keyId) return false
                 return !!get().backedUpKeyIds[keyId]
             },

@@ -17,7 +17,7 @@ import {
     multisigChainAdapters,
     useMultisigAccountDetailQuery,
 } from '@perawallet/wallet-core-multisig'
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import { addressOn, hasCustody } from '../credentials'
 import { multisigParametersOf, withMultisigParameters } from '../multisig'
 import { useUpdateAccount } from './useUpdateAccount'
@@ -70,7 +70,7 @@ export const useMultisigDetailsBackfill = (
         // The address is the local source of truth; never persist a
         // server-provided cosigner set it doesn't commit to. A mismatch means
         // a wrong or malicious backend response — leave the account un-healed.
-        let derivedAddress: string | null = null
+        let derivedAddress: Nullable<string> = null
         try {
             derivedAddress = multisigChainAdapters
                 .get(scope.chainId)

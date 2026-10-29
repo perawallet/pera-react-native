@@ -25,6 +25,7 @@ import { upsertAssets } from '@perawallet/wallet-core-assets'
 import {
     isPeraNetworkError,
     type Optional,
+    type Nullable,
 } from '@perawallet/wallet-core-shared'
 import type { EvmChainId } from '@perawallet/wallet-core-chain-contract'
 import type { EvmChain } from '../chains/types'
@@ -249,7 +250,7 @@ const readHeadSignal = async (
     ctx: ChainContext,
     chain: EvmChain,
     scope: ChainScope,
-    cursor: number | null,
+    cursor: Nullable<number>,
 ): Promise<AccountChangeSignal> => {
     const head = Number(
         await createEvmClient(scope, ctx, chain).getBlockNumber(),

@@ -11,6 +11,7 @@
  */
 
 import { CHAIN_FAMILIES } from '@perawallet/wallet-core-chain-contract'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { ContactAddresses } from './models'
 
 /** The id given to a contact saved before contacts had ids: its first address
@@ -19,7 +20,7 @@ import type { ContactAddresses } from './models'
  *  contact gets a random id, and no id is ever re-derived after an edit. */
 export const derivedContactId = (
     addresses: ContactAddresses,
-): string | null => {
+): Nullable<string> => {
     const family = CHAIN_FAMILIES.find(each => addresses[each])
     return family ? `${family}:${addresses[family]}` : null
 }

@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import {
     isAccountKey,
     isAccountRecordKey,
@@ -37,7 +38,7 @@ type ReviewBuckets<TAvailable> = {
 
 export type BackupAccountReview = ReviewBuckets<{
     address: string
-    type: BackupItemKind | null
+    type: Nullable<BackupItemKind>
     /** A record only a newer version of the app can restore. */
     needsUpdate: boolean
     /** Empty for an item written before records, which names no chain. */
@@ -66,9 +67,9 @@ export const isLiveInBackup = (item: SyncItemState): boolean =>
 
 /** `idOf` names an item of this kind, and returns null for any other. */
 const deriveReview = <TAvailable>(
-    syncState: SyncState | null,
+    syncState: Nullable<SyncState>,
     localIds: readonly string[],
-    idOf: (key: BackupItemKey, item: SyncItemState) => string | null,
+    idOf: (key: BackupItemKey, item: SyncItemState) => Nullable<string>,
     toAvailable: (id: string, item: SyncItemState) => TAvailable,
 ): ReviewBuckets<TAvailable> => {
     const backedUp = new Set<string>()
@@ -108,7 +109,7 @@ const addressesOfItem = (item: SyncItemState): string[] =>
  * name an entity by its primary, and a row from the backup by its record's.
  */
 const deriveRecordReview = <TAvailable>(
-    syncState: SyncState | null,
+    syncState: Nullable<SyncState>,
     localRecords: readonly (readonly string[])[],
     isKey: (key: BackupItemKey) => boolean,
     isRecordKey: (key: BackupItemKey) => boolean,
@@ -157,7 +158,7 @@ const deriveRecordReview = <TAvailable>(
  *  account also stores key material under the same item type, so counting every
  *  ACCOUNT item would double it. */
 export const deriveBackupAccountReview = (
-    syncState: SyncState | null,
+    syncState: Nullable<SyncState>,
     localAccounts: readonly (readonly string[])[],
 ): BackupAccountReview =>
     deriveRecordReview(
@@ -174,7 +175,9 @@ export const deriveBackupAccountReview = (
 
 /** Accounts the backup holds that only a newer version of the app can
  *  restore. This device keeps them as they are and never writes over them. */
-export const countNewerAccountRecords = (syncState: SyncState | null): number =>
+export const countNewerAccountRecords = (
+    syncState: Nullable<SyncState>,
+): number =>
     Object.entries(syncState?.items ?? {}).filter(
         ([key, item]) =>
             isAccountRecordKey(key) &&
@@ -190,7 +193,7 @@ export const countNewerAccountRecords = (syncState: SyncState | null): number =>
  * render as a bare address, and the name is the whole record.
  */
 export const deriveBackupContactReview = (
-    syncState: SyncState | null,
+    syncState: Nullable<SyncState>,
     localContactIds: readonly string[],
 ): BackupContactReview => {
     const records = Object.entries(syncState?.items ?? {}).filter(
@@ -225,7 +228,7 @@ export const deriveBackupContactReview = (
  *  does: a credential only the backup holds would otherwise render as a bare
  *  credential id. */
 export const deriveBackupPasskeyReview = (
-    syncState: SyncState | null,
+    syncState: Nullable<SyncState>,
     localCredentialIds: readonly string[],
 ): BackupPasskeyReview =>
     deriveReview(
@@ -236,7 +239,7 @@ export const deriveBackupPasskeyReview = (
     )
 
 const isAddressLiveUnder = (
-    syncState: SyncState | null,
+    syncState: Nullable<SyncState>,
     address: string,
     isOwnKey: (key: BackupItemKey) => boolean,
 ): boolean =>
@@ -252,12 +255,12 @@ const isAddressLiveUnder = (
  *  intersects with the wallet's addresses, which such a caller satisfies by
  *  construction. */
 export const isAddressBackedUp = (
-    syncState: SyncState | null,
+    syncState: Nullable<SyncState>,
     address: string,
 ): boolean => isAddressLiveUnder(syncState, address, isAccountKey)
 
 export const isContactBackedUp = (
-    syncState: SyncState | null,
+    syncState: Nullable<SyncState>,
     id: string,
 ): boolean =>
     Object.entries(syncState?.items ?? {}).some(
@@ -270,12 +273,12 @@ export const isContactBackedUp = (
 /** The credential id rides in `item.address`, the same local-only field an
  *  account's address uses: the key itself is a hash and cannot be read back. */
 export const isPasskeyBackedUp = (
-    syncState: SyncState | null,
+    syncState: Nullable<SyncState>,
     credentialId: string,
 ): boolean => isAddressLiveUnder(syncState, credentialId, isPasskeyItemKey)
 
 export const areKeysDeletedFromBackup = (
-    syncState: SyncState | null,
+    syncState: Nullable<SyncState>,
     keys: readonly BackupItemKey[],
 ): boolean =>
     keys.every(key => {

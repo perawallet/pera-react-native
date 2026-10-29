@@ -19,6 +19,7 @@
 // A bad RP ID collapses to a decline: the content script falls through to the
 // page's real `navigator.credentials`, which rejects with its own SecurityError.
 import { resolveRpId } from '@perawallet/wallet-core-passkeys/webauthn'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import type { PasskeyApprovalOpener } from './passkey-opener'
 import { isSecureDappOrigin } from './secure-origin'
 import {
@@ -55,7 +56,7 @@ export class PasskeyRouter {
     // Arrow property so `this` is bound when used as an onMessage listener.
     handleMessage = (
         message: unknown,
-        sender: chrome.runtime.MessageSender | undefined,
+        sender: Optional<chrome.runtime.MessageSender>,
         sendResponse: (response: WebauthnCeremonyResponse) => void,
     ): boolean => {
         if (!isWebauthnRelayMessage(message)) return false

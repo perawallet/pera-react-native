@@ -151,7 +151,7 @@ export const nativeAssetFor = (chainId: ChainId): PeraAsset =>
     assetsChainAdapters.get(chainId).getNativeAsset()
 
 /** {@link nativeAssetFor}, or undefined when this build doesn't ship the chain's assets adapter. */
-export const findNativeAsset = (chainId: ChainId): PeraAsset | undefined =>
+export const findNativeAsset = (chainId: ChainId): Optional<PeraAsset> =>
     assetsChainAdapters.has(chainId) ? nativeAssetFor(chainId) : undefined
 
 /** @throws ChainAdapterNotRegisteredError */

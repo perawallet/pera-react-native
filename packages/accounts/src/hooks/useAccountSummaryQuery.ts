@@ -13,7 +13,7 @@
 import { useMemo } from 'react'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
-import { type Nullable } from '@perawallet/wallet-core-shared'
+import { type Nullable, type Optional } from '@perawallet/wallet-core-shared'
 import { useQuery } from '@tanstack/react-query'
 import type { Decimal } from 'decimal.js'
 import { getAccountPortfolioTotals } from '../db'
@@ -69,7 +69,7 @@ export const readAccountSummary = async (
  * to express the total in native terms.
  */
 export const useAccountSummaryQuery = (
-    address: string | undefined,
+    address: Optional<string>,
     scope: ChainScope,
 ): UseAccountSummaryResult => {
     const hasPricing = useChainCapability(scope.chainId, 'pricing')

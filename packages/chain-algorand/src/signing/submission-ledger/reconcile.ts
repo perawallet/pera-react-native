@@ -17,7 +17,11 @@ import {
     type ChainScope,
     type ChainScopeKey,
 } from '@perawallet/wallet-core-chain-contract'
-import { isNotFoundError, logger } from '@perawallet/wallet-core-shared'
+import {
+    isNotFoundError,
+    logger,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import type { Database } from '@perawallet/wallet-core-database'
 import {
     getOpenSubmissionAttempts,
@@ -284,7 +288,7 @@ const readPending = async (
  */
 const readIndexerRound = async (
     client: SubmissionProbeClient,
-): Promise<number | null> => {
+): Promise<Nullable<number>> => {
     const health = await client.client.indexer.makeHealthCheck().do()
     if ((health['is-migrating'] ?? health.isMigrating) === true) return null
     const round = health.round

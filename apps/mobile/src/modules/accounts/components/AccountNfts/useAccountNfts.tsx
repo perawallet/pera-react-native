@@ -32,7 +32,10 @@ import {
     type CollectibleSortMode,
     type GalleryLayout,
 } from '@perawallet/wallet-core-assets'
-import { useDebouncedValue } from '@perawallet/wallet-core-shared'
+import {
+    useDebouncedValue,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import { SEARCH_DEBOUNCE_TIME_SHORT } from '@constants/ui'
 import { useCapability } from '@hooks/useCapability'
 import { useSyncRefresh } from '@hooks/useSyncRefresh'
@@ -65,9 +68,9 @@ type UseAccountNftsResult = {
     handleRefresh: () => void
     openManageSheet: () => Promise<void>
     openAddNftSheet: () => void
-    flatListRef: React.MutableRefObject<React.ComponentRef<
-        typeof PWFlatList
-    > | null>
+    flatListRef: React.MutableRefObject<
+        Nullable<React.ComponentRef<typeof PWFlatList>>
+    >
 }
 
 export const useAccountNfts = (): UseAccountNftsResult => {

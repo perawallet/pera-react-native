@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import { VaultLockedOutError } from '../errors'
 import { LOCKOUT_STORAGE_KEY } from '../storage-keys'
 
@@ -28,7 +29,7 @@ const INITIAL_LOCKOUT_SECONDS = 30
 // deadline keyed by its `performance.timeOrigin`; `{}` means none serving yet.
 type LockoutRecord = {
     failedAttempts: number
-    lockoutDeadlines: Record<string, number> | null
+    lockoutDeadlines: Nullable<Record<string, number>>
 }
 
 // `ChromeMonotonicClockService`'s reading, read locally because this package
@@ -54,9 +55,9 @@ const isDeadlineMap = (value: unknown): value is Record<string, number> =>
 
 const read = async (): Promise<LockoutRecord> => {
     const stored = await chrome.storage.local.get(LOCKOUT_STORAGE_KEY)
-    const record = stored[LOCKOUT_STORAGE_KEY] as
-        | Record<string, unknown>
-        | undefined
+    const record = stored[LOCKOUT_STORAGE_KEY] as Optional<
+        Record<string, unknown>
+    >
     const failedAttempts = record?.failedAttempts ?? 0
     // A tampered counter can't size a window, so it serves the first block.
     if (

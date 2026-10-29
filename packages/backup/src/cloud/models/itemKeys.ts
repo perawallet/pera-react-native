@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { ItemKeyHash } from '../crypto/itemKeyHash'
 import type { BackupItemKey } from './types'
 
@@ -95,7 +96,9 @@ export const passkeySecretsItemKey = (hash: ItemKeyHash): BackupItemKey =>
 export const isPasskeySecretsItemKey = (key: BackupItemKey): boolean =>
     key.startsWith(BACKUP_PASSKEY_SECRETS_KEY_PREFIX)
 
-export const passkeyPartnerKey = (key: BackupItemKey): BackupItemKey | null => {
+export const passkeyPartnerKey = (
+    key: BackupItemKey,
+): Nullable<BackupItemKey> => {
     if (isPasskeyItemKey(key))
         return `${BACKUP_PASSKEY_SECRETS_KEY_PREFIX}${key.slice(BACKUP_PASSKEYS_KEY_PREFIX.length)}`
     if (isPasskeySecretsItemKey(key))

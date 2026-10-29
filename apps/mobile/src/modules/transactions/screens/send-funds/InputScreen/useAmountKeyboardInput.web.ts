@@ -11,9 +11,10 @@
  */
 
 import { useEffect, useRef } from 'react'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { UseAmountKeyboardInputParams } from './useAmountKeyboardInput'
 
-const isTextField = (target: EventTarget | null): boolean =>
+const isTextField = (target: Nullable<EventTarget>): boolean =>
     target instanceof HTMLElement &&
     (target.isContentEditable ||
         ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName))
@@ -38,7 +39,7 @@ export const useAmountKeyboardInput = ({
         // A frame late: the sheet's Modal focus trap moves focus to its first
         // focusable element (the backdrop) as the sheet opens.
         const frame = requestAnimationFrame(() => {
-            ;(amountRef.current as unknown as HTMLElement | null)?.focus()
+            ;(amountRef.current as unknown as Nullable<HTMLElement>)?.focus()
         })
         return () => cancelAnimationFrame(frame)
     }, [amountRef, isActive])
@@ -65,7 +66,8 @@ export const useAmountKeyboardInput = ({
                 const isOnAmount =
                     active === null ||
                     active === document.body ||
-                    active === (amountRef.current as unknown as Element | null)
+                    active ===
+                        (amountRef.current as unknown as Nullable<Element>)
                 if (!isOnAmount) return
                 event.preventDefault()
                 latest.current.onSubmit()

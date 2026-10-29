@@ -21,6 +21,7 @@ import {
     generateOrderedUniqueId,
     toError,
     type Nullable,
+    type Optional,
 } from '@perawallet/wallet-core-shared'
 import {
     FEE_ADJUSTMENT_DELIVERY_MESSAGE_MARKER,
@@ -103,7 +104,7 @@ export const enqueueArc0001SignRequest = async (
     let groupContext: UnsignedTransaction[] = decodedGroup
     let txs: UnsignedTransaction[] = indicesToSign.map(i => decodedGroup[i])
     let rawTransactionsBase64 = toSign.map(t => t.walletTxn.txn)
-    let feeAdjustments: FeeAdjustment[] | undefined
+    let feeAdjustments: Optional<FeeAdjustment[]>
 
     if (assigned.adjustments.length > 0) {
         groupContext = assigned.transactions

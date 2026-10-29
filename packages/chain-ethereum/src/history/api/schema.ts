@@ -11,6 +11,7 @@
  */
 
 import { z } from 'zod'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 const address = z.string().regex(/^0x[0-9a-fA-F]{40}$/)
 const amount = z.string().regex(/^\d+$/)
@@ -100,32 +101,32 @@ export const evmHistoryPageSchema = z.object({
 export type EvmHistoryItemResponse = {
     kind: 'transaction' | 'withdrawal'
     /** Null on a withdrawal row. */
-    hash: string | null
+    hash: Nullable<string>
     block_number: number
     /** ISO 8601. */
     block_time: string
     /** Null, with `to`, `value` and `method`, when the row is known only from a transfer stream. */
-    from: string | null
-    to: string | null
-    value: string | null
+    from: Nullable<string>
+    to: Nullable<string>
+    value: Nullable<string>
     /** Wei: the transaction's total gas cost, whoever paid it. */
     // lanekeep-ignore-next-line pera/amount-types reason: JSON wire response shape
-    fee: string | null
+    fee: Nullable<string>
     status: 'success' | 'failed'
-    method: string | null
+    method: Nullable<string>
     token_transfers: {
         asset_id: string
         contract: string
         from: string
         to: string
         value: string
-        token_name: string | null
-        token_symbol: string | null
-        token_decimals: number | null
+        token_name: Nullable<string>
+        token_symbol: Nullable<string>
+        token_decimals: Nullable<number>
     }[]
     internal_transfers: {
         from: string
-        to: string | null
+        to: Nullable<string>
         value: string
         status: 'success' | 'failed'
     }[]
@@ -136,8 +137,8 @@ export type EvmHistoryItemResponse = {
         quantity: string
         from: string
         to: string
-        collection_name: string | null
-        collection_symbol: string | null
+        collection_name: Nullable<string>
+        collection_symbol: Nullable<string>
     }[]
     // lanekeep-ignore-next-line pera/amount-types reason: JSON wire response shape
     withdrawals: { index: number; validator_index: number; amount: string }[]

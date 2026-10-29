@@ -21,6 +21,7 @@ import {
 import {
     ALGO_ASSET_NAME,
     isIntegrityRequiredError,
+    type Optional,
 } from '@perawallet/wallet-core-shared'
 import {
     USD_CURRENCY_ID,
@@ -34,7 +35,7 @@ import { trackEvent, SettingsEvent, AnalyticsMetadataKey } from '@analytics'
 
 type UseSettingsCurrencyScreenResult = {
     setCurrency: (currency: Currency) => void
-    search: string | undefined
+    search: Optional<string>
     setSearch: (v?: string) => void
     filteredData: Currency[]
     preferredCurrency: string

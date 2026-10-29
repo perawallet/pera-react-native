@@ -15,6 +15,7 @@ import {
     useAnimatedReaction,
     type SharedValue,
 } from 'react-native-reanimated'
+import type { Optional, Nullable } from '@perawallet/wallet-core-shared'
 import { useChartSelectionReporter } from './useChartSelectionReporter'
 
 /** The subset of victory's ChartPressState this component reads. */
@@ -34,8 +35,8 @@ export type BalanceChartPressState = {
  */
 export const useChartPressSelection = <T>(
     pressState: BalanceChartPressState,
-    series: T[] | undefined,
-    onSelectionChanged: (item: T | null) => void,
+    series: Optional<T[]>,
+    onSelectionChanged: (item: Nullable<T>) => void,
 ): void => {
     const report = useChartSelectionReporter(series, onSelectionChanged)
 

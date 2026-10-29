@@ -25,7 +25,10 @@ import {
     type DisplayableAsset,
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
-import { baseUnitsToDisplayUnits } from '@perawallet/wallet-core-shared'
+import {
+    baseUnitsToDisplayUnits,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
     LEGACY_CHAIN_ID,
@@ -138,7 +141,7 @@ export const useBalanceImpactSummary = (): UseBalanceImpactSummaryResult => {
         ]
         const items = movements.map<SortableItem>(({ assetId, amount }) => {
             const isAlgo = assetId === nativeAsset.assetId
-            const asset: PeraAsset | undefined = isAlgo
+            const asset: Optional<PeraAsset> = isAlgo
                 ? nativeAsset
                 : assets.get(assetId)
             const decimals = asset?.decimals ?? 0

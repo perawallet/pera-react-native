@@ -17,6 +17,7 @@ import type {
     ConnectionKind,
     ConnectionStoreAPI,
 } from '@perawallet/wallet-extension-connections'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import type {
     ConnectionErrorScope,
     ConnectionPairOptions,
@@ -104,7 +105,7 @@ export interface ConnectionHandler<
      * Log-safe identifiers for a pairing URI. Must not include the URI: v1's
      * `key=` and v2's `symKey=` are pairing secrets and error logs ship to the crash reporter.
      */
-    describeUri?(uri: string): Record<string, string | null>
+    describeUri?(uri: string): Record<string, Nullable<string>>
 
     /**
      * Present only if the protocol can push wallet-initiated messages. Each

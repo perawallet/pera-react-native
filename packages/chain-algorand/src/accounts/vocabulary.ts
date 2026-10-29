@@ -22,6 +22,7 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { SeedScheme } from '@perawallet/wallet-core-kms/constants'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
 
 /** The account kinds Algorand distinguishes; the backup and devices wire formats spell them this way too. */
@@ -99,11 +100,11 @@ export const isQuantumAccount = hasSeed(SeedScheme.Quantum)
 export const isHDWalletAccount = hasSeed(SeedScheme.Bip39)
 
 /** The account's Algorand address, or `undefined` when it has no Algorand entry. */
-export const algorandAddressOf = (account: WalletAccount): string | undefined =>
+export const algorandAddressOf = (account: WalletAccount): Optional<string> =>
     chainAccountOf(account, ALGORAND_CHAIN_ID)?.address
 
 /** The KMS key that signs for the account on Algorand, when a local one does. */
-export const algorandKeyOf = (account: WalletAccount): string | undefined =>
+export const algorandKeyOf = (account: WalletAccount): Optional<string> =>
     chainAccountOf(account, ALGORAND_CHAIN_ID)?.keyPairId
 
 /**

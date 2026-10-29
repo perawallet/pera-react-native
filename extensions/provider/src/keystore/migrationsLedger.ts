@@ -17,6 +17,7 @@ import {
     DEFAULT_LEDGER_KEY,
     type Revision,
 } from '@algorandfoundation/provider-migrations'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 /**
  * A dedicated instance, never the keystore's own. The keystore mints its
@@ -28,7 +29,7 @@ import {
  */
 export const PERA_MIGRATIONS_MMKV_ID = 'pera-provider-migrations'
 
-let instance: MMKV | null = null
+let instance: Nullable<MMKV> = null
 
 const storage = (): MMKV => {
     instance ??= createMMKV({ id: PERA_MIGRATIONS_MMKV_ID })

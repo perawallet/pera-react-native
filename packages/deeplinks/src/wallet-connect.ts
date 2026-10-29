@@ -14,13 +14,14 @@ import {
     isWalletConnectScheme,
     parseWalletConnectUri,
 } from '@perawallet/wallet-core-walletconnect/shared/deeplink'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import { DeeplinkType, type WalletConnectDeeplink } from './links'
 import { resolveChainDeeplink } from './resolve'
 
 export const parseWalletConnectDeeplink = (
     uri: string,
     sourceUrl: string,
-): WalletConnectDeeplink | null => {
+): Nullable<WalletConnectDeeplink> => {
     const link = parseWalletConnectUri(uri)
     if (!link) return null
     return {
@@ -35,7 +36,7 @@ export const parseWalletConnectDeeplink = (
  * The `wc:` URI a link carries, or undefined when it isn't a WalletConnect
  * link. A chain's own wrapper scheme counts: its adapter unwraps it.
  */
-export const walletConnectUriOf = (url: string): string | undefined => {
+export const walletConnectUriOf = (url: string): Optional<string> => {
     if (isWalletConnectScheme(url)) return url
 
     const resolution = resolveChainDeeplink(url)

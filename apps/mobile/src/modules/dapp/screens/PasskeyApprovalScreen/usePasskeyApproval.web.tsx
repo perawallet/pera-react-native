@@ -39,6 +39,7 @@ import {
     resolvePasskey,
     type PendingApproval,
 } from '@perawallet/wallet-core-browser-runtime'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useRequireVaultPassword } from '@modules/vault'
 import {
@@ -84,8 +85,8 @@ type PasskeyPendingApproval = Extract<
 >
 
 const asPasskeyApproval = (
-    approval: PendingApproval | null,
-): PasskeyPendingApproval | null => {
+    approval: Nullable<PendingApproval>,
+): Nullable<PasskeyPendingApproval> => {
     if (
         approval &&
         (approval.kind === 'passkey-create' || approval.kind === 'passkey-get')
@@ -107,7 +108,7 @@ type UsePasskeyApprovalResult = {
     isConfirmed: boolean
     /** False until the window is armed (see useApprovalArming) or while busy. */
     canApprove: boolean
-    error: string | null
+    error: Nullable<string>
     approve: () => Promise<void>
     decline: () => Promise<void>
 }
@@ -118,7 +119,7 @@ export const usePasskeyApproval = (): UsePasskeyApprovalResult => {
     const { request: requestBottomSheet } = useBottomSheet()
     const { t } = useLanguage()
     const [isBusy, setIsBusy] = useState(false)
-    const [error, setError] = useState<string | null>(null)
+    const [error, setError] = useState<Nullable<string>>(null)
     const isArmed = useApprovalArming()
     const isConfirmed = useApprovalConfirmedStore(state => state.isConfirmed)
 
@@ -163,7 +164,7 @@ export const usePasskeyApproval = (): UsePasskeyApprovalResult => {
             // as a decline rather than falling back to the first credential.
             selectCredential: async (
                 choices: PasskeyChoice[],
-            ): Promise<string | null> => {
+            ): Promise<Nullable<string>> => {
                 const chosen = await requestBottomSheet<string>({
                     contents: (
                         <PasskeyChooserContent

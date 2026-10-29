@@ -11,6 +11,7 @@
  */
 
 import type { KeyData } from '@algorandfoundation/keystore-core'
+import type { Optional } from '@perawallet/wallet-core-shared'
 
 /**
  * canary.13 record shape. `seed` is untyped upstream but real: both versions'
@@ -54,7 +55,7 @@ export type LiftedMaterial = { id: string; bytes: Uint8Array }
  */
 export const liftSecrets = <T>(
     value: T,
-    ownerId: string | undefined,
+    ownerId: Optional<string>,
     lifted: LiftedMaterial[],
 ): T => {
     if (Array.isArray(value)) {
@@ -168,13 +169,13 @@ export type NestedRootShape = { rootId: string; rootMaterial: Uint8Array }
  */
 export const recognizedNestedShape = (
     record: Canary13Record,
-): NestedRootShape | undefined => {
+): Optional<NestedRootShape> => {
     const lifted: LiftedMaterial[] = []
     liftSecrets(record, record.id, lifted)
     if (lifted.length !== 1) return undefined
 
     const [only] = lifted
-    const nested = (record.metadata as { rootKey?: Canary13Record } | undefined)
+    const nested = (record.metadata as Optional<{ rootKey?: Canary13Record }>)
         ?.rootKey
     if (nested === undefined) return undefined
     if (typeof only.id !== 'string' || nested.id !== only.id) return undefined
@@ -230,7 +231,7 @@ const parseBip44Path = (path: string): number[] =>
 
 const rawDerivationPathOf = (
     meta: Record<string, unknown>,
-): string | undefined => {
+): Optional<string> => {
     if (typeof meta.derivationPath === 'string') return meta.derivationPath
     if (typeof meta.path === 'string') return meta.path
     return undefined
@@ -274,7 +275,7 @@ export const normalizeCanary13Record = ({
         metadata: { ...(record.metadata ?? {}) },
     }
     const meta = metadata.metadata as Record<string, unknown>
-    let bytes: Uint8Array | undefined
+    let bytes: Optional<Uint8Array>
 
     if (record.type === LEGACY_FALCON_TYPE) {
         metadata.type = 'falcon-1024'

@@ -56,6 +56,7 @@ type StoredAlgorandChainData = {
     swapGroupDetail: Nullable<StoredSwapGroupDetail>
     groupId: Nullable<string>
     /** Base units, as a decimal string. */
+    // lanekeep-ignore-next-line pera/amount-types reason: JSON document stored in the chain_data column; decoded with new Decimal below
     closeAmount: Nullable<string>
 }
 

@@ -16,6 +16,7 @@ import {
     type CloudFileStore,
     type ReadCloudFileOptions,
 } from '@perawallet/wallet-extension-platform'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 
 // Sequential on purpose: a burst of parallel downloads against a cloud store is
 // worse than ten small reads in a row.
@@ -26,7 +27,10 @@ const PROBE_LIMIT = 10
 const MAX_PROBE_BYTES = 64 * 1024
 
 /** One entry's contents; `null` when unreadable or larger than `maxBytes`. */
-type ReadEntry = (fileName: string, maxBytes: number) => Promise<string | null>
+type ReadEntry = (
+    fileName: string,
+    maxBytes: number,
+) => Promise<Nullable<string>>
 
 export type ResolvedCandidate = {
     fileName: string
@@ -37,13 +41,13 @@ export type ResolvedCandidate = {
 // the name filter rejects it.
 const probeContents = async (
     entries: string[],
-    isCandidateContents: ((contents: string) => boolean) | undefined,
+    isCandidateContents: Optional<(contents: string) => boolean>,
     readEntry: ReadEntry,
 ): Promise<ResolvedCandidate[]> => {
     if (!isCandidateContents) return []
     const found: ResolvedCandidate[] = []
     for (const fileName of entries.slice(0, PROBE_LIMIT)) {
-        let contents: string | null
+        let contents: Nullable<string>
         try {
             contents = await readEntry(fileName, MAX_PROBE_BYTES)
         } catch {
@@ -60,7 +64,7 @@ const chooseFrom = async (
     candidates: ResolvedCandidate[],
     store: CloudFileStore,
     chooseFile: ChooseCloudFile,
-): Promise<ResolvedCandidate | null> => {
+): Promise<Nullable<ResolvedCandidate>> => {
     const [only, ...rest] = candidates
     if (!only) throw new CloudFileNotFoundError(store)
     if (rest.length === 0) return only
@@ -78,7 +82,7 @@ export const resolveCandidate = async (
     store: CloudFileStore,
     { isCandidate, isCandidateContents, chooseFile }: ReadCloudFileOptions,
     readEntry: ReadEntry,
-): Promise<ResolvedCandidate | null> => {
+): Promise<Nullable<ResolvedCandidate>> => {
     const named = entries.filter(isCandidate).map(fileName => ({ fileName }))
     const candidates =
         named.length > 0

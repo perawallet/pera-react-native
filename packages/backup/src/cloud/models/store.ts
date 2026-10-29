@@ -10,18 +10,18 @@
  limitations under the License
  */
 
-import type { BaseStoreState } from '@perawallet/wallet-core-shared'
+import type { BaseStoreState, Nullable } from '@perawallet/wallet-core-shared'
 import type { BackupId } from './types'
 
 export type CloudBackupState = BaseStoreState & {
     /** DID-compatible backup identifier; null until configured. */
-    backupId: BackupId | null
+    backupId: Nullable<BackupId>
     /** Base64-encoded salt used for key derivation; null until configured. */
-    salt: string | null
+    salt: Nullable<string>
     /** Device id this backup was registered with. Held here rather than read
      *  from the device store at call time, so every signed request uses the id
      *  the server knows. Null for backups configured before it was stored. */
-    deviceId: string | null
+    deviceId: Nullable<string>
 }
 
 export type CloudBackupActions = {

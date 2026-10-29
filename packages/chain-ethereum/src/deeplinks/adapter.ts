@@ -29,6 +29,7 @@ import {
     type DeeplinkParseFailure,
     type DeeplinkParseResult,
 } from '@perawallet/wallet-core-deeplinks'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { eip155ChainIdOfNetwork } from '../blockchain/utils/caip19'
 import { evmChainOf, evmChainOfEip155Id } from '../chains/table'
 import type { EvmChain } from '../chains/types'
@@ -44,7 +45,7 @@ const MAX_UINT256 = new Decimal(maxUint256.toString())
 const SINGLE_PARAMS = ['value', 'address', 'uint256']
 
 // Base units are whole numbers; a fraction means display units leaked in.
-const parseBaseUnits = (raw: string): Decimal | undefined => {
+const parseBaseUnits = (raw: string): Optional<Decimal> => {
     if (!AMOUNT_PATTERN.test(raw)) return undefined
     const amount = new Decimal(raw)
     return amount.isFinite() && amount.isInteger() && amount.lte(MAX_UINT256)
@@ -55,7 +56,7 @@ const parseBaseUnits = (raw: string): Decimal | undefined => {
 // Hand-written: React Native's URLSearchParams throws on a malformed escape and
 // cuts a value at its second `=`, where Node keeps it. Only the keys the
 // grammar uses are decoded; gas, gasLimit and the rest are never read.
-const readQuery = (query: string): Map<string, string> | undefined => {
+const readQuery = (query: string): Optional<Map<string, string>> => {
     const params = new Map<string, string>()
     for (const segment of query.split('&')) {
         const eq = segment.indexOf('=')
@@ -81,7 +82,7 @@ const fail = (reason: DeeplinkParseFailure): DeeplinkParseResult => ({
 
 // viem's strict isAddress is what the codec's isValid is; the codec imports
 // this module, so it cannot be called from here.
-const checkAddress = (raw: string): DeeplinkParseFailure | undefined => {
+const checkAddress = (raw: string): Optional<DeeplinkParseFailure> => {
     if (ADDRESS_PATTERN.test(raw)) {
         return isAddress(raw) ? undefined : 'malformed'
     }
@@ -95,9 +96,9 @@ const canParseWith =
 
 export type Eip681ParseOptions = {
     /** The registered scope that owns an `@<eip155 id>`; undefined rejects the link. */
-    resolve: (eip155ChainId: number) => ChainScope | undefined
+    resolve: (eip155ChainId: number) => Optional<ChainScope>
     /** The chain a link without `@<eip155 id>` pays on; undefined rejects such a link as unsupported-network. */
-    defaultChainId: ChainId | undefined
+    defaultChainId: Optional<ChainId>
     nativeAssetOf: (chainId: ChainId) => AssetRef
 }
 
@@ -190,7 +191,7 @@ const nativeAssetOfEvmChain = (chainId: ChainId): AssetRef => {
 /** Resolves an `@<eip155 id>` against every chain in the EVM table. */
 export const resolveEvmScope = (
     eip155ChainId: number,
-): ChainScope | undefined => {
+): Optional<ChainScope> => {
     const owner = evmChainOfEip155Id(eip155ChainId)
     return owner && { chainId: owner.chain.row.id, networkId: owner.networkId }
 }
@@ -204,7 +205,7 @@ export const createEvmDeeplinkAdapter = (
 ): DeeplinkChainAdapter => {
     const isRegistered = (chainId: ChainId): boolean =>
         addressCodecs.has(chainId)
-    const resolve = (eip155ChainId: number): ChainScope | undefined => {
+    const resolve = (eip155ChainId: number): Optional<ChainScope> => {
         const scope = resolveEvmScope(eip155ChainId)
         return scope && isRegistered(scope.chainId) ? scope : undefined
     }
@@ -221,7 +222,7 @@ export const createEvmDeeplinkAdapter = (
                     ?.chainId,
                 nativeAssetOf: nativeAssetOfEvmChain,
             }),
-        toAssetRef: (raw): AssetRef | undefined =>
+        toAssetRef: (raw): Optional<AssetRef> =>
             isAddress(raw)
                 ? { chainId: owner.row.id, assetId: getAddress(raw) }
                 : undefined,
@@ -240,8 +241,8 @@ export const parseEvmPaymentUri = (input: string): DeeplinkParseResult =>
 // mainnet when no network is given.
 const eip155ChainIdOfLink = (
     chain: EvmChain,
-    networkId: NetworkId | undefined,
-): number | undefined => {
+    networkId: Optional<NetworkId>,
+): Optional<number> => {
     if (networkId !== undefined) return eip155ChainIdOfNetwork(chain, networkId)
     const mainnet = chain.descriptor.networks.find(n => n.tier === 'mainnet')
     const eip155ChainId = mainnet && eip155ChainIdOfNetwork(chain, mainnet.id)

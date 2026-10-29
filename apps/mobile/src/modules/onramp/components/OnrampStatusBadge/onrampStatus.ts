@@ -12,6 +12,7 @@
 
 import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 import type { OnrampStatus } from '@perawallet/wallet-core-onramp'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { IconName, PWIconVariant } from '@components/core'
 
 export type OnrampStatusColor =
@@ -23,7 +24,7 @@ export type OnrampStatusColor =
 
 export type OnrampStatusDescriptor = {
     /** PWIcon name for the inline status indicator; null = no icon (cancelled). */
-    icon: IconName | null
+    icon: Nullable<IconName>
     /** Semantic color used for the pill (OnrampStatusBadge) styling. */
     color: OnrampStatusColor
     /** PWIcon variant resolving the inline status color. */

@@ -16,6 +16,7 @@ import {
     type CloudFileSaveResult,
     type ReadCloudFileOptions,
 } from '@perawallet/wallet-extension-platform'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import {
     CloudStorageErrorCode,
     type CloudStorage,
@@ -103,7 +104,7 @@ const probeEntry = async (
     drive: CloudStorage,
     fileName: string,
     maxBytes: number,
-): Promise<string | null> => {
+): Promise<Nullable<string>> => {
     const path = `${BACKUP_FOLDER}/${fileName}`
     const { size } = await drive.stat(path)
     return size > maxBytes ? null : drive.readFile(path)
@@ -127,7 +128,7 @@ export const readFromGoogleDrive = async (
     // session re-runs its operation after a rejected token, so the resolved
     // name is kept out here and reused: prompting `chooseFile` twice would be
     // the regression the single session is meant to remove.
-    let resolved: ResolvedCandidate | null = null
+    let resolved: Nullable<ResolvedCandidate> = null
 
     const result = await runOnGoogleDrive(async drive => {
         const candidate =

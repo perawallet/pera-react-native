@@ -15,6 +15,7 @@ import { HDKey } from '@scure/bip32'
 import { hmac } from '@noble/hashes/hmac.js'
 import { sha256 } from '@noble/hashes/sha2.js'
 import { InvalidKeyDataError } from '@algorandfoundation/keystore-core'
+import type { Optional } from '@perawallet/wallet-core-shared'
 
 // The synchronous API needs these. Hermes has no WebCrypto, so the async
 // variants that fall back to it are not an option on device.
@@ -65,8 +66,8 @@ export const deriveSecp256k1PrivateKey = (
     path: string,
 ): Uint8Array => {
     const indices = parseBip32Path(path)
-    let node: HDKey | undefined
-    let nodeKey: Uint8Array | undefined
+    let node: Optional<HDKey>
+    let nodeKey: Optional<Uint8Array>
     try {
         node = HDKey.fromMasterSeed(seed)
         for (const index of indices) {

@@ -29,7 +29,7 @@ import {
     type DappRequestFailure,
     type WalletConnectRequestRoute,
 } from '@perawallet/wallet-core-connections'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import { eip155ChainIdOfNetwork } from '../blockchain/utils/caip19'
 import type { EvmChain } from '../chains/types'
 import { isMessageSigningEnabled } from '../signing/messageSigningGate'
@@ -232,7 +232,7 @@ const answerCapabilities =
         ) {
             throw invalidParams('chainIds must be hex chain ids')
         }
-        return ethereumWalletCapabilities(chain, chainIds as Hex[] | undefined)
+        return ethereumWalletCapabilities(chain, chainIds as Optional<Hex[]>)
     }
 
 const answerCallsStatus =

@@ -13,6 +13,7 @@
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { DeviceChainAdapter } from '@perawallet/wallet-core-device'
 import { SeedScheme } from '@perawallet/wallet-core-kms/constants'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { EvmChain } from '../chains/types'
 
 /**
@@ -28,7 +29,7 @@ export const EVM_DEVICE_ACCOUNT_TYPES = {
     watch: 'watch',
 } as const
 
-const evmDeviceAccountType = ({ custody }: WalletAccount): string | null => {
+const evmDeviceAccountType = ({ custody }: WalletAccount): Nullable<string> => {
     if (custody.kind === 'hardware') return EVM_DEVICE_ACCOUNT_TYPES.hardware
     if (custody.kind === 'watch') return EVM_DEVICE_ACCOUNT_TYPES.watch
     if (

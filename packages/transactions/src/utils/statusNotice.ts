@@ -14,6 +14,7 @@ import {
     i18nKey,
     type TransactionNotice,
 } from '@perawallet/wallet-core-chain-contract'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import type { TransactionHistoryStatus } from '../models/types'
 
 const PENDING = i18nKey('transactions.notice.pending')
@@ -30,9 +31,9 @@ const REPLACEMENT_NOT_NEEDED = i18nKey(
  * @param since Unix ms the transaction was first seen; shown on a pending notice only.
  */
 export const transactionStatusNotice = (
-    status: TransactionHistoryStatus | undefined,
+    status: Optional<TransactionHistoryStatus>,
     since?: number,
-): TransactionNotice | undefined => {
+): Optional<TransactionNotice> => {
     if (status === 'pending') {
         return {
             kind: 'warning',

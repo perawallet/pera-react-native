@@ -11,12 +11,13 @@
  */
 
 import type { KeyValueStorageService } from '@perawallet/wallet-extension-platform'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { createMMKV, type MMKV } from 'react-native-mmkv'
 
 export class RNKeyValueStorageService implements KeyValueStorageService {
     mmkv: MMKV = createMMKV()
 
-    getItem(key: string): string | null {
+    getItem(key: string): Nullable<string> {
         return this.mmkv.getString(key) ?? null
     }
 
@@ -32,7 +33,7 @@ export class RNKeyValueStorageService implements KeyValueStorageService {
         this.mmkv.set(key, JSON.stringify(value))
     }
 
-    getJSON<T>(key: string): T | null {
+    getJSON<T>(key: string): Nullable<T> {
         const v = this.mmkv.getString(key)
         if (!v) return null
         try {

@@ -12,13 +12,14 @@
 
 import { PWDropdown, PWIcon, PWText, PWView } from '@components/core'
 import type { MigrationPlanSummary } from '@perawallet/wallet-extension-platform'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { useStyles } from '../styles'
 
 type LegacyDatabaseCardProps = {
     plan: MigrationPlanSummary
     selectedVersion: number
     onSelectVersion: (version: number) => void
-    lastGenerated: { version: number; at: number } | undefined
+    lastGenerated: Optional<{ version: number; at: number }>
     disabled: boolean
 }
 

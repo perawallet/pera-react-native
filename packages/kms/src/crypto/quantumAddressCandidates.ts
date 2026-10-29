@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { Optional } from '@perawallet/wallet-core-shared'
 import {
     PQ_DERIVATION_CANONICAL,
     PQ_DERIVATION_LEGACY,
@@ -41,10 +42,8 @@ export const quantumAddressCandidates = (
 ): QuantumAddressCandidate[] => {
     const provider = getPQProvider()
     const canonicalSeed = chain.deriveKeygenSeed(entropy)
-    let canonical:
-        | ReturnType<typeof provider.generateKeypairFromSeed>
-        | undefined
-    let legacy: ReturnType<typeof provider.generateKeypairFromSeed> | undefined
+    let canonical: Optional<ReturnType<typeof provider.generateKeypairFromSeed>>
+    let legacy: Optional<ReturnType<typeof provider.generateKeypairFromSeed>>
 
     try {
         canonical = provider.generateKeypairFromSeed(canonicalSeed)

@@ -15,8 +15,7 @@ import type {
     ChainScopeKey,
     WalletMode,
 } from '@perawallet/wallet-core-chain-contract'
-import type { Nullable } from '@perawallet/wallet-core-shared'
-import type { BaseStoreState } from '@perawallet/wallet-core-shared'
+import type { BaseStoreState, Nullable } from '@perawallet/wallet-core-shared'
 import type { DevicePlatform } from '@perawallet/wallet-extension-platform'
 
 /** One account as registration reports it. Domain shape, camelCase. */

@@ -21,7 +21,7 @@ import {
     useChainCapabilityCheck,
     useNetworkStore,
 } from '@perawallet/wallet-core-chain-shared'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { chainAccountOf } from '../credentials/accessors'
 import type { WalletAccount } from '../models'
@@ -32,7 +32,7 @@ import type { WalletAccount } from '../models'
  */
 export const useCapabilityChainResolver = (
     capability: ChainCapability,
-): ((account: WalletAccount) => ChainId | undefined) => {
+): ((account: WalletAccount) => Optional<ChainId>) => {
     const check = useChainCapabilityCheck()
     // Joined so the resolver keeps its identity until the enabled set changes.
     const enabledKey = getProvider()

@@ -121,7 +121,7 @@ export const usePinCode = (): UsePinCodeResult => {
     // the time left on it does.
     const isLockedOut = getRemainingLockoutSeconds() > 0
 
-    const loadRecord = useCallback(async (): Promise<PinRecord | null> => {
+    const loadRecord = useCallback(async (): Promise<Nullable<PinRecord>> => {
         return withSecret(PIN_RECORD_KEY_ID, parsePinRecord)
     }, [withSecret])
 

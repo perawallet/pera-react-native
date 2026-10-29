@@ -12,6 +12,7 @@
 
 import { File, Paths } from 'expo-file-system'
 import Share from 'react-native-share'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 export type ShareFileResult = 'shared' | 'cancelled'
 
@@ -43,7 +44,8 @@ export const shareFile = async (
     } catch (error) {
         // Save to Files rejects on cancel even with failOnCancel off.
         if (
-            (error as { code?: unknown } | null)?.code === SHARE_CANCELLED_CODE
+            (error as Nullable<{ code?: unknown }>)?.code ===
+            SHARE_CANCELLED_CODE
         ) {
             return 'cancelled'
         }

@@ -15,6 +15,7 @@ import {
     toScopeKey,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
+import type { Maybe } from '@perawallet/wallet-core-shared'
 import {
     accountsChainAdapters,
     type AuthorityTargetCategory,
@@ -29,7 +30,7 @@ import { useAllAccounts } from './useAllAccounts'
  * source is missing or the chain can't move authority.
  */
 export const useAuthorityTargets = (
-    source: WalletAccount | null | undefined,
+    source: Maybe<WalletAccount>,
     category: AuthorityTargetCategory,
     scope: ChainScope,
 ): WalletAccount[] => {

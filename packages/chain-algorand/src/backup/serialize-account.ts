@@ -27,6 +27,7 @@ import {
     type SecretsBackupPayload,
 } from '@perawallet/wallet-core-backup'
 import { SeedScheme } from '@perawallet/wallet-core-kms/constants'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { ALGORAND_HD_DERIVATION_TYPE } from '../accounts/constants'
 import { algorandMultisigOf } from '../accounts/multisig-participants'
 import {
@@ -53,11 +54,11 @@ export const AlgorandBackupKinds = {
     hdAccount: 'hdWallet' as ChainBackupKind,
 } as const
 
-const nameValue = (account: WalletAccount): string | null =>
+const nameValue = (account: WalletAccount): Nullable<string> =>
     account.name ?? null
 
 export const serializeAlgorandAccount: BackupChainAdapter['serializeAccount'] =
-    (account, { updatedAt, hd }): AddressBackupPayload | null => {
+    (account, { updatedAt, hd }): Nullable<AddressBackupPayload> => {
         const address = algorandAddressOf(account)
         if (!address) return null
         const customName = nameValue(account)
@@ -136,7 +137,7 @@ export const serializeAlgorandAccount: BackupChainAdapter['serializeAccount'] =
 export const serializeAlgorandMnemonicSecret = (
     account: WalletAccount,
     mnemonic: string,
-): SecretsBackupPayload | null => {
+): Nullable<SecretsBackupPayload> => {
     const address = algorandAddressOf(account)
     if (!address) return null
     if (isQuantumAccount(account)) {
@@ -152,7 +153,7 @@ export const serializeAlgorandMnemonicSecret = (
 // so they back up through the identical key-scoped state.
 export const algorandMnemonicBackupKeyId = (
     account: WalletAccount,
-): string | null =>
+): Nullable<string> =>
     isStandaloneAccount(account) ||
     isHDWalletAccount(account) ||
     isQuantumAccount(account)

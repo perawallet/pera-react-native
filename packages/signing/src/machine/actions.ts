@@ -24,7 +24,7 @@ import {
     type TransactionPlanner,
     type UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
-import { toError } from '@perawallet/wallet-core-shared'
+import { toError, type Optional } from '@perawallet/wallet-core-shared'
 import { recordReviewApproval } from '../db/repository'
 import {
     isInteractiveSource,
@@ -118,7 +118,7 @@ export const buildGroupSignerMap = (
 const approvalOf = async (
     request: TransactionSignRequest,
     scope: ChainScope,
-): Promise<ReviewApproval | undefined> => {
+): Promise<Optional<ReviewApproval>> => {
     if (
         !isUnsignedTransactionRequest(request) ||
         request.followingTxs === undefined ||
@@ -353,7 +353,7 @@ const heldPlannedSigner = (
     signers: string[],
     allAccounts: WalletAccount[],
     scope: ChainScope,
-): string | undefined => {
+): Optional<string> => {
     const held = [...new Set(signers)].flatMap(
         signer =>
             findAccountByAddressOn(allAccounts, scope.chainId, signer) ?? [],
@@ -369,7 +369,7 @@ const signedForAddresses = (
     request: UnsignedTransactionSignRequest,
     allAccounts: WalletAccount[],
     scope: ChainScope,
-): (string | undefined)[] | undefined => {
+): Optional<Optional<string>[]> => {
     if (!plannerChainAdapters.has(scope.chainId)) return undefined
     const adapter = plannerChainAdapters.get(scope.chainId)
     const addresses = adapter.signedForAddresses(request)

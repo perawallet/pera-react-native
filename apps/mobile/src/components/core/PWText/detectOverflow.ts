@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import type { Optional, Nullable } from '@perawallet/wallet-core-shared'
+
 // Pulled out of PWText so the decision logic can be unit-tested against
 // fixture data: react-native-web (this repo's unit test renderer) never
 // calls onTextLayout at all, so a render-based test can't exercise it.
@@ -32,7 +34,7 @@ const ELLIPSIS_PATTERN = /(…|\.\.\.)$/
 // screenshot that turns out fine.
 export const isTruncated = (
     lines: readonly OverflowLine[],
-    numberOfLines: number | undefined,
+    numberOfLines: Optional<number>,
 ): boolean => {
     if (numberOfLines === undefined || lines.length === 0) return false
     const lastLine = lines[lines.length - 1]
@@ -43,8 +45,8 @@ export const isTruncated = (
 }
 
 export const isWiderThanParent = (
-    maxLineWidth: number | null,
-    boxWidth: number | null,
+    maxLineWidth: Nullable<number>,
+    boxWidth: Nullable<number>,
 ): boolean => {
     if (maxLineWidth === null || boxWidth === null) return false
     // 1px tolerance for float rounding between the layout and text-layout events.

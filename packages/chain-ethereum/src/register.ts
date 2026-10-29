@@ -65,6 +65,7 @@ import {
     ledgerAppDriverRegistry,
     type LedgerAppDriver,
 } from '@perawallet/wallet-extension-hardware-wallet'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import {
     createEthereumAccountsAdapter,
     createEvmAddressCodec,
@@ -157,7 +158,7 @@ export const createEvmChainRegistration = (
     // The registries ignore a repeat of the same instance but reject a new one,
     // so the adapters are built on the first registration; every context the
     // app hands in reads the same live stores.
-    let adapters: EvmChainAdapters | undefined
+    let adapters: Optional<EvmChainAdapters>
     return ctx => {
         adapters ??= buildAdapters(ctx, chain)
         addressCodecs.register(adapters.addressCodec)

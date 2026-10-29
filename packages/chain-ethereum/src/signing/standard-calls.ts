@@ -26,6 +26,7 @@ import {
     type ReviewWarning,
     type TransactionSummary,
 } from '@perawallet/wallet-core-chain-contract'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { toEvmNftAssetId } from '../blockchain/utils/caip19'
 import type { EvmChain } from '../chains/types'
 import { sendSummary } from '../transfer/summary'
@@ -62,7 +63,7 @@ const toCall = (
     args: readonly unknown[],
     from: Address,
     contract: Address,
-): EvmStandardCall | undefined => {
+): Optional<EvmStandardCall> => {
     const address = (index: number) => getAddress(args[index] as Address)
     const uint = (index: number) => args[index] as bigint
     switch (item.name) {
@@ -165,7 +166,7 @@ export const decodeEvmStandardCall = (call: {
     to?: Address
     data: Hex
     value: bigint
-}): EvmStandardCall | undefined => {
+}): Optional<EvmStandardCall> => {
     if (!call.to || call.value !== 0n || size(call.data) < SELECTOR_SIZE) {
         return undefined
     }
@@ -286,7 +287,7 @@ const LIMITED_APPROVAL_WARNING: ReviewWarning = {
 /** Undefined for a revocation or a transfer: neither grants anything. */
 export const approvalWarningOf = (
     call: EvmStandardCall,
-): ReviewWarning | undefined => {
+): Optional<ReviewWarning> => {
     if (isRevocation(call)) return undefined
     switch (call.kind) {
         case 'approve':

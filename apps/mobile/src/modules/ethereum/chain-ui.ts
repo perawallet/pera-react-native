@@ -11,6 +11,7 @@
  */
 
 import { i18nKey } from '@perawallet/wallet-core-chain-contract'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import type { ChainUi } from '@modules/chain-ui'
 import { EthereumTransactionDetailBody } from './components/EthereumTransactionDetailBody'
 import { EthereumTransactionPreviewRow } from './components/EthereumTransactionPreviewRow'
@@ -19,7 +20,7 @@ import { EthereumSendFeeSection } from './components/EthereumSendFeeSection'
 
 // metro.config.js swaps this for the stub unless the baked CHAINS lists
 // ethereum, which keeps viem out of an Algorand-only bundle.
-export const ethereumChainUi: ChainUi | undefined = {
+export const ethereumChainUi: Optional<ChainUi> = {
     familyLabel: i18nKey('chain_families.evm'),
     passphraseCompatibilityKey: i18nKey('view_passphrase.compatibility.evm'),
     transactionDetails: {

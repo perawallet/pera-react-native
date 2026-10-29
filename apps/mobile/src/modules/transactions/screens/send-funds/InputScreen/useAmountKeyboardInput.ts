@@ -12,6 +12,7 @@
 
 import type { RefObject } from 'react'
 import type { View } from 'react-native'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 export type UseAmountKeyboardInputParams = {
     /** Same contract as the on-screen keypad: a digit or '.', undefined deletes. */
@@ -23,7 +24,7 @@ export type UseAmountKeyboardInputParams = {
     onPaste: (text: string) => void
     onSubmit: () => void
     /** Focused once rendered, so Tab walks on from the amount to the controls below. */
-    amountRef: RefObject<View | null>
+    amountRef: RefObject<Nullable<View>>
     /**
      * True while the amount is on screen and this screen is focused. The send
      * stack keeps it mounted under later steps, which must not receive its keys.

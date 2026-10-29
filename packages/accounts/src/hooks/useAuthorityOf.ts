@@ -11,15 +11,16 @@
  */
 
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import type { Maybe, Nullable } from '@perawallet/wallet-core-shared'
 import { authorityOf } from '../credentials'
 import type { WalletAccount } from '../models'
 import { useAccountChainStateStore } from '../store'
 
 /** Re-renders only when `authorityOf(account, scope)` changes. */
 export const useAuthorityOf = (
-    account: WalletAccount | null | undefined,
+    account: Maybe<WalletAccount>,
     scope: ChainScope,
-): string | null =>
+): Nullable<string> =>
     // authorityOf reads this same snapshot via getState(); selecting its primitive result re-renders only when the authority changes.
     useAccountChainStateStore(() =>
         account ? authorityOf(account, scope) : null,

@@ -14,6 +14,7 @@ import {
     AppError,
     type NodeErrorCopy,
     type NodeErrorsAdapter,
+    type Optional,
 } from '@perawallet/wallet-core-shared'
 import { ALGORAND_CHAIN_ID } from '../../chain-id'
 import { AlgodError } from './AlgodError'
@@ -31,9 +32,7 @@ const copyFor = (error: AlgodError): NodeErrorCopy => ({
  * copy wins over `unknown_node_error`. Any other `AppError` already carries
  * its own copy.
  */
-export const describeAlgodError = (
-    error: unknown,
-): NodeErrorCopy | undefined => {
+export const describeAlgodError = (error: unknown): Optional<NodeErrorCopy> => {
     if (error instanceof AlgodError) return copyFor(error)
     if (error instanceof AppError || !(error instanceof Error)) {
         return undefined

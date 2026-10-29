@@ -10,10 +10,11 @@
  limitations under the License
  */
 
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { createRNFalconProvider } from './rnFalconProvider'
 import type { PQSignatureProvider } from './types'
 
-let cached: PQSignatureProvider | undefined
+let cached: Optional<PQSignatureProvider>
 
 /**
  * On-device (iOS / Android) PQ signature provider: the native Nitro

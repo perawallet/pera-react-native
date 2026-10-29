@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import type { Optional } from '@perawallet/wallet-core-shared'
+
 // No runtime imports: injected-scripts.ts calls the tag at import time, and
 // specs load this module under partial package mocks.
 
@@ -60,6 +62,6 @@ export const webViewScript = (
 
 /** Joins with a newline so no part can run into the next one (ASI). */
 export const joinWebViewScripts = (
-    ...scripts: readonly (WebViewScript | undefined)[]
+    ...scripts: readonly Optional<WebViewScript>[]
 ): WebViewScript =>
     brand(scripts.filter(script => script !== undefined).join('\n'))

@@ -21,13 +21,13 @@ import {
     type RemoteConfigService,
 } from '@perawallet/wallet-extension-platform'
 import { config, isDebug } from '@perawallet/wallet-core-config'
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import { getFirebaseApp } from './firebase-app'
 
 /** Serves bundled defaults when unconfigured; fetches real Firebase Remote
  * Config values once a Firebase project (firebaseProjectId) is registered. */
 export class ChromeRemoteConfigService implements RemoteConfigService {
-    private remoteConfig: RemoteConfig | null = null
+    private remoteConfig: Nullable<RemoteConfig> = null
 
     async initializeRemoteConfig(): Promise<void> {
         const app = getFirebaseApp()

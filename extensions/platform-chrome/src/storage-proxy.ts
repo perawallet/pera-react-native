@@ -15,6 +15,7 @@
 // worker proxies storage over runtime messaging. Only the `local` area and the ops
 // the offscreen boot path uses are proxied: vault/session code never runs offscreen.
 
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { isTrustedExtensionPageSender } from './trusted-sender'
 
 export const STORAGE_PROXY_SCOPE = 'pera-storage-proxy'
@@ -52,7 +53,7 @@ export const startStorageProxyHost = (
 ): void => {
     chromeLike.runtime.onMessage.addListener(
         (message, sender, sendResponse) => {
-            const msg = message as StorageProxyMessage | undefined
+            const msg = message as Optional<StorageProxyMessage>
             if (msg?.scope !== STORAGE_PROXY_SCOPE) return undefined
             // The only legitimate client is the offscreen document; content
             // scripts share this onMessage listener, so refuse everyone else.
@@ -128,7 +129,7 @@ export const installOffscreenStorageShim = (
         const response = (await chromeLike.runtime.sendMessage({
             scope: STORAGE_PROXY_SCOPE,
             ...message,
-        })) as StorageProxyResponse | undefined
+        })) as Optional<StorageProxyResponse>
         if (!response?.ok) {
             throw new Error(
                 `storage proxy ${message.kind} failed: ${
@@ -141,7 +142,7 @@ export const installOffscreenStorageShim = (
 
     const listeners = new Set<ChangeListener>()
     chromeLike.runtime.onMessage.addListener((message: unknown, sender) => {
-        const msg = message as StorageChangedBroadcast | undefined
+        const msg = message as Optional<StorageChangedBroadcast>
         if (msg?.scope !== STORAGE_EVENT_SCOPE) return undefined
         if (!isTrustedExtensionPageSender(sender, chromeLike)) return undefined
         listeners.forEach(listener => listener(msg.changes, msg.areaName))
