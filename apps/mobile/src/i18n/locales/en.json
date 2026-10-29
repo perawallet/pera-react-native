@@ -2943,7 +2943,11 @@
             "slow": "Slow",
             "normal": "Normal",
             "fast": "Fast",
-            "max_fee": "Max fee"
+            "max_fee": "Max fee",
+            "max_fee_for_preset": "Max fee ({{preset}})",
+            "max_fee_info": "The most you'll pay if network fees rise. You're usually charged less.",
+            "wait_seconds": "~{{seconds}} sec",
+            "wait_minutes": "~{{minutes}} min"
         },
         "confirmation": {
             "add_to_contacts": "+ Add to Contacts",
@@ -2955,6 +2959,7 @@
             "network": "Network",
             "fee": "Fee",
             "current_balance": "Current Balance",
+            "total": "Total",
             "note": "Note",
             "recipient_below_mbr": {
                 "title": "Amount Below Recipient Minimum",

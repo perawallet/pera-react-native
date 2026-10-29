@@ -167,7 +167,7 @@ export const TransactionConfirmationScreen = () => {
                     </KeyValueRow>
                 )}
                 <FeeSection
-                    chainId={scope.chainId}
+                    scope={scope}
                     amount={feeAmount}
                     presets={feePresets}
                     isLoading={isFeePending}

@@ -2959,7 +2959,11 @@
             "slow": "Lenta",
             "normal": "Normal",
             "fast": "Rápida",
-            "max_fee": "Taxa máxima"
+            "max_fee": "Taxa máxima",
+            "max_fee_for_preset": "Taxa máxima ({{preset}})",
+            "max_fee_info": "O máximo que você vai pagar se as taxas da rede subirem. Normalmente você paga menos.",
+            "wait_seconds": "~{{seconds}} s",
+            "wait_minutes": "~{{minutes}} min"
         },
         "confirmation": {
             "add_to_contacts": "+ Adicionar aos contatos",
@@ -2971,6 +2975,7 @@
             "network": "Rede",
             "fee": "Taxa",
             "current_balance": "Saldo atual",
+            "total": "Total",
             "note": "Nota",
             "recipient_below_mbr": {
                 "title": "Valor abaixo do mínimo do destinatário",

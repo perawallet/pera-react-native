@@ -2943,7 +2943,11 @@
             "slow": "Lenta",
             "normal": "Normal",
             "fast": "Rápida",
-            "max_fee": "Comisión máxima"
+            "max_fee": "Comisión máxima",
+            "max_fee_for_preset": "Comisión máxima ({{preset}})",
+            "max_fee_info": "Lo máximo que pagarás si suben las comisiones de la red. Normalmente pagas menos.",
+            "wait_seconds": "~{{seconds}} s",
+            "wait_minutes": "~{{minutes}} min"
         },
         "confirmation": {
             "add_to_contacts": "+ Añadir a contactos",
@@ -2955,6 +2959,7 @@
             "network": "Red",
             "fee": "Comisión",
             "current_balance": "Saldo actual",
+            "total": "Total",
             "note": "Nota",
             "recipient_below_mbr": {
                 "title": "Cantidad inferior al mínimo del destinatario",

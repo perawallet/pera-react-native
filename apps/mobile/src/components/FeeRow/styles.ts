@@ -18,19 +18,40 @@ export const useStyles = makeStyles(theme => ({
         alignItems: 'center',
         gap: theme.spacing.xs,
     },
+    section: {
+        width: '100%',
+        gap: theme.spacing.sm,
+    },
+    secondaryText: {
+        color: theme.colors.textGray,
+    },
     presetRow: {
         flex: 1,
         flexDirection: 'row',
         justifyContent: 'space-between',
-        alignItems: 'center',
+        alignItems: 'flex-start',
+        gap: theme.spacing.md,
+    },
+    presetLabel: {
+        flexShrink: 1,
+        gap: theme.spacing.xs,
+    },
+    feeAmount: {
+        flexShrink: 1,
+        alignItems: 'flex-end',
+        gap: theme.spacing.xs,
     },
     maxFeeRow: {
         flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.xs,
-        marginTop: theme.spacing.xs,
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
+        gap: theme.spacing.md,
     },
     maxFeeLabel: {
-        color: theme.colors.textGray,
+        flexShrink: 1,
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        alignItems: 'center',
+        gap: theme.spacing.xs,
     },
 }))
