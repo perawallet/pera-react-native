@@ -14,13 +14,15 @@ import { MigrationDataSection } from '../components/MigrationDataSection'
 import { LegacyVsRnRow } from '../components/LegacyVsRnRow'
 import type { RNMigrationSnapshot } from '../useRNMigrationSnapshot'
 
+type NotificationFiltersSectionProps = {
+    filters: string[]
+    rn: RNMigrationSnapshot
+}
+
 export const NotificationFiltersSection = ({
     filters,
     rn,
-}: {
-    filters: string[]
-    rn: RNMigrationSnapshot
-}) => {
+}: NotificationFiltersSectionProps) => {
     return (
         <MigrationDataSection
             title='Notification Filters'

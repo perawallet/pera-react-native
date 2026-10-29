@@ -89,6 +89,7 @@ export const useLocalKeyCreateOptions = ({
                     ? {
                           labelKey: learnMore.labelKey,
                           onPress: () =>
+                              // oxlint-disable-next-line pera/no-unvalidated-open-url -- key-kind learn-more URLs are config.* values
                               pushWebView({
                                   url: learnMore.url,
                                   id: `${option.id}-account-support`,

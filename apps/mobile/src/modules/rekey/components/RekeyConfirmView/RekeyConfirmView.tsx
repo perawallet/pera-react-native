@@ -77,6 +77,7 @@ export const RekeyConfirmView = ({
     const { pushWebView } = useWebView()
 
     const handleLearnMore = useCallback(() => {
+        // oxlint-disable-next-line pera/no-unvalidated-open-url -- every caller passes a config.* support URL
         pushWebView({ url: supportUrl })
     }, [pushWebView, supportUrl])
 

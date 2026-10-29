@@ -55,7 +55,6 @@
     "no-var": "error",
     "import/no-duplicates": ["error", { "prefer-inline": true }],
     "unused-imports/no-unused-imports": "error",
-    "pera/no-unvalidated-open-url": "error",
     "pera/prefer-lookup-map": "error",
     "max-lines": [
       "warn",
@@ -323,6 +322,11 @@
       "rules": { "pera/hook-result-type": "error" }
     },
     {
+      "files": ["src/**/*.tsx"],
+      "excludeFiles": ["src/**/__tests__/**", "src/**/__mocks__/**", "src/**/test-utils/**", "src/**/__integration__/**", "src/**/*.spec.{ts,tsx}", "src/**/*.test.{ts,tsx}"],
+      "rules": { "pera/component-props-type": "error" }
+    },
+    {
       "files": ["src/modules/**", "src/components/**"],
       "excludeFiles": ["src/**/__tests__/**", "src/**/__mocks__/**", "src/**/test-utils/**", "src/**/__integration__/**", "src/**/*.spec.{ts,tsx}", "src/**/*.test.{ts,tsx}"],
       "rules": { "pera/no-package-store-internals": "error" }
@@ -340,7 +344,7 @@
     {
       "files": ["src/**"],
       "excludeFiles": ["src/**/__tests__/**", "src/**/__mocks__/**", "src/**/test-utils/**", "src/**/__integration__/**", "src/**/*.spec.{ts,tsx}", "src/**/*.test.{ts,tsx}"],
-      "rules": { "pera/logger-static-message": "error", "pera/prefer-to-error": "error" }
+      "rules": { "pera/logger-static-message": "error", "pera/no-unvalidated-open-url": "error", "pera/prefer-to-error": "error" }
     },
     {
       "files": ["src/**/__tests__/**", "src/**/*.spec.{ts,tsx}", "src/**/__integration__/**", "src/**/test-utils/**", "vitest*.ts"],

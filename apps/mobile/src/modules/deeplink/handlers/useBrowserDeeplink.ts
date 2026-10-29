@@ -14,7 +14,7 @@ import { useCallback } from 'react'
 import { Linking } from 'react-native'
 import { generateOrderedUniqueId, logger } from '@perawallet/wallet-core-shared'
 import { routeCapabilities } from '@routes/capabilities'
-import { isSafeBrowserUrl, useWebView } from '@modules/webview'
+import { toValidatedBrowserUrl, useWebView } from '@modules/webview'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 
@@ -37,7 +37,8 @@ export const useBrowserDeeplink = (): BrowserDeeplinkHandler => {
 
     return useCallback(
         ({ url, sourceUrl, onError }) => {
-            if (!isSafeBrowserUrl(url)) {
+            const validatedUrl = toValidatedBrowserUrl(url)
+            if (!validatedUrl) {
                 logger.warn('Blocked deeplink WebView push for unsafe URL', {
                     url,
                     sourceUrl,
@@ -53,11 +54,10 @@ export const useBrowserDeeplink = (): BrowserDeeplinkHandler => {
                 // Capability contract (capabilities-types.ts): off ⇒
                 // Linking.openURL. On web nothing mounts the webview stack,
                 // so pushWebView would silently no-op.
-                // oxlint-disable-next-line pera/no-unvalidated-open-url -- isSafeBrowserUrl above
-                void Linking.openURL(url)
+                void Linking.openURL(validatedUrl)
                 return true
             }
-            pushWebView({ id: generateOrderedUniqueId(), url })
+            pushWebView({ id: generateOrderedUniqueId(), url: validatedUrl })
             return true
         },
         [errorToast, pushWebView, t],
