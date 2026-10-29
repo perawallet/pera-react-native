@@ -22,7 +22,7 @@ import type { HdIndex } from '../models'
  * is the desired security behavior; the user just retypes the mnemonic.
  * The exception is a build with a chain that can't derive in memory: its keys
  * derive only inside the keystore, so the seed is saved from discovery on
- * (`isSeedPersisted`) and removed again if the import is abandoned.
+ * (`isSeedPersisted`) and removed again when the import is cancelled or superseded.
  */
 
 export type HDImportSession = {

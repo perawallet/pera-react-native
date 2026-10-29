@@ -600,6 +600,42 @@ describe('useHDImportSession', () => {
             ).toHaveBeenCalledExactlyOnceWith('w-1')
         })
 
+        test('sweeps the seed again when the session was cancelled while the walk ran', async () => {
+            const families = setUpChains()
+            let releaseProbes: () => void = () => undefined
+            const gate = new Promise<void>(resolve => {
+                releaseProbes = resolve
+            })
+            for (const checkActivity of families.checkActivity.values()) {
+                checkActivity.mockImplementation(async (probed: string[]) => {
+                    await gate
+                    return new Map(probed.map(a => [a, false]))
+                })
+            }
+            const { result } = renderHook(() => useHDImportSession(MAINNET))
+            await prepare(result)
+
+            let discovery: Promise<LocalAccount[]> = Promise.resolve([])
+            act(() => {
+                discovery = result.current.discoverImportAccounts({
+                    walletKeyId: 'w-1',
+                })
+            })
+            await vi.waitFor(() =>
+                expect(
+                    families.checkActivity.get(ALGORAND)!.mock.calls.length,
+                ).toBeGreaterThan(0),
+            )
+            act(() => result.current.cancelImport())
+            kmsMock.removeKeyAndChildren.mockClear()
+            releaseProbes()
+
+            await expect(discovery).rejects.toBeInstanceOf(
+                HDImportSessionNotFoundError,
+            )
+            expect(kmsMock.removeKeyAndChildren).toHaveBeenCalledWith('w-1')
+        })
+
         test('saves the seed again on commit after a failed commit removed it', async () => {
             const families = setUpChains()
             const { result } = renderHook(() => useHDImportSession(MAINNET))

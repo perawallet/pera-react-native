@@ -11,3 +11,4 @@
  */
 
 export { DiscoveredAccountRow } from './DiscoveredAccountRow'
+export type { DiscoveredAccountRowProps } from './DiscoveredAccountRow'

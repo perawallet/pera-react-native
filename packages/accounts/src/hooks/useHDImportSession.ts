@@ -127,6 +127,17 @@ export const useHDImportSession = (
                     rootKey: pending.rootKey,
                     onUnusedKeys: removeUnclaimedKeys,
                 })
+                // A cancel mid-walk removed the seed while a derive was still
+                // writing children under it, so they are swept once it ends.
+                if (
+                    useHDImportSessionStore.getState().pending?.walletKeyId !==
+                    pending.walletKeyId
+                ) {
+                    void removeKeyAndChildren(pending.walletKeyId).catch(
+                        () => undefined,
+                    )
+                    throw new HDImportSessionNotFoundError(walletKeyId)
+                }
             } else {
                 const getPublicKey = requirePublicKeyGetter(
                     accountsChainAdapters.get(scope.chainId),
