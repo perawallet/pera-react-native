@@ -19,14 +19,14 @@ import { FEE_ROW_TEST_ID, type FeeRowProps } from './types'
 import { useStyles } from './styles'
 
 export const FlatFeeRow = ({
-    chainId,
+    scope,
     amount,
     isLoading,
     accessory,
-}: Pick<FeeRowProps, 'chainId' | 'amount' | 'isLoading' | 'accessory'>) => {
+}: Pick<FeeRowProps, 'scope' | 'amount' | 'isLoading' | 'accessory'>) => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const asset = nativeAssetFor(chainId)
+    const asset = nativeAssetFor(scope.chainId)
 
     return (
         <KeyValueRow

@@ -41,6 +41,8 @@ export type AssetListItemViewProps = {
     isNativeAsset: boolean
     /** Listed under its group: names its network in the subtitle. */
     isGroupMember?: boolean
+    /** Names the holding's network under the row; a group member already names it in its subtitle. */
+    shouldShowNetwork?: boolean
     /** List-level converter; the row converts its own value (observer-free). */
     convertFiat: AssetFiatConverter
     onPress?: (event: GestureResponderEvent) => void
@@ -60,6 +62,7 @@ const AssetListItemViewBase = ({
     chainId,
     isNativeAsset,
     isGroupMember = false,
+    shouldShowNetwork = false,
     convertFiat,
     onPress,
     style,
@@ -154,6 +157,11 @@ const AssetListItemViewBase = ({
             right={balance}
             subtitle={
                 isGroupMember ? <ChainLabel chainId={chainId} /> : undefined
+            }
+            footer={
+                shouldShowNetwork && !isGroupMember ? (
+                    <ChainLabel chainId={chainId} />
+                ) : undefined
             }
             showFavorite
             showDeletedLabel

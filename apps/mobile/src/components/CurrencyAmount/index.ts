@@ -14,6 +14,7 @@ export { CurrencyAmount } from './CurrencyAmount'
 export type { CurrencyAmountProps } from './CurrencyAmount'
 export {
     resolvePrecision,
+    resolveSignificantPrecision,
     PREFERRED_MAX_PRECISION,
     type PrecisionVariant,
     type ResolvedPrecision,
