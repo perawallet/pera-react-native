@@ -48,7 +48,7 @@ export const SendTotalRow = ({ total }: { total: UseSendTotalResult }) => {
             <PreferredAmount
                 value={total.preferredValue}
                 density='compact'
-                isLoading={total.isPending}
+                isLoading={total.isPending || total.isPreferredPending}
                 ignorePrivacyMode
                 truncate={false}
                 style={styles.secondaryAmount}

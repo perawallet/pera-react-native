@@ -213,6 +213,7 @@ const SEND_TOTAL = vi.hoisted(() => ({
     lines: [],
     preferredValue: undefined,
     isPending: false,
+    isPreferredPending: false,
 }))
 
 vi.mock('../useSendTotal', () => ({
@@ -672,6 +673,53 @@ describe('useTransactionConfirmationScreen', () => {
             expect(result.current.feeShortfall).toBeUndefined()
         })
 
+        it('holds Confirm while the native balance is loading', () => {
+            const result = confirmNativeSend(new Decimal(500))
+
+            expect(result.current.isFeeCoveragePending).toBe(true)
+            expect(mockNavigate).not.toHaveBeenCalled()
+        })
+
+        it('holds Confirm while the fee is loading', () => {
+            ;(useSpendableBalanceQuery as Mock).mockReturnValue({
+                data: { balance: new Decimal(1000), max: new Decimal(1000) },
+                isPending: false,
+            })
+            ;(useSendFeeQuery as Mock).mockReturnValue({
+                ...ETH_FEE,
+                feeAmount: undefined,
+                maxFeeAmount: undefined,
+                isPending: true,
+            })
+
+            const result = confirmNativeSend(new Decimal(500))
+
+            expect(result.current.isFeeCoveragePending).toBe(true)
+        })
+
+        it('releases Confirm once the fee and the native balance have loaded', () => {
+            ;(useSpendableBalanceQuery as Mock).mockReturnValue({
+                data: { balance: new Decimal(1000), max: new Decimal(1000) },
+                isPending: false,
+            })
+
+            const result = confirmNativeSend(new Decimal(500))
+
+            expect(result.current.isFeeCoveragePending).toBe(false)
+        })
+
+        it('keeps Confirm slidable when the fee could not be estimated, so it can say why', () => {
+            ;(useSendFeeQuery as Mock).mockReturnValue({
+                ...ETH_FEE,
+                maxFeeAmount: undefined,
+                isError: true,
+            })
+
+            const result = confirmNativeSend(new Decimal(1))
+
+            expect(result.current.isFeeCoveragePending).toBe(false)
+        })
+
         it('totals the send with the fee it will be charged', () => {
             const result = confirmNativeSend(new Decimal(1))
 
@@ -742,6 +790,7 @@ describe('useTransactionConfirmationScreen', () => {
 
             expect(result.current.total).toBeUndefined()
             expect(result.current.feeShortfall).toBeUndefined()
+            expect(result.current.isFeeCoveragePending).toBe(false)
         })
     })
 

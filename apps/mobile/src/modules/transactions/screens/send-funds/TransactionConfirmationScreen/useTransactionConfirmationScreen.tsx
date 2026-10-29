@@ -113,6 +113,8 @@ type useTransactionConfirmationScreenResult = {
     total: Optional<UseSendTotalResult>
     /** Set while the native balance can't cover the send at the selected preset's worst-case fee. */
     feeShortfall: Optional<{ title: string; body: string }>
+    /** True while the fee coverage check still waits on the fee or the native balance. */
+    isFeeCoveragePending: boolean
 }
 
 export const useTransactionConfirmationScreen =
@@ -302,6 +304,12 @@ export const useTransactionConfirmationScreen =
             currentLanguage,
         ])
 
+        // A failed estimate stays slidable so Confirm can explain it in a toast.
+        const isFeeCoveragePending =
+            isFeeCoverageChecked &&
+            !isFeeError &&
+            (!maxFeeAmount || !nativeSpendable || !baseUnitAmount)
+
         const sendTotal = useSendTotal({
             scope,
             asset,
@@ -421,5 +429,6 @@ export const useTransactionConfirmationScreen =
             isSigning,
             total: isFeeCoverageChecked ? sendTotal : undefined,
             feeShortfall,
+            isFeeCoveragePending,
         }
     }

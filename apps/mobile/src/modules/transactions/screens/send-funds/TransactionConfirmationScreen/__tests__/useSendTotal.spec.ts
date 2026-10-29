@@ -52,17 +52,23 @@ const ETHER_ASSET = ETHER as PeraAsset
 // 0.000008523412 ETH, which the fee row shows as 0.00000852.
 const FEE_WEI = new Decimal('8523412000000')
 
-const priceAt = (usdPerUnit: Record<string, number>) =>
+const priceAt = (
+    usdPerUnit: Record<string, number>,
+    pendingAssetIds: string[] = [],
+) =>
     vi
         .mocked(usePreferredAmount)
-        .mockImplementation((sourceAmount, sourceAssetId) => ({
-            displayCurrency: 'USD',
-            convertedValue:
-                sourceAmount && sourceAssetId in usdPerUnit
-                    ? sourceAmount.mul(usdPerUnit[sourceAssetId])
-                    : null,
-            isPending: false,
-        }))
+        .mockImplementation((sourceAmount, sourceAssetId) => {
+            const isPending = pendingAssetIds.includes(sourceAssetId)
+            return {
+                displayCurrency: 'USD',
+                convertedValue:
+                    !isPending && sourceAmount && sourceAssetId in usdPerUnit
+                        ? sourceAmount.mul(usdPerUnit[sourceAssetId])
+                        : null,
+                isPending,
+            }
+        })
 
 describe('useSendTotal', () => {
     beforeEach(() => {
@@ -140,6 +146,36 @@ describe('useSendTotal', () => {
 
         expect(result.current.preferredValue).toBeUndefined()
         expect(result.current.lines).toHaveLength(2)
+    })
+
+    it('is pending on the preferred total while either price loads', () => {
+        priceAt({ native: 2000, '0xusdc': 1 }, ['native'])
+
+        const { result } = renderHook(() =>
+            useSendTotal({
+                scope: SCOPE,
+                asset: USDC,
+                amount: new Decimal(25),
+                feeAmount: FEE_WEI,
+            }),
+        )
+
+        expect(result.current.isPreferredPending).toBe(true)
+        expect(result.current.preferredValue).toBeUndefined()
+        expect(result.current.isPending).toBe(false)
+    })
+
+    it('is not pending on the preferred total once both prices load', () => {
+        const { result } = renderHook(() =>
+            useSendTotal({
+                scope: SCOPE,
+                asset: USDC,
+                amount: new Decimal(25),
+                feeAmount: FEE_WEI,
+            }),
+        )
+
+        expect(result.current.isPreferredPending).toBe(false)
     })
 
     it('has no preferred total for a collectible', () => {

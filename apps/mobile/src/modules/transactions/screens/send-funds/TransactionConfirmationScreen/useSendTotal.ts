@@ -36,6 +36,8 @@ export type UseSendTotalResult = {
     /** In the preferred currency; unset until both prices load, and for a collectible. */
     preferredValue: Optional<Decimal>
     isPending: boolean
+    /** True while either price behind `preferredValue` is still loading. */
+    isPreferredPending: boolean
 }
 
 type UseSendTotalInput = {
@@ -66,14 +68,16 @@ export const useSendTotal = ({
     }, [feeAmount, nativeAsset])
 
     const isCollectibleAsset = asset ? isCollectible(asset) : false
-    const { convertedValue: amountValue } = usePreferredAmount(
+    const { convertedValue: amountValue, isPending: isAmountPricePending } =
+        usePreferredAmount(
         amount,
         asset?.assetId ?? nativeAsset.assetId,
         false,
         undefined,
         scope,
     )
-    const { convertedValue: feeValue } = usePreferredAmount(
+    const { convertedValue: feeValue, isPending: isFeePricePending } =
+        usePreferredAmount(
         fee,
         nativeAsset.assetId,
         false,
@@ -81,9 +85,16 @@ export const useSendTotal = ({
         scope,
     )
 
+    const isPreferredPending = isAmountPricePending || isFeePricePending
+
     return useMemo(() => {
         if (!asset || !amount || !fee) {
-            return { lines: [], preferredValue: undefined, isPending: true }
+            return {
+                lines: [],
+                preferredValue: undefined,
+                isPending: true,
+                isPreferredPending,
+            }
         }
         const lines = isNativeAssetId(asset.assetId)
             ? [{ asset, amount: amount.plus(fee) }]
@@ -95,7 +106,7 @@ export const useSendTotal = ({
             !isCollectibleAsset && amountValue && feeValue
                 ? amountValue.plus(feeValue)
                 : undefined
-        return { lines, preferredValue, isPending: false }
+        return { lines, preferredValue, isPending: false, isPreferredPending }
     }, [
         asset,
         amount,
@@ -105,5 +116,6 @@ export const useSendTotal = ({
         isCollectibleAsset,
         amountValue,
         feeValue,
+        isPreferredPending,
     ])
 }

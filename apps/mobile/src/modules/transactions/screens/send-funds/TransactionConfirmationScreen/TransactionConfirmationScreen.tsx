@@ -64,6 +64,7 @@ export const TransactionConfirmationScreen = () => {
         isSigning,
         total,
         feeShortfall,
+        isFeeCoveragePending,
     } = useTransactionConfirmationScreen()
     const { canSaveRecipient, saveRecipient } = useSaveRecipientContact(
         destination,
@@ -112,6 +113,7 @@ export const TransactionConfirmationScreen = () => {
                             !!recipientWarning ||
                             isRecipientInfoPending ||
                             recipientSafety.isConfirmBlocked ||
+                            isFeeCoveragePending ||
                             !!feeShortfall
                         }
                         testID='send_confirm_button'
