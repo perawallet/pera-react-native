@@ -170,6 +170,30 @@ describe('useMarkNotificationsAsReadMutation', () => {
         expect(result.current.markAsRead).toBe(first)
     })
 
+    it('posts on the deployment and device current at the call after a switch on a mounted hook', async () => {
+        vi.mocked(updateLastSeenNotification).mockResolvedValue(undefined)
+        const { result, rerender } = renderHook(
+            () => useMarkNotificationsAsReadMutation(),
+            { wrapper: createWrapper() },
+        )
+
+        modeState.current = 'developer'
+        vi.mocked(useDeploymentDeviceID).mockReturnValue('dev-2')
+        rerender()
+
+        act(() => {
+            result.current.markAsRead(777)
+        })
+
+        await waitFor(() => {
+            expect(updateLastSeenNotification).toHaveBeenCalledWith(
+                'developer',
+                'dev-2',
+                777,
+            )
+        })
+    })
+
     it('posts on the deployment and device it was called with when they change mid-request', async () => {
         vi.mocked(updateLastSeenNotification).mockResolvedValue(undefined)
         const { result, rerender } = renderHook(

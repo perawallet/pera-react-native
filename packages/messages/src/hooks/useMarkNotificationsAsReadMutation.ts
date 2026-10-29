@@ -59,15 +59,16 @@ export const useMarkNotificationsAsReadMutation =
             throwOnError: false,
         })
 
-        // A ref keeps `markAsRead` stable while it still posts the deployment and device current at the call.
-        const target = useRef({ deployment, deviceID: deviceID ?? '' })
-        target.current = { deployment, deviceID: deviceID ?? '' }
-
         // The caller is an unmount effect with no UI to explain a doomed
         // request, so the guard lives here rather than at the call site.
         // Identity must stay stable: that effect lists `markAsRead` as a
         // dependency, so a fresh function each render would run its
-        // mark-as-read cleanup on every render instead of on unmount.
+        // mark-as-read cleanup on every render instead of on unmount. The ref
+        // keeps it stable while still posting the deployment and device
+        // current at the call.
+        const target = useRef({ deployment, deviceID: deviceID ?? '' })
+        target.current = { deployment, deviceID: deviceID ?? '' }
+
         const markAsRead = useCallback(
             (lastSeenNotificationId: number) => {
                 if (isUnavailableOnNetwork) return

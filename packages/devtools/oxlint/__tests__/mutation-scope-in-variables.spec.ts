@@ -79,6 +79,33 @@ new RuleTester({
             errors: [captured('mutationFn', 'scope', 'useSelectedScope')],
         },
         {
+            name: 'a non-null assertion on the source call still binds the source',
+            code: `
+                function useX() {
+                    const scope = useSelectedScope()!
+                    return useMutation({ mutationFn: () => post(scope) })
+                }`,
+            errors: [captured('mutationFn', 'scope', 'useSelectedScope')],
+        },
+        {
+            name: 'a satisfies expression on the source call still binds the source',
+            code: `
+                function useX() {
+                    const scope = useSelectedScope() satisfies ChainScope
+                    return useMutation({ mutationFn: () => post(scope) })
+                }`,
+            errors: [captured('mutationFn', 'scope', 'useSelectedScope')],
+        },
+        {
+            name: 'a quoted callback key is checked',
+            code: `
+                function useX() {
+                    const scope = useSelectedScope()
+                    return useMutation({ 'mutationFn': () => post(scope) })
+                }`,
+            errors: [captured('mutationFn', 'scope', 'useSelectedScope')],
+        },
+        {
             name: 'a destructured binding is tracked',
             code: `
                 function useX(account) {
