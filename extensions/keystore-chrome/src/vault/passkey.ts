@@ -11,16 +11,18 @@
  */
 
 import { base64 } from '@scure/base'
-import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import {
+    PasskeyPrfUnsupportedError,
     PasskeyUnlockError,
     VaultCorruptedError,
     VaultLockedOutError,
+    VaultReauthRequiredError,
 } from '../errors'
 import { PRF_BLOB_KEY, PRF_CRED_ID_KEY } from '../storage-keys'
 import { armAutoLock } from './autolock'
 import { clearFailedAttempts, getLockoutRemainingSeconds } from './lockout'
-import { putSessionMasterKey } from './session'
+import { hasRecentPasswordAuth } from './password-auth'
+import { putSessionMasterKey, requireSessionMasterKey } from './session'
 import { unwrapMasterKeyWithPassword } from './vault'
 
 // The fixed info string used in HKDF derivation — must match exactly on both
@@ -99,9 +101,9 @@ const deriveKekFromPrf = async (
  * identical request shape — what keeps them from drifting into a salt mismatch.
  */
 const assertPrf = async (
-    credentialIdBytes: Nullable<Uint8Array>,
+    credentialIdBytes: Uint8Array | null,
     salt: Uint8Array,
-): Promise<Nullable<ArrayBuffer>> => {
+): Promise<ArrayBuffer | null> => {
     const allowCredentials: PublicKeyCredentialDescriptor[] =
         credentialIdBytes !== null
             ? [
@@ -126,10 +128,8 @@ const assertPrf = async (
         },
     })
     return (
-        ((
-            assertion as Nullable<PublicKeyCredential>
-        )?.getClientExtensionResults()?.prf?.results
-            ?.first as Optional<ArrayBuffer>) ?? null
+        ((assertion as PublicKeyCredential | null)?.getClientExtensionResults()
+            ?.prf?.results?.first as ArrayBuffer | undefined) ?? null
     )
 }
 
@@ -144,7 +144,7 @@ export const isPasskeyUnlockSupported = async (): Promise<boolean> => {
             const caps = await (
                 PublicKeyCredential as {
                     getClientCapabilities: () => Promise<
-                        Record<string, Optional<boolean>>
+                        Record<string, boolean | undefined>
                     >
                 }
             ).getClientCapabilities()
@@ -183,11 +183,10 @@ export const isPasskeyUnlockEnabled = async (): Promise<boolean> => {
  * behind. WebAuthn offers no way to delete it, so the user must remove it from
  * their authenticator — acceptable for such an unusual path.
  */
-export const enablePasskeyUnlock = async (password: string): Promise<void> => {
-    // Verify the password first — throws InvalidPasswordError on wrong password.
-    // This also gives us the master key bytes to wrap.
-    const masterKey = await unwrapMasterKeyWithPassword(password)
-    let prfOutput: Nullable<ArrayBuffer> = null
+const wrapMasterKeyWithPasskey = async (
+    masterKey: Uint8Array,
+): Promise<void> => {
+    let prfOutput: ArrayBuffer | null = null
     try {
         // Random PRF eval salt persisted with the blob so assertions use the same input.
         const prfEvalSalt = crypto.getRandomValues(new Uint8Array(32))
@@ -228,13 +227,11 @@ export const enablePasskeyUnlock = async (password: string): Promise<void> => {
             },
         })
 
-        const pkCred = credential as Nullable<PublicKeyCredential>
+        const pkCred = credential as PublicKeyCredential | null
         const prfEnabled =
             pkCred?.getClientExtensionResults()?.prf?.enabled ?? false
         if (!prfEnabled) {
-            throw new Error(
-                'PRF extension not supported or not returned by the authenticator.',
-            )
+            throw new PasskeyPrfUnsupportedError()
         }
 
         // PRF output MUST come from an assertion evaluated against the
@@ -247,9 +244,7 @@ export const enablePasskeyUnlock = async (password: string): Promise<void> => {
         prfOutput = await assertPrf(credRawIdBytes, prfEvalSalt)
 
         if (!prfOutput) {
-            throw new Error(
-                'PRF extension not supported or not returned by the authenticator.',
-            )
+            throw new PasskeyPrfUnsupportedError()
         }
 
         // Derive a KEK from the PRF output and wrap the master key.
@@ -281,11 +276,40 @@ export const enablePasskeyUnlock = async (password: string): Promise<void> => {
             [PRF_CRED_ID_KEY]: base64.encode(credRawIdBytes),
         })
     } finally {
-        masterKey.fill(0)
         // Zero PRF output bytes after KEK derivation.
         if (prfOutput !== null) {
             new Uint8Array(prfOutput).fill(0)
         }
+    }
+}
+
+export const enablePasskeyUnlock = async (password: string): Promise<void> => {
+    // Verify the password first: throws InvalidPasswordError on wrong password.
+    // This also gives us the master key bytes to wrap.
+    const masterKey = await unwrapMasterKeyWithPassword(password)
+    try {
+        await wrapMasterKeyWithPasskey(masterKey)
+    } finally {
+        masterKey.fill(0)
+    }
+}
+
+/**
+ * The password-free enable path, for the moments right after a password was
+ * proven (Create Password, unlock, a verified re-check). The session key is
+ * what every signing operation already reads, so wrapping it adds no exposure;
+ * the window is what keeps someone at an unlocked, unattended machine from
+ * adding a second unlock path.
+ */
+export const enablePasskeyUnlockWithSession = async (): Promise<void> => {
+    const masterKey = await requireSessionMasterKey()
+    try {
+        if (!(await hasRecentPasswordAuth())) {
+            throw new VaultReauthRequiredError()
+        }
+        await wrapMasterKeyWithPasskey(masterKey)
+    } finally {
+        masterKey.fill(0)
     }
 }
 
@@ -334,12 +358,12 @@ const unwrapMasterKeyWithPasskey = async (): Promise<Uint8Array> => {
     // Decode stored base64 → raw bytes for the allowCredentials descriptor.
     // TextEncoder here would produce ASCII bytes of the string, matching no
     // real credential and causing NotAllowedError on every attempt.
-    const credentialIdBytes: Nullable<Uint8Array> =
+    const credentialIdBytes: Uint8Array | null =
         typeof credentialIdEncoded === 'string'
             ? base64.decode(credentialIdEncoded)
             : null
 
-    let prfOutput: Nullable<ArrayBuffer> = null
+    let prfOutput: ArrayBuffer | null = null
     try {
         prfOutput = await assertPrf(credentialIdBytes, prfEvalSaltBytes)
 

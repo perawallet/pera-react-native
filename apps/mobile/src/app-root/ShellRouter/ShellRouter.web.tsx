@@ -17,7 +17,7 @@ import {
     useNavigationContainerRef,
     type ParamListBase,
 } from '@react-navigation/native'
-import { CreatePasswordScreen } from '@modules/vault'
+import { CreatePasswordScreen, PasskeyUnlockSetupScreen } from '@modules/vault'
 import { OnboardingStackNavigator } from '@modules/onboarding/routes'
 import { useLedgerHandoffTabExit } from '@modules/ledger'
 import { FullScreenLoadingView } from '@components/FullScreenLoadingView'
@@ -83,6 +83,20 @@ export const ShellRouter = (): React.JSX.Element => {
                         }}
                     />
                     {/* A wipe lands here with its success sheet queued. */}
+                    <BottomSheetManager />
+                </>
+            )
+        }
+        case 'passkey-setup': {
+            return (
+                <>
+                    <PasskeyUnlockSetupScreen
+                        onDone={() => {
+                            // no-op: the step clears its session flag, which
+                            // the shell observes and re-routes to onboarding.
+                        }}
+                    />
+                    {/* The password re-check is a sheet; nothing else mounts a manager here. */}
                     <BottomSheetManager />
                 </>
             )

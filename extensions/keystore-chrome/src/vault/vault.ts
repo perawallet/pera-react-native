@@ -21,6 +21,8 @@ import {
 import {
     AUTO_LOCK_MINUTES_KEY,
     LOCKOUT_STORAGE_KEY,
+    PASSKEY_SETUP_PENDING_KEY,
+    PASSWORD_AUTH_AT_KEY,
     PRF_BLOB_KEY,
     PRF_CRED_ID_KEY,
     VAULT_STORAGE_KEY,
@@ -28,6 +30,7 @@ import {
 import { deriveArgon2id, type Argon2Params } from './argon2'
 import { armAutoLock, disarmAutoLock } from './autolock'
 import { runThrottledAttempt } from './lockout'
+import { clearPasswordAuth, stampPasswordAuth } from './password-auth'
 import {
     clearSessionMasterKey,
     hasSessionMasterKey,
@@ -311,6 +314,7 @@ export const verifyVaultPassword = async (
     }
     // Verification only — the key is not needed beyond proving it decrypts.
     masterKey.fill(0)
+    await stampPasswordAuth()
     return true
 }
 
@@ -370,6 +374,7 @@ export const createVault = async (password: string): Promise<void> => {
         await chrome.storage.local.remove([PRF_BLOB_KEY, PRF_CRED_ID_KEY])
         await putSessionMasterKey(masterKey)
         await armAutoLock()
+        await stampPasswordAuth()
     } finally {
         masterKey.fill(0)
     }
@@ -406,6 +411,7 @@ export const unlockVault = async (password: string): Promise<void> => {
     try {
         await putSessionMasterKey(masterKey)
         await armAutoLock()
+        await stampPasswordAuth()
         await rewrapIfWeaker(password, masterKey)
     } finally {
         masterKey.fill(0)
@@ -414,6 +420,8 @@ export const unlockVault = async (password: string): Promise<void> => {
 
 export const lockVault = async (): Promise<void> => {
     await disarmAutoLock()
+    // Before the key, so a lock listener never sees a live stamp beside a missing key.
+    await clearPasswordAuth()
     await clearSessionMasterKey()
 }
 
@@ -431,6 +439,10 @@ export const destroyVault = async (): Promise<void> => {
         PRF_CRED_ID_KEY,
         LOCKOUT_STORAGE_KEY,
         AUTO_LOCK_MINUTES_KEY,
+    ])
+    await chrome.storage.session.remove([
+        PASSWORD_AUTH_AT_KEY,
+        PASSKEY_SETUP_PENDING_KEY,
     ])
     await clearSessionMasterKey()
 }
