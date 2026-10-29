@@ -2,7 +2,8 @@
  * Copyright (c) Pera Wallet. All rights reserved.
  */
 
-import { defineRule, type Match } from 'lanekeep'
+import { defineRule } from 'lanekeep'
+import type { Match } from 'lanekeep'
 import { COMPOSITION_ROOTS } from '../shared/chain-package-allowlist.js'
 import { TEST_SUPPORT, withoutTests } from '../shared/scope.js'
 
