@@ -56,7 +56,8 @@ export const useKMS = () => {
     const keystoreKeys = useKeystoreKeys()
     const { createAlgo25Key } = useAlgo25()
     const { createQuantumKey } = useQuantum()
-    const { createHDWalletKey, persistHDMasterKey } = useHDWallet()
+    const { createHDWalletKey, persistHDMasterKey, mintPasskeyMainKey } =
+        useHDWallet()
     const { deleteKey, keyStore, withExportedKey, checkAccess } =
         useKMSService()
     const { ensurePasskeyMainKey } = usePasskeyMainKey()
@@ -388,6 +389,7 @@ export const useKMS = () => {
         createQuantumKey,
         createHDWalletKey,
         persistHDMasterKey,
+        mintPasskeyMainKey,
         getQuantumPublicKey,
         getPQSigningInfo,
         withExportedKey,

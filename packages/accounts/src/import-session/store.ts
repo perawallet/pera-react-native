@@ -20,6 +20,9 @@ import type { HdIndex } from '../models'
  * after the user typed a mnemonic but before they confirmed which addresses
  * to actually persist. Intentionally NOT persisted — losing it on app restart
  * is the desired security behavior; the user just retypes the mnemonic.
+ * The exception is a build with a chain that can't derive in memory: its keys
+ * derive only inside the keystore, so the seed is saved from discovery on
+ * (`isSeedPersisted`) and removed again when the import is cancelled or superseded.
  */
 
 export type HDImportSession = {
@@ -28,6 +31,8 @@ export type HDImportSession = {
     entropy: Uint8Array
     /** The indexes the user was offered, so a later walk can tell which they declined. */
     discoveredIndexes?: HdIndex[]
+    /** Whether the seed is already in the keystore, so commit mustn't save it again and cancel must remove it. */
+    isSeedPersisted?: boolean
 }
 
 type State = {
@@ -37,6 +42,8 @@ type State = {
 type Actions = {
     start: (session: HDImportSession) => void
     recordDiscovered: (walletKeyId: string, indexes: HdIndex[]) => void
+    markSeedPersisted: (walletKeyId: string) => void
+    markSeedRemoved: (walletKeyId: string) => void
     resetState: () => void
 }
 
@@ -53,6 +60,16 @@ export const useHDImportSessionStore = create<State & Actions>((set, get) => ({
         const pending = get().pending
         if (!pending || pending.walletKeyId !== walletKeyId) return
         set({ pending: { ...pending, discoveredIndexes: indexes } })
+    },
+    markSeedPersisted: walletKeyId => {
+        const pending = get().pending
+        if (!pending || pending.walletKeyId !== walletKeyId) return
+        set({ pending: { ...pending, isSeedPersisted: true } })
+    },
+    markSeedRemoved: walletKeyId => {
+        const pending = get().pending
+        if (!pending || pending.walletKeyId !== walletKeyId) return
+        set({ pending: { ...pending, isSeedPersisted: false } })
     },
     resetState: () => {
         const prev = get().pending
