@@ -21,7 +21,8 @@ const mocks = vi.hoisted(() => ({
     removeAccountToken: vi.fn(),
     insertAssetHolding: vi.fn(),
     getAccountAddedTokens: vi.fn(),
-    fetchAssetMetadata: vi.fn(),
+    fetchAndPersistAssets: vi.fn(),
+    getAssetById: vi.fn(),
 }))
 
 vi.mock('../../db', () => ({
@@ -32,9 +33,11 @@ vi.mock('../../db', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
-    fetchAssetMetadata: mocks.fetchAssetMetadata,
+    fetchAndPersistAssets: mocks.fetchAndPersistAssets,
+    getAssetById: mocks.getAssetById,
 }))
 
+import { TokenMetadataUnavailableError } from '../../errors'
 import { useAddTokenMutation } from '../useAddTokenMutation'
 
 const SCOPE: ChainScope = { chainId: 'ethereum', networkId: 'mainnet' }
@@ -56,12 +59,14 @@ const setup = () => {
 
 beforeEach(() => {
     vi.clearAllMocks()
+    mocks.fetchAndPersistAssets.mockResolvedValue(undefined)
+    mocks.getAssetById.mockResolvedValue({ assetId: USDC })
 })
 
 describe('useAddTokenMutation', () => {
-    it('caches the metadata before recording the token and its holding', async () => {
+    it('stores the metadata through the bulk sync before recording the token and its holding', async () => {
         const order: string[] = []
-        mocks.fetchAssetMetadata.mockImplementation(async () => {
+        mocks.fetchAndPersistAssets.mockImplementation(async () => {
             order.push('metadata')
         })
         mocks.addAccountToken.mockImplementation(async () => {
@@ -79,12 +84,16 @@ describe('useAddTokenMutation', () => {
         await act(() => result.current.addToken(VARIABLES))
 
         expect(order).toEqual(['metadata', 'token', 'holding'])
-        expect(mocks.fetchAssetMetadata).toHaveBeenCalledWith(USDC, SCOPE)
+        expect(mocks.fetchAndPersistAssets).toHaveBeenCalledWith([USDC], SCOPE)
+        expect(mocks.getAssetById).toHaveBeenCalledWith({
+            assetId: USDC,
+            scope: SCOPE,
+        })
         expect(invalidate).toHaveBeenCalled()
     })
 
-    it('records nothing when the metadata read fails', async () => {
-        mocks.fetchAssetMetadata.mockRejectedValue(new Error('offline'))
+    it('records nothing when the metadata sync fails', async () => {
+        mocks.fetchAndPersistAssets.mockRejectedValue(new Error('offline'))
         const { wrapper } = setup()
         const { result } = renderHook(() => useAddTokenMutation(), {
             wrapper,
@@ -94,5 +103,19 @@ describe('useAddTokenMutation', () => {
             act(() => result.current.addToken(VARIABLES)),
         ).rejects.toThrow('offline')
         expect(mocks.addAccountToken).not.toHaveBeenCalled()
+    })
+
+    it('records nothing when the sync stored no metadata for the token', async () => {
+        mocks.getAssetById.mockResolvedValue(null)
+        const { wrapper } = setup()
+        const { result } = renderHook(() => useAddTokenMutation(), {
+            wrapper,
+        })
+
+        await expect(
+            act(() => result.current.addToken(VARIABLES)),
+        ).rejects.toBeInstanceOf(TokenMetadataUnavailableError)
+        expect(mocks.addAccountToken).not.toHaveBeenCalled()
+        expect(mocks.insertAssetHolding).not.toHaveBeenCalled()
     })
 })

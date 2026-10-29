@@ -12,8 +12,12 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import { fetchAssetMetadata } from '@perawallet/wallet-core-assets'
+import {
+    fetchAndPersistAssets,
+    getAssetById,
+} from '@perawallet/wallet-core-assets'
 import { addAccountToken, insertAssetHolding } from '../db'
+import { TokenMetadataUnavailableError } from '../errors'
 import { invalidateAccountQueriesForAddresses } from './querykeys'
 
 type AddTokenVariables = {
@@ -36,9 +40,13 @@ export const useAddTokenMutation = (): UseAddTokenMutationResult => {
             scope,
             assetId,
         }: AddTokenVariables) => {
-            // Metadata first, and a read that throws when the token can't be
-            // read: a holding row without it renders as a skeleton.
-            await fetchAssetMetadata(assetId, scope)
+            // Not fetchAssetMetadata: it stores only the chain's half, and the
+            // resync won't refetch the logo or tier while that half is fresh.
+            await fetchAndPersistAssets([assetId], scope)
+            // The sync skips a token it can't read rather than throwing.
+            if (!(await getAssetById({ assetId, scope }))) {
+                throw new TokenMetadataUnavailableError(assetId)
+            }
             await addAccountToken({ accountAddress, scope, assetId })
             await insertAssetHolding({ accountAddress, assetId, scope })
         },

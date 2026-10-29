@@ -723,7 +723,8 @@ describe('useAddAssetView', () => {
             registerEthereumChain()
         })
 
-        it('adds a verified token at once, with no opt-in, and confirms it', async () => {
+        // The token flow itself is covered in useAddAssetToken.spec.ts.
+        it('routes an EVM token to the token add, not to opt-in', async () => {
             const { result } = renderHook(() =>
                 useAddAssetView({ chainId: 'ethereum' }),
             )
@@ -740,126 +741,7 @@ describe('useAddAssetView', () => {
                 scope: ETHEREUM_SCOPE,
                 assetId: '0xUSDC',
             })
-            expect(mockT).toHaveBeenCalledWith('add_asset.token.added_body', {
-                assetName: 'USDC',
-                chain: 'Ethereum',
-            })
-            expect(mockShowToast).toHaveBeenCalledWith(
-                expect.objectContaining({ type: 'success' }),
-            )
             expect(result.current.isOptedIn(verified('0xUSDC'))).toBe(true)
-        })
-
-        it('warns before adding an unverified token, and adds nothing if declined', async () => {
-            mockRequest.mockResolvedValueOnce(undefined)
-            const { result } = renderHook(() =>
-                useAddAssetView({ chainId: 'ethereum' }),
-            )
-
-            await act(async () => {
-                await result.current.handleRequestAdd(onEthereum('0xNEW'))
-            })
-
-            expect(mockRequest).toHaveBeenCalledTimes(1)
-            expect(mockAddToken).not.toHaveBeenCalled()
-        })
-
-        it('adds an unverified token once the warning is accepted', async () => {
-            mockRequest.mockResolvedValueOnce(true)
-            const { result } = renderHook(() =>
-                useAddAssetView({ chainId: 'ethereum' }),
-            )
-
-            await act(async () => {
-                await result.current.handleRequestAdd(onEthereum('0xNEW'))
-            })
-
-            expect(mockAddToken).toHaveBeenCalledTimes(1)
-        })
-
-        it('shows an error toast when adding fails', async () => {
-            const failure = new Error('offline')
-            mockAddToken.mockRejectedValueOnce(failure)
-            const { result } = renderHook(() =>
-                useAddAssetView({ chainId: 'ethereum' }),
-            )
-
-            await act(async () => {
-                await result.current.handleRequestAdd(verified('0xUSDC'))
-            })
-
-            expect(mockShowError).toHaveBeenCalledWith(
-                failure,
-                'add_asset.token.add_failed_title',
-            )
-            expect(result.current.isOptedIn(verified('0xUSDC'))).toBe(false)
-        })
-
-        it('offers Remove only for an added token that holds nothing', () => {
-            mockAddedTokens.mockReturnValue([
-                {
-                    scope: ETHEREUM_SCOPE,
-                    assetId: '0xEMPTY',
-                    hasBalance: false,
-                },
-                { scope: ETHEREUM_SCOPE, assetId: '0xHELD', hasBalance: true },
-            ])
-            const { result } = renderHook(() =>
-                useAddAssetView({ chainId: 'ethereum' }),
-            )
-
-            expect(result.current.canRemove(onEthereum('0xEMPTY'))).toBe(true)
-            expect(result.current.canRemove(onEthereum('0xHELD'))).toBe(false)
-            expect(result.current.canRemove(onEthereum('0xOTHER'))).toBe(false)
-        })
-
-        it('removes an added token once confirmed', async () => {
-            mockAddedTokens.mockReturnValue([
-                {
-                    scope: ETHEREUM_SCOPE,
-                    assetId: '0xEMPTY',
-                    hasBalance: false,
-                },
-            ])
-            mockRequest.mockResolvedValueOnce(true)
-            const { result } = renderHook(() =>
-                useAddAssetView({ chainId: 'ethereum' }),
-            )
-
-            await act(async () => {
-                await result.current.handleRequestRemove(onEthereum('0xEMPTY'))
-            })
-
-            expect(mockRemoveToken).toHaveBeenCalledWith({
-                accountAddress: '0xtest',
-                scope: ETHEREUM_SCOPE,
-                assetId: '0xEMPTY',
-            })
-            expect(mockShowToast).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    title: 'add_asset.token.removed_title',
-                }),
-            )
-        })
-
-        it('keeps the token when Remove is dismissed', async () => {
-            mockAddedTokens.mockReturnValue([
-                {
-                    scope: ETHEREUM_SCOPE,
-                    assetId: '0xEMPTY',
-                    hasBalance: false,
-                },
-            ])
-            mockRequest.mockResolvedValueOnce(undefined)
-            const { result } = renderHook(() =>
-                useAddAssetView({ chainId: 'ethereum' }),
-            )
-
-            await act(async () => {
-                await result.current.handleRequestRemove(onEthereum('0xEMPTY'))
-            })
-
-            expect(mockRemoveToken).not.toHaveBeenCalled()
         })
 
         it('words the search by network: contract address on EVM, asset ID on Algorand, both under All', () => {

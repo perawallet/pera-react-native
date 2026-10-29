@@ -1116,7 +1116,8 @@
             "title": "Bu hesap işlenirken bir hata oluştu",
             "body": "Bir şeyler ters gitmiş görünüyor. Tekrar dene ve sorun devam ederse destek ekibiyle iletişime geç.",
             "generic": "Bu hesap işlenirken bir hata oluştu.",
-            "no_hd_wallet": "Bu hesap için Universal Wallet bulunamadı."
+            "no_hd_wallet": "Bu hesap için Universal Wallet bulunamadı.",
+            "token_unreadable": "Pera bu tokenın bilgilerini okuyamadı. Adresi kontrol et ve tekrar dene."
         },
         "blockchain": {
             "generic": "Blockchain erişiminde bir şeyler ters gitti."

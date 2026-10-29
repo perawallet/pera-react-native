@@ -1116,7 +1116,8 @@
             "title": "An error occurred processing this account",
             "body": "Something appears to have gone wrong. Please try again and contact support if the issue persists.",
             "generic": "An error occurred processing this account.",
-            "no_hd_wallet": "Could not find the Universal Wallet for this account."
+            "no_hd_wallet": "Could not find the Universal Wallet for this account.",
+            "token_unreadable": "Pera couldn't read this token's details. Check the address and try again."
         },
         "blockchain": {
             "generic": "Something went wrong accessing the blockchain."

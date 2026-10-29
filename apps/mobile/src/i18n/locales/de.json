@@ -1108,7 +1108,8 @@
             "title": "Bei der Verarbeitung dieses Kontos ist ein Fehler aufgetreten",
             "body": "Es scheint ein Fehler aufgetreten zu sein. Bitte versuche es erneut und wende dich an den Support, falls das Problem weiterhin besteht.",
             "generic": "Bei der Verarbeitung dieses Kontos ist ein Fehler aufgetreten.",
-            "no_hd_wallet": "Das Universal Wallet für dieses Konto konnte nicht gefunden werden."
+            "no_hd_wallet": "Das Universal Wallet für dieses Konto konnte nicht gefunden werden.",
+            "token_unreadable": "Pera konnte die Details dieses Tokens nicht lesen. Prüfe die Adresse und versuche es erneut."
         },
         "blockchain": {
             "generic": "Beim Zugriff auf die Blockchain ist ein Fehler aufgetreten."

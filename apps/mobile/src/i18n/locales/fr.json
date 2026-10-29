@@ -1116,7 +1116,8 @@
             "title": "Une erreur est survenue lors du traitement de ce compte",
             "body": "Un problème semble être survenu. Veuillez réessayer et contacter l’assistance si le problème persiste.",
             "generic": "Une erreur est survenue lors du traitement de ce compte.",
-            "no_hd_wallet": "Impossible de trouver l’Universal Wallet de ce compte."
+            "no_hd_wallet": "Impossible de trouver l’Universal Wallet de ce compte.",
+            "token_unreadable": "Pera n’a pas pu lire les informations de ce token. Vérifiez l’adresse et réessayez."
         },
         "blockchain": {
             "generic": "Un problème est survenu lors de l’accès à la blockchain."

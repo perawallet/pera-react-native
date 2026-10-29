@@ -26,6 +26,7 @@ import {
     vi,
 } from 'vitest'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
+import { Decimal } from 'decimal.js'
 
 import {
     getAddedTokenIdsByAccount,
@@ -33,6 +34,8 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import {
     assetsAdapterFor,
+    getAssetById,
+    upsertAssets,
     type DisplayableAsset,
 } from '@perawallet/wallet-core-assets'
 import { mockAssetSearch } from '@perawallet/wallet-core-chain-algorand/test-handlers'
@@ -236,10 +239,31 @@ describe('Flow: Add Asset with a second chain registered', () => {
         afterAll(teardownTestDatabase)
 
         it('Given Add Asset opens on Ethereum, when + is tapped on a token, then it is added at once and its check offers Remove', async () => {
+            // Pera's half (tier, logo) and the chain's half, as the real
+            // sync stores them for a listed token.
             vi.spyOn(
                 assetsAdapterFor(ETHEREUM_MAINNET),
                 'syncAssets',
-            ).mockResolvedValue(undefined)
+            ).mockImplementation(async (_refs, scope) => {
+                await upsertAssets({
+                    scope,
+                    items: [
+                        {
+                            assetId: DAI,
+                            name: 'Dai Stablecoin',
+                            unitName: 'DAI',
+                            decimals: 18,
+                            totalSupply: new Decimal(0),
+                            creator: { address: '' },
+                            peraMetadata: {
+                                isDeleted: false,
+                                verificationTier: 'verified',
+                                logo: 'https://pera.test/dai.png',
+                            },
+                        },
+                    ],
+                })
+            })
             renderAddAsset('ethereum' as ChainId)
 
             await waitFor(() => {
@@ -267,6 +291,13 @@ describe('Flow: Add Asset with a second chain registered', () => {
                     scope: ETHEREUM_MAINNET,
                 }),
             ).toEqual(new Map([[ETHEREUM_ADDRESS, [DAI]]]))
+            expect(
+                (await getAssetById({ assetId: DAI, scope: ETHEREUM_MAINNET }))
+                    ?.peraMetadata,
+            ).toMatchObject({
+                verificationTier: 'verified',
+                logo: 'https://pera.test/dai.png',
+            })
         })
     })
 })

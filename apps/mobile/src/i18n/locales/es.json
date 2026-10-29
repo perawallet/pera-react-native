@@ -1116,7 +1116,8 @@
             "title": "Error al procesar esta cuenta",
             "body": "Algo salió mal. Inténtalo de nuevo y ponte en contacto con soporte si el problema continúa.",
             "generic": "Se produjo un error al procesar esta cuenta.",
-            "no_hd_wallet": "No se pudo encontrar la Universal Wallet de esta cuenta."
+            "no_hd_wallet": "No se pudo encontrar la Universal Wallet de esta cuenta.",
+            "token_unreadable": "Pera no pudo leer los datos de este token. Revisa la dirección e inténtalo de nuevo."
         },
         "blockchain": {
             "generic": "Algo salió mal al acceder a la blockchain."
