@@ -465,6 +465,25 @@ describe("Flow: One account's assets across chains", () => {
         ).toBeNull()
     })
 
+    it('Given All and a search that keeps the USDC group, when the group is expanded, then each member names its network once', async () => {
+        useAccountsStore.getState().setAccounts([TWO_CHAIN_ACCOUNT])
+        renderList(TWO_CHAIN_ACCOUNT)
+        await screen.findByTestId('asset_group_row_usdc')
+
+        typeSearch('usd')
+        await waitFor(() => {
+            expect(screen.queryByTestId('asset_row_native')).toBeNull()
+        })
+        fireEvent.click(await screen.findByTestId('asset_group_row_usdc'))
+
+        const ethereumMember = await screen.findByTestId(
+            `asset_row_${ETH_USDC}`,
+        )
+        expect(
+            within(ethereumMember).getAllByTestId('chain_label_ethereum'),
+        ).toHaveLength(1)
+    })
+
     it("Given All, when 'algo' and then an Algorand asset id are searched, then ALGO and that asset are found as before", async () => {
         useAccountsStore.getState().setAccounts([TWO_CHAIN_ACCOUNT])
         renderList(TWO_CHAIN_ACCOUNT)
