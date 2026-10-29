@@ -230,6 +230,43 @@ describe('PWInput', () => {
             },
         )
 
+        it('leaves out the visible-password keyboard on a secure Android field', () => {
+            Platform.OS = 'android'
+
+            const props = getSensitiveInputProps({ isSecureTextEntry: true })
+
+            expect(props).not.toHaveProperty('keyboardType')
+            expect(props).toMatchObject({
+                autoCapitalize: 'none',
+                autoCorrect: false,
+                spellCheck: false,
+                autoComplete: 'off',
+            })
+        })
+
+        it('keeps the ascii-capable keyboard on a secure iOS field', () => {
+            Platform.OS = 'ios'
+
+            expect(
+                getSensitiveInputProps({ isSecureTextEntry: true }),
+            ).toMatchObject({ keyboardType: 'ascii-capable' })
+        })
+
+        it('does not set a keyboard type on a secure Android field', () => {
+            Platform.OS = 'android'
+            render(
+                <PWInput
+                    placeholder='pw'
+                    secureTextEntry
+                    isSensitive
+                />,
+            )
+            const input = screen.getByPlaceholderText('pw')
+
+            expect(input.getAttribute('keyboardtype')).toBeNull()
+            expect(input.getAttribute('spellcheck')).toBe('false')
+        })
+
         it('applies that set to the field, letting an explicit prop win', () => {
             render(
                 <PWInput

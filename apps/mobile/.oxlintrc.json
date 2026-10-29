@@ -299,7 +299,7 @@
     {
       "files": ["src/**"],
       "excludeFiles": ["src/**/__tests__/**", "src/**/__mocks__/**", "src/**/test-utils/**", "src/**/__integration__/**", "src/**/*.spec.{ts,tsx}", "src/**/*.test.{ts,tsx}"],
-      "rules": { "pera/no-display-string-identity": "error", "pera/fetch-has-deadline": "error" }
+      "rules": { "pera/sensitive-input-props": "error", "pera/no-display-string-identity": "error", "pera/fetch-has-deadline": "error" }
     },
     {
       "files": ["src/**"],
