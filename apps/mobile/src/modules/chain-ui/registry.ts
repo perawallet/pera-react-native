@@ -10,17 +10,29 @@
  limitations under the License
  */
 
-import type { ChainFamily } from '@perawallet/wallet-core-chain-contract'
+import type {
+    ChainFamily,
+    ChainId,
+} from '@perawallet/wallet-core-chain-contract'
 import { algorandChainUi } from '@modules/algorand/chain-ui'
-import { ethereumChainUi } from '@modules/ethereum/chain-ui'
+import {
+    ethereumChainUi,
+    evmChainUiOverrides,
+} from '@modules/ethereum/chain-ui'
 import type { ChainUi, ChainUiRegistry } from './types'
 
 export const chainUiRegistry: ChainUiRegistry = {
-    algorand: algorandChainUi,
-    evm: ethereumChainUi,
+    families: { algorand: algorandChainUi, evm: ethereumChainUi },
+    chains: { evm: evmChainUiOverrides },
 }
 
 const NO_CHAIN_UI: ChainUi = {}
 
-export const chainUiFor = (family: ChainFamily): ChainUi =>
-    chainUiRegistry[family] ?? NO_CHAIN_UI
+export const chainUiFor = (family: ChainFamily, chainId?: ChainId): ChainUi => {
+    const familyUi = chainUiRegistry.families[family] ?? NO_CHAIN_UI
+    const override =
+        chainId === undefined
+            ? undefined
+            : chainUiRegistry.chains[family]?.[chainId]
+    return override ? { ...familyUi, ...override } : familyUi
+}

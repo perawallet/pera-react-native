@@ -12,11 +12,20 @@
 
 // @vitest-environment node
 
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import type { ChainFamily } from '@perawallet/wallet-core-chain-contract'
 import { algorandChainUi } from '@modules/algorand/chain-ui'
 import { ethereumChainUi } from '@modules/ethereum/chain-ui'
 import { chainUiFor } from '../registry'
+
+const mocks = vi.hoisted(() => ({ BaseFeeSection: () => null }))
+
+vi.mock('@modules/ethereum/chain-ui', async importOriginal => ({
+    ...(await importOriginal<typeof import('@modules/ethereum/chain-ui')>()),
+    evmChainUiOverrides: {
+        base: { sendConfirmation: { FeeSection: mocks.BaseFeeSection } },
+    },
+}))
 
 describe('chainUiFor', () => {
     it("returns Algorand's entry for the algorand family", () => {
@@ -51,5 +60,29 @@ describe('chainUiFor', () => {
 
         expect(ui.transactionDetails).toBeUndefined()
         expect(ui.assetDetails).toBeUndefined()
+    })
+
+    it("replaces the family's slot with the chain's own", () => {
+        expect(chainUiFor('evm', 'base').sendConfirmation?.FeeSection).toBe(
+            mocks.BaseFeeSection,
+        )
+    })
+
+    it("keeps the family's other slots on a chain that overrides one", () => {
+        const ui = chainUiFor('evm', 'base')
+
+        expect(ui.transactionDetails).toBe(ethereumChainUi?.transactionDetails)
+        expect(ui.familyLabel).toBe('chain_families.evm')
+    })
+
+    it("leaves a chain with no override on the family's entry", () => {
+        const ui = chainUiFor('evm', 'ethereum')
+
+        expect(ui).toBe(ethereumChainUi)
+        expect(ui.sendConfirmation?.FeeSection).not.toBe(mocks.BaseFeeSection)
+    })
+
+    it("never lets one family's override reach another family", () => {
+        expect(chainUiFor('algorand', 'base')).toBe(algorandChainUi)
     })
 })

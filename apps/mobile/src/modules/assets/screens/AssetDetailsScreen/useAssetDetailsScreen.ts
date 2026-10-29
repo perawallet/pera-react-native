@@ -82,7 +82,8 @@ export const useAssetDetailsScreen = ({
     const isError = isQueryError && !asset
     const descriptor = getChainDescriptor(chainId)
     const assetDetailsDisplay =
-        chainUiFor(descriptor.family).assetDetails ?? neutralAssetDetailsDisplay
+        chainUiFor(descriptor.family, chainId).assetDetails ??
+        neutralAssetDetailsDisplay
 
     const about = useMemo(
         () =>

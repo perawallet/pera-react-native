@@ -148,7 +148,7 @@ export const useSettingsDeveloperNodeSettingsScreen =
                 if (
                     hasCustomNetworks &&
                     chains.capabilities(descriptor.id).customNetworks &&
-                    chainUiFor(descriptor.family).customNode &&
+                    chainUiFor(descriptor.family, descriptor.id).customNode &&
                     isCustomNetworkOffered()
                 ) {
                     networks.push({
@@ -193,6 +193,7 @@ export const useSettingsDeveloperNodeSettingsScreen =
                 if (networkId === CUSTOM_NETWORK_ID) {
                     const CustomNodeForm = chainUiFor(
                         getChainDescriptor(chainId).family,
+                        chainId,
                     ).customNode?.Form
                     if (CustomNodeForm) {
                         await request({

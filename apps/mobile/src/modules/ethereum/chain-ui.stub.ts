@@ -10,6 +10,11 @@
  limitations under the License
  */
 
-import type { ChainUi } from '@modules/chain-ui'
+import type { EvmChainId } from '@perawallet/wallet-core-chain-contract'
+import type { ChainUi, ChainUiOverride } from '@modules/chain-ui'
 
 export const ethereumChainUi: ChainUi | undefined = undefined
+
+export const evmChainUiOverrides:
+    | Partial<Record<EvmChainId, ChainUiOverride>>
+    | undefined = undefined
