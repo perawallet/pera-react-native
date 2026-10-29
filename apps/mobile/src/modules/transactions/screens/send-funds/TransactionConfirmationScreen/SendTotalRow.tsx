@@ -17,7 +17,9 @@ import { useLanguage } from '@hooks/useLanguage'
 import type { UseSendTotalResult } from './useSendTotal'
 import { useStyles } from './styles'
 
-export const SendTotalRow = ({ total }: { total: UseSendTotalResult }) => {
+type SendTotalRowProps = { total: UseSendTotalResult }
+
+export const SendTotalRow = ({ total }: SendTotalRowProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
 

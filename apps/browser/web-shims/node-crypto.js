@@ -143,8 +143,11 @@ export function createHmac(algorithm, key) {
 
 const SUBTLE_DIGEST_BY_HASH = { sha512: 'SHA-512', sha256: 'SHA-256' }
 
+// hashName comes from the caller, so a prototype key such as `constructor` must miss.
 function subtleDigestOf(hashName) {
-    return Object.hasOwn(SUBTLE_DIGEST_BY_HASH, hashName) ? SUBTLE_DIGEST_BY_HASH[hashName] : null
+    return Object.hasOwn(SUBTLE_DIGEST_BY_HASH, hashName)
+        ? SUBTLE_DIGEST_BY_HASH[hashName]
+        : null
 }
 
 // Async PBKDF2 matching Node.js callback API.
