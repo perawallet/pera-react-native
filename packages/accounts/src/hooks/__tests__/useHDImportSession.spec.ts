@@ -42,6 +42,7 @@ import {
 
 const kmsMock = vi.hoisted(() => ({
     persistHDMasterKey: vi.fn(),
+    mintPasskeyMainKey: vi.fn().mockResolvedValue(undefined),
     removeKeyAndChildren: vi.fn().mockResolvedValue(undefined),
 }))
 const prepareMock = vi.hoisted(() => vi.fn())
@@ -160,6 +161,7 @@ describe('useHDImportSession', () => {
         expect(kmsMock.persistHDMasterKey).toHaveBeenCalledWith(
             expect.objectContaining({ keyId: 'w-1' }),
         )
+        expect(kmsMock.mintPasskeyMainKey).not.toHaveBeenCalled()
         expect(
             fakeAccountsChain().derivation.deriveAccount,
         ).toHaveBeenCalledWith(expect.anything(), 'w-1', 1, 0, {
@@ -170,6 +172,35 @@ describe('useHDImportSession', () => {
         expect(addressOn(saved[0], TESTNET_SCOPE)).toBe('ADDR-A')
         expect(useAccountsStore.getState().accounts).toHaveLength(1)
         expect(useHDImportSessionStore.getState().pending).toBeNull()
+    })
+
+    test('commitImport saves copies, so the walk and a retry still read the real root key', async () => {
+        const { result } = renderHook(() => useHDImportSession(TESTNET_SCOPE))
+        await act(async () => {
+            await result.current.prepareImport({ mnemonicIndices: INDICES })
+        })
+        const session = useHDImportSessionStore.getState().pending!
+        kmsMock.persistHDMasterKey.mockImplementation(
+            async ({ rootKey, entropy }) => {
+                rootKey.fill(0)
+                entropy.fill(0)
+                return { seedKey: { id: 'w-1' } }
+            },
+        )
+
+        await act(async () => {
+            await result.current.commitImport({
+                walletKeyId: 'w-1',
+                selectedAccounts: [discovered()],
+            })
+        })
+
+        const persisted = kmsMock.persistHDMasterKey.mock.calls[0][0]
+        expect(persisted.rootKey).not.toBe(session.rootKey)
+        expect(persisted.entropy).not.toBe(session.entropy)
+        const walkRootKey: Uint8Array =
+            discoverWalletAccounts.mock.calls[0][1].rootKey
+        expect([...walkRootKey]).toEqual(new Array(96).fill(7))
     })
 
     test('commitImport walks the wallet across every chain once, declining nothing when every offered index was kept', async () => {
@@ -448,8 +479,10 @@ describe('useHDImportSession', () => {
             await discover(result)
 
             expect(kmsMock.persistHDMasterKey).toHaveBeenCalledOnce()
-            const persisted = kmsMock.persistHDMasterKey.mock.calls[0][0]
+            const [persisted, options] =
+                kmsMock.persistHDMasterKey.mock.calls[0]
             expect(persisted.keyId).toBe('w-1')
+            expect(options).toEqual({ shouldMintPasskeyMainKey: false })
             expect(persisted.rootKey).not.toBe(session.rootKey)
             expect(persisted.entropy).not.toBe(session.entropy)
             expect(
@@ -458,7 +491,7 @@ describe('useHDImportSession', () => {
             expect(found.map(hdIndexOf)).toEqual([{ account: 2, keyIndex: 0 }])
         })
 
-        test('records only the indexes whose candidate no stored account holds an entry of', async () => {
+        test('records only the indexes whose candidate the wallet can still take', async () => {
             setUpChains({
                 [ALGORAND]: [familyHdAddress('algorand', 1, 0)],
                 [ETHEREUM]: [familyHdAddress('evm', 0, 0)],
@@ -509,6 +542,9 @@ describe('useHDImportSession', () => {
             })
 
             expect(kmsMock.persistHDMasterKey).not.toHaveBeenCalled()
+            expect(kmsMock.mintPasskeyMainKey).toHaveBeenCalledExactlyOnceWith(
+                'w-1',
+            )
             const derivedOn = (chainId: typeof ALGORAND) =>
                 vi
                     .mocked(families.derivations.get(chainId)!.deriveAccount)

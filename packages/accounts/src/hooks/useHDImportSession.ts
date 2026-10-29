@@ -42,7 +42,7 @@ import {
     withDefaultChains,
 } from '../store'
 import { HDImportSessionNotFoundError, NoHdSeedError } from '../errors'
-import { findEntryHolder } from '../utils'
+import { importableCandidate } from '../utils'
 import { hdDiscoveryChains, hdIndexOf } from '../credentials'
 
 export type UseHDImportSessionResult = {
@@ -62,7 +62,8 @@ export type UseHDImportSessionResult = {
 export const useHDImportSession = (
     scope: ChainScope,
 ): UseHDImportSessionResult => {
-    const { persistHDMasterKey, removeKeyAndChildren } = useKMS()
+    const { persistHDMasterKey, mintPasskeyMainKey, removeKeyAndChildren } =
+        useKMS()
     const setAccounts = useAccountsStore(state => state.setAccounts)
 
     const prepareImport = useCallback(
@@ -100,12 +101,17 @@ export const useHDImportSession = (
                 )
                 if (needsKeystore && !pending.isSeedPersisted) {
                     // `persistHDMasterKey` zeroes what it is given, and the
-                    // session's bytes are still needed.
-                    await persistHDMasterKey({
-                        keyId: pending.walletKeyId,
-                        rootKey: new Uint8Array(pending.rootKey),
-                        entropy: new Uint8Array(pending.entropy),
-                    })
+                    // session's bytes are still needed. The passkey main key
+                    // waits for commit: a seed the user never confirms must
+                    // not anchor it, as an app kill here would leave it there.
+                    await persistHDMasterKey(
+                        {
+                            keyId: pending.walletKeyId,
+                            rootKey: new Uint8Array(pending.rootKey),
+                            entropy: new Uint8Array(pending.entropy),
+                        },
+                        { shouldMintPasskeyMainKey: false },
+                    )
                     // A cancel or a new prepare that landed during the save found
                     // nothing marked to remove, so the seed is dropped here.
                     if (
@@ -154,7 +160,7 @@ export const useHDImportSession = (
             useHDImportSessionStore.getState().recordDiscovered(
                 pending.walletKeyId,
                 discovered.flatMap(account =>
-                    findEntryHolder(accounts, account) !== undefined
+                    importableCandidate(accounts, account) === undefined
                         ? []
                         : (hdIndexOf(account) ?? []),
                 ),
@@ -180,11 +186,17 @@ export const useHDImportSession = (
                 throw new HDImportSessionNotFoundError(walletKeyId)
             }
 
-            if (!pending.isSeedPersisted) {
+            // A seed saved during discovery skipped its passkey main key. The
+            // save gets copies, as `persistHDMasterKey` zeroes what it is
+            // given: the walk below and a retry after a failed commit still
+            // read the session's bytes.
+            if (pending.isSeedPersisted) {
+                await mintPasskeyMainKey(pending.walletKeyId)
+            } else {
                 await persistHDMasterKey({
                     keyId: pending.walletKeyId,
-                    rootKey: pending.rootKey,
-                    entropy: pending.entropy,
+                    rootKey: new Uint8Array(pending.rootKey),
+                    entropy: new Uint8Array(pending.entropy),
                 })
             }
 
@@ -272,7 +284,13 @@ export const useHDImportSession = (
 
             return committed
         },
-        [persistHDMasterKey, removeKeyAndChildren, scope, setAccounts],
+        [
+            persistHDMasterKey,
+            mintPasskeyMainKey,
+            removeKeyAndChildren,
+            scope,
+            setAccounts,
+        ],
     )
 
     const cancelImport = useCallback(() => {
