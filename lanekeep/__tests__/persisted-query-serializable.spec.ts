@@ -106,6 +106,10 @@ describe('pera/persisted-query-serializable', () => {
 
     // UNTAGGED_TYPES mirrors stringifyTypedJson: when the serializer starts
     // tagging one of them it must come off the list.
+    it('lists exactly the types the samples below cover', () => {
+        expect([...UNTAGGED_TYPES]).toEqual(['Date', 'Set', 'ReadonlySet'])
+    })
+
     it.each([
         ['Date', () => new Date(0)],
         ['Set', () => new Set([1])],

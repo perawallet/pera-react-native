@@ -5,6 +5,7 @@ import {
 } from './persisted-keys'
 import type {
     Checked,
+    Consumed,
     Item,
     RawWithIso,
     Tagged,
@@ -16,6 +17,12 @@ export const useTagged = () =>
     useQuery({
         queryKey: ['kept', 'tagged'],
         queryFn: (): Promise<Tagged> => fetchThing('x'),
+    })
+
+export const useConsumedInTransform = () =>
+    useQuery({
+        queryKey: ['kept', 'consumed'],
+        queryFn: (): Promise<Consumed> => fetchThing('x'),
     })
 
 export const useRawIsoBuiltInSelect = () =>

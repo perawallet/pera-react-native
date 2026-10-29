@@ -324,6 +324,7 @@ const addSchemaNames = (
     node: Node,
     inTransform: boolean,
     out: TypeSummary,
+    isConsumed = false,
 ): void => {
     const kind = ctx.kind(node) ?? ''
     const children = ctx.namedChildren(node)
@@ -335,7 +336,9 @@ const addSchemaNames = (
     if (kind === 'new_expression') {
         const constructor = children[0]
         const name = constructor === undefined ? '' : text(ctx, constructor)
-        if (inTransform && UNTAGGED.has(name)) out.untagged.push(name)
+        if (inTransform && !isConsumed && UNTAGGED.has(name)) {
+            out.untagged.push(name)
+        }
     }
     if (kind === 'call_expression') {
         const callee = children[0]
@@ -366,7 +369,27 @@ const addSchemaNames = (
             }
         }
     }
-    for (const child of children) addSchemaNames(ctx, child, inTransform, out)
+    // A Date or Set that is read through, spread or copied into an array never reaches the payload.
+    const consumesFirst =
+        kind === 'member_expression' || kind === 'spread_element'
+    const callee = kind === 'call_expression' ? children[0] : undefined
+    const copiesArgs =
+        callee !== undefined && text(ctx, callee) === 'Array.from'
+    for (const [index, child] of children.entries()) {
+        if (copiesArgs && index > 0 && ctx.kind(child) === 'arguments') {
+            for (const arg of ctx.namedChildren(child)) {
+                addSchemaNames(ctx, arg, inTransform, out, true)
+            }
+            continue
+        }
+        addSchemaNames(
+            ctx,
+            child,
+            inTransform,
+            out,
+            consumesFirst && index === 0,
+        )
+    }
 }
 
 const summarizeSchema = (ctx: RuleContext, value: Node): TypeSummary => {

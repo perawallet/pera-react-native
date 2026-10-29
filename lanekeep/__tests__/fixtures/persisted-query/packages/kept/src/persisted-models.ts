@@ -49,3 +49,12 @@ export const checkedSchema = z
     .string()
     .refine(s => !Number.isNaN(new Date(s).getTime()))
 export type Checked = z.infer<typeof checkedSchema>
+
+export const consumedSchema = z
+    .object({ at: z.string(), ids: z.array(z.string()) })
+    .transform(v => ({
+        at: new Date(v.at).toISOString(),
+        ids: [...new Set(v.ids)],
+        copy: Array.from(new Set(v.ids)),
+    }))
+export type Consumed = z.infer<typeof consumedSchema>
