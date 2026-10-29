@@ -12,7 +12,7 @@
 
 import type { MigrationPlanSummary } from '@perawallet/wallet-extension-platform'
 import { getProvider } from '@perawallet/wallet-extension-provider'
-import { toError } from '@perawallet/wallet-core-shared'
+import { registerStore, toError } from '@perawallet/wallet-core-shared'
 import { create } from 'zustand'
 
 export type SimulationOutcome =
@@ -229,3 +229,9 @@ export const useMigrationSimulatorStore = create<MigrationSimulatorStore>()(
         },
     }),
 )
+
+registerStore({
+    name: 'migration-simulator-store',
+    clearStorage: () => {},
+    resetState: () => useMigrationSimulatorStore.getState().resetState(),
+})

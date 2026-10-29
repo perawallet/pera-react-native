@@ -12,7 +12,10 @@
 
 import { create } from 'zustand'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
+import {
+    generateOrderedUniqueId,
+    registerStore,
+} from '@perawallet/wallet-core-shared'
 import type { MultiSigAccount, MultisigProposeMode } from '../models'
 
 /**
@@ -107,6 +110,12 @@ export const useDraftSignRequestStore = create<Store>((set, get) => ({
     },
     resetState: () => set(initialState),
 }))
+
+registerStore({
+    name: 'multisig-draft-sign-request-store',
+    clearStorage: () => {},
+    resetState: () => useDraftSignRequestStore.getState().resetState(),
+})
 
 export const deleteDraftSignRequest = (localId: string): void =>
     useDraftSignRequestStore.getState().deleteDraft(localId)

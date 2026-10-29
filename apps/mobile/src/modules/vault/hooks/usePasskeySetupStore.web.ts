@@ -40,6 +40,7 @@ type PasskeySetupStore = PasskeySetupStoreState & PasskeySetupStoreActions
 
 const initialState: PasskeySetupStoreState = { isPending: null }
 
+// lanekeep-ignore-next-line pera/store-in-wipe-registry reason: mirror of the keystore's chrome.storage.session flag, hydrated once on shell mount; a reset to null leaves the unlocked shell resolving
 export const usePasskeySetupStore = create<PasskeySetupStore>()(set => ({
     ...initialState,
     hydrate: async () => {

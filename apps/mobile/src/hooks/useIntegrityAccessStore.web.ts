@@ -47,6 +47,7 @@ const initialState: IntegrityAccessStoreState = {
 const hasLiveToken = (snapshot: IntegritySnapshot | null, now: number) =>
     snapshot?.tokenExpiresAt != null && snapshot.tokenExpiresAt > now
 
+// lanekeep-ignore-next-line pera/store-in-wipe-registry reason: device integrity facts mirrored from the service worker, their only writer; a reset desyncs them until the next snapshot
 export const useIntegrityAccessStore = create<IntegrityAccessStore>()(set => ({
     ...initialState,
     applySnapshot: (snapshot, now) =>

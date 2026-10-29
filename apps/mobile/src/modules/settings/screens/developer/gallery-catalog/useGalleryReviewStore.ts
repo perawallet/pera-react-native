@@ -31,6 +31,7 @@ type GalleryReviewStore = GalleryReviewState & GalleryReviewActions
 
 const initialState: GalleryReviewState = { visited: {}, good: {} }
 
+// lanekeep-ignore-next-line pera/store-in-wipe-registry reason: developer review progress for the component gallery; it describes the build, not the wallet
 export const useGalleryReviewStore = create<GalleryReviewStore>()(
     guardedPersist(
         set => ({

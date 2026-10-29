@@ -16,6 +16,7 @@ import type {
     SecureBackupPayload,
 } from '@perawallet/wallet-core-backup'
 import { zeroBytes } from '@perawallet/wallet-core-kms'
+import { registerStore } from '@perawallet/wallet-core-shared'
 
 // Transient state for the ASB recovery wizard: holds the parsed envelope
 // (from the file-pick step), the decrypted payload (from the key-entry step),
@@ -78,3 +79,9 @@ export const useAsbImportFlowStore = create<State & Actions>((set, get) => ({
         set(initialState)
     },
 }))
+
+registerStore({
+    name: 'asb-import-flow-store',
+    clearStorage: () => {},
+    resetState: () => useAsbImportFlowStore.getState().reset(),
+})

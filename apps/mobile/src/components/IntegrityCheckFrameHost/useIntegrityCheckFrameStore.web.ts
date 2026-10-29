@@ -34,6 +34,7 @@ type IntegrityCheckFrameState = {
     requestVerify: () => void
 }
 
+// lanekeep-ignore-next-line pera/store-in-wipe-registry reason: device integrity challenge tied to the worker's live attempt; a reset hides a frame the attempt still holds the port for
 export const useIntegrityCheckFrameStore = create<IntegrityCheckFrameState>(
     set => ({
         url: null,

@@ -12,6 +12,7 @@
 
 import { create } from 'zustand'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import { registerStore } from '@perawallet/wallet-core-shared'
 
 type BidaliState = {
     selectedAccount?: WalletAccount
@@ -33,6 +34,12 @@ const useBidaliStore = create<BidaliStore>()(set => ({
     setSelectedAccount: account => set({ selectedAccount: account }),
     reset: () => set(initialState),
 }))
+
+registerStore({
+    name: 'bidali-store',
+    clearStorage: () => {},
+    resetState: () => useBidaliStore.getState().reset(),
+})
 
 type UseBidaliResult = {
     selectedAccount?: WalletAccount
