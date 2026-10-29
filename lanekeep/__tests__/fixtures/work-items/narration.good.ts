@@ -9,5 +9,8 @@ export const a = 1
 // Polls every 5s; the server 404s until the card exists
 // Tests run with a 10s timeout; the function takes a 30s timeout
 // Mints Bored Ape #1234 for the default account (#1), see sqlite/sqlite-wasm#129
+// Wait 300ms so the observed animation settles
+// a 2s delay, measured from mount
+// Restores the previously-set value and rehydrates the previously committed state
 export const s = 'This used to retry (#1234), one run sat 75s'
 export const d = 4

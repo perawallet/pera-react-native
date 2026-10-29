@@ -16,7 +16,7 @@ type HistoryHit = { kind: HistoryKind; phrase: string }
 // pronoun subject and the second must not follow a be-form, modal or conjunction.
 const BEFORE_PASSIVE = String.raw`(?:is|are|was|were|be|been|being|get|gets|got|getting|isn't|aren't|wasn't|weren't|can|could|may|might|must|should|will|would|not|only|also|then|and|or)`
 // Runtime state ("the previously selected account"), not history.
-const STATE_PARTICIPLE = String.raw`(?:selected|synced|correct|first|picked|persisted|derived|open|stored|saved|imported|added|seen|cached|focused|connected)`
+const STATE_PARTICIPLE = String.raw`(?:selected|synced|correct|first|picked|persisted|derived|open|stored|saved|imported|added|seen|cached|focused|connected|committed|set)`
 const NARRATION: readonly RegExp[] = [
     /\b(?:this|it|they|we|that|which|who|there|these|those)\s+(?:all\s+|both\s+|each\s+|once\s+|also\s+)?used to\b/i,
     new RegExp(
@@ -24,7 +24,7 @@ const NARRATION: readonly RegExp[] = [
         'i',
     ),
     new RegExp(
-        String.raw`(?<!\b(?:added|selected|saved|stored|seen|persisted)\s+)\bpreviously\b(?![- ]"?${STATE_PARTICIPLE}\b)`,
+        String.raw`(?<!\b(?:added|selected|saved|stored|seen|persisted)\s+)\bpreviously\b(?!-\w|\s"?${STATE_PARTICIPLE}\b)`,
         'i',
     ),
     /\b(?:was|were|has been|have been|had been|got) renamed\b|\brenamed from\b/i,
@@ -39,7 +39,7 @@ const PR_REFERENCE =
 // measurement only beside a word that marks it as observed ("takes" needs a
 // "~" estimate, since "takes a 30s timeout" is configuration).
 const MEASURED_TIMING =
-    /\b(?:took|sat|measured|observed|outran|overran|p(?:50|90|95|99))\b[^.;]{0,40}?~?\d+(?:\.\d+)?\s?(?:ms|s)\b|\b(?:takes|taking)\s+~\d+(?:\.\d+)?\s?(?:ms|s)\b|~?\b\d+(?:\.\d+)?\s?(?:ms|s)\b[^.;]{0,40}?\b(?:took|sat|measured|observed|locally|on a dev laptop|on a loaded runner)\b/i
+    /\b(?:took|sat|measured|observed|outran|overran|p(?:50|90|95|99))\b[^.;]{0,40}?~?\d+(?:\.\d+)?\s?(?:ms|s)\b|\b(?:takes|taking)\s+~\d+(?:\.\d+)?\s?(?:ms|s)\b|~?\b\d+(?:\.\d+)?\s?(?:ms|s)\b[^.;]{0,40}?\b(?:took|sat|locally|on a dev laptop|on a loaded runner)\b/i
 
 // Tree-sitter prefilters with Rust's regex: Unicode `\b`/`\d`, no lookbehind,
 // and flags don't carry over. `check` re-tests in JS, so the gap can drop a

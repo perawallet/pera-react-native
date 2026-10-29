@@ -36,7 +36,7 @@ export const TOUR_OVERFLOW_MARKER = 'LOCALE_TOUR_OVERFLOW'
 // even if that answer is "settled by timeout, screenshot anyway".
 //
 // Sheet mounts on a simulator can take seconds; a tighter cap reports false
-// "never mounted" steps.
+// "never mounted" steps. Re-run the tour before lowering it.
 export const SETTLE_TIMEOUT_MS = 5000
 
 const waitForSettle = (): Promise<void> =>
