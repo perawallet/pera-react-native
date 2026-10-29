@@ -6,7 +6,7 @@ import { defineRule } from 'lanekeep'
 
 import { jsonLocation, keyLines } from '../shared/locale.js'
 import { resolveRelative } from '../shared/paths.js'
-import { topLevelMapping } from '../shared/yaml.js'
+import { yamlMap } from '../shared/workspace.js'
 
 const NITRO =
     'Nitro module: its C++ is generated against one react-native-nitro-modules ABI, which the overrides pin'
@@ -85,6 +85,20 @@ const isNativeModule = (name: string): boolean =>
 const isExactVersion = (spec: string): boolean =>
     /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/.test(spec)
 
+// A key with no scalar value opens a nested mapping, not a version.
+const scalarEntries = (
+    raw: string,
+    key: string,
+): Map<string, { value: string; line: number }> =>
+    new Map(
+        yamlMap(raw, key)
+            .filter(entry => entry.value !== '')
+            .map(entry => [
+                entry.key,
+                { value: entry.value, line: entry.line },
+            ]),
+    )
+
 export default defineRule({
     id: 'pera/native-exact-pins',
     language: ['javascript'],
@@ -126,8 +140,8 @@ export default defineRule({
             ctx.report(file, 'apps/mobile/package.json is not valid JSON')
             return
         }
-        const catalog = topLevelMapping(workspaceRaw, 'catalog')
-        const overrides = topLevelMapping(workspaceRaw, 'overrides')
+        const catalog = scalarEntries(workspaceRaw, 'catalog')
+        const overrides = scalarEntries(workspaceRaw, 'overrides')
         const lines = keyLines(manifestRaw)
         const reported = new Set<string>()
 

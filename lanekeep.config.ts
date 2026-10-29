@@ -5,6 +5,7 @@
 import { defineConfig } from 'lanekeep'
 
 import amountTypes from './lanekeep/rules/amount-types.js'
+import catalogVersions from './lanekeep/rules/catalog-versions.js'
 import conformanceWorkflowPaths from './lanekeep/rules/conformance-workflow-paths.js'
 import copyrightHeader from './lanekeep/rules/copyright-header.js'
 import domSpecEnvironment from './lanekeep/rules/dom-spec-environment.js'
@@ -54,8 +55,10 @@ import vitestPoolConfig from './lanekeep/rules/vitest-pool-config.js'
 export default defineConfig({
     // Every TS/JS file in the repo, plus Python (the e2e harness). A rule about
     // shipped source narrows itself with lanekeep/shared/scope.ts; the
-    // repo-wide rules need tests and tooling in view.
-    include: ['**/*.{ts,tsx,mts,cts,js,jsx,mjs,cjs,py}'],
+    // repo-wide rules need tests and tooling in view. pnpm-workspace.yaml is
+    // here only as catalog-versions' anchor; it reads the manifests and the
+    // lockfile from beside it.
+    include: ['**/*.{ts,tsx,mts,cts,js,jsx,mjs,cjs,py}', 'pnpm-workspace.yaml'],
     // lanekeep also skips gitignored files on top of the excludes below, so a generated
     // file like packages/config/src/generated-env.ts can match `include` and still never
     // appear here — expected, not a glob bug.
@@ -134,5 +137,6 @@ export default defineConfig({
         secretBufferZeroed,
         conformanceWorkflowPaths,
         nativeExactPins,
+        catalogVersions,
     ],
 })

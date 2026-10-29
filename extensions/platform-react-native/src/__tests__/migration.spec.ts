@@ -179,7 +179,6 @@ describe('RNMigrationService', () => {
             expect(await service.hasLegacyData()).toBe(false)
             expect(loggerMock.warn).toHaveBeenCalledWith(
                 expect.stringContaining('not registered'),
-                undefined,
             )
         })
 

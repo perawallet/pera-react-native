@@ -19,6 +19,7 @@ import {
     type SupportedUsState,
 } from '@perawallet/wallet-core-card'
 import { config } from '@perawallet/wallet-core-config'
+import { logger } from '@perawallet/wallet-core-shared'
 
 const mockMutateAsync = vi.fn()
 const mockRefetchRecord = vi.fn()
@@ -114,7 +115,10 @@ vi.mock('@modules/bottom-sheet', () => ({
 }))
 
 const mockPushWebView = vi.fn()
-vi.mock('@modules/webview', () => ({
+vi.mock('@modules/webview', async () => ({
+    ...(await vi.importActual<
+        typeof import('@modules/webview/hooks/handlers-shared')
+    >('@modules/webview/hooks/handlers-shared')),
     useWebView: () => ({ pushWebView: mockPushWebView }),
     withLanguageParam: (url: string, locale: string) => `${url}?lang=${locale}`,
 }))
@@ -625,6 +629,41 @@ describe('useCardOnboardingAddressScreen', () => {
             id: 'card-terms',
         })
     })
+
+    it.each([true, false])(
+        'refuses a non-https Baanx card T&C link instead of opening Pera terms (inAppWebView: %s)',
+        inAppWebView => {
+            mockCapabilities.inAppWebView = inAppWebView
+            const warnSpy = vi
+                .spyOn(logger, 'warn')
+                .mockImplementation(() => {})
+            mockSettings = {
+                countries: [gb, us],
+                usStates: [california],
+                termsAndConditionsUrls: {
+                    us: 'http://baanx/us-terms.pdf',
+                    intl: 'http://baanx/intl-terms.pdf',
+                },
+            }
+            const { result } = renderHook(() =>
+                useCardOnboardingAddressScreen(),
+            )
+
+            act(() => result.current.handleOpenCardTerms())
+
+            expect(mockPushWebView).not.toHaveBeenCalled()
+            expect(mockOpenURL).not.toHaveBeenCalled()
+            expect(warnSpy).toHaveBeenCalledWith(
+                '[card] refused the Baanx card terms URL',
+                { jurisdiction: 'intl' },
+            )
+            expect(mockErrorToast).toHaveBeenCalledWith(
+                'peraCard.account.error_title',
+                'peraCard.account.error_body',
+            )
+            warnSpy.mockRestore()
+        },
+    )
 
     it('renders and falls back when settings lack the links block entirely', () => {
         // A settings shape without `termsAndConditionsUrls` (e.g. a stale

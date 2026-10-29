@@ -13,6 +13,7 @@
 import React from 'react'
 import { describe, it, expect, vi } from 'vitest'
 import { render, act, screen } from '@test-utils/render'
+import { webViewScript } from '../../../utils/webViewScript'
 import { PWWebView } from '../PWWebView'
 
 import type { WebViewNativeEvent } from 'react-native-webview/lib/WebViewTypes'
@@ -22,14 +23,25 @@ import type { WebViewNativeEvent } from 'react-native-webview/lib/WebViewTypes'
 type CapturedNavState = Pick<WebViewNativeEvent, 'url' | 'loading'>
 
 type CapturedWebViewProps = {
+    injectedJavaScript?: string
+    injectedJavaScriptBeforeContentLoaded?: string
     onNavigationStateChange?: (navState: CapturedNavState) => void
 }
 
-const { capturedWebViewProps } = vi.hoisted(() => ({
-    capturedWebViewProps: {
-        current: undefined as CapturedWebViewProps | undefined,
-    },
-}))
+type CapturedGuardOptions = {
+    externalNavigation?: { onExternalNavigation: (url: string) => void }
+}
+
+const { capturedWebViewProps, capturedGuardOptions, mockPushWebView } =
+    vi.hoisted(() => ({
+        capturedWebViewProps: {
+            current: undefined as CapturedWebViewProps | undefined,
+        },
+        capturedGuardOptions: {
+            current: undefined as CapturedGuardOptions | undefined,
+        },
+        mockPushWebView: vi.fn(),
+    }))
 
 vi.mock('react-native-webview', () => ({
     WebView: (props: CapturedWebViewProps) => {
@@ -42,14 +54,18 @@ vi.mock('@modules/webview/hooks', () => ({
     useContextFingerprints: () => ({}),
     usePeraWebviewInterface: () => ({ handleMessage: vi.fn() }),
     useWebViewStore: (
-        selector: (state: { removeWebView: () => void }) => unknown,
-    ) => selector({ removeWebView: vi.fn() }),
+        selector: (state: {
+            removeWebView: () => void
+            pushWebView: typeof mockPushWebView
+        }) => unknown,
+    ) => selector({ removeWebView: vi.fn(), pushWebView: mockPushWebView }),
 }))
 
 vi.mock('../useWebViewNavigationGuard', () => ({
-    useWebViewNavigationGuard: () => ({
-        onShouldStartLoadWithRequest: () => true,
-    }),
+    useWebViewNavigationGuard: (options: CapturedGuardOptions) => {
+        capturedGuardOptions.current = options
+        return { onShouldStartLoadWithRequest: () => true }
+    },
 }))
 
 vi.mock('@hooks/useLanguage')
@@ -118,5 +134,88 @@ describe('PWWebView title bar host', () => {
         // `t` returns the key under test setup.
         expect(screen.getByText('common.webview.unknown_host')).toBeTruthy()
         expect(screen.queryByText('good.xyz')).toBeNull()
+    })
+})
+
+describe('PWWebView injected scripts', () => {
+    const renderWith = (props: { enablePeraConnect: boolean }, extra = {}) =>
+        render(
+            <PWWebView
+                url='https://good.xyz/landing'
+                {...props}
+                {...extra}
+            />,
+        )
+
+    it('injects no before-content script, and no bridge in the document-end one, without Pera Connect', () => {
+        renderWith({ enablePeraConnect: false })
+
+        const { injectedJavaScript, injectedJavaScriptBeforeContentLoaded } =
+            capturedWebViewProps.current ?? {}
+        expect(injectedJavaScriptBeforeContentLoaded).toBeUndefined()
+        expect(injectedJavaScript).toContain('updateTheme?.(')
+        expect(injectedJavaScript).not.toContain('peraMobileInterface')
+    })
+
+    it('injects the bridge before content and again at document end with Pera Connect', () => {
+        renderWith({ enablePeraConnect: true })
+
+        const { injectedJavaScript, injectedJavaScriptBeforeContentLoaded } =
+            capturedWebViewProps.current ?? {}
+        expect(injectedJavaScript).toContain('setupPeraMobileInterface')
+        expect(injectedJavaScriptBeforeContentLoaded).toContain(
+            'setupPeraMobileInterface',
+        )
+        expect(injectedJavaScriptBeforeContentLoaded).toContain(
+            'setupPeraConnect',
+        )
+        expect(injectedJavaScriptBeforeContentLoaded?.endsWith('true;')).toBe(
+            true,
+        )
+    })
+
+    it('places the caller script between the bridge and the theme update', () => {
+        renderWith(
+            { enablePeraConnect: true },
+            { customJavaScript: webViewScript`window.__custom = 1;` },
+        )
+
+        const bundle = capturedWebViewProps.current?.injectedJavaScript ?? ''
+        const custom = bundle.indexOf('window.__custom = 1;')
+        expect(custom).toBeGreaterThan(bundle.indexOf('setupPeraConnect'))
+        expect(custom).toBeLessThan(bundle.indexOf('updateTheme?.('))
+    })
+})
+
+describe('PWWebView external navigation', () => {
+    const renderWithExternalLinks = () =>
+        render(
+            <PWWebView
+                url='https://good.xyz/landing'
+                enablePeraConnect={false}
+                openExternalLinksInBrowser
+            />,
+        )
+
+    it('pushes an https target the page navigates away to', () => {
+        renderWithExternalLinks()
+
+        capturedGuardOptions.current?.externalNavigation?.onExternalNavigation(
+            'https://other.xyz/',
+        )
+
+        expect(mockPushWebView).toHaveBeenCalledWith({
+            url: 'https://other.xyz/',
+        })
+    })
+
+    it('pushes nothing for an http target', () => {
+        renderWithExternalLinks()
+
+        capturedGuardOptions.current?.externalNavigation?.onExternalNavigation(
+            'http://evil.xyz/',
+        )
+
+        expect(mockPushWebView).not.toHaveBeenCalled()
     })
 })

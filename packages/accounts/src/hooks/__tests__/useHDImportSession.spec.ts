@@ -21,11 +21,20 @@ import {
 } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useHDImportSession } from '../useHDImportSession'
+import { accountsChainAdapters } from '../../chain-adapter'
 import { useHDImportSessionStore } from '../../import-session'
 import { useAccountsStore } from '../../store'
 import { HDImportSessionNotFoundError } from '../../errors'
 import type { AccountsState, LocalAccount } from '../../models'
-import { buildAccount, addressOn } from '../../credentials'
+import { buildAccount, addressOn, hdIndexOf } from '../../credentials'
+import {
+    ALGORAND,
+    BASE,
+    deriveInMemoryOn,
+    ETHEREUM,
+    familyHdAddress,
+    registerChainFamilies,
+} from '../../__tests__/chainFamilies'
 import {
     fakeAccountsChain,
     TESTNET_SCOPE,
@@ -33,6 +42,7 @@ import {
 
 const kmsMock = vi.hoisted(() => ({
     persistHDMasterKey: vi.fn(),
+    mintPasskeyMainKey: vi.fn().mockResolvedValue(undefined),
     removeKeyAndChildren: vi.fn().mockResolvedValue(undefined),
 }))
 const prepareMock = vi.hoisted(() => vi.fn())
@@ -151,6 +161,7 @@ describe('useHDImportSession', () => {
         expect(kmsMock.persistHDMasterKey).toHaveBeenCalledWith(
             expect.objectContaining({ keyId: 'w-1' }),
         )
+        expect(kmsMock.mintPasskeyMainKey).not.toHaveBeenCalled()
         expect(
             fakeAccountsChain().derivation.deriveAccount,
         ).toHaveBeenCalledWith(expect.anything(), 'w-1', 1, 0, {
@@ -161,6 +172,35 @@ describe('useHDImportSession', () => {
         expect(addressOn(saved[0], TESTNET_SCOPE)).toBe('ADDR-A')
         expect(useAccountsStore.getState().accounts).toHaveLength(1)
         expect(useHDImportSessionStore.getState().pending).toBeNull()
+    })
+
+    test('commitImport saves copies, so the walk and a retry still read the real root key', async () => {
+        const { result } = renderHook(() => useHDImportSession(TESTNET_SCOPE))
+        await act(async () => {
+            await result.current.prepareImport({ mnemonicIndices: INDICES })
+        })
+        const session = useHDImportSessionStore.getState().pending!
+        kmsMock.persistHDMasterKey.mockImplementation(
+            async ({ rootKey, entropy }) => {
+                rootKey.fill(0)
+                entropy.fill(0)
+                return { seedKey: { id: 'w-1' } }
+            },
+        )
+
+        await act(async () => {
+            await result.current.commitImport({
+                walletKeyId: 'w-1',
+                selectedAccounts: [discovered()],
+            })
+        })
+
+        const persisted = kmsMock.persistHDMasterKey.mock.calls[0][0]
+        expect(persisted.rootKey).not.toBe(session.rootKey)
+        expect(persisted.entropy).not.toBe(session.entropy)
+        const walkRootKey: Uint8Array =
+            discoverWalletAccounts.mock.calls[0][1].rootKey
+        expect([...walkRootKey]).toEqual(new Array(96).fill(7))
     })
 
     test('commitImport walks the wallet across every chain once, declining nothing when every offered index was kept', async () => {
@@ -340,6 +380,7 @@ describe('useHDImportSession', () => {
         expect(
             useHDImportSessionStore.getState().pending?.discoveredIndexes,
         ).toEqual([{ account: 0, keyIndex: 0 }])
+        expect(kmsMock.persistHDMasterKey).not.toHaveBeenCalled()
     })
 
     test('discoverImportAccounts leaves out of the offered indexes one whose address the wallet already holds', async () => {
@@ -370,5 +411,293 @@ describe('useHDImportSession', () => {
         await expect(
             result.current.discoverImportAccounts({ walletKeyId: 'w-1' }),
         ).rejects.toThrow(HDImportSessionNotFoundError)
+    })
+
+    describe('with more than one HD discovery chain', () => {
+        const MAINNET = { chainId: ALGORAND, networkId: 'mainnet' }
+        const CHAIN_IDS = [ALGORAND, ETHEREUM, BASE]
+        type HookResult = {
+            current: ReturnType<typeof useHDImportSession>
+        }
+
+        const setUpChains = (active: Record<string, string[]> = {}) => {
+            const families = registerChainFamilies(CHAIN_IDS)
+            for (const chainId of CHAIN_IDS) {
+                Object.assign(accountsChainAdapters.get(chainId), {
+                    localKeyKinds: [
+                        {
+                            seed: 'bip39',
+                            signingScheme:
+                                chainId === ALGORAND ? 'ed25519' : 'secp256k1',
+                            isHd: true,
+                        },
+                    ],
+                })
+            }
+            deriveInMemoryOn(ALGORAND)
+            for (const chainId of CHAIN_IDS) {
+                families.checkActivity
+                    .get(chainId)!
+                    .mockImplementation(
+                        async (probed: string[]) =>
+                            new Map(
+                                probed.map(a => [
+                                    a,
+                                    (active[chainId] ?? []).includes(a),
+                                ]),
+                            ),
+                    )
+            }
+            return families
+        }
+
+        const prepare = async (result: HookResult) => {
+            await act(async () => {
+                await result.current.prepareImport({
+                    mnemonicIndices: INDICES,
+                })
+            })
+        }
+
+        const discover = async (result: HookResult) => {
+            let found: LocalAccount[] = []
+            await act(async () => {
+                found = await result.current.discoverImportAccounts({
+                    walletKeyId: 'w-1',
+                })
+            })
+            return found
+        }
+
+        test('persists the seed once from copies, marks the session persisted and finds an index active on one chain only', async () => {
+            setUpChains({ [BASE]: [familyHdAddress('evm', 2, 0)] })
+            const { result } = renderHook(() => useHDImportSession(MAINNET))
+            await prepare(result)
+            const session = useHDImportSessionStore.getState().pending!
+
+            const found = await discover(result)
+            await discover(result)
+
+            expect(kmsMock.persistHDMasterKey).toHaveBeenCalledOnce()
+            const [persisted, options] =
+                kmsMock.persistHDMasterKey.mock.calls[0]
+            expect(persisted.keyId).toBe('w-1')
+            expect(options).toEqual({ shouldMintPasskeyMainKey: false })
+            expect(persisted.rootKey).not.toBe(session.rootKey)
+            expect(persisted.entropy).not.toBe(session.entropy)
+            expect(
+                useHDImportSessionStore.getState().pending?.isSeedPersisted,
+            ).toBe(true)
+            expect(found.map(hdIndexOf)).toEqual([{ account: 2, keyIndex: 0 }])
+        })
+
+        test('records only the indexes whose candidate the wallet can still take', async () => {
+            setUpChains({
+                [ALGORAND]: [familyHdAddress('algorand', 1, 0)],
+                [ETHEREUM]: [familyHdAddress('evm', 0, 0)],
+            })
+            const { result } = renderHook(() => useHDImportSession(MAINNET))
+            await prepare(result)
+            // Index 0/0 landed earlier with only its EVM entry.
+            useAccountsStore.setState({
+                accounts: [
+                    buildAccount({
+                        custody: {
+                            kind: 'local',
+                            seed: 'bip39',
+                            hd: { account: 0, keyIndex: 0 },
+                        },
+                        chainId: ETHEREUM,
+                        chains: {
+                            [ETHEREUM]: {
+                                address: familyHdAddress('evm', 0, 0),
+                                keyPairId: 'held-key',
+                            },
+                        },
+                    }),
+                ],
+            })
+
+            await discover(result)
+
+            expect(
+                useHDImportSessionStore.getState().pending?.discoveredIndexes,
+            ).toEqual([{ account: 1, keyIndex: 0 }])
+        })
+
+        test('commit skips saving the seed and derives each distinct key of a selected account once, on its chain', async () => {
+            const families = setUpChains({
+                [BASE]: [familyHdAddress('evm', 2, 0)],
+            })
+            const { result } = renderHook(() => useHDImportSession(MAINNET))
+            await prepare(result)
+            const found = await discover(result)
+            kmsMock.persistHDMasterKey.mockClear()
+
+            await act(async () => {
+                await result.current.commitImport({
+                    walletKeyId: 'w-1',
+                    selectedAccounts: found,
+                })
+            })
+
+            expect(kmsMock.persistHDMasterKey).not.toHaveBeenCalled()
+            expect(kmsMock.mintPasskeyMainKey).toHaveBeenCalledExactlyOnceWith(
+                'w-1',
+            )
+            const derivedOn = (chainId: typeof ALGORAND) =>
+                vi
+                    .mocked(families.derivations.get(chainId)!.deriveAccount)
+                    .mock.calls.map(([, seed, account, keyIndex]) => [
+                        seed,
+                        account,
+                        keyIndex,
+                    ])
+            expect(derivedOn(ALGORAND)).toContainEqual(['w-1', 2, 0])
+            expect(derivedOn(ETHEREUM)).toContainEqual(['w-1', 2, 0])
+            expect(derivedOn(BASE)).not.toContainEqual(['w-1', 2, 0])
+            expect(useAccountsStore.getState().accounts).toHaveLength(1)
+        })
+
+        test('cancelImport removes a persisted seed and leaves an unpersisted one alone', async () => {
+            setUpChains()
+            const { result } = renderHook(() => useHDImportSession(MAINNET))
+            await prepare(result)
+
+            act(() => result.current.cancelImport())
+            expect(kmsMock.removeKeyAndChildren).not.toHaveBeenCalled()
+
+            await prepare(result)
+            await discover(result)
+            act(() => result.current.cancelImport())
+
+            expect(
+                kmsMock.removeKeyAndChildren,
+            ).toHaveBeenCalledExactlyOnceWith('w-1')
+            expect(useHDImportSessionStore.getState().pending).toBeNull()
+        })
+
+        test('prepareImport removes the seed a previous persisted session left behind', async () => {
+            setUpChains()
+            const { result } = renderHook(() => useHDImportSession(MAINNET))
+            await prepare(result)
+            await discover(result)
+
+            await prepare(result)
+
+            expect(
+                kmsMock.removeKeyAndChildren,
+            ).toHaveBeenCalledExactlyOnceWith('w-1')
+            expect(
+                useHDImportSessionStore.getState().pending?.isSeedPersisted,
+            ).toBeUndefined()
+        })
+
+        test('returns nothing when no chain answers, leaving the persisted seed for cancelImport to remove', async () => {
+            const families = setUpChains()
+            for (const checkActivity of families.checkActivity.values()) {
+                checkActivity.mockRejectedValue(new Error('offline'))
+            }
+            const { result } = renderHook(() => useHDImportSession(MAINNET))
+            await prepare(result)
+
+            await expect(discover(result)).resolves.toEqual([])
+            act(() => result.current.cancelImport())
+
+            expect(kmsMock.removeKeyAndChildren).toHaveBeenCalledWith('w-1')
+        })
+
+        test('removes a seed whose session was cancelled while it was being saved', async () => {
+            setUpChains()
+            let finishPersist: () => void = () => undefined
+            kmsMock.persistHDMasterKey.mockReturnValueOnce(
+                new Promise<void>(resolve => {
+                    finishPersist = resolve
+                }),
+            )
+            const { result } = renderHook(() => useHDImportSession(MAINNET))
+            await prepare(result)
+
+            let discovery: Promise<LocalAccount[]> = Promise.resolve([])
+            act(() => {
+                discovery = result.current.discoverImportAccounts({
+                    walletKeyId: 'w-1',
+                })
+            })
+            act(() => result.current.cancelImport())
+            expect(kmsMock.removeKeyAndChildren).not.toHaveBeenCalled()
+            finishPersist()
+
+            await expect(discovery).rejects.toBeInstanceOf(
+                HDImportSessionNotFoundError,
+            )
+            expect(
+                kmsMock.removeKeyAndChildren,
+            ).toHaveBeenCalledExactlyOnceWith('w-1')
+        })
+
+        test('sweeps the seed again when the session was cancelled while the walk ran', async () => {
+            const families = setUpChains()
+            let releaseProbes: () => void = () => undefined
+            const gate = new Promise<void>(resolve => {
+                releaseProbes = resolve
+            })
+            for (const checkActivity of families.checkActivity.values()) {
+                checkActivity.mockImplementation(async (probed: string[]) => {
+                    await gate
+                    return new Map(probed.map(a => [a, false]))
+                })
+            }
+            const { result } = renderHook(() => useHDImportSession(MAINNET))
+            await prepare(result)
+
+            let discovery: Promise<LocalAccount[]> = Promise.resolve([])
+            act(() => {
+                discovery = result.current.discoverImportAccounts({
+                    walletKeyId: 'w-1',
+                })
+            })
+            await vi.waitFor(() =>
+                expect(
+                    families.checkActivity.get(ALGORAND)!.mock.calls.length,
+                ).toBeGreaterThan(0),
+            )
+            act(() => result.current.cancelImport())
+            kmsMock.removeKeyAndChildren.mockClear()
+            releaseProbes()
+
+            await expect(discovery).rejects.toBeInstanceOf(
+                HDImportSessionNotFoundError,
+            )
+            expect(kmsMock.removeKeyAndChildren).toHaveBeenCalledWith('w-1')
+        })
+
+        test('saves the seed again on commit after a failed commit removed it', async () => {
+            const families = setUpChains()
+            const { result } = renderHook(() => useHDImportSession(MAINNET))
+            await prepare(result)
+            const found = await discover(result)
+            vi.mocked(
+                families.derivations.get(ALGORAND)!.deriveAccount,
+            ).mockRejectedValueOnce(new Error('derive failed'))
+
+            await act(async () => {
+                await expect(
+                    result.current.commitImport({
+                        walletKeyId: 'w-1',
+                        selectedAccounts: found,
+                    }),
+                ).rejects.toThrow('derive failed')
+            })
+            kmsMock.persistHDMasterKey.mockClear()
+            await act(async () => {
+                await result.current.commitImport({
+                    walletKeyId: 'w-1',
+                    selectedAccounts: found,
+                })
+            })
+
+            expect(kmsMock.persistHDMasterKey).toHaveBeenCalledOnce()
+        })
     })
 })

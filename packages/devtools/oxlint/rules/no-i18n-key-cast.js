@@ -10,27 +10,9 @@
  limitations under the License
  */
 
-const BRAND = 'I18nKey'
+import { mentionsTypeReference } from './type-reference.js'
 
-// A cast can bury the brand in a union, a generic argument or a record, so the
-// whole target type is walked, not just its outermost reference.
-const mentionsBrand = value => {
-    if (Array.isArray(value)) return value.some(mentionsBrand)
-    if (value === null || typeof value !== 'object') return false
-    if (value.type === 'TSTypeReference') {
-        const { typeName } = value
-        const name =
-            typeName.type === 'Identifier' ? typeName.name : typeName.right?.name
-        if (name === BRAND) return true
-    }
-    return Object.keys(value).some(
-        key =>
-            key !== 'parent' &&
-            key !== 'loc' &&
-            key !== 'range' &&
-            mentionsBrand(value[key]),
-    )
-}
+const BRAND = 'I18nKey'
 
 export const noI18nKeyCast = {
     meta: {
@@ -46,7 +28,7 @@ export const noI18nKeyCast = {
     },
     create(context) {
         const check = node => {
-            if (mentionsBrand(node.typeAnnotation)) {
+            if (mentionsTypeReference(node.typeAnnotation, BRAND)) {
                 context.report({ node, messageId: 'cast' })
             }
         }

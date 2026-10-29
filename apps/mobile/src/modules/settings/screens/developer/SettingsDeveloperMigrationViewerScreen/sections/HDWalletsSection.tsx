@@ -17,11 +17,11 @@ import { MigrationDataRow } from '../components/MigrationDataRow'
 import { MigrationDataSubBlock } from '../components/MigrationDataSubBlock'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 
-export const HDWalletsSection = ({
-    hdSeeds,
-}: {
+type HDWalletsSectionProps = {
     hdSeeds: LegacyHDWallet[]
-}) => {
+}
+
+export const HDWalletsSection = ({ hdSeeds }: HDWalletsSectionProps) => {
     return (
         <MigrationDataSection
             title='HD Wallets'

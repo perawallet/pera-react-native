@@ -39,8 +39,14 @@ import {
     generateBridgeToken,
     hasValidBridgeToken,
     isTrustedWebviewOrigin,
+    toValidatedBrowserUrl,
 } from '@modules/webview/hooks/handlers'
 import { useNotifyWebViewOnContextChange } from '@modules/webview/hooks/useNotifyWebViewOnContextChange'
+import {
+    joinWebViewScripts,
+    webViewScript,
+    type WebViewScript,
+} from '../../utils/webViewScript'
 import { useWebViewNavigationGuard } from './useWebViewNavigationGuard'
 import { useWebViewMessageSecurity } from './useWebViewMessageSecurity'
 import { usePWWebViewLoadState } from './usePWWebViewLoadState'
@@ -75,16 +81,14 @@ export type PWWebViewProps = {
     onClose?: () => void
     onBack?: () => void
     inBottomSheet?: boolean
-    customJavaScript?: string
+    customJavaScript?: WebViewScript
     onCustomMessage?: (data: unknown) => void
     webviewRef?: React.RefObject<Nullable<WebView>>
     favorite?: WebViewFavorite
 } & WebViewProps
 
-const updateTheme = (mode: 'light' | 'dark') => {
-    const jsTheme = mode === 'dark' ? 'dark-theme' : 'light-theme'
-    return `updateTheme?.('${jsTheme}');`
-}
+const updateTheme = (mode: 'light' | 'dark'): WebViewScript =>
+    webViewScript`updateTheme?.(${mode === 'dark' ? 'dark-theme' : 'light-theme'});`
 
 export const PWWebView = (props: PWWebViewProps) => {
     const {
@@ -198,8 +202,10 @@ export const PWWebView = (props: PWWebViewProps) => {
             openExternalLinksInBrowser
                 ? {
                       hostUrl: loadableUrl,
-                      onExternalNavigation: (target: string) =>
-                          pushWebView({ url: target }),
+                      onExternalNavigation: (target: string) => {
+                          const url = toValidatedBrowserUrl(target)
+                          if (url) pushWebView({ url })
+                      },
                   }
                 : undefined,
         [openExternalLinksInBrowser, loadableUrl, pushWebView],
@@ -341,44 +347,42 @@ export const PWWebView = (props: PWWebViewProps) => {
         })
     }, [])
 
-    // Installed BEFORE the page runs any script: @perawallet/connect fires
-    // window.open('perawallet-wc://…') the moment the user connects —
-    // possibly before document-end injection has run. Without the hook in
-    // place, WKWebView silently drops the call (popups disabled) and Android
-    // detours it through the navigation guard. Interface before connect —
-    // peraConnectJS's initial processModals() needs window.peraRPC. The
-    // trailing 'true;' keeps iOS from choking on a non-serializable eval
-    // result.
+    // Installed before the page runs any script: @perawallet/connect calls
+    // window.open('perawallet-wc://…') on connect, possibly before document-end
+    // injection, and WKWebView drops it unless the hook is in place. Interface
+    // before connect: peraConnectJS's processModals() needs window.peraRPC.
+    // `true;` keeps iOS from choking on a non-serializable eval result.
+    // Undefined, never '', without Pera Connect: iOS would install an empty
+    // user script.
     const preLoadJS = useMemo(
         () =>
             enablePeraConnect
-                ? peraMobileInterfaceJS(bridgeToken) + peraConnectJS + 'true;'
+                ? joinWebViewScripts(
+                      peraMobileInterfaceJS(bridgeToken),
+                      peraConnectJS,
+                      webViewScript`true;`,
+                  )
                 : undefined,
         [enablePeraConnect, bridgeToken],
     )
 
-    // Document-end bundle. The connect/interface scripts are re-included as
-    // a belt-and-braces fallback (before-content-loaded has historically
-    // been unreliable on some Android versions); their idempotency guards
-    // make the second pass a no-op. baseJS (needs document.head),
-    // customJavaScript, and updateTheme are DOM-dependent and stay
-    // document-end only.
-    const jsToLoad = useMemo(() => {
-        let js = baseJS
-
-        if (enablePeraConnect) {
-            js += peraMobileInterfaceJS(bridgeToken)
-            js += peraConnectJS
-        }
-
-        if (customJavaScript) {
-            js += customJavaScript
-        }
-
-        js += updateTheme(theme.mode)
-
-        return js
-    }, [enablePeraConnect, customJavaScript, theme.mode, bridgeToken])
+    // The connect/interface scripts run again at document end because
+    // before-content-loaded injection is unreliable on some Android versions;
+    // their idempotency guards make the second pass a no-op. baseJS,
+    // customJavaScript and updateTheme need the DOM, so they run here only.
+    const jsToLoad = useMemo(
+        () =>
+            joinWebViewScripts(
+                baseJS,
+                enablePeraConnect
+                    ? peraMobileInterfaceJS(bridgeToken)
+                    : undefined,
+                enablePeraConnect ? peraConnectJS : undefined,
+                customJavaScript,
+                updateTheme(theme.mode),
+            ),
+        [enablePeraConnect, customJavaScript, theme.mode, bridgeToken],
+    )
 
     const renderWebView = useCallback(() => {
         return (
@@ -390,6 +394,7 @@ export const PWWebView = (props: PWWebViewProps) => {
                 thirdPartyCookiesEnabled={false}
                 mixedContentMode='never'
                 {...rest}
+                // oxlint-disable-next-line pera/no-unvalidated-open-url -- the url prop is checked at each <PWWebView> by this rule
                 source={{
                     uri: loadableUrl,
                 }}
@@ -397,6 +402,7 @@ export const PWWebView = (props: PWWebViewProps) => {
                 // default http(s) whitelist hands custom-scheme URLs straight to
                 // the OS before the guard runs, bypassing the origin check. With
                 // '*' the guard is the sole decision point.
+                // oxlint-disable-next-line pera/no-unvalidated-open-url -- the navigation guard decides every scheme (see above)
                 originWhitelist={['*']}
                 style={styles.webview}
                 renderLoading={() => (

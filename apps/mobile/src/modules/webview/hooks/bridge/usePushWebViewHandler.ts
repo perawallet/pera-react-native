@@ -37,7 +37,7 @@ export const usePushWebViewHandler = ({
     onBackRequested,
 }: UsePushWebViewHandlerParams): BridgeHandler => {
     const { t } = useLanguage()
-    const { pushWebView: pushWebViewContext } = useWebView()
+    const { pushWebView } = useWebView()
     const hasRequiredParams = useRequiredParams(webview)
 
     return useCallback(
@@ -81,7 +81,7 @@ export const usePushWebViewHandler = ({
                       }
                     : undefined
 
-            pushWebViewContext({
+            pushWebView({
                 url,
                 onCloseRequested,
                 onBackRequested,
@@ -91,7 +91,7 @@ export const usePushWebViewHandler = ({
             })
         },
         [
-            pushWebViewContext,
+            pushWebView,
             onCloseRequested,
             onBackRequested,
             hasRequiredParams,

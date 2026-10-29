@@ -32,6 +32,11 @@ const FEE_PRESET_LABELS: Record<FeePreset, I18nKey> = {
     fast: i18nKey('send_funds.fee.fast'),
 }
 
+type GasFeeEditorProps = Pick<
+    FeeRowProps,
+    'scope' | 'selectedPreset' | 'onPresetChange' | 'accessory'
+> & { presets: Record<FeePreset, FeePresetEstimate> }
+
 // Full width rather than a KeyValueRow: the value column there is too narrow
 // for a tier, its wait and two amounts on a small screen.
 export const GasFeeEditor = ({
@@ -40,10 +45,7 @@ export const GasFeeEditor = ({
     selectedPreset,
     onPresetChange,
     accessory,
-}: Pick<
-    FeeRowProps,
-    'scope' | 'selectedPreset' | 'onPresetChange' | 'accessory'
-> & { presets: Record<FeePreset, FeePresetEstimate> }) => {
+}: GasFeeEditorProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
 

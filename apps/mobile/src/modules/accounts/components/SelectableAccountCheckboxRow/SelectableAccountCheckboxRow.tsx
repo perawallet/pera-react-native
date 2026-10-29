@@ -26,6 +26,7 @@ export type SelectableAccountCheckboxRowProps = {
     title: string
     titleCopyValue?: string
     subtitle?: string
+    details?: ReactNode
     badge?: ReactNode
     leadingIcon?: ReactNode
     isSelected: boolean
@@ -42,6 +43,7 @@ export const SelectableAccountCheckboxRow = ({
     title,
     titleCopyValue,
     subtitle,
+    details,
     badge,
     leadingIcon,
     isSelected,
@@ -96,6 +98,7 @@ export const SelectableAccountCheckboxRow = ({
                         {subtitle}
                     </PWText>
                 )}
+                {details}
             </PWView>
 
             {!!onInfoPress && (

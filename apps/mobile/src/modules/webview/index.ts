@@ -20,7 +20,6 @@ export {
     type WebViewRequest,
 } from './hooks/useWebViewStore'
 export {
-    isSafeBrowserUrl,
     isSafeRelativePath,
     isTrustedWebviewOrigin,
     openValidatedBrowserUrl,
@@ -30,3 +29,4 @@ export {
     resolveWebviewLanguage,
     withLanguageParam,
 } from './hooks/webviewLanguage'
+export { webViewScript, type WebViewScript } from './utils/webViewScript'

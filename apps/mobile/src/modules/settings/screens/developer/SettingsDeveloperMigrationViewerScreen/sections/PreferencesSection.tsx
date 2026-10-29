@@ -45,13 +45,15 @@ const PREFERENCE_KEYS: Array<keyof LegacyPreferences> = [
     'swapTermsAccepted',
 ]
 
+type PreferencesSectionProps = {
+    preferences: LegacyPreferences
+    rn: RNMigrationSnapshot
+}
+
 export const PreferencesSection = ({
     preferences,
     rn,
-}: {
-    preferences: LegacyPreferences
-    rn: RNMigrationSnapshot
-}) => {
+}: PreferencesSectionProps) => {
     return (
         <MigrationDataSection
             title='Preferences'

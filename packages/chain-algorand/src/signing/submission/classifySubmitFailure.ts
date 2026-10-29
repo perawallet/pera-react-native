@@ -30,7 +30,7 @@ export type SubmitFailureOutcome =
 
 /**
  * Turns a raw submit throw into either proof of success or a classified
- * failure. `source` only labels the log line, so each submit path stays
+ * failure. `source` only labels the log context, so each submit path stays
  * distinguishable in the field.
  */
 export const classifySubmitFailure = (
@@ -41,7 +41,8 @@ export const classifySubmitFailure = (
     const algodError = toAlgodError(error)
     // The SubmissionError surfaces only the classification; log the node's
     // actual response so no-verdict failures stay diagnosable in the field.
-    logger.warn(`${source}: submit failed`, {
+    logger.warn('Submit failed', {
+        source,
         code: algodError.code,
         message: algodError.message,
     })

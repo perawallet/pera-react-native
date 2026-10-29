@@ -325,6 +325,11 @@
       "rules": { "no-console": "error" }
     },
     {
+      "files": ["packages/*/src/**", "extensions/*/src/**", "apps/browser/src/**"],
+      "excludeFiles": ["**/__tests__/**", "**/__mocks__/**", "**/test-utils/**", "**/__integration__/**", "**/*.spec.{ts,tsx}", "**/*.test.{ts,tsx}"],
+      "rules": { "pera/logger-static-message": "error" }
+    },
+    {
       "files": ["packages/*/src/**", "extensions/*/src/**"],
       "excludeFiles": ["**/__tests__/**", "**/__mocks__/**", "**/test-utils/**", "**/__integration__/**", "**/*.spec.{ts,tsx}", "**/*.test.{ts,tsx}"],
       "rules": { "pera/typed-domain-errors": "error" }
@@ -355,6 +360,11 @@
         "packages/backup/src/cloud/hooks/useResolveHdSeedForBackup.ts"
       ],
       "rules": { "pera/hd-derive-claimed": "error" }
+    },
+    {
+      "files": ["packages/security/src/**", "extensions/keystore-chrome/src/vault/**"],
+      "excludeFiles": ["**/__tests__/**", "**/*.spec.{ts,tsx}", "**/*.test.{ts,tsx}"],
+      "rules": { "pera/monotonic-lockout-clock": "error" }
     },
     {
       "files": ["**/__tests__/**", "**/*.spec.{ts,tsx}", "**/__integration__/**", "**/vitest*.ts"],

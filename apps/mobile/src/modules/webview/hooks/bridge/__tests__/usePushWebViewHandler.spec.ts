@@ -18,6 +18,8 @@ import {
     bridgeMessage,
     createMockWebview,
     injectedScript,
+    INVALID_PARAMS_CODE,
+    lastMessage,
     languageMockValue,
     lastAction,
 } from './fixtures'
@@ -144,9 +146,12 @@ describe('usePushWebViewHandler', () => {
             )
 
             expect(mockPushWebView).not.toHaveBeenCalled()
-            const sent = injectedScript(webview)
-            expect(sent).toContain('"code":-32602')
-            expect(sent).toContain(`Unsupported URL: ${url}`)
+            expect(lastMessage(webview)).toMatchObject({
+                error: {
+                    code: INVALID_PARAMS_CODE,
+                    message: `Unsupported URL: ${url}`,
+                },
+            })
         },
     )
 

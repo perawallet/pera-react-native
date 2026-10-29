@@ -54,7 +54,10 @@ void i18n.use(initReactI18next).init({
     saveMissing: __DEV__,
     missingKeyHandler: __DEV__
         ? (_languages, namespace, key) => {
-              logger.warn(`[i18n] missing key: ${namespace}:${key}`)
+              logger.warn('[i18n] missing key', {
+                  namespace,
+                  translationKey: key,
+              })
           }
         : undefined,
 })

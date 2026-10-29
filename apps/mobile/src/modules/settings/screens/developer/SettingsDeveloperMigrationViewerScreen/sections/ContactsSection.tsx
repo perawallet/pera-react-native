@@ -18,13 +18,12 @@ import { MigrationDataRow } from '../components/MigrationDataRow'
 import { MigrationDataSubBlock } from '../components/MigrationDataSubBlock'
 import type { RNMigrationSnapshot } from '../useRNMigrationSnapshot'
 
-export const ContactsSection = ({
-    contacts,
-    rn,
-}: {
+type ContactsSectionProps = {
     contacts: LegacyContact[]
     rn: RNMigrationSnapshot
-}) => {
+}
+
+export const ContactsSection = ({ contacts, rn }: ContactsSectionProps) => {
     return (
         <MigrationDataSection
             title='Contacts'

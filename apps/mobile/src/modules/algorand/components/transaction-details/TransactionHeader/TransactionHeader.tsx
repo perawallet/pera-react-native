@@ -24,13 +24,15 @@ import { TransactionIcon } from '@components/TransactionIcon'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { algorandTransactionIconName } from '@modules/algorand/icons'
 
+type TransactionHeaderProps = {
+    transaction: AlgorandTransactionView
+    isInnerTransaction?: boolean
+}
+
 export const TransactionHeader = ({
     transaction,
     isInnerTransaction = false,
-}: {
-    transaction: AlgorandTransactionView
-    isInnerTransaction?: boolean
-}) => {
+}: TransactionHeaderProps) => {
     const { t } = useLanguage()
     const styles = useStyles()
     const blockTime = useMemo(

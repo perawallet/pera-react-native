@@ -15,11 +15,11 @@ import { MigrationDataSection } from '../components/MigrationDataSection'
 import { EmptyDataHint } from '../components/EmptyDataHint'
 import { MigrationDataRow } from '../components/MigrationDataRow'
 
-export const RawFlagsSection = ({
-    rawFlags,
-}: {
+type RawFlagsSectionProps = {
     rawFlags: LegacyPreferences['rawFlags']
-}) => {
+}
+
+export const RawFlagsSection = ({ rawFlags }: RawFlagsSectionProps) => {
     const entries = Object.entries(rawFlags)
     return (
         <MigrationDataSection

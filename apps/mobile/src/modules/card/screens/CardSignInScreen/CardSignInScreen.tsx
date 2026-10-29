@@ -98,8 +98,8 @@ export const CardSignInScreen = () => {
                                 )}
                                 secureTextEntry
                                 showVisibilityToggle
-                                autoCapitalize='none'
-                                autoCorrect={false}
+                                isSensitive
+                                autoComplete='current-password'
                                 renderErrorMessage
                                 errorStyle={styles.errorMessage}
                                 errorMessage={

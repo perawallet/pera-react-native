@@ -88,14 +88,20 @@ describe('parseChainOverrides', () => {
     ])('ignores %s and warns once', (_, json) => {
         const warn = vi.spyOn(logger, 'warn').mockImplementation(() => {})
 
-        expect(parseChainOverrides(json, `${KEY}_${json}`)).toEqual({
+        const remoteConfigKey = `${KEY}_${json}`
+
+        expect(parseChainOverrides(json, remoteConfigKey)).toEqual({
             capabilities: {},
         })
-        expect(parseChainOverrides(json, `${KEY}_${json}`)).toEqual({
+        expect(parseChainOverrides(json, remoteConfigKey)).toEqual({
             capabilities: {},
         })
 
         expect(warn).toHaveBeenCalledTimes(1)
+        expect(warn).toHaveBeenCalledWith(
+            'Ignoring malformed chain overrides',
+            expect.objectContaining({ remoteConfigKey }),
+        )
         warn.mockRestore()
     })
 })

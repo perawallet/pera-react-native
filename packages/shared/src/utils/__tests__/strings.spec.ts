@@ -468,16 +468,16 @@ describe('utils/strings - decodeLongString', () => {
     test('warns with the supplied field name when input exceeds MAX_SAFE_INTEGER', () => {
         decodeLongString('9999999999999999', 'lastSeenNotificationId')
         expect(logger.warn).toHaveBeenCalledWith(
-            expect.stringContaining(
-                'lastSeenNotificationId: value "9999999999999999" exceeds Number.MAX_SAFE_INTEGER',
-            ),
+            expect.stringContaining('exceeds Number.MAX_SAFE_INTEGER'),
+            { field: 'lastSeenNotificationId', value: '9999999999999999' },
         )
     })
 
     test('uses "decodeLongString" as the label when fieldName is omitted', () => {
         decodeLongString('9999999999999999')
         expect(logger.warn).toHaveBeenCalledWith(
-            expect.stringContaining('decodeLongString: value'),
+            expect.any(String),
+            expect.objectContaining({ field: 'decodeLongString' }),
         )
     })
 
