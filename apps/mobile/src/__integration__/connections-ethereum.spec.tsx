@@ -616,91 +616,51 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                     return { walletKit, request }
                 }
 
-                describe('with contractDecoding on', () => {
-                    beforeEach(() => {
-                        // One override per chain, so dappConnect is restated.
-                        setCapabilityOverrides(
-                            { dappConnect: true, contractDecoding: true },
-                            'ethereum',
-                        )
-                    })
-
-                    it('Given a dApp approves a spender for unlimited USDC, when it is reviewed, then it reads as an approval with the unlimited warning and approving it answers the dApp', async () => {
-                        const { walletKit, request } = await reviewApproval()
-
-                        await waitFor(() => {
-                            expect(
-                                screen.getAllByTestId(
-                                    'message-signing-spend-approval-warning',
-                                ),
-                            ).not.toHaveLength(0)
-                        })
-                        expect(
-                            screen.getAllByText(
-                                'transactions.list_item.approval',
-                            ),
-                        ).not.toHaveLength(0)
-                        expect(
-                            screen.getAllByText(
-                                'signing.spend_approval.unlimited',
-                            ),
-                        ).not.toHaveLength(0)
-                        await waitFor(() => {
-                            expect(
-                                screen.getAllByText('USDC'),
-                            ).not.toHaveLength(0)
-                        })
-                        expect(
-                            screen.queryByTestId(
-                                'ethereum_contract_call_warning',
-                            ),
-                        ).toBeNull()
-
-                        fireEvent.click(
-                            screen.getAllByTestId(
-                                'message-signing-spend-approval-warning',
-                            )[0],
-                        )
-                        await waitFor(() => {
-                            expect(
-                                screen.getAllByTestId(
-                                    'message-signing-spend-approval-row-unlimited',
-                                ),
-                            ).not.toHaveLength(0)
-                        })
-
-                        await act(async () => {
-                            await request.approve([], { txIds: [HASH] })
-                        })
-                        await waitFor(() => {
-                            expect(answerOf(walletKit)).toMatchObject({
-                                id: 7,
-                                result: HASH,
-                            })
-                        })
-                    })
-                })
-
-                it('Given contractDecoding is off, when the same approval is reviewed, then it is still an unrecognised contract call', async () => {
-                    await reviewApproval()
+                it('Given the shipped Ethereum capabilities, when a dApp approves a spender for unlimited USDC, then it reads as an approval with the unlimited warning and approving it answers the dApp', async () => {
+                    const { walletKit, request } = await reviewApproval()
 
                     await waitFor(() => {
                         expect(
                             screen.getAllByTestId(
-                                'ethereum_contract_call_warning',
+                                'message-signing-spend-approval-warning',
                             ),
                         ).not.toHaveLength(0)
                     })
                     expect(
-                        screen.getAllByText(
-                            'transactions.list_item.contract_call',
-                        ),
+                        screen.getAllByText('transactions.list_item.approval'),
                     ).not.toHaveLength(0)
                     expect(
-                        screen.queryByTestId(
-                            'message-signing-spend-approval-warning',
-                        ),
+                        screen.getAllByText('signing.spend_approval.unlimited'),
+                    ).not.toHaveLength(0)
+                    await waitFor(() => {
+                        expect(screen.getAllByText('USDC')).not.toHaveLength(0)
+                    })
+                    expect(
+                        screen.queryByTestId('ethereum_contract_call_warning'),
                     ).toBeNull()
+
+                    fireEvent.click(
+                        screen.getAllByTestId(
+                            'message-signing-spend-approval-warning',
+                        )[0],
+                    )
+                    await waitFor(() => {
+                        expect(
+                            screen.getAllByTestId(
+                                'message-signing-spend-approval-row-unlimited',
+                            ),
+                        ).not.toHaveLength(0)
+                    })
+
+                    await act(async () => {
+                        await request.approve([], { txIds: [HASH] })
+                    })
+                    await waitFor(() => {
+                        expect(answerOf(walletKit)).toMatchObject({
+                            id: 7,
+                            result: HASH,
+                        })
+                    })
                 })
             })
 

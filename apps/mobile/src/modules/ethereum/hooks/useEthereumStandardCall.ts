@@ -27,7 +27,6 @@ import {
     type EvmNftItem,
     type EvmStandardCall,
 } from '@perawallet/wallet-core-chain-ethereum'
-import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useBaseUnitsAmount } from '@hooks/useBaseUnitsAmount'
 
@@ -234,17 +233,16 @@ const present = (
 }
 
 /**
- * Reads the decoded call only while `contractDecoding` is on. The calldata
- * can't say whether `approve` or `transferFrom` moves an amount or a token id,
- * so the token's own records decide: a fungible record first, then an NFT
- * record for that id, and neither means an unknown token shown in base units.
+ * The calldata can't say whether `approve` or `transferFrom` moves an amount
+ * or a token id, so the token's own records decide: a fungible record first,
+ * then an NFT record for that id, and neither means an unknown token shown in
+ * base units.
  */
 export const useEthereumStandardCall = (
     view: Nullable<EthereumTransactionView>,
     scope: ChainScope,
 ): UseEthereumStandardCallResult => {
-    const isDecoding = useChainCapability(scope.chainId, 'contractDecoding')
-    const call = isDecoding ? view?.call : undefined
+    const call = view?.call
 
     const fungible = useBaseUnitsAmount(
         call && isFungibleCandidate(call) ? call.contract : '',

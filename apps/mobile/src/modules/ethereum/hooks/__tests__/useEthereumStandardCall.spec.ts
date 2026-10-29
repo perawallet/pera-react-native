@@ -19,15 +19,7 @@ import type {
     EthereumTransactionView,
     EvmStandardCall,
 } from '@perawallet/wallet-core-chain-ethereum'
-import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 import { useEthereumStandardCall } from '../useEthereumStandardCall'
-
-vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
-    ...(await importOriginal<
-        typeof import('@perawallet/wallet-core-chain-shared')
-    >()),
-    useChainCapability: vi.fn(),
-}))
 
 const SCOPE: ChainScope = { chainId: 'ethereum', networkId: 'mainnet' }
 const SIGNER = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'
@@ -87,22 +79,7 @@ const render = (call: EvmStandardCall) =>
 
 describe('useEthereumStandardCall', () => {
     beforeEach(() => {
-        vi.mocked(useChainCapability).mockReturnValue(true)
         mockRecords({})
-    })
-
-    it('reads nothing while contractDecoding is off', () => {
-        vi.mocked(useChainCapability).mockReturnValue(false)
-        mockRecords({ [TOKEN]: USDC })
-
-        expect(render(approve(5n))).toEqual({
-            standardCall: null,
-            isLoading: false,
-        })
-        expect(useChainCapability).toHaveBeenCalledWith(
-            'ethereum',
-            'contractDecoding',
-        )
     })
 
     it('reads nothing from a view without a decoded call', () => {

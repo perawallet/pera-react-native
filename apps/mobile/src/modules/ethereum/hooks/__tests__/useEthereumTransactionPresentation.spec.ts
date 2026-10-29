@@ -17,7 +17,6 @@ import { useFindAccountByAddress } from '@perawallet/wallet-core-accounts'
 import { useSingleAssetDetailsQuery } from '@perawallet/wallet-core-assets'
 import type { TransactionNative } from '@perawallet/wallet-core-chain-contract'
 import type { EvmStandardCall } from '@perawallet/wallet-core-chain-ethereum'
-import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 import { registerEthereumChain } from '@test-utils/chain-fixtures'
 import {
     ETHEREUM_FIXTURE_NFT_ID,
@@ -28,13 +27,6 @@ import {
     type EthereumDisplayFixtureKind,
 } from '@test-utils/ethereum-display-fixtures'
 import { useEthereumTransactionPresentation } from '../useEthereumTransactionPresentation'
-
-vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
-    ...(await importOriginal<
-        typeof import('@perawallet/wallet-core-chain-shared')
-    >()),
-    useChainCapability: vi.fn(),
-}))
 
 const USDC = { assetId: ETHEREUM_FIXTURE_TOKEN, decimals: 6, unitName: 'USDC' }
 
@@ -55,6 +47,7 @@ describe('useEthereumTransactionPresentation', () => {
             'token-transfer',
             'nft-transfer',
             'contract-call',
+            'approval',
             'contract-creation',
         ] as const) {
             natives[kind] = await reviewEthereumFixture(kind)
@@ -64,7 +57,6 @@ describe('useEthereumTransactionPresentation', () => {
     beforeEach(() => {
         mockAssetQuery({ data: null, isPending: false })
         vi.mocked(useFindAccountByAddress).mockReturnValue(null)
-        vi.mocked(useChainCapability).mockReturnValue(false)
     })
 
     it('presents a transfer as a send of the recipient and the ether moved', () => {
@@ -250,22 +242,18 @@ describe('useEthereumTransactionPresentation', () => {
         expect(malformed.result.current).toBeNull()
     })
 
-    describe('with contractDecoding on', () => {
+    describe('a decoded standard call', () => {
         const HOLDER = '0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC'
 
-        // The contract-call fixture is a dApp approve, so its view already
+        // The approval fixture is a dApp approve, so its view already
         // carries the decoded call; these swap in other calls on the same target.
         const callNative = (call?: EvmStandardCall): TransactionNative => {
-            const native = natives['contract-call']
+            const native = natives.approval
             const transaction = native.transaction as Record<string, unknown>
             return call
                 ? { ...native, transaction: { ...transaction, call } }
                 : native
         }
-
-        beforeEach(() => {
-            vi.mocked(useChainCapability).mockReturnValue(true)
-        })
 
         it('presents an approve as an approval to its spender, not a transfer', () => {
             mockAssetQuery({ data: USDC, isPending: false })
@@ -381,19 +369,5 @@ describe('useEthereumTransactionPresentation', () => {
             expect(result.current?.amount).toBeUndefined()
             expect(result.current?.isAmountLoading).toBe(false)
         })
-    })
-
-    it('keeps a decoded call an unrecognised contract call while contractDecoding is off', () => {
-        mockAssetQuery({ data: USDC, isPending: false })
-
-        const { result } = renderHook(() =>
-            useEthereumTransactionPresentation(natives['contract-call']),
-        )
-
-        expect(result.current?.titleKey).toBe(
-            'transactions.list_item.contract_call',
-        )
-        expect(result.current?.standardCall).toBeNull()
-        expect(result.current?.isTransfer).toBe(false)
     })
 })

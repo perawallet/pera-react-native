@@ -361,10 +361,7 @@ describe('Flow: a dApp request names a scam address or a look-alike of a known o
                     { id: 'carol', name: 'Carol', addresses: { evm: CONTACT } },
                 ],
             })
-            setCapabilityOverrides(
-                { dappConnect: true, contractDecoding: true },
-                'ethereum',
-            )
+            setCapabilityOverrides({ dappConnect: true }, 'ethereum')
             vi.spyOn(kmsCore, 'sign').mockImplementation(async (_id, payload) =>
                 vectorSignature(payload),
             )
@@ -440,8 +437,8 @@ describe('Flow: a dApp request names a scam address or a look-alike of a known o
             await expectHeldUntilAcknowledged(TRANSACTION_SLIDE)
         })
 
-        // The last two are permits the spend-approval parser can't read, so
-        // only the schema walk names their spender.
+        // The last is a permit the spend-approval parser can't read, so only
+        // the schema walk names its spender.
         it.each([
             ['a Permit2 signature', PERMIT2_SINGLE_UNLIMITED_TYPED_DATA],
             ['a DAI permit', DAI_PERMIT_TYPED_DATA],
