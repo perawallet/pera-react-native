@@ -101,11 +101,12 @@ const matchesPreview = (
         const shown = readEvmReviewTransaction(preview, chain)
         const [builtTo, shownTo] = [built.transaction.to, shown.transaction.to]
         const shownFee = shown.transaction.maxFeePerGas
-        const ceiling = shown.isPreview
-            ? shown.maxFeePerGasCeiling
-            : shownFee === undefined
-              ? undefined
-              : shownFee * BATCH_FEE_CEILING_MULTIPLIER
+        const ceilingOf = () => {
+            if (shown.isPreview) return shown.maxFeePerGasCeiling
+            if (shownFee === undefined) return undefined
+            return shownFee * BATCH_FEE_CEILING_MULTIPLIER
+        }
+        const ceiling = ceilingOf()
         const builtFee = built.transaction.maxFeePerGas
         return (
             ceiling !== undefined &&

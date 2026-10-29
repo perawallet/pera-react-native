@@ -32,7 +32,7 @@ import {
 } from '@perawallet/wallet-core-backup'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import { useSecurityStore } from '@perawallet/wallet-core-security'
+import { isAppLocked, useSecurityStore } from '@perawallet/wallet-core-security'
 import {
     isPasskeyKey,
     keystoreEntriesFingerprint,
@@ -217,7 +217,7 @@ const useBackupSyncManagerSetup = () => {
             resolveMnemonic: account => latest.current.resolveMnemonic(account),
             resolvePrivateKey: (chainId, keyPairId) =>
                 latest.current.resolvePrivateKey(chainId, keyPairId),
-            isLocked: () => useSecurityStore.getState().isAppLockActive,
+            isLocked: isAppLocked,
             listPasskeys: () => latest.current.listPasskeys(),
             importPasskeys: passkeys => latest.current.importPasskeys(passkeys),
             subscribePasskeyChanges,

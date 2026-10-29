@@ -15,8 +15,8 @@ import { getSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import {
     hydrateConnectionsStore,
+    reloadConnections,
     setActiveConnectionRegistry,
-    useConnectionsStore,
     type ConnectionRegistryClient,
 } from '@perawallet/wallet-core-connections'
 import {
@@ -77,9 +77,7 @@ export const useConnectionsProvider = (): ConnectionRegistryClient => {
         const stopWatching = onLocalStorageKeyChanged(
             [CONNECTIONS_KV_KEY],
             () => {
-                void store
-                    .list()
-                    .then(useConnectionsStore.getState().setConnections)
+                void reloadConnections(store)
             },
         )
         return () => {

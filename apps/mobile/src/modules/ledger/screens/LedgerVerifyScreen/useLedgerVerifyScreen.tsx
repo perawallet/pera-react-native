@@ -24,7 +24,10 @@ import {
     isWatchAccount,
     type LedgerSelectableAccount,
     recordAuthority,
-    useAccountsStore,
+    addHardwareChainAccount,
+    getAllAccounts,
+    updateHardwareDetails,
+    upgradeWatchAccountToHardware,
     useSelectedAccountId,
     useSetAccounts,
     type WalletAccount,
@@ -317,7 +320,7 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
     )
 
     const runAdd = useCallback(async () => {
-        const current = useAccountsStore.getState().accounts
+        const current = getAllAccounts()
         // Through the chain's codec: an EVM device reports a checksummed
         // address the wallet may hold in another case.
         const heldAt = (address: string) =>
@@ -502,9 +505,8 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
         const joinIdOf = (targetClaims: readonly LedgerHolderClaim[]) =>
             targetClaims.find(claim => proven.has(claim.holderId))?.holderId
 
-        const store = useAccountsStore.getState()
         upgrades.forEach((upgrade, i) => {
-            store.upgradeWatchAccountToHardware(
+            upgradeWatchAccountToHardware(
                 upgrade.id,
                 upgrade.details,
                 chainId,
@@ -512,7 +514,7 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
             )
         })
         rebinds.forEach((rebind, i) => {
-            store.updateHardwareDetails(
+            updateHardwareDetails(
                 rebind.id,
                 rebind.details,
                 chainId,
@@ -520,8 +522,8 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
             )
         })
         for (const [i, { address, details }] of hardwareEntries.entries()) {
-            const before = useAccountsStore.getState().accounts.length
-            store.addHardwareChainAccount(
+            const before = getAllAccounts().length
+            addHardwareChainAccount(
                 details,
                 chainId,
                 address,
@@ -533,7 +535,7 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
             )
             // An entry joining the device's account keeps that account's
             // name, so only a created account uses up a number.
-            if (useAccountsStore.getState().accounts.length > before) {
+            if (getAllAccounts().length > before) {
                 nextDefaultNameNumber++
             }
         }
@@ -542,7 +544,7 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
             for (const { address, authorityAddress } of authorities) {
                 recordAuthority(scope, address, authorityAddress)
             }
-            setAccounts([...useAccountsStore.getState().accounts, ...batch])
+            setAccounts([...getAllAccounts(), ...batch])
         }
 
         if (
@@ -561,11 +563,7 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
             (batch[0] && chainAccountOf(batch[0], chainId)?.address) ??
             upgrades[0]?.address
         const selected = selectedAddress
-            ? findAccountByAddressOn(
-                  useAccountsStore.getState().accounts,
-                  chainId,
-                  selectedAddress,
-              )
+            ? findAccountByAddressOn(getAllAccounts(), chainId, selectedAddress)
             : undefined
         if (selected) {
             setSelectedAccountId(selected.id)

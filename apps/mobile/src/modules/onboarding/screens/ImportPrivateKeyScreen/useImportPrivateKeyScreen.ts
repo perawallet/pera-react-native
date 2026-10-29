@@ -15,7 +15,7 @@ import { useRoute, type RouteProp } from '@react-navigation/native'
 import {
     parsePrivateKey,
     isValidPrivateKeyInput,
-    useAccountsStore,
+    importAccountFromPrivateKey,
 } from '@perawallet/wallet-core-accounts'
 import { useCloudBackupStore } from '@perawallet/wallet-core-backup'
 import { zeroBytes } from '@perawallet/wallet-core-kms'
@@ -98,9 +98,10 @@ export const useImportPrivateKeyScreen =
                 try {
                     privateKey = parsePrivateKey(chainId, inputRef.current)
                     inputRef.current = ''
-                    const account = await useAccountsStore
-                        .getState()
-                        .importAccountFromPrivateKey(chainId, privateKey)
+                    const account = await importAccountFromPrivateKey(
+                        chainId,
+                        privateKey,
+                    )
                     if (!isMounted()) return
                     navigation.push('NameAccount', { account, chainId })
                 } catch (error) {

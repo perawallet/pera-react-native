@@ -48,6 +48,28 @@ export const useSettingsOptions = () => {
     const canRekey = useCapability(rekeyRequirementFor(LEGACY_CHAIN_ID))
 
     const settingsOptions = useMemo<SettingsOptionSection[]>(() => {
+        const connectionsEntriesOf = (): SettingsOptionItem[] => {
+            if (routeCapabilities.connectionsSettings) {
+                return [
+                    {
+                        route: 'ConnectionsSettings',
+                        icon: 'globe',
+                        title: t('settings.main.connections_title'),
+                    },
+                ]
+            }
+            if (routeCapabilities.walletConnectSettings) {
+                return [
+                    {
+                        route: 'WalletConnectSettings',
+                        icon: 'wallet-connect',
+                        title: t('settings.main.wallet_connect_title'),
+                    },
+                ]
+            }
+            return []
+        }
+
         const sections: SettingsOptionSection[] = [
             {
                 title: t('settings.main.account_section'),
@@ -88,25 +110,7 @@ export const useSettingsOptions = () => {
                     // regardless of their own capability flags. The
                     // underlying routes/screens are untouched for direct
                     // navigation elsewhere (e.g. a WC pairing flow).
-                    ...(routeCapabilities.connectionsSettings
-                        ? [
-                              {
-                                  route: 'ConnectionsSettings',
-                                  icon: 'globe',
-                                  title: t('settings.main.connections_title'),
-                              } satisfies SettingsOptionItem,
-                          ]
-                        : routeCapabilities.walletConnectSettings
-                          ? [
-                                {
-                                    route: 'WalletConnectSettings',
-                                    icon: 'wallet-connect',
-                                    title: t(
-                                        'settings.main.wallet_connect_title',
-                                    ),
-                                } satisfies SettingsOptionItem,
-                            ]
-                          : []),
+                    ...connectionsEntriesOf(),
                     ...(routeCapabilities.passkeysAutofillSettings
                         ? [
                               {

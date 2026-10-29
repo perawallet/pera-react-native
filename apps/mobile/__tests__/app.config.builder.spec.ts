@@ -69,6 +69,8 @@ describe('buildAppConfig — refactor invariants', () => {
         )
         expect(build({ APP_ENV: 'staging' }).extra.appVariant).toBe('staging')
         expect(build({}).extra.appVariant).toBe('dev')
+        expect(build({ APP_ENV: 'qa' }).extra.appVariant).toBe('dev')
+        expect(build({ APP_ENV: 'constructor' }).extra.appVariant).toBe('dev')
     })
 
     it('propagates IOS_TEAM_ID to the app and the passkey plugin from one source', () => {

@@ -621,12 +621,20 @@ const resolveChainEntry = async (
     if (custody.kind === 'hardware' && deviceAddress === undefined) {
         throw new DeviceAddressRequiredError(chainId)
     }
-    const held =
-        custody.kind === 'hardware'
-            ? deviceAddress
-            : custody.kind === 'watch'
-              ? firstHeldAddress(account)
-              : undefined
+    const heldAddressOf = () => {
+        switch (custody.kind) {
+            case 'hardware': {
+                return deviceAddress
+            }
+            case 'watch': {
+                return firstHeldAddress(account)
+            }
+            default: {
+                return undefined
+            }
+        }
+    }
+    const held = heldAddressOf()
     const codec = addressCodecs.get(chainId)
     if (held === undefined || !codec.isValid(held, networkId)) {
         throw new ChainNotEligibleError(account.id, chainId)

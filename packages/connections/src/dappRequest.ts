@@ -11,7 +11,12 @@
  */
 
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
+import {
+    AppError,
+    ErrorCategory,
+    type Nullable,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
 import {
     createChainAdapterRegistry,
     type ChainId,
@@ -49,11 +54,11 @@ export const DAPP_REQUEST_FAILURES = [
 
 export type DappRequestFailure = (typeof DAPP_REQUEST_FAILURES)[number]
 
-export class DappRequestRejectedError extends Error {
+export class DappRequestRejectedError extends AppError {
     readonly failure = 'user-rejected' as const
 
     constructor() {
-        super('User rejected')
+        super('User rejected', { category: ErrorCategory.CONNECTIONS })
         this.name = 'DappRequestRejectedError'
     }
 }
@@ -62,24 +67,26 @@ export class DappRequestRejectedError extends Error {
  * The wallet refused the request without the user declining it. Absent a
  * `failure`, the dApp gets its namespace's generic internal error.
  */
-export class DappRequestFailedError extends Error {
+export class DappRequestFailedError extends AppError {
     readonly failure?: Exclude<DappRequestFailure, 'user-rejected'>
 
     constructor(
         message: string,
         failure?: Exclude<DappRequestFailure, 'user-rejected'>,
     ) {
-        super(message)
+        super(message, { category: ErrorCategory.CONNECTIONS })
         this.name = 'DappRequestFailedError'
         this.failure = failure
     }
 }
 
-export class PendingRequestCapacityError extends Error {
+export class PendingRequestCapacityError extends AppError {
     readonly failure = 'limit-exceeded' as const
 
     constructor() {
-        super('Too many requests are already open')
+        super('Too many requests are already open', {
+            category: ErrorCategory.CONNECTIONS,
+        })
         this.name = 'PendingRequestCapacityError'
     }
 }

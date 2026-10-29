@@ -201,25 +201,19 @@ export const toCheckPortMessage = (
     }
 }
 
+const FRAME_EVENT_BY_PAGE_EVENT: Partial<
+    Record<CheckPageMessage['event'], IntegrityFrameEvent>
+> = {
+    'interactive-required': 'expand',
+    'interactive-done': 'collapse',
+    solved: 'finished',
+    error: 'finished',
+}
+
 export const frameEventFor = (
     message: CheckPageMessage,
-): Nullable<IntegrityFrameEvent> => {
-    switch (message.event) {
-        case 'interactive-required': {
-            return 'expand'
-        }
-        case 'interactive-done': {
-            return 'collapse'
-        }
-        case 'solved':
-        case 'error': {
-            return 'finished'
-        }
-        default: {
-            return null
-        }
-    }
-}
+): Nullable<IntegrityFrameEvent> =>
+    FRAME_EVENT_BY_PAGE_EVENT[message.event] ?? null
 
 export const parseCheckPortMessage = (
     data: unknown,

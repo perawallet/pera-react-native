@@ -12,7 +12,9 @@
 
 import { describe, expect, it, beforeEach } from 'vitest'
 import {
+    readCloudBackupImportedKey,
     readCloudBackupRestoreMnemonic,
+    setCloudBackupImportedKey,
     useCloudBackupRestoreDraftStore,
 } from '../draftStore'
 
@@ -80,5 +82,17 @@ describe('useCloudBackupRestoreDraftStore', () => {
         useCloudBackupRestoreDraftStore.getState().setMnemonic(WORDLIST_PHRASE)
 
         expect(replacedBytes.every(byte => byte === 0)).toBe(true)
+    })
+
+    it('round-trips the imported key', () => {
+        const importedKey = {
+            salt: 'c2FsdA==',
+            argon2id: { iterations: 3, memoryKiB: 65536, parallelism: 1 },
+        } as unknown as Parameters<typeof setCloudBackupImportedKey>[0]
+        expect(readCloudBackupImportedKey()).toBeNull()
+
+        setCloudBackupImportedKey(importedKey)
+
+        expect(readCloudBackupImportedKey()).toBe(importedKey)
     })
 })

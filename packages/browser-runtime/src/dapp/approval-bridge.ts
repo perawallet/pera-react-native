@@ -32,7 +32,12 @@ import {
     type WireWalletOperationResult,
 } from '../connections/protocol'
 import { isTrustedExtensionPageSender } from '@perawallet/wallet-extension-platform-chrome/messaging'
-import type { Optional, Nullable } from '@perawallet/wallet-core-shared'
+import {
+    AppError,
+    ErrorCategory,
+    type Optional,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import type {
     PasskeyDecision,
     PasskeyCreateApprovalContext,
@@ -213,9 +218,9 @@ export const toWalletFailure = (
     )
 
 /** Callers surface this to the dApp as a declined request rather than opening a surface. */
-export class ApprovalRejectedError extends Error {
+export class ApprovalRejectedError extends AppError {
     constructor(message: string) {
-        super(message)
+        super(message, { category: ErrorCategory.CONNECTIONS })
         this.name = 'ApprovalRejectedError'
     }
 }

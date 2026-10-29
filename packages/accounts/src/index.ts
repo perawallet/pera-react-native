@@ -38,6 +38,14 @@ export {
     useHoldingsRefreshStore,
     hydrateAccountChainStates,
     recordAuthority,
+    getAllAccounts,
+    getSelectedAccount,
+    getSelectedAccountId,
+    setSelectedAccountId,
+    importAccountFromPrivateKey,
+    addHardwareChainAccount,
+    upgradeWatchAccountToHardware,
+    updateHardwareDetails,
     type AccountChainStateSlice,
 } from './store'
 export {

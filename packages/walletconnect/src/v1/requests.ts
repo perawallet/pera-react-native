@@ -82,6 +82,24 @@ const requestAgeMs = (requestId: number): Optional<number> =>
         ? Date.now() - Math.floor(requestId / 1000)
         : undefined
 
+const legacySignDataVerdictOf = (
+    chainId: number | undefined,
+    params: unknown[],
+    scope: ChainScope,
+): GateResult => {
+    if (
+        isV1ChainIdAcceptable(chainId, scope) &&
+        legacyItemChainIdsAcceptable(params, scope)
+    ) {
+        return { ok: true }
+    }
+    return {
+        ok: false,
+        reason: 'chain id not acceptable on the active network',
+        code: 'invalid-network',
+    }
+}
+
 export const createV1RequestHandlers = (deps: {
     kit: HandlerKit
     connectors: Pick<WalletConnectConnectorRegistry, 'ensureReady'>
@@ -376,14 +394,11 @@ export const createV1RequestHandlers = (deps: {
         // `gateSignDataRequest` rejects the legacy array shape outright, so that
         // branch gets only the chain check; the registry validates its payload.
         const verdict: GateResult = Array.isArray(request.params)
-            ? isV1ChainIdAcceptable(connection.metadata.chainId, scope) &&
-              legacyItemChainIdsAcceptable(request.params, scope)
-                ? { ok: true }
-                : {
-                      ok: false,
-                      reason: 'chain id not acceptable on the active network',
-                      code: 'invalid-network',
-                  }
+            ? legacySignDataVerdictOf(
+                  connection.metadata.chainId,
+                  request.params,
+                  scope,
+              )
             : gateSignDataRequest({
                   payload,
                   scope,

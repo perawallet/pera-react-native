@@ -86,29 +86,32 @@ export const AccountActionsContent = ({
                   },
               ]
 
+    const sendActionOf = (): ActionRow | null => {
+        if (canSend) {
+            return {
+                id: 'send-transaction',
+                icon: 'transactions/send',
+                title: t('address_actions.send_transaction'),
+                subtitle: t('address_actions.send_transaction_subtitle'),
+                onPress: openSendTransaction,
+            }
+        }
+        if (sendUnavailableNote) {
+            return {
+                id: 'send-transaction',
+                icon: 'transactions/send',
+                title: t('address_actions.send_transaction'),
+                subtitle: sendUnavailableNote,
+                onPress: () => undefined,
+                isDisabled: true,
+            }
+        }
+        return null
+    }
+    const sendAction = sendActionOf()
+
     const actions: ActionRow[] = [
-        ...(canSend
-            ? [
-                  {
-                      id: 'send-transaction',
-                      icon: 'transactions/send' as const,
-                      title: t('address_actions.send_transaction'),
-                      subtitle: t('address_actions.send_transaction_subtitle'),
-                      onPress: openSendTransaction,
-                  },
-              ]
-            : sendUnavailableNote
-              ? [
-                    {
-                        id: 'send-transaction',
-                        icon: 'transactions/send' as const,
-                        title: t('address_actions.send_transaction'),
-                        subtitle: sendUnavailableNote,
-                        onPress: () => undefined,
-                        isDisabled: true,
-                    },
-                ]
-              : []),
+        ...(sendAction ? [sendAction] : []),
         ...(canAddWatchAccount
             ? [
                   {

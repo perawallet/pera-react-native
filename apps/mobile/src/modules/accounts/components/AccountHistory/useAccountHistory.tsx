@@ -144,11 +144,8 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
     const sources = useAccountHoldingSources(account)
     const selectedSource = useSelectedNetworkSource(sources)
     const scope = selectedSource?.scope ?? ownScope
-    const accountAddress = selectedSource
-        ? selectedSource.address
-        : account
-          ? addressOn(account, ownScope)
-          : undefined
+    const ownAddress = account ? addressOn(account, ownScope) : undefined
+    const accountAddress = selectedSource ? selectedSource.address : ownAddress
     const { hasInternet } = useNetworkStatus()
     const navigation =
         useNavigation<NativeStackNavigationProp<AppStackParamList>>()

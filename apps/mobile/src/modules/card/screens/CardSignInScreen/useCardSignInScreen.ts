@@ -16,11 +16,13 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import {
     getCardApiError,
     isAccountLockedError,
+    getCardOnboardingProgress,
+    isEscrowCardCreated,
     isInvalidCredentialsError,
     isInvalidInputError,
+    setCardOnboardingStep,
     signInSchema,
     useCardLoginMutation,
-    useCardStore,
     useRestoreEscrowCardMutation,
     useSendLoginOtpMutation,
     type SignInFormValues,
@@ -212,7 +214,7 @@ export const useCardSignInScreen = (): UseCardSignInScreenResult => {
                     // so the card gets created and bound, unless the backend
                     // already holds one made on another device.
                     const hasEscrowCard =
-                        useCardStore.getState().escrowCardAddress !== null ||
+                        isEscrowCardCreated() ||
                         (await restoreEscrowCardAsync(
                             accounts.flatMap(
                                 account =>
@@ -241,17 +243,17 @@ export const useCardSignInScreen = (): UseCardSignInScreenResult => {
                 // unfinished. Resume where the server is waiting, through the
                 // same router the onboarding steps use.
                 if (result.phase) {
-                    const store = useCardStore.getState()
+                    const progress = getCardOnboardingProgress()
                     const { screen, step } = getOnboardingNextRoute({
                         phase: result.phase,
                         verificationState: result.verificationState,
-                        countryIso: store.countryIso,
-                        localStep: store.onboardingStep,
+                        countryIso: progress.countryIso,
+                        localStep: progress.onboardingStep,
                         hasSession: false,
                         hasContactVerificationId:
-                            store.contactVerificationId !== null,
+                            progress.contactVerificationId !== null,
                     })
-                    store.setOnboardingStep(step)
+                    setCardOnboardingStep(step)
                     if (screen === 'CardOnboardingStatus') {
                         navigation.navigate('PeraCard', {
                             screen: 'CardOnboarding',

@@ -116,22 +116,25 @@ export const useResolveHdSeedForBackup = (
                 const scopeAddress = chainAccountOf(account, chainId)?.address
                 // Deriving commits the child key to the keystore, so a chain
                 // whose address carries the key skips it.
-                const publicKeyHex = !scopeKeyPairId
-                    ? null
-                    : scopeAddress && adapter.publicKeyHexOf
-                      ? adapter.publicKeyHexOf(scopeAddress)
-                      : await cached(
-                            publicKeys.current,
-                            `${chainId}|${scopeKeyPairId}`,
-                            async () => {
-                                const child = await adapter.deriveHdAccount(
-                                    kmsCore,
-                                    seedKeyId,
-                                    index,
-                                )
-                                return bytesToHex(child.publicKey)
-                            },
-                        )
+                const resolvePublicKeyHex = async () => {
+                    if (!scopeKeyPairId) return null
+                    if (scopeAddress && adapter.publicKeyHexOf) {
+                        return adapter.publicKeyHexOf(scopeAddress)
+                    }
+                    return cached(
+                        publicKeys.current,
+                        `${chainId}|${scopeKeyPairId}`,
+                        async () => {
+                            const child = await adapter.deriveHdAccount(
+                                kmsCore,
+                                seedKeyId,
+                                index,
+                            )
+                            return bytesToHex(child.publicKey)
+                        },
+                    )
+                }
+                const publicKeyHex = await resolvePublicKeyHex()
                 const readSecrets = async () => {
                     const entropyHex = await readEntropyHex(
                         executeWithMnemonic,

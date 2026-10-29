@@ -19,6 +19,7 @@ import {
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import {
     CardAccountLinkedElsewhereError,
+    setCardFundingSourceAddress,
     useCardStore,
     useFundingAddressLinkMutation,
 } from '@perawallet/wallet-core-card'
@@ -99,9 +100,7 @@ export const useStatusFundingSource = (
         // Consume the one-shot flag so it can't re-fire on later focuses.
         setParams({ autoConnectSelected: undefined })
         // Purely local, the card gets created and linked to this account by the Pera backend
-        useCardStore
-            .getState()
-            .setConnectedFundingSourceAddress(selectedAccountAddress)
+        setCardFundingSourceAddress(selectedAccountAddress)
     }, [
         autoConnectSelected,
         selectedAccountAddress,
@@ -151,9 +150,7 @@ export const useStatusFundingSource = (
                 }
                 trackEvent(CardEvent.CreateVerifyAccountSelect)
                 // Purely local, the card gets created and linked to this account by the Pera backend
-                useCardStore
-                    .getState()
-                    .setConnectedFundingSourceAddress(address)
+                setCardFundingSourceAddress(address)
             })()
         },
         [pickFundingSource, checkFundingAddress, showCardError, scope.chainId],

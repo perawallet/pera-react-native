@@ -107,12 +107,13 @@ const b64urlToBytes = (value: string): Uint8Array => {
 }
 
 /** Normalizes a WebAuthn `BufferSource` to a `Uint8Array` view. */
-const bufferSourceToBytes = (input: BufferSource): Uint8Array =>
-    input instanceof Uint8Array
-        ? input
-        : ArrayBuffer.isView(input)
-          ? new Uint8Array(input.buffer, input.byteOffset, input.byteLength)
-          : new Uint8Array(input)
+const bufferSourceToBytes = (input: BufferSource): Uint8Array => {
+    if (input instanceof Uint8Array) return input
+    if (ArrayBuffer.isView(input)) {
+        return new Uint8Array(input.buffer, input.byteOffset, input.byteLength)
+    }
+    return new Uint8Array(input)
+}
 
 const serializeDescriptor = (
     descriptor: PublicKeyCredentialDescriptor,

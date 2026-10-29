@@ -17,7 +17,12 @@ import {
     sealAesGcm,
     zeroBytes,
 } from '@perawallet/wallet-core-kms'
-import { encodeToBase64, type Nullable } from '@perawallet/wallet-core-shared'
+import {
+    AppError,
+    ErrorCategory,
+    encodeToBase64,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import type { Argon2idConfig } from '../models'
 import {
     decodeBase64Salt,
@@ -38,9 +43,9 @@ const QR_SALT_LENGTH = 16
 
 const encoder = new TextEncoder()
 
-export class BackupSyncQrError extends Error {
+export class BackupSyncQrError extends AppError {
     constructor(message = 'Failed to read the sync QR payload') {
-        super(message)
+        super(message, { category: ErrorCategory.STORAGE })
         this.name = 'BackupSyncQrError'
     }
 }

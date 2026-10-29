@@ -42,6 +42,19 @@ type PasskeyState = 'disabled' | 'enabled' | null
 type ChangePasswordValidationError = PasswordStrengthError | 'mismatch' | null
 type ChangePasswordError = 'invalid_current' | 'corrupted' | 'unexpected' | null
 
+const changePasswordValidationErrorOf = (
+    newPassword: string,
+    confirmNewPassword: string,
+    newPasswordStrengthError: PasswordStrengthError | null,
+): ChangePasswordValidationError => {
+    if (newPassword.length > 0 && newPasswordStrengthError) {
+        return newPasswordStrengthError
+    }
+    return confirmNewPassword.length > 0 && confirmNewPassword !== newPassword
+        ? 'mismatch'
+        : null
+}
+
 type UseVaultSecuritySettingsScreenResult = {
     autoLockMinutes: Nullable<number>
     autoLockOptions: readonly number[]
@@ -171,13 +184,11 @@ export const useVaultSecuritySettingsScreen =
         const { score: newPasswordScore, error: newPasswordStrengthError } =
             usePasswordStrength(newPassword)
 
-        const changePasswordValidationError: ChangePasswordValidationError =
-            newPassword.length > 0 && newPasswordStrengthError
-                ? newPasswordStrengthError
-                : confirmNewPassword.length > 0 &&
-                    confirmNewPassword !== newPassword
-                  ? 'mismatch'
-                  : null
+        const changePasswordValidationError = changePasswordValidationErrorOf(
+            newPassword,
+            confirmNewPassword,
+            newPasswordStrengthError,
+        )
 
         const canSubmitChangePassword =
             currentPassword.length > 0 &&

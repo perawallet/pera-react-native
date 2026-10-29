@@ -37,6 +37,7 @@ const backupRootPattern = (backupId: BackupId): string =>
 
 /** Rejects with the canonical string the two sides disagreed on rather than a
  *  bare 401, so a signing mismatch is readable from the test output. */
+// oxlint-disable-next-line pera/typed-domain-errors -- MSW test double, thrown only inside spec request handlers
 class BackupSignatureError extends Error {
     constructor(detail: string) {
         super(`Backup request failed signature verification: ${detail}`)

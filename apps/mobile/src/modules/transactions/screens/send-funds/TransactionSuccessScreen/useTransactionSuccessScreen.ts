@@ -46,6 +46,14 @@ type UseTransactionSuccessScreenResult = {
     explorerName: string
 }
 
+const successVariantOf = (
+    routeVariant: SuccessRouteParams['variant'],
+    isCloseAccount: boolean,
+): SuccessVariant => {
+    if (routeVariant) return routeVariant
+    return isCloseAccount ? 'close_account' : 'payment'
+}
+
 export const useTransactionSuccessScreen =
     (): UseTransactionSuccessScreenResult => {
         const route = useRoute<{
@@ -68,11 +76,7 @@ export const useTransactionSuccessScreen =
         const isClaimFlow =
             routeVariant === 'claim' || routeVariant === 'reject'
 
-        const variant: SuccessVariant = routeVariant
-            ? routeVariant
-            : isCloseAccount
-              ? 'close_account'
-              : 'payment'
+        const variant = successVariantOf(routeVariant, isCloseAccount)
 
         const handleDone = useCallback(() => {
             if (isClaimFlow) {

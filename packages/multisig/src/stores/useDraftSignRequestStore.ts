@@ -110,3 +110,6 @@ export const useDraftSignRequestStore = create<Store>((set, get) => ({
     },
     resetState: () => set(initialState),
 }))
+
+export const deleteDraftSignRequest = (localId: string): void =>
+    useDraftSignRequestStore.getState().deleteDraft(localId)

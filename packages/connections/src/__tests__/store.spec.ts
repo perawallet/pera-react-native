@@ -13,8 +13,10 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { clearAllStores } from '@perawallet/wallet-core-shared'
 import {
+    findConnection,
     hydrateConnectionsStore,
     isConnectionAlive,
+    reloadConnections,
     useConnectionsStore,
 } from '../store'
 import type {
@@ -185,6 +187,30 @@ describe('connections store', () => {
 
             expect(isConnectionAlive('a')).toBe(false)
             expect(isConnectionAlive('b')).toBe(true)
+        })
+    })
+
+    describe('findConnection', () => {
+        it('finds a record by id and is undefined otherwise', () => {
+            useConnectionsStore.getState().setConnections([connection('a')])
+
+            expect(findConnection('a')?.id).toBe('a')
+            expect(findConnection('b')).toBeUndefined()
+        })
+    })
+
+    describe('reloadConnections', () => {
+        it('sets the listed connections and marks the mirror hydrated', async () => {
+            const api = makeApi()
+            await api.upsert(connection('a'))
+            expect(useConnectionsStore.getState().isHydrated).toBe(false)
+
+            await reloadConnections(api)
+
+            expect(useConnectionsStore.getState().connections).toEqual([
+                connection('a'),
+            ])
+            expect(useConnectionsStore.getState().isHydrated).toBe(true)
         })
     })
 })

@@ -755,20 +755,18 @@ const dedupeFailuresByAddress = (
     })
 }
 
+const IMPORT_STAGE_BY_FORMAT_KIND: Partial<Record<BackupAccountType, number>> =
+    {
+        [BackupAccountType.hdChain]: 1,
+        [BackupAccountType.standaloneKey]: 2,
+    }
+
 /** An `hdChain` entry derives against the seed the pre-pass restored, and an
  *  entry of an earlier stage claims an address a later one shares. */
 const importStageOf = ({ addressPayload }: PulledAccount): number => {
-    switch (addressPayload.type) {
-        case BackupAccountType.hdChain: {
-            return 1
-        }
-        case BackupAccountType.standaloneKey: {
-            return 2
-        }
-        default: {
-            return 0
-        }
-    }
+    // A chain kind is the backup file's own string, so it never indexes the map.
+    if (isChainAddressPayload(addressPayload)) return 0
+    return IMPORT_STAGE_BY_FORMAT_KIND[addressPayload.type] ?? 0
 }
 
 /** The entries of one wallet account, in the order its record lists them.

@@ -34,6 +34,14 @@ const zxcvbn = new ZxcvbnFactory({
 export const getPasswordScore = (password: string): PasswordScore =>
     zxcvbn.check(password, PRODUCT_TERMS).score
 
+const strengthErrorOf = (
+    password: string,
+    score: PasswordScore,
+): PasswordStrengthError | null => {
+    if (password.length < MIN_PASSWORD_LENGTH) return 'too_short'
+    return score < MIN_PASSWORD_SCORE ? 'too_weak' : null
+}
+
 type UsePasswordStrengthResult = {
     score: PasswordScore
     error: Nullable<PasswordStrengthError>
@@ -44,11 +52,5 @@ export const usePasswordStrength = (
 ): UsePasswordStrengthResult =>
     useMemo(() => {
         const score = getPasswordScore(password)
-        const error =
-            password.length < MIN_PASSWORD_LENGTH
-                ? 'too_short'
-                : score < MIN_PASSWORD_SCORE
-                  ? 'too_weak'
-                  : null
-        return { score, error }
+        return { score, error: strengthErrorOf(password, score) }
     }, [password])

@@ -17,6 +17,12 @@ import { useDeepLink } from '@modules/deeplink'
 
 type ErrorKind = 'none' | 'invalid' | 'failed'
 
+const ERROR_MESSAGE_KEY_BY_KIND: Record<ErrorKind, I18nKey | null> = {
+    none: null,
+    invalid: i18nKey('paste_link.error_invalid'),
+    failed: i18nKey('paste_link.error_failed'),
+}
+
 export type UsePasteLinkContentResult = {
     value: string
     isSubmitting: boolean
@@ -123,12 +129,7 @@ export const usePasteLinkContent = (
     }, [value, isValidDeepLink, isDeepLinkAvailable, handleDeepLink, onClose])
 
     const hasError = errorKind !== 'none'
-    const errorMessageKey =
-        errorKind === 'invalid'
-            ? i18nKey('paste_link.error_invalid')
-            : errorKind === 'failed'
-              ? i18nKey('paste_link.error_failed')
-              : null
+    const errorMessageKey = ERROR_MESSAGE_KEY_BY_KIND[errorKind]
 
     return {
         value,

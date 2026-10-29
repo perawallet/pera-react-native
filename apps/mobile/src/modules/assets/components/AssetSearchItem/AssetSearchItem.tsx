@@ -40,22 +40,30 @@ export const AssetSearchItem = ({
     const { asset, scope } = result
     const handlePress = useCallback(() => onAdd?.(result), [onAdd, result])
 
-    const icon = isOptingIn ? (
-        <PWLoadingIndicator size='sm' />
-    ) : isOptedIn ? (
-        <PWIcon
-            name='check'
-            size='sm'
-            variant='positive'
-        />
-    ) : onAdd ? (
-        <PWIcon
-            name='plus'
-            size='sm'
-            variant='primary'
-            testID={`asset_search_item_add_${asset.assetId}`}
-        />
-    ) : null
+    const renderIcon = () => {
+        if (isOptingIn) return <PWLoadingIndicator size='sm' />
+        if (isOptedIn) {
+            return (
+                <PWIcon
+                    name='check'
+                    size='sm'
+                    variant='positive'
+                />
+            )
+        }
+        if (onAdd) {
+            return (
+                <PWIcon
+                    name='plus'
+                    size='sm'
+                    variant='primary'
+                    testID={`asset_search_item_add_${asset.assetId}`}
+                />
+            )
+        }
+        return null
+    }
+    const icon = renderIcon()
     const action = icon ? (
         <PWView style={styles.actionButton}>{icon}</PWView>
     ) : undefined

@@ -113,6 +113,11 @@ describe('RNBiometricsService', () => {
             expect(await service.getSecurityLevel()).toBe('none')
         })
 
+        test('maps a level outside SecurityLevel to "none"', async () => {
+            getEnrolledLevelAsyncMock.mockResolvedValue(7)
+            expect(await service.getSecurityLevel()).toBe('none')
+        })
+
         test('returns "none" when the platform call throws', async () => {
             getEnrolledLevelAsyncMock.mockRejectedValue(
                 new Error('unsupported'),

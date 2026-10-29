@@ -34,6 +34,8 @@ function resolveMarketingVersion(env) {
   return env.APP_VERSION || packageVersion.split('-')[0];
 }
 
+const appVariantByEnv = { staging: 'staging', production: 'production' };
+
 // Determine app variant based on environment
 function getAppVariant(env) {
   // Opt-in like E2E_FIXTURES: the on-device benchmark app wipes and reseeds its
@@ -44,14 +46,8 @@ function getAppVariant(env) {
     }
     return 'bench';
   }
-  switch (env.APP_ENV) {
-    case 'staging': { return 'staging';
-    }
-    case 'production': { return 'production';
-    }
-    default: { return 'dev';
-    }
-  }
+  // Object.hasOwn, not a bare index: APP_ENV=constructor would resolve Object.prototype's.
+  return Object.hasOwn(appVariantByEnv, env.APP_ENV) ? appVariantByEnv[env.APP_ENV] : 'dev';
 }
 
 // Bundle/Package identifiers per environment

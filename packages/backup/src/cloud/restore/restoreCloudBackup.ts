@@ -12,6 +12,8 @@
 
 import { zeroBytes } from '@perawallet/wallet-core-kms'
 import {
+    AppError,
+    ErrorCategory,
     isPeraNetworkError,
     logger,
     toError,
@@ -60,11 +62,17 @@ export type RestoreErrorCategory =
     | 'INVALID_CREDENTIALS'
     | 'UNKNOWN'
 
-export class CloudBackupRestoreError extends Error {
+export class CloudBackupRestoreError extends AppError {
     readonly category: RestoreErrorCategory
 
     constructor(category: RestoreErrorCategory, cause?: unknown) {
-        super(`Cloud backup restore failed: ${category}`, { cause })
+        super(
+            `Cloud backup restore failed: ${category}`,
+            { category: ErrorCategory.STORAGE },
+            cause instanceof Error ? cause : undefined,
+        )
+        // AppError can't forward { cause } to Error, and serializeError follows only cause.
+        this.cause = cause
         this.name = 'CloudBackupRestoreError'
         this.category = category
     }

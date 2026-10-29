@@ -18,11 +18,15 @@ import {
     withSecret,
     zeroBytes,
 } from '@perawallet/wallet-core-kms'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import {
+    AppError,
+    ErrorCategory,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 
-export class BackupMnemonicParseError extends Error {
+export class BackupMnemonicParseError extends AppError {
     constructor(message = 'Stored backup phrase is not a wordlist phrase') {
-        super(message)
+        super(message, { category: ErrorCategory.STORAGE })
         this.name = 'BackupMnemonicParseError'
     }
 }

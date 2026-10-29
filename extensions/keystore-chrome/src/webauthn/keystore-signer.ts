@@ -104,6 +104,15 @@ const isPasskeyMainKey = (key: Key): boolean =>
     key.type === 'hd-root-key' &&
     readMetadataString(key, 'scheme') === PBKDF2_P256_SCHEME
 
+// Code-unit order, NOT `localeCompare`: the other two writers use a bare
+// `.sort()`, and a locale-aware collation would disagree with them on case and
+// punctuation.
+const compareKeyIds = (a: Key, b: Key): number => {
+    if (a.id < b.id) return -1
+    if (a.id > b.id) return 1
+    return 0
+}
+
 /**
  * Normalizes whatever `key.publicKey` the keystore hands back (64-byte raw
  * `X || Y`, or 65-byte `0x04`-prefixed) into the flat 64-byte `X || Y` form
@@ -154,10 +163,7 @@ const resolveMainKeyId = async (
         .filter(
             key => WALLET_ROOT_TYPES.has(key.type) && !isPasskeyMainKey(key),
         )
-        // Code-unit order, NOT `localeCompare`: the other two writers use a
-        // bare `.sort()`, and a locale-aware collation would disagree with them
-        // on case and punctuation.
-        .sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
+        .sort(compareKeyIds)
     const [firstRoot] = roots
     if (!firstRoot) {
         throw new InvalidKeyDataError(

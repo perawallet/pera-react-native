@@ -17,7 +17,11 @@ import {
     type DatabaseDriver,
     type DatabaseService,
 } from '@perawallet/wallet-extension-platform'
-import type { Optional } from '@perawallet/wallet-core-shared'
+import {
+    AppError,
+    ErrorCategory,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
 import {
     DB_CONTROL_SCOPE,
     DB_SCOPE,
@@ -80,9 +84,9 @@ class ChromeDatabaseDriver implements DatabaseDriver {
  * in execOnce, which are all transport-level (no response / timeout /
  * not-ready) — see the retry-scoping comment on `exec()`.
  */
-class DbExecFailedError extends Error {
+class DbExecFailedError extends AppError {
     constructor(message: string) {
-        super(message)
+        super(message, { category: ErrorCategory.STORAGE })
         this.name = 'DbExecFailedError'
     }
 }

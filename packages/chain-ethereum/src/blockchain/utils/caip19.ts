@@ -15,25 +15,33 @@ import type {
     ChainScope,
     NetworkId,
 } from '@perawallet/wallet-core-chain-contract'
-import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
+import {
+    AppError,
+    ErrorCategory,
+    type Nullable,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
 import type { EvmChain } from '../../chains/types'
 
-export class UnknownEvmNetworkError extends Error {
+export class UnknownEvmNetworkError extends AppError {
     readonly scope: ChainScope
 
     constructor(scope: ChainScope) {
-        super(`${scope.chainId}/${scope.networkId} is not an EVM network`)
+        super(`${scope.chainId}/${scope.networkId} is not an EVM network`, {
+            category: ErrorCategory.NETWORK,
+        })
         this.name = 'UnknownEvmNetworkError'
         this.scope = scope
     }
 }
 
-export class InvalidCaip19Error extends Error {
+export class InvalidCaip19Error extends AppError {
     readonly caip19: string
 
     constructor(caip19: string, scope: ChainScope) {
         super(
             `${caip19} is not an asset on ${scope.chainId}/${scope.networkId}`,
+            { category: ErrorCategory.ASSETS },
         )
         this.name = 'InvalidCaip19Error'
         this.caip19 = caip19

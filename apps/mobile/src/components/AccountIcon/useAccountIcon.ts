@@ -82,6 +82,14 @@ export type UseAccountIconOptions = {
     authAccount?: WalletAccount
 }
 
+const rekeyedStateOf = (
+    isRekeyed: boolean,
+    canSign: boolean,
+): AccountDisplayState => {
+    if (!isRekeyed) return 'base'
+    return canSign ? 'rekeyedSignable' : 'rekeyedUnsignable'
+}
+
 export const useAccountIcon = (
     account: Optional<WalletAccount>,
     options: UseAccountIconOptions = {},
@@ -106,13 +114,7 @@ export const useAccountIcon = (
         if (!account) return null
 
         const isRekeyed = !ignoreRekey && authority !== null
-        const state: AccountDisplayState =
-            displayState ??
-            (isRekeyed
-                ? canSign
-                    ? 'rekeyedSignable'
-                    : 'rekeyedUnsignable'
-                : 'base')
+        const state = displayState ?? rekeyedStateOf(isRekeyed, canSign)
 
         switch (state) {
             case 'rekeyedSignable': {
