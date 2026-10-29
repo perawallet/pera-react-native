@@ -147,7 +147,7 @@ describe('createEthereumAccountStateOps', () => {
     describe('checkActivity', () => {
         const OTHER: Hex = '0x00000000000000000000000000000000000000bb'
 
-        it('reads an address whose read failed as inactive when another address answered', async () => {
+        it('leaves an address whose read failed out of the map when another address answered', async () => {
             server.use(
                 ...evmRpcHandlers({
                     rpcUrl: RPC_URL,
@@ -166,12 +166,7 @@ describe('createEthereumAccountStateOps', () => {
                     contextWith(),
                     ETHEREUM,
                 ).checkActivity([ADDRESS, OTHER], SCOPE),
-            ).resolves.toEqual(
-                new Map([
-                    [ADDRESS, true],
-                    [OTHER, false],
-                ]),
-            )
+            ).resolves.toEqual(new Map([[ADDRESS, true]]))
         })
 
         it('rejects when no address in the batch could be read', async () => {

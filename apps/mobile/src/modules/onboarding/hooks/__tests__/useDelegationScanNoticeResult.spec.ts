@@ -77,4 +77,45 @@ describe('useDelegationScanNoticeResult', () => {
             }),
         )
     })
+
+    it('words the notice for a rescan the user started', async () => {
+        mockDiscoverDelegatedAccounts.mockRejectedValue(
+            new Error('indexer 500'),
+        )
+        const { result } = renderHook(() => useDelegationScanNoticeResult())
+
+        await result.current.scanRekeyed(['SENDER'], 'rescan')
+
+        expect(mockShowToast).toHaveBeenCalledWith(
+            expect.objectContaining({
+                title: 'onboarding.searching_accounts.rekey_scan_failed_title',
+                body: 'onboarding.searching_accounts.rekey_rescan_failed_body',
+            }),
+        )
+    })
+
+    it("lists each account's address on the scan chain and skips one without", () => {
+        const { result } = renderHook(() => useDelegationScanNoticeResult())
+
+        const addresses = result.current.rekeyScanAddressesOf([
+            { chains: { algorand: { address: 'ALGO_1' } } },
+            { chains: { ethereum: { address: '0xabc' } } },
+            { chains: { algorand: { address: 'ALGO_2' } } },
+        ] as never)
+
+        expect(addresses).toEqual(['ALGO_1', 'ALGO_2'])
+    })
+
+    it('drops candidates whose scan-chain address a held account already has', () => {
+        const { result } = renderHook(() => useDelegationScanNoticeResult())
+        const held = { chains: { algorand: { address: 'HELD' } } }
+        const fresh = { chains: { algorand: { address: 'FRESH' } } }
+
+        const unheld = result.current.withoutHeld(
+            [{ chains: { algorand: { address: 'HELD' } } }, fresh] as never,
+            [held] as never,
+        )
+
+        expect(unheld).toEqual([fresh])
+    })
 })

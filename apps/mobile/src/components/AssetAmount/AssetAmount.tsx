@@ -22,7 +22,8 @@ import type { Maybe } from '@perawallet/wallet-core-shared'
  * - `detailed` (default) — the asset's natural precision (trims the default
  *   floor up to the asset's own `decimals`; collectibles / 0-decimal assets
  *   render whole).
- * - `compact` — a fixed 2 dp, for dense list rows.
+ * - `compact` — a fixed 2 dp, for dense list rows; an asset with more than 6
+ *   decimals keeps its detailed precision so a row reads like its detail.
  * - `significant` — a few significant digits, for a tiny amount such as a fee.
  */
 export type AssetAmountDensity = 'compact' | 'detailed' | 'significant'
@@ -64,6 +65,7 @@ export const AssetAmount = ({
                 assetId={assetId}
                 value={value}
                 precision='compact'
+                assetDecimals={asset?.decimals}
                 {...displayProps}
             />
         )

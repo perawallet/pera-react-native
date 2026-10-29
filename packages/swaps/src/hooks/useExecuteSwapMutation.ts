@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { useCallback } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
@@ -18,10 +19,12 @@ import {
     isMultisigAccount,
     useAccountsStore,
     useSelectedAccount,
+    type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { deploymentOf } from '@perawallet/wallet-core-config'
 import { useDeviceIdLookup } from '@perawallet/wallet-core-device'
 import { useSigningRequest } from '@perawallet/wallet-core-signing'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import {
     swapAdapterFor,
     SwapAccountUnsupportedError,
@@ -39,8 +42,19 @@ import { useSwapScope } from './useSwapScope'
 
 export type ExecuteSwapVariables = Omit<ExecuteSwapParams, 'account' | 'signer'>
 
+// TanStack swaps a pending mutation's options on every render, so the account and scope travel in the variables.
+type ExecuteSwapMutationVariables = ExecuteSwapVariables & {
+    account: Nullable<WalletAccount>
+    scope: Nullable<ChainScope>
+}
+
+export type UseExecuteSwapMutationResult = {
+    mutateAsync: (variables: ExecuteSwapVariables) => Promise<ExecuteSwapResult>
+    reset: () => void
+}
+
 /** Runs on the selected account's swap scope, so the scope and the signer can't disagree. */
-export const useExecuteSwapMutation = () => {
+export const useExecuteSwapMutation = (): UseExecuteSwapMutationResult => {
     const { addSignRequest } = useSigningRequest()
     const account = useSelectedAccount()
     const scope = useSwapScope(account)
@@ -71,8 +85,12 @@ export const useExecuteSwapMutation = () => {
         throwOnError: false,
     })
 
-    return useMutation<ExecuteSwapResult, Error, ExecuteSwapVariables>({
-        mutationFn: async variables => {
+    const { mutateAsync, reset } = useMutation<
+        ExecuteSwapResult,
+        Error,
+        ExecuteSwapMutationVariables
+    >({
+        mutationFn: async ({ account, scope, ...variables }) => {
             if (!account || !scope) {
                 throw new SwapAccountUnsupportedError()
             }
@@ -106,4 +124,12 @@ export const useExecuteSwapMutation = () => {
         retry: false,
         throwOnError: false,
     })
+
+    const executeSwap = useCallback(
+        (variables: ExecuteSwapVariables) =>
+            mutateAsync({ ...variables, account, scope }),
+        [mutateAsync, account, scope],
+    )
+
+    return { mutateAsync: executeSwap, reset }
 }

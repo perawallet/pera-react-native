@@ -326,7 +326,8 @@
             "suspicious_title": "ASA suspect",
             "suspicious_description": "Cet ASA a été signalé comme suspect par le programme de vérification des ASA de Pera.",
             "learn_more": "En savoir plus sur la vérification des ASA"
-        }
+        },
+        "copy_full_amount_hint": "Appuyez longuement pour copier le montant complet"
     },
     "accounts": {
         "legacyQuantum": {
@@ -459,6 +460,7 @@
         "hide_wallet_structure": "Masquer la structure du wallet",
         "scan_new_addresses": "Scanner de nouvelles adresses",
         "scan_new_accounts": "Scanner de nouveaux comptes {{network}}",
+        "scan_new_wallet_accounts": "Scanner de nouveaux comptes",
         "universal_wallet_subtitle": "Une passphrase, tous les réseaux",
         "viewing": "Actuel",
         "wallet_label": "Wallet n° {{number}}",
@@ -2233,7 +2235,15 @@
             "no_new_addresses_title": "Aucune nouvelle adresse trouvée",
             "no_new_addresses_body": "Nous n’avons trouvé aucune adresse supplémentaire associée à ce wallet.",
             "rekey_scan_failed_title": "Impossible de vérifier les comptes rekeyés",
-            "rekey_scan_failed_body": "Votre compte a été importé. Nous n’avons pas pu vérifier si d’autres comptes sont rekeyés vers celui-ci — vous pouvez relancer l’analyse depuis les Paramètres."
+            "rekey_scan_failed_body": "Votre compte a été importé. Nous n’avons pas pu vérifier si d’autres comptes sont rekeyés vers celui-ci — vous pouvez relancer l’analyse depuis les Paramètres.",
+            "rekey_rescan_failed_body": "Nous n’avons pas pu vérifier si d’autres comptes sont rekeyés vers ce wallet. Relancez le scan pour réessayer.",
+            "rescan_found_title": "Scan terminé",
+            "rescan_found_body_one": "1 compte a été ajouté ou mis à jour.",
+            "rescan_found_body_other": "{{count}} comptes ont été ajoutés ou mis à jour.",
+            "rescan_partial_title": "Scan incomplet",
+            "rescan_partial_body": "Certaines vérifications n’ont pas pu aboutir. Les comptes trouvés jusqu’ici ont été ajoutés. Relancez le scan pour trouver le reste.",
+            "rescan_failed_title": "Impossible de scanner les comptes",
+            "rescan_failed_body": "Vérifiez votre connexion et réessayez."
         },
         "create_account": {
             "processing": "Configuration de votre wallet...",

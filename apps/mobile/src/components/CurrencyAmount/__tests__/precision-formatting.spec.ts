@@ -39,13 +39,15 @@ beforeAll(async () => {
 
     format = (amount, variant, decimals) => {
         const value = new Decimal(amount)
-        const { precision, minPrecision } = resolvePrecision(
+        const { precision, minPrecision, rounding } = resolvePrecision(
             variant,
             decimals,
             value,
         )
         const { sign, integer, fraction } = formatNumber(
-            value,
+            rounding != null
+                ? value.toDecimalPlaces(precision, rounding)
+                : value,
             precision,
             'en-US',
             minPrecision,
@@ -80,6 +82,21 @@ describe('resolvePrecision + real formatNumber', () => {
     it('assetFull keeps the asset decimals but pads down to 2', () => {
         expect(format('1.5', 'assetFull', 6)).toBe('1.50')
         expect(format('1.234567', 'assetFull', 6)).toBe('1.234567')
+    })
+
+    it('assetFull follows the EVM display rules for an 18-decimal asset', () => {
+        expect(format('0.001344293173', 'assetFull', 18)).toBe('0.001344')
+        expect(format('0.0000085123', 'assetFull', 18)).toBe('0.0000085')
+        expect(format('1234.56789123', 'assetFull', 18)).toBe('1,234.5678')
+        expect(format('1.5', 'assetFull', 18)).toBe('1.50')
+    })
+
+    it('assetFull rounds down, never showing more than the amount', () => {
+        expect(format('0.0013449999', 'assetFull', 18)).toBe('0.001344')
+    })
+
+    it('compact reads like assetFull for an 18-decimal asset', () => {
+        expect(format('0.001344293173', 'compact', 18)).toBe('0.001344')
     })
 
     it('preferredFull keeps sub-cent fiat digits up to 6 dp', () => {

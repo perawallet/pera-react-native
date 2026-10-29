@@ -10,8 +10,9 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
+import { useCallback, useRef } from 'react'
 import { useMutation } from '@tanstack/react-query'
+import type { WalletMode } from '@perawallet/wallet-core-chain-contract'
 import { useDeploymentDeviceID } from '@perawallet/wallet-core-device'
 import {
     useAnyEnabledChainHasCapability,
@@ -19,6 +20,13 @@ import {
 } from '@perawallet/wallet-core-chain-shared'
 import { updateLastSeenNotification } from '../api/notifications'
 import { useInboxInvalidator } from './useInboxInvalidator'
+
+// TanStack swaps a pending mutation's options on every render, so the deployment and device travel in the variables.
+type MarkNotificationsAsReadVariables = {
+    lastSeenNotificationId: number
+    deployment: WalletMode
+    deviceID: string
+}
 
 type UseMarkNotificationsAsReadMutationResult = {
     markAsRead: (lastSeenNotificationId: number) => void
@@ -35,10 +43,14 @@ export const useMarkNotificationsAsReadMutation =
         const { invalidate } = useInboxInvalidator()
 
         const { mutate } = useMutation({
-            mutationFn: (lastSeenNotificationId: number) =>
+            mutationFn: ({
+                lastSeenNotificationId,
+                deployment,
+                deviceID,
+            }: MarkNotificationsAsReadVariables) =>
                 updateLastSeenNotification(
                     deployment,
-                    deviceID ?? '',
+                    deviceID,
                     lastSeenNotificationId,
                 ),
             onSuccess: () => {
@@ -51,11 +63,16 @@ export const useMarkNotificationsAsReadMutation =
         // request, so the guard lives here rather than at the call site.
         // Identity must stay stable: that effect lists `markAsRead` as a
         // dependency, so a fresh function each render would run its
-        // mark-as-read cleanup on every render instead of on unmount.
+        // mark-as-read cleanup on every render instead of on unmount. The ref
+        // keeps it stable while still posting the deployment and device
+        // current at the call.
+        const target = useRef({ deployment, deviceID: deviceID ?? '' })
+        target.current = { deployment, deviceID: deviceID ?? '' }
+
         const markAsRead = useCallback(
             (lastSeenNotificationId: number) => {
                 if (isUnavailableOnNetwork) return
-                mutate(lastSeenNotificationId)
+                mutate({ lastSeenNotificationId, ...target.current })
             },
             [isUnavailableOnNetwork, mutate],
         )

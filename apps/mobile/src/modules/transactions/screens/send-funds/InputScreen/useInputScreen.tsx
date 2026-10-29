@@ -24,7 +24,10 @@ import {
     toWholeUnits,
     useAssetsQuery,
 } from '@perawallet/wallet-core-assets'
-import type { Maybe } from '@perawallet/wallet-core-shared'
+import {
+    roundAssetAmountForDisplay,
+    type Maybe,
+} from '@perawallet/wallet-core-shared'
 import {
     useSendFeeQuery,
     useSpendableBalanceQuery,
@@ -101,10 +104,15 @@ export const useInputScreen = () => {
     // Maybe so setValue retains the same `string | null | undefined` shape
     // it had before — `setValueAndRef` and `handleKey` both pass undefined.
     const [value, setValue] = useState<Maybe<string>>(() =>
-        amount ? amount.toString() : undefined,
+        amount ? amount.toFixed() : undefined,
     )
     const valueRef = useRef<Maybe<string>>(value)
+    // Set when the field shows a rounded stand-in for an amount the app filled
+    // (MAX, close-out, prefill): Next sends this, not the shown digits. Any edit
+    // clears it.
+    const exactAmountRef = useRef<Maybe<Decimal>>(amount ?? undefined)
     const setValueAndRef = useCallback((newValue: Maybe<string>) => {
+        exactAmountRef.current = undefined
         valueRef.current = newValue
         setValue(newValue)
     }, [])
@@ -122,6 +130,26 @@ export const useInputScreen = () => {
         return assets.get(selectedAssetId)
     }, [selectedAssetId, assets])
 
+    const setExactAmount = useCallback(
+        (exact: Decimal) => {
+            const shown = asset
+                ? roundAssetAmountForDisplay(exact, asset.decimals)
+                : exact
+            setValueAndRef(shown.toFixed())
+            exactAmountRef.current = exact
+        },
+        [asset, setValueAndRef],
+    )
+
+    // A display-unit prefill lands before the asset's decimals do, so it is
+    // rounded once they arrive, unless the user has already edited it.
+    const isPrefillRoundedRef = useRef(false)
+    useEffect(() => {
+        if (isPrefillRoundedRef.current || !asset) return
+        isPrefillRoundedRef.current = true
+        if (exactAmountRef.current) setExactAmount(exactAmountRef.current)
+    }, [asset, setExactAmount])
+
     // TRANSFER deeplinks stash a base-unit amount on the store because
     // they don't know the asset's `decimals` at parse time. Convert here once
     // the asset query resolves, mirror it into both `value` (the visual
@@ -130,7 +158,7 @@ export const useInputScreen = () => {
     useEffect(() => {
         if (!pendingAmountBaseUnits || !asset) return
         const display = toWholeUnits(BigInt(pendingAmountBaseUnits), asset)
-        setValueAndRef(display.toString())
+        setExactAmount(display)
         setAmount(display)
         setPendingAmountBaseUnits(undefined)
     }, [
@@ -138,7 +166,7 @@ export const useInputScreen = () => {
         asset,
         setAmount,
         setPendingAmountBaseUnits,
-        setValueAndRef,
+        setExactAmount,
     ])
 
     // The same fee the confirmation screen prices from, so any amount derived
@@ -212,15 +240,13 @@ export const useInputScreen = () => {
 
     const setMax = useCallback(() => {
         if (!isMaxReady) return
-        setValueAndRef(
-            (isReserveReleasable ? totalBalance : maxAmount).toString(),
-        )
+        setExactAmount(isReserveReleasable ? totalBalance : maxAmount)
     }, [
         isMaxReady,
         isReserveReleasable,
         maxAmount,
         totalBalance,
-        setValueAndRef,
+        setExactAmount,
     ])
 
     const translateParagraphs = useCallback(
@@ -289,14 +315,14 @@ export const useInputScreen = () => {
     const confirmCloseAccount = useCallback(() => {
         setIsCloseAccount(true)
         setAmount(closeAmount)
-        setValueAndRef(closeAmount.toString())
+        setExactAmount(closeAmount)
         proceedToDestination()
     }, [
         closeAmount,
         proceedToDestination,
         setAmount,
         setIsCloseAccount,
-        setValueAndRef,
+        setExactAmount,
     ])
 
     // Resets the close flag too: coming back from a confirmed close and
@@ -304,14 +330,14 @@ export const useInputScreen = () => {
     const continuePastMax = useCallback(() => {
         setIsCloseAccount(false)
         setAmount(maxAmount)
-        setValueAndRef(maxAmount.toString())
+        setExactAmount(maxAmount)
         proceedToDestination()
     }, [
         maxAmount,
         proceedToDestination,
         setAmount,
         setIsCloseAccount,
-        setValueAndRef,
+        setExactAmount,
     ])
 
     const showExceedsBalance = useCallback(() => {
@@ -325,7 +351,8 @@ export const useInputScreen = () => {
     }, [errorToast, t])
 
     const handleNext = useCallback(async () => {
-        const amountValue = value ? new Decimal(value) : null
+        const amountValue =
+            exactAmountRef.current ?? (value ? new Decimal(value) : null)
         // Zero-amount ALGO payments are valid on-chain (used for notes and
         // sync pings). Zero stays rejected for ASAs, where the destination
         // router could misroute a 0 send into the Express/ARC-59 opt-in

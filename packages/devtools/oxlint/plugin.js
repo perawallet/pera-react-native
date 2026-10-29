@@ -23,6 +23,7 @@ import { noAlgorandSdkImports } from './rules/no-algorand-sdk-imports.js'
 import { noI18nKeyCast } from './rules/no-i18n-key-cast.js'
 import { hdDeriveClaimed } from './rules/hd-derive-claimed.js'
 import { noManualUnitConversion } from './rules/no-manual-unit-conversion.js'
+import { mutationScopeInVariables } from './rules/mutation-scope-in-variables.js'
 import { sensitiveInputProps } from './rules/sensitive-input-props.js'
 import { monotonicLockoutClock } from './rules/monotonic-lockout-clock.js'
 import { noDisplayStringIdentity } from './rules/no-display-string-identity.js'
@@ -37,6 +38,7 @@ import { preferToError } from './rules/prefer-to-error.js'
 import { noDeepRelativeImports } from './rules/no-deep-relative-imports.js'
 import { webviewInjectionSerializer } from './rules/webview-injection-serializer.js'
 import { typedDomainErrors } from './rules/typed-domain-errors.js'
+import { queryPendingGated } from './rules/query-pending-gated.js'
 
 // A mobile-source rule needs its own override in apps/mobile/.oxlintrc.json:
 // oxlint resolves an inherited override's globs from the extending config's
@@ -57,6 +59,7 @@ export default {
         'no-i18n-key-cast': noI18nKeyCast,
         'hd-derive-claimed': hdDeriveClaimed,
         'no-manual-unit-conversion': noManualUnitConversion,
+        'mutation-scope-in-variables': mutationScopeInVariables,
         'sensitive-input-props': sensitiveInputProps,
         'monotonic-lockout-clock': monotonicLockoutClock,
         'no-display-string-identity': noDisplayStringIdentity,
@@ -71,5 +74,6 @@ export default {
         'no-deep-relative-imports': noDeepRelativeImports,
         'webview-injection-serializer': webviewInjectionSerializer,
         'typed-domain-errors': typedDomainErrors,
+        'query-pending-gated': queryPendingGated,
     },
 }

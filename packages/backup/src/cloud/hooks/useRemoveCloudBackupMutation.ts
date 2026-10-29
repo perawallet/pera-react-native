@@ -10,7 +10,9 @@
  limitations under the License
  */
 
+import { useCallback } from 'react'
 import { useMutation, type UseMutationOptions } from '@tanstack/react-query'
+import type { WalletMode } from '@perawallet/wallet-core-chain-contract'
 import { useWalletDeployment } from '@perawallet/wallet-core-chain-shared'
 import { logger, toError } from '@perawallet/wallet-core-shared'
 import { destroyBackup } from '../api'
@@ -46,14 +48,22 @@ const suspendSyncManager = async (): Promise<() => void> => {
     }
 }
 
+// TanStack swaps a pending mutation's options on every render, so the deployment travels in the variables.
+type RemoveCloudBackupVariables = { deployment: WalletMode }
+
+export type UseRemoveCloudBackupMutationResult = {
+    mutate: () => void
+    isPending: boolean
+}
+
 /**
  * The remote destroy runs first and the local teardown only follows a confirmed
  * one, so a failure leaves the device able to retry rather than dropping the
  * keys that reach a backup the server still holds.
  */
 export const useRemoveCloudBackupMutation = (
-    options?: UseMutationOptions<void, Error, void>,
-) => {
+    options?: UseMutationOptions<void, Error, RemoveCloudBackupVariables>,
+): UseRemoveCloudBackupMutationResult => {
     const deployment = useWalletDeployment()
     const backupId = useCloudBackupStore(state => state.backupId)
     const resetCloudBackup = useCloudBackupStore(state => state.resetState)
@@ -62,9 +72,11 @@ export const useRemoveCloudBackupMutation = (
         state => state.resetState,
     )
 
-    return useMutation({
+    const { mutate, isPending } = useMutation({
         throwOnError: false,
-        mutationFn: async (): Promise<void> => {
+        mutationFn: async ({
+            deployment,
+        }: RemoveCloudBackupVariables): Promise<void> => {
             const deviceId = resolveBackupDeviceId(deployment)
             if (!backupId || !deviceId) {
                 throw new Error(
@@ -87,4 +99,11 @@ export const useRemoveCloudBackupMutation = (
         },
         ...options,
     })
+
+    const remove = useCallback(
+        () => mutate({ deployment }),
+        [mutate, deployment],
+    )
+
+    return { mutate: remove, isPending }
 }

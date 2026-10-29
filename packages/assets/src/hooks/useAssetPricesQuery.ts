@@ -37,9 +37,11 @@ export const useAssetPricesQuery = (
     // with the same values.
     const stableIds = useStableIdList(ids)
 
+    const isEnabled = enabled ?? true
+
     const query = useQuery({
         queryKey: getAssetPricesQueryKey(stableIds, scope),
-        enabled: enabled ?? true,
+        enabled: isEnabled,
         staleTime: Infinity,
         queryFn: () => getAssetPricesByIds({ assetIds: stableIds, scope }),
         // SQLite is the source of truth; run the queryFn even while offline instead
@@ -58,7 +60,7 @@ export const useAssetPricesQuery = (
         })
         return {
             data: assetPrices,
-            isPending: query.isPending,
+            isPending: isEnabled && query.isPending,
             isFetched: query.isFetched,
             isRefetching: query.isRefetching,
             isError: query.isError,
@@ -66,6 +68,7 @@ export const useAssetPricesQuery = (
         }
     }, [
         query.data,
+        isEnabled,
         query.isPending,
         query.isFetched,
         query.isRefetching,
