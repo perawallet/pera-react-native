@@ -2,7 +2,7 @@
  * Copyright (c) Pera Wallet. All rights reserved.
  */
 
-import { defineRule } from 'lanekeep'
+import { defineRule, type Match } from 'lanekeep'
 import { COMPOSITION_ROOTS } from '../shared/chain-package-allowlist.js'
 import { TEST_SUPPORT, withoutTests } from '../shared/scope.js'
 
@@ -189,6 +189,16 @@ const ALLOWED: readonly Allowed[] = [
     },
 ]
 
+const reportMessageOf = (m: Match, text: string, where: string): string => {
+    if (m.lit !== undefined) {
+        return `\`${text}\` is a chain id literal in ${where}`
+    }
+    if (m.cmp !== undefined) {
+        return `\`${text}\` is compared as a chain id in ${where}`
+    }
+    return `\`${text}\` branches on chain identity in ${where}`
+}
+
 export default defineRule({
     id: 'pera/no-chain-identity-in-shared-packages',
     severity: 'error',
@@ -262,13 +272,6 @@ export default defineRule({
         if (isAllowed) return
 
         const where = isApp ? 'app code' : 'a shared package'
-        ctx.report(
-            at,
-            m.lit !== undefined
-                ? `\`${text}\` is a chain id literal in ${where}`
-                : m.cmp !== undefined
-                  ? `\`${text}\` is compared as a chain id in ${where}`
-                  : `\`${text}\` branches on chain identity in ${where}`,
-        )
+        ctx.report(at, reportMessageOf(m, text, where))
     },
 })

@@ -108,6 +108,15 @@ const isPasskeyMainKey = (key: Key): boolean =>
  * `X || Y`, or 65-byte `0x04`-prefixed) into the flat 64-byte `X || Y` form
  * the `KeystoreSigner` port's `publicKeyXY` fields use.
  */
+// Code-unit order, NOT `localeCompare`: the other two writers use a bare
+// `.sort()`, and a locale-aware collation would disagree with them on case and
+// punctuation.
+const compareKeyIds = (a: Key, b: Key): number => {
+    if (a.id < b.id) return -1
+    if (a.id > b.id) return 1
+    return 0
+}
+
 const toFlatXY = (publicKey: Uint8Array): Uint8Array => {
     const { x, y } = splitP256PublicKey(publicKey)
     const flat = new Uint8Array(x.length + y.length)
@@ -153,10 +162,7 @@ const resolveMainKeyId = async (
         .filter(
             key => WALLET_ROOT_TYPES.has(key.type) && !isPasskeyMainKey(key),
         )
-        // Code-unit order, NOT `localeCompare`: the other two writers use a
-        // bare `.sort()`, and a locale-aware collation would disagree with them
-        // on case and punctuation.
-        .sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
+        .sort(compareKeyIds)
     const [firstRoot] = roots
     if (!firstRoot) {
         throw new InvalidKeyDataError(

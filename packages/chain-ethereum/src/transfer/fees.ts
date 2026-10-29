@@ -45,12 +45,16 @@ const FEE_PRESET_PERCENTILE: Record<FeePreset, number> = {
 // Doubling the base fee survives several full blocks of base-fee growth; only base fee plus tip is charged.
 const BASE_FEE_HEADROOM = 2n
 
+const compareBigInt = (a: bigint, b: bigint): number => {
+    if (a < b) return -1
+    if (a > b) return 1
+    return 0
+}
+
 const upperMedian = (values: bigint[]): bigint =>
     values.length === 0
         ? 0n
-        : [...values].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0))[
-              Math.floor(values.length / 2)
-          ]
+        : [...values].sort(compareBigInt)[Math.floor(values.length / 2)]
 
 const minPriorityFeeOf = (chain: EvmChain, networkId: NetworkId): bigint =>
     chain.row.fee.kind === 'eip1559-min-tip'

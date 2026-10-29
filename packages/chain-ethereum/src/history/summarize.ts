@@ -15,6 +15,7 @@ import {
     type AssetDisplayHint,
     type BalanceChange,
     type ChainScope,
+    type TransactionIconKind,
     type TransactionSummary,
     i18nKey,
 } from '@perawallet/wallet-core-chain-contract'
@@ -45,6 +46,39 @@ type NftLeg = {
     assetId: string
     isIn: boolean
     isOut: boolean
+}
+
+type TransferDirection = 'self' | 'out' | 'in'
+
+const transferDirectionOf = (
+    isSelf: boolean,
+    isOutgoing: boolean,
+): TransferDirection => {
+    if (isSelf) return 'self'
+    return isOutgoing ? 'out' : 'in'
+}
+
+const ICON_BY_DIRECTION: Record<TransferDirection, TransactionIconKind> = {
+    self: 'self',
+    out: 'send',
+    in: 'receive',
+}
+
+const nftCounterpartyOf = (
+    direction: NftDirection,
+    leg: EvmNftTransfer,
+): Nullable<string> => {
+    switch (direction) {
+        case 'in': {
+            return leg.from
+        }
+        case 'out': {
+            return leg.to
+        }
+        default: {
+            return null
+        }
+    }
 }
 
 const nftDisplayOf = (leg: EvmNftTransfer): AssetDisplayHint => ({
@@ -158,12 +192,12 @@ const summarizeNativeTransfer = (
     const sent = areEqual(from, address)
     // A forwarder's internal transfer lists the row for us without the row's value being ours.
     if (!sent && !areEqual(to, address)) return undefined
-    const isSelf = sent && areEqual(to, address)
+    const direction = transferDirectionOf(sent && areEqual(to, address), sent)
     return {
         kind: 'transfer',
         title: { key: sent ? SEND : RECEIVE },
-        icon: isSelf ? 'self' : sent ? 'send' : 'receive',
-        direction: isSelf ? 'self' : sent ? 'out' : 'in',
+        icon: ICON_BY_DIRECTION[direction],
+        direction,
         counterparty: normalize(sent ? to : from),
         amount: {
             assetRef: chain.descriptor.nativeAsset.ref,
@@ -196,12 +230,12 @@ const summarizeTokenTransfer = (
     const out = areEqual(leg.from, address)
     // A spender moving someone else's tokens is not a receive.
     if (!out && !areEqual(leg.to, address)) return undefined
-    const isSelf = out && areEqual(leg.to, address)
+    const direction = transferDirectionOf(out && areEqual(leg.to, address), out)
     return {
         kind: 'token-transfer',
         title: { key: out ? SEND : RECEIVE },
-        icon: isSelf ? 'self' : out ? 'send' : 'receive',
-        direction: isSelf ? 'self' : out ? 'out' : 'in',
+        icon: ICON_BY_DIRECTION[direction],
+        direction,
         counterparty: normalize(out ? leg.to : leg.from),
         amount: {
             assetRef: {
@@ -262,8 +296,7 @@ const summarizeNftTransfer = (
         }
     }
     const { leg, assetId } = only
-    const counterparty: Nullable<string> =
-        direction === 'in' ? leg.from : direction === 'out' ? leg.to : null
+    const counterparty = nftCounterpartyOf(direction, leg)
     return {
         ...base,
         ...(counterparty !== null && {

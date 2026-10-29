@@ -59,12 +59,11 @@ export const useRekeyTransactionFeeQuery = (
     // algod down — it fails fast, networkMode 'always'): staying disabled
     // would leave this query pending forever and the confirm CTA dead.
     // resolveMinFeeForSender already guards with max(suggested, config).
-    const suggestedMinFee =
-        loadedSuggestedMinFee !== undefined
-            ? loadedSuggestedMinFee
-            : isSuggestedMinFeeError
-              ? minTxnFee
-              : null
+    const suggestedMinFeeOf = () => {
+        if (loadedSuggestedMinFee !== undefined) return loadedSuggestedMinFee
+        return isSuggestedMinFeeError ? minTxnFee : null
+    }
+    const suggestedMinFee = suggestedMinFeeOf()
 
     const query = useQuery({
         // Scope is part of the key — feePerByte differs between mainnet
