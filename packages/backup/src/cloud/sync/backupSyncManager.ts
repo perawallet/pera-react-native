@@ -11,7 +11,7 @@
  */
 
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
-import { logger, type Nullable } from '@perawallet/wallet-core-shared'
+import { logger, type Nullable, toError } from '@perawallet/wallet-core-shared'
 import { config } from '@perawallet/wallet-core-config'
 import {
     withBackupAuthSecretKey,
@@ -683,7 +683,7 @@ export class BackupSyncManager {
             await deleteBackupKeys()
         } catch (error) {
             logger.warn('BackupSyncManager: failed to delete backup keys', {
-                error: error instanceof Error ? error.message : String(error),
+                error: toError(error).message,
             })
         }
     }
@@ -719,7 +719,7 @@ export class BackupSyncManager {
             // A stop mid-run is deliberate, not a failed sync.
             if (error instanceof BackupSyncAbortedError) return
             logger.warn('BackupSyncManager: sync failed', {
-                error: error instanceof Error ? error.message : String(error),
+                error: toError(error).message,
             })
             // Seed an empty state when the first-ever sync is the one that
             // failed, so the overview reports FAILED instead of falling back
@@ -755,8 +755,7 @@ export class BackupSyncManager {
             } catch (error) {
                 if (error instanceof BackupSyncAbortedError) return
                 logger.warn('BackupSyncManager: pull failed', {
-                    error:
-                        error instanceof Error ? error.message : String(error),
+                    error: toError(error).message,
                 })
             }
         })

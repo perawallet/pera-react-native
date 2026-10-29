@@ -23,6 +23,7 @@ import {
     type WalletConnectV1SessionKeyStore,
 } from '@perawallet/wallet-core-walletconnect'
 import { getProvider } from '@perawallet/wallet-extension-provider'
+import { toError } from '@perawallet/wallet-core-shared'
 import { migratedAddressOf } from './accountStoreOps'
 
 export type WalletConnectMigrationResult = {
@@ -231,8 +232,7 @@ export const migrateWalletConnect = async (
             seenTopics.add(reconstructed.topic)
             result.imported += 1
         } catch (error) {
-            firstFailure ??=
-                error instanceof Error ? error : new Error(String(error))
+            firstFailure ??= toError(error)
         }
     }
 

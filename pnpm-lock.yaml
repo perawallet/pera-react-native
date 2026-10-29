@@ -3252,6 +3252,9 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 20.19.43
+      oxlint:
+        specifier: ^1.88.0
+        version: 1.88.0(oxlint-tsgolint@7.0.2004)
       tsx:
         specifier: 'catalog:'
         version: 4.23.15

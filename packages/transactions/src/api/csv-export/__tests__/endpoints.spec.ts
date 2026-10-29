@@ -13,6 +13,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { fetchTransactionsCsv, CsvExportError } from '../endpoints'
 import {
+    addressCodecs,
+    ChainAdapterNotRegisteredError,
+    type AddressCodec,
+} from '@perawallet/wallet-core-chain-contract'
+import {
     AppError,
     ErrorCategory,
     isExpectedError,
@@ -52,7 +57,14 @@ const MOCK_CSV_CONTENT = `Date,Type,Amount,Asset
 2024-01-16,axfer,500,USDC`
 
 describe('fetchTransactionsCsv', () => {
+    let isValid: ReturnType<typeof vi.fn<(address: string) => boolean>>
+
     beforeEach(() => {
+        isValid = vi.fn((address: string) => address === VALID_ADDRESS)
+        addressCodecs.register({
+            chainId: 'algorand',
+            isValid,
+        } as unknown as AddressCodec)
         lastQueryClientCall = null
         mockGetError = null
         mockGetResponse = {
@@ -63,6 +75,7 @@ describe('fetchTransactionsCsv', () => {
 
     afterEach(() => {
         vi.clearAllMocks()
+        addressCodecs.reset()
     })
 
     it('fetches CSV successfully', async () => {
@@ -121,6 +134,55 @@ describe('fetchTransactionsCsv', () => {
                 scope: { chainId: 'algorand', networkId: 'mainnet' },
             }),
         ).rejects.toThrow(CsvExportError)
+    })
+
+    it('rejects a 58-character string its chain codec says is not an address, without calling the backend', async () => {
+        const lookAlike = `${VALID_ADDRESS.slice(0, -1)}A`
+
+        await expect(
+            fetchTransactionsCsv({
+                accountAddress: lookAlike,
+                scope: { chainId: 'algorand', networkId: 'mainnet' },
+            }),
+        ).rejects.toThrow(CsvExportError)
+        expect(lastQueryClientCall).toBeNull()
+    })
+
+    it("validates with the codec of the scope's chain", async () => {
+        await fetchTransactionsCsv({
+            accountAddress: VALID_ADDRESS,
+            scope: { chainId: 'algorand', networkId: 'mainnet' },
+        })
+
+        expect(isValid).toHaveBeenCalledWith(VALID_ADDRESS, 'mainnet')
+    })
+
+    it('rejects an address on a chain with no address codec', async () => {
+        const rejection = fetchTransactionsCsv({
+            accountAddress: VALID_ADDRESS,
+            scope: { chainId: 'ethereum', networkId: 'mainnet' },
+        })
+
+        await expect(rejection).rejects.toThrow(CsvExportError)
+        await expect(rejection).rejects.not.toBeInstanceOf(
+            ChainAdapterNotRegisteredError,
+        )
+        expect(lastQueryClientCall).toBeNull()
+    })
+
+    it('accepts an address of any length its chain codec accepts', async () => {
+        addressCodecs.register({
+            chainId: 'ethereum',
+            isValid: () => true,
+        } as unknown as AddressCodec)
+        const evmAddress = `0x${'a'.repeat(40)}`
+
+        await expect(
+            fetchTransactionsCsv({
+                accountAddress: evmAddress,
+                scope: { chainId: 'ethereum', networkId: 'mainnet' },
+            }),
+        ).resolves.toMatchObject({ accountAddress: evmAddress })
     })
 
     it('throws CsvExportError for network errors', async () => {

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, toError } from '@perawallet/wallet-core-shared'
 import { deleteItem, readItems } from '../api'
 import {
     parseAccountRecordPayload,
@@ -450,7 +450,7 @@ const seedKeyToDelete = async (
         references = await readSeedReferences(others, deps)
     } catch (error) {
         logger.warn('reviewActions: could not read address records', {
-            error: error instanceof Error ? error.message : String(error),
+            error: toError(error).message,
         })
         return null
     }
@@ -481,7 +481,7 @@ const deleteKeysFromBackup = async ({
         } catch (error) {
             logger.warn('reviewActions: delete failed, queued for retry', {
                 key,
-                error: error instanceof Error ? error.message : String(error),
+                error: toError(error).message,
             })
             continue
         }
@@ -561,7 +561,7 @@ const legacyKeysToDelete = async (
         // Offline: delete the address (which queues a retry) and leave every
         // secret alone rather than guess.
         logger.warn('reviewActions: could not read address records', {
-            error: error instanceof Error ? error.message : String(error),
+            error: toError(error).message,
         })
         return [addressKey]
     }
@@ -699,11 +699,7 @@ export const importContactFromBackup = async ({
             else legacy.push(parseContactPayload(plaintext))
         } catch (error) {
             logger.warn('reviewActions: unreadable contact', { key: item.key })
-            return contactImportFailure(
-                state,
-                id,
-                error instanceof Error ? error.message : String(error),
-            )
+            return contactImportFailure(state, id, toError(error).message)
         }
     }
     if (records.some(record => contactRecordEntries(record).length === 0))
@@ -855,10 +851,7 @@ export const importPasskeyFromBackup = async ({
                 failed: [
                     {
                         credentialId,
-                        reason:
-                            error instanceof Error
-                                ? error.message
-                                : String(error),
+                        reason: toError(error).message,
                     },
                 ],
             },

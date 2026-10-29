@@ -14,6 +14,7 @@ import {
     AppError,
     ErrorCategory,
     isExpectedError,
+    toError,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 import type {
@@ -39,6 +40,7 @@ import type {
     SyncState,
 } from '../models'
 import type { Contact } from '@perawallet/wallet-core-contacts'
+import { toError } from '@perawallet/wallet-core-shared'
 import type { ItemKeyHasher } from '../crypto/itemKeyHash'
 import type { PulledAccount } from '../restore'
 
@@ -75,7 +77,7 @@ export class BackupPushIncompleteError extends AppError {
         // The message embeds the inner error's, which isExpectedError no longer
         // matches on an AppError, so the wrapper takes the inner verdict.
         super(
-            `Backup push incomplete: ${error instanceof Error ? error.message : String(error)}`,
+            `Backup push incomplete: ${toError(error).message}`,
             {
                 category: ErrorCategory.STORAGE,
                 expected: isExpectedError(error),

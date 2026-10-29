@@ -3758,8 +3758,7 @@
         "introduction": {
             "title": "Le swap dans Pera",
             "description": "Pera Wallet offre un moyen simple et rapide d’échanger des actifs. Grâce à P.E.R.A., les demandes de swap sont routées intelligemment entre plusieurs plateformes d’échange décentralisées basées sur Algorand afin d’obtenir le meilleur prix disponible.",
-            "powered_by": "Propulsé par ",
-            "powered_by_brand": "P.E.R.A.",
+            "powered_by": "Propulsé par <0>P.E.R.A.</0>",
             "start_swapping": "Commencer à échanger",
             "terms_agreement": "En continuant, vous acceptez les <0>conditions d’utilisation</0> de notre partenaire de swap"
         },
@@ -3775,7 +3774,7 @@
             "you_pay": "Vous payez",
             "you_receive": "Vous recevez",
             "to": "Vers",
-            "balance_label": "Solde : ",
+            "balance_label": "Solde : <0/>",
             "max": "MAX",
             "select_asset": "Choisir"
         },
@@ -3855,7 +3854,7 @@
             },
             "list": {
                 "item": {
-                    "description": "{{amountIn}} {{unitIn}} échangés contre "
+                    "description": "<0/> échangés contre <1/>"
                 },
                 "empty": {
                     "title": "Aucun swap pour le moment",

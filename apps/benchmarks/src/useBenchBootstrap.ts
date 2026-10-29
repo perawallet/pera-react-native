@@ -11,7 +11,7 @@
  */
 
 import { useEffect, useState } from 'react'
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, toError } from '@perawallet/wallet-core-shared'
 import { runBenchBootstrap } from './bootstrapSteps'
 
 export type UseBenchBootstrapResult = {
@@ -28,7 +28,7 @@ export const useBenchBootstrap = (): UseBenchBootstrapResult => {
             .then(() => setIsReady(true))
             .catch((cause: unknown) => {
                 logger.error('Bench bootstrap failed', { error: cause })
-                setError(cause instanceof Error ? cause.message : String(cause))
+                setError(toError(cause).message)
             })
     }, [])
 
