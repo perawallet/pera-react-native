@@ -15,7 +15,6 @@ import {
     MaskedTextInput,
     type MaskedTextInputProps,
 } from 'react-native-advanced-input-mask'
-import { getTestProps } from '@utils/test-id-helper'
 
 export type CurrencyInputProps = {
     minPrecision: number
@@ -40,7 +39,7 @@ export const CurrencyInput = (props: CurrencyInputProps) => {
 
     return (
         <MaskedTextInput
-            {...getTestProps(testID)}
+            testID={testID}
             {...rest}
             allowedKeys='0123456789,.'
             inputMode='numeric'

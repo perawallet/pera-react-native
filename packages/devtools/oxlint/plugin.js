@@ -26,6 +26,7 @@ import { noManualUnitConversion } from './rules/no-manual-unit-conversion.js'
 import { noDisplayStringIdentity } from './rules/no-display-string-identity.js'
 import { fetchHasDeadline } from './rules/fetch-has-deadline.js'
 import { componentPropsType } from './rules/component-props-type.js'
+import { testIdProp } from './rules/test-id-prop.js'
 import { preferToError } from './rules/prefer-to-error.js'
 
 // A mobile-source rule needs its own override in apps/mobile/.oxlintrc.json:
@@ -50,6 +51,7 @@ export default {
         'no-display-string-identity': noDisplayStringIdentity,
         'fetch-has-deadline': fetchHasDeadline,
         'component-props-type': componentPropsType,
+        'test-id-prop': testIdProp,
         'prefer-to-error': preferToError,
     },
 }

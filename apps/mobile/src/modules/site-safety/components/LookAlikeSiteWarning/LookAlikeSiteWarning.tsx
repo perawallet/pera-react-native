@@ -21,7 +21,6 @@ import {
     PWView,
 } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import { getTestProps } from '@utils/test-id-helper'
 import { useStyles } from './styles'
 
 export type LookAlikeSiteWarningProps = {
@@ -65,13 +64,13 @@ export const LookAlikeSiteWarning = ({
                 <PWText
                     variant='bodySemibold'
                     style={styles.host}
-                    {...getTestProps('site_look_alike_host')}
+                    testID='site_look_alike_host'
                 >
                     {host}
                 </PWText>
                 <PWText
                     style={styles.body}
-                    {...getTestProps('site_look_alike_body')}
+                    testID='site_look_alike_body'
                 >
                     {imitates.name === imitates.domain
                         ? t('site_safety.look_alike.body_domain', {
@@ -87,7 +86,7 @@ export const LookAlikeSiteWarning = ({
                 <PWTouchableOpacity
                     style={styles.acknowledge}
                     onPress={handleToggleAcknowledged}
-                    {...getTestProps('site_look_alike_acknowledge')}
+                    testID='site_look_alike_acknowledge'
                 >
                     <PWCheckbox
                         checked={isAcknowledged}
@@ -104,13 +103,13 @@ export const LookAlikeSiteWarning = ({
                     variant='secondary'
                     isDisabled={!isAcknowledged}
                     onPress={onContinue}
-                    {...getTestProps('site_look_alike_continue')}
+                    testID='site_look_alike_continue'
                 />
                 <PWButton
                     title={t('site_safety.look_alike.reject')}
                     variant='primary'
                     onPress={onReject}
-                    {...getTestProps('site_look_alike_reject')}
+                    testID='site_look_alike_reject'
                 />
             </PWView>
         </PWView>
