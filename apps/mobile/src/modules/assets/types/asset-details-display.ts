@@ -17,6 +17,7 @@ import type {
     ChainScope,
     I18nKey,
 } from '@perawallet/wallet-core-chain-contract'
+import type { Decimal } from 'decimal.js'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
 export type AssetChainSectionProps = {
@@ -26,7 +27,7 @@ export type AssetChainSectionProps = {
 
 export type AssetExplorerLink = { url: string; label: string }
 
-export type AssetAboutParams = {
+export type AssetDisplayParams = {
     asset: PeraAsset
     scope: ChainScope
     descriptor: ChainDescriptor
@@ -40,11 +41,19 @@ export type AssetAboutDisplay = {
     explorerLink: Nullable<AssetExplorerLink>
 }
 
+/** `amount` is in base units; null renders as "—". `labelKey` also titles the info sheet. */
+export type AssetSupplyDisplay = {
+    labelKey: I18nKey
+    infoBodyKey: I18nKey
+    amount: Nullable<Decimal>
+}
+
 /** What one chain family adds to the asset detail screen; a family with no entry gets the neutral layout. */
 export type AssetDetailsDisplay = {
     /** Renders on the Markets tab, after About. */
     VerificationSection?: ComponentType<AssetChainSectionProps>
     /** Renders on the Markets tab, after the description. */
     IssuerControlsSection?: ComponentType<AssetChainSectionProps>
-    resolveAbout: (params: AssetAboutParams) => AssetAboutDisplay
+    resolveAbout: (params: AssetDisplayParams) => AssetAboutDisplay
+    resolveSupply: (params: AssetDisplayParams) => AssetSupplyDisplay
 }

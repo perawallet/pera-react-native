@@ -301,8 +301,10 @@
             "description": "Açıklama",
             "social_media": "Sosyal medya",
             "chart_empty_body": "Bir bakiye geçmişin oluştuğunda burada bir grafik göreceksin",
-            "total_supply_info_title": "Toplam arz",
-            "total_supply_info_body": "Bir varlığın toplam arzı oluşturulma anında belirlenir ve varlığın oluşturulan toplam birim sayısına karşılık gelir."
+            "total_supply_info_body": "Bir varlığın toplam arzı oluşturulma anında belirlenir ve varlığın oluşturulan toplam birim sayısına karşılık gelir.",
+            "circulating_supply": "Dolaşımdaki arz",
+            "circulating_supply_info_body": "Dolaşımdaki arz, şu anda dolaşımda olan coin sayısıdır. Bir ağın yerel coin’inin sabit bir toplamı yoktur; bu rakam coin’ler basıldıkça veya yakıldıkça değişir.",
+            "token_total_supply_info_body": "Toplam arz, sözleşmenin ihraç ettiği token sayısından yakılanların çıkarılmasıyla bulunur. İhraççı token bastığında veya yaktığında değişir."
         },
         "action_buttons": {
             "swap": "Swap",

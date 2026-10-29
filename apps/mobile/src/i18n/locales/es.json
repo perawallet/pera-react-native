@@ -301,8 +301,10 @@
             "description": "Descripción",
             "social_media": "Redes sociales",
             "chart_empty_body": "Verás un gráfico aquí cuando tengas algo de historial de saldo",
-            "total_supply_info_title": "Suministro total",
-            "total_supply_info_body": "El suministro total de un activo se fija en el momento de su creación y corresponde al total de unidades creadas del activo."
+            "total_supply_info_body": "El suministro total de un activo se fija en el momento de su creación y corresponde al total de unidades creadas del activo.",
+            "circulating_supply": "Suministro circulante",
+            "circulating_supply_info_body": "El suministro circulante es el número de monedas que están actualmente en circulación. La moneda nativa de una red no tiene un total fijo, por lo que esta cifra cambia a medida que se emiten o se queman monedas.",
+            "token_total_supply_info_body": "El suministro total es el número de tokens que ha emitido el contrato, menos los quemados. Cambia cuando el emisor acuña o quema tokens."
         },
         "action_buttons": {
             "swap": "Swap",

@@ -301,8 +301,10 @@
             "description": "Description",
             "social_media": "Réseaux sociaux",
             "chart_empty_body": "Un graphique apparaîtra ici dès que vous aurez un historique de solde",
-            "total_supply_info_title": "Offre totale",
-            "total_supply_info_body": "L’offre totale d’un actif est définie lors de sa création et correspond au nombre total d’unités créées."
+            "total_supply_info_body": "L’offre totale d’un actif est définie lors de sa création et correspond au nombre total d’unités créées.",
+            "circulating_supply": "Offre en circulation",
+            "circulating_supply_info_body": "L’offre en circulation est le nombre de pièces actuellement en circulation. La monnaie native d’un réseau n’a pas de total fixe : ce chiffre évolue à mesure que des pièces sont émises ou brûlées.",
+            "token_total_supply_info_body": "L’offre totale est le nombre de jetons émis par le contrat, moins ceux qui ont été brûlés. Elle change lorsque l’émetteur crée ou brûle des jetons."
         },
         "action_buttons": {
             "swap": "Swap",

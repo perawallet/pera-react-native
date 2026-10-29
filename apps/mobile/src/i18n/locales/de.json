@@ -301,8 +301,10 @@
             "description": "Beschreibung",
             "social_media": "Soziale Medien",
             "chart_empty_body": "Sobald ein Guthabenverlauf vorliegt, wird hier ein Diagramm angezeigt",
-            "total_supply_info_title": "Gesamtangebot",
-            "total_supply_info_body": "Das Gesamtangebot eines Assets wird bei der Erstellung festgelegt und entspricht der Gesamtzahl der erstellten Einheiten des Assets."
+            "total_supply_info_body": "Das Gesamtangebot eines Assets wird bei der Erstellung festgelegt und entspricht der Gesamtzahl der erstellten Einheiten des Assets.",
+            "circulating_supply": "Umlaufendes Angebot",
+            "circulating_supply_info_body": "Das umlaufende Angebot ist die Anzahl der Coins, die derzeit im Umlauf sind. Die native Währung eines Netzwerks hat kein festes Gesamtangebot, daher ändert sich diese Zahl, wenn Coins ausgegeben oder verbrannt werden.",
+            "token_total_supply_info_body": "Das Gesamtangebot ist die Anzahl der Token, die der Vertrag ausgegeben hat, abzüglich der verbrannten. Es ändert sich, wenn der Emittent Token prägt oder verbrennt."
         },
         "action_buttons": {
             "swap": "Tauschen",
