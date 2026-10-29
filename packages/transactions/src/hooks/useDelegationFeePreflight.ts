@@ -18,7 +18,7 @@ import { baseUnitsToDisplayUnits } from '@perawallet/wallet-core-shared'
 
 import type { Decimal } from 'decimal.js'
 
-export type UseRekeyFeePreflightResult = {
+export type UseDelegationFeePreflightResult = {
     /**
      * True when the source's spendable balance (balance − min-balance
      * reserve) cannot cover the rekey fee. Stays false while the fee or the
@@ -33,27 +33,27 @@ export type UseRekeyFeePreflightResult = {
  * fee, and after paying it its balance must stay at or above the min-balance
  * reserve. Reads the account's live on-chain state, not the synced balance
  * row, so an account funded since the last sync isn't held back, and compares
- * against the fee the screen already displays (`useRekeyTransactionFeeQuery`'s
+ * against the fee the screen already displays (`useDelegationTransactionFeeQuery`'s
  * display-unit `Decimal`), so the gate and the displayed fee can never diverge.
  */
-export const useRekeyFeePreflight = (
+export const useDelegationFeePreflight = (
     sourceAddress: string,
-    feeAlgos: Decimal | undefined,
+    fee: Decimal | undefined,
     scope: ChainScope,
-): UseRekeyFeePreflightResult => {
+): UseDelegationFeePreflightResult => {
     const { data: accountState } = useOnChainAccountStateQuery(
         sourceAddress,
         scope,
     )
 
     const isUnderfunded = useMemo(() => {
-        if (!feeAlgos || !accountState) return false
+        if (!fee || !accountState) return false
         const reserve = baseUnitsToDisplayUnits(
             accountState.reserveBalance,
             getChainDescriptor(scope.chainId).nativeAsset.decimals,
         )
-        return accountState.nativeBalance.minus(reserve).lessThan(feeAlgos)
-    }, [feeAlgos, accountState, scope.chainId])
+        return accountState.nativeBalance.minus(reserve).lessThan(fee)
+    }, [fee, accountState, scope.chainId])
 
     return { isUnderfunded }
 }

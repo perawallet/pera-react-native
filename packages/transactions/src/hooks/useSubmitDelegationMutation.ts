@@ -19,6 +19,7 @@ import type {
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import {
     getOpenSubmissionAttemptsForIntent,
+    DELEGATION_SUBMISSION_FLOW,
     STALE_OPEN_ATTEMPT_MS,
     resolveMinFeeForSender,
     submitAndAutoRefresh,
@@ -27,18 +28,18 @@ import {
     useSigningRequest,
 } from '@perawallet/wallet-core-signing'
 import { assertOnline } from '@perawallet/wallet-core-shared'
-import { RekeyError } from '../errors'
+import { DelegationError } from '../errors'
 import { sendFlowFeatureFor } from '../chain-adapter'
-import { requestRekeySignatures } from './requestRekeySignatures'
+import { requestDelegationSignatures } from './requestDelegationSignatures'
 
-export type SubmitRekeyParams = {
-    /** Sender / receiver of the 0-amount payment that carries the rekey. */
+export type SubmitDelegationParams = {
+    /** Account the delegation applies to. */
     sourceAddress: string
-    /** Address that will become the new auth address. */
-    rekeyToAddress: string
+    /** Address that signs for `sourceAddress` once this lands. */
+    authorityAddress: string
 }
 
-export type UseSubmitRekeyMutationOptions = {
+export type UseSubmitDelegationMutationOptions = {
     scope: ChainScope
     /**
      * Localized strings shown in the signing pipeline's review UI. The
@@ -51,14 +52,14 @@ export type UseSubmitRekeyMutationOptions = {
     }
 }
 
-export type UseSubmitRekeyMutationResult = {
-    submitAsync: (params: SubmitRekeyParams) => Promise<string[]>
+export type UseSubmitDelegationMutationResult = {
+    submitAsync: (params: SubmitDelegationParams) => Promise<string[]>
     isPending: boolean
 }
 
 /**
- * End-to-end submit for a rekey transaction:
- * 1. Build an unsigned 0-amount payment with `rekeyTo`.
+ * End-to-end submit for a delegation transaction:
+ * 1. Build the unsigned delegation transaction through the chain adapter.
  * 2. Hand it to the signing pipeline so the canonical Ledger approval UI
  *    can surface when the source's auth chain ends at a hardware account.
  * 3. Submit via `submitAndAutoRefresh` so the source account's balance and
@@ -66,7 +67,7 @@ export type UseSubmitRekeyMutationResult = {
  *    screen would render against a stale authority until periodic sync.
  *    Return the resulting tx IDs.
  *
- * Every failure propagates as a {@link RekeyError} tagged with the stage
+ * Every failure propagates as a {@link DelegationError} tagged with the stage
  * that failed (`build_failed`, `signing_failed`, `submission_failed`,
  * `submission_pending`, `user_rejected`) so confirm screens can show
  * failure-specific copy.
@@ -78,10 +79,10 @@ export type UseSubmitRekeyMutationResult = {
  * network-congestion guard (`max(suggestedMinFee, configMinTxnFee)`) lives
  * in `resolveMinFeeForSender` too.
  */
-export const useSubmitRekeyMutation = ({
+export const useSubmitDelegationMutation = ({
     scope,
     signingMetadata,
-}: UseSubmitRekeyMutationOptions): UseSubmitRekeyMutationResult => {
+}: UseSubmitDelegationMutationOptions): UseSubmitDelegationMutationResult => {
     const { addSignRequest } = useSigningRequest()
     const accounts = useAllAccounts()
     const { minTxnFee, pqMultiplier } = useFeeConfig(scope.chainId)
@@ -98,20 +99,25 @@ export const useSubmitRekeyMutation = ({
         throwOnError: false,
         mutationFn: async ({
             sourceAddress,
-            rekeyToAddress,
-        }: SubmitRekeyParams): Promise<string[]> => {
+            authorityAddress,
+        }: SubmitDelegationParams): Promise<string[]> => {
             // A still-open ledger row for the same rekey may land any
             // moment — a rebuild would mint a new txid algod cannot dedupe.
             const openAttempts = await getOpenSubmissionAttemptsForIntent({
                 scope,
                 sender: sourceAddress,
-                intentKey: { kind: 'rekey', address: sourceAddress },
+                intentKey: {
+                    kind: DELEGATION_SUBMISSION_FLOW,
+                    address: sourceAddress,
+                },
                 unevaluatableBefore: Date.now() - STALE_OPEN_ATTEMPT_MS,
             })
             if (openAttempts.length > 0) {
-                throw new RekeyError(
+                throw new DelegationError(
                     'submission_pending',
-                    new Error('previous rekey attempt still being verified'),
+                    new Error(
+                        'previous delegation attempt still being verified',
+                    ),
                 )
             }
 
@@ -122,7 +128,7 @@ export const useSubmitRekeyMutation = ({
                 // submitted). Surfaces through the existing build_failed path.
                 assertOnline()
                 // Shared min-fee source (same query cache as the
-                // useRekeyTransactionFeeQuery display) — the fee submitted
+                // useDelegationTransactionFeeQuery display) — the fee submitted
                 // and the fee shown read the same entry.
                 const suggestedMinFee = await fetchSuggestedMinFee()
                 // The rekey txn is signed by sourceAddress's CURRENT auth
@@ -136,19 +142,22 @@ export const useSubmitRekeyMutation = ({
                     configMinTxnFee: minTxnFee,
                     pqMultiplier,
                 })
-                unsignedTxn = await sendFlowFeatureFor(scope, 'rekey').buildTx({
+                unsignedTxn = await sendFlowFeatureFor(
+                    scope,
+                    'delegation',
+                ).buildTx({
                     scope,
                     sourceAddress,
-                    rekeyToAddress,
+                    authorityAddress,
                     minFee: resolvedMinFee,
                 })
             } catch (error) {
-                throw new RekeyError('build_failed', error)
+                throw new DelegationError('build_failed', error)
             }
 
-            // requestRekeySignatures already rejects with a RekeyError
+            // requestDelegationSignatures already rejects with a DelegationError
             // (`user_rejected` / `signing_failed`), so it is not re-wrapped.
-            const signed = await requestRekeySignatures(
+            const signed = await requestDelegationSignatures(
                 addSignRequest,
                 signingMetadata,
                 [unsignedTxn],
@@ -156,12 +165,15 @@ export const useSubmitRekeyMutation = ({
 
             try {
                 return await submitAndAutoRefresh(scope, signed, {
-                    flow: 'rekey',
-                    intentKey: { kind: 'rekey', address: sourceAddress },
+                    flow: DELEGATION_SUBMISSION_FLOW,
+                    intentKey: {
+                        kind: DELEGATION_SUBMISSION_FLOW,
+                        address: sourceAddress,
+                    },
                     sender: sourceAddress,
                 })
             } catch (error) {
-                throw new RekeyError('submission_failed', error)
+                throw new DelegationError('submission_failed', error)
             }
         },
     })

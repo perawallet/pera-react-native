@@ -12,8 +12,8 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-import { requestRekeySignatures } from '../requestRekeySignatures'
-import { RekeyError } from '../../errors'
+import { requestDelegationSignatures } from '../requestDelegationSignatures'
+import { DelegationError } from '../../errors'
 
 import type {
     SignedTransaction,
@@ -21,7 +21,7 @@ import type {
 } from '@perawallet/wallet-core-chain-contract'
 import type { UnsignedTransactionSignRequest } from '@perawallet/wallet-core-signing'
 
-describe('requestRekeySignatures', () => {
+describe('requestDelegationSignatures', () => {
     const source = { name: 'src-name', description: 'src-description' }
     const unsignedTxs = [
         { id: 'tx-1' } as unknown as UnsignedTransaction,
@@ -35,7 +35,7 @@ describe('requestRekeySignatures', () => {
     it('hands a headless transactions sign request to the pipeline with the supplied txs', () => {
         const addSignRequest = vi.fn()
 
-        void requestRekeySignatures(addSignRequest, source, unsignedTxs)
+        void requestDelegationSignatures(addSignRequest, source, unsignedTxs)
 
         expect(addSignRequest).toHaveBeenCalledTimes(1)
         const request = addSignRequest.mock
@@ -57,7 +57,7 @@ describe('requestRekeySignatures', () => {
         )
         const signed = [{ signed: true } as unknown as SignedTransaction]
 
-        const promise = requestRekeySignatures(
+        const promise = requestDelegationSignatures(
             addSignRequest,
             source,
             unsignedTxs,
@@ -77,7 +77,7 @@ describe('requestRekeySignatures', () => {
         )
         const signedA = { signed: true } as unknown as SignedTransaction
 
-        const promise = requestRekeySignatures(
+        const promise = requestDelegationSignatures(
             addSignRequest,
             source,
             unsignedTxs,
@@ -88,7 +88,7 @@ describe('requestRekeySignatures', () => {
         await expect(promise).resolves.toEqual([signedA])
     })
 
-    it('rejects with a user_rejected RekeyError when the pipeline calls reject', async () => {
+    it('rejects with a user_rejected DelegationError when the pipeline calls reject', async () => {
         let capturedRequest: UnsignedTransactionSignRequest | undefined
         const addSignRequest = vi.fn(
             (request: UnsignedTransactionSignRequest) => {
@@ -96,7 +96,7 @@ describe('requestRekeySignatures', () => {
             },
         )
 
-        const promise = requestRekeySignatures(
+        const promise = requestDelegationSignatures(
             addSignRequest,
             source,
             unsignedTxs,
@@ -104,11 +104,11 @@ describe('requestRekeySignatures', () => {
 
         await capturedRequest!.reject!()
 
-        await expect(promise).rejects.toBeInstanceOf(RekeyError)
+        await expect(promise).rejects.toBeInstanceOf(DelegationError)
         await expect(promise).rejects.toMatchObject({ reason: 'user_rejected' })
     })
 
-    it('rejects with a signing_failed RekeyError wrapping the original error', async () => {
+    it('rejects with a signing_failed DelegationError wrapping the original error', async () => {
         let capturedRequest: UnsignedTransactionSignRequest | undefined
         const addSignRequest = vi.fn(
             (request: UnsignedTransactionSignRequest) => {
@@ -117,7 +117,7 @@ describe('requestRekeySignatures', () => {
         )
         const originalError = new Error('signing transport failed')
 
-        const promise = requestRekeySignatures(
+        const promise = requestDelegationSignatures(
             addSignRequest,
             source,
             unsignedTxs,
@@ -125,7 +125,7 @@ describe('requestRekeySignatures', () => {
 
         await capturedRequest!.error!(originalError)
 
-        await expect(promise).rejects.toBeInstanceOf(RekeyError)
+        await expect(promise).rejects.toBeInstanceOf(DelegationError)
         await expect(promise).rejects.toMatchObject({
             reason: 'signing_failed',
             originalError,

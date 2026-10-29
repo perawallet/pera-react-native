@@ -12,7 +12,7 @@
 
 import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
 
-import { RekeyError } from '../errors'
+import { DelegationError } from '../errors'
 
 import type {
     SignedTransaction,
@@ -31,7 +31,7 @@ type AddSignRequestFn = (request: TransactionSignRequest) => void
  * Ledger approval on-device — but bounded so a dropped request surfaces as a
  * failure instead of hanging the confirm screen forever.
  */
-const REKEY_SIGNING_TIMEOUT_MS = 5 * 60 * 1000
+const DELEGATION_SIGNING_TIMEOUT_MS = 5 * 60 * 1000
 
 /**
  * Hand the unsigned rekey transaction to the signing pipeline and resolve
@@ -44,7 +44,7 @@ const REKEY_SIGNING_TIMEOUT_MS = 5 * 60 * 1000
  * already shown the full review (source, target, fee, warnings) and collected
  * an explicit confirmation, we just need the signature.
  */
-export const requestRekeySignatures = (
+export const requestDelegationSignatures = (
     addSignRequest: AddSignRequestFn,
     source: { name: string; description: string },
     unsignedTxs: UnsignedTransaction[],
@@ -66,13 +66,13 @@ export const requestRekeySignatures = (
         const timeoutId = setTimeout(() => {
             settle(() =>
                 reject(
-                    new RekeyError(
+                    new DelegationError(
                         'signing_failed',
-                        new Error('Rekey signing timed out'),
+                        new Error('Delegation signing timed out'),
                     ),
                 ),
             )
-        }, REKEY_SIGNING_TIMEOUT_MS)
+        }, DELEGATION_SIGNING_TIMEOUT_MS)
 
         const request: UnsignedTransactionSignRequest = {
             id: generateOrderedUniqueId(),
@@ -94,10 +94,10 @@ export const requestRekeySignatures = (
                 )
             },
             reject: async () => {
-                settle(() => reject(new RekeyError('user_rejected')))
+                settle(() => reject(new DelegationError('user_rejected')))
             },
             error: async (err: Error) => {
-                settle(() => reject(new RekeyError('signing_failed', err)))
+                settle(() => reject(new DelegationError('signing_failed', err)))
             },
         }
         addSignRequest(request)

@@ -319,8 +319,8 @@ describe('useErrorToast', () => {
 
         expect(mockShowToast).toHaveBeenCalledWith(
             {
-                title: 'errors.algod.asset_frozen.title',
-                body: 'errors.algod.asset_frozen.body',
+                title: 'errors.transaction.asset_frozen.title',
+                body: 'errors.transaction.asset_frozen.body',
                 type: 'error',
             },
             undefined,

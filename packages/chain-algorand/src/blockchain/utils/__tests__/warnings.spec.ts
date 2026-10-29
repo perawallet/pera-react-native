@@ -146,7 +146,7 @@ describe('aggregateTransactionWarnings', () => {
         )
         expect(warnings).toEqual([
             {
-                type: 'rekey',
+                type: 'delegation',
                 senderAddress: 'ADDR1',
                 targetAddress: 'ENCODED_REKEY_TARGET',
             },
@@ -262,7 +262,7 @@ describe('aggregateTransactionWarnings', () => {
         )
         expect(warnings).toHaveLength(2)
         expect(warnings[0].type).toBe('close-account')
-        expect(warnings[1].type).toBe('rekey')
+        expect(warnings[1].type).toBe('delegation')
     })
 
     test('detects both close-account and rekey on same transaction', () => {
@@ -284,7 +284,7 @@ describe('aggregateTransactionWarnings', () => {
         )
         expect(warnings).toHaveLength(2)
         expect(warnings[0].type).toBe('close-account')
-        expect(warnings[1].type).toBe('rekey')
+        expect(warnings[1].type).toBe('delegation')
     })
 
     test('detects asset-freeze warning', () => {
@@ -333,7 +333,7 @@ describe('aggregateTransactionWarnings', () => {
         )
         expect(warnings).toHaveLength(2)
         expect(warnings[0].type).toBe('asset-freeze')
-        expect(warnings[1].type).toBe('rekey')
+        expect(warnings[1].type).toBe('delegation')
     })
 
     // gating must follow the authorizing entity (the dApp-supplied
@@ -364,7 +364,7 @@ describe('aggregateTransactionWarnings', () => {
 
             expect(warnings).toEqual([
                 {
-                    type: 'rekey',
+                    type: 'delegation',
                     senderAddress: 'FOREIGN_E',
                     targetAddress: 'ENCODED_ATTACKER',
                 },
@@ -439,7 +439,7 @@ describe('aggregateTransactionWarnings', () => {
 
             expect(warnings).toEqual([
                 {
-                    type: 'rekey',
+                    type: 'delegation',
                     senderAddress: 'ADDR1',
                     targetAddress: 'ENCODED_REKEY_TARGET',
                 },
@@ -473,7 +473,7 @@ describe('aggregateTransactionWarnings', () => {
 
             expect(warnings).toEqual([
                 {
-                    type: 'rekey',
+                    type: 'delegation',
                     senderAddress: 'FOREIGN_E',
                     targetAddress: 'ENCODED_TARGET_1',
                 },

@@ -57,11 +57,13 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
         mockResolveMinFeeForSender(...args),
     getOpenSubmissionAttemptsForIntent: (...args: unknown[]) =>
         mockGetOpenSubmissionAttemptsForIntent(...args),
+    // Pinned against the real constant in the signing package's types.spec.ts.
+    DELEGATION_SUBMISSION_FLOW: 'rekey',
     STALE_OPEN_ATTEMPT_MS: 60 * 60 * 1000,
 }))
 
-import { useSubmitRekeyMutation } from '../useSubmitRekeyMutation'
-import { RekeyError } from '../../errors'
+import { useSubmitDelegationMutation } from '../useSubmitDelegationMutation'
+import { DelegationError } from '../../errors'
 import { sendFlowChainAdapters } from '../../chain-adapter'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
@@ -94,7 +96,7 @@ const wrapper = ({ children }: { children: React.ReactNode }) => {
     )
 }
 
-describe('useSubmitRekeyMutation', () => {
+describe('useSubmitDelegationMutation', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockGetSuggestedParams.mockResolvedValue({ minFee: 1000n })
@@ -103,7 +105,7 @@ describe('useSubmitRekeyMutation', () => {
             chainId: 'algorand',
             buildTransferTxs: vi.fn(),
             transactionFee: vi.fn(),
-            rekey: { buildTx: mockBuildRekeyTx },
+            delegation: { buildTx: mockBuildRekeyTx },
         })
         mockUseFeeConfig.mockReturnValue({
             minTxnFee: 1000n,
@@ -126,12 +128,12 @@ describe('useSubmitRekeyMutation', () => {
         // OFF-004 hardening: when the device is offline, the mutation must
         // reject immediately — no Ledger/biometric prompt on a request that
         // can no way be submitted. assertOnline() runs BEFORE getSuggestedParams
-        // and before requestRekeySignatures, so neither may be reached.
+        // and before requestDelegationSignatures, so neither may be reached.
         onlineManager.setOnline(false)
 
         const { result } = renderHook(
             () =>
-                useSubmitRekeyMutation({
+                useSubmitDelegationMutation({
                     scope: {
                         chainId: LEGACY_CHAIN_ID,
                         networkId: 'testnet',
@@ -143,15 +145,15 @@ describe('useSubmitRekeyMutation', () => {
 
         const rejection = result.current.submitAsync({
             sourceAddress: 'SRC',
-            rekeyToAddress: 'TGT',
+            authorityAddress: 'TGT',
         })
 
-        await expect(rejection).rejects.toBeInstanceOf(RekeyError)
+        await expect(rejection).rejects.toBeInstanceOf(DelegationError)
         await expect(rejection).rejects.toMatchObject({
             reason: 'build_failed',
         })
         // The NoConnectionError is preserved as the wrapped cause.
-        await rejection.catch((error: RekeyError) => {
+        await rejection.catch((error: DelegationError) => {
             expect(error.originalError).toBeInstanceOf(NoConnectionError)
         })
 
@@ -170,7 +172,7 @@ describe('useSubmitRekeyMutation', () => {
 
         const { result } = renderHook(
             () =>
-                useSubmitRekeyMutation({
+                useSubmitDelegationMutation({
                     scope: {
                         chainId: LEGACY_CHAIN_ID,
                         networkId: 'testnet',
@@ -182,10 +184,10 @@ describe('useSubmitRekeyMutation', () => {
 
         const rejection = result.current.submitAsync({
             sourceAddress: 'SRC',
-            rekeyToAddress: 'TGT',
+            authorityAddress: 'TGT',
         })
 
-        await expect(rejection).rejects.toBeInstanceOf(RekeyError)
+        await expect(rejection).rejects.toBeInstanceOf(DelegationError)
         await expect(rejection).rejects.toMatchObject({
             reason: 'submission_pending',
         })
@@ -213,7 +215,7 @@ describe('useSubmitRekeyMutation', () => {
 
         const { result } = renderHook(
             () =>
-                useSubmitRekeyMutation({
+                useSubmitDelegationMutation({
                     scope: {
                         chainId: LEGACY_CHAIN_ID,
                         networkId: 'testnet',
@@ -226,7 +228,7 @@ describe('useSubmitRekeyMutation', () => {
         await act(async () => {
             await result.current.submitAsync({
                 sourceAddress: 'SRC',
-                rekeyToAddress: 'TGT',
+                authorityAddress: 'TGT',
             })
         })
 
@@ -250,7 +252,7 @@ describe('useSubmitRekeyMutation', () => {
 
         const { result } = renderHook(
             () =>
-                useSubmitRekeyMutation({
+                useSubmitDelegationMutation({
                     scope: {
                         chainId: LEGACY_CHAIN_ID,
                         networkId: 'testnet',
@@ -266,14 +268,14 @@ describe('useSubmitRekeyMutation', () => {
         await act(async () => {
             returned = await result.current.submitAsync({
                 sourceAddress: 'SRC',
-                rekeyToAddress: 'TGT',
+                authorityAddress: 'TGT',
             })
         })
 
         expect(mockBuildRekeyTx).toHaveBeenCalledWith({
             scope: { chainId: 'algorand', networkId: 'testnet' },
             sourceAddress: 'SRC',
-            rekeyToAddress: 'TGT',
+            authorityAddress: 'TGT',
             minFee: 1000n,
         })
         expect(mockAddSignRequest).toHaveBeenCalledTimes(1)
@@ -292,7 +294,7 @@ describe('useSubmitRekeyMutation', () => {
         expect(returned).toEqual(txIds)
     })
 
-    it('rejects with a user_rejected RekeyError when the signing pipeline rejects', async () => {
+    it('rejects with a user_rejected DelegationError when the signing pipeline rejects', async () => {
         mockBuildRekeyTx.mockResolvedValueOnce({ id: 'unsigned-txn' })
         mockAddSignRequest.mockImplementationOnce(
             (request: MockSignRequest) => {
@@ -302,7 +304,7 @@ describe('useSubmitRekeyMutation', () => {
 
         const { result } = renderHook(
             () =>
-                useSubmitRekeyMutation({
+                useSubmitDelegationMutation({
                     scope: {
                         chainId: LEGACY_CHAIN_ID,
                         networkId: 'testnet',
@@ -317,19 +319,19 @@ describe('useSubmitRekeyMutation', () => {
         await expect(
             result.current.submitAsync({
                 sourceAddress: 'SRC',
-                rekeyToAddress: 'TGT',
+                authorityAddress: 'TGT',
             }),
         ).rejects.toMatchObject({ reason: 'user_rejected' })
         expect(mockSubmitAndAutoRefresh).not.toHaveBeenCalled()
     })
 
-    it('wraps a failed payment build in a build_failed RekeyError', async () => {
+    it('wraps a failed payment build in a build_failed DelegationError', async () => {
         const buildError = new Error('cannot build payment')
         mockBuildRekeyTx.mockRejectedValueOnce(buildError)
 
         const { result } = renderHook(
             () =>
-                useSubmitRekeyMutation({
+                useSubmitDelegationMutation({
                     scope: {
                         chainId: LEGACY_CHAIN_ID,
                         networkId: 'testnet',
@@ -344,7 +346,7 @@ describe('useSubmitRekeyMutation', () => {
         await expect(
             result.current.submitAsync({
                 sourceAddress: 'SRC',
-                rekeyToAddress: 'TGT',
+                authorityAddress: 'TGT',
             }),
         ).rejects.toMatchObject({
             reason: 'build_failed',
@@ -353,7 +355,7 @@ describe('useSubmitRekeyMutation', () => {
         expect(mockAddSignRequest).not.toHaveBeenCalled()
     })
 
-    it('wraps algod submission errors in a submission_failed RekeyError', async () => {
+    it('wraps algod submission errors in a submission_failed DelegationError', async () => {
         const algodError = new Error('algod unreachable')
         mockBuildRekeyTx.mockResolvedValueOnce({ id: 'unsigned-txn' })
         mockAddSignRequest.mockImplementationOnce(
@@ -365,7 +367,7 @@ describe('useSubmitRekeyMutation', () => {
 
         const { result } = renderHook(
             () =>
-                useSubmitRekeyMutation({
+                useSubmitDelegationMutation({
                     scope: {
                         chainId: LEGACY_CHAIN_ID,
                         networkId: 'testnet',
@@ -379,9 +381,9 @@ describe('useSubmitRekeyMutation', () => {
 
         const rejection = result.current.submitAsync({
             sourceAddress: 'SRC',
-            rekeyToAddress: 'TGT',
+            authorityAddress: 'TGT',
         })
-        await expect(rejection).rejects.toBeInstanceOf(RekeyError)
+        await expect(rejection).rejects.toBeInstanceOf(DelegationError)
         await expect(rejection).rejects.toMatchObject({
             reason: 'submission_failed',
             originalError: algodError,
@@ -391,7 +393,7 @@ describe('useSubmitRekeyMutation', () => {
     it('opts out of throwOnError so signing failures do not crash the confirm screen', async () => {
         // Mirrors the production QueryProvider, where mutations default to
         // throwOnError: true so unhandled errors surface to ErrorBoundary.
-        // useSubmitRekeyMutation overrides this because every caller handles
+        // useSubmitDelegationMutation overrides this because every caller handles
         // signing failures locally via try/catch + showError. Without the
         // override, a Ledger timeout would render-error the confirm screen
         // on the next re-render even after the consumer's catch block had
@@ -430,7 +432,7 @@ describe('useSubmitRekeyMutation', () => {
 
         const { result, rerender } = renderHook(
             () =>
-                useSubmitRekeyMutation({
+                useSubmitDelegationMutation({
                     scope: {
                         chainId: LEGACY_CHAIN_ID,
                         networkId: 'testnet',
@@ -445,7 +447,7 @@ describe('useSubmitRekeyMutation', () => {
             await expect(
                 result.current.submitAsync({
                     sourceAddress: 'SRC',
-                    rekeyToAddress: 'TGT',
+                    authorityAddress: 'TGT',
                 }),
             ).rejects.toMatchObject({
                 reason: 'signing_failed',
@@ -475,7 +477,7 @@ describe('useSubmitRekeyMutation', () => {
 
         const { result } = renderHook(
             () =>
-                useSubmitRekeyMutation({
+                useSubmitDelegationMutation({
                     scope: {
                         chainId: LEGACY_CHAIN_ID,
                         networkId: 'testnet',
@@ -488,7 +490,7 @@ describe('useSubmitRekeyMutation', () => {
         await act(async () => {
             await result.current.submitAsync({
                 sourceAddress: 'SRC',
-                rekeyToAddress: 'TGT',
+                authorityAddress: 'TGT',
             })
         })
 
@@ -507,7 +509,7 @@ describe('useSubmitRekeyMutation', () => {
         })
     })
 
-    it('surfaces a chain without rekey as a build_failed RekeyError', async () => {
+    it('surfaces a chain without delegation as a build_failed DelegationError', async () => {
         sendFlowChainAdapters.reset()
         sendFlowChainAdapters.register({
             chainId: 'algorand',
@@ -517,7 +519,7 @@ describe('useSubmitRekeyMutation', () => {
 
         const { result } = renderHook(
             () =>
-                useSubmitRekeyMutation({
+                useSubmitDelegationMutation({
                     scope: {
                         chainId: LEGACY_CHAIN_ID,
                         networkId: 'testnet',
@@ -530,7 +532,7 @@ describe('useSubmitRekeyMutation', () => {
         await expect(
             result.current.submitAsync({
                 sourceAddress: 'SRC',
-                rekeyToAddress: 'TGT',
+                authorityAddress: 'TGT',
             }),
         ).rejects.toMatchObject({ reason: 'build_failed' })
         expect(mockAddSignRequest).not.toHaveBeenCalled()
