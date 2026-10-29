@@ -29,6 +29,7 @@ import { testIdProp } from './rules/test-id-prop.js'
 import { makeStylesLocation } from './rules/make-styles-location.js'
 import { preferToError } from './rules/prefer-to-error.js'
 import { noDeepRelativeImports } from './rules/no-deep-relative-imports.js'
+import { preferNullableAlias } from './rules/prefer-nullable-alias.js'
 
 // A mobile-source rule needs its own override in apps/mobile/.oxlintrc.json:
 // oxlint resolves an inherited override's globs from the extending config's
@@ -55,5 +56,6 @@ export default {
         'make-styles-location': makeStylesLocation,
         'prefer-to-error': preferToError,
         'no-deep-relative-imports': noDeepRelativeImports,
+        'prefer-nullable-alias': preferNullableAlias,
     },
 }

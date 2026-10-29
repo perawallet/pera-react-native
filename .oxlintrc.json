@@ -318,6 +318,21 @@
       "rules": { "pera/prefer-to-error": "error" }
     },
     {
+      "files": ["apps/*/src/**", "packages/*/src/**", "extensions/*/src/**"],
+      "excludeFiles": [
+        "**/__tests__/**",
+        "**/__mocks__/**",
+        "**/test-utils/**",
+        "**/__integration__/**",
+        "**/*.spec.{ts,tsx}",
+        "**/*.test.{ts,tsx}",
+        "packages/shared/src/**",
+        "packages/chain-contract/src/**",
+        "packages/config/src/**"
+      ],
+      "rules": { "pera/prefer-nullable-alias": "error" }
+    },
+    {
       "files": ["packages/*/src/**", "extensions/*/src/**", "apps/browser/src/**"],
       "excludeFiles": ["**/__tests__/**", "**/__mocks__/**", "**/test-utils/**", "**/__integration__/**", "**/*.spec.{ts,tsx}", "**/*.test.{ts,tsx}"],
       "rules": { "no-console": "error" }
