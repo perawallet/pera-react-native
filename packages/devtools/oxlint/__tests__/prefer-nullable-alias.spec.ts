@@ -50,6 +50,8 @@ tester.run(RULE, preferNullableAlias, {
         'type A = { a?: string }',
         'function f(a?: string) {}',
         { code: 'type A = string | null', filename: 'globals.d.ts' },
+        `import type { Optional } from '${S}'\nimport type { Nullable } from './types'\ntype A = Optional<Nullable<Foo>>`,
+        `import type { Nullable } from '${S}'\ntype A = Nullable<Array<Nullable<Foo>>>`,
     ],
     invalid: [
         {
@@ -173,6 +175,66 @@ tester.run(RULE, preferNullableAlias, {
             code: `import type { Nullable } from '${S}'\ntype A = string | /* unset */ null`,
             output: null,
             errors: [{ messageId: 'nullable' }],
+        },
+        {
+            code: `import type { Nullable } from '${S}'\ntype A = Nullable<Foo> | undefined`,
+            output: `import type { Maybe } from '${S}'\ntype A = Maybe<Foo>`,
+            errors: [{ messageId: 'collapse', data: { alias: 'Maybe' } }],
+        },
+        {
+            code: `import type { Nullable } from '${S}'\ntype A = Nullable<Foo> | undefined\ntype B = Nullable<Bar>`,
+            output: `import type { Nullable, Maybe } from '${S}'\ntype A = Maybe<Foo>\ntype B = Nullable<Bar>`,
+            errors: [{ messageId: 'collapse' }],
+        },
+        {
+            code: `import type { Maybe, Nullable } from '${S}'\ntype A = undefined | Nullable<Foo>\ntype B = Nullable<Bar>`,
+            output: `import type { Maybe, Nullable } from '${S}'\ntype A = Maybe<Foo>\ntype B = Nullable<Bar>`,
+            errors: [{ messageId: 'collapse' }],
+        },
+        {
+            code: `import type { Maybe } from '${S}'\ntype A = Maybe<Foo> | null`,
+            output: `import type { Maybe } from '${S}'\ntype A = Maybe<Foo>`,
+            errors: [{ messageId: 'collapse', data: { alias: 'Maybe' } }],
+        },
+        {
+            code: `import type { Optional, Nullable } from '${S}'\ntype A = Optional<Nullable<Foo>>`,
+            output: `import type { Maybe } from '${S}'\ntype A = Maybe<Foo>`,
+            errors: [{ messageId: 'collapse', data: { alias: 'Maybe' } }],
+        },
+        {
+            code: `import type { Foo, Nullable, Optional } from '${S}'\ntype A = Nullable<Optional<Bar>>`,
+            output: `import type { Foo, Maybe } from '${S}'\ntype A = Maybe<Bar>`,
+            errors: [{ messageId: 'collapse', data: { alias: 'Maybe' } }],
+        },
+        {
+            code: `import { logger, type Optional, type Nullable } from '${S}'\ntype A = Optional<Nullable<Foo>>`,
+            output: `import { logger, type Maybe } from '${S}'\ntype A = Maybe<Foo>`,
+            errors: [{ messageId: 'collapse' }],
+        },
+        {
+            code: `import type { Maybe } from '${S}'\nimport type { Nullable } from '${S}'\ntype A = Nullable<Foo> | undefined`,
+            output: `import type { Maybe } from '${S}'\ntype A = Maybe<Foo>`,
+            errors: [{ messageId: 'collapse' }],
+        },
+        {
+            code: `import type { Nullable } from '${S}'\ntype A = Nullable<Nullable<Foo>>`,
+            output: `import type { Nullable } from '${S}'\ntype A = Nullable<Foo>`,
+            errors: [{ messageId: 'collapse', data: { alias: 'Nullable' } }],
+        },
+        {
+            code: `import type { Optional, Nullable } from '${S}'\ntype A = Optional<Nullable<Foo>> | null`,
+            output: `import type { Maybe } from '${S}'\ntype A = Maybe<Foo>`,
+            errors: [{ messageId: 'collapse' }],
+        },
+        {
+            code: `import type { Optional, Nullable } from '${S}'\ntype Maybe<T> = T\ntype A = Optional<Nullable<Foo>>`,
+            output: null,
+            errors: [{ messageId: 'collapse' }],
+        },
+        {
+            code: `import type { Nullable } from '${S}'\ntype A = Nullable</* why */ Foo> | undefined`,
+            output: null,
+            errors: [{ messageId: 'collapse' }],
         },
     ],
 })

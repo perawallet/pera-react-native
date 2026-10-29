@@ -33,6 +33,7 @@ import {
     type WithPersist,
     type Nullable,
     type Optional,
+    type Maybe,
 } from '@perawallet/wallet-core-shared'
 import {
     addressCodecs,
@@ -264,7 +265,7 @@ const stripPreV2Custody = (raw: PersistedRecord): PersistedRecord => {
 
 /** The id of the account that held `address` before the migration; `null` when none did. */
 const idForLegacyAddress = (
-    address: Optional<Nullable<string>>,
+    address: Maybe<string>,
     records: readonly MigratedRecord[],
 ): Nullable<string> => {
     if (!address) return null
@@ -317,7 +318,7 @@ const migrateToV5 = (
         lifted,
     )
     const accounts = records.map(record => record.account)
-    const idOf = (address: Optional<Nullable<string>>) =>
+    const idOf = (address: Maybe<string>) =>
         idForLegacyAddress(address, records)
     const launchAccountId = idOf(state.launchAccountAddress)
     return {

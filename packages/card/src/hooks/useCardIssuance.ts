@@ -17,7 +17,7 @@ import {
     type Mutation,
 } from '@tanstack/react-query'
 import { type ChainScope } from '@perawallet/wallet-core-chain-contract'
-import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
+import type { Nullable, Optional, Maybe } from '@perawallet/wallet-core-shared'
 import { CardOrderNotVerifiedError } from '../api/card'
 import { CardStatus, VerificationState, isKycVerified } from '../models'
 import type { Card, CardEligibilityReason } from '../models'
@@ -62,7 +62,7 @@ export type UseCardIssuanceResult = {
     retryOrder: () => void
     /** The Baanx card, once the status query has one. `null` when there is no
      *  card yet, `undefined` while the first fetch is in flight. */
-    card: Optional<Nullable<Card>>
+    card: Maybe<Card>
     /** True when the status query is paused waiting for connectivity. */
     isStatusPaused: boolean
     /**

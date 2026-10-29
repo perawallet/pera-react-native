@@ -19,7 +19,7 @@ import {
 import { getChainDescriptor } from '@perawallet/wallet-core-chain-shared'
 import {
     baseUnitsToDisplayUnits,
-    type Nullable,
+    type Maybe,
     type Optional,
 } from '@perawallet/wallet-core-shared'
 import { accountsChainAdapters } from '../chain-adapter'
@@ -48,7 +48,7 @@ export type UseAccountStateQueryResult = {
  * in base units.
  */
 export const useAccountStateQuery = (
-    account: Optional<Nullable<WalletAccount>>,
+    account: Maybe<WalletAccount>,
     scope: ChainScope,
 ): UseAccountStateQueryResult => {
     const address = (account && addressOn(account, scope)) ?? ''

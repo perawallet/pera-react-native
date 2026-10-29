@@ -47,6 +47,7 @@ import {
     useDebouncedValue,
     type Nullable,
     type Optional,
+    type Maybe,
 } from '@perawallet/wallet-core-shared'
 import {
     assetRefKey,
@@ -124,7 +125,7 @@ export const useAddAssetView = (
     >(new Set())
     // Undefined until the user picks a chip.
     const [pickedChainId, setPickedChainId] =
-        useState<Optional<Nullable<ChainId>>>(undefined)
+        useState<Maybe<ChainId>>(undefined)
     const [searchQuery, setSearchQuery] = useState('')
     const debouncedQuery = useDebouncedValue(searchQuery, SEARCH_DEBOUNCE_TIME)
 
