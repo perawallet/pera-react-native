@@ -6,16 +6,21 @@ export const THUMB_SIZE = 64
 const TAG_FONT_SIZE = 13
 const ROW_LINE_HEIGHT = 20
 const CAPTION_FONT_SIZE = 11
+const BADGE_SIZE = 24
+const TITLE_FONT_SIZE = 18
 
 export const rowHeight = moderateScale(ROW_LINE_HEIGHT)
 export const caption = { fontSize: CAPTION_FONT_SIZE }
 
 export const useStyles = makeStyles(theme => {
     const tag = { fontSize: TAG_FONT_SIZE }
+    const title = { fontSize: moderateScale(TITLE_FONT_SIZE) }
     return {
         key: { width: KEY_SIZE, height: KEY_SIZE },
         thumb: { width: THUMB_SIZE },
         tag,
+        title,
+        badge: { width: moderateScale(BADGE_SIZE) },
         inset: { paddingBottom: theme.spacing.xl + 20 },
         half: { borderRadius: theme.spacing.xl / 2 },
         tall: { height: theme.spacing.xxl * 4 },

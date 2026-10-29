@@ -15,21 +15,23 @@ describe('pera/no-numeric-sizes', () => {
         const found = await run()
 
         expect(locations(found)).toEqual([
-            'size-rules.component.bad.tsx:5',
-            'size-rules.component.bad.tsx:9',
-            'size-rules.component.bad.tsx:13',
-            'size-rules.component.bad.tsx:14',
+            'size-rules.component.bad.tsx:6',
+            'size-rules.component.bad.tsx:7',
+            'size-rules.component.bad.tsx:11',
+            'size-rules.component.bad.tsx:15',
             'size-rules.component.bad.tsx:16',
+            'size-rules.component.bad.tsx:18',
             'size-rules.styles.bad.ts:4',
             'size-rules.styles.bad.ts:5',
-            'size-rules.styles.bad.ts:19',
-            'size-rules.styles.bad.ts:20',
-            'size-rules.styles.bad.ts:21',
-            'size-rules.styles.bad.ts:22',
-            'size-rules.styles.bad.ts:23',
+            'size-rules.styles.bad.ts:9',
+            'size-rules.styles.bad.ts:24',
             'size-rules.styles.bad.ts:25',
+            'size-rules.styles.bad.ts:26',
             'size-rules.styles.bad.ts:27',
+            'size-rules.styles.bad.ts:28',
             'size-rules.styles.bad.ts:30',
+            'size-rules.styles.bad.ts:32',
+            'size-rules.styles.bad.ts:35',
         ])
     })
 
@@ -44,6 +46,8 @@ describe('pera/no-numeric-sizes', () => {
                 'numeric value 16 for JSX prop "width" — use a theme token',
                 'module constant KEY_SIZE = 72 feeds styles — use a theme token at the use site',
                 'module constant ICON_SIZE = 20 feeds styles — use a theme token at the use site',
+                'module constant LOADER_SIZE = 32 feeds styles — use a theme token at the use site',
+                'module constant BADGE_SIZE = 24 feeds styles — use a theme token at the use site',
             ]),
         )
     })
@@ -82,11 +86,13 @@ describe('pera/no-typography-in-styles size constants', () => {
             'size-rules.styles.bad.ts:6',
             'size-rules.styles.bad.ts:7',
             'size-rules.styles.bad.ts:8',
+            'size-rules.styles.bad.ts:10',
         ])
         expect(found.map(v => v.message)).toEqual([
             'module constant TAG_FONT_SIZE = 13 sets typography — use getTypography or a PWText variant',
             'module constant ROW_LINE_HEIGHT = 20 sets typography — use getTypography or a PWText variant',
             'module constant CAPTION_FONT_SIZE = 11 sets typography — use getTypography or a PWText variant',
+            'module constant TITLE_FONT_SIZE = 18 sets typography — use getTypography or a PWText variant',
         ])
     })
 })

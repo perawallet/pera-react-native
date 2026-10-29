@@ -153,7 +153,13 @@ const calleeName = (ctx: RuleContext, call: Node): string | undefined => {
     return ctx.text(callee)
 }
 
-function classify(ctx: RuleContext, reference: Node): ConstantSink | undefined {
+// Every sink on the way up counts: `moderateScale` also scales sizes, so
+// `width: moderateScale(ICON_SIZE)` must still reach the enclosing makeStyles.
+function classify(
+    ctx: RuleContext,
+    reference: Node,
+    sinks: Set<ConstantSink>,
+): void {
     for (const ancestor of ctx.ancestors(reference)) {
         switch (ctx.kind(ancestor)) {
             case 'call_expression': {
@@ -165,16 +171,17 @@ function classify(ctx: RuleContext, reference: Node): ConstantSink | undefined {
                     callee !== undefined &&
                     isRneuiMakeStyles(ctx, callee)
                 ) {
-                    return 'makeStyles'
+                    sinks.add('makeStyles')
+                } else if (TYPOGRAPHY_CALLS.has(name)) {
+                    sinks.add('typography')
                 }
-                if (TYPOGRAPHY_CALLS.has(name)) return 'typography'
                 break
             }
             case 'jsx_attribute': {
                 const attr = ctx.namedChildren(ancestor)[0]
                 const name = attr === undefined ? undefined : ctx.text(attr)
                 if (name !== undefined && JSX_SIZE_PROPS.has(name)) {
-                    return 'jsxSizeProp'
+                    sinks.add('jsxSizeProp')
                 }
                 break
             }
@@ -182,19 +189,18 @@ function classify(ctx: RuleContext, reference: Node): ConstantSink | undefined {
                 const key = ctx.namedChildren(ancestor)[0]
                 const name = key === undefined ? undefined : ctx.text(key)
                 if (name !== undefined && TYPOGRAPHY_KEYS.has(name)) {
-                    return 'typography'
+                    sinks.add('typography')
                 }
                 break
             }
         }
     }
-    return undefined
 }
 
 /**
  * Where a module constant is read in its own file. The declaration itself is
- * skipped; every other identifier with the same name is classified by the
- * nearest enclosing sink.
+ * skipped; every other identifier with the same name contributes each sink
+ * that encloses it.
  */
 export function constantSinks(
     ctx: RuleContext,
@@ -218,8 +224,7 @@ export function constantSinks(
         if (ctx.line(reference) === line && ctx.column(reference) === column) {
             continue
         }
-        const sink = classify(ctx, reference)
-        if (sink !== undefined) sinks.add(sink)
+        classify(ctx, reference, sinks)
     }
     return sinks
 }
