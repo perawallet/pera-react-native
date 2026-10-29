@@ -30,6 +30,7 @@ export const AmountRowText = ({ item }: AmountRowTextProps) => {
             {/* Sign sits after the asset symbol (e.g. "¦ -0.1"), matching the
                 single-transaction summary header. */}
             <AssetAmount
+                chainId={item.chainId}
                 asset={item.asset}
                 value={item.amount}
                 sign={signOf(item)}

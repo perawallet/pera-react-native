@@ -72,11 +72,13 @@ const TransactionListItemView = ({
                 <PWView style={styles.amountContainer}>
                     {amounts.map((amount, index) => (
                         <CurrencyAmount
+                            chainId={amount.chainId}
                             key={index}
                             value={amount.value}
                             currency={amount.currency}
                             assetId={amount.assetId}
                             precision='compact'
+                            assetDecimals={amount.decimals}
                             prefix={amount.prefix}
                             showSymbol
                             symbolPosition='end'

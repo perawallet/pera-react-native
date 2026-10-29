@@ -170,6 +170,14 @@ export type ProbedHdIndex = {
     active: AccountChains
 }
 
+/**
+ * How far a chain answered one probed batch. `answered`: every index derived
+ * and the chain answered for every address. `partial`: it answered some, but
+ * an index failed to derive or the answer left an address out. `failed`: the
+ * probe rejected, or no index derived.
+ */
+export type HdProbeOutcome = 'answered' | 'partial' | 'failed'
+
 type DiscoverWalletActivityParams = {
     /** The seed's KMS id. */
     walletId: string
@@ -187,12 +195,15 @@ type DiscoverWalletActivityParams = {
     rootKey?: Uint8Array
     accountGapLimit?: number
     keyIndexGapLimit?: number
+    /** Called once per chain for each probed batch. */
+    onProbeSettled?: (outcome: HdProbeOutcome) => void
 }
 
 /**
  * Walks a persisted seed's HD tree on every chain in `chainIds` at once: an
  * index is active when any chain reports activity there. A derivation or a
- * probe that fails reads as inactive on that chain. Resolves to every index
+ * probe that fails reads as inactive on that chain, and `onProbeSettled`
+ * says how much of it was answered. Resolves to every index
  * it probed, so the caller can drop the keys it derived for nothing.
  */
 export async function discoverWalletActivity({
@@ -204,6 +215,7 @@ export async function discoverWalletActivity({
     rootKey,
     accountGapLimit = ACCOUNT_GAP_LIMIT,
     keyIndexGapLimit,
+    onProbeSettled,
 }: DiscoverWalletActivityParams): Promise<ProbedHdIndex[]> {
     const { chains: registry } = getProvider()
     // Filled as each key is derived, so a batch that fails later still reports
@@ -303,15 +315,24 @@ export async function discoverWalletActivity({
         const addresses = entries.flatMap(entry =>
             entry ? [entry.address] : [],
         )
-        if (addresses.length === 0) return entries.map(() => undefined)
-        const activity = await accountsChainAdapters
-            .get(scope.chainId)
-            .checkActivity(addresses, scope)
-            .then(answer => {
-                onProbeAnswered?.()
-                return answer
-            })
-            .catch(() => new Map<string, boolean>())
+        if (addresses.length === 0) {
+            onProbeSettled?.('failed')
+            return entries.map(() => undefined)
+        }
+        let activity: Map<string, boolean>
+        try {
+            activity = await accountsChainAdapters
+                .get(scope.chainId)
+                .checkActivity(addresses, scope)
+        } catch {
+            onProbeSettled?.('failed')
+            return entries.map(() => undefined)
+        }
+        onProbeAnswered?.()
+        const isComplete =
+            addresses.length === entries.length &&
+            addresses.every(address => activity.has(address))
+        onProbeSettled?.(isComplete ? 'answered' : 'partial')
         return entries.map(entry =>
             entry && activity.get(entry.address) === true ? entry : undefined,
         )

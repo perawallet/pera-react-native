@@ -10,17 +10,32 @@
  limitations under the License
  */
 
+import { useCallback } from 'react'
 import { useMutation, type UseMutationOptions } from '@tanstack/react-query'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { deleteDevice } from './endpoints'
 import { useDeploymentDeviceID } from './useDeviceID'
 
+// TanStack swaps a pending mutation's options on every render, so the device IDs travel in the variables.
+type DeleteDeviceVariables = {
+    developerDeviceID: Nullable<string>
+    liveDeviceID: Nullable<string>
+}
+
+export type UseDeleteDeviceMutationResult = {
+    mutateAsync: () => Promise<void>
+}
+
 export const useDeleteDeviceMutation = (
-    options?: UseMutationOptions<void, Error, void>,
-) => {
+    options?: UseMutationOptions<void, Error, DeleteDeviceVariables>,
+): UseDeleteDeviceMutationResult => {
     const developerDeviceID = useDeploymentDeviceID('developer')
     const liveDeviceID = useDeploymentDeviceID('live')
-    return useMutation({
-        mutationFn: async () => {
+    const { mutateAsync } = useMutation({
+        mutationFn: async ({
+            developerDeviceID,
+            liveDeviceID,
+        }: DeleteDeviceVariables) => {
             // v3 takes `id` alone and prefers it over a push token when both
             // are sent, so a device whose push token was never granted can
             // still be deleted — v1 could not.
@@ -33,4 +48,11 @@ export const useDeleteDeviceMutation = (
         },
         ...options,
     })
+
+    const deleteDevices = useCallback(
+        () => mutateAsync({ developerDeviceID, liveDeviceID }),
+        [mutateAsync, developerDeviceID, liveDeviceID],
+    )
+
+    return { mutateAsync: deleteDevices }
 }

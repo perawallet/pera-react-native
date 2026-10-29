@@ -128,6 +128,7 @@ export const AssetInboxSendSummaryScreen = () => {
                         <PWView style={styles.rowAssetContainer}>
                             {asset ? (
                                 <AssetTitle
+                                    chainId={scope.chainId}
                                     asset={asset}
                                     nameVariant='h4'
                                 />
@@ -136,6 +137,7 @@ export const AssetInboxSendSummaryScreen = () => {
                             )}
                         </PWView>
                         <AssetAmount
+                            chainId={scope.chainId}
                             value={amount}
                             asset={asset}
                             variant='h4'
@@ -166,6 +168,7 @@ export const AssetInboxSendSummaryScreen = () => {
                             {t('send_funds.asset_inbox_summary.fees_label')}
                         </PWText>
                         <AssetAmount
+                            chainId={scope.chainId}
                             value={fee}
                             asset={nativeAsset}
                             ignorePrivacyMode

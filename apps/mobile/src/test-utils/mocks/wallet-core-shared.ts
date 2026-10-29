@@ -77,6 +77,12 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
         critical: () => {},
         warn: () => {},
     })
+    // Imports only constants and decimal.js; the precision policy reads it, so a stub would
+    // invalidate every asset-amount formatting assertion.
+    const { resolveAssetDisplayPrecision, roundAssetAmountForDisplay } =
+        await vi.importActual<
+            typeof import('@packages/shared/src/utils/asset-precision')
+        >('@packages/shared/src/utils/asset-precision')
     const { percentChange } = await vi.importActual<
         typeof import('@packages/shared/src/utils/percent-change')
     >('@packages/shared/src/utils/percent-change')
@@ -484,6 +490,9 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
         // The precision policy reads this, so a wrong value silently invalidates
         // every precision/formatting assertion.
         DEFAULT_PRECISION: 2,
+        ASSET_MAX_PRECISION: 6,
+        resolveAssetDisplayPrecision,
+        roundAssetAmountForDisplay,
         ZERO_DECIMAL: new (require('decimal.js').Decimal)(0),
         ALGO_EXPLORER_URL: 'https://explorer.perawallet.app',
         // Must mirror packages/shared/src/models/base-types.ts — period pills

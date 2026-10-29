@@ -11,6 +11,7 @@
  */
 
 import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
+import type { NotifierRoot } from 'react-native-notifier'
 import { renderHook, act } from '@testing-library/react'
 import { useClipboard } from '../useClipboard'
 import * as Clipboard from 'expo-clipboard'
@@ -67,6 +68,32 @@ describe('useClipboard', () => {
             {
                 notifier: undefined,
             },
+        )
+    })
+
+    it('shows a custom body on the given notifier', async () => {
+        const mockShowToast = vi.fn()
+        ;(useToast as Mock).mockReturnValue({
+            showToast: mockShowToast,
+        })
+        const notifier = {} as NotifierRoot
+
+        const { result } = renderHook(() => useClipboard())
+
+        await act(async () => {
+            await result.current.copyToClipboard('1.5', {
+                notifier,
+                body: '1.5 ETH',
+            })
+        })
+
+        expect(mockShowToast).toHaveBeenCalledWith(
+            {
+                title: 'common.copied_to_clipboard.title',
+                body: '1.5 ETH',
+                type: 'success',
+            },
+            { notifier },
         )
     })
 

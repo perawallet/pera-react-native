@@ -105,7 +105,7 @@ export const useAccountSummaryQuery = (
             // its metadata (the enrichment pass has caught up).
             isComplete:
                 !!query.data && (query.data.missingMetadataCount ?? 0) === 0,
-            isPending: query.isPending,
+            isPending: !!address && query.isPending,
             isError: query.isError,
             isPaused: query.isPaused,
         }
@@ -114,6 +114,7 @@ export const useAccountSummaryQuery = (
         query.isPending,
         query.isError,
         query.isPaused,
+        address,
         hasPricing,
         isUnconvertibleUnknown,
     ])

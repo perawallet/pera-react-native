@@ -31,7 +31,7 @@ import {
     getCardSettlementAssetId,
     useCardUsdcCreditQuery,
 } from '@perawallet/wallet-core-card'
-import { i18nKey } from '@perawallet/wallet-core-chain-contract'
+import { i18nKey, type ChainId } from '@perawallet/wallet-core-chain-contract'
 import { apiSlippageToPercent } from '@perawallet/wallet-core-swaps'
 import {
     logger,
@@ -97,6 +97,8 @@ const STEP_ROWS: Record<CardConfirmSwapStep, CardConfirmSwapStepRowModel[]> = {
 }
 
 type UseCardConfirmSwapScreenResult = {
+    /** The chain the card settles on; both assets' chain. */
+    chainId: ChainId
     step: CardConfirmSwapStep
     steps: CardConfirmSwapStepRowModel[]
     handleRetryDeposit: () => void
@@ -367,6 +369,7 @@ export const useCardConfirmSwapScreen = (): UseCardConfirmSwapScreenResult => {
     const isBusy = isSwapping || step === 'swapping' || step === 'depositing'
 
     return {
+        chainId: scope.chainId,
         sourceAsset,
         usdcAsset,
         payDisplay,

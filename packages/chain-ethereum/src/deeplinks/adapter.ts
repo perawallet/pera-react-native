@@ -19,6 +19,7 @@ import {
     type AssetRef,
     type ChainId,
     type ChainScope,
+    type NetworkId,
     type PaymentUriOpts,
 } from '@perawallet/wallet-core-chain-contract'
 import {
@@ -96,8 +97,8 @@ const canParseWith =
 export type Eip681ParseOptions = {
     /** The registered scope that owns an `@<eip155 id>`; undefined rejects the link. */
     resolve: (eip155ChainId: number) => Optional<ChainScope>
-    /** The chain a link without `@<eip155 id>` pays on. */
-    defaultChainId: ChainId
+    /** The chain a link without `@<eip155 id>` pays on; undefined rejects such a link as unsupported-network. */
+    defaultChainId: Optional<ChainId>
     nativeAssetOf: (chainId: ChainId) => AssetRef
 }
 
@@ -118,11 +119,15 @@ export const parseEip681Uri = (
     const targetFailure = checkAddress(target)
     if (targetFailure) return fail(targetFailure)
 
-    let scope: Optional<ChainScope>
+    let linkTarget: ChainLinkTarget
     if (rawChainId !== undefined) {
         if (!/^\d+$/.test(rawChainId)) return fail('malformed')
-        scope = resolve(Number(rawChainId))
+        const scope = resolve(Number(rawChainId))
         if (!scope) return fail('unsupported-network')
+        linkTarget = { chainId: scope.chainId, networkId: scope.networkId }
+    } else {
+        if (defaultChainId === undefined) return fail('unsupported-network')
+        linkTarget = { chainId: defaultChainId }
     }
 
     // A link-initiated approval is a drain vector and the wallet decodes no
@@ -135,9 +140,6 @@ export const parseEip681Uri = (
     const params = readQuery(query)
     if (!params) return fail('malformed')
 
-    const linkTarget: ChainLinkTarget = scope
-        ? { chainId: scope.chainId, networkId: scope.networkId }
-        : { chainId: defaultChainId }
     const value = params.get('value') ?? null
 
     if (functionName === undefined) {
@@ -214,9 +216,10 @@ export const createEvmDeeplinkAdapter = (
         parse: input =>
             parseEip681Uri(input, {
                 resolve,
-                defaultChainId:
-                    resolve(EIP681_DEFAULT_EIP155_CHAIN_ID)?.chainId ??
-                    owner.row.id,
+                // No fallback to the owner: paying a chain-1 link on another EVM chain
+                // sends to the same address there.
+                defaultChainId: resolve(EIP681_DEFAULT_EIP155_CHAIN_ID)
+                    ?.chainId,
                 nativeAssetOf: nativeAssetOfEvmChain,
             }),
         toAssetRef: (raw): Optional<AssetRef> =>
@@ -226,15 +229,27 @@ export const createEvmDeeplinkAdapter = (
     }
 }
 
-export const parseEvmPaymentUri = (
-    chain: EvmChain,
-    input: string,
-): DeeplinkParseResult =>
+export const parseEvmPaymentUri = (input: string): DeeplinkParseResult =>
     parseEip681Uri(input, {
         resolve: resolveEvmScope,
-        defaultChainId: chain.row.id,
+        defaultChainId: resolveEvmScope(EIP681_DEFAULT_EIP155_CHAIN_ID)
+            ?.chainId,
         nativeAssetOf: nativeAssetOfEvmChain,
     })
+
+// A link without `@<chain id>` is chain 1's, so every other chain names its
+// mainnet when no network is given.
+const eip155ChainIdOfLink = (
+    chain: EvmChain,
+    networkId: NetworkId | undefined,
+): number | undefined => {
+    if (networkId !== undefined) return eip155ChainIdOfNetwork(chain, networkId)
+    const mainnet = chain.descriptor.networks.find(n => n.tier === 'mainnet')
+    const eip155ChainId = mainnet && eip155ChainIdOfNetwork(chain, mainnet.id)
+    return eip155ChainId === EIP681_DEFAULT_EIP155_CHAIN_ID
+        ? undefined
+        : eip155ChainId
+}
 
 export const toEip681Uri = (
     chain: EvmChain,
@@ -249,7 +264,7 @@ export const toEip681Uri = (
     }
     // toFixed: Decimal#toString gives "1e+21", which EIP-681 cannot parse.
     const amount = opts?.amount?.toFixed()
-    const eip155ChainId = eip155ChainIdOfNetwork(chain, opts?.networkId)
+    const eip155ChainId = eip155ChainIdOfLink(chain, opts?.networkId)
     const chainSuffix = eip155ChainId === undefined ? '' : `@${eip155ChainId}`
     const assetRef = opts?.assetRef
 

@@ -64,6 +64,7 @@ export const TxTypeDetails = ({ tx, isExternal }: TxTypeDetailsProps) => {
                 )
                 secondary = (
                     <AssetAmount
+                        chainId={scope.chainId}
                         asset={nativeAsset}
                         density='compact'
                         value={amount}
@@ -81,6 +82,7 @@ export const TxTypeDetails = ({ tx, isExternal }: TxTypeDetailsProps) => {
                 // Just show the raw amount for now - asset decimals would need asset lookup
                 secondary = (
                     <AssetAmount
+                        chainId={scope.chainId}
                         asset={asset}
                         density='compact'
                         value={baseUnitsToDisplayUnits(

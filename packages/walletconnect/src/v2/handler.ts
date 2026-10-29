@@ -1241,9 +1241,9 @@ export const createWalletConnectV2Handler = (
         /** From `pair()`; a re-approval without one keeps the stored origin. */
         origin?: ConnectionOrigin,
     ): Nullable<WalletConnectV2Connection> => {
-        const namespaces = v2Chains().flatMap(({ support }) => {
+        const namespaces = v2Chains().flatMap(({ support, v2 }) => {
             const namespace = session.namespaces[support.namespace]
-            return namespace ? [{ support, namespace }] : []
+            return namespace ? [{ support, v2, namespace }] : []
         })
         if (namespaces.length === 0) {
             // Pera approves nothing outside its own namespaces, so this is a
@@ -1254,14 +1254,17 @@ export const createWalletConnectV2Handler = (
             return null
         }
 
-        const parsedByNamespace = namespaces.map(({ support, namespace }) => ({
-            support,
-            namespace,
-            parsed: namespace.accounts.flatMap(account => {
-                const caip10 = parseCaip10AccountIn(support, account)
-                return caip10 === null ? [] : [caip10]
+        const parsedByNamespace = namespaces.map(
+            ({ support, v2, namespace }) => ({
+                support,
+                v2,
+                namespace,
+                parsed: namespace.accounts.flatMap(account => {
+                    const caip10 = parseCaip10AccountIn(support, account)
+                    return caip10 === null ? [] : [caip10]
+                }),
             }),
-        }))
+        )
         const accounts = dedupe(
             parsedByNamespace.flatMap(({ parsed }) =>
                 parsed.map(({ address }) => address),
@@ -1304,9 +1307,14 @@ export const createWalletConnectV2Handler = (
                             : parsed.map(({ chainId }) => chainId),
                     ),
                 ),
+                // Settings shows these as granted, so like the connect sheet
+                // they are only the prompting methods: a listed `eth_sign` is
+                // refused per call and must not read as blind signing allowed.
                 methods: dedupe(
-                    parsedByNamespace.flatMap(
-                        ({ namespace }) => namespace.methods,
+                    parsedByNamespace.flatMap(({ namespace, v2 }) =>
+                        namespace.methods.filter(method =>
+                            v2.signingMethods.includes(method),
+                        ),
                     ),
                 ),
                 // Seconds, as WalletKit reports it.

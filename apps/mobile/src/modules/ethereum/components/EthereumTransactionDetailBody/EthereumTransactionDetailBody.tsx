@@ -85,6 +85,7 @@ export const EthereumTransactionDetailBody = ({
                         title={t('transactions.common.amount')}
                     >
                         <AssetAmount
+                            chainId={presentation.scope.chainId}
                             asset={amount?.asset}
                             value={amount?.value}
                             isLoading={isAmountLoading}
@@ -136,6 +137,7 @@ export const EthereumTransactionDetailBody = ({
                 >
                     {maxFee ? (
                         <AssetAmount
+                            chainId={presentation.scope.chainId}
                             asset={maxFee.asset}
                             value={maxFee.value}
                             showSymbol

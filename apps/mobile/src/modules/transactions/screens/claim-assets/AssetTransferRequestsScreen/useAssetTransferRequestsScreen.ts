@@ -39,8 +39,7 @@ export const useAssetTransferRequestsScreen =
                 RouteProp<MessagesStackParamList, 'AssetTransferRequests'>
             >()
         const { scope } = route.params
-        const { accountAddress, setAccountAddress, setAssetRequests } =
-            useClaimAssets()
+        const { setAccountAddress, setAssetRequests } = useClaimAssets()
 
         useEffect(() => {
             setAccountAddress(route.params.item.address)
@@ -51,7 +50,7 @@ export const useAssetTransferRequestsScreen =
             isError,
             error,
             isUnavailableOnNetwork,
-        } = useAssetInboxRequestsQuery(scope, accountAddress)
+        } = useAssetInboxRequestsQuery(scope, route.params.item.address)
         const isIntegrityBlocked = isError && isIntegrityRequiredError(error)
 
         const handleItemPress = useCallback(

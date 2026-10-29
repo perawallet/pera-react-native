@@ -37,9 +37,6 @@ vi.mock('@perawallet/wallet-core-assets', async importOriginal => ({
         typeof import('@perawallet/wallet-core-assets')
     >()),
     nativeAssetFor: vi.fn(),
-    // CurrencyAmount asks whether the amount is the native asset of the
-    // legacy network, which needs a registered assets adapter.
-    useIsNativeAssetId: () => () => false,
 }))
 
 vi.mock('@components/PreferredAmount', () => ({

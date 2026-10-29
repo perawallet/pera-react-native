@@ -46,6 +46,7 @@ export const ConvertedPreferredAmount = ({
         <CurrencyAmount
             currency={displayCurrency}
             assetId={displayAssetId}
+            chainId={currencyScope.chainId}
             isFiat={isFiatCurrency(displayAssetId)}
             value={convertedValue}
             {...displayProps}

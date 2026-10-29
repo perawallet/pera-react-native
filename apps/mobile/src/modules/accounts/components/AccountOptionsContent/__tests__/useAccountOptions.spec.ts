@@ -25,9 +25,14 @@ import {
 import type { BackupActionOutcome } from '@perawallet/wallet-core-backup'
 import {
     registerAlgorandAccountsAdapter,
+    registerAlgorandDeviceAdapter,
     registerAlgorandMultisigAdapter,
     seedAuthority,
 } from '@test-utils/algorandAccountsAdapter'
+import {
+    registerEthereumAccountsAdapter,
+    registerEthereumDeviceAdapter,
+} from '@test-utils/ethereumAccountsAdapter'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { setCapabilityOverrides } from '@test-utils/capability-overrides'
 import { addressCodecs } from '@perawallet/wallet-core-chain-contract'
@@ -83,7 +88,7 @@ const { mockToggleAccountNotification, mockIsTogglePending } = vi.hoisted(
     }),
 )
 const { mockIsBackedUp } = vi.hoisted(() => ({
-    mockIsBackedUp: vi.fn(() => true),
+    mockIsBackedUp: vi.fn((_address: string) => true),
 }))
 const { mockIsCloudBackupEnabled } = vi.hoisted(() => ({
     mockIsCloudBackupEnabled: vi.fn(() => true),
@@ -159,7 +164,10 @@ vi.mock('@hooks/useAppNavigation', () => ({
     }),
 }))
 
-vi.mock('@perawallet/wallet-core-messages', () => ({
+vi.mock('@perawallet/wallet-core-messages', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-messages')
+    >()),
     useNotificationPreferences: () => ({
         disabledAccounts: [],
         isAccountEnabled: mockIsAccountEnabled,
@@ -168,7 +176,7 @@ vi.mock('@perawallet/wallet-core-messages', () => ({
 }))
 
 vi.mock('@modules/cloud-backup', () => ({
-    useIsAccountBackedUp: () => mockIsBackedUp(),
+    useIsAccountBackedUp: (address: string) => mockIsBackedUp(address),
     DeleteFromBackupSheet: () => null,
 }))
 
@@ -294,6 +302,7 @@ describe('useAccountOptions', () => {
     beforeEach(() => {
         registerLegacyAddressCodec(() => true)
         registerAlgorandAccountsAdapter()
+        registerAlgorandDeviceAdapter()
         registerAlgorandMultisigAdapter()
         vi.clearAllMocks()
         useAccountChainStateStore.getState().resetState()
@@ -508,7 +517,10 @@ describe('useAccountOptions', () => {
             return sheetOptionsOf(result.current).map(o => o.id)
         }
 
-        beforeEach(registerEthereumChain)
+        beforeEach(() => {
+            registerEthereumChain()
+            registerEthereumAccountsAdapter()
+        })
         afterEach(restoreAlgorandOnlyChains)
 
         it('offers View private key', () => {
@@ -583,6 +595,145 @@ describe('useAccountOptions', () => {
             expect(mockOpenRevealPrivateKeyFlow).toHaveBeenCalledWith(
                 'acc-pk',
                 ETHEREUM_CHAIN_ID,
+            )
+        })
+    })
+
+    describe('an Ethereum-only account', () => {
+        const ETH_ADDRESS = '0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed'
+        const ethWatchAccount: WalletAccount = {
+            id: 'acc-eth',
+            chains: { [ETHEREUM_CHAIN_ID]: { address: ETH_ADDRESS } },
+            custody: { kind: 'watch' },
+            name: 'Eth watch',
+        }
+        const ethHdAccount: WalletAccount = {
+            id: 'acc-eth-hd',
+            chains: {
+                [ETHEREUM_CHAIN_ID]: {
+                    address: ETH_ADDRESS,
+                    keyPairId: 'key-eth-hd',
+                },
+            },
+            custody: {
+                kind: 'local',
+                seed: 'bip39',
+                hd: { account: 0, keyIndex: 0 },
+            },
+        }
+
+        const render = (account: WalletAccount) =>
+            renderHook(() =>
+                useAccountOptions({
+                    account,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
+            )
+
+        const enableDeviceRegistrationV4 = () =>
+            useRemoteConfigStore
+                .getState()
+                .setConfigOverride('enable_device_registration_v4', true)
+
+        beforeEach(() => {
+            registerEthereumChain()
+            registerEthereumAccountsAdapter()
+        })
+        afterEach(restoreAlgorandOnlyChains)
+
+        it('keeps the notifications row while they are off for its chain, since v4 registration still sends its address', () => {
+            registerEthereumDeviceAdapter()
+            enableDeviceRegistrationV4()
+
+            const { result } = render(ethWatchAccount)
+
+            const ids = sheetOptionsOf(result.current).map(o => o.id)
+            expect(ids).toContain('rename-account')
+            expect(ids).toContain('remove-account')
+            expect(ids).toContain('toggle-notifications')
+        })
+
+        it('has no notifications row while v4 registration is off, since v3 leaves its address out', () => {
+            registerEthereumDeviceAdapter()
+
+            const { result } = render(ethWatchAccount)
+
+            const ids = sheetOptionsOf(result.current).map(o => o.id)
+            expect(ids).not.toContain('toggle-notifications')
+        })
+
+        it('has no notifications row when its chain registers nothing with the device', () => {
+            enableDeviceRegistrationV4()
+
+            const { result } = render(ethWatchAccount)
+
+            const ids = sheetOptionsOf(result.current).map(o => o.id)
+            expect(ids).not.toContain('toggle-notifications')
+        })
+
+        it('mutes its own address', async () => {
+            registerEthereumDeviceAdapter()
+            enableDeviceRegistrationV4()
+            const { result } = render(ethWatchAccount)
+
+            await act(async () => {
+                await sheetOptionsOf(result.current)
+                    .find(o => o.id === 'toggle-notifications')
+                    ?.onPress()
+            })
+
+            expect(mockToggleAccountNotification).toHaveBeenCalledWith(
+                ETH_ADDRESS,
+                false,
+            )
+        })
+
+        it('opens rename by account id', async () => {
+            mockRequestBottomSheet.mockResolvedValueOnce(undefined)
+            const { result } = render(ethWatchAccount)
+
+            await act(async () => {
+                await sheetOptionsOf(result.current)
+                    .find(o => o.id === 'rename-account')
+                    ?.onPress()
+            })
+
+            expect(
+                mockRequestBottomSheet.mock.calls[0][0].contents.props,
+            ).toEqual({ accountId: 'acc-eth' })
+        })
+
+        it('reads and deletes backup state at its own address', async () => {
+            mockIsBackedUp.mockReturnValue(true)
+            const { result } = render(ethWatchAccount)
+
+            await act(async () => {
+                await sheetOptionsOf(result.current)
+                    .find(o => o.id === 'remove-account')
+                    ?.onPress()
+            })
+            await act(async () => {
+                result.current.handleConfirmBackupWarning()
+            })
+            await act(async () => {
+                result.current.handleConfirmRemove()
+            })
+            await act(async () => {
+                await result.current.handleDeleteFromBackup()
+            })
+
+            expect(mockIsBackedUp).toHaveBeenCalledWith(ETH_ADDRESS)
+            expect(mockDeleteAccountFromBackup).toHaveBeenCalledWith(
+                ETH_ADDRESS,
+            )
+        })
+
+        it('offers no view-passphrase on an HD account, since its chain has no mnemonic backup', () => {
+            const { result } = render(ethHdAccount)
+
+            expect(sheetOptionsOf(result.current).map(o => o.id)).not.toContain(
+                'view-passphrase',
             )
         })
     })
@@ -887,6 +1038,7 @@ describe('useAccountOptions', () => {
                 enablePanDownToClose: true,
                 autoCreateContainer: false,
             })
+            expect(arg.contents.props).toEqual({ accountId: 'acc-1' })
         })
 
         it('updates the account with the trimmed name returned by the rename sheet', async () => {
