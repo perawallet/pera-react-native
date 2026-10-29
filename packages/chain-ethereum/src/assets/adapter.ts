@@ -179,11 +179,9 @@ const syncAssets =
         for (const batch of partition(stale, ASSETS_MAX_IDS)) {
             const items = await fetchAssetItems(scope, chain, batch)
             const known = items.flatMap((item, index) => {
-                // An unreadable row is read from the chain, like an unknown one.
-                if (!item) {
-                    unknown.push(batch[index]!)
-                    return []
-                }
+                // Left unstored so the next pass retries it: a chain read would
+                // store it without its tier, hiding a suspicious token's warning.
+                if (!item) return []
                 const { assetId, asset, isQuarantined } = toAssetMetadata(
                     batch[index]!,
                     item,

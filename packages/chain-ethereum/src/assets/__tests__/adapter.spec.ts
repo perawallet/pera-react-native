@@ -433,7 +433,7 @@ describe('syncAssets', () => {
         expect(node.map(a => a.assetId)).toEqual([DAI])
     })
 
-    it('reads on-chain the tokens whose backend row it cannot read', async () => {
+    it('stores nothing for a token whose backend row it cannot read', async () => {
         server.use(
             ...rpc({ [DAI]: usdcOnChain }),
             ...peraEvmAssetHandlers({
@@ -442,7 +442,7 @@ describe('syncAssets', () => {
                     [USDC_CAIP19]: usdcFromPera,
                     [DAI_CAIP19]: {
                         ...unknownAssetItem(DAI_CAIP19),
-                        verification_tier: 'trusted' as never,
+                        usd_value: '1.5',
                     },
                 },
             }),
@@ -456,7 +456,7 @@ describe('syncAssets', () => {
         await ops.syncAssets([USDC, DAI].map(ref), SCOPE)
 
         expect(full.map(a => a.assetId)).toEqual([USDC])
-        expect(node.map(a => a.assetId)).toEqual([DAI])
+        expect(node).toEqual([])
     })
 
     it('persists a quarantined token as suspicious with its on-chain intrinsics', async () => {
@@ -626,9 +626,8 @@ describe('prices', () => {
                 assets: {
                     [USDC_CAIP19]: priced('1.000100000000000000000000'),
                     [DAI_CAIP19]: {
-                        ...priced('1.000000000000000000000000'),
+                        ...priced('1.0'),
                         asset_id: DAI_CAIP19,
-                        verification_tier: 'trusted' as never,
                     },
                 },
             }),
