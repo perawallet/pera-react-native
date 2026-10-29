@@ -15,7 +15,7 @@ import {
     getBackupSyncManager,
     useBackupSyncActivityStore,
 } from '@perawallet/wallet-core-backup'
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, toError } from '@perawallet/wallet-core-shared'
 
 type UseBackupSyncResult = {
     syncNow: () => Promise<void>
@@ -32,7 +32,7 @@ export const useBackupSync = (): UseBackupSyncResult => {
             await getBackupSyncManager().syncNow()
         } catch (error) {
             logger.warn('useBackupSync: manual sync failed', {
-                error: error instanceof Error ? error.message : String(error),
+                error: toError(error).message,
             })
         }
     }, [])
