@@ -93,6 +93,7 @@ const mockContextValue: UseAccountOverviewModalResult = {
     } as WalletAccount,
     openSendFunds: vi.fn(),
     openReceiveFunds: vi.fn(),
+    openReceiveFundsOn: vi.fn(),
     openAccountOptions: vi.fn(),
 }
 

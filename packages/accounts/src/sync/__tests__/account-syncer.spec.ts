@@ -29,11 +29,13 @@ vi.mock('@perawallet/wallet-core-chain-shared', () => ({
 // package graph on every test — under full-suite parallel load that import
 // alone can blow the test timeout.
 vi.mock('@perawallet/wallet-core-assets', () => ({
+    findNativeAsset: () => ({ assetId: '0' }),
     fetchAndPersistAssets: vi.fn().mockResolvedValue(undefined),
     fetchAndPersistPrices: vi.fn().mockResolvedValue(undefined),
 }))
 
 vi.mock('../../db', () => ({
+    insertAssetHolding: vi.fn(),
     upsertAccountChainState: vi.fn(),
     refreshAccountHoldings: vi.fn().mockResolvedValue(true),
     getAccountChainStateRow: vi.fn().mockResolvedValue(undefined),

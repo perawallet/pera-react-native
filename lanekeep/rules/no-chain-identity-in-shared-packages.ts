@@ -129,7 +129,7 @@ const ALLOWED: readonly Allowed[] = [
         reason: "Asks whether the asset lives on the currency's chain; compares two passed scopes, never a named chain.",
     },
     {
-        file: 'apps/mobile/src/modules/accounts/components/AccountAssetList/useAccountAssetList.tsx',
+        file: 'apps/mobile/src/modules/accounts/hooks/useSelectedNetworkSource.ts',
         text: 'source.scope.chainId === storedChainId',
         reason: "Checks the stored network chip is one of the viewed account's chains; compares two passed values, never a named chain.",
     },

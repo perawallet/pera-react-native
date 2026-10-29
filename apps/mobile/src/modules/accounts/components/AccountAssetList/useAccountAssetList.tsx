@@ -19,6 +19,8 @@ import {
     useAccountAssetsQuery,
     useAccountHoldingSources,
     useCanSignWith,
+    useHasAccountChainState,
+    useIsHoldingsRefreshFailed,
     assetFromHoldingLiteRow,
     accountChainIdOf,
     useRegisteredChainIds,
@@ -60,6 +62,7 @@ import {
     type GroupedHoldingItem,
 } from '@modules/assets'
 import { useAssetListViewStore } from '../../hooks/useAssetListViewStore'
+import { useSelectedNetworkSource } from '../../hooks/useSelectedNetworkSource'
 import { useNftHoldingSources } from '../../hooks/useNftHoldingSources'
 import { AssetFilterContent } from '../AssetFilterContent'
 import { AssetSortContent } from '../AssetSortContent'
@@ -80,6 +83,8 @@ type UseAccountAssetListResult = {
     items: AccountAssetListItem[]
     /** Empty while the account is on fewer than two chains: nothing to filter. */
     chainFilterOptions: FilterOption<Nullable<ChainId>>[]
+    /** The selected network, when it holds nothing but its native asset at zero and nothing is searched: the list offers funding it. */
+    fundingChainId: Nullable<ChainId>
     /** The chain the list is narrowed to; `null` is All. */
     selectedChainId: Nullable<ChainId>
     setSelectedChainId: (chainId: Nullable<ChainId>) => void
@@ -169,7 +174,6 @@ export const useAccountAssetList = ({
         .map(({ scope: { chainId } }) => chainId)
         .join()
     const isChainSwitchedOff = sources.length === 0
-    const storedChainId = useAssetListViewStore(state => state.selectedChainId)
     const setSelectedChainId = useAssetListViewStore(
         state => state.setSelectedChainId,
     )
@@ -179,13 +183,8 @@ export const useAccountAssetList = ({
     const toggleGroupExpanded = useAssetListViewStore(
         state => state.toggleGroupExpanded,
     )
-    // Derived, never written back: viewing an account without the stored chain
-    // shows All, and the next account that has it shows it again.
-    const selectedChainId =
-        storedChainId !== null &&
-        sources.some(source => source.scope.chainId === storedChainId)
-            ? storedChainId
-            : null
+    const selectedSource = useSelectedNetworkSource(sources)
+    const selectedChainId = selectedSource?.scope.chainId ?? null
     const querySources = useMemo(
         () =>
             selectedChainId === null
@@ -227,10 +226,17 @@ export const useAccountAssetList = ({
     const balanceFilters = useMemo(
         () => ({
             hideZeroBalance,
+            // A network's own list always opens on its native asset.
+            keepZeroNative: selectedChainId !== null,
             hideNfts: !displayNfts,
             hideZeroBalanceNfts: !effectiveDisplayOptedInNfts,
         }),
-        [hideZeroBalance, displayNfts, effectiveDisplayOptedInNfts],
+        [
+            hideZeroBalance,
+            selectedChainId,
+            displayNfts,
+            effectiveDisplayOptedInNfts,
+        ],
     )
 
     // DB does the sort + filter + search in one read, returning lightweight
@@ -432,22 +438,43 @@ export const useAccountAssetList = ({
         }
     }, [requestBottomSheet, isReadOnly, navigation, scope.chainId])
 
-    const hasActiveFilter =
-        hideZeroBalance || !displayNfts || !effectiveDisplayOptedInNfts
+    const isRefreshFailed = useIsHoldingsRefreshFailed(
+        selectedSource?.scope ?? scope,
+        selectedSource?.address ?? '',
+    )
+    const hasRead = useHasAccountChainState(
+        selectedSource?.scope ?? scope,
+        selectedSource?.address ?? '',
+    )
+    // The lone row is the native asset at zero: a failed first read leaves the
+    // same row as a saved placeholder, so it reads as unfunded only once a read
+    // has succeeded. That signal survives a restart; the failed flag does not.
+    const fundingChainId =
+        selectedChainId !== null &&
+        !isPending &&
+        !isPlaceholderData &&
+        hasRead &&
+        !isRefreshFailed &&
+        searchFilter.length === 0 &&
+        holdings.length === 1 &&
+        holdings[0]!.assetId === findNativeAsset(selectedChainId)?.assetId &&
+        holdings[0]!.amount.isZero()
+            ? selectedChainId
+            : null
 
     const getEmptyTitle = useCallback(() => {
-        if (searchFilter?.length || hasActiveFilter) {
+        if (searchFilter.length > 0) {
             return t('account_details.assets.nomatch_title')
         }
         return t('account_details.assets.empty_title')
-    }, [searchFilter, hasActiveFilter, t])
+    }, [searchFilter, t])
 
     const getEmptyBody = useCallback(() => {
-        if (searchFilter?.length || hasActiveFilter) {
+        if (searchFilter.length > 0) {
             return t('account_details.assets.nomatch_body')
         }
         return t('account_details.assets.empty_body')
-    }, [searchFilter, hasActiveFilter, t])
+    }, [searchFilter, t])
 
     const isSwipeable = useCallback(
         (item: AccountHoldingsLiteRow) =>
@@ -480,6 +507,7 @@ export const useAccountAssetList = ({
         isChainSwitchedOff,
         items: visibleItemsOf(isChainSwitchedOff, isPending, items),
         chainFilterOptions,
+        fundingChainId,
         selectedChainId,
         setSelectedChainId,
         toggleGroupExpanded,
