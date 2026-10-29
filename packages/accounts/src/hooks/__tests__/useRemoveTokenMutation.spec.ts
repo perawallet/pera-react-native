@@ -11,7 +11,7 @@
  */
 // @vitest-environment jsdom
 import React from 'react'
-import { act, renderHook, waitFor } from '@testing-library/react'
+import { act, renderHook } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { describe, expect, it, beforeEach, vi } from 'vitest'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
@@ -21,7 +21,7 @@ const mocks = vi.hoisted(() => ({
     removeAccountToken: vi.fn(),
     insertAssetHolding: vi.fn(),
     getAccountAddedTokens: vi.fn(),
-    fetchAndPersistAssets: vi.fn(),
+    fetchAssetMetadata: vi.fn(),
 }))
 
 vi.mock('../../db', () => ({
@@ -31,13 +31,7 @@ vi.mock('../../db', () => ({
     getAccountAddedTokens: mocks.getAccountAddedTokens,
 }))
 
-vi.mock('@perawallet/wallet-core-assets', () => ({
-    fetchAndPersistAssets: mocks.fetchAndPersistAssets,
-}))
-
 import { getAccountHeldAssetsQueryKey } from '../querykeys'
-import { useAccountAddedTokensQuery } from '../useAccountAddedTokensQuery'
-import { useAddTokenMutation } from '../useAddTokenMutation'
 import { useRemoveTokenMutation } from '../useRemoveTokenMutation'
 
 const SCOPE: ChainScope = { chainId: 'ethereum', networkId: 'mainnet' }
@@ -60,60 +54,6 @@ const setup = () => {
 
 beforeEach(() => {
     vi.clearAllMocks()
-})
-
-describe('useAccountAddedTokensQuery', () => {
-    it('returns the added tokens read for the sources', async () => {
-        const token = { scope: SCOPE, assetId: USDC, hasBalance: false }
-        mocks.getAccountAddedTokens.mockResolvedValue([token])
-        const { wrapper } = setup()
-
-        const { result } = renderHook(
-            () => useAccountAddedTokensQuery(SOURCES),
-            { wrapper },
-        )
-
-        await waitFor(() => expect(result.current.addedTokens).toEqual([token]))
-    })
-})
-
-describe('useAddTokenMutation', () => {
-    it('caches the metadata before recording the token and its holding', async () => {
-        const order: string[] = []
-        mocks.fetchAndPersistAssets.mockImplementation(async () => {
-            order.push('metadata')
-        })
-        mocks.addAccountToken.mockImplementation(async () => {
-            order.push('token')
-        })
-        mocks.insertAssetHolding.mockImplementation(async () => {
-            order.push('holding')
-        })
-        const { queryClient, wrapper } = setup()
-        const invalidate = vi.spyOn(queryClient, 'invalidateQueries')
-        const { result } = renderHook(() => useAddTokenMutation(), {
-            wrapper,
-        })
-
-        await act(() => result.current.addToken(VARIABLES))
-
-        expect(order).toEqual(['metadata', 'token', 'holding'])
-        expect(mocks.fetchAndPersistAssets).toHaveBeenCalledWith([USDC], SCOPE)
-        expect(invalidate).toHaveBeenCalled()
-    })
-
-    it('records nothing when the metadata read fails', async () => {
-        mocks.fetchAndPersistAssets.mockRejectedValue(new Error('offline'))
-        const { wrapper } = setup()
-        const { result } = renderHook(() => useAddTokenMutation(), {
-            wrapper,
-        })
-
-        await expect(
-            act(() => result.current.addToken(VARIABLES)),
-        ).rejects.toThrow('offline')
-        expect(mocks.addAccountToken).not.toHaveBeenCalled()
-    })
 })
 
 describe('useRemoveTokenMutation', () => {

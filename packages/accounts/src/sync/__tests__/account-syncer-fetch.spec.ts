@@ -32,7 +32,16 @@ const mockRefreshAccountHoldings = vi.fn()
 const mockGetAccountChainStateRow = vi.fn()
 const mockInsertAssetHolding = vi.fn()
 
+const { mockGetAddedTokenIdsByAccount } = vi.hoisted(() => ({
+    mockGetAddedTokenIdsByAccount: vi.fn(
+        async ({ accountAddresses }: { accountAddresses: string[] }) =>
+            new Map(accountAddresses.map(address => [address, [] as string[]])),
+    ),
+}))
+
 vi.mock('../../db', () => ({
+    getAddedTokenIdsByAccount: (...args: unknown[]) =>
+        mockGetAddedTokenIdsByAccount(...args),
     insertAssetHolding: (...args: unknown[]) => mockInsertAssetHolding(...args),
     upsertAccountChainState: (...args: unknown[]) =>
         mockUpsertAccountChainState(...args),
@@ -154,6 +163,30 @@ describe('fetchAndPersistAccount', () => {
             holdingsChanged: true,
             observedRound: 1234,
         })
+    })
+
+    it('writes a token added during the read at zero, from the list read after it', async () => {
+        const order: string[] = []
+        fetchAccountState().mockImplementation(async () => {
+            order.push('read')
+            return snapshot()
+        })
+        mockGetAddedTokenIdsByAccount.mockImplementationOnce(async () => {
+            order.push('added')
+            return new Map([['ADDR1', ['10', '77']]])
+        })
+
+        await fetchAndPersistAccount('ADDR1', MAINNET_SCOPE)
+
+        expect(order).toEqual(['read', 'added'])
+        const { holdings } = mockRefreshAccountHoldings.mock.lastCall![0] as {
+            holdings: { assetId: string; amount: Decimal }[]
+        }
+        expect(holdings.map(h => [h.assetId, h.amount.toFixed()])).toEqual([
+            ['0', '1500000'],
+            ['10', '500'],
+            ['77', '0'],
+        ])
     })
 
     it("hands the chain the prior row's chain state", async () => {

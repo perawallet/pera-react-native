@@ -105,7 +105,6 @@ type NftRead = Optional<PromiseSettledResult<NftHoldingsRead>>
 const toSnapshot = (
     nativeAssetId: string,
     { wei, tokens }: HolderBalances,
-    addedTokenIds: ReadonlySet<string>,
     latest: number,
     pending: number,
     blockNumber: bigint,
@@ -118,18 +117,12 @@ const toSnapshot = (
             assetId,
             amount: new Decimal(balance.toString()),
         }))
-    const heldIds = new Set(tokenHoldings.map(({ assetId }) => assetId))
-    // An added token shows at zero too; one whose balanceOf failed reads as 0.
-    const addedHoldings = [...addedTokenIds]
-        .filter(assetId => !heldIds.has(assetId))
-        .map(assetId => ({ assetId, amount: new Decimal(0) }))
     return {
         nativeBalanceBaseUnits: baseUnits,
         chainState: { family: 'evm', nonce: { latest, pending } },
         holdings: [
             { assetId: nativeAssetId, amount: baseUnits },
             ...tokenHoldings,
-            ...addedHoldings,
             ...(nfts?.status === 'fulfilled' ? nfts.value.holdings : []),
         ],
         observedRound: Number(blockNumber),
@@ -201,19 +194,15 @@ const readBatch = async (
             scope,
         ),
     ])
-    // Checksummed on both sides, so a listed token that was also added is
-    // read once; a stored id that isn't an address is skipped, not thrown.
-    const addedOf = (address: string): ReadonlySet<string> =>
-        new Set(
-            (addedByAccount.get(address) ?? [])
+    // Added tokens off the list need their balances read too; the syncer
+    // shows them at zero. Checksummed, so a listed token that was also added
+    // is read once; a stored id that isn't an address is skipped, not thrown.
+    const readTokenIds = [
+        ...new Set(
+            [...tokenIds, ...[...addedByAccount.values()].flat()]
                 .filter(id => isAddress(id))
                 .map(id => getAddress(id)),
-        )
-    const readTokenIds = [
-        ...new Set([
-            ...tokenIds.map(id => getAddress(id)),
-            ...reads.flatMap(read => [...addedOf(read.address)]),
-        ]),
+        ),
     ]
     // Issued together, so the batching transport sends the aggregates and
     // every nonce read as one request. Pinning to one block keeps balances,
@@ -252,7 +241,6 @@ const readBatch = async (
             toSnapshot(
                 chain.nativeAsset.assetId,
                 balances.get(getAddress(read.address))!,
-                addedOf(read.address),
                 latest,
                 pending,
                 blockNumber,

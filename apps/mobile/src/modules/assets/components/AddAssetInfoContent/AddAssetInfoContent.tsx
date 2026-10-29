@@ -23,22 +23,20 @@ import { SheetHeader } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { useWebView } from '@modules/webview'
 import { config } from '@perawallet/wallet-core-config'
-import { useAsaVerificationInfoContent } from './useAsaVerificationInfoContent'
+import { useAddAssetInfoContent } from './useAddAssetInfoContent'
 import { useStyles } from './styles'
 
 import verificationBadgeLight from '@assets/images/verification-info-badge.png'
 import verificationBadgeDark from '@assets/images/verification-info-badge-dark.png'
 
-export type AsaVerificationInfoContentProps = Record<string, never>
+export type AddAssetInfoContentProps = Record<string, never>
 
-export const AsaVerificationInfoContent = (
-    _: AsaVerificationInfoContentProps = {},
-) => {
+export const AddAssetInfoContent = (_: AddAssetInfoContentProps = {}) => {
     const styles = useStyles()
     const { theme } = useTheme()
     const { t } = useLanguage()
     const { pushWebView } = useWebView()
-    const { hasAddingNotes, hasOptInNote } = useAsaVerificationInfoContent()
+    const { hasAddingNotes, hasOptInNote } = useAddAssetInfoContent()
 
     const heroImage =
         theme.mode === 'dark' ? verificationBadgeDark : verificationBadgeLight

@@ -41,7 +41,7 @@ import {
 import { OptOutConfirmationContent } from '@modules/accounts/components/AccountAssetList/OptOutConfirmationContent'
 import { RenameAccountContent } from '@modules/accounts/components/AccountOptionsContent/RenameAccountContent'
 import { AddAssetContent } from '@modules/assets/components/AddAssetContent'
-import { AsaVerificationInfoContent } from '@modules/assets/components/AsaVerificationInfoContent'
+import { AddAssetInfoContent } from '@modules/assets/components/AddAssetInfoContent'
 import { OptInConfirmationContent } from '@modules/assets/components/OptInConfirmationContent'
 import { AssetInboxWarningContent } from '@modules/transactions/components/send-funds/AssetInboxWarningContent'
 import { SendFundsInfoContent } from '@modules/transactions/components/send-funds/SendFundsInfoContent'
@@ -412,7 +412,7 @@ export const getSheetSections = (): GallerySection[] => [
                     request: () => ({
                         contents: (
                             <GallerySheetBoundary>
-                                <AsaVerificationInfoContent />
+                                <AddAssetInfoContent />
                             </GallerySheetBoundary>
                         ),
                         options: {

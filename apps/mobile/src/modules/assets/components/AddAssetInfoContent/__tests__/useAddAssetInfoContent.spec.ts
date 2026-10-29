@@ -11,12 +11,11 @@
  */
 
 import { renderHook } from '@test-utils/render'
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { useAsaVerificationInfoContent } from '../useAsaVerificationInfoContent'
+import { describe, it, expect, vi } from 'vitest'
+import { useAddAssetInfoContent } from '../useAddAssetInfoContent'
 
-const { mockChainIds, mockOptInChainIds } = vi.hoisted(() => ({
+const { mockChainIds } = vi.hoisted(() => ({
     mockChainIds: vi.fn((): string[] => []),
-    mockOptInChainIds: vi.fn((): string[] => ['algorand']),
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
@@ -30,19 +29,18 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
         })),
 }))
 
-vi.mock('@hooks/useCapableChainIds', () => ({
-    useCapableChainIds: () => mockOptInChainIds(),
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<object>()),
+    getChainDescriptor: (chainId: string) => ({
+        protocol: { requiresAssetOptIn: chainId === 'algorand' },
+    }),
 }))
 
-describe('useAsaVerificationInfoContent', () => {
-    beforeEach(() => {
-        mockOptInChainIds.mockReturnValue(['algorand'])
-    })
-
+describe('useAddAssetInfoContent', () => {
     it('adds no notes for an account on Algorand alone', () => {
         mockChainIds.mockReturnValue(['algorand'])
 
-        const { result } = renderHook(() => useAsaVerificationInfoContent())
+        const { result } = renderHook(() => useAddAssetInfoContent())
 
         expect(result.current.hasAddingNotes).toBe(false)
     })
@@ -50,7 +48,7 @@ describe('useAsaVerificationInfoContent', () => {
     it('explains both ways of adding for an account on Algorand and Ethereum', () => {
         mockChainIds.mockReturnValue(['algorand', 'ethereum'])
 
-        const { result } = renderHook(() => useAsaVerificationInfoContent())
+        const { result } = renderHook(() => useAddAssetInfoContent())
 
         expect(result.current).toEqual({
             hasAddingNotes: true,
@@ -61,7 +59,7 @@ describe('useAsaVerificationInfoContent', () => {
     it('leaves out the opt-in note for an account only on EVM chains', () => {
         mockChainIds.mockReturnValue(['ethereum', 'base'])
 
-        const { result } = renderHook(() => useAsaVerificationInfoContent())
+        const { result } = renderHook(() => useAddAssetInfoContent())
 
         expect(result.current).toEqual({
             hasAddingNotes: true,
