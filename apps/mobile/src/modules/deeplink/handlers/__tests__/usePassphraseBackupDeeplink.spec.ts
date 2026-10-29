@@ -33,6 +33,10 @@ vi.mock('@perawallet/wallet-core-backup', () => ({
     }),
 }))
 
+vi.mock('@hooks/useCapableChainIds', () => ({
+    useCapableChainId: () => 'algorand',
+}))
+
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useSelectedScope: (chainId: string) => ({ chainId, networkId: 'mainnet' }),
 }))

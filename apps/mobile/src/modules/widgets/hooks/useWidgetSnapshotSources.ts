@@ -17,7 +17,6 @@ import {
     useAccountValueTotalsQuery,
     useSigningAccounts,
 } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
     config,
     deploymentOf,
@@ -37,6 +36,7 @@ import {
 import { useAccountsNeedingMnemonicBackup } from '@perawallet/wallet-core-backup'
 import { usePreferences, useSettings } from '@perawallet/wallet-core-settings'
 import { useCloudBackupSummary } from '@modules/cloud-backup'
+import { useCapableChainId } from '@hooks/useCapableChainIds'
 import { useLanguage } from '@hooks/useLanguage'
 import { useNetworkLabel } from '@hooks/useNetworkLabel'
 import { UserPreferences } from '@constants/user-preferences'
@@ -55,7 +55,9 @@ import type { WidgetSnapshotWriterInput } from './useWidgetSnapshotWriter'
 export const useWidgetSnapshotSources = (): WidgetSnapshotWriterInput => {
     const { t, currentLanguage } = useLanguage()
     const networkLabel = useNetworkLabel()
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    // The widgets mirror one chain: the one whose portfolio chart the app draws.
+    const scope = useSelectedScope(useCapableChainId('balanceHistory'))
+    const backupScope = useSelectedScope(useCapableChainId('mnemonicBackup'))
     const deployment = useWalletDeployment()
     // The widget's yellow bar matches the app's: any deployment that isn't live.
     const isLive = deployment === 'live'
@@ -66,7 +68,7 @@ export const useWidgetSnapshotSources = (): WidgetSnapshotWriterInput => {
     const { privacyMode, theme } = useSettings()
     const { getPreference } = usePreferences()
 
-    const accounts = useSigningAccounts(LEGACY_CHAIN_ID)
+    const accounts = useSigningAccounts(scope.chainId)
     const totals = useAccountValueTotalsQuery(accounts, scope)
     const currency = useCurrency(scope)
     const priceQuery = useNativeUsdPriceQuery(scope)
@@ -96,7 +98,10 @@ export const useWidgetSnapshotSources = (): WidgetSnapshotWriterInput => {
     // Every account, not just signing ones: a rekey target can need its
     // passphrase backed up, the same as the in-app banner says.
     const allAccounts = useAccountsStore(state => state.accounts)
-    const passphrase = useAccountsNeedingMnemonicBackup(allAccounts, scope)
+    const passphrase = useAccountsNeedingMnemonicBackup(
+        allAccounts,
+        backupScope,
+    )
     const cloudBackup = useCloudBackupSummary()
     const receiveTargets = useWidgetReceiveTargets()
     // Every account, so a shared account's sign request is labelled by name.

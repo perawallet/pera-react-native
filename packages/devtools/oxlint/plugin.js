@@ -25,6 +25,7 @@ import { hdDeriveClaimed } from './rules/hd-derive-claimed.js'
 import { noManualUnitConversion } from './rules/no-manual-unit-conversion.js'
 import { noDisplayStringIdentity } from './rules/no-display-string-identity.js'
 import { fetchHasDeadline } from './rules/fetch-has-deadline.js'
+import { componentPropsType } from './rules/component-props-type.js'
 import { noPackageStoreInternals } from './rules/no-package-store-internals.js'
 import { testIdProp } from './rules/test-id-prop.js'
 import { makeStylesLocation } from './rules/make-styles-location.js'
@@ -54,6 +55,7 @@ export default {
         'no-manual-unit-conversion': noManualUnitConversion,
         'no-display-string-identity': noDisplayStringIdentity,
         'fetch-has-deadline': fetchHasDeadline,
+        'component-props-type': componentPropsType,
         'no-package-store-internals': noPackageStoreInternals,
         'test-id-prop': testIdProp,
         'make-styles-location': makeStylesLocation,

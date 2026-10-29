@@ -111,6 +111,10 @@ vi.mock('@modules/cloud-backup', () => ({
     useCloudBackupSummary: () => ({ state: 'notSetUp' }),
 }))
 
+vi.mock('@hooks/useCapableChainIds', () => ({
+    useCapableChainId: () => 'algorand',
+}))
+
 vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({ t: (key: string) => key, currentLanguage: 'pt-BR' }),
 }))

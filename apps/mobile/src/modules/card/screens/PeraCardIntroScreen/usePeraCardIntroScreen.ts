@@ -53,7 +53,6 @@ export const usePeraCardIntroScreen = (): UsePeraCardIntroScreenResult => {
             currentLanguage,
         )
         if (!routeCapabilities.inAppWebView) {
-            // oxlint-disable-next-line pera/no-unvalidated-open-url -- network config plus a lang param
             void Linking.openURL(url)
             return
         }

@@ -15,7 +15,11 @@ import { Animated } from 'react-native'
 import { useLanguage } from '@hooks/useLanguage'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useToast } from '@hooks/useToast'
-import { type RouteProp, useRoute } from '@react-navigation/native'
+import {
+    type RouteProp,
+    useNavigation,
+    useRoute,
+} from '@react-navigation/native'
 import {
     chainAccountOf,
     hasCustody,
@@ -56,6 +60,7 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
     const { t } = useLanguage()
     const { showToast, errorToast } = useToast()
     const navigation = useAppNavigation()
+    const reactNavigation = useNavigation()
     const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const { discoverAccounts } = useAccountDiscovery(scope)
     const { discoverImportAccounts, cancelImport } = useHDImportSession(scope)
@@ -100,19 +105,34 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
     }, [dotOpacities])
 
     const hasSearched = useRef(false)
+    const isImportMode = 'mode' in params && params.mode === 'import'
+    const isSearchingImportRef = useRef(false)
+    const hasLeftRef = useRef(false)
+
+    // The select screen's own listener isn't mounted yet.
+    useEffect(() => {
+        if (!isImportMode) return
+        return reactNavigation.addListener('beforeRemove', () => {
+            if (!isSearchingImportRef.current) return
+            hasLeftRef.current = true
+            cancelImport()
+        })
+    }, [isImportMode, reactNavigation, cancelImport])
 
     const searchAccounts = useCallback(async () => {
         if (hasSearched.current) return
         hasSearched.current = true
 
         try {
-            // Import mode: in-memory rootKey only, nothing persisted yet.
-            // Always navigate to selection screen so the user picks the
-            // address(es) to actually import.
+            // Import mode: always navigate to the selection screen so the user
+            // picks the account(s) to import.
             if ('mode' in params && params.mode === 'import') {
+                isSearchingImportRef.current = true
                 const discovered = await discoverImportAccounts({
                     walletKeyId: params.walletKeyId,
                 })
+                isSearchingImportRef.current = false
+                if (hasLeftRef.current) return
                 if (discovered.length === 0) {
                     throw new Error('HD discovery returned no accounts')
                 }
@@ -251,6 +271,8 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
                 }
             }
         } catch (error) {
+            isSearchingImportRef.current = false
+            if (hasLeftRef.current) return
             logger.error('Failed during scan-new-addresses', { error })
             // In import mode, abandon the in-memory session so we don't leak
             // root key material if the user retries.

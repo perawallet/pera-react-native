@@ -46,10 +46,7 @@ import {
     useSelectedAccountId,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import {
-    LEGACY_CHAIN_ID,
-    type ChainId,
-} from '@perawallet/wallet-core-chain-contract'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { useSwapChainResolver } from '@perawallet/wallet-core-swaps'
 import { useBottomSheetStore } from '@modules/bottom-sheet'
 import { BIDALI_SHEET_OPTIONS } from '@modules/gift-card'
@@ -69,6 +66,7 @@ import { useIsPeraCardEnabled } from '@hooks/useIsPeraCardEnabled'
 import { useIsGiftCardsEnabled } from '@hooks/useIsGiftCardsEnabled'
 import { useIsCloudBackupAvailable } from '@hooks/useIsCloudBackupAvailable'
 import { useCapabilityCheck } from '@hooks/useCapability'
+import { useCapableChainId } from '@hooks/useCapableChainIds'
 import { navigateHome, navigateToScreen } from '../navigateToScreen'
 import { useScannerRequestStore } from '@hooks/useScannerRequest'
 import { useAccountDrawerRequestStore } from '@hooks/useAccountDrawerRequest'
@@ -151,7 +149,7 @@ export const useDeepLink = (): UseDeepLinkResult => {
     }
     const swapChainOf = useSwapChainResolver()
     const resolveAssetHolderAddress = useResolveAssetHolderAddress(
-        useSelectedScope(LEGACY_CHAIN_ID),
+        useSelectedScope(useCapableChainId('nft')),
     )
     // Fund's provider redirects back with the address it delivered to, on
     // whichever chain the purchase was for.

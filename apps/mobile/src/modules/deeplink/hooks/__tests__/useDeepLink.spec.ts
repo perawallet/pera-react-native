@@ -181,6 +181,10 @@ vi.mock('@perawallet/wallet-core-transactions', () => ({
     useAssetOptInMutation: () => ({ optIn: vi.fn() }),
 }))
 
+vi.mock('@hooks/useCapableChainIds', () => ({
+    useCapableChainId: () => 'algorand',
+}))
+
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     getChainDescriptor: (chainId: string) => ({
         displayName: chainId === 'algorand' ? 'Algorand' : 'Ethereum',
@@ -2233,6 +2237,28 @@ describe('useDeepLink', () => {
         )
         expect(mockErrorToast).not.toHaveBeenCalled()
         expect(mockOnSuccess).toHaveBeenCalled()
+    })
+
+    it('normalizes a bare-domain DISCOVER_BROWSER URL to https before pushing it', async () => {
+        ;(parseDeeplink as Mock).mockReturnValue({
+            type: DeeplinkType.DISCOVER_BROWSER,
+            url: 'tinyman.org',
+            sourceUrl: 'perawallet://app/discover-browser/?url=...',
+        })
+        const { result } = renderHook(() => useDeepLink())
+
+        await act(async () => {
+            await result.current.handleDeepLink(
+                'perawallet://app/discover-browser/?url=...',
+                false,
+                'deeplink',
+            )
+        })
+
+        expect(mockPushWebView).toHaveBeenCalledWith(
+            expect.objectContaining({ url: 'https://tinyman.org' }),
+        )
+        expect(mockErrorToast).not.toHaveBeenCalled()
     })
 
     it('blocks INTERNAL_BROWSER deeplink with an unsafe URL', async () => {

@@ -381,6 +381,10 @@ vi.mock('@modules/transactions', () => ({
     },
 }))
 
+vi.mock('@hooks/useCapableChainIds', () => ({
+    useCapableChainId: () => 'algorand',
+}))
+
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     getChainDescriptor: (chainId: string) => ({
         displayName: chainId === 'algorand' ? 'Algorand' : 'Ethereum',

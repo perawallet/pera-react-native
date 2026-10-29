@@ -13,8 +13,8 @@
 import { useCallback } from 'react'
 import { addressOn, useAccountsStore } from '@perawallet/wallet-core-accounts'
 import { useAccountsNeedingMnemonicBackup } from '@perawallet/wallet-core-backup'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { useCapableChainId } from '@hooks/useCapableChainIds'
 import { navigateHome, navigateToScreen } from '../navigateToScreen'
 
 export type PassphraseBackupDeeplinkHandler = (
@@ -28,7 +28,7 @@ export type PassphraseBackupDeeplinkHandler = (
  */
 export const usePassphraseBackupDeeplink =
     (): PassphraseBackupDeeplinkHandler => {
-        const scope = useSelectedScope(LEGACY_CHAIN_ID)
+        const scope = useSelectedScope(useCapableChainId('mnemonicBackup'))
         const accounts = useAccountsStore(state => state.accounts)
         const { accounts: needing } = useAccountsNeedingMnemonicBackup(
             accounts,

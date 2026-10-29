@@ -17,13 +17,12 @@ import { EmptyDataHint } from '../components/EmptyDataHint'
 import type { RNMigrationSnapshot } from '../useRNMigrationSnapshot'
 import { AccountCard } from './AccountCard'
 
-export const AccountsSection = ({
-    accounts,
-    rn,
-}: {
+type AccountsSectionProps = {
     accounts: LegacyAccount[]
     rn: RNMigrationSnapshot
-}) => {
+}
+
+export const AccountsSection = ({ accounts, rn }: AccountsSectionProps) => {
     return (
         <MigrationDataSection
             title='Accounts'
