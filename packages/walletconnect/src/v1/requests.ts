@@ -83,7 +83,7 @@ const requestAgeMs = (requestId: number): Optional<number> =>
         : undefined
 
 const legacySignDataVerdictOf = (
-    chainId: number | undefined,
+    chainId: Optional<number>,
     params: unknown[],
     scope: ChainScope,
 ): GateResult => {

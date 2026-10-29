@@ -235,7 +235,7 @@ export const readCloudBackupRestoreMnemonic = (): Nullable<string[]> => {
     return null
 }
 
-export const readCloudBackupImportedKey = (): BackupEncryptionKey | null =>
+export const readCloudBackupImportedKey = (): Nullable<BackupEncryptionKey> =>
     useCloudBackupRestoreDraftStore.getState().importedKey
 
 export const setCloudBackupImportedKey = (

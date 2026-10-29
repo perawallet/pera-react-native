@@ -45,7 +45,7 @@ type ChangePasswordError = 'invalid_current' | 'corrupted' | 'unexpected' | null
 const changePasswordValidationErrorOf = (
     newPassword: string,
     confirmNewPassword: string,
-    newPasswordStrengthError: PasswordStrengthError | null,
+    newPasswordStrengthError: Nullable<PasswordStrengthError>,
 ): ChangePasswordValidationError => {
     if (newPassword.length > 0 && newPasswordStrengthError) {
         return newPasswordStrengthError

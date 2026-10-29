@@ -12,6 +12,7 @@
 
 import type { Decimal } from 'decimal.js'
 import type { CardTransaction } from '@perawallet/wallet-core-card'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { PWScrollView, PWText } from '@components/core'
 import { CurrencyAmount } from '@components/CurrencyAmount'
 import { useLanguage } from '@hooks/useLanguage'
@@ -24,7 +25,7 @@ type TransactionInfoTabProps = {
     transaction: CardTransaction
 }
 
-const feesPrefixOf = (fees: Decimal): string | undefined => {
+const feesPrefixOf = (fees: Decimal): Optional<string> => {
     if (fees.isZero()) return undefined
     return fees.isNegative() ? '+' : '-'
 }

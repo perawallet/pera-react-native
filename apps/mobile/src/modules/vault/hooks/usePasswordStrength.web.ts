@@ -37,7 +37,7 @@ export const getPasswordScore = (password: string): PasswordScore =>
 const strengthErrorOf = (
     password: string,
     score: PasswordScore,
-): PasswordStrengthError | null => {
+): Nullable<PasswordStrengthError> => {
     if (password.length < MIN_PASSWORD_LENGTH) return 'too_short'
     return score < MIN_PASSWORD_SCORE ? 'too_weak' : null
 }

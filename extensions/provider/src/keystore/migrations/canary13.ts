@@ -231,7 +231,7 @@ const parseBip44Path = (path: string): number[] =>
 
 const rawDerivationPathOf = (
     meta: Record<string, unknown>,
-): string | undefined => {
+): Optional<string> => {
     if (typeof meta.derivationPath === 'string') return meta.derivationPath
     if (typeof meta.path === 'string') return meta.path
     return undefined

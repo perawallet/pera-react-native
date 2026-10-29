@@ -36,7 +36,7 @@ const isPlainObject = (value: unknown): value is Record<string, unknown> =>
 const isNonEmptyString = (value: unknown): value is string =>
     typeof value === 'string' && value.length > 0
 
-const firstNonEmptyString = (...values: unknown[]): string | null =>
+const firstNonEmptyString = (...values: unknown[]): Nullable<string> =>
     values.find(isNonEmptyString) ?? null
 
 /**

@@ -17,7 +17,7 @@ import { useDeepLink } from '@modules/deeplink'
 
 type ErrorKind = 'none' | 'invalid' | 'failed'
 
-const ERROR_MESSAGE_KEY_BY_KIND: Record<ErrorKind, I18nKey | null> = {
+const ERROR_MESSAGE_KEY_BY_KIND: Record<ErrorKind, Nullable<I18nKey>> = {
     none: null,
     invalid: i18nKey('paste_link.error_invalid'),
     failed: i18nKey('paste_link.error_failed'),

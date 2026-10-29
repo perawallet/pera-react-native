@@ -18,7 +18,7 @@ import { LegacyVsRnRow } from '../components/LegacyVsRnRow'
 import { MigrationDataRow } from '../components/MigrationDataRow'
 import type { RNMigrationSnapshot } from '../useRNMigrationSnapshot'
 
-const deviceIdOriginStatusOf = (origin: DeviceIdOrigin | null): string => {
+const deviceIdOriginStatusOf = (origin: Nullable<DeviceIdOrigin>): string => {
     switch (origin) {
         case 'migrated': {
             return 'migrated id active'
