@@ -46,7 +46,7 @@ import {
     type UseRecipientSafetyResult,
 } from '@modules/transactions/hooks'
 import { AssetInboxWarningContent } from '@modules/transactions/components/send-funds/AssetInboxWarningContent'
-import type { SendFundsStackParamList } from '../../../routes/send-funds/types'
+import type { SendFundsStackParamList } from '@modules/transactions/routes/send-funds/types'
 import LightHeaderImage from '@assets/images/asset-inbox-send-light.svg'
 import DarkHeaderImage from '@assets/images/asset-inbox-send-dark.svg'
 import { useThemeMode } from '@rneui/themed'

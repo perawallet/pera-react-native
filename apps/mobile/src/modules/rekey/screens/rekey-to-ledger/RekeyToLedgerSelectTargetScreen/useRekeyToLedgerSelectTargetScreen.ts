@@ -26,7 +26,7 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 
-import type { RekeyToLedgerStackParamList } from '../../../routes/rekey-to-ledger/types'
+import type { RekeyToLedgerStackParamList } from '@modules/rekey/routes/rekey-to-ledger/types'
 
 export type UseRekeyToLedgerSelectTargetScreenResult = {
     sourceAddress: string

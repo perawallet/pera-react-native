@@ -34,15 +34,15 @@ import { useBottomSheet } from '@modules/bottom-sheet'
 import { useWebView } from '@modules/webview'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
-import { useHandleRekeyError } from '../../../hooks/useHandleRekeyError'
-import { useRekeyProposeHandoff } from '../../../hooks/useRekeyProposeHandoff'
+import { useHandleRekeyError } from '@modules/rekey/hooks/useHandleRekeyError'
+import { useRekeyProposeHandoff } from '@modules/rekey/hooks/useRekeyProposeHandoff'
 import {
     PreviousRekeyWarningSheet,
     type RekeyWarningCopy,
-} from '../../../components/PreviousRekeyWarningSheet'
+} from '@modules/rekey/components/PreviousRekeyWarningSheet'
 
 import type { Decimal } from 'decimal.js'
-import type { UndoRekeyStackParamList } from '../../../routes/undo-rekey/types'
+import type { UndoRekeyStackParamList } from '@modules/rekey/routes/undo-rekey/types'
 
 export type UseUndoRekeyConfirmScreenResult = {
     source: WalletAccount | null

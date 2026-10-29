@@ -163,6 +163,31 @@ describe('pera/no-hardcoded-ui-strings', () => {
     })
 })
 
+describe('pera/no-deep-relative-imports', () => {
+    it('blocks in mobile source only, tests aside', () => {
+        const mobile = readOxlintConfig('apps/mobile/.oxlintrc.json')
+        const root = readOxlintConfig('.oxlintrc.json')
+        const overrides = overridesWith(mobile, 'pera/no-deep-relative-imports')
+
+        expect(overrides).toHaveLength(1)
+        expect(overrides[0].files).toEqual(['src/**'])
+        expect(overrides[0].rules['pera/no-deep-relative-imports']).toBe(
+            'error',
+        )
+        expect(overrides[0].excludeFiles).toEqual([
+            'src/**/__tests__/**',
+            'src/**/__mocks__/**',
+            'src/**/test-utils/**',
+            'src/**/__integration__/**',
+            'src/**/*.spec.{ts,tsx}',
+            'src/**/*.test.{ts,tsx}',
+        ])
+        expect(
+            overridesWith(root, 'pera/no-deep-relative-imports'),
+        ).toHaveLength(0)
+    })
+})
+
 describe('no-console', () => {
     it('blocks console calls in package, extension and browser-app source, tests aside', () => {
         const root = readOxlintConfig('.oxlintrc.json')

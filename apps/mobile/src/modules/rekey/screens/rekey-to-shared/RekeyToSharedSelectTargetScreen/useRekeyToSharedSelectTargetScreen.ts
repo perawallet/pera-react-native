@@ -26,7 +26,7 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 
-import type { RekeyToSharedStackParamList } from '../../../routes/rekey-to-shared/types'
+import type { RekeyToSharedStackParamList } from '@modules/rekey/routes/rekey-to-shared/types'
 
 export type UseRekeyToSharedSelectTargetScreenResult = {
     sourceAddress: string
