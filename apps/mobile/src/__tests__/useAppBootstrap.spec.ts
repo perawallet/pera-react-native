@@ -394,7 +394,8 @@ describe('useAppBootstrap', () => {
         expect(result.current.bootstrapped).toBe(true)
         expect(result.current.initError).toBeNull()
         expect(mocks.loggerError).toHaveBeenCalledWith(
-            expect.stringContaining('k/bad, k/worse'),
+            'Keystore reconcile skipped undecodable records',
+            { recordIds: ['k/bad', 'k/worse'] },
         )
     })
 
@@ -627,7 +628,8 @@ describe('useAppBootstrap', () => {
         })
 
         expect(mocks.loggerWarn).toHaveBeenCalledWith(
-            'Passkey credentials left flat: cred-1',
+            'Passkey credentials left flat',
+            { credentialIds: ['cred-1'] },
         )
     })
 })

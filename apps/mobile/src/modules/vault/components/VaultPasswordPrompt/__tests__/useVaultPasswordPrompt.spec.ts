@@ -126,7 +126,9 @@ describe('useVaultPasswordPrompt', () => {
     it('does not auto-launch once a lockout counted at mount reaches zero', async () => {
         vi.useFakeTimers()
         try {
-            mocks.getLockoutRemainingSeconds.mockResolvedValue(30)
+            mocks.getLockoutRemainingSeconds
+                .mockResolvedValueOnce(30)
+                .mockResolvedValue(0)
             const { result } = renderHook(() =>
                 useVaultPasswordPrompt({ onVerified: vi.fn() }),
             )
@@ -148,6 +150,48 @@ describe('useVaultPasswordPrompt', () => {
         } finally {
             vi.useRealTimers()
         }
+    })
+
+    it('re-reads the lockout when the countdown reaches zero so the vault clears it', async () => {
+        vi.useFakeTimers()
+        mocks.getLockoutRemainingSeconds
+            .mockResolvedValueOnce(2)
+            .mockResolvedValue(0)
+        const { result } = renderHook(() =>
+            useVaultPasswordPrompt({ onVerified: vi.fn() }),
+        )
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(0)
+        })
+        expect(result.current.lockoutSeconds).toBe(2)
+        expect(mocks.getLockoutRemainingSeconds).toHaveBeenCalledOnce()
+
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(2000)
+        })
+
+        expect(mocks.getLockoutRemainingSeconds).toHaveBeenCalledTimes(2)
+        expect(result.current.lockoutSeconds).toBe(0)
+    })
+
+    it('restarts the countdown when the re-read still reports a lockout', async () => {
+        vi.useFakeTimers()
+        mocks.getLockoutRemainingSeconds
+            .mockResolvedValueOnce(1)
+            .mockResolvedValueOnce(5)
+            .mockResolvedValue(0)
+        const { result } = renderHook(() =>
+            useVaultPasswordPrompt({ onVerified: vi.fn() }),
+        )
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(0)
+        })
+
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(1000)
+        })
+
+        expect(result.current.lockoutSeconds).toBe(5)
     })
 
     it('treats a cancelled prompt as a silent no-op and leaves the password usable', async () => {

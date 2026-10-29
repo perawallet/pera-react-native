@@ -196,6 +196,6 @@ const captureFailure = (
     err: unknown,
 ): void => {
     const reason = toError(err).message
-    logger.error(`Legacy ${step} migration failed`, { error: err })
+    logger.error('Legacy extras migration failed', { step, error: err })
     result.failed.push({ step, reason })
 }

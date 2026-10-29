@@ -511,9 +511,7 @@ const removeUnreferencedKey = async (
     try {
         await getProvider().key.store.remove(keyPairId)
     } catch (error) {
-        logger.warn(
-            `Could not remove an unreferenced imported key: ${error instanceof Error ? error.message : 'unknown error'}`,
-        )
+        logger.warn('Could not remove an unreferenced imported key', { error })
     }
 }
 
@@ -676,9 +674,10 @@ const probeChainEntries = async (
             try {
                 entry = await resolveChainEntry(account, chainId)
             } catch (error) {
-                logger.warn(
-                    `Could not resolve an address on ${chainId} to probe: ${error instanceof Error ? error.message : 'unknown error'}`,
-                )
+                logger.warn('Could not resolve an address to probe', {
+                    chainId,
+                    error,
+                })
                 return undefined
             }
             // A probe that couldn't be made reads as inactive rather than
@@ -782,9 +781,7 @@ export const withDefaultChains = async <A extends WalletAccount>(
         try {
             entry = await resolveChainEntry(draft, chainId)
         } catch (error) {
-            logger.warn(
-                `Could not add default chain ${chainId}: ${error instanceof Error ? error.message : 'unknown error'}`,
-            )
+            logger.warn('Could not add a default chain', { chainId, error })
             continue
         }
         const { accounts } = useAccountsStore.getState()
@@ -1215,9 +1212,10 @@ export const useAccountsStore: UseBoundStore<
                         await removeUnreferencedKeys(get().accounts, unusedKeys)
                         return enabled
                     } catch (error) {
-                        logger.warn(
-                            `Chain discovery failed for ${accountId}: ${error instanceof Error ? error.message : 'unknown error'}`,
-                        )
+                        logger.warn('Chain discovery failed', {
+                            accountId,
+                            error,
+                        })
                         return []
                     }
                 }),
@@ -1254,9 +1252,7 @@ export const useAccountsStore: UseBoundStore<
                             })
                         } catch (error) {
                             isWalkIncomplete = true
-                            logger.warn(
-                                `Wallet discovery failed: ${error instanceof Error ? error.message : 'unknown error'}`,
-                            )
+                            logger.warn('Wallet discovery failed', { error })
                         } finally {
                             zeroBytes(options.rootKey)
                         }
@@ -1313,7 +1309,8 @@ export const useAccountsStore: UseBoundStore<
                                     ) {
                                         isWalkIncomplete = true
                                         logger.warn(
-                                            `Could not add discovered ${chainId} entry: ${error instanceof Error ? error.message : 'unknown error'}`,
+                                            'Could not add a discovered chain entry',
+                                            { chainId, error },
                                         )
                                     }
                                     // The failed add's own claim would keep the
@@ -1488,7 +1485,8 @@ export const useAccountsStore: UseBoundStore<
                 const accounts = get().accounts
                 if (id && !accounts.some(a => a.id === id)) {
                     logger.warn(
-                        `Attempted to select account ${id}, but it does not exist in accounts list.`,
+                        'Attempted to select an account that is not in the accounts list',
+                        { accountId: id },
                     )
                     return
                 }
@@ -1512,7 +1510,8 @@ export const useAccountsStore: UseBoundStore<
                 const accounts = get().accounts
                 if (!id || !accounts.some(a => a.id === id)) {
                     logger.warn(
-                        `Attempted to pin launch account ${id}, but it does not exist in accounts list.`,
+                        'Attempted to pin a launch account that is not in the accounts list',
+                        { accountId: id },
                     )
                     return
                 }

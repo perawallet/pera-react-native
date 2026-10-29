@@ -18,6 +18,7 @@ import {
     member,
     overridesWith,
     readOxlintConfig,
+    template,
     type Node,
 } from './helpers.js'
 
@@ -46,11 +47,6 @@ const assign = (operator: string, left: Node, right: Node): Node => ({
     operator,
     left,
     right,
-})
-const template = (quasis: string[], expressions: Node[]): Node => ({
-    type: 'TemplateLiteral',
-    quasis: quasis.map(raw => ({ type: 'TemplateElement', value: { raw } })),
-    expressions,
 })
 
 type Visitor = 'CallExpression' | 'BinaryExpression' | 'AssignmentExpression'

@@ -29,18 +29,18 @@ describe('tracer', () => {
         vi.useRealTimers()
     })
 
-    test('mark logs a single prefixed line containing the label', () => {
+    test('mark logs a single prefixed line carrying the label in its context', () => {
         tracer.mark('step-a')
 
         expect(infoSpy).toHaveBeenCalledTimes(1)
         expect(infoSpy.mock.calls[0][0]).toContain('[TRACE]')
-        expect(infoSpy.mock.calls[0][0]).toContain('step-a')
+        expect(infoSpy.mock.calls[0][1]).toMatchObject({ label: 'step-a' })
     })
 
-    test('mark serializes meta into the line', () => {
+    test('mark passes meta in the context', () => {
         tracer.mark('with-meta', { count: 3 })
 
-        expect(infoSpy.mock.calls[0][0]).toContain('"count":3')
+        expect(infoSpy.mock.calls[0][1]).toMatchObject({ meta: { count: 3 } })
     })
 
     test('mark is one-shot per label — duplicates are ignored', () => {
@@ -63,10 +63,10 @@ describe('tracer', () => {
             const result = await tracer.track('fetch', async () => 42)
 
             expect(result).toBe(42)
-            const line = infoSpy.mock.calls.find(c =>
-                String(c[0]).includes('fetch'),
-            )?.[0]
-            expect(line).toContain('durationMs')
+            const context = infoSpy.mock.calls.find(
+                c => c[1]?.label === 'fetch',
+            )?.[1]
+            expect(context?.meta).toHaveProperty('durationMs')
         })
 
         test('marks an :error variant and rethrows on rejection', async () => {
@@ -78,11 +78,10 @@ describe('tracer', () => {
                 }),
             ).rejects.toBe(boom)
 
-            const line = infoSpy.mock.calls.find(c =>
-                String(c[0]).includes('fails:error'),
-            )?.[0]
-            expect(line).toContain('fails:error')
-            expect(line).toContain('boom')
+            const context = infoSpy.mock.calls.find(
+                c => c[1]?.label === 'fails:error',
+            )?.[1]
+            expect(context?.meta).toMatchObject({ message: 'boom' })
         })
     })
 
@@ -126,11 +125,11 @@ describe('tracer', () => {
             query.state.status = 'success'
             captured!({ query })
 
-            const line = infoSpy.mock.calls.find(c =>
-                String(c[0]).includes('query:accounts'),
-            )?.[0]
-            expect(line).toContain('query:accounts:first')
-            expect(line).toContain('"status":"success"')
+            const context = infoSpy.mock.calls.find(c =>
+                String(c[1]?.label).startsWith('query:accounts'),
+            )?.[1]
+            expect(context?.label).toContain('query:accounts:first')
+            expect(context?.meta).toMatchObject({ status: 'success' })
 
             expect(unsubscribe).not.toHaveBeenCalled()
             vi.advanceTimersByTime(5000)
@@ -154,7 +153,9 @@ describe('tracer', () => {
             tracer.instrumentQueryCache(cache, 1000)
 
             expect(
-                infoSpy.mock.calls.some(c => String(c[0]).includes('query:')),
+                infoSpy.mock.calls.some(c =>
+                    String(c[1]?.label).startsWith('query:'),
+                ),
             ).toBe(false)
         })
     })
