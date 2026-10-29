@@ -71,6 +71,7 @@ export const useSwapHistoryList = ({
                 [AnalyticsMetadataKey.SwapPairing]: `${item.assetIn.unitName}/${item.assetOut.unitName}`,
             })
             onClose()
+            // oxlint-disable-next-line pera/no-unvalidated-open-url -- swap adapter builds it from the chain's explorer config
             pushWebView({ url, id: generateUniqueId() })
         },
         [scope, onClose, pushWebView],

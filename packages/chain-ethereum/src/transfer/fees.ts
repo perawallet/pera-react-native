@@ -42,6 +42,16 @@ const FEE_PRESET_PERCENTILE: Record<FeePreset, number> = {
     fast: 90,
 }
 
+// A heuristic, not a mempool reading: with the base-fee headroom below, a
+// percentile tip from recent blocks usually lands within this many blocks.
+const FEE_PRESET_EXPECTED_BLOCKS: Record<FeePreset, number> = {
+    slow: 5,
+    normal: 3,
+    fast: 1,
+}
+
+const MS_PER_SECOND = 1000
+
 // Doubling the base fee survives several full blocks of base-fee growth; only base fee plus tip is charged.
 const BASE_FEE_HEADROOM = 2n
 
@@ -175,6 +185,14 @@ export const toEvmFeeEstimate = (
                     ),
                     maxAmount: new Decimal(
                         (fees.gas * maxFeePerGas + fees.surcharge).toString(),
+                    ),
+                    estimatedWaitSeconds: Math.max(
+                        1,
+                        Math.ceil(
+                            (FEE_PRESET_EXPECTED_BLOCKS[name] *
+                                chain.row.blockTimeMs) /
+                                MS_PER_SECOND,
+                        ),
                     ),
                 },
             ]

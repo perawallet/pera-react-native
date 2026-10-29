@@ -25,11 +25,20 @@ type CapturedWebViewProps = {
     onNavigationStateChange?: (navState: CapturedNavState) => void
 }
 
-const { capturedWebViewProps } = vi.hoisted(() => ({
-    capturedWebViewProps: {
-        current: undefined as CapturedWebViewProps | undefined,
-    },
-}))
+type CapturedGuardOptions = {
+    externalNavigation?: { onExternalNavigation: (url: string) => void }
+}
+
+const { capturedWebViewProps, capturedGuardOptions, mockPushWebView } =
+    vi.hoisted(() => ({
+        capturedWebViewProps: {
+            current: undefined as CapturedWebViewProps | undefined,
+        },
+        capturedGuardOptions: {
+            current: undefined as CapturedGuardOptions | undefined,
+        },
+        mockPushWebView: vi.fn(),
+    }))
 
 vi.mock('react-native-webview', () => ({
     WebView: (props: CapturedWebViewProps) => {
@@ -42,14 +51,18 @@ vi.mock('@modules/webview/hooks', () => ({
     useContextFingerprints: () => ({}),
     usePeraWebviewInterface: () => ({ handleMessage: vi.fn() }),
     useWebViewStore: (
-        selector: (state: { removeWebView: () => void }) => unknown,
-    ) => selector({ removeWebView: vi.fn() }),
+        selector: (state: {
+            removeWebView: () => void
+            pushWebView: typeof mockPushWebView
+        }) => unknown,
+    ) => selector({ removeWebView: vi.fn(), pushWebView: mockPushWebView }),
 }))
 
 vi.mock('../useWebViewNavigationGuard', () => ({
-    useWebViewNavigationGuard: () => ({
-        onShouldStartLoadWithRequest: () => true,
-    }),
+    useWebViewNavigationGuard: (options: CapturedGuardOptions) => {
+        capturedGuardOptions.current = options
+        return { onShouldStartLoadWithRequest: () => true }
+    },
 }))
 
 vi.mock('@hooks/useLanguage')
@@ -118,5 +131,38 @@ describe('PWWebView title bar host', () => {
         // `t` returns the key under test setup.
         expect(screen.getByText('common.webview.unknown_host')).toBeTruthy()
         expect(screen.queryByText('good.xyz')).toBeNull()
+    })
+})
+
+describe('PWWebView external navigation', () => {
+    const renderWithExternalLinks = () =>
+        render(
+            <PWWebView
+                url='https://good.xyz/landing'
+                enablePeraConnect={false}
+                openExternalLinksInBrowser
+            />,
+        )
+
+    it('pushes an https target the page navigates away to', () => {
+        renderWithExternalLinks()
+
+        capturedGuardOptions.current?.externalNavigation?.onExternalNavigation(
+            'https://other.xyz/',
+        )
+
+        expect(mockPushWebView).toHaveBeenCalledWith({
+            url: 'https://other.xyz/',
+        })
+    })
+
+    it('pushes nothing for an http target', () => {
+        renderWithExternalLinks()
+
+        capturedGuardOptions.current?.externalNavigation?.onExternalNavigation(
+            'http://evil.xyz/',
+        )
+
+        expect(mockPushWebView).not.toHaveBeenCalled()
     })
 })

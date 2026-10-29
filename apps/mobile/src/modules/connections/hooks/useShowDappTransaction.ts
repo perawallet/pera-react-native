@@ -28,6 +28,7 @@ export const useShowDappTransaction = (): ShowTransaction => {
             const url = getChainDescriptor(
                 scope.chainId,
             ).explorer.transactionUrl(scope.networkId, txId)
+            // oxlint-disable-next-line pera/no-unvalidated-open-url -- chain explorer config origin; the dApp's txId only fills the path
             if (url) pushWebView({ url })
         },
         [pushWebView],
