@@ -3,55 +3,10 @@
  */
 
 import { defineRule } from 'lanekeep'
+import { SECRET_PRODUCERS } from '../shared/secrets.js'
 import { TEST_SUPPORT, productionSource } from '../shared/scope.js'
 
-// Calls that return key material. The rule is blind to a producer missing
-// here. Callback-style `pbkdf2` can't be listed (its key arrives as a callback
-// parameter, which lanekeep doesn't track), so its promise wrappers are.
-const PRODUCERS = [
-    'algo25SecretKeyToIndices',
-    'algo25SeedToIndices',
-    'argon2id',
-    'argon2idDerive',
-    'backupMnemonicToPassword',
-    'bip39SeedFromEntropy',
-    'computeArgon2id',
-    'decodePrivateKey',
-    'decodePrivateKeyBytes',
-    'deriveArgon2id',
-    'deriveBackupAuthKeypair',
-    'deriveBackupChildKeys',
-    'deriveBackupKeys',
-    'deriveBackupMasterKey',
-    'deriveBip39Seed',
-    'deriveLegacyPasskeyCredentialFromMainKey',
-    'deriveLiquidAuthMainKey',
-    'deriveMainKey',
-    'derivePasskeyCredential',
-    'derivePasskeyMainKey',
-    'derivePQKeygenSeed',
-    'deriveSecp256k1PrivateKey',
-    'entropyToIndices',
-    'fromSeed',
-    'genDerivedMainKeyWithSubtle',
-    'genDomainSpecificKeyPair',
-    'generateHDMasterKey',
-    'generateKeypairFromSeed',
-    'hashPin',
-    'hkdf',
-    'indicesToAlgo25Seed',
-    'indicesToEntropy',
-    'indicesToUtf8Bytes',
-    'mnemonicWordsToIndices',
-    'prepareHDMasterKey',
-    'requireSessionMasterKey',
-    'unwrapMasterKeyWithPassword',
-    // bip39/algosdk calls with no production caller, listed so a new one is checked.
-    'mnemonicToEntropy',
-    'mnemonicToSeed',
-    'seedFromMnemonic',
-]
-const ACQUIRE = `^(${PRODUCERS.join('|')})$`
+const ACQUIRE = `^(${SECRET_PRODUCERS.join('|')})$`
 const WIPERS = '^(zeroBytes|wipeBytes)$'
 // A field of a result counts only under one of these names: wiping or
 // returning `keyPair.publicKey` leaves `keyPair.secretKey` behind. lanekeep
