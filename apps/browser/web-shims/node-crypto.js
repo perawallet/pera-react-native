@@ -40,7 +40,8 @@ import { gcm } from '@noble/ciphers/aes.js'
 function toUint8(data) {
     if (data instanceof Uint8Array) return data
     if (typeof data === 'string') return new TextEncoder().encode(data)
-    if (ArrayBuffer.isView(data)) return new Uint8Array(data.buffer, data.byteOffset, data.byteLength)
+    if (ArrayBuffer.isView(data))
+        return new Uint8Array(data.buffer, data.byteOffset, data.byteLength)
     if (data instanceof ArrayBuffer) return new Uint8Array(data)
     throw new TypeError('Unsupported data type for crypto operation')
 }
@@ -54,7 +55,9 @@ function getHashFn(algorithm) {
     if (norm === 'sha256') return sha256
     if (norm === 'sha512') return sha512
     if (norm === 'sha512256') return sha512_256
-    throw new Error('node-crypto shim: unsupported hash algorithm "' + algorithm + '"')
+    throw new Error(
+        'node-crypto shim: unsupported hash algorithm "' + algorithm + '"',
+    )
 }
 
 // Node.js Hash-like object (returned by createHash)
@@ -63,8 +66,14 @@ function makeHashObject(hashFn, initialChunks) {
     const chunks = initialChunks ? initialChunks.map(c => c.slice()) : []
     return {
         update(data, encoding) {
-            if (encoding !== undefined && encoding !== 'utf8' && encoding !== 'binary') {
-                throw new Error(`node-crypto shim: update() encoding '${encoding}' not supported`)
+            if (
+                encoding !== undefined &&
+                encoding !== 'utf8' &&
+                encoding !== 'binary'
+            ) {
+                throw new Error(
+                    `node-crypto shim: update() encoding '${encoding}' not supported`,
+                )
             }
             chunks.push(toUint8(data))
             return this
@@ -73,14 +82,24 @@ function makeHashObject(hashFn, initialChunks) {
             const total = chunks.reduce((n, c) => n + c.length, 0)
             const buf = new Uint8Array(total)
             let offset = 0
-            for (const c of chunks) { buf.set(c, offset); offset += c.length }
+            for (const c of chunks) {
+                buf.set(c, offset)
+                offset += c.length
+            }
             const result = hashFn(buf)
             if (!encoding || encoding === 'buffer') return result
-            if (encoding === 'hex') return Array.from(result).map(b => b.toString(16).padStart(2, '0')).join('')
-            throw new Error(`node-crypto shim: digest() encoding '${encoding}' not supported`)
+            if (encoding === 'hex')
+                return Array.from(result)
+                    .map(b => b.toString(16).padStart(2, '0'))
+                    .join('')
+            throw new Error(
+                `node-crypto shim: digest() encoding '${encoding}' not supported`,
+            )
         },
         // True state clone: new object with accumulated chunks copied.
-        copy() { return makeHashObject(hashFn, chunks) },
+        copy() {
+            return makeHashObject(hashFn, chunks)
+        },
     }
 }
 
@@ -90,8 +109,14 @@ function makeHmacObject(hashFn, key) {
     const keyBytes = toUint8(key)
     return {
         update(data, encoding) {
-            if (encoding !== undefined && encoding !== 'utf8' && encoding !== 'binary') {
-                throw new Error(`node-crypto shim: update() encoding '${encoding}' not supported`)
+            if (
+                encoding !== undefined &&
+                encoding !== 'utf8' &&
+                encoding !== 'binary'
+            ) {
+                throw new Error(
+                    `node-crypto shim: update() encoding '${encoding}' not supported`,
+                )
             }
             chunks.push(toUint8(data))
             return this
@@ -100,11 +125,19 @@ function makeHmacObject(hashFn, key) {
             const total = chunks.reduce((n, c) => n + c.length, 0)
             const buf = new Uint8Array(total)
             let offset = 0
-            for (const c of chunks) { buf.set(c, offset); offset += c.length }
+            for (const c of chunks) {
+                buf.set(c, offset)
+                offset += c.length
+            }
             const result = hmac(hashFn, keyBytes, buf)
             if (!encoding || encoding === 'buffer') return result
-            if (encoding === 'hex') return Array.from(result).map(b => b.toString(16).padStart(2, '0')).join('')
-            throw new Error(`node-crypto shim: digest() encoding '${encoding}' not supported`)
+            if (encoding === 'hex')
+                return Array.from(result)
+                    .map(b => b.toString(16).padStart(2, '0'))
+                    .join('')
+            throw new Error(
+                `node-crypto shim: digest() encoding '${encoding}' not supported`,
+            )
         },
     }
 }
@@ -141,18 +174,13 @@ export function createHmac(algorithm, key) {
     return makeHmacObject(getHashFn(algorithm), key)
 }
 
+const SUBTLE_DIGEST_BY_HASH = { sha512: 'SHA-512', sha256: 'SHA-256' }
+
+// hashName comes from the caller, so a prototype key such as `constructor` must miss.
 function subtleDigestOf(hashName) {
-    switch (hashName) {
-        case 'sha512': {
-            return 'SHA-512'
-        }
-        case 'sha256': {
-            return 'SHA-256'
-        }
-        default: {
-            return null
-        }
-    }
+    return Object.hasOwn(SUBTLE_DIGEST_BY_HASH, hashName)
+        ? SUBTLE_DIGEST_BY_HASH[hashName]
+        : null
 }
 
 // Async PBKDF2 matching Node.js callback API.
@@ -163,22 +191,34 @@ export function pbkdf2(password, salt, iterations, keylen, digest, callback) {
     const saltBytes = toUint8(salt)
     const subtleDigest = subtleDigestOf(normaliseAlgorithm(digest))
     if (!subtleDigest) {
-        callback(new Error('node-crypto pbkdf2 shim: unsupported digest "' + digest + '"'), null)
+        callback(
+            new Error(
+                'node-crypto pbkdf2 shim: unsupported digest "' + digest + '"',
+            ),
+            null,
+        )
         return
     }
-    globalThis.crypto.subtle.importKey(
-        'raw', pwBytes, { name: 'PBKDF2' }, false, ['deriveBits'],
-    ).then(key =>
-        globalThis.crypto.subtle.deriveBits(
-            { name: 'PBKDF2', salt: saltBytes, iterations, hash: subtleDigest },
-            key,
-            keylen * 8,
+    globalThis.crypto.subtle
+        .importKey('raw', pwBytes, { name: 'PBKDF2' }, false, ['deriveBits'])
+        .then(key =>
+            globalThis.crypto.subtle.deriveBits(
+                {
+                    name: 'PBKDF2',
+                    salt: saltBytes,
+                    iterations,
+                    hash: subtleDigest,
+                },
+                key,
+                keylen * 8,
+            ),
         )
-    ).then(bits => {
-        callback(null, new Uint8Array(bits))
-    }).catch(err => {
-        callback(err, null)
-    })
+        .then(bits => {
+            callback(null, new Uint8Array(bits))
+        })
+        .catch(err => {
+            callback(err, null)
+        })
 }
 
 // Served next to the extension pages by scripts/build.mjs, which bundles
@@ -199,7 +239,13 @@ function deriveArgon2idInWorker(message, nonce, opts) {
             worker.terminate()
             reject(new Error(event.message || 'argon2 worker failed'))
         }
-        worker.postMessage({ password: message, salt: nonce, m: opts.m, t: opts.t, p: opts.p })
+        worker.postMessage({
+            password: message,
+            salt: nonce,
+            m: opts.m,
+            t: opts.t,
+            p: opts.p,
+        })
     })
 }
 
@@ -208,7 +254,14 @@ function deriveArgon2idInWorker(message, nonce, opts) {
 // main thread, so the worker is preferred and the async variant is the fallback.
 export function argon2(algorithm, params, callback) {
     if (algorithm !== 'argon2id') {
-        callback(new Error('node-crypto argon2 shim: unsupported algorithm "' + algorithm + '"'), null)
+        callback(
+            new Error(
+                'node-crypto argon2 shim: unsupported algorithm "' +
+                    algorithm +
+                    '"',
+            ),
+            null,
+        )
         return
     }
     // A Uint8Array message is the caller's to wipe (kms zeroes it once this
@@ -217,7 +270,13 @@ export function argon2(algorithm, params, callback) {
     const message = toUint8(params.message)
     const nonce = toUint8(params.nonce)
     const version = params.version ?? ARGON2_VERSION_13
-    const opts = { t: params.passes, m: params.memory, p: params.parallelism, dkLen: params.tagLength, version }
+    const opts = {
+        t: params.passes,
+        m: params.memory,
+        p: params.parallelism,
+        dkLen: params.tagLength,
+        version,
+    }
     const deriveInline = () => argon2idAsync(message, nonce, opts)
     const canUseWorker =
         typeof Worker !== 'undefined' &&
@@ -244,16 +303,25 @@ function concatChunks(chunks) {
     const total = chunks.reduce((n, c) => n + c.length, 0)
     const buf = new Uint8Array(total)
     let offset = 0
-    for (const c of chunks) { buf.set(c, offset); offset += c.length }
+    for (const c of chunks) {
+        buf.set(c, offset)
+        offset += c.length
+    }
     return buf
 }
 
 function assertAesGcm(algorithm, key) {
     if (algorithm.toLowerCase() !== AES_GCM_ALGORITHM) {
-        throw new Error('node-crypto cipher shim: unsupported algorithm "' + algorithm + '"')
+        throw new Error(
+            'node-crypto cipher shim: unsupported algorithm "' +
+                algorithm +
+                '"',
+        )
     }
     if (toUint8(key).length !== AES_256_KEY_LENGTH) {
-        throw new Error('node-crypto cipher shim: aes-256-gcm needs a 32-byte key')
+        throw new Error(
+            'node-crypto cipher shim: aes-256-gcm needs a 32-byte key',
+        )
     }
 }
 
@@ -261,7 +329,8 @@ function assertAesGcm(algorithm, key) {
 // so reuse after final() must be refused here: a second plaintext under the
 // same key and IV leaks the GCM auth key. Node's Cipher refuses it too.
 function assertNotFinished(isFinished) {
-    if (isFinished) throw new Error('node-crypto cipher shim: cipher already finalized')
+    if (isFinished)
+        throw new Error('node-crypto cipher shim: cipher already finalized')
 }
 
 // noble's GCM is one-shot, so update() only buffers and final() returns the
@@ -274,15 +343,25 @@ export function createCipheriv(algorithm, key, iv) {
     let tag = null
     let isFinished = false
     return {
-        setAAD(data) { assertNotFinished(isFinished); aad = toUint8(data); return this },
-        update(data) { assertNotFinished(isFinished); chunks.push(toUint8(data)); return new Uint8Array(0) },
+        setAAD(data) {
+            assertNotFinished(isFinished)
+            aad = toUint8(data)
+            return this
+        },
+        update(data) {
+            assertNotFinished(isFinished)
+            chunks.push(toUint8(data))
+            return new Uint8Array(0)
+        },
         final() {
             assertNotFinished(isFinished)
             // Set before encrypting, so even a throw can't leave the IV reusable.
             isFinished = true
             const plaintext = concatChunks(chunks)
             try {
-                const sealed = gcm(toUint8(key), toUint8(iv), aad).encrypt(plaintext)
+                const sealed = gcm(toUint8(key), toUint8(iv), aad).encrypt(
+                    plaintext,
+                )
                 tag = sealed.slice(sealed.length - AES_GCM_TAG_LENGTH)
                 return sealed.slice(0, sealed.length - AES_GCM_TAG_LENGTH)
             } finally {
@@ -290,7 +369,10 @@ export function createCipheriv(algorithm, key, iv) {
             }
         },
         getAuthTag() {
-            if (!tag) throw new Error('node-crypto cipher shim: getAuthTag() before final()')
+            if (!tag)
+                throw new Error(
+                    'node-crypto cipher shim: getAuthTag() before final()',
+                )
             return tag
         },
     }
@@ -303,24 +385,39 @@ export function createDecipheriv(algorithm, key, iv) {
     let tag = null
     let isFinished = false
     return {
-        setAAD(data) { assertNotFinished(isFinished); aad = toUint8(data); return this },
+        setAAD(data) {
+            assertNotFinished(isFinished)
+            aad = toUint8(data)
+            return this
+        },
         // Node accepts a truncated tag; a short one would weaken the forgery bound.
         setAuthTag(data) {
             assertNotFinished(isFinished)
             const bytes = toUint8(data)
             if (bytes.length !== AES_GCM_TAG_LENGTH) {
-                throw new Error('node-crypto cipher shim: aes-256-gcm needs a 16-byte auth tag')
+                throw new Error(
+                    'node-crypto cipher shim: aes-256-gcm needs a 16-byte auth tag',
+                )
             }
             tag = bytes
             return this
         },
-        update(data) { assertNotFinished(isFinished); chunks.push(toUint8(data)); return new Uint8Array(0) },
+        update(data) {
+            assertNotFinished(isFinished)
+            chunks.push(toUint8(data))
+            return new Uint8Array(0)
+        },
         // Throws on a wrong key, wrong AAD or tampered bytes, as Node's does.
         final() {
             assertNotFinished(isFinished)
-            if (!tag) throw new Error('node-crypto cipher shim: final() before setAuthTag()')
+            if (!tag)
+                throw new Error(
+                    'node-crypto cipher shim: final() before setAuthTag()',
+                )
             isFinished = true
-            return gcm(toUint8(key), toUint8(iv), aad).decrypt(concatChunks([...chunks, tag]))
+            return gcm(toUint8(key), toUint8(iv), aad).decrypt(
+                concatChunks([...chunks, tag]),
+            )
         },
     }
 }
