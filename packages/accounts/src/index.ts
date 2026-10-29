@@ -37,6 +37,13 @@ export {
     useAccountChainStateStore,
     hydrateAccountChainStates,
     recordAuthority,
+    getAllAccounts,
+    getSelectedAccount,
+    getSelectedAccountId,
+    importAccountFromPrivateKey,
+    addHardwareChainAccount,
+    upgradeWatchAccountToHardware,
+    updateHardwareDetails,
     type AccountChainStateSlice,
 } from './store'
 export {

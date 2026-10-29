@@ -12,6 +12,7 @@
 
 export {
     useDraftSignRequestStore,
+    deleteDraftSignRequest,
     isDraftSignRequestId,
     DRAFT_SIGN_REQUEST_ID_PREFIX,
 } from './useDraftSignRequestStore'
