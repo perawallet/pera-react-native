@@ -19,6 +19,7 @@ const MAINNET_SCOPE = {
 } as const
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    getChainDescriptor: () => ({ protocol: { requiresAssetOptIn: false } }),
     useNetworkStore: {
         getState: () => ({ network: 'mainnet' }),
         subscribe: () => () => {},

@@ -28,6 +28,7 @@ import {
 import {
     fakeAccountsChain,
     MAINNET_SCOPE,
+    registerFakeNativeAsset,
 } from '../../__tests__/fakeAccountsChain'
 
 const testDb = vi.hoisted(() => ({ current: null as Database | null }))
@@ -76,6 +77,7 @@ describe('fetchAndPersistAccount chain-state row', () => {
     let teardown: () => void
 
     beforeEach(async () => {
+        registerFakeNativeAsset()
         const result = createTestDatabase()
         testDb.current = result.db
         teardown = result.teardown

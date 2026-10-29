@@ -17,6 +17,7 @@ import { syncAndEnrichNewAccount } from '../account-syncer'
 import {
     fakeAccountsChain,
     MAINNET_SCOPE,
+    registerFakeNativeAsset,
 } from '../../__tests__/fakeAccountsChain'
 
 const fetchAccountState = () =>
@@ -66,6 +67,7 @@ const makeQueryClient = () => {
 
 describe('syncAndEnrichNewAccount', () => {
     beforeEach(() => {
+        registerFakeNativeAsset()
         vi.clearAllMocks()
         mockRefreshAccountHoldings.mockResolvedValue(true)
         mockGetAccountChainStateRow.mockResolvedValue(undefined)

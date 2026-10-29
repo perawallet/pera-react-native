@@ -15,10 +15,12 @@ import { Decimal } from 'decimal.js'
 import { findNativeAsset } from '@perawallet/wallet-core-assets'
 import { fetchAndPersistAccount, ensureAccountFetched } from '../account-syncer'
 import type { AccountStateSnapshot } from '../../chain-adapter'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import { getAccountChainState, useHoldingsRefreshStore } from '../../store'
 import {
     fakeAccountsChain,
     MAINNET_SCOPE,
+    registerFakeNativeAsset,
 } from '../../__tests__/fakeAccountsChain'
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
@@ -82,6 +84,7 @@ const fetchAccountState = () =>
 
 describe('fetchAndPersistAccount', () => {
     beforeEach(() => {
+        registerFakeNativeAsset()
         vi.clearAllMocks()
         mockUpsertAccountChainState.mockResolvedValue(undefined)
         mockRefreshAccountHoldings.mockResolvedValue(true)
@@ -176,6 +179,20 @@ describe('fetchAndPersistAccount', () => {
             'ADDR1',
             MAINNET_SCOPE,
             expect.objectContaining({ addedTokenIds: ['0xTOKEN'] }),
+        )
+    })
+
+    it('skips the added-token read on a chain that adds by opt-in', async () => {
+        getProvider().chains.reset()
+        registerFakeNativeAsset(6, { requiresAssetOptIn: true })
+
+        await fetchAndPersistAccount('ADDR1', MAINNET_SCOPE)
+
+        expect(mockGetAddedTokenIdsByAccount).not.toHaveBeenCalled()
+        expect(fetchAccountState()).toHaveBeenCalledWith(
+            'ADDR1',
+            MAINNET_SCOPE,
+            expect.objectContaining({ addedTokenIds: [] }),
         )
     })
 
@@ -323,6 +340,7 @@ describe('fetchAndPersistAccount', () => {
 
 describe('ensureAccountFetched', () => {
     beforeEach(() => {
+        registerFakeNativeAsset()
         vi.clearAllMocks()
         mockInsertAssetHolding.mockResolvedValue(undefined)
         mockRefreshAccountHoldings.mockResolvedValue(true)
