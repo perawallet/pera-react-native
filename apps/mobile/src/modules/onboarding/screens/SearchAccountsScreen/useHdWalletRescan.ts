@@ -11,9 +11,6 @@
  */
 
 import { useCallback } from 'react'
-import { useAppNavigation } from '@hooks/useAppNavigation'
-import { useLanguage } from '@hooks/useLanguage'
-import { useToast } from '@hooks/useToast'
 import {
     NoHdSeedError,
     seedOf,
@@ -22,6 +19,9 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { logger } from '@perawallet/wallet-core-shared'
+import { useAppNavigation } from '@hooks/useAppNavigation'
+import { useLanguage } from '@hooks/useLanguage'
+import { useToast } from '@hooks/useToast'
 import {
     REKEY_SCAN_UNAVAILABLE,
     useDelegationScanNoticeResult,
