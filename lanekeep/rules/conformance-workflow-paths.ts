@@ -3,6 +3,7 @@
  */
 
 import { defineRule } from 'lanekeep'
+import { manifestNameOf } from '../shared/workspace.js'
 
 interface Suite {
     manifest: string
@@ -92,17 +93,6 @@ interface ReadCtx {
     listDir(path: string): string[] | undefined
 }
 
-const nameOf = (ctx: ReadCtx, dir: string): string | undefined => {
-    const raw = ctx.readFile(`${dir}/package.json`)
-    if (raw === undefined) return undefined
-    try {
-        const name = (JSON.parse(raw) as { name?: unknown }).name
-        return typeof name === 'string' ? name : undefined
-    } catch {
-        return undefined
-    }
-}
-
 /** Workspace package name to its directory, relative to the project root. */
 const workspaceDirs = (ctx: ReadCtx, base: string): Map<string, string> => {
     const out = new Map<string, string>()
@@ -121,7 +111,7 @@ const workspaceDirs = (ctx: ReadCtx, base: string): Map<string, string> => {
             dirs.push(pattern)
         }
         for (const dir of dirs) {
-            const name = nameOf(ctx, join(base, dir))
+            const name = manifestNameOf(ctx, join(base, dir))
             if (name !== undefined) out.set(name, dir)
         }
     }

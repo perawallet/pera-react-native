@@ -3,13 +3,10 @@
  */
 
 import { defineRule } from 'lanekeep'
+import { workspaceMemberOf } from '../shared/workspace.js'
 
 const PRAGMA = /@vitest-environment\s+(jsdom|happy-dom)\b/
 const ENVIRONMENT = /\benvironment:\s*['"]([\w-]+)['"]/
-
-// Lazy prefix, so a scratch fixture's own `packages/<name>` resolves too.
-const workspaceDir = (path: string): string | undefined =>
-    /^((?:.*?\/)?(?:apps|packages|extensions)\/[^/]+)\//.exec(path)?.[1]
 
 export default defineRule({
     id: 'pera/dom-spec-environment',
@@ -41,7 +38,7 @@ export default defineRule({
     check(ctx, m) {
         const at = m.import
         if (at === undefined || PRAGMA.test(ctx.fileText)) return
-        const dir = workspaceDir(ctx.filePath)
+        const dir = workspaceMemberOf(ctx.filePath)?.dir
         if (dir === undefined) return
         const config = ctx.readFile(`${dir}/vitest.config.ts`) ?? ''
         // Vitest's own default when the config names none.
