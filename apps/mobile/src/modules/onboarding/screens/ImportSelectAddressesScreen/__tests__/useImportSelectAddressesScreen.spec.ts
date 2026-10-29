@@ -261,24 +261,25 @@ describe('useImportSelectAddressesScreen — import mode', () => {
         expect(mockCancelImport).toHaveBeenCalledOnce()
     })
 
-    test('lists a candidate as imported when only one of its entries is already held', () => {
-        const linked = {
-            id: 'linked',
-            chains: {
-                algorand: { address: 'ALGO-LINKED', keyPairId: 'w-1' },
-                ethereum: { address: '0xLINKED', keyPairId: 'w-1-evm' },
-            },
-            custody: {
-                kind: 'local',
-                seed: 'bip39',
-                hd: { account: 3, keyIndex: 0 },
-            },
-        }
+    const linked = {
+        id: 'linked',
+        chains: {
+            algorand: { address: 'ALGO-LINKED', keyPairId: 'w-1' },
+            ethereum: { address: '0xLINKED', keyPairId: 'w-1-evm' },
+        },
+        custody: {
+            kind: 'local',
+            seed: 'bip39',
+            hd: { account: 3, keyIndex: 0 },
+        },
+    }
+
+    test('lists a candidate as imported when its HD account landed earlier with only one of its entries', () => {
         mockAllAccounts.current = [
             {
                 id: 'held',
                 chains: { ethereum: { address: '0xLINKED', keyPairId: 'k' } },
-                custody: { kind: 'watch' },
+                custody: linked.custody,
             } as unknown as WalletAccount,
         ]
         mockRouteParams.current = {
@@ -291,6 +292,35 @@ describe('useImportSelectAddressesScreen — import mode', () => {
 
         expect(result.current.importedAccountIds).toEqual(new Set(['linked']))
         expect(result.current.areAllImported).toBe(true)
+    })
+
+    test('imports the rest of a candidate when a watch account holds one of its addresses', async () => {
+        mockAllAccounts.current = [
+            {
+                id: 'watched',
+                chains: { ethereum: { address: '0xLINKED' } },
+                custody: { kind: 'watch' },
+            } as unknown as WalletAccount,
+        ]
+        mockRouteParams.current = {
+            mode: 'import',
+            walletKeyId: 'w-1',
+            accounts: [linked],
+        }
+
+        const { result } = renderHook(() => useImportSelectAddressesScreen())
+        expect(result.current.importedAccountIds).toEqual(new Set())
+        expect(Object.keys(result.current.accounts[0].chains)).toEqual([
+            'algorand',
+        ])
+
+        await act(async () => {
+            await result.current.handleContinue()
+        })
+
+        const [{ selectedAccounts }] = mockCommitImport.mock.calls[0]
+        expect(selectedAccounts).toHaveLength(1)
+        expect(Object.keys(selectedAccounts[0].chains)).toEqual(['algorand'])
     })
 
     test('reports linked addresses only when an account holds more than one distinct address', () => {

@@ -23,8 +23,8 @@ import {
     useSelectedAccountId,
     useHDImportSession,
     chainAccountOf,
-    findEntryHolder,
     hdIndexOf,
+    importableCandidate,
     signingKeyOn,
     useSyncCandidateAccounts,
     type LocalAccount,
@@ -98,21 +98,37 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
     const { setAccounts } = useSetAccounts()
     const { seedIdOf } = useKMS()
 
-    // Held when any of its entries is, so an account that earlier landed with
-    // only some of its addresses can't be imported twice.
-    const importedAccountIds = useMemo(
+    // An account already held is shown whole and disabled; any other shows
+    // and imports only the addresses no other account holds.
+    const importable = useMemo(
         () =>
-            new Set(
-                accounts.flatMap(acc =>
-                    findEntryHolder(allAccounts, acc) ? [acc.id] : [],
-                ),
+            new Map(
+                accounts.map(acc => [
+                    acc.id,
+                    importableCandidate(allAccounts, acc),
+                ]),
             ),
         [accounts, allAccounts],
     )
 
+    const candidates = useMemo(
+        () => accounts.map(acc => importable.get(acc.id) ?? acc),
+        [accounts, importable],
+    )
+
+    const importedAccountIds = useMemo(
+        () =>
+            new Set(
+                accounts.flatMap(acc =>
+                    importable.get(acc.id) ? [] : [acc.id],
+                ),
+            ),
+        [accounts, importable],
+    )
+
     const newAccounts = useMemo(
-        () => accounts.filter(acc => !importedAccountIds.has(acc.id)),
-        [accounts, importedAccountIds],
+        () => candidates.filter(acc => !importedAccountIds.has(acc.id)),
+        [candidates, importedAccountIds],
     )
 
     const selectableAccountIds = useMemo(
@@ -122,7 +138,7 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
 
     const hasLinkedAddresses = useMemo(
         () =>
-            accounts.some(
+            candidates.some(
                 acc =>
                     new Set(
                         Object.values(acc.chains).flatMap(entry =>
@@ -130,10 +146,10 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
                         ),
                     ).size > 1,
             ),
-        [accounts],
+        [candidates],
     )
 
-    useSyncCandidateAccounts(accounts)
+    useSyncCandidateAccounts(candidates)
 
     const {
         selectedAddresses: selectedAccountIds,
@@ -151,7 +167,7 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
         setIsProcessing(true)
 
         void deferToNextCycle(async () => {
-            const accountsToAdd = accounts.filter(acc =>
+            const accountsToAdd = newAccounts.filter(acc =>
                 selectedAccountIds.has(acc.id),
             )
 
@@ -279,6 +295,7 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
         })
     }, [
         accounts,
+        newAccounts,
         selectedAccountIds,
         allAccounts,
         isImportMode,
@@ -316,7 +333,7 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
     const canContinue = areAllImported || selectedAccountIds.size > 0
 
     return {
-        accounts,
+        accounts: candidates,
         selectedAccountIds,
         isAllSelected,
         areAllImported,

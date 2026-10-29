@@ -17,6 +17,8 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 import { getSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import type {
+    AccountChains,
+    ChainAccount,
     HardwareWalletAccount,
     MultiSigAccount,
     WalletAccount,
@@ -182,22 +184,59 @@ export const findAccountByAnyChainAddress = (
         }),
     )
 
+const holdsAnEntryOf = (
+    holder: WalletAccount,
+    candidate: WalletAccount,
+): boolean =>
+    (Object.keys(candidate.chains) as ChainId[]).some(chainId => {
+        const address = chainAccountOf(candidate, chainId)?.address
+        const held = chainAccountOf(holder, chainId)?.address
+        return (
+            address !== undefined &&
+            held !== undefined &&
+            isSameAddress(chainId, held, address)
+        )
+    })
+
 /**
- * The stored account holding any of `account`'s chain entries, each compared
- * on its own chain. A candidate that earlier landed with only some of its
- * addresses is still held.
+ * What of an HD import candidate the wallet can still take, or `undefined`
+ * when it is already held: an HD account at the candidate's index holds one of
+ * its addresses (the same seed landed earlier, maybe with only some of them),
+ * or other accounts hold every entry. Otherwise the entries another account
+ * holds, such as a watched address or a raw-key import, are dropped, so they
+ * don't block the rest of the candidate.
  */
-export const findEntryHolder = (
+export const importableCandidate = <A extends WalletAccount>(
     accounts: readonly WalletAccount[],
-    account: WalletAccount,
-): WalletAccount | undefined => {
-    for (const chainId of Object.keys(account.chains) as ChainId[]) {
-        const address = chainAccountOf(account, chainId)?.address
-        if (address === undefined) continue
-        const holder = findAccountByAddressOn(accounts, chainId, address)
-        if (holder) return holder
-    }
-    return undefined
+    candidate: A,
+): A | undefined => {
+    const index = hdIndexOf(candidate)
+    const isHdHeld =
+        index !== undefined &&
+        accounts.some(account => {
+            const held = hdIndexOf(account)
+            return (
+                held?.account === index.account &&
+                held.keyIndex === index.keyIndex &&
+                holdsAnEntryOf(account, candidate)
+            )
+        })
+    if (isHdHeld) return undefined
+
+    const free = (
+        Object.entries(candidate.chains) as [
+            ChainId,
+            ChainAccount | undefined,
+        ][]
+    ).filter(
+        ([chainId, entry]) =>
+            entry !== undefined &&
+            findAccountByAddressOn(accounts, chainId, entry.address) ===
+                undefined,
+    )
+    if (free.length === 0) return undefined
+    if (free.length === Object.keys(candidate.chains).length) return candidate
+    return { ...candidate, chains: Object.fromEntries(free) as AccountChains }
 }
 
 // A chain whose codec isn't registered (a build-gated chain) falls back to

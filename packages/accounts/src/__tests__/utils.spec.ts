@@ -19,9 +19,9 @@ import {
     canSignProgram,
     findAccountByAddressOn,
     findAccountByAnyChainAddress,
-    findEntryHolder,
     getAccountDisplayName,
     hasSigningKeys,
+    importableCandidate,
     isHardwareWalletAccount,
     isLedgerAccount,
     isMultisigAccount,
@@ -416,30 +416,72 @@ describe('utils - address lookups', () => {
         expect(isSameAddress(OTHER_CHAIN_ID, 'abc', 'ABC')).toBe(false)
     })
 
-    test("finds the stored account holding any entry of the candidate, on that entry's own chain", () => {
-        const candidate = buildTestAccount(TEST_CUSTODY.watch, {
-            [FAKE_CHAIN_ID]: { address: 'CANDIDATE_FAKE' },
-            [OTHER_CHAIN_ID]: { address: 'CANDIDATE_OTHER' },
-        })
-        const holdsOtherEntryOnly = buildTestAccount(TEST_CUSTODY.watch, {
-            [OTHER_CHAIN_ID]: { address: 'CANDIDATE_OTHER' },
-        })
-        const unrelated = testAccount('watch', 'UNRELATED')
-
-        expect(
-            findEntryHolder([unrelated, holdsOtherEntryOnly], candidate),
-        ).toBe(holdsOtherEntryOnly)
-        expect(findEntryHolder([unrelated], candidate)).toBeUndefined()
-    })
-
-    test('does not match an address another chain holds', () => {
-        const candidate = buildTestAccount(TEST_CUSTODY.watch, {
-            [FAKE_CHAIN_ID]: { address: 'SHARED_ADDRESS' },
-        })
-        const onOtherChain = buildTestAccount(TEST_CUSTODY.watch, {
-            [OTHER_CHAIN_ID]: { address: 'SHARED_ADDRESS' },
+    describe('importableCandidate', () => {
+        const hdAt = (chains: Parameters<typeof buildTestAccount>[1]) =>
+            buildTestAccount(TEST_CUSTODY.hd, chains)
+        const candidate = hdAt({
+            [FAKE_CHAIN_ID]: { address: 'CANDIDATE_FAKE', keyPairId: 'k' },
+            [OTHER_CHAIN_ID]: { address: 'CANDIDATE_OTHER', keyPairId: 'k' },
         })
 
-        expect(findEntryHolder([onOtherChain], candidate)).toBeUndefined()
+        test('takes the whole candidate when nothing holds its entries', () => {
+            const unrelated = testAccount('watch', 'UNRELATED')
+
+            expect(importableCandidate([unrelated], candidate)).toBe(candidate)
+        })
+
+        test('holds a candidate an HD account at its index landed with only some of its addresses', () => {
+            const landedEarlier = hdAt({
+                [OTHER_CHAIN_ID]: {
+                    address: 'CANDIDATE_OTHER',
+                    keyPairId: 'k',
+                },
+            })
+
+            expect(
+                importableCandidate([landedEarlier], candidate),
+            ).toBeUndefined()
+        })
+
+        test('drops only the entry a watched or raw-key account holds, leaving the rest importable', () => {
+            const watched = buildTestAccount(TEST_CUSTODY.watch, {
+                [OTHER_CHAIN_ID]: { address: 'CANDIDATE_OTHER' },
+            })
+            const rawKey = buildTestAccount(TEST_CUSTODY.local, {
+                [OTHER_CHAIN_ID]: {
+                    address: 'CANDIDATE_OTHER',
+                    keyPairId: 'r',
+                },
+            })
+
+            for (const holder of [watched, rawKey]) {
+                const importable = importableCandidate([holder], candidate)
+                expect(importable?.id).toBe(candidate.id)
+                expect(Object.keys(importable?.chains ?? {})).toEqual([
+                    FAKE_CHAIN_ID,
+                ])
+            }
+        })
+
+        test('holds a candidate whose every entry other accounts hold', () => {
+            const holders = [
+                testAccount('watch', 'CANDIDATE_FAKE'),
+                buildTestAccount(TEST_CUSTODY.watch, {
+                    [OTHER_CHAIN_ID]: { address: 'CANDIDATE_OTHER' },
+                }),
+            ]
+
+            expect(importableCandidate(holders, candidate)).toBeUndefined()
+        })
+
+        test('does not match an address another chain holds', () => {
+            const onOtherChain = buildTestAccount(TEST_CUSTODY.watch, {
+                [OTHER_CHAIN_ID]: { address: 'CANDIDATE_FAKE' },
+            })
+
+            expect(importableCandidate([onOtherChain], candidate)).toBe(
+                candidate,
+            )
+        })
     })
 })
