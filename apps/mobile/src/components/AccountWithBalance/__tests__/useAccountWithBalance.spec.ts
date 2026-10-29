@@ -18,7 +18,10 @@ import type {
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { registerEthereumChain } from '@test-utils/chain-fixtures'
-import { useAccountWithBalance } from '../useAccountWithBalance'
+import {
+    crossChainTotalOf,
+    useAccountWithBalance,
+} from '../useAccountWithBalance'
 
 const mockIsSwitchedOff = vi.fn()
 const mockBasis = { current: 'native' as AccountValueBasis }
@@ -464,5 +467,119 @@ describe('useAccountWithBalance', () => {
                 true,
             )
         })
+    })
+})
+
+describe('crossChainTotalOf', () => {
+    const MAINNET_ALGO = {
+        address: ALGO_ADDRESS,
+        scope: { chainId: 'algorand', networkId: 'mainnet' },
+    } as const
+    const MAINNET_ETH = {
+        address: ETH_ADDRESS,
+        scope: { chainId: 'ethereum', networkId: 'mainnet' },
+    } as const
+    const doubled = (usd: Decimal | null | undefined) =>
+        usd ? usd.times(2) : null
+    const totals = (
+        entries: [string, Parameters<typeof mockAccountValueTotals.set>[1]][],
+    ) => new Map(entries) as never
+
+    beforeAll(() => {
+        registerEthereumChain()
+    })
+
+    it('is unavailable without a source', () => {
+        expect(crossChainTotalOf([], totals([]), doubled)).toEqual({
+            kind: 'unavailable',
+        })
+    })
+
+    it('shows no value when every source is on a test network', () => {
+        expect(
+            crossChainTotalOf(
+                [
+                    {
+                        address: ALGO_ADDRESS,
+                        scope: { chainId: 'algorand', networkId: 'testnet' },
+                    },
+                ],
+                totals([]),
+                doubled,
+            ),
+        ).toEqual({ kind: 'testOnly' })
+    })
+
+    it('is still loading while any value is pending', () => {
+        expect(
+            crossChainTotalOf(
+                [MAINNET_ALGO, MAINNET_ETH],
+                totals([
+                    [
+                        `algorand|${ALGO_ADDRESS}`,
+                        {
+                            nativeValue: new Decimal(1),
+                            fiatValue: new Decimal(1),
+                        },
+                    ],
+                    [
+                        `ethereum|${ETH_ADDRESS}`,
+                        {
+                            nativeValue: new Decimal(0),
+                            fiatValue: new Decimal(0),
+                            isPending: true,
+                        },
+                    ],
+                ]),
+                doubled,
+            ),
+        ).toEqual({ kind: 'fiat', value: undefined })
+    })
+
+    it('is unknown when any value is unpriced', () => {
+        expect(
+            crossChainTotalOf(
+                [MAINNET_ALGO, MAINNET_ETH],
+                totals([
+                    [
+                        `algorand|${ALGO_ADDRESS}`,
+                        {
+                            nativeValue: new Decimal(1),
+                            fiatValue: new Decimal(1),
+                        },
+                    ],
+                    [
+                        `ethereum|${ETH_ADDRESS}`,
+                        { nativeValue: new Decimal(1), fiatValue: null },
+                    ],
+                ]),
+                doubled,
+            ),
+        ).toEqual({ kind: 'fiat', value: null })
+    })
+
+    it('sums the fiat values and converts the total', () => {
+        expect(
+            crossChainTotalOf(
+                [MAINNET_ALGO, MAINNET_ETH],
+                totals([
+                    [
+                        `algorand|${ALGO_ADDRESS}`,
+                        {
+                            nativeValue: new Decimal(1),
+                            fiatValue: new Decimal(10),
+                        },
+                    ],
+                    [
+                        `ethereum|${ETH_ADDRESS}`,
+                        {
+                            nativeValue: new Decimal(1),
+                            fiatValue: new Decimal(5),
+                        },
+                    ],
+                ]),
+                doubled,
+            ),
+        ).toEqual({ kind: 'fiat', value: new Decimal(30) })
     })
 })

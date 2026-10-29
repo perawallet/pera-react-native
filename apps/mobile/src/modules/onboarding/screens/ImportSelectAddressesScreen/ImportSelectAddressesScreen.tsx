@@ -23,51 +23,37 @@ import {
 } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { ScreenHeader } from '@components/ScreenHeader'
-import { SelectableAccountCheckboxRow } from '@modules/accounts'
+import type { LocalAccount } from '@perawallet/wallet-core-accounts'
 
+import { DiscoveredAccountRow } from './DiscoveredAccountRow'
 import { useStyles } from './styles'
 import { useImportSelectAddressesScreen } from './useImportSelectAddressesScreen'
-import {
-    getAccountDisplayName,
-    chainAccountOf,
-    type LocalAccount,
-} from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 export const ImportSelectAddressesScreen = () => {
     const styles = useStyles()
     const {
         accounts,
-        selectedAddresses,
+        selectedAccountIds,
         isAllSelected,
         areAllImported,
         canContinue,
         isProcessing,
-        alreadyImportedAddresses,
+        importedAccountIds,
+        hasLinkedAddresses,
         toggleSelection,
         toggleSelectAll,
         handleContinue,
         t,
     } = useImportSelectAddressesScreen()
 
-    const renderItem = ({ item }: { item: LocalAccount }) => {
-        const address = chainAccountOf(item, LEGACY_CHAIN_ID)?.address ?? ''
-        const isImported = alreadyImportedAddresses.has(address)
-        const isSelected = selectedAddresses.has(address)
-
-        return (
-            <SelectableAccountCheckboxRow
-                title={getAccountDisplayName(item, LEGACY_CHAIN_ID)}
-                isSelected={isSelected}
-                isImported={isImported}
-                importedLabel={t(
-                    'onboarding.import_select_addresses.already_imported',
-                )}
-                onToggle={() => toggleSelection(address)}
-                checkboxTestID={`import_select_addresses_item_checkbox_${address}`}
-            />
-        )
-    }
+    const renderItem = ({ item }: { item: LocalAccount }) => (
+        <DiscoveredAccountRow
+            account={item}
+            isSelected={selectedAccountIds.has(item.id)}
+            isImported={importedAccountIds.has(item.id)}
+            onToggle={toggleSelection}
+        />
+    )
 
     return (
         <>
@@ -77,7 +63,7 @@ export const ImportSelectAddressesScreen = () => {
                     <PWButton
                         testID='import_select_addresses_continue_button'
                         title={t(
-                            'onboarding.import_select_addresses.finish_button',
+                            'onboarding.import_select_addresses.import_button',
                         )}
                         onPress={handleContinue}
                         variant='primary'
@@ -91,7 +77,9 @@ export const ImportSelectAddressesScreen = () => {
                         description={
                             !areAllImported
                                 ? t(
-                                      'onboarding.import_select_addresses.description',
+                                      hasLinkedAddresses
+                                          ? 'onboarding.import_select_addresses.description_linked'
+                                          : 'onboarding.import_select_addresses.description',
                                       {
                                           count: accounts.length,
                                       },
@@ -126,7 +114,9 @@ export const ImportSelectAddressesScreen = () => {
                                     style={styles.headerCount}
                                 >
                                     {t(
-                                        'onboarding.import_select_addresses.addresses_count',
+                                        hasLinkedAddresses
+                                            ? 'onboarding.import_select_addresses.accounts_count'
+                                            : 'onboarding.import_select_addresses.addresses_count',
                                         {
                                             count: accounts.length,
                                         },
@@ -157,7 +147,7 @@ export const ImportSelectAddressesScreen = () => {
                                 data={accounts}
                                 renderItem={renderItem}
                                 keyExtractor={item => item.id}
-                                extraData={selectedAddresses}
+                                extraData={selectedAccountIds}
                                 cardLayout
                                 showsVerticalScrollIndicator={false}
                             />

@@ -12,5 +12,8 @@
 
 export { AccountWithBalance } from './AccountWithBalance'
 export type { AccountWithBalanceProps } from './AccountWithBalance'
-export { useAccountWithBalance } from './useAccountWithBalance'
+export {
+    crossChainTotalOf,
+    useAccountWithBalance,
+} from './useAccountWithBalance'
 export type { CrossChainTotal } from './useAccountWithBalance'

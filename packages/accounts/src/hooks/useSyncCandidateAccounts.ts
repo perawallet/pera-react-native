@@ -17,6 +17,7 @@ import {
     selectChainNetworkId,
     useNetworkStore,
 } from '@perawallet/wallet-core-chain-shared'
+import { logger } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { accountsChainAdapters } from '../chain-adapter'
 import { chainAccountOf } from '../credentials'
@@ -97,7 +98,14 @@ export const useSyncCandidateAccounts = (
                         address,
                     )
                 ) {
-                    void cleanupRemovedAccountData({ accountAddress: address })
+                    void cleanupRemovedAccountData({
+                        accountAddress: address,
+                    }).catch(error => {
+                        logger.warn('Candidate account cleanup failed', {
+                            address,
+                            error,
+                        })
+                    })
                 }
             }
         }

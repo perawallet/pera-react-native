@@ -673,6 +673,20 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
             manual: 'manual',
         },
         findAccountByAnyChainAddress: vi.fn(findInAnyChain),
+        findEntryHolder: vi.fn((accounts: any[] = [], account: any) =>
+            accounts.find(held =>
+                Object.entries(account?.chains ?? {}).some(
+                    ([chainId, entry]: [string, any]) =>
+                        !!entry &&
+                        chainAccountOf(held, chainId)?.address ===
+                            entry.address,
+                ),
+            ),
+        ),
+        useSyncCandidateAccounts: vi.fn(),
+        useAccountValueTotalsQuery: vi.fn(() => ({
+            accountValueTotals: new Map(),
+        })),
         useAccountsStore: vi.fn((selector: (s: any) => any) =>
             selector({
                 accounts: [],

@@ -106,9 +106,10 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
         hasSearched.current = true
 
         try {
-            // Import mode: in-memory rootKey only, nothing persisted yet.
-            // Always navigate to selection screen so the user picks the
-            // address(es) to actually import.
+            // Import mode: the root key stays in memory, except that a build with
+            // a chain that derives only in the keystore saves the seed for
+            // discovery (cancelImport removes it). Always navigate to the
+            // selection screen so the user picks the account(s) to import.
             if ('mode' in params && params.mode === 'import') {
                 const discovered = await discoverImportAccounts({
                     walletKeyId: params.walletKeyId,
