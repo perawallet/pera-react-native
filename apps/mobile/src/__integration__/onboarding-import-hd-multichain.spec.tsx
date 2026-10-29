@@ -20,6 +20,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { evmRpcHandlers } from '@perawallet/wallet-core-chain-ethereum/test-handlers'
 import { mockIndexerSearchForAccounts } from '@perawallet/wallet-core-chain-algorand/test-handlers'
+import { kmsCore } from '@perawallet/wallet-core-kms'
 import { mockAccountFastLookup } from '@perawallet/wallet-core-shared/test-handlers'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import { server } from '@test-utils/msw-server'
