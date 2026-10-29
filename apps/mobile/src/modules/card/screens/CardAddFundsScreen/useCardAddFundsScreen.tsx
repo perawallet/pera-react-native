@@ -57,6 +57,7 @@ type UseCardAddFundsScreenResult = {
     /** Source asset balance in the funding account, formatted. */
     balanceDisplay: string
     /** Raw typed amount string, or null/undefined when empty. */
+    // lanekeep-ignore-next-line pera/amount-types reason: the keypad's raw text, which can be a partial entry like `0.`; the Decimal is derived from it
     amount: Maybe<string>
     /** USDC the deposit/swap yields, e.g. "0.00 USDC". */
     secondaryDisplay: string
