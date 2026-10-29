@@ -18,7 +18,7 @@ export const testIdProp = {
                 'Pass testID to a component instead of spreading getTestProps outside components/core',
         },
         messages: {
-            spread: 'Pass testID instead of spreading getTestProps(…): components/core turns a testID into test props itself. Give the component a testID prop if it lacks one, and pass a suffixed ID as testID={id && `${id}_suffix`}.',
+            spread: 'Pass testID to the element instead of spreading getTestProps(…): core components and React Native primitives map it to automation props. Give a Pera component a testID prop if it lacks one, and pass a suffixed ID as testID={id && `${id}_suffix`}.',
         },
         schema: [],
     },
