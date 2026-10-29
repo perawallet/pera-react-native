@@ -10,8 +10,13 @@
  limitations under the License
  */
 
-/** Callees whose first argument is the component function. */
-export const COMPONENT_WRAPPERS = ['memo', 'forwardRef']
+// Callees whose first argument is the component function, mapped to the index
+// of their props type argument: forwardRef<Ref, Props> puts the ref first.
+const PROPS_TYPE_ARGUMENT = new Map([
+    ['memo', 0],
+    ['forwardRef', 1],
+])
+export const COMPONENT_WRAPPERS = [...PROPS_TYPE_ARGUMENT.keys()]
 
 const isPascalCase = name => /^[A-Z][A-Za-z0-9]*$/.test(name)
 
@@ -37,6 +42,14 @@ const componentFunction = init => {
         return componentFunction(init.arguments[0])
     }
     return undefined
+}
+
+const wrapperPropsTypes = init => {
+    if (init?.type !== 'CallExpression') return []
+    const index = PROPS_TYPE_ARGUMENT.get(calleeName(init.callee))
+    if (index === undefined) return []
+    const props = init.typeArguments?.params[index]
+    return [...(props ? [props] : []), ...wrapperPropsTypes(init.arguments[0])]
 }
 
 const propsAnnotation = param =>
@@ -70,17 +83,21 @@ export const componentPropsType = {
                 'Function components type their props with a named <Name>Props type declared above them, not an inline type literal',
         },
         messages: {
-            inline: '{{component}} types its props with an inline type literal: declare type {{component}}Props above the component and annotate the props parameter with it.',
+            inline: '{{component}} types its props with an inline type literal: declare type {{component}}Props above the component and use it in place of the literal.',
         },
         schema: [],
     },
     create(context) {
         if (!context.filename.endsWith('.tsx')) return {}
 
-        const check = (component, fn) => {
+        // Reports the first offending annotation only, so a component typed
+        // inline in two places still gets one error.
+        const check = (component, annotations) => {
             if (!isPascalCase(component)) return
-            const annotation = propsAnnotation(fn?.params[0])
-            if (annotation && containsTypeLiteral(annotation)) {
+            const annotation = annotations.find(
+                candidate => candidate && containsTypeLiteral(candidate),
+            )
+            if (annotation) {
                 context.report({
                     node: annotation,
                     messageId: 'inline',
@@ -90,11 +107,21 @@ export const componentPropsType = {
         }
         return {
             FunctionDeclaration(node) {
-                if (node.id) check(node.id.name, node)
+                if (node.id) {
+                    check(node.id.name, [propsAnnotation(node.params[0])])
+                }
             },
             VariableDeclarator(node) {
                 if (node.id.type !== 'Identifier') return
-                check(node.id.name, componentFunction(node.init))
+                const fn = componentFunction(node.init)
+                if (!fn) return
+                // const X: FC<{ … }>, memo<{ … }>(…) and forwardRef<Ref, { … }>(…)
+                // type the props outside the parameter.
+                check(node.id.name, [
+                    propsAnnotation(fn.params[0]),
+                    node.id.typeAnnotation,
+                    ...wrapperPropsTypes(node.init),
+                ])
             },
         }
     },

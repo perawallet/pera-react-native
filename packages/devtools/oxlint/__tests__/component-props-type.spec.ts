@@ -62,6 +62,15 @@ const declarator = (name: string, init: Node | null): Node => ({
     id: id(name),
     init,
 })
+const typedDeclarator = (name: string, type: Node, init: Node): Node => ({
+    type: 'VariableDeclarator',
+    id: annotated(id(name), type),
+    init,
+})
+const typedCall = (callee: Node, params: Node[], args: Node[]): Node => ({
+    ...call(callee, args),
+    typeArguments: { type: 'TSTypeParameterInstantiation', params },
+})
 const fnDecl = (name: string, params: Node[]): Node => ({
     type: 'FunctionDeclaration',
     id: id(name),
@@ -70,6 +79,7 @@ const fnDecl = (name: string, params: Node[]): Node => ({
 
 const inline = () => annotated(objectPattern(), typeLiteral())
 const named = () => annotated(objectPattern(), typeRef('FooProps'))
+const untypedProps = () => arrow([objectPattern(), id('ref')])
 
 describe('pera/component-props-type', () => {
     it.each([
@@ -144,6 +154,57 @@ describe('pera/component-props-type', () => {
                 call(id('memo'), [call(id('forwardRef'), [arrow([inline()])])]),
             ),
         ],
+        [
+            'memo<{ … }>(arrow)',
+            'VariableDeclarator',
+            declarator(
+                'Foo',
+                typedCall(id('memo'), [typeLiteral()], [untypedProps()]),
+            ),
+        ],
+        [
+            'forwardRef<Ref, { … }>(arrow)',
+            'VariableDeclarator',
+            declarator(
+                'Foo',
+                typedCall(
+                    id('forwardRef'),
+                    [typeRef('View'), typeLiteral()],
+                    [untypedProps()],
+                ),
+            ),
+        ],
+        [
+            'memo(forwardRef<Ref, { … }>(arrow))',
+            'VariableDeclarator',
+            declarator(
+                'Foo',
+                call(id('memo'), [
+                    typedCall(
+                        id('forwardRef'),
+                        [typeRef('View'), typeLiteral()],
+                        [untypedProps()],
+                    ),
+                ]),
+            ),
+        ],
+        [
+            'const Foo: FC<{ … }> = arrow',
+            'VariableDeclarator',
+            typedDeclarator(
+                'Foo',
+                typeRef('FC', typeLiteral()),
+                untypedProps(),
+            ),
+        ],
+        [
+            'memo<{ … }> over an inline-typed param, once',
+            'VariableDeclarator',
+            declarator(
+                'Foo',
+                typedCall(id('memo'), [typeLiteral()], [arrow([inline()])]),
+            ),
+        ],
     ])('reports %s typed with an inline literal', (_label, visitor, node) => {
         expect(lint(visitor, node as Node)).toHaveBeenCalledOnce()
     })
@@ -172,6 +233,20 @@ describe('pera/component-props-type', () => {
 
         expect(report).toHaveBeenCalledWith({
             node: props.typeAnnotation,
+            messageId: 'inline',
+            data: { component: 'Foo' },
+        })
+    })
+
+    it('reports a wrapper type argument on the argument itself', () => {
+        const props = typeLiteral()
+        const report = lint(
+            'VariableDeclarator',
+            declarator('Foo', typedCall(id('memo'), [props], [untypedProps()])),
+        )
+
+        expect(report).toHaveBeenCalledWith({
+            node: props,
             messageId: 'inline',
             data: { component: 'Foo' },
         })
@@ -219,6 +294,56 @@ describe('pera/component-props-type', () => {
                 call(id('forwardRef'), [
                     arrow([named(), annotated(id('ref'), typeLiteral())]),
                 ]),
+            ),
+        ],
+        [
+            'memo<FooProps>(arrow)',
+            'VariableDeclarator',
+            declarator(
+                'Foo',
+                typedCall(id('memo'), [typeRef('FooProps')], [untypedProps()]),
+            ),
+        ],
+        [
+            'forwardRef<Ref, FooProps>(arrow)',
+            'VariableDeclarator',
+            declarator(
+                'Foo',
+                typedCall(
+                    id('forwardRef'),
+                    [typeRef('View'), typeRef('FooProps')],
+                    [untypedProps()],
+                ),
+            ),
+        ],
+        [
+            'a forwardRef whose ref type argument is a literal',
+            'VariableDeclarator',
+            declarator(
+                'Foo',
+                typedCall(
+                    id('forwardRef'),
+                    [typeLiteral(), typeRef('FooProps')],
+                    [untypedProps()],
+                ),
+            ),
+        ],
+        [
+            'const Foo: FC<FooProps> = arrow',
+            'VariableDeclarator',
+            typedDeclarator(
+                'Foo',
+                typeRef('FC', typeRef('FooProps')),
+                untypedProps(),
+            ),
+        ],
+        [
+            'a PascalCase non-function annotated with a literal',
+            'VariableDeclarator',
+            typedDeclarator(
+                'Config',
+                typeLiteral(),
+                call(id('createConfig'), []),
             ),
         ],
         [
