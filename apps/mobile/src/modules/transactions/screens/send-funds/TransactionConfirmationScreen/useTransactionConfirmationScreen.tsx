@@ -272,7 +272,7 @@ export const useTransactionConfirmationScreen =
                 nativeAsset.decimals,
                 maxFee,
             )
-            const fee = `${formatCurrency(
+            const maxFeeLabel = `${formatCurrency(
                 maxFee,
                 precision,
                 nativeAsset.unitName ?? '',
@@ -286,7 +286,7 @@ export const useTransactionConfirmationScreen =
                     symbol: nativeAsset.unitName,
                 }),
                 body: t('send_funds.confirmation.fee_shortfall.body', {
-                    fee,
+                    fee: maxFeeLabel,
                 }),
             }
         }, [
