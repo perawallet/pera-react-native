@@ -37,6 +37,7 @@ export {
     type HistoryFeedProps,
     type HistoryFeedSource,
     type UseTransactionHistoryRowsResult,
+    type UseMergedTransactionHistoryRowsResult,
     type SendAccountResolution,
     type UseKnownAddressesParams,
     type UseKnownAddressesResult,
