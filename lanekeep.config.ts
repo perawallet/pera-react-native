@@ -47,6 +47,7 @@ import pqLibrarySeam from './lanekeep/rules/pq-library-seam.js'
 import secp256k1LibrarySeam from './lanekeep/rules/secp256k1-library-seam.js'
 import secretBufferZeroed from './lanekeep/rules/secret-buffer-zeroed.js'
 import specFileSuffix from './lanekeep/rules/spec-file-suffix.js'
+import specImportsOwnSrc from './lanekeep/rules/spec-imports-own-src.js'
 import storeInWipeRegistry from './lanekeep/rules/store-in-wipe-registry.js'
 import submissionSeam from './lanekeep/rules/submission-seam.js'
 import translationKeyExists from './lanekeep/rules/translation-key-exists.js'
@@ -132,6 +133,7 @@ export default defineConfig({
         domSpecEnvironment,
         noWorkspaceRequireInTests,
         vitestPoolConfig,
+        specImportsOwnSrc,
         amountTypes,
         noSecretInLogs,
         secretBufferZeroed,

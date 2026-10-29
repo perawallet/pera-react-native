@@ -77,6 +77,7 @@ const TransactionListItemView = ({
                             currency={amount.currency}
                             assetId={amount.assetId}
                             precision='compact'
+                            assetDecimals={amount.decimals}
                             prefix={amount.prefix}
                             showSymbol
                             symbolPosition='end'

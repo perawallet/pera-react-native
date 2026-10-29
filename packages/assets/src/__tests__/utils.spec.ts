@@ -354,5 +354,13 @@ describe('utils', () => {
             })
             expect(result).toBe('1.50 ALGO')
         })
+
+        test('caps an 18-decimal amount at 6 decimals', () => {
+            const result = formatAssetAmount(new Decimal('1344293173000000'), {
+                decimals: 18,
+                unitName: 'ETH',
+            })
+            expect(result).toBe('0.001344 ETH')
+        })
     })
 })

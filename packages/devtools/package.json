@@ -43,7 +43,8 @@
     "tsx": "catalog:",
     "vitest": "catalog:",
     "@types/node": "catalog:",
-    "vite": "catalog:"
+    "vite": "catalog:",
+    "oxlint": "^1.88.0"
   },
   "publishConfig": {
     "access": "public"

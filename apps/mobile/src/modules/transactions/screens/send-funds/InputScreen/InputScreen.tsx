@@ -226,6 +226,7 @@ export const InputScreen = () => {
                                 styles.h1,
                             ]}
                             showSymbol={false}
+                            shouldFitWidth
                         />
                     </PWView>
                     {!isCollectible && (

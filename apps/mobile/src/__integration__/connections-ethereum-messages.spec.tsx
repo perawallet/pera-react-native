@@ -40,6 +40,8 @@ import {
     TOPIC as V2_SESSION_TOPIC,
     V2_URI,
 } from '@packages/walletconnect/src/v2/__tests__/fakeWalletKit'
+import { useSigningStore } from '@packages/signing/src/store'
+import { __resetSigningActorRegistryForTests } from '@packages/signing/src/hooks/useSigningActorLifecycle'
 import {
     MAIL_TYPED_DATA,
     PERMIT2_SINGLE_TYPED_DATA,
@@ -226,6 +228,10 @@ describe('Flow: an eip155 dApp asks for a message signature', () => {
     setSuiteUnhandledRequestMode('bypass')
 
     beforeEach(async () => {
+        // Actors and the queue are module state, so one test's leftover would
+        // hold every later review behind it.
+        __resetSigningActorRegistryForTests()
+        useSigningStore.getState().resetState()
         resetTestKeystore()
         walletKitStub.reset()
         captured.registry = undefined

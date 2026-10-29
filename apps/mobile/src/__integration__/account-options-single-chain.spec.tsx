@@ -100,7 +100,7 @@ describe('Flow: the account options sheet in a single-chain build', () => {
         )
 
         expect(
-            await screen.findByText('account_info.scan_new_addresses'),
+            await screen.findByText('account_info.scan_new_wallet_accounts'),
         ).toBeTruthy()
         expect(screen.getByText(siblingAddress)).toBeTruthy()
         expect(screen.queryByText('account_info.viewing')).toBeNull()
