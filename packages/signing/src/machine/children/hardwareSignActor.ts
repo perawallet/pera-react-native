@@ -161,8 +161,12 @@ export const hardwareSignActor = fromCallback<
                     callbacks,
                 })
             }
-            default: {
+            case 'arbitrary-data': {
                 return strategy.sign(group, account, callbacks)
+            }
+            default: {
+                const exhaustive: never = group.data
+                return exhaustive
             }
         }
     }

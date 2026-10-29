@@ -106,7 +106,7 @@ export const LegacyDatabaseCard = ({
 }
 
 const lastGeneratedLabelOf = (
-    lastGenerated: { version: number; at: number } | undefined,
+    lastGenerated: LegacyDatabaseCardProps['lastGenerated'],
     isSingleSnapshot: boolean,
 ): string => {
     if (!lastGenerated) return '—'

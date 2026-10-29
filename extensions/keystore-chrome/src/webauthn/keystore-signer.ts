@@ -103,11 +103,6 @@ const isPasskeyMainKey = (key: Key): boolean =>
     key.type === 'hd-root-key' &&
     readMetadataString(key, 'scheme') === PBKDF2_P256_SCHEME
 
-/**
- * Normalizes whatever `key.publicKey` the keystore hands back (64-byte raw
- * `X || Y`, or 65-byte `0x04`-prefixed) into the flat 64-byte `X || Y` form
- * the `KeystoreSigner` port's `publicKeyXY` fields use.
- */
 // Code-unit order, NOT `localeCompare`: the other two writers use a bare
 // `.sort()`, and a locale-aware collation would disagree with them on case and
 // punctuation.
@@ -117,6 +112,11 @@ const compareKeyIds = (a: Key, b: Key): number => {
     return 0
 }
 
+/**
+ * Normalizes whatever `key.publicKey` the keystore hands back (64-byte raw
+ * `X || Y`, or 65-byte `0x04`-prefixed) into the flat 64-byte `X || Y` form
+ * the `KeystoreSigner` port's `publicKeyXY` fields use.
+ */
 const toFlatXY = (publicKey: Uint8Array): Uint8Array => {
     const { x, y } = splitP256PublicKey(publicKey)
     const flat = new Uint8Array(x.length + y.length)

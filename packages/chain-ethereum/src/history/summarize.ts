@@ -75,8 +75,12 @@ const nftCounterpartyOf = (
         case 'out': {
             return leg.to
         }
-        default: {
+        case 'self': {
             return null
+        }
+        default: {
+            const exhaustive: never = direction
+            return exhaustive
         }
     }
 }

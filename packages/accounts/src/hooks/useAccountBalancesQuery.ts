@@ -149,8 +149,9 @@ export const summarizeHoldings = (
         // and are unknown while either price is.
         const nativeAssetValueOf = () => {
             if (isNative) return assetAmount
-            if (nativeUsdPrice.isZero() || holding.usdPrice === null)
+            if (nativeUsdPrice.isZero() || holding.usdPrice === null) {
                 return null
+            }
             return assetAmount.times(usdAssetPrice).div(nativeUsdPrice)
         }
         const nativeAssetValue = nativeAssetValueOf()
