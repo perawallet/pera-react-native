@@ -156,4 +156,27 @@ describe('useMarkMnemonicBackupComplete', () => {
 
         expect(useMnemonicBackupStore.getState().backedUpKeyIds).toEqual({})
     })
+
+    test('is a no-op on a chain with no backup adapter', async () => {
+        const { useMnemonicBackupStore } = await import('../../store')
+        const { useMarkMnemonicBackupComplete } =
+            await import('../useMarkMnemonicBackupComplete')
+
+        const account: WalletAccount = {
+            id: 'account-evm',
+            custody: { kind: 'local', seed: 'bip39' },
+            chains: { ethereum: { address: '0xE1', keyPairId: 'kp-evm' } },
+        }
+
+        mockUseAccountsStore.mockReturnValue([account])
+
+        const { result } = renderHook(() =>
+            useMarkMnemonicBackupComplete('ethereum'),
+        )
+        act(() => {
+            result.current(account)
+        })
+
+        expect(useMnemonicBackupStore.getState().backedUpKeyIds).toEqual({})
+    })
 })

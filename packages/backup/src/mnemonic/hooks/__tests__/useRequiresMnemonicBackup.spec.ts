@@ -128,4 +128,20 @@ describe('useRequiresMnemonicBackup', () => {
         )
         expect(result.current).toBe(false)
     })
+
+    test('returns false for an account on a chain with no backup adapter', async () => {
+        const { useRequiresMnemonicBackup } =
+            await import('../useRequiresMnemonicBackup')
+
+        const account: WalletAccount = {
+            id: 'account-evm',
+            custody: { kind: 'local', seed: 'bip39' },
+            chains: { ethereum: { address: '0xE1', keyPairId: 'kp-evm' } },
+        }
+
+        const { result } = renderHook(() =>
+            useRequiresMnemonicBackup(account, 'ethereum'),
+        )
+        expect(result.current).toBe(false)
+    })
 })

@@ -30,10 +30,9 @@ export const useAccountsDelegatedTo = (
     // Reads every legacy scope, so any slice write can change the result.
     const chainStates = useAccountChainStateStore(state => state.states)
     return useMemo(() => {
+        if (!address || !accountsChainAdapters.has(chainId)) return []
         const authority = accountsChainAdapters.get(chainId).authority
-        return address && authority
-            ? authority.accountsDelegatedTo(address, accounts)
-            : []
+        return authority ? authority.accountsDelegatedTo(address, accounts) : []
         // eslint-disable-next-line react-hooks/exhaustive-deps -- chainStates re-runs the memo: accountsDelegatedTo reads the chain-state store, not its arguments
     }, [address, accounts, chainId, chainStates])
 }

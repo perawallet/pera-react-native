@@ -18,8 +18,8 @@ import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 
 const mockRequiresBackup = vi.fn()
 vi.mock('../useRequiresMnemonicBackup', () => ({
-    useRequiresMnemonicBackup: (account: WalletAccount | null | undefined) =>
-        mockRequiresBackup(account),
+    useRequiresMnemonicBackup: (...args: unknown[]) =>
+        mockRequiresBackup(...args),
 }))
 
 const mockFundedNetworks = vi.fn()
@@ -52,9 +52,18 @@ vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => {
 })
 
 import { registerFakeBackupAdapter } from '../../../__tests__/fakeBackupAdapter'
+import { useMnemonicBackupStore } from '../../store'
 import { useShouldPromptMnemonicBackup } from '../useShouldPromptMnemonicBackup'
 
 const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
+
+const ETHEREUM_SCOPE: ChainScope = { chainId: 'ethereum', networkId: 'mainnet' }
+
+const accountOnEthereum: WalletAccount = {
+    id: 'evm-account',
+    custody: { kind: 'local', seed: 'bip39', hd: { account: 0, keyIndex: 0 } },
+    chains: { ethereum: { address: '0xE1', keyPairId: 'kp-evm' } },
+}
 
 const accountHD: WalletAccount = {
     id: 'hd-account',
@@ -78,7 +87,15 @@ describe('useShouldPromptMnemonicBackup', () => {
         mockAccountsDelegatedTo.mockReturnValue([])
         mockCanBackUpMnemonic.mockReset()
         mockCanBackUpMnemonic.mockReturnValue(true)
+        useMnemonicBackupStore.getState().resetState()
     })
+
+    const useRealRequiresBackup = async () => {
+        const { useRequiresMnemonicBackup } = await vi.importActual<
+            typeof import('../useRequiresMnemonicBackup')
+        >('../useRequiresMnemonicBackup')
+        mockRequiresBackup.mockImplementation(useRequiresMnemonicBackup)
+    }
 
     test('false when the chain has mnemonic backup off, however funded', () => {
         mockRequiresBackup.mockReturnValue(true)
@@ -183,5 +200,45 @@ describe('useShouldPromptMnemonicBackup', () => {
             undefined,
             'algorand',
         )
+    })
+
+    test('false, and reads no backup adapter, on a chain with mnemonic backup off', async () => {
+        await useRealRequiresBackup()
+        mockFundedNetworks.mockReturnValue(fundedOn('mainnet'))
+        mockCanBackUpMnemonic.mockReturnValue(false)
+
+        const { result } = renderHook(() =>
+            useShouldPromptMnemonicBackup(accountOnEthereum, ETHEREUM_SCOPE),
+        )
+        expect(result.current).toBe(false)
+        expect(mockRequiresBackup).toHaveBeenCalledWith(undefined, 'ethereum')
+        expect(mockFundedNetworks).toHaveBeenCalledWith(
+            undefined,
+            ETHEREUM_SCOPE,
+        )
+        expect(mockAccountsDelegatedTo).toHaveBeenCalledWith(
+            undefined,
+            'ethereum',
+        )
+    })
+
+    test('false, without throwing, when the capability is on but the chain registers no backup adapter', async () => {
+        await useRealRequiresBackup()
+        mockFundedNetworks.mockReturnValue(fundedOn('mainnet'))
+
+        const { result } = renderHook(() =>
+            useShouldPromptMnemonicBackup(accountOnEthereum, ETHEREUM_SCOPE),
+        )
+        expect(result.current).toBe(false)
+    })
+
+    test('prompts a funded, never-backed-up Algorand account through the real backup state', async () => {
+        await useRealRequiresBackup()
+        mockFundedNetworks.mockReturnValue(fundedOn('mainnet'))
+
+        const { result } = renderHook(() =>
+            useShouldPromptMnemonicBackup(accountHD, SCOPE),
+        )
+        expect(result.current).toBe(true)
     })
 })

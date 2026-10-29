@@ -98,4 +98,18 @@ describe('getMnemonicBackupKeyId', () => {
         expect(getMnemonicBackupKeyId(hardware, 'algorand')).toBeNull()
         expect(getMnemonicBackupKeyId(watch, 'algorand')).toBeNull()
     })
+
+    test("returns null on a chain with no backup adapter, without asking another chain's adapter", () => {
+        const mnemonicBackupKeyId = vi.fn(() => 'chain-id')
+        backupChainAdapters.reset()
+        backupChainAdapters.register(fakeBackupAdapter({ mnemonicBackupKeyId }))
+        const account: WalletAccount = {
+            id: 'acc-evm',
+            custody: { kind: 'local', seed: 'bip39' },
+            chains: { ethereum: { address: '0xE1', keyPairId: 'kp-evm' } },
+        }
+
+        expect(getMnemonicBackupKeyId(account, 'ethereum')).toBeNull()
+        expect(mnemonicBackupKeyId).not.toHaveBeenCalled()
+    })
 })
