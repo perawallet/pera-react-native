@@ -44,6 +44,16 @@ const template = (): Node => ({
     quasis: [],
     expressions: [],
 })
+const optional = (expression: Node): Node => ({
+    type: 'ChainExpression',
+    expression,
+})
+const computedMember = (object: Node, property: Node): Node => ({
+    type: 'MemberExpression',
+    computed: true,
+    object,
+    property,
+})
 const brk = (): Node => ({ type: 'BreakStatement', label: null })
 const binary = (operator: string, left: Node, right: Node): Node => ({
     type: 'BinaryExpression',
@@ -121,6 +131,14 @@ describe(RULE, () => {
                 bare(lit('b'), lit('AB')),
                 bare(lit('c'), lit('C')),
                 bare(lit('d'), lit('D')),
+            ]),
+        ],
+        [
+            'optional-chain member values',
+            switchOn(id('key'), [
+                bare(lit('a'), optional(member(id('Colors'), 'primary'))),
+                bare(lit('b'), optional(member(id('Colors'), 'secondary'))),
+                bare(lit('c'), optional(member(id('Colors'), 'tertiary'))),
             ]),
         ],
     ])('reports %s', (_label, node) => {
@@ -229,6 +247,41 @@ describe(RULE, () => {
                 bare(lit('a'), lit('A')),
                 bare(lit('b'), lit('B')),
                 caseOf(lit('c'), [ret()]),
+            ]),
+        ],
+        [
+            'an optional-chain read off the discriminant root',
+            switchOn(optional(member(id('call'), 'kind')), [
+                bare(lit('a'), optional(member(id('call'), 'to'))),
+                bare(lit('b'), optional(member(id('call'), 'spender'))),
+                bare(lit('c'), optional(member(id('call'), 'operator'))),
+            ]),
+        ],
+        [
+            'a computed member value',
+            switchOn(id('key'), [
+                bare(lit('a'), lit('A')),
+                bare(lit('b'), lit('B')),
+                bare(lit('c'), computedMember(id('labels'), id('k'))),
+            ]),
+        ],
+        [
+            'a type-assertion value',
+            switchOn(id('key'), [
+                bare(lit('a'), lit('A')),
+                bare(lit('b'), lit('B')),
+                bare(lit('c'), {
+                    type: 'TSAsExpression',
+                    expression: lit('C'),
+                }),
+            ]),
+        ],
+        [
+            'regex literal values',
+            switchOn(id('key'), [
+                bare(lit('a'), { ...lit(null), regex: { pattern: 'a' } }),
+                bare(lit('b'), { ...lit(null), regex: { pattern: 'b' } }),
+                bare(lit('c'), { ...lit(null), regex: { pattern: 'c' } }),
             ]),
         ],
     ])('allows %s', (_label, node) => {

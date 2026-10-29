@@ -39,7 +39,8 @@ const isStaticMember = (node, excludedRoot) => {
 }
 
 const isConstantValue = (argument, discriminantRoot) => {
-    if (argument.type === 'Literal') return true
+    // A regex literal is a fresh object per evaluation; a shared map entry would share its lastIndex.
+    if (argument.type === 'Literal') return !argument.regex
     if (argument.type === 'CallExpression') {
         return (
             argument.callee.type === 'Identifier' &&

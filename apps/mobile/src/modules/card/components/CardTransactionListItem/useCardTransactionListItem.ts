@@ -33,16 +33,6 @@ type UseCardTransactionListItemResult = {
     isDebit: boolean
 }
 
-const KIND_LABEL_KEYS: Record<CardTransactionKind, I18nKey> = {
-    [CardTransactionKind.Payment]: i18nKey(
-        'peraCard.transactions.kind_payment',
-    ),
-    [CardTransactionKind.Refund]: i18nKey('peraCard.transactions.kind_refund'),
-    [CardTransactionKind.Deposit]: i18nKey(
-        'peraCard.transactions.kind_deposit',
-    ),
-}
-
 const relativeDateLabel = (
     t: Translate,
     relative: CardTransactionRelativeDate,
@@ -75,6 +65,16 @@ const STATUS_LABEL_KEYS: Partial<Record<TransactionStatus, I18nKey>> = {
 const FALLBACK_STATUS_LABEL_KEY: I18nKey = i18nKey(
     'peraCard.transactions.status_pending',
 )
+
+const KIND_LABEL_KEYS: Record<CardTransactionKind, I18nKey> = {
+    [CardTransactionKind.Payment]: i18nKey(
+        'peraCard.transactions.kind_payment',
+    ),
+    [CardTransactionKind.Refund]: i18nKey('peraCard.transactions.kind_refund'),
+    [CardTransactionKind.Deposit]: i18nKey(
+        'peraCard.transactions.kind_deposit',
+    ),
+}
 
 export const useCardTransactionListItem = (
     transaction: CardTransaction,
