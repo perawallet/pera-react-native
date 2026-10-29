@@ -15,7 +15,7 @@ import { useTestnetIndicator } from './useTestnetIndicator.web'
 import { useStyles } from './styles.web'
 
 // Web/extension equivalent of native's full-width testnet bar
-// (components/RootComponent/RootComponent.tsx). Mounted once as the first
+// (components/RootComponent/RootContentContainer). Mounted once as the first
 // child of the app-shell card (AppShell.web.tsx): the bar takes real layout
 // height so screen titles can never collide with it, and the
 // frame paints thin testnetBg accents on the other three edges above screen

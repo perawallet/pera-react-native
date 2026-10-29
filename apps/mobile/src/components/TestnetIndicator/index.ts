@@ -11,6 +11,6 @@
  */
 
 // Web-only (mounted by AppShell.web.tsx; native's bar lives in
-// RootComponent.tsx) — the explicit .web suffix keeps it out of native
+// RootContentContainer.tsx) — the explicit .web suffix keeps it out of native
 // resolution by convention.
 export { TestnetIndicator } from './TestnetIndicator.web'
