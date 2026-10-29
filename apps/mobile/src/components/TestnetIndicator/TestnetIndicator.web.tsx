@@ -16,7 +16,7 @@ import { useStyles } from './styles.web'
 
 // Web/extension equivalent of native's full-width testnet bar
 // (components/RootComponent/RootContentContainer). Mounted once as the first
-// child of the app-shell card (AppShell.web.tsx): the bar takes real layout
+// child of the app-shell card (AppShellThemedRoot.web.tsx): the bar takes real layout
 // height so screen titles can never collide with it, and the
 // frame paints thin testnetBg accents on the other three edges above screen
 // content without blocking taps.

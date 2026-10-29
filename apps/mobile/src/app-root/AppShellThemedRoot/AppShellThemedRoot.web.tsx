@@ -27,13 +27,13 @@ import { NetworkSwitchInvalidation } from '../NetworkSwitchInvalidation'
 import { ActivityAutoLock } from '../ActivityAutoLock'
 import { ShellRouter } from '../ShellRouter'
 
-// Splitting this out of AppShellContent is load-bearing: a makeStyles hook in
-// the same component that *renders* ThemeProvider runs with no theme context
-// and throws `Cannot read properties of undefined (reading 'colors')`.
 export type AppShellThemedRootProps = {
     persister: AppProvidersProps['persister']
 }
 
+// Splitting this out of AppShellContent is load-bearing: a makeStyles hook in
+// the same component that *renders* ThemeProvider runs with no theme context
+// and throws `Cannot read properties of undefined (reading 'colors')`.
 export const AppShellThemedRoot = ({
     persister,
 }: AppShellThemedRootProps): React.JSX.Element => {

@@ -34,7 +34,11 @@ import { PairingProgressOverlay } from '@modules/walletconnect/shell'
 import { useTokenListener } from '@modules/token'
 import { usePhishingListRefresh } from '@modules/site-safety/shell'
 
-export const RootContentContainer = ({ fcmToken }: RootComponentProps) => {
+export type RootContentContainerProps = RootComponentProps
+
+export const RootContentContainer = ({
+    fcmToken,
+}: RootContentContainerProps) => {
     const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const isLive = useWalletDeployment() === 'live'
     const insets = useSafeAreaInsets()
@@ -69,7 +73,7 @@ export const RootContentContainer = ({ fcmToken }: RootComponentProps) => {
                     </PWView>
                 )}
 
-                {/* App.tsx mounts the single GestureHandlerRootView above this tree. */}
+                {/* AppContent mounts the single GestureHandlerRootView above this tree. */}
                 <PWView style={styles.content}>
                     <MainRoutes />
                     <WebViewOverlay />

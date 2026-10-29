@@ -18,11 +18,13 @@ import React from 'react'
 // lanekeep-ignore-next-line pera/no-primitive-rn-components reason: temporary bootstrap; real shell loaded dynamically after hydration
 import { Text, View } from 'react-native'
 
+export type RootBoundaryProps = { children: React.ReactNode }
+
 // Outermost mount guard ABOVE ThemeProvider: AppShell's own boundary lives
 // inside it, so a throw in theme construction or ThemeProvider itself would
 // white-screen. Store-free and unthemed per App.web.tsx's boot-order contract.
 export class RootBoundary extends React.Component<
-    { children: React.ReactNode },
+    RootBoundaryProps,
     { hasError: boolean }
 > {
     state = { hasError: false }

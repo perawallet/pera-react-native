@@ -11,3 +11,4 @@
  */
 
 export { RootBoundary } from './RootBoundary.web'
+export type { RootBoundaryProps } from './RootBoundary.web'

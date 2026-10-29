@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-// Web-only (mounted by AppShell.web.tsx; native's bar lives in
+// Web-only (mounted by AppShellThemedRoot.web.tsx; native's bar lives in
 // RootContentContainer.tsx) — the explicit .web suffix keeps it out of native
 // resolution by convention.
 export { TestnetIndicator } from './TestnetIndicator.web'

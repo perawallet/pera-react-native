@@ -11,3 +11,4 @@
  */
 
 export { RootContentContainer } from './RootContentContainer'
+export type { RootContentContainerProps } from './RootContentContainer'

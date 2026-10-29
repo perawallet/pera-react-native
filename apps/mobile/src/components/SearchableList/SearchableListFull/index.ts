@@ -11,3 +11,4 @@
  */
 
 export { SearchableListFull } from './SearchableListFull'
+export type { SearchableListFullProps } from './SearchableListFull'

@@ -11,11 +11,12 @@
  */
 
 import React from 'react'
-import { useStyles } from './styles'
 
 import { PWView } from '@components/core'
 
 import { CollectibleThumbnail as AssetsCollectibleThumbnail } from '@modules/assets/components/CollectibleThumbnail'
+
+import { useStyles } from './styles'
 
 export const AssetsCollectibleThumbnailPreview = () => {
     const styles = useStyles()

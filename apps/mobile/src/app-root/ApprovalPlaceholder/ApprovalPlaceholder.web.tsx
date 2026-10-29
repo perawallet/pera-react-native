@@ -11,9 +11,9 @@
  */
 
 import React from 'react'
-import { useStyles } from './styles'
 import { PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
+import { useStyles } from './styles.web'
 
 export const ApprovalPlaceholder = (): React.JSX.Element => {
     const { t } = useLanguage()

@@ -22,7 +22,7 @@ export type CapableChainPreviewProps = {
     children: (chainId: ChainId) => ReactNode
 }
 
-/** Renders a preview on the first chain with `capability` on, as the flow does; the hook lives here so a catalog entry needs no component of its own. */
+// The hook lives here so a catalog entry needs no component of its own.
 export const CapableChainPreview = ({
     capability,
     children,

@@ -36,7 +36,7 @@ ComponentName/              # PascalCase
 ├── index.ts                # Barrel: export { ComponentName } and type
 ├── __tests__/
 │   └── ComponentName.spec.tsx
-└── SubComponent.tsx        # NOT re-exported, used only by parent
+└── SubComponent/           # Own folder (same shape); NOT re-exported, used only by parent
 ```
 
 Folder naming: component folders = `PascalCase`, grouping/utility folders = `kebab-case`.

@@ -15,13 +15,13 @@ import { useLanguage } from '@hooks/useLanguage'
 import type { BalanceImpactItem } from '../useBalanceImpactSummary'
 import { BalanceImpactSubtitle } from '../BalanceImpactSubtitle'
 
-// A close-remainder/close-to sweeps the whole balance, so the explicit
-// `amount` understates the outflow — present it as the full balance instead
-// of a misleadingly small figure.
 export type FullBalanceRowTextProps = {
     item: BalanceImpactItem
 }
 
+// A close-remainder/close-to sweeps the whole balance, so the explicit
+// `amount` understates the outflow — present it as the full balance instead
+// of a misleadingly small figure.
 export const FullBalanceRowText = ({ item }: FullBalanceRowTextProps) => {
     const { t } = useLanguage()
     return (

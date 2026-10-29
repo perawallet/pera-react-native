@@ -45,8 +45,10 @@ const renderHeaderNode = (
     return component
 }
 
+export type SearchableListFullProps<T> = SearchableListProps<T>
+
 const SearchableListFullInner = <T,>(
-    props: SearchableListProps<T>,
+    props: SearchableListFullProps<T>,
     ref: React.ForwardedRef<PWFlatListRef>,
 ) => {
     const {
@@ -320,5 +322,5 @@ const SearchableListFullInner = <T,>(
 }
 
 export const SearchableListFull = forwardRef(SearchableListFullInner) as <T>(
-    props: SearchableListProps<T> & React.RefAttributes<PWFlatListRef>,
+    props: SearchableListFullProps<T> & React.RefAttributes<PWFlatListRef>,
 ) => React.ReactElement

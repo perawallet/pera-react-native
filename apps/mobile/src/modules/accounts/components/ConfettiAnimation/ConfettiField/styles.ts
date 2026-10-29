@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { makeStyles, useTheme } from '@rneui/themed'
+import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
     container: {
@@ -27,20 +27,3 @@ export const useStyles = makeStyles(theme => ({
         pointerEvents: 'none',
     },
 }))
-
-/** Vibrant on-brand palette for confetti flakes, drawn from semantic theme tokens. */
-export const useConfettiColors = (): string[] => {
-    const { theme } = useTheme()
-    const { colors } = theme
-
-    return [
-        colors.wallet1,
-        colors.wallet2,
-        colors.wallet3,
-        colors.wallet4,
-        colors.wallet5,
-        colors.success,
-        colors.secondary,
-        colors.warning,
-    ]
-}
