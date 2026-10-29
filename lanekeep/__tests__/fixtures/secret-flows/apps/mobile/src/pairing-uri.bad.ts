@@ -16,3 +16,11 @@ export const derived = (url: string) => {
     const wcUri = walletConnectUriOf(url)
     console.log(wcUri)
 }
+
+export const optional = (uri?: string) => {
+    logger.debug('pair', { uri })
+}
+
+export const bare = (queue: string[]) => {
+    queue.forEach(uri => logger.debug('pair', { uri }))
+}

@@ -24,3 +24,7 @@ export const copyEntropy = (phrase: string) => {
 export const copyUri = (data: Data) => {
     copyToClipboard(data.uri)
 }
+
+export const copyViaRef = (ref: Ref, account: Account) => {
+    ref.current.copyToClipboard(account.mnemonic)
+}

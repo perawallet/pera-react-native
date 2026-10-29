@@ -22,3 +22,7 @@ export const parseDeeplink = (url: string) => {
     logger.debug('parsing', { url })
     return url
 }
+
+export const handleDeepLinkImpl = (url: string) => {
+    logger.debug('handling', { url })
+}

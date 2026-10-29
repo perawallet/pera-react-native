@@ -41,7 +41,10 @@ const REPORTER_METHODS =
 // `copyToClipboard` is `useClipboard`'s wrapper, and the engine doesn't follow
 // a value into it.
 const CLIPBOARD_CALLEE =
-    /^(Clipboard\.setString(Async)?|navigator\.clipboard\.writeText|([\w$]+\.)?copyToClipboard)$/
+    /^(Clipboard\.setString(Async)?|navigator\.clipboard\.writeText|([\w$.?()]+\.)?copyToClipboard)$/
+
+// Query strings unescape once, so each backslash of the regex is doubled.
+const CLIPBOARD_QUERY_PATTERN = CLIPBOARD_CALLEE.source.split('\\').join('\\\\')
 
 // The engine can't seed a `catch` binding, so a caught error is recognised by
 // its binding kind or by a parameter named like one (ky's `beforeError`).
@@ -117,7 +120,8 @@ function isSinkCall(ctx: RuleContext, node: Node): boolean {
 // The generic sinks (templates, `+`, `??`, `||`, `JSON.stringify`) match
 // everywhere, so a finding counts only when the sink sits in the arguments of
 // a log-like call. The walk stops at any other call's arguments, because a
-// call is opaque to the engine, and at a function boundary.
+// call is opaque to the engine, and at a function boundary. A template or `+`
+// assigned to a variable first is therefore not reported.
 function isInSinkArguments(ctx: RuleContext, node: Node): boolean {
     let previous = node
     for (const ancestor of ctx.ancestors(node)) {
@@ -173,7 +177,7 @@ export default defineRule({
         message:
             'a secret reaches a log, analytics, crash-report, error or clipboard sink',
         remediation:
-            'Log that the operation happened, never the value. Mnemonics, seeds and entropy, WalletConnect pairing URIs, scanned or deep-linked URLs and serialized errors must not reach a logger, the console, an analytics event, a crash report, an Error message or the clipboard. Log a classified value instead (the parsed link type, originOf(url), describeUri(uri)), and pass a caught error as { error }, never JSON.stringify(error).',
+            'Log that the operation happened, never the value. Mnemonics, seeds and entropy, WalletConnect pairing URIs, scanned or deep-linked URLs and serialized errors must not reach a logger, the console, an analytics event, a crash report, an Error message or the clipboard. Log a classified value instead (the parsed link type, originOf(url), describeUri(uri)), and pass a caught error as { error }, never JSON.stringify(error). A native error can carry the URL it failed on in its message, so { error } is safe only where that URL is not secret.',
         examples: {
             bad: "logger.error('import failed', seed)",
             good: "logger.error('import failed')",
@@ -202,9 +206,7 @@ export default defineRule({
             '(binary_expression left: (_) @sink operator: ["+" "??" "||"])',
             '(binary_expression operator: ["+" "??" "||"] right: (_) @sink)',
             '((call_expression function: (member_expression object: (identifier) @json property: (property_identifier) @method) arguments: (arguments . (_) @sink)) (#eq? @json "JSON") (#eq? @method "stringify"))',
-            '((call_expression function: (member_expression object: (identifier) @object property: (property_identifier) @method) arguments: (arguments . (_) @sink)) (#eq? @object "Clipboard") (#match? @method "^setString(Async)?$"))',
-            '((call_expression function: (member_expression object: (member_expression object: (identifier) @navigator property: (property_identifier) @clipboard) property: (property_identifier) @method) arguments: (arguments . (_) @sink)) (#eq? @navigator "navigator") (#eq? @clipboard "clipboard") (#eq? @method "writeText"))',
-            '((call_expression function: [(identifier) @fn (member_expression property: (property_identifier) @fn)] arguments: (arguments . (_) @sink)) (#eq? @fn "copyToClipboard"))',
+            `((call_expression function: (_) @callee arguments: (arguments . (_) @sink)) (#match? @callee "${CLIPBOARD_QUERY_PATTERN}"))`,
         ],
         sanitizers: [
             `((call_expression function: [(identifier) @fn (member_expression property: (property_identifier) @fn)]) @sanitizer (#match? @fn "${SANITIZERS}"))`,

@@ -16,3 +16,12 @@ export const redacted = (uri: string) => {
 export const topic = (uri: string) => {
     logger.debug('pairing', { topic: walletConnectUriTopic(uri) })
 }
+
+export const connected = async (data: Data) => {
+    const result = await pairConnection(data.uri)
+    logger.info('connected', { result })
+}
+
+export const described = (uri: string) => {
+    logger.debug('pairing', { ...describeV2PairingUri(uri) })
+}
