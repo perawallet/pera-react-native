@@ -13,6 +13,7 @@
 import { useEffect, useState } from 'react'
 import type { MigrationPlanSummary } from '@perawallet/wallet-extension-platform'
 import { getProvider } from '@perawallet/wallet-extension-provider'
+import { toError } from '@perawallet/wallet-core-shared'
 
 type UseMigrationPlansResult = {
     plans: MigrationPlanSummary[]
@@ -36,7 +37,7 @@ export const useMigrationPlans = (): UseMigrationPlansResult => {
             })
             .catch(err => {
                 if (cancelled) return
-                setError(err instanceof Error ? err : new Error(String(err)))
+                setError(toError(err))
                 setIsLoading(false)
             })
         return () => {

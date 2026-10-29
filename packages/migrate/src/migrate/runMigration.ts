@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, toError } from '@perawallet/wallet-core-shared'
 import type {
     LegacyMigrationData,
     MigrationService,
@@ -333,6 +333,3 @@ const recordSucceededSteps = async (
         })
     }
 }
-
-const toError = (err: unknown): Error =>
-    err instanceof Error ? err : new Error(String(err))

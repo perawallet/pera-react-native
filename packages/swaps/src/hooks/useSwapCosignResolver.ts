@@ -21,7 +21,11 @@ import {
 } from '@perawallet/wallet-core-chain-shared'
 import { deploymentOf } from '@perawallet/wallet-core-config'
 import { useDeviceIdLookup } from '@perawallet/wallet-core-device'
-import { decodeFromBase64, logger } from '@perawallet/wallet-core-shared'
+import {
+    decodeFromBase64,
+    logger,
+    toError,
+} from '@perawallet/wallet-core-shared'
 import {
     addSignature,
     getSignRequestsWithSignatures,
@@ -149,7 +153,7 @@ const runBestEffort = async (
         await run()
     } catch (error) {
         logger.warn(`swap cosign settle: ${label} failed (non-fatal)`, {
-            error: error instanceof Error ? error.message : String(error),
+            error: toError(error).message,
         })
     }
 }

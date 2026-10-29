@@ -12,6 +12,7 @@
 
 // Only shapes some chain could sign for; anything else can never match a request.
 const EVM_ADDRESS = /^0x[0-9a-f]{40}$/
+// Shape only: update-bundled-lists runs this in Node, where no chain has registered an address codec.
 const ALGORAND_ADDRESS = /^[a-z2-7]{58}$/
 
 /**

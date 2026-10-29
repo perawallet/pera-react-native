@@ -34,6 +34,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-shared', () => ({
+    toError: (e: unknown) => (e instanceof Error ? e : new Error(String(e))),
     logger: loggerMock,
 }))
 
