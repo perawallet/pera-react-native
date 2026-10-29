@@ -65,7 +65,7 @@ const ICON_BY_DIRECTION: Record<TransferDirection, TransactionIconKind> = {
 }
 
 const nftCounterpartyOf = (
-    direction: NftDirection,
+    direction: TransferDirection,
     leg: EvmNftTransfer,
 ): Nullable<string> => {
     switch (direction) {
@@ -251,16 +251,14 @@ const summarizeTokenTransfer = (
     }
 }
 
-type NftDirection = 'in' | 'out' | 'self'
-
-const nftDirectionOf = (legs: NftLeg[]): NftDirection => {
+const nftDirectionOf = (legs: NftLeg[]): TransferDirection => {
     if (legs.every(({ isIn, isOut }) => isIn && !isOut)) return 'in'
     if (legs.every(({ isIn, isOut }) => isOut && !isIn)) return 'out'
     return 'self'
 }
 
 const NFT_PRESENTATION: Record<
-    NftDirection,
+    TransferDirection,
     Pick<TransactionSummary, 'icon'> & { title: typeof SEND }
 > = {
     in: { title: RECEIVE, icon: 'receive' },
