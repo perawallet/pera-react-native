@@ -111,8 +111,8 @@ export type PortfolioValueHistoryItem = {
 }
 
 export type AccountBalanceHistoryItem = PortfolioValueHistoryItem & {
-    /** Display units of the chain's native asset; `null` across several chains, whose native assets don't add. */
-    nativeValue: Nullable<Decimal>
+    /** Display units of the chain's native asset. */
+    nativeValue: Decimal
 }
 
 export type AccountAssetBalanceHistoryItem = {
