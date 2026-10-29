@@ -119,6 +119,7 @@
     "react/rules-of-hooks": "error",
     "react/exhaustive-deps": "error",
     "pera/no-algorand-sdk-imports": "error",
+    "pera/prefer-lookup-map": "error",
     "pera/no-i18n-key-cast": "error"
   },
   "overrides": [

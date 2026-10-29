@@ -56,6 +56,7 @@
     "import/no-duplicates": ["error", { "prefer-inline": true }],
     "unused-imports/no-unused-imports": "error",
     "pera/no-unvalidated-open-url": "error",
+    "pera/prefer-lookup-map": "error",
     "max-lines": [
       "warn",
       {

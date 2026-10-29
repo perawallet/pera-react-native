@@ -27,6 +27,7 @@ import { noDisplayStringIdentity } from './rules/no-display-string-identity.js'
 import { fetchHasDeadline } from './rules/fetch-has-deadline.js'
 import { testIdProp } from './rules/test-id-prop.js'
 import { makeStylesLocation } from './rules/make-styles-location.js'
+import { preferLookupMap } from './rules/prefer-lookup-map.js'
 import { preferToError } from './rules/prefer-to-error.js'
 import { noDeepRelativeImports } from './rules/no-deep-relative-imports.js'
 import { typedDomainErrors } from './rules/typed-domain-errors.js'
@@ -54,6 +55,7 @@ export default {
         'fetch-has-deadline': fetchHasDeadline,
         'test-id-prop': testIdProp,
         'make-styles-location': makeStylesLocation,
+        'prefer-lookup-map': preferLookupMap,
         'prefer-to-error': preferToError,
         'no-deep-relative-imports': noDeepRelativeImports,
         'typed-domain-errors': typedDomainErrors,
