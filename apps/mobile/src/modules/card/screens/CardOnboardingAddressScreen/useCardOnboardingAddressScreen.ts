@@ -50,7 +50,7 @@ import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 
-import type { Optional } from '@perawallet/wallet-core-shared'
+import { logger, type Optional } from '@perawallet/wallet-core-shared'
 import { useCardScope } from '../../hooks/useCardScope'
 
 export type UseCardOnboardingAddressScreenResult = {
@@ -167,12 +167,13 @@ export const useCardOnboardingAddressScreen =
             config.termsOfServiceUrl,
             currentLanguage,
         )
-        const cardTermsUrl =
-            toValidatedBrowserUrl(
-                settings?.termsAndConditionsUrls?.[
-                    isUsResident ? 'us' : 'intl'
-                ],
-            ) ?? platformTermsUrl
+        const cardTermsJurisdiction = isUsResident ? 'us' : 'intl'
+        // Only a missing link falls back. A refused one opens nothing, so the
+        // user never accepts the card terms having read Pera's instead.
+        const cardTermsUrl = toValidatedBrowserUrl(
+            settings?.termsAndConditionsUrls?.[cardTermsJurisdiction] ??
+                platformTermsUrl,
+        )
 
         // Prefill the residence country chosen earlier in the flow, once settings
         // load. One-shot; matches it against the supported list for the flag/name.
@@ -263,12 +264,22 @@ export const useCardOnboardingAddressScreen =
         )
 
         const handleOpenCardTerms = useCallback(() => {
+            if (!cardTermsUrl) {
+                logger.warn('[card] refused the Baanx card terms URL', {
+                    jurisdiction: cardTermsJurisdiction,
+                })
+                errorToast(
+                    t('peraCard.account.error_title'),
+                    t('peraCard.account.error_body'),
+                )
+                return
+            }
             if (!routeCapabilities.inAppWebView) {
                 void Linking.openURL(cardTermsUrl)
                 return
             }
             pushWebView({ url: cardTermsUrl, id: 'card-terms' })
-        }, [pushWebView, cardTermsUrl])
+        }, [pushWebView, cardTermsUrl, cardTermsJurisdiction, errorToast, t])
         const handleOpenPlatformTerms = useCallback(() => {
             // Checkbox 2 is Pera's own Terms & Conditions.
             if (!routeCapabilities.inAppWebView) {
