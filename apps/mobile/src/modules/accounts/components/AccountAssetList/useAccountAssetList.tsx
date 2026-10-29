@@ -482,7 +482,7 @@ export const useAccountAssetList = ({
     const shouldShowNetwork =
         selectedChainId === null &&
         sources.length > 1 &&
-        searchFilter.trim().length > 0
+        debouncedSearch.trim().length > 0
 
     const renderItemProps = useMemo(
         () => ({
