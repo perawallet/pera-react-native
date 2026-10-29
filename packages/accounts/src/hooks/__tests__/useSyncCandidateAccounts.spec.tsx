@@ -148,7 +148,7 @@ describe('useSyncCandidateAccounts', () => {
         ).toEqual([ALGORAND_ADDRESS])
     })
 
-    it('on unmount deletes the unheld addresses, keeping one a stored account gained meanwhile', () => {
+    it('on unmount deletes the unheld addresses, keeping one a stored account gained meanwhile', async () => {
         registerChainFamilies([ALGORAND, ETHEREUM])
         const accounts = [
             candidate({
@@ -168,8 +168,41 @@ describe('useSyncCandidateAccounts', () => {
         })
         unmount()
 
-        expect(mockCleanupRemovedAccountData).toHaveBeenCalledExactlyOnceWith({
-            accountAddress: EVM_ADDRESS,
-        })
+        await vi.waitFor(() =>
+            expect(
+                mockCleanupRemovedAccountData,
+            ).toHaveBeenCalledExactlyOnceWith({
+                accountAddress: EVM_ADDRESS,
+            }),
+        )
+    })
+
+    it('waits for a sync still running at unmount before deleting its address', async () => {
+        registerChainFamilies([ALGORAND])
+        let finishSync: () => void = () => undefined
+        mockSyncAndEnrichNewAccount.mockReturnValueOnce(
+            new Promise<void>(resolve => {
+                finishSync = resolve
+            }),
+        )
+        const accounts = [candidate({ [ALGORAND]: ALGORAND_ADDRESS })]
+        const { unmount } = renderHook(
+            () => useSyncCandidateAccounts(accounts),
+            { wrapper: makeWrapper() },
+        )
+
+        unmount()
+        await Promise.resolve()
+        expect(mockCleanupRemovedAccountData).not.toHaveBeenCalled()
+
+        finishSync()
+
+        await vi.waitFor(() =>
+            expect(
+                mockCleanupRemovedAccountData,
+            ).toHaveBeenCalledExactlyOnceWith({
+                accountAddress: ALGORAND_ADDRESS,
+            }),
+        )
     })
 })

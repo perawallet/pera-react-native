@@ -62,7 +62,7 @@ export const useSyncCandidateAccounts = (
     }, [accounts])
 
     useEffect(() => {
-        const synced = new Set<string>()
+        const inFlight = new Map<string, Promise<unknown>[]>()
         for (const entry of entriesKey ? entriesKey.split('\n') : []) {
             const separator = entry.indexOf(ENTRY_SEPARATOR)
             const chainId = entry.slice(0, separator) as ChainId
@@ -76,29 +76,38 @@ export const useSyncCandidateAccounts = (
             ) {
                 continue
             }
-            synced.add(address)
-            void syncAndEnrichNewAccount(
-                address,
-                {
-                    chainId,
-                    networkId: selectChainNetworkId(
-                        useNetworkStore.getState(),
+            const syncs = inFlight.get(address) ?? []
+            syncs.push(
+                syncAndEnrichNewAccount(
+                    address,
+                    {
                         chainId,
-                    ),
-                },
-                queryClient,
+                        networkId: selectChainNetworkId(
+                            useNetworkStore.getState(),
+                            chainId,
+                        ),
+                    },
+                    queryClient,
+                ),
             )
+            inFlight.set(address, syncs)
         }
 
+        // A sync still running at unmount would write its rows after the
+        // delete, so each address is judged and cleaned only once its syncs
+        // have settled.
         return () => {
-            for (const address of synced) {
-                if (
-                    !findAccountByAnyChainAddress(
-                        useAccountsStore.getState().accounts,
-                        address,
-                    )
-                ) {
-                    void cleanupRemovedAccountData({
+            for (const [address, syncs] of inFlight) {
+                void Promise.allSettled(syncs).then(() => {
+                    if (
+                        findAccountByAnyChainAddress(
+                            useAccountsStore.getState().accounts,
+                            address,
+                        )
+                    ) {
+                        return
+                    }
+                    return cleanupRemovedAccountData({
                         accountAddress: address,
                     }).catch(error => {
                         logger.warn('Candidate account cleanup failed', {
@@ -106,7 +115,7 @@ export const useSyncCandidateAccounts = (
                             error,
                         })
                     })
-                }
+                })
             }
         }
     }, [entriesKey, queryClient])
