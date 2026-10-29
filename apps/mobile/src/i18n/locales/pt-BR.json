@@ -291,6 +291,7 @@
             "title": "Transações",
             "empty_body": "Nenhuma transação encontrada",
             "empty_on_network_body": "Ainda não há transações em {{network}}",
+            "network_failed": "Não foi possível carregar as transações em {{networks}}",
             "offline_empty_title": "Você está offline",
             "offline_empty_body": "Ainda não há transações salvas neste dispositivo. Elas aparecerão quando você voltar a ficar online.",
             "search_paused_body": "Nenhuma transação encontrada no histórico recente.",
@@ -325,7 +326,8 @@
             "suspicious_title": "ASA suspeito",
             "suspicious_description": "Este ASA foi sinalizado como suspeito pelo programa de verificação de ASA da Pera.",
             "learn_more": "Saiba mais sobre a verificação de ASA"
-        }
+        },
+        "copy_full_amount_hint": "Toque e segure para copiar o valor completo"
     },
     "accounts": {
         "legacyQuantum": {

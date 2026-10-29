@@ -29,3 +29,4 @@ export {
     resolveWebviewLanguage,
     withLanguageParam,
 } from './hooks/webviewLanguage'
+export { webViewScript, type WebViewScript } from './utils/webViewScript'

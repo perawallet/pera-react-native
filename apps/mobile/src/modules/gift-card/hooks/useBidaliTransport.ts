@@ -42,6 +42,7 @@ import {
 import { useLanguage } from '@hooks/useLanguage'
 import type WebView from 'react-native-webview'
 import { Decimal } from 'decimal.js'
+import { webViewScript, type WebViewScript } from '@modules/webview'
 import { sendBidaliEvent } from './bidali-events'
 import { useGiftCardScope } from './useGiftCardScope'
 
@@ -50,7 +51,6 @@ export const BIDALI_PAYMENT_CURRENCIES: readonly string[] = [
     'algorand',
     'usdcalgorand',
 ]
-const BIDALI_PAYMENT_CURRENCIES_JSON = JSON.stringify(BIDALI_PAYMENT_CURRENCIES)
 
 type CurrencyInfo = {
     assetId: string
@@ -120,9 +120,9 @@ export const computeBidaliBalances = (
 
 const buildBidaliProviderJS = (
     apiKey: string,
-    balancesJson: string,
-): string => {
-    return `
+    balances: Record<string, string>,
+): WebViewScript => {
+    return webViewScript`
         (function() {
             function sendRPC(method, params) {
                 if (!window.ReactNativeWebView) return;
@@ -135,10 +135,10 @@ const buildBidaliProviderJS = (
             }
 
             window.bidaliProvider = {
-                key: '${apiKey}',
+                key: ${apiKey},
                 name: 'perawallet',
-                paymentCurrencies: ${BIDALI_PAYMENT_CURRENCIES_JSON},
-                balances: ${balancesJson},
+                paymentCurrencies: ${BIDALI_PAYMENT_CURRENCIES},
+                balances: ${balances},
 
                 onPaymentRequest: function(req) {
                     if (req == null || typeof req !== 'object') return;
@@ -182,7 +182,7 @@ const isBidaliRPC = (data: unknown): data is BidaliRPCMessage => {
 }
 
 type UseBidaliTransportResult = {
-    providerJS: string
+    providerJS: WebViewScript
     handleMessage: (data: unknown) => void
     webviewRef: React.RefObject<Nullable<WebView>>
 }
@@ -199,16 +199,9 @@ export const useBidaliTransport = (
     const webviewRef = useRef<Nullable<WebView>>(null)
 
     const providerJS = useMemo(() => {
-        const balanceMap = computeBidaliBalances(
-            account,
-            balances,
-            scope,
-            chainMode,
-        )
-
         return buildBidaliProviderJS(
             getPeraServicesConfig(scope).bidaliApiKey,
-            JSON.stringify(balanceMap),
+            computeBidaliBalances(account, balances, scope, chainMode),
         )
     }, [chainMode, account, balances, scope])
 

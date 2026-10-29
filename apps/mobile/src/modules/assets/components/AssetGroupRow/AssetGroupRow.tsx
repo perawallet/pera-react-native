@@ -43,8 +43,15 @@ const AssetGroupRowBase = <T extends GroupableHolding>({
     const { t } = useLanguage()
     const { group, amount, isExpanded } = item
 
-    const { icon, verificationIcon, isSuspicious, subtitle, chainIds, fiat } =
-        useAssetGroupRow({ item, convertFiat })
+    const {
+        icon,
+        verificationIcon,
+        isSuspicious,
+        subtitle,
+        chainIds,
+        decimals,
+        fiat,
+    } = useAssetGroupRow({ item, convertFiat })
 
     if (!icon) {
         return <AssetRowSkeleton style={style} />
@@ -98,6 +105,7 @@ const AssetGroupRowBase = <T extends GroupableHolding>({
                         assetId=''
                         value={amount}
                         precision='compact'
+                        assetDecimals={decimals}
                         style={styles.primaryAmount}
                         numberOfLines={1}
                     />

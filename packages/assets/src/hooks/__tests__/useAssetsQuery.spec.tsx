@@ -83,6 +83,7 @@ describe('useAssetsQuery', () => {
                     },
                 )
 
+                expect(result.current.isPending).toBe(true)
                 await waitFor(() =>
                     expect(result.current.isPending).toBe(false),
                 )
@@ -103,6 +104,16 @@ describe('useAssetsQuery', () => {
                 )
             },
         )
+
+        it('is not pending and reads nothing for no ids', () => {
+            const { result } = renderHook(
+                () => useAssetsQuery(ALGORAND_MAINNET, []),
+                { wrapper: createWrapper(queryClient) },
+            )
+
+            expect(result.current.isPending).toBe(false)
+            expect(mocks.getAssetsByIds).not.toHaveBeenCalled()
+        })
 
         it('falls back to the adapter native asset when the seeded row is absent', async () => {
             mocks.getAssetsByIds.mockReturnValue([])

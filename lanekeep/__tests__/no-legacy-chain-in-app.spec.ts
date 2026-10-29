@@ -32,7 +32,7 @@ const LEGACY_CHAIN_BASELINE: readonly string[] = [
     'apps/mobile/src/hooks/useQuantumDappWarning.tsx',
     'apps/mobile/src/hooks/useResolvedAddress.ts',
     'apps/mobile/src/modules/accounts/components/AccountDrawer/useAccountPickers.tsx',
-    'apps/mobile/src/modules/accounts/components/AccountHistory/useAccountHistory.tsx',
+    'apps/mobile/src/modules/accounts/components/AccountHistory/useAccountHistoryRows.ts',
     'apps/mobile/src/modules/accounts/components/AccountInfoCard/AccountTypeInfoContent/useAccountTypeInfo.ts',
     'apps/mobile/src/modules/accounts/components/AccountInfoCard/RekeyedToRow.tsx',
     'apps/mobile/src/modules/accounts/components/AccountInfoCard/useAccountInfoCard.ts',

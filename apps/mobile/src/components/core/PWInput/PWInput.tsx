@@ -66,7 +66,8 @@ export type PWInputProps = {
     /**
      * Secret words and keys: the keyboard must not learn, suggest or autofill
      * them. Sets the props {@link getSensitiveInputProps} returns; explicit
-     * props passed alongside still win.
+     * props passed alongside still win. A field password managers fill keeps
+     * an explicit `autoComplete` beside it.
      */
     isSensitive?: boolean
     autoFocus?: boolean
@@ -106,20 +107,29 @@ export type PWInputProps = {
 // autoCorrect off is what stops iOS caching the text for suggestions; Android
 // keyboards ignore these hints but honour `visible-password`. `ascii-capable`
 // keeps iOS IMEs (Japanese, Pinyin) from composing, which can't match ASCII.
-export const getSensitiveInputProps = (): Pick<
+// A secure field skips `visible-password`, which shares `secureTextEntry`'s
+// InputType variation and, depending on prop order, unmasks the text.
+export const getSensitiveInputProps = ({
+    isSecureTextEntry = false,
+}: { isSecureTextEntry?: boolean } = {}): Pick<
     PWInputProps,
     | 'autoCapitalize'
     | 'autoCorrect'
     | 'spellCheck'
     | 'autoComplete'
     | 'keyboardType'
-> => ({
-    autoCapitalize: 'none',
-    autoCorrect: false,
-    spellCheck: false,
-    autoComplete: 'off',
-    keyboardType: isAndroid() ? 'visible-password' : 'ascii-capable',
-})
+> => {
+    const props = {
+        autoCapitalize: 'none',
+        autoCorrect: false,
+        spellCheck: false,
+        autoComplete: 'off',
+    } as const
+    if (!isAndroid()) return { ...props, keyboardType: 'ascii-capable' }
+    return isSecureTextEntry
+        ? props
+        : { ...props, keyboardType: 'visible-password' }
+}
 
 export const PWInput = forwardRef<PWInputRef, PWInputProps>(
     (
@@ -231,7 +241,11 @@ export const PWInput = forwardRef<PWInputRef, PWInputProps>(
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 ref={inputRef as any}
                 {...getTestProps(testID)}
-                {...(isSensitive ? getSensitiveInputProps() : undefined)}
+                {...(isSensitive
+                    ? getSensitiveInputProps({
+                          isSecureTextEntry: secureTextEntry,
+                      })
+                    : undefined)}
                 {...props}
                 secureTextEntry={
                     showVisibilityToggle

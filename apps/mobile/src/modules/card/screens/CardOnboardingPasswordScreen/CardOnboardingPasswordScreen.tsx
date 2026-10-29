@@ -51,8 +51,8 @@ export const CardOnboardingPasswordScreen = () => {
                                 )}
                                 secureTextEntry
                                 showVisibilityToggle
-                                autoCapitalize='none'
-                                autoCorrect={false}
+                                isSensitive
+                                autoComplete='new-password'
                                 testID='card-onboarding-password-input'
                             />
                         )}
@@ -74,8 +74,8 @@ export const CardOnboardingPasswordScreen = () => {
                                     )}
                                     secureTextEntry
                                     showVisibilityToggle
-                                    autoCapitalize='none'
-                                    autoCorrect={false}
+                                    isSensitive
+                                    autoComplete='new-password'
                                     showErrorOnBlur
                                     errorMessage={
                                         errors.confirmPassword && value

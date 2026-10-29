@@ -84,7 +84,7 @@ export const useAccountStateQuery = (
 
     return {
         data: query.data,
-        isPending: query.isPending,
+        isPending: !!address && query.isPending,
         isLoading: query.isLoading,
         isSuccess: query.isSuccess,
     }

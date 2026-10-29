@@ -115,6 +115,7 @@ describe('useAccountAssetsQuery', () => {
             wrapper: wrapper(),
         })
 
+        expect(result.current.isPending).toBe(true)
         await waitFor(() => expect(result.current.isPending).toBe(false))
 
         // The list query reads everything in one pass (FlashList virtualizes),
@@ -162,6 +163,7 @@ describe('useAccountAssetsQuery', () => {
 
         expect(mockGetAccountHoldingsLite).not.toHaveBeenCalled()
         expect(result.current.holdings).toEqual([])
+        expect(result.current.isPending).toBe(false)
     })
 
     it('holds the previous rows while the search changes over the same sources', async () => {

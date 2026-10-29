@@ -22,6 +22,7 @@ import { HistorySkeleton } from './HistorySkeleton'
 import { useStyles } from './styles'
 import { useAccountHistory } from './useAccountHistory'
 import {
+    TransactionHistoryFeed,
     TransactionHistoryRow,
     TransactionHistoryLoadState,
     TransactionHistorySearchOlder,
@@ -51,6 +52,10 @@ export const AccountHistory = ({ scrollEnabled }: AccountHistoryProps) => {
         isFetchingNextPage,
         isEmpty,
         networkChainId,
+        chainFilterOptions,
+        handleSelectChain,
+        historyFeeds,
+        failedNetworkNames,
         emptyBody,
         isOfflineEmpty,
         isRefreshing,
@@ -107,6 +112,10 @@ export const AccountHistory = ({ scrollEnabled }: AccountHistoryProps) => {
     const titleBar = (
         <AccountHistoryTitleBar
             chainId={networkChainId}
+            chainFilterOptions={chainFilterOptions}
+            onSelectChain={handleSelectChain}
+            failedNetworkNames={failedNetworkNames}
+            onRetryFailed={handleRetry}
             isCsvExportVisible={isCsvExportVisible}
             isExportingCsv={isExportingCsv}
             onOpenFilter={handleFilterPress}
@@ -119,10 +128,19 @@ export const AccountHistory = ({ scrollEnabled }: AccountHistoryProps) => {
     // account tab pager collapses to zero height on native, which blanked the
     // whole History tab — title included. The NFTs tab handles its
     // empty state the same way.
+    // Feeds render nothing; they sit outside the list so a branch switch never remounts them.
+    const feeds = historyFeeds.map(feed => (
+        <TransactionHistoryFeed
+            key={feed.feedKey}
+            {...feed}
+        />
+    ))
+
     const isPausedWithNothing = isSearchPaused && rows.length === 0
     if (isInitialLoad || isLoadFailed || isPausedWithNothing || isEmpty) {
         return (
             <PWView style={styles.container}>
+                {feeds}
                 <PWView style={styles.stateContainer}>
                     {titleBar}
                     {isInitialLoad ? (
@@ -149,6 +167,7 @@ export const AccountHistory = ({ scrollEnabled }: AccountHistoryProps) => {
 
     return (
         <PWView style={styles.container}>
+            {feeds}
             <PWFlatList
                 pauseSyncOnInteraction
                 data={rows}

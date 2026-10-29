@@ -71,6 +71,7 @@ describe('useAssetInboxRequestsQuery', () => {
             { wrapper },
         )
 
+        expect(result.current.isPending).toBe(true)
         await waitFor(() => expect(result.current.isPending).toBe(false))
 
         expect(useChainCapability).toHaveBeenCalledWith(chainId, 'assetInbox')
@@ -117,6 +118,7 @@ describe('useAssetInboxRequestsQuery', () => {
         )
 
         expect(result.current.data).toEqual([])
+        expect(result.current.isPending).toBe(false)
         expect(fetchRequests).not.toHaveBeenCalled()
     })
 
