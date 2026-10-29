@@ -19,7 +19,9 @@ import { useSigningPipeline } from '@perawallet/wallet-core-signing'
 import { useStyles } from './styles'
 import { SigningWarningsContent } from './SigningWarningsContent'
 
-export const SigningWarnings = ({ isGroup = false }: { isGroup?: boolean }) => {
+type SigningWarningsProps = { isGroup?: boolean }
+
+export const SigningWarnings = ({ isGroup = false }: SigningWarningsProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
     const { distinctWarnings, warnings } = useSigningPipeline()

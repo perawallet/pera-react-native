@@ -2943,7 +2943,11 @@
             "slow": "Lente",
             "normal": "Normale",
             "fast": "Rapide",
-            "max_fee": "Frais maximum"
+            "max_fee": "Frais maximum",
+            "max_fee_for_preset": "Frais maximum ({{preset}})",
+            "max_fee_info": "Le maximum que vous paierez si les frais du réseau augmentent. Vous payez généralement moins.",
+            "wait_seconds": "~{{seconds}} s",
+            "wait_minutes": "~{{minutes}} min"
         },
         "confirmation": {
             "add_to_contacts": "+ Ajouter aux contacts",
@@ -2955,6 +2959,7 @@
             "network": "Réseau",
             "fee": "Frais",
             "current_balance": "Solde actuel",
+            "total": "Total",
             "note": "Note",
             "recipient_below_mbr": {
                 "title": "Montant inférieur au minimum du destinataire",

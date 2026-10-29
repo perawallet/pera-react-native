@@ -367,3 +367,22 @@ describe('fetch', () => {
         }
     })
 })
+
+describe('pera/component-props-type', () => {
+    it('blocks in mobile production .tsx, tests aside', () => {
+        const mobile = readOxlintConfig('apps/mobile/.oxlintrc.json')
+        const overrides = overridesWith(mobile, 'pera/component-props-type')
+
+        expect(overrides).toHaveLength(1)
+        expect(overrides[0].files).toEqual(['src/**/*.tsx'])
+        expect(overrides[0].rules['pera/component-props-type']).toBe('error')
+        expect(overrides[0].excludeFiles).toEqual([
+            'src/**/__tests__/**',
+            'src/**/__mocks__/**',
+            'src/**/test-utils/**',
+            'src/**/__integration__/**',
+            'src/**/*.spec.{ts,tsx}',
+            'src/**/*.test.{ts,tsx}',
+        ])
+    })
+})
