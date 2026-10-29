@@ -35,7 +35,7 @@
         "@perawallet/wallet-core-devtools": "workspace:*",
         "@types/chrome": "catalog:",
         "@types/node": "catalog:",
-        "fake-indexeddb": "^6.2.5",
+        "fake-indexeddb": "catalog:",
         "typescript": "catalog:",
         "vite": "catalog:",
         "vitest": "catalog:"

@@ -40,8 +40,8 @@ export const CardForgotPasswordNewPasswordScreen = () => {
                                 )}
                                 secureTextEntry
                                 showVisibilityToggle
-                                autoCapitalize='none'
-                                autoCorrect={false}
+                                isSensitive
+                                autoComplete='new-password'
                                 testID='card-forgot-password-password-input'
                             />
                         )}
@@ -63,8 +63,8 @@ export const CardForgotPasswordNewPasswordScreen = () => {
                                     )}
                                     secureTextEntry
                                     showVisibilityToggle
-                                    autoCapitalize='none'
-                                    autoCorrect={false}
+                                    isSensitive
+                                    autoComplete='new-password'
                                     showErrorOnBlur
                                     errorMessage={
                                         errors.confirmPassword && value

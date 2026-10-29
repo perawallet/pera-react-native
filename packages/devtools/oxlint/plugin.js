@@ -23,6 +23,7 @@ import { noAlgorandSdkImports } from './rules/no-algorand-sdk-imports.js'
 import { noI18nKeyCast } from './rules/no-i18n-key-cast.js'
 import { hdDeriveClaimed } from './rules/hd-derive-claimed.js'
 import { noManualUnitConversion } from './rules/no-manual-unit-conversion.js'
+import { sensitiveInputProps } from './rules/sensitive-input-props.js'
 import { monotonicLockoutClock } from './rules/monotonic-lockout-clock.js'
 import { noDisplayStringIdentity } from './rules/no-display-string-identity.js'
 import { fetchHasDeadline } from './rules/fetch-has-deadline.js'
@@ -35,6 +36,7 @@ import { preferLookupMap } from './rules/prefer-lookup-map.js'
 import { preferToError } from './rules/prefer-to-error.js'
 import { noDeepRelativeImports } from './rules/no-deep-relative-imports.js'
 import { preferNullableAlias } from './rules/prefer-nullable-alias.js'
+import { webviewInjectionSerializer } from './rules/webview-injection-serializer.js'
 import { typedDomainErrors } from './rules/typed-domain-errors.js'
 
 // A mobile-source rule needs its own override in apps/mobile/.oxlintrc.json:
@@ -56,6 +58,7 @@ export default {
         'no-i18n-key-cast': noI18nKeyCast,
         'hd-derive-claimed': hdDeriveClaimed,
         'no-manual-unit-conversion': noManualUnitConversion,
+        'sensitive-input-props': sensitiveInputProps,
         'monotonic-lockout-clock': monotonicLockoutClock,
         'no-display-string-identity': noDisplayStringIdentity,
         'fetch-has-deadline': fetchHasDeadline,
@@ -68,6 +71,7 @@ export default {
         'prefer-to-error': preferToError,
         'no-deep-relative-imports': noDeepRelativeImports,
         'prefer-nullable-alias': preferNullableAlias,
+        'webview-injection-serializer': webviewInjectionSerializer,
         'typed-domain-errors': typedDomainErrors,
     },
 }

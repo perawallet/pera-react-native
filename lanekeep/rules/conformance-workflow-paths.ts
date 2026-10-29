@@ -3,6 +3,7 @@
  */
 
 import { defineRule } from 'lanekeep'
+import { dirOf, join, workspaceDirs, yamlList } from '../shared/workspace.js'
 
 interface Suite {
     manifest: string
@@ -21,112 +22,6 @@ const SUITES: readonly Suite[] = [
 ]
 
 const WORKSPACE_PROTOCOL = 'workspace:'
-
-const dirOf = (path: string): string => path.split('/').slice(0, -1).join('/')
-
-const join = (base: string, path: string): string =>
-    base === '' ? path : `${base}/${path}`
-
-const unquote = (raw: string): string => {
-    const value = raw.trim()
-    const quote = value.charAt(0)
-    if (quote === "'" || quote === '"') {
-        const end = value.indexOf(quote, 1)
-        return end === -1 ? value.slice(1) : value.slice(1, end)
-    }
-    const comment = value.indexOf(' #')
-    return (comment === -1 ? value : value.slice(0, comment)).trim()
-}
-
-const indentOf = (line: string): number => line.length - line.trimStart().length
-
-/**
- * The block-sequence entries under a nested mapping key, and the line of that
- * key (1-based, 0 when absent). Handles the block style every workflow and
- * pnpm-workspace.yaml here is written in; a flow sequence (`[a, b]`) reads as
- * empty, which reports every path as missing rather than passing silently.
- */
-const yamlList = (
-    raw: string,
-    keyPath: readonly string[],
-): { items: string[]; line: number } => {
-    const stack: { indent: number; key: string }[] = []
-    const items: string[] = []
-    let line = 0
-    const lines = raw.split('\n')
-    for (let i = 0; i < lines.length; i++) {
-        const text = lines[i] ?? ''
-        const trimmed = text.trim()
-        if (trimmed === '' || trimmed.startsWith('#')) continue
-        const indent = indentOf(text)
-        const item = /^-\s+(.*)$/.exec(trimmed)
-        if (item !== null) {
-            const inside =
-                stack.length === keyPath.length &&
-                stack.every((s, k) => s.key === keyPath[k]) &&
-                indent >= (stack[stack.length - 1]?.indent ?? 0)
-            if (inside) items.push(unquote(item[1] ?? ''))
-            continue
-        }
-        const key = /^([^\s:#][^:#]*?):(\s|$)/.exec(trimmed)
-        if (key === null) continue
-        while (
-            stack.length > 0 &&
-            (stack[stack.length - 1]?.indent ?? 0) >= indent
-        ) {
-            stack.pop()
-        }
-        stack.push({ indent, key: unquote(key[1] ?? '') })
-        if (
-            stack.length === keyPath.length &&
-            stack.every((s, k) => s.key === keyPath[k])
-        ) {
-            line = i + 1
-        }
-    }
-    return { items, line }
-}
-
-interface ReadCtx {
-    readFile(path: string): string | undefined
-    listDir(path: string): string[] | undefined
-}
-
-const nameOf = (ctx: ReadCtx, dir: string): string | undefined => {
-    const raw = ctx.readFile(`${dir}/package.json`)
-    if (raw === undefined) return undefined
-    try {
-        const name = (JSON.parse(raw) as { name?: unknown }).name
-        return typeof name === 'string' ? name : undefined
-    } catch {
-        return undefined
-    }
-}
-
-/** Workspace package name to its directory, relative to the project root. */
-const workspaceDirs = (ctx: ReadCtx, base: string): Map<string, string> => {
-    const out = new Map<string, string>()
-    const raw = ctx.readFile(join(base, 'pnpm-workspace.yaml'))
-    if (raw === undefined) return out
-    for (const pattern of yamlList(raw, ['packages']).items) {
-        const dirs: string[] = []
-        if (pattern.endsWith('/*')) {
-            const parent = pattern.slice(0, -2)
-            // listDir marks a directory with a trailing slash.
-            for (const entry of ctx.listDir(join(base, parent)) ?? []) {
-                if (entry.endsWith('/'))
-                    dirs.push(`${parent}/${entry.slice(0, -1)}`)
-            }
-        } else {
-            dirs.push(pattern)
-        }
-        for (const dir of dirs) {
-            const name = nameOf(ctx, join(base, dir))
-            if (name !== undefined) out.set(name, dir)
-        }
-    }
-    return out
-}
 
 export default defineRule({
     id: 'pera/conformance-workflow-paths',
