@@ -86,7 +86,8 @@ export default defineConfig({
     // rule that goes quadratic (which would blow well past this ceiling, not
     // graze it). The global budget already covers a rule that's merely slow
     // across the whole run.
-    timeouts: { rule: 1000, global: 60000 },
+    // CI runners take about 2.5x local wall time, and the full tree already runs ~55s there.
+    timeouts: { rule: 1000, global: 120000 },
     // Every existing exception is a single line with a reason; a whole-file
     // directive would silence rules nobody reviewed it against.
     suppressions: { forbidFileScope: true },
