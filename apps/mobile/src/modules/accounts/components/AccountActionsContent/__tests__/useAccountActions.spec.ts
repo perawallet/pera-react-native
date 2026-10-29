@@ -49,10 +49,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
     ...(await importOriginal<
         typeof import('@perawallet/wallet-core-accounts')
     >()),
-    useSelectedAccountId: () => ({
-        selectedAccountId: null,
-        setSelectedAccountId: mockSetSelectedAccountId,
-    }),
+    setSelectedAccountId: mockSetSelectedAccountId,
     useAllAccounts: () => accountsRef.accounts,
     firstUnreachableChainsNote: mockFirstUnreachableChainsNote,
 }))

@@ -17,6 +17,7 @@ import {
     getSelectedAccount,
     getSelectedAccountId,
     importAccountFromPrivateKey,
+    setSelectedAccountId,
     updateHardwareDetails,
     upgradeWatchAccountToHardware,
 } from '../accountActions'
@@ -70,6 +71,24 @@ describe('account readers', () => {
         useAccountsStore.setState({ accounts: [], selectedAccountId: 'gone' })
 
         expect(getSelectedAccount()).toBeNull()
+    })
+})
+
+describe('setSelectedAccountId', () => {
+    beforeEach(() => {
+        useAccountsStore.setState({ accounts: [], selectedAccountId: null })
+    })
+
+    test('selects the account in the store, and null clears it', () => {
+        const account = testAccount('watch', 'A', { id: 'a' })
+        useAccountsStore.setState({ accounts: [account] })
+
+        setSelectedAccountId('a')
+        expect(useAccountsStore.getState().selectedAccountId).toBe('a')
+        expect(getSelectedAccount()).toEqual(account)
+
+        setSelectedAccountId(null)
+        expect(useAccountsStore.getState().selectedAccountId).toBeNull()
     })
 })
 

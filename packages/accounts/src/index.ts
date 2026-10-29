@@ -41,6 +41,7 @@ export {
     getAllAccounts,
     getSelectedAccount,
     getSelectedAccountId,
+    setSelectedAccountId,
     importAccountFromPrivateKey,
     addHardwareChainAccount,
     upgradeWatchAccountToHardware,

@@ -26,6 +26,9 @@ export const getSelectedAccount = (): Nullable<WalletAccount> =>
 export const getSelectedAccountId = (): Nullable<string> =>
     useAccountsStore.getState().selectedAccountId
 
+export const setSelectedAccountId: AccountsState['setSelectedAccountId'] = id =>
+    useAccountsStore.getState().setSelectedAccountId(id)
+
 export const importAccountFromPrivateKey: AccountsState['importAccountFromPrivateKey'] =
     (...args) =>
         useAccountsStore.getState().importAccountFromPrivateKey(...args)
