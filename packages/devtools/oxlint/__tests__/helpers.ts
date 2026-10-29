@@ -27,6 +27,11 @@ export const call = (callee: Node, args: Node[]): Node => ({
     callee,
     arguments: args,
 })
+export const template = (quasis: string[], expressions: Node[]): Node => ({
+    type: 'TemplateLiteral',
+    quasis: quasis.map(raw => ({ type: 'TemplateElement', value: { raw } })),
+    expressions,
+})
 
 export type OxlintOverride = {
     files: string[]
