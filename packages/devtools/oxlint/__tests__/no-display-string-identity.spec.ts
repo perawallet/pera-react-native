@@ -383,8 +383,6 @@ describe(RULE, () => {
             '**/__integration__/**',
             '**/*.spec.{ts,tsx}',
             '**/*.test.{ts,tsx}',
-            'packages/chain-algorand/src/accounts/address-codec.ts',
-            'packages/chain-algorand/src/blockchain/utils/addresses.ts',
             'packages/site-safety/src/addresses.ts',
         ])
 

@@ -236,7 +236,7 @@
     },
     {
       "files": ["packages/*/src/**", "extensions/*/src/**", "apps/browser/src/**"],
-      "excludeFiles": ["**/__tests__/**", "**/__mocks__/**", "**/test-utils/**", "**/__integration__/**", "**/*.spec.{ts,tsx}", "**/*.test.{ts,tsx}", "packages/chain-algorand/src/accounts/address-codec.ts", "packages/chain-algorand/src/blockchain/utils/addresses.ts", "packages/site-safety/src/addresses.ts"],
+      "excludeFiles": ["**/__tests__/**", "**/__mocks__/**", "**/test-utils/**", "**/__integration__/**", "**/*.spec.{ts,tsx}", "**/*.test.{ts,tsx}", "packages/site-safety/src/addresses.ts"],
       "rules": { "pera/no-display-string-identity": "error" }
     },
     {
