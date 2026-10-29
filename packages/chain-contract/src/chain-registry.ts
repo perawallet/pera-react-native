@@ -72,6 +72,13 @@ export interface ChainRegistry {
      * @throws ChainAdapterNotRegisteredError
      */
     isRestricted(chainId: ChainId, capability: ChainCapability): boolean
+    /**
+     * True when the build layer (the module's defaults with the composition
+     * root's overrides) has `capability` on, whatever remote config, the chain
+     * mode or the Feature Flags screen say now.
+     * @throws ChainAdapterNotRegisteredError
+     */
+    isInBuild(chainId: ChainId, capability: ChainCapability): boolean
     byCaip2(
         caip2: string,
     ): { chainId: ChainId; network: ChainNetwork } | undefined
@@ -171,6 +178,7 @@ export const createChainRegistry = (): ChainRegistry => {
                 capability,
                 readOverrides().chainMode?.[chainId] ?? 'live',
             ),
+        isInBuild: (chainId, capability) => entryFor(chainId).build[capability],
         byCaip2: caip2 => {
             for (const {
                 chain: { descriptor },

@@ -225,6 +225,25 @@ describe('createChainRegistry', () => {
         })
     })
 
+    it('reports the build value of a capability while overrides change the live one', () => {
+        registry.register(descriptor, { ...build, swap: true, staking: false })
+        registry.setCapabilityOverrides(() => ({
+            developer: { algorand: { swap: false, staking: true } },
+            chainMode: { algorand: 'developer' },
+        }))
+
+        expect(registry.isInBuild('algorand', 'swap')).toBe(true)
+        expect(registry.isInBuild('algorand', 'staking')).toBe(false)
+        expect(registry.capabilities('algorand').swap).toBe(false)
+        expect(registry.capabilities('algorand').staking).toBe(true)
+    })
+
+    it('throws a typed error from isInBuild for an unregistered chain', () => {
+        expect(() => registry.isInBuild('algorand', 'swap')).toThrow(
+            ChainAdapterNotRegisteredError,
+        )
+    })
+
     it('reports every capability false while the chain is switched off', () => {
         registry.register(descriptor, build)
         registry.setCapabilityOverrides(() => ({
