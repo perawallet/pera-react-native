@@ -105,6 +105,9 @@ export const accentPalette = {
     sardine: '#2925CB',
     transak: '#2A6BE6',
     bidali: '#6241E2',
+    chartTeal: '#28A79B',
+    peraCardBody: '#FCCA44',
+    peraCardPan: '#FFE858',
 } as const
 
 /**
@@ -121,5 +124,6 @@ export const tints = {
     gray900Alpha60: 'rgba(24, 24, 27, 0.6)',
     whiteAlpha12: 'rgba(255, 255, 255, 0.12)',
     whiteAlpha60: 'rgba(255, 255, 255, 0.6)',
+    blackAlpha35: 'rgba(0, 0, 0, 0.35)',
     blackAlpha70: 'rgba(0, 0, 0, 0.7)',
 } as const

@@ -17,6 +17,7 @@ import noAssertionlessTest from './lanekeep/rules/no-assertionless-test.js'
 import noChainIdentityInSharedPackages from './lanekeep/rules/no-chain-identity-in-shared-packages.js'
 import noChainPackageImports from './lanekeep/rules/no-chain-package-imports.js'
 import noChromeImportsOutsideWeb from './lanekeep/rules/no-chrome-imports-outside-web.js'
+import noColorLiteralsOutsideTheme from './lanekeep/rules/no-color-literals-outside-theme.js'
 import noCrossProtocolImports from './lanekeep/rules/no-cross-protocol-imports.js'
 import noDeepModuleImports from './lanekeep/rules/no-deep-module-imports.js'
 import noEmptyStyleObjects from './lanekeep/rules/no-empty-style-objects.js'
@@ -101,6 +102,7 @@ export default defineConfig({
         noTypographyInStyles,
         noEmptyStyleObjects,
         noNumericSizes,
+        noColorLiteralsOutsideTheme,
         noRawErrorToast,
         i18nKeyExists,
         errorParamsMatchCopy,
