@@ -30,6 +30,7 @@ const { mockRequestBottomSheet } = vi.hoisted(() => ({
 }))
 
 let mockSelectedAccountAddress: string | null = 'ACCOUNT_ADDRESS'
+let mockStoredAccountAddress: string | null | undefined = undefined
 let mockNetwork = 'mainnet'
 
 // --- mocks ----------------------------------------------------------------
@@ -56,21 +57,32 @@ vi.mock('@perawallet/wallet-core-accounts', async () => ({
     ...(await vi.importActual<object>(
         '@packages/accounts/src/models/accounts',
     )),
-    getSelectedAccount: () => selectedAccountMock(),
+    getSelectedAccount: () => storedAccountMock(),
     addressOn: (
         account: { chains: Record<string, { address: string }> },
         scope: { chainId: string },
     ) => account.chains[scope.chainId]?.address,
 }))
 
-const selectedAccountMock = () =>
-    mockSelectedAccountAddress === null
+const accountAt = (address: string | null) =>
+    address === null
         ? null
         : {
               id: 'selected',
               custody: { kind: 'watch' },
-              chains: { algorand: { address: mockSelectedAccountAddress } },
+              chains: { algorand: { address } },
           }
+
+const selectedAccountMock = () => accountAt(mockSelectedAccountAddress)
+
+// getSelectedAccount() re-reads at confirm time, so it can diverge from the
+// account the form rendered with.
+const storedAccountMock = () =>
+    accountAt(
+        mockStoredAccountAddress === undefined
+            ? mockSelectedAccountAddress
+            : mockStoredAccountAddress,
+    )
 
 vi.mock('@modules/onramp/hooks/useOnrampAccount', () => ({
     useOnrampAccount: () => ({
@@ -240,6 +252,7 @@ describe('useOnrampConfirm', () => {
         registerAlgorandRampAdapter()
         vi.clearAllMocks()
         mockSelectedAccountAddress = 'ACCOUNT_ADDRESS'
+        mockStoredAccountAddress = undefined
         mockNetwork = 'mainnet'
         mockEnsureOptIn.mockResolvedValue(true)
         mockRequestBottomSheet.mockResolvedValue(undefined)
@@ -279,6 +292,32 @@ describe('useOnrampConfirm', () => {
             }),
         )
         expect(mockCreateRampOrder).toHaveBeenCalled()
+    })
+
+    it.each([
+        [
+            'uses the account selected at confirm time',
+            'STORED_ADDRESS',
+            'STORED_ADDRESS',
+        ],
+        [
+            "falls back to the form's address when the selected account was removed",
+            null,
+            'ACCOUNT_ADDRESS',
+        ],
+    ])('%s', async (_label, storedAddress, expectedAddress) => {
+        mockStoredAccountAddress = storedAddress
+        const { result } = renderHook(() =>
+            useOnrampConfirm({ ...defaultProps, selectedPair: usdcPair }),
+        )
+
+        await act(async () => {
+            await result.current.handleConfirm()
+        })
+
+        expect(mockEnsureOptIn).toHaveBeenCalledWith(
+            expect.objectContaining({ address: expectedAddress }),
+        )
     })
 
     it('bails out before opt-in when the network has no known destination asset id', async () => {

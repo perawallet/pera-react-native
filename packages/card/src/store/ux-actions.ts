@@ -23,9 +23,6 @@ export type CardOnboardingProgress = Pick<
     | 'email'
 >
 
-// Plain functions for event-time reads: a value a hook captured at render goes
-// stale across an `await`, these read the store when they are called.
-
 export const getCardOnboardingProgress = (): CardOnboardingProgress => {
     const {
         onboardingStep,
