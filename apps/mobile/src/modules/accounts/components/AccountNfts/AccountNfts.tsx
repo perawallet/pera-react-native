@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import React, { useCallback, useMemo } from 'react'
+import React, { useCallback } from 'react'
 import {
     PWButton,
     PWFlatList,
@@ -24,88 +24,16 @@ import { SearchInput } from '@components/SearchInput'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 import { useAccountNfts } from './useAccountNfts'
-import { CollectibleGridItem, CollectibleListItem } from '@modules/assets'
 import { NftEmptyState } from '../NftEmptyState'
 import { GallerySkeleton } from './GallerySkeleton'
 import { EmptyView } from '@components/EmptyView'
-import {
-    assetFromHoldingLiteRow,
-    type AccountCollectibleLiteRow,
-} from '@perawallet/wallet-core-accounts'
-
-const GRID_COLUMNS = 2
-
-const ListSeparator = () => {
-    const styles = useStyles()
-
-    return <PWView style={styles.listSeparator} />
-}
+import { type AccountCollectibleLiteRow } from '@perawallet/wallet-core-accounts'
+import { GRID_COLUMNS } from './constants'
+import { ListSeparator } from './ListSeparator'
+import { GalleryCell } from './GalleryCell'
 
 const keyExtractor = (item: AccountCollectibleLiteRow) =>
     `${item.scope.chainId}:${item.assetId}`
-
-type GalleryCellProps = {
-    item: AccountCollectibleLiteRow
-    index: number
-    isGrid: boolean
-    onPress: (item: AccountCollectibleLiteRow) => void
-}
-
-const GalleryCellView = ({
-    item,
-    index,
-    isGrid,
-    onPress,
-}: GalleryCellProps) => {
-    const styles = useStyles()
-    // The row components are memoised, so they need a press handler whose
-    // identity survives a parent re-render. Building the closure here — inside
-    // a cell that only re-renders when its own item changes — is what makes
-    // that memo actually skip work.
-    const handlePress = useCallback(() => onPress(item), [onPress, item])
-
-    // Metadata is parsed here rather than in the query so a 15k-collectible
-    // account only pays for the cells on screen.
-    const displayItem = useMemo(() => {
-        const asset = assetFromHoldingLiteRow(item, item.scope.chainId)
-        if (!asset) return null
-        return {
-            assetId: item.assetId,
-            asset,
-            collectible: asset.peraMetadata?.collectible,
-            amount: item.amount,
-        }
-    }, [item])
-
-    if (!displayItem) return null
-
-    if (!isGrid) {
-        return (
-            <CollectibleListItem
-                item={displayItem}
-                onPress={handlePress}
-            />
-        )
-    }
-
-    return (
-        <PWView
-            style={[
-                styles.gridColumn,
-                index % GRID_COLUMNS === 0
-                    ? styles.gridColumnLeft
-                    : styles.gridColumnRight,
-            ]}
-        >
-            <CollectibleGridItem
-                item={displayItem}
-                onPress={handlePress}
-            />
-        </PWView>
-    )
-}
-
-const GalleryCell = React.memo(GalleryCellView)
 
 export const AccountNfts = () => {
     const styles = useStyles()

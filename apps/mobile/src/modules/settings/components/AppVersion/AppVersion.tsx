@@ -10,53 +10,18 @@
  limitations under the License
  */
 
-import { useRef, useMemo } from 'react'
+import { useRef } from 'react'
 import { useLanguage } from '@hooks/useLanguage'
-import { useStyles } from './styles'
 import { usePreferences } from '@perawallet/wallet-core-settings'
-import { config } from '@perawallet/wallet-core-config'
 import { UserPreferences } from '@constants/user-preferences'
 import { useToast } from '@hooks/useToast'
 import { Pressable } from 'react-native'
-import { PWText } from '@components/core'
-import { usePeraProvider } from '@perawallet/wallet-extension-provider'
 import type { Nullable } from '@perawallet/wallet-core-shared'
+import { AppVersionText } from './AppVersionText'
 
 const REQUIRED_TAPS = 10
 const NOTIFY_FROM_TAP_COUNT = 7
 const TAP_TIMEOUT = 1000
-
-const Version = () => {
-    const { t } = useLanguage()
-    const styles = useStyles()
-    const provider = usePeraProvider()
-    const { getAppVersion, getAppBuild } = provider.deviceInfo
-
-    const appVersion = useMemo(() => {
-        // On CI tag builds, show the full release tag (e.g. v7.0.0-alpha.9) so QA
-        // sees the exact prerelease; stable tags carry no suffix and local/off-tag
-        // builds fall back to the native store version. Leading "v" stripped.
-        return config.releaseTag
-            ? config.releaseTag.replace(/^v/, '')
-            : getAppVersion()
-    }, [getAppVersion])
-
-    const appBuild = useMemo(() => {
-        return getAppBuild()
-    }, [getAppBuild])
-
-    return (
-        <PWText
-            variant='caption'
-            style={styles.versionText}
-        >
-            {t('settings.main.version_footer', {
-                version: appVersion,
-                build: appBuild,
-            })}
-        </PWText>
-    )
-}
 
 export type AppVersionProps = {
     enableSecretTaps?: boolean
@@ -116,7 +81,7 @@ export const AppVersion = ({ enableSecretTaps }: AppVersionProps) => {
     }
 
     if (!enableSecretTaps) {
-        return <Version />
+        return <AppVersionText />
     }
 
     return (
@@ -124,7 +89,7 @@ export const AppVersion = ({ enableSecretTaps }: AppVersionProps) => {
             onPress={handlePress}
             testID='settings_app_version'
         >
-            <Version />
+            <AppVersionText />
         </Pressable>
     )
 }

@@ -14,11 +14,9 @@ import {
     createNativeStackNavigator,
     type NativeStackHeaderProps,
 } from '@react-navigation/native-stack'
-import { useNavigation } from '@react-navigation/native'
 
 import { SCREEN_ANIMATION_CONFIG } from '@constants/ui'
 import { NavigationHeader } from '@components/NavigationHeader'
-import { PWIcon, PWTouchableOpacity } from '@components/core'
 import { fullScreenLayout } from '@layouts/index'
 import { screenListeners } from '@routes/listeners'
 import { CloudBackupIntroScreen } from '../screens/CloudBackupIntroScreen'
@@ -34,40 +32,15 @@ import { CloudBackupContactsReviewScreen } from '../screens/CloudBackupContactsR
 import { CloudBackupPasskeysScreen } from '../screens/CloudBackupPasskeysScreen'
 import { CloudBackupPasskeysReviewScreen } from '../screens/CloudBackupPasskeysReviewScreen'
 import { CloudBackupRestorePassphraseScreen } from '../screens/CloudBackupRestorePassphraseScreen'
-import { CloudBackupRestoreEncryptionKeyScreen } from '../screens/CloudBackupRestoreEncryptionKeyScreen'
-import { CloudBackupRestoreScanScreen } from '../screens/CloudBackupRestoreScanScreen'
-import { useCloudBackupRestoreExit } from '../hooks/useCloudBackupRestoreExit'
 import { useCloudBackupInitialRoute } from '../hooks/useCloudBackupInitialRoute'
 import type { CloudBackupStackParamList } from './types'
+import { CloudBackupRestoreEncryptionKeyRoute } from './CloudBackupRestoreEncryptionKeyRoute'
+import { CloudBackupRestoreScanRoute } from './CloudBackupRestoreScanRoute'
+import { CloudBackupCloseButton } from './CloudBackupCloseButton'
 
 export type { CloudBackupStackParamList } from './types'
 
 const CloudBackupStack = createNativeStackNavigator<CloudBackupStackParamList>()
-
-// The restore screens are shared with the import flow, which has no
-// `CloudBackupOverview` to land on, so each stack names its own exit.
-export const CloudBackupRestoreEncryptionKeyRoute = () => {
-    const { exitToOverview } = useCloudBackupRestoreExit()
-    return <CloudBackupRestoreEncryptionKeyScreen onDone={exitToOverview} />
-}
-
-export const CloudBackupRestoreScanRoute = () => {
-    const { exitToOverview } = useCloudBackupRestoreExit()
-    return <CloudBackupRestoreScanScreen onDone={exitToOverview} />
-}
-
-const CloudBackupCloseButton = () => {
-    const navigation = useNavigation()
-
-    return (
-        <PWTouchableOpacity
-            onPress={navigation.goBack}
-            testID='cloud_backup_close_button'
-        >
-            <PWIcon name='cross' />
-        </PWTouchableOpacity>
-    )
-}
 
 export const CloudBackupStackNavigator = () => {
     const initialRouteName = useCloudBackupInitialRoute()
@@ -199,3 +172,5 @@ export const CloudBackupStackNavigator = () => {
 export { CloudBackupRestoreEncryptionKeyScreen } from '../screens/CloudBackupRestoreEncryptionKeyScreen'
 export { CloudBackupRestorePassphraseScreen } from '../screens/CloudBackupRestorePassphraseScreen'
 export { CloudBackupRestoreScanScreen } from '../screens/CloudBackupRestoreScanScreen'
+
+export { CloudBackupRestoreEncryptionKeyRoute, CloudBackupRestoreScanRoute }

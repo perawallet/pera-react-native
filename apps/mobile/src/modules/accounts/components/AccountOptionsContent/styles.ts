@@ -35,45 +35,6 @@ export const useStyles = makeStyles(theme => ({
         gap: theme.spacing.sm,
         marginBottom: theme.spacing.lg,
     },
-    networkCard: {
-        borderWidth: theme.borders.sm,
-        borderColor: theme.colors.layerGray,
-        borderRadius: theme.borderRadius.lg,
-        backgroundColor: theme.colors.layerGrayLightest,
-    },
-    networkRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.md,
-        padding: theme.spacing.md,
-        minWidth: 0,
-    },
-    networkText: {
-        flex: 1,
-        minWidth: 0,
-    },
-    networkAddress: {
-        color: theme.colors.textGray,
-    },
-    networkActions: {
-        flexDirection: 'row',
-        gap: theme.spacing.sm,
-    },
-    // A 16pt icon in sm padding: the design's 32pt square.
-    squareButton: {
-        padding: theme.spacing.sm,
-        borderRadius: theme.borderRadius.sm,
-        backgroundColor: theme.colors.buttonSquareBg,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    chevronExpanded: {
-        transform: [{ rotate: '180deg' }],
-    },
-    expandedSection: {
-        borderTopWidth: theme.borders.sm,
-        borderTopColor: theme.colors.layerGray,
-    },
     seeAllButton: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -94,16 +55,6 @@ export const useStyles = makeStyles(theme => ({
         borderWidth: theme.borders.md,
         borderColor: theme.colors.layerGrayLightest,
         borderRadius: theme.borderRadius.full,
-    },
-    unreachableNote: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        alignItems: 'center',
-        columnGap: theme.spacing.xs,
-        paddingHorizontal: theme.spacing.md,
-    },
-    unreachableNoteText: {
-        color: theme.colors.textGray,
     },
     sharedAccountOptions: {
         marginBottom: theme.spacing.lg,

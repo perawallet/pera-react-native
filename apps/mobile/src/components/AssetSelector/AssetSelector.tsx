@@ -10,25 +10,13 @@
  limitations under the License
  */
 
-import { useMemo } from 'react'
-import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
-import {
-    useAssetsQuery,
-    type DisplayableAsset,
-} from '@perawallet/wallet-core-assets'
+import { type DisplayableAsset } from '@perawallet/wallet-core-assets'
 import type { Optional } from '@perawallet/wallet-core-shared'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { AssetIcon } from '@components/AssetIcon'
-import { useStyles } from './styles'
-
-type AssetSelectorVariant = 'pay' | 'receive'
-
-type AssetSelectorBaseProps = {
-    variant: AssetSelectorVariant
-    onPress: () => void
-    testID?: string
-}
+import {
+    AssetSelectorContent,
+    type AssetSelectorBaseProps,
+} from './AssetSelectorContent'
+import { AssetSelectorById } from './AssetSelectorById'
 
 export type AssetSelectorProps = AssetSelectorBaseProps &
     (
@@ -46,90 +34,6 @@ export type AssetSelectorProps = AssetSelectorBaseProps &
               logoUrl?: string
           }
     )
-
-type AssetSelectorContentProps = AssetSelectorBaseProps & {
-    asset: Optional<DisplayableAsset>
-    label: string
-    logoUrl?: string
-}
-
-const AssetSelectorContent = ({
-    variant,
-    onPress,
-    testID,
-    asset,
-    label,
-    logoUrl,
-}: AssetSelectorContentProps) => {
-    const styles = useStyles({ variant })
-
-    return (
-        <PWTouchableOpacity
-            style={styles.container}
-            onPress={onPress}
-            testID={testID}
-        >
-            <PWView style={styles.content}>
-                {asset ? (
-                    <>
-                        <AssetIcon
-                            asset={asset}
-                            logoUrl={logoUrl}
-                            style={styles.icon}
-                            size='lg'
-                        />
-                        <PWText
-                            variant='h4'
-                            truncate
-                            style={styles.assetName}
-                        >
-                            {label}
-                        </PWText>
-                    </>
-                ) : (
-                    // Placeholder is a CTA phrase; shrink it to fit rather than
-                    // ellipsize ("Choose an asset" clips to "Choose an ass…").
-                    <PWText
-                        variant='h4'
-                        numberOfLines={1}
-                        adjustsFontSizeToFit
-                        style={styles.assetName}
-                    >
-                        {label}
-                    </PWText>
-                )}
-                <PWIcon name='chevron-right' />
-            </PWView>
-        </PWTouchableOpacity>
-    )
-}
-
-type AssetSelectorByIdProps = AssetSelectorBaseProps & {
-    assetId: string
-    fallbackLabel?: string
-}
-
-const AssetSelectorById = ({
-    assetId,
-    fallbackLabel,
-    ...rest
-}: AssetSelectorByIdProps) => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
-    // The selected asset is often one the account doesn't hold (e.g. the
-    // default swap receive asset), so it may not be in the local DB yet.
-    const { data: assets } = useAssetsQuery(scope, [assetId], {
-        fetchMissing: true,
-    })
-    const asset = useMemo(() => assets?.get(assetId), [assets, assetId])
-
-    return (
-        <AssetSelectorContent
-            {...rest}
-            asset={asset}
-            label={asset?.unitName ?? fallbackLabel ?? ''}
-        />
-    )
-}
 
 export const AssetSelector = (props: AssetSelectorProps) => {
     if ('assetId' in props) {

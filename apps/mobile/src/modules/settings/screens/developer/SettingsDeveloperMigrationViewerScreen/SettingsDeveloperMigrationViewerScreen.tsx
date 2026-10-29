@@ -36,10 +36,8 @@ import { PasskeysSection } from './sections/PasskeysSection'
 import { PreferencesSection } from './sections/PreferencesSection'
 import { RawFlagsSection } from './sections/RawFlagsSection'
 import { SchemaReplayResultsSection } from './sections/SchemaReplayResultsSection'
-import {
-    WalletConnectV1Section,
-    WalletConnectV2Section,
-} from './sections/WalletConnectSection'
+import { WalletConnectV1Section } from './sections/WalletConnectV1Section'
+import { WalletConnectV2Section } from './sections/WalletConnectV2Section'
 import { useStyles } from './styles'
 import { useSettingsDeveloperMigrationViewerScreen } from './useSettingsDeveloperMigrationViewerScreen'
 import { useRunMigration } from './useRunMigration'

@@ -36,12 +36,6 @@ export const useStyles = makeStyles(theme => ({
         paddingHorizontal: theme.spacing.xl,
         paddingBottom: theme.spacing.xl,
     },
-    separator: {
-        height: theme.borders.sm,
-        backgroundColor: theme.colors.layerGrayLighter,
-        // lanekeep-ignore-next-line pera/no-numeric-sizes reason: aligns with the title, past the icon width (sm = xxl) and the row gap (md)
-        marginLeft: theme.spacing.xxl + theme.spacing.md,
-    },
     // Skeleton geometry traces a real row: icon, stacked title/subtitle, and a
     // trailing amount.
     skeletonRow: {
