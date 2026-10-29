@@ -13,10 +13,12 @@
 import { renderHook } from '@testing-library/react'
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { Decimal } from 'decimal.js'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type {
     AccountValueBasis,
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { accountValueKey } from '@packages/accounts/src/models/balances'
 import { registerEthereumChain } from '@test-utils/chain-fixtures'
 import { useAccountWithBalance } from '../useAccountWithBalance'
 
@@ -39,19 +41,20 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
     return {
         useAccountChainId: chainOf,
         useAccountValueBasis: () => mockBasis.current,
-        accountValueKey: (chainId: string, address: string) =>
-            `${chainId}|${address}`,
+        accountValueKey: (...args: Parameters<typeof accountValueKey>) =>
+            accountValueKey(...args),
         accountValueOf: (
             account: WalletAccount,
             chainId: string,
             values: Map<string, unknown>,
         ) =>
             values.get(
-                `${chainId}|${
+                accountValueKey(
+                    chainId as ChainId,
                     (account.chains as Record<string, { address: string }>)[
                         chainId
-                    ]?.address ?? ''
-                }`,
+                    ]?.address ?? '',
+                ),
             ),
         useAccountValueTotalsQuery: (...args: unknown[]) => {
             mockTotalsQuery(...args)
@@ -126,10 +129,10 @@ describe('useAccountWithBalance', () => {
     })
 
     it("reads the given chain's address, scope and native asset over the account's own chain", () => {
-        mockAccountValueTotals.set(`algorand|${ALGO_ADDRESS}`, {
+        mockAccountValueTotals.set(accountValueKey('algorand', ALGO_ADDRESS), {
             nativeValue: new Decimal(1),
         })
-        mockAccountValueTotals.set(`ethereum|${ETH_ADDRESS}`, {
+        mockAccountValueTotals.set(accountValueKey('ethereum', ETH_ADDRESS), {
             nativeValue: new Decimal(2),
         })
 
@@ -146,7 +149,7 @@ describe('useAccountWithBalance', () => {
     })
 
     it('renders an Algorand-only wallet as a single-chain row', () => {
-        mockAccountValueTotals.set(`algorand|${ALGO_ADDRESS}`, {
+        mockAccountValueTotals.set(accountValueKey('algorand', ALGO_ADDRESS), {
             nativeValue: new Decimal(12),
         })
 
@@ -163,7 +166,7 @@ describe('useAccountWithBalance', () => {
     it('values an Ethereum account in ETH on its own chain', () => {
         registerEthereumChain()
         mockBasis.current = 'fiat'
-        mockAccountValueTotals.set(`ethereum|${ETH_ADDRESS}`, {
+        mockAccountValueTotals.set(accountValueKey('ethereum', ETH_ADDRESS), {
             nativeValue: new Decimal('1.5'),
             fiatValue: new Decimal(3000),
         })
@@ -183,7 +186,7 @@ describe('useAccountWithBalance', () => {
     })
 
     it('keeps an unknown native value unknown rather than 0', () => {
-        mockAccountValueTotals.set(`ethereum|${ETH_ADDRESS}`, {
+        mockAccountValueTotals.set(accountValueKey('ethereum', ETH_ADDRESS), {
             nativeValue: null,
         })
 
@@ -198,10 +201,13 @@ describe('useAccountWithBalance', () => {
         })
 
         it("is the account's fiat value in the preferred currency", () => {
-            mockAccountValueTotals.set(`ethereum|${ETH_ADDRESS}`, {
-                nativeValue: new Decimal('1.5'),
-                fiatValue: new Decimal(3000),
-            })
+            mockAccountValueTotals.set(
+                accountValueKey('ethereum', ETH_ADDRESS),
+                {
+                    nativeValue: new Decimal('1.5'),
+                    fiatValue: new Decimal(3000),
+                },
+            )
 
             const { result } = renderHook(() =>
                 useAccountWithBalance(ETH_ACCOUNT),
@@ -211,10 +217,13 @@ describe('useAccountWithBalance', () => {
         })
 
         it('is unknown, not 0, when the balance has no price', () => {
-            mockAccountValueTotals.set(`ethereum|${ETH_ADDRESS}`, {
-                nativeValue: new Decimal('5.77'),
-                fiatValue: null,
-            })
+            mockAccountValueTotals.set(
+                accountValueKey('ethereum', ETH_ADDRESS),
+                {
+                    nativeValue: new Decimal('5.77'),
+                    fiatValue: null,
+                },
+            )
 
             const { result } = renderHook(() =>
                 useAccountWithBalance(ETH_ACCOUNT),
@@ -224,10 +233,13 @@ describe('useAccountWithBalance', () => {
         })
 
         it('is unknown when the native balance is unpriced, even with priced tokens', () => {
-            mockAccountValueTotals.set(`ethereum|${ETH_ADDRESS}`, {
-                nativeValue: null,
-                fiatValue: null,
-            })
+            mockAccountValueTotals.set(
+                accountValueKey('ethereum', ETH_ADDRESS),
+                {
+                    nativeValue: null,
+                    fiatValue: null,
+                },
+            )
 
             const { result } = renderHook(() =>
                 useAccountWithBalance(ETH_ACCOUNT),
@@ -237,10 +249,13 @@ describe('useAccountWithBalance', () => {
         })
 
         it('is a real 0 for a zero balance', () => {
-            mockAccountValueTotals.set(`ethereum|${ETH_ADDRESS}`, {
-                nativeValue: new Decimal(0),
-                fiatValue: new Decimal(0),
-            })
+            mockAccountValueTotals.set(
+                accountValueKey('ethereum', ETH_ADDRESS),
+                {
+                    nativeValue: new Decimal(0),
+                    fiatValue: new Decimal(0),
+                },
+            )
 
             const { result } = renderHook(() =>
                 useAccountWithBalance(ETH_ACCOUNT),
@@ -250,11 +265,14 @@ describe('useAccountWithBalance', () => {
         })
 
         it('is undefined until the totals have loaded', () => {
-            mockAccountValueTotals.set(`algorand|${ALGO_ADDRESS}`, {
-                nativeValue: new Decimal(0),
-                fiatValue: new Decimal(0),
-                isPending: true,
-            })
+            mockAccountValueTotals.set(
+                accountValueKey('algorand', ALGO_ADDRESS),
+                {
+                    nativeValue: new Decimal(0),
+                    fiatValue: new Decimal(0),
+                    isPending: true,
+                },
+            )
 
             const { result: pending } = renderHook(() =>
                 useAccountWithBalance(ALGO_ACCOUNT),
@@ -301,14 +319,20 @@ describe('useAccountWithBalance', () => {
         })
 
         it("sums the account's fiat value across its chains, in the preferred currency", () => {
-            mockAccountValueTotals.set(`algorand|${ALGO_ADDRESS}`, {
-                nativeValue: new Decimal(1),
-                fiatValue: new Decimal(10),
-            })
-            mockAccountValueTotals.set(`ethereum|${ETH_ADDRESS}`, {
-                nativeValue: new Decimal(2),
-                fiatValue: new Decimal(20),
-            })
+            mockAccountValueTotals.set(
+                accountValueKey('algorand', ALGO_ADDRESS),
+                {
+                    nativeValue: new Decimal(1),
+                    fiatValue: new Decimal(10),
+                },
+            )
+            mockAccountValueTotals.set(
+                accountValueKey('ethereum', ETH_ADDRESS),
+                {
+                    nativeValue: new Decimal(2),
+                    fiatValue: new Decimal(20),
+                },
+            )
 
             const { result } = renderHook(() =>
                 useAccountWithBalance(BOTH_CHAINS),
@@ -328,15 +352,21 @@ describe('useAccountWithBalance', () => {
                     base: { address: ETH_ADDRESS },
                 },
             }
-            mockAccountValueTotals.set(`algorand|${ALGO_ADDRESS}`, {
-                nativeValue: new Decimal(1),
-                fiatValue: new Decimal(10),
-            })
-            mockAccountValueTotals.set(`ethereum|${ETH_ADDRESS}`, {
-                nativeValue: new Decimal(2),
-                fiatValue: new Decimal(20),
-            })
-            mockAccountValueTotals.set(`base|${ETH_ADDRESS}`, {
+            mockAccountValueTotals.set(
+                accountValueKey('algorand', ALGO_ADDRESS),
+                {
+                    nativeValue: new Decimal(1),
+                    fiatValue: new Decimal(10),
+                },
+            )
+            mockAccountValueTotals.set(
+                accountValueKey('ethereum', ETH_ADDRESS),
+                {
+                    nativeValue: new Decimal(2),
+                    fiatValue: new Decimal(20),
+                },
+            )
+            mockAccountValueTotals.set(accountValueKey('base', ETH_ADDRESS), {
                 nativeValue: new Decimal(0),
                 fiatValue: new Decimal(5),
             })
@@ -352,14 +382,20 @@ describe('useAccountWithBalance', () => {
         })
 
         it('is unknown, not a partial sum, when one chain is unpriced', () => {
-            mockAccountValueTotals.set(`algorand|${ALGO_ADDRESS}`, {
-                nativeValue: new Decimal(1),
-                fiatValue: new Decimal(10),
-            })
-            mockAccountValueTotals.set(`ethereum|${ETH_ADDRESS}`, {
-                nativeValue: new Decimal(2),
-                fiatValue: null,
-            })
+            mockAccountValueTotals.set(
+                accountValueKey('algorand', ALGO_ADDRESS),
+                {
+                    nativeValue: new Decimal(1),
+                    fiatValue: new Decimal(10),
+                },
+            )
+            mockAccountValueTotals.set(
+                accountValueKey('ethereum', ETH_ADDRESS),
+                {
+                    nativeValue: new Decimal(2),
+                    fiatValue: null,
+                },
+            )
 
             const { result } = renderHook(() =>
                 useAccountWithBalance(BOTH_CHAINS),
@@ -372,15 +408,21 @@ describe('useAccountWithBalance', () => {
         })
 
         it("is still loading while any chain's totals are", () => {
-            mockAccountValueTotals.set(`algorand|${ALGO_ADDRESS}`, {
-                nativeValue: new Decimal(1),
-                fiatValue: null,
-            })
-            mockAccountValueTotals.set(`ethereum|${ETH_ADDRESS}`, {
-                nativeValue: new Decimal(0),
-                fiatValue: new Decimal(0),
-                isPending: true,
-            })
+            mockAccountValueTotals.set(
+                accountValueKey('algorand', ALGO_ADDRESS),
+                {
+                    nativeValue: new Decimal(1),
+                    fiatValue: null,
+                },
+            )
+            mockAccountValueTotals.set(
+                accountValueKey('ethereum', ETH_ADDRESS),
+                {
+                    nativeValue: new Decimal(0),
+                    fiatValue: new Decimal(0),
+                    isPending: true,
+                },
+            )
 
             const { result } = renderHook(() =>
                 useAccountWithBalance(BOTH_CHAINS),
@@ -403,14 +445,20 @@ describe('useAccountWithBalance', () => {
                     scope: { chainId: 'ethereum', networkId: 'mainnet' },
                 },
             ])
-            mockAccountValueTotals.set(`algorand|${ALGO_ADDRESS}`, {
-                nativeValue: new Decimal(1),
-                fiatValue: new Decimal(10),
-            })
-            mockAccountValueTotals.set(`ethereum|${ETH_ADDRESS}`, {
-                nativeValue: new Decimal(2),
-                fiatValue: new Decimal(20),
-            })
+            mockAccountValueTotals.set(
+                accountValueKey('algorand', ALGO_ADDRESS),
+                {
+                    nativeValue: new Decimal(1),
+                    fiatValue: new Decimal(10),
+                },
+            )
+            mockAccountValueTotals.set(
+                accountValueKey('ethereum', ETH_ADDRESS),
+                {
+                    nativeValue: new Decimal(2),
+                    fiatValue: new Decimal(20),
+                },
+            )
 
             const { result } = renderHook(() =>
                 useAccountWithBalance(BOTH_CHAINS),

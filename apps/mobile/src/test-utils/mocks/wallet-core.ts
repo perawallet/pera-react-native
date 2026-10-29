@@ -11,9 +11,11 @@
  */
 
 import { vi } from 'vitest'
+import { accountValueKey } from '@packages/accounts/src/models/balances'
 import type { Decimal } from 'decimal.js'
 import {
     i18nKey,
+    type ChainId,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 
@@ -454,13 +456,15 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
         useAccountScope: vi.fn((account: any) =>
             scopeOf(account ? accountChainIdOf(account) : 'algorand'),
         ),
-        accountValueKey: vi.fn(
-            (chainId: string, address: string) => `${chainId}|${address}`,
+        accountValueKey: vi.fn((...args: Parameters<typeof accountValueKey>) =>
+            accountValueKey(...args),
         ),
         accountValueOf: vi.fn(
             (account: any, chainId: string, values: Map<string, unknown>) => {
                 const address = chainAccountOf(account, chainId)?.address
-                return address ? values.get(`${chainId}|${address}`) : undefined
+                return address
+                    ? values.get(accountValueKey(chainId as ChainId, address))
+                    : undefined
             },
         ),
         ownAddressOf: vi.fn(
