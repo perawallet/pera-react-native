@@ -10,13 +10,10 @@
  limitations under the License
  */
 
-import { toError } from '@perawallet/wallet-core-shared'
+import { toError, type LogErrorSeverity } from '@perawallet/wallet-core-shared'
 import type { CrashReportingService } from './models'
 
-// Superset of `LogErrorSeverity` in `packages/shared/src/utils/error-report.ts`:
-// the router also takes the non-reportable levels, so it keeps its own union
-// and nothing checks the 'error' | 'critical' | 'expected' literals against it.
-type LogSeverity = 'debug' | 'info' | 'warn' | 'error' | 'critical' | 'expected'
+type LogSeverity = 'debug' | 'info' | 'warn' | LogErrorSeverity
 
 export type ErrorReportPayload = {
     severity: LogSeverity

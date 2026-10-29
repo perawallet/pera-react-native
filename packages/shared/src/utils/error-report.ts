@@ -12,10 +12,6 @@
 
 import { isSensitiveKey, redactMaybeString } from './redaction'
 
-// Structurally mirrored by `LogSeverity` in
-// `extensions/platform/src/reporting/utils.ts`, which routes 'expected' to a
-// breadcrumb. The two unions are not linked at compile time, so the literals
-// have to be kept in step by hand.
 export type LogErrorSeverity = 'error' | 'critical' | 'expected'
 
 export type ErrorReportPayload = {
