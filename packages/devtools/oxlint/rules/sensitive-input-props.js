@@ -12,6 +12,7 @@
 
 const HELPER = 'getSensitiveInputProps'
 const WRAPPERS = new Set([
+    'ChainExpression',
     'ParenthesizedExpression',
     'TSAsExpression',
     'TSSatisfiesExpression',

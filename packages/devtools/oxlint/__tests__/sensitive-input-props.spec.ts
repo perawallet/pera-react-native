@@ -41,10 +41,12 @@ describe('pera/sensitive-input-props', () => {
         argument,
     })
     const literal = (value: boolean): Node => ({ type: 'Literal', value })
-    const parenthesized = (expression: Node): Node => ({
-        type: 'ParenthesizedExpression',
+    const wrapped = (type: string, expression: Node): Node => ({
+        type,
         expression,
     })
+    const parenthesized = (expression: Node): Node =>
+        wrapped('ParenthesizedExpression', expression)
     const conditional = (consequent: Node, alternate: Node): Node => ({
         type: 'ConditionalExpression',
         test: id('isSensitive'),
@@ -143,6 +145,33 @@ describe('pera/sensitive-input-props', () => {
             [
                 secure,
                 spread(parenthesized(logical(id('isSensitive'), helperCall))),
+            ],
+        ],
+        [
+            'secureTextEntry {...(getSensitiveInputProps() as X)}',
+            [secure, spread(wrapped('TSAsExpression', helperCall))],
+        ],
+        [
+            'secureTextEntry {...(getSensitiveInputProps() satisfies X)}',
+            [secure, spread(wrapped('TSSatisfiesExpression', helperCall))],
+        ],
+        [
+            'secureTextEntry {...getSensitiveInputProps()!}',
+            [secure, spread(wrapped('TSNonNullExpression', helperCall))],
+        ],
+        [
+            'secureTextEntry {...inputs?.getSensitiveInputProps()}',
+            [
+                secure,
+                spread(
+                    wrapped(
+                        'ChainExpression',
+                        call(
+                            member(id('inputs'), 'getSensitiveInputProps'),
+                            [],
+                        ),
+                    ),
+                ),
             ],
         ],
         [
