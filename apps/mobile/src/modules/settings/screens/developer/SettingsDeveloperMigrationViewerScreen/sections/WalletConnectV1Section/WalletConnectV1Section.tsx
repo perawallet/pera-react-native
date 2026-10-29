@@ -20,10 +20,6 @@ export type WalletConnectV1SectionProps = {
     sessions: LegacyWalletConnectV1Session[]
 }
 
-type WalletConnectV1SectionProps = {
-    sessions: LegacyWalletConnectV1Session[]
-}
-
 export const WalletConnectV1Section = ({
     sessions,
 }: WalletConnectV1SectionProps) => {
