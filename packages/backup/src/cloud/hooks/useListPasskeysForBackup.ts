@@ -16,6 +16,7 @@ import {
     BACKUP_ACCESS_DOMAIN,
     canAccess,
     entropyChildIdOf,
+    handOffSecret,
     withSecret,
     zeroBytes,
 } from '@perawallet/wallet-core-kms'
@@ -53,7 +54,9 @@ const readSeedEntropy = async (
     if (!entropyId) return null
     // `withSecret` zeroes its buffer once the handler returns, so the handler
     // copies the bytes out rather than handing back the reference itself.
-    return withSecret(entropyId, entropy => new Uint8Array(entropy))
+    return withSecret(entropyId, entropy =>
+        handOffSecret(new Uint8Array(entropy)),
+    )
 }
 
 type SweepCaches = {

@@ -17,6 +17,7 @@ import {
     SeedScheme,
     canAccess,
     entropyChildIdOf,
+    handOffSecret,
     seedSchemeOf,
     withSecret,
 } from '@perawallet/wallet-core-kms'
@@ -70,9 +71,8 @@ export const useResolveSeedEntropyForBackup = (
             // `withSecret` zeroes its buffer once the handler returns, so the
             // handler copies the bytes out rather than handing back the
             // reference itself.
-            const entropy = await withSecret(
-                entropyId,
-                secret => new Uint8Array(secret),
+            const entropy = await withSecret(entropyId, secret =>
+                handOffSecret(new Uint8Array(secret)),
             )
             return entropy == null ? null : { seedKeyId, entropy }
         },

@@ -348,7 +348,7 @@ export const useKMS = () => {
             const entropyId = entropyChildIdOf(seedKey.id, keystoreKeys)
             const indices = entropyId
                 ? await withSecret(entropyId, entropy =>
-                      entropyToIndices(entropy),
+                      handOffSecret(entropyToIndices(entropy)),
                   )
                 : null
             if (!indices) {
