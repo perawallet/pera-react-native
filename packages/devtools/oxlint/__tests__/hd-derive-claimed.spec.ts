@@ -23,23 +23,9 @@ import {
     member,
     overridesWith,
     readOxlintConfig,
+    withParents,
     type Node,
 } from './helpers.js'
-
-// Links each node to its parent, as the linter does before rules run.
-const withParents = (node: Node, parent?: Node): Node => {
-    node.parent = parent
-    for (const [key, value] of Object.entries(node)) {
-        if (key === 'parent') continue
-        const children = Array.isArray(value) ? value : [value]
-        for (const child of children) {
-            if (child && typeof child === 'object' && 'type' in child) {
-                withParents(child as Node, node)
-            }
-        }
-    }
-    return node
-}
 
 describe('pera/hd-derive-claimed', () => {
     const lintCall = (node: Node) => {

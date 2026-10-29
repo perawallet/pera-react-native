@@ -288,7 +288,7 @@
     {
       "files": ["packages/*/src/**", "extensions/*/src/**", "apps/browser/src/**"],
       "excludeFiles": ["**/__tests__/**", "**/__mocks__/**", "**/test-utils/**", "**/__integration__/**", "**/*.spec.{ts,tsx}", "**/*.test.{ts,tsx}"],
-      "rules": { "pera/hook-result-type": "error" }
+      "rules": { "pera/hook-result-type": "error", "pera/query-pending-gated": "error" }
     },
     {
       "files": ["packages/*/src/**", "extensions/*/src/**", "apps/browser/src/**"],
