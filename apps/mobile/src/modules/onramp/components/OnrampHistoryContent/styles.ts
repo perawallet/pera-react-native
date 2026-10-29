@@ -12,6 +12,7 @@
 
 import { makeStyles } from '@rneui/themed'
 
+// lanekeep-ignore-next-line pera/no-numeric-sizes reason: pending dot diameter
 const DOT_SIZE = 6
 
 export const useStyles = makeStyles(theme => ({

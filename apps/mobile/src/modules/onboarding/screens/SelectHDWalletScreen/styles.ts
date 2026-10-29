@@ -31,9 +31,11 @@ export const useStyles = makeStyles(theme => {
             alignItems: 'center',
         },
         walletIconContainer: {
+            // lanekeep-ignore-next-line pera/no-numeric-sizes reason: xl icon plus sm padding on each side
             width: theme.spacing.xl + 2 * theme.spacing.sm,
+            // lanekeep-ignore-next-line pera/no-numeric-sizes reason: xl icon plus sm padding on each side
             height: theme.spacing.xl + 2 * theme.spacing.sm,
-            borderRadius: (theme.spacing.xl + 2 * theme.spacing.sm) / 2,
+            borderRadius: theme.borderRadius.full,
             marginRight: theme.spacing.md,
         },
         rowContent: {

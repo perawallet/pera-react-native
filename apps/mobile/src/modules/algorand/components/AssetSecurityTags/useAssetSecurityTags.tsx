@@ -20,7 +20,7 @@ import {
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
-import type { IconName } from '@components/core/PWIcon/constants'
+import type { IconName } from '@components/core'
 import type { AssetSecurityTagVariant } from '../AssetSecurityTag'
 import {
     AssetSecurityInfoContent,

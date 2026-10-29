@@ -21,7 +21,7 @@ export const useStyles = makeStyles(theme => ({
     bullet: {
         width: theme.spacing.xxl,
         height: theme.spacing.xxl,
-        borderRadius: theme.spacing.xxl / 2,
+        borderRadius: theme.borderRadius.full,
         alignItems: 'center',
         justifyContent: 'center',
     },

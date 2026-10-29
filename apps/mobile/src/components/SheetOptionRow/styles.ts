@@ -16,6 +16,7 @@ export const useStyles = makeStyles(theme => ({
     row: {
         flexDirection: 'row',
         alignItems: 'center',
+        // lanekeep-ignore-next-line pera/no-numeric-sizes reason: option row min height (64)
         minHeight: theme.spacing['3xl'] + theme.spacing.lg,
         paddingHorizontal: theme.spacing.xl,
         gap: theme.spacing.lg,

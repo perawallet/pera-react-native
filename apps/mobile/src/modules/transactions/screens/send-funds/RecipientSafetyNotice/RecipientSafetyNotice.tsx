@@ -29,8 +29,8 @@ import { useLanguage } from '@hooks/useLanguage'
 import {
     ComparedAddress,
     KNOWN_LABEL_KEYS,
-} from '../../../components/address-safety/ComparedAddress'
-import { diffAddresses } from '../../../utils/diffAddresses'
+} from '@modules/transactions/components/address-safety/ComparedAddress'
+import { diffAddresses } from '@modules/transactions/utils/diffAddresses'
 import { useStyles } from './styles'
 
 export type RecipientSafetyNoticeProps = {

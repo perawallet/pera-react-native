@@ -28,6 +28,7 @@ import { fetchHasDeadline } from './rules/fetch-has-deadline.js'
 import { componentPropsType } from './rules/component-props-type.js'
 import { testIdProp } from './rules/test-id-prop.js'
 import { preferToError } from './rules/prefer-to-error.js'
+import { noDeepRelativeImports } from './rules/no-deep-relative-imports.js'
 
 // A mobile-source rule needs its own override in apps/mobile/.oxlintrc.json:
 // oxlint resolves an inherited override's globs from the extending config's
@@ -53,5 +54,6 @@ export default {
         'component-props-type': componentPropsType,
         'test-id-prop': testIdProp,
         'prefer-to-error': preferToError,
+        'no-deep-relative-imports': noDeepRelativeImports,
     },
 }

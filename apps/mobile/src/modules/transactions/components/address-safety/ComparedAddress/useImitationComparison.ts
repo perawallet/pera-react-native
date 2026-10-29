@@ -20,7 +20,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import {
     diffAddresses,
     type AddressSegment,
-} from '../../../utils/diffAddresses'
+} from '@modules/transactions/utils/diffAddresses'
 import { KNOWN_LABEL_KEYS } from './knownAddressLabel'
 
 export type UseImitationComparisonResult = {

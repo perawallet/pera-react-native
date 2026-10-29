@@ -12,6 +12,7 @@
 
 import { makeStyles } from '@rneui/themed'
 
+// lanekeep-ignore-next-line pera/no-numeric-sizes reason: collectible media skeleton height
 const BIG_SKELETON_HEIGHT = 300
 
 export const useStyles = makeStyles(theme => ({

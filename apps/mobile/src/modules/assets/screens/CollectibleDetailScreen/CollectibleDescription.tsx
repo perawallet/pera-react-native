@@ -10,8 +10,7 @@
  limitations under the License
  */
 
-import { PWText } from '@components/core'
-import { PWView } from '@components/core/PWView/PWView'
+import { PWText, PWView } from '@components/core'
 import { ExpandableText } from '@components/ExpandableText'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'

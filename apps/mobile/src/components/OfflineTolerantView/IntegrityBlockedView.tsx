@@ -10,8 +10,7 @@
  limitations under the License
  */
 
-import { PWButton } from '@components/core'
-import type { PWViewProps } from '@components/core/PWView'
+import { PWButton, type PWViewProps } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { useIntegrityAccessState } from '@hooks/useIntegrityAccessState'
 import { useLanguage } from '@hooks/useLanguage'

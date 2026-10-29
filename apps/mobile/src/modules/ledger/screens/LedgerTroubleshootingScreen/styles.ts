@@ -12,6 +12,7 @@
 
 import { makeStyles } from '@rneui/themed'
 
+// lanekeep-ignore-next-line pera/no-numeric-sizes reason: list bullet diameter
 const BULLET_SIZE = 6
 
 export const useStyles = makeStyles(theme => ({
@@ -33,7 +34,7 @@ export const useStyles = makeStyles(theme => ({
     stepCircle: {
         width: theme.spacing.xxl,
         height: theme.spacing.xxl,
-        borderRadius: theme.spacing.xxl / 2,
+        borderRadius: theme.borderRadius.full,
         backgroundColor: theme.colors.layerGrayLighter,
         alignItems: 'center',
         justifyContent: 'center',
@@ -42,7 +43,7 @@ export const useStyles = makeStyles(theme => ({
     bullet: {
         width: BULLET_SIZE,
         height: BULLET_SIZE,
-        borderRadius: BULLET_SIZE / 2,
+        borderRadius: theme.borderRadius.full,
         backgroundColor: theme.colors.textGray,
         marginTop: theme.spacing.sm,
         marginRight: theme.spacing.md,

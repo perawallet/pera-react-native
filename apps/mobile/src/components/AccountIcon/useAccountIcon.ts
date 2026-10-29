@@ -21,8 +21,7 @@ import {
     useDelegatedAccount,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import type { IconName } from '@components/core'
-import type { PWRoundIconVariant } from '@components/core/PWRoundIcon'
+import type { IconName, PWRoundIconVariant } from '@components/core'
 
 export type AccountDisplayState =
     | 'base'
