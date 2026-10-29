@@ -37,6 +37,14 @@ export type MediaCarouselProps = {
     onFullScreenPress?: (index: number) => void
 }
 
+const carouselPagesOf = (
+    visualMedia: MediaItem[],
+    modelItem: MediaItem | undefined,
+): MediaItem[] => {
+    if (visualMedia.length > 0) return visualMedia
+    return modelItem ? [modelItem] : []
+}
+
 export const MediaCarousel = ({
     media,
     fallbackImageUrl,
@@ -70,8 +78,7 @@ export const MediaCarousel = ({
     const modelItem = media.find(m => m.type === 'model')
     // No model file means nothing to open as 3D.
     const hasModel = modelItem?.downloadUrl !== undefined
-    const pages =
-        visualMedia.length > 0 ? visualMedia : modelItem ? [modelItem] : []
+    const pages = carouselPagesOf(visualMedia, modelItem)
     const hasMultiple = pages.length > 1
 
     const renderMediaItem = useCallback(
@@ -79,12 +86,9 @@ export const MediaCarousel = ({
             const downloadUri = item?.downloadUrl
             const isModelItem = item?.type === 'model'
             const imageUri = resolveMediaImageUri(item, fallbackImageUrl)
-            return (
-                <PWView
-                    style={styles.carouselItem}
-                    key={`media-${index}`}
-                >
-                    {item?.type === 'video' && downloadUri ? (
+            const renderMedia = () => {
+                if (item?.type === 'video' && downloadUri) {
+                    return (
                         <VideoPlayer
                             uri={downloadUri}
                             width={mediaSize}
@@ -92,7 +96,10 @@ export const MediaCarousel = ({
                             style={styles.videoPlayer}
                             autoPlay={index === activeIndex}
                         />
-                    ) : item?.type === 'audio' && downloadUri ? (
+                    )
+                }
+                if (item?.type === 'audio' && downloadUri) {
+                    return (
                         <AudioPlayer
                             uri={downloadUri}
                             posterUri={item?.previewUrl ?? fallbackImageUrl}
@@ -100,22 +107,34 @@ export const MediaCarousel = ({
                             height={mediaSize}
                             style={styles.videoPlayer}
                         />
-                    ) : imageUri && !failedUris.has(imageUri) ? (
+                    )
+                }
+                if (imageUri && !failedUris.has(imageUri)) {
+                    return (
                         <PWImage
                             source={{ uri: imageUri }}
                             style={styles.image}
                             resizeMode='contain'
                             onError={() => handleImageError(imageUri)}
                         />
-                    ) : (
-                        <PWView style={styles.placeholder}>
-                            <PWIcon
-                                name='image-off'
-                                variant='secondary'
-                                size={placeholderIconSize ?? 'md'}
-                            />
-                        </PWView>
-                    )}
+                    )
+                }
+                return (
+                    <PWView style={styles.placeholder}>
+                        <PWIcon
+                            name='image-off'
+                            variant='secondary'
+                            size={placeholderIconSize ?? 'md'}
+                        />
+                    </PWView>
+                )
+            }
+            return (
+                <PWView
+                    style={styles.carouselItem}
+                    key={`media-${index}`}
+                >
+                    {renderMedia()}
                     {hasModel && index >= 0 && (
                         <PWTouchableOpacity
                             style={styles.modelBadge}
