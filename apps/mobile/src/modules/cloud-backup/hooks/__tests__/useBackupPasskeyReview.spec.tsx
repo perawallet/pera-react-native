@@ -90,7 +90,10 @@ vi.mock('../useProvenPasskeysQuery', () => ({
     }),
 }))
 
-vi.mock('@perawallet/wallet-core-shared', () => ({
+vi.mock('@perawallet/wallet-core-shared', async () => ({
+    ...(await vi.importActual<
+        typeof import('@packages/shared/src/errors/base')
+    >('@packages/shared/src/errors/base')),
     logger: { warn: vi.fn() },
     NoConnectionError,
 }))

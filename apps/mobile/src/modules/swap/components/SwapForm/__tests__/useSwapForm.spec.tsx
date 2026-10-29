@@ -205,6 +205,9 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
             typeof import('@packages/shared/src/utils/unit-conversion')
         >('@packages/shared/src/utils/unit-conversion')
     return {
+        ...(await vi.importActual<
+            typeof import('@packages/shared/src/errors/base')
+        >('@packages/shared/src/errors/base')),
         ALGO_ASSET_NAME: 'ALGO',
         isAlgoAssetName: (value: string) => value === 'ALGO',
         isDecimalEqual: (a: Nullable<Decimal>, b: Nullable<Decimal>) => {
