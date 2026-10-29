@@ -497,12 +497,11 @@ describe('Flow: ConnectionsProvider pair → approve → sign', () => {
     })
 
     it('Given a session approved for one account, when the dApp asks to sign for another the wallet holds, then the peer is rejected rather than left waiting', async () => {
-        // The branch's headline security property. The refusal is a THROW
-        // out of the ARC-0001 resolver, and the legacy hook's synchronous
-        // try/catch used to be what turned that into a `rejectRequest`.
-        // Nothing inherited that job when the hook went — so "nothing was
-        // signed" is only half of it, and this is the guard on the other
-        // half: the dApp must hear back rather than time out.
+        // The headline security property. The refusal is a THROW out of the
+        // ARC-0001 resolver, and the provider must turn that into a
+        // `rejectRequest`: "nothing was signed" is only half of it, and this
+        // is the guard on the other half: the dApp must hear back rather than
+        // time out.
         await mountProvider()
         const connector = await pairAndHandshake('Rejecting dApp')
         await approveViaUi(SIGNING_ACCOUNT.name as string)

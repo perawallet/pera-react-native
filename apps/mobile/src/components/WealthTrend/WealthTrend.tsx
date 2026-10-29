@@ -52,7 +52,7 @@ export const WealthTrend = ({
     // value is flat for an all-ALGO account no matter what the price does.
     // Unpriced points are dropped first: defaulting one end to 0 would report
     // a swing between a real value and a rate we simply don't have.
-    const [absolute, percentage, isPositive] = useMemo(() => {
+    const [absolute, percentage, isPositive, hasPoints] = useMemo(() => {
         const priced =
             data?.flatMap(point =>
                 point.preferredValue ? [point.preferredValue] : [],
@@ -64,10 +64,12 @@ export const WealthTrend = ({
             lastDp.minus(firstDp),
             percentChange(firstDp, lastDp),
             lastDp.greaterThanOrEqualTo(firstDp),
-        ]
+            priced.length > 0,
+        ] as const
     }, [data])
 
-    return isPending || privacyMode || isUnavailableOnNetwork ? (
+    // A failed or empty chain leaves no history to measure a change over.
+    return isPending || !hasPoints || privacyMode || isUnavailableOnNetwork ? (
         <></>
     ) : (
         <PWView style={styles.container}>

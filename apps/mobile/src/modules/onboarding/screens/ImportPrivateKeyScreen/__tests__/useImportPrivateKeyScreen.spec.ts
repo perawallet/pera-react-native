@@ -73,11 +73,7 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
                 return false
             }
         },
-        useAccountsStore: {
-            getState: () => ({
-                importAccountFromPrivateKey: mocks.importAccountFromPrivateKey,
-            }),
-        },
+        importAccountFromPrivateKey: mocks.importAccountFromPrivateKey,
     }
 })
 

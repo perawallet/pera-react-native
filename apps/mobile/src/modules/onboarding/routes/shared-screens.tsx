@@ -36,12 +36,7 @@ import { AsbImportResultScreen } from '@modules/onboarding/screens/AsbImportResu
 import { PeraWebImportInfoScreen } from '@modules/onboarding/screens/PeraWebImportInfoScreen'
 import { PeraWebImportLoadingScreen } from '@modules/onboarding/screens/PeraWebImportLoadingScreen'
 import { PeraWebImportResultScreen } from '@modules/onboarding/screens/PeraWebImportResultScreen'
-import {
-    CloudBackupRestorePassphraseScreen,
-    CloudBackupRestoreEncryptionKeyScreen,
-    CloudBackupRestoreScanScreen,
-} from '@modules/cloud-backup/routes'
-import { useExitAccountFlow } from '@modules/onboarding/hooks'
+import { CloudBackupRestorePassphraseScreen } from '@modules/cloud-backup/routes'
 import {
     LedgerInstructionsScreen,
     LedgerPairScreen,
@@ -53,6 +48,8 @@ import {
 } from '@modules/ledger'
 
 import type { ImportFlowParamList } from './types'
+import { ImportFlowRestoreEncryptionKeyRoute } from './ImportFlowRestoreEncryptionKeyRoute'
+import { ImportFlowRestoreScanRoute } from './ImportFlowRestoreScanRoute'
 
 export const withAccountErrorBoundary = <P extends object>(
     WrappedComponent: React.ComponentType<P>,
@@ -130,23 +127,10 @@ const PeraWebImportResultScreenWithErrorBoundary = withAccountErrorBoundary(
 const CloudBackupRestorePassphraseScreenWithErrorBoundary =
     withAccountErrorBoundary(CloudBackupRestorePassphraseScreen)
 
-// The restore screens are shared with the cloud-backup stack, whose
-// `CloudBackupOverview` exit does not exist here; a restore reached from the
-// import flow ends like every other import.
-const CloudBackupRestoreEncryptionKeyRoute = () => {
-    const { exitAccountFlow } = useExitAccountFlow()
-    return <CloudBackupRestoreEncryptionKeyScreen onDone={exitAccountFlow} />
-}
-
-const CloudBackupRestoreScanRoute = () => {
-    const { exitAccountFlow } = useExitAccountFlow()
-    return <CloudBackupRestoreScanScreen onDone={exitAccountFlow} />
-}
-
 const CloudBackupRestoreEncryptionKeyScreenWithErrorBoundary =
-    withAccountErrorBoundary(CloudBackupRestoreEncryptionKeyRoute)
+    withAccountErrorBoundary(ImportFlowRestoreEncryptionKeyRoute)
 const CloudBackupRestoreScanScreenWithErrorBoundary = withAccountErrorBoundary(
-    CloudBackupRestoreScanRoute,
+    ImportFlowRestoreScanRoute,
 )
 
 /**

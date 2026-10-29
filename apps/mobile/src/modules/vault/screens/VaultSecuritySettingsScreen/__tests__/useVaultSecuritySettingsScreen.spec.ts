@@ -26,6 +26,24 @@ const mocks = vi.hoisted(() => {
             this.name = 'VaultCorruptedError'
         }
     }
+    class MockPasskeyPrfUnsupportedError extends Error {
+        constructor() {
+            super('PRF extension not supported.')
+            this.name = 'PasskeyPrfUnsupportedError'
+        }
+    }
+    class MockVaultReauthRequiredError extends Error {
+        constructor() {
+            super('A password must be proven again.')
+            this.name = 'VaultReauthRequiredError'
+        }
+    }
+    class MockVaultLockedError extends Error {
+        constructor() {
+            super('Vault is locked.')
+            this.name = 'VaultLockedError'
+        }
+    }
     return {
         getAutoLockMinutes: vi.fn(),
         setAutoLockMinutes: vi.fn(),
@@ -36,8 +54,13 @@ const mocks = vi.hoisted(() => {
         isPasskeyUnlockEnabled: vi.fn(),
         enablePasskeyUnlock: vi.fn(),
         disablePasskeyUnlock: vi.fn(),
+        enablePasskeyUnlockWithSession: vi.fn(),
+        trackEvent: vi.fn(),
         MockInvalidPasswordError,
         MockVaultCorruptedError,
+        MockPasskeyPrfUnsupportedError,
+        MockVaultReauthRequiredError,
+        MockVaultLockedError,
     }
 })
 const { MockInvalidPasswordError, MockVaultCorruptedError } = mocks
@@ -53,8 +76,20 @@ vi.mock('@perawallet/wallet-extension-keystore-chrome', () => ({
     isPasskeyUnlockEnabled: mocks.isPasskeyUnlockEnabled,
     enablePasskeyUnlock: mocks.enablePasskeyUnlock,
     disablePasskeyUnlock: mocks.disablePasskeyUnlock,
+    enablePasskeyUnlockWithSession: mocks.enablePasskeyUnlockWithSession,
     InvalidPasswordError: mocks.MockInvalidPasswordError,
     VaultCorruptedError: mocks.MockVaultCorruptedError,
+    PasskeyPrfUnsupportedError: mocks.MockPasskeyPrfUnsupportedError,
+    VaultReauthRequiredError: mocks.MockVaultReauthRequiredError,
+    VaultLockedError: mocks.MockVaultLockedError,
+}))
+vi.mock('@analytics', async importOriginal => ({
+    ...(await importOriginal<typeof import('@analytics')>()),
+    trackEvent: mocks.trackEvent,
+}))
+vi.mock('@hooks/useLanguage')
+vi.mock('../../../hooks/useRequireVaultPassword', () => ({
+    useRequireVaultPassword: () => ({ requireVaultPassword: vi.fn() }),
 }))
 
 import { useVaultSecuritySettingsScreen } from '../useVaultSecuritySettingsScreen.web'
@@ -200,6 +235,7 @@ describe('useVaultSecuritySettingsScreen', () => {
             expect(result.current.passkeyState).toBe('enabled')
             expect(result.current.passkeyPassword).toBe('')
             expect(result.current.hasPasskeyError).toBe(false)
+            expect(result.current.passkeySetupStatus).toBe('enabled')
         })
 
         it('on InvalidPasswordError sets hasPasskeyError, clears the password, and does NOT flip state', async () => {
@@ -215,27 +251,63 @@ describe('useVaultSecuritySettingsScreen', () => {
             expect(result.current.hasPasskeyError).toBe(true)
             expect(result.current.passkeyPassword).toBe('')
             expect(result.current.passkeyState).toBe('disabled')
+            expect(result.current.passkeySetupStatus).toBe('idle')
         })
 
-        it('on NotAllowedError (user cancels the passkey prompt) is a silent no-op', async () => {
-            const notAllowedError = new DOMException(
-                'cancelled',
-                'NotAllowedError',
+        it('surfaces a NotAllowedError as not-saved instead of staying silent', async () => {
+            mocks.enablePasskeyUnlock.mockRejectedValue(
+                new DOMException('cancelled', 'NotAllowedError'),
             )
-            mocks.enablePasskeyUnlock.mockRejectedValue(notAllowedError)
             const { result } = renderHook(() =>
                 useVaultSecuritySettingsScreen(),
             )
             await act(async () => {})
             act(() => result.current.setPasskeyPassword('some-password'))
             await act(() => result.current.handleEnablePasskey())
+            expect(result.current.passkeySetupStatus).toBe('not-saved')
             expect(result.current.hasPasskeyError).toBe(false)
-            expect(result.current.hasPasskeyEnableError).toBe(false)
             expect(result.current.passkeyState).toBe('disabled')
             expect(result.current.isEnablingPasskey).toBe(false)
         })
 
-        it('on an unexpected error sets hasPasskeyEnableError without rethrowing', async () => {
+        it('surfaces PasskeyPrfUnsupportedError as prf-unsupported', async () => {
+            mocks.enablePasskeyUnlock.mockRejectedValue(
+                new mocks.MockPasskeyPrfUnsupportedError(),
+            )
+            const { result } = renderHook(() =>
+                useVaultSecuritySettingsScreen(),
+            )
+            await act(async () => {})
+            act(() => result.current.setPasskeyPassword('some-password'))
+            await act(() => result.current.handleEnablePasskey())
+            expect(result.current.passkeySetupStatus).toBe('prf-unsupported')
+            expect(result.current.passkeyState).toBe('disabled')
+        })
+
+        it('shows the pending hint while the ceremony runs', async () => {
+            let resolve: () => void = () => {}
+            mocks.enablePasskeyUnlock.mockReturnValueOnce(
+                new Promise<void>(r => {
+                    resolve = r
+                }),
+            )
+            const { result } = renderHook(() =>
+                useVaultSecuritySettingsScreen(),
+            )
+            await act(async () => {})
+            act(() => result.current.setPasskeyPassword('some-password'))
+            let enabling: Promise<void> = Promise.resolve()
+            act(() => {
+                enabling = result.current.handleEnablePasskey()
+            })
+            expect(result.current.isEnablingPasskey).toBe(true)
+            expect(result.current.passkeySetupStatus).toBe('pending')
+            resolve()
+            await act(() => enabling)
+            expect(result.current.isEnablingPasskey).toBe(false)
+        })
+
+        it('on an unexpected error lands in unexpected without rethrowing', async () => {
             mocks.enablePasskeyUnlock.mockRejectedValue(new Error('boom'))
             const { result } = renderHook(() =>
                 useVaultSecuritySettingsScreen(),
@@ -243,7 +315,7 @@ describe('useVaultSecuritySettingsScreen', () => {
             await act(async () => {})
             act(() => result.current.setPasskeyPassword('some-password'))
             await act(() => result.current.handleEnablePasskey())
-            expect(result.current.hasPasskeyEnableError).toBe(true)
+            expect(result.current.passkeySetupStatus).toBe('unexpected')
             expect(result.current.passkeyState).toBe('disabled')
             expect(result.current.isEnablingPasskey).toBe(false)
         })

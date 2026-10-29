@@ -14,6 +14,7 @@ import { fromCallback } from 'xstate'
 import {
     findAccountByAddressOn,
     isHardwareWalletAccount,
+    type HardwareWalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { logger, toError } from '@perawallet/wallet-core-shared'
 import { HardwareWalletError } from '../../pipeline/errors'
@@ -135,6 +136,48 @@ export const hardwareSignActor = fromCallback<
         },
     }
 
+    const signGroupOnDevice = async (
+        group: (typeof groups)[number],
+        account: HardwareWalletAccount,
+    ) => {
+        switch (group.data.type) {
+            case 'transactions': {
+                return signPlannedGroupOnDevice({
+                    group,
+                    account,
+                    scope,
+                    registry: hardwareWalletRegistry,
+                    callbacks,
+                })
+            }
+            case 'message':
+            case 'auth-data': {
+                return signMessageGroupOnDevice({
+                    group,
+                    account,
+                    allAccounts,
+                    scope,
+                    registry: hardwareWalletRegistry,
+                    callbacks,
+                })
+            }
+            case 'arbitrary-data': {
+                return strategy.sign(group, account, callbacks)
+            }
+            default: {
+                // Fail closed: returning here would report an unknown group
+                // type (e.g. from a stale build) as GROUP_SIGNED.
+                const exhaustive: never = group.data
+                throw new HardwareWalletError(
+                    'unsupported_data_type',
+                    new Error(
+                        `Unsupported group type: ${(exhaustive as { type: string }).type}`,
+                    ),
+                )
+            }
+        }
+    }
+
     void (async () => {
         try {
             for (const group of groups) {
@@ -159,30 +202,7 @@ export const hardwareSignActor = fromCallback<
                 if (!isHardwareWalletAccount(accountForSigning)) {
                     throw new HardwareWalletError('signer_not_found')
                 }
-                const { type } = group.data
-                const result =
-                    type === 'transactions'
-                        ? await signPlannedGroupOnDevice({
-                              group,
-                              account: accountForSigning,
-                              scope,
-                              registry: hardwareWalletRegistry,
-                              callbacks,
-                          })
-                        : type === 'message' || type === 'auth-data'
-                          ? await signMessageGroupOnDevice({
-                                group,
-                                account: accountForSigning,
-                                allAccounts,
-                                scope,
-                                registry: hardwareWalletRegistry,
-                                callbacks,
-                            })
-                          : await strategy.sign(
-                                group,
-                                accountForSigning,
-                                callbacks,
-                            )
+                const result = await signGroupOnDevice(group, accountForSigning)
                 if (cancelled) return
                 sendBack({ type: 'GROUP_SIGNED', result })
                 // Mirrors the parent's totalTxs accounting: transaction

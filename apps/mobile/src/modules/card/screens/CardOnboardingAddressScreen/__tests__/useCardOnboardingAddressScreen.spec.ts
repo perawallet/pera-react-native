@@ -31,6 +31,7 @@ let mockAllowSms: boolean | null = true
 let mockOnboardingId: string | null = 'mock-onboarding-id'
 let mockOnboardingStep: OnboardingStep = OnboardingStep.EmailSend
 let mockCountryIso: string | null = 'GB'
+let mockProgressEmail: string | null = null
 let mockSettings:
     | {
           countries: SupportedCountry[]
@@ -76,37 +77,29 @@ vi.mock('@perawallet/wallet-core-card', async () => {
             refetch: vi.fn(),
         }),
         useOnboardingDetailsQuery: () => ({ refetch: mockRefetchRecord }),
-        useCardStore: Object.assign(
-            (
-                selector: (state: {
-                    onboardingId: string | null
-                    onboardingStep: OnboardingStep
-                    countryIso: string | null
-                    allowMarketing: boolean | null
-                    allowSms: boolean | null
-                    setCountryIso: (iso: string) => void
-                    setAllowMarketing: (allow: boolean) => void
-                    setAllowSms: (allow: boolean) => void
-                }) => unknown,
-            ) =>
-                selector({
-                    onboardingId: mockOnboardingId,
-                    onboardingStep: mockOnboardingStep,
-                    countryIso: mockCountryIso,
-                    allowMarketing: mockAllowMarketing,
-                    allowSms: mockAllowSms,
-                    setCountryIso: mockSetCountryIso,
-                    setAllowMarketing: mockSetAllowMarketing,
-                    setAllowSms: mockSetAllowSms,
-                }),
-            {
-                getState: () => ({
-                    consentSetId: null,
-                    allowMarketing: mockAllowMarketing,
-                    allowSms: mockAllowSms,
-                }),
-            },
-        ),
+        useCardStore: (
+            selector: (state: {
+                onboardingId: string | null
+                onboardingStep: OnboardingStep
+                countryIso: string | null
+                allowMarketing: boolean | null
+                allowSms: boolean | null
+                setCountryIso: (iso: string) => void
+                setAllowMarketing: (allow: boolean) => void
+                setAllowSms: (allow: boolean) => void
+            }) => unknown,
+        ) =>
+            selector({
+                onboardingId: mockOnboardingId,
+                onboardingStep: mockOnboardingStep,
+                countryIso: mockCountryIso,
+                allowMarketing: mockAllowMarketing,
+                allowSms: mockAllowSms,
+                setCountryIso: mockSetCountryIso,
+                setAllowMarketing: mockSetAllowMarketing,
+                setAllowSms: mockSetAllowSms,
+            }),
+        getCardOnboardingProgress: () => ({ email: mockProgressEmail }),
     }
 })
 
@@ -209,6 +202,7 @@ describe('useCardOnboardingAddressScreen', () => {
         mockOnboardingId = 'mock-onboarding-id'
         mockOnboardingStep = OnboardingStep.EmailSend
         mockCountryIso = 'GB'
+        mockProgressEmail = null
         mockAllowMarketing = true
         mockAllowSms = true
         mockSettings = {
@@ -527,6 +521,7 @@ describe('useCardOnboardingAddressScreen', () => {
         async (_label, failure) => {
             mockMutateAsync.mockRejectedValueOnce(failure)
             mockRefetchRecord.mockResolvedValueOnce(GONE_RECORD)
+            mockProgressEmail = 'user@example.com'
             const { result } = renderHook(() =>
                 useCardOnboardingAddressScreen(),
             )
@@ -538,7 +533,7 @@ describe('useCardOnboardingAddressScreen', () => {
 
             await waitFor(() =>
                 expect(mockNavigate).toHaveBeenCalledWith('CardSignIn', {
-                    email: undefined,
+                    email: 'user@example.com',
                     finishesRegistration: true,
                 }),
             )

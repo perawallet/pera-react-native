@@ -26,7 +26,7 @@ import {
     useAllAccounts,
 } from '@perawallet/wallet-core-accounts'
 import { AccountDisplay } from '@components/AccountDisplay'
-import { useStyles } from './ArbitraryDataSigningDetailsView.style'
+import { useStyles } from './styles'
 import { AssetAmount } from '@components/AssetAmount'
 import { useNativeAsset } from '@perawallet/wallet-core-assets'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'

@@ -12,6 +12,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, renderHook } from '@testing-library/react'
+import { accountValueKey } from '@perawallet/wallet-core-accounts'
 import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { WalletConnectEvent, AnalyticsMetadataKey } from '@analytics'
 import { AppError } from '@perawallet/wallet-core-shared'
@@ -185,9 +186,12 @@ describe('useConnectionApprovalView', () => {
             ])
         })
 
-        it('sorts by the value totals of every chain, keyed by address', () => {
+        it('sorts by the value totals of every chain, keyed by chain and address', () => {
             const accountValueTotals = new Map([
-                ['0xCCCC', { fiatValue: 50, nativeValue: 50 }],
+                [
+                    accountValueKey('ethereum', '0xCCCC'),
+                    { fiatValue: 50, nativeValue: 50 },
+                ],
             ])
             totals.current = accountValueTotals as never
 

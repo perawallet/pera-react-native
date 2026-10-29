@@ -18,6 +18,7 @@ import {
     useCardIssuance,
     useCardStore,
     useIsCardUnfreezing,
+    setCardFundingSourceAddress,
     useSetCardPinMutation,
     type CardEligibilityReason,
     type CardIssuanceState,
@@ -430,7 +431,7 @@ export const usePeraCardDetails = (): UsePeraCardDetailsResult => {
         if (address === undefined || address === fundingAddress) return
         // Local only: the Pera backend registers the address with Baanx at
         // card creation; Baanx has no funding-source endpoint for our wallets.
-        useCardStore.getState().setConnectedFundingSourceAddress(address)
+        setCardFundingSourceAddress(address)
     }, [fundingAddress, isAutoFunding, pickFundingSource, infoToast, t])
 
     // Guard the whole picker → repoint sequence so a double-tap can't run two

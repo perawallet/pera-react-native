@@ -76,13 +76,13 @@ export const useSignRequestDriver = () => {
     useEffect(() => {
         // Keep the sign-request sheet mounted for as long as its request is
         // pending — including while the Ledger overlay is shown on top during
-        // hardware signing. Previously this sheet was dismissed (and then
-        // `remove`d once its close animation finished) the moment hardware
-        // signing started; because the Ledger overlay is presented on top of
-        // it, removing the underlying sheet mid-sign collapsed gorhom's modal
-        // stack and tore the Ledger overlay down (the "vanishes when the
-        // device prompts" bug). Leaving it mounted underneath (hidden behind
-        // the overlay's backdrop) keeps the stack intact; it's dismissed only
+        // hardware signing. Dismissing it (and then `remove`ing it once its
+        // close animation finished) when hardware signing starts would break
+        // the stack: the Ledger overlay is presented on top of it, so removing
+        // the underlying sheet mid-sign collapses gorhom's modal stack and
+        // tears the Ledger overlay down (the "vanishes when the device
+        // prompts" bug). Leaving it mounted underneath (hidden behind the
+        // overlay's backdrop) keeps the stack intact; it's dismissed only
         // when the request actually leaves the queue.
         const sheetId = nextRequest ? nextRequest.id : null
 

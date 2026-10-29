@@ -41,6 +41,9 @@ export const useStyles = makeStyles(theme => {
         errorText: {
             color: theme.colors.negative,
         },
+        hint: {
+            color: theme.colors.textGray,
+        },
         successText: {
             color: theme.colors.positive,
         },

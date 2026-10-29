@@ -23,37 +23,4 @@ export const useStyles = makeStyles(theme => ({
         alignItems: 'center',
         backgroundColor: theme.colors.background,
     },
-    // FlashList ignores contentContainerStyle gap, so row spacing comes from
-    // the row's own border + padding rather than a list-level gap.
-    connectionRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.lg,
-        paddingVertical: theme.spacing.lg,
-        marginBottom: theme.spacing.md,
-        borderBottomWidth: theme.borders.sm,
-        borderBottomColor: theme.colors.layerGray,
-    },
-    icon: {
-        width: theme.spacing.xxl,
-        height: theme.spacing.xxl,
-        borderRadius: theme.spacing.xl,
-        overflow: 'hidden',
-    },
-    connectionInfo: {
-        flex: 1,
-        gap: theme.spacing.xxs,
-        alignItems: 'flex-start',
-    },
-    titleRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.sm,
-    },
-    title: {
-        flexShrink: 1,
-    },
-    subtitle: {
-        color: theme.colors.textGrayLighter,
-    },
 }))

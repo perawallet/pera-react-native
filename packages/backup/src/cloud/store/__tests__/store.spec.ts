@@ -13,7 +13,7 @@
 // @vitest-environment jsdom
 import { describe, test, expect, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import { useCloudBackupStore } from '../store'
+import { readCloudBackupCredentials, useCloudBackupStore } from '../store'
 
 beforeEach(() => {
     act(() => useCloudBackupStore.getState().resetState())
@@ -51,5 +51,23 @@ describe('useCloudBackupStore', () => {
         )
         act(() => result.current.resetState())
         expect(result.current.isConfigured()).toBe(false)
+    })
+
+    test('readCloudBackupCredentials is null until configured, then follows the store', () => {
+        expect(readCloudBackupCredentials()).toEqual({
+            backupId: null,
+            salt: null,
+        })
+
+        useCloudBackupStore.getState().setConfigured({
+            backupId: 'did:pera:abc',
+            salt: 'c2FsdA==',
+            deviceId: 'device-123',
+        })
+
+        expect(readCloudBackupCredentials()).toEqual({
+            backupId: 'did:pera:abc',
+            salt: 'c2FsdA==',
+        })
     })
 })

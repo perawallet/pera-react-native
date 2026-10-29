@@ -68,6 +68,7 @@ export interface ErrorMetadata {
     expected?: boolean
 }
 
+// oxlint-disable-next-line pera/typed-domain-errors -- the base every domain error extends
 export class AppError extends Error {
     public readonly metadata: ErrorMetadata
     public readonly timestamp: Date

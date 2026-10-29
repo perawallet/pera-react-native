@@ -42,6 +42,7 @@ import {
     serveFakeEvmNode,
     type FakeEvmNode,
 } from './fixtures/fake-evm-node.mjs'
+import { skipPasskeyUnlockStep } from './passkey-unlock-step'
 
 const dist = path.resolve(
     path.dirname(fileURLToPath(import.meta.url)),
@@ -363,6 +364,7 @@ test.describe('signing from a connected dApp', () => {
             .getByTestId('create-password-confirm-input')
             .fill(PASSWORD)
         await walletPage.getByTestId('create-password-submit').click()
+        await skipPasskeyUnlockStep(walletPage)
         await walletPage
             .getByTestId('onboarding_create_wallet_button')
             .click({ timeout: 20_000 })

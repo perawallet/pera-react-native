@@ -12,7 +12,6 @@
 
 import React from 'react'
 import { Decimal } from 'decimal.js'
-import { makeStyles, useTheme } from '@rneui/themed'
 
 import { PWView } from '@components/core'
 
@@ -32,7 +31,6 @@ import { AssetTierChip } from '@modules/assets/components/AssetTierChip'
 import { AssetTitle } from '@modules/assets/components/AssetTitle'
 import { CollectibleGridItem as AssetsCollectibleGridItem } from '@modules/assets/components/CollectibleGridItem'
 import { CollectibleListItem as AssetsCollectibleListItem } from '@modules/assets/components/CollectibleListItem'
-import { CollectibleThumbnail as AssetsCollectibleThumbnail } from '@modules/assets/components/CollectibleThumbnail'
 import { AccountAssetItemView } from '@modules/assets/components/AssetItem'
 
 import { TransactionDateHeader } from '@modules/transactions/components/TransactionDateHeader'
@@ -40,7 +38,6 @@ import { TransactionIcon } from '@components/TransactionIcon'
 import { TransactionListItem } from '@modules/transactions/components/TransactionListItem'
 import { TransactionStatusBadge } from '@modules/algorand/components/TransactionStatusBadge'
 
-import { SwapAssetPairIcon } from '@modules/swap/components/SwapAssetPairIcon'
 import { SwapProviderDisplay } from '@modules/swap/components/SwapProviderDisplay'
 import { SwapScopePreview } from './SwapScopePreview'
 import { SwapProviderRow } from '@modules/swap/components/SwapProviderRow'
@@ -102,32 +99,11 @@ import type { Banner } from '@perawallet/wallet-core-banners'
 import type { HardwareWalletDevice } from '@perawallet/wallet-core-hardware-wallet'
 import type { SignRequestSource } from '@perawallet/wallet-core-signing'
 import type { StakingProject } from '@perawallet/wallet-core-staking'
-import type { DexSwapAsset, SwapQuote } from '@perawallet/wallet-core-swaps'
+import type { SwapQuote } from '@perawallet/wallet-core-swaps'
 import type { GallerySection } from './types'
-
-const useThumbPreviewStyles = makeStyles(theme => ({
-    thumb: { width: theme.spacing['4xl'], height: theme.spacing['4xl'] },
-}))
-
-const AssetsCollectibleThumbnailPreview = () => {
-    const styles = useThumbPreviewStyles()
-    return (
-        <PWView>
-            <AssetsCollectibleThumbnail
-                thumbnailUrl='https://perawallet.app/static/nft-thumb.png'
-                imageStyle={styles.thumb}
-                placeholderStyle={styles.thumb}
-                iconSize='md'
-            />
-            <AssetsCollectibleThumbnail
-                thumbnailUrl={null}
-                imageStyle={styles.thumb}
-                placeholderStyle={styles.thumb}
-                iconSize='md'
-            />
-        </PWView>
-    )
-}
+import { mockDexAssetAlgo, mockDexAssetUsdc } from './mockDexAssets'
+import { SwapAssetPairIconPreview } from './SwapAssetPairIconPreview'
+import { AssetsCollectibleThumbnailPreview } from './AssetsCollectibleThumbnailPreview'
 
 registerPreview({
     id: 'comp-account-display',
@@ -429,22 +405,6 @@ registerPreview({
     ),
 })
 
-const mockDexAssetAlgo: DexSwapAsset = {
-    assetId: '0',
-    name: 'Algorand',
-    unitName: 'ALGO',
-    decimals: 6,
-    verificationTier: 'verified',
-}
-
-const mockDexAssetUsdc: DexSwapAsset = {
-    assetId: '31566704',
-    name: 'USD Coin',
-    unitName: 'USDC',
-    decimals: 6,
-    verificationTier: 'verified',
-}
-
 const mockSwapQuote: SwapQuote = {
     provider: 'Tinyman',
     providerDisplayName: 'Tinyman',
@@ -456,17 +416,6 @@ const mockSwapQuote: SwapQuote = {
     priceImpact: new Decimal('0.01'),
     peraFeeAmount: new Decimal('50000'),
     slippage: new Decimal('0.005'),
-}
-
-const SwapAssetPairIconPreview = () => {
-    const { theme } = useTheme()
-    return (
-        <SwapAssetPairIcon
-            assetIn={mockDexAssetAlgo}
-            assetOut={mockDexAssetUsdc}
-            surfaceColor={theme.colors.background}
-        />
-    )
 }
 
 registerPreview({

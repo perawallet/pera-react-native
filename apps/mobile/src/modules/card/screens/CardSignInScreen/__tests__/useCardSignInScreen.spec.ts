@@ -52,15 +52,13 @@ vi.mock('@perawallet/wallet-core-card', async () => {
             data: null,
             reset: vi.fn(),
         }),
-        useCardStore: Object.assign(vi.fn(), {
-            getState: () => ({
-                contactVerificationId: 'mock-contact-id',
-                countryIso: 'GB',
-                onboardingStep: 'PHONE_VERIFY',
-                setOnboardingStep: mockSetOnboardingStep,
-                escrowCardAddress: mockEscrowCardAddress.value,
-            }),
+        getCardOnboardingProgress: () => ({
+            contactVerificationId: 'mock-contact-id',
+            countryIso: 'GB',
+            onboardingStep: 'PHONE_VERIFY',
         }),
+        setCardOnboardingStep: (step: unknown) => mockSetOnboardingStep(step),
+        isEscrowCardCreated: () => mockEscrowCardAddress.value !== null,
         useRestoreEscrowCardMutation: () => ({
             mutate: vi.fn(),
             mutateAsync: mockRestoreMutateAsync,

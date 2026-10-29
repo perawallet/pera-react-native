@@ -36,6 +36,7 @@ import {
     SwapEvent,
     TabbarEvent,
     TransactionsEvent,
+    VaultEvent,
     WalletConnectEvent,
     WebviewEvent,
 } from '../contexts'
@@ -89,6 +90,8 @@ const CHAIN_AGNOSTIC_EVENTS: readonly string[] = [
     SettingsEvent.CloudBackup,
     ...Object.values(PasskeysEvent),
     ...Object.values(CloudBackupEvent),
+    // The vault is the extension's lock, above any account or chain.
+    ...Object.values(VaultEvent),
     // App chrome and navigation, before any account is picked.
     ...Object.values(TabbarEvent),
     ...Object.values(MenuEvent),

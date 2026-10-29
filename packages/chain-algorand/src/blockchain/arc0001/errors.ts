@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { AppError, ErrorCategory } from '@perawallet/wallet-core-shared'
 import type { Arc0001ErrorCode } from './types'
 
 // Carries ARC-0001's numeric code + { index, field }. Transports relay the
@@ -17,7 +18,7 @@ import type { Arc0001ErrorCode } from './types'
 // code-bearing error to JSON-RPC -32000, so the numeric code is NOT relayed
 // there. Never place wallet-private data (e.g. held addresses) in either field
 // — it reaches the remote peer verbatim.
-export class Arc0001Error extends Error {
+export class Arc0001Error extends AppError {
     public readonly code: Arc0001ErrorCode
     public readonly data?: { index?: number; field?: string }
 
@@ -26,7 +27,7 @@ export class Arc0001Error extends Error {
         message: string,
         data?: { index?: number; field?: string },
     ) {
-        super(message)
+        super(message, { category: ErrorCategory.CONNECTIONS })
         this.name = 'Arc0001Error'
         this.code = code
         this.data = data

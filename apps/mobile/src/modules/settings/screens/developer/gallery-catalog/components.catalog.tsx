@@ -11,7 +11,6 @@
  */
 
 import React from 'react'
-import { makeStyles, useTheme, type Theme } from '@rneui/themed'
 
 import {
     PWBadge,
@@ -58,20 +57,9 @@ import {
 import peraTransactionLoading from '@assets/animations/pera-transaction-loading.json'
 
 import { registerPreview } from './registry'
+import { useLottiePreviewStyles } from './styles'
 import { VariantPreview } from './VariantPreview'
-
-const useLottiePreviewStyles = makeStyles(theme => ({
-    media: { width: theme.spacing['4xl'], height: theme.spacing['4xl'] },
-}))
-
-const WithTheme = ({
-    children,
-}: {
-    children: (theme: Theme) => React.ReactNode
-}) => {
-    const { theme } = useTheme()
-    return <>{children(theme)}</>
-}
+import { WithTheme } from './WithTheme'
 
 const LottiePreview = () => {
     const styles = useLottiePreviewStyles()

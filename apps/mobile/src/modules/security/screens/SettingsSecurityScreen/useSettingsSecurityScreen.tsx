@@ -163,18 +163,21 @@ export const useSettingsSecurityScreen =
                         // 'unconfirmed' level is a temporary lockout the user
                         // clears with the device passcode; everything else is the
                         // generic "couldn't authenticate" error.
-                        const toast =
-                            result.reason === 'weak-biometric'
-                                ? {
-                                      title: t(
-                                          'settings.security.biometric_weak_title',
-                                      ),
-                                      body: t(
-                                          'settings.security.biometric_weak_message',
-                                      ),
-                                  }
-                                : result.reason === 'unconfirmed'
-                                  ? {
+                        const { reason } = result
+                        const biometricFailureToastOf = () => {
+                            switch (reason) {
+                                case 'weak-biometric': {
+                                    return {
+                                        title: t(
+                                            'settings.security.biometric_weak_title',
+                                        ),
+                                        body: t(
+                                            'settings.security.biometric_weak_message',
+                                        ),
+                                    }
+                                }
+                                case 'unconfirmed': {
+                                    return {
                                         title: t(
                                             'settings.security.biometric_unconfirmed_title',
                                         ),
@@ -182,7 +185,9 @@ export const useSettingsSecurityScreen =
                                             'settings.security.biometric_unconfirmed_message',
                                         ),
                                     }
-                                  : {
+                                }
+                                default: {
+                                    return {
                                         title: t(
                                             'settings.security.biometric_error_title',
                                         ),
@@ -190,6 +195,10 @@ export const useSettingsSecurityScreen =
                                             'settings.security.biometric_error_message',
                                         ),
                                     }
+                                }
+                            }
+                        }
+                        const toast = biometricFailureToastOf()
                         errorToast(toast.title, toast.body)
                     }
                     return result.ok

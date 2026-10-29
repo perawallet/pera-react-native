@@ -57,8 +57,11 @@ export type WhitelistItemResponse = z.input<typeof whitelistItemSchema>
 
 export type WhitelistItemSchemaOutput = z.output<typeof whitelistItemSchema>
 
+// Rows are checked one by one, so one row of a shape this client predates (a
+// new tier, a price at another precision) prices that asset as a miss rather
+// than failing every asset in the request.
 export const assetsResponseSchema = z.object({
-    results: z.array(assetItemSchema),
+    results: z.array(z.object({ asset_id: z.string() }).passthrough()),
 })
 
 // Rows are checked one by one, so a row of a kind this client predates (an

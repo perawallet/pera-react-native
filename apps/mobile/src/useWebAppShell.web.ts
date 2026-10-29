@@ -39,7 +39,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import { config } from '@perawallet/wallet-core-config'
-import { useVaultLockState } from '@modules/vault'
+import { usePasskeySetupStore, useVaultLockState } from '@modules/vault'
 import { useDatabaseReadinessStore } from '@hooks/useDatabaseReadinessStore.web'
 import { useShowOnboarding } from '@hooks/useShowOnboarding'
 import { queryClient } from '@providers/QueryProvider'
@@ -57,6 +57,7 @@ setEngineKeySource(requireSessionMasterKey)
 export type WebShellState =
     | 'resolving'
     | 'create-password'
+    | 'passkey-setup'
     | 'onboarding'
     | 'main'
     | 'approval-placeholder'
@@ -70,6 +71,8 @@ type UseWebAppShellResult = {
 
 export const useWebAppShell = (): UseWebAppShellResult => {
     const { isInitialized, isUnlocked } = useVaultLockState()
+    const isPasskeySetupPending = usePasskeySetupStore(state => state.isPending)
+    const hydratePasskeySetup = usePasskeySetupStore(state => state.hydrate)
     const showOnboarding = useShowOnboarding()
     const hasAccounts = useHasAccounts()
     const [isBootstrapped, setIsBootstrapped] = useState(false)
@@ -86,6 +89,10 @@ export const useWebAppShell = (): UseWebAppShellResult => {
         boolean | null
     >(null)
     const pendingApprovalCheckStarted = useRef(false)
+
+    useEffect(() => {
+        void hydratePasskeySetup()
+    }, [hydratePasskeySetup])
 
     useEffect(() => {
         if (getSurface() !== 'popup' || pendingApprovalCheckStarted.current) {
@@ -220,6 +227,12 @@ export const useWebAppShell = (): UseWebAppShellResult => {
         return { shellState: 'resolving', fcmToken }
     }
     if (!isInitialized) return { shellState: 'create-password', fcmToken }
+    // Ahead of the bootstrap wait: bootstrap runs under the step, and the
+    // session flag brings the step back after a lock mid-ceremony.
+    if (isUnlocked && isPasskeySetupPending === null)
+        return { shellState: 'resolving', fcmToken }
+    if (isUnlocked && isPasskeySetupPending)
+        return { shellState: 'passkey-setup', fcmToken }
     if (isUnlocked && !isBootstrapped)
         return { shellState: 'resolving', fcmToken }
     // isInitialized && !isUnlocked never reaches here — VaultGate intercepts.

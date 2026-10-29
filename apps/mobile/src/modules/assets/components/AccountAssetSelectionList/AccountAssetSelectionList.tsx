@@ -92,6 +92,18 @@ export const AccountAssetSelectionList = ({
         [onAssetSelected, styles],
     )
 
+    const renderListEmpty = () => {
+        if (debouncedSearchFilter) {
+            return (
+                <EmptyView
+                    title={emptyResultTitle}
+                    body={emptyResultBody}
+                />
+            )
+        }
+        return isError ? undefined : emptyView
+    }
+
     return (
         <AssetSelectionList
             data={filteredBalanceData}
@@ -103,16 +115,7 @@ export const AccountAssetSelectionList = ({
             isLoading={isLoading}
             skeletonCount={3}
             inBottomSheet={inBottomSheet}
-            ListEmptyComponent={
-                debouncedSearchFilter ? (
-                    <EmptyView
-                        title={emptyResultTitle}
-                        body={emptyResultBody}
-                    />
-                ) : isError ? undefined : (
-                    emptyView
-                )
-            }
+            ListEmptyComponent={renderListEmpty()}
         />
     )
 }

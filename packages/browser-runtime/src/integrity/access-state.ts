@@ -139,6 +139,13 @@ const enrolFailureCause = (
     return failure.code ? `enrol-check-error:${failure.code}` : 'enrol-failed'
 }
 
+const mintFailureCauseOf = (
+    failure: IntegrityLastFailure,
+): IntegrityFailureCause => {
+    if (failure.isTransport) return 'mint-timeout'
+    return (failure.status ?? 0) >= 500 ? 'mint-5xx' : 'mint-refused'
+}
+
 const fromLastFailure = (
     snapshot: IntegritySnapshot,
     failure: IntegrityLastFailure,
@@ -171,12 +178,11 @@ const fromLastFailure = (
     if (failure.isTransport && now - failure.at < INTEGRITY_PENDING_GRACE_MS) {
         return { status: 'pending' }
     }
-    const cause: IntegrityFailureCause = failure.isTransport
-        ? 'mint-timeout'
-        : (failure.status ?? 0) >= 500
-          ? 'mint-5xx'
-          : 'mint-refused'
-    return degraded('service', cause, snapshot.mintBackoff)
+    return degraded(
+        'service',
+        mintFailureCauseOf(failure),
+        snapshot.mintBackoff,
+    )
 }
 
 /** Precedence, highest first: offline, ready, needs-interaction, checking, degraded, pending. */

@@ -40,6 +40,13 @@ export type UsePWDrawerDragParams = {
     hasTapToClose?: boolean
 }
 
+const shouldOpenOnRelease = (velocityX: number, progress: number): boolean => {
+    'worklet'
+    if (velocityX > PWDRAWER_FLING_VELOCITY) return true
+    if (velocityX < -PWDRAWER_FLING_VELOCITY) return false
+    return progress > PWDRAWER_COMMIT_THRESHOLD
+}
+
 /**
  * The drawer's drag, shared by every surface that can move it.
  *
@@ -82,12 +89,10 @@ export const usePWDrawerDrag = ({
             })
             .onEnd(event => {
                 'worklet'
-                const shouldOpen =
-                    event.velocityX > PWDRAWER_FLING_VELOCITY
-                        ? true
-                        : event.velocityX < -PWDRAWER_FLING_VELOCITY
-                          ? false
-                          : progress.value > PWDRAWER_COMMIT_THRESHOLD
+                const shouldOpen = shouldOpenOnRelease(
+                    event.velocityX,
+                    progress.value,
+                )
 
                 progress.value = withSpring(
                     shouldOpen ? 1 : 0,

@@ -24,7 +24,7 @@ import type {
     AssetInboxQuote,
     InboxRejectTxsParams,
     InboxSendTxsParams,
-    RekeyTxParams,
+    DelegationTxParams,
     SendFlowChainAdapter,
     TransferTxsParams,
 } from '../chain-adapter'
@@ -41,7 +41,7 @@ export interface SendFlowContractFixtures {
     express?: ExpressTransferTxsParams
     optIn?: AssetOptInTxsParams
     optOut?: AssetOptOutTxsParams
-    rekey?: RekeyTxParams
+    delegation?: DelegationTxParams
 }
 
 type Build = (adapter: SendFlowChainAdapter) => Promise<UnsignedTransaction[]>
@@ -87,11 +87,11 @@ export const sendFlowContractTests = (
                 (a => a.assetHolding!.buildOptOutTxs(fixtures.optOut!)),
         ],
         [
-            'a rekey',
-            fixtures.rekey?.scope,
-            fixtures.rekey &&
-                adapter.rekey &&
-                (a => one(a.rekey!.buildTx(fixtures.rekey!))),
+            'a delegation',
+            fixtures.delegation?.scope,
+            fixtures.delegation &&
+                adapter.delegation &&
+                (a => one(a.delegation!.buildTx(fixtures.delegation!))),
         ],
         [
             'an inbox send',
