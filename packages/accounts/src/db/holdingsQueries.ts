@@ -10,7 +10,17 @@
  limitations under the License
  */
 
-import { eq, and, notInArray, ne, or, isNull, like, sql } from 'drizzle-orm'
+import {
+    eq,
+    and,
+    inArray,
+    notInArray,
+    ne,
+    or,
+    isNull,
+    like,
+    sql,
+} from 'drizzle-orm'
 import { Decimal } from 'decimal.js'
 import { getDatabase, type Database } from '@perawallet/wallet-core-database'
 import {
@@ -18,6 +28,7 @@ import {
     AssetsPeraSchema,
     AssetPricesSchema,
     PeraAssetType,
+    findNativeAsset,
     isNativeAssetId,
     nativeAssetFor,
     peraAssetFromJoinRow,
@@ -98,6 +109,7 @@ async function queryHoldingRows({
     sortMode = 'balanceDesc',
     search,
     hideZeroBalance,
+    keepZeroNative,
     hideNfts,
     hideZeroBalanceNfts,
     excludeAssetTypes,
@@ -107,7 +119,23 @@ async function queryHoldingRows({
     const conditions = [isFromSources(sources)]
 
     if (hideZeroBalance) {
-        conditions.push(ne(AccountAssetHoldingsSchema.amount, new Decimal(0)))
+        const nativeAssetIds = keepZeroNative
+            ? sources.flatMap(
+                  ({ scope }) => findNativeAsset(scope.chainId)?.assetId ?? [],
+              )
+            : []
+        const isNonZero = ne(AccountAssetHoldingsSchema.amount, new Decimal(0))
+        conditions.push(
+            nativeAssetIds.length > 0
+                ? or(
+                      isNonZero,
+                      inArray(
+                          AccountAssetHoldingsSchema.assetId,
+                          nativeAssetIds,
+                      ),
+                  )!
+                : isNonZero,
+        )
     }
     if (hideNfts) {
         conditions.push(

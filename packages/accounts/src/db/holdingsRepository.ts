@@ -246,6 +246,12 @@ export async function addToAssetHolding({
 export type AccountHoldingsFilters = {
     /** When true, rows with amount === 0 are excluded. */
     hideZeroBalance?: boolean
+    /**
+     * With `hideZeroBalance`, still keeps each source chain's native holding, so
+     * a network always lists its native asset. Read by the multi-source holdings
+     * query only.
+     */
+    keepZeroNative?: boolean
     /** When true, NFTs (collectible asset type) are excluded entirely. */
     hideNfts?: boolean
     /** When true, NFTs the account holds none of are excluded. */

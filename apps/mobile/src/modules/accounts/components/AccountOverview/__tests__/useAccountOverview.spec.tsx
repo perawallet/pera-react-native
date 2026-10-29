@@ -322,6 +322,9 @@ describe('useAccountOverview', () => {
         expect(typeof result.current.contextValue.openReceiveFunds).toBe(
             'function',
         )
+        expect(result.current.contextValue.openReceiveFundsOn).toBe(
+            result.current.openReceiveFundsOn,
+        )
         expect(typeof result.current.contextValue.openAccountOptions).toBe(
             'function',
         )

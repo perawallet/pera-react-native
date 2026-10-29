@@ -40,6 +40,7 @@ vi.mock('@perawallet/wallet-core-database', async importOriginal => ({
 }))
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
+    findNativeAsset: () => ({ assetId: '0' }),
     fetchAndPersistAssets: vi.fn().mockResolvedValue(undefined),
     fetchAndPersistPrices: vi.fn().mockResolvedValue(undefined),
 }))

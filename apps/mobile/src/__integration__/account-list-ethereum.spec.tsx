@@ -322,6 +322,7 @@ describe('Flow: Account list with Ethereum registered', () => {
                         account: ETHEREUM_ACCOUNT,
                         openSendFunds: noop,
                         openReceiveFunds: noop,
+                        openReceiveFundsOn: noop,
                         openAccountOptions: noop,
                     }}
                 >
