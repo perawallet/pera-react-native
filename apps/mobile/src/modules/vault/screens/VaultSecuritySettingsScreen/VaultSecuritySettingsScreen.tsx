@@ -145,7 +145,7 @@ export const VaultSecuritySettingsScreen = () => {
                         value={currentPassword}
                         onChangeText={setCurrentPassword}
                         secureTextEntry
-                        autoCapitalize='none'
+                        isSensitive
                         autoComplete='current-password'
                     />
                     <PWInput
@@ -156,7 +156,7 @@ export const VaultSecuritySettingsScreen = () => {
                         value={newPassword}
                         onChangeText={setNewPassword}
                         secureTextEntry
-                        autoCapitalize='none'
+                        isSensitive
                         autoComplete='new-password'
                         errorMessage={newPasswordError}
                         renderErrorMessage={newPasswordError !== undefined}
@@ -172,7 +172,7 @@ export const VaultSecuritySettingsScreen = () => {
                         value={confirmNewPassword}
                         onChangeText={setConfirmNewPassword}
                         secureTextEntry
-                        autoCapitalize='none'
+                        isSensitive
                         autoComplete='new-password'
                         errorMessage={confirmNewPasswordError}
                         renderErrorMessage={
@@ -224,7 +224,7 @@ export const VaultSecuritySettingsScreen = () => {
                                 value={passkeyPassword}
                                 onChangeText={setPasskeyPassword}
                                 secureTextEntry
-                                autoCapitalize='none'
+                                isSensitive
                                 autoComplete='current-password'
                             />
                         )}

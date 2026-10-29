@@ -63,9 +63,9 @@ describe('pera/sensitive-input-props', () => {
 
     const lint = (attributes: Node[]) => {
         const report = vi.fn()
-        sensitiveInputProps.create({ report }).JSXOpeningElement(
-            opening(attributes),
-        )
+        sensitiveInputProps
+            .create({ report })
+            .JSXOpeningElement(opening(attributes))
         return report
     }
 
@@ -135,14 +135,15 @@ describe('pera/sensitive-input-props', () => {
             'the PWInput conditional spread in parentheses',
             [
                 attr('secureTextEntry', container(id('x'))),
-                spread(
-                    parenthesized(conditional(helperCall, id('undefined'))),
-                ),
+                spread(parenthesized(conditional(helperCall, id('undefined')))),
             ],
         ],
         [
             'secureTextEntry {...(isSensitive && getSensitiveInputProps())}',
-            [secure, spread(parenthesized(logical(id('isSensitive'), helperCall)))],
+            [
+                secure,
+                spread(parenthesized(logical(id('isSensitive'), helperCall))),
+            ],
         ],
         [
             'secureTextEntry={false}',
