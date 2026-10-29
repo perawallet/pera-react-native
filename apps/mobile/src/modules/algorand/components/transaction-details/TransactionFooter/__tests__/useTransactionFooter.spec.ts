@@ -95,4 +95,21 @@ describe('useTransactionFooter', () => {
 
         expect(result.current.assetUrl).toBe('https://example.com/nft')
     })
+
+    it.each(['http://example.com/nft', 'javascript:alert(1)'])(
+        'hides the asset url CTA and pushes nothing for %s',
+        url => {
+            const { result } = renderHook(() =>
+                useTransactionFooter({
+                    id: 'TX_ID_123',
+                    assetConfigTransaction: { params: { url } },
+                } as PeraDisplayableTransaction),
+            )
+
+            result.current.showAssetUrl()
+
+            expect(result.current.assetUrl).toBeNull()
+            expect(mockPushWebView).not.toHaveBeenCalled()
+        },
+    )
 })

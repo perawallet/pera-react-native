@@ -28,7 +28,7 @@ import { trackEvent, CardEvent } from '@analytics'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { useBottomSheet } from '@modules/bottom-sheet'
-import { useWebView } from '@modules/webview'
+import { toValidatedBrowserUrl, useWebView } from '@modules/webview'
 import { useNetworkStatus } from '@modules/network'
 import { routeCapabilities } from '@routes/capabilities'
 import { useRequirePinVerification } from '@modules/security'
@@ -330,12 +330,13 @@ export const usePeraCardDetails = (): UsePeraCardDetailsResult => {
         if (!(await requirePinVerification())) return
         try {
             const session = await setPin.mutateAsync()
+            const hostedPageUrl = toValidatedBrowserUrl(session.hostedPageUrl)
+            if (!hostedPageUrl) return
             if (!routeCapabilities.inAppWebView) {
-                // oxlint-disable-next-line pera/no-unvalidated-open-url -- httpsUrlSchema at the API boundary
-                void Linking.openURL(session.hostedPageUrl)
+                void Linking.openURL(hostedPageUrl)
                 return
             }
-            pushWebView({ url: session.hostedPageUrl, id: 'card-set-pin' })
+            pushWebView({ url: hostedPageUrl, id: 'card-set-pin' })
         } catch (error) {
             await showError(error)
         }

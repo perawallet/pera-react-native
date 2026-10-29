@@ -121,7 +121,10 @@ vi.mock('@modules/bottom-sheet', () => ({
 }))
 
 const mockPushWebView = vi.fn()
-vi.mock('@modules/webview', () => ({
+vi.mock('@modules/webview', async () => ({
+    ...(await vi.importActual<
+        typeof import('@modules/webview/hooks/handlers-shared')
+    >('@modules/webview/hooks/handlers-shared')),
     useWebView: () => ({ pushWebView: mockPushWebView }),
     withLanguageParam: (url: string, locale: string) => `${url}?lang=${locale}`,
 }))
@@ -621,6 +624,24 @@ describe('useCardOnboardingAddressScreen', () => {
             countries: [gb, us],
             usStates: [california],
             termsAndConditionsUrls: { us: null, intl: null },
+        }
+        const { result } = renderHook(() => useCardOnboardingAddressScreen())
+
+        act(() => result.current.handleOpenCardTerms())
+        expect(mockPushWebView).toHaveBeenCalledWith({
+            url: `${config.termsOfServiceUrl}?lang=en`,
+            id: 'card-terms',
+        })
+    })
+
+    it('falls back to Pera terms for the card T&C when the Baanx link is not https', () => {
+        mockSettings = {
+            countries: [gb, us],
+            usStates: [california],
+            termsAndConditionsUrls: {
+                us: 'http://baanx/us-terms.pdf',
+                intl: 'http://baanx/intl-terms.pdf',
+            },
         }
         const { result } = renderHook(() => useCardOnboardingAddressScreen())
 

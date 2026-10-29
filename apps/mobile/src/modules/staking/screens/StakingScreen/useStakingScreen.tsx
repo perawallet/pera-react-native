@@ -15,7 +15,7 @@ import { trackEvent, StakingEvent, AnalyticsMetadataKey } from '@analytics'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { isIntegrityRequiredError } from '@perawallet/wallet-core-shared'
-import { useWebView } from '@modules/webview'
+import { toValidatedBrowserUrl, useWebView } from '@modules/webview'
 import {
     useStakingDisclaimer,
     useStakingProjectsQuery,
@@ -74,6 +74,9 @@ export const useStakingScreen = (): UseStakingScreenResult => {
 
     const openProject = useCallback(
         (project: StakingProject) => {
+            const url = toValidatedBrowserUrl(project.link)
+            if (!url) return
+
             trackEvent(StakingEvent.SelectProject, {
                 [AnalyticsMetadataKey.Name]: project.title,
                 [AnalyticsMetadataKey.Url]: project.link,
@@ -81,7 +84,7 @@ export const useStakingScreen = (): UseStakingScreenResult => {
             })
 
             pushWebView({
-                url: project.link,
+                url,
                 enablePeraConnect: true,
             })
         },

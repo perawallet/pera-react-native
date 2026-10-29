@@ -39,7 +39,11 @@ import { useBottomSheet } from '@modules/bottom-sheet'
 import { CardCountryPickerContent } from '@modules/card/components/CardCountryPicker'
 import { CardUsStatePickerContent } from '@modules/card/components/CardUsStatePicker'
 import { useCardErrorToast, useCardOnboardingRouter } from '@modules/card/hooks'
-import { useWebView, withLanguageParam } from '@modules/webview'
+import {
+    toValidatedBrowserUrl,
+    useWebView,
+    withLanguageParam,
+} from '@modules/webview'
 import { routeCapabilities } from '@routes/capabilities'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useToast } from '@hooks/useToast'
@@ -165,8 +169,11 @@ export const useCardOnboardingAddressScreen =
             currentLanguage,
         )
         const cardTermsUrl =
-            settings?.termsAndConditionsUrls?.[isUsResident ? 'us' : 'intl'] ??
-            platformTermsUrl
+            toValidatedBrowserUrl(
+                settings?.termsAndConditionsUrls?.[
+                    isUsResident ? 'us' : 'intl'
+                ],
+            ) ?? platformTermsUrl
 
         // Prefill the residence country chosen earlier in the flow, once settings
         // load. One-shot; matches it against the supported list for the flag/name.
@@ -258,7 +265,6 @@ export const useCardOnboardingAddressScreen =
 
         const handleOpenCardTerms = useCallback(() => {
             if (!routeCapabilities.inAppWebView) {
-                // oxlint-disable-next-line pera/no-unvalidated-open-url -- network config
                 void Linking.openURL(cardTermsUrl)
                 return
             }
@@ -267,7 +273,6 @@ export const useCardOnboardingAddressScreen =
         const handleOpenPlatformTerms = useCallback(() => {
             // Checkbox 2 is Pera's own Terms & Conditions.
             if (!routeCapabilities.inAppWebView) {
-                // oxlint-disable-next-line pera/no-unvalidated-open-url -- network config plus a lang param
                 void Linking.openURL(platformTermsUrl)
                 return
             }

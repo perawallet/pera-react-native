@@ -124,7 +124,10 @@ vi.mock('@hooks/useToast', () => ({
     }),
 }))
 
-vi.mock('@modules/webview', () => ({
+vi.mock('@modules/webview', async () => ({
+    ...(await vi.importActual<
+        typeof import('@modules/webview/hooks/handlers-shared')
+    >('@modules/webview/hooks/handlers-shared')),
     useWebView: () => ({
         pushWebView: mocks.pushWebView,
         removeWebView: vi.fn(),
@@ -607,6 +610,26 @@ describe('usePeraCardDetails', () => {
         expect(mocks.openURL).toHaveBeenCalledWith('https://hosted/pin')
         expect(mocks.pushWebView).not.toHaveBeenCalled()
     })
+
+    it.each([true, false])(
+        'opens nothing for an http hosted PIN page (inAppWebView: %s)',
+        async inAppWebView => {
+            Object.assign(mockCapabilities, { inAppWebView })
+            mocks.setPinMutateAsync.mockResolvedValue({
+                token: 'tok',
+                hostedPageUrl: 'http://hosted/pin',
+            })
+
+            const { result } = renderHook(() => usePeraCardDetails())
+            await act(async () => {
+                await result.current.onSetPin()
+            })
+
+            expect(mocks.pushWebView).not.toHaveBeenCalled()
+            expect(mocks.openURL).not.toHaveBeenCalled()
+            expect(mocks.errorToast).not.toHaveBeenCalled()
+        },
+    )
 
     it('does not start the set-PIN request when the PIN gate is not passed', async () => {
         mocks.requirePinVerification.mockResolvedValue(false)

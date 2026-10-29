@@ -20,7 +20,7 @@ import {
     PWView,
 } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import { useWebView } from '@modules/webview'
+import { toValidatedBrowserUrl, useWebView } from '@modules/webview'
 import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
 
 export type AssetSocialMediaProps = {
@@ -57,9 +57,11 @@ export const AssetSocialMedia = ({ assetDetails }: AssetSocialMediaProps) => {
     }
 
     const openLink = (url: string) => {
+        const validatedUrl = toValidatedBrowserUrl(url)
+        if (!validatedUrl) return
         pushWebView({
             id: generateOrderedUniqueId(),
-            url,
+            url: validatedUrl,
         })
     }
 

@@ -16,6 +16,7 @@ import { useNetworkStatusStore } from '@modules/network'
 import { IntegrityRequiredError } from '@perawallet/wallet-core-shared'
 import { useStakingProjectsQuery } from '@perawallet/wallet-core-staking'
 import { trackEvent } from '@analytics'
+import type { StakingProject } from '@modules/staking/models'
 import { useStakingScreen } from '../useStakingScreen'
 
 vi.mock('@analytics', () => ({
@@ -31,8 +32,13 @@ vi.mock('@analytics', () => ({
     },
 }))
 
-vi.mock('@modules/webview', () => ({
-    useWebView: () => ({ pushWebView: vi.fn() }),
+const { mockPushWebView } = vi.hoisted(() => ({ mockPushWebView: vi.fn() }))
+
+vi.mock('@modules/webview', async () => ({
+    ...(await vi.importActual<
+        typeof import('@modules/webview/hooks/handlers-shared')
+    >('@modules/webview/hooks/handlers-shared')),
+    useWebView: () => ({ pushWebView: mockPushWebView }),
 }))
 
 vi.mock('@modules/bottom-sheet', () => ({
@@ -93,6 +99,44 @@ describe('useStakingScreen', () => {
 
     afterEach(() => {
         setHasInternet(true)
+    })
+
+    describe('opening a project', () => {
+        const project = (link: string) =>
+            ({ title: 'Project', link }) as StakingProject
+
+        it('pushes an https link into the webview', async () => {
+            mockStakingProjectsQuery({})
+            const { result } = renderHook(() => useStakingScreen())
+
+            await act(() =>
+                result.current.handleProjectPress(
+                    project('https://project.example/stake'),
+                ),
+            )
+
+            expect(mockPushWebView).toHaveBeenCalledWith({
+                url: 'https://project.example/stake',
+                enablePeraConnect: true,
+            })
+        })
+
+        it('pushes and tracks nothing for an http link', async () => {
+            mockStakingProjectsQuery({})
+            const { result } = renderHook(() => useStakingScreen())
+
+            await act(() =>
+                result.current.handleProjectPress(
+                    project('http://project.example/stake'),
+                ),
+            )
+
+            expect(mockPushWebView).not.toHaveBeenCalled()
+            expect(trackEvent).not.toHaveBeenCalledWith(
+                'staking_select_project',
+                expect.anything(),
+            )
+        })
     })
 
     describe('offline', () => {
