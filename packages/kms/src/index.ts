@@ -19,8 +19,10 @@ export * from './models'
 export * from './errors'
 export { WORDLIST as MNEMONIC_WORDLIST } from './crypto/wordlist'
 export {
+    indicesToUtf8Bytes,
     mnemonicIndexToWord,
     mnemonicWordsToIndices,
+    utf8BytesToIndices,
 } from './crypto/mnemonic-indices'
 export { uniformIntBelow, pickDistinctIndexes } from './crypto/random'
 export { handOffSecret, zeroBytes } from './crypto/secure-memory'

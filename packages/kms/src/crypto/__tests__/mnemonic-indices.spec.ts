@@ -16,6 +16,7 @@ import {
     indicesToUtf8Bytes,
     mnemonicIndexToWord,
     mnemonicWordsToIndices,
+    utf8BytesToIndices,
 } from '../mnemonic-indices'
 
 describe('mnemonicWordsToIndices', () => {
@@ -84,6 +85,63 @@ describe('indicesToUtf8Bytes', () => {
     it('throws for an out-of-range index', () => {
         expect(() => indicesToUtf8Bytes(Uint16Array.of(2048))).toThrow(
             RangeError,
+        )
+    })
+})
+
+describe('utf8BytesToIndices', () => {
+    const PHRASE =
+        'champion say kitchen sock defense example mesh body sample artwork warfare canvas item recall cheese total floor cycle such asthma okay immense lake street'
+
+    const viaStrings = (bytes: Uint8Array) =>
+        mnemonicWordsToIndices(new TextDecoder().decode(bytes).split(' '))
+
+    it('resolves every wordlist word to its index', () => {
+        const bytes = new TextEncoder().encode(wordlist.join(' '))
+
+        expect(Array.from(utf8BytesToIndices(bytes)!)).toEqual(
+            wordlist.map((_, index) => index),
+        )
+    })
+
+    it('is the inverse of indicesToUtf8Bytes', () => {
+        const indices = mnemonicWordsToIndices(PHRASE.split(' '))!
+
+        const parsed = utf8BytesToIndices(indicesToUtf8Bytes(indices))
+
+        expect(parsed).toBeInstanceOf(Uint16Array)
+        expect(Array.from(parsed!)).toEqual(Array.from(indices))
+    })
+
+    it.each([
+        ['an unknown word', 'abandon notaword zoo'],
+        ['a prefix of a word', 'aband'],
+        ['a word with a suffix', 'abandons'],
+        ['an empty phrase', ''],
+        ['a double space', 'abandon  zoo'],
+        ['a trailing space', 'abandon zoo '],
+        ['a leading space', ' abandon zoo'],
+        ['an upper-case word', 'Abandon zoo'],
+        ['a non-ASCII byte', 'abandon z\u00f6o'],
+    ])('returns null, as the string route does, for %s', (_, text) => {
+        const bytes = new TextEncoder().encode(text)
+
+        expect(viaStrings(bytes)).toBeNull()
+        expect(utf8BytesToIndices(bytes)).toBeNull()
+    })
+
+    it('returns null for bytes that are not valid UTF-8', () => {
+        const bytes = Uint8Array.of(0x61, 0xff, 0xfe)
+
+        expect(viaStrings(bytes)).toBeNull()
+        expect(utf8BytesToIndices(bytes)).toBeNull()
+    })
+
+    it('agrees with the string route on a single word', () => {
+        const bytes = new TextEncoder().encode('zoo')
+
+        expect(Array.from(utf8BytesToIndices(bytes)!)).toEqual(
+            Array.from(viaStrings(bytes)!),
         )
     })
 })
