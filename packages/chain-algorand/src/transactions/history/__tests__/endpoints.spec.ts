@@ -34,7 +34,7 @@ vi.mock('../../../blockchain/utils/nodeHttp', () => ({
 // Fully replaced (no `importActual`): the real `@perawallet/wallet-core-assets`
 // barrel transitively pulls in react-native-mmkv, which cannot resolve under
 // vitest (same class of issue as the
-// blockchain barrel mock in `useRekeyFeePreflight.spec.ts` and the provider
+// blockchain barrel mock in `useDelegationFeePreflight.spec.ts` and the provider
 // stub in `vitest.setup.ts`).
 // `./indexer/endpoints` only imports this one named export, and the routing
 // tests below that reach the indexer path use empty transaction pages, so

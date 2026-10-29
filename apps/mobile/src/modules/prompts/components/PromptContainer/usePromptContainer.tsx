@@ -54,6 +54,8 @@ import {
     AnalyticsConsentPrompt,
     ANALYTICS_CONSENT_PROMPT_ID,
 } from '@modules/prompts/components/AnalyticsConsentPrompt'
+import { usePasskeyUnlockOfferPrompt } from '@modules/prompts/hooks/usePasskeyUnlockOfferPrompt'
+import { PasskeyUnlockOfferPrompt } from '@modules/prompts/components/PasskeyUnlockOfferPrompt'
 
 export type Prompt = {
     id: string
@@ -107,6 +109,7 @@ export const usePromptContainer = (): UsePromptContainerResult => {
     const bannerPrompt = useBannerPrompt()
     const legacyQuantumPrompt = useLegacyQuantumPrompt()
     const biometricsDisabledPrompt = useBiometricsDisabledPrompt()
+    const passkeyUnlockOffer = usePasskeyUnlockOfferPrompt()
     const { consent: analyticsConsent } = useAnalyticsConsent()
     const [nextPrompt, setNextPrompt] = useState<Optional<Prompt>>(undefined)
     const dismissedIds = usePromptStore(state => state.dismissedIds)
@@ -163,6 +166,17 @@ export const usePromptContainer = (): UsePromptContainerResult => {
                     !getPreference(UserPreferences._securityPinSetupPrompt),
             },
             {
+                id: UserPreferences._passkeyUnlockOfferPrompt,
+                priority: PromptPriority.passkeyUnlockOffer,
+                isGate: false,
+                isSheet: true,
+                component: PasskeyUnlockOfferPrompt,
+                isDue:
+                    routeCapabilities.vaultSecuritySettings &&
+                    passkeyUnlockOffer.isDue &&
+                    !getPreference(UserPreferences._passkeyUnlockOfferPrompt),
+            },
+            {
                 id: UserPreferences._legacyQuantumNoticePrompt,
                 priority: PromptPriority.legacyQuantumNotice,
                 isGate: false,
@@ -191,6 +205,7 @@ export const usePromptContainer = (): UsePromptContainerResult => {
             bannerPrompt.isForced,
             legacyQuantumPrompt.isDue,
             biometricsDisabledPrompt.isDue,
+            passkeyUnlockOffer.isDue,
         ],
     )
 
@@ -309,10 +324,9 @@ export const usePromptContainer = (): UsePromptContainerResult => {
         [setPresentationHeld],
     )
 
-    // Hides only the prompt that was answered. This used to hide every prompt,
-    // which meant answering one silently suppressed the rest for the session —
-    // and, because that state was the container's own, a remount brought them
-    // all back. The queue now advances to the next by priority instead.
+    // Hides only the prompt that was answered: hiding every prompt would
+    // silently suppress the rest for the session. The queue advances to the
+    // next by priority instead.
     const hidePrompt = (id: string) => {
         dismiss(id)
     }

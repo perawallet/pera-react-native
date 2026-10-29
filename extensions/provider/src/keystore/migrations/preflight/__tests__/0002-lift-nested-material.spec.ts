@@ -528,7 +528,7 @@ describe('0002-lift-nested-material', () => {
 
     // `SECRET_FIELDS` is the whole vocabulary of what counts as material.
     // Nested `seed` and `key` carriers are as dangerous as `privateKey` and
-    // were previously covered by nothing.
+    // so they need their own coverage.
     it.each(['privateKey', 'seed', 'key'])(
         'lifts a nested %s out of the plaintext bucket',
         async field => {

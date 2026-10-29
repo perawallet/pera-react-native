@@ -27,3 +27,23 @@ export const useStyles = makeStyles(theme => {
         },
     }
 })
+
+export const useCloseAccountWarningStyles = makeStyles(theme => ({
+    container: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        gap: theme.spacing.lg,
+        marginVertical: theme.spacing.xl,
+        backgroundColor: theme.colors.suspiciousBannerBg,
+        padding: theme.spacing.lg,
+        borderRadius: theme.spacing.sm,
+    },
+    messageContainer: {
+        flexShrink: 1,
+        gap: theme.spacing.xs,
+    },
+    message: {
+        flexShrink: 1,
+        color: theme.colors.suspiciousBannerContent,
+    },
+}))

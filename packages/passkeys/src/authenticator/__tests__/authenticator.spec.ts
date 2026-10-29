@@ -534,7 +534,7 @@ describe('assertCredential', () => {
 })
 
 // A discoverable ("usernameless") request sends no allowCredentials, so the
-// core previously took candidates[0] — signing the user in as an identity
+// core must not take candidates[0] — that signs the user in as an identity
 // they never chose, with no indication another existed.
 describe('assertCredential with several discoverable credentials', () => {
     const twoCredentials = [

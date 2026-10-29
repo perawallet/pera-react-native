@@ -99,12 +99,18 @@ export interface AppColors {
     successCheckmark: string
     heroBg: string
 
+    // Chart
+    /** 6-digit hex only: the native chart appends a 2-digit alpha. Deliberately not `positive`, a different turquoise. */
+    chartAreaFill: string
+
     // Banner
     bannerContentBg: string
     bannerBg: string
     bannerButton: string
     bannerIconBg: string
     bannerText: string
+    /** Sits over banner art, so it does not change with the mode. */
+    bannerCloseButtonBg: string
 
     // Alert
     alertNegative: string
@@ -172,9 +178,17 @@ export interface AppColors {
 
     // QR Scanner
     qrScannerBg: string
+    /** White in both modes: a QR code must stay dark-on-light to scan. */
+    qrCodeBg: string
+    /** Black in both modes, for the same reason. */
+    qrCodeFg: string
 
     // Backdrop
     backdropModalBg: string
+
+    // Bootsplash
+    /** The migration splash continues the native bootsplash, which ignores the app's mode. */
+    bootsplashContent: string
 
     // Keyboard
     keyboardAccessoryBg: string

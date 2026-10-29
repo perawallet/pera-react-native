@@ -51,7 +51,7 @@ const PREFIX_PATTERNS = [
     /\b\w*[qQ]uery[kK]ey\w*\s*(?::[^=]*)?=\s*\[\s*'([^']+)'/g,
     // `export const WIDGETS_QUERY_KEY = ['widgets']`
     /\b[A-Z_]*QUERY_KEY\w*\s*(?::[^=]*)?=\s*\[\s*'([^']+)'/g,
-    // Inline `queryKey: ['rekey-transaction-fee', ...]` on a useQuery call
+    // Inline `queryKey: ['delegation-transaction-fee', ...]` on a useQuery call
     /queryKey:\s*\[\s*'([^']+)'/g,
 ]
 

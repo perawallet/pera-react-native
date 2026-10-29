@@ -1260,8 +1260,8 @@ describe('queryClient', () => {
         })
 
         // RN rejects with a plain `Error`, so ky never wraps it in NetworkError
-        // and this used to fall through to error level — it was ~84% of the
-        // Android app's Crashlytics volume.
+        // and without handling it falls through to error level, flooding
+        // crash reporting.
         it('logs an unwrapped platform network error at warn level, not error', async () => {
             const dnsError = new Error(
                 'fetch failed: java.net.UnknownHostException: Unable to resolve host "mainnet.api.perawallet.app": No address associated with hostname',

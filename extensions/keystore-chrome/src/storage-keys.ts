@@ -26,3 +26,7 @@ export const SESSION_MASTER_KEY = 'vault:master-key'
 export const AUTO_LOCK_MINUTES_KEY = 'vault:auto-lock-minutes'
 /** chrome.storage.local — unlock lockout bookkeeping (failed attempts, lockout end time). */
 export const LOCKOUT_STORAGE_KEY = 'vault:lockout'
+/** chrome.storage.session: epoch ms of the last proven password. */
+export const PASSWORD_AUTH_AT_KEY = 'vault:password-auth-at'
+/** chrome.storage.session: the onboarding passkey step is still owed. */
+export const PASSKEY_SETUP_PENDING_KEY = 'vault:passkey-setup-pending'

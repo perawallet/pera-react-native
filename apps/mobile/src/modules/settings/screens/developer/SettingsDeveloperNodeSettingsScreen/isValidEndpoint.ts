@@ -16,10 +16,9 @@ import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
  * Platform-neutral on purpose: this file has no `.web` twin, unlike
  * `useSettingsDeveloperNodeSettingsScreen(.web).ts`. A bare import of THAT
  * pair resolves to whichever platform variant Metro/webpack pick for the
- * importing bundle, which is exactly why `isValidEndpoint` used to be
- * duplicated three times (once per file that needed it) instead of shared
- * via a cross-import between the two screen-hook variants. Importing this
- * module instead is unambiguous on every platform.
+ * importing bundle, which is exactly why `isValidEndpoint` lives here rather
+ * than being shared via a cross-import between the two screen-hook variants.
+ * Importing this module instead is unambiguous on every platform.
  */
 export const isValidEndpoint = (value: string): boolean => {
     try {

@@ -32,8 +32,8 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
 
 describe('device/hooks/useDeviceID', () => {
     // resetState rather than vi.resetModules + per-test dynamic imports: the
-    // latter re-transformed the store's whole module graph every test and
-    // intermittently overran the 5s timeout under the full parallel run.
+    // latter re-transforms the store's whole module graph every test and can
+    // exceed the test timeout under the full parallel run.
     beforeEach(() => {
         useDeviceStore.getState().resetState()
     })

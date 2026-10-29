@@ -12,55 +12,13 @@
 
 import React from 'react'
 import type { StyleProp, ViewStyle } from 'react-native'
-import { PWSkeleton, PWView } from '@components/core'
-import { useStyles } from './styles'
+import { SkeletonRow } from './SkeletonRow'
 
 export type AssetRowSkeletonProps = {
     /** Number of skeleton rows to render. Defaults to a single row. */
     count?: number
     /** Outer spacing, as the caller gives the loaded row. */
     style?: StyleProp<ViewStyle>
-}
-
-const SkeletonRow = ({ style }: Pick<AssetRowSkeletonProps, 'style'>) => {
-    const styles = useStyles()
-    return (
-        <PWView style={[styles.container, style]}>
-            <PWSkeleton
-                circle
-                height={styles.icon.width}
-                width={styles.icon.width}
-            />
-            <PWView style={styles.textColumn}>
-                <PWView style={styles.primaryLine}>
-                    <PWSkeleton
-                        height={styles.nameBar.height}
-                        style={styles.nameBar}
-                    />
-                </PWView>
-                <PWView style={styles.secondaryLine}>
-                    <PWSkeleton
-                        height={styles.subtitleBar.height}
-                        style={styles.subtitleBar}
-                    />
-                </PWView>
-            </PWView>
-            <PWView style={styles.amountColumn}>
-                <PWView style={styles.primaryLine}>
-                    <PWSkeleton
-                        height={styles.amountBar.height}
-                        width={styles.amountBar.width}
-                    />
-                </PWView>
-                <PWView style={styles.secondaryLine}>
-                    <PWSkeleton
-                        height={styles.fiatBar.height}
-                        width={styles.fiatBar.width}
-                    />
-                </PWView>
-            </PWView>
-        </PWView>
-    )
 }
 
 /**

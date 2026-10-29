@@ -13,9 +13,19 @@
 export { VaultGate } from './components/VaultGate'
 export { UnlockScreen } from './components/UnlockScreen'
 export { CreatePasswordScreen } from './screens/CreatePasswordScreen'
+export { PasskeyUnlockSetupScreen } from './screens/PasskeyUnlockSetupScreen'
 export { VaultSecuritySettingsScreen } from './screens/VaultSecuritySettingsScreen'
 export { useVaultLockState } from './hooks/useVaultLockState.web'
 export { useAutoLockActivity } from './hooks/useAutoLockActivity.web'
 export { useAppLockFromVault } from './hooks/useAppLockFromVault.web'
 export { useRequireVaultPassword } from './hooks/useRequireVaultPassword'
 export { VaultPasswordPrompt } from './components/VaultPasswordPrompt'
+export { usePasskeySetupStore } from './hooks/usePasskeySetupStore.web'
+export {
+    isPasskeySetupFailure,
+    PasskeySetupFailure,
+    PasskeyUnlockSetupContent,
+    usePasskeyUnlockSetup,
+    type PasskeyUnlockSetupFailure,
+    type PasskeyUnlockSetupStatus,
+} from './components/PasskeyUnlockSetup'

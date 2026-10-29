@@ -23,6 +23,7 @@ import { PeraCardAccountItem } from '../PeraCardAccountItem'
 import { AccountMenuHeader } from './AccountMenuHeader'
 import { useAccountMenu, type AccountMenuListItem } from './useAccountMenu'
 import { useCallback, type ReactNode } from 'react'
+import { ListSeparator } from './ListSeparator'
 
 export type AccountMenuProps = {
     onSelected: (account: WalletAccount) => void
@@ -121,10 +122,4 @@ export const AccountMenu = (props: AccountMenuProps) => {
             </PWView>
         </PWView>
     )
-}
-
-const ListSeparator = () => {
-    const styles = useStyles()
-
-    return <PWView style={styles.listSeparator} />
 }

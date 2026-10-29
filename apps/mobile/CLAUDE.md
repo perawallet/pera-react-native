@@ -6,7 +6,7 @@
 
 - Use theme tokens only (`theme.colors.*`, `theme.spacing.*`, `theme.borders.*`). No hardcoded colors or values
 - No inline styles; all styles go in `styles.ts` next to the component
-- Export `useStyles` hook from `styles.ts`
+- `makeStyles` is only called in `styles.ts` (or a platform twin such as `styles.web.ts`); export `useStyles` for the folder's main component and `use<Name>Styles` for any other. `pera/make-styles-location` enforces this
 
 ## Components (CRITICAL)
 
@@ -36,10 +36,12 @@ ComponentName/              # PascalCase
 ├── index.ts                # Barrel: export { ComponentName } and type
 ├── __tests__/
 │   └── ComponentName.spec.tsx
-└── SubComponent.tsx        # NOT re-exported, used only by parent
+└── SubComponent/           # Own folder (same shape); NOT re-exported, used only by parent
 ```
 
 Folder naming: component folders = `PascalCase`, grouping/utility folders = `kebab-case`.
+
+One component per `.tsx` (`react/no-multi-comp`): a second component moves to its own `Name/` folder beside the file that uses it.
 
 If creating a core component, update `apps/mobile/src/components/core/index.ts` barrel.
 
