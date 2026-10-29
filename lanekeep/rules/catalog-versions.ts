@@ -6,7 +6,7 @@ import { defineRule } from 'lanekeep'
 import { compareVersions, parsePnpmLock } from '../shared/pnpm-lock.js'
 import type { PnpmLock } from '../shared/pnpm-lock.js'
 import { dirOf, join, workspaceMembers, yamlMap } from '../shared/workspace.js'
-import type { YamlComment, YamlMapEntry } from '../shared/workspace.js'
+import type { ReadCtx, YamlComment, YamlMapEntry } from '../shared/workspace.js'
 
 const DEPENDENCY_FIELDS = new Set([
     'dependencies',
@@ -17,12 +17,18 @@ const DEPENDENCY_FIELDS = new Set([
 
 const MARKER_PREFIX = 'pin:'
 
+// Anything that reads as an attempt at a marker, so a misspelling is reported
+// instead of being taken for prose.
+const LOOKS_LIKE_PIN = /^pin\b/i
+const TRAILING_PIN = /\s#\s*(pin\b.*)$/i
+
 type PinMarker =
     | { kind: 'lockstep'; group: string }
     | { kind: 'follows'; parent: string }
     | { kind: 'hold'; version: string }
 
 const parsePinMarker = (text: string): PinMarker | undefined => {
+    if (!text.startsWith(MARKER_PREFIX)) return undefined
     const tokens = text.slice(MARKER_PREFIX.length).trim().split(/\s+/)
     const [kind, arg] = tokens
     if (tokens.length !== 2 || kind === undefined || arg === undefined) {
@@ -42,7 +48,7 @@ const columnOf = (lines: readonly string[], line: number): number => {
 }
 
 const isPin = (comment: YamlComment): boolean =>
-    comment.text.startsWith(MARKER_PREFIX)
+    LOOKS_LIKE_PIN.test(comment.text)
 
 interface Marked {
     entry: YamlMapEntry
@@ -88,7 +94,7 @@ const manifestSpecs = (
 }
 
 const checkCatalogUsage = (
-    ctx: { readFile(path: string): string | undefined },
+    ctx: Pick<ReadCtx, 'readFile'>,
     base: string,
     members: readonly string[],
     catalog: ReadonlySet<string>,
@@ -177,9 +183,18 @@ const checkMarkers = (
 
     wsLines.forEach((text, i) => {
         const trimmed = text.trim()
-        if (!trimmed.startsWith('#')) return
+        if (!trimmed.startsWith('#')) {
+            const trailing = TRAILING_PIN.exec(text)?.[1]
+            if (trailing !== undefined) {
+                at(
+                    i + 1,
+                    `pin marker '${trailing.trim()}' is not directly above a catalog entry`,
+                )
+            }
+            return
+        }
         const comment = trimmed.slice(1).trim()
-        if (!comment.startsWith(MARKER_PREFIX) || attached.has(i + 1)) return
+        if (!LOOKS_LIKE_PIN.test(comment) || attached.has(i + 1)) return
         at(
             i + 1,
             `pin marker '${comment}' is not directly above a catalog entry`,
@@ -192,7 +207,9 @@ const checkMarkers = (
         const version = resolved.get(entry.key) ?? ''
         if (marker.kind === 'lockstep') {
             const members = groups.get(marker.group) ?? []
-            members.push(item)
+            if (!members.some(m => m.entry.key === entry.key)) {
+                members.push(item)
+            }
             groups.set(marker.group, members)
         } else if (marker.kind === 'follows') {
             const parentVersion = lock?.catalog.get(marker.parent)
@@ -271,12 +288,10 @@ export default defineRule({
         remediation:
             "Use 'catalog:' for any dependency the catalog lists. For a pin, move the entries together as the note above the marker says, or keep the bump out of the PR; raise a hold only after redoing the check its note names.",
         examples: {
-            bad: 'apps/mobile/package.json: "react-native-quick-crypto": "^1.0.17" while the catalog lists it',
-            good: '"react-native-quick-crypto": "catalog:"',
+            bad: 'a package.json with "some-lib": "^1.2.0" while the catalog lists some-lib',
+            good: '"some-lib": "catalog:"',
         },
     },
-    // pnpm-workspace.yaml anchors the check: the manifests and the lockfile it
-    // is compared with are read from beside it.
     language: 'yaml',
     gates: { pathMatches: ['**/pnpm-workspace.yaml'] },
     query: '(stream) @file',

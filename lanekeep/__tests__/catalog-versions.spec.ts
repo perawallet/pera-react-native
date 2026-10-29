@@ -269,6 +269,72 @@ describe('pera/catalog-versions', () => {
         })
     })
 
+    it('flags a follows parent whose peer variants disagree on the child', async () => {
+        const found = await check({
+            [WORKSPACE]: workspaceYaml([
+                '  # pin: follows parent',
+                '  child: 2.0.0',
+                '  parent: 3.0.0',
+            ]),
+            [LOCK]: lockfile({ child: '2.0.0', parent: '3.0.0' }, [
+                "  'parent@3.0.0(peer@1.0.0)':",
+                '    dependencies:',
+                '      child: 2.0.0',
+                '',
+                "  'parent@3.0.0(peer@2.0.0)':",
+                '    dependencies:',
+                '      child: 2.1.0',
+            ]),
+        })
+
+        expect(found).toEqual([
+            [
+                WORKSPACE,
+                7,
+                "'child' resolves to 2.0.0, but 'parent' 3.0.0 depends on 2.1.0; move the two together",
+            ],
+        ])
+    })
+
+    it('flags a marker written on the entry line, misspelled, or repeated on one entry', async () => {
+        const found = await check({
+            [WORKSPACE]: workspaceYaml([
+                '  tsx: ^4.0.0 # pin: hold 4.0.0',
+                '  # Pin: hold 1.0.0',
+                '  b: 1.0.0',
+                '  # pin hold 1.0.0',
+                '  c: 1.0.0',
+                '  # pin: lockstep solo',
+                '  # pin: lockstep solo',
+                '  d: 1.0.0',
+            ]),
+            [LOCK]: lockfile({ d: '1.0.0' }),
+        })
+
+        expect(found).toEqual([
+            [
+                WORKSPACE,
+                6,
+                "pin marker 'pin: hold 4.0.0' is not directly above a catalog entry",
+            ],
+            [
+                WORKSPACE,
+                7,
+                `'Pin: hold 1.0.0' is not a pin marker: ${MARKER_GRAMMAR}`,
+            ],
+            [
+                WORKSPACE,
+                9,
+                `'pin hold 1.0.0' is not a pin marker: ${MARKER_GRAMMAR}`,
+            ],
+            [
+                WORKSPACE,
+                11,
+                "lockstep group 'solo' has only 'd'; a group needs at least two entries",
+            ],
+        ])
+    })
+
     it('flags a resolution above its hold, and one that is not a version', async () => {
         const found = await check({
             [WORKSPACE]: workspaceYaml([
