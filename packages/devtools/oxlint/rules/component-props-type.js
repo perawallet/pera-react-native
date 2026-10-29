@@ -20,12 +20,13 @@ export const COMPONENT_WRAPPERS = [...PROPS_TYPE_ARGUMENT.keys()]
 
 const isPascalCase = name => /^[A-Z][A-Za-z0-9]*$/.test(name)
 
-const calleeName = callee =>
-    callee.type === 'Identifier'
-        ? callee.name
-        : callee.type === 'MemberExpression' && !callee.computed
-          ? callee.property?.name
-          : undefined
+const calleeName = callee => {
+    if (callee.type === 'Identifier') return callee.name
+    if (callee.type === 'MemberExpression' && !callee.computed) {
+        return callee.property?.name
+    }
+    return undefined
+}
 
 // memo(forwardRef((props, ref) => …)) still resolves to the inner function.
 const componentFunction = init => {
