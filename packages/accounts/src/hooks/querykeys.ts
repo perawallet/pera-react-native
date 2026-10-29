@@ -76,6 +76,19 @@ export const getAccountHeldAssetsQueryKey = (
     ...sources.map(({ address, scope }) => ({ address, scope })),
 ]
 
+// One `{ address, scope }` element per address keeps the key inside the sync
+// tick's address-scoped invalidation, as for the holdings page.
+export const getHeldAssetDetailsQueryKey = (
+    addresses: readonly string[],
+    scope: ChainScope,
+    params: { kind: string; maxAssetIds?: number },
+): unknown[] => [
+    MODULE_PREFIX,
+    'held-asset-details',
+    ...addresses.map(address => ({ address, scope })),
+    { ...params },
+]
+
 // One `{ address, scope }` element per source keeps the key inside the sync
 // tick's address-scoped invalidation, as for the holdings page.
 export const getAccountCollectiblesQueryKey = (

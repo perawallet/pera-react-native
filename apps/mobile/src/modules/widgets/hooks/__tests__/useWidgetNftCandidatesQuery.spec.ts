@@ -11,22 +11,14 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { renderHook, waitFor } from '@testing-library/react'
-import { createQueryClientWrapper } from '@test-utils/render'
+import { renderHook } from '@testing-library/react'
 import { MAX_WIDGET_NFTS } from '../../snapshot'
 import { useWidgetNftCandidatesQuery } from '../useWidgetNftCandidatesQuery'
 
-const mocks = vi.hoisted(() => ({
-    getAccountCollectiblesLite: vi.fn(),
-    getAssetsByIds: vi.fn(),
-}))
+const mocks = vi.hoisted(() => ({ useHeldAssetDetailsQuery: vi.fn() }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
-    getAccountCollectiblesLite: mocks.getAccountCollectiblesLite,
-}))
-
-vi.mock('@perawallet/wallet-core-assets', () => ({
-    getAssetsByIds: mocks.getAssetsByIds,
+    useHeldAssetDetailsQuery: mocks.useHeldAssetDetailsQuery,
 }))
 
 const SCOPE = { chainId: 'algorand', networkId: 'mainnet' } as never
@@ -40,43 +32,36 @@ const asset = (
     peraMetadata: { collectible },
 })
 
+const heldAssets = (assets: unknown[] | undefined, isError = false) =>
+    mocks.useHeldAssetDetailsQuery.mockReturnValue({ assets, isError })
+
 const renderQuery = (addresses: string[], enabled = true) =>
-    renderHook(() => useWidgetNftCandidatesQuery(addresses, SCOPE, enabled), {
-        wrapper: createQueryClientWrapper(),
-    })
+    renderHook(() => useWidgetNftCandidatesQuery(addresses, SCOPE, enabled))
 
 describe('useWidgetNftCandidatesQuery', () => {
     beforeEach(() => {
-        mocks.getAccountCollectiblesLite.mockReset()
-        mocks.getAssetsByIds.mockReset()
+        mocks.useHeldAssetDetailsQuery.mockReset()
     })
 
-    it('dedupes held collectibles across accounts', async () => {
-        mocks.getAccountCollectiblesLite
-            .mockResolvedValueOnce([{ assetId: '1' }, { assetId: '2' }])
-            .mockResolvedValueOnce([{ assetId: '2' }, { assetId: '3' }])
-        mocks.getAssetsByIds.mockResolvedValue([])
+    // Some collectibles have no image, so the lookup reads past the cap.
+    it('asks for collectibles with headroom past the cap', () => {
+        heldAssets(undefined)
 
-        renderQuery(['A', 'B'])
+        renderQuery(['A'])
 
-        await waitFor(() =>
-            expect(mocks.getAssetsByIds).toHaveBeenCalledWith({
-                assetIds: ['1', '2', '3'],
-                scope: SCOPE,
-            }),
+        expect(mocks.useHeldAssetDetailsQuery).toHaveBeenCalledWith(
+            ['A'],
+            SCOPE,
+            {
+                kind: 'collectible',
+                maxAssetIds: MAX_WIDGET_NFTS * 3,
+                enabled: true,
+            },
         )
-        expect(mocks.getAccountCollectiblesLite).toHaveBeenCalledWith({
-            sources: [{ address: 'A', scope: SCOPE }],
-            includeZeroBalance: false,
-        })
     })
 
-    it('maps assets with an image and skips those without', async () => {
-        mocks.getAccountCollectiblesLite.mockResolvedValue([
-            { assetId: '1' },
-            { assetId: '2' },
-        ])
-        mocks.getAssetsByIds.mockResolvedValue([
+    it('maps assets with an image and skips those without', () => {
+        heldAssets([
             asset('1', {
                 title: 'Gif',
                 primaryImage: 'https://x/1.gif',
@@ -90,7 +75,6 @@ describe('useWidgetNftCandidatesQuery', () => {
 
         const { result } = renderQuery(['A'])
 
-        await waitFor(() => expect(result.current.candidates).toBeDefined())
         expect(result.current.candidates).toEqual([
             {
                 assetId: '1',
@@ -101,9 +85,8 @@ describe('useWidgetNftCandidatesQuery', () => {
         ])
     })
 
-    it('falls back to an image preview and the asset name', async () => {
-        mocks.getAccountCollectiblesLite.mockResolvedValue([{ assetId: '1' }])
-        mocks.getAssetsByIds.mockResolvedValue([
+    it('falls back to an image preview and the asset name', () => {
+        heldAssets([
             asset('1', {
                 media: [
                     {
@@ -117,52 +100,38 @@ describe('useWidgetNftCandidatesQuery', () => {
 
         const { result } = renderQuery(['A'])
 
-        await waitFor(() => expect(result.current.candidates).toBeDefined())
         expect(result.current.candidates).toEqual([
             { assetId: '1', title: 'Asset 1', imageUrl: 'https://x/p.png' },
         ])
     })
 
-    it('caps candidates at MAX_WIDGET_NFTS', async () => {
-        const ids = Array.from({ length: MAX_WIDGET_NFTS * 3 }, (_, i) =>
-            String(i + 1),
-        )
-        mocks.getAccountCollectiblesLite.mockResolvedValue(
-            ids.map(assetId => ({ assetId })),
-        )
-        mocks.getAssetsByIds.mockImplementation(
-            async ({ assetIds }: { assetIds: string[] }) =>
-                assetIds.map(id =>
-                    asset(id, { primaryImage: `https://x/${id}.png` }),
-                ),
+    it('caps candidates at MAX_WIDGET_NFTS', () => {
+        heldAssets(
+            Array.from({ length: MAX_WIDGET_NFTS * 3 }, (_, i) =>
+                asset(String(i + 1), { primaryImage: `https://x/${i}.png` }),
+            ),
         )
 
         const { result } = renderQuery(['A'])
 
-        await waitFor(() => expect(result.current.candidates).toBeDefined())
         expect(result.current.candidates).toHaveLength(MAX_WIDGET_NFTS)
     })
 
-    it('reads nothing and stays undefined when disabled', () => {
-        const { result } = renderQuery(['A'], false)
+    it('stays undefined while loading or disabled', () => {
+        heldAssets(undefined)
 
-        expect(result.current.candidates).toBeUndefined()
-        expect(mocks.getAccountCollectiblesLite).not.toHaveBeenCalled()
+        expect(renderQuery(['A']).result.current.candidates).toBeUndefined()
+        expect(
+            renderQuery(['A'], false).result.current.candidates,
+        ).toBeUndefined()
     })
 
     // An NFT failure must not hold back the price and portfolio widgets.
-    it('reports no candidates when the read fails', async () => {
-        mocks.getAccountCollectiblesLite.mockRejectedValue(new Error('db'))
+    it('reports no candidates when the read fails or there are no accounts', () => {
+        heldAssets(undefined, true)
+        expect(renderQuery(['A']).result.current.candidates).toEqual([])
 
-        const { result } = renderQuery(['A'])
-
-        await waitFor(() => expect(result.current.candidates).toEqual([]))
-    })
-
-    it('reports no candidates when there are no addresses', () => {
-        const { result } = renderQuery([])
-
-        expect(result.current.candidates).toEqual([])
-        expect(mocks.getAccountCollectiblesLite).not.toHaveBeenCalled()
+        heldAssets(undefined)
+        expect(renderQuery([]).result.current.candidates).toEqual([])
     })
 })

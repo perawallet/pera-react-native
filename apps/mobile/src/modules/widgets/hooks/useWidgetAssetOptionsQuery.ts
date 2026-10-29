@@ -10,10 +10,8 @@
  limitations under the License
  */
 
-import { useQuery } from '@tanstack/react-query'
-import { getAccountHoldingsLite } from '@perawallet/wallet-core-accounts'
+import { useHeldAssetDetailsQuery } from '@perawallet/wallet-core-accounts'
 import {
-    getAssetsByIds,
     PeraAssetVerificationTier,
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
@@ -44,47 +42,25 @@ const toOption = (asset: PeraAsset): WidgetAssetOption | undefined => {
     }
 }
 
-const loadOptions = async (
-    addresses: string[],
-    scope: ChainScope,
-): Promise<WidgetAssetOption[]> => {
-    const rows = await Promise.all(
-        addresses.map(address =>
-            getAccountHoldingsLite({
-                sources: [{ address, scope }],
-                hideZeroBalance: true,
-                hideNfts: true,
-            }),
-        ),
-    )
-    // ALGO is always offered by the widget itself.
-    const assetIds = [...new Set(rows.flat().map(row => row.assetId))].filter(
-        id => id !== NATIVE_ASSET_ID,
-    )
-    const assets = await getAssetsByIds({ assetIds, scope })
-    return assets
-        .map(toOption)
-        .filter((option): option is WidgetAssetOption => !!option)
-        .slice(0, MAX_ASSET_OPTIONS)
-}
-
 export const useWidgetAssetOptionsQuery = (
     addresses: string[],
     scope: ChainScope,
     enabled: boolean,
 ): UseWidgetAssetOptionsQueryResult => {
-    const sortedAddresses = [...addresses].sort()
-    const hasAddresses = addresses.length > 0
-    const { data, isError } = useQuery({
-        queryKey: ['widgets', 'asset-options', scope, sortedAddresses],
-        queryFn: () => loadOptions(sortedAddresses, scope),
-        enabled: enabled && hasAddresses,
-        // Local SQLite reads; must not pause offline.
-        networkMode: 'always',
+    const { assets, isError } = useHeldAssetDetailsQuery(addresses, scope, {
+        kind: 'fungible',
+        enabled,
     })
     if (!enabled) return { options: undefined }
     // A failed or empty read leaves only ALGO in the picker rather than
     // holding back the snapshot.
-    if (!hasAddresses || isError) return { options: [] }
-    return { options: data }
+    if (addresses.length === 0 || isError) return { options: [] }
+    return {
+        options: assets
+            // ALGO is always offered by the widget itself.
+            ?.filter(asset => asset.assetId !== NATIVE_ASSET_ID)
+            .map(toOption)
+            .filter((option): option is WidgetAssetOption => !!option)
+            .slice(0, MAX_ASSET_OPTIONS),
+    }
 }

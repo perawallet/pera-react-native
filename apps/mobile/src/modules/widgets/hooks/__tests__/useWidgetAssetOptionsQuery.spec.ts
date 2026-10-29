@@ -11,21 +11,16 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { renderHook, waitFor } from '@testing-library/react'
-import { createQueryClientWrapper } from '@test-utils/render'
+import { renderHook } from '@testing-library/react'
 import { useWidgetAssetOptionsQuery } from '../useWidgetAssetOptionsQuery'
 
-const mocks = vi.hoisted(() => ({
-    getAccountHoldingsLite: vi.fn(),
-    getAssetsByIds: vi.fn(),
-}))
+const mocks = vi.hoisted(() => ({ useHeldAssetDetailsQuery: vi.fn() }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
-    getAccountHoldingsLite: mocks.getAccountHoldingsLite,
+    useHeldAssetDetailsQuery: mocks.useHeldAssetDetailsQuery,
 }))
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
-    getAssetsByIds: mocks.getAssetsByIds,
     PeraAssetVerificationTier: { verified: 'verified' },
 }))
 
@@ -42,46 +37,32 @@ const asset = (
     peraMetadata: { verificationTier, ...extra },
 })
 
+const heldAssets = (assets: unknown[] | undefined, isError = false) =>
+    mocks.useHeldAssetDetailsQuery.mockReturnValue({ assets, isError })
+
 const renderQuery = (addresses: string[], enabled = true) =>
-    renderHook(() => useWidgetAssetOptionsQuery(addresses, SCOPE, enabled), {
-        wrapper: createQueryClientWrapper(),
-    })
+    renderHook(() => useWidgetAssetOptionsQuery(addresses, SCOPE, enabled))
 
 describe('useWidgetAssetOptionsQuery', () => {
     beforeEach(() => {
-        mocks.getAccountHoldingsLite.mockReset()
-        mocks.getAssetsByIds.mockReset()
+        mocks.useHeldAssetDetailsQuery.mockReset()
     })
 
-    it('reads held fungible assets across accounts without NFTs or empty balances', async () => {
-        mocks.getAccountHoldingsLite
-            .mockResolvedValueOnce([{ assetId: '1' }, { assetId: '0' }])
-            .mockResolvedValueOnce([{ assetId: '1' }, { assetId: '2' }])
-        mocks.getAssetsByIds.mockResolvedValue([])
+    it('asks for the fungible holdings of the given accounts', () => {
+        heldAssets(undefined)
 
         renderQuery(['A', 'B'])
 
-        await waitFor(() =>
-            expect(mocks.getAssetsByIds).toHaveBeenCalledWith({
-                assetIds: ['1', '2'],
-                scope: SCOPE,
-            }),
+        expect(mocks.useHeldAssetDetailsQuery).toHaveBeenCalledWith(
+            ['A', 'B'],
+            SCOPE,
+            { kind: 'fungible', enabled: true },
         )
-        expect(mocks.getAccountHoldingsLite).toHaveBeenCalledWith({
-            sources: [{ address: 'A', scope: SCOPE }],
-            hideZeroBalance: true,
-            hideNfts: true,
-        })
     })
 
     // A spoofed "USDC" must never reach the home screen picker.
-    it('offers only verified assets', async () => {
-        mocks.getAccountHoldingsLite.mockResolvedValue([
-            { assetId: '1' },
-            { assetId: '2' },
-            { assetId: '3' },
-        ])
-        mocks.getAssetsByIds.mockResolvedValue([
+    it('offers only verified assets', () => {
+        heldAssets([
             asset('1', 'verified'),
             asset('2', 'unverified'),
             asset('3', 'suspicious'),
@@ -89,39 +70,37 @@ describe('useWidgetAssetOptionsQuery', () => {
 
         const { result } = renderQuery(['A'])
 
-        await waitFor(() => expect(result.current.options).toBeDefined())
         expect(result.current.options).toEqual([
             { assetId: '1', name: 'Asset 1', unitName: 'A1' },
         ])
     })
 
-    it('skips collectibles that slipped past the NFT filter', async () => {
-        mocks.getAccountHoldingsLite.mockResolvedValue([{ assetId: '1' }])
-        mocks.getAssetsByIds.mockResolvedValue([
+    it('leaves out ALGO and collectibles', () => {
+        heldAssets([
+            asset('0', 'verified'),
             asset('1', 'verified', { collectible: { title: 'Art' } }),
             asset('2', 'verified'),
         ])
 
         const { result } = renderQuery(['A'])
 
-        await waitFor(() => expect(result.current.options).toBeDefined())
         expect(result.current.options?.map(option => option.assetId)).toEqual([
             '2',
         ])
     })
 
-    it('reads nothing and stays undefined when disabled', () => {
-        const { result } = renderQuery(['A'], false)
+    it('stays undefined while loading or disabled', () => {
+        heldAssets(undefined)
 
-        expect(result.current.options).toBeUndefined()
-        expect(mocks.getAccountHoldingsLite).not.toHaveBeenCalled()
+        expect(renderQuery(['A']).result.current.options).toBeUndefined()
+        expect(renderQuery(['A'], false).result.current.options).toBeUndefined()
     })
 
-    it('reports no options when the read fails', async () => {
-        mocks.getAccountHoldingsLite.mockRejectedValue(new Error('db'))
+    it('reports no options when the read fails or there are no accounts', () => {
+        heldAssets(undefined, true)
+        expect(renderQuery(['A']).result.current.options).toEqual([])
 
-        const { result } = renderQuery(['A'])
-
-        await waitFor(() => expect(result.current.options).toEqual([]))
+        heldAssets(undefined)
+        expect(renderQuery([]).result.current.options).toEqual([])
     })
 })
