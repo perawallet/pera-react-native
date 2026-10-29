@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import type { Optional, Nullable } from '@perawallet/wallet-core-shared'
+
 // Pure parser for the settings store's persisted envelope, which lands in
 // chrome.storage.local as a JSON *string* under `kv:settings-store`. Kept
 // side-effect-free so it's usable from the ISOLATED relay and unit-testable
@@ -17,8 +19,6 @@
 //
 // Defaults OFF on every failure mode — this is opt-in, and Pera must never
 // silently hijack WebAuthn.
-import type { Optional, Nullable } from '@perawallet/wallet-core-shared'
-
 export const SETTINGS_STORE_KV_KEY = 'kv:settings-store'
 export const WEBAUTHN_TOGGLE_PREFERENCE_KEY = 'webauthnInterceptionEnabled'
 

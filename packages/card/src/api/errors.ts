@@ -10,9 +10,9 @@
  limitations under the License
  */
 
-/** Normalized view of a card/Baanx API failure, used to attribute it to a field. */
 import type { Optional } from '@perawallet/wallet-core-shared'
 
+/** Normalized view of a card/Baanx API failure, used to attribute it to a field. */
 export type CardApiError = {
     /** HTTP status code, when the failure carried an HTTP response. */
     status?: number

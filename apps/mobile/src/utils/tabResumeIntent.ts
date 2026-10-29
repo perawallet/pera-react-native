@@ -10,14 +10,14 @@
  limitations under the License
  */
 
+import type { Nullable } from '@perawallet/wallet-core-shared'
+
 /**
  * What a flow needs to reopen in a browser tab when the toolbar popup can't
  * finish it (a Bluetooth Ledger can only be reached from a tab). Amounts are
  * display-unit strings: the record crosses `chrome.storage.session`, and
  * `Decimal` doesn't survive JSON.
  */
-import type { Nullable } from '@perawallet/wallet-core-shared'
-
 export type TabResumeIntent =
     | {
           flow: 'swap'

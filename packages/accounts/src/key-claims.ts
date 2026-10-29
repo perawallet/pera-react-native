@@ -10,9 +10,9 @@
  limitations under the License
  */
 
-/** Who made a claim, so a walk can tell the claims its own adds made from other flows'. */
 import type { Optional } from '@perawallet/wallet-core-shared'
 
+/** Who made a claim, so a walk can tell the claims its own adds made from other flows'. */
 export type ClaimOwner = object
 
 let activeWalks = 0

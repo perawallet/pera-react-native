@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import type { Nullable } from '@perawallet/wallet-core-shared'
+
 /**
  * Splits an account type label into its main type and the parenthetical
  * qualifier (e.g. "Rekeyed (Signed by a Ledger account)" → main "Rekeyed",
@@ -17,8 +19,6 @@
  * in a smaller font. Returns a null qualifier for labels without a
  * parenthetical part.
  */
-import type { Nullable } from '@perawallet/wallet-core-shared'
-
 export const splitAccountTypeLabel = (
     label: string,
 ): { main: string; qualifier: Nullable<string> } => {

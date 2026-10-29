@@ -10,9 +10,9 @@
  limitations under the License
  */
 
-/** Required QR action; Rejects anything else with `unsupported_action`. */
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
+/** Required QR action; Rejects anything else with `unsupported_action`. */
 export const PERA_WEB_QR_ACTION_IMPORT = 'import'
 
 /**

@@ -10,14 +10,14 @@
  limitations under the License
  */
 
+import type { Nullable } from '@perawallet/wallet-core-shared'
+
 // Shared extraction of the WalletConnect pairing URI from a
 // @perawallet/connect connect-modal. Used by the Discover-iframe bridge
 // (discover-main.ts) and by the all-URLs connect-modal watcher. Ported from
 // native's peraConnectJS (apps/mobile/src/modules/webview/components/PWWebView/
 // injected-scripts.ts) — the fallback chain below tolerates connect DOM drift
 // across 1.x versions, so keep all three branches.
-import type { Nullable } from '@perawallet/wallet-core-shared'
-
 export const CONNECT_MODAL_WRAPPER_ID = 'pera-wallet-connect-modal-wrapper'
 
 const WC_SCHEME = 'wc'

@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import type { Optional } from '@perawallet/wallet-core-shared'
+
 /**
  * Best-effort display host for a webview URL, or `undefined` when the URL has
  * no host to show.
@@ -26,8 +28,6 @@
  * blank origin line under a page-chosen title is worse than an explicit
  * "unknown" — the caller supplies that copy.
  */
-import type { Optional } from '@perawallet/wallet-core-shared'
-
 const OPAQUE_ORIGIN_SCHEMES = [
     'about:',
     'data:',

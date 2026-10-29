@@ -10,13 +10,13 @@
  limitations under the License
  */
 
+import type { Nullable } from '@perawallet/wallet-core-shared'
+
 /**
  * chrome.storage.session: the flow the toolbar popup handed to a tab
  * (`expanded.html?flow=resume`). Session storage because the popup and the tab
  * share no memory, and the popup is gone by the time the tab reads it.
  */
-import type { Nullable } from '@perawallet/wallet-core-shared'
-
 export const TAB_RESUME_SESSION_KEY = 'tab-resume:intent'
 
 // Session storage defaults to TRUSTED_CONTEXTS, so content scripts can't read it.

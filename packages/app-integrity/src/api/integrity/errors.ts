@@ -10,14 +10,14 @@
  limitations under the License
  */
 
+import type { Optional, Nullable, Maybe } from '@perawallet/wallet-core-shared'
+
 /**
  * The `code` from a Pera error body such as `{ error, code }`. ky pre-parses
  * the body onto its HTTPError's `data` and consumes the response, and
  * queryClient keeps that error as the PeraNetworkError's `originalError`, so
  * that is the only place the body survives.
  */
-import type { Optional, Nullable, Maybe } from '@perawallet/wallet-core-shared'
-
 export const readIntegrityErrorCode = (error: unknown): Optional<string> => {
     const candidates = [
         error,

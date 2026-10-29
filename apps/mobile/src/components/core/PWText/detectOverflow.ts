@@ -10,11 +10,11 @@
  limitations under the License
  */
 
+import type { Optional, Nullable } from '@perawallet/wallet-core-shared'
+
 // Pulled out of PWText so the decision logic can be unit-tested against
 // fixture data: react-native-web (this repo's unit test renderer) never
 // calls onTextLayout at all, so a render-based test can't exercise it.
-
-import type { Optional, Nullable } from '@perawallet/wallet-core-shared'
 
 export type OverflowLine = { text: string; width: number }
 

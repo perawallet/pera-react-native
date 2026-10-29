@@ -10,13 +10,13 @@
  limitations under the License
  */
 
+import type { Nullable } from '@perawallet/wallet-core-shared'
+
 // Pure wire for the Turnstile check page: constants, types, parsers and a URL
 // builder shared by the content script (relaying window.postMessage to a
 // runtime port) and the service worker (the port's other end). No chrome.*
 // and no side-effect imports, so content-wire.ts can bundle this into the
 // content-script build.
-
-import type { Nullable } from '@perawallet/wallet-core-shared'
 
 export const INTEGRITY_CHECK_MESSAGE_TYPE = 'pera:integrity-check'
 export const INTEGRITY_FRAME_MESSAGE_TYPE = 'pera:integrity-frame'

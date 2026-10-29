@@ -10,9 +10,9 @@
  limitations under the License
  */
 
-/** The outer JSON inside the base64-encoded backup file. */
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
+/** The outer JSON inside the base64-encoded backup file. */
 export type SecureBackupEnvelope = {
     version: string
     suite: string

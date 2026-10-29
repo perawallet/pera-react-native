@@ -10,9 +10,9 @@
  limitations under the License
  */
 
-/** Extra style spread into the text input. Native has no focus ring to reset. */
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
+/** Extra style spread into the text input. Native has no focus ring to reset. */
 export const inputFocusRingReset: Nullable<object> = null
 
 /** Native keeps the reveal toggle focus-gated, like the app's other password fields. */

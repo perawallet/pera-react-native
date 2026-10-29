@@ -10,14 +10,14 @@
  limitations under the License
  */
 
+import type { Nullable } from '@perawallet/wallet-core-shared'
+
 /**
  * What the bridge advertises when we have no usable app locale. Deliberately a
  * region-qualified tag rather than bare `en`: it is the value `getPublicSettings`
  * hardcoded before this existed, so keeping it means the no-locale path cannot
  * change what Discover already receives.
  */
-import type { Nullable } from '@perawallet/wallet-core-shared'
-
 export const WEBVIEW_FALLBACK_LANGUAGE = 'en-US'
 
 /**

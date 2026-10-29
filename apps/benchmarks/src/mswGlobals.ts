@@ -10,12 +10,12 @@
  limitations under the License
  */
 
+import type { Nullable } from '@perawallet/wallet-core-shared'
+
 // MSW touches web globals Hermes lacks at module scope (`class extends
 // MessageEvent`, `new BroadcastChannel(...)` for its ws API): without these the
 // bundle throws before React mounts and the app sits on the splash screen.
 // RN installs `Event` and `EventTarget` before the entry module runs.
-
-import type { Nullable } from '@perawallet/wallet-core-shared'
 
 const defineGlobal = (name: string, value: unknown) => {
     if (name in globalThis) return

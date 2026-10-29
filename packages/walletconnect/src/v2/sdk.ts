@@ -10,11 +10,11 @@
  limitations under the License
  */
 
+import type { Nullable } from '@perawallet/wallet-core-shared'
+
 // Evaluating these packages costs seconds on a mid-range Android phone, and a
 // static import ran that before the first frame of every launch. Loading them
 // here defers it to the first WalletConnect v2 use.
-import type { Nullable } from '@perawallet/wallet-core-shared'
-
 const load = async () => {
     const [core, walletKit, utils] = await Promise.all([
         import('@walletconnect/core'),

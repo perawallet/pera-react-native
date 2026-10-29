@@ -10,9 +10,9 @@
  limitations under the License
  */
 
-/** Reads one string field off an unvalidated wire object. */
 import type { Optional } from '@perawallet/wallet-core-shared'
 
+/** Reads one string field off an unvalidated wire object. */
 export const readString = (
     source: Record<string, unknown>,
     key: string,

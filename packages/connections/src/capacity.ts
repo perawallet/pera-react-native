@@ -10,10 +10,10 @@
  limitations under the License
  */
 
-// Generous on purpose: a dApp has one request in flight, and two tabs of the
-// same site is the only ordinary reason to exceed it.
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
+// Generous on purpose: a dApp has one request in flight, and two tabs of the
+// same site is the only ordinary reason to exceed it.
 export const MAX_PENDING_REQUESTS_PER_PEER = 3
 export const MAX_PENDING_REQUESTS = 8
 

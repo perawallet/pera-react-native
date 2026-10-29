@@ -10,9 +10,9 @@
  limitations under the License
  */
 
-/** The personal cloud drives a saved file can live in. */
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
+/** The personal cloud drives a saved file can live in. */
 export type CloudFileStore = 'icloud' | 'googleDrive'
 
 /**

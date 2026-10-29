@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import type { Maybe } from '@perawallet/wallet-core-shared'
+
 // Shared secure-context gate for every page-facing trust boundary (the
 // window.pera dapp router and the WebAuthn ceremony router).
 //
@@ -28,8 +30,6 @@
 //
 // The loopback carve-out mirrors the browser's own secure-context rule so
 // local dapp development against http://localhost keeps working.
-import type { Maybe } from '@perawallet/wallet-core-shared'
-
 const LOOPBACK_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]'])
 
 /**

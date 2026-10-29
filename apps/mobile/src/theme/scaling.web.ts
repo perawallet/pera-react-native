@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import type { Optional } from '@perawallet/wallet-core-shared'
+
 // Web sibling of scaling.ts: moderateScale exists to grow type on large
 // PHONES (375pt baseline, clamp [1, 1.35]). A desktop browser tab is not a
 // large phone — the expanded surface (≥1280px) pins the 1.35 ceiling and
@@ -17,8 +19,6 @@
 // scaleLineHeight: browsers don't multiply an explicit lineHeight by an OS
 // font scale (that's the RN native text stack), so the design's line box
 // applies unchanged too.
-import type { Optional } from '@perawallet/wallet-core-shared'
-
 export const moderateScale = (size: number, _factor?: number): number => size
 
 export const scaleLineHeight = (

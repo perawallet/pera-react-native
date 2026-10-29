@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import type { Nullable } from '@perawallet/wallet-core-shared'
+
 /**
  * How long a hardware signing session survives the app being backgrounded
  * before it is aborted (transport disconnected, machine sent to the
@@ -21,8 +23,6 @@
  * exchange is already frozen — and on Android it only prolongs a session
  * the user has visibly walked away from.
  */
-import type { Nullable } from '@perawallet/wallet-core-shared'
-
 export const HARDWARE_BACKGROUND_GRACE_MS = 15_000
 
 /**
