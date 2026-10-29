@@ -73,3 +73,11 @@ export const useSamePackageItem = () =>
         queryKey: ['kept', 'item'],
         queryFn: (): Promise<Item> => fetchThing('x'),
     })
+
+export const useAnnotatedMethodShorthand = () =>
+    useQuery({
+        queryKey: ['kept', 'annotated-method'],
+        async queryFn(): Promise<Tagged> {
+            return fetchThing('x')
+        },
+    })

@@ -35,6 +35,7 @@ const BAD_LINES = [
     'persisted-queries.bad.ts:89',
     'persisted-queries.bad.ts:95',
     'persisted-queries.bad.ts:101',
+    'persisted-queries.bad.ts:107',
 ]
 
 const messageAt = async (
@@ -67,6 +68,9 @@ describe('pera/persisted-query-serializable', () => {
         )
         expect(await messageAt(63)).toBe(
             'persisted query "kept/opaque" declares its payload as unknown; name the payload type',
+        )
+        expect(await messageAt(107)).toBe(
+            'persisted query "kept/method" needs an explicit queryFn return type so its payload can be checked',
         )
     })
 

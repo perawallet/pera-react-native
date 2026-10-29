@@ -100,3 +100,11 @@ export const useImportedPrefix = () =>
         queryKey: [MODULE_PREFIX, 'imported'],
         queryFn: (): Promise<WithDate> => fetchThing('x'),
     })
+
+export const useMethodShorthand = () =>
+    useQuery({
+        queryKey: ['kept', 'method'],
+        async queryFn() {
+            return fetchThing('x')
+        },
+    })

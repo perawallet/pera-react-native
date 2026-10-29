@@ -13,7 +13,7 @@
 import { useQuery } from '@tanstack/react-query'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { checkIsMultisigAddress } from '../api/endpoints'
-import { getMultisigAccountDetailQueryKey } from './querykeys'
+import { getIsMultisigAddressQueryKey } from './querykeys'
 
 type UseIsMultisigAddressQueryParams = {
     scope: ChainScope
@@ -36,7 +36,7 @@ export const useIsMultisigAddressQuery = ({
     enabled = true,
 }: UseIsMultisigAddressQueryParams): UseIsMultisigAddressQueryResult => {
     const query = useQuery({
-        queryKey: getMultisigAccountDetailQueryKey(scope, address),
+        queryKey: getIsMultisigAddressQueryKey(scope, address),
         queryFn: async (): Promise<MultisigAddressCheckResult> => {
             const isMultisig = await checkIsMultisigAddress(scope, address)
             return { isMultisig }

@@ -804,7 +804,7 @@ export default defineRule({
         message:
             'a persisted query caches a value the cache serializer does not round-trip',
         remediation:
-            "Cache the raw shape and build the value in `select`; or tag the type in `stringifyTypedJson`/`parseTypedJson` with a round-trip test; or mark the key 'never' in QUERY_PREFIX_POLICY. A persisted `queryFn` is an inline `(): Promise<Payload> =>` (wrap a bare `queryFn: fetchX`, even an annotated one) naming a declared type, never `unknown`/`any`.",
+            "Cache the raw shape and build the value in `select`; or tag the type in `stringifyTypedJson`/`parseTypedJson` with a round-trip test; or mark the key 'never' in QUERY_PREFIX_POLICY. A persisted `queryFn` is an inline `(): Promise<Payload> =>` or `queryFn(): Promise<Payload> {…}` (wrap a bare `queryFn: fetchX`, even an annotated one) naming a declared type, never `unknown`/`any`.",
         examples: {
             bad: "useQuery({ queryKey: ['banners'], queryFn: (): Promise<{ at: Date }> => fetchAt() })",
             good: "useQuery({ queryKey: ['banners'], queryFn: (): Promise<{ at: string }> => fetchAt(), select: raw => ({ at: new Date(raw.at) }) })",
@@ -822,6 +822,7 @@ export default defineRule({
         (program (export_statement declaration: (type_alias_declaration name: (type_identifier) @typeName) @typeDecl))
         ((object (pair key: (property_identifier) @fnKey value: (_) @fnValue) @fnPair) @siteObject (#eq? @fnKey "queryFn"))
         ((object (shorthand_property_identifier) @fnShort) @siteObject (#eq? @fnShort "queryFn"))
+        ((object (method_definition name: (property_identifier) @fnMethod) @fnMethodDef) @siteObject (#eq? @fnMethod "queryFn"))
     `,
     check(ctx, m) {
         if (m.declarator !== undefined) {
@@ -845,6 +846,8 @@ export default defineRule({
             emitQuerySite(ctx, m.siteObject!, m.fnPair, m.fnValue)
         } else if (m.fnShort !== undefined) {
             emitQuerySite(ctx, m.siteObject!, m.fnShort, undefined)
+        } else if (m.fnMethodDef !== undefined) {
+            emitQuerySite(ctx, m.siteObject!, m.fnMethodDef, m.fnMethodDef)
         }
     },
     reduce,
