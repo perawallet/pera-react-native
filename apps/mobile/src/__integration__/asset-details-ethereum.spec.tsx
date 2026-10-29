@@ -177,6 +177,34 @@ describe('Flow: Asset details on its own network', () => {
         ).toBeNull()
     })
 
+    it('Given an Ethereum token, when its details open, then neither tab shows the price-alert or favorite button', async () => {
+        selectAccount(TWO_CHAIN_ACCOUNT)
+        renderDetails({ assetId: ETH_USDC, chainId: 'ethereum' })
+
+        expect(
+            await screen.findAllByTestId('chain_label_ethereum'),
+        ).toHaveLength(2)
+        expect(
+            screen.queryAllByTestId('asset_notification_button'),
+        ).toHaveLength(0)
+        expect(screen.queryAllByTestId('asset_favorite_button')).toHaveLength(0)
+    })
+
+    it('Given an Algorand asset, when its details open, then the price-alert and favorite buttons show', async () => {
+        selectAccount(ALGORAND_ACCOUNT)
+        renderDetails({
+            assetId: USDC_TEST_ASSET.assetId,
+            chainId: 'algorand',
+        })
+
+        expect(
+            await screen.findAllByTestId('asset_notification_button'),
+        ).toHaveLength(2)
+        expect(
+            await screen.findAllByTestId('asset_favorite_button'),
+        ).toHaveLength(2)
+    })
+
     it('Given an Algorand asset, when its tabs render, then both show a chart', async () => {
         selectAccount(ALGORAND_ACCOUNT)
         renderDetails({

@@ -14,7 +14,7 @@ import { useCallback } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import {
     invalidateCardQueries,
-    useCardStore,
+    setCardFundingType,
     type FundingType,
 } from '@perawallet/wallet-core-card'
 import { EXTENDED_TOAST_DURATION_MS } from '@constants/ui'
@@ -46,7 +46,7 @@ export const useFinishCardCreation = (): UseFinishCardCreationResult => {
 
     const finish = useCallback(
         (fundingType: FundingType, autoFundingDegraded: boolean) => {
-            useCardStore.getState().setSelectedFundingType(fundingType)
+            setCardFundingType(fundingType)
             invalidateCardQueries(queryClient)
 
             schedule(() => {

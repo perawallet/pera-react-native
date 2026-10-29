@@ -39,7 +39,9 @@ vi.mock('@modules/bottom-sheet', () => ({
 
 vi.mock('@perawallet/wallet-core-card', () => ({
     hasCardSession: () => mocks.hasCardSession(),
-    useCardStore: { getState: () => mocks.cardState },
+    isEscrowCardApproved: () =>
+        mocks.cardState.escrowCardAddress !== null &&
+        mocks.cardState.escrowCardApproved,
 }))
 
 vi.mock('@modules/accounts/components/AccountSortContent', () => ({

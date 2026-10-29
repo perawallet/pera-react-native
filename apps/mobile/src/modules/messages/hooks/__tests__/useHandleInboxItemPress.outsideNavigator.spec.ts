@@ -20,11 +20,11 @@ const SCOPE = { chainId: 'algorand', networkId: 'mainnet' } as const
 /**
  * Guards the invariant that this hook works with **no navigation context**.
  *
- * `useNotificationDeeplinkListener` reaches it from RootComponent, which mounts
- * the listener at RootComponent.tsx:80 but only renders `<MainRoutes/>` — the
- * component that owns NavigationContainer — at :102. So in production this hook
- * runs above the container, and any `useNavigation`/`useAppNavigation` in its
- * tree throws during render on every launch.
+ * `useNotificationDeeplinkListener` reaches it from RootContentContainer, which
+ * mounts the listener but only renders `<MainRoutes/>` — the component that owns
+ * NavigationContainer — below it. So in production this hook runs above the
+ * container, and any `useNavigation`/`useAppNavigation` in its tree throws
+ * during render on every launch.
  *
  * The mock below is the load-bearing part. The unit setup
  * (`src/test-utils/mocks/navigation.ts`) globally mocks

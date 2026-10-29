@@ -188,6 +188,23 @@ describe('usePreferredAmount', () => {
         expect(result.current.convertedValue).toBeNull()
     })
 
+    it('returns no value, not zero, for an asset with no price', () => {
+        const { result } = renderHook(() =>
+            usePreferredAmount(new Decimal(10), '0'),
+        )
+
+        expect(result.current.isPending).toBe(false)
+        expect(result.current.convertedValue).toBeNull()
+    })
+
+    it('keeps a real zero price as zero', () => {
+        const { result } = renderHook(() =>
+            usePreferredAmount(new Decimal(10), '0', false, new Decimal(0)),
+        )
+
+        expect(result.current.convertedValue).toEqual(new Decimal(0))
+    })
+
     it('passes null through when sourceAmount is null', () => {
         const { result } = renderHook(() => usePreferredAmount(null, '0'))
 

@@ -71,13 +71,16 @@ describe('sumPortfolioHistories', () => {
         ])
     })
 
-    it('is empty when any chain has no points, rather than charting part of the total', () => {
+    it('skips a chain with no points, as for an Algorand address with no activity beside a funded Ethereum one', () => {
         const result = sumPortfolioHistories([
             [],
             [point(1, '10'), point(2, '20')],
         ])
 
-        expect(result).toEqual([])
+        expect(values(result)).toEqual([
+            [1, '10'],
+            [2, '20'],
+        ])
     })
 
     it('is empty when no series has history', () => {

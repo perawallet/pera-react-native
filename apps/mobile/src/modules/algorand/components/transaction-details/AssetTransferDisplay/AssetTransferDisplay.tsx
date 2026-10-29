@@ -82,6 +82,31 @@ export const AssetTransferDisplay = ({
         return null
     }
 
+    const renderAsset = () => {
+        if (asset) {
+            return (
+                <AssetTitle
+                    asset={asset}
+                    nameVariant='body'
+                    showId
+                />
+            )
+        }
+        if (isAssetPending) {
+            return (
+                <LoadingView
+                    size='sm'
+                    variant='circle'
+                />
+            )
+        }
+        return (
+            <PWText variant='body'>
+                {t('transactions.common.asset_unavailable')}
+            </PWText>
+        )
+    }
+
     return (
         <PWView style={styles.container}>
             <TransactionHeader
@@ -98,24 +123,7 @@ export const AssetTransferDisplay = ({
 
             <PWView style={styles.detailContainer}>
                 <KeyValueRow title={t('transactions.common.asset')}>
-                    <PWView style={styles.detailRow}>
-                        {asset ? (
-                            <AssetTitle
-                                asset={asset}
-                                nameVariant='body'
-                                showId
-                            />
-                        ) : isAssetPending ? (
-                            <LoadingView
-                                size='sm'
-                                variant='circle'
-                            />
-                        ) : (
-                            <PWText variant='body'>
-                                {t('transactions.common.asset_unavailable')}
-                            </PWText>
-                        )}
-                    </PWView>
+                    <PWView style={styles.detailRow}>{renderAsset()}</PWView>
                 </KeyValueRow>
 
                 <KeyValueRow title={t('transactions.common.from')}>

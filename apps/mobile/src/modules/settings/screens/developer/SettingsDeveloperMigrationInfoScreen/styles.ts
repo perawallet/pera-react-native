@@ -11,7 +11,6 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-import { getTypography } from '@theme/typography'
 
 export const useStyles = makeStyles(theme => ({
     container: {
@@ -34,40 +33,6 @@ export const useStyles = makeStyles(theme => ({
     intro: {
         marginBottom: theme.spacing.xs,
         color: theme.colors.textGray,
-    },
-    planCard: {
-        padding: theme.spacing.md,
-        borderRadius: theme.borderRadius.md,
-        backgroundColor: theme.colors.layerGrayLighter,
-        gap: theme.spacing.sm,
-    },
-    planHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: theme.spacing.xs,
-    },
-    planTitle: {
-        flexShrink: 1,
-    },
-    planMeta: {
-        color: theme.colors.textGray,
-    },
-    readerImpact: {
-        color: theme.colors.textGray,
-        fontStyle: 'italic',
-    },
-    migrationRow: {
-        gap: theme.spacing.xxs,
-        paddingVertical: theme.spacing.xs,
-        borderTopWidth: theme.borders.sm,
-        borderTopColor: theme.colors.layerGray,
-    },
-    migrationStep: {
-        ...getTypography(theme, 'bodySemibold'),
-    },
-    migrationDescription: {
-        color: theme.colors.textMain,
     },
     emptyState: {
         color: theme.colors.textGray,

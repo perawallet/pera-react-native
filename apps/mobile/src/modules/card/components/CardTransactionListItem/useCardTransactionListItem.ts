@@ -15,6 +15,7 @@ import {
     TransactionSign,
     TransactionStatus,
 } from '@perawallet/wallet-core-card'
+import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 import { useLanguage } from '@hooks/useLanguage'
 import {
     CardTransactionKind,
@@ -30,20 +31,6 @@ type UseCardTransactionListItemResult = {
     /** e.g. "Payment • Today", "Refund • Pending", "Today" (deposit). */
     subtitle: string
     isDebit: boolean
-}
-
-const kindLabel = (t: Translate, kind: CardTransactionKind): string => {
-    switch (kind) {
-        case CardTransactionKind.Payment: {
-            return t('peraCard.transactions.kind_payment')
-        }
-        case CardTransactionKind.Refund: {
-            return t('peraCard.transactions.kind_refund')
-        }
-        case CardTransactionKind.Deposit: {
-            return t('peraCard.transactions.kind_deposit')
-        }
-    }
 }
 
 const relativeDateLabel = (
@@ -66,18 +53,27 @@ const relativeDateLabel = (
     }
 }
 
-const statusLabel = (t: Translate, status: TransactionStatus): string => {
-    switch (status) {
-        case TransactionStatus.Declined: {
-            return t('peraCard.transactions.status_declined')
-        }
-        case TransactionStatus.Reverted: {
-            return t('peraCard.transactions.status_reverted')
-        }
-        default: {
-            return t('peraCard.transactions.status_pending')
-        }
-    }
+const STATUS_LABEL_KEYS: Partial<Record<TransactionStatus, I18nKey>> = {
+    [TransactionStatus.Declined]: i18nKey(
+        'peraCard.transactions.status_declined',
+    ),
+    [TransactionStatus.Reverted]: i18nKey(
+        'peraCard.transactions.status_reverted',
+    ),
+}
+
+const FALLBACK_STATUS_LABEL_KEY: I18nKey = i18nKey(
+    'peraCard.transactions.status_pending',
+)
+
+const KIND_LABEL_KEYS: Record<CardTransactionKind, I18nKey> = {
+    [CardTransactionKind.Payment]: i18nKey(
+        'peraCard.transactions.kind_payment',
+    ),
+    [CardTransactionKind.Refund]: i18nKey('peraCard.transactions.kind_refund'),
+    [CardTransactionKind.Deposit]: i18nKey(
+        'peraCard.transactions.kind_deposit',
+    ),
 }
 
 export const useCardTransactionListItem = (
@@ -102,13 +98,16 @@ export const useCardTransactionListItem = (
                   t,
                   getCardTransactionRelativeDate(transaction.dateTime),
               )
-            : statusLabel(t, transaction.status)
+            : t(
+                  STATUS_LABEL_KEYS[transaction.status] ??
+                      FALLBACK_STATUS_LABEL_KEY,
+              )
 
     // A deposit's title already says "Deposit", so the row drops the prefix.
     const segments =
         kind === CardTransactionKind.Deposit
             ? [secondSegment]
-            : [kindLabel(t, kind), secondSegment]
+            : [t(KIND_LABEL_KEYS[kind]), secondSegment]
 
     return { title, subtitle: segments.filter(Boolean).join(' • '), isDebit }
 }

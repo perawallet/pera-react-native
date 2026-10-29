@@ -4552,7 +4552,6 @@
             "passkey_disable": "Passkey-Entsperrung deaktivieren",
             "passkey_password_placeholder": "Wallet-Passwort",
             "passkey_error": "Passkey-Entsperrung konnte nicht aktiviert werden. Überprüfe dein Passwort und versuche es erneut.",
-            "passkey_enable_error": "Passkey-Entsperrung konnte nicht aktiviert werden. Bitte versuche es erneut.",
             "change_password_title": "Passwort ändern",
             "change_password_current_placeholder": "Aktuelles Passwort",
             "change_password_new_placeholder": "Neues Passwort",
@@ -4564,6 +4563,26 @@
             "change_password_error_unexpected": "Beim Ändern deines Passworts ist ein Fehler aufgetreten. Bitte versuche es erneut.",
             "change_password_success": "Passwort erfolgreich geändert.",
             "change_password_submit": "Passwort ändern"
+        },
+        "passkey_setup": {
+            "title": "Mit Passkey entsperren",
+            "offer_title": "Beim nächsten Mal schneller entsperren",
+            "body": "Entsperre Pera Wallet mit Touch ID, Windows Hello, deinem Smartphone oder einem Sicherheitsschlüssel, statt dein Passwort einzugeben. Dein Passwort funktioniert weiterhin als Backup.",
+            "enable_button": "Passkey einrichten",
+            "not_now_button": "Nicht jetzt",
+            "retry_button": "Erneut versuchen",
+            "continue_button": "Weiter",
+            "pending_hint": "Folge den Anweisungen deines Browsers. Eventuell musst du zweimal bestätigen.",
+            "success_title": "Passkey-Entsperrung ist aktiv",
+            "success_body": "Entsperre Pera Wallet beim nächsten Mal mit deinem Passkey. Dein Passwort funktioniert weiterhin.",
+            "error_not_saved": "Der Passkey wurde nicht gespeichert.",
+            "error_prf_unsupported": "Dieser Passkey kann Pera Wallet nicht entsperren.",
+            "error_unexpected": "Passkey-Entsperrung konnte nicht aktiviert werden.",
+            "hint_not_saved_title": "Versuche einen anderen Speicherort",
+            "hint_not_saved_body": "Die Abfrage wurde geschlossen oder dein Passwort-Manager konnte den Passkey nicht speichern. Versuche es erneut und wähle in der Browser-Abfrage eine andere Option, etwa Google Password Manager, iCloud Keychain oder einen Sicherheitsschlüssel. Wenn immer wieder ein Passwort-Manager übernimmt, deaktiviere in seinen Einstellungen das Speichern von Passkeys.",
+            "hint_prf_title": "Woanders speichern",
+            "hint_prf_body": "Der Passkey wurde gespeichert, aber dein Passwort-Manager oder Sicherheitsschlüssel unterstützt die Funktion nicht, die Pera Wallet zum Entsperren braucht (PRF). Versuche es erneut mit Google Password Manager, iCloud Keychain oder einem Sicherheitsschlüssel mit PRF-Unterstützung und lösche danach den ungenutzten Passkey.",
+            "reauth_description": "Bestätige dein Passwort, um die Passkey-Entsperrung zu aktivieren."
         },
         "approval": {
             "placeholder": "Genehmigungsoberfläche — kommt in M4."

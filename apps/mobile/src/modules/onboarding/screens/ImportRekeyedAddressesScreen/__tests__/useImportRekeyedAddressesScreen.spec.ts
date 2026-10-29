@@ -50,9 +50,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
         account: { chains: Record<string, { address: string }> },
         scope: { chainId: string },
     ) => account.chains[scope.chainId]?.address,
-    useAccountsStore: {
-        getState: () => ({ accounts: mockStoreAccounts.current }),
-    },
+    getAllAccounts: () => mockStoreAccounts.current,
 }))
 
 vi.mock('@hooks/useLanguage')

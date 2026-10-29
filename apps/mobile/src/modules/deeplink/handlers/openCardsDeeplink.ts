@@ -10,7 +10,11 @@
  limitations under the License
  */
 
-import { OnboardingStep, useCardStore } from '@perawallet/wallet-core-card'
+import {
+    getCardOnboardingProgress,
+    isEscrowCardApproved,
+    OnboardingStep,
+} from '@perawallet/wallet-core-card'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import { navigationRef } from '@routes/navigationRef'
 import { navigateToScreen } from '../navigateToScreen'
@@ -52,16 +56,11 @@ export const openCardsDeeplink = (
     path: Optional<string>,
     replaceCurrentScreen: boolean,
 ): void => {
-    const {
-        onboardingId,
-        onboardingStep,
-        escrowCardAddress,
-        escrowCardApproved,
-    } = useCardStore.getState()
+    const { onboardingId, onboardingStep } = getCardOnboardingProgress()
     const target = getCardDeeplinkTarget(path, {
         onboardingId,
         onboardingStep,
-        hasApprovedCard: escrowCardAddress !== null && escrowCardApproved,
+        hasApprovedCard: isEscrowCardApproved(),
     })
     switch (target) {
         case 'onboarding-status': {

@@ -62,6 +62,49 @@ export const SheetHeader = ({
     const isFullScreen = size === 'full' || size === 'modal'
     const showClose = showCloseProp ?? (isFullScreen || !isPanDownEnabled)
 
+    const renderCenter = () => {
+        if (typeof title !== 'string') return title
+        if (!subtitle) {
+            return (
+                <PWText
+                    variant={titleVariant}
+                    weight={titleWeight}
+                    truncate
+                    style={styles.title}
+                    testID={testID ? `${testID}-title` : undefined}
+                >
+                    {title}
+                </PWText>
+            )
+        }
+        return (
+            <PWView style={styles.titleColumn}>
+                <PWText
+                    variant={titleVariant}
+                    weight={titleWeight}
+                    truncate
+                    style={styles.title}
+                    testID={testID ? `${testID}-title` : undefined}
+                >
+                    {title}
+                </PWText>
+                {typeof subtitle !== 'string' ? (
+                    subtitle
+                ) : (
+                    <PWText
+                        variant='footnoteMedium'
+                        weight={400}
+                        truncate
+                        style={styles.subtitle}
+                        testID={testID ? `${testID}-subtitle` : undefined}
+                    >
+                        {subtitle}
+                    </PWText>
+                )}
+            </PWView>
+        )
+    }
+
     return (
         <PWToolbar
             left={
@@ -75,48 +118,7 @@ export const SheetHeader = ({
                     />
                 ) : undefined
             }
-            center={
-                typeof title !== 'string' ? (
-                    title
-                ) : subtitle ? (
-                    <PWView style={styles.titleColumn}>
-                        <PWText
-                            variant={titleVariant}
-                            weight={titleWeight}
-                            truncate
-                            style={styles.title}
-                            testID={testID ? `${testID}-title` : undefined}
-                        >
-                            {title}
-                        </PWText>
-                        {typeof subtitle !== 'string' ? (
-                            subtitle
-                        ) : (
-                            <PWText
-                                variant='footnoteMedium'
-                                weight={400}
-                                truncate
-                                style={styles.subtitle}
-                                testID={
-                                    testID ? `${testID}-subtitle` : undefined
-                                }
-                            >
-                                {subtitle}
-                            </PWText>
-                        )}
-                    </PWView>
-                ) : (
-                    <PWText
-                        variant={titleVariant}
-                        weight={titleWeight}
-                        truncate
-                        style={styles.title}
-                        testID={testID ? `${testID}-title` : undefined}
-                    >
-                        {title}
-                    </PWText>
-                )
-            }
+            center={renderCenter()}
             right={rightAction}
             paddingStyle={paddingStyle}
             style={[styles.toolbar, style]}

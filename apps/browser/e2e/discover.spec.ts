@@ -27,6 +27,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { findDiscoverFrame } from './bridge-frames'
 import { clickThroughPinPrompt, dismissPinPromptIfPresent } from './pin-prompt'
+import { skipPasskeyUnlockStep } from './passkey-unlock-step'
 
 const dist = path.resolve(
     path.dirname(fileURLToPath(import.meta.url)),
@@ -97,6 +98,7 @@ test.describe.skip('discover tab (web)', () => {
         await page.getByTestId('create-password-input').fill(PASSWORD)
         await page.getByTestId('create-password-confirm-input').fill(PASSWORD)
         await page.getByTestId('create-password-submit').click()
+        await skipPasskeyUnlockStep(page)
 
         await page
             .getByTestId('onboarding_create_wallet_button')

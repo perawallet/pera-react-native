@@ -10,13 +10,9 @@
  limitations under the License
  */
 
-import { PWText, PWView } from '@components/core'
-import { useStyles } from '../styles'
-import {
-    formatDebugValue,
-    shouldUseStackedLayout,
-} from '../utils/formatDebugValue'
+import { shouldUseStackedLayout } from '../utils/formatDebugValue'
 import { StackedMigrationDataRow } from './StackedMigrationDataRow'
+import { InlineMigrationDataRow } from './InlineMigrationDataRow'
 
 type MigrationDataRowProps = { label: string; value: unknown }
 
@@ -30,31 +26,9 @@ export const MigrationDataRow = ({ label, value }: MigrationDataRowProps) => {
         )
     }
     return (
-        <MigrationDataRowImpl
+        <InlineMigrationDataRow
             label={label}
             value={value}
         />
-    )
-}
-
-const MigrationDataRowImpl = ({ label, value }: MigrationDataRowProps) => {
-    const styles = useStyles()
-    return (
-        <PWView style={styles.inlineRow}>
-            <PWText
-                variant='body'
-                style={styles.inlineRowLabel}
-            >
-                {label}
-            </PWText>
-            <PWText
-                variant='body'
-                style={styles.inlineRowValue}
-                numberOfLines={1}
-                ellipsizeMode='middle'
-            >
-                {formatDebugValue(value)}
-            </PWText>
-        </PWView>
     )
 }

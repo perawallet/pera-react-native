@@ -66,7 +66,7 @@ export class ChainActionBuildError extends AppError {
     }
 }
 
-export class DuplicateDeeplinkSchemeError extends Error {
+export class DuplicateDeeplinkSchemeError extends AppError {
     readonly scheme: string
     /** The chain that already claims `scheme`. */
     readonly owner: ChainId
@@ -76,6 +76,7 @@ export class DuplicateDeeplinkSchemeError extends Error {
     constructor(scheme: string, owner: ChainId, chainId: ChainId) {
         super(
             `Deeplink scheme "${scheme}" is already claimed by chain "${owner}", so chain "${chainId}" cannot register it`,
+            { category: ErrorCategory.VALIDATION },
         )
         this.name = 'DuplicateDeeplinkSchemeError'
         this.scheme = scheme

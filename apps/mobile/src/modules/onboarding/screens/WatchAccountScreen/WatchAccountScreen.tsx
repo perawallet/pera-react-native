@@ -49,12 +49,13 @@ export const WatchAccountScreen = () => {
         !isNfdResolving &&
         !address.includes('.')
 
-    const errorMessage =
-        address.length > 0 && isDuplicateAddress
-            ? t('onboarding.watch_account.duplicate_address')
-            : showInvalidError
-              ? t(invalidAddressKey)
-              : undefined
+    const errorMessageOf = () => {
+        if (address.length > 0 && isDuplicateAddress) {
+            return t('onboarding.watch_account.duplicate_address')
+        }
+        return showInvalidError ? t(invalidAddressKey) : undefined
+    }
+    const errorMessage = errorMessageOf()
 
     return (
         <PWScreen

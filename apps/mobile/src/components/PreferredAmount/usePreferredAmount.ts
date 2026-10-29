@@ -11,7 +11,7 @@
  */
 
 import { useMemo } from 'react'
-import { Decimal } from 'decimal.js'
+import type { Decimal } from 'decimal.js'
 import {
     useCurrency,
     usePreferredCurrencyPriceQuery,
@@ -94,13 +94,11 @@ export const usePreferredAmount = (
         if (!sourceAmount) return null
         if (isPending) return null
 
-        // A resolved-but-absent price means the asset genuinely has no market
-        // value, so 0 is honest here. An absent *rate* below is not — that is
-        // a missing conversion, and it renders as a placeholder.
+        // No price row means the price is unknown, not zero: a priced asset
+        // whose fetch failed must not read as worthless.
         const resolvedUsdPrice =
-            preFetchedUsdPrice ??
-            usdPrices?.get(sourceAssetId)?.usdPrice ??
-            new Decimal(0)
+            preFetchedUsdPrice ?? usdPrices?.get(sourceAssetId)?.usdPrice
+        if (resolvedUsdPrice == null) return null
         const usdValue = sourceAmount.mul(resolvedUsdPrice)
 
         if (!needsFallback) {

@@ -13,7 +13,11 @@
 import { hmac } from '@noble/hashes/hmac.js'
 import { sha256 } from '@noble/hashes/sha2.js'
 import { zeroBytes } from '@perawallet/wallet-core-kms'
-import { bytesToHex } from '@perawallet/wallet-core-shared'
+import {
+    AppError,
+    ErrorCategory,
+    bytesToHex,
+} from '@perawallet/wallet-core-shared'
 
 /** Lowercase hex, 64 chars. The manifest is a case-sensitive record, so the
  *  casing is part of the identifier, not a formatting choice. */
@@ -23,9 +27,11 @@ export type ItemKeyHasher = (address: string) => ItemKeyHash
 
 export type DisposableItemKeyHasher = ItemKeyHasher & { dispose: () => void }
 
-export class ItemKeyHasherDisposedError extends Error {
+export class ItemKeyHasherDisposedError extends AppError {
     constructor() {
-        super('Item key hasher used after dispose')
+        super('Item key hasher used after dispose', {
+            category: ErrorCategory.STORAGE,
+        })
         this.name = 'ItemKeyHasherDisposedError'
     }
 }

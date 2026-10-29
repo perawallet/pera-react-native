@@ -167,6 +167,39 @@ export const SearchScreen = () => {
     const showSkeleton = hasQuery && isLoading && !hasResults
     const showNoResults = hasQuery && !isLoading && !hasResults
 
+    const renderListEmpty = () => {
+        if (showNoResults) {
+            return (
+                <EmptyView
+                    icon='magnifying-glass'
+                    title={t('search.no_results_title')}
+                    body={t('search.no_results_body')}
+                />
+            )
+        }
+        if (showSkeleton) {
+            return (
+                <PWView
+                    testID='search_loading_skeleton'
+                    style={styles.skeletonContainer}
+                >
+                    <LoadingView
+                        variant='skeleton'
+                        count={SKELETON_ROW_COUNT}
+                        size='sm'
+                    />
+                </PWView>
+            )
+        }
+        return (
+            <EmptyView
+                icon='magnifying-glass'
+                title={t('search.empty_prompt_title')}
+                body={t('search.empty_prompt_body')}
+            />
+        )
+    }
+
     return (
         <PWScreen scroll='never'>
             <SearchInput
@@ -188,32 +221,7 @@ export const SearchScreen = () => {
                 keyExtractor={keyExtractor}
                 style={styles.list}
                 contentContainerStyle={styles.contentContainer}
-                ListEmptyComponent={
-                    showNoResults ? (
-                        <EmptyView
-                            icon='magnifying-glass'
-                            title={t('search.no_results_title')}
-                            body={t('search.no_results_body')}
-                        />
-                    ) : showSkeleton ? (
-                        <PWView
-                            testID='search_loading_skeleton'
-                            style={styles.skeletonContainer}
-                        >
-                            <LoadingView
-                                variant='skeleton'
-                                count={SKELETON_ROW_COUNT}
-                                size='sm'
-                            />
-                        </PWView>
-                    ) : (
-                        <EmptyView
-                            icon='magnifying-glass'
-                            title={t('search.empty_prompt_title')}
-                            body={t('search.empty_prompt_body')}
-                        />
-                    )
-                }
+                ListEmptyComponent={renderListEmpty()}
             />
         </PWScreen>
     )

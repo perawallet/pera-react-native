@@ -18,7 +18,10 @@ import type {
     PeraTransaction,
 } from '../../blockchain/models/algosdk-shapes'
 
-vi.mock('@perawallet/wallet-core-shared', () => ({
+vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-shared')
+    >()),
     decodeFromBase64: (b64: string) => new TextEncoder().encode(b64),
 }))
 
