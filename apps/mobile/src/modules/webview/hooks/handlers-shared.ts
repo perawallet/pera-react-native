@@ -17,7 +17,7 @@ import {
     JsonRpcErrorCode,
     sanitizeErrorForWebview as sanitizeDappError,
 } from '@perawallet/wallet-core-dapp/wire'
-import { logger, bytesToHex } from '@perawallet/wallet-core-shared'
+import { logger, bytesToHex, originOf } from '@perawallet/wallet-core-shared'
 import type WebView from 'react-native-webview'
 
 import { toLoadableUrl } from '../components/PWWebView/toLoadableUrl'
@@ -69,7 +69,7 @@ export const createRequireSecure =
         if (!securedConnection) {
             logger.warn('Blocked WebView bridge call from untrusted origin', {
                 operation: context.operation,
-                sourceUrl: context.sourceUrl,
+                sourceOrigin: originOf(context.sourceUrl ?? undefined),
                 messageId: context.messageId,
             })
             sendError(

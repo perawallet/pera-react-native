@@ -40,13 +40,18 @@ vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useSelectedScope: (chainId: string) => ({ chainId, networkId: 'mainnet' }),
 }))
 
-vi.mock('@perawallet/wallet-core-shared', () => ({
+vi.mock('@perawallet/wallet-core-shared', async () => ({
     get logger() {
         return mockLogger
     },
     AppError: class AppError extends Error {},
     bytesToHex: (bytes: Uint8Array) =>
         Array.from(bytes, b => b.toString(16).padStart(2, '0')).join(''),
+    originOf: (
+        await vi.importActual<typeof import('@packages/shared/src/utils/urls')>(
+            '@packages/shared/src/utils/urls',
+        )
+    ).originOf,
 }))
 
 vi.mock('react-native-webview', () => ({ default: {} }))
@@ -253,7 +258,7 @@ describe('requireSecure', () => {
         })
     })
 
-    it('logs the blocked request with operation and source URL', () => {
+    it('logs the blocked request with operation and source origin', () => {
         requireSecure(false, context, vi.fn())
 
         expect(mockLogger.warn).toHaveBeenCalledTimes(1)
@@ -261,7 +266,7 @@ describe('requireSecure', () => {
             'Blocked WebView bridge call from untrusted origin',
             {
                 operation: 'getSettings',
-                sourceUrl: 'https://evil.com/',
+                sourceOrigin: 'https://evil.com',
                 messageId: 'msg-1',
             },
         )

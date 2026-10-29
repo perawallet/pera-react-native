@@ -122,6 +122,7 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
     return {
         logger: {
             debug: vi.fn(),
+            info: vi.fn(),
             warn: vi.fn(),
             error: vi.fn(),
         },
@@ -1563,6 +1564,25 @@ describe('useDeepLink', () => {
             expect(mockOnError).toHaveBeenCalled()
         },
     )
+
+    it('logs a liquid:// deeplink without its URL', async () => {
+        ;(parseDeeplink as Mock).mockReturnValue({
+            type: DeeplinkType.LIQUID_AUTH,
+            variant: 'liquid',
+            sourceUrl: 'liquid://secret',
+        })
+        const { result } = renderHook(() => useDeepLink())
+
+        await act(async () => {
+            await result.current.handleDeepLink(
+                'liquid://secret',
+                false,
+                'deeplink',
+            )
+        })
+
+        expect(logger.info).toHaveBeenCalledWith('liquid:// deeplink received')
+    })
 
     describe('capability gating', () => {
         // The capability each gated type needs, switched off in turn.
