@@ -13,7 +13,7 @@
 import { useCallback } from 'react'
 import { accountsChainAdapters } from '@perawallet/wallet-core-accounts'
 import { BACKUP_ACCESS_DOMAIN, useKMS } from '@perawallet/wallet-core-kms'
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, toError } from '@perawallet/wallet-core-shared'
 import type { SerializePrivateKeyResolver } from '../sync/types'
 
 /** Resolves null when the key is unavailable, which skips that account rather
@@ -39,10 +39,7 @@ export const useResolvePrivateKeyForBackup =
                     logger.warn(
                         'useResolvePrivateKeyForBackup: resolve failed',
                         {
-                            error:
-                                error instanceof Error
-                                    ? error.message
-                                    : String(error),
+                            error: toError(error).message,
                         },
                     )
                     return null

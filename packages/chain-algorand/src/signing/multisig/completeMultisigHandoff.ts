@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, toError } from '@perawallet/wallet-core-shared'
 import {
     SubmissionError,
     type CompleteMultisigHandoffArgs,
@@ -132,7 +132,7 @@ const failHandoff = async (
     error: unknown,
 ): Promise<void> => {
     logger.warn('Multisig handoff completion failed', {
-        error: error instanceof Error ? error.message : String(error),
+        error: toError(error).message,
     })
     deps.reportError(error)
     await runBestEffort(() => deps.decline(), 'decline')
@@ -155,7 +155,7 @@ const runBestEffort = async (
         await run()
     } catch (error) {
         logger.warn(`Multisig handoff ${label} failed (non-fatal)`, {
-            error: error instanceof Error ? error.message : String(error),
+            error: toError(error).message,
         })
     }
 }

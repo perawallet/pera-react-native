@@ -12,6 +12,7 @@ const GUARDED = [
     'translation-key-exists',
     'i18n-key-exists',
     'no-unused-translation-keys',
+    'no-split-sentences',
     'no-i18n-integrity-suppressions',
 ].join('|')
 
@@ -21,7 +22,7 @@ export default defineRule({
     card: {
         message: 'an i18n integrity finding is suppressed',
         remediation:
-            'Fix the key instead: add it to en.json and every locale, delete it, or use it. Missing, extra and unused keys have no legitimate exception.',
+            'Fix the key instead: add it to en.json and every locale, delete it, use it, or make a split sentence one key. Missing, extra, unused and split keys have no legitimate exception.',
         // Neither example spells a directive: lanekeep scans raw bytes for
         // one, and this file is inside `include`.
         examples: {

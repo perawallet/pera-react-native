@@ -24,7 +24,7 @@ import {
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { zeroBytes } from '@perawallet/wallet-core-kms'
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, toError } from '@perawallet/wallet-core-shared'
 import { useRequirePinVerification } from '@modules/security'
 import { useMnemonicForAddress } from '../../hooks'
 import type { BackupStackParamList } from '../../routes/types'
@@ -121,10 +121,7 @@ export const useBackupReminderMnemonicScreen =
                     logger.error(
                         'BackupMnemonic: failed to retrieve mnemonic',
                         {
-                            error:
-                                err instanceof Error
-                                    ? err.message
-                                    : String(err),
+                            error: toError(err).message,
                             stack: err instanceof Error ? err.stack : undefined,
                         },
                     )

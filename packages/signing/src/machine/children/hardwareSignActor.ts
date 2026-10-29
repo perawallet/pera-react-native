@@ -15,7 +15,7 @@ import {
     findAccountByAddressOn,
     isHardwareWalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, toError } from '@perawallet/wallet-core-shared'
 import { HardwareWalletError } from '../../pipeline/errors'
 import { createHardwareStrategy } from '../../pipeline/signing/createHardwareStrategy'
 import { isKeyedByPlanner, type SigningPhase } from '../../pipeline/types'
@@ -198,7 +198,7 @@ export const hardwareSignActor = fromCallback<
             // onError may have already fired via strategy callbacks; this catches
             // anything thrown synchronously or escaping the strategy (e.g. the
             // signer_not_found guards above).
-            const error = err instanceof Error ? err : new Error(String(err))
+            const error = toError(err)
             const event = isLedgerError(error)
                 ? ('STRATEGY_ERROR' as const)
                 : ('NON_LEDGER_ERROR' as const)
