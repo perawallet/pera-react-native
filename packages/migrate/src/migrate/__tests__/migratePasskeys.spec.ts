@@ -25,6 +25,7 @@ const {
     disposeMock,
     entropyToIndicesMock,
     indicesToUtf8BytesMock,
+    withSecretMock,
     platformMock,
 } = vi.hoisted(() => ({
     keystoreState: { keys: [] as Array<Record<string, unknown>> },
@@ -37,6 +38,7 @@ const {
     disposeMock: vi.fn(),
     entropyToIndicesMock: vi.fn(),
     indicesToUtf8BytesMock: vi.fn(),
+    withSecretMock: vi.fn(),
     platformMock: { OS: 'android' as 'android' | 'ios' },
 }))
 
@@ -70,11 +72,7 @@ vi.mock('@perawallet/wallet-core-kms', () => ({
                 k.metadata?.parentKeyId === seedKeyId &&
                 k.metadata?.entropyKey === true,
         )?.id,
-    // Hands out the entropy only when that child's entry is in the keystore.
-    withSecret: async (id: string, handler: (bytes: Uint8Array) => unknown) =>
-        keystoreState.keys.some(k => k.id === id)
-            ? handler(Uint8Array.from([0xaa, 0xbb, 0xcc]))
-            : null,
+    withSecret: withSecretMock,
     zeroBytes: (
         ...buffers: Array<Uint8Array | Uint16Array | null | undefined>
     ) => {
@@ -166,6 +164,15 @@ beforeEach(() => {
     indicesToUtf8BytesMock
         .mockReset()
         .mockImplementation(() => new TextEncoder().encode('test phrase'))
+    // Hands out the entropy only when that child's entry is in the keystore.
+    withSecretMock
+        .mockReset()
+        .mockImplementation(
+            async (id: string, handler: (bytes: Uint8Array) => unknown) =>
+                keystoreState.keys.some(k => k.id === id)
+                    ? handler(Uint8Array.from([0xaa, 0xbb, 0xcc]))
+                    : null,
+        )
 
     accountsState.accounts = [
         {
@@ -481,6 +488,38 @@ describe('migratePasskeys', () => {
         expect(result).toEqual({ imported: 2, skipped: 0 })
         expect(deriveMainKeyMock).toHaveBeenCalledTimes(1)
         expect(deriveCredentialMock).toHaveBeenCalledTimes(2)
+    })
+
+    it('retries the keystore read for the next passkey on a seed after a failed read', async () => {
+        const idA = new Uint8Array(32).fill(0x10)
+        const idB = new Uint8Array(32).fill(0x20)
+        deriveCredentialMock.mockImplementation(async ({ origin }) =>
+            derivedFor(origin === 'https://a.example' ? idA : idB),
+        )
+        withSecretMock.mockRejectedValueOnce(new Error('keystore busy'))
+
+        const result = await migratePasskeys(
+            [
+                buildPasskey({
+                    siteUrl: 'a.example',
+                    credentialId: Buffer.from(idA).toString('base64'),
+                }),
+                buildPasskey({
+                    siteUrl: 'b.example',
+                    credentialId: Buffer.from(idB).toString('base64'),
+                }),
+            ],
+            'algorand',
+        )
+
+        expect(result).toEqual({ imported: 1, skipped: 1 })
+        expect(withSecretMock).toHaveBeenCalledTimes(2)
+        expect(writeEntryMock).toHaveBeenCalledTimes(1)
+        expect(writeEntryMock).toHaveBeenCalledWith(
+            expect.objectContaining({
+                credentialId: Buffer.from(idB).toString('base64'),
+            }),
+        )
     })
 
     it('counts a failed write as skipped without breaking the batch', async () => {

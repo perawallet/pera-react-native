@@ -188,11 +188,16 @@ const createMigrationContext = (chainId: ChainId): MigrationContext => {
             return typeof parentKeyId === 'string' ? parentKeyId : undefined
         },
         getMainKey: seedKeyId => {
-            let pending = mainKeyBySeed.get(seedKeyId)
-            if (!pending) {
-                pending = deriveMainKeyFromEntropy(seedKeyId)
-                mainKeyBySeed.set(seedKeyId, pending)
-            }
+            const cached = mainKeyBySeed.get(seedKeyId)
+            if (cached) return cached
+            const pending = deriveMainKeyFromEntropy(seedKeyId)
+            mainKeyBySeed.set(seedKeyId, pending)
+            // A failed keystore read would otherwise skip every passkey on this seed.
+            pending.catch(() => {
+                if (mainKeyBySeed.get(seedKeyId) === pending) {
+                    mainKeyBySeed.delete(seedKeyId)
+                }
+            })
             return pending
         },
         writePasskey,

@@ -25,3 +25,11 @@ export const radixToString = (m: string) => {
     const seed = deriveBip39Seed(m)
     return seed.length.toString(16)
 }
+export const nonSecretStringified = (id: Uint8Array) =>
+    String(id) + JSON.stringify(id) + btoa(id)
+export const nonSecretFromCharCode = (id: Uint8Array) =>
+    String.fromCharCode(...id) + String.fromCharCode.apply(null, id)
+export const secretLengthStringified = (m: string) => {
+    const seed = deriveBip39Seed(m)
+    return String(seed.length) + JSON.stringify({ size: seed.byteLength })
+}

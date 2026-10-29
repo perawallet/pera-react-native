@@ -11,7 +11,9 @@
  */
 
 import { describe, expect, it } from 'vitest'
+import { entropyToMnemonic } from '@scure/bip39'
 import { wordlist } from '@scure/bip39/wordlists/english.js'
+import { deriveLiquidAuthMainKey, entropyToIndices } from '../hdwallet-utils'
 import {
     indicesToUtf8Bytes,
     mnemonicIndexToWord,
@@ -142,6 +144,53 @@ describe('utf8BytesToIndices', () => {
 
         expect(Array.from(utf8BytesToIndices(bytes)!)).toEqual(
             Array.from(viaStrings(bytes)!),
+        )
+    })
+})
+
+// Unmocked on purpose: the passkey migration feeds these bytes to PBKDF2 where it
+// used to feed scure's phrase string, so any drift changes every derived key.
+describe('indicesToUtf8Bytes over entropyToIndices', () => {
+    const fromHex = (hex: string) => Uint8Array.from(Buffer.from(hex, 'hex'))
+    const ENTROPIES: Array<[string, Uint8Array]> = [
+        ['all-zero 128-bit', new Uint8Array(16)],
+        ['all-0xff 128-bit', new Uint8Array(16).fill(0xff)],
+        ['BIP39 vector 7f… 128-bit', new Uint8Array(16).fill(0x7f)],
+        [
+            'BIP39 vector 9e88… 128-bit',
+            fromHex('9e885d952ad362caeb4efe34a8e91bd2'),
+        ],
+        ['all-zero 256-bit', new Uint8Array(32)],
+        ['all-0xff 256-bit', new Uint8Array(32).fill(0xff)],
+        ['BIP39 vector 80… 256-bit', new Uint8Array(32).fill(0x80)],
+        [
+            'BIP39 vector 68a7… 256-bit',
+            fromHex(
+                '68a79eaca2324873eacc50cb9c6eca8cc68ea5d936f98787c60c7ebc74e6ce7c',
+            ),
+        ],
+    ]
+
+    it.each(ENTROPIES)(
+        'is byte-equal to the UTF-8 of scure entropyToMnemonic for %s entropy',
+        (_, entropy) => {
+            const expected = new TextEncoder().encode(
+                entropyToMnemonic(entropy, wordlist),
+            )
+
+            const bytes = indicesToUtf8Bytes(entropyToIndices(entropy))
+
+            expect(Array.from(bytes)).toEqual(Array.from(expected))
+        },
+    )
+
+    it('reaches the dp256 golden main key from all-zero 128-bit entropy', async () => {
+        const phrase = indicesToUtf8Bytes(entropyToIndices(new Uint8Array(16)))
+
+        const key = await deriveLiquidAuthMainKey(phrase)
+
+        expect(Buffer.from(key).toString('hex')).toBe(
+            '80ec8c0fc085095e052d18e461bd46d792d37c4d4e0e4b25f3a9b49650bf8af7e3760656b3ca62ad50c9a2b64115a205e16bc27712ba76db014d06ed4ac31670',
         )
     })
 })

@@ -136,3 +136,26 @@ export const subarrayThenDecoded = (m: string) => {
 export const subarrayThenDecoderDecoded = () => {
     return withSecret('id', s => textDecoder.decode(s.subarray(0)))
 }
+export const stringified = (m: string) => {
+    const seed = deriveBip39Seed(m)
+    return String(seed)
+}
+export const jsonStringified = (m: string) => {
+    const seed = deriveBip39Seed(m)
+    return JSON.stringify(seed)
+}
+export const fromCharCodes = (m: string) => {
+    const seed = deriveBip39Seed(m)
+    return String.fromCharCode(...seed)
+}
+export const fromCharCodesApplied = (m: string) => {
+    const seed = deriveBip39Seed(m)
+    return String.fromCharCode.apply(null, seed)
+}
+export const btoaEncoded = (m: string) => {
+    const seed = deriveBip39Seed(m)
+    return btoa(seed)
+}
+export const copiedThenStringified = () => {
+    return withSecret('id', s => JSON.stringify(s.slice()))
+}

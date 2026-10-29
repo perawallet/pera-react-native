@@ -25,6 +25,9 @@ const STRING_ENCODERS =
 const STRING_ENCODING_PATTERN =
     '^(hex|base64|base64url|utf8|utf-8|ascii|latin1|binary|ucs2|ucs-2|utf16le|utf-16le)$'
 const CONVERTING_METHODS_PATTERN = '^(join|toHex|toBase64)$'
+// Built-ins that read bytes into a string: `String(x)` gives "1,2,3", `btoa` base64.
+const STRINGIFYING_FUNCTIONS = '^(String|btoa)$'
+const STRINGIFYING_FUNCTIONS_RE = new RegExp(STRINGIFYING_FUNCTIONS)
 const STRING_ENCODING = new RegExp(STRING_ENCODING_PATTERN)
 const CONVERTING_METHODS = new RegExp(CONVERTING_METHODS_PATTERN)
 const STRING_ENCODERS_RE = new RegExp(STRING_ENCODERS)
@@ -88,6 +91,10 @@ const SINKS = [
     `((call_expression function: (member_expression object: (_) @sink property: (property_identifier) @method)) (#match? @method "${CONVERTING_METHODS_PATTERN}"))`,
     '((call_expression function: (member_expression object: (new_expression constructor: (identifier) @ctor) property: (property_identifier) @method) arguments: (arguments (_) @sink)) (#eq? @ctor "TextDecoder") (#eq? @method "decode"))',
     '((call_expression function: (member_expression object: (identifier) @object property: (property_identifier) @method) arguments: (arguments (_) @sink)) (#match? @object "([Dd]ecoder|DECODER)$") (#eq? @method "decode"))',
+    `((call_expression function: (identifier) @fn arguments: (arguments . (_) @sink)) (#match? @fn "${STRINGIFYING_FUNCTIONS}"))`,
+    '((call_expression function: (member_expression object: (identifier) @object property: (property_identifier) @method) arguments: (arguments . (_) @sink)) (#eq? @object "JSON") (#eq? @method "stringify"))',
+    '((call_expression function: (member_expression object: (identifier) @object property: (property_identifier) @method) arguments: (arguments [(spread_element (_) @sink) (_) @sink])) (#eq? @object "String") (#eq? @method "fromCharCode"))',
+    '((call_expression function: (member_expression object: (member_expression object: (identifier) @object property: (property_identifier) @method) property: (property_identifier) @apply) arguments: (arguments . (_) . (_) @sink)) (#eq? @object "String") (#eq? @method "fromCharCode") (#eq? @apply "apply"))',
     '(template_substitution (_) @sink)',
     '((binary_expression left: (_) @sink operator: "+" right: [(string) (template_string)]))',
     '((binary_expression left: [(string) (template_string)] operator: "+" right: (_) @sink))',
@@ -260,6 +267,18 @@ const stateSetterNames = (ctx: RuleContext): Set<string> => {
     return names
 }
 
+const isStringifyingBuiltin = (
+    ctx: RuleContext,
+    name: string,
+    object: Node | undefined,
+): boolean => {
+    if (object === undefined) return STRINGIFYING_FUNCTIONS_RE.test(name)
+    const objectText = ctx.text(object) ?? ''
+    if (name === 'stringify') return objectText === 'JSON'
+    if (name === 'fromCharCode') return objectText === 'String'
+    return name === 'apply' && objectText === 'String.fromCharCode'
+}
+
 const classifyArgument = (
     ctx: RuleContext,
     call: Node,
@@ -269,6 +288,9 @@ const classifyArgument = (
     if (ctx.kind(call) === 'new_expression') return 'copy'
     const { name, object, isMember } = callee
     if (STRING_ENCODERS_RE.test(name)) return 'string'
+    if (isStringifyingBuiltin(ctx, name, isMember ? object : undefined)) {
+        return 'string'
+    }
     if (name === 'decode' && isMember && object !== undefined) {
         const objectText = ctx.text(object) ?? ''
         if (
@@ -300,7 +322,9 @@ const classifySink = (
     ) {
         return { cls: 'string', held: sink }
     }
-    const call = callOfArgument(ctx, sink)
+    // `String.fromCharCode(...bytes)` reads the secret through a spread.
+    const argument = parentKind === 'spread_element' ? parent : sink
+    const call = callOfArgument(ctx, argument)
     if (call !== undefined) {
         const cls = classifyArgument(ctx, call)
         if (cls !== undefined && cls !== 'copy') return { cls, held: sink }
