@@ -36,9 +36,13 @@ import {
     useAllAccounts,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { generateOrderedUniqueId, logger } from '@perawallet/wallet-core-shared'
+import {
+    generateOrderedUniqueId,
+    logger,
+    withTimeout,
+} from '@perawallet/wallet-core-shared'
 import { useDeeplinkErrorHandler } from './useDeeplinkErrorHandler'
-import { withTimeout } from './timeout'
+import { DeeplinkTimeoutError } from './timeout'
 
 export type ChainActionDeeplinkHandler = (
     data: ChainActionDeeplink,
@@ -175,9 +179,10 @@ export const useChainActionDeeplink = (): ChainActionDeeplinkHandler => {
 
             try {
                 const tx = await withTimeout(
-                    `${chainData.action}ChainAction`,
-                    CHAIN_ACTION_BUILD_TIMEOUT_MS,
                     buildChainAction(chainData, { scope }),
+                    CHAIN_ACTION_BUILD_TIMEOUT_MS,
+                    `${chainData.action}ChainAction`,
+                    (operation, ms) => new DeeplinkTimeoutError(operation, ms),
                 )
 
                 // Adds a quantum sender's PQ surcharge (mirrors the WC/webview

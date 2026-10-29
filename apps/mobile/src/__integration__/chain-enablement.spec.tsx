@@ -288,6 +288,7 @@ describe('Flow: an account enables chains as it is used on them', () => {
 
         const checksummed = addressCodecs.get('base').normalize(ethereumAddress)
         expect(screen.getByText(checksummed)).toBeTruthy()
+        expect(screen.getByTestId('receive_chain_caption')).toBeTruthy()
         const [held] = useAccountsStore.getState().accounts
         expect(useAccountsStore.getState().accounts).toHaveLength(1)
         expect(chainAccountOf(held!, 'base')).toMatchObject({
