@@ -13,13 +13,13 @@
 import { useMemo } from 'react'
 import { Decimal } from 'decimal.js'
 import {
-    findNativeAsset,
     PeraAssetVerificationTier,
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { IconName } from '@components/core'
+import { nativeAssetInfoOf } from '@modules/chain-ui/icon'
 import type {
     AssetFiatConverter,
     AssetFiatValue,
@@ -99,8 +99,10 @@ export const useAssetGroupRow = <T extends GroupableHolding>({
         const tiers = members.map(({ asset, holding }): Nullable<GroupTier> => {
             if (!asset) return null
             const isNative =
-                findNativeAsset(holding.scope.chainId)?.assetId ===
-                holding.assetId
+                nativeAssetInfoOf({
+                    chainId: holding.scope.chainId,
+                    assetId: holding.assetId,
+                }) !== undefined
             return isNative
                 ? 'trusted'
                 : (asset.peraMetadata?.verificationTier ??

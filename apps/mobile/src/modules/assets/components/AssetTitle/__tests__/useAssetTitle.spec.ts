@@ -12,7 +12,10 @@
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { renderHook } from '@testing-library/react'
-import type { PeraAsset } from '@perawallet/wallet-core-assets'
+import type {
+    PeraAsset,
+    PeraAssetVerificationTier,
+} from '@perawallet/wallet-core-assets'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import {
     registerEthereumChain,
@@ -88,6 +91,20 @@ describe('useAssetTitle', () => {
         expect(verified.verificationIcon).toBe('assets/verified')
         expect(verified.isIdVisible).toBe(true)
         expect(verified.isSuspicious).toBe(false)
+    })
+
+    it('gives a trusted-tier token the trusted badge', () => {
+        const result = title(
+            make({
+                peraMetadata: {
+                    verificationTier: 'trusted' as PeraAssetVerificationTier,
+                    isDeleted: false,
+                },
+            }),
+        )
+
+        expect(result.verificationIcon).toBe('assets/trusted')
+        expect(result.isSuspicious).toBe(false)
     })
 
     it('marks a suspicious token and badges it', () => {
