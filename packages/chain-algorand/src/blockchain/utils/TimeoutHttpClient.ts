@@ -33,6 +33,7 @@ type Query = Record<string, unknown> & { format?: string }
  * short-circuit on AppError metadata, which would skip the structural status
  * and algod-body classification every node rejection relies on for its copy.
  */
+// oxlint-disable-next-line pera/typed-domain-errors -- implements algosdk's BaseHTTPClientError; AppError metadata would bypass the status and body classification described above
 class TimeoutHttpClientError extends Error implements BaseHTTPClientError {
     constructor(
         message: string,

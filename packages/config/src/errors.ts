@@ -12,6 +12,7 @@
 
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 
+// oxlint-disable-next-line pera/typed-domain-errors -- wallet-core-shared depends on wallet-core-config, so AppError is out of reach here
 export class UnconfiguredScopeError extends Error {
     readonly scope: ChainScope
 

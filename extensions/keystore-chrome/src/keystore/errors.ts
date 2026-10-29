@@ -18,6 +18,7 @@
 /**
  * Base error class for keystore operations.
  */
+// oxlint-disable-next-line pera/typed-domain-errors -- ported from @algorandfoundation/keystore@1.0.0-canary.17 with upstream's own base class
 export class KeyStoreError extends Error {
     constructor(message: string, name: string, cause?: Error) {
         super(message)

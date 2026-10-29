@@ -1385,6 +1385,9 @@ importers:
       '@perawallet/wallet-core-passkeys':
         specifier: workspace:*
         version: link:../../packages/passkeys
+      '@perawallet/wallet-core-shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
       '@scure/base':
         specifier: 'catalog:'
         version: 2.4.0

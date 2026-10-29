@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import type { AppError } from '@perawallet/wallet-core-shared'
+import { ErrorCategory, AppError } from '@perawallet/wallet-core-shared'
 import type { HardwareWalletTransport } from './types'
 
 /**
@@ -48,6 +48,7 @@ export interface LedgerAppDriver {
     ): HardwareWalletTransport
 }
 
+// oxlint-disable-next-line pera/typed-domain-errors -- classifyLedgerError turns a plain error into a retryable LedgerConnectionError and passes an AppError through, so a missing driver stays plain to reach the user as a Ledger connection failure
 export class LedgerAppDriverNotRegisteredError extends Error {
     readonly chainId: string
 
@@ -58,12 +59,13 @@ export class LedgerAppDriverNotRegisteredError extends Error {
     }
 }
 
-export class DuplicateLedgerAppDriverError extends Error {
+export class DuplicateLedgerAppDriverError extends AppError {
     readonly chainId: string
 
     constructor(chainId: string) {
         super(
             `A different Ledger app driver is already registered for chain "${chainId}"`,
+            { category: ErrorCategory.BLOCKCHAIN },
         )
         this.name = 'DuplicateLedgerAppDriverError'
         this.chainId = chainId
