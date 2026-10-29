@@ -389,6 +389,9 @@ overrides:
   '@gorhom/portal>nanoid': 6.0.0
   picomatch@3: 3.0.1
   picomatch@4: 4.0.4
+  # GHSA-gg6h-894w-4m9c floor (quadratic-time lookbehind matching), reached
+  # through every @firebase/firestore copy.
+  re2js@<2.8.7: 2.8.7
   react: 19.3.0
   react-dom: 19.3.0
   react-native: 0.88.0
