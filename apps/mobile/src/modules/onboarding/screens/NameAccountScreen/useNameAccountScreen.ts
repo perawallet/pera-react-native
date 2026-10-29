@@ -53,6 +53,13 @@ type NameAccountScreenRouteProp = RouteProp<
     'NameAccount'
 >
 
+const accountCreationTypeOf = (
+    account: WalletAccount,
+): 'ledger' | 'watch' | 'create' => {
+    if (isHardwareWalletAccount(account)) return 'ledger'
+    return isWatchAccount(account) ? 'watch' : 'create'
+}
+
 export const useNameAccountScreen = () => {
     const route = useRoute<NameAccountScreenRouteProp>()
 
@@ -185,11 +192,7 @@ export const useNameAccountScreen = () => {
 
             trackEvent(OnboardingEvent.RegisterAccount, {
                 [AnalyticsMetadataKey.AccountCreationType]:
-                    isHardwareWalletAccount(targetAccount)
-                        ? 'ledger'
-                        : isWatchAccount(targetAccount)
-                          ? 'watch'
-                          : 'create',
+                    accountCreationTypeOf(targetAccount),
                 [AnalyticsMetadataKey.ChainId]: chainId,
             })
 

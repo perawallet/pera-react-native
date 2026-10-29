@@ -30,6 +30,29 @@ export type FullScreenMediaViewerProps = {
     initialIndex?: number
 }
 
+const FullScreenMediaPage = ({ item }: { item: FullScreenMediaItem }) => {
+    switch (item.type) {
+        case 'video': {
+            return <VideoPlayer uri={item.uri} />
+        }
+        case 'audio': {
+            return (
+                <AudioPlayer
+                    uri={item.uri}
+                    posterUri={item.posterUri}
+                />
+            )
+        }
+        case 'image': {
+            return <ZoomableImage uri={item.uri} />
+        }
+        default: {
+            const exhaustive: never = item.type
+            return exhaustive
+        }
+    }
+}
+
 export const FullScreenMediaViewer = ({
     media,
     initialIndex = 0,
@@ -70,16 +93,7 @@ export const FullScreenMediaViewer = ({
                             key={index}
                             style={styles.page}
                         >
-                            {item.type === 'video' ? (
-                                <VideoPlayer uri={item.uri} />
-                            ) : item.type === 'audio' ? (
-                                <AudioPlayer
-                                    uri={item.uri}
-                                    posterUri={item.posterUri}
-                                />
-                            ) : (
-                                <ZoomableImage uri={item.uri} />
-                            )}
+                            <FullScreenMediaPage item={item} />
                         </PWView>
                     ))}
                 </PagerView>

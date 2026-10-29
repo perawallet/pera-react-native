@@ -138,17 +138,21 @@ export const useOnrampQuotes = ({
                     setQuotes([])
                     const limits = resolveRampQuoteLimits(error)
                     setQuoteLimits(limits)
-                    setQuotesError(
-                        isConnectivityError(error)
-                            ? t('errors.network.no_connection.body')
-                            : limits?.min
-                              ? t('onramp.form.amount_below_min', {
-                                    min: limits.min.toString(),
-                                })
-                              : isSourceAmountTooLowError(error)
-                                ? t('onramp.form.amount_below_min_unknown')
-                                : toOnrampUserMessage(error),
-                    )
+                    const quoteErrorMessageOf = () => {
+                        if (isConnectivityError(error)) {
+                            return t('errors.network.no_connection.body')
+                        }
+                        if (limits?.min) {
+                            return t('onramp.form.amount_below_min', {
+                                min: limits.min.toString(),
+                            })
+                        }
+                        if (isSourceAmountTooLowError(error)) {
+                            return t('onramp.form.amount_below_min_unknown')
+                        }
+                        return toOnrampUserMessage(error)
+                    }
+                    setQuotesError(quoteErrorMessageOf())
                     setIsQuoting(false)
                 }
             })()

@@ -33,6 +33,17 @@ type UseCreatePasswordScreenResult = {
     handleSubmit: () => Promise<void>
 }
 
+const validationErrorOf = (
+    password: string,
+    confirmation: string,
+    strengthError: PasswordStrengthError | null,
+): PasswordStrengthError | 'mismatch' | null => {
+    if (password.length > 0 && strengthError) return strengthError
+    return confirmation.length > 0 && confirmation !== password
+        ? 'mismatch'
+        : null
+}
+
 export const useCreatePasswordScreen = ({
     onDone,
 }: UseCreatePasswordScreenParams): UseCreatePasswordScreenResult => {
@@ -44,12 +55,11 @@ export const useCreatePasswordScreen = ({
     const { score: passwordScore, error: strengthError } =
         usePasswordStrength(password)
 
-    const validationError =
-        password.length > 0 && strengthError
-            ? strengthError
-            : confirmation.length > 0 && confirmation !== password
-              ? ('mismatch' as const)
-              : null
+    const validationError = validationErrorOf(
+        password,
+        confirmation,
+        strengthError,
+    )
 
     const canSubmit =
         !strengthError && confirmation === password && !isSubmitting

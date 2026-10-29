@@ -99,14 +99,19 @@ export const LegacyDatabaseCard = ({
                 style={styles.lastGenerated}
             >
                 last generated{' '}
-                {lastGenerated
-                    ? isSingleSnapshot
-                        ? formatRelative(lastGenerated.at)
-                        : `v${lastGenerated.version} · ${formatRelative(lastGenerated.at)}`
-                    : '—'}
+                {lastGeneratedLabelOf(lastGenerated, isSingleSnapshot)}
             </PWText>
         </PWView>
     )
+}
+
+const lastGeneratedLabelOf = (
+    lastGenerated: { version: number; at: number } | undefined,
+    isSingleSnapshot: boolean,
+): string => {
+    if (!lastGenerated) return '—'
+    if (isSingleSnapshot) return formatRelative(lastGenerated.at)
+    return `v${lastGenerated.version} · ${formatRelative(lastGenerated.at)}`
 }
 
 const formatRelative = (at: number): string => {

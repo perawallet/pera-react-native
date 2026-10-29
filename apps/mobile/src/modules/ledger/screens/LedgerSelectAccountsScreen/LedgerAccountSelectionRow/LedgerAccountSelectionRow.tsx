@@ -47,12 +47,15 @@ export const LedgerAccountSelectionRow = ({
 }: LedgerAccountSelectionRowProps) => {
     const { t } = useLanguage()
 
-    const badgeTitle =
-        variant === 'delegated'
-            ? t('ledger.select_accounts.rekeyed_label')
-            : isUpgradeable
-              ? t('ledger.select_accounts.watch_account_label')
-              : null
+    const badgeTitleOf = () => {
+        if (variant === 'delegated') {
+            return t('ledger.select_accounts.rekeyed_label')
+        }
+        return isUpgradeable
+            ? t('ledger.select_accounts.watch_account_label')
+            : null
+    }
+    const badgeTitle = badgeTitleOf()
 
     const handleInfoPress = useCallback(() => {
         onInfoPress(address, accountIndex)

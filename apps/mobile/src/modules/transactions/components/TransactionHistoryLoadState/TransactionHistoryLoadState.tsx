@@ -49,18 +49,9 @@ export const TransactionHistoryLoadState = ({
 }: TransactionHistoryLoadStateProps) => {
     const { t } = useLanguage()
 
-    return (
-        <OfflineTolerantView
-            isOffline={isLoadOffline}
-            isUnavailable={isLoadUnavailable}
-            isIntegrityBlocked={isLoadIntegrityBlocked}
-            isError={isLoadFailed}
-            // No retry offline: it can only fail again.
-            onRetry={isLoadOffline ? undefined : onRetry}
-            isRetrying={isRetrying}
-            style={style}
-        >
-            {isSearchPaused ? (
+    const renderEmptyState = () => {
+        if (isSearchPaused) {
+            return (
                 <EmptyView
                     body={t(
                         'asset_details.transaction_list.search_paused_body',
@@ -72,7 +63,10 @@ export const TransactionHistoryLoadState = ({
                     }
                     style={style}
                 />
-            ) : isOfflineEmpty ? (
+            )
+        }
+        if (isOfflineEmpty) {
+            return (
                 <EmptyView
                     title={t(
                         'asset_details.transaction_list.offline_empty_title',
@@ -82,13 +76,29 @@ export const TransactionHistoryLoadState = ({
                     )}
                     style={style}
                 />
-            ) : (
-                <EmptyView
-                    body={t('asset_details.transaction_list.empty_body')}
-                    isLoading={isLoading}
-                    style={style}
-                />
-            )}
+            )
+        }
+        return (
+            <EmptyView
+                body={t('asset_details.transaction_list.empty_body')}
+                isLoading={isLoading}
+                style={style}
+            />
+        )
+    }
+
+    return (
+        <OfflineTolerantView
+            isOffline={isLoadOffline}
+            isUnavailable={isLoadUnavailable}
+            isIntegrityBlocked={isLoadIntegrityBlocked}
+            isError={isLoadFailed}
+            // No retry offline: it can only fail again.
+            onRetry={isLoadOffline ? undefined : onRetry}
+            isRetrying={isRetrying}
+            style={style}
+        >
+            {renderEmptyState()}
         </OfflineTolerantView>
     )
 }

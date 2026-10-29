@@ -91,6 +91,61 @@ export const SwapAmountSection = (props: SwapAmountSectionProps) => {
         assetToFiat,
     })
 
+    const renderAmount = () => {
+        if (isPay) {
+            return (
+                <PWInput
+                    variant='h2'
+                    value={displayValue}
+                    onChangeText={handleTextChange}
+                    onFocus={handleFocus}
+                    onBlur={handleBlur}
+                    keyboardType='decimal-pad'
+                    placeholder='0.00'
+                    placeholderTextColor={theme.colors.textGrayLighter}
+                    containerStyle={styles.amountInputContainer}
+                    inputContainerStyle={styles.amountInputInnerContainer}
+                    inputStyle={styles.amountInput}
+                    leftIcon={
+                        isFiatInput && localCurrencySymbol ? (
+                            <PWText
+                                variant='h2'
+                                style={styles.currencyPrefix}
+                            >
+                                {localCurrencySymbol}
+                            </PWText>
+                        ) : undefined
+                    }
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    testID='swap-pay-input'
+                />
+            )
+        }
+        if (isLoading) {
+            return (
+                <PWSkeleton
+                    width={120}
+                    height={28}
+                />
+            )
+        }
+        return (
+            <PWText
+                style={
+                    hasPositiveAmount
+                        ? styles.amountText
+                        : styles.amountTextMuted
+                }
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                testID='swap-receive-amount'
+            >
+                {displayValue || '0.00'}
+            </PWText>
+        )
+    }
+
     return (
         <AmountField
             variant={isPay ? 'plain' : 'card'}
@@ -113,54 +168,7 @@ export const SwapAmountSection = (props: SwapAmountSectionProps) => {
                     />
                 </PWView>
             }
-            amount={
-                isPay ? (
-                    <PWInput
-                        variant='h2'
-                        value={displayValue}
-                        onChangeText={handleTextChange}
-                        onFocus={handleFocus}
-                        onBlur={handleBlur}
-                        keyboardType='decimal-pad'
-                        placeholder='0.00'
-                        placeholderTextColor={theme.colors.textGrayLighter}
-                        containerStyle={styles.amountInputContainer}
-                        inputContainerStyle={styles.amountInputInnerContainer}
-                        inputStyle={styles.amountInput}
-                        leftIcon={
-                            isFiatInput && localCurrencySymbol ? (
-                                <PWText
-                                    variant='h2'
-                                    style={styles.currencyPrefix}
-                                >
-                                    {localCurrencySymbol}
-                                </PWText>
-                            ) : undefined
-                        }
-                        numberOfLines={1}
-                        adjustsFontSizeToFit
-                        testID='swap-pay-input'
-                    />
-                ) : isLoading ? (
-                    <PWSkeleton
-                        width={120}
-                        height={28}
-                    />
-                ) : (
-                    <PWText
-                        style={
-                            hasPositiveAmount
-                                ? styles.amountText
-                                : styles.amountTextMuted
-                        }
-                        numberOfLines={1}
-                        adjustsFontSizeToFit
-                        testID='swap-receive-amount'
-                    >
-                        {displayValue || '0.00'}
-                    </PWText>
-                )
-            }
+            amount={renderAmount()}
             selector={
                 <AssetSelector
                     assetId={assetId}

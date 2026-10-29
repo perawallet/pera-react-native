@@ -35,6 +35,36 @@ export type FullScreenMediaViewerProps = {
     initialIndex?: number
 }
 
+const FullScreenMediaPage = ({ item }: { item: FullScreenMediaItem }) => {
+    const styles = useStyles()
+    switch (item.type) {
+        case 'video': {
+            return <VideoPlayer uri={item.uri} />
+        }
+        case 'audio': {
+            return (
+                <AudioPlayer
+                    uri={item.uri}
+                    posterUri={item.posterUri}
+                />
+            )
+        }
+        case 'image': {
+            return (
+                <PWImage
+                    source={{ uri: item.uri }}
+                    style={styles.image}
+                    resizeMode='contain'
+                />
+            )
+        }
+        default: {
+            const exhaustive: never = item.type
+            return exhaustive
+        }
+    }
+}
+
 // No PagerView or pinch-zoom on web: one item at a time with arrow controls,
 // and the toolbar hands the full-resolution original to a browser tab.
 export const FullScreenMediaViewer = ({
@@ -83,20 +113,7 @@ export const FullScreenMediaViewer = ({
                     key={activeIndex}
                     style={styles.page}
                 >
-                    {activeItem.type === 'video' ? (
-                        <VideoPlayer uri={activeItem.uri} />
-                    ) : activeItem.type === 'audio' ? (
-                        <AudioPlayer
-                            uri={activeItem.uri}
-                            posterUri={activeItem.posterUri}
-                        />
-                    ) : (
-                        <PWImage
-                            source={{ uri: activeItem.uri }}
-                            style={styles.image}
-                            resizeMode='contain'
-                        />
-                    )}
+                    <FullScreenMediaPage item={activeItem} />
                 </PWView>
             ) : null}
 

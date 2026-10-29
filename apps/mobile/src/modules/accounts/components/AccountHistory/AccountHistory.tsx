@@ -22,8 +22,7 @@ import { HistorySkeleton } from './HistorySkeleton'
 import { useStyles } from './styles'
 import { useAccountHistory } from './useAccountHistory'
 import {
-    TransactionListItem,
-    TransactionDateHeader,
+    TransactionHistoryRow,
     TransactionHistoryLoadState,
     TransactionHistorySearchOlder,
     getTransactionRowKey,
@@ -63,21 +62,13 @@ export const AccountHistory = ({ scrollEnabled }: AccountHistoryProps) => {
     } = useAccountHistory()
 
     const renderItem = useCallback(
-        ({ item }: { item: TransactionListRow }) =>
-            item.kind === 'header' ? (
-                <TransactionDateHeader title={item.title} />
-            ) : item.kind === 'record' ? (
-                <TransactionListItem
-                    record={item.record}
-                    suspectedPoisoning={suspectedPoisoningById.get(item.key)}
-                />
-            ) : (
-                <TransactionListItem
-                    transaction={item.transaction}
-                    onPress={handleTransactionPress}
-                    suspectedPoisoning={suspectedPoisoningById.get(item.key)}
-                />
-            ),
+        ({ item }: { item: TransactionListRow }) => (
+            <TransactionHistoryRow
+                row={item}
+                onTransactionPress={handleTransactionPress}
+                suspectedPoisoning={suspectedPoisoningById.get(item.key)}
+            />
+        ),
         [handleTransactionPress, suspectedPoisoningById],
     )
 
