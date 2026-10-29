@@ -95,7 +95,7 @@ const nftDisplayOf = (leg: EvmNftTransfer): AssetDisplayHint => ({
 })
 
 // Without decimals the amount would be guessed, so there is no hint.
-const tokenDisplayOf = (leg: EvmTokenTransfer): AssetDisplayHint | undefined =>
+const tokenDisplayOf = (leg: EvmTokenTransfer): Optional<AssetDisplayHint> =>
     leg.token_decimals === null
         ? undefined
         : { symbol: leg.token_symbol ?? '', decimals: leg.token_decimals }
@@ -141,7 +141,7 @@ const nativeChangeOf = (
     item: EvmHistoryItem,
     address: string,
     chain: EvmChain,
-): BalanceChange | undefined => {
+): Optional<BalanceChange> => {
     if (
         item.status !== 'success' ||
         (item.from !== null && areEqual(item.from, address))
