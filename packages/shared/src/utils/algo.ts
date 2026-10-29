@@ -13,8 +13,7 @@
 import { ALGO_ASSET_NAME } from '../constants'
 
 /**
- * Whether a value (currency id, asset unit name, or ramp-token id/symbol) is the
- * native ALGO ticker.
+ * Whether a value (currency id or ramp catalogue id) is the native ALGO ticker.
  *
  * Only for values from trusted sources (settings, first-party backends, ramp
  * providers). Never decide identity from an on-chain unit name — an ASA can
