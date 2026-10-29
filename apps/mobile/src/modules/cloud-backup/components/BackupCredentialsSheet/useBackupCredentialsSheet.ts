@@ -18,7 +18,7 @@ import {
     withBackupMnemonicIndices,
 } from '@perawallet/wallet-core-backup'
 import { zeroBytes } from '@perawallet/wallet-core-kms'
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, toError } from '@perawallet/wallet-core-shared'
 import { trackEvent, CloudBackupEvent } from '@analytics'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
 
@@ -97,10 +97,7 @@ export const useBackupCredentialsSheet =
                     logger.error(
                         'BackupCredentialsSheet: failed to load mnemonic',
                         {
-                            error:
-                                error instanceof Error
-                                    ? error.message
-                                    : String(error),
+                            error: toError(error).message,
                             isParseError:
                                 error instanceof BackupMnemonicParseError,
                         },

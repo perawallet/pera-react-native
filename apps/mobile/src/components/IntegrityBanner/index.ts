@@ -10,6 +10,6 @@
  limitations under the License
  */
 
-// Web-only (mounted by AppShell.web.tsx): native apps carry their API key, so
+// Web-only (mounted by AppShellThemedRoot.web.tsx): native apps carry their API key, so
 // the integrity token never gates them.
 export { IntegrityBanner } from './IntegrityBanner.web'

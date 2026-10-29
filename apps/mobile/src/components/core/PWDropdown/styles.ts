@@ -12,6 +12,7 @@
 
 import { makeStyles } from '@rneui/themed'
 
+// lanekeep-ignore-next-line pera/no-numeric-sizes reason: dropdown menu minimum width
 export const DROPDOWN_MIN_WIDTH = 200
 
 // Caps width so long labels truncate instead of pushing the menu edge-to-edge.

@@ -470,6 +470,27 @@ describe('hardwareSignActor', () => {
         expect(mocks.strategySign).not.toHaveBeenCalled()
     })
 
+    it('fails an unknown group type instead of reporting it as GROUP_SIGNED', async () => {
+        mocks.sign.mockResolvedValue(makeResult())
+        const unknown = {
+            ...makeGroup(),
+            data: { type: 'future-type' } as never,
+        } as AnalyzedSignableGroup
+
+        const { events, stop } = await runActor(
+            makeInput({ groups: [unknown] }),
+        )
+        stop()
+
+        expect(events.some(e => e.type === 'GROUP_SIGNED')).toBe(false)
+        expect(events.some(e => e.type === 'ALL_DONE')).toBe(false)
+        const failure = events.find(e => e.type === 'NON_LEDGER_ERROR')
+        expect(failure).toMatchObject({
+            error: { cause: { reason: 'unsupported_data_type' } },
+        })
+        expect(mocks.sign).not.toHaveBeenCalled()
+    })
+
     it("surfaces the device app's blind-signing refusal as its own retryable kind", async () => {
         const refusal = new LedgerBlindSigningRequiredError({
             appName: 'Ethereum',

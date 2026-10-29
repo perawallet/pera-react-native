@@ -10,18 +10,20 @@
  limitations under the License
  */
 
+import { AppError, ErrorCategory } from '@perawallet/wallet-core-shared'
 import { RemoteConfigDefaults, type RemoteConfigValue } from './models'
 
 export type RemoteConfigDefaultsMap = Readonly<
     Record<string, RemoteConfigValue>
 >
 
-export class DuplicateRemoteConfigKeyError extends Error {
+export class DuplicateRemoteConfigKeyError extends AppError {
     readonly key: string
 
     constructor(key: string) {
         super(
             `Remote config key "${key}" is already declared with another default`,
+            { category: ErrorCategory.VALIDATION },
         )
         this.name = 'DuplicateRemoteConfigKeyError'
         this.key = key

@@ -32,6 +32,7 @@ import { useQRScannerView } from './useQRScannerView'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import type { Nullable } from '@perawallet/wallet-core-shared'
+import { ScannerErrorFallback } from './ScannerErrorFallback'
 
 /**
  * Local notifier scoped to the scanner Modal. The scanner is a native
@@ -60,41 +61,6 @@ const createQRCameraScanner = () =>
             default: module.QRCameraScanner,
         })),
     )
-
-type ScannerErrorFallbackProps = {
-    onRetry: () => void
-    onClose: () => void
-}
-
-const ScannerErrorFallback = ({
-    onRetry,
-    onClose,
-}: ScannerErrorFallbackProps) => {
-    const insets = useSafeAreaInsets()
-    const styles = useStyles(insets)
-    const { t } = useLanguage()
-    return (
-        <EmptyView
-            style={styles.emptyView}
-            title={t('camera.scanner_load_failed.title')}
-            body={t('camera.scanner_load_failed.body')}
-            button={
-                <PWView style={styles.errorActions}>
-                    <PWButton
-                        variant='primary'
-                        title={t('common.retry.label')}
-                        onPress={onRetry}
-                    />
-                    <PWButton
-                        variant='secondary'
-                        title={t('common.close.label')}
-                        onPress={onClose}
-                    />
-                </PWView>
-            }
-        />
-    )
-}
 
 const SCREEN_CAPTURE_TAG = 'qr-scanner'
 

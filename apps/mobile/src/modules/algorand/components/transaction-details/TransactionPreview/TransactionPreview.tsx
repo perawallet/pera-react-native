@@ -22,7 +22,7 @@ import {
 import type { GestureResponderEvent } from 'react-native'
 import { useStyles } from './styles'
 import { TxTypeDetails } from './TxTypeDetails'
-import { algorandTransactionIconName } from '../../../icons'
+import { algorandTransactionIconName } from '@modules/algorand/icons'
 
 export type TransactionPreviewProps = {
     transaction: AlgorandTransactionView

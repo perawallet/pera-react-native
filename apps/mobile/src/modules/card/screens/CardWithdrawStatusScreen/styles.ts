@@ -34,6 +34,7 @@ export const useStyles = makeStyles(theme => ({
         borderRadius: theme.spacing.md,
     },
     amountSkeleton: {
+        // lanekeep-ignore-next-line pera/no-numeric-sizes reason: amount skeleton width (192)
         width: theme.spacing['5xl'] * 2,
         height: theme.spacing['3xl'],
         borderRadius: theme.spacing.sm,

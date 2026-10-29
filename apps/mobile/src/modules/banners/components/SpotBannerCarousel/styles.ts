@@ -13,13 +13,11 @@
 import { makeStyles } from '@rneui/themed'
 import { getTypography } from '@theme/typography'
 
-// Native parity: 48dp icon on the left, 36dp close circle on the right.
-const ICON_SIZE = 48
-
 export const useStyles = makeStyles(theme => ({
     // PagerView won't render without an explicit height.
     pager: {
-        height: ICON_SIZE + theme.spacing.lg * 2,
+        // lanekeep-ignore-next-line pera/no-numeric-sizes reason: pager is the icon (3xl) plus lg above and below
+        height: theme.spacing['3xl'] + theme.spacing.lg * 2,
     },
     page: {
         paddingHorizontal: theme.spacing.md,
@@ -35,8 +33,8 @@ export const useStyles = makeStyles(theme => ({
         borderColor: theme.colors.layerGray,
     },
     iconWrapper: {
-        width: ICON_SIZE,
-        height: ICON_SIZE,
+        width: theme.spacing['3xl'],
+        height: theme.spacing['3xl'],
         marginVertical: theme.spacing.md,
         borderRadius: theme.borderRadius.full,
         overflow: 'hidden',
@@ -45,8 +43,8 @@ export const useStyles = makeStyles(theme => ({
         justifyContent: 'center',
     },
     icon: {
-        width: ICON_SIZE,
-        height: ICON_SIZE,
+        width: theme.spacing['3xl'],
+        height: theme.spacing['3xl'],
     },
     text: {
         ...getTypography(theme, 'body'),

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { PWTapToConfirm } from '@components/core/PWTapToConfirm'
+import { PWTapToConfirm } from '@components/core'
 import {
     TAP_TO_CONFIRM_WEB_ARMED_TIMEOUT,
     TAP_TO_CONFIRM_WEB_MIN_CONFIRM_DELAY,

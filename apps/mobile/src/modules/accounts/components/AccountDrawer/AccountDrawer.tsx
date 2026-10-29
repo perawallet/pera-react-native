@@ -11,38 +11,12 @@
  */
 
 import type { ReactNode } from 'react'
-import { PWDrawer } from '@components/core'
 import { routeCapabilities } from '@routes/capabilities'
 
-import { AccountDrawerContext } from './AccountDrawerContext'
-import { useAccountDrawerHost } from './useAccountDrawerHost'
+import { AccountDrawerHost } from './AccountDrawerHost'
 
 export type AccountDrawerProps = {
     children: ReactNode
-}
-
-const AccountDrawerHost = ({ children }: AccountDrawerProps) => {
-    const { isOpen, progress, controls, markOpen, markClosed, renderContent } =
-        useAccountDrawerHost()
-
-    return (
-        <AccountDrawerContext.Provider value={controls}>
-            <PWDrawer
-                isOpen={isOpen}
-                onOpen={markOpen}
-                onClose={markClosed}
-                renderContent={renderContent}
-                variant='back'
-                progress={progress}
-                // Every screen that can open this drives it from a PWPager pan;
-                // an edge gesture here would compete with those and claim the
-                // platform back-swipe for the entire tab shell.
-                hasOwnOpenGesture={false}
-            >
-                {children}
-            </PWDrawer>
-        </AccountDrawerContext.Provider>
-    )
 }
 
 /**

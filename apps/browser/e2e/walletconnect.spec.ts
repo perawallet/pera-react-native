@@ -35,6 +35,7 @@ import algosdk from 'algosdk'
 import WalletConnect from '@perawallet/walletconnect'
 import { getAlgorandChainConfig } from '@perawallet/wallet-core-config'
 import { startFakeBridge } from './fixtures/fake-wc-bridge.mjs'
+import { skipPasskeyUnlockStep } from './passkey-unlock-step'
 
 const dist = path.resolve(
     path.dirname(fileURLToPath(import.meta.url)),
@@ -116,6 +117,7 @@ test.beforeAll(async () => {
     await page.getByTestId('create-password-input').fill(PASSWORD)
     await page.getByTestId('create-password-confirm-input').fill(PASSWORD)
     await page.getByTestId('create-password-submit').click()
+    await skipPasskeyUnlockStep(page)
 
     await page
         .getByTestId('onboarding_create_wallet_button')

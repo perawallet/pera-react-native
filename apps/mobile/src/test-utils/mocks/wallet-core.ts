@@ -454,10 +454,13 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
         useAccountScope: vi.fn((account: any) =>
             scopeOf(account ? accountChainIdOf(account) : 'algorand'),
         ),
+        accountValueKey: vi.fn(
+            (chainId: string, address: string) => `${chainId}|${address}`,
+        ),
         accountValueOf: vi.fn(
             (account: any, chainId: string, values: Map<string, unknown>) => {
                 const address = chainAccountOf(account, chainId)?.address
-                return address ? values.get(address) : undefined
+                return address ? values.get(`${chainId}|${address}`) : undefined
             },
         ),
         ownAddressOf: vi.fn(

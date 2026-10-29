@@ -156,12 +156,11 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
     const { setSelectedAccountId } = useSelectedAccountId()
     const { pending: pendingWithdrawal, isReady: isWithdrawReady } =
         useCardWithdraw()
-    const withdrawState: CardWithdrawState =
-        pendingWithdrawal === null
-            ? 'idle'
-            : isWithdrawReady
-              ? 'ready'
-              : 'waiting'
+    const withdrawStateOf = (): CardWithdrawState => {
+        if (pendingWithdrawal === null) return 'idle'
+        return isWithdrawReady ? 'ready' : 'waiting'
+    }
+    const withdrawState = withdrawStateOf()
 
     const onAddFunds = useCallback(() => {
         trackEvent(CardEvent.HomeAddFunds)

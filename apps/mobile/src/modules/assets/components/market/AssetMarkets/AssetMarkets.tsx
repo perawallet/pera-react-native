@@ -59,7 +59,7 @@ import { toDiscoverTokenDetailPath } from '@modules/discover'
 import type {
     AssetAboutDisplay,
     AssetDetailsDisplay,
-} from '../../../types/asset-details-display'
+} from '@modules/assets/types/asset-details-display'
 
 export type AssetMarketsProps = {
     asset: PeraAsset
@@ -67,17 +67,6 @@ export type AssetMarketsProps = {
     assetDetailsDisplay: AssetDetailsDisplay
     about: AssetAboutDisplay
     isNetworkLineVisible?: boolean
-}
-
-const Loading = () => {
-    const styles = useStyles()
-    return (
-        <LoadingView
-            style={styles.loadingContainer}
-            variant='skeleton'
-            count={3}
-        />
-    )
 }
 
 export const AssetMarkets = ({
@@ -137,7 +126,13 @@ export const AssetMarkets = ({
     }
 
     if (isPending) {
-        return <Loading />
+        return (
+            <LoadingView
+                style={styles.loadingContainer}
+                variant='skeleton'
+                count={3}
+            />
+        )
     }
 
     if (!assetDetails) {

@@ -101,9 +101,16 @@ export const useAccountAssetSelectionList = ({
 
         const predicated = filterAsset ? excluded.filter(filterAsset) : excluded
 
-        return [...predicated].sort((a, b) =>
-            isNativeOn(a) === isNativeOn(b) ? 0 : isNativeOn(a) ? -1 : 1,
-        )
+        const byNativeFirst = (
+            a: (typeof predicated)[number],
+            b: (typeof predicated)[number],
+        ): number => {
+            const isANative = isNativeOn(a)
+            if (isANative === isNativeOn(b)) return 0
+            return isANative ? -1 : 1
+        }
+
+        return [...predicated].sort(byNativeFirst)
     }, [balanceData, debouncedSearchFilter, excludeAssetId, filterAsset])
 
     return {

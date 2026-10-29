@@ -20,7 +20,12 @@ export const useStyles = makeStyles((theme, props: PWRoundIconProps) => {
 
     const { diameter } = getRoundIconDimensions(theme, size)
 
-    const accountBackgrounds: Partial<Record<PWRoundIconVariant, string>> = {
+    const variantBackgrounds: Partial<Record<PWRoundIconVariant, string>> = {
+        primary:
+            theme.mode === 'dark'
+                ? theme.colors.buttonHelperBg
+                : theme.colors.buttonPrimaryBg,
+        helper: theme.colors.buttonSquareBg,
         accountTurquoise: theme.colors.accountIconTurquoiseBg,
         accountPurple: theme.colors.accountIconPurpleBg,
         accountMagenta: theme.colors.accountIconMagentaBg,
@@ -31,14 +36,7 @@ export const useStyles = makeStyles((theme, props: PWRoundIconProps) => {
     }
 
     const backgroundColor =
-        accountBackgrounds[variant] ??
-        (variant === 'primary'
-            ? theme.mode === 'dark'
-                ? theme.colors.buttonHelperBg
-                : theme.colors.buttonPrimaryBg
-            : variant === 'helper'
-              ? theme.colors.buttonSquareBg
-              : theme.colors.layerGrayLighter)
+        variantBackgrounds[variant] ?? theme.colors.layerGrayLighter
 
     return {
         container: {

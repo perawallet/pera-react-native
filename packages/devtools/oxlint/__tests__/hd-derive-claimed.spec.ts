@@ -25,6 +25,7 @@ import {
     readOxlintConfig,
     withParents,
     type Node,
+    withParents,
 } from './helpers.js'
 
 describe('pera/hd-derive-claimed', () => {

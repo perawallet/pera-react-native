@@ -25,7 +25,7 @@ import {
     useKMS,
     zeroBytes,
 } from '@perawallet/wallet-core-kms'
-import { bytesToHex, logger } from '@perawallet/wallet-core-shared'
+import { bytesToHex, logger, toError } from '@perawallet/wallet-core-shared'
 import { backupAdapterFor, backupSeedReference } from '../../chain-adapter'
 import { useSeedReferencesStore } from '../store/seedReferencesStore'
 import type { SeedSecretsCache, SerializeHdResolver } from '../sync/types'
@@ -111,22 +111,25 @@ export const useResolveHdSeedForBackup = (
                 const scopeAddress = chainAccountOf(account, chainId)?.address
                 // Deriving commits the child key to the keystore, so a chain
                 // whose address carries the key skips it.
-                const publicKeyHex = !scopeKeyPairId
-                    ? null
-                    : scopeAddress && adapter.publicKeyHexOf
-                      ? adapter.publicKeyHexOf(scopeAddress)
-                      : await cached(
-                            publicKeys.current,
-                            `${chainId}|${scopeKeyPairId}`,
-                            async () => {
-                                const child = await adapter.deriveHdAccount(
-                                    kmsCore,
-                                    seedKeyId,
-                                    index,
-                                )
-                                return bytesToHex(child.publicKey)
-                            },
-                        )
+                const resolvePublicKeyHex = async () => {
+                    if (!scopeKeyPairId) return null
+                    if (scopeAddress && adapter.publicKeyHexOf) {
+                        return adapter.publicKeyHexOf(scopeAddress)
+                    }
+                    return cached(
+                        publicKeys.current,
+                        `${chainId}|${scopeKeyPairId}`,
+                        async () => {
+                            const child = await adapter.deriveHdAccount(
+                                kmsCore,
+                                seedKeyId,
+                                index,
+                            )
+                            return bytesToHex(child.publicKey)
+                        },
+                    )
+                }
+                const publicKeyHex = await resolvePublicKeyHex()
                 const readSecrets = async () => {
                     const entropyHex = await readEntropyHex(
                         executeWithMnemonic,
@@ -151,8 +154,7 @@ export const useResolveHdSeedForBackup = (
                 return { seedFirstDerivedAddress, publicKeyHex, ...resolved }
             } catch (error) {
                 logger.warn('useResolveHdSeedForBackup: resolve failed', {
-                    error:
-                        error instanceof Error ? error.message : String(error),
+                    error: toError(error).message,
                 })
                 return null
             }

@@ -35,6 +35,13 @@ export const PromptContainer = () => {
 
     const PromptComponent = displayed.component
 
+    const containerStyleOf = () => {
+        if (displayed.isSheet) return styles.containerSheet
+        return displayed.isFullBleed
+            ? styles.containerFullBleed
+            : styles.container
+    }
+
     // accessibilityViewIsModal: a native Modal made siblings inaccessible for
     // free; this in-tree overlay must say so itself or VoiceOver swipes onto
     // the tab bar underneath. iOS only — Android (sibling subtrees must opt
@@ -47,15 +54,7 @@ export const PromptContainer = () => {
         >
             <Animated.View style={[styles.revealLayer, revealStyle]}>
                 <PWView style={styles.stage}>
-                    <PWView
-                        style={
-                            displayed.isSheet
-                                ? styles.containerSheet
-                                : displayed.isFullBleed
-                                  ? styles.containerFullBleed
-                                  : styles.container
-                        }
-                    >
+                    <PWView style={containerStyleOf()}>
                         {/* This container mounts above NavigationContainer (it is
                         a sibling of <MainRoutes />), so a prompt calling
                         useNavigation would throw "Couldn't find a navigation

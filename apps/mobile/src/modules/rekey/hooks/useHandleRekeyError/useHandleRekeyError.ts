@@ -16,14 +16,14 @@ import { useToast } from '@hooks/useToast'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
 import {
-    RekeyError,
-    type RekeyErrorReason,
+    DelegationError,
+    type DelegationErrorReason,
 } from '@perawallet/wallet-core-transactions'
 
 type UseHandleRekeyErrorResult = (error: unknown) => void
 
 const FALLBACK_TITLE_KEYS: Record<
-    Exclude<RekeyErrorReason, 'user_rejected'>,
+    Exclude<DelegationErrorReason, 'user_rejected'>,
     I18nKey
 > = {
     build_failed: i18nKey('rekey.errors.build_failed.title'),
@@ -34,14 +34,14 @@ const FALLBACK_TITLE_KEYS: Record<
 
 /**
  * Shared catch handler for the four rekey confirm screens. Branches on the
- * {@link RekeyError} reason so each failure stage gets its own copy:
+ * {@link DelegationError} reason so each failure stage gets its own copy:
  *
  *  - `user_rejected` is a non-fatal cancellation → dedicated toast.
  *  - every other reason → error toast with a stage-specific fallback title.
  *    The raw `originalError` is passed through so a recognized algod node
  *    error still gets its precise translation from `showError`.
  *
- * Anything that is not a RekeyError falls back to the generic error toast.
+ * Anything that is not a DelegationError falls back to the generic error toast.
  */
 export const useHandleRekeyError = (): UseHandleRekeyErrorResult => {
     const { t } = useLanguage()
@@ -50,7 +50,7 @@ export const useHandleRekeyError = (): UseHandleRekeyErrorResult => {
 
     return useCallback(
         (error: unknown) => {
-            if (!(error instanceof RekeyError)) {
+            if (!(error instanceof DelegationError)) {
                 showError(error)
                 return
             }

@@ -16,6 +16,7 @@ import type { ChainId, ChainScope } from './models/identity'
  * A chain's selected network changed between capturing a scope and using it.
  * Thrown so the caller aborts instead of acting on the wrong network.
  */
+// oxlint-disable-next-line pera/typed-domain-errors -- wallet-core-shared depends on chain-contract, so AppError is out of reach here
 export class ScopeChangedError extends Error {
     readonly expected: ChainScope
     readonly actual: ChainScope
@@ -31,6 +32,7 @@ export class ScopeChangedError extends Error {
     }
 }
 
+// oxlint-disable-next-line pera/typed-domain-errors -- wallet-core-shared depends on chain-contract, so AppError is out of reach here
 export class InvalidScopeKeyError extends Error {
     readonly key: string
 
@@ -41,6 +43,7 @@ export class InvalidScopeKeyError extends Error {
     }
 }
 
+// oxlint-disable-next-line pera/typed-domain-errors -- wallet-core-shared depends on chain-contract, so AppError is out of reach here
 export class ChainAdapterNotRegisteredError extends Error {
     readonly feature: string
     readonly chainId: ChainId
@@ -53,6 +56,7 @@ export class ChainAdapterNotRegisteredError extends Error {
     }
 }
 
+// oxlint-disable-next-line pera/typed-domain-errors -- wallet-core-shared depends on chain-contract, so AppError is out of reach here
 export class DuplicateChainAdapterError extends Error {
     readonly feature: string
     readonly chainId: ChainId

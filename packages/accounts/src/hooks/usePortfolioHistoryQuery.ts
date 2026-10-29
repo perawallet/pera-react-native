@@ -69,8 +69,13 @@ export const usePortfolioHistoryQuery = (
     const combine = useCallback(
         (results: UseQueryResult<Nullable<PortfolioHistoryPoint[]>>[]) => ({
             hasSourceMissing: results.some(result => result.data === null),
-            data: sumPortfolioHistories(
-                results.map(result => result.data ?? []),
+            // The sum skips empty series, so a chain still loading or failed
+            // must not reach it as one, or the chart would plot the rest alone.
+            data: (results.some(result => result.data === undefined)
+                ? []
+                : sumPortfolioHistories(
+                      results.map(result => result.data ?? []),
+                  )
             ).map(({ timestamp, usdValue }) => ({
                 datetime: new Date(timestamp),
                 preferredValue: usdToPreferred(usdValue),

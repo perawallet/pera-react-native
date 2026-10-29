@@ -40,6 +40,18 @@ export const CloudBackupOverviewScreen = () => {
         isSavingCredentials,
     } = useCloudBackupOverview()
 
+    const passkeysSubtitleOf = () => {
+        if (!arePasskeysResolved) return undefined
+        if (passkeysNotBackedUp > 0) {
+            return t('cloud_backup.overview.passkeys_not_backed_up', {
+                count: passkeysNotBackedUp,
+            })
+        }
+        return t('cloud_backup.overview.passkeys_in_sync', {
+            count: passkeysInSync,
+        })
+    }
+
     return (
         <>
             <PWScreen testID='cloud_backup_overview_screen'>
@@ -130,23 +142,7 @@ export const CloudBackupOverviewScreen = () => {
                                 variant='filled'
                                 icon='key'
                                 title={t('cloud_backup.overview.passkeys')}
-                                subtitle={
-                                    !arePasskeysResolved
-                                        ? undefined
-                                        : passkeysNotBackedUp > 0
-                                          ? t(
-                                                'cloud_backup.overview.passkeys_not_backed_up',
-                                                {
-                                                    count: passkeysNotBackedUp,
-                                                },
-                                            )
-                                          : t(
-                                                'cloud_backup.overview.passkeys_in_sync',
-                                                {
-                                                    count: passkeysInSync,
-                                                },
-                                            )
-                                }
+                                subtitle={passkeysSubtitleOf()}
                                 subtitleIcon={
                                     passkeysNotBackedUp > 0
                                         ? 'cloud-off'

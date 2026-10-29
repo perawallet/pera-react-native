@@ -24,6 +24,7 @@ import {
     runMigration,
     type MigrationRunResult,
 } from '@perawallet/wallet-core-migrate'
+import { toError } from '@perawallet/wallet-core-shared'
 
 export type UseRunMigrationResult = {
     run: () => Promise<MigrationRunResult>
@@ -58,7 +59,7 @@ export const useRunMigration = (): UseRunMigrationResult => {
             setResult(runResult)
             return runResult
         } catch (e) {
-            const err = e instanceof Error ? e : new Error(String(e))
+            const err = toError(e)
             setError(err)
             throw err
         } finally {

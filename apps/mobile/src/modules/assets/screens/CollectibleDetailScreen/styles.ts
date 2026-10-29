@@ -12,30 +12,10 @@
 
 import { makeStyles } from '@rneui/themed'
 
+// lanekeep-ignore-next-line pera/no-numeric-sizes reason: collectible media skeleton height
 const BIG_SKELETON_HEIGHT = 300
 
 export const useStyles = makeStyles(theme => ({
-    container: {
-        backgroundColor: theme.colors.background,
-    },
-    contentContainer: {
-        paddingHorizontal: theme.spacing.xl,
-        gap: theme.spacing.xl,
-    },
-    titleSection: {
-        gap: theme.spacing.xs,
-    },
-    title: {
-        color: theme.colors.textMain,
-    },
-    collectionName: {
-        color: theme.colors.textGray,
-    },
-    accountRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.xs,
-    },
     description: {
         color: theme.colors.textMain,
     },
@@ -89,13 +69,6 @@ export const useStyles = makeStyles(theme => ({
         alignItems: 'center',
         gap: theme.spacing.xs,
     },
-    actionButtonsContainer: {
-        flexDirection: 'row',
-        gap: theme.spacing.xl,
-        alignItems: 'center',
-        alignSelf: 'center',
-        paddingHorizontal: theme.spacing.lg,
-    },
     skeletonContainer: {
         paddingHorizontal: theme.spacing.lg,
         paddingTop: theme.spacing.xl,
@@ -112,26 +85,5 @@ export const useStyles = makeStyles(theme => ({
         height: theme.spacing.xxl,
         borderRadius: theme.borderRadius.md,
         marginBottom: theme.spacing.sm,
-    },
-    quantityChip: {
-        alignSelf: 'center',
-        marginLeft: theme.spacing.sm,
-        flexShrink: 0,
-    },
-    mediaContainerDimmed: {
-        opacity: 0.4,
-    },
-    optOutNotice: {
-        gap: theme.spacing.md,
-    },
-    optOutNoticeRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.sm,
-        marginVertical: theme.spacing.sm,
-    },
-    optOutNoticeText: {
-        color: theme.colors.textGrayLighter,
-        flexShrink: 1,
     },
 }))

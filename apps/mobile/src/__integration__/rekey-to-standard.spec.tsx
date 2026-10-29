@@ -14,8 +14,8 @@
 //
 //   Intro ─► SelectTarget ─► Confirm ─► (sign + submit) ─► Success
 //
-// The Confirm screen mounts `useSubmitRekeyMutation`, which mounts the
-// signing pipeline. Because `requestRekeySignatures` uses a non-interactive
+// The Confirm screen mounts `useSubmitDelegationMutation`, which mounts the
+// signing pipeline. Because `requestDelegationSignatures` uses a non-interactive
 // `sourceType: 'local'`, the pipeline auto-signs headlessly via the real
 // KMS-backed local-key signer — no signing overlay or extra provider is
 // mounted. So this drives a real Confirm → sign → algod-POST → Success path.

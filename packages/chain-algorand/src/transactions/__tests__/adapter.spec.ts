@@ -49,7 +49,7 @@ describe('algorandSendFlowAdapter', () => {
         expect(algorandSendFlowAdapter.assetInbox).toBe(algorandAssetInbox)
         expect(algorandSendFlowAdapter.express).toBeDefined()
         expect(algorandSendFlowAdapter.assetHolding).toBeDefined()
-        expect(algorandSendFlowAdapter.rekey).toBeDefined()
+        expect(algorandSendFlowAdapter.delegation).toBeDefined()
     })
 })
 

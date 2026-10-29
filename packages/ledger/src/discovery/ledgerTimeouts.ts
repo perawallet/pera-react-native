@@ -24,11 +24,11 @@ import {
  * the dedicated "Request timed out" preset) rather than the generic `Error`
  * the shared utility would otherwise produce.
  *
- * Previously this constructed `LedgerConnectionError` for every timeout —
- * indistinguishable from a genuine connection failure, so a stuck on-device
- * confirmation (nothing wrong with the connection, the user just hasn't
- * confirmed/rejected yet) and an actual failed connect both surfaced the same
- * generic "Connection failed" screen with no way to tell which had happened.
+ * A `LedgerConnectionError` for every timeout would be indistinguishable from
+ * a genuine connection failure, so a stuck on-device confirmation (nothing
+ * wrong with the connection, the user just hasn't confirmed/rejected yet) and
+ * an actual failed connect would both surface the same generic "Connection
+ * failed" screen with no way to tell which had happened.
  *
  * `operation` is a developer-facing label for the error message (logs /
  * debugging only) — deliberately not localized. User-facing copy is resolved

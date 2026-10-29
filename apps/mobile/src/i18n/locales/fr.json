@@ -1112,10 +1112,6 @@
                 "title": "Actif non accepté",
                 "body": "Le compte destinataire n’a pas ajouté l’actif {{assetId}}. Demandez au destinataire de l’ajouter, ou envoyez-le via la boîte de réception d’actifs."
             },
-            "asset_frozen": {
-                "title": "Actif gelé",
-                "body": "L’actif {{assetId}} est gelé, ce transfert ne peut donc pas aboutir. Le gestionnaire de gel de l’actif doit d’abord le dégeler."
-            },
             "duplicate_txn": {
                 "title": "Déjà soumise",
                 "body": "Cette transaction a déjà été traitée par le réseau."
@@ -1259,6 +1255,10 @@
             "not_replaceable": {
                 "title": "Transaction plus en attente",
                 "body": "Cette transaction a déjà été confirmée ou remplacée et ne peut plus être accélérée ni annulée."
+            },
+            "asset_frozen": {
+                "title": "Actif gelé",
+                "body": "L’actif {{assetId}} est gelé, ce transfert ne peut donc pas aboutir. Le gestionnaire de gel de l’actif doit d’abord le dégeler."
             }
         },
         "kms": {
@@ -3758,8 +3758,7 @@
         "introduction": {
             "title": "Le swap dans Pera",
             "description": "Pera Wallet offre un moyen simple et rapide d’échanger des actifs. Grâce à P.E.R.A., les demandes de swap sont routées intelligemment entre plusieurs plateformes d’échange décentralisées basées sur Algorand afin d’obtenir le meilleur prix disponible.",
-            "powered_by": "Propulsé par ",
-            "powered_by_brand": "P.E.R.A.",
+            "powered_by": "Propulsé par <0>P.E.R.A.</0>",
             "start_swapping": "Commencer à échanger",
             "terms_agreement": "En continuant, vous acceptez les <0>conditions d’utilisation</0> de notre partenaire de swap"
         },
@@ -3775,7 +3774,7 @@
             "you_pay": "Vous payez",
             "you_receive": "Vous recevez",
             "to": "Vers",
-            "balance_label": "Solde : ",
+            "balance_label": "Solde : <0/>",
             "max": "MAX",
             "select_asset": "Choisir"
         },
@@ -3855,7 +3854,7 @@
             },
             "list": {
                 "item": {
-                    "description": "{{amountIn}} {{unitIn}} échangés contre "
+                    "description": "<0/> échangés contre <1/>"
                 },
                 "empty": {
                     "title": "Aucun swap pour le moment",
@@ -4556,7 +4555,6 @@
             "passkey_disable": "Désactiver le déverrouillage par passkey",
             "passkey_password_placeholder": "Mot de passe du wallet",
             "passkey_error": "Impossible d’activer le déverrouillage par passkey. Vérifiez votre mot de passe et réessayez.",
-            "passkey_enable_error": "Impossible d’activer le déverrouillage par passkey. Veuillez réessayer.",
             "change_password_title": "Modifier le mot de passe",
             "change_password_current_placeholder": "Mot de passe actuel",
             "change_password_new_placeholder": "Nouveau mot de passe",
@@ -4568,6 +4566,26 @@
             "change_password_error_unexpected": "Une erreur s’est produite lors de la modification de votre mot de passe. Veuillez réessayer.",
             "change_password_success": "Mot de passe modifié avec succès.",
             "change_password_submit": "Modifier le mot de passe"
+        },
+        "passkey_setup": {
+            "title": "Déverrouiller avec une passkey",
+            "offer_title": "Déverrouillez plus vite la prochaine fois",
+            "body": "Déverrouillez Pera Wallet avec Touch ID, Windows Hello, votre téléphone ou une clé de sécurité au lieu de saisir votre mot de passe. Votre mot de passe reste utilisable en secours.",
+            "enable_button": "Configurer une passkey",
+            "not_now_button": "Pas maintenant",
+            "retry_button": "Réessayer",
+            "continue_button": "Continuer",
+            "pending_hint": "Suivez les instructions de votre navigateur. Une double confirmation peut vous être demandée.",
+            "success_title": "Le déverrouillage par passkey est activé",
+            "success_body": "La prochaine fois, déverrouillez Pera Wallet avec votre passkey. Votre mot de passe reste utilisable.",
+            "error_not_saved": "La passkey n’a pas été enregistrée.",
+            "error_prf_unsupported": "Cette passkey ne peut pas déverrouiller Pera Wallet.",
+            "error_unexpected": "Impossible d’activer le déverrouillage par passkey.",
+            "hint_not_saved_title": "Essayez un autre emplacement",
+            "hint_not_saved_body": "La fenêtre a été fermée, ou votre gestionnaire de mots de passe n’a pas pu enregistrer la passkey. Réessayez et choisissez une autre option dans la fenêtre du navigateur, comme Google Password Manager, iCloud Keychain ou une clé de sécurité. Si un gestionnaire de mots de passe prend toujours le relais, désactivez l’enregistrement des passkeys dans ses réglages.",
+            "hint_prf_title": "Enregistrez-la ailleurs",
+            "hint_prf_body": "La passkey a été enregistrée, mais votre gestionnaire de mots de passe ou votre clé de sécurité ne prend pas en charge la fonction dont Pera Wallet a besoin pour déverrouiller (PRF). Réessayez avec Google Password Manager, iCloud Keychain ou une clé de sécurité compatible PRF, puis supprimez la passkey inutilisée.",
+            "reauth_description": "Confirmez votre mot de passe pour activer le déverrouillage par passkey."
         },
         "approval": {
             "placeholder": "Surface d’approbation — à venir dans M4."

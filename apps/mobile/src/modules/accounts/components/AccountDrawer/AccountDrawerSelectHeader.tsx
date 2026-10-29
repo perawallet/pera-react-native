@@ -13,7 +13,7 @@
 import { PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 
-import { useSelectHeaderStyles } from './selectHeaderStyles'
+import { useSelectHeaderStyles } from './styles'
 
 /**
  * Replaces the portfolio view for screens that are picking an account to act

@@ -11,77 +11,9 @@
  */
 
 import React from 'react'
-import { createPortal } from 'react-dom'
 import { BaseErrorBoundary } from '@components/BaseErrorBoundary'
-import { PWButton, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import { useIntegrityCheckFrameHost } from './useIntegrityCheckFrameHost.web'
-import { useStyles } from './styles.web'
-
-// react-native-web renders through react-dom, so a raw element works here, as in PWWebView.
-const IFrame = 'iframe' as unknown as React.ComponentType<{
-    ref?: React.Ref<HTMLIFrameElement>
-    src: string
-    sandbox: string
-    title: string
-    inert?: boolean
-    style?: React.CSSProperties
-}>
-
-// PWWebView's allowances; no allow-top-navigation, so a click in the frame can
-// never navigate the wallet page itself.
-const CHECK_FRAME_SANDBOX =
-    'allow-same-origin allow-scripts allow-forms allow-popups'
-
-const IntegrityCheckFrame = (): React.JSX.Element | null => {
-    const { url, isExpanded, iframeRef, dismiss } = useIntegrityCheckFrameHost()
-    const styles = useStyles()
-    const { t } = useLanguage()
-    const title = t('integrityCheck.frame_title')
-
-    if (!url) return null
-
-    // Into the body: every react-native-web View is its own stacking context,
-    // so nothing in the tree can rise above the Modal portals.
-    return createPortal(
-        <PWView
-            style={isExpanded ? styles.backdrop : styles.hidden}
-            role={isExpanded ? 'dialog' : undefined}
-            aria-modal={isExpanded}
-            aria-label={isExpanded ? title : undefined}
-        >
-            <PWView style={isExpanded ? styles.modal : styles.hiddenFrame}>
-                {/* Outside the iframe and before it: a false slot keeps the
-                    frame's position, so expanding never remounts a live solve. */}
-                {isExpanded && (
-                    <PWView style={styles.header}>
-                        <PWText style={styles.heading}>
-                            {t('integrityCheck.frame_heading')}
-                        </PWText>
-                        <PWButton
-                            variant='link'
-                            title={t('integrityCheck.frame_dismiss')}
-                            onPress={dismiss}
-                        />
-                    </PWView>
-                )}
-                <IFrame
-                    ref={iframeRef}
-                    src={url}
-                    sandbox={CHECK_FRAME_SANDBOX}
-                    title={title}
-                    // Out of the tab order and the accessibility tree while
-                    // hidden; unlike display: none, scripts keep running.
-                    inert={!isExpanded}
-                    // Fills what the heading leaves; both wrappers are flex columns.
-                    // oxlint-disable-next-line react-native/no-inline-styles -- makeStyles ids cannot style a raw element
-                    style={{ border: 0, width: '100%', flex: 1, minHeight: 0 }}
-                />
-            </PWView>
-        </PWView>,
-        document.body,
-    )
-}
+import { IntegrityCheckFrame } from './IntegrityCheckFrame'
 
 // Its own boundary, so a failure here can never take the shell down.
 export const IntegrityCheckFrameHost = (): React.JSX.Element => {

@@ -16,5 +16,6 @@ export {
     PWDRAWER_EDGE_WIDTH,
     PWDRAWER_COMMIT_THRESHOLD,
     PWDRAWER_FLING_VELOCITY,
+    PWDRAWER_SPRING_CONFIG,
 } from './constants'
 export type { PWDrawerProps, PWDrawerVariant } from './types'

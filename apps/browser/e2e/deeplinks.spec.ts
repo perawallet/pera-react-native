@@ -13,6 +13,7 @@
 import { expect, test, chromium, type BrowserContext } from '@playwright/test'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { skipPasskeyUnlockStep } from './passkey-unlock-step'
 
 const dist = path.resolve(
     path.dirname(fileURLToPath(import.meta.url)),
@@ -53,6 +54,7 @@ test('popup runs onboarding in place, without popping out to a tab', async () =>
     await popup.getByTestId('create-password-input').fill(PASSWORD)
     await popup.getByTestId('create-password-confirm-input').fill(PASSWORD)
     await popup.getByTestId('create-password-submit').click()
+    await skipPasskeyUnlockStep(popup)
 
     // The real OnboardingStackNavigator, not a hand-off CTA. Only the Ledger
     // scan and ASB file-pick steps pop out, and neither is on this screen.

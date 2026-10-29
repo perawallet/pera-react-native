@@ -12,6 +12,7 @@
 
 import { makeStyles } from '@rneui/themed'
 
+// lanekeep-ignore-next-line pera/no-numeric-sizes reason: hero artwork height
 const HERO_HEIGHT = 210
 
 export const useStyles = makeStyles(theme => ({
