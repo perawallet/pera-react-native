@@ -43,7 +43,7 @@ export const InputScreen = () => {
     const navigation =
         useNavigation<StackNavigationProp<SendFundsStackParamList>>()
     const {
-        scope,
+        scope: sendScope,
         asset,
         accountAssetBalance,
         isBalanceReady,
@@ -135,7 +135,7 @@ export const InputScreen = () => {
                 </PWText>
                 <AccountDisplay
                     account={selectedAccount ?? undefined}
-                    chainId={scope.chainId}
+                    chainId={sendScope.chainId}
                     style={styles.accountDisplay}
                     iconProps={{ size: 'sm' }}
                     showChevron={false}
@@ -143,7 +143,7 @@ export const InputScreen = () => {
                 />
             </PWView>
         ),
-        [styles, t, asset?.name, selectedAccount, scope.chainId],
+        [styles, t, asset?.name, selectedAccount, sendScope.chainId],
     )
 
     useNavigationHeader({
