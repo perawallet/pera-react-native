@@ -13,6 +13,7 @@
 import type { ReactNode } from 'react'
 import { useTheme } from '@rneui/themed'
 import { PWDivider } from '@components/core'
+import { RequestAddressWarning } from '@modules/signing/components/RequestAddressWarning'
 import { SigningWarnings } from '@modules/signing/components/SigningWarnings'
 import { useStyles } from './styles'
 
@@ -38,6 +39,8 @@ export const TransactionReviewLayout = ({
             {header}
 
             <SigningWarnings />
+
+            <RequestAddressWarning />
 
             <PWDivider
                 color={theme.colors.layerGray}

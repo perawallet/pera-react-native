@@ -56,6 +56,7 @@ import type {
     UnsignedTransactionsSignableData,
 } from './pipeline/types'
 import type { PendingWalletConnectHandoff } from './pipeline/walletConnectHandoffs'
+import type { MessageSignerChainAdapter } from './message-signer'
 import { chainIdOfSignRequest } from './models/chain'
 
 export type RequestStructure = 'single' | 'list'
@@ -89,6 +90,22 @@ export type DelegatedUnsignableReason = {
     kind: 'authMissing' | 'authIsWatch'
     senderAddress: string
     authAddress: string
+}
+
+/** What an address a review shows is to the transaction. */
+export type ReviewedAddressRole =
+    | 'recipient'
+    | 'token-recipient'
+    | 'close-recipient'
+    | 'new-authorizer'
+    | 'referenced-account'
+    | 'target'
+    | 'spender'
+    | 'operator'
+
+export type ReviewedAddress = {
+    address: string
+    role: ReviewedAddressRole
 }
 
 export type ArbitraryDataDisplay =
@@ -158,6 +175,11 @@ export interface ReviewerChainAdapter {
     ): DelegatedUnsignableReason | null
     /** Never throws; anything that isn't cleanly printable comes back as hex. */
     decodeArbitraryDataForDisplay(data: string): ArbitraryDataDisplay
+    /**
+     * The counterparty addresses the review shows for one transaction, never
+     * its sender; `[]` for a transaction it can't read.
+     */
+    reviewedAddresses(transaction: TransactionNative): ReviewedAddress[]
     /** The review model of one unsigned transaction; null for one the chain can't read. */
     toTransactionNative(
         transaction: UnsignedTransaction,
@@ -201,6 +223,11 @@ export const decodeArbitraryDataForDisplay: WithChain<
     ReviewerChainAdapter['decodeArbitraryDataForDisplay']
 > = (chainId, ...args) =>
     reviewerChainAdapters.get(chainId).decodeArbitraryDataForDisplay(...args)
+
+export const reviewedAddressesOf: WithChain<
+    ReviewerChainAdapter['reviewedAddresses']
+> = (chainId, ...args) =>
+    reviewerChainAdapters.get(chainId).reviewedAddresses(...args)
 
 export type ResolveMinFeeForSenderParams = {
     senderAddress: string
@@ -937,6 +964,9 @@ export interface LocalKeySignerChainAdapter {
 
 export const localKeySignerChainAdapters =
     createChainAdapterRegistry<LocalKeySignerChainAdapter>('local-key signer')
+
+export const messageSignerChainAdapters =
+    createChainAdapterRegistry<MessageSignerChainAdapter>('message signer')
 
 export const localKeySignerAdapterFor = (
     scope: ChainScope,

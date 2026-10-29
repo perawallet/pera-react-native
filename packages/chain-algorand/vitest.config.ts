@@ -10,9 +10,12 @@
  limitations under the License
  */
 
-import { defineConfig } from 'vitest/config'
+import { configDefaults, defineConfig } from 'vitest/config'
 import { coverageConfig } from '@perawallet/wallet-core-devtools/vitest/coverage'
-import { poolConfig } from '@perawallet/wallet-core-devtools/vitest/pool'
+import {
+    poolConfig,
+    vmGlobalsSetup,
+} from '@perawallet/wallet-core-devtools/vitest/pool'
 import path from 'path'
 import { fileURLToPath } from 'url'
 
@@ -49,19 +52,41 @@ const CONTRACT_SUITES = {
         '../../extensions/hardware-wallet/src/__tests__/app-driver-contract.ts',
 }
 
+// The HTTP client rethrows the caller's abort reason, a DOMException from
+// Node's realm, which the vmThreads context doesn't see as an Error.
+const FORKS_ONLY_SPECS = ['src/blockchain/utils/__tests__/nodeHttp.spec.ts']
+
 export default defineConfig({
     test: {
         ...poolConfig,
         coverage: coverageConfig,
         globals: true,
-        environment: 'jsdom',
-        setupFiles: ['./vitest.setup.ts'],
+        environment: 'node',
+        setupFiles: [vmGlobalsSetup, './vitest.setup.ts'],
         passWithNoTests: true,
         typecheck: {
             enabled: true,
             include: ['src/**/*.test-d.ts'],
             tsconfig: './tsconfig.typecheck.json',
         },
+        projects: [
+            {
+                extends: true,
+                test: {
+                    name: 'vm',
+                    exclude: [...configDefaults.exclude, ...FORKS_ONLY_SPECS],
+                },
+            },
+            {
+                extends: true,
+                test: {
+                    name: 'forks',
+                    pool: 'forks',
+                    include: FORKS_ONLY_SPECS,
+                    typecheck: { enabled: false },
+                },
+            },
+        ],
     },
     resolve: {
         conditions: ['default'],

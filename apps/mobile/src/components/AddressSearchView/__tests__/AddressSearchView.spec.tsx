@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { ReactNode } from 'react'
 import { render, screen, fireEvent } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { AddressSearchView } from '../AddressSearchView'
@@ -24,7 +25,6 @@ import { fixtureCodec } from '@packages/chain-contract/src/__tests__/testing'
 
 const SCOPE = { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const
 
-// Mock dependencies
 vi.mock('@perawallet/wallet-core-contacts', () => ({
     addressFamilyOf: vi.fn(),
     useContacts: vi.fn(),
@@ -58,7 +58,19 @@ vi.mock('@perawallet/wallet-core-chain-shared', () => ({
 }))
 
 // The real registry loads every chain's UI; the copy is the hook spec's concern.
-vi.mock('@modules/chain-ui', () => ({ chainUiFor: () => ({}) }))
+vi.mock('@modules/chain-ui', () => ({
+    chainUiFor: () => ({
+        addressSearchPlaceholder: 'address_entry.search_placeholder',
+    }),
+}))
+
+const mockChainName = vi.hoisted(() => ({
+    value: undefined as string | undefined,
+}))
+
+vi.mock('@hooks/useChainNameWhenMultiChain', () => ({
+    useChainNameWhenMultiChain: () => mockChainName.value,
+}))
 
 vi.mock('@perawallet/wallet-core-nfd', () => ({
     useNfdSearchQuery: vi.fn(() => ({ data: [], isLoading: false })),
@@ -87,7 +99,18 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
 
 vi.mock('@components/AddressDisplay', () => ({
     __esModule: true,
-    AddressDisplay: ({ address }: { address: string }) => address,
+    AddressDisplay: ({
+        address,
+        trailing,
+    }: {
+        address: string
+        trailing?: ReactNode
+    }) => (
+        <>
+            {address}
+            {trailing}
+        </>
+    ),
 }))
 
 vi.mock('@components/AccountDisplay', () => ({
@@ -126,7 +149,7 @@ describe('AddressSearchView', () => {
     const mockFindContacts = vi.fn()
 
     beforeEach(() => {
-        vi.clearAllMocks()
+        mockChainName.value = undefined
 
         vi.mocked(useContacts).mockReturnValue({
             findContacts: mockFindContacts,
@@ -137,7 +160,19 @@ describe('AddressSearchView', () => {
         mockFindContacts.mockReturnValue([])
     })
 
-    it('renders empty view when no matches found and input is empty', () => {
+    it('shows no empty view before typing when an address is excluded', () => {
+        render(
+            <AddressSearchView
+                scope={SCOPE}
+                onSelected={mockOnSelected}
+                excludeAddress='SENDER_ADDRESS_123'
+            />,
+        )
+
+        expect(screen.queryByText('address_entry.no_accounts_found')).toBeNull()
+    })
+
+    it('still shows the empty view before typing when nothing is excluded', () => {
         render(
             <AddressSearchView
                 scope={SCOPE}
@@ -146,18 +181,9 @@ describe('AddressSearchView', () => {
         )
 
         expect(screen.getByText('address_entry.no_accounts_found')).toBeTruthy()
-        expect(screen.getByText('address_entry.no_accounts_body')).toBeTruthy()
     })
 
-    it('shows matching accounts when searching', () => {
-        const mockAccount = {
-            chains: { algorand: { address: 'ABC123456789' } },
-            name: 'Test Account',
-        }
-        vi.mocked(useAllAccounts).mockReturnValue([
-            mockAccount,
-        ] as unknown as ReturnType<typeof useAllAccounts>)
-
+    it('renders the empty view when the typed query matches nothing', () => {
         render(
             <AddressSearchView
                 scope={SCOPE}
@@ -165,11 +191,64 @@ describe('AddressSearchView', () => {
             />,
         )
 
-        expect(screen.getByText('address_entry.my_accounts')).toBeTruthy()
-        expect(screen.getByText('Test Account')).toBeTruthy()
+        const input = screen.getAllByPlaceholderText(
+            'address_entry.search_placeholder',
+        )[1]
+        fireEvent.change(input, { target: { value: 'nobody' } })
 
-        fireEvent.click(screen.getByText('Test Account'))
-        expect(mockOnSelected).toHaveBeenCalledWith('ABC123456789')
+        expect(screen.getByText('address_entry.no_accounts_found')).toBeTruthy()
+        expect(screen.getByText('address_entry.no_accounts_body')).toBeTruthy()
+    })
+
+    it('hands the chain badge to account rows and contact rows when the chain is named', () => {
+        mockChainName.value = 'Ethereum'
+        vi.mocked(useAllAccounts).mockReturnValue([
+            {
+                chains: { algorand: { address: 'ABC123456789' } },
+                name: 'Test Account',
+            },
+        ] as unknown as ReturnType<typeof useAllAccounts>)
+        mockFindContacts.mockReturnValue([
+            { addresses: { algorand: 'CONT12345' }, name: 'Friend' },
+        ])
+
+        render(
+            <AddressSearchView
+                scope={SCOPE}
+                onSelected={mockOnSelected}
+                showAllContactsWhenEmpty
+            />,
+        )
+
+        expect(mockAccountResultRow).toHaveBeenCalledWith(
+            expect.objectContaining({ badges: expect.anything() }),
+        )
+        expect(screen.getAllByText('Ethereum')).toHaveLength(1)
+    })
+
+    it('shows no chain badge when the chain is not named', () => {
+        vi.mocked(useAllAccounts).mockReturnValue([
+            {
+                chains: { algorand: { address: 'ABC123456789' } },
+                name: 'Test Account',
+            },
+        ] as unknown as ReturnType<typeof useAllAccounts>)
+        mockFindContacts.mockReturnValue([
+            { addresses: { algorand: 'CONT12345' }, name: 'Friend' },
+        ])
+
+        render(
+            <AddressSearchView
+                scope={SCOPE}
+                onSelected={mockOnSelected}
+                showAllContactsWhenEmpty
+            />,
+        )
+
+        expect(mockAccountResultRow).toHaveBeenCalledWith(
+            expect.objectContaining({ badges: undefined }),
+        )
+        expect(screen.queryByText('Ethereum')).toBeNull()
     })
 
     it("scopes account rows to the search's chain, whose address a pick selects", () => {
@@ -191,66 +270,6 @@ describe('AddressSearchView', () => {
         expect(mockAccountResultRow).toHaveBeenCalledWith(
             expect.objectContaining({ chainId: SCOPE.chainId }),
         )
-    })
-
-    it('shows matching contacts when searching', () => {
-        const CONTACT_ADDRESS = 'CONT12345'
-        const mockContact = {
-            addresses: { algorand: CONTACT_ADDRESS },
-            name: 'Friend',
-        }
-        mockFindContacts.mockReturnValue([mockContact])
-
-        render(
-            <AddressSearchView
-                scope={SCOPE}
-                onSelected={mockOnSelected}
-            />,
-        )
-
-        // Two search fields render: the non-interactive sticky display mirror
-        // and the focusable overlay (last in document order) — type into the
-        // overlay.
-        const input = screen.getAllByPlaceholderText(
-            'address_entry.search_placeholder',
-        )[1]
-        fireEvent.change(input, { target: { value: 'Friend' } })
-
-        expect(mockFindContacts).toHaveBeenCalledWith({
-            keyword: 'Friend',
-            family: 'algorand',
-        })
-        expect(screen.getByText('address_entry.contacts')).toBeTruthy()
-        expect(screen.getByText(CONTACT_ADDRESS)).toBeTruthy()
-
-        fireEvent.click(screen.getByText(CONTACT_ADDRESS))
-        expect(mockOnSelected).toHaveBeenCalledWith(CONTACT_ADDRESS)
-    })
-
-    it('excludes account matching excludeAddress', () => {
-        const senderAccount = {
-            chains: { algorand: { address: 'SENDER_ADDRESS_123' } },
-            name: 'Sender',
-        }
-        const otherAccount = {
-            chains: { algorand: { address: 'OTHER_ADDRESS_456' } },
-            name: 'Other Account',
-        }
-        vi.mocked(useAllAccounts).mockReturnValue([
-            senderAccount,
-            otherAccount,
-        ] as unknown as ReturnType<typeof useAllAccounts>)
-
-        render(
-            <AddressSearchView
-                scope={SCOPE}
-                onSelected={mockOnSelected}
-                excludeAddress='SENDER_ADDRESS_123'
-            />,
-        )
-
-        expect(screen.queryByText('Sender')).toBeNull()
-        expect(screen.getByText('Other Account')).toBeTruthy()
     })
 
     it('shows valid address option when input is a valid address', () => {
@@ -316,39 +335,6 @@ describe('AddressSearchView', () => {
         fireEvent.change(input, { target: { value: 'VALID_ADDRESS' } })
 
         expect(screen.queryByTestId('address-search-add-icon')).toBeNull()
-    })
-
-    it('hides accounts and contacts when address is valid', () => {
-        const mockAccount = {
-            chains: { algorand: { address: 'ABC123456789' } },
-            name: 'Test Account',
-        }
-        vi.mocked(useAllAccounts).mockReturnValue([
-            mockAccount,
-        ] as unknown as ReturnType<typeof useAllAccounts>)
-        mockFindContacts.mockReturnValue([
-            { addresses: { algorand: 'CONT12345' }, name: 'Friend' },
-        ])
-        mockIsValidAddress.mockReturnValue(true)
-
-        render(
-            <AddressSearchView
-                scope={SCOPE}
-                onSelected={mockOnSelected}
-            />,
-        )
-
-        // Two search fields render: the non-interactive sticky display mirror
-        // and the focusable overlay (last in document order) — type into the
-        // overlay.
-        const input = screen.getAllByPlaceholderText(
-            'address_entry.search_placeholder',
-        )[1]
-        fireEvent.change(input, { target: { value: 'VALID_ADDRESS' } })
-
-        expect(screen.getByText('address_entry.address')).toBeTruthy()
-        expect(screen.queryByText('address_entry.my_accounts')).toBeNull()
-        expect(screen.queryByText('address_entry.contacts')).toBeNull()
     })
 
     it('forwards the NFD name alongside the address when an NFD result is selected', () => {

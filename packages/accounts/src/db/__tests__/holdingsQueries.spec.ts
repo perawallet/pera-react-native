@@ -58,6 +58,56 @@ describe('account holdings queries', () => {
         teardown()
     })
 
+    describe('keepZeroNative', () => {
+        const idsOf = async (filters: {
+            hideZeroBalance?: boolean
+            keepZeroNative?: boolean
+        }) =>
+            (
+                await getAccountHoldingsLite({
+                    db,
+                    sources: [{ address: 'ADDR1', scope: MAINNET_SCOPE }],
+                    ...filters,
+                })
+            )
+                .map(row => row.assetId)
+                .sort()
+
+        beforeEach(async () => {
+            await refreshAccountHoldings({
+                db,
+                accountAddress: 'ADDR1',
+                scope: MAINNET_SCOPE,
+                holdings: [
+                    {
+                        assetId: nativeAssetFor(LEGACY_CHAIN_ID).assetId,
+                        amount: new Decimal(0),
+                    },
+                    { assetId: '10', amount: new Decimal(0) },
+                    { assetId: '20', amount: new Decimal(5) },
+                ],
+            })
+        })
+
+        it('keeps the zero native holding while hiding other zero balances', async () => {
+            expect(
+                await idsOf({ hideZeroBalance: true, keepZeroNative: true }),
+            ).toEqual(['0', '20'])
+        })
+
+        it('hides it with the plain hide-zero filter', async () => {
+            expect(await idsOf({ hideZeroBalance: true })).toEqual(['20'])
+        })
+
+        it('changes nothing without the hide-zero filter', async () => {
+            expect(await idsOf({ keepZeroNative: true })).toEqual([
+                '0',
+                '10',
+                '20',
+            ])
+        })
+    })
+
     describe('getAccountCollectiblesLite', () => {
         const collectible = (
             assetId: string,

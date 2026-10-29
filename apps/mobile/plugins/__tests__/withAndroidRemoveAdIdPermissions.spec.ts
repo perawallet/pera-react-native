@@ -12,14 +12,7 @@
 
 import { describe, expect, it } from 'vitest'
 import { removeAdIdPermissions } from '../withAndroidRemoveAdIdPermissions'
-
-const perm = (name: string, extra: Record<string, string> = {}) => ({
-    $: { 'android:name': name, ...extra },
-})
-
-const manifestWith = (names: string[]) => ({
-    manifest: { 'uses-permission': names.map(name => perm(name)) },
-})
+import { manifestWith } from './manifestFixtures'
 
 const removeMarkers = (result: {
     manifest: { 'uses-permission': { $: Record<string, string> }[] }

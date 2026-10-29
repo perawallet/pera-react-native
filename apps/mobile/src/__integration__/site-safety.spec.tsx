@@ -144,11 +144,24 @@ const SIGNING_ACCOUNT: WalletAccount = {
 const SNAPSHOT: PhishingListSnapshot = {
     generatedAt: '2026-01-01T00:00:00.000Z',
     sources: {
-        metamask: { deny: LISTED_HOST, allow: '', impersonationTargets: '' },
+        metamask: {
+            deny: LISTED_HOST,
+            allow: '',
+            impersonationTargets: '',
+            addresses: '',
+        },
         polkadot: {
             deny: 'bundled-dot.example',
             allow: '',
             impersonationTargets: '',
+            addresses: '',
+        },
+        // A source with no rows reads as unseeded and would seed again on every check.
+        'mew-darklist': {
+            deny: '',
+            allow: '',
+            impersonationTargets: '',
+            addresses: '0x09750ad360fdb7a2ee23669c4503c974d86d8694',
         },
     },
 }
@@ -168,10 +181,15 @@ const downloadLists = async (deny: string[]): Promise<void> => {
                 },
             },
             polkadot: { body: { allow: [], deny: hosts(20_000, 'dot') } },
+            'mew-darklist': { status: 304 },
         }),
     )
     const outcomes = await refreshPhishingLists()
-    expect(outcomes).toEqual({ metamask: 'updated', polkadot: 'updated' })
+    expect(outcomes).toEqual({
+        metamask: 'updated',
+        polkadot: 'updated',
+        'mew-darklist': 'unchanged',
+    })
 }
 
 const IN_APP_ORIGIN: ConnectionOrigin = { source: 'in-app' }

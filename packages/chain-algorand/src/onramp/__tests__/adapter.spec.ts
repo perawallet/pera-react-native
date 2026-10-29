@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+// @vitest-environment jsdom
 import { describe, expect, it, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
@@ -47,10 +48,17 @@ describe('algorandRampAdapter', () => {
         )
     })
 
-    it('falls back to the ticker when the provider gives no asset id', () => {
+    it('recognises ALGO by its catalogue id', () => {
         expect(
-            adapter.isNativeToken(token({ id: 'ALGO', symbol: 'ALGO' })),
+            adapter.isNativeToken(token({ id: 'ALGO', symbol: 'XALGO' })),
         ).toBe(true)
+    })
+
+    it('never takes a catalogue token for ALGO by its ticker', () => {
+        const lookAlike = token({ id: 'ALGO_LOOKALIKE', symbol: 'ALGO' })
+
+        expect(adapter.isNativeToken(lookAlike)).toBe(false)
+        expect(adapter.toAssetId(lookAlike, MAINNET)).toBeNull()
     })
 
     it('does not treat another asset as ALGO', () => {

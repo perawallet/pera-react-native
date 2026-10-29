@@ -14,7 +14,8 @@ import { useCallback, useMemo } from 'react'
 import { Decimal } from 'decimal.js'
 import {
     addressOn,
-    type AccountBalanceHistoryItem,
+    type AccountHoldingSource,
+    type PortfolioValueHistoryItem,
     useAccountHoldingSources,
     useAccountScope,
     useAccountSummaryQuery,
@@ -26,10 +27,10 @@ import {
 import {
     isTestTierScope,
     LEGACY_CHAIN_ID,
+    type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import {
     chainDisplayNameOf,
-    useChainCapabilityCheck,
     useSelectedScope,
 } from '@perawallet/wallet-core-chain-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
@@ -51,12 +52,10 @@ export type UseAccountOverviewHeaderResult = {
     availability: ChainAvailability
     /** Undefined for a chain this build doesn't register. */
     chainName: Optional<string>
-    /**
-     * Every chain the account holds assets on has balance history. The chart
-     * plots only those chains, so once the total counts another it would
-     * contradict it.
-     */
-    hasBalanceHistory: boolean
+    /** The sources the total counts; the chart sums exactly these. */
+    chartSources: AccountHoldingSource[]
+    /** Converts the total and the chart alike. */
+    currencyScope: ChainScope
     /**
      * Across every chain the account is on, leaving out test-network holdings
      * once a second chain is registered. `null` while any counted value or the
@@ -70,12 +69,12 @@ export type UseAccountOverviewHeaderResult = {
     isPending: boolean
     period: HistoryPeriod
     setPeriod: (period: HistoryPeriod) => void
-    selectedPoint: Nullable<AccountBalanceHistoryItem>
+    selectedPoint: Nullable<PortfolioValueHistoryItem>
     hasBalance: boolean
     canSign: boolean
     togglePrivacyMode: () => void
     handleChartSelectionChange: (
-        selected: Nullable<AccountBalanceHistoryItem>,
+        selected: Nullable<PortfolioValueHistoryItem>,
     ) => void
 }
 
@@ -85,15 +84,6 @@ export const useAccountOverviewHeader = (
     const scope = useAccountScope(account, LEGACY_CHAIN_ID)
     const availability = useChainAvailability(scope.chainId)
     const sources = useAccountHoldingSources(account)
-    const check = useChainCapabilityCheck()
-    // The chart plots `scope` alone, so an account spanning another chain
-    // would show a chart that contradicts its total.
-    const hasBalanceHistory =
-        sources.length > 0 &&
-        sources.every(source => source.scope.chainId === scope.chainId) &&
-        check({
-            chain: { chainId: scope.chainId, capability: 'balanceHistory' },
-        })
     // Test-network holdings never count as money (once a second chain is
     // registered), so they stay out of the total.
     const countedSources = useMemo(
@@ -104,6 +94,8 @@ export const useAccountOverviewHeader = (
         [sources],
     )
     const hasFiatTotal = countedSources.length > 0
+    // An all-test-network account has no fiat total, but still charts its holdings.
+    const chartSources = hasFiatTotal ? countedSources : sources
     const chainName = chainDisplayNameOf(scope.chainId)
     const currencyScope = useSelectedScope(LEGACY_CHAIN_ID)
     const { usdToPreferred } = useCurrency(currencyScope)
@@ -151,7 +143,7 @@ export const useAccountOverviewHeader = (
     )
 
     const { period, setPeriod, selectedPoint, setSelectedPoint } =
-        useChartInteraction<AccountBalanceHistoryItem>()
+        useChartInteraction<PortfolioValueHistoryItem>()
 
     const { privacyMode, setPrivacyMode } = useSettings()
     const togglePrivacyMode = useCallback(() => {
@@ -163,7 +155,7 @@ export const useAccountOverviewHeader = (
     // re-rendered every tab at each end of a scrub — seconds of stall on a large
     // account. The chart's gesture now blocks its ancestors natively instead.
     const handleChartSelectionChange = useCallback(
-        (selected: Nullable<AccountBalanceHistoryItem>) => {
+        (selected: Nullable<PortfolioValueHistoryItem>) => {
             setSelectedPoint(selected)
         },
         [setSelectedPoint],
@@ -172,7 +164,8 @@ export const useAccountOverviewHeader = (
     return {
         availability,
         chainName,
-        hasBalanceHistory,
+        chartSources,
+        currencyScope,
         portfolioPreferredValue,
         hasFiatTotal,
         isBalanceComplete: isComplete,

@@ -43,18 +43,17 @@ export const SharedAccountDetailsContent = ({
     const { t } = useLanguage()
     const { isUserIncluded, isAddressInWallet, handleEditContact } =
         useSharedAccountDetailsContent(details.addresses)
+    const truncated = truncateAlgorandAddress(details.address)
 
     return (
         <PWSheetLayout
             header={
                 <SheetHeader
-                    title={
-                        details.name || truncateAlgorandAddress(details.address)
-                    }
+                    title={details.name || truncated}
                     titleVariant='bodyLarge'
                     subtitle={
-                        details.name
-                            ? truncateAlgorandAddress(details.address)
+                        details.name && details.name !== truncated
+                            ? truncated
                             : undefined
                     }
                 />

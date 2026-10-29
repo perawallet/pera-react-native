@@ -12,8 +12,9 @@
 
 import { zeroBytes } from '@perawallet/wallet-core-kms'
 import { bytesToHex, type Nullable } from '@perawallet/wallet-core-shared'
-import { pbkdf2, randomBytes } from 'crypto'
+import { randomBytes } from 'crypto'
 import type { MonotonicLockout } from './lockout'
+import { pbkdf2Hash } from './pbkdf2'
 
 // v1 used Argon2id in pure-JS; unusably slow on mobile engines, so it was
 // replaced before any production rollout. v1 records are treated as invalid.
@@ -58,31 +59,8 @@ const hexToBytes = (hex: string): Uint8Array => {
     return bytes
 }
 
-// Zeros the UTF-8 encoded PIN buffer once pbkdf2 has consumed it. The PIN
-// string itself is immutable (JS strings can't be wiped) — clearing the
-// encoded byte view is the best we can do without a string-zeroing
-// primitive.
 const hashPin = (pin: string, salt: Uint8Array): Promise<Uint8Array> =>
-    new Promise((resolve, reject) => {
-        const pinBytes = encoder.encode(pin)
-        pbkdf2(
-            pinBytes,
-            salt,
-            PBKDF2_ITERATIONS,
-            HASH_LENGTH_BYTES,
-            PBKDF2_DIGEST,
-            (err, derivedKey) => {
-                zeroBytes(pinBytes)
-                if (err || !derivedKey) {
-                    reject(err ?? new Error('pbkdf2 returned no key'))
-                    return
-                }
-                const hash = new Uint8Array(derivedKey)
-                zeroBytes(derivedKey)
-                resolve(hash)
-            },
-        )
-    })
+    pbkdf2Hash(pin, salt, PBKDF2_ITERATIONS, HASH_LENGTH_BYTES, PBKDF2_DIGEST)
 
 const randomHex = (length: number): string => {
     const bytes = new Uint8Array(randomBytes(length))

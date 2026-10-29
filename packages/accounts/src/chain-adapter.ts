@@ -318,14 +318,15 @@ export interface AccountsChainAdapter {
     /** Absent on a chain whose holdings carry no data to describe. */
     describeHolding?(native: ChainHoldingNative): HoldingDescription
     /**
-     * The summed value of `addresses` over `period`. Absent on a chain with no
-     * portfolio history source.
+     * The summed value of `addresses` over `period`. `null` when the network
+     * serves no portfolio history, unlike `[]`, which is a source with no
+     * points. Absent on a chain with no portfolio history source.
      */
     fetchPortfolioHistory?(
         addresses: string[],
         period: HistoryPeriod,
         scope: ChainScope,
-    ): Promise<PortfolioHistoryPoint[]>
+    ): Promise<Nullable<PortfolioHistoryPoint[]>>
     /** One holding's history. Absent on a chain with no such source. */
     fetchHoldingBalanceHistory?(
         address: string,
@@ -565,15 +566,15 @@ export const fetchHoldingAcquisitionOrder = async (
         : new Map()
 }
 
-/** Empty, without a request, on a chain with no portfolio history source. */
+/** `null`, without a request, on a chain with no portfolio history source. */
 export const fetchPortfolioHistory = async (
     addresses: string[],
     period: HistoryPeriod,
     scope: ChainScope,
-): Promise<PortfolioHistoryPoint[]> =>
+): Promise<Nullable<PortfolioHistoryPoint[]>> =>
     (await accountsChainAdapters
         .get(scope.chainId)
-        .fetchPortfolioHistory?.(addresses, period, scope)) ?? []
+        .fetchPortfolioHistory?.(addresses, period, scope)) ?? null
 
 /** Empty, without a request, on a chain with no holding history source. */
 export const fetchHoldingBalanceHistory = async (

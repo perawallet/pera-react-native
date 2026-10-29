@@ -24,6 +24,11 @@ export const useStyles = makeStyles(theme => ({
         color: theme.colors.textGray,
         paddingTop: theme.spacing.sm,
     },
+    scope: {
+        textAlign: 'center',
+        paddingTop: theme.spacing.md,
+        paddingHorizontal: theme.spacing.xl,
+    },
     rows: {
         width: '100%',
         paddingTop: theme.spacing.lg,

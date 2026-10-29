@@ -178,14 +178,6 @@ vi.mock('@perawallet/wallet-core-device', () => ({
     useDeviceIdLookup: () => () => 'test-device-id',
 }))
 
-vi.mock('@hooks/useModalState', () => ({
-    useModalState: () => ({
-        isOpen: false,
-        open: vi.fn(),
-        close: vi.fn(),
-    }),
-}))
-
 vi.mock('@modules/bottom-sheet', () => ({
     useBottomSheet: () => ({
         request: mockRequestBottomSheet,

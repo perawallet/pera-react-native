@@ -12,8 +12,6 @@
 
 // @vitest-environment node
 
-// @vitest-environment node
-
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { File } from 'expo-file-system'
 import { getImageBase64 } from '../getImageBase64'
@@ -32,7 +30,6 @@ vi.mock('expo-file-system', () => ({
 
 describe('getImageBase64', () => {
     beforeEach(() => {
-        vi.clearAllMocks()
         mockFileInstance.base64.mockResolvedValue('base64data')
         vi.mocked(File).downloadFileAsync = vi
             .fn()

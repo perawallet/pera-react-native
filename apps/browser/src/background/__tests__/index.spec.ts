@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+// @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { redactSensitiveContext } from '@perawallet/wallet-core-shared'
 

@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-// @vitest-environment node
 import { describe, test, expect } from 'vitest'
 import { mnemonicToSeed } from '@scure/bip39'
 import { fromSeed } from '@algorandfoundation/xhd-wallet-api'

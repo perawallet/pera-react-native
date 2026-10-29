@@ -365,8 +365,8 @@ describe('useCardOnboardingEmailScreen', () => {
         mockCurrentRegion = { iso3166alpha2: 'ZZ', name: 'Nowhere' }
         const { result } = renderHook(() => useCardOnboardingEmailScreen())
 
-        // Give the effect a chance to run before asserting nothing happened.
-        await waitFor(() => expect(result.current).toBeTruthy())
+        await act(async () => {})
+
         expect(result.current.selectedCountry).toBeUndefined()
     })
 })

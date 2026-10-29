@@ -24,6 +24,7 @@ import {
 } from '@perawallet/wallet-core-assets'
 import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
 import {
+    chainDisplayNameOf,
     useSelectedScope,
     useSelectedScopes,
 } from '@perawallet/wallet-core-chain-shared'
@@ -41,6 +42,7 @@ import { useToast } from '@hooks/useToast'
 import { SEARCH_DEBOUNCE_TIME } from '@constants/ui'
 import type { AddAssetContentVariant } from '@modules/assets/components/AddAssetContent'
 import {
+    isChainRefusedError,
     isIntegrityRequiredError,
     useDebouncedValue,
     type Nullable,
@@ -75,7 +77,9 @@ type UseAddAssetViewResult = {
     isOffline: boolean
     isIntegrityBlocked: boolean
     isUnavailable: boolean
-    /** Set when the search found the chain can't be searched here: the default copy is about BetaNet and custom nodes. */
+    /** Set when the backend refused every searched chain: the default title is about BetaNet and custom nodes, which have no Pera services at all. */
+    unavailableTitle: Optional<string>
+    /** Set with `unavailableTitle`; a chip names its chain. Unset for a network with no Pera services, so the default copy shows. */
     unavailableBody: Optional<string>
     isFetchingNextPage: boolean
     hasNextPage: boolean
@@ -176,6 +180,8 @@ export const useAddAssetView = (
         isLoading,
         isError,
         error,
+        isUnavailable: isKnownUnavailable,
+        unavailableReasons: knownReasons,
         isPaused,
         isFetchingNextPage,
         hasNextPage,
@@ -186,7 +192,20 @@ export const useAddAssetView = (
     })
     const { hasInternet } = useNetworkStatus()
     const isOffline = isPaused || (isError && !hasInternet)
-    const isSearchUnavailable = isError && isAssetSearchUnavailableError(error)
+    const failedUnavailable =
+        isError && isAssetSearchUnavailableError(error) ? error : undefined
+    const isSearchUnavailable =
+        isKnownUnavailable || failedUnavailable !== undefined
+    const unavailableReasons = isKnownUnavailable
+        ? knownReasons
+        : failedUnavailable
+          ? [failedUnavailable]
+          : []
+    // A missing Pera service (BetaNet, a custom node) says nothing about the
+    // chain being listed, so only a backend refusal gets the not-listed copy.
+    const isNotListed =
+        unavailableReasons.length > 0 &&
+        unavailableReasons.every(isChainRefusedError)
     // The list shows skeletons only while it's empty, so this turns a "No
     // assets found" flash into skeletons; rows already shown stay up. Clearing
     // goes back to the list fetched for the empty query.
@@ -309,13 +328,24 @@ export const useAddAssetView = (
         handleSearchChange: setSearchQuery,
         results,
         showsNetwork: selectedChainId === null && offeredChainIds.length > 1,
-        isLoading: isLoading || isDebouncingTypedQuery,
+        // Typing on an unavailable chain asks nothing, so nothing loads.
+        isLoading:
+            !isSearchUnavailable && (isLoading || isDebouncingTypedQuery),
         isError,
         isOffline,
         isIntegrityBlocked: isError && isIntegrityRequiredError(error),
         isUnavailable: offeredChainIds.length === 0 || isSearchUnavailable,
-        unavailableBody: isSearchUnavailable
-            ? t('common.network_unavailable.generic_body')
+        unavailableTitle: isNotListed
+            ? t('add_asset.not_listed.title')
+            : undefined,
+        unavailableBody: isNotListed
+            ? selectedChainId !== null
+                ? t('add_asset.not_listed.body', {
+                      chain:
+                          chainDisplayNameOf(selectedChainId) ??
+                          selectedChainId,
+                  })
+                : t('add_asset.not_listed.body_all')
             : undefined,
         isFetchingNextPage,
         hasNextPage,

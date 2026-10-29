@@ -102,6 +102,11 @@
         "search_placeholder": "Search by name or asset ID",
         "no_results": "No assets found",
         "partial_results": "Some networks couldn't be searched, so results may be missing.",
+        "not_listed": {
+            "title": "Not available yet",
+            "body": "Pera doesn't list assets on {{chain}} yet.",
+            "body_all": "Pera doesn't list assets on these networks yet."
+        },
         "opt_in": {
             "failed_title": "Failed to opt-in",
             "success_title": "Opt-in successful",
@@ -200,6 +205,8 @@
         "no_accounts_found": "No Accounts Found",
         "no_accounts_body": "There are no matching accounts",
         "search_placeholder": "Account address, NFD name, or short name",
+        "search_placeholder_evm": "0x address or account name",
+        "search_placeholder_neutral": "Address or account name",
         "nfd_results": "NFDomains",
         "nfd_resolving": "Resolving NFD...",
         "nfd_resolved": "Resolved from {{name}}",
@@ -283,6 +290,7 @@
         "transaction_list": {
             "title": "Transactions",
             "empty_body": "No transactions found",
+            "empty_on_network_body": "No transactions yet on {{network}}",
             "offline_empty_title": "You're offline",
             "offline_empty_body": "No transactions are saved on this device yet. They'll appear once you're back online.",
             "search_paused_body": "No transactions found in recent history.",
@@ -339,6 +347,8 @@
             "empty_body": "You have no assets linked to this account",
             "nomatch_title": "No Matching Assets",
             "nomatch_body": "No assets matched your search term",
+            "funding_title": "Get started on {{network}}",
+            "funding_body": "Deposit funds to start using this network. You'll need some {{nativeSymbol}} on {{network}} to pay network fees.",
             "network_filter_all": "All",
             "see_networks": "See networks",
             "hide_networks": "Hide networks",
@@ -434,6 +444,7 @@
         "remove_rekey_error_message": "You can't remove this account before removing its {{count}} rekeyed account(s)",
         "view_private_key": "View private key",
         "networks_title": "Networks",
+        "networks_title_named": "{{name}} on each network",
         "add_network": "Add",
         "add_network_error": "Couldn't add this network",
         "add_network_success": "{{network}} added",
@@ -450,8 +461,7 @@
         "universal_wallet_subtitle": "One passphrase, all networks",
         "viewing": "Viewing",
         "wallet_label": "Wallet #{{number}}",
-        "main_address": "Main Address",
-        "sub_address": "Sub Address",
+        "account_number": "Account #{{number}}",
         "type_universal_wallet": "Universal Wallet",
         "type_algo25": "Algo25 Account",
         "type_watch": "Watch Account",
@@ -501,8 +511,10 @@
         "acknowledge": {
             "title": "Keep it secret. Keep it safe.",
             "description": "Confirm and acknowledge the following:",
+            "scope": "This passphrase controls your accounts on all networks: {{networks}}.",
             "row_screen": "Nobody can see my screen.",
             "row_share": "I risk losing all my funds if I share my recovery passphrase with anyone.",
+            "row_share_all_networks": "I risk losing all my funds on every network if I share my recovery passphrase with anyone.",
             "row_lose": "My funds are permanently lost if I lose my recovery passphrase and lose access to my wallet.",
             "row_pera": "Pera employees will NEVER ask for my recovery passphrase.",
             "cta_reveal": "Reveal Recovery Passphrase",
@@ -512,7 +524,14 @@
             "title": "Passphrase",
             "body": "Make sure to record these words in the correct order, using the corresponding numbers.",
             "error_title": "Could not retrieve passphrase",
-            "error_body": "Something went wrong. Please try again."
+            "error_body": "Something went wrong. Please try again.",
+            "reach_title": "This account's addresses"
+        },
+        "compatibility": {
+            "title": "Using this passphrase in other wallets",
+            "evm": "Ethereum-compatible networks: standard BIP39 wallets such as MetaMask can import these words, and your first account's address will match. Accounts you add later in Pera may not appear in those wallets by default.",
+            "algorand": "Algorand: works in Pera and other wallets that support Algorand 24-word HD wallets. Legacy 25-word Algorand wallets can't import it.",
+            "warning": "Anyone who has these words controls your funds on every network. Never enter them on a website or share them with anyone."
         }
     },
     "reveal_private_key": {
@@ -1936,7 +1955,7 @@
         },
         "inbox": {
             "empty_title": "No pending messages",
-            "empty_body": "You do not currently have any pending inbox messages",
+            "empty_body": "The inbox holds Algorand assets sent to you before you’ve opted in, along with shared account invitations and signature requests. Tokens on other networks arrive directly in your balance.",
             "asa_requests_one": "1 incoming asset",
             "asa_requests_other": "{{count}} incoming assets",
             "multisig_sign": {
@@ -1948,7 +1967,16 @@
                 "status_confirmed": "Confirmed"
             },
             "invitation_title": "<0>You've been invited</0> to join a shared account {{address}}",
-            "view_invitation_details": "View invitation details"
+            "view_invitation_details": "View invitation details",
+            "info": {
+                "title": "About the inbox",
+                "algorand_title": "Algorand",
+                "algorand_body": "An Algorand account must opt in to an asset before it can hold it. Assets sent to you before you’ve opted in wait here, in the inbox, until you claim or reject them. Shared account invitations and signature requests arrive here too.",
+                "other_networks_title": "Other networks",
+                "other_networks_body": "Networks such as Ethereum and Base have no opt-in. Tokens sent to you there arrive directly in your balance and never appear in the inbox.",
+                "find_tokens_body": "To see them, open the account and check its assets on that network.",
+                "learn_more": "Learn more"
+            }
         },
         "claim": {
             "asset_transfer_requests_title": "Asset Transfer Requests",
@@ -2153,24 +2181,25 @@
     },
     "onboarding": {
         "import_options": {
-            "title": "Select your passphrase type",
+            "title": "Recover from Passphrase",
             "hd_wallet": {
                 "title": "Universal Wallet",
-                "description": "Wallet that lets you derive new accounts, all using the same passphrase",
-                "chip": "new"
+                "description": "Wallet that lets you create multiple accounts across chains from a single 24-word recovery phrase"
             },
             "algo25": {
-                "title": "ALGO25",
+                "title": "Algo25",
                 "description": "Legacy format that is specific to Algorand ecosystem",
-                "chip": "legacy",
-                "mnemonic_info": "25-word passphrase"
+                "chip": "legacy"
             },
-            "mnemonic_info": "24-word passphrase"
+            "quantum": {
+                "title": "Quantum Account",
+                "description": "Falcon-1024 signatures, natively secured on Algorand"
+            }
         },
         "import_info": {
-            "title": "Recover an Algorand Wallet",
-            "body": "In the following steps, you'll enter your recovery passphrase to recover an Algorand wallet. Have your recovery passphrase handy before you begin.",
-            "button": "Recover an Algorand Wallet"
+            "title": "Recover a Wallet",
+            "body": "In the following steps, you'll enter your recovery passphrase to recover a wallet. Have your recovery passphrase handy before you begin.",
+            "button": "Recover a Wallet"
         },
         "import_account": {
             "title": "Enter your Recovery Passphrase",
@@ -2210,12 +2239,11 @@
             "error_title": "Failed to create account"
         },
         "main_screen": {
-            "welcome": "Welcome to \n Pera Wallet",
-            "new_to_algo": "New to Algorand?",
-            "create_wallet": "Create a new wallet",
-            "already_have_account": "Already have an account?",
-            "import_account": "Import an account",
-            "privacy_agreement": "By creating a wallet, you agree to Pera Wallet's <0>Privacy Policy</0>"
+            "welcome": "Welcome to\nPera Wallet",
+            "new_to_pera": "New to Pera?",
+            "create_wallet": "Create Wallet",
+            "already_have_wallet": "Already have a wallet?",
+            "import_wallet": "Import Wallet"
         },
         "terms_sheet": {
             "title": "Terms and Conditions",
@@ -2255,11 +2283,11 @@
             }
         },
         "add_account": {
-            "title": "Add an\naccount",
+            "title": "Add Account",
             "add_account_option_title": "Add Account",
             "add_account_option_description": "Add a new account to your existing Universal Wallet",
             "import_account_option_title": "Import Account",
-            "import_account_option_description": "Import an existing Algorand account with various methods",
+            "import_account_option_description": "Import an existing account or connect your Ledger",
             "qr_scan_invalid_title": "Invalid QR Code",
             "qr_scan_invalid_body": "This QR code doesn't contain a valid account recovery link",
             "qr_scan_invalid_mnemonic_title": "Invalid Passphrase",
@@ -2271,17 +2299,23 @@
             "create_universal_wallet_option_description": "Wallet that lets you derive new accounts, all using the same 24-word passphrase",
             "create_algo25_option_title": "Create an Algo25 Account",
             "create_algo25_option_description": "Legacy format that is specific to Algorand",
-            "quantum_account_option_title": "Add Quantum Account",
+            "quantum_account_option_title": "Algorand Quantum Account",
             "quantum_account_option_description": "Falcon-1024 signatures, natively secured on Algorand. Your keys, now ready for the post-quantum era.",
             "quantum_account_option_badge": "NEW",
             "quantum_account_option_learn_more": "Learn more",
             "quantum_creating_title": "Creating your Quantum account…",
             "terms_and_privacy": "By adding a wallet, you agree to Pera Wallet's <0>Terms and Conditions</0> and <1>Privacy Policy</1>",
-            "create_multisig_option_title": "Add Shared Account",
-            "create_multisig_option_description": "Create a new shared account with enhanced security that requires multiple signers",
+            "create_multisig_option_title": "Algorand Shared Account",
+            "create_multisig_option_description": "Create a new multi-sig account with enhanced security that requires multiple signers",
             "pera_card_option_title": "Add Pera Card Account",
             "pera_card_option_description": "Spend your crypto in the real world with the Pera Card",
             "see_other_options": "See other options"
+        },
+        "add_account_options": {
+            "title": "Add Account",
+            "multichain_title": "Multichain Account",
+            "multichain_description": "Create a new address across all supported blockchains, linked to your existing recovery phrase",
+            "multichain_new_wallet_description": "Access and manage multiple blockchain networks from a single wallet"
         },
         "import_private_key": {
             "title": "Import private key",
@@ -2294,29 +2328,33 @@
             "backup_not_included": "This account isn't in a cloud backup. To recover it later, use View private key in the account's options and keep the key somewhere safe."
         },
         "import_account_options": {
-            "title": "Import an\naccount",
-            "recover_wallet_title": "Recover a wallet",
-            "recover_wallet_description": "I want to recover an Algorand wallet",
-            "recover_qr_title": "Recover an account with QR code",
-            "recover_qr_description": "I want to recover an Algorand account using a QR code",
+            "title": "Import Account",
+            "onboarding_title": "Import Wallet",
+            "recover_passphrase_title": "Recover from Passphrase",
+            "recover_passphrase_description": "Recover a wallet using passphrase",
+            "recover_qr_title": "Recover from QR Code",
+            "recover_qr_description": "Recover an Algorand wallet using a QR code",
             "private_key_title": "Import a Private Key",
             "private_key_description": "Add an account from its private key",
-            "pair_ledger_title": "Pair Ledger via Bluetooth",
-            "pair_ledger_description": "I want to recover an account that is backed by my Ledger hardware wallet via Bluetooth",
-            "pair_ledger_usb_title": "Pair Ledger via USB",
-            "pair_ledger_usb_description": "I want to recover an account that is backed by my Ledger hardware wallet via USB cable",
+            "pair_ledger_title": "Pair with Ledger",
+            "pair_ledger_description": "Manage your accounts via a paired Ledger device",
             "pair_ledger_unsupported_description": "Not supported by this browser or device",
-            "pera_web_title": "Import from Pera Web",
-            "pera_web_description": "I want to import Algorand accounts from Pera Web",
-            "cloud_backup_title": "Import from Cloud Backup",
-            "cloud_backup_description": "I want to restore my accounts and contacts using my 12-word backup phrase and encryption key",
+            "pera_web_title": "Recover from Legacy Web Wallet",
+            "pera_web_description": "Import Algorand Wallet from Pera Web",
+            "cloud_backup_title": "Recover from Cloud Backup",
+            "cloud_backup_description": "Restore your accounts and contacts on a fresh app or sync with your other devices.",
             "cloud_backup_already_enabled_title": "Cloud Backup is already on",
             "cloud_backup_already_enabled_body": "This device already has a Cloud Backup. Manage it in Settings › Cloud Backup.",
-            "asb_title": "Algorand Secure Backup",
-            "asb_legacy_title": "Legacy Backup",
-            "asb_description": "I want to restore my accounts using an Algorand Secure Backup file and 12-word key",
-            "quantum_title": "Import Quantum account",
-            "quantum_description": "I want to import a Quantum account using its 25-word passphrase"
+            "asb_title": "Recover from Algorand Secure Backup",
+            "asb_legacy_title": "Recover from Legacy Backup",
+            "asb_description": "Restore wallet using an Algorand Secure Backup file and 12-word key"
+        },
+        "ledger_transport_options": {
+            "title": "Pair with Ledger",
+            "ble_title": "Bluetooth",
+            "ble_description": "Connect your Ledger wirelessly via Bluetooth",
+            "usb_title": "USB",
+            "usb_description": "Connect your Ledger directly using a USB cable"
         },
         "asb_import": {
             "info": {
@@ -2723,13 +2761,13 @@
             "cancel": "Cancel"
         }
     },
+    "chain_selection": {
+        "title": "Choose Network",
+        "add_action": "Add"
+    },
     "receive_funds": {
         "account_selection": {
             "title": "Select Account"
-        },
-        "chain_selection": {
-            "title": "Choose Network",
-            "add_action": "Add"
         },
         "qrview": {
             "error_title": "No Account Selected",
@@ -2847,7 +2885,10 @@
             "title": "Select Asset",
             "search_placeholder": "Search by asset name or ID",
             "no_results_title": "No Matching Assets",
-            "no_results_body": "No assets matched your search term"
+            "no_results_body": "No assets matched your search term",
+            "empty_title": "Nothing to send on {{network}}",
+            "empty_body": "This account has no assets on {{network}} yet. Receive some to start sending.",
+            "empty_receive_action": "Receive"
         },
         "bottom_sheet": {
             "no_account_title": "No Account Selected",
@@ -2911,6 +2952,7 @@
             "amount": "Amount",
             "account": "Account",
             "to": "To",
+            "network": "Network",
             "fee": "Fee",
             "current_balance": "Current Balance",
             "note": "Note",
@@ -3355,6 +3397,23 @@
             "show_details": "Show Details",
             "details_title": "Athentication Request Details",
             "details_description": "Review the full metadata of this authentication request before approving."
+        },
+        "address_safety": {
+            "listed_title": "Known scam address",
+            "listed_body": "This request names an address on a public list of addresses used to steal funds. Signing could hand it your assets.",
+            "look_alike_title": "This request names an address that imitates one you know",
+            "look_alike_body": "It starts and ends like an address you know, but the characters in between are different. Scammers create look-alike addresses to trick you. Compare the full addresses below.",
+            "acknowledge": "I understand the risk and want to sign anyway",
+            "role": {
+                "recipient": "Recipient",
+                "token_recipient": "Token recipient",
+                "close_recipient": "Receives the remaining balance",
+                "new_authorizer": "New signing authority",
+                "referenced_account": "Referenced account",
+                "target": "Contract",
+                "spender": "Spender",
+                "operator": "Operator"
+            }
         }
     },
     "site_safety": {
@@ -3699,8 +3758,7 @@
         "introduction": {
             "title": "Swap in Pera",
             "description": "Pera Wallet provides an easy and fast way to swap assets. With P.E.R.A., swap requests are intelligently routed across multiple Algorand based decentralized exchanges to secure the best available price.",
-            "powered_by": "Powered by ",
-            "powered_by_brand": "P.E.R.A.",
+            "powered_by": "Powered by <0>P.E.R.A.</0>",
             "start_swapping": "Start Swapping",
             "terms_agreement": "By continuing, you agree to our swap partner's <0>Terms of Service</0>"
         },
@@ -3716,7 +3774,7 @@
             "you_pay": "You pay",
             "you_receive": "You receive",
             "to": "To",
-            "balance_label": "Balance: ",
+            "balance_label": "Balance: <0/>",
             "max": "MAX",
             "select_asset": "Select"
         },
@@ -3796,7 +3854,7 @@
             },
             "list": {
                 "item": {
-                    "description": "Swapped {{amountIn}} {{unitIn}} for "
+                    "description": "Swapped <0/> for <1/>"
                 },
                 "empty": {
                     "title": "No swaps yet",

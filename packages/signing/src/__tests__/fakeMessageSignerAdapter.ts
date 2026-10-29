@@ -12,10 +12,10 @@
 
 import { vi } from 'vitest'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import {
-    messageSignerChainAdapters,
-    type AuthDataSigner,
-    type MessageSignerChainAdapter,
+import { messageSignerChainAdapters } from '../chain-adapter'
+import type {
+    AuthDataSigner,
+    MessageSignerChainAdapter,
 } from '../message-signer'
 
 const notStubbed = (member: string) => () => {
@@ -50,6 +50,7 @@ export const fakeMessageSignerAdapter = ({
     signsVerifiably: vi.fn(() => true),
     supports: vi.fn(() => true),
     describe: vi.fn(notStubbed('describe')),
+    reviewedAddresses: vi.fn(() => []),
     plan: vi.fn(notStubbed('plan')),
     assemble: vi.fn(notStubbed('assemble')),
     ...(authData === null ? {} : { authData: fakeAuthDataSigner(authData) }),

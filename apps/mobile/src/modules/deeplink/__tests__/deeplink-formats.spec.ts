@@ -163,6 +163,9 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
     const { toBigInt } = await vi.importActual<
         typeof import('@packages/shared/src/utils/unit-conversion')
     >('@packages/shared/src/utils/unit-conversion')
+    const { withTimeout } = await vi.importActual<
+        typeof import('@packages/shared/src/utils/async')
+    >('@packages/shared/src/utils/async')
 
     // Real error classes and enums rather than hand-copied literals: the
     // deeplinks package extends AppError at load. base.ts has no runtime
@@ -179,6 +182,7 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
         ),
         ...errors,
         toBigInt,
+        withTimeout,
     }
 })
 
@@ -357,6 +361,7 @@ vi.mock('@modules/transactions', () => ({
             setDestination: mockSetDestination,
             setSelectedAsset: mockSetSelectedAsset,
             setCanSelectAsset: mockSetCanSelectAsset,
+            setChainId: vi.fn(),
             setNote: mockSetNote,
             setAmount: mockSetAmount,
             setPendingAmountBaseUnits: mockSetPendingAmountBaseUnits,

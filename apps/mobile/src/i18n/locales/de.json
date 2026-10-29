@@ -102,6 +102,11 @@
         "search_placeholder": "Nach Name oder Asset-ID suchen",
         "no_results": "Keine Assets gefunden",
         "partial_results": "Einige Netzwerke konnten nicht durchsucht werden, daher fehlen möglicherweise Ergebnisse.",
+        "not_listed": {
+            "title": "Noch nicht verfügbar",
+            "body": "Pera listet auf {{chain}} noch keine Assets.",
+            "body_all": "Pera listet auf diesen Netzwerken noch keine Assets."
+        },
         "opt_in": {
             "failed_title": "Anmeldung fehlgeschlagen",
             "success_title": "Anmeldung erfolgreich",
@@ -200,6 +205,8 @@
         "no_accounts_found": "Keine Konten gefunden",
         "no_accounts_body": "Es gibt keine passenden Konten",
         "search_placeholder": "Kontoadresse, NFD-Name oder Kurzname",
+        "search_placeholder_evm": "0x-Adresse oder Kontoname",
+        "search_placeholder_neutral": "Adresse oder Kontoname",
         "nfd_results": "NFDomains",
         "nfd_resolving": "NFD wird aufgelöst...",
         "nfd_resolved": "Aufgelöst von {{name}}",
@@ -283,6 +290,7 @@
         "transaction_list": {
             "title": "Transaktionen",
             "empty_body": "Keine Transaktionen gefunden",
+            "empty_on_network_body": "Noch keine Transaktionen auf {{network}}",
             "offline_empty_title": "Du bist offline",
             "offline_empty_body": "Auf diesem Gerät sind noch keine Transaktionen gespeichert. Sie erscheinen, sobald du wieder online bist.",
             "search_paused_body": "Keine Transaktionen im jüngsten Verlauf gefunden.",
@@ -339,6 +347,8 @@
             "empty_body": "Diesem Konto sind keine Assets zugeordnet",
             "nomatch_title": "Keine passenden Assets",
             "nomatch_body": "Keine Assets entsprechen deinem Suchbegriff",
+            "funding_title": "Erste Schritte auf {{network}}",
+            "funding_body": "Zahle Guthaben ein, um dieses Netzwerk zu nutzen. Du brauchst etwas {{nativeSymbol}} auf {{network}}, um Netzwerkgebühren zu bezahlen.",
             "network_filter_all": "Alle",
             "see_networks": "Netzwerke anzeigen",
             "hide_networks": "Netzwerke ausblenden",
@@ -434,6 +444,7 @@
         "remove_rekey_error_message": "Du kannst dieses Konto erst entfernen, nachdem du seine {{count}} rekeyed Konto(s) entfernt hast",
         "view_private_key": "Privaten Schlüssel anzeigen",
         "networks_title": "Netzwerke",
+        "networks_title_named": "{{name}} in jedem Netzwerk",
         "add_network": "Hinzufügen",
         "add_network_error": "Dieses Netzwerk konnte nicht hinzugefügt werden",
         "add_network_success": "{{network}} hinzugefügt",
@@ -450,8 +461,7 @@
         "universal_wallet_subtitle": "Eine Wiederherstellungsphrase, alle Netzwerke",
         "viewing": "Aktuell",
         "wallet_label": "Wallet Nr. {{number}}",
-        "main_address": "Hauptadresse",
-        "sub_address": "Unteradresse",
+        "account_number": "Konto Nr. {{number}}",
         "type_universal_wallet": "Universal Wallet",
         "type_algo25": "Algo25-Konto",
         "type_watch": "Beobachtungskonto",
@@ -501,8 +511,10 @@
         "acknowledge": {
             "title": "Geheim halten. Sicher aufbewahren.",
             "description": "Bestätige Folgendes:",
+            "scope": "Diese Wiederherstellungsphrase kontrolliert deine Konten in allen Netzwerken: {{networks}}.",
             "row_screen": "Niemand kann meinen Bildschirm sehen.",
             "row_share": "Ich riskiere den Verlust meines gesamten Guthabens, wenn ich meine Wiederherstellungsphrase mit jemandem teile.",
+            "row_share_all_networks": "Ich riskiere den Verlust meines gesamten Guthabens in allen Netzwerken, wenn ich meine Wiederherstellungsphrase mit jemandem teile.",
             "row_lose": "Mein Guthaben ist unwiderruflich verloren, wenn ich meine Wiederherstellungsphrase verliere und den Zugriff auf mein Wallet verliere.",
             "row_pera": "Pera-Mitarbeiter werden NIEMALS nach meiner Wiederherstellungsphrase fragen.",
             "cta_reveal": "Wiederherstellungsphrase anzeigen",
@@ -512,7 +524,14 @@
             "title": "Passphrase",
             "body": "Notiere diese Wörter unbedingt in der richtigen Reihenfolge anhand der entsprechenden Nummern.",
             "error_title": "Passphrase konnte nicht abgerufen werden",
-            "error_body": "Etwas ist schiefgelaufen. Bitte versuche es erneut."
+            "error_body": "Etwas ist schiefgelaufen. Bitte versuche es erneut.",
+            "reach_title": "Adressen dieses Kontos"
+        },
+        "compatibility": {
+            "title": "Passphrase in anderen Wallets verwenden",
+            "evm": "Ethereum-kompatible Netzwerke: Standard-BIP39-Wallets wie MetaMask können diese Wörter importieren, und die Adresse deines ersten Kontos stimmt überein. Konten, die du später in Pera hinzufügst, erscheinen in diesen Wallets standardmäßig eventuell nicht.",
+            "algorand": "Algorand: funktioniert in Pera und anderen Wallets, die Algorand-HD-Wallets mit 24 Wörtern unterstützen. Ältere Algorand-Wallets mit 25 Wörtern können sie nicht importieren.",
+            "warning": "Wer diese Wörter hat, kontrolliert dein Guthaben in allen Netzwerken. Gib sie niemals auf einer Website ein und teile sie mit niemandem."
         }
     },
     "reveal_private_key": {
@@ -1928,7 +1947,7 @@
         },
         "inbox": {
             "empty_title": "Keine ausstehenden Nachrichten",
-            "empty_body": "Du hast derzeit keine ausstehenden Nachrichten im Posteingang",
+            "empty_body": "Im Posteingang landen Algorand-Assets, die dir gesendet wurden, bevor du dich für sie angemeldet hast, sowie Einladungen zu Gemeinschaftskonten und Signaturanfragen. Tokens in anderen Netzwerken kommen direkt in deinem Guthaben an.",
             "asa_requests_one": "1 eingehendes Asset",
             "asa_requests_other": "{{count}} eingehende Assets",
             "multisig_sign": {
@@ -1940,7 +1959,16 @@
                 "status_confirmed": "Bestätigt"
             },
             "invitation_title": "<0>Du wurdest eingeladen</0>, einem Gemeinschaftskonto {{address}} beizutreten",
-            "view_invitation_details": "Einladungsdetails anzeigen"
+            "view_invitation_details": "Einladungsdetails anzeigen",
+            "info": {
+                "title": "Über den Posteingang",
+                "algorand_title": "Algorand",
+                "algorand_body": "Ein Algorand-Konto muss sich für ein Asset anmelden, bevor es dieses halten kann. Assets, die dir vor deiner Anmeldung gesendet werden, warten hier im Posteingang, bis du sie beanspruchst oder ablehnst. Auch Einladungen zu Gemeinschaftskonten und Signaturanfragen kommen hier an.",
+                "other_networks_title": "Andere Netzwerke",
+                "other_networks_body": "Netzwerke wie Ethereum und Base kennen keine Anmeldung für Assets. Tokens, die dir dort gesendet werden, kommen direkt in deinem Guthaben an und erscheinen nie im Posteingang.",
+                "find_tokens_body": "Du findest sie, indem du das Konto öffnest und dir seine Assets in diesem Netzwerk ansiehst.",
+                "learn_more": "Mehr erfahren"
+            }
         },
         "claim": {
             "asset_transfer_requests_title": "Asset-Übertragungsanfragen",
@@ -2145,24 +2173,25 @@
     },
     "onboarding": {
         "import_options": {
-            "title": "Wähle deinen Passphrase-Typ",
+            "title": "Mit Passphrase wiederherstellen",
             "hd_wallet": {
                 "title": "Universal Wallet",
-                "description": "Wallet, mit dem du neue Konten ableiten kannst, die alle dieselbe Passphrase verwenden",
-                "chip": "neu"
+                "description": "Wallet, mit dem du aus einer einzigen 24-Wort-Wiederherstellungsphrase mehrere Konten über Chains hinweg erstellen kannst"
             },
             "algo25": {
-                "title": "ALGO25",
+                "title": "Algo25",
                 "description": "Legacy-Format, das speziell für das Algorand-Ökosystem gilt",
-                "chip": "legacy",
-                "mnemonic_info": "Passphrase mit 25 Wörtern"
+                "chip": "legacy"
             },
-            "mnemonic_info": "Passphrase mit 24 Wörtern"
+            "quantum": {
+                "title": "Quantum-Konto",
+                "description": "Falcon-1024-Signaturen, nativ auf Algorand gesichert"
+            }
         },
         "import_info": {
-            "title": "Ein Algorand-Wallet wiederherstellen",
-            "body": "In den folgenden Schritten gibst du deine Wiederherstellungsphrase ein, um ein Algorand-Wallet wiederherzustellen. Halte deine Wiederherstellungsphrase bereit, bevor du beginnst.",
-            "button": "Ein Algorand-Wallet wiederherstellen"
+            "title": "Ein Wallet wiederherstellen",
+            "body": "In den folgenden Schritten gibst du deine Wiederherstellungsphrase ein, um ein Wallet wiederherzustellen. Halte deine Wiederherstellungsphrase bereit, bevor du beginnst.",
+            "button": "Ein Wallet wiederherstellen"
         },
         "import_account": {
             "title": "Gib deine Wiederherstellungsphrase ein",
@@ -2202,12 +2231,11 @@
             "error_title": "Konto konnte nicht erstellt werden"
         },
         "main_screen": {
-            "welcome": "Willkommen bei \n Pera Wallet",
-            "new_to_algo": "Neu bei Algorand?",
-            "create_wallet": "Neues Wallet erstellen",
-            "already_have_account": "Du hast bereits ein Konto?",
-            "import_account": "Konto importieren",
-            "privacy_agreement": "Durch das Erstellen eines Wallets stimmst du der <0>Datenschutzrichtlinie</0> von Pera Wallet zu"
+            "welcome": "Willkommen bei\nPera Wallet",
+            "new_to_pera": "Neu bei Pera?",
+            "create_wallet": "Wallet erstellen",
+            "already_have_wallet": "Du hast bereits ein Wallet?",
+            "import_wallet": "Wallet importieren"
         },
         "terms_sheet": {
             "title": "Allgemeine Geschäftsbedingungen",
@@ -2247,11 +2275,11 @@
             }
         },
         "add_account": {
-            "title": "Konto\nhinzufügen",
+            "title": "Konto hinzufügen",
             "add_account_option_title": "Konto hinzufügen",
             "add_account_option_description": "Neues Konto zu deinem bestehenden Universal Wallet hinzufügen",
             "import_account_option_title": "Konto importieren",
-            "import_account_option_description": "Bestehendes Algorand-Konto mit verschiedenen Methoden importieren",
+            "import_account_option_description": "Bestehendes Konto importieren oder deinen Ledger verbinden",
             "qr_scan_invalid_title": "Ungültiger QR-Code",
             "qr_scan_invalid_body": "Dieser QR-Code enthält keinen gültigen Konto-Wiederherstellungslink",
             "qr_scan_invalid_mnemonic_title": "Ungültige Passphrase",
@@ -2263,17 +2291,23 @@
             "create_universal_wallet_option_description": "Wallet, mit dem du neue Konten ableiten kannst, die alle dieselbe 24-Wort-Passphrase verwenden",
             "create_algo25_option_title": "Algo25-Konto erstellen",
             "create_algo25_option_description": "Legacy-Format, das speziell für Algorand gilt",
-            "quantum_account_option_title": "Quantum-Konto hinzufügen",
+            "quantum_account_option_title": "Algorand Quantum-Konto",
             "quantum_account_option_description": "Falcon-1024-Signaturen, nativ auf Algorand gesichert. Deine Schlüssel, jetzt bereit für das Post-Quanten-Zeitalter.",
             "quantum_account_option_badge": "NEU",
             "quantum_account_option_learn_more": "Mehr erfahren",
             "quantum_creating_title": "Dein Quantum-Konto wird erstellt…",
             "terms_and_privacy": "Durch das Hinzufügen eines Wallets stimmst du den <0>Allgemeinen Geschäftsbedingungen</0> und der <1>Datenschutzrichtlinie</1> von Pera Wallet zu",
-            "create_multisig_option_title": "Gemeinschaftskonto hinzufügen",
-            "create_multisig_option_description": "Neues Gemeinschaftskonto mit erhöhter Sicherheit erstellen, das mehrere Signierer erfordert",
+            "create_multisig_option_title": "Algorand-Gemeinschaftskonto",
+            "create_multisig_option_description": "Neues Multisig-Konto mit erhöhter Sicherheit erstellen, das mehrere Signierer erfordert",
             "pera_card_option_title": "Pera Card Konto hinzufügen",
             "pera_card_option_description": "Gib dein Krypto in der realen Welt mit der Pera Card aus",
             "see_other_options": "Weitere Optionen anzeigen"
+        },
+        "add_account_options": {
+            "title": "Konto hinzufügen",
+            "multichain_title": "Multichain-Konto",
+            "multichain_description": "Neue Adresse auf allen unterstützten Blockchains erstellen, verknüpft mit deiner bestehenden Wiederherstellungsphrase",
+            "multichain_new_wallet_description": "Mehrere Blockchain-Netzwerke mit einem einzigen Wallet nutzen und verwalten"
         },
         "import_private_key": {
             "title": "Privaten Schlüssel importieren",
@@ -2286,29 +2320,33 @@
             "backup_not_included": "Dieses Konto ist in keinem Cloud-Backup. Um es später wiederherzustellen, nutze „Privaten Schlüssel anzeigen“ in den Kontooptionen und bewahre den Schlüssel sicher auf."
         },
         "import_account_options": {
-            "title": "Konto\nimportieren",
-            "recover_wallet_title": "Wallet wiederherstellen",
-            "recover_wallet_description": "Ich möchte ein Algorand-Wallet wiederherstellen",
-            "recover_qr_title": "Konto mit QR-Code wiederherstellen",
-            "recover_qr_description": "Ich möchte ein Algorand-Konto mit einem QR-Code wiederherstellen",
+            "title": "Konto importieren",
+            "onboarding_title": "Wallet importieren",
+            "recover_passphrase_title": "Mit Passphrase wiederherstellen",
+            "recover_passphrase_description": "Wallet mithilfe einer Passphrase wiederherstellen",
+            "recover_qr_title": "Mit QR-Code wiederherstellen",
+            "recover_qr_description": "Algorand-Wallet mit einem QR-Code wiederherstellen",
             "private_key_title": "Privaten Schlüssel importieren",
             "private_key_description": "Konto über seinen privaten Schlüssel hinzufügen",
-            "pair_ledger_title": "Ledger per Bluetooth koppeln",
-            "pair_ledger_description": "Ich möchte ein Konto wiederherstellen, das über Bluetooth durch mein Ledger-Hardware-Wallet gesichert ist",
-            "pair_ledger_usb_title": "Ledger per USB koppeln",
-            "pair_ledger_usb_description": "Ich möchte ein Konto wiederherstellen, das über USB-Kabel durch mein Ledger-Hardware-Wallet gesichert ist",
+            "pair_ledger_title": "Mit Ledger koppeln",
+            "pair_ledger_description": "Verwalte deine Konten über ein gekoppeltes Ledger-Gerät",
             "pair_ledger_unsupported_description": "Von diesem Browser oder Gerät nicht unterstützt",
-            "pera_web_title": "Von Pera Web importieren",
-            "pera_web_description": "Ich möchte Algorand-Konten von Pera Web importieren",
-            "cloud_backup_title": "Aus Cloud-Backup importieren",
-            "cloud_backup_description": "Ich möchte meine Konten und Kontakte mit meiner 12-Wort-Passphrase und meinem Backup-Schlüssel wiederherstellen",
+            "pera_web_title": "Aus Legacy-Web-Wallet wiederherstellen",
+            "pera_web_description": "Algorand-Wallet aus Pera Web importieren",
+            "cloud_backup_title": "Aus Cloud-Backup wiederherstellen",
+            "cloud_backup_description": "Stelle deine Konten und Kontakte in einer neuen App wieder her oder synchronisiere sie mit deinen anderen Geräten.",
             "cloud_backup_already_enabled_title": "Cloud-Backup ist bereits aktiv",
             "cloud_backup_already_enabled_body": "Dieses Gerät hat bereits ein Cloud-Backup. Verwalte es unter Einstellungen › Cloud-Backup.",
-            "asb_title": "Algorand Secure Backup",
-            "asb_legacy_title": "Legacy-Backup",
-            "asb_description": "Ich möchte meine Konten mithilfe einer Algorand Secure Backup-Datei und eines 12-Wort-Schlüssels wiederherstellen",
-            "quantum_title": "Quantum-Konto importieren",
-            "quantum_description": "Ich möchte ein Quantum-Konto mit seiner 25-Wort-Passphrase importieren"
+            "asb_title": "Aus Algorand Secure Backup wiederherstellen",
+            "asb_legacy_title": "Aus Legacy-Backup wiederherstellen",
+            "asb_description": "Wallet mit einer Algorand Secure Backup-Datei und einem 12-Wort-Schlüssel wiederherstellen"
+        },
+        "ledger_transport_options": {
+            "title": "Mit Ledger koppeln",
+            "ble_title": "Bluetooth",
+            "ble_description": "Verbinde deinen Ledger drahtlos per Bluetooth",
+            "usb_title": "USB",
+            "usb_description": "Verbinde deinen Ledger direkt mit einem USB-Kabel"
         },
         "asb_import": {
             "info": {
@@ -2715,13 +2753,13 @@
             "cancel": "Abbrechen"
         }
     },
+    "chain_selection": {
+        "title": "Netzwerk wählen",
+        "add_action": "Hinzufügen"
+    },
     "receive_funds": {
         "account_selection": {
             "title": "Konto auswählen"
-        },
-        "chain_selection": {
-            "title": "Netzwerk wählen",
-            "add_action": "Hinzufügen"
         },
         "qrview": {
             "error_title": "Kein Konto ausgewählt",
@@ -2839,7 +2877,10 @@
             "title": "Asset auswählen",
             "search_placeholder": "Nach Asset-Name oder ID suchen",
             "no_results_title": "Keine passenden Assets",
-            "no_results_body": "Keine Assets entsprechen deinem Suchbegriff"
+            "no_results_body": "Keine Assets entsprechen deinem Suchbegriff",
+            "empty_title": "Nichts zu senden auf {{network}}",
+            "empty_body": "Dieses Konto hat noch keine Assets auf {{network}}. Empfange welche, um mit dem Senden zu beginnen.",
+            "empty_receive_action": "Empfangen"
         },
         "bottom_sheet": {
             "no_account_title": "Kein Konto ausgewählt",
@@ -2903,6 +2944,7 @@
             "amount": "Betrag",
             "account": "Konto",
             "to": "An",
+            "network": "Netzwerk",
             "fee": "Gebühr",
             "current_balance": "Aktuelles Guthaben",
             "note": "Notiz",
@@ -3347,6 +3389,23 @@
             "show_details": "Details anzeigen",
             "details_title": "Details der Authentifizierungsanfrage",
             "details_description": "Überprüfe die vollständigen Metadaten dieser Authentifizierungsanfrage, bevor du sie genehmigst."
+        },
+        "address_safety": {
+            "listed_title": "Bekannte Betrugsadresse",
+            "listed_body": "Diese Anfrage nennt eine Adresse aus einer öffentlichen Liste von Adressen, mit denen Guthaben gestohlen wird. Wenn du signierst, könnte sie an deine Assets gelangen.",
+            "look_alike_title": "Diese Anfrage nennt eine Adresse, die eine dir bekannte nachahmt",
+            "look_alike_body": "Sie beginnt und endet wie eine Adresse, die du kennst, aber die Zeichen dazwischen sind anders. Betrüger erstellen ähnlich aussehende Adressen, um dich zu täuschen. Vergleiche unten die vollständigen Adressen.",
+            "acknowledge": "Ich verstehe das Risiko und möchte trotzdem signieren",
+            "role": {
+                "recipient": "Empfänger",
+                "token_recipient": "Token-Empfänger",
+                "close_recipient": "Erhält das Restguthaben",
+                "new_authorizer": "Neue Signaturberechtigung",
+                "referenced_account": "Referenziertes Konto",
+                "target": "Vertrag",
+                "spender": "Berechtigte Adresse",
+                "operator": "Operator"
+            }
         }
     },
     "site_safety": {
@@ -3691,8 +3750,7 @@
         "introduction": {
             "title": "Tauschen in Pera",
             "description": "Pera Wallet bietet eine einfache und schnelle Möglichkeit, Assets zu tauschen. Mit P.E.R.A. werden Tauschanfragen intelligent über mehrere Algorand-basierte dezentrale Börsen geleitet, um den besten verfügbaren Preis zu sichern.",
-            "powered_by": "Unterstützt von ",
-            "powered_by_brand": "P.E.R.A.",
+            "powered_by": "Unterstützt von <0>P.E.R.A.</0>",
             "start_swapping": "Tauschen starten",
             "terms_agreement": "Durch Fortfahren stimmst du den <0>Nutzungsbedingungen</0> unseres Tauschpartners zu"
         },
@@ -3708,7 +3766,7 @@
             "you_pay": "Du zahlst",
             "you_receive": "Du erhältst",
             "to": "An",
-            "balance_label": "Guthaben: ",
+            "balance_label": "Guthaben: <0/>",
             "max": "MAX",
             "select_asset": "Auswählen"
         },
@@ -3788,7 +3846,7 @@
             },
             "list": {
                 "item": {
-                    "description": "{{amountIn}} {{unitIn}} getauscht gegen "
+                    "description": "<0/> getauscht gegen <1/>"
                 },
                 "empty": {
                     "title": "Noch keine Tauschvorgänge",

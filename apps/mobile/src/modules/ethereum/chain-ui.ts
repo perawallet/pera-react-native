@@ -21,6 +21,7 @@ import { EthereumSendFeeSection } from './components/EthereumSendFeeSection'
 // ethereum, which keeps viem out of an Algorand-only bundle.
 export const ethereumChainUi: ChainUi | undefined = {
     familyLabel: i18nKey('chain_families.evm'),
+    passphraseCompatibilityKey: i18nKey('view_passphrase.compatibility.evm'),
     transactionDetails: {
         ReviewBody: EthereumTransactionReviewBody,
         DetailBody: EthereumTransactionDetailBody,
@@ -29,6 +30,7 @@ export const ethereumChainUi: ChainUi | undefined = {
     sendConfirmation: {
         FeeSection: EthereumSendFeeSection,
     },
+    addressSearchPlaceholder: i18nKey('address_entry.search_placeholder_evm'),
     wrongNetworkAddress: {
         titleKey: i18nKey('address_entry.wrong_network.title.evm'),
         bodyKey: i18nKey('address_entry.wrong_network.body.evm'),

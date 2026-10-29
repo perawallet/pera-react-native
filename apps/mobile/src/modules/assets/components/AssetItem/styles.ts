@@ -34,8 +34,10 @@ export const useStyles = makeStyles(theme => {
             alignItems: 'center',
             gap: theme.spacing.lg,
         },
+        // Text gives way to the right slot, never the other way round.
         infoContainer: {
             flex: 1,
+            minWidth: 0,
         },
         titleRow: {
             flexDirection: 'row',
@@ -57,6 +59,7 @@ export const useStyles = makeStyles(theme => {
         },
         rightSlot: {
             marginLeft: theme.spacing.md,
+            flexShrink: 0,
         },
     }
 })

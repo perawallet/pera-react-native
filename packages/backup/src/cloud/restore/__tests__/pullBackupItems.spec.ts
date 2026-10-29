@@ -10,8 +10,6 @@
  limitations under the License
  */
 
-// @vitest-environment node
-
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { encryptItemPayload } from '../../crypto/itemPayload'
 

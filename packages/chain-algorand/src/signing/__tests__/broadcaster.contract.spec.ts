@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-// @vitest-environment node
 import { afterAll, afterEach, beforeAll } from 'vitest'
 import { generateAccount } from 'algosdk'
 import { http, HttpResponse } from 'msw'

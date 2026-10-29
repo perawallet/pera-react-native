@@ -10,9 +10,6 @@
  limitations under the License
  */
 
-// @vitest-environment node
-// jsdom rewrites import.meta.url to a non-file URL, which readFileSync rejects.
-
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 

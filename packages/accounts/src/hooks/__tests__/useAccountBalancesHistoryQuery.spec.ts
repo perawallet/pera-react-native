@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+// @vitest-environment jsdom
 import { renderHook, waitFor } from '@testing-library/react'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
@@ -25,15 +26,17 @@ import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 // Algorand switches its Pera-backed capabilities off on BetaNet and custom
 // nodes, the networks only a developer-mode override reaches.
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useChainCapability: vi.fn(() =>
-        ['mainnet', 'testnet'].includes(mockNetwork.network ?? 'mainnet'),
+    useChainCapability: vi.fn(
+        () =>
+            !mockNetwork.isSourceSwitchedOff &&
+            ['mainnet', 'testnet'].includes(mockNetwork.network ?? 'mainnet'),
     ),
 }))
 
 const portfolioHistory = () =>
     vi.mocked(fakeAccountsChain().adapter.fetchPortfolioHistory)
 
-const mockNetwork = { network: 'mainnet' }
+const mockNetwork = { network: 'mainnet', isSourceSwitchedOff: false }
 
 const selectedScope = (): ChainScope => ({
     chainId: 'algorand',
@@ -68,6 +71,7 @@ describe('useAccountBalancesHistoryQuery', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockNetwork.network = 'mainnet'
+        mockNetwork.isSourceSwitchedOff = false
         mockUsdToPreferred.mockImplementation((amount: Decimal) =>
             amount.mul(1.5),
         )
@@ -149,6 +153,56 @@ describe('useAccountBalancesHistoryQuery', () => {
 
             await waitFor(() => expect(result.current.isSuccess).toBe(true))
 
+            expect(result.current.data).toEqual([])
+            expect(result.current.isUnavailableOnNetwork).toBe(false)
+        })
+
+        it('flags isUnavailableOnNetwork when the network serves no history', async () => {
+            portfolioHistory().mockResolvedValue(null)
+
+            const { result } = renderHook(
+                () =>
+                    useAccountBalancesHistoryQuery(
+                        ['ADDR1'],
+                        'one-week',
+                        selectedScope(),
+                    ),
+                { wrapper: createWrapper() },
+            )
+
+            await waitFor(() =>
+                expect(result.current.isUnavailableOnNetwork).toBe(true),
+            )
+            expect(result.current.data).toEqual([])
+            expect(result.current.isPending).toBe(false)
+        })
+
+        it('drops cached points once the network loses its history source', async () => {
+            portfolioHistory().mockResolvedValue([
+                {
+                    timestamp: Date.parse('2024-01-01T00:00:00Z'),
+                    usdValue: new Decimal('100.00'),
+                    nativeValue: new Decimal('500.00'),
+                },
+            ])
+            const wrapper = createWrapper()
+
+            const { result, rerender } = renderHook(
+                () =>
+                    useAccountBalancesHistoryQuery(
+                        ['ADDR1'],
+                        'one-day',
+                        selectedScope(),
+                    ),
+                { wrapper },
+            )
+            await waitFor(() => expect(result.current.data).toHaveLength(1))
+
+            // Same key, with the source switched off remotely.
+            mockNetwork.isSourceSwitchedOff = true
+            rerender()
+
+            expect(result.current.isUnavailableOnNetwork).toBe(true)
             expect(result.current.data).toEqual([])
         })
 

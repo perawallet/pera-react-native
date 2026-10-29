@@ -10,17 +10,18 @@
  limitations under the License
  */
 
-import type { BackupId } from '@perawallet/wallet-core-backup'
+import type {
+    BackupCredentialsFileDestination,
+    BackupId,
+} from '@perawallet/wallet-core-backup'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import type {
     ChooseCloudFile,
     CloudFileReadResult,
     CloudFileSaveResult,
-    CloudFileStore,
 } from '@perawallet/wallet-extension-platform'
 
-/** A local file alongside the cloud drives the platform can reach. */
-export type CredentialsFileSource = 'device' | CloudFileStore
+export type CredentialsFileSource = BackupCredentialsFileDestination
 
 export type SaveResult = CloudFileSaveResult
 export type ReadResult = CloudFileReadResult
@@ -31,8 +32,7 @@ export type BackupCredentials = {
     backupId: BackupId
 }
 
-/** Straight off a store, where either half can be gone: the backup was deleted
- *  or the draft cleared while a sheet, a PIN or a sign-in was open. */
+/** Either half can be gone when read straight off a store. */
 export type MaybeBackupCredentials = {
     [K in keyof BackupCredentials]: Nullable<BackupCredentials[K]>
 }

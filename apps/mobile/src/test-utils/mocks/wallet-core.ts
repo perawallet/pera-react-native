@@ -41,6 +41,10 @@ vi.mock('@perawallet/wallet-core-site-safety', () => ({
         isChecking: false,
     })),
     assessSiteSafety: vi.fn(async () => ({ kind: 'clear' })),
+    useListedAddressesQuery: vi.fn(() => ({
+        isListed: () => false,
+        isChecking: false,
+    })),
     startPhishingListRefresh: vi.fn(() => () => {}),
     PHISHING_LIST_STORE_NAME: 'site-safety-phishing-lists-store',
     usePhishingListStore: { persist: { rehydrate: vi.fn() } },
@@ -320,6 +324,8 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
         isLoading: false,
         isError: false,
         error: null,
+        isUnavailable: false,
+        unavailableReasons: [],
         isPaused: false,
         isFetchingNextPage: false,
         hasNextPage: false,
@@ -549,6 +555,22 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
             isPending: false,
         })),
         getAccountDisplayName: vi.fn(a => a?.name || ''),
+        isNamedAfterOwnAddress: vi.fn(
+            (account: any) =>
+                !!account?.name &&
+                entriesOf(account).some(
+                    entry => entry.address === account.name,
+                ),
+        ),
+        accountNumberOf: vi.fn((account: any) => {
+            const custody = account?.custody
+            if (custody?.kind === 'local' && custody.seed === 'bip39') {
+                return custody.hd.account + custody.hd.keyIndex + 1
+            }
+            return custody?.kind === 'hardware'
+                ? custody.accountIndex + 1
+                : undefined
+        }),
         useAccountPresentation: vi.fn(() => null),
         authorityTransitionLabel: vi.fn(() => ({
             labelKey: i18nKey('account_info.type_rekeyed_signer'),

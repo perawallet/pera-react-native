@@ -10,23 +10,51 @@
  limitations under the License
  */
 
-import { defineConfig } from 'vitest/config'
+import { configDefaults, defineConfig } from 'vitest/config'
 import { coverageConfig } from '@perawallet/wallet-core-devtools/vitest/coverage'
-import { poolConfig } from '@perawallet/wallet-core-devtools/vitest/pool'
+import {
+    poolConfig,
+    vmGlobalsSetup,
+} from '@perawallet/wallet-core-devtools/vitest/pool'
 import path from 'path'
 import { fileURLToPath } from 'url'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
+
+// Registering the real Algorand dApp-request adapter loads chain-algorand's
+// connect graph, so only the specs that dispatch through it pay for that.
+const dappAdapterSpecs = [
+    'src/__tests__/*Parity.spec.ts',
+    'src/v1/__tests__/{adapterValidation,handler}.spec.ts',
+    'src/v2/__tests__/{handler*,supportedNamespaces}.spec.ts',
+]
 
 export default defineConfig({
     test: {
         ...poolConfig,
         coverage: coverageConfig,
         globals: true,
-        environment: 'jsdom',
-        setupFiles: [
-            './vitest.setup.ts',
-            './src/__tests__/registerDappRequestAdapter.ts',
+        environment: 'node',
+        setupFiles: [vmGlobalsSetup, './vitest.setup.ts'],
+        projects: [
+            {
+                extends: true,
+                test: {
+                    name: 'unit',
+                    exclude: [...configDefaults.exclude, ...dappAdapterSpecs],
+                },
+            },
+            {
+                extends: true,
+                test: {
+                    name: 'dapp-adapter',
+                    include: dappAdapterSpecs,
+                    setupFiles: [
+                        vmGlobalsSetup,
+                        './src/__tests__/registerDappRequestAdapter.ts',
+                    ],
+                },
+            },
         ],
     },
     resolve: {

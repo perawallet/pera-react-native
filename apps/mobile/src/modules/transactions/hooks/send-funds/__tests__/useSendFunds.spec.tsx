@@ -212,6 +212,22 @@ describe('useSendFunds', () => {
     })
 })
 
+describe('useSendFunds chain', () => {
+    beforeEach(() => {
+        useSendFundsStore.getState().reset()
+    })
+
+    it('holds the chosen network until the flow resets', () => {
+        const { result } = renderHook(() => useSendFunds())
+
+        act(() => result.current.setChainId('ethereum'))
+        expect(result.current.chainId).toBe('ethereum')
+
+        act(() => result.current.reset())
+        expect(result.current.chainId).toBeUndefined()
+    })
+})
+
 describe('useSendFunds fee preset', () => {
     beforeEach(() => {
         useSendFundsStore.getState().reset()

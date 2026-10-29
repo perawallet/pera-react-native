@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+// @vitest-environment jsdom
 import React from 'react'
 import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'

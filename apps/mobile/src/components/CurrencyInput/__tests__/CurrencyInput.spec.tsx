@@ -10,31 +10,30 @@
  limitations under the License
  */
 
-import { render, screen } from '@test-utils/render'
+import { render } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
 import { CurrencyInput } from '../CurrencyInput'
 
-// Mock react-native-advanced-input-mask
-vi.mock('react-native-advanced-input-mask', async () => {
-    const React = await import('react')
-    return {
-        MaskedTextInput: (props: Record<string, unknown>) =>
-            React.createElement('div', {
-                ...props,
-                'data-testid': 'currency-input',
-            }),
-    }
-})
+const { maskedProps } = vi.hoisted(() => ({
+    maskedProps: { current: {} as Record<string, unknown> },
+}))
+
+vi.mock('react-native-advanced-input-mask', () => ({
+    MaskedTextInput: (props: Record<string, unknown>) => {
+        maskedProps.current = props
+        return null
+    },
+}))
 
 describe('CurrencyInput', () => {
-    // lanekeep-ignore-next-line pera/no-primitive-retest reason: the one smoke test for a component with no other case
-    it('renders correctly', () => {
+    it('masks the fraction to the max precision, padding up to the min precision', () => {
         render(
             <CurrencyInput
                 minPrecision={2}
                 maxPrecision={6}
             />,
         )
-        expect(screen.getByTestId('currency-input')).toBeTruthy()
+
+        expect(maskedProps.current.mask).toBe(`[0${'9'.repeat(12)}].[999900]`)
     })
 })

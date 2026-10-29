@@ -42,7 +42,8 @@ import { useChartInteraction } from '@hooks/useChartInteraction'
 import { ChartPeriodSelection } from '@components/ChartPeriodSelection'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import {
-    type AccountBalanceHistoryItem,
+    type AccountHoldingSource,
+    type PortfolioValueHistoryItem,
     useAccountBalancesHistoryQuery,
     addressOn,
 } from '@perawallet/wallet-core-accounts'
@@ -56,7 +57,7 @@ import { ExpandablePanel } from '@components/ExpandablePanel'
 import { TrendIndicator } from '@components/TrendIndicator'
 
 export type PortfolioViewProps = {
-    onDataSelected?: (selected: Nullable<AccountBalanceHistoryItem>) => void
+    onDataSelected?: (selected: Nullable<PortfolioValueHistoryItem>) => void
 } & PWViewProps
 
 export const PortfolioView = ({ ...props }: PortfolioViewProps) => {
@@ -76,7 +77,7 @@ export const PortfolioView = ({ ...props }: PortfolioViewProps) => {
     const { preferredCurrency } = useCurrency(scope)
     const { t } = useLanguage()
     const { period, setPeriod, selectedPoint, setSelectedPoint } =
-        useChartInteraction<AccountBalanceHistoryItem>()
+        useChartInteraction<PortfolioValueHistoryItem>()
     const { getPreference, setPreference } = usePreferences()
 
     const isChartShown =
@@ -89,6 +90,10 @@ export const PortfolioView = ({ ...props }: PortfolioViewProps) => {
     const addresses = useMemo(
         () => accounts.flatMap(a => addressOn(a, scope) ?? []),
         [accounts, scope],
+    )
+    const historySources = useMemo<AccountHoldingSource[]>(
+        () => addresses.map(address => ({ address, scope })),
+        [addresses, scope],
     )
 
     const { data: historyData } = useAccountBalancesHistoryQuery(
@@ -109,6 +114,20 @@ export const PortfolioView = ({ ...props }: PortfolioViewProps) => {
         [historyData],
     )
 
+    // The chart reports fiat points only; the native headline reads the same
+    // point from this single-chain series, which shares the chart's timestamps.
+    const selectedNativeValue = useMemo(
+        () =>
+            selectedPoint
+                ? (historyData.find(
+                      point =>
+                          point.datetime.getTime() ===
+                          selectedPoint.datetime.getTime(),
+                  )?.nativeValue ?? null)
+                : null,
+        [historyData, selectedPoint],
+    )
+
     const [trendAbsolute, trendPercentage] = useMemo(() => {
         const firstDp = historyDataPoints.at(0) ?? new Decimal(0)
         const lastDp = historyDataPoints.at(-1) ?? new Decimal(0)
@@ -127,7 +146,7 @@ export const PortfolioView = ({ ...props }: PortfolioViewProps) => {
     )
 
     const chartSelectionChanged = useCallback(
-        (selected: Nullable<AccountBalanceHistoryItem>) => {
+        (selected: Nullable<PortfolioValueHistoryItem>) => {
             setSelectedPoint(selected)
             props.onDataSelected?.(selected)
         },
@@ -209,7 +228,7 @@ export const PortfolioView = ({ ...props }: PortfolioViewProps) => {
                                 variant='h2'
                                 value={
                                     selectedPoint
-                                        ? selectedPoint.nativeValue
+                                        ? selectedNativeValue
                                         : portfolioNativeValue
                                 }
                                 asset={nativeAsset}
@@ -311,6 +330,8 @@ export const PortfolioView = ({ ...props }: PortfolioViewProps) => {
                     <ExpandablePanel isExpanded={isChartShown}>
                         <PWView style={styles.chartContainer}>
                             <WealthChart
+                                sources={historySources}
+                                currencyScope={scope}
                                 period={period}
                                 onSelectionChanged={chartSelectionChanged}
                             />

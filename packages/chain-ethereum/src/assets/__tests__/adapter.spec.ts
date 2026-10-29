@@ -32,9 +32,18 @@ import {
     upsertNodeAssets,
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
-import { PeraServiceUnavailableError } from '@perawallet/wallet-core-shared'
+import { isAssetSearchUnavailableError } from '@perawallet/wallet-core-assets'
+import {
+    isChainRefusedError,
+    PeraServiceUnavailableError,
+} from '@perawallet/wallet-core-shared'
 import { createEthereumAssetsAdapter } from '../adapter'
-import { ETHEREUM } from '../../__tests__/evm-chains'
+import {
+    eip155IdOf,
+    ETHEREUM,
+    EVM_TEST_CHAINS,
+    evmScopeOf,
+} from '../../__tests__/evm-chains'
 
 import { ASSETS_PATH } from '../api/endpoints'
 import type { AssetItemResponse, WhitelistItemResponse } from '../api/schema'
@@ -1198,4 +1207,117 @@ describe('NFTs', () => {
 
         expect(urls).toEqual([])
     })
+})
+
+// The same code serves every EVM chain, so what a tester sees on Base is what
+// each of these reads off the wire: the chain's own EIP-155 id in the path, and
+// the backend's refusal told apart from a build with no assets service.
+describe('search on every EVM chain and network', () => {
+    const NETWORKS = EVM_TEST_CHAINS.flatMap(chain =>
+        (['mainnet', 'testnet'] as const).map(
+            tier => [`${chain.row.id} ${tier}`, chain, tier] as const,
+        ),
+    )
+    const tokenListPath = `${TEST_PERA_URL}/api/v3/evm/:chainId/tokens/`
+
+    it.each(NETWORKS)(
+        '%s: reads its own token list by EIP-155 id and filters it as Ethereum does',
+        async (_network, chain, tier) => {
+            const scope = evmScopeOf(chain, tier)
+            const eip155Id = eip155IdOf(chain, tier)
+            const requested: string[] = []
+            server.use(
+                http.get(tokenListPath, ({ params }) => {
+                    requested.push(String(params.chainId))
+                    return HttpResponse.json({
+                        results: [
+                            nativeWhitelistItem(eip155Id),
+                            {
+                                ...unknownAssetItem(
+                                    `eip155:${eip155Id}/erc20:${DAI.toLowerCase()}`,
+                                ),
+                                type: 'erc20',
+                                name: 'Dai Stablecoin',
+                                unit_name: 'DAI',
+                                fraction_decimals: 18,
+                                is_swappable: true,
+                                is_fundable: false,
+                            },
+                        ],
+                    })
+                }),
+            )
+            const adapter = createEthereumAssetsAdapter(
+                testChainContext({ services: ['assets'], chain }),
+                chain,
+            )
+
+            const page = await adapter.search!(
+                { query: 'dai', hasCollectible: false },
+                scope,
+            )
+
+            expect(requested).toEqual([String(eip155Id)])
+            expect(page.results.map(asset => asset.assetId)).toEqual([DAI])
+        },
+    )
+
+    it.each(
+        NETWORKS.flatMap(network =>
+            (['chain_not_enabled', 'unknown_chain'] as const).map(
+                code => [...network, code] as const,
+            ),
+        ),
+    )(
+        '%s: a 422 %s rejects as a chain refusal, which Add Asset words as not listed',
+        async (_network, chain, tier, code) => {
+            server.use(
+                http.get(tokenListPath, () =>
+                    HttpResponse.json(
+                        { error: 'Chain refused', code },
+                        { status: 422 },
+                    ),
+                ),
+            )
+            const adapter = createEthereumAssetsAdapter(
+                testChainContext({ services: ['assets'], chain }),
+                chain,
+            )
+
+            const error = await adapter.search!(
+                { query: '', hasCollectible: false },
+                evmScopeOf(chain, tier),
+            ).catch((caught: unknown) => caught)
+
+            expect(isChainRefusedError(error)).toBe(true)
+            expect(isAssetSearchUnavailableError(error)).toBe(true)
+        },
+    )
+
+    it.each(NETWORKS)(
+        '%s: a build listing no assets service asks nothing and rejects as a missing service, which keeps the default copy',
+        async (_network, chain, tier) => {
+            const requested: string[] = []
+            server.use(
+                http.get(tokenListPath, ({ params }) => {
+                    requested.push(String(params.chainId))
+                    return HttpResponse.json({ results: [] })
+                }),
+            )
+            const adapter = createEthereumAssetsAdapter(
+                testChainContext({ services: [], chain }),
+                chain,
+            )
+
+            const error = await adapter.search!(
+                { query: '', hasCollectible: false },
+                evmScopeOf(chain, tier),
+            ).catch((caught: unknown) => caught)
+
+            expect(error).toBeInstanceOf(PeraServiceUnavailableError)
+            expect(isChainRefusedError(error)).toBe(false)
+            expect(isAssetSearchUnavailableError(error)).toBe(true)
+            expect(requested).toEqual([])
+        },
+    )
 })

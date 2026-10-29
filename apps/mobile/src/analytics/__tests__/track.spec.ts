@@ -12,8 +12,6 @@
 
 // @vitest-environment node
 
-// @vitest-environment node
-
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { logger } from '@perawallet/wallet-core-shared'
 
@@ -25,14 +23,6 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useSelectedScope: (chainId: string) => ({
-        chainId,
-        networkId: currentNetwork,
-    }),
-    getSelectedScope: (chainId: string) => ({
-        chainId,
-        networkId: currentNetwork,
-    }),
     useNetworkStore: {
         getState: () => ({
             mode: currentNetwork === 'mainnet' ? 'live' : 'developer',

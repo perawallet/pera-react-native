@@ -27,18 +27,25 @@ export type {
 } from './models'
 export {
     PHISHING_LIST_SOURCES,
+    isCompleteList,
     parseMetaMaskPhishingConfig,
+    parseMewDarklist,
     parsePolkadotPhishingList,
 } from './sources'
+export { normalizeListedAddresses, toListedAddressKey } from './addresses'
 export { listLookupCandidates, toSiteHost } from './host'
 export { toConfusableSkeleton } from './confusables'
 export { findImpersonatedTarget } from './lookAlike'
 export { WELL_KNOWN_DAPPS } from './wellKnownDapps'
-export { PhishingListDomainsSchema } from './db/schema'
+export {
+    PhishingListAddressesSchema,
+    PhishingListDomainsSchema,
+} from './db/schema'
 export {
     countGenerationRows,
     deleteOtherGenerations,
     findImpersonationTargetDomains,
+    findListedAddresses,
     findListedDomains,
     writePhishingListGeneration,
 } from './db/repository'
@@ -65,9 +72,15 @@ export {
     startPhishingListRefresh,
 } from './scheduler'
 export { assessSiteSafety } from './assess'
+export { findPhishingListedAddresses } from './listedAddresses'
 export { siteSafetyQueryKeys } from './hooks/querykeys'
 export {
     useSiteSafetyQuery,
     type UseSiteSafetyQueryParams,
     type UseSiteSafetyQueryResult,
 } from './hooks/useSiteSafetyQuery'
+export {
+    useListedAddressesQuery,
+    type UseListedAddressesQueryParams,
+    type UseListedAddressesQueryResult,
+} from './hooks/useListedAddressesQuery'

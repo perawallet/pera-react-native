@@ -35,7 +35,7 @@ const getKeystoreKeysSnapshot = (): Key[] => getKeystoreStore().state.keys
 
 /**
  * Prefix shared by every passkey query, including ones owned by consumers
- * (the mobile migration banner keeps its own sibling key under it). Mutations
+ * (`useFlaggedPasskeysQuery` keeps its own sibling key under it). Mutations
  * invalidate the root so those siblings refresh too — TanStack matches by
  * prefix, and a sibling is not a descendant of `passkeysQueryKey`.
  */

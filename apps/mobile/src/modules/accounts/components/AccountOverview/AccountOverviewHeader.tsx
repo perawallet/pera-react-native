@@ -52,7 +52,8 @@ export const AccountOverviewHeader = ({
     const {
         availability,
         chainName,
-        hasBalanceHistory,
+        chartSources,
+        currencyScope,
         portfolioPreferredValue,
         hasFiatTotal,
         isPending,
@@ -65,7 +66,7 @@ export const AccountOverviewHeader = ({
         togglePrivacyMode,
         handleChartSelectionChange,
     } = useAccountOverviewHeader(account)
-    const isChartShown = chartVisible && hasBalanceHistory
+    const isChartShown = chartVisible
 
     // While loading we always render the primary layout underneath so its mount
     // animations (ExpandablePanel, LineChart) run hidden by the opaque skeleton
@@ -126,9 +127,10 @@ export const AccountOverviewHeader = ({
                                 )}
                         </PWView>
                         <PWView style={styles.secondaryValueBar}>
-                            {hasBalanceHistory && !selectedPoint && (
+                            {!selectedPoint && (
                                 <WealthTrend
-                                    account={account}
+                                    sources={chartSources}
+                                    currencyScope={currencyScope}
                                     period={period}
                                     enabled={isChartShown}
                                 />
@@ -150,7 +152,8 @@ export const AccountOverviewHeader = ({
                     <ExpandablePanel isExpanded={isChartShown}>
                         <PWView style={styles.chartContainer}>
                             <WealthChart
-                                account={account}
+                                sources={chartSources}
+                                currencyScope={currencyScope}
                                 period={period}
                                 onSelectionChanged={handleChartSelectionChange}
                                 enabled={isChartShown}
@@ -200,10 +203,10 @@ export const AccountOverviewHeader = ({
         hasFiatTotal,
         isPending,
         isBalanceComplete,
-        account,
         period,
         isChartShown,
-        hasBalanceHistory,
+        chartSources,
+        currencyScope,
         handleChartSelectionChange,
         setPeriod,
         t,

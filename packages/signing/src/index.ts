@@ -102,7 +102,7 @@ export {
     type TransactionWarning,
 } from './models'
 
-export { chainIdOfSignRequest } from './models/chain'
+export { chainIdOfSignRequest, scopeOfSignRequest } from './models/chain'
 export { SigningRequestScopeProvider } from './hooks/SigningRequestScope'
 export type {
     HardwareChildSnapshot,
@@ -179,6 +179,7 @@ export {
     isAuthDataWirePayload,
     messageSignerChainAdapters,
     parseAuthDataWireRequest,
+    reviewedMessageAddressesOf,
     signsMessageVerifiably,
     signMessages,
     type ArbitraryDataMessagePayload,
@@ -195,11 +196,14 @@ export {
     decodeArbitraryDataForDisplay,
     getDelegatedUnsignableReason,
     resolveAllSignerAddresses,
+    reviewedAddressesOf,
     reviewerChainAdapters,
     type ArbitraryDataDisplay,
     type GroupTransactionItem,
     type DelegatedUnsignableReason,
     type RequestStructure,
+    type ReviewedAddress,
+    type ReviewedAddressRole,
     type ReviewerChainAdapter,
     type ReviewPolicy,
     type SingleTransactionItem,

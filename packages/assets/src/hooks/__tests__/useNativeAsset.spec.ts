@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+// @vitest-environment jsdom
 import { renderHook } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { ChainAdapterNotRegisteredError } from '@perawallet/wallet-core-chain-contract'

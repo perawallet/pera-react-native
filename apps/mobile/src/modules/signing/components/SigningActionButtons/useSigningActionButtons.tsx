@@ -39,6 +39,7 @@ import type { SigningStackParamList } from '@modules/signing/routes'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { UserPreferences } from '@constants/user-preferences'
+import { useRequestAddressSafety } from '../../hooks/useRequestAddressSafety'
 import {
     SecurityGuardContent,
     type GuardedWarningType,
@@ -60,6 +61,8 @@ export type UseSigningActionButtonsResult = {
      */
     cannotSignNotice: Optional<{ title: string; body: string }>
     cosignSignerAddress: string
+    /** A flagged address in the request still waits on the user's acknowledgement. */
+    isConfirmBlocked: boolean
 }
 
 const preferenceKeyMap: Record<GuardedWarningType, string> = {
@@ -78,6 +81,7 @@ export const useSigningActionButtons = (): UseSigningActionButtonsResult => {
     const { getPreference } = usePreferences()
     const { request: requestBottomSheet } = useBottomSheet()
     const { confirmQuantumDappUsage } = useQuantumDappWarning()
+    const { isConfirmBlocked } = useRequestAddressSafety()
 
     // Bumped to remount the slide-to-confirm slider so it resets as needed
     const [slideResetKey, setSlideResetKey] = useState(0)
@@ -189,7 +193,7 @@ export const useSigningActionButtons = (): UseSigningActionButtonsResult => {
     }, [currentRequest, allTransactions.length])
 
     const handleSignAndSend = useCallback(() => {
-        if (cannotSignNotice) return
+        if (cannotSignNotice || isConfirmBlocked) return
 
         void (async () => {
             // Backstop for sessions approved before this warning shipped, so
@@ -251,6 +255,7 @@ export const useSigningActionButtons = (): UseSigningActionButtonsResult => {
         })()
     }, [
         cannotSignNotice,
+        isConfirmBlocked,
         currentRequest,
         confirmQuantumDappUsage,
         guardedWarningType,
@@ -287,5 +292,6 @@ export const useSigningActionButtons = (): UseSigningActionButtonsResult => {
         isMultisigCosign,
         cannotSignNotice,
         cosignSignerAddress,
+        isConfirmBlocked,
     }
 }

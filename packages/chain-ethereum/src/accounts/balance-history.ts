@@ -29,6 +29,7 @@ import type {
 } from '@perawallet/wallet-core-chain-contract'
 import {
     CHART_QUERY_TIMEOUT_MS,
+    baseUnitsToDisplayUnits,
     isPeraNetworkError,
     partition,
     queryClient,
@@ -213,9 +214,6 @@ export const priceAt = (
     return price
 }
 
-const toDisplayUnits = (baseUnits: Decimal, decimals: number): Decimal =>
-    baseUnits.div(new Decimal(10).pow(decimals))
-
 /** An asset with no price yet at a point adds nothing to it, as on the account screen. */
 export const valuePortfolio = (
     points: GridPoint[],
@@ -229,7 +227,7 @@ export const valuePortfolio = (
             const price = asset && priceAt(asset.prices, timestamp)
             if (!asset || !price) continue
             usdValue = usdValue.plus(
-                toDisplayUnits(baseUnits, asset.decimals).times(price),
+                baseUnitsToDisplayUnits(baseUnits, asset.decimals).times(price),
             )
         }
         const native = assets.get(nativeCaip19)
@@ -253,7 +251,7 @@ export const valueHolding = (
     points.flatMap(({ timestamp, balances }) => {
         const price = priceAt(asset.prices, timestamp)
         if (!price) return []
-        const amount = toDisplayUnits(
+        const amount = baseUnitsToDisplayUnits(
             balances.get(caip19) ?? new Decimal(0),
             asset.decimals,
         )
@@ -369,7 +367,8 @@ export const createEthereumBalanceHistoryOps = (
     const fetchPortfolioHistory: AccountsChainAdapter['fetchPortfolioHistory'] =
         async (addresses, period, scope) => {
             eip155ChainIdOf(scope, chain)
-            if (addresses.length === 0 || !hasServices(ctx, scope)) return []
+            if (!hasServices(ctx, scope)) return null
+            if (addresses.length === 0) return []
             const [listed, holdings] = await Promise.all([
                 fetchWhitelist(scope, chain),
                 readHoldings(scope, addresses),
@@ -392,7 +391,8 @@ export const createEthereumBalanceHistoryOps = (
                 [...assetIdByCaip19.keys()],
                 period,
             )
-            if (!grid?.length) return []
+            if (grid === null) return null
+            if (grid.length === 0) return []
             const points = [
                 ...grid,
                 { timestamp: now(), balances: sumBalances(scope, holdings) },

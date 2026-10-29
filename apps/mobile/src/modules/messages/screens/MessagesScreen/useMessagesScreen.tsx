@@ -17,6 +17,7 @@ import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useInboxQuery, useInboxStatus } from '@perawallet/wallet-core-messages'
 import { useBottomSheet } from '@modules/bottom-sheet'
+import { InboxInfoContent } from '@modules/messages/components/InboxInfoContent'
 import { NotificationSettingsContent } from '@modules/messages/components/NotificationSettingsContent'
 import type { MessagesTabsParamsList } from './MessagesScreen'
 
@@ -59,6 +60,17 @@ export const useMessagesScreen = () => {
         })
     }, [requestBottomSheet])
 
+    const openInboxInfo = useCallback(() => {
+        void requestBottomSheet({
+            contents: <InboxInfoContent />,
+            options: {
+                size: 'modal',
+                enablePanDownToClose: true,
+                autoCreateContainer: false,
+            },
+        })
+    }, [requestBottomSheet])
+
     const showInboxBadge = useMemo(
         () =>
             !isUnavailableOnNetwork &&
@@ -77,6 +89,7 @@ export const useMessagesScreen = () => {
     return {
         initialRouteName,
         openSettingsModal,
+        openInboxInfo,
         activeTab,
         setActiveTab,
         showInboxBadge,

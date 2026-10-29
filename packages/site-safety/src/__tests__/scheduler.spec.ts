@@ -18,6 +18,7 @@ import {
     startPhishingListRefresh,
 } from '../scheduler'
 import { ensurePhishingListsSeeded } from '../seed'
+import { PHISHING_LIST_SOURCES } from '../sources'
 import { usePhishingListStore } from '../store/store'
 
 vi.mock('../refresh', async importOriginal => ({
@@ -29,7 +30,7 @@ vi.mock('../seed', () => ({ ensurePhishingListsSeeded: vi.fn(async () => {}) }))
 const NOW = 1_800_000_000_000
 
 const markAllRefreshedAt = (at: number): void => {
-    for (const source of ['metamask', 'polkadot'] as const) {
+    for (const { id: source } of PHISHING_LIST_SOURCES) {
         usePhishingListStore.getState().activateGeneration(source, {
             generation: 1,
             refreshedAt: at,

@@ -11,8 +11,9 @@
  */
 
 import { useSendFunds, useSendScope } from '@modules/transactions/hooks'
-import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
+import { addressOn, useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import { verifyNameAddress } from '@perawallet/wallet-core-nfd'
+import { useChainNameWhenMultiChain } from '@hooks/useChainNameWhenMultiChain'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { useCallback, useEffect, useState, useRef } from 'react'
@@ -77,6 +78,10 @@ export const useSelectDestinationScreen = () => {
     // destination once the chain itself vouches for it; nothing here
     // trusts the search result or a cache.
     const scope = useSendScope()
+    const senderAddress = selectedAccount
+        ? addressOn(selectedAccount, scope)
+        : undefined
+    const chainBadgeName = useChainNameWhenMultiChain(scope.chainId)
     const { errorToast } = useToast()
     const { t } = useLanguage()
     const [isVerifyingNfd, setIsVerifyingNfd] = useState(false)
@@ -139,6 +144,8 @@ export const useSelectDestinationScreen = () => {
         selectedAsset,
         selectedAccount,
         scope,
+        senderAddress,
+        chainBadgeName,
         handleSelected,
         isCheckingExternalOptIn: isResolvingDestination || isVerifyingNfd,
         isAutoAdvancing,

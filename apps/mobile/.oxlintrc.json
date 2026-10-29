@@ -82,6 +82,10 @@
           {
             "name": "chrome",
             "message": "apps/mobile must not reference the ambient chrome global directly — go through a chrome-owning package (e.g. @perawallet/wallet-extension-platform-chrome, @perawallet/wallet-core-browser-runtime, @perawallet/wallet-extension-keystore-chrome) or its typed accessor instead."
+          },
+          {
+            "name": "fetch",
+            "message": "Request through queryClient from @perawallet/wallet-core-shared, which carries the retries, timeouts and typed errors a raw fetch skips. A call that must use fetch itself (another host's client, platform code with no client) takes an oxlint-disable-next-line comment giving its reason."
           }
         ]
       }
@@ -136,6 +140,21 @@
             "object": "Alert",
             "property": "alert",
             "message": "Show a bottom sheet, or the error toast for failures; only developer screens use a native alert."
+          },
+          {
+            "object": "globalThis",
+            "property": "fetch",
+            "message": "Request through queryClient from @perawallet/wallet-core-shared, which carries the retries, timeouts and typed errors a raw fetch skips. A call that must use fetch itself (another host's client, platform code with no client) takes an oxlint-disable-next-line comment giving its reason."
+          },
+          {
+            "object": "window",
+            "property": "fetch",
+            "message": "Request through queryClient from @perawallet/wallet-core-shared, which carries the retries, timeouts and typed errors a raw fetch skips. A call that must use fetch itself (another host's client, platform code with no client) takes an oxlint-disable-next-line comment giving its reason."
+          },
+          {
+            "object": "self",
+            "property": "fetch",
+            "message": "Request through queryClient from @perawallet/wallet-core-shared, which carries the retries, timeouts and typed errors a raw fetch skips. A call that must use fetch itself (another host's client, platform code with no client) takes an oxlint-disable-next-line comment giving its reason."
           }
         ]
       }
@@ -150,6 +169,21 @@
             "object": "StyleSheet",
             "property": "create",
             "message": "Style with makeStyles from @rneui/themed, in a styles.ts beside the component."
+          },
+          {
+            "object": "globalThis",
+            "property": "fetch",
+            "message": "Request through queryClient from @perawallet/wallet-core-shared, which carries the retries, timeouts and typed errors a raw fetch skips. A call that must use fetch itself (another host's client, platform code with no client) takes an oxlint-disable-next-line comment giving its reason."
+          },
+          {
+            "object": "window",
+            "property": "fetch",
+            "message": "Request through queryClient from @perawallet/wallet-core-shared, which carries the retries, timeouts and typed errors a raw fetch skips. A call that must use fetch itself (another host's client, platform code with no client) takes an oxlint-disable-next-line comment giving its reason."
+          },
+          {
+            "object": "self",
+            "property": "fetch",
+            "message": "Request through queryClient from @perawallet/wallet-core-shared, which carries the retries, timeouts and typed errors a raw fetch skips. A call that must use fetch itself (another host's client, platform code with no client) takes an oxlint-disable-next-line comment giving its reason."
           }
         ]
       }
@@ -182,6 +216,49 @@
         ],
         "pera/decimal-construction": "error"
       }
+    },
+    {
+      "files": ["src/modules/**"],
+      "excludeFiles": ["src/**/__tests__/**", "src/**/__mocks__/**", "src/**/test-utils/**", "src/**/__integration__/**", "src/**/*.spec.{ts,tsx}", "src/**/*.test.{ts,tsx}"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              {
+                "name": "zustand/middleware",
+                "importNames": ["persist", "createJSONStorage"],
+                "message": "Persist through guardedPersist from @perawallet/wallet-core-shared, which quarantines state it cannot restore instead of letting the next write erase it."
+              },
+              {
+                "name": "decimal.js",
+                "importNames": ["default"],
+                "message": "Import the named { Decimal } from decimal.js."
+              },
+              {
+                "name": "react-native",
+                "importNames": ["ActivityIndicator"],
+                "message": "Use PWLoadingIndicator from @components/core."
+              },
+              {
+                "name": "@tanstack/react-query",
+                "importNames": ["useQuery", "useQueries", "useInfiniteQuery", "useSuspenseQuery", "useSuspenseQueries", "useSuspenseInfiniteQuery", "useMutation"],
+                "message": "Put this query or mutation in its domain package as a named use…Query/use…Mutation hook with a declared result type, and call that hook here. useQueryClient stays allowed."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["src/**"],
+      "excludeFiles": ["src/**/__tests__/**", "src/**/__mocks__/**", "src/**/test-utils/**", "src/**/__integration__/**", "src/**/*.spec.{ts,tsx}", "src/**/*.test.{ts,tsx}"],
+      "rules": { "pera/no-manual-unit-conversion": "error" }
+    },
+    {
+      "files": ["src/**"],
+      "excludeFiles": ["src/**/__tests__/**", "src/**/__mocks__/**", "src/**/test-utils/**", "src/**/__integration__/**", "src/**/*.spec.{ts,tsx}", "src/**/*.test.{ts,tsx}"],
+      "rules": { "pera/no-display-string-identity": "error", "pera/fetch-has-deadline": "error" }
     },
     {
       "files": ["src/**"],

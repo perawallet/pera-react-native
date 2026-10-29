@@ -93,22 +93,6 @@ describe('AccountWithBalance', () => {
         )
     })
 
-    it('shows no chain badge while every account is on one chain', () => {
-        render(<AccountWithBalance account={ACCOUNT} />)
-
-        expect(screen.queryByText('Algorand')).toBeNull()
-    })
-
-    it("shows the account's chain once the wallet spans chains", () => {
-        mockHookResult.isMultiChain = true
-
-        render(<AccountWithBalance account={ACCOUNT} />)
-
-        expect(
-            within(screen.getByTestId('account_display')).getByText('Algorand'),
-        ).toBeTruthy()
-    })
-
     it("replaces the balances with a notice when the chain's kill switch is off, keeping the chain badge under the name", () => {
         mockHookResult.availability = { isAvailable: false }
         mockHookResult.isMultiChain = true

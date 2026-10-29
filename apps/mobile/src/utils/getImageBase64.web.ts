@@ -10,6 +10,9 @@
  limitations under the License
  */
 
+// The signal also aborts blob(), so this must outlast a large animated image on a slow link.
+const IMAGE_COPY_TIMEOUT_MS = 60_000
+
 /**
  * Web/extension twin of `getImageBase64`. expo-file-system's `File`/`Paths`
  * API is a native-only no-op stub on web (every method just warns and
@@ -24,7 +27,10 @@ export const getImageBase64 = async (
     imageUrl: string,
     _cacheKey: string,
 ): Promise<string> => {
-    const response = await fetch(imageUrl)
+    // oxlint-disable-next-line no-restricted-globals -- collectible media lives on any host, and queryClient only reaches Pera's backend
+    const response = await fetch(imageUrl, {
+        signal: AbortSignal.timeout(IMAGE_COPY_TIMEOUT_MS),
+    })
     if (!response.ok) {
         throw new Error(`Failed to fetch image (${response.status})`)
     }

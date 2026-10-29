@@ -11,6 +11,7 @@
  */
 
 import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
+import { Trans } from 'react-i18next'
 import { useLanguage } from '@hooks/useLanguage'
 import { SwapAssetPairIcon } from '@modules/swap/components/SwapAssetPairIcon'
 import type { SwapHistoryItem } from '@perawallet/wallet-core-swaps'
@@ -55,10 +56,7 @@ export const SwapHistoryListItem = ({
     const inUnit = item.assetIn.unitName ?? ''
     const outUnit = item.assetOut.unitName ?? ''
 
-    const descriptionPrefix = t('swap.history.list.item.description', {
-        amountIn: formatAmount(item.amountIn, inDecimals),
-        unitIn: inUnit,
-    })
+    const amountInLabel = `${formatAmount(item.amountIn, inDecimals)} ${inUnit}`
     const amountOutLabel = `${formatAmount(item.amountOut, outDecimals)} ${outUnit}`
     const dateLabel = item.completedDatetime
         ? formatDatetime(item.completedDatetime, undefined, 'medium')
@@ -80,8 +78,19 @@ export const SwapHistoryListItem = ({
                     variant='body'
                     style={styles.itemDescription}
                 >
-                    {descriptionPrefix}
-                    <PWText variant='bodySemibold'>{amountOutLabel}</PWText>
+                    <Trans
+                        t={t}
+                        i18nKey='swap.history.list.item.description'
+                        components={[
+                            <PWText key='amount-in'>{amountInLabel}</PWText>,
+                            <PWText
+                                key='amount-out'
+                                variant='bodySemibold'
+                            >
+                                {amountOutLabel}
+                            </PWText>,
+                        ]}
+                    />
                     {!!dateLabel && (
                         <PWText
                             variant='body'

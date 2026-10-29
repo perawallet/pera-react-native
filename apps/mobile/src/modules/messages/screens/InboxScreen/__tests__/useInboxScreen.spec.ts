@@ -17,6 +17,8 @@ import { useInboxScreen } from '../useInboxScreen'
 import { useInboxQuery, type InboxItem } from '@perawallet/wallet-core-messages'
 import { useIsDeviceRegistrationPending } from '@perawallet/wallet-core-device'
 import { IntegrityRequiredError } from '@perawallet/wallet-core-shared'
+import { useAccountValueBasis } from '@perawallet/wallet-core-accounts'
+import { chainDisplayNameOf } from '@perawallet/wallet-core-chain-shared'
 
 const mockHandleInboxItemPress = vi.fn()
 
@@ -27,6 +29,20 @@ vi.mock('@perawallet/wallet-core-messages', () => ({
 
 vi.mock('@perawallet/wallet-core-device', () => ({
     useIsDeviceRegistrationPending: vi.fn(),
+}))
+
+vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-accounts')
+    >()),
+    useAccountValueBasis: vi.fn(),
+}))
+
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
+    chainDisplayNameOf: vi.fn(),
 }))
 
 vi.mock('@modules/messages/hooks', () => ({
@@ -44,6 +60,23 @@ describe('useInboxScreen', () => {
             refetch: vi.fn(),
         } as unknown as ReturnType<typeof useInboxQuery>)
         vi.mocked(useIsDeviceRegistrationPending).mockReturnValue(false)
+        vi.mocked(useAccountValueBasis).mockReturnValue('native')
+        vi.mocked(chainDisplayNameOf).mockReturnValue('Algorand')
+    })
+
+    it('names the inbox chain for the row badge once the wallet spans chains', () => {
+        vi.mocked(useAccountValueBasis).mockReturnValue('fiat')
+
+        const { result } = renderHook(() => useInboxScreen())
+
+        expect(result.current.chainBadgeName).toBe('Algorand')
+        expect(chainDisplayNameOf).toHaveBeenCalledWith('algorand')
+    })
+
+    it('leaves the rows unbadged while the wallet is on one chain', () => {
+        const { result } = renderHook(() => useInboxScreen())
+
+        expect(result.current.chainBadgeName).toBeUndefined()
     })
 
     it('returns empty inbox array when data is undefined', () => {
