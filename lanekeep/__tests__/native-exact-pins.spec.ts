@@ -167,6 +167,8 @@ describe('pera/native-exact-pins', () => {
             "  '@react-native-firebase/app@<28': ^27.0.0",
             "  '@ledgerhq/react-native-hw-transport-ble>react-native-ble-plx@3': ^3.4.0",
             "  'react-native-quick-crypto-shim@<2': ^1.0.0",
+            "  'react-native-quick-crypto@>=1 <2': ^1.0.17",
+            "  '@ledgerhq/react-native-hw-transport-ble@>=6 <7>react-native-ble-plx': ^3.4.0",
             '',
         ].join('\n')
         const found = await check({
@@ -193,6 +195,16 @@ describe('pera/native-exact-pins', () => {
                 'pnpm-workspace.yaml',
                 4,
                 '"react-native-ble-plx" is overridden to "^3.4.0" by "@ledgerhq/react-native-hw-transport-ble>react-native-ble-plx@3", not an exact version',
+            ],
+            [
+                'pnpm-workspace.yaml',
+                6,
+                '"react-native-quick-crypto" is overridden to "^1.0.17" by "react-native-quick-crypto@>=1 <2", not an exact version',
+            ],
+            [
+                'pnpm-workspace.yaml',
+                7,
+                '"react-native-ble-plx" is overridden to "^3.4.0" by "@ledgerhq/react-native-hw-transport-ble@>=6 <7>react-native-ble-plx", not an exact version',
             ],
         ] satisfies Finding[])
     })

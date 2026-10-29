@@ -92,13 +92,19 @@ const scalarEntries = (
 ): { key: string; value: string; line: number }[] =>
     yamlMap(raw, key).filter(entry => entry.value !== '')
 
+// Matches pnpm's own override parser: a `>` after a space, `|` or `@` belongs
+// to a version selector (`esbuild@>=0.27.3 <0.28.1`), not a parent>child split.
+const PARENT_SEPARATOR = /[^ |@]>/g
+
 /**
  * The package an override key rewrites: the child of a `parent>child` key,
  * without its `@<selector>`. A scoped name's own `@` is its first character,
  * so the selector's `@` is searched for after it.
  */
 const overrideTarget = (key: string): string => {
-    const child = key.slice(key.lastIndexOf('>') + 1)
+    const separator = [...key.matchAll(PARENT_SEPARATOR)].pop()
+    const child =
+        separator === undefined ? key : key.slice((separator.index ?? 0) + 2)
     const at = child.indexOf('@', 1)
     return at === -1 ? child : child.slice(0, at)
 }
