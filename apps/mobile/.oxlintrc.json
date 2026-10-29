@@ -276,6 +276,11 @@
       "rules": { "pera/hook-result-type": "error" }
     },
     {
+      "files": ["src/modules/**", "src/components/**"],
+      "excludeFiles": ["src/**/__tests__/**", "src/**/__mocks__/**", "src/**/test-utils/**", "src/**/__integration__/**", "src/**/*.spec.{ts,tsx}", "src/**/*.test.{ts,tsx}"],
+      "rules": { "pera/no-package-store-internals": "error" }
+    },
+    {
       "files": ["src/**/__tests__/**", "src/**/*.spec.{ts,tsx}", "src/**/__integration__/**", "src/**/test-utils/**", "vitest*.ts"],
       "rules": { "pera/no-algorand-sdk-imports": "off" }
     }
