@@ -19,11 +19,13 @@ import { KeyValueRow } from '@components/KeyValueRow'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { ViewTextDetailsContent } from '../../ViewTextDetailsContent'
 
+type TransactionNoteRowProps = {
+    transaction: AlgorandTransactionView
+}
+
 export const TransactionNoteRow = ({
     transaction,
-}: {
-    transaction: AlgorandTransactionView
-}) => {
+}: TransactionNoteRowProps) => {
     const { t } = useLanguage()
     const { request: requestBottomSheet } = useBottomSheet()
 

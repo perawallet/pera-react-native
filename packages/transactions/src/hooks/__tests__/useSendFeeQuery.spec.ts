@@ -36,9 +36,21 @@ const ALGORAND: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
 const ETHEREUM: ChainScope = { chainId: 'ethereum', networkId: 'mainnet' }
 
 const PRESETS = {
-    slow: { amount: new Decimal(10), maxAmount: new Decimal(20) },
-    normal: { amount: new Decimal(30), maxAmount: new Decimal(40) },
-    fast: { amount: new Decimal(50), maxAmount: new Decimal(60) },
+    slow: {
+        amount: new Decimal(10),
+        maxAmount: new Decimal(20),
+        estimatedWaitSeconds: 60,
+    },
+    normal: {
+        amount: new Decimal(30),
+        maxAmount: new Decimal(40),
+        estimatedWaitSeconds: 36,
+    },
+    fast: {
+        amount: new Decimal(50),
+        maxAmount: new Decimal(60),
+        estimatedWaitSeconds: 12,
+    },
 }
 
 describe('useSendFeeQuery', () => {
