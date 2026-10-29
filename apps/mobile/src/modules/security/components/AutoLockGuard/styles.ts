@@ -60,3 +60,48 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => ({
         zIndex: theme.zIndex.max,
     },
 }))
+
+// lanekeep-ignore-next-line pera/no-numeric-sizes reason: lockout icon size
+const LOCKOUT_ICON_SIZE = 80
+
+export const useLockoutViewStyles = makeStyles(theme => ({
+    lockoutContainer: {
+        flex: 1,
+        justifyContent: 'space-between',
+        paddingHorizontal: theme.spacing.xl,
+        paddingTop: theme.spacing['4xl'],
+        paddingBottom: theme.spacing.xxl,
+    },
+    lockoutContent: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    lockoutIconContainer: {
+        width: LOCKOUT_ICON_SIZE,
+        height: LOCKOUT_ICON_SIZE,
+        borderRadius: theme.spacing.sm,
+        backgroundColor: theme.colors.alertNegative,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: theme.spacing['4xl'],
+    },
+    lockoutTitle: {
+        textAlign: 'center',
+        marginBottom: theme.spacing.sm,
+    },
+    lockoutSubtitle: {
+        color: theme.colors.textGray,
+        textAlign: 'center',
+        marginBottom: theme.spacing.xxl,
+    },
+    lockoutActions: {
+        paddingTop: theme.spacing.lg,
+    },
+    divider: {
+        paddingBottom: theme.spacing.xxl,
+        marginBottom: theme.spacing.xxl,
+        borderBottomWidth: theme.borders.sm,
+        borderBottomColor: theme.colors.layerGrayLighter,
+    },
+}))

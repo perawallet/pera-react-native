@@ -28,6 +28,7 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
 
 import {
     useDraftSignRequestStore,
+    deleteDraftSignRequest,
     isDraftSignRequestId,
     DRAFT_SIGN_REQUEST_ID_PREFIX,
 } from '../useDraftSignRequestStore'
@@ -107,6 +108,21 @@ describe('useDraftSignRequestStore', () => {
     it('deleteDraft is a no-op for unknown id (no state churn)', () => {
         const before = useDraftSignRequestStore.getState().drafts
         useDraftSignRequestStore.getState().deleteDraft('draft-nope')
+        expect(useDraftSignRequestStore.getState().drafts).toBe(before)
+    })
+
+    it('deleteDraftSignRequest removes the draft, and an unknown id is a no-op', () => {
+        const localId = useDraftSignRequestStore
+            .getState()
+            .createDraft(baseInput())
+
+        deleteDraftSignRequest(localId)
+        const before = useDraftSignRequestStore.getState().drafts
+        deleteDraftSignRequest(localId)
+
+        expect(
+            useDraftSignRequestStore.getState().getDraft(localId),
+        ).toBeUndefined()
         expect(useDraftSignRequestStore.getState().drafts).toBe(before)
     })
 

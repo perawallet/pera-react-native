@@ -10,11 +10,15 @@
  limitations under the License
  */
 
+import { AppError, ErrorCategory } from '@perawallet/wallet-core-shared'
+
 // The worker keeps running the statement after this is thrown: a timeout only
 // means the caller stopped waiting.
-export class SqlStatementTimeoutError extends Error {
+export class SqlStatementTimeoutError extends AppError {
     constructor(timeoutMs: number) {
-        super(`db worker request timed out after ${timeoutMs}ms`)
+        super(`db worker request timed out after ${timeoutMs}ms`, {
+            category: ErrorCategory.STORAGE,
+        })
         this.name = 'SqlStatementTimeoutError'
     }
 }

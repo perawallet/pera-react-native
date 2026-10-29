@@ -14,37 +14,23 @@ import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
     container: {
-        flexGrow: 1,
-    },
-    messageContainer: {
-        flexGrow: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: theme.spacing.md,
+        gap: theme.spacing.lg,
     },
     title: {
-        textAlign: 'center',
+        color: theme.colors.textMain,
+        marginBottom: theme.spacing.xs,
     },
-    description: {
-        textAlign: 'center',
-    },
-    statementContainer: {
-        alignItems: 'center',
-        gap: theme.spacing.xs,
-        marginTop: theme.spacing.lg,
-    },
-    statementLabel: {
+    body: {
         color: theme.colors.textGray,
     },
-    accountContainer: {
-        alignItems: 'center',
+    errorText: {
+        color: theme.colors.negative,
+    },
+    hint: {
+        color: theme.colors.textGray,
+    },
+    actions: {
         gap: theme.spacing.md,
-        marginTop: theme.spacing.xxl,
-    },
-    onBehalfOf: {
-        textAlign: 'center',
-    },
-    detailsContainer: {
-        alignItems: 'flex-start',
+        marginTop: theme.spacing.md,
     },
 }))

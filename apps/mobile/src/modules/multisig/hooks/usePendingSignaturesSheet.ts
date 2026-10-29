@@ -12,8 +12,8 @@
 
 import { useCallback } from 'react'
 import {
+    deleteDraftSignRequest,
     isDraftSignRequestId,
-    useDraftSignRequestStore,
 } from '@perawallet/wallet-core-multisig'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { usePendingSignaturesSheetStore } from '../stores/usePendingSignaturesSheetStore'
@@ -45,7 +45,7 @@ export const usePendingSignaturesSheet =
                     isDraftSignRequestId(currentId) &&
                     !isDraftSignRequestId(signRequestId)
                 ) {
-                    useDraftSignRequestStore.getState().deleteDraft(currentId)
+                    deleteDraftSignRequest(currentId)
                 }
                 openSheet(signRequestId, chainId)
             },

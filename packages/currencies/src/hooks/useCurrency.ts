@@ -73,17 +73,23 @@ export const useCurrency = (scope: ChainScope): UseCurrencyResult => {
     // from the wallet mode's deployment, which always has a backend.
     const isZeroNativeRateUnresolved = hasPeraBackend(scope)
 
-    // USD needs no rate, so it is never pending.
-    const isRatePending =
-        preferredCurrency === USD_CURRENCY_ID
-            ? false
-            : isNativePreferred
-              ? nativeUsdPricePending ||
+    const ratePendingOf = (): boolean => {
+        // USD needs no rate, so it is never pending.
+        if (preferredCurrency === USD_CURRENCY_ID) return false
+        if (isNativePreferred) {
+            return (
+                nativeUsdPricePending ||
                 !nativeUsdPrice ||
                 (nativeUsdPrice.isZero() && isZeroNativeRateUnresolved)
-              : preferredRatePending ||
-                !preferredRate?.usdPrice ||
-                preferredRate.usdPrice.isZero()
+            )
+        }
+        return (
+            preferredRatePending ||
+            !preferredRate?.usdPrice ||
+            preferredRate.usdPrice.isZero()
+        )
+    }
+    const isRatePending = ratePendingOf()
 
     const usdToPreferred = useCallback<
         (usdAmount: Maybe<Decimal>) => Nullable<Decimal>

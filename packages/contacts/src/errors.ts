@@ -10,16 +10,20 @@
  limitations under the License
  */
 
+import { AppError, ErrorCategory } from '@perawallet/wallet-core-shared'
+
 /**
  * Thrown by `editContact` when no contact has the id.
  * Surfaces the case where the caller's `selectedContact` is stale (e.g.
  * deleted on another device) so the UI doesn't silently report success.
  */
-export class ContactNotFoundError extends Error {
+export class ContactNotFoundError extends AppError {
     readonly id: string
 
     constructor(id: string) {
-        super(`No contact found with id ${id}`)
+        super(`No contact found with id ${id}`, {
+            category: ErrorCategory.STORAGE,
+        })
         this.name = 'ContactNotFoundError'
         this.id = id
     }

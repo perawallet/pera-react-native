@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { Decimal } from 'decimal.js'
 import type { CardTransaction } from '@perawallet/wallet-core-card'
 import { PWScrollView, PWText } from '@components/core'
 import { CurrencyAmount } from '@components/CurrencyAmount'
@@ -21,6 +22,11 @@ import { useStyles } from './styles'
 
 type TransactionInfoTabProps = {
     transaction: CardTransaction
+}
+
+const feesPrefixOf = (fees: Decimal): string | undefined => {
+    if (fees.isZero()) return undefined
+    return fees.isNegative() ? '+' : '-'
 }
 
 export const TransactionInfoTab = ({
@@ -37,7 +43,7 @@ export const TransactionInfoTab = ({
     // Fees are charges, shown negative; a negative wire fee is a credit back
     // to the user and must keep its sign (+) instead of being flipped.
     const fees = transaction.feesInTransactionCurrency
-    const feesPrefix = fees.isZero() ? undefined : fees.isNegative() ? '+' : '-'
+    const feesPrefix = feesPrefixOf(fees)
 
     return (
         <PWScrollView

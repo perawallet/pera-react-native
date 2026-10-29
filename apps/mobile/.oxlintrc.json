@@ -49,12 +49,14 @@
     "react/rules-of-hooks": "error",
     "react/exhaustive-deps": "error",
     "no-console": "warn",
+    "no-nested-ternary": "error",
     "no-unused-vars": "off",
     "prefer-const": "error",
     "no-var": "error",
     "import/no-duplicates": ["error", { "prefer-inline": true }],
     "unused-imports/no-unused-imports": "error",
     "pera/no-unvalidated-open-url": "error",
+    "pera/prefer-lookup-map": "error",
     "max-lines": [
       "warn",
       {
@@ -326,6 +328,16 @@
       "rules": { "pera/component-props-type": "error" }
     },
     {
+      "files": ["src/modules/**", "src/components/**"],
+      "excludeFiles": ["src/**/__tests__/**", "src/**/__mocks__/**", "src/**/test-utils/**", "src/**/__integration__/**", "src/**/*.spec.{ts,tsx}", "src/**/*.test.{ts,tsx}"],
+      "rules": { "pera/no-package-store-internals": "error" }
+    },
+    {
+      "files": ["src/**/*.{ts,tsx}"],
+      "excludeFiles": ["src/**/__tests__/**", "src/**/__mocks__/**", "src/**/test-utils/**", "src/**/__integration__/**", "src/**/*.spec.{ts,tsx}", "src/**/*.test.{ts,tsx}"],
+      "rules": { "pera/make-styles-location": "error" }
+    },
+    {
       "files": ["src/**/*.{ts,tsx}"],
       "excludeFiles": ["src/components/core/**"],
       "rules": { "pera/test-id-prop": "error" }
@@ -338,6 +350,10 @@
     {
       "files": ["src/**/__tests__/**", "src/**/*.spec.{ts,tsx}", "src/**/__integration__/**", "src/**/test-utils/**", "vitest*.ts"],
       "rules": { "pera/no-algorand-sdk-imports": "off" }
+    },
+    {
+      "files": ["**/__tests__/**", "**/__mocks__/**", "**/__integration__/**", "**/test-utils/**", "**/*.spec.{ts,tsx,js,jsx}", "**/*.test.{ts,tsx,js,jsx}"],
+      "rules": { "no-nested-ternary": "off" }
     },
     {
       "files": ["src/**"],

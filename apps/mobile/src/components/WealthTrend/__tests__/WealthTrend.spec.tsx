@@ -101,6 +101,23 @@ describe('WealthTrend', () => {
         expect(container.innerHTML).toBe('')
     })
 
+    it('renders empty when there is no history to measure', () => {
+        vi.mocked(usePortfolioHistoryQuery).mockReturnValue({
+            data: [],
+            isPending: false,
+        } as unknown as ReturnType<typeof usePortfolioHistoryQuery>)
+
+        const { container } = render(
+            <WealthTrend
+                sources={SOURCES}
+                currencyScope={ALGORAND}
+                period='one-week'
+            />,
+        )
+
+        expect(container.innerHTML).toBe('')
+    })
+
     it('displays positive trend with percentage', () => {
         vi.mocked(usePortfolioHistoryQuery).mockReturnValue({
             data: [

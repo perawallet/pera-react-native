@@ -30,7 +30,11 @@ import {
     stringifyDecimalJson,
     type Database,
 } from '@perawallet/wallet-core-database'
-import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
+import {
+    AppError,
+    ErrorCategory,
+    generateOrderedUniqueId,
+} from '@perawallet/wallet-core-shared'
 import {
     parseScopeKey,
     toScopeKey,
@@ -583,9 +587,11 @@ export const pruneResolvedSubmissionAttempts = async ({
 }
 
 /** The sender already has a batch with this id. */
-export class DuplicateTransactionBatchError extends Error {
+export class DuplicateTransactionBatchError extends AppError {
     constructor(batchId: string) {
-        super(`A batch with id ${batchId} already exists for this sender`)
+        super(`A batch with id ${batchId} already exists for this sender`, {
+            category: ErrorCategory.TRANSACTIONS,
+        })
         this.name = 'DuplicateTransactionBatchError'
     }
 }

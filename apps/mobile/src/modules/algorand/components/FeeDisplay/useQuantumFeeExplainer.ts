@@ -27,6 +27,19 @@ type UseQuantumFeeExplainerResult = {
     isQuantumFee: boolean
 }
 
+const authorizerAddressOf = (
+    transaction: AlgorandTransactionView | undefined,
+    resolved: ReturnType<typeof useSigningPipeline>['resolved'],
+): string | undefined => {
+    if (transaction) {
+        return transaction.authAddr?.publicKey
+            ? encodeAlgorandAddress(transaction.authAddr.publicKey)
+            : transaction.sender
+    }
+    if (!resolved) return undefined
+    return chainAccountOf(resolved.signerAccount, LEGACY_CHAIN_ID)?.address
+}
+
 /**
  * Decides whether the quantum-fee explainer affordance should appear next to a
  * rendered transaction fee. The fee is higher for Quantum accounts, so the
@@ -50,13 +63,7 @@ export const useQuantumFeeExplainer = (
     const enabled = useCapability({ platform: 'quantum' })
     const { resolved } = useSigningPipeline()
 
-    const authorizerAddress = transaction
-        ? transaction.authAddr?.publicKey
-            ? encodeAlgorandAddress(transaction.authAddr.publicKey)
-            : transaction.sender
-        : resolved
-          ? chainAccountOf(resolved.signerAccount, LEGACY_CHAIN_ID)?.address
-          : undefined
+    const authorizerAddress = authorizerAddressOf(transaction, resolved)
 
     const signer = useSignerFor(authorizerAddress, LEGACY_CHAIN_ID)
 

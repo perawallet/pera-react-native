@@ -11,6 +11,7 @@
  */
 
 import { AUTO_LOCK_MINUTES_KEY } from '../storage-keys'
+import { clearPasswordAuth } from './password-auth'
 import { clearSessionMasterKey } from './session'
 
 export { AUTO_LOCK_MINUTES_KEY }
@@ -59,6 +60,9 @@ export const handleAutoLockAlarm = async (
     alarm: chrome.alarms.Alarm,
 ): Promise<void> => {
     if (alarm.name !== AUTO_LOCK_ALARM) return
+    // Same order as lockVault, which this module can't import without a cycle:
+    // a stamp that outlives the lock lets a passkey unlock enrol another passkey.
+    await clearPasswordAuth()
     await clearSessionMasterKey()
     await disarmAutoLock()
 }

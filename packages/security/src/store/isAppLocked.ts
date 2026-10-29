@@ -10,22 +10,8 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed'
+import { useSecurityStore } from './store'
 
-// Moved verbatim from the Swap and Fund screens, which carried identical copies
-// before the select header became shared.
-export const useSelectHeaderStyles = makeStyles(theme => ({
-    selectHeader: {
-        paddingTop: theme.spacing.sm,
-        gap: theme.spacing.md,
-        width: '100%',
-        minWidth: 0,
-    },
-    selectTitle: {
-        minWidth: 0,
-    },
-    selectDescription: {
-        color: theme.colors.textGray,
-        minWidth: 0,
-    },
-}))
+/** True while the lock screen is up, including before the guard has settled. */
+export const isAppLocked = (): boolean =>
+    useSecurityStore.getState().isAppLockActive

@@ -42,7 +42,7 @@ const {
 // this package, and `isExpectedError` checks them by identity.
 vi.mock('@perawallet/wallet-core-backup', async importOriginal => ({
     ...(await importOriginal<Record<string, unknown>>()),
-    useCloudBackupStore: { getState: () => storeState },
+    readCloudBackupCredentials: () => ({ ...storeState }),
 }))
 // errors.ts extends AppError from this package, so the real exports (not the
 // global unit-test stub) must survive here — only logger is overridden.
