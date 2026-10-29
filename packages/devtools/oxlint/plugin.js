@@ -23,6 +23,7 @@ import { noAlgorandSdkImports } from './rules/no-algorand-sdk-imports.js'
 import { noI18nKeyCast } from './rules/no-i18n-key-cast.js'
 import { hdDeriveClaimed } from './rules/hd-derive-claimed.js'
 import { noManualUnitConversion } from './rules/no-manual-unit-conversion.js'
+import { mutationScopeInVariables } from './rules/mutation-scope-in-variables.js'
 import { sensitiveInputProps } from './rules/sensitive-input-props.js'
 import { monotonicLockoutClock } from './rules/monotonic-lockout-clock.js'
 import { noDisplayStringIdentity } from './rules/no-display-string-identity.js'
@@ -58,6 +59,7 @@ export default {
         'no-i18n-key-cast': noI18nKeyCast,
         'hd-derive-claimed': hdDeriveClaimed,
         'no-manual-unit-conversion': noManualUnitConversion,
+        'mutation-scope-in-variables': mutationScopeInVariables,
         'sensitive-input-props': sensitiveInputProps,
         'monotonic-lockout-clock': monotonicLockoutClock,
         'no-display-string-identity': noDisplayStringIdentity,
