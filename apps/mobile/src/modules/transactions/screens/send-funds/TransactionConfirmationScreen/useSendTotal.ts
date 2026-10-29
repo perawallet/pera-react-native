@@ -70,20 +70,14 @@ export const useSendTotal = ({
     const isCollectibleAsset = asset ? isCollectible(asset) : false
     const { convertedValue: amountValue, isPending: isAmountPricePending } =
         usePreferredAmount(
-        amount,
-        asset?.assetId ?? nativeAsset.assetId,
-        false,
-        undefined,
-        scope,
-    )
+            amount,
+            asset?.assetId ?? nativeAsset.assetId,
+            false,
+            undefined,
+            scope,
+        )
     const { convertedValue: feeValue, isPending: isFeePricePending } =
-        usePreferredAmount(
-        fee,
-        nativeAsset.assetId,
-        false,
-        undefined,
-        scope,
-    )
+        usePreferredAmount(fee, nativeAsset.assetId, false, undefined, scope)
 
     const isPreferredPending = isAmountPricePending || isFeePricePending
 
