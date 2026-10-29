@@ -20,7 +20,6 @@ export interface WorkspaceMember {
 // Lazy prefix, so a scratch fixture's own `packages/<name>` resolves too.
 const MEMBER = /^((?:.*?\/)?(apps|packages|extensions)\/[^/]+)\//
 
-/** The workspace member directory that contains `path`, if any. */
 export const workspaceMemberOf = (
     path: string,
 ): WorkspaceMember | undefined => {

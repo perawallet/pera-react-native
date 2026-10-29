@@ -2,7 +2,7 @@
  * Copyright (c) Pera Wallet. All rights reserved.
  */
 
-import { describe, expect, it } from 'vitest'
+import { beforeAll, describe, expect, it } from 'vitest'
 import {
     createRunner,
     locations,
@@ -19,7 +19,10 @@ const SELFIE_CONFIG = [
     'export default {',
     '    resolve: {',
     '        alias: {',
-    "            '@perawallet/selfie/aliased': path.resolve(__dirname, 'src/aliased.ts'),",
+    "            '@perawallet/selfie/aliased': path.resolve(",
+    '                __dirname,',
+    "                'src/aliased.ts',",
+    '            ),',
     "            '@perawallet/selfie/elsewhere': path.resolve(",
     '                __dirname,',
     "                '../other/src/index.ts',",
@@ -77,10 +80,68 @@ const check = async (files: Record<string, string>): Promise<Violation[]> =>
         }
     })
 
-describe('pera/spec-imports-own-src', () => {
-    it('reports own-name imports in package and extension test code unless an exact alias points into its src', async () => {
-        const found = await check(FILES)
+const LOADERS_CONFIG = [
+    "import path from 'path'",
+    'export default {',
+    '    resolve: {',
+    '        alias: {',
+    "            // '@perawallet/loaders/commented': path.resolve(__dirname, 'src/commented.ts'),",
+    "            '@perawallet/loaders/real': path.resolve(__dirname, 'src/real.ts'),",
+    '        },',
+    '    },',
+    '}',
+    '',
+].join('\n')
 
+const LISTY_CONFIG = [
+    "import path from 'path'",
+    'export default {',
+    '    resolve: {',
+    '        alias: [',
+    '            {',
+    "                find: '@perawallet/listy',",
+    "                replacement: path.resolve(__dirname, 'src/index.ts'),",
+    '            },',
+    '        ],',
+    '    },',
+    '}',
+    '',
+].join('\n')
+
+const LOADERS = 'packages/loaders'
+
+const COVERAGE_FILES: Record<string, string> = {
+    [`${LOADERS}/package.json`]: manifest('@perawallet/loaders'),
+    [`${LOADERS}/vitest.config.ts`]: LOADERS_CONFIG,
+    [`${LOADERS}/src/__tests__/mocks.spec.ts`]: [
+        "vi.mock('@perawallet/loaders')",
+        "vi.doMock('@perawallet/loaders')",
+        "await vi.importMock('@perawallet/loaders')",
+        "const r = require('@perawallet/loaders')",
+        '',
+    ].join('\n'),
+    [`${LOADERS}/src/__tests__/commented.spec.ts`]:
+        "import { a } from '@perawallet/loaders/commented'\n",
+    [`${LOADERS}/src/__tests__/real.spec.ts`]:
+        "import { a } from '@perawallet/loaders/real'\n",
+    [`${LOADERS}/src/__mocks__/mock.ts`]:
+        "import { a } from '@perawallet/loaders'\n",
+    [`${LOADERS}/vitest.setup.ts`]: "import '@perawallet/loaders'\n",
+    [`${LOADERS}/src/prod.ts`]: "import { a } from '@perawallet/loaders'\n",
+    'packages/listy/package.json': manifest('@perawallet/listy'),
+    'packages/listy/vitest.config.ts': LISTY_CONFIG,
+    'packages/listy/src/__tests__/listy.spec.ts':
+        "import { a } from '@perawallet/listy'\n",
+}
+
+describe('pera/spec-imports-own-src', () => {
+    let found: Violation[]
+
+    beforeAll(async () => {
+        found = await check(FILES)
+    })
+
+    it('reports own-name imports in package and extension test code unless an exact alias points into its src', () => {
         expect(locations(found)).toEqual([
             'plug.spec.ts:1',
             'bare.spec.ts:1',
@@ -98,13 +159,26 @@ describe('pera/spec-imports-own-src', () => {
         )
     })
 
-    it('names the specifier and the package in the message', async () => {
-        const found = await check(FILES)
-
+    it('names the specifier and the package in the message', () => {
         expect(
             found.find(v => v.file.endsWith('barrel.spec.ts'))?.message,
         ).toBe(
             "'@perawallet/selfie' is @perawallet/selfie itself and resolves to its dist; import from src relatively, or alias '@perawallet/selfie' to src in vitest.config.ts",
         )
+    })
+
+    it('covers every loader form, test support and setup files, and fails closed on an array alias or a commented-out one', async () => {
+        const extra = await check(COVERAGE_FILES)
+
+        expect(locations(extra)).toEqual([
+            'listy.spec.ts:1',
+            'mock.ts:1',
+            'commented.spec.ts:1',
+            'mocks.spec.ts:1',
+            'mocks.spec.ts:2',
+            'mocks.spec.ts:3',
+            'mocks.spec.ts:4',
+            'vitest.setup.ts:1',
+        ])
     })
 })

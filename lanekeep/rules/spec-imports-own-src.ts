@@ -27,11 +27,15 @@ const VI_LOADER_QUERY = `
 const ALIAS_ENTRY =
     /['"]([^'"]+)['"]\s*:\s*(?:path\.)?resolve\(\s*__dirname\s*,\s*['"]([^'"]+)['"]\s*,?\s*\)/g
 
+// A commented-out alias must not exempt an import.
+const LINE_COMMENT = /^\s*\/\/.*$/gm
+
 /** The alias keys in `config` whose target lies inside `<dir>/src/`. */
 const ownSrcAliases = (config: string, dir: string): ReadonlySet<string> => {
     const keys = new Set<string>()
     const configPath = `${dir}/vitest.config.ts`
-    for (const [, key, target] of config.matchAll(ALIAS_ENTRY)) {
+    const live = config.replace(LINE_COMMENT, '')
+    for (const [, key, target] of live.matchAll(ALIAS_ENTRY)) {
         if (key === undefined || target === undefined) continue
         if (resolveRelative(configPath, target).startsWith(`${dir}/src/`)) {
             keys.add(key)
