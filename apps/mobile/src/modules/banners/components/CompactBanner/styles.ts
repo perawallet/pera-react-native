@@ -52,7 +52,9 @@ export const useStyles = makeStyles(theme => ({
     // height short of the width. Opaque, because 18% was invisible on the mint
     // this sits on (`bannerBg`, the same turquoise in both themes).
     moreBadge: {
+        // lanekeep-ignore-next-line pera/no-numeric-sizes reason: badge fits one digit (xl) plus xs of padding
         minWidth: theme.spacing.xl + theme.spacing.xs,
+        // lanekeep-ignore-next-line pera/no-numeric-sizes reason: badge fits one digit (xl) plus xs of padding
         minHeight: theme.spacing.xl + theme.spacing.xs,
         paddingHorizontal: theme.spacing.xs,
         borderRadius: theme.borderRadius.full,

@@ -10,13 +10,12 @@
  limitations under the License
  */
 
-import type { Decimal } from 'decimal.js'
 import { CardWalletKind } from '@perawallet/wallet-core-card'
-import { PWIcon, PWListItemLayout, PWText, PWView } from '@components/core'
-import { CurrencyAmount } from '@components/CurrencyAmount'
+import { PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import type { PeraCardCredits } from './usePeraCardOverview'
 import { useStyles } from './styles'
+import { CreditRow } from './CreditRow'
 
 type PeraCardCreditsSectionProps = {
     credits: PeraCardCredits
@@ -60,59 +59,5 @@ export const PeraCardCreditsSection = ({
                 />
             </PWView>
         </PWView>
-    )
-}
-
-type CreditRowProps = {
-    kind: CardWalletKind
-    label: string
-    amount: Decimal
-    currency: string
-    onPress: (kind: CardWalletKind) => void
-    testID: string
-}
-
-const CreditRow = ({
-    kind,
-    label,
-    amount,
-    currency,
-    onPress,
-    testID,
-}: CreditRowProps) => {
-    const styles = useStyles()
-
-    return (
-        <PWListItemLayout
-            style={styles.cardRow}
-            onPress={() => onPress(kind)}
-            testID={testID}
-            right={
-                <PWView style={styles.rowRight}>
-                    <CurrencyAmount
-                        value={amount}
-                        currency={currency}
-                        assetId={null}
-                        precision='compact'
-                        symbolPosition='end'
-                        variant='bodyLarge'
-                        weight={500}
-                        style={styles.rowValue}
-                    />
-                    <PWIcon
-                        name='chevron-right'
-                        size='sm'
-                        variant='secondary'
-                    />
-                </PWView>
-            }
-        >
-            <PWText
-                variant='bodyLarge'
-                weight={400}
-            >
-                {label}
-            </PWText>
-        </PWListItemLayout>
     )
 }

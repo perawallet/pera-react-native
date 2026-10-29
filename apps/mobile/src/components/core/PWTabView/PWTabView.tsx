@@ -12,17 +12,8 @@
 
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs'
 import type { ParamListBase } from '@react-navigation/native'
-import { makeStyles } from '@rneui/themed'
 import { PWTabBar } from './PWTabBar'
-
-const useStyles = makeStyles(() => ({
-    navigator: {
-        flex: 1,
-    },
-    scene: {
-        flex: 1,
-    },
-}))
+import { useStyles } from './styles'
 
 export const createPWTabNavigator = <ParamList extends ParamListBase>() => {
     const Tab = createMaterialTopTabNavigator<ParamList>()

@@ -18,8 +18,8 @@ import {
     PWTouchableIcon,
     type PWInputProps,
     type PWInputRef,
+    PWIcon,
 } from '@components/core'
-import { PWIcon } from '@components/core/PWIcon'
 import { useStyles } from './styles'
 
 export type SearchInputProps = Omit<PWInputProps, 'leftIcon' | 'rightIcon'>

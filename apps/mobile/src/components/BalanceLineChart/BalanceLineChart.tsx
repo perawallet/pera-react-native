@@ -34,10 +34,6 @@ import { useStyles } from './styles'
 
 import type { StyleProp, ViewStyle } from 'react-native'
 
-// Legacy literal, carried over verbatim so the port stays visually a no-op. It
-// is deliberately not theme.colors.positive (a different turquoise) and wants a
-// semantic token of its own.
-const AREA_FILL_COLOR = '#28A79B'
 const AREA_FILL_TOP_OPACITY = '4D' // 30%
 const AREA_FILL_BOTTOM_OPACITY = '00'
 
@@ -172,8 +168,8 @@ export const BalanceLineChart = <T,>({
                                             start={vec(0, chartBounds.top)}
                                             end={vec(0, chartBounds.bottom)}
                                             colors={[
-                                                `${AREA_FILL_COLOR}${AREA_FILL_TOP_OPACITY}`,
-                                                `${AREA_FILL_COLOR}${AREA_FILL_BOTTOM_OPACITY}`,
+                                                `${theme.colors.chartAreaFill}${AREA_FILL_TOP_OPACITY}`,
+                                                `${theme.colors.chartAreaFill}${AREA_FILL_BOTTOM_OPACITY}`,
                                             ]}
                                         />
                                     </Area>

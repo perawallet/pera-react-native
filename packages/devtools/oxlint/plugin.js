@@ -26,8 +26,10 @@ import { noManualUnitConversion } from './rules/no-manual-unit-conversion.js'
 import { noDisplayStringIdentity } from './rules/no-display-string-identity.js'
 import { fetchHasDeadline } from './rules/fetch-has-deadline.js'
 import { testIdProp } from './rules/test-id-prop.js'
+import { makeStylesLocation } from './rules/make-styles-location.js'
 import { loggerStaticMessage } from './rules/logger-static-message.js'
 import { preferToError } from './rules/prefer-to-error.js'
+import { noDeepRelativeImports } from './rules/no-deep-relative-imports.js'
 
 // A mobile-source rule needs its own override in apps/mobile/.oxlintrc.json:
 // oxlint resolves an inherited override's globs from the extending config's
@@ -51,7 +53,9 @@ export default {
         'no-display-string-identity': noDisplayStringIdentity,
         'fetch-has-deadline': fetchHasDeadline,
         'test-id-prop': testIdProp,
+        'make-styles-location': makeStylesLocation,
         'logger-static-message': loggerStaticMessage,
         'prefer-to-error': preferToError,
+        'no-deep-relative-imports': noDeepRelativeImports,
     },
 }

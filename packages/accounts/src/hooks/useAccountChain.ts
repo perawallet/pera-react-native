@@ -24,7 +24,11 @@ import {
 import type { Maybe } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { chainAccountOf } from '../credentials/accessors'
-import type { WalletAccount } from '../models'
+import {
+    accountValueKey,
+    type AccountValueKey,
+    type WalletAccount,
+} from '../models'
 import { accountsChainAdapters } from '../chain-adapter'
 import { canSignWith } from '../signer-resolution'
 import { useAccountChainStateStore, useAccountsStore } from '../store'
@@ -63,14 +67,14 @@ export const useAccountScope = (
     fallbackChainId: ChainId,
 ): ChainScope => useSelectedScope(useAccountChainId(account, fallbackChainId))
 
-/** The account's totals on its own chain, looked up by its address there. */
+/** The account's totals on `chainId`, looked up by its address there. */
 export const accountValueOf = <V>(
     account: WalletAccount,
     chainId: ChainId,
-    values: ReadonlyMap<string, V>,
+    values: ReadonlyMap<AccountValueKey, V>,
 ): V | undefined => {
     const address = chainAccountOf(account, chainId)?.address
-    return address ? values.get(address) : undefined
+    return address ? values.get(accountValueKey(chainId, address)) : undefined
 }
 
 /**

@@ -14,7 +14,7 @@ import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import {
     RekeySuccessScreen,
     type RekeySuccessCopy,
-} from '../../../components/RekeySuccessScreen'
+} from '@modules/rekey/components/RekeySuccessScreen'
 
 const SUCCESS_COPY: RekeySuccessCopy = {
     titleKey: i18nKey('rekey.to_shared.success.title'),

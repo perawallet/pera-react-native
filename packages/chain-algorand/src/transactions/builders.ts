@@ -23,7 +23,7 @@ import type {
     AssetOptOutTxsParams,
     ExpressTransferTxsParams,
     KeyRegistrationTxParams,
-    RekeyTxParams,
+    DelegationTxParams,
     TransferTxsParams,
 } from '@perawallet/wallet-core-transactions'
 import { isAlgorandNativeAssetId } from '../descriptor'
@@ -144,15 +144,15 @@ export const buildOptOutTxs = ({
 export const buildRekeyTx = async ({
     scope,
     sourceAddress,
-    rekeyToAddress,
+    authorityAddress,
     minFee,
-}: RekeyTxParams): Promise<PeraTransaction> => {
+}: DelegationTxParams): Promise<PeraTransaction> => {
     const { createTransaction } = clientFor(scope)
     const payment = {
         sender: sourceAddress,
         receiver: sourceAddress,
         amount: microAlgo(0n),
-        rekeyTo: rekeyToAddress,
+        rekeyTo: authorityAddress,
     }
     const draft = await createTransaction.payment(payment)
     // Rebuild with an explicit fee only when the PQ-aware minimum exceeds what

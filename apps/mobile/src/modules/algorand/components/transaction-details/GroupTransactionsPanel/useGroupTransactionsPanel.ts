@@ -20,7 +20,7 @@ import type { RelatedTransactionsProps } from '@modules/signing'
 import {
     toGroupTransactionRows,
     type GroupTransactionRow,
-} from '../../../utils/groupTransactionRows'
+} from '@modules/algorand/utils/groupTransactionRows'
 
 export type GroupTransactionsPanelProps = RelatedTransactionsProps
 

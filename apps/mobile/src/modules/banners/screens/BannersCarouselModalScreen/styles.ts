@@ -43,7 +43,7 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => ({
         justifyContent: 'center',
         // Translucent backdrop keeps the X tappable + visible over any banner
         // art color palette.
-        backgroundColor: 'rgba(0, 0, 0, 0.35)',
+        backgroundColor: theme.colors.bannerCloseButtonBg,
         zIndex: theme.zIndex.layer1,
     },
 }))

@@ -100,10 +100,10 @@ sendFlowContractTests(() => algorandSendFlowAdapter, {
         scope,
         optOuts: [{ sender: 'SENDER', assetId: 31566704n, creator: 'CREATOR' }],
     },
-    rekey: {
+    delegation: {
         scope,
         sourceAddress: 'SENDER',
-        rekeyToAddress: 'AUTH',
+        authorityAddress: 'AUTH',
         minFee: 1000n,
     },
 })

@@ -88,7 +88,7 @@ export const useTransactionWarnings = (
             'close-asset': addressWarnings.filter(
                 w => w.type === 'close-asset',
             ),
-            rekey: addressWarnings.filter(w => w.type === 'rekey'),
+            delegation: addressWarnings.filter(w => w.type === 'delegation'),
             'asset-freeze': addressWarnings.filter(
                 w => w.type === 'asset-freeze',
             ),

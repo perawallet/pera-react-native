@@ -22,6 +22,8 @@ import {
     hydratePlatform,
     installOffscreenStorageShim,
 } from '@perawallet/wallet-extension-platform-chrome/bootstrap'
+import { OffscreenStatus } from './app-root/OffscreenStatus'
+import { RootBoundary } from './app-root/RootBoundary'
 
 type ShellComponent = React.ComponentType
 
@@ -34,58 +36,6 @@ const registerTransports = async (): Promise<void> => {
             import('./bootstrap/hardware-wallet-transports'),
         ])
     registerHardwareWalletTransports(getProvider().hardwareWalletRegistry)
-}
-
-const OffscreenStatus = (): React.JSX.Element => (
-    <View style={{ flex: 1 }}>
-        {/* oxlint-disable-next-line pera/no-hardcoded-ui-strings -- e2e status probe in the offscreen document, never shown to a user */}
-        <Text testID='offscreen-status'>offscreen host running</Text>
-    </View>
-)
-
-// Outermost mount guard ABOVE ThemeProvider: AppShell's own boundary lives
-// inside it, so a throw in theme construction or ThemeProvider itself would
-// white-screen. Store-free and unthemed per this file's boot-order contract.
-class RootBoundary extends React.Component<
-    { children: React.ReactNode },
-    { hasError: boolean }
-> {
-    state = { hasError: false }
-
-    static getDerivedStateFromError(): { hasError: boolean } {
-        return { hasError: true }
-    }
-
-    render(): React.ReactNode {
-        if (!this.state.hasError) return this.props.children
-        return (
-            <View
-                style={{
-                    flex: 1,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    padding: 24,
-                }}
-            >
-                {/* oxlint-disable-next-line pera/no-hardcoded-ui-strings -- the outermost error boundary renders before i18n can load */}
-                <Text
-                    testID='root-boundary-fallback'
-                    style={{ marginBottom: 16 }}
-                >
-                    Pera Wallet failed to start.
-                </Text>
-                {/* oxlint-disable-next-line pera/no-hardcoded-ui-strings -- the outermost error boundary renders before i18n can load */}
-                <Text
-                    testID='root-boundary-reload'
-                    accessibilityRole='button'
-                    onPress={() => globalThis.location.reload()}
-                    style={{ fontWeight: '600' }}
-                >
-                    Reload
-                </Text>
-            </View>
-        )
-    }
 }
 
 export const App = (): React.JSX.Element => {

@@ -11,7 +11,7 @@
  */
 
 import { PWText, PWView } from '@components/core'
-import type { AddressSegment } from '../../../utils/diffAddresses'
+import type { AddressSegment } from '@modules/transactions/utils/diffAddresses'
 import { useStyles } from './styles'
 
 export type ComparedAddressProps = {

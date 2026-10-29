@@ -40,7 +40,7 @@ import { useBottomSheet } from '@modules/bottom-sheet'
 import { ConfirmActionContent } from '@components/ConfirmActionContent'
 import { useStyles } from './styles'
 import type { StackNavigationProp } from '@react-navigation/stack'
-import type { SendFundsStackParamList } from '../../../routes/send-funds/types'
+import type { SendFundsStackParamList } from '@modules/transactions/routes/send-funds/types'
 
 type CloseAccountChoice = 'close' | 'keepOpen'
 

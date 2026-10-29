@@ -97,15 +97,15 @@ vi.mock('@perawallet/wallet-core-transactions', async importOriginal => ({
     ...(await importOriginal<
         typeof import('@perawallet/wallet-core-transactions')
     >()),
-    useSubmitRekeyMutation: () => ({
+    useSubmitDelegationMutation: () => ({
         submitAsync: mockSubmitAsync,
         isPending: false,
     }),
-    useRekeyTransactionFeeQuery: () => ({
-        feeAlgos: new Decimal('0.001'),
+    useDelegationTransactionFeeQuery: () => ({
+        fee: new Decimal('0.001'),
         isPending: false,
     }),
-    useRekeyFeePreflight: () => ({ isUnderfunded: mockIsUnderfunded }),
+    useDelegationFeePreflight: () => ({ isUnderfunded: mockIsUnderfunded }),
 }))
 
 const mockRequestBottomSheet = vi.fn()
@@ -206,7 +206,7 @@ describe('useUndoRekeyConfirmScreen', () => {
         await waitFor(() => {
             expect(mockSubmitAsync).toHaveBeenCalledWith({
                 sourceAddress: 'SRC',
-                rekeyToAddress: 'SRC',
+                authorityAddress: 'SRC',
             })
         })
         expect(mockNavigate).toHaveBeenCalledWith('UndoRekey', {
@@ -291,10 +291,12 @@ describe('useUndoRekeyConfirmScreen', () => {
     })
 
     it('shows the user-rejected toast and does not navigate when the signer cancels', async () => {
-        const { RekeyError } =
+        const { DelegationError } =
             await import('@perawallet/wallet-core-transactions')
         mockRequestBottomSheet.mockResolvedValueOnce(true)
-        mockSubmitAsync.mockRejectedValueOnce(new RekeyError('user_rejected'))
+        mockSubmitAsync.mockRejectedValueOnce(
+            new DelegationError('user_rejected'),
+        )
         const { result } = renderHook(() => useUndoRekeyConfirmScreen())
 
         await act(async () => {

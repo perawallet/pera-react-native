@@ -13,6 +13,7 @@
 import { makeStyles } from '@rneui/themed'
 
 // Matches the design's 20px chain icons and "+N" chip.
+// lanekeep-ignore-next-line pera/no-numeric-sizes reason: stacked chain icon size
 export const CHAIN_ICON_SIZE = 20
 
 export const useStyles = makeStyles(theme => ({

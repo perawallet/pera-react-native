@@ -20,23 +20,6 @@ export const useStyles = makeStyles(theme => ({
     contentContainer: {
         paddingHorizontal: theme.spacing.xl,
     },
-    // marginLeft = 3xl thumbnail + md row gap, to align the divider with row text.
-    listSeparator: {
-        height: theme.borders.sm,
-        backgroundColor: theme.colors.layerGrayLighter,
-        marginLeft: theme.spacing['3xl'] + theme.spacing.md,
-    },
-    // FlashList has no columnWrapperStyle, so grid spacing rides on the cells.
-    gridColumn: {
-        paddingBottom: theme.spacing.xl,
-    },
-    // Half-gap on each cell's inner edge -> xl between columns, outer edges flush.
-    gridColumnLeft: {
-        paddingRight: theme.spacing.xl / 2,
-    },
-    gridColumnRight: {
-        paddingLeft: theme.spacing.xl / 2,
-    },
     // Skeletons trace the real layouts: two square tiles per row in grid mode,
     // thumbnail-plus-two-lines in list mode.
     skeletonGrid: {

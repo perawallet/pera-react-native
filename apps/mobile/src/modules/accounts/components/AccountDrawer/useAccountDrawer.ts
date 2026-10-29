@@ -17,7 +17,7 @@ import {
     withSpring,
     type SharedValue,
 } from 'react-native-reanimated'
-import { PWDRAWER_SPRING_CONFIG } from '@components/core/PWDrawer/constants'
+import { PWDRAWER_SPRING_CONFIG } from '@components/core'
 import { SCREEN_ANIMATION_DURATION_MS } from '@constants/ui'
 import { useAccountSwitcherActions } from '@modules/accounts/hooks/useAccountSwitcherActions'
 

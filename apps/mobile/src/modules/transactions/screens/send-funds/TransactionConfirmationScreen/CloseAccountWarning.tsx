@@ -12,10 +12,10 @@
 
 import { PWRoundIcon, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import { makeStyles } from '@rneui/themed'
+import { useCloseAccountWarningStyles } from './styles'
 
 export const CloseAccountWarning = () => {
-    const styles = useStyles()
+    const styles = useCloseAccountWarningStyles()
     const { t } = useLanguage()
 
     return (
@@ -36,23 +36,3 @@ export const CloseAccountWarning = () => {
         </PWView>
     )
 }
-
-const useStyles = makeStyles(theme => ({
-    container: {
-        flexDirection: 'row',
-        alignItems: 'flex-start',
-        gap: theme.spacing.lg,
-        marginVertical: theme.spacing.xl,
-        backgroundColor: theme.colors.suspiciousBannerBg,
-        padding: theme.spacing.lg,
-        borderRadius: theme.spacing.sm,
-    },
-    messageContainer: {
-        flexShrink: 1,
-        gap: theme.spacing.xs,
-    },
-    message: {
-        flexShrink: 1,
-        color: theme.colors.suspiciousBannerContent,
-    },
-}))
