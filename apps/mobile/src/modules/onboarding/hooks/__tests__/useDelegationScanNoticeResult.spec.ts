@@ -78,6 +78,22 @@ describe('useDelegationScanNoticeResult', () => {
         )
     })
 
+    it('words the notice for a rescan the user started', async () => {
+        mockDiscoverDelegatedAccounts.mockRejectedValue(
+            new Error('indexer 500'),
+        )
+        const { result } = renderHook(() => useDelegationScanNoticeResult())
+
+        await result.current.scanRekeyed(['SENDER'], 'rescan')
+
+        expect(mockShowToast).toHaveBeenCalledWith(
+            expect.objectContaining({
+                title: 'onboarding.searching_accounts.rekey_scan_failed_title',
+                body: 'onboarding.searching_accounts.rekey_rescan_failed_body',
+            }),
+        )
+    })
+
     it("lists each account's address on the scan chain and skips one without", () => {
         const { result } = renderHook(() => useDelegationScanNoticeResult())
 

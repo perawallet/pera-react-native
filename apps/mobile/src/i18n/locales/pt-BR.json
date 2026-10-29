@@ -2238,6 +2238,7 @@
             "no_new_addresses_body": "Não encontramos nenhum endereço adicional associado a esta wallet.",
             "rekey_scan_failed_title": "Não foi possível verificar contas com rekey",
             "rekey_scan_failed_body": "Sua conta foi importada. Não foi possível verificar se outras contas têm rekey para ela — você pode escanear novamente em Configurações.",
+            "rekey_rescan_failed_body": "Não foi possível verificar se outras contas têm rekey para esta wallet. Busque novamente para tentar outra vez.",
             "rescan_found_title": "Busca concluída",
             "rescan_found_body_one": "1 conta foi adicionada ou atualizada.",
             "rescan_found_body_other": "{{count}} contas foram adicionadas ou atualizadas.",

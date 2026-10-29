@@ -49,21 +49,16 @@ vi.mock('@hooks/useToast', () => ({
     }),
 }))
 
-vi.mock('@perawallet/wallet-core-accounts', () => {
-    const useAccountsStore = Object.assign(
-        (selector: (state: unknown) => unknown) =>
-            selector({ discoverWalletAccounts: mocks.discoverWalletAccounts }),
-        { getState: () => ({ accounts: mocks.held.current }) },
-    )
-    return {
-        NoHdSeedError: class NoHdSeedError extends Error {},
-        seedOf: mocks.seedOf,
-        useAccountsStore,
-        useSelectedAccountId: () => ({
-            setSelectedAccountId: mocks.setSelectedAccountId,
-        }),
-    }
-})
+vi.mock('@perawallet/wallet-core-accounts', () => ({
+    getAllAccounts: () => mocks.held.current,
+    NoHdSeedError: class NoHdSeedError extends Error {},
+    seedOf: mocks.seedOf,
+    useAccountsStore: (selector: (state: unknown) => unknown) =>
+        selector({ discoverWalletAccounts: mocks.discoverWalletAccounts }),
+    useSelectedAccountId: () => ({
+        setSelectedAccountId: mocks.setSelectedAccountId,
+    }),
+}))
 
 vi.mock('../../../hooks', () => ({
     REKEY_SCAN_UNAVAILABLE: 'rekey-scan-unavailable',
@@ -154,10 +149,10 @@ describe('useHdWalletRescan', () => {
 
         await rescan()
 
-        expect(mocks.scanRekeyed).toHaveBeenCalledExactlyOnceWith([
-            'ALGO_ADDRESS',
-            'SIBLING',
-        ])
+        expect(mocks.scanRekeyed).toHaveBeenCalledExactlyOnceWith(
+            ['ALGO_ADDRESS', 'SIBLING'],
+            'rescan',
+        )
     })
 
     it('tells the user how many accounts changed and exits the flow', async () => {

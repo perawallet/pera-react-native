@@ -2226,6 +2226,7 @@
             "no_new_addresses_body": "Wir konnten keine weiteren, mit diesem Wallet verbundenen Adressen finden.",
             "rekey_scan_failed_title": "Rekeyed Konten konnten nicht geprüft werden",
             "rekey_scan_failed_body": "Dein Konto wurde importiert. Wir konnten nicht prüfen, ob andere Konten darauf rekeyed sind — du kannst den Scan in den Einstellungen wiederholen.",
+            "rekey_rescan_failed_body": "Wir konnten nicht prüfen, ob andere Konten auf dieses Wallet rekeyed sind. Scanne erneut, um es noch einmal zu versuchen.",
             "rescan_found_title": "Scan abgeschlossen",
             "rescan_found_body_one": "1 Konto wurde hinzugefügt oder aktualisiert.",
             "rescan_found_body_other": "{{count}} Konten wurden hinzugefügt oder aktualisiert.",

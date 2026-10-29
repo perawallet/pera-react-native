@@ -2234,6 +2234,7 @@
             "no_new_addresses_body": "We didn't find any additional addresses associated with this wallet.",
             "rekey_scan_failed_title": "Couldn't check for rekeyed accounts",
             "rekey_scan_failed_body": "Your account was imported. We couldn't check whether other accounts are rekeyed to it — you can scan again from Settings.",
+            "rekey_rescan_failed_body": "We couldn't check whether other accounts are rekeyed to this wallet. Scan again to try once more.",
             "rescan_found_title": "Scan complete",
             "rescan_found_body_one": "1 account was added or updated.",
             "rescan_found_body_other": "{{count}} accounts were added or updated.",

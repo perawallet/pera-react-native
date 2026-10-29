@@ -12,6 +12,7 @@
 
 import { useCallback } from 'react'
 import {
+    getAllAccounts,
     NoHdSeedError,
     seedOf,
     useAccountsStore,
@@ -58,11 +59,11 @@ export const useHdWalletRescan = (): UseHdWalletRescanResult => {
                     throw new Error('Wallet discovery got no answer')
                 }
 
-                const heldAccounts = useAccountsStore.getState().accounts
+                const heldAccounts = getAllAccounts()
                 const addresses = rekeyScanAddressesOf(
                     heldAccounts.filter(held => seedOf(held) === walletId),
                 )
-                const scanned = await scanRekeyed(addresses)
+                const scanned = await scanRekeyed(addresses, 'rescan')
                 // The scan lists every account rekeyed to the wallet, held or not; only the unheld are news.
                 const rekeyed =
                     scanned === REKEY_SCAN_UNAVAILABLE
