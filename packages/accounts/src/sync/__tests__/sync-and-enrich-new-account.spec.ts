@@ -26,6 +26,7 @@ const mockFetchAndPersistAssets = vi.fn(() => Promise.resolve())
 const mockFetchAndPersistPrices = vi.fn(() => Promise.resolve())
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
+    findNativeAsset: () => ({ assetId: '0' }),
     fetchAndPersistAssets: (...args: unknown[]) =>
         mockFetchAndPersistAssets(...args),
     fetchAndPersistPrices: (...args: unknown[]) =>
@@ -37,6 +38,7 @@ const mockGetAccountChainStateRow = vi.fn()
 const mockGetAccountHoldings = vi.fn()
 
 vi.mock('../../db', () => ({
+    insertAssetHolding: vi.fn(),
     upsertAccountChainState: vi.fn(),
     refreshAccountHoldings: (...args: unknown[]) =>
         mockRefreshAccountHoldings(...args),

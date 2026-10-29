@@ -290,6 +290,7 @@
         "transaction_list": {
             "title": "Transações",
             "empty_body": "Nenhuma transação encontrada",
+            "empty_on_network_body": "Ainda não há transações em {{network}}",
             "offline_empty_title": "Você está offline",
             "offline_empty_body": "Ainda não há transações salvas neste dispositivo. Elas aparecerão quando você voltar a ficar online.",
             "search_paused_body": "Nenhuma transação encontrada no histórico recente.",
@@ -346,6 +347,8 @@
             "empty_body": "Você não tem ativos vinculados a esta conta",
             "nomatch_title": "Nenhum ativo encontrado",
             "nomatch_body": "Nenhum ativo corresponde à sua busca",
+            "funding_title": "Comece em {{network}}",
+            "funding_body": "Deposite fundos para começar a usar esta rede. Você vai precisar de um pouco de {{nativeSymbol}} em {{network}} para pagar as taxas de rede.",
             "network_filter_all": "Todas",
             "see_networks": "Ver redes",
             "hide_networks": "Ocultar redes",
@@ -3778,8 +3781,7 @@
         "introduction": {
             "title": "Converter na Pera",
             "description": "A Pera Wallet oferece uma forma rápida e fácil de converter ativos. Com o P.E.R.A., as solicitações de conversão são roteadas de forma inteligente entre várias exchanges descentralizadas baseadas em Algorand para garantir o melhor preço disponível.",
-            "powered_by": "Com tecnologia ",
-            "powered_by_brand": "P.E.R.A.",
+            "powered_by": "Com tecnologia <0>P.E.R.A.</0>",
             "start_swapping": "Começar a converter",
             "terms_agreement": "Ao continuar, você concorda com os <0>Termos de Serviço</0> do nosso parceiro de swap"
         },
@@ -3795,7 +3797,7 @@
             "you_pay": "Você paga",
             "you_receive": "Você recebe",
             "to": "Para",
-            "balance_label": "Saldo: ",
+            "balance_label": "Saldo: <0/>",
             "max": "MÁX",
             "select_asset": "Selecionar"
         },
@@ -3875,7 +3877,7 @@
             },
             "list": {
                 "item": {
-                    "description": "Converteu {{amountIn}} {{unitIn}} por "
+                    "description": "Converteu <0/> por <1/>"
                 },
                 "empty": {
                     "title": "Nenhuma conversão ainda",

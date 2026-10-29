@@ -290,6 +290,7 @@
         "transaction_list": {
             "title": "Transacciones",
             "empty_body": "No se encontraron transacciones",
+            "empty_on_network_body": "Aún no hay transacciones en {{network}}",
             "offline_empty_title": "Estás sin conexión",
             "offline_empty_body": "Todavía no hay transacciones guardadas en este dispositivo. Aparecerán cuando vuelvas a estar en línea.",
             "search_paused_body": "No se encontraron transacciones en el historial reciente.",
@@ -346,6 +347,8 @@
             "empty_body": "No tienes activos vinculados a esta cuenta",
             "nomatch_title": "Sin activos coincidentes",
             "nomatch_body": "Ningún activo coincide con tu búsqueda",
+            "funding_title": "Empieza en {{network}}",
+            "funding_body": "Deposita fondos para empezar a usar esta red. Necesitarás algo de {{nativeSymbol}} en {{network}} para pagar las comisiones de red.",
             "network_filter_all": "Todas",
             "see_networks": "Ver redes",
             "hide_networks": "Ocultar redes",
@@ -3755,8 +3758,7 @@
         "introduction": {
             "title": "Swap en Pera",
             "description": "Pera Wallet ofrece una forma fácil y rápida de intercambiar activos. Con P.E.R.A., las solicitudes de swap se enrutan de forma inteligente entre varios exchanges descentralizados basados en Algorand para conseguir el mejor precio disponible.",
-            "powered_by": "Con la tecnología de ",
-            "powered_by_brand": "P.E.R.A.",
+            "powered_by": "Con la tecnología de <0>P.E.R.A.</0>",
             "start_swapping": "Empezar a intercambiar",
             "terms_agreement": "Al continuar, aceptas los <0>Términos del servicio</0> de nuestro socio de swap"
         },
@@ -3772,7 +3774,7 @@
             "you_pay": "Pagas",
             "you_receive": "Recibes",
             "to": "A",
-            "balance_label": "Saldo: ",
+            "balance_label": "Saldo: <0/>",
             "max": "MÁX",
             "select_asset": "Elegir"
         },
@@ -3852,7 +3854,7 @@
             },
             "list": {
                 "item": {
-                    "description": "Intercambiaste {{amountIn}} {{unitIn}} por "
+                    "description": "Intercambiaste <0/> por <1/>"
                 },
                 "empty": {
                     "title": "Aún no hay swaps",

@@ -13,6 +13,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { LegacyMigrationData } from '@perawallet/wallet-extension-platform'
 import { getProvider } from '@perawallet/wallet-extension-provider'
+import { toError } from '@perawallet/wallet-core-shared'
 
 type MigrationViewerRenderState =
     | { kind: 'loading' }
@@ -45,7 +46,7 @@ export const useSettingsDeveloperMigrationViewerScreen =
                 setData(payload)
                 setIsMigrationComplete(complete)
             } catch (e) {
-                setError(e instanceof Error ? e : new Error(String(e)))
+                setError(toError(e))
             } finally {
                 setIsLoading(false)
             }

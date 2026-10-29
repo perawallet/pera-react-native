@@ -18,6 +18,7 @@ import { PREFERRED_MAX_PRECISION } from '../precision'
 import { Decimal } from 'decimal.js'
 import { useSettings } from '@perawallet/wallet-core-settings'
 import type { TypographyVariant } from '@theme/typography'
+import { UNKNOWN_AMOUNT_PLACEHOLDER } from '@constants/ui'
 
 describe('CurrencyAmount', () => {
     it('renders formatted currency value', () => {
@@ -387,5 +388,72 @@ describe('getAlgoSymbolWeight', () => {
     it('honours an explicit weight override, still clamping 600 to 700', () => {
         expect(getAlgoSymbolWeight('h4', 500)).toBe(500)
         expect(getAlgoSymbolWeight('body', 600)).toBe(700)
+    })
+})
+
+// RN-web renders a View as <div> and a Text as <span>, so "no div" means the
+// inline amount is text runs only and can't escape a parent Text's truncation.
+describe('CurrencyAmount isInline', () => {
+    it('renders an ASA amount and unit as text only, with the same string as the default layout', () => {
+        const props = {
+            value: new Decimal('1234.5'),
+            currency: 'USDC',
+            assetId: '31566704',
+            precision: 'assetFull',
+            assetDecimals: 6,
+            symbolPosition: 'end',
+        } as const
+        const { container: blockContainer } = render(
+            <CurrencyAmount {...props} />,
+        )
+        const { container } = render(
+            <CurrencyAmount
+                {...props}
+                isInline
+            />,
+        )
+
+        expect(container.querySelector('div')).toBeNull()
+        expect(container.textContent).toBe(blockContainer.textContent)
+    })
+
+    it('renders the Algo glyph inline, spaced from the amount the default layout shows', () => {
+        const props = {
+            value: new Decimal('1234.5'),
+            currency: 'ALGO',
+            assetId: '0',
+            precision: 'assetFull',
+            assetDecimals: 6,
+        } as const
+        const { container: blockContainer } = render(
+            <CurrencyAmount {...props} />,
+        )
+        const { container } = render(
+            <CurrencyAmount
+                {...props}
+                isInline
+            />,
+        )
+
+        expect(container.querySelector('div')).toBeNull()
+        expect(container.textContent).toBe(
+            `¦ ${blockContainer.textContent?.replace('¦', '')}`,
+        )
+    })
+
+    it('shows the placeholder as text instead of the skeleton while loading', () => {
+        const { container } = render(
+            <CurrencyAmount
+                value={new Decimal(1)}
+                currency='USDC'
+                assetId='31566704'
+                precision='compact'
+                isLoading
+                isInline
+            />,
+        )
+
+        expect(container.querySelector('div')).toBeNull()
+        expect(container.textContent).toBe(UNKNOWN_AMOUNT_PLACEHOLDER)
     })
 })

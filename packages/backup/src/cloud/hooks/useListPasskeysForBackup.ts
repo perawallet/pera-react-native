@@ -28,7 +28,7 @@ import {
     type PasskeyBackupInputs,
     type PasskeyPrivateKeyReader,
 } from '@perawallet/wallet-core-passkeys'
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, toError } from '@perawallet/wallet-core-shared'
 import {
     getKeystoreStore,
     keystoreSubtle,
@@ -121,7 +121,7 @@ const collectCandidateKeys = async (): Promise<KeystoreKey[]> => {
         // still worth proving, and a keychain that will not open is a device
         // condition.
         logger.warn('useListPasskeysForBackup: flat record scan failed', {
-            error: error instanceof Error ? error.message : String(error),
+            error: toError(error).message,
         })
         return [...storeKeys]
     }
@@ -211,7 +211,7 @@ const sweepPasskeys = async (chainId: ChainId): Promise<LocalPasskey[]> => {
 const logSkippedPasskey = (credentialId: string, error: unknown): void => {
     logger.warn('useListPasskeysForBackup: skipped a credential', {
         credentialId,
-        error: error instanceof Error ? error.message : String(error),
+        error: toError(error).message,
     })
 }
 

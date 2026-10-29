@@ -15,6 +15,7 @@ import {
     bytesEqual,
     bytesToHex,
     type Optional,
+    toError,
 } from '@perawallet/wallet-core-shared'
 
 import { InvalidSignableDataError } from '@perawallet/wallet-core-signing'
@@ -119,7 +120,7 @@ const validateGroupStructure = (
         } catch (e) {
             throw new InvalidSignableDataError(
                 `failed to recompute transaction group ID: ${
-                    e instanceof Error ? e.message : String(e)
+                    toError(e).message
                 }`,
             )
         }

@@ -11,7 +11,7 @@
  */
 
 import { decodeTransactions } from '../utils/transact'
-import { decodeFromBase64 } from '@perawallet/wallet-core-shared'
+import { decodeFromBase64, toError } from '@perawallet/wallet-core-shared'
 import type { ZodError } from 'zod'
 
 import type { DappResolveContext } from '@perawallet/wallet-core-signing'
@@ -77,7 +77,7 @@ export const resolveArc0001SignTxnRequest = (
         } catch (e) {
             throw new Arc0001Error(
                 Arc0001ErrorCode.InvalidInput,
-                `transaction at index ${index} is not valid base64: ${e instanceof Error ? e.message : String(e)}`,
+                `transaction at index ${index} is not valid base64: ${toError(e).message}`,
                 { index, field: 'txn' },
             )
         }
@@ -90,7 +90,7 @@ export const resolveArc0001SignTxnRequest = (
             // is deliberate: algosdk is the canonical source of truth for
             // transaction validity. Transports log the relayed
             // rejection, so real-dApp impact stays observable.
-            const reason = e instanceof Error ? e.message : String(e)
+            const reason = toError(e).message
             throw new Arc0001Error(
                 Arc0001ErrorCode.InvalidInput,
                 `could not decode transaction at index ${index}: ${reason}`,

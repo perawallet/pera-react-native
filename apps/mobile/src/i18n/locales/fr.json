@@ -290,6 +290,7 @@
         "transaction_list": {
             "title": "Transactions",
             "empty_body": "Aucune transaction trouvée",
+            "empty_on_network_body": "Aucune transaction pour le moment sur {{network}}",
             "offline_empty_title": "Vous êtes hors ligne",
             "offline_empty_body": "Aucune transaction n’est encore enregistrée sur cet appareil. Elles apparaîtront dès que vous serez de retour en ligne.",
             "search_paused_body": "Aucune transaction trouvée dans l’historique récent.",
@@ -346,6 +347,8 @@
             "empty_body": "Vous n’avez aucun actif lié à ce compte",
             "nomatch_title": "Aucun actif correspondant",
             "nomatch_body": "Aucun actif ne correspond à votre recherche",
+            "funding_title": "Commencez sur {{network}}",
+            "funding_body": "Déposez des fonds pour commencer à utiliser ce réseau. Vous aurez besoin d’un peu de {{nativeSymbol}} sur {{network}} pour payer les frais de réseau.",
             "network_filter_all": "Tous",
             "see_networks": "Voir les réseaux",
             "hide_networks": "Masquer les réseaux",
@@ -3755,8 +3758,7 @@
         "introduction": {
             "title": "Le swap dans Pera",
             "description": "Pera Wallet offre un moyen simple et rapide d’échanger des actifs. Grâce à P.E.R.A., les demandes de swap sont routées intelligemment entre plusieurs plateformes d’échange décentralisées basées sur Algorand afin d’obtenir le meilleur prix disponible.",
-            "powered_by": "Propulsé par ",
-            "powered_by_brand": "P.E.R.A.",
+            "powered_by": "Propulsé par <0>P.E.R.A.</0>",
             "start_swapping": "Commencer à échanger",
             "terms_agreement": "En continuant, vous acceptez les <0>conditions d’utilisation</0> de notre partenaire de swap"
         },
@@ -3772,7 +3774,7 @@
             "you_pay": "Vous payez",
             "you_receive": "Vous recevez",
             "to": "Vers",
-            "balance_label": "Solde : ",
+            "balance_label": "Solde : <0/>",
             "max": "MAX",
             "select_asset": "Choisir"
         },
@@ -3852,7 +3854,7 @@
             },
             "list": {
                 "item": {
-                    "description": "{{amountIn}} {{unitIn}} échangés contre "
+                    "description": "<0/> échangés contre <1/>"
                 },
                 "empty": {
                     "title": "Aucun swap pour le moment",

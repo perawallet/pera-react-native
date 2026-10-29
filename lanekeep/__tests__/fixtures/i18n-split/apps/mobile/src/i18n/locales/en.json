@@ -1,0 +1,19 @@
+{
+    "swap": {
+        "powered_by": "Powered by ",
+        "leading": " for {{amount}}",
+        "tab": "Balance:\t",
+        "newline": "Swapped\n",
+        "whole": "Swapped <0/> for <1/>",
+        "empty": ""
+    },
+    "peraCard": {
+        "account": {
+            "report_lost_email_body": "Hello,\n\nDetails:\n"
+        },
+        "transactions": {
+            "report_email_body": "Hello,\n\nIssue: \n",
+            "report_transactions_email_body": " Hello,\n"
+        }
+    }
+}
