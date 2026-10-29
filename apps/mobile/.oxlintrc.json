@@ -286,6 +286,11 @@
       "rules": { "pera/monotonic-lockout-clock": "error" }
     },
     {
+      "files": ["src/**/*.{ts,tsx}"],
+      "excludeFiles": ["src/components/core/**"],
+      "rules": { "pera/test-id-prop": "error" }
+    },
+    {
       "files": ["src/**"],
       "excludeFiles": ["src/**/__tests__/**", "src/**/__mocks__/**", "src/**/test-utils/**", "src/**/__integration__/**", "src/**/*.spec.{ts,tsx}", "src/**/*.test.{ts,tsx}"],
       "rules": { "pera/prefer-to-error": "error" }
