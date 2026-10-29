@@ -53,7 +53,11 @@ export type OxlintOverride = {
     excludeFiles?: string[]
     rules: Record<string, unknown>
 }
-export type OxlintConfig = { plugins?: string[]; overrides: OxlintOverride[] }
+export type OxlintConfig = {
+    plugins?: string[]
+    rules?: Record<string, unknown>
+    overrides: OxlintOverride[]
+}
 
 // Config paths resolve from the repo root, which is 4 levels up from __tests__.
 export const readOxlintConfig = (path: string): OxlintConfig =>

@@ -44,13 +44,9 @@ vi.mock('@perawallet/wallet-core-multisig', async importOriginal => {
         await importOriginal<
             typeof import('@perawallet/wallet-core-multisig')
         >()
-    const stub = (() => ({ deleteDraft: deleteDraftMock })) as unknown as {
-        getState: () => { deleteDraft: typeof deleteDraftMock }
-    }
-    stub.getState = () => ({ deleteDraft: deleteDraftMock })
     return {
         ...actual,
-        useDraftSignRequestStore: stub,
+        deleteDraftSignRequest: deleteDraftMock,
     }
 })
 

@@ -11,7 +11,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { useCloudBackupRestoreDraftStore } from '@perawallet/wallet-core-backup'
+import { setCloudBackupImportedKey } from '@perawallet/wallet-core-backup'
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useAppNavigation } from '@hooks/useAppNavigation'
@@ -89,9 +89,7 @@ export const useRestoreBackupOptions = (): UseRestoreBackupOptionsResult => {
                 // The user may have left while the file was read; navigating
                 // now would open the restore over wherever they went.
                 if (!navigation.isFocused()) return null
-                useCloudBackupRestoreDraftStore
-                    .getState()
-                    .setImportedKey(result.key)
+                setCloudBackupImportedKey(result.key)
                 return ['CloudBackupRestorePassphrase']
             } catch (error) {
                 logger.error(

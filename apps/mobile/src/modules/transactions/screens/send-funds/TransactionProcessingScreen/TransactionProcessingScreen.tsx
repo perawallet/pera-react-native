@@ -39,18 +39,32 @@ export const TransactionProcessingScreen = () => {
     const titleKey = isHardwareSender
         ? i18nKey('send_funds.processing.title_hardware')
         : i18nKey('send_funds.processing.title')
-    const subtitleKey = isHardwareSender
-        ? hardwareDeviceName
-            ? i18nKey('send_funds.processing.subtitle_hardware')
-            : i18nKey('send_funds.processing.subtitle_hardware_noDevice')
-        : isAwaitingConfirmation
-          ? i18nKey('send_funds.processing.broadcast_subtitle')
-          : i18nKey('send_funds.processing.subtitle')
-    const subtitleParams = isHardwareSender
-        ? { deviceName: hardwareDeviceName, appName: ledgerAppName }
-        : isAwaitingConfirmation
-          ? { network: networkName }
-          : undefined
+    const subtitleOf = () => {
+        if (isHardwareSender) {
+            return {
+                key: hardwareDeviceName
+                    ? i18nKey('send_funds.processing.subtitle_hardware')
+                    : i18nKey(
+                          'send_funds.processing.subtitle_hardware_noDevice',
+                      ),
+                params: {
+                    deviceName: hardwareDeviceName,
+                    appName: ledgerAppName,
+                },
+            }
+        }
+        if (isAwaitingConfirmation) {
+            return {
+                key: i18nKey('send_funds.processing.broadcast_subtitle'),
+                params: { network: networkName },
+            }
+        }
+        return {
+            key: i18nKey('send_funds.processing.subtitle'),
+            params: undefined,
+        }
+    }
+    const subtitle = subtitleOf()
 
     return (
         <PWScreen scroll='never'>
@@ -70,7 +84,7 @@ export const TransactionProcessingScreen = () => {
                     {t(titleKey)}
                 </PWText>
                 <PWText style={styles.subtitle}>
-                    {t(subtitleKey, subtitleParams)}
+                    {t(subtitle.key, subtitle.params)}
                 </PWText>
             </PWView>
         </PWScreen>

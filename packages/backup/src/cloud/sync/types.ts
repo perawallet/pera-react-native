@@ -10,7 +10,13 @@
  limitations under the License
  */
 
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import {
+    AppError,
+    ErrorCategory,
+    isExpectedError,
+    toError,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import type {
     ChainId,
     WalletMode,
@@ -34,27 +40,27 @@ import type {
     SyncState,
 } from '../models'
 import type { Contact } from '@perawallet/wallet-core-contacts'
-import { toError } from '@perawallet/wallet-core-shared'
 import type { ItemKeyHasher } from '../crypto/itemKeyHash'
 import type { PulledAccount } from '../restore'
 
 /** An account item of a chain kind the restoring chain's backup adapter
  *  doesn't define; the restore reports it as that item's failure. */
-export class UnsupportedBackupAccountTypeError extends Error {
+export class UnsupportedBackupAccountTypeError extends AppError {
     constructor(
         public readonly type: string,
         public readonly chainId: ChainId,
     ) {
         super(
             `The ${chainId} backup adapter does not decode item type: ${type}`,
+            { category: ErrorCategory.STORAGE },
         )
         this.name = 'UnsupportedBackupAccountTypeError'
     }
 }
 
-export class BackupSyncAbortedError extends Error {
+export class BackupSyncAbortedError extends AppError {
     constructor() {
-        super('Backup sync aborted')
+        super('Backup sync aborted', { category: ErrorCategory.STORAGE })
         this.name = 'BackupSyncAbortedError'
     }
 }
@@ -62,12 +68,23 @@ export class BackupSyncAbortedError extends Error {
 /** A push failed part-way. `state` records what did land, so the next sync
  *  resends only the rest instead of conflicting on items the server already
  *  versioned. */
-export class BackupPushIncompleteError extends Error {
+export class BackupPushIncompleteError extends AppError {
     constructor(
         readonly state: SyncState,
         error: unknown,
     ) {
-        super(`Backup push incomplete: ${toError(error).message}`)
+        // The message embeds the inner error's, which isExpectedError no longer
+        // matches on an AppError, so the wrapper takes the inner verdict.
+        super(
+            `Backup push incomplete: ${toError(error).message}`,
+            {
+                category: ErrorCategory.STORAGE,
+                expected: isExpectedError(error),
+            },
+            error instanceof Error ? error : undefined,
+        )
+        // AppError can't forward { cause } to Error, and serializeError follows only cause.
+        this.cause = error
         this.name = 'BackupPushIncompleteError'
     }
 }

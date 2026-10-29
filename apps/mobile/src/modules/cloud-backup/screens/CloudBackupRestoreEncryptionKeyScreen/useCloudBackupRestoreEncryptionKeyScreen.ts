@@ -12,6 +12,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import {
+    readCloudBackupImportedKey,
     useCloudBackupRestoreDraftStore,
     useRestoreCloudBackupMutation,
     type BackupEncryptionKey,
@@ -89,9 +90,7 @@ export const useCloudBackupRestoreEncryptionKeyScreen = ({
     const { t } = useLanguage()
     // Read once: editing the field must not be undone by a store update, and
     // the draft is written before this screen mounts.
-    const [importedKey] = useState(
-        () => useCloudBackupRestoreDraftStore.getState().importedKey,
-    )
+    const [importedKey] = useState(readCloudBackupImportedKey)
     const [encryptionKey, setEncryptionKey] = useState(importedKey?.salt ?? '')
     const { hasMnemonic, clearDraft } = useRestoreDraft()
     const outcome = useRestoreOutcome({ clearDraft, onDone })

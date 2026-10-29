@@ -13,7 +13,10 @@
 // `registerAppIntegrity` stays package-internal; business logic is exposed via
 // hooks (useAppIntegrityRegistration, useAppIntegrityBootstrap).
 export type { RegisterAppIntegrityResult } from './registerAppIntegrity'
-export { getValidIntegrityToken } from './getValidIntegrityToken'
+export {
+    getValidIntegrityToken,
+    getStoredIntegrityToken,
+} from './getValidIntegrityToken'
 export {
     buildIntegrityHeaders,
     canCallIntegrityGuardedRoute,

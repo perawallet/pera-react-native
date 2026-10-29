@@ -11,7 +11,12 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { FundingType, useCardStore } from '@perawallet/wallet-core-card'
+import {
+    FundingType,
+    getCardFundingType,
+    setCardFundingType,
+    useCardStore,
+} from '@perawallet/wallet-core-card'
 import {
     isLedgerAccount,
     useAllAccounts,
@@ -122,9 +127,7 @@ export const useSelectFundingTypeSheet =
                 logger.info('Funding type switch ignored: already applying')
                 return
             }
-            const currentType =
-                useCardStore.getState().selectedFundingType ??
-                FundingType.Manual
+            const currentType = getCardFundingType() ?? FundingType.Manual
             // No change → nothing to do. The store is written only after a
             // successful switch, so a failed prior Auto leaves it Manual and
             // re-selecting Auto is a real change (recovery).
@@ -177,7 +180,7 @@ export const useSelectFundingTypeSheet =
                     }
                     await disableAutoDraw(connectedAccount)
                 }
-                useCardStore.getState().setSelectedFundingType(selectedType)
+                setCardFundingType(selectedType)
                 successToast(
                     t('peraCard.account.funding_type_updated_title'),
                     t('peraCard.account.funding_type_updated_body'),

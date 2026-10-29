@@ -26,8 +26,7 @@ import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useLanguage } from '@hooks/useLanguage'
 import { useAssetTransactionList } from './useAssetTransactionList'
 import {
-    TransactionListItem,
-    TransactionDateHeader,
+    TransactionHistoryRow,
     TransactionHistoryLoadState,
     TransactionHistorySearchOlder,
     getTransactionRowKey,
@@ -76,23 +75,41 @@ export const AssetTransactionList = ({
     } = useAssetTransactionList({ account, asset, scope })
 
     const renderItem = useCallback(
-        ({ item }: { item: TransactionListRow }) =>
-            item.kind === 'header' ? (
-                <TransactionDateHeader title={item.title} />
-            ) : item.kind === 'record' ? (
-                <TransactionListItem
-                    record={item.record}
-                    suspectedPoisoning={suspectedPoisoningById.get(item.key)}
-                />
-            ) : (
-                <TransactionListItem
-                    transaction={item.transaction}
-                    onPress={handleTransactionPress}
-                    suspectedPoisoning={suspectedPoisoningById.get(item.key)}
-                />
-            ),
+        ({ item }: { item: TransactionListRow }) => (
+            <TransactionHistoryRow
+                row={item}
+                onTransactionPress={handleTransactionPress}
+                suspectedPoisoning={suspectedPoisoningById.get(item.key)}
+            />
+        ),
         [handleTransactionPress, suspectedPoisoningById],
     )
+
+    const renderFooter = useCallback(() => {
+        if (isFetchingNextPage) {
+            return (
+                <PWView style={styles.loadingFooter}>
+                    <PWLoadingIndicator size='sm' />
+                </PWView>
+            )
+        }
+        if (isSearchPaused && rows.length > 0) {
+            return (
+                <PWView style={styles.loadingFooter}>
+                    <TransactionHistorySearchOlder
+                        onPress={handleSearchOlder}
+                    />
+                </PWView>
+            )
+        }
+        return null
+    }, [
+        isFetchingNextPage,
+        isSearchPaused,
+        rows.length,
+        handleSearchOlder,
+        styles.loadingFooter,
+    ])
 
     return (
         <>
@@ -167,19 +184,7 @@ export const AssetTransactionList = ({
                         style={styles.emptyView}
                     />
                 }
-                ListFooterComponent={
-                    isFetchingNextPage ? (
-                        <PWView style={styles.loadingFooter}>
-                            <PWLoadingIndicator size='sm' />
-                        </PWView>
-                    ) : isSearchPaused && rows.length > 0 ? (
-                        <PWView style={styles.loadingFooter}>
-                            <TransactionHistorySearchOlder
-                                onPress={handleSearchOlder}
-                            />
-                        </PWView>
-                    ) : null
-                }
+                ListFooterComponent={renderFooter}
                 refreshControl={
                     <PWRefreshControl
                         isRefreshing={isRefreshing}

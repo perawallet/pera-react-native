@@ -203,8 +203,10 @@ const runBootstrap = async (
 
 // Code-unit order, deliberately locale-independent: the pick must be the same
 // on every launch and every device.
-const byId = (a: KeyData, b: KeyData): number =>
-    a.id < b.id ? -1 : a.id > b.id ? 1 : 0
+const byId = (a: KeyData, b: KeyData): number => {
+    if (a.id < b.id) return -1
+    return a.id > b.id ? 1 : 0
+}
 
 /**
  * Every derivation-parent candidate, from one pass over the plaintext `k/`

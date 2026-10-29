@@ -14,6 +14,7 @@ import { Controller } from 'react-hook-form'
 import { PWButton, PWInput, PWScreen, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { CountrySelectorField } from '../../components/CountrySelectorField'
+import { fieldErrorMessageOf } from '../../utils/fieldErrorMessage'
 import { useCardOnboardingEmailScreen } from './useCardOnboardingEmailScreen'
 import { useStyles } from './styles'
 
@@ -60,15 +61,11 @@ export const CardOnboardingEmailScreen = () => {
                                 showErrorOnBlur
                                 renderErrorMessage
                                 errorStyle={styles.errorMessage}
-                                errorMessage={
-                                    error?.type === 'server'
-                                        ? error.message
-                                        : error && value
-                                          ? t(
-                                                'peraCard.create_account.email_invalid',
-                                            )
-                                          : undefined
-                                }
+                                errorMessage={fieldErrorMessageOf(
+                                    error,
+                                    value,
+                                    t('peraCard.create_account.email_invalid'),
+                                )}
                                 testID='card-onboarding-email-input'
                             />
                         )}

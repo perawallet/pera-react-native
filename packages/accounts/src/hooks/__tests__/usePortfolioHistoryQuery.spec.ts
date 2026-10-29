@@ -180,9 +180,9 @@ describe('usePortfolioHistoryQuery', () => {
         expect(result.current.data).toEqual([])
     })
 
-    it('charts nothing while one chain has points and another has none', async () => {
+    it('charts the funded chain when another has no points', async () => {
         history.mockImplementation(async (_addresses, _period, scope) =>
-            scope.chainId === ETHEREUM.chainId ? [] : [point(1, '10')],
+            scope.chainId === ALGORAND.chainId ? [] : [point(1, '10')],
         )
         const sources = [
             { address: 'ALGO', scope: ALGORAND },
@@ -197,7 +197,9 @@ describe('usePortfolioHistoryQuery', () => {
         await waitFor(() => expect(result.current.isPending).toBe(false))
         expect(history).toHaveBeenCalledTimes(2)
         expect(result.current.isUnavailableOnNetwork).toBe(false)
-        expect(result.current.data).toEqual([])
+        expect(result.current.data).toEqual([
+            { datetime: new Date(1), preferredValue: new Decimal(20) },
+        ])
     })
 
     it("reports an error when one chain's history fails", async () => {
@@ -219,6 +221,7 @@ describe('usePortfolioHistoryQuery', () => {
 
         await waitFor(() => expect(result.current.isError).toBe(true))
         expect(result.current.error).toEqual(new Error('history down'))
+        expect(result.current.data).toEqual([])
     })
 
     it('does not fetch while disabled', () => {

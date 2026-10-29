@@ -15,11 +15,12 @@ import {
     openAesGcm,
     sealAesGcm,
 } from '@perawallet/wallet-core-kms'
+import { AppError, ErrorCategory } from '@perawallet/wallet-core-shared'
 import type { BackupId, BackupItemKey } from '../models'
 
-export class DecryptItemPayloadError extends Error {
+export class DecryptItemPayloadError extends AppError {
     constructor(message = 'Failed to decrypt backup item payload') {
-        super(message)
+        super(message, { category: ErrorCategory.STORAGE })
         this.name = 'DecryptItemPayloadError'
     }
 }

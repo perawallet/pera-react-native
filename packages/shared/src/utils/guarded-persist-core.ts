@@ -18,6 +18,7 @@ import {
     type PersistStorage,
     type StorageValue,
 } from 'zustand/middleware'
+import { AppError, ErrorCategory } from '../errors/base'
 import type { Nullable, Optional } from './types'
 
 /** The synchronous key-value surface every platform's `keyValueStorage` exposes. */
@@ -62,10 +63,11 @@ export type QuarantineReporter = {
     warn(message: string, context: Record<string, unknown>): void
 }
 
-export class PersistedStateQuarantinedError extends Error {
+export class PersistedStateQuarantinedError extends AppError {
     constructor(storeName: string, reason: QuarantineReason) {
         super(
             `Persisted store "${storeName}" could not be restored (${reason}); its stored state was quarantined`,
+            { category: ErrorCategory.STORAGE },
         )
         this.name = 'PersistedStateQuarantinedError'
     }
