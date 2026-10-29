@@ -11,10 +11,7 @@
  */
 
 import type { Decimal } from 'decimal.js'
-import {
-    CurrencyAmount,
-    type CurrencyAmountProps,
-} from '@components/CurrencyAmount'
+import type { CurrencyAmountProps } from '@components/CurrencyAmount'
 import type { Maybe } from '@perawallet/wallet-core-shared'
 import { type ChainScope } from '@perawallet/wallet-core-chain-contract'
 

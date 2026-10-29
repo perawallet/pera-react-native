@@ -12,7 +12,7 @@
 
 import { makeStyles, useTheme } from '@rneui/themed'
 
-export const useStyles = makeStyles(theme => ({
+export const useStyles = makeStyles(() => ({
     piece: {
         position: 'absolute',
         top: 0,

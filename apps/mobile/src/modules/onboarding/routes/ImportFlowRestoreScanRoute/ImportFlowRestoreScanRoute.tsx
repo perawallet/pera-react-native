@@ -10,8 +10,6 @@
  limitations under the License
  */
 
-import type React from 'react'
-
 import { CloudBackupRestoreScanScreen } from '@modules/cloud-backup/routes'
 import { useExitAccountFlow } from '@modules/onboarding/hooks'
 

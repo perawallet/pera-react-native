@@ -12,8 +12,6 @@
 
 import { makeStyles } from '@rneui/themed'
 
-const BIG_SKELETON_HEIGHT = 300
-
 export const useStyles = makeStyles(theme => ({
     container: {
         backgroundColor: theme.colors.background,
