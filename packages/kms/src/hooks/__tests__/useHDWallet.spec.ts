@@ -212,6 +212,33 @@ describe('useHDWallet', () => {
             expect(mockEnsurePasskeyMainKey).not.toHaveBeenCalled()
         })
 
+        test('leaves the passkey main key to a later mint when told to, and that mint never throws', async () => {
+            const { result } = renderHook(() => useHDWallet())
+            await act(async () => {
+                await result.current.persistHDMasterKey(
+                    {
+                        keyId: 'hd-1',
+                        rootKey: new Uint8Array(96).fill(1),
+                        entropy: new Uint8Array(16).fill(2),
+                    },
+                    { shouldMintPasskeyMainKey: false },
+                )
+            })
+            expect(mockEnsurePasskeyMainKey).not.toHaveBeenCalled()
+
+            mockEnsurePasskeyMainKey.mockRejectedValueOnce(
+                new Error('mint boom'),
+            )
+            await act(async () => {
+                await result.current.mintPasskeyMainKey('hd-1')
+            })
+
+            expect(mockEnsurePasskeyMainKey).toHaveBeenCalledExactlyOnceWith(
+                'hd-1',
+            )
+            expect(mockLoggerError).toHaveBeenCalled()
+        })
+
         test('keeps the wallet when the passkey main key cannot be minted', async () => {
             // The repairs revision back-fills it on a later launch, so a
             // wallet with no main key is degraded, not broken — rolling the

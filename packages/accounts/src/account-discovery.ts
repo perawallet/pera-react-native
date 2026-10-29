@@ -12,10 +12,16 @@
 
 import {
     addressCodecs,
+    type ChainId,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
-import type { LocalAccount, WalletAccount } from './models'
-import { buildAccount } from './credentials'
+import type { AccountChains, LocalAccount, WalletAccount } from './models'
+import {
+    buildAccount,
+    isEnabledByDefault,
+    preferDefaultChain,
+    withEnablement,
+} from './credentials'
 import { recordAuthority } from './store/recordAuthority'
 import {
     accountsChainAdapters,
@@ -23,7 +29,13 @@ import {
     hdDeriveOpts,
     type GetPublicKey,
 } from './chain-adapter'
-import { hdPathKey, walkHdTree, type HdBatchProbe } from './hd-walk'
+import {
+    discoverWalletActivity,
+    hdPathKey,
+    walkHdTree,
+    type HdBatchProbe,
+    type ProbedHdIndex,
+} from './hd-walk'
 
 type DiscoverAccountsParams = {
     scope: ChainScope
@@ -93,6 +105,79 @@ export async function discoverAccounts({
     }
 
     return active.map(index => built.get(hdPathKey(index))!)
+}
+
+type DiscoverWalletCandidatesParams = {
+    walletKeyId: string
+    chainIds: readonly ChainId[]
+    /** The in-memory XHD root; the caller keeps ownership. */
+    rootKey?: Uint8Array
+    onUnusedKeys?: (keyPairIds: string[]) => Promise<void>
+}
+
+/**
+ * Walks the seed on every chain in `chainIds` at once and returns one unsaved
+ * account per index active on any of them, by path: the 0/0 account alone when
+ * none is. Each carries an entry on every default chain plus every chain it is
+ * active on. `walletKeyId` must already be in the keystore when a chain in
+ * `chainIds` has no in-memory public-key getter. Empty when no probe answered,
+ * as "no activity" is unknown then.
+ */
+export async function discoverWalletCandidates({
+    walletKeyId,
+    chainIds,
+    rootKey,
+    onUnusedKeys,
+}: DiscoverWalletCandidatesParams): Promise<LocalAccount[]> {
+    let hasProbeAnswered = false
+    const probed = await discoverWalletActivity({
+        walletId: walletKeyId,
+        chainIds,
+        rootKey,
+        onUnusedKeys,
+        onProbeAnswered: () => {
+            hasProbeAnswered = true
+        },
+    })
+    if (!hasProbeAnswered) return []
+
+    const isActive = ({ active }: ProbedHdIndex) =>
+        Object.keys(active).length > 0
+    const origin = (entry: ProbedHdIndex) =>
+        entry.index.account === 0 && entry.index.keyIndex === 0
+    const selected = probed.some(isActive)
+        ? probed.filter(isActive)
+        : probed.filter(origin)
+
+    return selected.flatMap(({ index, derived, active }) => {
+        const chains: AccountChains = {}
+        for (const chainId of chainIds) {
+            const activeEntry = active[chainId]
+            const derivedEntry = derived[chainId]
+            const entry =
+                activeEntry ??
+                (isEnabledByDefault(chainId) ? derivedEntry : undefined)
+            if (!entry) continue
+            const keyed = {
+                address: entry.address,
+                keyPairId: accountsChainAdapters
+                    .get(chainId)
+                    .hdKeyPairId(walletKeyId, index),
+            }
+            chains[chainId] = isEnabledByDefault(chainId)
+                ? keyed
+                : withEnablement(keyed, 'discovery')
+        }
+        const chainId = preferDefaultChain(Object.keys(chains) as ChainId[])
+        if (chainId === undefined) return []
+        return [
+            buildAccount({
+                custody: { kind: 'local', seed: 'bip39', hd: index },
+                chainId,
+                chains,
+            }),
+        ]
+    })
 }
 
 type DiscoverDelegatedAccountsParams = {

@@ -12,6 +12,7 @@
 
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import type { BiometricsDisabledReason, SecurityState } from '../models'
+import { parseAutoLockStart, type AutoLockStart } from '../autoLock'
 import type { LockoutDeadline } from '../lockout'
 import {
     guardedPersist,
@@ -34,24 +35,6 @@ const initialState = {
     acknowledgedBiometricsDisabledReason: null,
     biometricUnwrapFailures: 0,
     isBiometricRearmPending: false,
-}
-
-// `autoLockStartedAt` is persisted to unencrypted storage; a tampered/corrupt
-// value must never disable auto-lock. `null` legitimately means "no timer
-// running" (consumer treats it as unlocked), so an invalid persisted value
-// can't be sanitized to `null` — that would fail open. Coerce it to epoch `0`
-// instead, which the consumer reads as a long-elapsed timer and locks.
-const sanitizeAutoLockStartedAt = (value: unknown): Nullable<number> => {
-    if (value == null) return null
-    if (
-        typeof value !== 'number' ||
-        !Number.isFinite(value) ||
-        value < 0 ||
-        value > Date.now()
-    ) {
-        return 0
-    }
-    return value
 }
 
 // A Record rather than a list so adding a reason without listing it here is a
@@ -98,8 +81,8 @@ export const useSecurityStore: UseBoundStore<
             resetFailedAttempts: () => set({ failedAttempts: 0 }),
             setLockout: (lockout: Nullable<LockoutDeadline>) =>
                 set({ lockout }),
-            setAutoLockStartedAt: (date: Nullable<number>) =>
-                set({ autoLockStartedAt: date }),
+            setAutoLockStartedAt: (start: Nullable<AutoLockStart>) =>
+                set({ autoLockStartedAt: start }),
             requestLock: () =>
                 set(state => ({
                     lockRequestVersion: state.lockRequestVersion + 1,
@@ -136,7 +119,7 @@ export const useSecurityStore: UseBoundStore<
                 const stored = persisted as Partial<SecurityState> | undefined
                 return {
                     ...current,
-                    autoLockStartedAt: sanitizeAutoLockStartedAt(
+                    autoLockStartedAt: parseAutoLockStart(
                         stored?.autoLockStartedAt,
                     ),
                     biometricsDisabledReason: sanitizeDisabledReason(

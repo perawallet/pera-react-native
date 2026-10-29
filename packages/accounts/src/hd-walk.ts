@@ -155,7 +155,8 @@ export async function walkHdTree({
 
     if (hasHitLimit) {
         logger.warn(
-            `HD walk stopped at its limit of ${accountIndexLimit} account indexes and ${keyIndexLimit} key indexes each, with activity still being found`,
+            'HD walk stopped at its index limits with activity still being found',
+            { accountIndexLimit, keyIndexLimit },
         )
     }
     return found.sort(byPath)
@@ -175,6 +176,8 @@ type DiscoverWalletActivityParams = {
     chainIds: readonly ChainId[]
     /** Takes the keys a batch derived that no chain found active, once its probes resolve. */
     onUnusedKeys?: (keyPairIds: string[]) => Promise<void>
+    /** Called each time a chain's activity probe resolves, so a caller can tell "nothing active" from "nothing answered". */
+    onProbeAnswered?: () => void
     /** The highest account index the wallet already holds; the walk always reaches past it. */
     heldAccountIndex?: number
     /**
@@ -196,6 +199,7 @@ export async function discoverWalletActivity({
     walletId,
     chainIds,
     onUnusedKeys,
+    onProbeAnswered,
     heldAccountIndex = -1,
     rootKey,
     accountGapLimit = ACCOUNT_GAP_LIMIT,
@@ -303,6 +307,10 @@ export async function discoverWalletActivity({
         const activity = await accountsChainAdapters
             .get(scope.chainId)
             .checkActivity(addresses, scope)
+            .then(answer => {
+                onProbeAnswered?.()
+                return answer
+            })
             .catch(() => new Map<string, boolean>())
         return entries.map(entry =>
             entry && activity.get(entry.address) === true ? entry : undefined,

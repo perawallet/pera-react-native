@@ -219,7 +219,10 @@ const bestEffort = async (label: string, write: () => Promise<unknown>) => {
     try {
         await write()
     } catch (error) {
-        logger.warn(`ethereum submission ledger: ${label} failed`, { error })
+        logger.warn('Ethereum submission ledger step failed', {
+            step: label,
+            error,
+        })
     }
 }
 

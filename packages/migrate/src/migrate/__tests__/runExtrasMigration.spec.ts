@@ -247,8 +247,11 @@ describe('runExtrasMigration > step failures', () => {
         await runExtrasMigration(buildData(), OPTIONS)
 
         expect(loggerMock.error).toHaveBeenCalledWith(
-            'Legacy contacts migration failed',
-            expect.objectContaining({ error: expect.any(Error) }),
+            'Legacy extras migration failed',
+            expect.objectContaining({
+                step: 'contacts',
+                error: expect.any(Error),
+            }),
         )
     })
 

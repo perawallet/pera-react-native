@@ -31,8 +31,12 @@ type UseAutoLockListenerResult = {
 }
 
 export const useAutoLockListener = (): UseAutoLockListenerResult => {
-    const { checkAutoLock, setAutoLockStartedAt, checkPinEnabled } =
-        usePinCode()
+    const {
+        checkAutoLock,
+        startAutoLockTimer,
+        clearAutoLockTimer,
+        checkPinEnabled,
+    } = usePinCode()
     const { deleteAllData } = useDeleteAllData()
     const isMounted = useIsMounted()
     const lockRequestVersion = useSecurityStore(
@@ -84,8 +88,8 @@ export const useAutoLockListener = (): UseAutoLockListenerResult => {
     const seenLockRequestVersionRef = useRef<Nullable<number>>(null)
 
     const recordBackground = useCallback(() => {
-        setAutoLockStartedAt(Date.now())
-    }, [setAutoLockStartedAt])
+        startAutoLockTimer()
+    }, [startAutoLockTimer])
 
     const recordForeground = useCallback(async (): Promise<void> => {
         if (isForegroundCheckInFlight.current) {
@@ -139,8 +143,8 @@ export const useAutoLockListener = (): UseAutoLockListenerResult => {
     const unlock = useCallback(() => {
         setIsChecking(false)
         setIsLocked(false)
-        setAutoLockStartedAt(null)
-    }, [setAutoLockStartedAt])
+        clearAutoLockTimer()
+    }, [clearAutoLockTimer])
 
     const handleResetData = useCallback(async () => {
         await deleteAllData()
@@ -152,8 +156,8 @@ export const useAutoLockListener = (): UseAutoLockListenerResult => {
         clearAccountsStore()
         setIsChecking(false)
         setIsLocked(false)
-        setAutoLockStartedAt(null)
-    }, [deleteAllData, setAutoLockStartedAt])
+        clearAutoLockTimer()
+    }, [deleteAllData, clearAutoLockTimer])
 
     useEffect(() => {
         if (!isInitialized) {

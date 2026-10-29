@@ -461,4 +461,26 @@ describe('discoverWalletActivity', () => {
         ])
         expect(activeIndexes(probed)).toEqual([])
     })
+
+    it('calls onProbeAnswered once per resolved activity probe, never for a rejected one', async () => {
+        const families = registerChainFamilies([ALGORAND, ETHEREUM])
+        families.checkActivity
+            .get(ETHEREUM)!
+            .mockRejectedValue(new Error('rpc down'))
+        const onProbeAnswered = vi.fn()
+
+        await discoverWalletActivity({
+            walletId: 'seed',
+            chainIds: [ALGORAND, ETHEREUM],
+            onProbeAnswered,
+            accountGapLimit: 1,
+            keyIndexGapLimit: 2,
+        })
+
+        // Two batches of keys, each answered by Algorand alone.
+        expect(onProbeAnswered).toHaveBeenCalledTimes(
+            families.checkActivity.get(ALGORAND)!.mock.calls.length,
+        )
+        expect(onProbeAnswered).toHaveBeenCalled()
+    })
 })

@@ -11,24 +11,39 @@
  */
 
 import { useCallback } from 'react'
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import type {
+    ChainId,
+    ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import {
     handOffSecret,
     prepareHDMasterKey,
     useKMS,
 } from '@perawallet/wallet-core-kms'
+import {
+    selectChainNetworkId,
+    useNetworkStore,
+} from '@perawallet/wallet-core-chain-shared'
 import { useHDImportSessionStore } from '../import-session'
-import { discoverAccounts } from '../account-discovery'
+import {
+    discoverAccounts,
+    discoverWalletCandidates,
+} from '../account-discovery'
 import { hdPathKey } from '../hd-walk'
 import {
     accountsChainAdapters,
     deriveHdAccount,
     requirePublicKeyGetter,
 } from '../chain-adapter'
-import type { LocalAccount } from '../models/accounts'
-import { useAccountsStore, withDefaultChains } from '../store'
+import type { ChainAccount, LocalAccount } from '../models'
+import {
+    removeUnclaimedKeys,
+    useAccountsStore,
+    withDefaultChains,
+} from '../store'
 import { HDImportSessionNotFoundError, NoHdSeedError } from '../errors'
-import { chainAccountOf, findAddressHolder, hdIndexOf } from '../credentials'
+import { importableCandidate } from '../utils'
+import { hdDiscoveryChains, hdIndexOf } from '../credentials'
 
 export type UseHDImportSessionResult = {
     prepareImport: (params: { mnemonicIndices?: Uint16Array }) => Promise<{
@@ -47,12 +62,19 @@ export type UseHDImportSessionResult = {
 export const useHDImportSession = (
     scope: ChainScope,
 ): UseHDImportSessionResult => {
-    const { persistHDMasterKey, removeKeyAndChildren } = useKMS()
+    const { persistHDMasterKey, mintPasskeyMainKey, removeKeyAndChildren } =
+        useKMS()
     const setAccounts = useAccountsStore(state => state.setAccounts)
 
     const prepareImport = useCallback(
         async ({ mnemonicIndices }: { mnemonicIndices?: Uint16Array }) => {
             const prepared = await prepareHDMasterKey({ mnemonicIndices })
+            const previous = useHDImportSessionStore.getState().pending
+            if (previous?.isSeedPersisted) {
+                void removeKeyAndChildren(previous.walletKeyId).catch(
+                    () => undefined,
+                )
+            }
             useHDImportSessionStore.getState().start({
                 walletKeyId: prepared.keyId,
                 rootKey: handOffSecret(prepared.rootKey),
@@ -60,7 +82,7 @@ export const useHDImportSession = (
             })
             return { walletKeyId: prepared.keyId }
         },
-        [],
+        [removeKeyAndChildren],
     )
 
     const discoverImportAccounts = useCallback(
@@ -69,40 +91,88 @@ export const useHDImportSession = (
             if (!pending || pending.walletKeyId !== walletKeyId) {
                 throw new HDImportSessionNotFoundError(walletKeyId)
             }
-            const getPublicKey = requirePublicKeyGetter(
-                accountsChainAdapters.get(scope.chainId),
-            )(pending.rootKey)
-            const discovered = await discoverAccounts({
-                scope,
-                getPublicKey,
-                walletKeyId: pending.walletKeyId,
-            })
+            const chainIds = hdDiscoveryChains()
+            let discovered: LocalAccount[]
+            if (chainIds.length > 1) {
+                const needsKeystore = chainIds.some(
+                    chainId =>
+                        !accountsChainAdapters.get(chainId)
+                            .createPublicKeyGetter,
+                )
+                if (needsKeystore && !pending.isSeedPersisted) {
+                    // `persistHDMasterKey` zeroes what it is given, and the
+                    // session's bytes are still needed. The passkey main key
+                    // waits for commit: a seed the user never confirms must
+                    // not anchor it, as an app kill here would leave it there.
+                    await persistHDMasterKey(
+                        {
+                            keyId: pending.walletKeyId,
+                            rootKey: new Uint8Array(pending.rootKey),
+                            entropy: new Uint8Array(pending.entropy),
+                        },
+                        { shouldMintPasskeyMainKey: false },
+                    )
+                    // A cancel or a new prepare that landed during the save found
+                    // nothing marked to remove, so the seed is dropped here.
+                    if (
+                        useHDImportSessionStore.getState().pending
+                            ?.walletKeyId !== pending.walletKeyId
+                    ) {
+                        void removeKeyAndChildren(pending.walletKeyId).catch(
+                            () => undefined,
+                        )
+                        throw new HDImportSessionNotFoundError(walletKeyId)
+                    }
+                    useHDImportSessionStore
+                        .getState()
+                        .markSeedPersisted(pending.walletKeyId)
+                }
+                discovered = await discoverWalletCandidates({
+                    walletKeyId: pending.walletKeyId,
+                    chainIds,
+                    rootKey: pending.rootKey,
+                    onUnusedKeys: removeUnclaimedKeys,
+                })
+                // A cancel mid-walk removed the seed while a derive was still
+                // writing children under it, so they are swept once it ends.
+                if (
+                    useHDImportSessionStore.getState().pending?.walletKeyId !==
+                    pending.walletKeyId
+                ) {
+                    void removeKeyAndChildren(pending.walletKeyId).catch(
+                        () => undefined,
+                    )
+                    throw new HDImportSessionNotFoundError(walletKeyId)
+                }
+            } else {
+                const getPublicKey = requirePublicKeyGetter(
+                    accountsChainAdapters.get(scope.chainId),
+                )(pending.rootKey)
+                discovered = await discoverAccounts({
+                    scope,
+                    getPublicKey,
+                    walletKeyId: pending.walletKeyId,
+                })
+            }
             // Only the indexes the user can pick: one the wallet already holds
             // is shown disabled, and must not read as declined later.
             const { accounts } = useAccountsStore.getState()
             useHDImportSessionStore.getState().recordDiscovered(
                 pending.walletKeyId,
-                discovered.flatMap(account => {
-                    const address = chainAccountOf(
-                        account,
-                        scope.chainId,
-                    )?.address
-                    const isHeld =
-                        address !== undefined &&
-                        findAddressHolder(accounts, scope, address) !==
-                            undefined
-                    return isHeld ? [] : (hdIndexOf(account) ?? [])
-                }),
+                discovered.flatMap(account =>
+                    importableCandidate(accounts, account) === undefined
+                        ? []
+                        : (hdIndexOf(account) ?? []),
+                ),
             )
             return discovered
         },
-        [scope],
+        [scope, persistHDMasterKey, removeKeyAndChildren],
     )
 
-    // NOTE: `persistHDMasterKey`'s identity is unstable across renders, so
-    // this `useCallback` is effectively a no-op for memoization purposes.
-    // It is kept for surface consistency with the other functions returned
-    // by this hook, all of which are wrapped in `useCallback`.
+    // NOTE: `persistHDMasterKey`'s identity is unstable across renders, so the
+    // `useCallback`s that depend on it (here and in `discoverImportAccounts`)
+    // don't memoize; they are kept for consistency with the rest of the hook.
     const commitImport = useCallback(
         async ({
             walletKeyId,
@@ -116,24 +186,55 @@ export const useHDImportSession = (
                 throw new HDImportSessionNotFoundError(walletKeyId)
             }
 
-            await persistHDMasterKey({
-                keyId: pending.walletKeyId,
-                rootKey: pending.rootKey,
-                entropy: pending.entropy,
-            })
+            // A seed saved during discovery skipped its passkey main key. The
+            // save gets copies, as `persistHDMasterKey` zeroes what it is
+            // given: the walk below and a retry after a failed commit still
+            // read the session's bytes.
+            if (pending.isSeedPersisted) {
+                await mintPasskeyMainKey(pending.walletKeyId)
+            } else {
+                await persistHDMasterKey({
+                    keyId: pending.walletKeyId,
+                    rootKey: new Uint8Array(pending.rootKey),
+                    entropy: new Uint8Array(pending.entropy),
+                })
+            }
 
+            // A single discovery chain derives on the caller's scope, as before.
+            const isMultiChain = hdDiscoveryChains().length > 1
             try {
                 await Promise.all(
-                    selectedAccounts.map(acc => {
+                    selectedAccounts.map(async acc => {
                         const index = hdIndexOf(acc)
                         if (!index) {
                             throw new NoHdSeedError(pending.walletKeyId)
                         }
-                        return deriveHdAccount(
-                            scope,
-                            pending.walletKeyId,
-                            index,
-                        )
+                        // Discovery may have dropped a candidate's key as
+                        // unused mid-walk, so every key it references is
+                        // derived again, which also claims it. Chains share a
+                        // key, so each id is derived once, in sequence.
+                        const derivedKeyIds = new Set<string>()
+                        for (const [chainId, entry] of Object.entries(
+                            acc.chains,
+                        ) as [ChainId, ChainAccount | undefined][]) {
+                            const keyPairId = entry?.keyPairId
+                            if (keyPairId === undefined) continue
+                            if (derivedKeyIds.has(keyPairId)) continue
+                            derivedKeyIds.add(keyPairId)
+                            await deriveHdAccount(
+                                isMultiChain
+                                    ? {
+                                          chainId,
+                                          networkId: selectChainNetworkId(
+                                              useNetworkStore.getState(),
+                                              chainId,
+                                          ),
+                                      }
+                                    : scope,
+                                pending.walletKeyId,
+                                index,
+                            )
+                        }
                     }),
                 )
             } catch (e) {
@@ -143,6 +244,10 @@ export const useHDImportSession = (
                 // shadow a future retry's view of which children exist.
                 try {
                     await removeKeyAndChildren(pending.walletKeyId)
+                    // A retry must save the seed again.
+                    useHDImportSessionStore
+                        .getState()
+                        .markSeedRemoved(pending.walletKeyId)
                 } catch {
                     // Best-effort cleanup; surface the original failure.
                 }
@@ -179,12 +284,24 @@ export const useHDImportSession = (
 
             return committed
         },
-        [persistHDMasterKey, removeKeyAndChildren, scope, setAccounts],
+        [
+            persistHDMasterKey,
+            mintPasskeyMainKey,
+            removeKeyAndChildren,
+            scope,
+            setAccounts,
+        ],
     )
 
     const cancelImport = useCallback(() => {
+        const pending = useHDImportSessionStore.getState().pending
         useHDImportSessionStore.getState().resetState()
-    }, [])
+        if (pending?.isSeedPersisted) {
+            void removeKeyAndChildren(pending.walletKeyId).catch(
+                () => undefined,
+            )
+        }
+    }, [removeKeyAndChildren])
 
     return {
         prepareImport,

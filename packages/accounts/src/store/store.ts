@@ -509,9 +509,7 @@ const removeUnreferencedKey = async (
     try {
         await getProvider().key.store.remove(keyPairId)
     } catch (error) {
-        logger.warn(
-            `Could not remove an unreferenced imported key: ${error instanceof Error ? error.message : 'unknown error'}`,
-        )
+        logger.warn('Could not remove an unreferenced imported key', { error })
     }
 }
 
@@ -663,9 +661,10 @@ const probeChainEntries = async (
             try {
                 entry = await resolveChainEntry(account, chainId)
             } catch (error) {
-                logger.warn(
-                    `Could not resolve an address on ${chainId} to probe: ${error instanceof Error ? error.message : 'unknown error'}`,
-                )
+                logger.warn('Could not resolve an address to probe', {
+                    chainId,
+                    error,
+                })
                 return undefined
             }
             // A probe that couldn't be made reads as inactive rather than
@@ -737,6 +736,19 @@ const removeUnreferencedKeys = async (
 }
 
 /**
+ * Removes each key no stored account references and no running flow claims:
+ * every flow deriving a key for an account claims it, as it stores the account
+ * only after deriving.
+ */
+export const removeUnclaimedKeys = (
+    keyPairIds: readonly string[],
+): Promise<void> =>
+    removeUnreferencedKeys(
+        useAccountsStore.getState().accounts,
+        keyPairIds.filter(id => !isKeyClaimed(id)),
+    )
+
+/**
  * `draft` with an entry, enabled as `'created'`, on each default chain it is
  * eligible for and lacks. A chain whose entry can't be resolved, or whose
  * address another account holds, is left off; the draft is never written.
@@ -756,9 +768,7 @@ export const withDefaultChains = async <A extends WalletAccount>(
         try {
             entry = await resolveChainEntry(draft, chainId)
         } catch (error) {
-            logger.warn(
-                `Could not add default chain ${chainId}: ${error instanceof Error ? error.message : 'unknown error'}`,
-            )
+            logger.warn('Could not add a default chain', { chainId, error })
             continue
         }
         const { accounts } = useAccountsStore.getState()
@@ -1189,22 +1199,16 @@ export const useAccountsStore: UseBoundStore<
                         await removeUnreferencedKeys(get().accounts, unusedKeys)
                         return enabled
                     } catch (error) {
-                        logger.warn(
-                            `Chain discovery failed for ${accountId}: ${error instanceof Error ? error.message : 'unknown error'}`,
-                        )
+                        logger.warn('Chain discovery failed', {
+                            accountId,
+                            error,
+                        })
                         return []
                     }
                 }),
             discoverWalletAccounts: (walletId, options = {}) =>
                 queuedFor(`wallet:${walletId}`, () =>
                     trackWalk(async () => {
-                        // Every flow deriving a key for an account claims it,
-                        // as it stores the account only after deriving.
-                        const removeUnclaimedKeys = (keyPairIds: string[]) =>
-                            removeUnreferencedKeys(
-                                get().accounts,
-                                keyPairIds.filter(id => !isKeyClaimed(id)),
-                            )
                         let probed: ProbedHdIndex[] = []
                         // Only the probes read the root key; the adds derive
                         // through the keystore, so it is zeroed before them.
@@ -1225,9 +1229,7 @@ export const useAccountsStore: UseBoundStore<
                                 ),
                             })
                         } catch (error) {
-                            logger.warn(
-                                `Wallet discovery failed: ${error instanceof Error ? error.message : 'unknown error'}`,
-                            )
+                            logger.warn('Wallet discovery failed', { error })
                         } finally {
                             zeroBytes(options.rootKey)
                         }
@@ -1283,7 +1285,8 @@ export const useAccountsStore: UseBoundStore<
                                         )
                                     ) {
                                         logger.warn(
-                                            `Could not add discovered ${chainId} entry: ${error instanceof Error ? error.message : 'unknown error'}`,
+                                            'Could not add a discovered chain entry',
+                                            { chainId, error },
                                         )
                                     }
                                     // The failed add's own claim would keep the
@@ -1455,7 +1458,8 @@ export const useAccountsStore: UseBoundStore<
                 const accounts = get().accounts
                 if (id && !accounts.some(a => a.id === id)) {
                     logger.warn(
-                        `Attempted to select account ${id}, but it does not exist in accounts list.`,
+                        'Attempted to select an account that is not in the accounts list',
+                        { accountId: id },
                     )
                     return
                 }
@@ -1479,7 +1483,8 @@ export const useAccountsStore: UseBoundStore<
                 const accounts = get().accounts
                 if (!id || !accounts.some(a => a.id === id)) {
                     logger.warn(
-                        `Attempted to pin launch account ${id}, but it does not exist in accounts list.`,
+                        'Attempted to pin a launch account that is not in the accounts list',
+                        { accountId: id },
                     )
                     return
                 }
