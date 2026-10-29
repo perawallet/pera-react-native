@@ -85,12 +85,15 @@ describe('queryClient mutation error policy', () => {
 
         await waitFor(() => expect(result.current.isError).toBe(true))
         expect(errorSpy).toHaveBeenCalledWith(
-            'Mutation failed: Error',
-            expect.objectContaining({ mutationKey: ['test-mutation'] }),
+            'Mutation failed',
+            expect.objectContaining({
+                errorSummary: 'Error',
+                mutationKey: ['test-mutation'],
+            }),
         )
     })
 
-    it('names the error, status and url of an HTTP mutation failure in the log message', async () => {
+    it('names the error, status and url of an HTTP mutation failure in the log context', async () => {
         const errorSpy = vi.spyOn(logger, 'error').mockImplementation(() => {})
 
         // A 4xx is not transient, so it must reach the central logger with the
@@ -116,11 +119,15 @@ describe('queryClient mutation error policy', () => {
         })
 
         await waitFor(() => expect(result.current.isError).toBe(true))
-        // The dev log forwarder blanks stack-bearing context objects, so the
-        // identifying fields must be in the message itself.
         expect(errorSpy).toHaveBeenCalledWith(
-            'Mutation failed: HTTPError 400 https://baanx.test/v1/card/status',
-            expect.objectContaining({ mutationKey: ['http-failure'] }),
+            'Mutation failed',
+            expect.objectContaining({
+                errorSummary: 'HTTPError 400 https://baanx.test/v1/card/status',
+                mutationKey: ['http-failure'],
+            }),
+        )
+        expect(Object.keys(errorSpy.mock.calls[0][1] as object)[0]).toBe(
+            'errorSummary',
         )
     })
 
@@ -222,8 +229,16 @@ describe('queryClient query error policy', () => {
 
         await waitFor(() => expect(result.current.isError).toBe(true))
         expect(errorSpy).toHaveBeenCalledWith(
-            'Query failed: Error',
-            expect.objectContaining({ error: expect.any(Error) }),
+            'Query failed',
+            expect.objectContaining({
+                error: expect.any(Error),
+                errorSummary: 'Error',
+            }),
+        )
+        // The report body serializes the context in key order and Crashlytics
+        // truncates it, so the summary must precede the stack-bearing error.
+        expect(Object.keys(errorSpy.mock.calls[0][1] as object)[0]).toBe(
+            'errorSummary',
         )
     })
 })

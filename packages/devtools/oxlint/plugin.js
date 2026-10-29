@@ -30,6 +30,7 @@ import { componentPropsType } from './rules/component-props-type.js'
 import { noPackageStoreInternals } from './rules/no-package-store-internals.js'
 import { testIdProp } from './rules/test-id-prop.js'
 import { makeStylesLocation } from './rules/make-styles-location.js'
+import { loggerStaticMessage } from './rules/logger-static-message.js'
 import { preferLookupMap } from './rules/prefer-lookup-map.js'
 import { preferToError } from './rules/prefer-to-error.js'
 import { noDeepRelativeImports } from './rules/no-deep-relative-imports.js'
@@ -62,6 +63,7 @@ export default {
         'no-package-store-internals': noPackageStoreInternals,
         'test-id-prop': testIdProp,
         'make-styles-location': makeStylesLocation,
+        'logger-static-message': loggerStaticMessage,
         'prefer-lookup-map': preferLookupMap,
         'prefer-to-error': preferToError,
         'no-deep-relative-imports': noDeepRelativeImports,

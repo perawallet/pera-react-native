@@ -27,6 +27,11 @@ export const call = (callee: Node, args: Node[]): Node => ({
     callee,
     arguments: args,
 })
+export const template = (quasis: string[], expressions: Node[]): Node => ({
+    type: 'TemplateLiteral',
+    quasis: quasis.map(raw => ({ type: 'TemplateElement', value: { raw } })),
+    expressions,
+})
 
 // Links each node to its parent, as the linter does before rules run.
 export const withParents = (node: Node, parent?: Node): Node => {

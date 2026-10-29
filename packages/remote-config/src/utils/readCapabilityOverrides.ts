@@ -45,7 +45,10 @@ const lastWarned = new Map<string, string>()
 const warnOnce = (key: string, json: string, error: unknown): void => {
     if (lastWarned.get(key) === json) return
     lastWarned.set(key, json)
-    logger.warn(`Ignoring malformed ${key}`, { error })
+    logger.warn('Ignoring malformed chain overrides', {
+        remoteConfigKey: key,
+        error,
+    })
 }
 
 /**

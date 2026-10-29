@@ -303,8 +303,12 @@ const configureParentKey = async (
             // Legitimate for a multi-wallet user whose main key hasn't been
             // minted yet; the id-sorted pick is stable but still arbitrary.
             logger.warn(
-                `Multiple HD roots and no passkey main key; wiring ${hdRoots[0].id} of ${hdRoots.length} candidates`,
-                { step: 'configureParentKey' },
+                'Multiple HD roots and no passkey main key; wiring the first by id',
+                {
+                    step: 'configureParentKey',
+                    hdRootId: hdRoots[0].id,
+                    candidateCount: hdRoots.length,
+                },
             )
         }
         // Deprecated upstream, but it is what a wallet with no main key yet
