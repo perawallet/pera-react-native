@@ -209,7 +209,7 @@ const holdsAnEntryOf = (
 export const importableCandidate = <A extends WalletAccount>(
     accounts: readonly WalletAccount[],
     candidate: A,
-): A | undefined => {
+): Optional<A> => {
     const index = hdIndexOf(candidate)
     const isHdHeld =
         index !== undefined &&
@@ -224,10 +224,7 @@ export const importableCandidate = <A extends WalletAccount>(
     if (isHdHeld) return undefined
 
     const free = (
-        Object.entries(candidate.chains) as [
-            ChainId,
-            ChainAccount | undefined,
-        ][]
+        Object.entries(candidate.chains) as [ChainId, Optional<ChainAccount>][]
     ).filter(
         ([chainId, entry]) =>
             entry !== undefined &&
