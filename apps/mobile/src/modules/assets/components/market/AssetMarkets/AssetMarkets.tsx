@@ -69,17 +69,6 @@ export type AssetMarketsProps = {
     isNetworkLineVisible?: boolean
 }
 
-const Loading = () => {
-    const styles = useStyles()
-    return (
-        <LoadingView
-            style={styles.loadingContainer}
-            variant='skeleton'
-            count={3}
-        />
-    )
-}
-
 export const AssetMarkets = ({
     asset,
     scope,
@@ -137,7 +126,13 @@ export const AssetMarkets = ({
     }
 
     if (isPending) {
-        return <Loading />
+        return (
+            <LoadingView
+                style={styles.loadingContainer}
+                variant='skeleton'
+                count={3}
+            />
+        )
     }
 
     if (!assetDetails) {
