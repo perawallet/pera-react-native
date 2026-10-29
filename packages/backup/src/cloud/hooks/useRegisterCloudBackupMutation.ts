@@ -14,7 +14,10 @@ import { useCallback } from 'react'
 import { useMutation, type UseMutationOptions } from '@tanstack/react-query'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useWalletDeployment } from '@perawallet/wallet-core-chain-shared'
-import { useDeploymentDeviceID } from '@perawallet/wallet-core-device'
+import {
+    deviceIdForDeployment,
+    useDeviceStore,
+} from '@perawallet/wallet-core-device'
 import {
     BackupDeviceIdUnavailableError,
     BackupDraftMissingError,
@@ -51,7 +54,6 @@ export const useRegisterCloudBackupMutation = (
     >,
 ): UseRegisterCloudBackupMutationResult => {
     const deployment = useWalletDeployment()
-    const deviceId = useDeploymentDeviceID(deployment)
     const setRegistration = useCloudBackupDraftStore(
         state => state.setRegistration,
     )
@@ -95,7 +97,17 @@ export const useRegisterCloudBackupMutation = (
         ...options,
     })
 
-    const register = useCallback(() => mutate({ deviceId }), [mutate, deviceId])
+    // Read at call time, so a callback captured before the device registered still finds its id.
+    const register = useCallback(
+        () =>
+            mutate({
+                deviceId: deviceIdForDeployment(
+                    useDeviceStore.getState(),
+                    deployment,
+                ),
+            }),
+        [mutate, deployment],
+    )
 
     return { mutate: register, isPending }
 }

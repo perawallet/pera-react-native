@@ -15,7 +15,10 @@ import { useMutation, type UseMutationOptions } from '@tanstack/react-query'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useWalletDeployment } from '@perawallet/wallet-core-chain-shared'
-import { useDeploymentDeviceID } from '@perawallet/wallet-core-device'
+import {
+    deviceIdForDeployment,
+    useDeviceStore,
+} from '@perawallet/wallet-core-device'
 import {
     restoreCloudBackup,
     type RestoreCloudBackupResult,
@@ -66,7 +69,6 @@ export const useRestoreCloudBackupMutation = (
     >,
 ): UseRestoreCloudBackupMutationResult => {
     const deployment = useWalletDeployment()
-    const deviceId = useDeploymentDeviceID(deployment)
     const setConfigured = useCloudBackupStore(state => state.setConfigured)
     const setSyncState = useBackupSyncStateStore(state => state.setSyncState)
     const setProgress = useCloudBackupRestoreProgressStore(
@@ -121,15 +123,28 @@ export const useRestoreCloudBackupMutation = (
         ...options,
     })
 
+    // Read at call time: the QR scan holds `restore` across an awaited sheet, during which the device can register.
+    const withDeviceId = useCallback(
+        (
+            variables: RestoreCloudBackupVariables,
+        ): RestoreCloudBackupMutationVariables => ({
+            ...variables,
+            deviceId: deviceIdForDeployment(
+                useDeviceStore.getState(),
+                deployment,
+            ),
+        }),
+        [deployment],
+    )
     const restore = useCallback(
         (variables: RestoreCloudBackupVariables) =>
-            mutate({ ...variables, deviceId }),
-        [mutate, deviceId],
+            mutate(withDeviceId(variables)),
+        [mutate, withDeviceId],
     )
     const restoreAsync = useCallback(
         (variables: RestoreCloudBackupVariables) =>
-            mutateAsync({ ...variables, deviceId }),
-        [mutateAsync, deviceId],
+            mutateAsync(withDeviceId(variables)),
+        [mutateAsync, withDeviceId],
     )
 
     return { mutate: restore, mutateAsync: restoreAsync, isPending }

@@ -78,7 +78,8 @@ vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
 }))
 vi.mock('@perawallet/wallet-core-device', async importOriginal => ({
     ...(await importOriginal<object>()),
-    useDeploymentDeviceID: () => deviceIdMock.value,
+    useDeviceStore: { getState: () => ({}) },
+    deviceIdForDeployment: () => deviceIdMock.value,
 }))
 
 import { applyBackupSettings } from '../../sync/backupSettingsStores'
@@ -336,6 +337,34 @@ describe('useRestoreCloudBackupMutation', () => {
             salt: SALT,
             deviceId: 'device-123',
         })
+    })
+
+    // The QR scan captures `restore`, then awaits the backup-code sheet before calling it.
+    test('restores with a device id that registered after the callback was captured', async () => {
+        deviceIdMock.value = null
+        const onSuccess = vi.fn()
+        const { result } = renderRestore({ onSuccess })
+        const { mutate: captured } = result.current
+
+        deviceIdMock.value = 'device-123'
+        act(() => captured({ salt: SALT }))
+
+        await waitFor(() => expect(onSuccess).toHaveBeenCalled())
+        expect(restoreCloudBackupMock).toHaveBeenCalledWith(
+            expect.objectContaining({ deviceId: 'device-123' }),
+        )
+    })
+
+    test('keeps the restore callbacks stable when the device id arrives', () => {
+        deviceIdMock.value = null
+        const { result, rerender } = renderRestore()
+        const { mutate, mutateAsync } = result.current
+
+        deviceIdMock.value = 'device-123'
+        rerender()
+
+        expect(result.current.mutate).toBe(mutate)
+        expect(result.current.mutateAsync).toBe(mutateAsync)
     })
 
     test('mutateAsync resolves with the restore result on the call-time device', async () => {
