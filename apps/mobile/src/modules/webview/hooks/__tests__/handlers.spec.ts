@@ -48,8 +48,8 @@ vi.mock('@perawallet/wallet-core-shared', async () => ({
     bytesToHex: (bytes: Uint8Array) =>
         Array.from(bytes, b => b.toString(16).padStart(2, '0')).join(''),
     originOf: (
-        await vi.importActual<typeof import('@packages/shared/src/utils/urls')>(
-            '@packages/shared/src/utils/urls',
+        await vi.importActual<typeof import('@perawallet/wallet-core-shared')>(
+            '@perawallet/wallet-core-shared',
         )
     ).originOf,
 }))
