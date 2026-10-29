@@ -226,6 +226,38 @@ describe('createEvmActivityCheck', () => {
             }
         })
 
+        it('keeps at most four history GETs in flight across concurrent checks', async () => {
+            let inFlight = 0
+            let peak = 0
+            server.use(
+                http.get(
+                    `${TEST_PERA_URL}/api/v3/evm/:chainId/accounts/:address/transactions/`,
+                    async () => {
+                        inFlight++
+                        peak = Math.max(peak, inFlight)
+                        await new Promise(resolve => setTimeout(resolve, 5))
+                        inFlight--
+                        return undefined
+                    },
+                ),
+                ...rpc(),
+                ...peraEvmHandlers({ baseUrl: TEST_PERA_URL }),
+            )
+            const quietAt = (n: number): Hex =>
+                `0x${n.toString(16).padStart(40, '0')}`
+            const batch = (from: number) =>
+                Array.from({ length: 6 }, (_, i) => quietAt(from + i))
+            const check = checkWith(['history'])
+
+            const [first, second] = await Promise.all([
+                check(batch(1), SCOPE),
+                check(batch(100), SCOPE),
+            ])
+
+            expect(first.size + second.size).toBe(12)
+            expect(peak).toBe(4)
+        })
+
         it('counts an address whose only page is empty but carries a cursor', async () => {
             server.use(
                 ...rpc(),

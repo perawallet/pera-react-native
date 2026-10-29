@@ -14,6 +14,7 @@ import {
     addressCodecs,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
+import { mapWithConcurrency } from '@perawallet/wallet-core-shared'
 import type { LocalAccount, WalletAccount } from './models'
 import { buildAccount } from './credentials'
 import { recordAuthority } from './store/recordAuthority'
@@ -104,26 +105,43 @@ type DiscoverDelegatedAccountsParams = {
     scope: ChainScope
 }
 
-/** Address-driven: every caller passes the authorities to scan. */
+// A rescan passes every address on the seed, and each scan may follow several
+// indexer pages, so they run a few at a time rather than all at once.
+const DELEGATION_SCAN_CONCURRENCY = 4
+
+/**
+ * Address-driven: every caller passes the authorities to scan. Rejects with
+ * the first failure once every scan settles, so a lost answer never reads as
+ * "nothing rekeyed".
+ */
 export async function discoverDelegatedAccounts({
     accountAddresses,
     scope,
 }: DiscoverDelegatedAccountsParams): Promise<WalletAccount[]> {
     const { chainId } = scope
 
-    const tasks = accountAddresses.map(async address => {
-        const delegatedAddresses = await fetchDelegatedAddresses(address, scope)
+    const results = await mapWithConcurrency(
+        accountAddresses,
+        DELEGATION_SCAN_CONCURRENCY,
+        async address => {
+            const delegatedAddresses = await fetchDelegatedAddresses(
+                address,
+                scope,
+            )
 
-        return delegatedAddresses.map((delegatedAddress): WalletAccount => {
-            recordAuthority(scope, delegatedAddress, address)
-            return buildAccount({
-                custody: { kind: 'watch' },
-                chainId,
-                chains: { [chainId]: { address: delegatedAddress } },
+            return delegatedAddresses.map((delegatedAddress): WalletAccount => {
+                recordAuthority(scope, delegatedAddress, address)
+                return buildAccount({
+                    custody: { kind: 'watch' },
+                    chainId,
+                    chains: { [chainId]: { address: delegatedAddress } },
+                })
             })
-        })
-    })
+        },
+    )
 
-    const results = await Promise.all(tasks)
-    return results.flat()
+    return results.flatMap(result => {
+        if (result.status === 'rejected') throw result.reason
+        return result.value
+    })
 }

@@ -16,6 +16,10 @@ import type {
     ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import type { AccountsChainAdapter } from '@perawallet/wallet-core-accounts'
+import {
+    createConcurrencyLimit,
+    type ConcurrencyLimit,
+} from '@perawallet/wallet-core-shared'
 import type { EvmChain } from '../chains/types'
 import {
     ASSETS_SERVICE,
@@ -43,6 +47,17 @@ export const readNativeFootprint = async (
 }
 
 type Quiet = { address: string; index: number }
+
+// One gate for every EVM chain: the HD walk probes all of them and several
+// index batches at once, and each quiet address costs a Pera GET, so a
+// per-batch cap would still burst into the backend's rate limit.
+const PERA_LOOKUP_CONCURRENCY = 4
+let peraLookupGate: ConcurrencyLimit | undefined
+// Built on first use, so importing the adapter runs nothing.
+const peraLookup: ConcurrencyLimit = task => {
+    peraLookupGate ??= createConcurrencyLimit(PERA_LOOKUP_CONCURRENCY)
+    return peraLookupGate(task)
+}
 
 /**
  * One Multicall3 pass over the listed ERC-20s for `holders`: whether each
@@ -79,7 +94,8 @@ const readTokenHoldings = async (
  *
  * Each address costs two node reads (balance, nonce) and at most one Pera GET
  * (a history page or an NFT page, never a cursor), plus a share of one
- * Multicall3 pass per batch; never a request per token.
+ * Multicall3 pass per batch; never a request per token. The Pera GETs share
+ * one in-flight cap across every EVM chain.
  *
  * A read that fails never reads as `true` or `false`: its address is left out
  * of the map unless another source already found it used. The batch rejects
@@ -124,7 +140,9 @@ export const createEvmActivityCheck =
                 takeAll(
                     await Promise.allSettled(
                         quiet.map(({ address }) =>
-                            fetchHasHistory(scope, chain, address),
+                            peraLookup(() =>
+                                fetchHasHistory(scope, chain, address),
+                            ),
                         ),
                     ),
                 )
@@ -160,7 +178,9 @@ export const createEvmActivityCheck =
                     sources.push(
                         Promise.allSettled(
                             quiet.map(({ address }) =>
-                                fetchHasNftHoldings(scope, chain, address),
+                                peraLookup(() =>
+                                    fetchHasNftHoldings(scope, chain, address),
+                                ),
                             ),
                         ).then(takeAll),
                     )

@@ -307,4 +307,45 @@ describe('discoverDelegatedAccounts', () => {
             ['OTHER_ADDRESS', TESTNET_SCOPE],
         ])
     })
+
+    it('scans at most four authorities at once', async () => {
+        const fetchDelegatedAddresses = vi.mocked(
+            fakeAccountsChain().adapter.authority!.fetchDelegatedAddresses,
+        )
+        let inFlight = 0
+        let peak = 0
+        fetchDelegatedAddresses.mockImplementation(async () => {
+            inFlight++
+            peak = Math.max(peak, inFlight)
+            await new Promise(resolve => setTimeout(resolve, 1))
+            inFlight--
+            return []
+        })
+
+        await discoverDelegatedAccounts({
+            accountAddresses: Array.from({ length: 10 }, (_, i) => `A${i}`),
+            scope: TESTNET_SCOPE,
+        })
+
+        expect(fetchDelegatedAddresses).toHaveBeenCalledTimes(10)
+        expect(peak).toBe(4)
+    })
+
+    it('rejects when any authority scan fails', async () => {
+        const fetchDelegatedAddresses = vi.mocked(
+            fakeAccountsChain().adapter.authority!.fetchDelegatedAddresses,
+        )
+        const offline = new Error('offline')
+        fetchDelegatedAddresses.mockImplementation(async authAddress => {
+            if (authAddress === 'B') throw offline
+            return ['REKEYED']
+        })
+
+        await expect(
+            discoverDelegatedAccounts({
+                accountAddresses: ['A', 'B'],
+                scope: TESTNET_SCOPE,
+            }),
+        ).rejects.toBe(offline)
+    })
 })
