@@ -220,6 +220,24 @@ describe('vault lockout', () => {
 
             expect(await getLockoutRemainingSeconds()).toBe(30)
         })
+
+        it('serves the full window for a malformed deadline map without lockoutEndTime', async () => {
+            fake.data.set('vault:lockout', {
+                failedAttempts: 5,
+                lockoutDeadlines: [],
+            })
+
+            expect(await getLockoutRemainingSeconds()).toBe(30)
+        })
+
+        it('locks out when the stored counter is not a whole number', async () => {
+            fake.data.set('vault:lockout', {
+                failedAttempts: 'x',
+                lockoutDeadlines: null,
+            })
+
+            expect(await getLockoutRemainingSeconds()).toBe(30)
+        })
     })
 
     // Surfaces open at once (popup, expanded tab, approval window) each used to

@@ -40,7 +40,6 @@ export const parseAutoLockStart = (value: unknown): Nullable<AutoLockStart> => {
     if (monotonic === null) return { wallNowMs, monotonic: null }
     if (
         typeof monotonic !== 'object' ||
-        monotonic === undefined ||
         typeof monotonic.bootId !== 'string' ||
         monotonic.bootId === '' ||
         !isNonNegativeFinite(monotonic.elapsedMs)

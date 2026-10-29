@@ -24,13 +24,10 @@ const INITIAL_LOCKOUT_SECONDS = 30
 // across contexts. Each context (popup, expanded tab, approval window) serves
 // the full window on its own `performance.now()`, and the first one to finish
 // clears the lockout for all of them, after which nothing is left to exploit.
+// `lockoutDeadlines` is `null` when not locked out, else each serving context's
+// deadline keyed by its `performance.timeOrigin`; `{}` means none serving yet.
 type LockoutRecord = {
     failedAttempts: number
-    /**
-     * `null` when not locked out. Otherwise the deadline each context has
-     * started serving, keyed by its `performance.timeOrigin` and measured on
-     * that context's `performance.now()`; `{}` means no context is serving yet.
-     */
     lockoutDeadlines: Record<string, number> | null
 }
 
@@ -58,10 +55,21 @@ const isDeadlineMap = (value: unknown): value is Record<string, number> =>
 const read = async (): Promise<LockoutRecord> => {
     const stored = await chrome.storage.local.get(LOCKOUT_STORAGE_KEY)
     const record = stored[LOCKOUT_STORAGE_KEY] as
-        | (Partial<LockoutRecord> & { lockoutEndTime?: unknown })
+        | Record<string, unknown>
         | undefined
     const failedAttempts = record?.failedAttempts ?? 0
-    const lockoutDeadlines: unknown = record?.lockoutDeadlines
+    // A tampered counter can't size a window, so it serves the first block.
+    if (
+        typeof failedAttempts !== 'number' ||
+        !Number.isInteger(failedAttempts) ||
+        failedAttempts < 0
+    ) {
+        return {
+            failedAttempts: MAX_ATTEMPTS_BEFORE_LOCKOUT,
+            lockoutDeadlines: {},
+        }
+    }
+    const lockoutDeadlines = record?.lockoutDeadlines
     if (lockoutDeadlines === null || isDeadlineMap(lockoutDeadlines)) {
         return { failedAttempts, lockoutDeadlines }
     }
@@ -69,9 +77,7 @@ const read = async (): Promise<LockoutRecord> => {
     // last failure started a lockout, nothing shows it was served, so it's
     // served again in full rather than trusted.
     const startedLockout =
-        typeof record?.lockoutEndTime === 'number' &&
-        failedAttempts > 0 &&
-        failedAttempts % MAX_ATTEMPTS_BEFORE_LOCKOUT === 0
+        failedAttempts > 0 && failedAttempts % MAX_ATTEMPTS_BEFORE_LOCKOUT === 0
     return { failedAttempts, lockoutDeadlines: startedLockout ? {} : null }
 }
 
