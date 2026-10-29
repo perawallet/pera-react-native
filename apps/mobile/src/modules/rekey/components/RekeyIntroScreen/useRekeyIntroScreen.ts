@@ -62,6 +62,7 @@ export const useRekeyIntroScreen = (
     ])
 
     const handleLearnMore = useCallback(() => {
+        // oxlint-disable-next-line pera/no-unvalidated-open-url -- every caller passes a config.* support URL
         pushWebView({ url: navConfig.supportUrl })
     }, [pushWebView, navConfig.supportUrl])
 

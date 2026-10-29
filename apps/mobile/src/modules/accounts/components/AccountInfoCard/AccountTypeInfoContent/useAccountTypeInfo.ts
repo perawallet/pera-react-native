@@ -114,6 +114,7 @@ export const useAccountTypeInfo = ({
         // A rekeyed account's sheet copy describes its signer, not its own
         // kind, so the article has to follow the signer too.
         const url = transitionLabel?.supportUrl ?? presentation?.supportUrl
+        // oxlint-disable-next-line pera/no-unvalidated-open-url -- account presentation support URLs are config.* values
         if (url) pushWebView({ url })
     }, [pushWebView, transitionLabel, presentation])
 

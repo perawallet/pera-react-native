@@ -34,6 +34,7 @@ export const OnrampTermsContent = () => {
 
     const handleOpenLink = useCallback(
         (url: string) => {
+            // oxlint-disable-next-line pera/no-unvalidated-open-url -- callers pass the EXODUS_* constants or config.termsOfServiceUrl
             pushWebView({ url })
         },
         [pushWebView],
