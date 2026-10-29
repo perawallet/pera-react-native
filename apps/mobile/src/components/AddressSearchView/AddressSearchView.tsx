@@ -249,6 +249,7 @@ export const AddressSearchView = ({
                 <EmptyView
                     title={wrongNetworkMessage.title}
                     body={wrongNetworkMessage.body}
+                    shouldTruncateBody={false}
                 />
             ) : (
                 <EmptyView

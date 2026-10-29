@@ -17,26 +17,40 @@ import { LegacyVsRnRow } from '../components/LegacyVsRnRow'
 import { MigrationDataRow } from '../components/MigrationDataRow'
 import type { RNMigrationSnapshot } from '../useRNMigrationSnapshot'
 
+const deviceIdOriginStatusOf = (origin: DeviceIdOrigin | null): string => {
+    switch (origin) {
+        case 'migrated': {
+            return 'migrated id active'
+        }
+        case 'recreated': {
+            return 'recreated — migrated id replaced'
+        }
+        case null: {
+            return 'not from migration'
+        }
+        default: {
+            const exhaustive: never = origin
+            return exhaustive
+        }
+    }
+}
+
 const describeDeviceIdOrigin = (
     id: string | null,
     origin: DeviceIdOrigin | null,
 ): string => {
-    const status =
-        origin === 'migrated'
-            ? 'migrated id active'
-            : origin === 'recreated'
-              ? 'recreated — migrated id replaced'
-              : 'not from migration'
-    return `${id ?? 'null'} (${status})`
+    return `${id ?? 'null'} (${deviceIdOriginStatusOf(origin)})`
+}
+
+type DeviceIdentifiersSectionProps = {
+    deviceIdentifiers: LegacyDeviceIdentifiers
+    rn: RNMigrationSnapshot
 }
 
 export const DeviceIdentifiersSection = ({
     deviceIdentifiers,
     rn,
-}: {
-    deviceIdentifiers: LegacyDeviceIdentifiers
-    rn: RNMigrationSnapshot
-}) => {
+}: DeviceIdentifiersSectionProps) => {
     return (
         <MigrationDataSection title='Device Identifiers'>
             <MigrationDataRow

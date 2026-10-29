@@ -13,9 +13,10 @@
 import { makeStyles } from '@rneui/themed'
 import { getTypography } from '@theme/typography'
 
+// lanekeep-ignore-next-line pera/no-numeric-sizes reason: approval animation width
 const LOTTIE_WIDTH = 164
+// lanekeep-ignore-next-line pera/no-numeric-sizes reason: approval animation height
 const LOTTIE_HEIGHT = 48
-const PROGRESS_BAR_HEIGHT = 2
 
 type StyleProps = { progressFillPercent: number; bottomInset: number }
 
@@ -55,9 +56,9 @@ export const useStyles = makeStyles(
         },
         progressBarTrack: {
             width: '100%',
-            height: PROGRESS_BAR_HEIGHT,
+            height: theme.spacing.xxs,
             backgroundColor: theme.colors.layerGrayLighter,
-            borderRadius: PROGRESS_BAR_HEIGHT / 2,
+            borderRadius: theme.borderRadius.full,
             marginBottom: theme.spacing.xl,
             overflow: 'hidden',
         },

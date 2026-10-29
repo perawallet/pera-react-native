@@ -12,6 +12,7 @@
 
 import { makeStyles } from '@rneui/themed'
 
+// lanekeep-ignore-next-line pera/no-numeric-sizes reason: header artwork height
 const HEADER_IMAGE_HEIGHT = 220
 
 export const useStyles = makeStyles(theme => ({

@@ -119,7 +119,7 @@ describe('fetchAssetItems', () => {
 
         const items = await fetchAssetItems(SCOPE, ETHEREUM, [DAI, USDC])
 
-        expect(items.map(item => item.asset_id)).toEqual([
+        expect(items.map(item => item?.asset_id)).toEqual([
             DAI_CAIP19,
             USDC_CAIP19,
         ])
@@ -141,10 +141,31 @@ describe('fetchAssetItems', () => {
         ).rejects.toBeInstanceOf(PeraNetworkError)
     })
 
-    it('rejects a usd_value that is not a 24-place decimal string', async () => {
+    it('answers null for a row it cannot read and keeps the rest', async () => {
         server.use(
             http.post(`${PERA_URL}/api/v4/assets/`, () =>
-                HttpResponse.json({ results: [{ ...usdc, usd_value: '1.5' }] }),
+                HttpResponse.json({
+                    results: [
+                        { ...usdc, usd_value: '1.5' },
+                        {
+                            ...unknownAssetItem(DAI_CAIP19),
+                            verification_tier: 'trusted',
+                        },
+                        usdc,
+                    ],
+                }),
+            ),
+        )
+
+        const items = await fetchAssetItems(SCOPE, ETHEREUM, [USDC, DAI, USDC])
+
+        expect(items).toEqual([null, null, usdc])
+    })
+
+    it('rejects a row with no asset_id, since its position cannot be checked', async () => {
+        server.use(
+            http.post(`${PERA_URL}/api/v4/assets/`, () =>
+                HttpResponse.json({ results: [{ name: 'USD Coin' }] }),
             ),
         )
 

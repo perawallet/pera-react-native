@@ -18,6 +18,7 @@
 /**
  * Base error class for keystore operations.
  */
+// oxlint-disable-next-line pera/typed-domain-errors -- vendored upstream code (see header)
 export class KeyStoreError extends Error {
     constructor(message: string, name: string, cause?: Error) {
         super(message)

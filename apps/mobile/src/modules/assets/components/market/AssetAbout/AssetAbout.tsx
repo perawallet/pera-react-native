@@ -11,16 +11,12 @@
  */
 
 import { useStyles } from './styles'
-import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
-import { useResolvedAddress } from '@hooks/useResolvedAddress'
 import { PWButton, PWText, PWView } from '@components/core'
 import { KeyValueRow } from '@components/KeyValueRow'
 import type { PeraAsset } from '@perawallet/wallet-core-assets'
 import { useLanguage } from '@hooks/useLanguage'
-import { useWebView } from '@modules/webview'
-import { useClipboard } from '@hooks/useClipboard'
-import type { AssetAboutDisplay } from '../../../types/asset-details-display'
-import { extractDomain } from '../../../utils/extractDomain'
+import type { AssetAboutDisplay } from '@modules/assets/types/asset-details-display'
+import { useAssetAbout } from './useAssetAbout'
 
 export type AssetAboutProps = {
     assetDetails: PeraAsset
@@ -28,22 +24,16 @@ export type AssetAboutProps = {
 }
 
 export const AssetAbout = ({ assetDetails, about }: AssetAboutProps) => {
-    const { explorerLink } = about
     const styles = useStyles()
     const { t } = useLanguage()
-    const { pushWebView } = useWebView()
-    const { copyToClipboard } = useClipboard()
-    const { displayName: creatorDisplayName } = useResolvedAddress(
-        assetDetails.creator?.address ?? '',
-        { enabled: !!assetDetails.creator?.address },
-    )
-
-    const openLink = (url: string) => {
-        pushWebView({
-            id: generateOrderedUniqueId(),
-            url,
-        })
-    }
+    const {
+        creatorDisplayName,
+        assetLink,
+        explorerLink,
+        projectUrl,
+        copyToClipboard,
+        openLink,
+    } = useAssetAbout(assetDetails, about)
 
     return (
         <PWView style={styles.container}>
@@ -90,14 +80,14 @@ export const AssetAbout = ({ assetDetails, about }: AssetAboutProps) => {
                 </KeyValueRow>
             )}
 
-            {!!assetDetails.url?.length && (
+            {!!assetLink && (
                 <KeyValueRow
                     title={t(about.urlLabelKey)}
                     verticalAlignment='center'
                 >
                     <PWButton
-                        onPress={() => openLink(assetDetails.url ?? '')}
-                        title={extractDomain(assetDetails.url ?? '')}
+                        onPress={() => openLink(assetLink.url)}
+                        title={assetLink.label}
                         variant='link'
                         paddingStyle='none'
                     />
@@ -118,18 +108,14 @@ export const AssetAbout = ({ assetDetails, about }: AssetAboutProps) => {
                 </KeyValueRow>
             )}
 
-            {!!assetDetails.peraMetadata?.projectUrl?.length && (
+            {!!projectUrl && (
                 <KeyValueRow
                     title={t('asset_details.about.project_website')}
                     verticalAlignment='center'
                 >
                     <PWButton
                         title={t('asset_details.about.open_browser')}
-                        onPress={() =>
-                            openLink(
-                                assetDetails.peraMetadata?.projectUrl ?? '',
-                            )
-                        }
+                        onPress={() => openLink(projectUrl)}
                         variant='link'
                     />
                 </KeyValueRow>

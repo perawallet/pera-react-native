@@ -13,6 +13,7 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => {
+    // lanekeep-ignore-next-line pera/no-numeric-sizes reason: badge is two lg steps
     const BADGE_SIZE = theme.spacing.lg * 2
 
     return {
@@ -31,7 +32,7 @@ export const useStyles = makeStyles(theme => {
             right: 0,
             width: BADGE_SIZE,
             height: BADGE_SIZE,
-            borderRadius: BADGE_SIZE / 2,
+            borderRadius: theme.borderRadius.full,
             backgroundColor: theme.colors.buttonPrimaryBg,
             alignItems: 'center',
             justifyContent: 'center',

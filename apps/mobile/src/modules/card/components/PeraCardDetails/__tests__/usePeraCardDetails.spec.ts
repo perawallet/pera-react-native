@@ -70,27 +70,19 @@ vi.mock('@perawallet/wallet-core-card', async () => {
     const actual = await vi.importActual<object>('@perawallet/wallet-core-card')
     return {
         ...actual,
-        // Selector reads come from the mock state; the Connect action writes
-        // through getState(), so expose that too.
-        useCardStore: Object.assign(
-            (
-                selector: (state: {
-                    lastKnownPanLast4: string | null
-                    connectedFundingSourceAddress: string | null
-                    selectedFundingType: string | null
-                }) => unknown,
-            ) =>
-                selector({
-                    lastKnownPanLast4: mocks.panLast4,
-                    connectedFundingSourceAddress: mocks.fundingAddress,
-                    selectedFundingType: mocks.selectedFundingType,
-                }),
-            {
-                getState: () => ({
-                    setConnectedFundingSourceAddress: mocks.setFundingAddress,
-                }),
-            },
-        ),
+        useCardStore: (
+            selector: (state: {
+                lastKnownPanLast4: string | null
+                connectedFundingSourceAddress: string | null
+                selectedFundingType: string | null
+            }) => unknown,
+        ) =>
+            selector({
+                lastKnownPanLast4: mocks.panLast4,
+                connectedFundingSourceAddress: mocks.fundingAddress,
+                selectedFundingType: mocks.selectedFundingType,
+            }),
+        setCardFundingSourceAddress: mocks.setFundingAddress,
         useCardStatusQuery: () => ({
             data: mocks.status == null ? null : { status: mocks.status },
             fetchStatus: mocks.fetchStatus,
@@ -124,7 +116,10 @@ vi.mock('@hooks/useToast', () => ({
     }),
 }))
 
-vi.mock('@modules/webview', () => ({
+vi.mock('@modules/webview', async () => ({
+    ...(await vi.importActual<
+        typeof import('@modules/webview/hooks/handlers-shared')
+    >('@modules/webview/hooks/handlers-shared')),
     useWebView: () => ({
         pushWebView: mocks.pushWebView,
         removeWebView: vi.fn(),
@@ -196,6 +191,7 @@ vi.mock('../../../hooks', async () => ({
 }))
 
 import { FundingType } from '@perawallet/wallet-core-card'
+import { logger } from '@perawallet/wallet-core-shared'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { CardEvent } from '@analytics'
 import { passThroughAuthorizeDelegation } from '@test-utils/cardDelegation'
@@ -607,6 +603,33 @@ describe('usePeraCardDetails', () => {
         expect(mocks.openURL).toHaveBeenCalledWith('https://hosted/pin')
         expect(mocks.pushWebView).not.toHaveBeenCalled()
     })
+
+    it.each([true, false])(
+        'opens nothing, warns and toasts for an http hosted PIN page (inAppWebView: %s)',
+        async inAppWebView => {
+            Object.assign(mockCapabilities, { inAppWebView })
+            const warn = vi.spyOn(logger, 'warn').mockImplementation(() => {})
+            mocks.setPinMutateAsync.mockResolvedValue({
+                token: 'tok',
+                hostedPageUrl: 'http://hosted/pin?token=secret',
+            })
+
+            const { result } = renderHook(() => usePeraCardDetails())
+            await act(async () => {
+                await result.current.onSetPin()
+            })
+
+            expect(mocks.pushWebView).not.toHaveBeenCalled()
+            expect(mocks.openURL).not.toHaveBeenCalled()
+            expect(mocks.errorToast).toHaveBeenCalledTimes(1)
+            expect(warn).toHaveBeenCalledWith(
+                '[card] refused the set-PIN hosted page URL',
+                { flow: 'set-pin' },
+            )
+            expect(JSON.stringify(warn.mock.calls)).not.toContain('secret')
+            warn.mockRestore()
+        },
+    )
 
     it('does not start the set-PIN request when the PIN gate is not passed', async () => {
         mocks.requirePinVerification.mockResolvedValue(false)

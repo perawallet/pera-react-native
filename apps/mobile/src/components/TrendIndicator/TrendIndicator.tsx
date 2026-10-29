@@ -40,6 +40,19 @@ export type TrendIndicatorProps = {
     absolute?: TrendIndicatorAbsolute
 }
 
+type TrendDirection = 'flat' | 'up' | 'down'
+
+const SIGN_BY_DIRECTION: Record<TrendDirection, string> = {
+    flat: '',
+    up: '+',
+    down: '-',
+}
+
+const trendDirectionOf = (percentage: Decimal): TrendDirection => {
+    if (percentage.isZero()) return 'flat'
+    return percentage.greaterThan(0) ? 'up' : 'down'
+}
+
 export const TrendIndicator = ({
     percentage,
     variant = 'h4',
@@ -52,12 +65,15 @@ export const TrendIndicator = ({
 
     const isPositive = percentage.greaterThan(0)
     const isZero = percentage.isZero()
-    const itemStyle =
-        hasNeutralText || isZero
-            ? styles.itemNeutral
-            : isPositive
-              ? styles.itemUp
-              : styles.itemDown
+    const direction = trendDirectionOf(percentage)
+    const itemStyleByDirection = {
+        flat: styles.itemNeutral,
+        up: styles.itemUp,
+        down: styles.itemDown,
+    } satisfies Record<TrendDirection, typeof styles.itemNeutral>
+    const itemStyle = hasNeutralText
+        ? styles.itemNeutral
+        : itemStyleByDirection[direction]
 
     return (
         <PWView style={styles.container}>
@@ -94,7 +110,7 @@ export const TrendIndicator = ({
                     variant={absolute.variant ?? 'h4'}
                     truncate
                 >
-                    {isZero ? '' : isPositive ? '+' : '-'}
+                    {SIGN_BY_DIRECTION[direction]}
                     {formatCurrency(
                         absolute.amount.abs(),
                         absolute.precision ?? 2,

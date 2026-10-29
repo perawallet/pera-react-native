@@ -23,9 +23,9 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
-    useRekeyFeePreflight,
-    useRekeyTransactionFeeQuery,
-    useSubmitRekeyMutation,
+    useDelegationFeePreflight,
+    useDelegationTransactionFeeQuery,
+    useSubmitDelegationMutation,
 } from '@perawallet/wallet-core-transactions'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useWebView } from '@modules/webview'
@@ -105,21 +105,19 @@ export const useRekeyConfirmScreen = ({
     const handleRekeyError = useHandleRekeyError()
     const { pushWebView } = useWebView()
     const { request: requestBottomSheet } = useBottomSheet()
-    const { submitAsync, isPending: isSubmitting } = useSubmitRekeyMutation({
-        scope,
-        signingMetadata: {
-            name: t('rekey.signing.source_name'),
-            description: t('rekey.signing.source_description'),
-        },
-    })
-    const { feeAlgos, isPending: feePending } = useRekeyTransactionFeeQuery(
-        sourceAddress,
-        targetAddress,
-        scope,
-    )
+    const { submitAsync, isPending: isSubmitting } =
+        useSubmitDelegationMutation({
+            scope,
+            signingMetadata: {
+                name: t('rekey.signing.source_name'),
+                description: t('rekey.signing.source_description'),
+            },
+        })
+    const { fee: feeAlgos, isPending: feePending } =
+        useDelegationTransactionFeeQuery(sourceAddress, targetAddress, scope)
     // The source pays the rekey fee — block before any sign request is
     // created (and before the Ledger device prompt for hardware auths).
-    const { isUnderfunded } = useRekeyFeePreflight(
+    const { isUnderfunded } = useDelegationFeePreflight(
         sourceAddress,
         feeAlgos,
         scope,
@@ -157,7 +155,7 @@ export const useRekeyConfirmScreen = ({
         try {
             await submitAsync({
                 sourceAddress,
-                rekeyToAddress: targetAddress,
+                authorityAddress: targetAddress,
             })
             // A multisig propose already handed off via the 'proposed' event;
             // don't also show the success screen.
@@ -189,6 +187,7 @@ export const useRekeyConfirmScreen = ({
     ])
 
     const handleLearnMore = useCallback(() => {
+        // oxlint-disable-next-line pera/no-unvalidated-open-url -- every caller passes a config.* support URL
         pushWebView({ url: supportUrl })
     }, [pushWebView, supportUrl])
 

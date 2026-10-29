@@ -1,0 +1,50 @@
+/*
+ Copyright 2022-2026 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import { useMemo } from 'react'
+import { useLanguage } from '@hooks/useLanguage'
+import { useStyles } from './styles'
+import { config } from '@perawallet/wallet-core-config'
+import { PWText } from '@components/core'
+import { usePeraProvider } from '@perawallet/wallet-extension-provider'
+
+export const AppVersionText = () => {
+    const { t } = useLanguage()
+    const styles = useStyles()
+    const provider = usePeraProvider()
+    const { getAppVersion, getAppBuild } = provider.deviceInfo
+
+    const appVersion = useMemo(() => {
+        // On CI tag builds, show the full release tag (e.g. v7.0.0-alpha.9) so QA
+        // sees the exact prerelease; stable tags carry no suffix and local/off-tag
+        // builds fall back to the native store version. Leading "v" stripped.
+        return config.releaseTag
+            ? config.releaseTag.replace(/^v/, '')
+            : getAppVersion()
+    }, [getAppVersion])
+
+    const appBuild = useMemo(() => {
+        return getAppBuild()
+    }, [getAppBuild])
+
+    return (
+        <PWText
+            variant='caption'
+            style={styles.versionText}
+        >
+            {t('settings.main.version_footer', {
+                version: appVersion,
+                build: appBuild,
+            })}
+        </PWText>
+    )
+}

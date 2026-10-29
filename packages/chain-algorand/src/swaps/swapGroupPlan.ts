@@ -10,7 +10,11 @@
  limitations under the License
  */
 
-import { decodeFromBase64 } from '@perawallet/wallet-core-shared'
+import {
+    AppError,
+    ErrorCategory,
+    decodeFromBase64,
+} from '@perawallet/wallet-core-shared'
 import type { SignedTransaction } from '@perawallet/wallet-core-chain-contract'
 import type {
     SerializedGroupPlan,
@@ -140,9 +144,11 @@ export const serializeGroupPlans = (
  * Sentinel error so the swap execution flow can distinguish a user-initiated
  * cancel from a real signing failure (and skip the backend failure report).
  */
-export class SwapUserRejectedError extends Error {
+export class SwapUserRejectedError extends AppError {
     constructor() {
-        super('User rejected swap signing')
+        super('User rejected swap signing', {
+            category: ErrorCategory.TRANSACTIONS,
+        })
         this.name = 'SwapUserRejectedError'
     }
 }

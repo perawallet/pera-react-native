@@ -208,7 +208,7 @@ export type TransactionWarning =
           // is emptied and deleted. 'close-asset' is an asset-transfer close-to:
           // the sender opts out of that one ASA. Both warrant a warning, but
           // they are not the same severity and must not share copy.
-          type: 'close-account' | 'close-asset' | 'rekey' | 'asset-freeze'
+          type: 'close-account' | 'close-asset' | 'delegation' | 'asset-freeze'
           senderAddress: string
           targetAddress: string
       }

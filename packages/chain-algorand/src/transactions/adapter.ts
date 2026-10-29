@@ -77,7 +77,7 @@ export const algorandSendFlowAdapter: SendFlowChainAdapter = {
                 params.scope,
             ),
     },
-    rekey: {
+    delegation: {
         buildTx: async params =>
             toUnsignedAlgorandTransaction(
                 await buildRekeyTx(params),

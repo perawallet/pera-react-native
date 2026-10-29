@@ -17,11 +17,11 @@ import { useStyles } from './styles'
 import { useTransactionFooter } from './useTransactionFooter'
 import { RawTransactionButton } from '../RawTransactionButton'
 
-export const TransactionFooter = ({
-    transaction,
-}: {
+type TransactionFooterProps = {
     transaction: AlgorandTransactionView
-}) => {
+}
+
+export const TransactionFooter = ({ transaction }: TransactionFooterProps) => {
     const { t } = useLanguage()
     const styles = useStyles()
     const { showInExplorer, assetUrl, showAssetUrl } =

@@ -31,6 +31,7 @@ import { generateKey } from 'falcon-1024'
 import { getAlgorandChainConfig } from '@perawallet/wallet-core-config'
 import { dismissPinPromptIfPresent } from './pin-prompt'
 import { trackPageErrors } from './approval-surface'
+import { skipPasskeyUnlockStep } from './passkey-unlock-step'
 
 const here = path.dirname(fileURLToPath(import.meta.url))
 const dist = path.resolve(here, '../dist')
@@ -150,6 +151,7 @@ const openImportOptions = async (chainState: ChainState): Promise<Wallet> => {
     await page.getByTestId('create-password-input').fill(PASSWORD)
     await page.getByTestId('create-password-confirm-input').fill(PASSWORD)
     await page.getByTestId('create-password-submit').click()
+    await skipPasskeyUnlockStep(page)
     await page
         .getByTestId('onboarding_import_account_button')
         .click({ timeout: 20_000 })

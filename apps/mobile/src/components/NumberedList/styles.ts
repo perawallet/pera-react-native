@@ -18,7 +18,8 @@ type StyleProps = {
 
 export const useStyles = makeStyles((theme, { isDense }: StyleProps) => {
     const bulletSize = isDense
-        ? theme.spacing.xl + theme.spacing.sm
+        ? // lanekeep-ignore-next-line pera/no-numeric-sizes reason: dense bullet is the xl icon plus sm padding
+          theme.spacing.xl + theme.spacing.sm
         : theme.spacing.xxl
 
     return {

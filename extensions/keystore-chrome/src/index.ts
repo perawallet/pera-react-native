@@ -35,6 +35,14 @@ export {
 } from './vault/vault'
 export { getLockoutRemainingSeconds } from './vault/lockout'
 export {
+    hasRecentPasswordAuth,
+    PASSKEY_ENABLE_REAUTH_WINDOW_MS,
+} from './vault/password-auth'
+export {
+    readPasskeySetupPending,
+    writePasskeySetupPending,
+} from './vault/passkey-setup'
+export {
     getSessionMasterKey,
     requireSessionMasterKey,
     SESSION_MASTER_KEY,
@@ -54,6 +62,7 @@ export {
     isPasskeyUnlockSupported,
     isPasskeyUnlockEnabled,
     enablePasskeyUnlock,
+    enablePasskeyUnlockWithSession,
     unlockWithPasskey,
     verifyPasskey,
     disablePasskeyUnlock,

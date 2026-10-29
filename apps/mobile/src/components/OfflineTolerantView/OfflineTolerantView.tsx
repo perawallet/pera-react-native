@@ -11,8 +11,7 @@
  */
 
 import type { ReactNode } from 'react'
-import { PWButton } from '@components/core'
-import type { PWViewProps } from '@components/core/PWView'
+import { PWButton, type PWViewProps } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
 import { IntegrityBlockedView } from './IntegrityBlockedView'

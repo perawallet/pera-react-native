@@ -17,9 +17,11 @@ import {
     useAccountValueBasis,
     useAccountValueTotalsQuery,
     useSigningAccountsOnOwnChain,
+    type AccountHoldingSource,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
+import { setCapabilityOverrides } from '@test-utils/capability-overrides'
 import { registerEthereumChain } from '@test-utils/chain-fixtures'
 import { usePortfolioView } from '../usePortfolioView'
 
@@ -51,13 +53,28 @@ vi.mock('@perawallet/wallet-core-currencies', () => ({
     })),
 }))
 
+const ALGO_SOURCE: AccountHoldingSource = {
+    address: 'ALGO',
+    scope: { chainId: 'algorand', networkId: 'mainnet' },
+}
+const ETH_SOURCE: AccountHoldingSource = {
+    address: `0x${'a'.repeat(40)}`,
+    scope: { chainId: 'ethereum', networkId: 'mainnet' },
+}
+
 const totals = (
     portfolioUsdValue: Decimal | null,
     portfolioFiatValue: Decimal | null,
     isPortfolioFiatValuePartial = false,
+    sources: {
+        native?: AccountHoldingSource[]
+        fiat?: AccountHoldingSource[]
+    } = {},
 ) =>
     ({
         accountValueTotals: new Map(),
+        nativeTotalSources: sources.native ?? [],
+        fiatTotalSources: sources.fiat ?? [],
         portfolioNativeValue: new Decimal(50),
         portfolioUsdValue,
         portfolioFiatValue,
@@ -155,46 +172,64 @@ describe('usePortfolioView', () => {
 
         const { result } = renderHook(() => usePortfolioView())
 
-        expect(result.current.accounts).toEqual([ethAccount])
         expect(vi.mocked(useAccountValueTotalsQuery)).toHaveBeenCalledWith(
             [ethAccount],
             expect.objectContaining({ chainId: 'algorand' }),
         )
     })
 
-    it('keeps the chart while every counted chain has balance history', () => {
-        vi.mocked(useSigningAccountsOnOwnChain).mockReturnValue([
-            {
-                id: 'algo',
-                custody: { kind: 'local', seed: null },
-                chains: { algorand: { address: 'ALGO', keyPairId: 'k' } },
-            },
-        ])
+    it('plots the chains the native total sums on the native basis', () => {
+        vi.mocked(useAccountValueBasis).mockReturnValue('native')
+        vi.mocked(useAccountValueTotalsQuery).mockReturnValue(
+            totals(new Decimal(10), new Decimal(30), false, {
+                native: [ALGO_SOURCE],
+                fiat: [ALGO_SOURCE, ETH_SOURCE],
+            }),
+        )
+
+        const { result } = renderHook(() => usePortfolioView())
+
+        expect(result.current.chartSources).toEqual([ALGO_SOURCE])
+        expect(result.current.hasBalanceHistory).toBe(true)
+    })
+
+    it('plots every chain the fiat total sums once the wallet spans chains', () => {
+        registerEthereumChain()
+        vi.mocked(useAccountValueBasis).mockReturnValue('fiat')
+        vi.mocked(useAccountValueTotalsQuery).mockReturnValue(
+            totals(new Decimal(10), new Decimal(30), false, {
+                native: [ALGO_SOURCE],
+                fiat: [ALGO_SOURCE, ETH_SOURCE],
+            }),
+        )
+
+        const { result } = renderHook(() => usePortfolioView())
+
+        expect(result.current.chartSources).toEqual([ALGO_SOURCE, ETH_SOURCE])
+        expect(result.current.hasBalanceHistory).toBe(true)
+    })
+
+    it('drops the chart when a chain in the total has no balance history', () => {
+        registerEthereumChain()
+        setCapabilityOverrides({ balanceHistory: false }, 'ethereum')
+        vi.mocked(useAccountValueBasis).mockReturnValue('fiat')
+        vi.mocked(useAccountValueTotalsQuery).mockReturnValue(
+            totals(new Decimal(10), new Decimal(30), false, {
+                fiat: [ALGO_SOURCE, ETH_SOURCE],
+            }),
+        )
+
+        const { result } = renderHook(() => usePortfolioView())
+
+        expect(result.current.hasBalanceHistory).toBe(false)
+    })
+
+    it('has no chart when nothing counted can be plotted', () => {
         vi.mocked(useAccountValueBasis).mockReturnValue('native')
 
         const { result } = renderHook(() => usePortfolioView())
 
-        expect(result.current.hasBalanceHistory).toBe(true)
-    })
-
-    it('drops the chart once the total counts a chain the chart leaves out', () => {
-        registerEthereumChain()
-        vi.mocked(useSigningAccountsOnOwnChain).mockReturnValue([
-            {
-                id: 'eth',
-                custody: { kind: 'local', seed: null },
-                chains: {
-                    ethereum: {
-                        address: `0x${'a'.repeat(40)}`,
-                        keyPairId: 'k',
-                    },
-                },
-            },
-        ])
-        vi.mocked(useAccountValueBasis).mockReturnValue('fiat')
-
-        const { result } = renderHook(() => usePortfolioView())
-
+        expect(result.current.chartSources).toEqual([])
         expect(result.current.hasBalanceHistory).toBe(false)
     })
 })

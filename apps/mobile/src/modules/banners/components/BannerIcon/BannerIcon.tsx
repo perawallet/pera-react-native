@@ -11,9 +11,12 @@
  */
 
 import type { BannerType } from '@perawallet/wallet-core-banners'
-import { PWIcon } from '@components/core'
-import type { IconName } from '@components/core/PWIcon/constants'
-import type { PWIconSize, PWIconVariant } from '@components/core/PWIcon/types'
+import {
+    PWIcon,
+    type IconName,
+    type PWIconSize,
+    type PWIconVariant,
+} from '@components/core'
 
 const BANNER_TYPE_TO_ICON: Record<BannerType, IconName> = {
     generic: 'sparkle',

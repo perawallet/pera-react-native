@@ -12,7 +12,7 @@
 
 // A sender rekeyed on-chain to a Pera-held multisig must dispatch to the
 // multisig propose path end-to-end, keyed on the AUTH account's template.
-// Previously such a request died at machine init with CannotSignError.
+// Such a request must not die at machine init with CannotSignError.
 // Isolated in its own file: the propose sync-flow leaves its request pending,
 // which would shadow any later test in the same file.
 

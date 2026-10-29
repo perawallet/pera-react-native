@@ -125,7 +125,7 @@ const throughTheWire = (accounts: WalletAccount[], hdFirstAddress: string) =>
                         keys: () => testKeystore.store!.state.keys,
                     })
                     return revealEthereumPrivateKey(
-                        { exportSecp256k1Key } as never,
+                        { exportSecp256k1Key },
                         keyPairId,
                         BACKUP_ACCESS_DOMAIN,
                     )

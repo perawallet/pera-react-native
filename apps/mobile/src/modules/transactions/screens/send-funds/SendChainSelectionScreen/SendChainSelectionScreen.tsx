@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { ChainSelectionList } from '../../../components/ChainSelectionList'
+import { ChainSelectionList } from '@modules/transactions/components/ChainSelectionList'
 import { useSendChainSelectionScreen } from './useSendChainSelectionScreen'
 
 export const SendChainSelectionScreen = () => {

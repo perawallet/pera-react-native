@@ -342,7 +342,7 @@ describe('quantum fee through the app builders', () => {
         const txn = await buildRekeyTx({
             scope,
             sourceAddress: sender.address,
-            rekeyToAddress: sender.address,
+            authorityAddress: sender.address,
             minFee: resolvedFee,
         })
         expect(txn.fee).toBe(resolvedFee)

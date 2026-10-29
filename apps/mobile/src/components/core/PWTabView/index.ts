@@ -10,4 +10,4 @@
  limitations under the License
  */
 
-export { PWTabView } from './PWTabView'
+export { PWTabView, createPWTabNavigator } from './PWTabView'

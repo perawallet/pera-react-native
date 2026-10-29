@@ -163,10 +163,11 @@ export type AssetOptOutTxsParams = {
     optOuts: Array<{ sender: string; assetId: bigint; creator: string }>
 }
 
-export type RekeyTxParams = {
+export type DelegationTxParams = {
     scope: ChainScope
     sourceAddress: string
-    rekeyToAddress: string
+    /** Signs for `sourceAddress` once the delegation lands. */
+    authorityAddress: string
     /** Base units of the native asset: the PQ-aware minimum for the effective signer. */
     minFee: bigint
 }
@@ -213,7 +214,9 @@ export interface SendFlowChainAdapter {
             params: AssetOptOutTxsParams,
         ): Promise<UnsignedTransaction[]>
     }
-    rekey?: { buildTx(params: RekeyTxParams): Promise<UnsignedTransaction> }
+    delegation?: {
+        buildTx(params: DelegationTxParams): Promise<UnsignedTransaction>
+    }
     /** The fee `transaction` pays as built, in base units of the native asset. */
     transactionFee(transaction: UnsignedTransaction): Decimal
 }
@@ -221,7 +224,7 @@ export interface SendFlowChainAdapter {
 export const sendFlowChainAdapters =
     createChainAdapterRegistry<SendFlowChainAdapter>('send flow')
 
-type SendFlowFeature = 'express' | 'assetInbox' | 'assetHolding' | 'rekey'
+type SendFlowFeature = 'express' | 'assetInbox' | 'assetHolding' | 'delegation'
 
 /** Throws {@link PeraServiceUnavailableError} when the chain lacks the feature. */
 export const sendFlowFeatureFor = <K extends SendFlowFeature>(

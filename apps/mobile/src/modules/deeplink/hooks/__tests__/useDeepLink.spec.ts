@@ -98,7 +98,10 @@ const mockCardOnboarding = vi.hoisted(() => ({
 }))
 vi.mock('@perawallet/wallet-core-card', () => ({
     OnboardingStep: { Completed: 'COMPLETED' },
-    useCardStore: { getState: () => mockCardOnboarding },
+    getCardOnboardingProgress: () => mockCardOnboarding,
+    isEscrowCardApproved: () =>
+        mockCardOnboarding.escrowCardAddress !== null &&
+        mockCardOnboarding.escrowCardApproved,
 }))
 
 vi.mock('@perawallet/wallet-core-shared', async () => {
@@ -238,12 +241,8 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccountId: () => ({
         setSelectedAccountId: accountsState.setSelectedAccountId,
     }),
-    useAccountsStore: {
-        getState: () => ({
-            accounts: accountsState.accounts,
-            getSelectedAccount: () => accountsState.selected,
-        }),
-    },
+    getAllAccounts: () => accountsState.accounts,
+    getSelectedAccount: () => accountsState.selected,
     findAccountByAnyChainAddress: (
         accounts: StoredAccount[],
         address: string,
@@ -1975,6 +1974,28 @@ describe('useDeepLink', () => {
         )
         expect(mockErrorToast).not.toHaveBeenCalled()
         expect(mockOnSuccess).toHaveBeenCalled()
+    })
+
+    it('normalizes a bare-domain DISCOVER_BROWSER URL to https before pushing it', async () => {
+        ;(parseDeeplink as Mock).mockReturnValue({
+            type: DeeplinkType.DISCOVER_BROWSER,
+            url: 'tinyman.org',
+            sourceUrl: 'perawallet://app/discover-browser/?url=...',
+        })
+        const { result } = renderHook(() => useDeepLink())
+
+        await act(async () => {
+            await result.current.handleDeepLink(
+                'perawallet://app/discover-browser/?url=...',
+                false,
+                'deeplink',
+            )
+        })
+
+        expect(mockPushWebView).toHaveBeenCalledWith(
+            expect.objectContaining({ url: 'https://tinyman.org' }),
+        )
+        expect(mockErrorToast).not.toHaveBeenCalled()
     })
 
     it('blocks INTERNAL_BROWSER deeplink with an unsafe URL', async () => {

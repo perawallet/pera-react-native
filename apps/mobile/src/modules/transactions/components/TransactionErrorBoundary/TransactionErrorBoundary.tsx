@@ -11,44 +11,13 @@
  */
 
 import React, { type ReactNode } from 'react'
-import { AppError, ErrorCategory } from '@perawallet/wallet-core-shared'
+import { ErrorCategory } from '@perawallet/wallet-core-shared'
 import { BaseErrorBoundary } from '@components/BaseErrorBoundary'
-import { useLanguage } from '@hooks/useLanguage'
-import { EmptyView } from '@components/EmptyView'
-import { PWButton } from '@components/core'
+import { TransactionErrorFallback } from './TransactionErrorFallback'
 
 export interface TransactionErrorBoundaryProps {
     children: ReactNode
     t: (key: string, options?: Record<string, unknown>) => string
-}
-
-const TransactionErrorFallback = ({
-    error,
-    reset,
-}: {
-    error: AppError | Error
-    reset: () => void
-}) => {
-    const { t } = useLanguage()
-    const appError = error instanceof AppError ? error : null
-
-    return (
-        <EmptyView
-            title={t('errors.transaction.title')}
-            body={
-                appError?.metadata.messageKey
-                    ? t(appError.metadata.messageKey, appError.metadata.params)
-                    : t('errors.transaction.body')
-            }
-            button={
-                <PWButton
-                    title={t('common.go_back.label')}
-                    variant='primary'
-                    onPress={reset}
-                />
-            }
-        />
-    )
 }
 
 /**

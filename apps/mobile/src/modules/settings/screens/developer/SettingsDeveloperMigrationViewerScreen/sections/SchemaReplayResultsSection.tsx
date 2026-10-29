@@ -13,14 +13,15 @@
 import type { LegacySchemaReplayResult } from '@perawallet/wallet-extension-platform'
 import { MigrationDataSection } from '../components/MigrationDataSection'
 import { EmptyDataHint } from '../components/EmptyDataHint'
-import { MigrationDataRow } from '../components/MigrationDataRow'
-import { StackedMigrationDataRow } from '../components/StackedMigrationDataRow'
+import { SchemaReplayResultRow } from './SchemaReplayResultRow'
+
+type SchemaReplayResultsSectionProps = {
+    results: Record<string, LegacySchemaReplayResult> | undefined
+}
 
 export const SchemaReplayResultsSection = ({
     results,
-}: {
-    results: Record<string, LegacySchemaReplayResult> | undefined
-}) => {
+}: SchemaReplayResultsSectionProps) => {
     if (!results) return null
     const entries = Object.entries(results)
     return (
@@ -47,48 +48,4 @@ export const SchemaReplayResultsSection = ({
             )}
         </MigrationDataSection>
     )
-}
-
-const SchemaReplayResultRow = ({
-    dbName,
-    result,
-}: {
-    dbName: string
-    result: LegacySchemaReplayResult
-}) => (
-    <>
-        <MigrationDataRow
-            label={dbName}
-            value={formatSchemaReplayResult(result)}
-        />
-        {result.kind === 'failed' && (
-            <StackedMigrationDataRow
-                label={`${dbName} error`}
-                value={result.errorMessage}
-            />
-        )}
-    </>
-)
-
-const formatSchemaReplayResult = (result: LegacySchemaReplayResult): string => {
-    switch (result.kind) {
-        case 'missing': {
-            return 'missing (file not on disk)'
-        }
-        case 'notNeeded': {
-            return `notNeeded (already at v${result.currentVersion})`
-        }
-        case 'ahead': {
-            return `ahead (file is v${result.currentVersion}, adapter target is lower)`
-        }
-        case 'replayed': {
-            return `replayed v${result.fromVersion} → v${result.toVersion}`
-        }
-        case 'tooOld': {
-            return `tooOld (v${result.currentVersion} < oldest supported v${result.oldestSupported})`
-        }
-        case 'failed': {
-            return `failed at v${result.partialVersion}`
-        }
-    }
 }

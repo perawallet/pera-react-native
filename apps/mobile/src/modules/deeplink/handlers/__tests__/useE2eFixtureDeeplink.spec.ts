@@ -14,13 +14,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
 
 const {
-    mockSetState,
+    mockReplaceAllContacts,
     mockReset,
     mockIsReady,
     mockHasAccounts,
     mockDismissAll,
 } = vi.hoisted(() => ({
-    mockSetState: vi.fn(),
+    mockReplaceAllContacts: vi.fn(),
     mockHasAccounts: vi.fn(() => true),
     mockDismissAll: vi.fn(),
     mockReset: vi.fn(),
@@ -32,7 +32,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-contacts', () => ({
-    useContactsStore: { setState: mockSetState },
+    replaceAllContacts: mockReplaceAllContacts,
 }))
 
 vi.mock('react-native', () => ({
@@ -67,7 +67,7 @@ describe('useE2eFixtureDeeplink', () => {
 
         result.current({ fixture: 'contacts-one' })
 
-        expect(mockSetState).not.toHaveBeenCalled()
+        expect(mockReplaceAllContacts).not.toHaveBeenCalled()
         expect(mockReset).not.toHaveBeenCalled()
     })
 
@@ -77,10 +77,7 @@ describe('useE2eFixtureDeeplink', () => {
         result.current({ fixture: 'contacts-empty' })
 
         expect(mockDismissAll).toHaveBeenCalled()
-        expect(mockSetState).toHaveBeenCalledWith({
-            contacts: [],
-            selectedContact: null,
-        })
+        expect(mockReplaceAllContacts).toHaveBeenCalledWith([])
         expect(mockReset).toHaveBeenCalledWith({
             index: 1,
             routes: [
@@ -98,19 +95,16 @@ describe('useE2eFixtureDeeplink', () => {
 
         result.current({ fixture: 'contacts-one' })
 
-        expect(mockSetState).toHaveBeenCalledWith({
-            contacts: [
-                {
-                    id: 'e2e-fixture-contact',
-                    name: 'AutoTestContact',
-                    addresses: {
-                        algorand:
-                            'CBLWUBRWCWNKZ2Y2Q5HFKN7XISNBVAN47422MZOKH5OGCZ3H5JYLTDPLOA',
-                    },
+        expect(mockReplaceAllContacts).toHaveBeenCalledWith([
+            {
+                id: 'e2e-fixture-contact',
+                name: 'AutoTestContact',
+                addresses: {
+                    algorand:
+                        'CBLWUBRWCWNKZ2Y2Q5HFKN7XISNBVAN47422MZOKH5OGCZ3H5JYLTDPLOA',
                 },
-            ],
-            selectedContact: null,
-        })
+            },
+        ])
     })
 
     it('lands on Home without touching contacts', () => {
@@ -119,7 +113,7 @@ describe('useE2eFixtureDeeplink', () => {
         result.current({ fixture: 'home' })
 
         expect(mockDismissAll).toHaveBeenCalled()
-        expect(mockSetState).not.toHaveBeenCalled()
+        expect(mockReplaceAllContacts).not.toHaveBeenCalled()
         expect(mockReset).toHaveBeenCalledWith({
             index: 0,
             routes: [
@@ -149,7 +143,7 @@ describe('useE2eFixtureDeeplink', () => {
 
         result.current({ fixture: 'contacts-empty' })
 
-        expect(mockSetState).not.toHaveBeenCalled()
+        expect(mockReplaceAllContacts).not.toHaveBeenCalled()
         expect(mockReset).not.toHaveBeenCalled()
     })
 })

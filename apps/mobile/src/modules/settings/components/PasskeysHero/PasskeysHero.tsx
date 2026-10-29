@@ -25,7 +25,9 @@ export const PasskeysHero = () => {
     const Hero = isDarkMode ? PasskeysHeroDark : PasskeysHeroLight
     return (
         <Hero
+            // lanekeep-ignore-next-line pera/no-numeric-sizes reason: hero artwork width
             width={96}
+            // lanekeep-ignore-next-line pera/no-numeric-sizes reason: hero artwork height
             height={88}
         />
     )

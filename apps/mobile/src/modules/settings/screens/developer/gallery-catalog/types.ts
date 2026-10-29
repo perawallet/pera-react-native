@@ -16,7 +16,7 @@ import type {
     BottomSheetRegistry,
     BottomSheetRequest,
 } from '@modules/bottom-sheet'
-import type { IconName } from '@components/core/PWIcon'
+import type { IconName } from '@components/core'
 import type { RootStackParamList } from '@routes/types'
 
 export type GalleryCategoryId =

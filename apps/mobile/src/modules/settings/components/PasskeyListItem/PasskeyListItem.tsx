@@ -38,12 +38,24 @@ export const PasskeyListItem = ({
     const showUserName = userName.length > 0 && userName !== passkey.displayName
 
     const lastUsed = resolveLastUsed(passkey.lastUsedAt)
-    const lastUsedLabel =
-        lastUsed.kind === 'never'
-            ? t('settings.passkeys.last_used_never')
-            : lastUsed.kind === 'today'
-              ? t('settings.passkeys.last_used_today')
-              : lastUsed.value
+    const lastUsedLabelOf = () => {
+        switch (lastUsed.kind) {
+            case 'never': {
+                return t('settings.passkeys.last_used_never')
+            }
+            case 'today': {
+                return t('settings.passkeys.last_used_today')
+            }
+            case 'date': {
+                return lastUsed.value
+            }
+            default: {
+                const exhaustive: never = lastUsed
+                return exhaustive
+            }
+        }
+    }
+    const lastUsedLabel = lastUsedLabelOf()
 
     return (
         <PWView

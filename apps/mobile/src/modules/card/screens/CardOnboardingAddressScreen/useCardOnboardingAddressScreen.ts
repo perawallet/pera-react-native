@@ -19,6 +19,7 @@ import {
     getCardApiError,
     isDuplicateError,
     isOnboardingNotFoundError,
+    getCardOnboardingProgress,
     isUserAlreadyCreatedError,
     OnboardingStep,
     US_ISO,
@@ -39,13 +40,17 @@ import { useBottomSheet } from '@modules/bottom-sheet'
 import { CardCountryPickerContent } from '@modules/card/components/CardCountryPicker'
 import { CardUsStatePickerContent } from '@modules/card/components/CardUsStatePicker'
 import { useCardErrorToast, useCardOnboardingRouter } from '@modules/card/hooks'
-import { useWebView, withLanguageParam } from '@modules/webview'
+import {
+    toValidatedBrowserUrl,
+    useWebView,
+    withLanguageParam,
+} from '@modules/webview'
 import { routeCapabilities } from '@routes/capabilities'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 
-import type { Optional } from '@perawallet/wallet-core-shared'
+import { logger, type Optional } from '@perawallet/wallet-core-shared'
 import { useCardScope } from '../../hooks/useCardScope'
 
 export type UseCardOnboardingAddressScreenResult = {
@@ -110,11 +115,9 @@ export const useCardOnboardingAddressScreen =
         // session (resumed sign-in), so the consents must be re-collected here
         // instead of silently recorded as "denied". Snapshotted so the boxes
         // don't vanish mid-interaction once the first tick makes them non-null.
-        const [showsConsentOptIns] = useState(() => {
-            const { allowMarketing: marketing, allowSms: sms } =
-                useCardStore.getState()
-            return marketing === null || sms === null
-        })
+        const [showsConsentOptIns] = useState(
+            () => allowMarketing === null || allowSms === null,
+        )
         const submitAddress = useSubmitAddressMutation(scope)
         const submitConsent = useSubmitConsentMutation(scope)
         // Read only on a duplicate, to see where an earlier save left the record.
@@ -164,9 +167,13 @@ export const useCardOnboardingAddressScreen =
             config.termsOfServiceUrl,
             currentLanguage,
         )
-        const cardTermsUrl =
-            settings?.termsAndConditionsUrls?.[isUsResident ? 'us' : 'intl'] ??
-            platformTermsUrl
+        const cardTermsJurisdiction = isUsResident ? 'us' : 'intl'
+        // Only a missing link falls back. A refused one opens nothing, so the
+        // user never accepts the card terms having read Pera's instead.
+        const cardTermsUrl = toValidatedBrowserUrl(
+            settings?.termsAndConditionsUrls?.[cardTermsJurisdiction] ??
+                platformTermsUrl,
+        )
 
         // Prefill the residence country chosen earlier in the flow, once settings
         // load. One-shot; matches it against the supported list for the flag/name.
@@ -257,17 +264,25 @@ export const useCardOnboardingAddressScreen =
         )
 
         const handleOpenCardTerms = useCallback(() => {
+            if (!cardTermsUrl) {
+                logger.warn('[card] refused the Baanx card terms URL', {
+                    jurisdiction: cardTermsJurisdiction,
+                })
+                errorToast(
+                    t('peraCard.account.error_title'),
+                    t('peraCard.account.error_body'),
+                )
+                return
+            }
             if (!routeCapabilities.inAppWebView) {
-                // oxlint-disable-next-line pera/no-unvalidated-open-url -- network config
                 void Linking.openURL(cardTermsUrl)
                 return
             }
             pushWebView({ url: cardTermsUrl, id: 'card-terms' })
-        }, [pushWebView, cardTermsUrl])
+        }, [pushWebView, cardTermsUrl, cardTermsJurisdiction, errorToast, t])
         const handleOpenPlatformTerms = useCallback(() => {
             // Checkbox 2 is Pera's own Terms & Conditions.
             if (!routeCapabilities.inAppWebView) {
-                // oxlint-disable-next-line pera/no-unvalidated-open-url -- network config plus a lang param
                 void Linking.openURL(platformTermsUrl)
                 return
             }
@@ -363,7 +378,7 @@ export const useCardOnboardingAddressScreen =
                         t('peraCard.address.already_registered_body'),
                     )
                     navigation.navigate('CardSignIn', {
-                        email: useCardStore.getState().email ?? undefined,
+                        email: getCardOnboardingProgress().email ?? undefined,
                         finishesRegistration: true,
                     })
                     return

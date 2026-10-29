@@ -1112,10 +1112,6 @@
                 "title": "Asset not accepted",
                 "body": "The receiving account hasn't opted in to asset {{assetId}}. Ask the recipient to opt in, or send via the ASA Inbox."
             },
-            "asset_frozen": {
-                "title": "Asset frozen",
-                "body": "Asset {{assetId}} is frozen, so this transfer can't be completed. The asset's freeze manager must unfreeze it first."
-            },
             "duplicate_txn": {
                 "title": "Already submitted",
                 "body": "This transaction has already been processed by the network."
@@ -1259,6 +1255,10 @@
             "not_replaceable": {
                 "title": "Transaction no longer pending",
                 "body": "This transaction has already confirmed or been replaced, so it can't be sped up or cancelled."
+            },
+            "asset_frozen": {
+                "title": "Asset frozen",
+                "body": "Asset {{assetId}} is frozen, so this transfer can't be completed. The asset's freeze manager must unfreeze it first."
             }
         },
         "kms": {
@@ -2260,9 +2260,14 @@
             "title": "Select addresses to add",
             "description": "We found that there are {{count}} addresses registered to this wallet",
             "addresses_count": "{{count}} addresses",
+            "description_linked_one": "We found {{count}} account in this wallet. It includes its Algorand and EVM addresses.",
+            "description_linked_other": "We found {{count}} accounts in this wallet. Each account includes its Algorand and EVM addresses.",
+            "accounts_count_one": "{{count}} account",
+            "accounts_count_other": "{{count}} accounts",
             "select_all": "Select all",
             "already_imported": "already imported",
-            "finish_button": "Finish Account Creation",
+            "import_button": "Import accounts",
+            "total_value": "<0/> total",
             "all_imported_title": "Already in your wallet",
             "all_imported_body": "Every address this wallet derives is already in Pera — including any you are only watching. Remove an address to re-add it with its private key."
         },
@@ -2943,7 +2948,11 @@
             "slow": "Slow",
             "normal": "Normal",
             "fast": "Fast",
-            "max_fee": "Max fee"
+            "max_fee": "Max fee",
+            "max_fee_for_preset": "Max fee ({{preset}})",
+            "max_fee_info": "The most you'll pay if network fees rise. You're usually charged less.",
+            "wait_seconds": "~{{seconds}} sec",
+            "wait_minutes": "~{{minutes}} min"
         },
         "confirmation": {
             "add_to_contacts": "+ Add to Contacts",
@@ -2955,6 +2964,7 @@
             "network": "Network",
             "fee": "Fee",
             "current_balance": "Current Balance",
+            "total": "Total",
             "note": "Note",
             "recipient_below_mbr": {
                 "title": "Amount Below Recipient Minimum",
@@ -4555,7 +4565,6 @@
             "passkey_disable": "Disable passkey unlock",
             "passkey_password_placeholder": "Wallet password",
             "passkey_error": "Could not enable passkey unlock. Check your password and try again.",
-            "passkey_enable_error": "Couldn't enable passkey unlock. Please try again.",
             "change_password_title": "Change password",
             "change_password_current_placeholder": "Current password",
             "change_password_new_placeholder": "New password",
@@ -4567,6 +4576,26 @@
             "change_password_error_unexpected": "Something went wrong changing your password. Please try again.",
             "change_password_success": "Password changed successfully.",
             "change_password_submit": "Change password"
+        },
+        "passkey_setup": {
+            "title": "Unlock with a passkey",
+            "offer_title": "Unlock faster next time",
+            "body": "Unlock Pera Wallet with Touch ID, Windows Hello, your phone or a security key instead of typing your password. Your password still works as a backup.",
+            "enable_button": "Set up passkey",
+            "not_now_button": "Not now",
+            "retry_button": "Try again",
+            "continue_button": "Continue",
+            "pending_hint": "Follow your browser's prompts. You may be asked to confirm twice.",
+            "success_title": "Passkey unlock is on",
+            "success_body": "Next time, unlock Pera Wallet with your passkey. Your password still works.",
+            "error_not_saved": "The passkey wasn't saved.",
+            "error_prf_unsupported": "This passkey can't unlock Pera Wallet.",
+            "error_unexpected": "Couldn't turn on passkey unlock.",
+            "hint_not_saved_title": "Try a different place to save it",
+            "hint_not_saved_body": "The prompt was closed, or your password manager couldn't save the passkey. Try again and choose another option in the browser prompt, such as Google Password Manager, iCloud Keychain or a security key. If a password manager keeps taking over, turn off passkey saving in its settings.",
+            "hint_prf_title": "Save it somewhere else",
+            "hint_prf_body": "The passkey was saved, but your password manager or security key doesn't support the feature Pera Wallet needs to unlock (PRF). Try again with Google Password Manager, iCloud Keychain or a security key that supports PRF, then delete the unused passkey.",
+            "reauth_description": "Confirm your password to turn on passkey unlock."
         },
         "approval": {
             "placeholder": "Approval surface — coming in M4."

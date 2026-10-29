@@ -35,22 +35,16 @@ vi.mock('@perawallet/wallet-core-card', async () => {
     const actual = await vi.importActual<object>('@perawallet/wallet-core-card')
     return {
         ...actual,
-        useCardStore: Object.assign(
-            (selector: (state: Record<string, unknown>) => unknown) =>
-                selector({
-                    selectedFundingType: mockStoredFundingType,
-                    connectedFundingSourceAddress: mockConnectedAddress,
-                    escrowCardAddress: mockEscrowCardAddress,
-                    escrowCardOwner: mockEscrowCardOwner,
-                    escrowCardScopeKey: mockEscrowCardScopeKey,
-                }),
-            {
-                getState: () => ({
-                    selectedFundingType: mockStoredFundingType,
-                    setSelectedFundingType: mockSetSelectedFundingType,
-                }),
-            },
-        ),
+        useCardStore: (selector: (state: Record<string, unknown>) => unknown) =>
+            selector({
+                selectedFundingType: mockStoredFundingType,
+                connectedFundingSourceAddress: mockConnectedAddress,
+                escrowCardAddress: mockEscrowCardAddress,
+                escrowCardOwner: mockEscrowCardOwner,
+                escrowCardScopeKey: mockEscrowCardScopeKey,
+            }),
+        getCardFundingType: () => mockStoredFundingType,
+        setCardFundingType: (type: unknown) => mockSetSelectedFundingType(type),
     }
 })
 

@@ -11,13 +11,13 @@
  */
 
 import { useEffect } from 'react'
-import { useCardStore } from '@perawallet/wallet-core-card'
+import { clearCardLoginSecrets } from '@perawallet/wallet-core-card'
 
 /** Drops the in-memory onboarding password and its login budget once the flow unmounts. */
 export const useClearPasswordOnExit = (): void => {
     useEffect(
         () => () => {
-            useCardStore.getState().clearLoginSecrets()
+            clearCardLoginSecrets()
         },
         [],
     )

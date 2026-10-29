@@ -48,12 +48,20 @@ export const CreatePasswordScreen = ({
         handleSubmit,
     } = useCreatePasswordScreen({ onDone })
 
-    const passwordError =
-        validationError === 'too_short'
-            ? t('vault.create_password.error_too_short')
-            : validationError === 'too_weak'
-              ? t('vault.password_strength.error_too_weak')
-              : undefined
+    const passwordErrorOf = () => {
+        switch (validationError) {
+            case 'too_short': {
+                return t('vault.create_password.error_too_short')
+            }
+            case 'too_weak': {
+                return t('vault.password_strength.error_too_weak')
+            }
+            default: {
+                return undefined
+            }
+        }
+    }
+    const passwordError = passwordErrorOf()
 
     const confirmError =
         validationError === 'mismatch'

@@ -103,6 +103,14 @@ describe('node-crypto web shim vs node:crypto', () => {
                 expect(Buffer.from(actual).toString('hex')).toBe(Buffer.from(expected).toString('hex'))
             })
         }
+
+        it('reports an unsupported digest through the callback', async () => {
+            const error = await new Promise(resolve => {
+                shim.pbkdf2(password, salt, iterations, keylen, 'md5', err => resolve(err))
+            })
+
+            expect(error.message).toContain('unsupported digest "md5"')
+        })
     })
 
     describe('randomBytes', () => {

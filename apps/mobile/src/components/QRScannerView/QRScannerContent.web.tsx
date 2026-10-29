@@ -251,22 +251,9 @@ export const QRScannerContent = ({
         void openExpandedTab('camera-access')
     }, [])
 
-    return (
-        <PWView style={styles.container}>
-            <PWView style={styles.header}>
-                <PWTouchableIcon
-                    name='cross'
-                    variant='primary'
-                    onPress={onClose}
-                />
-            </PWView>
-            <PWText
-                variant='h2'
-                style={styles.title}
-            >
-                {title ?? t('qr_scanner.title')}
-            </PWText>
-            {canUseCameraInline && !hasCameraError ? (
+    const renderCameraArea = () => {
+        if (canUseCameraInline && !hasCameraError) {
+            return (
                 <Video
                     ref={videoRef}
                     autoPlay
@@ -274,7 +261,10 @@ export const QRScannerContent = ({
                     muted
                     style={styles.video}
                 />
-            ) : cameraError === 'blocked' || cameraError === 'unavailable' ? (
+            )
+        }
+        if (cameraError === 'blocked' || cameraError === 'unavailable') {
+            return (
                 <PWView testID='qr-camera-error'>
                     <PWText
                         variant='body'
@@ -301,18 +291,21 @@ export const QRScannerContent = ({
                         />
                     </PWView>
                 </PWView>
-            ) : isPopup &&
-              !skipDeepLinkHandler &&
-              cameraPermission !== 'denied' &&
-              !hasCameraError ? (
-                <PWButton
-                    testID='qr-scan-with-camera'
-                    variant='secondary'
-                    title={t('qr_scanner.scan_with_camera')}
-                    onPress={handleScanWithCamera}
-                    style={styles.scanWithCamera}
-                />
-            ) : isPopup && cameraPermission !== 'denied' && !hasCameraError ? (
+            )
+        }
+        if (isPopup && cameraPermission !== 'denied' && !hasCameraError) {
+            if (!skipDeepLinkHandler) {
+                return (
+                    <PWButton
+                        testID='qr-scan-with-camera'
+                        variant='secondary'
+                        title={t('qr_scanner.scan_with_camera')}
+                        onPress={handleScanWithCamera}
+                        style={styles.scanWithCamera}
+                    />
+                )
+            }
+            return (
                 <PWButton
                     testID='qr-allow-camera'
                     variant='secondary'
@@ -320,14 +313,34 @@ export const QRScannerContent = ({
                     onPress={handleAllowCamera}
                     style={styles.scanWithCamera}
                 />
-            ) : (
-                <PWText
-                    variant='body'
-                    style={styles.unavailable}
-                >
-                    {t('qr_scanner.camera_unavailable')}
-                </PWText>
-            )}
+            )
+        }
+        return (
+            <PWText
+                variant='body'
+                style={styles.unavailable}
+            >
+                {t('qr_scanner.camera_unavailable')}
+            </PWText>
+        )
+    }
+
+    return (
+        <PWView style={styles.container}>
+            <PWView style={styles.header}>
+                <PWTouchableIcon
+                    name='cross'
+                    variant='primary'
+                    onPress={onClose}
+                />
+            </PWView>
+            <PWText
+                variant='h2'
+                style={styles.title}
+            >
+                {title ?? t('qr_scanner.title')}
+            </PWText>
+            {renderCameraArea()}
             <PWText
                 variant='caption'
                 style={styles.pasteLabel}

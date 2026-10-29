@@ -18,6 +18,7 @@ import {
     type IconName,
 } from '@components/core'
 import { useStyles } from './styles'
+import { SummaryLine } from './SummaryLine'
 
 export type BackupReviewLine = {
     icon: IconName
@@ -32,26 +33,6 @@ export type BackupReviewCardProps = {
     actionLabel: string
     onReview: () => void
     testID: string
-}
-
-const SummaryLine = ({ icon, isNegative, label }: BackupReviewLine) => {
-    const styles = useStyles()
-
-    return (
-        <PWView style={styles.summaryLine}>
-            <PWIcon
-                name={icon}
-                size='sm'
-                variant={isNegative ? 'error' : 'secondary'}
-            />
-            <PWText
-                variant='body'
-                style={styles.summaryText}
-            >
-                {label}
-            </PWText>
-        </PWView>
-    )
 }
 
 export const BackupReviewCard = ({

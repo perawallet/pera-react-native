@@ -19,6 +19,7 @@ import {
     type SupportedUsState,
 } from '@perawallet/wallet-core-card'
 import { config } from '@perawallet/wallet-core-config'
+import { logger } from '@perawallet/wallet-core-shared'
 
 const mockMutateAsync = vi.fn()
 const mockRefetchRecord = vi.fn()
@@ -31,6 +32,7 @@ let mockAllowSms: boolean | null = true
 let mockOnboardingId: string | null = 'mock-onboarding-id'
 let mockOnboardingStep: OnboardingStep = OnboardingStep.EmailSend
 let mockCountryIso: string | null = 'GB'
+let mockProgressEmail: string | null = null
 let mockSettings:
     | {
           countries: SupportedCountry[]
@@ -76,37 +78,29 @@ vi.mock('@perawallet/wallet-core-card', async () => {
             refetch: vi.fn(),
         }),
         useOnboardingDetailsQuery: () => ({ refetch: mockRefetchRecord }),
-        useCardStore: Object.assign(
-            (
-                selector: (state: {
-                    onboardingId: string | null
-                    onboardingStep: OnboardingStep
-                    countryIso: string | null
-                    allowMarketing: boolean | null
-                    allowSms: boolean | null
-                    setCountryIso: (iso: string) => void
-                    setAllowMarketing: (allow: boolean) => void
-                    setAllowSms: (allow: boolean) => void
-                }) => unknown,
-            ) =>
-                selector({
-                    onboardingId: mockOnboardingId,
-                    onboardingStep: mockOnboardingStep,
-                    countryIso: mockCountryIso,
-                    allowMarketing: mockAllowMarketing,
-                    allowSms: mockAllowSms,
-                    setCountryIso: mockSetCountryIso,
-                    setAllowMarketing: mockSetAllowMarketing,
-                    setAllowSms: mockSetAllowSms,
-                }),
-            {
-                getState: () => ({
-                    consentSetId: null,
-                    allowMarketing: mockAllowMarketing,
-                    allowSms: mockAllowSms,
-                }),
-            },
-        ),
+        useCardStore: (
+            selector: (state: {
+                onboardingId: string | null
+                onboardingStep: OnboardingStep
+                countryIso: string | null
+                allowMarketing: boolean | null
+                allowSms: boolean | null
+                setCountryIso: (iso: string) => void
+                setAllowMarketing: (allow: boolean) => void
+                setAllowSms: (allow: boolean) => void
+            }) => unknown,
+        ) =>
+            selector({
+                onboardingId: mockOnboardingId,
+                onboardingStep: mockOnboardingStep,
+                countryIso: mockCountryIso,
+                allowMarketing: mockAllowMarketing,
+                allowSms: mockAllowSms,
+                setCountryIso: mockSetCountryIso,
+                setAllowMarketing: mockSetAllowMarketing,
+                setAllowSms: mockSetAllowSms,
+            }),
+        getCardOnboardingProgress: () => ({ email: mockProgressEmail }),
     }
 })
 
@@ -121,7 +115,10 @@ vi.mock('@modules/bottom-sheet', () => ({
 }))
 
 const mockPushWebView = vi.fn()
-vi.mock('@modules/webview', () => ({
+vi.mock('@modules/webview', async () => ({
+    ...(await vi.importActual<
+        typeof import('@modules/webview/hooks/handlers-shared')
+    >('@modules/webview/hooks/handlers-shared')),
     useWebView: () => ({ pushWebView: mockPushWebView }),
     withLanguageParam: (url: string, locale: string) => `${url}?lang=${locale}`,
 }))
@@ -206,6 +203,7 @@ describe('useCardOnboardingAddressScreen', () => {
         mockOnboardingId = 'mock-onboarding-id'
         mockOnboardingStep = OnboardingStep.EmailSend
         mockCountryIso = 'GB'
+        mockProgressEmail = null
         mockAllowMarketing = true
         mockAllowSms = true
         mockSettings = {
@@ -524,6 +522,7 @@ describe('useCardOnboardingAddressScreen', () => {
         async (_label, failure) => {
             mockMutateAsync.mockRejectedValueOnce(failure)
             mockRefetchRecord.mockResolvedValueOnce(GONE_RECORD)
+            mockProgressEmail = 'user@example.com'
             const { result } = renderHook(() =>
                 useCardOnboardingAddressScreen(),
             )
@@ -535,7 +534,7 @@ describe('useCardOnboardingAddressScreen', () => {
 
             await waitFor(() =>
                 expect(mockNavigate).toHaveBeenCalledWith('CardSignIn', {
-                    email: undefined,
+                    email: 'user@example.com',
                     finishesRegistration: true,
                 }),
             )
@@ -630,6 +629,41 @@ describe('useCardOnboardingAddressScreen', () => {
             id: 'card-terms',
         })
     })
+
+    it.each([true, false])(
+        'refuses a non-https Baanx card T&C link instead of opening Pera terms (inAppWebView: %s)',
+        inAppWebView => {
+            mockCapabilities.inAppWebView = inAppWebView
+            const warnSpy = vi
+                .spyOn(logger, 'warn')
+                .mockImplementation(() => {})
+            mockSettings = {
+                countries: [gb, us],
+                usStates: [california],
+                termsAndConditionsUrls: {
+                    us: 'http://baanx/us-terms.pdf',
+                    intl: 'http://baanx/intl-terms.pdf',
+                },
+            }
+            const { result } = renderHook(() =>
+                useCardOnboardingAddressScreen(),
+            )
+
+            act(() => result.current.handleOpenCardTerms())
+
+            expect(mockPushWebView).not.toHaveBeenCalled()
+            expect(mockOpenURL).not.toHaveBeenCalled()
+            expect(warnSpy).toHaveBeenCalledWith(
+                '[card] refused the Baanx card terms URL',
+                { jurisdiction: 'intl' },
+            )
+            expect(mockErrorToast).toHaveBeenCalledWith(
+                'peraCard.account.error_title',
+                'peraCard.account.error_body',
+            )
+            warnSpy.mockRestore()
+        },
+    )
 
     it('renders and falls back when settings lack the links block entirely', () => {
         // A settings shape without `termsAndConditionsUrls` (e.g. a stale
