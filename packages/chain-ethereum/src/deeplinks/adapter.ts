@@ -95,8 +95,8 @@ const canParseWith =
 export type Eip681ParseOptions = {
     /** The registered scope that owns an `@<eip155 id>`; undefined rejects the link. */
     resolve: (eip155ChainId: number) => ChainScope | undefined
-    /** The chain a link without `@<eip155 id>` pays on. */
-    defaultChainId: ChainId
+    /** The chain a link without `@<eip155 id>` pays on; undefined rejects such a link as unsupported-network. */
+    defaultChainId: ChainId | undefined
     nativeAssetOf: (chainId: ChainId) => AssetRef
 }
 
@@ -117,11 +117,15 @@ export const parseEip681Uri = (
     const targetFailure = checkAddress(target)
     if (targetFailure) return fail(targetFailure)
 
-    let scope: ChainScope | undefined
+    let linkTarget: ChainLinkTarget
     if (rawChainId !== undefined) {
         if (!/^\d+$/.test(rawChainId)) return fail('malformed')
-        scope = resolve(Number(rawChainId))
+        const scope = resolve(Number(rawChainId))
         if (!scope) return fail('unsupported-network')
+        linkTarget = { chainId: scope.chainId, networkId: scope.networkId }
+    } else {
+        if (defaultChainId === undefined) return fail('unsupported-network')
+        linkTarget = { chainId: defaultChainId }
     }
 
     // A link-initiated approval is a drain vector and the wallet decodes no
@@ -134,9 +138,6 @@ export const parseEip681Uri = (
     const params = readQuery(query)
     if (!params) return fail('malformed')
 
-    const linkTarget: ChainLinkTarget = scope
-        ? { chainId: scope.chainId, networkId: scope.networkId }
-        : { chainId: defaultChainId }
     const value = params.get('value') ?? null
 
     if (functionName === undefined) {
@@ -213,9 +214,10 @@ export const createEvmDeeplinkAdapter = (
         parse: input =>
             parseEip681Uri(input, {
                 resolve,
-                defaultChainId:
-                    resolve(EIP681_DEFAULT_EIP155_CHAIN_ID)?.chainId ??
-                    owner.row.id,
+                // No fallback to the owner: paying a chain-1 link on another EVM chain
+                // sends to the same address there.
+                defaultChainId: resolve(EIP681_DEFAULT_EIP155_CHAIN_ID)
+                    ?.chainId,
                 nativeAssetOf: nativeAssetOfEvmChain,
             }),
         toAssetRef: (raw): AssetRef | undefined =>
