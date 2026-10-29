@@ -27,7 +27,7 @@ import type { Nullable } from '@perawallet/wallet-core-shared'
 import { describeHolding } from '../chain-adapter'
 import type { HoldingRestriction } from '../models'
 import { isEqualChainData } from '../store/accountChainState'
-import { AccountAssetHoldingsSchema } from './schema'
+import { AccountAddedTokensSchema, AccountAssetHoldingsSchema } from './schema'
 
 export type HoldingRow = {
     assetId: string
@@ -59,7 +59,7 @@ type UpsertAccountHoldingsParams = {
 export async function refreshAccountHoldings({
     db = getDatabase(),
     accountAddress,
-    holdings,
+    holdings: readHoldings,
     scope,
     retain,
 }: UpsertAccountHoldingsParams): Promise<boolean> {
@@ -71,8 +71,26 @@ export async function refreshAccountHoldings({
             assetId: AccountAssetHoldingsSchema.assetId,
             amount: AccountAssetHoldingsSchema.amount,
             native: AccountAssetHoldingsSchema.native,
+            addedAt: AccountAddedTokensSchema.addedAt,
         })
         .from(AccountAssetHoldingsSchema)
+        .leftJoin(
+            AccountAddedTokensSchema,
+            and(
+                eq(
+                    AccountAddedTokensSchema.accountAddress,
+                    AccountAssetHoldingsSchema.accountAddress,
+                ),
+                eq(
+                    AccountAddedTokensSchema.scope,
+                    AccountAssetHoldingsSchema.scope,
+                ),
+                eq(
+                    AccountAddedTokensSchema.assetId,
+                    AccountAssetHoldingsSchema.assetId,
+                ),
+            ),
+        )
         .where(
             and(
                 eq(AccountAssetHoldingsSchema.accountAddress, accountAddress),
@@ -80,6 +98,17 @@ export async function refreshAccountHoldings({
             ),
         )
         .all()
+
+    // An added token the chain left out holds nothing, but stays at zero.
+    // Joined in this read, not a separate one, so a token added or removed
+    // while the chain read was in flight is judged by the table as it is now.
+    const readIds = new Set(readHoldings.map(h => h.assetId))
+    const holdings: UpsertHoldingInput[] = [
+        ...readHoldings,
+        ...existingRows
+            .filter(r => r.addedAt !== null && !readIds.has(r.assetId))
+            .map(r => ({ assetId: r.assetId, amount: new Decimal(0) })),
+    ]
 
     const existing = new Map(
         existingRows.map(r => [

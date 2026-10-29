@@ -34,16 +34,7 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
     fetchAndPersistPrices: vi.fn().mockResolvedValue(undefined),
 }))
 
-const { mockGetAddedTokenIdsByAccount } = vi.hoisted(() => ({
-    mockGetAddedTokenIdsByAccount: vi.fn(
-        async ({ accountAddresses }: { accountAddresses: string[] }) =>
-            new Map(accountAddresses.map(address => [address, [] as string[]])),
-    ),
-}))
-
 vi.mock('../../db', () => ({
-    getAddedTokenIdsByAccount: (...args: unknown[]) =>
-        mockGetAddedTokenIdsByAccount(...args),
     insertAssetHolding: vi.fn(),
     upsertAccountChainState: vi.fn(),
     refreshAccountHoldings: vi.fn().mockResolvedValue(true),

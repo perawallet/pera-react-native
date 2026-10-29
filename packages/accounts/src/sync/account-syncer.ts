@@ -11,7 +11,6 @@
  */
 
 import type { QueryClient } from '@tanstack/react-query'
-import { Decimal } from 'decimal.js'
 import {
     fetchAndPersistAssets,
     fetchAndPersistPrices,
@@ -23,7 +22,6 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import {
-    getAddedTokenIdsByAccount,
     upsertAccountChainState,
     refreshAccountHoldings,
     getAccountChainStateRow,
@@ -225,24 +223,9 @@ async function doFetchAndPersistAccount(
         .getState()
         .setAccountChainState(scope, address, chainState)
 
-    // Read after the chain's answer, not before it: a token added or removed
-    // while that read was in flight must not be dropped or brought back.
-    const addedIds =
-        (
-            await getAddedTokenIdsByAccount({
-                accountAddresses: [address],
-                scope,
-            })
-        ).get(address) ?? []
-    const heldIds = new Set(holdings.map(({ assetId }) => assetId))
     const holdingsChanged = await refreshAccountHoldings({
         accountAddress: address,
-        holdings: [
-            ...holdings,
-            ...addedIds
-                .filter(assetId => !heldIds.has(assetId))
-                .map(assetId => ({ assetId, amount: new Decimal(0) })),
-        ],
+        holdings,
         scope,
         retain:
             unrefreshedHoldings &&
