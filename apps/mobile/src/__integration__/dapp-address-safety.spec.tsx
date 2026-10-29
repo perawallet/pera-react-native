@@ -81,7 +81,6 @@ import { useSigningStore } from '@packages/signing/src/store'
 import { __resetSigningActorRegistryForTests } from '@packages/signing/src/hooks/useSigningActorLifecycle'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { server, setSuiteUnhandledRequestMode } from '@test-utils/msw-server'
-import { setCapabilityOverrides } from '@test-utils/capability-overrides'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import {
     resetTestDatabase,
@@ -361,7 +360,6 @@ describe('Flow: a dApp request names a scam address or a look-alike of a known o
                     { id: 'carol', name: 'Carol', addresses: { evm: CONTACT } },
                 ],
             })
-            setCapabilityOverrides({ dappConnect: true }, 'ethereum')
             vi.spyOn(kmsCore, 'sign').mockImplementation(async (_id, payload) =>
                 vectorSignature(payload),
             )

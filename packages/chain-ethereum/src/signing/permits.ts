@@ -307,8 +307,8 @@ export const isPermitTypedData = (typedData: unknown): boolean => {
 
 /**
  * Recognises EIP-2612, DAI-style or ERC-721 `Permit`, or Permit2 typed data that
- * lets `spender` move the signer's tokens. `now` is Unix ms. Never throws; anything it doesn't
- * match exactly yields `undefined`.
+ * lets `spender` move the signer's tokens or NFT. `now` is Unix ms. Never throws;
+ * anything it doesn't match exactly yields `undefined`.
  */
 export const spendApprovalOf = (
     typedData: TypedDataDefinition,
