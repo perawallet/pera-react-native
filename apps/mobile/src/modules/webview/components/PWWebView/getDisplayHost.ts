@@ -16,7 +16,7 @@
  *
  * Used by the title bar, which renders before the WebView can surface a load
  * error, so it must never throw on a malformed or scheme-less input — an
- * unguarded `new URL()` previously crashed the title bar. Retries with an
+ * unguarded `new URL()` would crash the title bar. Retries with an
  * `https://` prefix so a bare host (`example.com/x`) still resolves, then falls
  * back to the raw string when it still cannot be parsed.
  *

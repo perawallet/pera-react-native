@@ -551,9 +551,9 @@ const renderReport = ({
     // "Reconciled", not "clean": every expected step is accounted for
     // (SHOT, ERR, or explicitly missing) with no driver-side capture
     // failures, AND there were zero errors. Folding erroredCount in here is
-    // deliberate — a run with 44 errors previously still reported "Clean
-    // run: Yes" as long as they reconciled against BEGIN, which reads as
-    // "nothing wrong" when 44 surfaces plainly failed.
+    // deliberate — otherwise a run with errors that reconciled against BEGIN
+    // would report "Clean run: Yes", which reads as "nothing wrong" when
+    // surfaces plainly failed.
     const reconciled =
         done &&
         missingCount === 0 &&

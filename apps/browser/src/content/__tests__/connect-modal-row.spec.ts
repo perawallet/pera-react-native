@@ -212,7 +212,7 @@ describe('shouldInjectRow', () => {
 
     it('does not inject when the SDK rendered its "Install Pera Extension" row (enabled but discovery has not resolved)', () => {
         // is-extension-enabled="true" + is-extension-available unset is
-        // exactly the state that used to render two extension rows: the
+        // exactly the state that would render two extension rows: the
         // SDK's own stale install prompt, plus ours. The owner's chosen fix
         // suppresses ours here, accepting the SDK's stale prompt as the cost.
         expect(

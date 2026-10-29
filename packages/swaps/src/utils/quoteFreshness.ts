@@ -14,7 +14,7 @@ import type { SwapQuote } from '../models'
 
 /**
  * How long a fetched quote stays executable on the client. The wire
- * schema carries no expiry, so staleness was previously enforced only by
+ * schema carries no expiry, so staleness is otherwise enforced only by
  * the backend at prepare time — a paused confirm could carry a
  * minutes-old quote into execution. Conservative TTL,
  * comfortably above normal confirm latency; replace with the backend's

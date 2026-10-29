@@ -97,7 +97,7 @@ describe('typed rejection paths conformance', () => {
         // of 1000 so this holds without guessing the renderer's rounding.
         expect(error.message).toContain(`overspend (account ${sender.address},`)
         // Guards the exact rendering OVERSPEND_RE's shape-match relies on —
-        // this string previously lived only in a comment, not an assertion.
+        // this string is asserted here, not just described in a comment.
         expect(error.message).toContain(
             `MicroAlgos:${renderedBalance / 1000n}mA`,
         )
