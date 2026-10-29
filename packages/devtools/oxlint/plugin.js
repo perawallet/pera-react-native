@@ -23,6 +23,7 @@ import { noAlgorandSdkImports } from './rules/no-algorand-sdk-imports.js'
 import { noI18nKeyCast } from './rules/no-i18n-key-cast.js'
 import { hdDeriveClaimed } from './rules/hd-derive-claimed.js'
 import { noManualUnitConversion } from './rules/no-manual-unit-conversion.js'
+import { fetchHasDeadline } from './rules/fetch-has-deadline.js'
 import { componentPropsType } from './rules/component-props-type.js'
 
 // A mobile-source rule needs its own override in apps/mobile/.oxlintrc.json:
@@ -44,6 +45,7 @@ export default {
         'no-i18n-key-cast': noI18nKeyCast,
         'hd-derive-claimed': hdDeriveClaimed,
         'no-manual-unit-conversion': noManualUnitConversion,
+        'fetch-has-deadline': fetchHasDeadline,
         'component-props-type': componentPropsType,
     },
 }

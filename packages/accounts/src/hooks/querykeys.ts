@@ -23,6 +23,7 @@ export const isAccountQuery = (queryKey: QueryKey): boolean =>
 
 type AccountBalancesQueryKeyFilters = {
     hideZeroBalance?: boolean
+    keepZeroNative?: boolean
     hideNfts?: boolean
     hideZeroBalanceNfts?: boolean
     excludeAssetTypes?: string[]
