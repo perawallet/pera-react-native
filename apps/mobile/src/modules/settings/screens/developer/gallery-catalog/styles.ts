@@ -27,7 +27,3 @@ export const useVariantPreviewStyles = makeStyles(theme => ({
 export const useLottiePreviewStyles = makeStyles(theme => ({
     media: { width: theme.spacing['4xl'], height: theme.spacing['4xl'] },
 }))
-
-export const useThumbPreviewStyles = makeStyles(theme => ({
-    thumb: { width: theme.spacing['4xl'], height: theme.spacing['4xl'] },
-}))
