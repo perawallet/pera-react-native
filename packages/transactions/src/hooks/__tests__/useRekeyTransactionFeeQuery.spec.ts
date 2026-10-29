@@ -205,6 +205,7 @@ describe('useRekeyTransactionFeeQuery', () => {
         // No fetch should have been queued.
         expect(mockBuildRekeyTx).not.toHaveBeenCalled()
         expect(result.current.feeAlgos).toBeUndefined()
+        expect(result.current.isPending).toBe(false)
     })
 
     it('does not run the query when rekeyToAddress is empty', async () => {
@@ -216,6 +217,7 @@ describe('useRekeyTransactionFeeQuery', () => {
 
         expect(mockBuildRekeyTx).not.toHaveBeenCalled()
         expect(result.current.feeAlgos).toBeUndefined()
+        expect(result.current.isPending).toBe(false)
     })
 
     it('caches per network — a mainnet fee does not satisfy a testnet query', async () => {

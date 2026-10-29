@@ -71,6 +71,7 @@ describe('useOnChainAccountStateQuery', () => {
             { wrapper },
         )
 
+        expect(result.current.isPending).toBe(true)
         await waitFor(() => expect(result.current.isSuccess).toBe(true))
         expect(result.current.data).toEqual(summarized(snapshot))
         expect(fetchAccountState()).toHaveBeenCalledWith(
@@ -111,7 +112,7 @@ describe('useOnChainAccountStateQuery', () => {
         )
 
         expect(result.current.isFetching).toBe(false)
-        expect(result.current.isPending).toBe(true)
+        expect(result.current.isPending).toBe(false)
         expect(fetchAccountState()).not.toHaveBeenCalled()
     })
 

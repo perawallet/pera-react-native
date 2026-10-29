@@ -65,6 +65,8 @@ export const useRekeyTransactionFeeQuery = (
             : isSuggestedMinFeeError
               ? minTxnFee
               : null
+    const hasAddresses = !!sourceAddress && !!rekeyToAddress
+    const isAwaitingMinFee = suggestedMinFee === null
 
     const query = useQuery({
         // Scope is part of the key — feePerByte differs between mainnet
@@ -108,12 +110,13 @@ export const useRekeyTransactionFeeQuery = (
                 ),
             )
         },
-        enabled:
-            !!sourceAddress && !!rekeyToAddress && suggestedMinFee !== null,
+        enabled: hasAddresses && !isAwaitingMinFee,
     })
 
     return {
         feeAlgos: query.data,
-        isPending: query.isPending,
+        // Stays pending while the shared min-fee query loads: the confirm
+        // screens show the fee as loading until it can be built.
+        isPending: hasAddresses && (isAwaitingMinFee || query.isPending),
     }
 }
