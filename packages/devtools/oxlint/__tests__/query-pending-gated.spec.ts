@@ -63,6 +63,13 @@ const strictEquals = (left: Node, right: Node): Node => ({
     left,
     right,
 })
+const ifReturn = (test: Node, consequent: Node): Node => ({
+    type: 'IfStatement',
+    test,
+    consequent,
+    alternate: null,
+})
+const block = (...body: Node[]): Node => ({ type: 'BlockStatement', body })
 const declare = (target: Node, init: Node): Node => ({
     type: 'VariableDeclaration',
     declarations: [{ type: 'VariableDeclarator', id: target, init }],
@@ -221,6 +228,96 @@ describe(RULE, () => {
             expect(report).toHaveBeenCalledTimes(1)
         })
 
+        it.each([
+            [
+                '!address || query.isPending, true while disabled',
+                () => logical('||', not(id('address')), pendingOf()),
+            ],
+            [
+                "fetchStatus === 'idle' && query.isPending, true only while disabled",
+                () =>
+                    logical(
+                        '&&',
+                        strictEquals(
+                            member(id('query'), 'fetchStatus'),
+                            lit('idle'),
+                        ),
+                        pendingOf(),
+                    ),
+            ],
+            [
+                '!address && query.isPending, the gate inverted',
+                () => logical('&&', not(id('address')), pendingOf()),
+            ],
+            [
+                'address ? false : query.isPending, the branches swapped',
+                () => cond(id('address'), lit(false), pendingOf()),
+            ],
+            [
+                '!query.isFetching && query.isPending',
+                () =>
+                    logical(
+                        '&&',
+                        not(member(id('query'), 'isFetching')),
+                        pendingOf(),
+                    ),
+            ],
+        ])('reports %s', (_label, read) => {
+            expect(
+                readOf(not(not(id('address'))), read()),
+            ).toHaveBeenCalledTimes(1)
+        })
+
+        it('reports a read guarded by an && outside the value it feeds', () => {
+            const read = logical(
+                '&&',
+                id('address'),
+                call(id('track'), [pendingOf()]),
+            )
+
+            expect(readOf(not(not(id('address'))), read)).toHaveBeenCalledTimes(
+                1,
+            )
+        })
+
+        it('reports a read before the early return', () => {
+            const target = queryCall('useQuery', [
+                enabled(not(not(id('address')))),
+            ])
+
+            const report = lint(
+                [
+                    declare(id('query'), target),
+                    declare(id('wasPending'), pendingOf()),
+                    ifReturn(not(id('address')), ret(lit(false))),
+                    result(prop('isPending', id('wasPending'))),
+                ],
+                target,
+            )
+
+            expect(report).toHaveBeenCalledTimes(1)
+        })
+
+        it('does not take an early return that has an else branch', () => {
+            const target = queryCall('useQuery', [
+                enabled(not(not(id('address')))),
+            ])
+
+            const report = lint(
+                [
+                    declare(id('query'), target),
+                    {
+                        ...ifReturn(not(id('address')), ret(lit(false))),
+                        alternate: block(),
+                    },
+                    result(prop('isPending', pendingOf())),
+                ],
+                target,
+            )
+
+            expect(report).toHaveBeenCalledTimes(1)
+        })
+
         it('reports a raw read inside a useMemo callback', () => {
             const target = queryCall('useQuery', [enabled(id('isEnabled'))])
             const memo = call(id('useMemo'), [
@@ -278,6 +375,108 @@ describe(RULE, () => {
             ],
         ])('allows %s', (_label, read) => {
             expect(readOf(id('isEnabled'), read())).not.toHaveBeenCalled()
+        })
+
+        it.each([
+            [
+                'the read on the left of the &&',
+                () => logical('&&', pendingOf(), id('address')),
+            ],
+            [
+                '!!address against a Boolean(address) gate',
+                () => logical('&&', not(not(id('address'))), pendingOf()),
+            ],
+            [
+                "fetchStatus !== 'idle'",
+                () =>
+                    logical(
+                        '&&',
+                        {
+                            ...strictEquals(
+                                member(id('query'), 'fetchStatus'),
+                                lit('idle'),
+                            ),
+                            operator: '!==',
+                        },
+                        pendingOf(),
+                    ),
+            ],
+            [
+                'a negated test with the read in the alternate',
+                () => cond(not(id('address')), lit(false), pendingOf()),
+            ],
+        ])('allows %s', (_label, read) => {
+            const gate = call(id('Boolean'), [id('address')])
+
+            expect(readOf(gate, read())).not.toHaveBeenCalled()
+        })
+
+        it.each([
+            ['a return', ret(lit(false))],
+            ['a block ending in a throw', block({ type: 'ThrowStatement' })],
+        ])('allows a read after an early exit by %s', (_label, exit) => {
+            const target = queryCall('useQuery', [
+                enabled(not(not(id('address')))),
+            ])
+
+            const report = lint(
+                [
+                    declare(id('query'), target),
+                    ifReturn(not(id('address')), exit),
+                    result(prop('isPending', pendingOf())),
+                ],
+                target,
+            )
+
+            expect(report).not.toHaveBeenCalled()
+        })
+
+        it('allows early exits that together cover the gate', () => {
+            const gate = logical('&&', id('hasAddress'), not(id('isOff')))
+            const target = queryCall('useQuery', [enabled(gate)])
+
+            const report = lint(
+                [
+                    declare(id('query'), target),
+                    ifReturn(
+                        logical('||', not(id('hasAddress')), id('isOff')),
+                        ret(lit(false)),
+                    ),
+                    result(prop('isPending', pendingOf())),
+                ],
+                target,
+            )
+
+            expect(report).not.toHaveBeenCalled()
+        })
+
+        it('allows a read inside the consequent of an if on the gate', () => {
+            const target = queryCall('useQuery', [enabled(id('isEnabled'))])
+
+            const report = lint(
+                [
+                    declare(id('query'), target),
+                    {
+                        ...ifReturn(
+                            id('isEnabled'),
+                            block(result(prop('isPending', pendingOf()))),
+                        ),
+                    },
+                ],
+                target,
+            )
+
+            expect(report).not.toHaveBeenCalled()
+        })
+
+        it('allows a pending state of its own ORed with the guarded read', () => {
+            const read = logical(
+                '||',
+                logical('&&', id('hasAddresses'), id('isAwaitingMinFee')),
+                logical('&&', id('isEnabled'), pendingOf()),
+            )
+
+            expect(readOf(id('isEnabled'), read)).not.toHaveBeenCalled()
         })
 
         it('allows gate names spread across nested combinators', () => {

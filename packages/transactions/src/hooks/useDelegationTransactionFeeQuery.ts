@@ -67,6 +67,7 @@ export const useDelegationTransactionFeeQuery = (
     const suggestedMinFee = suggestedMinFeeOf()
     const hasAddresses = !!sourceAddress && !!authorityAddress
     const isAwaitingMinFee = suggestedMinFee === null
+    const isEnabled = hasAddresses && !isAwaitingMinFee
 
     const query = useQuery({
         // Scope is part of the key — feePerByte differs between mainnet
@@ -107,13 +108,15 @@ export const useDelegationTransactionFeeQuery = (
                 getChainDescriptor(scope.chainId).nativeAsset.decimals,
             )
         },
-        enabled: hasAddresses && !isAwaitingMinFee,
+        enabled: isEnabled,
     })
 
     return {
         fee: query.data,
         // Stays pending while the shared min-fee query loads: the confirm
         // screens show the fee as loading until it can be built.
-        isPending: hasAddresses && (isAwaitingMinFee || query.isPending),
+        isPending:
+            (hasAddresses && isAwaitingMinFee) ||
+            (isEnabled && query.isPending),
     }
 }

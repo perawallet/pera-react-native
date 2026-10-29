@@ -15,9 +15,6 @@ const GATED_QUERY_HOOKS = ['useQuery', 'useInfiniteQuery']
 // isLoading is deliberately not checked: v5 defines it as isPending &&
 // isFetching, so it is already false while a query is disabled or paused.
 
-/** Reading either one says whether a fetch is actually running. */
-const FETCH_STATE_FLAGS = ['fetchStatus', 'isFetching']
-
 const FUNCTION_TYPES = [
     'FunctionDeclaration',
     'FunctionExpression',
@@ -41,6 +38,7 @@ const TYPE_WRAPPERS = [
     'TSSatisfiesExpression',
 ]
 const SKIPPED_KEYS = ['parent', 'loc', 'range']
+const POSITION_KEYS = [...SKIPPED_KEYS, 'start', 'end', 'raw']
 
 const childNodes = node => {
     const children = []
@@ -91,10 +89,6 @@ const namesIn = (node, names) =>
         }
     })
 
-const mentionsFetchState = node =>
-    (node.type === 'Identifier' && FETCH_STATE_FLAGS.includes(node.name)) ||
-    childNodes(node).some(mentionsFetchState)
-
 const enclosingFunction = node => {
     for (let current = node.parent; current; current = current.parent) {
         if (FUNCTION_TYPES.includes(current.type)) return current
@@ -121,7 +115,167 @@ const gateOf = call => {
     }
     const names = new Set()
     namesIn(value, names)
-    return names.size > 0 ? [...names] : undefined
+    if (names.size === 0) return undefined
+    return { names: [...names], conjuncts: conjuncts(fact(value)) }
+}
+
+const sameNode = (a, b) => {
+    if (a === b) return true
+    if (typeof a !== 'object' || typeof b !== 'object' || !a || !b) {
+        return false
+    }
+    if (a.type === 'Identifier' && b.type === 'Identifier') {
+        return a.name === b.name
+    }
+    if (Array.isArray(a) || Array.isArray(b)) {
+        return (
+            Array.isArray(a) &&
+            Array.isArray(b) &&
+            a.length === b.length &&
+            a.every((entry, index) => sameNode(entry, b[index]))
+        )
+    }
+    const keys = Object.keys(a).filter(key => !POSITION_KEYS.includes(key))
+    const otherKeys = Object.keys(b).filter(key => !POSITION_KEYS.includes(key))
+    return (
+        keys.length === otherKeys.length &&
+        keys.every(key => sameNode(a[key], b[key]))
+    )
+}
+
+const isBooleanCast = node =>
+    node.type === 'CallExpression' &&
+    node.callee.type === 'Identifier' &&
+    node.callee.name === 'Boolean' &&
+    node.arguments.length === 1
+
+// A condition known to hold, as its expression with any `!`, `!!` and
+// Boolean() peeled off and folded into `negated`, so `!!address`,
+// `Boolean(address)` and the fall-through of `if (!address) return` all
+// compare equal.
+const fact = (node, negated = false) => {
+    let current = node
+    let isNegated = negated
+    for (;;) {
+        if (TYPE_WRAPPERS.includes(current.type)) {
+            current = current.expression
+        } else if (
+            current.type === 'UnaryExpression' &&
+            current.operator === '!'
+        ) {
+            isNegated = !isNegated
+            current = current.argument
+        } else if (isBooleanCast(current)) {
+            current = current.arguments[0]
+        } else {
+            return { node: current, negated: isNegated }
+        }
+    }
+}
+
+const negation = ({ node, negated }) => ({ node, negated: !negated })
+
+// Splits `a && b` (or, negated, `a || b` by De Morgan) into the facts that
+// each have to hold.
+const conjuncts = ({ node, negated }) => {
+    const operator = negated ? '||' : '&&'
+    if (node.type === 'LogicalExpression' && node.operator === operator) {
+        return [
+            ...conjuncts(fact(node.left, negated)),
+            ...conjuncts(fact(node.right, negated)),
+        ]
+    }
+    return [{ node, negated }]
+}
+
+const sameFact = (a, b) => a.negated === b.negated && sameNode(a.node, b.node)
+
+const flagName = node => {
+    if (node.type === 'Identifier') return node.name
+    if (node.type === 'MemberExpression' && !node.computed) {
+        return node.property.name
+    }
+    return undefined
+}
+
+// isPaused is deliberately not a fix: a disabled query is not paused, so
+// `!isPaused && query.isPending` still spins forever. Only facts that are
+// false while disabled count; `fetchStatus === 'idle'` is true then.
+const isFetchingFact = ({ node, negated }) => {
+    if (flagName(node) === 'isFetching') return !negated
+    if (node.type !== 'BinaryExpression') return false
+    if (node.operator !== '===' && node.operator !== '!==') return false
+    const sides = [node.left, node.right]
+    const status = sides.find(side => flagName(side) === 'fetchStatus')
+    const literal = sides.find(
+        side => side.type === 'Literal' && typeof side.value === 'string',
+    )
+    if (status === undefined || literal === undefined) return false
+    const isEquality = (node.operator === '===') !== negated
+    return isEquality ? literal.value === 'fetching' : literal.value === 'idle'
+}
+
+const exits = statement =>
+    statement.type === 'ReturnStatement' ||
+    statement.type === 'ThrowStatement' ||
+    (statement.type === 'BlockStatement' &&
+        statement.body.length > 0 &&
+        exits(statement.body.at(-1)))
+
+const earlyExitFacts = (block, statement) => {
+    const facts = []
+    for (const earlier of block.body) {
+        if (earlier === statement) break
+        if (
+            earlier.type === 'IfStatement' &&
+            !earlier.alternate &&
+            exits(earlier.consequent)
+        ) {
+            facts.push(...conjuncts(negation(fact(earlier.test))))
+        }
+    }
+    return facts
+}
+
+const branchFacts = (parent, child) => {
+    if (parent.consequent === child) return conjuncts(fact(parent.test))
+    if (parent.alternate === child) {
+        return conjuncts(negation(fact(parent.test)))
+    }
+    return []
+}
+
+// The facts that hold wherever the read's value reaches the hook's result.
+// An `&&` operand counts only while the read's value flows straight into it;
+// `||` adds nothing, because `!address || query.isPending` is true while
+// disabled even though the read itself is only reached with an address.
+const guardFacts = (read, fn) => {
+    const facts = []
+    let isValueChain = true
+    let child = read
+    for (
+        let parent = read.parent;
+        parent && parent !== fn;
+        child = parent, parent = parent.parent
+    ) {
+        isValueChain = isValueChain && TRANSPARENT_TYPES.includes(parent.type)
+        if (
+            isValueChain &&
+            parent.type === 'LogicalExpression' &&
+            parent.operator === '&&'
+        ) {
+            const other = parent.left === child ? parent.right : parent.left
+            facts.push(...conjuncts(fact(other)))
+        } else if (
+            parent.type === 'ConditionalExpression' ||
+            parent.type === 'IfStatement'
+        ) {
+            facts.push(...branchFacts(parent, child))
+        } else if (parent.type === 'BlockStatement') {
+            facts.push(...earlyExitFacts(parent, child))
+        }
+    }
+    return facts
 }
 
 const pendingLocals = pattern => {
@@ -161,24 +315,14 @@ const isDependencyEntry = read => {
     )
 }
 
-// isPaused is deliberately not a fix: a disabled query is not paused, so
-// `!isPaused && query.isPending` still spins forever.
-const isCombined = (read, gate) => {
-    const names = new Set()
-    let child = read
-    for (
-        let parent = read.parent;
-        parent && TRANSPARENT_TYPES.includes(parent.type);
-        parent = parent.parent
-    ) {
-        for (const sibling of childNodes(parent)) {
-            if (sibling === child) continue
-            if (mentionsFetchState(sibling)) return true
-            namesIn(sibling, names)
-        }
-        child = parent
-    }
-    return gate.every(name => names.has(name))
+const isGuarded = (read, fn, gate) => {
+    const facts = guardFacts(read, fn)
+    return (
+        facts.some(isFetchingFact) ||
+        gate.conjuncts.every(required =>
+            facts.some(known => sameFact(known, required)),
+        )
+    )
 }
 
 export const queryPendingGated = {
@@ -190,7 +334,7 @@ export const queryPendingGated = {
         },
         messages: {
             ungated:
-                '{{hook}} is gated by a non-literal enabled, and a disabled query stays isPending forever: combine this read with every name in that condition ({{gate}}), e.g. isEnabled ? query.isPending : false, or with fetchStatus / isFetching.',
+                '{{hook}} is gated by a non-literal enabled, and a disabled query stays isPending forever: make the read false whenever that condition (on {{gate}}) is false, by ANDing it with the condition itself (isEnabled && query.isPending), returning early when it fails, or ANDing it with isFetching.',
         },
         schema: [],
     },
@@ -257,13 +401,13 @@ export const queryPendingGated = {
                 })
 
                 for (const read of reads) {
-                    if (isDependencyEntry(read) || isCombined(read, gate)) {
+                    if (isDependencyEntry(read) || isGuarded(read, fn, gate)) {
                         continue
                     }
                     context.report({
                         node: read,
                         messageId: 'ungated',
-                        data: { hook, gate: gate.join(', ') },
+                        data: { hook, gate: gate.names.join(', ') },
                     })
                 }
             },
