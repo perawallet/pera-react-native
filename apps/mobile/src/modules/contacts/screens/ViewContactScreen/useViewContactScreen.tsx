@@ -171,6 +171,7 @@ export const useViewContactScreen = (): UseViewContactScreenResult => {
                       })
                     : chainIds[0]
             const url = chainId ? links.get(chainId) : undefined
+            // oxlint-disable-next-line pera/no-unvalidated-open-url -- chain descriptor explorer links
             if (url) pushWebView({ url })
         },
         [explorerLinks, requestBottomSheet, pushWebView],

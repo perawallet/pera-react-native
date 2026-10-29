@@ -53,6 +53,7 @@ export const BidaliWebViewScreen = () => {
     return (
         <PWView style={styles.container}>
             <PWWebView
+                // oxlint-disable-next-line pera/no-unvalidated-open-url -- buildBidaliUrl over the services config base URL
                 url={url}
                 enablePeraConnect={false}
                 showControls

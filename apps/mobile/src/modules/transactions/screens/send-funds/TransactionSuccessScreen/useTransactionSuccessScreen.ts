@@ -84,6 +84,7 @@ export const useTransactionSuccessScreen =
 
         const viewInExplorer = useCallback(() => {
             if (!explorerUrl) return
+            // oxlint-disable-next-line pera/no-unvalidated-open-url -- chain descriptor explorer URL
             pushWebView({ url: explorerUrl, id: generateUniqueId() })
         }, [explorerUrl, pushWebView])
 

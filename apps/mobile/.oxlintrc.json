@@ -54,7 +54,6 @@
     "no-var": "error",
     "import/no-duplicates": ["error", { "prefer-inline": true }],
     "unused-imports/no-unused-imports": "error",
-    "pera/no-unvalidated-open-url": "error",
     "max-lines": [
       "warn",
       {
@@ -274,6 +273,11 @@
       "files": ["src/**"],
       "excludeFiles": ["src/**/__tests__/**", "src/**/__mocks__/**", "src/**/test-utils/**", "src/**/__integration__/**", "src/**/*.spec.{ts,tsx}", "src/**/*.test.{ts,tsx}"],
       "rules": { "pera/hook-result-type": "error" }
+    },
+    {
+      "files": ["src/**"],
+      "excludeFiles": ["src/**/__tests__/**", "src/**/__mocks__/**", "src/**/test-utils/**", "src/**/__integration__/**", "src/**/*.spec.{ts,tsx}", "src/**/*.test.{ts,tsx}"],
+      "rules": { "pera/no-unvalidated-open-url": "error" }
     },
     {
       "files": ["src/**/__tests__/**", "src/**/*.spec.{ts,tsx}", "src/**/__integration__/**", "src/**/test-utils/**", "vitest*.ts"],

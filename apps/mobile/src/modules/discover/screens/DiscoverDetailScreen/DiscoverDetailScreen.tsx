@@ -32,6 +32,7 @@ export const DiscoverDetailScreen = () => {
         >
             {isReady ? (
                 <PWWebView
+                    // oxlint-disable-next-line pera/no-unvalidated-open-url -- config.discoverBaseUrl plus an isSafeRelativePath path
                     url={url}
                     enablePeraConnect={true}
                     containerStyle={styles.webview}

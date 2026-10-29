@@ -70,6 +70,7 @@ export const useSettingsScreen = () => {
             return
         }
         const id = generateUniqueId()
+        // oxlint-disable-next-line pera/no-unvalidated-open-url -- callers pass network config URLs
         pushWebView({
             url,
             id,

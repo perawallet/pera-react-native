@@ -135,6 +135,29 @@ describe('pera/no-hardcoded-ui-strings', () => {
     })
 })
 
+describe('pera/no-unvalidated-open-url', () => {
+    it('blocks in mobile production source through its own override, not the top-level rules', () => {
+        const mobile = readOxlintConfig(
+            'apps/mobile/.oxlintrc.json',
+        ) as unknown as { rules: Record<string, string> }
+        const overrides = overridesWith(
+            mobile as unknown as OxlintConfig,
+            'pera/no-unvalidated-open-url',
+        )
+
+        expect(overrides).toHaveLength(1)
+        expect(overrides[0].files).toEqual(['src/**'])
+        expect(overrides[0].rules['pera/no-unvalidated-open-url']).toBe('error')
+        expect(overrides[0].excludeFiles).toEqual(
+            expect.arrayContaining([
+                'src/**/__tests__/**',
+                'src/**/*.spec.{ts,tsx}',
+            ]),
+        )
+        expect(mobile.rules['pera/no-unvalidated-open-url']).toBeUndefined()
+    })
+})
+
 describe('no-console', () => {
     it('blocks console calls in package, extension and browser-app source, tests aside', () => {
         const root = readOxlintConfig('.oxlintrc.json')
