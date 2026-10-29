@@ -106,13 +106,13 @@ type DiscoverDelegatedAccountsParams = {
 }
 
 // A rescan passes every address on the seed, and each scan may follow several
-// indexer pages, so they run a few at a time rather than all at once.
+// pages, so they run a few at a time rather than all at once.
 const DELEGATION_SCAN_CONCURRENCY = 4
 
 /**
  * Address-driven: every caller passes the authorities to scan. Rejects with
  * the first failure once every scan settles, so a lost answer never reads as
- * "nothing rekeyed".
+ * "nothing delegated".
  */
 export async function discoverDelegatedAccounts({
     accountAddresses,

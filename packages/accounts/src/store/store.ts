@@ -24,6 +24,7 @@ import {
     type LaunchAccountMode,
     type RecordedAuthorities,
     type WalletAccount,
+    type WalletDiscoveryCoverage,
 } from '../models'
 import {
     gateWritesOnHydration,
@@ -90,6 +91,7 @@ import {
 import {
     discoverWalletActivity,
     hdPathKey,
+    type HdProbeOutcome,
     type ProbedHdIndex,
 } from '../hd-walk'
 import { isKeyClaimed, isKeyClaimedByOthers, trackWalk } from '../key-claims'
@@ -544,6 +546,17 @@ const holdsAddressOn = (
         const held = chainAccountOf(account, chainId)?.address
         return held !== undefined && isSameAddress(chainId, held, address)
     })
+
+const coverageOf = (
+    outcomes: Record<HdProbeOutcome, number>,
+    isWalkIncomplete: boolean,
+): WalletDiscoveryCoverage => {
+    if (outcomes.answered + outcomes.partial === 0) return 'unanswered'
+    if (isWalkIncomplete || outcomes.partial + outcomes.failed > 0) {
+        return 'partial'
+    }
+    return 'complete'
+}
 
 const scopeOn = (chainId: ChainId): ChainScope => ({
     chainId,
@@ -1206,7 +1219,11 @@ export const useAccountsStore: UseBoundStore<
                                 keyPairIds.filter(id => !isKeyClaimed(id)),
                             )
                         let probed: ProbedHdIndex[] = []
-                        const outcomes = { answered: 0, partial: 0, failed: 0 }
+                        const outcomes: Record<HdProbeOutcome, number> = {
+                            answered: 0,
+                            partial: 0,
+                            failed: 0,
+                        }
                         let isWalkIncomplete = false
                         // Only the probes read the root key; the adds derive
                         // through the keystore, so it is zeroed before them.
@@ -1319,18 +1336,11 @@ export const useAccountsStore: UseBoundStore<
                                 ),
                             )
                         }
-                        const hasAnswer =
-                            outcomes.answered + outcomes.partial > 0
                         return {
                             accounts: get().accounts.filter(account =>
                                 changedIds.has(account.id),
                             ),
-                            coverage: !hasAnswer
-                                ? 'unanswered'
-                                : isWalkIncomplete ||
-                                    outcomes.partial + outcomes.failed > 0
-                                  ? 'partial'
-                                  : 'complete',
+                            coverage: coverageOf(outcomes, isWalkIncomplete),
                         }
                     }),
                 ),
