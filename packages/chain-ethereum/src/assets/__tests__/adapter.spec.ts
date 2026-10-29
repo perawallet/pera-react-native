@@ -442,6 +442,32 @@ describe('syncAssets', () => {
         expect(node.map(a => a.assetId)).toEqual([DAI])
     })
 
+    it('stores nothing for a token whose backend row it cannot read', async () => {
+        server.use(
+            ...rpc({ [DAI]: usdcOnChain }),
+            ...peraEvmAssetHandlers({
+                baseUrl: TEST_PERA_URL,
+                assets: {
+                    [USDC_CAIP19]: usdcFromPera,
+                    [DAI_CAIP19]: {
+                        ...unknownAssetItem(DAI_CAIP19),
+                        usd_value: '1.5',
+                    },
+                },
+            }),
+        )
+        const { node, full } = memoryPersistence()
+        const ops = createEthereumAssetsAdapter(
+            testChainContext({ services: ['assets'] }),
+            ETHEREUM,
+        )
+
+        await ops.syncAssets([USDC, DAI].map(ref), SCOPE)
+
+        expect(full.map(a => a.assetId)).toEqual([USDC])
+        expect(node).toEqual([])
+    })
+
     it('persists a quarantined token as suspicious with its on-chain intrinsics', async () => {
         server.use(
             ...rpc({ [DAI]: daiOnChain }),
@@ -587,6 +613,31 @@ describe('prices', () => {
                 assets: {
                     [USDC_CAIP19]: priced('1.000100000000000000000000'),
                     [DAI_CAIP19]: { ...priced(null), asset_id: DAI_CAIP19 },
+                },
+            }),
+        )
+        const adapter = createEthereumAssetsAdapter(
+            testChainContext({ services: pricedServices }),
+            ETHEREUM,
+        )
+
+        const prices = await adapter.getPrices([ref(USDC), ref(DAI)], SCOPE)
+
+        expect(
+            prices.map(p => [p.assetRef.assetId, p.usdPrice.toFixed()]),
+        ).toEqual([[USDC, '1.0001']])
+    })
+
+    it('prices the readable rows when another row in the request is unreadable', async () => {
+        server.use(
+            ...peraEvmAssetHandlers({
+                baseUrl: TEST_PERA_URL,
+                assets: {
+                    [USDC_CAIP19]: priced('1.000100000000000000000000'),
+                    [DAI_CAIP19]: {
+                        ...priced('1.0'),
+                        asset_id: DAI_CAIP19,
+                    },
                 },
             }),
         )
