@@ -19,29 +19,60 @@ import { LOCKOUT_STORAGE_KEY } from '../storage-keys'
 const MAX_ATTEMPTS_BEFORE_LOCKOUT = 5
 const INITIAL_LOCKOUT_SECONDS = 30
 
+// The web platform has no monotonic clock that survives a change of JS
+// context, and the wall clock can be moved, so no deadline is ever compared
+// across contexts. Each context (popup, expanded tab, approval window) serves
+// the full window on its own `performance.now()`, and the first one to finish
+// clears the lockout for all of them, after which nothing is left to exploit.
 type LockoutRecord = {
     failedAttempts: number
-    lockoutEndTime: number | null
     /**
-     * The same deadline on `performance.now()`'s clock, valid only in the
-     * context whose `performance.timeOrigin` wrote it. Moving the system clock
-     * forward shortens the wall-clock deadline but not this one.
+     * `null` when not locked out. Otherwise the deadline each context has
+     * started serving, keyed by its `performance.timeOrigin` and measured on
+     * that context's `performance.now()`; `{}` means no context is serving yet.
      */
-    monotonicLockout?: { timeOrigin: number; endTime: number }
+    lockoutDeadlines: Record<string, number> | null
 }
+
+// `ChromeMonotonicClockService`'s reading, read locally because this package
+// sits below platform-chrome.
+const readMonotonicClock = (): { bootId: string; elapsedMs: number } => ({
+    bootId: String(performance.timeOrigin),
+    elapsedMs: performance.now(),
+})
+
+const lockoutMsForAttempts = (failedAttempts: number): number => {
+    const block = Math.floor(failedAttempts / MAX_ATTEMPTS_BEFORE_LOCKOUT)
+    if (block === 0) return 0
+    return INITIAL_LOCKOUT_SECONDS * 2 ** (block - 1) * 1000
+}
+
+const isDeadlineMap = (value: unknown): value is Record<string, number> =>
+    typeof value === 'object' &&
+    value !== null &&
+    !Array.isArray(value) &&
+    Object.values(value).every(
+        deadline => typeof deadline === 'number' && Number.isFinite(deadline),
+    )
 
 const read = async (): Promise<LockoutRecord> => {
     const stored = await chrome.storage.local.get(LOCKOUT_STORAGE_KEY)
     const record = stored[LOCKOUT_STORAGE_KEY] as
-        | Partial<LockoutRecord>
+        | (Partial<LockoutRecord> & { lockoutEndTime?: unknown })
         | undefined
-    // Defensive against a partial/malformed stored record (e.g. a future
-    // schema change) — fail open on the missing field rather than throw.
-    return {
-        failedAttempts: record?.failedAttempts ?? 0,
-        lockoutEndTime: record?.lockoutEndTime ?? null,
-        monotonicLockout: record?.monotonicLockout,
+    const failedAttempts = record?.failedAttempts ?? 0
+    const lockoutDeadlines: unknown = record?.lockoutDeadlines
+    if (lockoutDeadlines === null || isDeadlineMap(lockoutDeadlines)) {
+        return { failedAttempts, lockoutDeadlines }
     }
+    // A record from before per-context deadlines, or a malformed one. When the
+    // last failure started a lockout, nothing shows it was served, so it's
+    // served again in full rather than trusted.
+    const startedLockout =
+        typeof record?.lockoutEndTime === 'number' &&
+        failedAttempts > 0 &&
+        failedAttempts % MAX_ATTEMPTS_BEFORE_LOCKOUT === 0
+    return { failedAttempts, lockoutDeadlines: startedLockout ? {} : null }
 }
 
 const write = async (record: LockoutRecord): Promise<void> => {
@@ -74,31 +105,52 @@ const recordFailure = async (): Promise<void> => {
         await write({ ...record, failedAttempts })
         return
     }
-    const block = failedAttempts / MAX_ATTEMPTS_BEFORE_LOCKOUT
-    const lockoutMs = INITIAL_LOCKOUT_SECONDS * 2 ** (block - 1) * 1000
+    const { bootId, elapsedMs } = readMonotonicClock()
     await write({
         failedAttempts,
-        lockoutEndTime: Date.now() + lockoutMs,
-        monotonicLockout: {
-            timeOrigin: performance.timeOrigin,
-            endTime: performance.now() + lockoutMs,
+        lockoutDeadlines: {
+            [bootId]: elapsedMs + lockoutMsForAttempts(failedAttempts),
         },
     })
 }
 
 const toSeconds = (ms: number): number => Math.max(0, Math.ceil(ms / 1000))
 
-/** The longer of the wall-clock and (same-context) monotonic deadlines. */
-export const getLockoutRemainingSeconds = async (): Promise<number> => {
-    const { lockoutEndTime, monotonicLockout } = await read()
-    if (lockoutEndTime === null) return 0
-    const wallRemaining = toSeconds(lockoutEndTime - Date.now())
-    const monotonicRemaining =
-        monotonicLockout?.timeOrigin === performance.timeOrigin
-            ? toSeconds(monotonicLockout.endTime - performance.now())
-            : 0
-    return Math.max(wallRemaining, monotonicRemaining)
+// Caller holds the lock. Starts this context's deadline the first time it
+// sees a lockout, and clears the lockout for every context once its own passes.
+const resolveRemainingMs = async (): Promise<number> => {
+    const record = await read()
+    const { lockoutDeadlines } = record
+    if (lockoutDeadlines === null) return 0
+    const { bootId, elapsedMs } = readMonotonicClock()
+    const deadline = lockoutDeadlines[bootId]
+    if (deadline === undefined) {
+        const windowMs = lockoutMsForAttempts(record.failedAttempts)
+        if (windowMs === 0) {
+            await write({ ...record, lockoutDeadlines: null })
+            return 0
+        }
+        await write({
+            ...record,
+            lockoutDeadlines: {
+                ...lockoutDeadlines,
+                [bootId]: elapsedMs + windowMs,
+            },
+        })
+        return windowMs
+    }
+    const remainingMs = deadline - elapsedMs
+    if (remainingMs > 0) return remainingMs
+    await write({ ...record, lockoutDeadlines: null })
+    return 0
 }
+
+/**
+ * Seconds left on the lockout, 0 when none. Not a pure read: it starts this
+ * context's deadline on first sight of a lockout and clears one it has served.
+ */
+export const getLockoutRemainingSeconds = async (): Promise<number> =>
+    withLock(async () => toSeconds(await resolveRemainingMs()))
 
 export const clearFailedAttempts = async (): Promise<void> => {
     await chrome.storage.local.remove(LOCKOUT_STORAGE_KEY)
@@ -114,7 +166,7 @@ export const runThrottledAttempt = async <T>(
     isWrongPassword: (error: unknown) => boolean,
 ): Promise<T> =>
     withLock(async () => {
-        const remainingSeconds = await getLockoutRemainingSeconds()
+        const remainingSeconds = toSeconds(await resolveRemainingMs())
         if (remainingSeconds > 0)
             throw new VaultLockedOutError(remainingSeconds)
         let result: T
