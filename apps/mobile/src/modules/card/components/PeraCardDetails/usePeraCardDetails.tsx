@@ -22,7 +22,7 @@ import {
     type CardEligibilityReason,
     type CardIssuanceState,
 } from '@perawallet/wallet-core-card'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { trackEvent, CardEvent } from '@analytics'
 import { useLanguage } from '@hooks/useLanguage'
@@ -331,7 +331,17 @@ export const usePeraCardDetails = (): UsePeraCardDetailsResult => {
         try {
             const session = await setPin.mutateAsync()
             const hostedPageUrl = toValidatedBrowserUrl(session.hostedPageUrl)
-            if (!hostedPageUrl) return
+            if (!hostedPageUrl) {
+                // The URL is never logged: the hosted page carries a session token.
+                logger.warn('[card] refused the set-PIN hosted page URL', {
+                    flow: 'set-pin',
+                })
+                errorToast(
+                    t('peraCard.account.error_title'),
+                    t('peraCard.account.error_body'),
+                )
+                return
+            }
             if (!routeCapabilities.inAppWebView) {
                 void Linking.openURL(hostedPageUrl)
                 return
@@ -340,7 +350,7 @@ export const usePeraCardDetails = (): UsePeraCardDetailsResult => {
         } catch (error) {
             await showError(error)
         }
-    }, [setPin, requirePinVerification, pushWebView, showError])
+    }, [setPin, requirePinVerification, pushWebView, showError, errorToast, t])
     const onSetPin = useCallback(() => {
         trackEvent(CardEvent.DetailsSetPin)
         void submitSetPin()

@@ -12,16 +12,9 @@
 
 import { useStyles } from './styles'
 import type { PeraAsset } from '@perawallet/wallet-core-assets'
-import {
-    type IconName,
-    PWIcon,
-    PWText,
-    PWTouchableOpacity,
-    PWView,
-} from '@components/core'
+import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import { toValidatedBrowserUrl, useWebView } from '@modules/webview'
-import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
+import { useAssetSocialMedia } from './useAssetSocialMedia'
 
 export type AssetSocialMediaProps = {
     assetDetails: PeraAsset
@@ -30,39 +23,10 @@ export type AssetSocialMediaProps = {
 export const AssetSocialMedia = ({ assetDetails }: AssetSocialMediaProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const { pushWebView } = useWebView()
-
-    const socialLinks = [
-        {
-            label: 'Discord',
-            url: assetDetails.peraMetadata?.discordUrl,
-            icon: 'socials/discord' as IconName,
-        },
-        {
-            label: 'Telegram',
-            url: assetDetails.peraMetadata?.telegramUrl,
-            icon: 'socials/telegram' as IconName,
-        },
-        {
-            label: 'Twitter',
-            url: assetDetails.peraMetadata?.twitterUsername
-                ? `https://twitter.com/${assetDetails.peraMetadata?.twitterUsername}`
-                : null,
-            icon: 'socials/twitter' as IconName,
-        },
-    ].filter(link => link.url)
+    const { socialLinks, openLink } = useAssetSocialMedia(assetDetails)
 
     if (socialLinks.length === 0) {
         return null
-    }
-
-    const openLink = (url: string) => {
-        const validatedUrl = toValidatedBrowserUrl(url)
-        if (!validatedUrl) return
-        pushWebView({
-            id: generateOrderedUniqueId(),
-            url: validatedUrl,
-        })
     }
 
     return (
@@ -70,11 +34,11 @@ export const AssetSocialMedia = ({ assetDetails }: AssetSocialMediaProps) => {
             <PWText style={styles.sectionTitle}>
                 {t('asset_details.markets.social_media')}
             </PWText>
-            {socialLinks.map((link, index) => (
+            {socialLinks.map(link => (
                 <PWTouchableOpacity
-                    key={index}
+                    key={link.label}
                     style={styles.row}
-                    onPress={() => openLink(link.url!)}
+                    onPress={() => openLink(link.url)}
                 >
                     <PWView style={styles.labelContainer}>
                         <PWIcon

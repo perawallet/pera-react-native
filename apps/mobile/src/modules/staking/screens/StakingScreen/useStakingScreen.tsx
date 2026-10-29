@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback, useEffect } from 'react'
+import { useCallback, useEffect, useMemo } from 'react'
 import { trackEvent, StakingEvent, AnalyticsMetadataKey } from '@analytics'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
@@ -47,14 +47,17 @@ export const useStakingScreen = (): UseStakingScreenResult => {
     // language: the staking package can't read i18next itself (no
     // react-i18next dependency there), so the reactive value comes from here.
     const { currentLanguage } = useLanguage()
-    const {
-        data: projects,
-        isLoading,
-        isError,
-        error,
-        isPaused,
-        refetch,
-    } = useStakingProjectsQuery(scope, currentLanguage)
+    const { data, isLoading, isError, error, isPaused, refetch } =
+        useStakingProjectsQuery(scope, currentLanguage)
+    // A project whose link the webview would refuse is dropped, so no card is
+    // a dead tap.
+    const projects = useMemo(
+        () =>
+            data.filter(
+                project => toValidatedBrowserUrl(project.link) !== null,
+            ),
+        [data],
+    )
     const { hasInternet } = useNetworkStatus()
     const { isDisclaimerAccepted, acceptDisclaimer } = useStakingDisclaimer()
     const { request: requestBottomSheet } = useBottomSheet()

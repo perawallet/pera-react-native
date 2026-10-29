@@ -199,6 +199,7 @@ vi.mock('../../../hooks', async () => ({
 }))
 
 import { FundingType } from '@perawallet/wallet-core-card'
+import { logger } from '@perawallet/wallet-core-shared'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { CardEvent } from '@analytics'
 import { passThroughAuthorizeDelegation } from '@test-utils/cardDelegation'
@@ -612,12 +613,13 @@ describe('usePeraCardDetails', () => {
     })
 
     it.each([true, false])(
-        'opens nothing for an http hosted PIN page (inAppWebView: %s)',
+        'opens nothing, warns and toasts for an http hosted PIN page (inAppWebView: %s)',
         async inAppWebView => {
             Object.assign(mockCapabilities, { inAppWebView })
+            const warn = vi.spyOn(logger, 'warn').mockImplementation(() => {})
             mocks.setPinMutateAsync.mockResolvedValue({
                 token: 'tok',
-                hostedPageUrl: 'http://hosted/pin',
+                hostedPageUrl: 'http://hosted/pin?token=secret',
             })
 
             const { result } = renderHook(() => usePeraCardDetails())
@@ -627,7 +629,13 @@ describe('usePeraCardDetails', () => {
 
             expect(mocks.pushWebView).not.toHaveBeenCalled()
             expect(mocks.openURL).not.toHaveBeenCalled()
-            expect(mocks.errorToast).not.toHaveBeenCalled()
+            expect(mocks.errorToast).toHaveBeenCalledTimes(1)
+            expect(warn).toHaveBeenCalledWith(
+                '[card] refused the set-PIN hosted page URL',
+                { flow: 'set-pin' },
+            )
+            expect(JSON.stringify(warn.mock.calls)).not.toContain('secret')
+            warn.mockRestore()
         },
     )
 

@@ -105,6 +105,21 @@ describe('useStakingScreen', () => {
         const project = (link: string) =>
             ({ title: 'Project', link }) as StakingProject
 
+        it('lists only projects whose link the webview would open', () => {
+            const https = project('https://project.example/stake')
+            mockStakingProjectsQuery({
+                data: [
+                    project('http://project.example/stake'),
+                    project('ipfs://bafybeigdyrzt'),
+                    https,
+                ],
+            })
+
+            const { result } = renderHook(() => useStakingScreen())
+
+            expect(result.current.projects).toEqual([https])
+        })
+
         it('pushes an https link into the webview', async () => {
             mockStakingProjectsQuery({})
             const { result } = renderHook(() => useStakingScreen())
