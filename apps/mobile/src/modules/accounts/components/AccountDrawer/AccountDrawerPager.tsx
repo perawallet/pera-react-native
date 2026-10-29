@@ -13,10 +13,7 @@
 import type { ReactNode } from 'react'
 import { useWindowDimensions } from 'react-native'
 import type { SharedValue } from 'react-native-reanimated'
-import { PWPager } from '@components/core'
-// From the constants module rather than the barrel: it's a plain number, and
-// the barrel carries every core component with it.
-import { PWDRAWER_WIDTH_RATIO } from '@components/core/PWDrawer/constants'
+import { PWPager, PWDRAWER_WIDTH_RATIO } from '@components/core'
 
 import { useAccountDrawerControls } from './AccountDrawerContext'
 

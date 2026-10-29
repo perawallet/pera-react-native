@@ -59,7 +59,7 @@ import { toDiscoverTokenDetailPath } from '@modules/discover'
 import type {
     AssetAboutDisplay,
     AssetDetailsDisplay,
-} from '../../../types/asset-details-display'
+} from '@modules/assets/types/asset-details-display'
 
 export type AssetMarketsProps = {
     asset: PeraAsset

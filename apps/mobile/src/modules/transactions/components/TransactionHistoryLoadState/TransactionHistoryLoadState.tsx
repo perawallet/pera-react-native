@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import type { PWViewProps } from '@components/core/PWView'
+import type { PWViewProps } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { OfflineTolerantView } from '@components/OfflineTolerantView'
 import { useLanguage } from '@hooks/useLanguage'
