@@ -13,6 +13,7 @@
 import { makeStyles } from '@rneui/themed'
 import { CHART_HEIGHT } from '@constants/ui'
 
+// lanekeep-ignore-next-line pera/no-numeric-sizes reason: account overview header artwork height
 const HEADER_HEIGHT = 412
 const SKELETON_BORDER_RADIUS = 8
 

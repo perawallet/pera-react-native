@@ -12,6 +12,7 @@
 
 import { makeStyles } from '@rneui/themed'
 
+// lanekeep-ignore-next-line pera/no-numeric-sizes reason: source badge icon size
 const ICON_SIZE = 20
 
 export const useStyles = makeStyles(theme => ({
@@ -33,12 +34,12 @@ export const useStyles = makeStyles(theme => ({
     icon: {
         width: ICON_SIZE,
         height: ICON_SIZE,
-        borderRadius: ICON_SIZE / 2,
+        borderRadius: theme.borderRadius.full,
     },
     iconFallback: {
         width: ICON_SIZE,
         height: ICON_SIZE,
-        borderRadius: ICON_SIZE / 2,
+        borderRadius: theme.borderRadius.full,
         justifyContent: 'center',
         alignItems: 'center',
         backgroundColor: theme.colors.layerGrayLighter,

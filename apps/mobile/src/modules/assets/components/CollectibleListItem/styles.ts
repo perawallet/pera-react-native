@@ -12,8 +12,6 @@
 
 import { makeStyles } from '@rneui/themed'
 
-const THUMBNAIL_SIZE = 48
-
 export const useStyles = makeStyles(theme => ({
     // Dense NFT rows: keep the compact vertical padding + gap rather than the
     // layout's default lg spacing.
@@ -22,18 +20,18 @@ export const useStyles = makeStyles(theme => ({
         paddingVertical: theme.spacing.sm,
     },
     thumbnail: {
-        width: THUMBNAIL_SIZE,
-        height: THUMBNAIL_SIZE,
+        width: theme.spacing['3xl'],
+        height: theme.spacing['3xl'],
         borderRadius: theme.borderRadius.sm,
         overflow: 'hidden',
     },
     image: {
-        width: THUMBNAIL_SIZE,
-        height: THUMBNAIL_SIZE,
+        width: theme.spacing['3xl'],
+        height: theme.spacing['3xl'],
     },
     placeholderContainer: {
-        width: THUMBNAIL_SIZE,
-        height: THUMBNAIL_SIZE,
+        width: theme.spacing['3xl'],
+        height: theme.spacing['3xl'],
         alignItems: 'center',
         justifyContent: 'center',
         backgroundColor: theme.colors.layerGrayLighter,

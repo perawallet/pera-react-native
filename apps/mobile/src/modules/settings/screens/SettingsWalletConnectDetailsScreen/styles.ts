@@ -13,26 +13,21 @@
 import { makeStyles } from '@rneui/themed'
 import { getTypography } from '@theme/typography'
 
-const NETWORK_TEXT_FONT_SIZE = 10
-
 export const useStyles = makeStyles(theme => {
     const mainnetText = {
         ...getTypography(theme, 'caption'),
         color: theme.colors.positive,
         textTransform: 'uppercase' as const,
-        fontSize: NETWORK_TEXT_FONT_SIZE,
     }
     const testnetText = {
         ...getTypography(theme, 'caption'),
         color: theme.colors.testnetBg,
         textTransform: 'uppercase' as const,
-        fontSize: NETWORK_TEXT_FONT_SIZE,
     }
     const otherNetworkText = {
         ...getTypography(theme, 'caption'),
         color: theme.colors.textGray,
         textTransform: 'uppercase' as const,
-        fontSize: NETWORK_TEXT_FONT_SIZE,
     }
     return {
         container: {
