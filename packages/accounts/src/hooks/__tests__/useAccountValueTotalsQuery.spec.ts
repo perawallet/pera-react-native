@@ -163,6 +163,8 @@ describe('useAccountValueTotalsQuery', () => {
 
         expect(result.current.accountValueTotals.size).toBe(0)
         expect(result.current.isPending).toBe(false)
+        expect(result.current.nativeTotalSources).toEqual([])
+        expect(result.current.fiatTotalSources).toEqual([])
     })
 
     it('keeps the result referentially stable across renders with a fresh but equal accounts array', async () => {
@@ -383,6 +385,31 @@ describe('useAccountValueTotalsQuery', () => {
                     ?.fiatValue,
             ).toEqual(new Decimal(0))
             expect(result.current.portfolioFiatValue).toEqual(new Decimal(3040))
+        })
+
+        it('lists the addresses each total sums: the scope chain for native, every chain for fiat', async () => {
+            mockGetAccountPortfolioTotals.mockResolvedValue(totals(1, 0, 3000))
+
+            const { result } = renderHook(
+                () =>
+                    useAccountValueTotalsQuery(
+                        [makeAccount('A1'), ethereumAccount],
+                        SCOPE,
+                    ),
+                { wrapper: createWrapper() },
+            )
+            await waitFor(() => expect(result.current.isPending).toBe(false))
+
+            expect(result.current.nativeTotalSources).toEqual([
+                { address: 'A1', scope: SCOPE },
+            ])
+            expect(result.current.fiatTotalSources).toEqual([
+                { address: 'A1', scope: SCOPE },
+                {
+                    address: '0xE',
+                    scope: { chainId: 'ethereum', networkId: 'mainnet' },
+                },
+            ])
         })
 
         const renderWithEthereum = async (
@@ -723,6 +750,34 @@ describe('useAccountValueTotalsQuery', () => {
                 expect(result.current.portfolioFiatValue).toEqual(
                     new Decimal(40),
                 )
+            } finally {
+                useNetworkStore.getState().setMode('live')
+            }
+        })
+
+        it('leaves a test-tier chain out of the fiat sources but keeps it in the native ones', async () => {
+            registerBothChains()
+            useNetworkStore.getState().setMode('developer')
+
+            try {
+                const { result } = renderHook(
+                    () =>
+                        useAccountValueTotalsQuery(
+                            [makeAccount('A1'), makeSecondChainAccount('E1')],
+                            SCOPE,
+                        ),
+                    { wrapper: createWrapper() },
+                )
+                await waitFor(() =>
+                    expect(result.current.isPending).toBe(false),
+                )
+
+                expect(result.current.fiatTotalSources).toEqual([
+                    { address: 'A1', scope: SCOPE },
+                ])
+                expect(result.current.nativeTotalSources).toEqual([
+                    { address: 'A1', scope: SCOPE },
+                ])
             } finally {
                 useNetworkStore.getState().setMode('live')
             }
