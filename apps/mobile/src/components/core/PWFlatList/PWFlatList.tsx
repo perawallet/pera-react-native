@@ -25,10 +25,11 @@ import {
 import { useBottomSheetScrollableCreator } from '@gorhom/bottom-sheet'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
-import { PWView } from '../PWView'
 import { PWInBottomSheetContext } from '../PWBottomSheet/inSheetContext'
 import { useStyles } from './styles'
 import { useSyncPauseOnInteraction } from './useSyncPauseOnInteraction'
+import { ListSeparator } from './ListSeparator'
+import { CardSeparator } from './CardSeparator'
 
 export type PWFlatListRef = {
     scrollToOffset: (params: { offset: number; animated?: boolean }) => void
@@ -63,18 +64,6 @@ export type PWFlatListProps<T> = FlashListProps<T> & {
  * cost is a slightly larger recycle pool, not more mounted rows.
  */
 const DEFAULT_DRAW_DISTANCE = 1000
-
-const ListSeparator = () => {
-    const styles = useStyles()
-
-    return <PWView style={styles.itemSeparator} />
-}
-
-const CardSeparator = () => {
-    const styles = useStyles()
-
-    return <PWView style={styles.cardSeparator} />
-}
 
 export const PWFlatList = forwardRef<PWFlatListRef, PWFlatListProps<unknown>>(
     (

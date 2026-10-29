@@ -27,6 +27,7 @@ export const fetchWithAbortError = (
 ): Promise<Response> => {
     const signal = init?.signal
     if (!signal) {
+        // oxlint-disable-next-line no-restricted-properties -- viem's transport fetch, wrapped only to reject aborts as an AbortError
         return globalThis.fetch(input, init)
     }
     if (signal.aborted) {
@@ -35,6 +36,7 @@ export const fetchWithAbortError = (
     return new Promise<Response>((resolve, reject) => {
         const onAbort = () => reject(abortError())
         signal.addEventListener('abort', onAbort, { once: true })
+        // oxlint-disable-next-line no-restricted-properties -- viem's transport fetch, wrapped only to reject aborts as an AbortError
         globalThis.fetch(input, init).then(
             response => {
                 signal.removeEventListener('abort', onAbort)

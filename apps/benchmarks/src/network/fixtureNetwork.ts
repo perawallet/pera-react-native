@@ -44,6 +44,7 @@ export const startFixtureNetwork = (): FixtureNetwork => {
     let requests = 0
     let unhandled: string[] = []
 
+    // oxlint-disable-next-line no-restricted-properties -- installs the fixture replayer in place of the network, as the comment above explains
     globalThis.fetch = async (input, init) => {
         const request = new Request(input, init)
         if (isReachabilityProbe(request)) {

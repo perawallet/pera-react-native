@@ -12,6 +12,8 @@
 
 import i18n from 'i18next'
 
+import { toError } from '@perawallet/wallet-core-shared'
+
 import {
     useBottomSheetStore,
     type InternalRequest,
@@ -22,7 +24,7 @@ import {
 } from '@modules/settings/screens/developer/gallery-catalog/launchGalleryEntry'
 import type { GalleryLaunch } from '@modules/settings/screens/developer/gallery-catalog/types'
 
-import { drainOverflow } from '@components/core/PWText/overflowRegistry'
+import { drainOverflow } from '@components/core'
 
 import { getTourStep } from './steps'
 import type { RunTourStepOutcome, RunTourStepParams } from '../types'
@@ -35,11 +37,8 @@ export const TOUR_OVERFLOW_MARKER = 'LOCALE_TOUR_OVERFLOW'
 // pending layout) must not hang the driver forever — it needs an answer,
 // even if that answer is "settled by timeout, screenshot anyway".
 //
-// Calibrated against a real device run (iPhone 16 Pro Max sim):
-// step-latency p95 was ~2.1s and max ~2.7-3.2s, with 57 of 75 sheet-mount
-// attempts hitting the old 2000ms cap and reporting a false "never mounted".
-// 5000ms clears the observed max with headroom. Do not lower this back
-// toward 2000 without a fresh measured run — that number was too tight.
+// Sheet mounts on a simulator can take seconds; a tighter cap reports false
+// "never mounted" steps. Re-run the tour before lowering it.
 export const SETTLE_TIMEOUT_MS = 5000
 
 const waitForSettle = (): Promise<void> =>
@@ -129,7 +128,7 @@ export const runTourStep = async ({
     try {
         launchOutcome = launchGalleryEntry(step.entry)
     } catch (error) {
-        const reason = error instanceof Error ? error.message : String(error)
+        const reason = toError(error).message
         console.log(`${TOUR_ERROR_MARKER}|${stepId}|${reason}`)
         return 'launch-error'
     }

@@ -162,7 +162,7 @@ export const useAccountOverview = ({
     // Reveal the header as soon as the (cheap, SQL-aggregate) balance summary
     // resolves. The chart history is a separate, slower network query that's
     // gated on chart visibility — it must not hold the header in a skeleton
-    // (and previously did, blocking ~10s on the wealth endpoint timeout).
+    // (it would otherwise wait out the wealth endpoint's timeout).
     const { isPending: isBalancesPending, isPaused: isBalancesPaused } =
         useAccountSummaryQuery(address, scope)
     // Guarantee the viewed account's holdings + metadata + prices are fetched
@@ -196,9 +196,16 @@ export const useAccountOverview = ({
             account,
             openSendFunds,
             openReceiveFunds,
+            openReceiveFundsOn,
             openAccountOptions,
         }),
-        [account, openSendFunds, openReceiveFunds, openAccountOptions],
+        [
+            account,
+            openSendFunds,
+            openReceiveFunds,
+            openReceiveFundsOn,
+            openAccountOptions,
+        ],
     )
 
     return {

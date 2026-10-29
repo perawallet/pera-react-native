@@ -24,6 +24,7 @@ import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import { AddAccountScreen } from '@modules/onboarding/screens/AddAccountScreen/AddAccountScreen'
+import { AddAccountOptionsScreen } from '@modules/onboarding/screens/AddAccountOptionsScreen/AddAccountOptionsScreen'
 import { NameAccountScreen } from '@modules/onboarding/screens/NameAccountScreen/NameAccountScreen'
 import { useOnboardingStore } from '@modules/onboarding/hooks/useOnboardingStore'
 import { SLOW_WAIT_TIMEOUT_MS } from './__fixtures__/timeouts'
@@ -31,6 +32,7 @@ import { SLOW_WAIT_TIMEOUT_MS } from './__fixtures__/timeouts'
 const renderAddAccount = () =>
     renderWithNavigation(AddAccountScreen, 'AddAccountHome', {
         additionalScreens: [
+            { name: 'AddAccountOptions', component: AddAccountOptionsScreen },
             { name: 'NameAccount', component: NameAccountScreen },
         ],
     })
@@ -49,6 +51,9 @@ describe('create quantum account', () => {
 
     it('Given the flag is on, when the user creates a Quantum account and names it, then a quantum account is persisted', async () => {
         renderAddAccount()
+        fireEvent.click(
+            await waitFor(() => screen.getByTestId('add_account_add_button')),
+        )
 
         // The Quantum create option is gated on the flag — with it on the
         // entrypoint must be visible.

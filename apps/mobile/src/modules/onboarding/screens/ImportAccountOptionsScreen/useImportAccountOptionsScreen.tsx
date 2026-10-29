@@ -10,21 +10,19 @@
  limitations under the License
  */
 
-import React, { useCallback, useEffect, useMemo } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { type RouteProp, useRoute } from '@react-navigation/native'
 import {
     detectImportKind,
     keyKindOptionsOf,
-    offeredLocalKeyKinds,
     setPendingImportMnemonic,
-    type LocalKeySeed,
 } from '@perawallet/wallet-core-accounts'
 import { useCloudBackupStore } from '@perawallet/wallet-core-backup'
 import {
-    isPostQuantumScheme,
     LEGACY_CHAIN_ID,
     i18nKey,
     type ChainId,
+    type I18nKey,
 } from '@perawallet/wallet-core-chain-contract'
 import type { IconName } from '@components/core'
 import { useAppNavigation } from '@hooks/useAppNavigation'
@@ -48,12 +46,21 @@ import {
     ImportOptionsContent,
     type ImportOptionsContentResult,
 } from '../../components/ImportOptionsContent'
+import {
+    LedgerTransportOptionsContent,
+    type LedgerTransportOptionsContentResult,
+} from '../../components/LedgerTransportOptionsContent'
+import { useIsOnboarding } from '../../hooks/useOnboardingStore'
 import { usePrivateKeyImportChainId } from '../../hooks/usePrivateKeyImportChainId'
 import type { ImportFlowParamList } from '../../routes/types'
 import { trackChainOnboardingEvent } from '../../utils'
 
 export type UseImportAccountOptionsScreenResult = {
-    options: AccountOption[]
+    titleKey: I18nKey
+    mainOptions: AccountOption[]
+    otherOptions: AccountOption[]
+    isOtherOptionsVisible: boolean
+    handleToggleOtherOptions: () => void
     isQRScannerVisible: boolean
     handleCloseQRScanner: () => void
     handleQRScannerSuccess: (url: string, restartScanning?: () => void) => void
@@ -69,10 +76,7 @@ export const useImportAccountOptionsScreen =
         const { request: requestBottomSheet } = useBottomSheet()
         const { chooseRestoreRoute, isReadingCredentials } =
             useRestoreBackupOptions()
-        const isQuantumEnabled = useCapability({
-            platform: 'quantum',
-            anyChain: 'quantumAccounts',
-        })
+        const { isOnboarding } = useIsOnboarding()
         const canUseLedger = useCapability({ anyChain: 'ledger' })
         const ledgerChainIds = useCapableChainIds('ledger')
         const canUseLedgerUsb = useCapability({
@@ -99,6 +103,8 @@ export const useImportAccountOptionsScreen =
             state.isConfigured(),
         )
         const privateKeyChainId = usePrivateKeyImportChainId()
+        const [isOtherOptionsVisible, setIsOtherOptionsVisible] =
+            useState(false)
 
         const {
             isOpen: isQRScannerVisible,
@@ -125,7 +131,9 @@ export const useImportAccountOptionsScreen =
         const handleOpenImportOptions = useCallback(async () => {
             const result = await requestBottomSheet<ImportOptionsContentResult>(
                 {
-                    contents: <ImportOptionsContent />,
+                    contents: (
+                        <ImportOptionsContent chainId={LEGACY_CHAIN_ID} />
+                    ),
                     options: {
                         size: 'auto',
                         enablePanDownToClose: true,
@@ -177,6 +185,37 @@ export const useImportAccountOptionsScreen =
                 })
             }
         }, [chooseLedgerChain, navigation])
+
+        // Only where USB is possible is there a transport to choose.
+        const handlePairLedger = useCallback(async () => {
+            if (!canUseLedgerUsb) {
+                await handlePairLedgerBle()
+                return
+            }
+            const transport =
+                await requestBottomSheet<LedgerTransportOptionsContentResult>({
+                    contents: (
+                        <LedgerTransportOptionsContent
+                            isBleAvailable={isLedgerBleAvailable}
+                            isUsbAvailable={isLedgerUsbAvailable}
+                        />
+                    ),
+                    options: {
+                        size: 'auto',
+                        enablePanDownToClose: true,
+                        autoCreateContainer: false,
+                    },
+                })
+            if (transport === 'ble') await handlePairLedgerBle()
+            if (transport === 'usb') await handlePairLedgerUsb()
+        }, [
+            canUseLedgerUsb,
+            requestBottomSheet,
+            isLedgerBleAvailable,
+            isLedgerUsbAvailable,
+            handlePairLedgerBle,
+            handlePairLedgerUsb,
+        ])
 
         const handleQRScannerSuccess = useCallback(
             (url: string, restartScanning?: () => void) => {
@@ -258,12 +297,6 @@ export const useImportAccountOptionsScreen =
             navigation,
         ])
 
-        const handleImportKind = useCallback(
-            (seed: LocalKeySeed) =>
-                navigation.push('ImportAccount', { accountType: seed }),
-            [navigation],
-        )
-
         const privateKeyImportOptions: AccountOption[] = useMemo(
             () =>
                 privateKeyChainId
@@ -287,168 +320,138 @@ export const useImportAccountOptionsScreen =
             [privateKeyChainId, navigation],
         )
 
-        const kindImportOptions: AccountOption[] = useMemo(
+        const isLedgerAvailable = canUseLedgerUsb
+            ? isLedgerBleAvailable || isLedgerUsbAvailable
+            : isLedgerBleAvailable
+
+        const mainOptions: AccountOption[] = useMemo(
             () =>
-                offeredLocalKeyKinds(LEGACY_CHAIN_ID).flatMap(
-                    ({ kind, options: { import: entry } }) =>
-                        entry &&
-                        (!isPostQuantumScheme(kind.signingScheme) ||
-                            isQuantumEnabled)
-                            ? [
-                                  {
-                                      testID: `import_account_${entry.id}_button`,
-                                      titleKey: entry.titleKey,
-                                      descriptionKey: entry.descriptionKey,
-                                      leftIcon: entry.icon as IconName,
-                                      onPress: () =>
-                                          handleImportKind(kind.seed),
-                                  },
-                              ]
-                            : [],
-                ),
-            [isQuantumEnabled, handleImportKind],
+                (
+                    [
+                        {
+                            testID: 'import_account_options_recover_wallet_button',
+                            titleKey: i18nKey(
+                                'onboarding.import_account_options.recover_passphrase_title',
+                            ),
+                            descriptionKey: i18nKey(
+                                'onboarding.import_account_options.recover_passphrase_description',
+                            ),
+                            leftIcon: 'key' as IconName,
+                            onPress: () => {
+                                void handleOpenImportOptions()
+                            },
+                        },
+                        isCloudBackupAvailable && {
+                            testID: 'import_account_options_cloud_backup_button',
+                            titleKey: i18nKey(
+                                'onboarding.import_account_options.cloud_backup_title',
+                            ),
+                            descriptionKey: i18nKey(
+                                'onboarding.import_account_options.cloud_backup_description',
+                            ),
+                            leftIcon: 'cloud-download' as IconName,
+                            onPress: () => {
+                                void handleImportCloudBackup()
+                            },
+                        },
+                        canUseLedger && {
+                            testID: 'import_account_options_pair_ledger_button',
+                            titleKey: i18nKey(
+                                'onboarding.import_account_options.pair_ledger_title',
+                            ),
+                            descriptionKey: isLedgerAvailable
+                                ? i18nKey(
+                                      'onboarding.import_account_options.pair_ledger_description',
+                                  )
+                                : i18nKey(
+                                      'onboarding.import_account_options.pair_ledger_unsupported_description',
+                                  ),
+                            leftIcon: 'ledger' as IconName,
+                            onPress: () => {
+                                void handlePairLedger()
+                            },
+                            isDisabled: !isLedgerAvailable,
+                        },
+                    ] satisfies (AccountOption | false)[]
+                ).filter((option): option is AccountOption => !!option),
+            [
+                handleOpenImportOptions,
+                handleImportCloudBackup,
+                handlePairLedger,
+                isCloudBackupAvailable,
+                canUseLedger,
+                isLedgerAvailable,
+            ],
         )
 
-        const options: AccountOption[] = useMemo(() => {
-            const allOptions: AccountOption[] = [
-                {
-                    testID: 'import_account_options_recover_wallet_button',
-                    titleKey: i18nKey(
-                        'onboarding.import_account_options.recover_wallet_title',
-                    ),
-                    descriptionKey: i18nKey(
-                        'onboarding.import_account_options.recover_wallet_description',
-                    ),
-                    leftIcon: 'fund' as IconName,
-                    onPress: () => void handleOpenImportOptions(),
-                },
-                ...kindImportOptions,
-                ...privateKeyImportOptions,
-                {
-                    testID: 'import_account_options_recover_qr_button',
-                    titleKey: i18nKey(
-                        'onboarding.import_account_options.recover_qr_title',
-                    ),
-                    descriptionKey: i18nKey(
-                        'onboarding.import_account_options.recover_qr_description',
-                    ),
-                    leftIcon: 'qr' as IconName,
-                    onPress: handleOpenQRScanner,
-                },
-            ]
+        const otherOptions: AccountOption[] = useMemo(
+            () =>
+                (
+                    [
+                        canImportPeraWeb && {
+                            testID: 'import_account_options_pera_web_button',
+                            titleKey: i18nKey(
+                                'onboarding.import_account_options.pera_web_title',
+                            ),
+                            descriptionKey: i18nKey(
+                                'onboarding.import_account_options.pera_web_description',
+                            ),
+                            leftIcon: 'globe' as IconName,
+                            onPress: handleImportPeraWeb,
+                        },
+                        canImportSecureBackup && {
+                            testID: 'import_account_options_asb_button',
+                            titleKey: isCloudBackupAvailable
+                                ? i18nKey(
+                                      'onboarding.import_account_options.asb_legacy_title',
+                                  )
+                                : i18nKey(
+                                      'onboarding.import_account_options.asb_title',
+                                  ),
+                            descriptionKey: i18nKey(
+                                'onboarding.import_account_options.asb_description',
+                            ),
+                            leftIcon: 'shield-check' as IconName,
+                            onPress: handleImportAsb,
+                        },
+                        {
+                            testID: 'import_account_options_recover_qr_button',
+                            titleKey: i18nKey(
+                                'onboarding.import_account_options.recover_qr_title',
+                            ),
+                            descriptionKey: i18nKey(
+                                'onboarding.import_account_options.recover_qr_description',
+                            ),
+                            leftIcon: 'qr' as IconName,
+                            onPress: handleOpenQRScanner,
+                        },
+                        ...privateKeyImportOptions,
+                    ] satisfies (AccountOption | false)[]
+                ).filter((option): option is AccountOption => !!option),
+            [
+                canImportPeraWeb,
+                canImportSecureBackup,
+                isCloudBackupAvailable,
+                handleImportPeraWeb,
+                handleImportAsb,
+                handleOpenQRScanner,
+                privateKeyImportOptions,
+            ],
+        )
 
-            if (canUseLedger) {
-                allOptions.push({
-                    testID: 'import_account_options_pair_ledger_button',
-                    titleKey: i18nKey(
-                        'onboarding.import_account_options.pair_ledger_title',
-                    ),
-                    descriptionKey: isLedgerBleAvailable
-                        ? i18nKey(
-                              'onboarding.import_account_options.pair_ledger_description',
-                          )
-                        : i18nKey(
-                              'onboarding.import_account_options.pair_ledger_unsupported_description',
-                          ),
-                    leftIcon: 'wallet' as IconName,
-                    onPress: () => void handlePairLedgerBle(),
-                    isDisabled: !isLedgerBleAvailable,
-                })
-            }
-
-            if (canUseLedgerUsb) {
-                allOptions.push({
-                    testID: 'import_account_options_pair_ledger_usb_button',
-                    titleKey: i18nKey(
-                        'onboarding.import_account_options.pair_ledger_usb_title',
-                    ),
-                    descriptionKey: isLedgerUsbAvailable
-                        ? i18nKey(
-                              'onboarding.import_account_options.pair_ledger_usb_description',
-                          )
-                        : i18nKey(
-                              'onboarding.import_account_options.pair_ledger_unsupported_description',
-                          ),
-                    leftIcon: 'wallet' as IconName,
-                    onPress: () => void handlePairLedgerUsb(),
-                    isDisabled: !isLedgerUsbAvailable,
-                })
-            }
-
-            allOptions.push(
-                ...(canImportPeraWeb
-                    ? [
-                          {
-                              testID: 'import_account_options_pera_web_button',
-                              titleKey: i18nKey(
-                                  'onboarding.import_account_options.pera_web_title',
-                              ),
-                              descriptionKey: i18nKey(
-                                  'onboarding.import_account_options.pera_web_description',
-                              ),
-                              leftIcon: 'globe' as IconName,
-                              onPress: handleImportPeraWeb,
-                          },
-                      ]
-                    : []),
-                ...(isCloudBackupAvailable
-                    ? [
-                          {
-                              testID: 'import_account_options_cloud_backup_button',
-                              titleKey: i18nKey(
-                                  'onboarding.import_account_options.cloud_backup_title',
-                              ),
-                              descriptionKey: i18nKey(
-                                  'onboarding.import_account_options.cloud_backup_description',
-                              ),
-                              leftIcon: 'cloud-download' as IconName,
-                              onPress: () => void handleImportCloudBackup(),
-                          },
-                      ]
-                    : []),
-                ...(canImportSecureBackup
-                    ? [
-                          {
-                              testID: 'import_account_options_asb_button',
-                              titleKey: isCloudBackupAvailable
-                                  ? i18nKey(
-                                        'onboarding.import_account_options.asb_legacy_title',
-                                    )
-                                  : i18nKey(
-                                        'onboarding.import_account_options.asb_title',
-                                    ),
-                              descriptionKey: i18nKey(
-                                  'onboarding.import_account_options.asb_description',
-                              ),
-                              leftIcon: 'shield-check' as IconName,
-                              onPress: handleImportAsb,
-                          },
-                      ]
-                    : []),
-            )
-
-            return allOptions
-        }, [
-            handleOpenImportOptions,
-            handleOpenQRScanner,
-            handlePairLedgerBle,
-            handlePairLedgerUsb,
-            handleImportAsb,
-            handleImportPeraWeb,
-            handleImportCloudBackup,
-            kindImportOptions,
-            privateKeyImportOptions,
-            isCloudBackupAvailable,
-            canImportSecureBackup,
-            canUseLedger,
-            canUseLedgerUsb,
-            canImportPeraWeb,
-            isLedgerBleAvailable,
-            isLedgerUsbAvailable,
-        ])
+        const handleToggleOtherOptions = useCallback(
+            () => setIsOtherOptionsVisible(prev => !prev),
+            [],
+        )
 
         return {
-            options,
+            titleKey: isOnboarding
+                ? i18nKey('onboarding.import_account_options.onboarding_title')
+                : i18nKey('onboarding.import_account_options.title'),
+            mainOptions,
+            otherOptions,
+            isOtherOptionsVisible,
+            handleToggleOtherOptions,
             isQRScannerVisible,
             handleCloseQRScanner: closeQRScanner,
             handleQRScannerSuccess,

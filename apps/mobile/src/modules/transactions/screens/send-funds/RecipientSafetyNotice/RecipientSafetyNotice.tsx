@@ -26,12 +26,11 @@ import {
 } from '@components/core'
 import { InfoCallout } from '@components/InfoCallout'
 import { useLanguage } from '@hooks/useLanguage'
-import { getTestProps } from '@utils/test-id-helper'
 import {
     ComparedAddress,
     KNOWN_LABEL_KEYS,
-} from '../../../components/address-safety/ComparedAddress'
-import { diffAddresses } from '../../../utils/diffAddresses'
+} from '@modules/transactions/components/address-safety/ComparedAddress'
+import { diffAddresses } from '@modules/transactions/utils/diffAddresses'
 import { useStyles } from './styles'
 
 export type RecipientSafetyNoticeProps = {
@@ -128,7 +127,7 @@ export const RecipientSafetyNotice = ({
             <PWTouchableOpacity
                 style={styles.acknowledge}
                 onPress={onToggleAcknowledged}
-                {...getTestProps('recipient_look_alike_acknowledge')}
+                testID='recipient_look_alike_acknowledge'
             >
                 <PWCheckbox
                     checked={isAcknowledged}

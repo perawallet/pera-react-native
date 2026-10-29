@@ -11,17 +11,18 @@
  */
 
 import type { CardImageCustomCss } from '@perawallet/wallet-core-card'
+import { accentPalette, palette } from '@theme/colors'
 
 /**
  * Brand colors for the Baanx-rendered secure card image, sampled from
  * `assets/images/pera-card.png` so the server render matches the card art.
- * These are API request-body params (hex), NOT RN theme tokens — shared by
- * every screen that reveals a secure card image (Card Details, and the
- * upcoming PIN view) so the rendered images stay visually consistent.
+ * Request-body params, so they read the palette rather than per-mode theme
+ * tokens: the server render ignores the app's mode. Shared by every reveal
+ * screen so the rendered images stay visually consistent.
  */
 export const SECURE_CARD_IMAGE_CSS: CardImageCustomCss = {
-    cardBackgroundColor: '#FCCA44',
-    cardTextColor: '#000000',
-    panBackgroundColor: '#FFE858',
-    panTextColor: '#000000',
+    cardBackgroundColor: accentPalette.peraCardBody,
+    cardTextColor: palette.black,
+    panBackgroundColor: accentPalette.peraCardPan,
+    panTextColor: palette.black,
 }

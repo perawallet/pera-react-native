@@ -14,7 +14,7 @@
 
 All external components (from `@rneui/themed`, `react-native`, third-party) **MUST** be wrapped in `PW`-prefixed components before use. These live in `apps/mobile/src/components/core/PW[Name]/`.
 
-**ALWAYS** import core components from the barrel: `import { PWButton, PWText } from '@components/core'`
+**ALWAYS** import core components from the barrel: `import { PWButton, PWText } from '@components/core'`. `no-restricted-imports` fails a `@components/core/<subpath>` import outside `components/core` (tests exempt); files inside it import siblings by subpath, because a barrel import there would import itself.
 
 Exception: basic layout primitives used only inside PW components. Loading spinners are `PWLoadingIndicator`.
 
@@ -36,10 +36,12 @@ ComponentName/              # PascalCase
 ├── index.ts                # Barrel: export { ComponentName } and type
 ├── __tests__/
 │   └── ComponentName.spec.tsx
-└── SubComponent.tsx        # NOT re-exported, used only by parent
+└── SubComponent/           # Own folder (same shape); NOT re-exported, used only by parent
 ```
 
 Folder naming: component folders = `PascalCase`, grouping/utility folders = `kebab-case`.
+
+One component per `.tsx` (`react/no-multi-comp`): a second component moves to its own `Name/` folder beside the file that uses it.
 
 If creating a core component, update `apps/mobile/src/components/core/index.ts` barrel.
 

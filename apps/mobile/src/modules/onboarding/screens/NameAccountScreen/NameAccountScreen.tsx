@@ -14,7 +14,6 @@ import { PWText, PWView } from '@components/core'
 import { NameAccountForm } from '@components/NameAccountForm'
 import { AccountIcon } from '@components/AccountIcon'
 import { useLanguage } from '@hooks/useLanguage'
-import { getAccountDisplayName } from '@perawallet/wallet-core-accounts'
 import { ChainIcon } from '@modules/chain-ui'
 import { useNameAccountScreen } from './useNameAccountScreen'
 import { useStyles } from './styles'
@@ -27,9 +26,8 @@ export const NameAccountScreen = () => {
         isCreating,
         handleNameChange,
         handleFinish,
-        numWallets,
+        accountTitle,
         account,
-        chainId,
         enabledChainIds,
     } = useNameAccountScreen()
 
@@ -50,11 +48,7 @@ export const NameAccountScreen = () => {
                     variant='h4'
                     style={styles.nameText}
                 >
-                    {account
-                        ? getAccountDisplayName(account, chainId)
-                        : t('onboarding.name_account.wallet_label', {
-                              count: numWallets + 1,
-                          })}
+                    {accountTitle}
                 </PWText>
             </PWView>
             {enabledChainIds.length > 0 && (
@@ -66,6 +60,7 @@ export const NameAccountScreen = () => {
                         <ChainIcon
                             key={chainId}
                             chainId={chainId}
+                            // lanekeep-ignore-next-line pera/no-numeric-sizes reason: chain icon size (20)
                             size={20}
                         />
                     ))}

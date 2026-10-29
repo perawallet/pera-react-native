@@ -83,6 +83,9 @@ export const algorandChainUi: ChainUi = {
         Form: AlgorandCustomNodeForm,
     },
     familyLabel: i18nKey('chain_families.algorand'),
+    passphraseCompatibilityKey: i18nKey(
+        'view_passphrase.compatibility.algorand',
+    ),
     accountOptions: {
         ExpandedSection: AlgorandAccountSection,
         useHasExpandedSection: useHasAlgorandAccountSection,
@@ -94,6 +97,7 @@ export const algorandChainUi: ChainUi = {
         descriptionKey: i18nKey('onboarding.watch_account.description'),
         invalidAddressKey: i18nKey('onboarding.watch_account.invalid_address'),
     },
+    addressSearchPlaceholder: i18nKey('address_entry.search_placeholder'),
     wrongNetworkAddress: {
         titleKey: i18nKey('address_entry.wrong_network.title.algorand'),
         bodyKey: i18nKey('address_entry.wrong_network.body.algorand'),

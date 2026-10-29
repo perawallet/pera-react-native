@@ -25,7 +25,11 @@ import {
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import { getProvider } from '@perawallet/wallet-extension-provider'
-import type { WalletAccount } from '../models'
+import {
+    accountValueKey,
+    type AccountValueKey,
+    type WalletAccount,
+} from '../models'
 import {
     accountChainEntries,
     useOtherRegisteredChainIds,
@@ -57,12 +61,12 @@ export type AccountValueTotals = {
     isError: boolean
 }
 
-export type AccountValueTotalsMap = Map<string, AccountValueTotals>
+export type AccountValueTotalsMap = Map<AccountValueKey, AccountValueTotals>
 
 export type UseAccountValueTotalsQueryResult = {
     /**
-     * Keyed by address, one entry per chain an account is on: an account
-     * derived on two chains has two.
+     * One entry per chain an account is on, keyed by `accountValueKey`: EVM
+     * chains share an address, so the chain has to be part of the key.
      */
     accountValueTotals: AccountValueTotalsMap
     /**
@@ -266,7 +270,7 @@ export const useAccountValueTotalsQuery = (
                 }
 
                 return [
-                    address,
+                    accountValueKey(accountScope.chainId, address),
                     {
                         nativeValue,
                         usdValue,

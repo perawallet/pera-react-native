@@ -115,12 +115,16 @@ export const darkColorTokens = {
     successCheckmark: palette.gray[900],
     heroBg: '#1D1D21',
 
+    // Chart
+    chartAreaFill: accentPalette.chartTeal,
+
     // Banner
     bannerContentBg: palette.gray[700],
     bannerBg: palette.turquoise[200],
     bannerButton: tints.whiteAlpha12,
     bannerIconBg: tints.turquoise700Alpha20,
     bannerText: palette.turquoise[900],
+    bannerCloseButtonBg: tints.blackAlpha35,
 
     // Alert
     alertNegative: palette.salmon[500],
@@ -188,9 +192,14 @@ export const darkColorTokens = {
 
     // QR Scanner
     qrScannerBg: tints.blackAlpha70,
+    qrCodeBg: palette.white,
+    qrCodeFg: palette.black,
 
     // Backdrop
     backdropModalBg: 'rgba(0, 0, 0, 0.86)',
+
+    // Bootsplash
+    bootsplashContent: palette.black,
 
     // Keyboard
     keyboardAccessoryBg: '#292929',

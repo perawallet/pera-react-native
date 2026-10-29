@@ -18,7 +18,6 @@ import {
     type LocalAccount,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { AnalyticsMetadataKey, OnboardingEvent } from '@analytics'
 import { capabilityState } from '@test-utils/capability-mock'
 import { registerAlgorandAccountsAdapter } from '@test-utils/algorandAccountsAdapter'
 import {
@@ -193,115 +192,90 @@ describe('useAddAccountScreen', () => {
         setQuantumEnabled(true)
     })
 
-    it('mainOptions excludes add account option when no HD wallet exists', () => {
-        mockUseAllAccounts.mockReturnValue([])
+    const findOption = (options: { testID: string }[], testID: string) =>
+        options.find(o => o.testID === testID)
+
+    it('mainOptions lists add account, Pera Card and import, in that order', () => {
+        mockUseAllAccounts.mockReturnValue([HD_ACCOUNT])
 
         const { result } = renderHook(() => useAddAccountScreen())
 
-        const addOption = result.current.mainOptions.find(
-            o => o.testID === 'add_account_add_button',
-        )
-        expect(addOption).toBeUndefined()
-    })
-
-    it('mainOptions includes Create Universal Wallet at top when no HD wallet exists', () => {
-        mockUseAllAccounts.mockReturnValue([])
-
-        const { result } = renderHook(() => useAddAccountScreen())
-
-        expect(result.current.mainOptions[0]?.testID).toBe(
-            'add_account_create_universal_wallet_button',
-        )
-        expect(result.current.mainOptions[1]?.testID).toBe(
-            'add_account_create_quantum_button',
-        )
-        expect(result.current.mainOptions[2]?.testID).toBe(
-            'add_account_create_multisig_button',
-        )
-        expect(result.current.mainOptions[3]?.testID).toBe(
+        expect(result.current.mainOptions.map(o => o.testID)).toEqual([
+            'add_account_add_button',
             'add_account_pera_card_button',
-        )
-        expect(result.current.mainOptions[4]?.testID).toBe(
             'add_account_import_button',
-        )
+        ])
     })
 
-    it('mainOptions excludes Create Universal Wallet when HD wallet exists', () => {
+    it('mainOptions offers add account even without an HD wallet', () => {
+        const { result } = renderHook(() => useAddAccountScreen())
+
+        expect(
+            findOption(result.current.mainOptions, 'add_account_add_button'),
+        ).toBeDefined()
+    })
+
+    it('add account option describes the existing Universal Wallet when one exists', () => {
         mockUseAllAccounts.mockReturnValue([HD_ACCOUNT])
 
         const { result } = renderHook(() => useAddAccountScreen())
 
-        const universalOption = result.current.mainOptions.find(
-            o => o.testID === 'add_account_create_universal_wallet_button',
+        expect(result.current.mainOptions[0]?.descriptionKey).toBe(
+            'onboarding.add_account.add_account_option_description',
         )
-        expect(universalOption).toBeUndefined()
     })
 
-    it('mainOptions includes add account option when HD wallet exists', () => {
+    it('add account option describes a new multichain wallet when none exists', () => {
+        const { result } = renderHook(() => useAddAccountScreen())
+
+        expect(result.current.mainOptions[0]?.descriptionKey).toBe(
+            'onboarding.add_account_options.multichain_new_wallet_description',
+        )
+    })
+
+    it('add account option opens the AddAccountOptions screen', () => {
         mockUseAllAccounts.mockReturnValue([HD_ACCOUNT])
 
         const { result } = renderHook(() => useAddAccountScreen())
 
-        const addOption = result.current.mainOptions.find(
-            o => o.testID === 'add_account_add_button',
-        )
-        expect(addOption).toBeDefined()
+        act(() => {
+            result.current.mainOptions[0]!.onPress()
+        })
+
+        expect(mockPush).toHaveBeenCalledWith('AddAccountOptions', {
+            chainId: 'algorand',
+        })
+        expect(mockBuildNextHDAccount).not.toHaveBeenCalled()
     })
 
-    it('mainOptions always includes import account option', () => {
+    it('the main menu offers no quantum or shared account row', () => {
         const { result } = renderHook(() => useAddAccountScreen())
 
-        const importOption = result.current.mainOptions.find(
-            o => o.testID === 'add_account_import_button',
-        )
-        expect(importOption).toBeDefined()
+        const testIDs = [
+            ...result.current.mainOptions,
+            ...result.current.otherOptions,
+        ].map(o => o.testID)
+        expect(testIDs).not.toContain('add_account_create_quantum_button')
+        expect(testIDs).not.toContain('add_account_create_multisig_button')
     })
 
-    it('otherOptions includes watch, universal wallet, and algo25 when HD wallet exists', () => {
-        mockUseAllAccounts.mockReturnValue([HD_ACCOUNT])
+    it.each([
+        ['with', [HD_ACCOUNT]],
+        ['without', []],
+    ])(
+        'otherOptions lists watch, universal wallet and algo25 %s an HD wallet',
+        (_, accounts) => {
+            mockUseAllAccounts.mockReturnValue(accounts)
 
-        const { result } = renderHook(() => useAddAccountScreen())
+            const { result } = renderHook(() => useAddAccountScreen())
 
-        expect(result.current.otherOptions).toHaveLength(3)
-        expect(
-            result.current.otherOptions.find(
-                o => o.testID === 'add_account_watch_button',
-            ),
-        ).toBeDefined()
-        expect(
-            result.current.otherOptions.find(
-                o => o.testID === 'add_account_create_universal_wallet_button',
-            ),
-        ).toBeDefined()
-        expect(
-            result.current.otherOptions.find(
-                o => o.testID === 'add_account_create_algo25_button',
-            ),
-        ).toBeDefined()
-    })
-
-    it('otherOptions excludes universal wallet when no HD wallet exists', () => {
-        mockUseAllAccounts.mockReturnValue([])
-
-        const { result } = renderHook(() => useAddAccountScreen())
-
-        expect(result.current.otherOptions).toHaveLength(2)
-        expect(
-            result.current.otherOptions.find(
-                o => o.testID === 'add_account_watch_button',
-            ),
-        ).toBeDefined()
-        expect(
-            result.current.otherOptions.find(
-                o => o.testID === 'add_account_create_universal_wallet_button',
-            ),
-        ).toBeUndefined()
-        expect(
-            result.current.otherOptions.find(
-                o => o.testID === 'add_account_create_algo25_button',
-            ),
-        ).toBeDefined()
-    })
+            expect(result.current.otherOptions.map(o => o.testID)).toEqual([
+                'add_account_watch_button',
+                'add_account_create_universal_wallet_button',
+                'add_account_create_algo25_button',
+            ])
+        },
+    )
 
     it('handleClose navigates back', () => {
         const { result } = renderHook(() => useAddAccountScreen())
@@ -325,48 +299,6 @@ describe('useAddAccountScreen', () => {
         })
 
         expect(mockPush).toHaveBeenCalledWith('ImportAccountOptions')
-    })
-
-    it('mainOptions does not include pair ledger or scan qr options', () => {
-        const { result } = renderHook(() => useAddAccountScreen())
-
-        expect(
-            result.current.mainOptions.find(
-                o => o.testID === 'add_account_pair_ledger_button',
-            ),
-        ).toBeUndefined()
-        expect(
-            result.current.mainOptions.find(
-                o => o.testID === 'add_account_scan_qr_button',
-            ),
-        ).toBeUndefined()
-    })
-
-    it('mainOptions includes shared account option', () => {
-        const { result } = renderHook(() => useAddAccountScreen())
-
-        expect(
-            result.current.mainOptions.find(
-                o => o.testID === 'add_account_create_multisig_button',
-            ),
-        ).toBeDefined()
-    })
-
-    it('mainOptions places pera card option between shared account and import', () => {
-        const { result } = renderHook(() => useAddAccountScreen())
-
-        const multisigIndex = result.current.mainOptions.findIndex(
-            o => o.testID === 'add_account_create_multisig_button',
-        )
-        const peraCardIndex = result.current.mainOptions.findIndex(
-            o => o.testID === 'add_account_pera_card_button',
-        )
-        const importIndex = result.current.mainOptions.findIndex(
-            o => o.testID === 'add_account_import_button',
-        )
-
-        expect(peraCardIndex).toBe(multisigIndex + 1)
-        expect(importIndex).toBe(peraCardIndex + 1)
     })
 
     it('pera card option navigates to the Pera Card intro screen', () => {
@@ -409,67 +341,6 @@ describe('useAddAccountScreen', () => {
         ).toBeUndefined()
     })
 
-    it('shared account option opens introduction dialog without navigating', () => {
-        const { result } = renderHook(() => useAddAccountScreen())
-
-        const multisigOption = result.current.mainOptions.find(
-            o => o.testID === 'add_account_create_multisig_button',
-        )!
-
-        expect(result.current.isMultisigIntroductionVisible).toBe(false)
-
-        act(() => {
-            multisigOption.onPress()
-        })
-
-        expect(result.current.isMultisigIntroductionVisible).toBe(true)
-        expect(mockResetMultisigCreation).not.toHaveBeenCalled()
-        expect(mockNavigate).not.toHaveBeenCalled()
-    })
-
-    it('closing shared account introduction hides dialog without navigating', () => {
-        const { result } = renderHook(() => useAddAccountScreen())
-
-        const multisigOption = result.current.mainOptions.find(
-            o => o.testID === 'add_account_create_multisig_button',
-        )!
-
-        act(() => {
-            multisigOption.onPress()
-        })
-
-        act(() => {
-            result.current.handleCloseMultisigIntroduction()
-        })
-
-        expect(result.current.isMultisigIntroductionVisible).toBe(false)
-        expect(mockResetMultisigCreation).not.toHaveBeenCalled()
-        expect(mockNavigate).not.toHaveBeenCalled()
-    })
-
-    it('continuing shared account introduction resets state and navigates to CreateMultisig', () => {
-        const { result } = renderHook(() => useAddAccountScreen())
-
-        const multisigOption = result.current.mainOptions.find(
-            o => o.testID === 'add_account_create_multisig_button',
-        )!
-
-        act(() => {
-            multisigOption.onPress()
-        })
-
-        act(() => {
-            result.current.handleContinueMultisigIntroduction()
-        })
-
-        expect(result.current.isMultisigIntroductionVisible).toBe(false)
-        expect(mockResetMultisigCreation).toHaveBeenCalledTimes(1)
-        expect(mockNavigate).toHaveBeenCalledWith('Multisig', {
-            screen: 'CreateMultisig',
-            params: { chainId: 'algorand' },
-        })
-    })
-
     it('watch address option navigates to WatchInfo', () => {
         const { result } = renderHook(() => useAddAccountScreen())
 
@@ -482,57 +353,6 @@ describe('useAddAccountScreen', () => {
         })
 
         expect(mockPush).toHaveBeenCalledWith('WatchInfo')
-    })
-
-    it('universal wallet option creates account and navigates to NameAccount', async () => {
-        const newAccount = {
-            id: 'new-id',
-            chains: { algorand: { address: 'NEW_ADDRESS' } },
-            custody: {
-                kind: 'local',
-                seed: 'bip39',
-                hd: { account: 0, keyIndex: 0 },
-            },
-            canSign: true,
-        }
-        mockBuildHdWalletAccount.mockResolvedValue(newAccount)
-
-        const { result } = renderHook(() => useAddAccountScreen())
-
-        const universalOption = result.current.mainOptions.find(
-            o => o.testID === 'add_account_create_universal_wallet_button',
-        )!
-
-        await act(async () => {
-            universalOption.onPress()
-        })
-
-        expect(mockBuildHdWalletAccount).toHaveBeenCalledWith({
-            account: 0,
-            keyIndex: 0,
-        })
-        expect(mockPush).toHaveBeenCalledWith('NameAccount', {
-            account: newAccount,
-        })
-    })
-
-    it('universal wallet option shows error toast on failure', async () => {
-        mockBuildHdWalletAccount.mockRejectedValue(new Error('Creation failed'))
-
-        const { result } = renderHook(() => useAddAccountScreen())
-
-        const universalOption = result.current.mainOptions.find(
-            o => o.testID === 'add_account_create_universal_wallet_button',
-        )!
-
-        await act(async () => {
-            universalOption.onPress()
-        })
-
-        expect(mockShowError).toHaveBeenCalledWith(
-            expect.any(Error),
-            'onboarding.create_account.error_title',
-        )
     })
 
     it('universal wallet option in otherOptions creates new wallet when HD wallet exists', async () => {
@@ -567,6 +387,25 @@ describe('useAddAccountScreen', () => {
         expect(mockPush).toHaveBeenCalledWith('NameAccount', {
             account: newAccount,
         })
+    })
+
+    it('universal wallet option shows error toast on failure', async () => {
+        mockBuildHdWalletAccount.mockRejectedValue(new Error('Creation failed'))
+
+        const { result } = renderHook(() => useAddAccountScreen())
+
+        const universalOption = result.current.otherOptions.find(
+            o => o.testID === 'add_account_create_universal_wallet_button',
+        )!
+
+        await act(async () => {
+            universalOption.onPress()
+        })
+
+        expect(mockShowError).toHaveBeenCalledWith(
+            expect.any(Error),
+            'onboarding.create_account.error_title',
+        )
     })
 
     it('algo25 option creates algo25 account and navigates to NameAccount', async () => {
@@ -617,28 +456,6 @@ describe('useAddAccountScreen', () => {
         )
     })
 
-    it('mainOptions includes quantum option when the flag is enabled', () => {
-        const { result } = renderHook(() => useAddAccountScreen())
-
-        expect(
-            result.current.mainOptions.find(
-                o => o.testID === 'add_account_create_quantum_button',
-            ),
-        ).toBeDefined()
-    })
-
-    it('mainOptions excludes the multisig option when the multisig capability is off', () => {
-        capabilityState.turnOff('multisig')
-
-        const { result } = renderHook(() => useAddAccountScreen())
-
-        expect(
-            result.current.mainOptions.some(
-                o => o.testID === 'add_account_create_multisig_button',
-            ),
-        ).toBe(false)
-    })
-
     it('otherOptions excludes the watch option when the watchAccounts capability is off', () => {
         capabilityState.turnOff('watchAccounts')
 
@@ -683,18 +500,6 @@ describe('useAddAccountScreen', () => {
         })
     })
 
-    it('mainOptions excludes quantum option when the flag is disabled', () => {
-        setQuantumEnabled(false)
-
-        const { result } = renderHook(() => useAddAccountScreen())
-
-        expect(
-            result.current.mainOptions.find(
-                o => o.testID === 'add_account_create_quantum_button',
-            ),
-        ).toBeUndefined()
-    })
-
     it('offers no key-kind create row on a chain with no account presentation', () => {
         accountPresentationChainAdapters.reset()
 
@@ -704,158 +509,8 @@ describe('useAddAccountScreen', () => {
             ...result.current.mainOptions,
             ...result.current.otherOptions,
         ].map(o => o.testID)
-        expect(testIDs).not.toContain('add_account_create_quantum_button')
         expect(testIDs).not.toContain('add_account_create_algo25_button')
         expect(testIDs).toContain('add_account_import_button')
-    })
-
-    it('places the quantum option directly after the first account option', () => {
-        mockUseAllAccounts.mockReturnValue([HD_ACCOUNT])
-
-        const { result } = renderHook(() => useAddAccountScreen())
-
-        const addIndex = result.current.mainOptions.findIndex(
-            o => o.testID === 'add_account_add_button',
-        )
-        const quantumIndex = result.current.mainOptions.findIndex(
-            o => o.testID === 'add_account_create_quantum_button',
-        )
-
-        expect(quantumIndex).toBe(addIndex + 1)
-    })
-
-    it('quantum option carries a NEW badge and a learn-more link', () => {
-        const { result } = renderHook(() => useAddAccountScreen())
-
-        const quantumOption = result.current.mainOptions.find(
-            o => o.testID === 'add_account_create_quantum_button',
-        )!
-
-        expect(quantumOption.badge?.labelKey).toBe(
-            'onboarding.add_account.quantum_account_option_badge',
-        )
-        expect(quantumOption.learnMore?.labelKey).toBe(
-            'onboarding.add_account.quantum_account_option_learn_more',
-        )
-    })
-
-    it('quantum learn-more link opens the quantum-account support webview', () => {
-        const { result } = renderHook(() => useAddAccountScreen())
-
-        const quantumOption = result.current.mainOptions.find(
-            o => o.testID === 'add_account_create_quantum_button',
-        )!
-
-        act(() => {
-            quantumOption.learnMore!.onPress()
-        })
-
-        expect(mockPushWebView).toHaveBeenCalledWith(
-            expect.objectContaining({
-                url: 'https://example.com/quantum-account',
-            }),
-        )
-    })
-
-    it('quantum option creates quantum account and navigates to NameAccount', async () => {
-        const newAccount = {
-            id: 'quantum-id',
-            chains: { algorand: { address: 'QUANTUM_ADDRESS' } },
-            custody: { kind: 'local', seed: 'quantum' },
-            canSign: true,
-        }
-        mockBuildSingleKeyAccount.mockResolvedValue(newAccount)
-
-        const { result } = renderHook(() => useAddAccountScreen())
-
-        const quantumOption = result.current.mainOptions.find(
-            o => o.testID === 'add_account_create_quantum_button',
-        )!
-
-        await act(async () => {
-            quantumOption.onPress()
-        })
-
-        expect(mockBuildSingleKeyAccount).toHaveBeenCalledWith({
-            seed: 'quantum',
-        })
-        expect(mockPush).toHaveBeenCalledWith('NameAccount', {
-            account: newAccount,
-        })
-    })
-
-    it('quantum option tracks the quantum-account press event', async () => {
-        mockBuildSingleKeyAccount.mockResolvedValue(null)
-
-        const { result } = renderHook(() => useAddAccountScreen())
-
-        const quantumOption = result.current.mainOptions.find(
-            o => o.testID === 'add_account_create_quantum_button',
-        )!
-
-        await act(async () => {
-            quantumOption.onPress()
-        })
-
-        expect(mockTrackEvent).toHaveBeenCalledWith(
-            OnboardingEvent.CreateAccountQuantum,
-            { [AnalyticsMetadataKey.ChainId]: 'algorand' },
-        )
-    })
-
-    it('quantum option shows error toast on failure', async () => {
-        mockBuildSingleKeyAccount.mockRejectedValue(new Error('Keygen failed'))
-
-        const { result } = renderHook(() => useAddAccountScreen())
-
-        const quantumOption = result.current.mainOptions.find(
-            o => o.testID === 'add_account_create_quantum_button',
-        )!
-
-        await act(async () => {
-            quantumOption.onPress()
-        })
-
-        expect(mockShowError).toHaveBeenCalledWith(
-            expect.any(Error),
-            'onboarding.create_account.error_title',
-        )
-    })
-
-    it('creatingTitleKey reflects the quantum title while a quantum account is created', async () => {
-        let resolveCreate: (value: unknown) => void
-        mockBuildSingleKeyAccount.mockImplementation(
-            () =>
-                new Promise(resolve => {
-                    resolveCreate = resolve
-                }),
-        )
-
-        const { result } = renderHook(() => useAddAccountScreen())
-
-        // Default title before any creation starts.
-        expect(result.current.creatingTitleKey).toBe(
-            'onboarding.create_account.processing',
-        )
-
-        const quantumOption = result.current.mainOptions.find(
-            o => o.testID === 'add_account_create_quantum_button',
-        )!
-
-        await act(async () => {
-            quantumOption.onPress()
-        })
-
-        expect(result.current.creatingTitleKey).toBe(
-            'onboarding.add_account.quantum_creating_title',
-        )
-
-        await act(async () => {
-            resolveCreate!({
-                id: 'q',
-                chains: { algorand: { address: 'ADDR' } },
-            })
-        })
     })
 
     it('creatingTitleKey stays the default while an algo25 account is created', async () => {
@@ -889,69 +544,6 @@ describe('useAddAccountScreen', () => {
         })
     })
 
-    it('add account option calls createNextHDAccount and navigates to NameAccount', async () => {
-        mockUseAllAccounts.mockReturnValue([HD_ACCOUNT])
-
-        const newAccount = {
-            id: 'new-hd',
-            chains: { algorand: { address: 'NEW_HD_ADDRESS' } },
-            custody: {
-                kind: 'local',
-                seed: 'bip39',
-                hd: { account: 0, keyIndex: 0 },
-            },
-            canSign: true,
-        }
-        mockBuildNextHDAccount.mockResolvedValue(newAccount)
-
-        const { result } = renderHook(() => useAddAccountScreen())
-
-        const addOption = result.current.mainOptions.find(
-            o => o.testID === 'add_account_add_button',
-        )!
-
-        await act(async () => {
-            addOption.onPress()
-        })
-
-        expect(mockBuildNextHDAccount).toHaveBeenCalled()
-        expect(mockPush).toHaveBeenCalledWith('NameAccount', {
-            account: newAccount,
-        })
-    })
-
-    it('add account option does nothing when no HD wallet accounts exist', async () => {
-        mockUseAllAccounts.mockReturnValue([])
-
-        const { result } = renderHook(() => useAddAccountScreen())
-
-        const addOption = result.current.mainOptions.find(
-            o => o.testID === 'add_account_add_button',
-        )
-        expect(addOption).toBeUndefined()
-        expect(mockBuildNextHDAccount).not.toHaveBeenCalled()
-    })
-
-    it('add account option shows error toast on failure', async () => {
-        mockUseAllAccounts.mockReturnValue([HD_ACCOUNT])
-        mockBuildNextHDAccount.mockRejectedValue(new Error('Derivation failed'))
-
-        const { result } = renderHook(() => useAddAccountScreen())
-
-        const addOption = result.current.mainOptions.find(
-            o => o.testID === 'add_account_add_button',
-        )!
-
-        await act(async () => {
-            addOption.onPress()
-        })
-
-        expect(mockShowError).toHaveBeenCalledWith(
-            expect.any(Error),
-            'onboarding.create_account.error_title',
-        )
-    })
-
     it('isCreatingAccount reflects loading state during account creation', async () => {
         let resolveCreate: (value: unknown) => void
         mockBuildHdWalletAccount.mockImplementation(
@@ -965,7 +557,7 @@ describe('useAddAccountScreen', () => {
 
         expect(result.current.isCreatingAccount).toBe(false)
 
-        const universalOption = result.current.mainOptions.find(
+        const universalOption = result.current.otherOptions.find(
             o => o.testID === 'add_account_create_universal_wallet_button',
         )!
 
@@ -1034,57 +626,6 @@ describe('useAddAccountScreen', () => {
         expect(mockPushWebView).toHaveBeenCalledWith({
             url: 'https://example.com/privacy?lang=en',
             id: 'privacy-policy',
-        })
-    })
-
-    it('add account navigates to SelectHDWallet when multiple HD wallets exist', async () => {
-        mockUseAllAccounts.mockReturnValue([HD_ACCOUNT])
-        mockHasMultipleHdSeeds.mockReturnValue(true)
-
-        const { result } = renderHook(() => useAddAccountScreen())
-
-        const addOption = result.current.mainOptions.find(
-            o => o.testID === 'add_account_add_button',
-        )!
-
-        await act(async () => {
-            addOption.onPress()
-        })
-
-        expect(mockPush).toHaveBeenCalledWith('SelectHDWallet')
-        expect(mockBuildNextHDAccount).not.toHaveBeenCalled()
-    })
-
-    it('add account does not navigate to SelectHDWallet when single HD wallet exists', async () => {
-        mockUseAllAccounts.mockReturnValue([HD_ACCOUNT])
-        mockHasMultipleHdSeeds.mockReturnValue(false)
-
-        const newAccount = {
-            id: 'new-hd',
-            chains: { algorand: { address: 'NEW_HD_ADDRESS' } },
-            custody: {
-                kind: 'local',
-                seed: 'bip39',
-                hd: { account: 0, keyIndex: 0 },
-            },
-            canSign: true,
-        }
-        mockBuildNextHDAccount.mockResolvedValue(newAccount)
-
-        const { result } = renderHook(() => useAddAccountScreen())
-
-        const addOption = result.current.mainOptions.find(
-            o => o.testID === 'add_account_add_button',
-        )!
-
-        await act(async () => {
-            addOption.onPress()
-        })
-
-        expect(mockPush).not.toHaveBeenCalledWith('SelectHDWallet')
-        expect(mockBuildNextHDAccount).toHaveBeenCalled()
-        expect(mockPush).toHaveBeenCalledWith('NameAccount', {
-            account: newAccount,
         })
     })
 })

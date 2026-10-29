@@ -20,6 +20,7 @@ describe(ID, () => {
             'i18n-suppressions.bad.ts:3',
             'i18n-suppressions.bad.ts:5',
             'i18n-suppressions.bad.ts:7',
+            'i18n-suppressions.bad.ts:9',
         ])
     })
 

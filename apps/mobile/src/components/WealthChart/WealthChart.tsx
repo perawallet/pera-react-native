@@ -21,24 +21,24 @@ import {
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 import {
-    type AccountBalanceHistoryItem,
-    useAccountBalancesHistoryQuery,
-    addressOn,
-    useAccountScope,
-    useAllAccounts,
-    type WalletAccount,
+    type AccountHoldingSource,
+    type PortfolioValueHistoryItem,
+    usePortfolioHistoryQuery,
 } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 
 export type WealthChartProps = {
-    account?: WalletAccount
+    /** Plotted as one summed series. */
+    sources: AccountHoldingSource[]
+    /** Converts the plotted values, so they match the total shown beside the chart. */
+    currencyScope: ChainScope
     period: HistoryPeriod
-    onSelectionChanged: (item: Nullable<AccountBalanceHistoryItem>) => void
+    onSelectionChanged: (item: Nullable<PortfolioValueHistoryItem>) => void
     /** Gate the (slow) history fetch on chart visibility. */
     enabled?: boolean
 }
 
-const getPreferredValue = (item: AccountBalanceHistoryItem): number =>
+const getPreferredValue = (item: PortfolioValueHistoryItem): number =>
     // Non-null by construction: `plottablePoints` drops unpriced points below.
     (item.preferredValue as Decimal).toNumber()
 
@@ -47,23 +47,13 @@ const getPreferredValue = (item: AccountBalanceHistoryItem): number =>
 // the d3 scales and Skia paths — purely to redraw a line that hadn't changed.
 export const WealthChart = memo(function WealthChart({
     onSelectionChanged,
-    account,
+    sources,
+    currencyScope,
     period,
     enabled = true,
 }: WealthChartProps) {
     const themeStyle = useStyles()
     const { t } = useLanguage()
-
-    const accounts = useAllAccounts()
-    // An account's own chain; the whole-wallet view stays on the legacy chain.
-    const scope = useAccountScope(account, LEGACY_CHAIN_ID)
-    const addresses = useMemo(
-        () =>
-            (account ? [account] : accounts).flatMap(
-                (a: WalletAccount) => addressOn(a, scope) ?? [],
-            ),
-        [account, accounts, scope],
-    )
 
     const {
         data,
@@ -73,7 +63,7 @@ export const WealthChart = memo(function WealthChart({
         isPaused,
         refetch,
         isUnavailableOnNetwork,
-    } = useAccountBalancesHistoryQuery(addresses, period, scope, enabled)
+    } = usePortfolioHistoryQuery(sources, period, currencyScope, enabled)
 
     // A point with no preferred value has no rate behind it (offline, never
     // synced). Plotting it as 0 would draw a cliff to the axis, so drop it —

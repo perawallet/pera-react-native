@@ -158,6 +158,7 @@ export type OnboardingStackParamList = ImportFlowParamList & {
 
 export type AddAccountStackParamList = ImportFlowParamList & {
     AddAccountHome: undefined
+    AddAccountOptions: { chainId: ChainId }
     SelectHDWallet: Optional<{
         /** Forwarded to NameAccount so the caller's flow can resume after naming. */
         returnTo?: PostCreateReturnTarget

@@ -159,6 +159,7 @@ test('Add Account creates a quantum account through the web keystore', async () 
     await page
         .getByTestId('account_menu_add_account_button')
         .click({ timeout: 20_000 })
+    await page.getByTestId('add_account_add_button').click({ timeout: 20_000 })
     await page
         .getByTestId('add_account_create_quantum_button')
         .click({ timeout: 20_000 })

@@ -12,15 +12,16 @@
 
 import { makeStyles } from '@rneui/themed'
 
+// lanekeep-ignore-next-line pera/no-numeric-sizes reason: header artwork width, same as CreatePasswordScreen
 const HEADER_IMAGE_WIDTH = 137
+// lanekeep-ignore-next-line pera/no-numeric-sizes reason: header artwork height, same as CreatePasswordScreen
 const HEADER_IMAGE_HEIGHT = 217
 
 export const useStyles = makeStyles(theme => ({
     container: {
         flex: 1,
         paddingHorizontal: theme.spacing.xl,
-        // Matches CreatePasswordScreen, so the step reads as the next page of
-        // the same flow.
+        // lanekeep-ignore-next-line pera/no-numeric-sizes reason: same fixed top padding as CreatePasswordScreen, so the step reads as the next page of that flow
         paddingTop: theme.spacing['5xl'] * 2,
     },
     imageContainer: {

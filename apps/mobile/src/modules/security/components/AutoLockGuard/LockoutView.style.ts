@@ -12,6 +12,7 @@
 
 import { makeStyles } from '@rneui/themed'
 
+// lanekeep-ignore-next-line pera/no-numeric-sizes reason: lockout icon size
 const LOCKOUT_ICON_SIZE = 80
 
 export const useStyles = makeStyles(theme => ({

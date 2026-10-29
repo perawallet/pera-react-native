@@ -32,8 +32,7 @@ import {
     createDiscoverBridgeHost,
     openExternalTab,
 } from '@perawallet/wallet-core-browser-runtime'
-import { PWView } from '@components/core/PWView'
-import { PWButton } from '@components/core/PWButton'
+import { PWView, PWButton } from '@components/core'
 import { EmptyView } from '@components/EmptyView/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
 import { useNetworkStatus } from '@modules/network'
@@ -113,7 +112,7 @@ export const PWWebView = ({
     // A cross-origin iframe reports only a coarse load/error signal — there is
     // no per-subresource `onError` the way react-native-webview gives native,
     // and no way to read the framed document's status. That is enough for the
-    // thing that actually mattered: a Bidali load failure previously left a
+    // thing that actually matters: a Bidali load failure must not leave a
     // blank panel with no explanation and no way back.
     //
     // `onError` on an iframe is unreliable across browsers for navigation

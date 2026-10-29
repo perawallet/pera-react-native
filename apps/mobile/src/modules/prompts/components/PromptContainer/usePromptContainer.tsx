@@ -324,10 +324,9 @@ export const usePromptContainer = (): UsePromptContainerResult => {
         [setPresentationHeld],
     )
 
-    // Hides only the prompt that was answered. This used to hide every prompt,
-    // which meant answering one silently suppressed the rest for the session —
-    // and, because that state was the container's own, a remount brought them
-    // all back. The queue now advances to the next by priority instead.
+    // Hides only the prompt that was answered: hiding every prompt would
+    // silently suppress the rest for the session. The queue advances to the
+    // next by priority instead.
     const hidePrompt = (id: string) => {
         dismiss(id)
     }

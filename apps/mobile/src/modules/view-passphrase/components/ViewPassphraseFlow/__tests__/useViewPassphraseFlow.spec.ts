@@ -76,6 +76,9 @@ describe('useViewPassphraseFlow', () => {
 
         expect(mockRequirePinVerification).toHaveBeenCalled()
         expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
+        expect(
+            mockRequestBottomSheet.mock.calls[0]![0].contents.props.address,
+        ).toBe('ADDR')
     })
 
     it("opens the display sheet after the acknowledge sheet resolves with 'confirm'", async () => {

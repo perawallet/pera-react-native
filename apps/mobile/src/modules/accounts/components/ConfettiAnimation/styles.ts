@@ -12,20 +12,7 @@
 
 import { makeStyles, useTheme } from '@rneui/themed'
 
-export const useStyles = makeStyles(theme => ({
-    container: {
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        zIndex: theme.zIndex.overlay1,
-        // Clip flakes that sway past the screen edges.
-        overflow: 'hidden',
-        // Confetti is decorative — let taps pass through to the UI below
-        // so buttons remain interactive while the animation plays.
-        pointerEvents: 'none',
-    },
+export const useStyles = makeStyles(() => ({
     piece: {
         position: 'absolute',
         top: 0,

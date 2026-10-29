@@ -18,8 +18,8 @@ import {
     useRemoteConfig,
 } from '@perawallet/wallet-core-remote-config'
 import { useLanguage } from '@hooks/useLanguage'
-import { BASE_LOCALE, resolveLocale } from '../../../../i18n/locales'
-import { getEffectiveSupportedLocales } from '../../../../i18n/effectiveLocales'
+import { BASE_LOCALE, resolveLocale } from '@i18n/locales'
+import { getEffectiveSupportedLocales } from '@i18n/effectiveLocales'
 
 type UseSettingsLanguageScreenResult = {
     language: string

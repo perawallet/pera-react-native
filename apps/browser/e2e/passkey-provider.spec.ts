@@ -112,12 +112,11 @@ const attachVirtualAuthenticator = async (
 // Passkey approvals share the pending-approval store and discovery message
 // with enable/sign, so this defers to the shared helper.
 //
-// This used to carry its own copy of the pre-#1400 discovery poll, which only
-// ever asked `get-current-approval`. That message deliberately skips entries
-// whose surface is 'window' (approval-bridge.ts), so once the service worker
-// fell back to the window — routine on a headless runner with no window
-// manager — the poll could never return non-null and the spec failed
-// permanently rather than slowly. #1400 fixed that everywhere except here.
+// A poll that only asks `get-current-approval` cannot work here: that message
+// deliberately skips entries whose surface is 'window' (approval-bridge.ts), so
+// once the service worker falls back to the window — routine on a headless
+// runner with no window manager — the poll can never return non-null and the
+// spec fails permanently rather than slowly.
 const openApprovalPopup = async (): Promise<{
     approvalPage: Page
     approvalErrors: Error[]
@@ -319,9 +318,9 @@ test('interception on: create() opens the Pera consent screen; approving returns
 
     // Deliberately generous: the FIRST passkey on a wallet also mints the
     // PBKDF2-HMAC-SHA512 `pbkdf2-p256` main key every later credential derives
-    // from, and that is 210k iterations of pure-JS HMAC by design. It measures
-    // ~9.5s on a dev laptop and several times that on a CI runner, against
-    // sub-second for every subsequent ceremony (see the get/decline/delete
+    // from, and that is 210k iterations of pure-JS HMAC by design. It takes
+    // several seconds on a dev laptop and several times that on a CI runner,
+    // against sub-second for every subsequent ceremony (see the get/decline/delete
     // tests below, which reuse the main key). A tighter budget here fails on
     // slow hardware only, which is the worst kind of flake.
     await expect

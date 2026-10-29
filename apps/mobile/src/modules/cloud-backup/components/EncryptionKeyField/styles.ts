@@ -25,6 +25,7 @@ export const useStyles = makeStyles(theme => ({
     keyField: {
         flexDirection: 'row',
         alignItems: 'center',
+        // lanekeep-ignore-next-line pera/no-numeric-sizes reason: field min height (56)
         minHeight: theme.spacing['3xl'] + theme.spacing.sm,
         paddingHorizontal: theme.spacing.lg,
         borderRadius: theme.borderRadius.sm,

@@ -11,6 +11,7 @@
  */
 
 import type { PeraAsset } from '@perawallet/wallet-core-assets'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { type Nullable } from '@perawallet/wallet-core-shared'
 import type { Decimal } from 'decimal.js'
 
@@ -80,20 +81,36 @@ export type AccountBalance = {
 export type AccountBalances = Map<string, AccountBalance>
 
 /**
- * Per-address values for ranking accounts: the native value within one chain,
- * the fiat value across chains. Structural on purpose: both the full
- * `AccountBalances` map and `useAccountValueTotalsQuery`'s cheap totals map
- * satisfy it.
+ * One account's totals on one chain. Chain-qualified because EVM chains derive
+ * the same address, so an address alone would let one chain's entry overwrite
+ * another's. Branded so a key can only come from `accountValueKey`.
+ */
+export type AccountValueKey = `${ChainId}|${string}` & {
+    readonly __accountValueKey: unique symbol
+}
+
+export const accountValueKey = (
+    chainId: ChainId,
+    address: string,
+): AccountValueKey => `${chainId}|${address}` as AccountValueKey
+
+/**
+ * Per-chain values for ranking accounts: the native value within one chain,
+ * the fiat value across chains. Structural on purpose: any map of this shape
+ * satisfies it, such as `useAccountValueTotalsQuery`'s totals map.
  */
 export type AccountValues = Map<
-    string,
+    AccountValueKey,
     Pick<AccountBalance, 'nativeValue' | 'fiatValue'>
 >
 
-export type AccountBalanceHistoryItem = {
+export type PortfolioValueHistoryItem = {
     datetime: Date
     /** `null` when the preferred-currency rate is unresolved — not 0. */
     preferredValue: Nullable<Decimal>
+}
+
+export type AccountBalanceHistoryItem = PortfolioValueHistoryItem & {
     /** Display units of the chain's native asset. */
     nativeValue: Decimal
 }

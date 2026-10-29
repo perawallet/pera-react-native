@@ -13,6 +13,7 @@ import { beforeEach, describe, test, expect, vi } from 'vitest'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
 import {
+    accountNumberOf,
     canSignArbitraryData,
     canSignDirectly,
     canSignProgram,
@@ -24,7 +25,7 @@ import {
     isLedgerAccount,
     isMultisigAccount,
     isDelegatedAccount,
-    isNamedAfterAddress,
+    isNamedAfterOwnAddress,
     isSameAddress,
     isWatchAccount,
 } from '../utils'
@@ -46,6 +47,7 @@ import {
 
 const OTHER_CHAIN_ID = 'ethereum' as ChainId
 const LONG_ADDRESS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+const OTHER_ADDRESS = '0x1234567890abcdef'
 
 const named = (address: string, name?: string): WalletAccount =>
     testAccount('hd', address, name === undefined ? {} : { name })
@@ -121,44 +123,105 @@ describe('utils - getAccountDisplayName', () => {
         ).toBe('ABCDEF...WRONG')
     })
 
+    test('treats a name that is its address on another chain as no name', () => {
+        const account = buildTestAccount(
+            TEST_CUSTODY.hd,
+            {
+                [FAKE_CHAIN_ID]: { address: LONG_ADDRESS, keyPairId: 'hd-key' },
+                [OTHER_CHAIN_ID]: {
+                    address: OTHER_ADDRESS,
+                    keyPairId: 'hd-key',
+                },
+            },
+            { name: '0x1234...cdef' },
+        )
+
+        expect(getAccountDisplayName(account, FAKE_CHAIN_ID)).toBe('ABC~XYZ')
+    })
+
     test('returns "No Account" when the account is null', () => {
         expect(getAccountDisplayName(null, FAKE_CHAIN_ID)).toBe('No Account')
     })
 })
 
-describe('utils - isNamedAfterAddress', () => {
+describe('utils - isNamedAfterOwnAddress', () => {
+    const twoChains = (name?: string): WalletAccount =>
+        buildTestAccount(
+            TEST_CUSTODY.hd,
+            {
+                [FAKE_CHAIN_ID]: { address: LONG_ADDRESS, keyPairId: 'hd-key' },
+                [OTHER_CHAIN_ID]: {
+                    address: OTHER_ADDRESS,
+                    keyPairId: 'hd-key',
+                },
+            },
+            name === undefined ? {} : { name },
+        )
+
     test.each([
         ['the full address', LONG_ADDRESS],
         ['a legacy 6+6 truncation', 'ABCDEF...UVWXYZ'],
         ['a unicode-ellipsis truncation', 'ABCDEF…UVWXYZ'],
     ])('is true for a name that is %s', (_, name) => {
-        expect(
-            isNamedAfterAddress(named(LONG_ADDRESS, name), FAKE_CHAIN_ID),
-        ).toBe(true)
+        expect(isNamedAfterOwnAddress(named(LONG_ADDRESS, name))).toBe(true)
     })
+
+    test.each([
+        ['the full address', OTHER_ADDRESS],
+        ['a truncation', '0x1234...cdef'],
+    ])(
+        "is true for a name that is %s on the account's other chain",
+        (_, name) => {
+            expect(isNamedAfterOwnAddress(twoChains(name))).toBe(true)
+        },
+    )
 
     test.each([
         ['a custom name', 'Savings'],
         ['a custom name that only looks like a truncation', 'ABCDEF...WRONG'],
+        ['an empty name', ''],
         ['no name', undefined],
     ])('is false for %s', (_, name) => {
-        expect(
-            isNamedAfterAddress(named(LONG_ADDRESS, name), FAKE_CHAIN_ID),
-        ).toBe(false)
+        expect(isNamedAfterOwnAddress(twoChains(name))).toBe(false)
     })
 
-    test('is false on a chain the account holds no address on', () => {
-        const account = buildTestAccount(TEST_CUSTODY.watch, {
-            [FAKE_CHAIN_ID]: { address: LONG_ADDRESS },
-        })
-
+    test("is false for a truncation of another account's address", () => {
         expect(
-            isNamedAfterAddress(
-                { ...account, name: LONG_ADDRESS },
-                OTHER_CHAIN_ID,
-            ),
+            isNamedAfterOwnAddress(named(LONG_ADDRESS, 'ZYXWVU...FEDCBA')),
         ).toBe(false)
     })
+})
+
+describe('utils - accountNumberOf', () => {
+    const hd = (account: number, keyIndex: number) =>
+        buildTestAccount(
+            { ...TEST_CUSTODY.hd, hd: { account, keyIndex } },
+            { [FAKE_CHAIN_ID]: { address: LONG_ADDRESS, keyPairId: 'hd-key' } },
+        )
+
+    test.each([
+        [0, 0, 1],
+        [2, 0, 3],
+        [0, 4, 5],
+    ])('numbers an HD account at (%i, %i) as %i', (account, keyIndex, n) => {
+        expect(accountNumberOf(hd(account, keyIndex))).toBe(n)
+    })
+
+    test("numbers a hardware account from its device's account index", () => {
+        const account = buildTestAccount(
+            { ...TEST_CUSTODY.hardware, accountIndex: 1 },
+            { [FAKE_CHAIN_ID]: { address: LONG_ADDRESS } },
+        )
+
+        expect(accountNumberOf(account)).toBe(2)
+    })
+
+    test.each(['local', 'explicit', 'watch', 'multisig'] as const)(
+        'has no number for a %s account',
+        custody => {
+            expect(accountNumberOf(testAccount(custody))).toBeUndefined()
+        },
+    )
 })
 
 describe('utils - custody guards', () => {

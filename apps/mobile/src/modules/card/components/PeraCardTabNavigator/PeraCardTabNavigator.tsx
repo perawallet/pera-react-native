@@ -11,7 +11,7 @@
  */
 
 import { trackEvent, CardEvent } from '@analytics'
-import { createPWTabNavigator } from '@components/core/PWTabView/PWTabView'
+import { createPWTabNavigator } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { PeraCardOverview } from '../PeraCardOverview'
 import { PeraCardDetails } from '../PeraCardDetails'

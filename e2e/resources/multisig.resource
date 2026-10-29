@@ -27,6 +27,8 @@ ${PARTICIPANT_ROWS_ALL_VISIBLE}             ${6}
 ${ACCOUNT_MENU_ADD_BUTTON}              tid=account_menu_add_account_button
 ${MORE_BUTTON}                          tid=more_button
 ${ADD_ACCOUNT_CREATE_MULTISIG_BUTTON}   tid=add_account_create_multisig_button
+${ADD_ACCOUNT_ADD_BUTTON}               tid=add_account_add_button
+${ADD_ACCOUNT_IMPORT_BUTTON}            tid=add_account_import_button
 ${ADD_ACCOUNT_SEE_OTHER_OPTIONS}        tid=add_account_see_other_options_button
 ${ADD_ACCOUNT_WATCH_BUTTON}             tid=add_account_watch_button
 ${WATCH_ADDRESS_INPUT}                  tid=watch_account_address_input
@@ -192,11 +194,13 @@ Open Add Account
     Open Account Menu
     ${accounts}=    Accounts In Open Menu
     Tap    ${ACCOUNT_MENU_ADD_BUTTON}
-    Wait Until Page Contains Element    ${ADD_ACCOUNT_CREATE_MULTISIG_BUTTON}    timeout=15s
+    Wait Until Page Contains Element    ${ADD_ACCOUNT_IMPORT_BUTTON}    timeout=15s
     RETURN    ${accounts}
 
 Open Multisig Introduction
     ${accounts}=    Open Add Account
+    Tap    ${ADD_ACCOUNT_ADD_BUTTON}
+    Wait Until Page Contains Element    ${ADD_ACCOUNT_CREATE_MULTISIG_BUTTON}    timeout=15s
     Tap    ${ADD_ACCOUNT_CREATE_MULTISIG_BUTTON}
     Wait Until Settled    ${MULTISIG_INTRO_CONTINUE_BUTTON}
     RETURN    ${accounts}

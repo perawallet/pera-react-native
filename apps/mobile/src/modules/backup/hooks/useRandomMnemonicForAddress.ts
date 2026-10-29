@@ -26,6 +26,7 @@ import {
     logger,
     type Nullable,
     type Optional,
+    toError,
 } from '@perawallet/wallet-core-shared'
 import { useMnemonicForAddress } from './useMnemonicForAddress'
 
@@ -90,7 +91,7 @@ export const useRandomMnemonicForAddress = (
                     'BackupVerification: failed to sample mnemonic words',
                     {
                         custody: custodyOf(account).kind,
-                        error: err instanceof Error ? err.message : String(err),
+                        error: toError(err).message,
                         stack: err instanceof Error ? err.stack : undefined,
                     },
                 )
