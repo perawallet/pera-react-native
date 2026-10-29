@@ -45,7 +45,7 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => ({
     },
     body: {
         paddingHorizontal: theme.spacing.xl,
-        gap: theme.spacing.xl + theme.spacing.sm,
+        gap: theme.spacing.xxl,
     },
     header: {
         alignItems: 'center',
@@ -64,8 +64,8 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => ({
         color: theme.colors.textGray,
     },
     footer: {
-        paddingHorizontal: theme.spacing.xl + theme.spacing.sm,
+        paddingHorizontal: theme.spacing.xxl,
         paddingTop: theme.spacing.md,
-        paddingBottom: theme.spacing.xl + theme.spacing.sm,
+        paddingBottom: theme.spacing.xxl,
     },
 }))

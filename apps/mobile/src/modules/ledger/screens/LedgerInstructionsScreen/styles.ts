@@ -23,7 +23,7 @@ export const useStyles = makeStyles(theme => ({
     stepCircle: {
         width: theme.spacing.xxl,
         height: theme.spacing.xxl,
-        borderRadius: theme.spacing.xxl / 2,
+        borderRadius: theme.borderRadius.full,
         backgroundColor: theme.colors.layerGrayLighter,
         alignItems: 'center',
         justifyContent: 'center',

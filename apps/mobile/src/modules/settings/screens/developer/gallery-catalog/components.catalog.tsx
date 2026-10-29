@@ -11,6 +11,7 @@
  */
 
 import React from 'react'
+import { useTheme, type Theme } from '@rneui/themed'
 
 import {
     PWBadge,
@@ -59,6 +60,15 @@ import peraTransactionLoading from '@assets/animations/pera-transaction-loading.
 import { registerPreview } from './registry'
 import { useLottiePreviewStyles } from './styles'
 import { VariantPreview } from './VariantPreview'
+
+const WithTheme = ({
+    children,
+}: {
+    children: (theme: Theme) => React.ReactNode
+}) => {
+    const { theme } = useTheme()
+    return <>{children(theme)}</>
+}
 
 const LottiePreview = () => {
     const styles = useLottiePreviewStyles()
@@ -970,26 +980,36 @@ registerPreview({
         <VariantPreview
             items={[
                 {
-                    label: 'cover / 80×80',
+                    label: 'cover / 4xl×4xl',
                     node: (
-                        <PWImage
-                            source={{ uri: 'https://via.placeholder.com/80' }}
-                            width={80}
-                            height={80}
-                        />
+                        <WithTheme>
+                            {theme => (
+                                <PWImage
+                                    source={{
+                                        uri: 'https://via.placeholder.com/80',
+                                    }}
+                                    width={theme.spacing['4xl']}
+                                    height={theme.spacing['4xl']}
+                                />
+                            )}
+                        </WithTheme>
                     ),
                 },
                 {
-                    label: 'contain / 120×60',
+                    label: 'contain / 5xl×3xl',
                     node: (
-                        <PWImage
-                            source={{
-                                uri: 'https://via.placeholder.com/120x60',
-                            }}
-                            width={120}
-                            height={60}
-                            resizeMode='contain'
-                        />
+                        <WithTheme>
+                            {theme => (
+                                <PWImage
+                                    source={{
+                                        uri: 'https://via.placeholder.com/120x60',
+                                    }}
+                                    width={theme.spacing['5xl']}
+                                    height={theme.spacing['3xl']}
+                                    resizeMode='contain'
+                                />
+                            )}
+                        </WithTheme>
                     ),
                 },
             ]}
@@ -1016,43 +1036,59 @@ registerPreview({
         <VariantPreview
             items={[
                 {
-                    label: 'pulse / single row / height 20',
+                    label: 'pulse / single row / height xl',
                     node: (
-                        <PWSkeleton
-                            animation='pulse'
-                            height={20}
-                        />
+                        <WithTheme>
+                            {theme => (
+                                <PWSkeleton
+                                    animation='pulse'
+                                    height={theme.spacing.xl}
+                                />
+                            )}
+                        </WithTheme>
                     ),
                 },
                 {
-                    label: 'pulse / 3 rows / height 16',
+                    label: 'pulse / 3 rows / height lg',
                     node: (
-                        <PWSkeleton
-                            animation='pulse'
-                            height={16}
-                            count={3}
-                        />
+                        <WithTheme>
+                            {theme => (
+                                <PWSkeleton
+                                    animation='pulse'
+                                    height={theme.spacing.lg}
+                                    count={3}
+                                />
+                            )}
+                        </WithTheme>
                     ),
                 },
                 {
-                    label: 'pulse / circle / 48×48',
+                    label: 'pulse / circle / 3xl×3xl',
                     node: (
-                        <PWSkeleton
-                            animation='pulse'
-                            height={48}
-                            width={48}
-                            circle
-                        />
+                        <WithTheme>
+                            {theme => (
+                                <PWSkeleton
+                                    animation='pulse'
+                                    height={theme.spacing['3xl']}
+                                    width={theme.spacing['3xl']}
+                                    circle
+                                />
+                            )}
+                        </WithTheme>
                     ),
                 },
                 {
-                    label: 'wave / 2 rows / height 20',
+                    label: 'wave / 2 rows / height xl',
                     node: (
-                        <PWSkeleton
-                            animation='wave'
-                            height={20}
-                            count={2}
-                        />
+                        <WithTheme>
+                            {theme => (
+                                <PWSkeleton
+                                    animation='wave'
+                                    height={theme.spacing.xl}
+                                    count={2}
+                                />
+                            )}
+                        </WithTheme>
                     ),
                 },
             ]}

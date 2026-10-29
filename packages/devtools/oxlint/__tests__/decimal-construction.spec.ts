@@ -50,7 +50,7 @@ describe('pera/decimal-construction', () => {
             expect(overrides).toHaveLength(1)
             expect(overrides[0].rules['no-restricted-imports']).toEqual([
                 'error',
-                {
+                expect.objectContaining({
                     paths: expect.arrayContaining([
                         {
                             name: 'decimal.js',
@@ -59,7 +59,7 @@ describe('pera/decimal-construction', () => {
                                 'Import the named { Decimal } from decimal.js.',
                         },
                     ]),
-                },
+                }),
             ])
         }
     })

@@ -61,6 +61,7 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => ({
     },
 }))
 
+// lanekeep-ignore-next-line pera/no-numeric-sizes reason: lockout icon size
 const LOCKOUT_ICON_SIZE = 80
 
 export const useLockoutViewStyles = makeStyles(theme => ({

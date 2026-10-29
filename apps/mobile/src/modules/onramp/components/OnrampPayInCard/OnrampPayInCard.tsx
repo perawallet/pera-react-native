@@ -19,6 +19,7 @@ import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useStyles } from './styles'
 import { useClipboard } from '@hooks/useClipboard'
 
+// lanekeep-ignore-next-line pera/no-numeric-sizes reason: pay-in QR code size
 const QR_SIZE = 180
 
 export type OnrampPayInCardProps = {

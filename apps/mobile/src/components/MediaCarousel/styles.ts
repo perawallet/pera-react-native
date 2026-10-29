@@ -13,10 +13,11 @@
 import { makeStyles } from '@rneui/themed'
 import type { ScaledSize } from 'react-native'
 
+// lanekeep-ignore-next-line pera/no-numeric-sizes reason: pager dot diameter
 const DOT_SIZE = 6
-const DOT_RADIUS = 3
 
 export const useStyles = makeStyles((theme, dimensions: ScaledSize) => {
+    // lanekeep-ignore-next-line pera/no-numeric-sizes reason: window width minus xl padding on each side
     const mediaSize = dimensions.width - 2 * theme.spacing.xl
 
     return {
@@ -81,13 +82,14 @@ export const useStyles = makeStyles((theme, dimensions: ScaledSize) => {
         dot: {
             width: DOT_SIZE,
             height: DOT_SIZE,
-            borderRadius: DOT_RADIUS,
+            borderRadius: theme.borderRadius.full,
             backgroundColor: theme.colors.layerGrayLighter,
         },
         dotActive: {
             backgroundColor: theme.colors.textMain,
         },
         pagerView: {
+            // lanekeep-ignore-next-line pera/no-numeric-sizes reason: pager is the media plus lg above and below
             height: mediaSize + 2 * theme.spacing.lg,
         },
     }

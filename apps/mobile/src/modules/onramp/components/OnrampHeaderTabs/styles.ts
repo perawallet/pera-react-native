@@ -13,6 +13,7 @@
 import { makeStyles } from '@rneui/themed'
 import { getFontWeightVariant } from '@theme/typography'
 
+// lanekeep-ignore-next-line pera/no-numeric-sizes reason: needs-attention dot diameter
 const DOT_SIZE = 6
 
 export const useStyles = makeStyles(theme => ({

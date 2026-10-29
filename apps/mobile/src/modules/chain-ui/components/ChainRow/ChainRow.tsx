@@ -17,6 +17,7 @@ import { PWListItemLayout, PWText } from '@components/core'
 import { ChainIcon } from '../ChainIcon'
 import { useStyles } from './styles'
 
+// lanekeep-ignore-next-line pera/no-numeric-sizes reason: chain row icon size
 const CHAIN_ICON_SIZE = 40
 
 export type ChainRowProps = {
