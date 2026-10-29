@@ -47,6 +47,23 @@ import {
 import { useStyles } from './styles'
 import type { PWPagerProps } from './types'
 
+const shouldOpenDrawerOnRelease = (
+    velocityX: number,
+    progress: number,
+): boolean => {
+    'worklet'
+    if (velocityX > PWPAGER_FLING_VELOCITY) return true
+    if (velocityX < -PWPAGER_FLING_VELOCITY) return false
+    return progress > PWPAGER_DRAWER_COMMIT_THRESHOLD
+}
+
+const settledPageOnRelease = (velocityX: number, offset: number): number => {
+    'worklet'
+    if (velocityX < -PWPAGER_FLING_VELOCITY) return Math.ceil(offset)
+    if (velocityX > PWPAGER_FLING_VELOCITY) return Math.floor(offset)
+    return Math.round(offset)
+}
+
 export type UsePWPagerParams = Required<
     Pick<
         PWPagerProps,
@@ -141,12 +158,10 @@ export const usePWPager = ({
     const onPanEnd = (event: PanGestureActiveEvent) => {
         'worklet'
         if (isDrivingDrawer.value === 1 && drawerProgress) {
-            const shouldOpen =
-                event.velocityX > PWPAGER_FLING_VELOCITY
-                    ? true
-                    : event.velocityX < -PWPAGER_FLING_VELOCITY
-                      ? false
-                      : drawerProgress.value > PWPAGER_DRAWER_COMMIT_THRESHOLD
+            const shouldOpen = shouldOpenDrawerOnRelease(
+                event.velocityX,
+                drawerProgress.value,
+            )
 
             drawerProgress.value = withSpring(
                 shouldOpen ? 1 : 0,
@@ -171,12 +186,7 @@ export const usePWPager = ({
 
         // A flick commits to the neighbouring page even from a short drag;
         // otherwise the nearest page wins.
-        const settled =
-            event.velocityX < -PWPAGER_FLING_VELOCITY
-                ? Math.ceil(offset.value)
-                : event.velocityX > PWPAGER_FLING_VELOCITY
-                  ? Math.floor(offset.value)
-                  : Math.round(offset.value)
+        const settled = settledPageOnRelease(event.velocityX, offset.value)
         const target = Math.min(Math.max(settled, 0), lastPageIndex)
 
         offset.value = withSpring(

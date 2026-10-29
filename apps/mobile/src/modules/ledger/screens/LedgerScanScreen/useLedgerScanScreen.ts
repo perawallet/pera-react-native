@@ -134,6 +134,14 @@ type UseLedgerScanScreenResult = {
 const USB_ONLY_TRANSPORTS: LedgerTransportType[] = ['usb']
 const BLE_ONLY_TRANSPORTS: LedgerTransportType[] = ['ble']
 
+const connectionOptionsOf = (
+    canScanBle: boolean,
+    isBleOnly: boolean,
+): { transportTypes: LedgerTransportType[] } | undefined => {
+    if (!canScanBle) return { transportTypes: USB_ONLY_TRANSPORTS }
+    return isBleOnly ? { transportTypes: BLE_ONLY_TRANSPORTS } : undefined
+}
+
 type LedgerScanRouteParams = {
     LedgerScan: Optional<{ transportType?: LedgerTransportType }>
 }
@@ -188,13 +196,7 @@ export const useLedgerScanScreen = (): UseLedgerScanScreenResult => {
         error,
         isReady,
         supportedTransportTypes,
-    } = useLedgerConnection(
-        !canScanBle
-            ? { transportTypes: USB_ONLY_TRANSPORTS }
-            : isBleOnly
-              ? { transportTypes: BLE_ONLY_TRANSPORTS }
-              : undefined,
-    )
+    } = useLedgerConnection(connectionOptionsOf(canScanBle, isBleOnly))
     const isUsbFallbackScan =
         !canScanBle && supportedTransportTypes.includes('usb')
     const isBleUnsupported =

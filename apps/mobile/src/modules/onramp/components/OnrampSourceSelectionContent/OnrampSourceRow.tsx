@@ -43,15 +43,17 @@ export const OnrampSourceRow = ({
     // code, falling back to the raw code when untranslated. Crypto sub-line:
     // "{symbol} · {network} network".
     const countryCode = token.countryCode?.toUpperCase()
-    const subLine =
-        isFiat && countryCode
-            ? t(`countries.${countryCode}`, { defaultValue: countryCode })
-            : isFiat
-              ? token.name
-              : t('onramp.source_selection.network_suffix', {
-                    symbol: token.symbol,
-                    network: token.network.name,
-                })
+    const subLineOf = () => {
+        if (isFiat && countryCode) {
+            return t(`countries.${countryCode}`, { defaultValue: countryCode })
+        }
+        if (isFiat) return token.name
+        return t('onramp.source_selection.network_suffix', {
+            symbol: token.symbol,
+            network: token.network.name,
+        })
+    }
+    const subLine = subLineOf()
 
     return (
         <PWTouchableOpacity

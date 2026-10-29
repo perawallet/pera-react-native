@@ -63,6 +63,13 @@ export const ImportAccountScreen = () => {
 
     const wordsPerColumn = Math.ceil(mnemonicLength / 2)
 
+    const inputContainerStyleOf = (isFocused: boolean, offsetIndex: number) => {
+        if (isFocused) return styles.focusedInputContainer
+        return invalidWordIndices.has(offsetIndex)
+            ? styles.invalidInputContainer
+            : styles.inputContainer
+    }
+
     useNavigationHeader({
         right: (
             <PWIcon
@@ -155,15 +162,10 @@ export const ImportAccountScreen = () => {
                                                             containerStyle={
                                                                 styles.inputOuterContainer
                                                             }
-                                                            inputContainerStyle={
-                                                                isFocused
-                                                                    ? styles.focusedInputContainer
-                                                                    : invalidWordIndices.has(
-                                                                            offsetIndex,
-                                                                        )
-                                                                      ? styles.invalidInputContainer
-                                                                      : styles.inputContainer
-                                                            }
+                                                            inputContainerStyle={inputContainerStyleOf(
+                                                                isFocused,
+                                                                offsetIndex,
+                                                            )}
                                                             inputStyle={
                                                                 styles.input
                                                             }

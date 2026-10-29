@@ -79,11 +79,9 @@ export const CardPickerSheetContent = <T,>({
         [onSelect, getLabel, getTestID, styles.row],
     )
 
-    return (
-        <PWView style={styles.container}>
-            <SheetHeader title={title} />
-
-            {isError ? (
+    const renderBody = () => {
+        if (isError) {
+            return (
                 <EmptyView
                     style={styles.center}
                     title={copy.errorTitle}
@@ -96,35 +94,47 @@ export const CardPickerSheetContent = <T,>({
                         />
                     }
                 />
-            ) : isLoading ? (
+            )
+        }
+        if (isLoading) {
+            return (
                 <PWView style={styles.center}>
                     <PWLoadingIndicator />
                 </PWView>
-            ) : (
-                <PWView style={styles.content}>
-                    {onSearchChange ? (
-                        <SearchInput
-                            value={search ?? ''}
-                            onChangeText={onSearchChange}
-                            placeholder={copy.searchPlaceholder}
-                        />
-                    ) : null}
-                    <PWFlatList
-                        inBottomSheet
-                        data={items}
-                        renderItem={renderItem}
-                        keyExtractor={getKey}
-                        style={styles.list}
-                        keyboardShouldPersistTaps='handled'
-                        ListEmptyComponent={
-                            <EmptyView
-                                title={copy.emptyTitle}
-                                body={copy.emptyBody}
-                            />
-                        }
+            )
+        }
+        return (
+            <PWView style={styles.content}>
+                {onSearchChange ? (
+                    <SearchInput
+                        value={search ?? ''}
+                        onChangeText={onSearchChange}
+                        placeholder={copy.searchPlaceholder}
                     />
-                </PWView>
-            )}
+                ) : null}
+                <PWFlatList
+                    inBottomSheet
+                    data={items}
+                    renderItem={renderItem}
+                    keyExtractor={getKey}
+                    style={styles.list}
+                    keyboardShouldPersistTaps='handled'
+                    ListEmptyComponent={
+                        <EmptyView
+                            title={copy.emptyTitle}
+                            body={copy.emptyBody}
+                        />
+                    }
+                />
+            </PWView>
+        )
+    }
+
+    return (
+        <PWView style={styles.container}>
+            <SheetHeader title={title} />
+
+            {renderBody()}
         </PWView>
     )
 }

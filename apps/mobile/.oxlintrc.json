@@ -49,6 +49,7 @@
     "react/rules-of-hooks": "error",
     "react/exhaustive-deps": "error",
     "no-console": "warn",
+    "no-nested-ternary": "error",
     "no-unused-vars": "off",
     "prefer-const": "error",
     "no-var": "error",
@@ -338,6 +339,10 @@
     {
       "files": ["src/**/__tests__/**", "src/**/*.spec.{ts,tsx}", "src/**/__integration__/**", "src/**/test-utils/**", "vitest*.ts"],
       "rules": { "pera/no-algorand-sdk-imports": "off" }
+    },
+    {
+      "files": ["**/__tests__/**", "**/__mocks__/**", "**/__integration__/**", "**/test-utils/**", "**/*.spec.{ts,tsx,js,jsx}", "**/*.test.{ts,tsx,js,jsx}"],
+      "rules": { "no-nested-ternary": "off" }
     },
     {
       "files": ["src/**"],

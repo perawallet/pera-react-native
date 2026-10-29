@@ -11,24 +11,14 @@
  */
 
 import React from 'react'
-import {
-    PWImage,
-    PWText,
-    PWToolbar,
-    PWTouchableIcon,
-    PWView,
-} from '@components/core'
-import { VideoPlayer } from '@components/VideoPlayer'
-import { AudioPlayer } from '@components/AudioPlayer'
+import { PWText, PWToolbar, PWTouchableIcon, PWView } from '@components/core'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
 import { useFullScreenMediaViewer } from './useFullScreenMediaViewer.web'
 import { useStyles } from './styles.web'
+import { FullScreenMediaPage } from './FullScreenMediaPage'
+import type { FullScreenMediaItem } from './types'
 
-export type FullScreenMediaItem = {
-    uri: string
-    type: 'image' | 'video' | 'audio'
-    posterUri?: string
-}
+export type { FullScreenMediaItem } from './types'
 
 export type FullScreenMediaViewerProps = {
     media: FullScreenMediaItem[]
@@ -83,20 +73,7 @@ export const FullScreenMediaViewer = ({
                     key={activeIndex}
                     style={styles.page}
                 >
-                    {activeItem.type === 'video' ? (
-                        <VideoPlayer uri={activeItem.uri} />
-                    ) : activeItem.type === 'audio' ? (
-                        <AudioPlayer
-                            uri={activeItem.uri}
-                            posterUri={activeItem.posterUri}
-                        />
-                    ) : (
-                        <PWImage
-                            source={{ uri: activeItem.uri }}
-                            style={styles.image}
-                            resizeMode='contain'
-                        />
-                    )}
+                    <FullScreenMediaPage item={activeItem} />
                 </PWView>
             ) : null}
 

@@ -228,6 +228,14 @@ const parseBip44Path = (path: string): number[] =>
             return hardened ? index + 0x80_00_00_00 : index
         })
 
+const rawDerivationPathOf = (
+    meta: Record<string, unknown>,
+): string | undefined => {
+    if (typeof meta.derivationPath === 'string') return meta.derivationPath
+    if (typeof meta.path === 'string') return meta.path
+    return undefined
+}
+
 export type NormalizeInput = {
     record: Canary13Record
     /**
@@ -303,12 +311,7 @@ export const normalizeCanary13Record = ({
         // `sign` reads the parsed `bip44Path` and `derivationType`, and
         // silently derives from `undefined` segments without them.
         if (meta.bip44Path === undefined) {
-            const rawPath =
-                typeof meta.derivationPath === 'string'
-                    ? meta.derivationPath
-                    : typeof meta.path === 'string'
-                      ? meta.path
-                      : undefined
+            const rawPath = rawDerivationPathOf(meta)
             if (rawPath !== undefined) {
                 meta.bip44Path = parseBip44Path(rawPath)
             }

@@ -60,6 +60,7 @@
     "no-loss-of-precision": "error",
     "no-misleading-character-class": "error",
     "no-new-native-nonconstructor": "error",
+    "no-nested-ternary": "error",
     "no-nonoctal-decimal-escape": "error",
     "no-obj-calls": "error",
     "no-prototype-builtins": "error",
@@ -357,6 +358,10 @@
     {
       "files": ["**/__tests__/**", "**/*.spec.{ts,tsx}", "**/__integration__/**", "**/vitest*.ts"],
       "rules": { "pera/no-algorand-sdk-imports": "off" }
+    },
+    {
+      "files": ["**/__tests__/**", "**/__mocks__/**", "**/__integration__/**", "**/test-utils/**", "**/*.spec.{ts,tsx,js}", "**/*.test.{ts,tsx,js}", "apps/browser/e2e/**"],
+      "rules": { "no-nested-ternary": "off" }
     }
   ]
 }
