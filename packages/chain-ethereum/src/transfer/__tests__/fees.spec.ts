@@ -18,11 +18,17 @@ import {
     describe,
     expect,
     it,
-    vi,
 } from 'vitest'
 import { setupServer } from 'msw/node'
-import { parseGwei, toHex, type RpcFeeHistory } from 'viem'
-import { estimateL1Fee, estimateOperatorFee } from 'viem/op-stack'
+import {
+    encodeFunctionData,
+    erc20Abi,
+    parseGwei,
+    parseTransaction,
+    toHex,
+    type Hex,
+    type RpcFeeHistory,
+} from 'viem'
 import { FEE_PRESETS } from '@perawallet/wallet-core-chain-contract'
 import { evmRpcHandlers } from '../../blockchain/msw-handlers'
 import { createEvmClient } from '../../blockchain/utils/createEvmClient'
@@ -32,16 +38,21 @@ import {
     ETHEREUM,
     EVM_TEST_CHAINS,
     POLYGON,
+    eip155IdOf,
     evmChainOf,
     evmScopeOf,
 } from '../../__tests__/evm-chains'
 import type { EvmChain } from '../../chains/types'
-import { readTransferFees, toEvmFeeEstimate } from '../fees'
-
-vi.mock('viem/op-stack', () => ({
-    estimateL1Fee: vi.fn(),
-    estimateOperatorFee: vi.fn(),
-}))
+import { VIEM_TRANSFER_NONCE_0 } from '../../signing/__tests__/fixtures'
+import type { EvmTransferCall } from '../builder'
+import { readEvmSurcharge, readTransferFees, toEvmFeeEstimate } from '../fees'
+import {
+    OP_STACK_ORACLE_ADDRESS,
+    opStackOracleResponder,
+    unsignedEncodingOf,
+    type OpStackOracleCall,
+    type OpStackOracleFixture,
+} from './op-stack-oracle'
 
 const call = {
     chainId: 1,
@@ -250,17 +261,63 @@ describe('toEvmFeeEstimate', () => {
 describe('per-chain fee strategies', () => {
     const L1_DATA_FEE = 1_234_567_890n
     const OPERATOR_FEE = 9_876n
+    const HISTORY = { baseFeePerGas: gwei(10), reward: [gwei(1, 30, 40)] }
+    // The fast preset of HISTORY: its caps encode longest, so it prices every preset.
+    const FAST = {
+        maxPriorityFeePerGas: parseGwei('40'),
+        maxFeePerGas: parseGwei('60'),
+    }
+
+    let oracleCalls: OpStackOracleCall[]
+    let nonceReads: number
+    let nodeResponses: Partial<
+        Record<'eth_estimateGas' | 'eth_getTransactionCount', Hex>
+    >
 
     beforeEach(() => {
-        vi.mocked(estimateL1Fee).mockReset().mockResolvedValue(L1_DATA_FEE)
-        vi.mocked(estimateOperatorFee)
-            .mockReset()
-            .mockResolvedValue(OPERATOR_FEE)
+        oracleCalls = []
+        nonceReads = 0
+        nodeResponses = {}
+    })
+
+    const baseCall = {
+        ...call,
+        chainId: eip155IdOf(BASE),
+    }
+
+    const pricedAs = (
+        nonce: number,
+        gas: bigint,
+        data?: Hex,
+    ): Parameters<typeof unsignedEncodingOf>[0] => ({
+        type: 'eip1559',
+        chainId: eip155IdOf(BASE),
+        nonce,
+        to: call.to,
+        value: call.value,
+        data,
+        gas,
+        ...FAST,
+    })
+
+    const oracleOf = (
+        encodings: Hex[],
+        l1Fee = L1_DATA_FEE,
+    ): OpStackOracleFixture => ({
+        l1Fees: new Map(encodings.map(encoding => [encoding, l1Fee])),
+        operatorFee: OPERATOR_FEE,
     })
 
     const readOn = (
         chain: EvmChain,
         history: Pick<RpcFeeHistory, 'baseFeePerGas'> & Partial<RpcFeeHistory>,
+        {
+            oracle = oracleOf([unsignedEncodingOf(pricedAs(0, 21_000n))]),
+            transfer = call,
+        }: {
+            oracle?: OpStackOracleFixture
+            transfer?: EvmTransferCall & { data?: Hex }
+        } = {},
     ) => {
         server.use(
             ...evmRpcHandlers({
@@ -271,22 +328,31 @@ describe('per-chain fee strategies', () => {
                         gasUsedRatio: [0.5],
                         ...history,
                     },
+                    eth_call: opStackOracleResponder(oracle, oracleCalls),
+                    eth_getTransactionCount: () => {
+                        nonceReads += 1
+                        return nodeResponses.eth_getTransactionCount ?? '0x0'
+                    },
+                    ...(nodeResponses.eth_estimateGas && {
+                        eth_estimateGas: nodeResponses.eth_estimateGas,
+                    }),
                 },
             }),
         )
         const scope = evmScopeOf(chain)
         return readTransferFees(
             createEvmClient(scope, testChainContext({ chain }), chain),
-            call,
+            transfer,
             chain,
             scope.networkId,
         )
     }
 
-    const HISTORY = { baseFeePerGas: gwei(10), reward: [gwei(1, 30, 40)] }
+    const readBase = (options: Parameters<typeof readOn>[2] = {}) =>
+        readOn(BASE, HISTORY, { transfer: baseCall, ...options })
 
     it("adds Base's L1 data fee and operator fee to every preset", async () => {
-        const fees = await readOn(BASE, HISTORY)
+        const fees = await readBase()
         const estimate = toEvmFeeEstimate(fees, 'normal', BASE)
         const surcharge = L1_DATA_FEE + OPERATOR_FEE
 
@@ -307,28 +373,74 @@ describe('per-chain fee strategies', () => {
         }
     })
 
-    it('names the OP-stack gas price oracle, which our chain definition lacks', async () => {
-        await readOn(BASE, HISTORY)
+    it('prices the L1 fee on the transaction the send would sign', async () => {
+        nodeResponses = {
+            eth_getTransactionCount: '0x12c',
+            eth_estimateGas: '0xfde8',
+        }
+        const data = encodeFunctionData({
+            abi: erc20Abi,
+            functionName: 'transfer',
+            args: [call.to, 5n],
+        })
+        const encoding = unsignedEncodingOf(pricedAs(300, 65_000n, data))
+
+        const fees = await readBase({
+            oracle: oracleOf([encoding]),
+            transfer: { ...baseCall, data },
+        })
+
+        expect(fees.surcharge).toBe(L1_DATA_FEE + OPERATOR_FEE)
+        expect(oracleCalls).toContainEqual({
+            functionName: 'getOperatorFee',
+            gas: 65_000n,
+        })
+        expect(oracleCalls).toContainEqual({
+            functionName: 'getL1Fee',
+            encoding,
+        })
+    })
+
+    it("reads Base's oracle at the OP-stack predeploy", async () => {
+        let target: unknown
+        const answer = opStackOracleResponder(
+            oracleOf([unsignedEncodingOf(pricedAs(0, 21_000n))]),
+        )
+        server.use(
+            ...evmRpcHandlers({
+                rpcUrl: TEST_RPC_URL,
+                responses: {
+                    eth_feeHistory: {
+                        oldestBlock: '0x1',
+                        gasUsedRatio: [0.5],
+                        ...HISTORY,
+                    },
+                    eth_call: params => {
+                        target = (params[0] as { to: unknown }).to
+                        return answer(params)
+                    },
+                },
+            }),
+        )
+        const scope = evmScopeOf(BASE)
+
+        await readTransferFees(
+            createEvmClient(scope, testChainContext({ chain: BASE }), BASE),
+            baseCall,
+            BASE,
+            scope.networkId,
+        )
 
         const oracle =
             BASE.row.fee.kind === 'eip1559-op-stack'
                 ? BASE.row.fee.gasPriceOracleAddress
                 : undefined
-        expect(oracle).toBe('0x420000000000000000000000000000000000000F')
-        expect(vi.mocked(estimateL1Fee).mock.calls[0]?.[1]).toMatchObject({
-            gasPriceOracleAddress: oracle,
-            to: call.to,
-            value: call.value,
-        })
-        expect(vi.mocked(estimateOperatorFee).mock.calls[0]?.[1]).toMatchObject(
-            { gasPriceOracleAddress: oracle },
-        )
+        expect(oracle).toBe(OP_STACK_ORACLE_ADDRESS)
+        expect(target).toBe(OP_STACK_ORACLE_ADDRESS)
     })
 
     it('rejects when the L1 data fee read fails, with no partial fee', async () => {
-        vi.mocked(estimateL1Fee).mockRejectedValue(new Error('oracle down'))
-
-        await expect(readOn(BASE, HISTORY)).rejects.toThrow('oracle down')
+        await expect(readBase({ oracle: oracleOf([]) })).rejects.toThrow()
     })
 
     it("never prices Polygon's tip below the network minimum", async () => {
@@ -363,10 +475,45 @@ describe('per-chain fee strategies', () => {
             ]
 
             expect(onChain).toEqual(onEthereum)
-            expect(estimateL1Fee).not.toHaveBeenCalled()
+            expect(oracleCalls).toEqual([])
+            expect(nonceReads).toBe(0)
+            expect(onChain.surcharge).toBe(0n)
             expect(toEvmFeeEstimate(onChain, 'slow', chain).assetRef).toEqual(
                 chain.descriptor.nativeAsset.ref,
             )
         },
     )
+})
+
+describe('readEvmSurcharge', () => {
+    it("prices a signed transaction's unsigned encoding", async () => {
+        const signed = parseTransaction(VIEM_TRANSFER_NONCE_0)
+        if (signed.type !== 'eip1559') throw new Error('expected eip1559')
+        const encoding = unsignedEncodingOf(signed)
+        const calls: OpStackOracleCall[] = []
+        server.use(
+            ...evmRpcHandlers({
+                rpcUrl: TEST_RPC_URL,
+                responses: {
+                    eth_call: opStackOracleResponder(
+                        {
+                            l1Fees: new Map([[encoding, 777n]]),
+                            operatorFee: 3n,
+                        },
+                        calls,
+                    ),
+                },
+            }),
+        )
+        const scope = evmScopeOf(BASE)
+
+        const surcharge = await readEvmSurcharge(
+            createEvmClient(scope, testChainContext({ chain: BASE }), BASE),
+            BASE,
+            signed as Parameters<typeof readEvmSurcharge>[2],
+        )
+
+        expect(surcharge).toBe(780n)
+        expect(calls).toContainEqual({ functionName: 'getL1Fee', encoding })
+    })
 })

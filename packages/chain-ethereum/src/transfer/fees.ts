@@ -10,8 +10,13 @@
  limitations under the License
  */
 
-import type { FeeValuesEIP1559, PublicClient } from 'viem'
-import { estimateL1Fee, estimateOperatorFee } from 'viem/op-stack'
+import {
+    parseAbi,
+    serializeTransaction,
+    type FeeValuesEIP1559,
+    type PublicClient,
+    type TransactionSerializableEIP1559,
+} from 'viem'
 import { Decimal } from 'decimal.js'
 import {
     FEE_PRESETS,
@@ -25,7 +30,7 @@ import type { EvmTransferCall } from './builder'
 /**
  * Gas is in gas units; every fee is in wei per gas, and `baseFeePerGas` is the
  * next block's. `surcharge` is in wei: what the chain charges on top of gas,
- * the same for every preset.
+ * priced on the fast preset's transaction and used for every preset.
  */
 export type EvmTransferFees = {
     gas: bigint
@@ -119,26 +124,78 @@ export const readEvmFeePresets = async (
     return { baseFeePerGas, presets }
 }
 
-// estimateGas prices L2 execution only. The oracle address is passed because
-// our defineChain declares no contracts, so viem's own lookup would throw.
-const readOpStackSurcharge = async (
+/** An EIP-1559 transaction with every field that sizes its encoding. Signature fields, if present, are ignored. */
+export type EvmPricedTransaction = TransactionSerializableEIP1559 &
+    FeeValuesEIP1559 & { chainId: number; nonce: number; gas: bigint }
+
+// viem's estimateL1Fee and estimateOperatorFee serialise with stub nonce, gas
+// and fees, which changes the size the oracle prices, so the oracle is read
+// directly. Our defineChain declares no contracts either, so viem couldn't find it.
+const gasPriceOracleAbi = parseAbi([
+    'function getL1Fee(bytes _data) view returns (uint256)',
+    'function getOperatorFee(uint256 _gasUsed) view returns (uint256)',
+])
+
+// The oracle adds a signature's size itself; a signature in the bytes would be counted twice.
+const unsignedEncodingOf = ({
+    r: _r,
+    s: _s,
+    v: _v,
+    yParity: _yParity,
+    ...unsigned
+}: EvmPricedTransaction) =>
+    serializeTransaction({
+        ...unsigned,
+        type: 'eip1559',
+    } as TransactionSerializableEIP1559)
+
+/**
+ * Wei the chain charges on top of gas for `transaction`: on an OP-stack chain,
+ * the oracle's L1 data fee for its unsigned encoding plus its operator fee;
+ * elsewhere `0n` with no read. Rejects when a read fails.
+ */
+export const readEvmSurcharge = async (
     client: PublicClient,
-    call: EvmTransferCall,
-    gasPriceOracleAddress: `0x${string}`,
+    chain: EvmChain,
+    transaction: EvmPricedTransaction,
 ): Promise<bigint> => {
-    const request = {
-        chain: client.chain,
-        account: call.from,
-        to: call.to,
-        value: call.value,
-        data: call.data,
-        gasPriceOracleAddress,
-    }
+    const { fee } = chain.row
+    if (fee.kind !== 'eip1559-op-stack') return 0n
+    const address = fee.gasPriceOracleAddress
     const [l1DataFee, operatorFee] = await Promise.all([
-        estimateL1Fee(client, request),
-        estimateOperatorFee(client, request),
+        client.readContract({
+            address,
+            abi: gasPriceOracleAbi,
+            functionName: 'getL1Fee',
+            args: [unsignedEncodingOf(transaction)],
+        }),
+        client.readContract({
+            address,
+            abi: gasPriceOracleAbi,
+            functionName: 'getOperatorFee',
+            args: [transaction.gas],
+        }),
     ])
     return l1DataFee + operatorFee
+}
+
+/** Estimates the call's gas and reads EIP-1559 fees at each preset's fee-history percentile. */
+export const readTransferGasAndPresets = async (
+    client: PublicClient,
+    call: EvmTransferCall,
+    chain: EvmChain,
+    networkId: NetworkId,
+): Promise<Omit<EvmTransferFees, 'surcharge'>> => {
+    const [gas, fees] = await Promise.all([
+        client.estimateGas({
+            account: call.from,
+            to: call.to,
+            value: call.value,
+            data: call.data,
+        }),
+        readEvmFeePresets(client, chain, networkId),
+    ])
+    return { gas, ...fees }
 }
 
 /** Estimates the call's gas and surcharge, and reads EIP-1559 fees at each preset's fee-history percentile. */
@@ -148,20 +205,38 @@ export const readTransferFees = async (
     chain: EvmChain,
     networkId: NetworkId,
 ): Promise<EvmTransferFees> => {
-    const { fee } = chain.row
-    const [gas, fees, surcharge] = await Promise.all([
-        client.estimateGas({
-            account: call.from,
-            to: call.to,
-            value: call.value,
-            data: call.data,
+    if (chain.row.fee.kind !== 'eip1559-op-stack') {
+        return {
+            ...(await readTransferGasAndPresets(
+                client,
+                call,
+                chain,
+                networkId,
+            )),
+            surcharge: 0n,
+        }
+    }
+    const [fees, nonce] = await Promise.all([
+        readTransferGasAndPresets(client, call, chain, networkId),
+        // The node's pending count can trail the ledger-aware nonce the build
+        // allocates; that rarely changes the encoded length, and a fee read must not depend on the ledger.
+        client.getTransactionCount({
+            address: call.from,
+            blockTag: 'pending',
         }),
-        readEvmFeePresets(client, chain, networkId),
-        fee.kind === 'eip1559-op-stack'
-            ? readOpStackSurcharge(client, call, fee.gasPriceOracleAddress)
-            : 0n,
     ])
-    return { gas, ...fees, surcharge }
+    // The fast preset's caps encode longest; one surcharge prices all three presets.
+    const surcharge = await readEvmSurcharge(client, chain, {
+        type: 'eip1559',
+        chainId: call.chainId,
+        nonce,
+        to: call.to,
+        value: call.value,
+        data: call.data,
+        gas: fees.gas,
+        ...fees.presets.fast,
+    })
+    return { ...fees, surcharge }
 }
 
 /** Prices each preset at gas x (base fee + tip), capped at gas x maxFeePerGas, plus the surcharge, in wei. */

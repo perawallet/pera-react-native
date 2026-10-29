@@ -28,7 +28,9 @@ import {
     hexToBytes,
     keccak256,
     parseTransaction,
+    type Hex,
     type RpcTransaction,
+    type TransactionSerializableEIP1559,
 } from 'viem'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
@@ -68,7 +70,8 @@ import {
 import { ethereumCallSummary } from '../../signing/review'
 import { createEvmBroadcasterAdapter } from '../broadcaster'
 import { submitEthereumTransactions } from '../submission'
-import { ETHEREUM } from '../../__tests__/evm-chains'
+import { BASE, ETHEREUM, evmScopeOf } from '../../__tests__/evm-chains'
+import { opStackOracleResponder, unsignedEncodingOf } from './op-stack-oracle'
 
 const SCOPE: ChainScope = { chainId: 'ethereum', networkId: 'mainnet' }
 const BYTES = hexToBytes(VIEM_TRANSFER_NONCE_0)
@@ -160,6 +163,20 @@ describe('Ethereum broadcaster adapter', () => {
             ])
         })
 
+        it('makes no eth_call on a chain without an OP-stack fee oracle', async () => {
+            const calls: unknown[] = []
+            useRpc({
+                eth_call: params => {
+                    calls.push(params)
+                    return '0x'
+                },
+            })
+
+            await adapter.submitAndAutoRefresh(SCOPE, SIGNED)
+
+            expect(calls).toEqual([])
+        })
+
         it('marks a node refusal failed and rethrows it', async () => {
             useRpc({
                 eth_sendRawTransaction: new EvmRpcErrorFixture(
@@ -227,6 +244,75 @@ describe('Ethereum broadcaster adapter', () => {
 
             expect(txIds).toEqual([HASH])
             expect(await rows()).toMatchObject([{ scope: 'ethereum/mainnet' }])
+        })
+    })
+
+    describe('on Base', () => {
+        const BASE_SCOPE = evmScopeOf(BASE)
+        const base = createEvmBroadcasterAdapter(
+            testChainContext({ chain: BASE }),
+            BASE,
+        )
+        const SIGNED = [{ scope: BASE_SCOPE, id: HASH, bytes: BYTES }]
+        const GAS_FEE = 420_000_000_000_000n
+        const L1_FEE = 5_000_000_000n
+        const OPERATOR_FEE = 7_000n
+
+        const useOracle = (l1Fees: ReadonlyMap<Hex, bigint>) =>
+            useRpc({
+                eth_call: opStackOracleResponder({
+                    l1Fees,
+                    operatorFee: OPERATOR_FEE,
+                }),
+            })
+
+        it('records an open send’s max fee as gas x max fee per gas plus the oracle’s fee for the signed bytes', async () => {
+            useOracle(
+                new Map([
+                    [
+                        unsignedEncodingOf(
+                            parseTransaction(
+                                VIEM_TRANSFER_NONCE_0,
+                            ) as TransactionSerializableEIP1559,
+                        ),
+                        L1_FEE,
+                    ],
+                ]),
+            )
+
+            await base.submitAndAutoRefresh(BASE_SCOPE, SIGNED)
+
+            const expected = new Decimal(
+                (GAS_FEE + L1_FEE + OPERATOR_FEE).toString(),
+            )
+            const [attempt] = await getSubmissionAttemptsWithHistoryEntry({
+                db,
+                scope: BASE_SCOPE,
+            })
+            expect(await rows()).toMatchObject([{ maxFee: expected }])
+            expect(attempt!.historyEntry?.fee).toEqual(expected)
+        })
+
+        it('records gas x max fee per gas alone, and still sends, when the oracle read fails', async () => {
+            const sent: unknown[] = []
+            useRpc({
+                eth_call: opStackOracleResponder({
+                    l1Fees: new Map(),
+                    operatorFee: OPERATOR_FEE,
+                }),
+                eth_sendRawTransaction: params => {
+                    sent.push(params[0])
+                    return HASH
+                },
+            })
+
+            const txIds = await base.submitAndAutoRefresh(BASE_SCOPE, SIGNED)
+
+            expect(txIds).toEqual([HASH])
+            expect(sent).toEqual([VIEM_TRANSFER_NONCE_0])
+            expect(await rows()).toMatchObject([
+                { maxFee: new Decimal(GAS_FEE.toString()) },
+            ])
         })
     })
 
