@@ -15,6 +15,7 @@ import {
     AppError,
     ErrorCategory,
     isExpectedError,
+    PeraNetworkError,
 } from '@perawallet/wallet-core-shared'
 import { BackupSyncQrError } from '../cloud/crypto/syncQrPayload'
 import { ItemKeyHasherDisposedError } from '../cloud/crypto/itemKeyHash'
@@ -130,18 +131,19 @@ describe('backup domain errors', () => {
         expect(error.chainId).toBe('algorand')
     })
 
-    it.each([
-        ['SecureBackupImportError', SecureBackupImportError, 'empty_file'],
-        ['PeraWebImportError', PeraWebImportError, 'malformed_qr'],
-    ] as const)(
-        '%s keeps its reason and defaults the message to it',
-        (_n, ErrorClass, reason) => {
-            const error = new ErrorClass(reason)
+    it('keeps the reason of a secure backup import failure and defaults the message to it', () => {
+        const error = new SecureBackupImportError('empty_file')
 
-            expect(error.reason).toBe(reason)
-            expect(error.message).toBe(reason)
-        },
-    )
+        expect(error.reason).toBe('empty_file')
+        expect(error.message).toBe('empty_file')
+    })
+
+    it('keeps the reason of a Pera Web import failure and defaults the message to it', () => {
+        const error = new PeraWebImportError('malformed_qr')
+
+        expect(error.reason).toBe('malformed_qr')
+        expect(error.message).toBe('malformed_qr')
+    })
 
     it('keeps the cause chain of a restore failure that has an Error cause', () => {
         const inner = new Error('inner')
@@ -170,6 +172,15 @@ describe('backup domain errors', () => {
 
         expect(error.state).toBe(state)
         expect(error.message).toContain('fetch failed')
+        expect(isExpectedError(error)).toBe(true)
+    })
+
+    it('takes the expected verdict of a wrapped network error', () => {
+        const error = new BackupPushIncompleteError(
+            createEmptySyncState('backup-1'),
+            new PeraNetworkError('server', { status: 503 }),
+        )
+
         expect(isExpectedError(error)).toBe(true)
     })
 

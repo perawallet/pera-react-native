@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { ErrorCategory, AppError } from '@perawallet/wallet-core-shared'
+import { AppError, ErrorCategory } from '@perawallet/wallet-core-shared'
 import type { HardwareWalletTransport } from './types'
 
 /**
