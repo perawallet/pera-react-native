@@ -67,8 +67,8 @@ export const decodeCredentialIdToBytes = (raw: string): Uint8Array | null => {
 }
 
 /** PBKDF2 is heavy, so callers cache this per HD seed across its passkeys. */
-export const deriveMainKey = (mnemonic: string): Promise<Uint8Array> =>
-    deriveLiquidAuthMainKey(mnemonic)
+export const deriveMainKey = (mnemonicBytes: Uint8Array): Promise<Uint8Array> =>
+    deriveLiquidAuthMainKey(mnemonicBytes)
 
 /**
  * Which public-key encoding the legacy platform hashed for the `credentialId` —
