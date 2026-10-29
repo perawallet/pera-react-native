@@ -43,6 +43,7 @@ export const PWStaticWebView = ({
 
     return (
         <WebView
+            // oxlint-disable-next-line pera/no-unvalidated-open-url -- checked at each <PWStaticWebView source> by this rule
             source={source}
             nestedScrollEnabled
             renderLoading={renderLoading ?? (() => <PWLoadingIndicator />)}

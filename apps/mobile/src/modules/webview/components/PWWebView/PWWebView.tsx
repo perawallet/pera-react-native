@@ -39,6 +39,7 @@ import {
     generateBridgeToken,
     hasValidBridgeToken,
     isTrustedWebviewOrigin,
+    toValidatedBrowserUrl,
 } from '@modules/webview/hooks/handlers'
 import { useNotifyWebViewOnContextChange } from '@modules/webview/hooks/useNotifyWebViewOnContextChange'
 import {
@@ -201,8 +202,10 @@ export const PWWebView = (props: PWWebViewProps) => {
             openExternalLinksInBrowser
                 ? {
                       hostUrl: loadableUrl,
-                      onExternalNavigation: (target: string) =>
-                          pushWebView({ url: target }),
+                      onExternalNavigation: (target: string) => {
+                          const url = toValidatedBrowserUrl(target)
+                          if (url) pushWebView({ url })
+                      },
                   }
                 : undefined,
         [openExternalLinksInBrowser, loadableUrl, pushWebView],
@@ -391,6 +394,7 @@ export const PWWebView = (props: PWWebViewProps) => {
                 thirdPartyCookiesEnabled={false}
                 mixedContentMode='never'
                 {...rest}
+                // oxlint-disable-next-line pera/no-unvalidated-open-url -- the url prop is checked at each <PWWebView> by this rule
                 source={{
                     uri: loadableUrl,
                 }}
@@ -398,6 +402,7 @@ export const PWWebView = (props: PWWebViewProps) => {
                 // default http(s) whitelist hands custom-scheme URLs straight to
                 // the OS before the guard runs, bypassing the origin check. With
                 // '*' the guard is the sole decision point.
+                // oxlint-disable-next-line pera/no-unvalidated-open-url -- the navigation guard decides every scheme (see above)
                 originWhitelist={['*']}
                 style={styles.webview}
                 renderLoading={() => (

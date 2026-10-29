@@ -55,7 +55,6 @@
     "no-var": "error",
     "import/no-duplicates": ["error", { "prefer-inline": true }],
     "unused-imports/no-unused-imports": "error",
-    "pera/no-unvalidated-open-url": "error",
     "pera/prefer-lookup-map": "error",
     "max-lines": [
       "warn",
@@ -345,7 +344,7 @@
     {
       "files": ["src/**"],
       "excludeFiles": ["src/**/__tests__/**", "src/**/__mocks__/**", "src/**/test-utils/**", "src/**/__integration__/**", "src/**/*.spec.{ts,tsx}", "src/**/*.test.{ts,tsx}"],
-      "rules": { "pera/prefer-to-error": "error" }
+      "rules": { "pera/no-unvalidated-open-url": "error", "pera/prefer-to-error": "error" }
     },
     {
       "files": ["src/**"],
