@@ -14,7 +14,6 @@ import { useMemo } from 'react'
 import { useLanguage } from '@hooks/useLanguage'
 import { PWIcon, PWTouchableOpacity, PWView, PWText } from '@components/core'
 import { useStyles } from './styles'
-import { getTestProps } from '@utils/test-id-helper'
 import { getDisplayHost } from './getDisplayHost'
 
 export type WebViewTitleBarProps = {
@@ -46,7 +45,7 @@ export const WebViewTitleBar = ({
         <PWView style={styles.titleBar}>
             <PWView style={styles.titleIconContainer}>
                 <PWTouchableOpacity
-                    {...getTestProps('webview_close_button')}
+                    testID='webview_close_button'
                     onPress={onCloseRequested}
                 >
                     <PWIcon
