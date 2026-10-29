@@ -181,6 +181,28 @@ describe('usePinEntry', () => {
         expect(result.current.pin).toBe('')
     })
 
+    it('keeps digits entered under the same step and clears them when the step changes', () => {
+        const { result, rerender } = renderHook(
+            ({ step }: { step: string }) =>
+                usePinEntry({
+                    onPinComplete: mockOnPinComplete,
+                    resetKey: step,
+                }),
+            { initialProps: { step: 'setup' } },
+        )
+
+        act(() => {
+            result.current.handleKeyPress('1')
+        })
+        rerender({ step: 'setup' })
+
+        expect(result.current.pin).toBe('1')
+
+        rerender({ step: 'confirm' })
+
+        expect(result.current.pin).toBe('')
+    })
+
     it('should handle delete on empty pin gracefully', () => {
         const { result } = renderHook(() =>
             usePinEntry({
