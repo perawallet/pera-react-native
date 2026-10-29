@@ -26,6 +26,7 @@ import {
     parseTypedJson,
     stringifyTypedJson,
     type Nullable,
+    toError,
 } from '@perawallet/wallet-core-shared'
 import {
     readRemoteConfigWithOverrides,
@@ -277,10 +278,9 @@ export const useAppBootstrap = (): UseAppBootstrapResult => {
             } catch (err) {
                 // The console transport drops the metadata object entirely, so
                 // the underlying cause must live in the message string itself.
-                logger.error(
-                    `App bootstrap failed: ${err instanceof Error ? err.message : String(err)}`,
-                    { error: err },
-                )
+                logger.error(`App bootstrap failed: ${toError(err).message}`, {
+                    error: err,
+                })
                 setInitError(
                     err instanceof KeystoreHydrationError
                         ? 'keystore'

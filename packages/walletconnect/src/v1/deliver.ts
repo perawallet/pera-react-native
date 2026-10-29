@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, toError } from '@perawallet/wallet-core-shared'
 import type { WalletConnectConnectorRegistry } from '../connection'
 import { WC_DELIVERY_TIMEOUT_MS } from '../shared/constants'
 import type { WalletConnectV1AnsweredRequests } from './answeredRequests'
@@ -64,10 +64,7 @@ export const createWalletConnectV1Delivery = (
                     logger.warn('WC reject delivery failed', {
                         clientId,
                         id,
-                        error:
-                            deliveryError instanceof Error
-                                ? deliveryError.message
-                                : String(deliveryError),
+                        error: toError(deliveryError).message,
                     })
                 },
             )
