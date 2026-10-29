@@ -244,7 +244,7 @@ const isConvertedToString = (ctx: RuleContext, node: Node): boolean => {
 }
 
 /** The `setX` of a `const [x, setX] = useState(…)` in this file. */
-const useStateSetters = (ctx: RuleContext): Set<string> => {
+const stateSetterNames = (ctx: RuleContext): Set<string> => {
     const names = new Set<string>()
     const matches = ctx.querySubtree(
         ctx.root,
@@ -276,7 +276,7 @@ const classifyArgument = (
     }
     if (name === 'useState') return 'state'
     if (!isMember && /^set[A-Z]/.test(name)) {
-        return useStateSetters(ctx).has(name) ? 'state' : undefined
+        return stateSetterNames(ctx).has(name) ? 'state' : undefined
     }
     if (!isMember && name === 'set') return 'store'
     if (isMember && name === 'setState') return 'store'
@@ -346,38 +346,39 @@ const classifySink = (
 
 const isHeldSecret = (ctx: RuleContext, value: Node, source: Node): boolean => {
     const node = unwrap(ctx, value)
-    switch (ctx.kind(node)) {
-        case 'identifier':
-        case 'subscript_expression':
-            return true
-        case 'member_expression': {
-            const property = ctx.namedChildren(node)[1]
-            return !LENGTH_PROPERTIES.has(
-                property === undefined ? '' : (ctx.text(property) ?? ''),
-            )
-        }
-        case 'call_expression':
-        case 'new_expression':
-            return isCopyForm(ctx, node) || node === source
-        case 'object':
-            return ctx.namedChildren(node).some(child => {
-                const kind = ctx.kind(child)
-                if (kind === 'shorthand_property_identifier') return true
-                if (kind === 'spread_element') return true
-                if (kind !== 'pair') return false
-                const pairValue = ctx.namedChildren(child).at(-1)
-                return (
-                    pairValue !== undefined &&
-                    isHeldSecret(ctx, pairValue, source)
-                )
-            })
-        case 'array':
-            return ctx
-                .namedChildren(node)
-                .some(element => isHeldSecret(ctx, element, source))
-        default:
-            return false
+    const kind = ctx.kind(node)
+    if (kind === 'identifier' || kind === 'subscript_expression') return true
+    if (kind === 'member_expression') {
+        const property = ctx.namedChildren(node)[1]
+        return !LENGTH_PROPERTIES.has(
+            property === undefined ? '' : (ctx.text(property) ?? ''),
+        )
     }
+    if (kind === 'call_expression' || kind === 'new_expression') {
+        return isCopyForm(ctx, node) || node === source
+    }
+    if (kind === 'object') {
+        return ctx.namedChildren(node).some(child => {
+            const childKind = ctx.kind(child)
+            if (
+                childKind === 'shorthand_property_identifier' ||
+                childKind === 'spread_element'
+            ) {
+                return true
+            }
+            if (childKind !== 'pair') return false
+            const pairValue = ctx.namedChildren(child).at(-1)
+            return (
+                pairValue !== undefined && isHeldSecret(ctx, pairValue, source)
+            )
+        })
+    }
+    if (kind === 'array') {
+        return ctx
+            .namedChildren(node)
+            .some(element => isHeldSecret(ctx, element, source))
+    }
+    return false
 }
 
 const isParameterIdentifier = (ctx: RuleContext, node: Node): boolean => {

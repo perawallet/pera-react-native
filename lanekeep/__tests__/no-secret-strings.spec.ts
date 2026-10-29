@@ -11,14 +11,16 @@ const FIXTURES = 'lanekeep/__tests__/fixtures/secret-strings/packages/kms/src'
 const reported = async (file: string) =>
     locations(await runRule(RULE, `${FIXTURES}/${file}`))
 
-// A fixture case is one line, so a bad file reports once on each of its lines.
-const everyLine = (file: string, count: number) =>
-    Array.from({ length: count }, (_, i) => `${file}:${i + 1}`)
+const at = (file: string, lines: number[]) =>
+    lines.map(line => `${file}:${line}`)
 
 describe('pera/no-secret-strings', () => {
     it('follows a producer call and the parameter of each scoped helper into a string', async () => {
         expect(await reported('sources.bad.ts')).toEqual(
-            everyLine('sources.bad.ts', 13),
+            at(
+                'sources.bad.ts',
+                [1, 3, 4, 6, 8, 10, 12, 14, 16, 18, 19, 21, 23],
+            ),
         )
     })
 
@@ -28,7 +30,13 @@ describe('pera/no-secret-strings', () => {
 
     it('reports each way key material becomes a string', async () => {
         expect(await reported('string-sinks.bad.ts')).toEqual(
-            everyLine('string-sinks.bad.ts', 26),
+            at(
+                'string-sinks.bad.ts',
+                [
+                    3, 7, 11, 15, 19, 23, 27, 31, 35, 39, 43, 47, 51, 55, 59,
+                    63, 67, 71, 75, 79, 83, 87, 91, 95, 99, 103,
+                ],
+            ),
         )
     })
 
@@ -38,7 +46,7 @@ describe('pera/no-secret-strings', () => {
 
     it('reports key material held in state, a memo or a store', async () => {
         expect(await reported('holder-sinks.bad.ts')).toEqual(
-            everyLine('holder-sinks.bad.ts', 9),
+            at('holder-sinks.bad.ts', [3, 5, 9, 12, 15, 19, 23, 27, 32]),
         )
     })
 
@@ -48,7 +56,7 @@ describe('pera/no-secret-strings', () => {
 
     it('reports a secret returned out of a scoped helper unmarked', async () => {
         expect(await reported('scoped-returns.bad.ts')).toEqual(
-            everyLine('scoped-returns.bad.ts', 9),
+            at('scoped-returns.bad.ts', [1, 3, 5, 7, 9, 11, 14, 17, 18]),
         )
     })
 
@@ -58,7 +66,7 @@ describe('pera/no-secret-strings', () => {
 
     it('reports a store field named for a secret and typed as a string', async () => {
         expect(await reported('store-fields.bad.ts')).toEqual(
-            everyLine('store-fields.bad.ts', 7),
+            at('store-fields.bad.ts', [2, 4, 5, 6, 8, 10, 11]),
         )
     })
 
