@@ -92,6 +92,8 @@ describe('evm op-stack l1 fee (base)', () => {
     it("estimates a transaction above the Fjord minimum within 1% of the oracle's answer for the transaction it signs", async () => {
         const env = await createEvmConformanceEnv('base')
         const sender = await createRawKeyEvmAccount(env)
+        // eth_estimateGas refuses a sender that can't pay for the gas it estimates.
+        await fundEvmAccount(env, sender.address, 10n ** 18n)
         const client = createEvmClient(env.scope, env.ctx, env.evmChain)
         // Incompressible, so the oracle's compressed-size estimate stays well above its minimum.
         const data = concat(
