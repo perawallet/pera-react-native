@@ -235,6 +235,14 @@ export const readCloudBackupRestoreMnemonic = (): string[] | null => {
     return null
 }
 
+export const readCloudBackupImportedKey = (): BackupEncryptionKey | null =>
+    useCloudBackupRestoreDraftStore.getState().importedKey
+
+export const setCloudBackupImportedKey = (
+    importedKey: BackupEncryptionKey,
+): void =>
+    useCloudBackupRestoreDraftStore.getState().setImportedKey(importedKey)
+
 registerStore({
     name: 'cloud-backup-restore-draft-store',
     clearStorage: () => useCloudBackupRestoreDraftStore.getState().resetState(),

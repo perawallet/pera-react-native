@@ -18,7 +18,11 @@ import {
     isDappUserRejection,
 } from '@perawallet/wallet-core-connections/dappRequest'
 import type { SerializedCredential } from '@perawallet/wallet-core-passkeys/webauthn'
-import { toError } from '@perawallet/wallet-core-shared'
+import {
+    AppError,
+    ErrorCategory,
+    toError,
+} from '@perawallet/wallet-core-shared'
 import {
     encodeSignedTransactions,
     isWireSignedSendOutcome,
@@ -40,9 +44,11 @@ const isPendingApproval = (value: unknown): value is PendingApproval =>
  * The caller must NOT close its window on this: the dApp has not been answered,
  * and closing would show the user a success that was never delivered.
  */
-export class ApprovalDeliveryError extends Error {
+export class ApprovalDeliveryError extends AppError {
     constructor(kind: string, detail: string) {
-        super(`Could not deliver '${kind}' to the approval bridge: ${detail}`)
+        super(`Could not deliver '${kind}' to the approval bridge: ${detail}`, {
+            category: ErrorCategory.CONNECTIONS,
+        })
         this.name = 'ApprovalDeliveryError'
     }
 }

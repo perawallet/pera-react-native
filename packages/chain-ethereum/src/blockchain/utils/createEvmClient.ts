@@ -21,16 +21,18 @@ import type {
     ChainContext,
     ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
+import { AppError, ErrorCategory } from '@perawallet/wallet-core-shared'
 import type { EvmChain } from '../../chains/types'
 import { eip155ChainIdOfNetwork } from './caip19'
 import { evmHttpTransport } from './evmHttpTransport'
 
-export class UnconfiguredEvmRpcError extends Error {
+export class UnconfiguredEvmRpcError extends AppError {
     readonly scope: ChainScope
 
     constructor(scope: ChainScope) {
         super(
             `No JSON-RPC endpoint is configured for ${scope.chainId}/${scope.networkId}`,
+            { category: ErrorCategory.NETWORK },
         )
         this.name = 'UnconfiguredEvmRpcError'
         this.scope = scope

@@ -14,7 +14,11 @@ import { create } from 'zustand'
 import { guardedPersist, registerStore } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import type { BaseStoreState } from '@perawallet/wallet-core-shared'
-import type { CloudBackupActions, CloudBackupStore } from '../models'
+import type {
+    CloudBackupActions,
+    CloudBackupState,
+    CloudBackupStore,
+} from '../models'
 
 const STORE_NAME = 'cloud-backup-store'
 
@@ -54,6 +58,14 @@ export const useCloudBackupStore = create<CloudBackupStore>()(
         },
     ),
 )
+
+export const readCloudBackupCredentials = (): Pick<
+    CloudBackupState,
+    'backupId' | 'salt'
+> => {
+    const { backupId, salt } = useCloudBackupStore.getState()
+    return { backupId, salt }
+}
 
 registerStore({
     name: STORE_NAME,

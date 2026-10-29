@@ -30,12 +30,17 @@ export const useContactRow = (contact: Contact): UseContactRowResult => {
     return useMemo(() => {
         const entries = contactAddressEntries(contact.addresses)
         const [first] = entries
-        const subtitle =
-            entries.length > 1
-                ? t('contacts.list.networks_count', { count: entries.length })
-                : first
-                  ? chainFamilyDisplay(first.family, t).truncate(first.address)
-                  : ''
+        const subtitleOf = () => {
+            if (entries.length > 1) {
+                return t('contacts.list.networks_count', {
+                    count: entries.length,
+                })
+            }
+            return first
+                ? chainFamilyDisplay(first.family, t).truncate(first.address)
+                : ''
+        }
+        const subtitle = subtitleOf()
         return { primaryAddress: first?.address ?? '', subtitle }
     }, [contact.addresses, t])
 }

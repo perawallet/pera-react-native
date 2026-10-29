@@ -109,6 +109,16 @@ const logUnwrapFailure = (error: unknown): BiometricUnwrapFailureReason => {
     return reason
 }
 
+const SECURITY_LEVEL_BY_ENROLLED_LEVEL: Partial<
+    Record<SecurityLevel, BiometricSecurityLevel>
+> = {
+    [SecurityLevel.BIOMETRIC_STRONG]: 'strong',
+    // BIOMETRIC_WEAK shares its numeric value with the deprecated
+    // `BIOMETRIC` member, so this also covers legacy reports.
+    [SecurityLevel.BIOMETRIC_WEAK]: 'weak',
+    [SecurityLevel.SECRET]: 'secret',
+}
+
 // Backed by `expo-local-authentication`, which on iOS uses
 // LAPolicy.deviceOwnerAuthenticationWithBiometrics and on Android uses the
 // AndroidX BiometricPrompt. We force biometric-only by disabling the device
@@ -136,22 +146,7 @@ export class RNBiometricsService implements BiometricsService {
     async getSecurityLevel(): Promise<BiometricSecurityLevel> {
         try {
             const level = await getEnrolledLevelAsync()
-            switch (level) {
-                case SecurityLevel.BIOMETRIC_STRONG: {
-                    return 'strong'
-                }
-                // BIOMETRIC_WEAK shares its numeric value with the deprecated
-                // `BIOMETRIC` member, so this also covers legacy reports.
-                case SecurityLevel.BIOMETRIC_WEAK: {
-                    return 'weak'
-                }
-                case SecurityLevel.SECRET: {
-                    return 'secret'
-                }
-                default: {
-                    return 'none'
-                }
-            }
+            return SECURITY_LEVEL_BY_ENROLLED_LEVEL[level] ?? 'none'
         } catch (error) {
             // Older OS versions / unsupported hardware can throw rather than
             // reporting NONE. Treat as "can't confirm a strong biometric".

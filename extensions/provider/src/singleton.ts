@@ -16,6 +16,7 @@ import type { HookCollection } from 'before-after-hook'
 import type { KeyStoreState } from '@algorandfoundation/keystore-core'
 import type { ReactNativeKeyStore } from '@algorandfoundation/react-native-keystore'
 import type { MigrationReport } from '@algorandfoundation/provider-migrations'
+import { AppError, ErrorCategory } from '@perawallet/wallet-core-shared'
 import { subtle } from './keystore/subtle'
 import { createPeraKeystore } from './keystore/createKeystore'
 import {
@@ -268,13 +269,15 @@ export const runQuantumMaterialRepair = (
  * data-integrity message (and support gets record ids) instead of a generic
  * "try again" that can never succeed.
  */
-export class KeystoreHydrationError extends Error {
+export class KeystoreHydrationError extends AppError {
     readonly failedIds: string[]
     readonly cause: unknown
 
     constructor(failedIds: string[], cause: unknown) {
         super(
             `keystore hydration failed: undecodable metadata record(s): ${failedIds.join(', ')}`,
+            { category: ErrorCategory.KMS },
+            cause instanceof Error ? cause : undefined,
         )
         this.name = 'KeystoreHydrationError'
         this.failedIds = failedIds

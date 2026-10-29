@@ -10,51 +10,83 @@
  limitations under the License
  */
 
-export class VaultLockedError extends Error {
+import { AppError, ErrorCategory } from '@perawallet/wallet-core-shared'
+
+export class VaultLockedError extends AppError {
     constructor(message: string) {
-        super(message)
+        super(message, { category: ErrorCategory.KMS })
         this.name = 'VaultLockedError'
     }
 }
 
-export class VaultExistsError extends Error {
+export class VaultExistsError extends AppError {
     constructor(message: string) {
-        super(message)
+        super(message, { category: ErrorCategory.KMS })
         this.name = 'VaultExistsError'
     }
 }
 
-export class VaultNotInitializedError extends Error {
+export class VaultNotInitializedError extends AppError {
     constructor(message: string) {
-        super(message)
+        super(message, { category: ErrorCategory.KMS })
         this.name = 'VaultNotInitializedError'
     }
 }
 
-export class InvalidPasswordError extends Error {
+export class InvalidPasswordError extends AppError {
     constructor(message: string) {
-        super(message)
+        super(message, { category: ErrorCategory.KMS })
         this.name = 'InvalidPasswordError'
     }
 }
 
-export class VaultCorruptedError extends Error {
+export class VaultCorruptedError extends AppError {
     constructor() {
-        super('Vault data is corrupted or has an unsupported format.')
+        super('Vault data is corrupted or has an unsupported format.', {
+            category: ErrorCategory.KMS,
+        })
         this.name = 'VaultCorruptedError'
     }
 }
 
-export class VaultLockedOutError extends Error {
+export class VaultLockedOutError extends AppError {
     constructor(readonly remainingSeconds: number) {
-        super('Vault unlock is temporarily locked out')
+        super('Vault unlock is temporarily locked out', {
+            category: ErrorCategory.KMS,
+        })
         this.name = 'VaultLockedOutError'
     }
 }
 
-export class PasskeyUnlockError extends Error {
+export class PasskeyUnlockError extends AppError {
     constructor() {
-        super('Passkey unlock failed: authentication tag mismatch.')
+        super('Passkey unlock failed: authentication tag mismatch.', {
+            category: ErrorCategory.KMS,
+        })
         this.name = 'PasskeyUnlockError'
+    }
+}
+
+export class VaultReauthRequiredError extends AppError {
+    constructor() {
+        super(
+            'A password must be proven again before passkey unlock can be enabled.',
+            {
+                category: ErrorCategory.KMS,
+            },
+        )
+        this.name = 'VaultReauthRequiredError'
+    }
+}
+
+export class PasskeyPrfUnsupportedError extends AppError {
+    constructor() {
+        super(
+            'PRF extension not supported or not returned by the authenticator.',
+            {
+                category: ErrorCategory.KMS,
+            },
+        )
+        this.name = 'PasskeyPrfUnsupportedError'
     }
 }

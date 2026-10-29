@@ -11,6 +11,7 @@
  */
 
 import type { z } from 'zod'
+import { AppError, ErrorCategory } from '@perawallet/wallet-core-shared'
 import {
     accountRecordPayloadSchema,
     addressBackupPayloadSchema,
@@ -30,9 +31,9 @@ import {
     type SettingsBackupPayload,
 } from '../models'
 
-export class BackupPayloadParseError extends Error {
+export class BackupPayloadParseError extends AppError {
     constructor(message: string) {
-        super(message)
+        super(message, { category: ErrorCategory.STORAGE })
         this.name = 'BackupPayloadParseError'
     }
 }

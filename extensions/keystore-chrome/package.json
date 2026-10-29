@@ -27,7 +27,8 @@
     "@scure/base": "catalog:",
     "@tanstack/store": "catalog:",
     "before-after-hook": "catalog:",
-    "@perawallet/wallet-core-passkeys": "workspace:*"
+    "@perawallet/wallet-core-passkeys": "workspace:*",
+    "@perawallet/wallet-core-shared": "workspace:*"
   },
   "devDependencies": {
     "typescript": "catalog:",

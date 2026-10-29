@@ -125,6 +125,15 @@ const ASSET_SKELETON_ITEMS: AccountAssetListItem[] = Array.from(
     (_, i) => ({ kind: 'skeleton', id: `asset-skeleton-${i}` }),
 )
 
+const visibleItemsOf = (
+    isChainSwitchedOff: boolean,
+    isPending: boolean,
+    items: AccountAssetListItem[],
+): AccountAssetListItem[] => {
+    if (isChainSwitchedOff) return EMPTY_ITEMS
+    return isPending ? ASSET_SKELETON_ITEMS : items
+}
+
 // Rows carry base units and parse their metadata lazily; the SQL-read group id
 // keeps that parse to group members.
 const homeHoldingAdapter: GroupableHoldingAdapter<AccountHoldingsLiteRow> = {
@@ -505,11 +514,7 @@ export const useAccountAssetList = ({
 
     return {
         isChainSwitchedOff,
-        items: isChainSwitchedOff
-            ? EMPTY_ITEMS
-            : isPending
-              ? ASSET_SKELETON_ITEMS
-              : items,
+        items: visibleItemsOf(isChainSwitchedOff, isPending, items),
         chainFilterOptions,
         fundingChainId,
         selectedChainId,

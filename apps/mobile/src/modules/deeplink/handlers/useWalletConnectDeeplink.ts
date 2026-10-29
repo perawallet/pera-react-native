@@ -39,6 +39,14 @@ export type WalletConnectDeeplinkHandler = (
     params: WalletConnectDeeplinkParams,
 ) => Promise<boolean>
 
+const originSourceOf = (
+    isOsDeeplink: boolean,
+    source: LinkSource,
+): ConnectionOriginSource => {
+    if (isOsDeeplink) return 'external-browser'
+    return source === 'in-app' ? 'in-app' : 'qr'
+}
+
 /**
  * Owns the pairing branch of the deeplink dispatcher: hand the URI to the
  * connection registry, keep the user informed while it runs, and translate
@@ -60,11 +68,7 @@ export const useWalletConnectDeeplink = (): WalletConnectDeeplinkHandler => {
             // hand-off, and 'in-app' sessions suppress the post-action
             // sheets. Notification-delivered links behave like QR: sheet
             // shown, no hand-off.
-            const originSource: ConnectionOriginSource = isOsDeeplink
-                ? 'external-browser'
-                : source === 'in-app'
-                  ? 'in-app'
-                  : 'qr'
+            const originSource = originSourceOf(isOsDeeplink, source)
 
             // The OS deep-link path has no other pending UI (QR has the
             // scanner's own overlay), so a global scrim covers the outcome

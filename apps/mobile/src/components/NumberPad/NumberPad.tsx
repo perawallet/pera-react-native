@@ -27,6 +27,11 @@ const padArrangment = [
     ['.', '0', undefined],
 ]
 
+const keyTestIdOf = (key: string | undefined): string => {
+    if (!key) return 'numpad_key_delete'
+    return key === '.' ? 'numpad_key_decimal' : `numpad_key_${key}`
+}
+
 export const NumberPad = memo(
     ({ onPress, allowDecimal = true }: NumberPadProps) => {
         const styles = useStyles()
@@ -59,11 +64,7 @@ export const NumberPad = memo(
                                     />
                                 )
                             }
-                            const keyTestID = key
-                                ? key === '.'
-                                    ? 'numpad_key_decimal'
-                                    : `numpad_key_${key}`
-                                : 'numpad_key_delete'
+                            const keyTestID = keyTestIdOf(key)
                             return (
                                 <PWTouchableOpacity
                                     key={`numpad-key-${idx}-${keyIdx}`}

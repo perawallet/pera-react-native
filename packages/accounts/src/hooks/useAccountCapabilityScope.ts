@@ -70,11 +70,12 @@ export const useAccountCapabilityScope = (
         chainAccountOf(owner, pinned) !== undefined
             ? pinned
             : undefined
-    const resolvedChainId = !account
-        ? undefined
-        : chainId === undefined
-          ? chainOf(account)
-          : resolvePinned(account, chainId)
+    const resolvedChainIdOf = () => {
+        if (!account) return undefined
+        if (chainId === undefined) return chainOf(account)
+        return resolvePinned(account, chainId)
+    }
+    const resolvedChainId = resolvedChainIdOf()
     const networkId = useNetworkStore(state =>
         resolvedChainId === undefined
             ? undefined

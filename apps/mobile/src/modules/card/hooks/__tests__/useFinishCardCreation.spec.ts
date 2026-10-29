@@ -37,11 +37,7 @@ vi.mock('@perawallet/wallet-core-card', async () => {
     >('@perawallet/wallet-core-card')
     return {
         ...actual,
-        useCardStore: Object.assign(vi.fn(), {
-            getState: () => ({
-                setSelectedFundingType: mockSetSelectedFundingType,
-            }),
-        }),
+        setCardFundingType: mockSetSelectedFundingType,
         invalidateCardQueries: mockInvalidateCardQueries,
     }
 })

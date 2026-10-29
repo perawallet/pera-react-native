@@ -127,27 +127,37 @@ export const BackupAccountRow = ({
         </>
     )
 
+    const renderAvatar = () => {
+        if (account) {
+            return (
+                <AccountIcon
+                    account={account}
+                    size='xl'
+                />
+            )
+        }
+        if (backupGlyph) {
+            return (
+                <PWRoundIcon
+                    icon={backupGlyph.name}
+                    variant={backupGlyph.variant}
+                    size='md'
+                />
+            )
+        }
+        return (
+            <PWRoundIcon
+                icon='accounts/glyph/unknown-account'
+                variant='accountNeutral'
+                size='md'
+            />
+        )
+    }
+
     return (
         <PWView testID={testID}>
             <PWView style={styles.row}>
-                {account ? (
-                    <AccountIcon
-                        account={account}
-                        size='xl'
-                    />
-                ) : backupGlyph ? (
-                    <PWRoundIcon
-                        icon={backupGlyph.name}
-                        variant={backupGlyph.variant}
-                        size='md'
-                    />
-                ) : (
-                    <PWRoundIcon
-                        icon='accounts/glyph/unknown-account'
-                        variant='accountNeutral'
-                        size='md'
-                    />
-                )}
+                {renderAvatar()}
                 <PWView style={styles.body}>
                     {/* Only the text toggles: a touchable groups its children
                         for screen readers, which would swallow `action`. A row

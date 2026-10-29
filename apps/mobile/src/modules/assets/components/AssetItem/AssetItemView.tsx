@@ -82,28 +82,33 @@ export const AssetItemView = ({
     const isFavorited = showFavorite && asset.peraMetadata?.isFavorited === true
     const showDeleted = showDeletedLabel && isDeleted
 
-    const subtitle = showDeleted ? (
-        <PWText
-            style={styles.deletedLabel}
-            numberOfLines={1}
-            testID='deleted-label'
-        >
-            {t('asset.deleted_label')}
-        </PWText>
-    ) : subtitleOverride ? (
-        subtitleOverride
-    ) : (
-        <PWText
-            // Account rows (copyableAssetId) have always shown the subtitle at
-            // body size, search rows at caption; kept as-is when the copy
-            // long-press moved from the subtitle text to the whole row.
-            variant={copyableAssetId ? 'body' : 'caption'}
-            style={styles.subtitle}
-            numberOfLines={1}
-        >
-            {secondaryText}
-        </PWText>
-    )
+    const renderSubtitle = () => {
+        if (showDeleted) {
+            return (
+                <PWText
+                    style={styles.deletedLabel}
+                    numberOfLines={1}
+                    testID='deleted-label'
+                >
+                    {t('asset.deleted_label')}
+                </PWText>
+            )
+        }
+        if (subtitleOverride) return subtitleOverride
+        return (
+            <PWText
+                // Account rows (copyableAssetId) have always shown the subtitle at
+                // body size, search rows at caption; kept as-is when the copy
+                // long-press moved from the subtitle text to the whole row.
+                variant={copyableAssetId ? 'body' : 'caption'}
+                style={styles.subtitle}
+                numberOfLines={1}
+            >
+                {secondaryText}
+            </PWText>
+        )
+    }
+    const subtitle = renderSubtitle()
 
     return (
         <PWTouchableOpacity
