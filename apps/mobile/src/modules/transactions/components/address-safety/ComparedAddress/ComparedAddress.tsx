@@ -11,7 +11,6 @@
  */
 
 import { PWText, PWView } from '@components/core'
-import { getTestProps } from '@utils/test-id-helper'
 import type { AddressSegment } from '@modules/transactions/utils/diffAddresses'
 import { useStyles } from './styles'
 
@@ -38,7 +37,7 @@ export const ComparedAddress = ({
             </PWText>
             <PWText
                 style={styles.address}
-                {...getTestProps(testID)}
+                testID={testID}
             >
                 {segments.map((segment, index) => (
                     <PWText

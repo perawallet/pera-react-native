@@ -25,6 +25,7 @@ import { hdDeriveClaimed } from './rules/hd-derive-claimed.js'
 import { noManualUnitConversion } from './rules/no-manual-unit-conversion.js'
 import { noDisplayStringIdentity } from './rules/no-display-string-identity.js'
 import { fetchHasDeadline } from './rules/fetch-has-deadline.js'
+import { testIdProp } from './rules/test-id-prop.js'
 import { preferToError } from './rules/prefer-to-error.js'
 import { noDeepRelativeImports } from './rules/no-deep-relative-imports.js'
 
@@ -49,6 +50,7 @@ export default {
         'no-manual-unit-conversion': noManualUnitConversion,
         'no-display-string-identity': noDisplayStringIdentity,
         'fetch-has-deadline': fetchHasDeadline,
+        'test-id-prop': testIdProp,
         'prefer-to-error': preferToError,
         'no-deep-relative-imports': noDeepRelativeImports,
     },

@@ -26,7 +26,6 @@ import {
 } from '@components/core'
 import { InfoCallout } from '@components/InfoCallout'
 import { useLanguage } from '@hooks/useLanguage'
-import { getTestProps } from '@utils/test-id-helper'
 import {
     ComparedAddress,
     KNOWN_LABEL_KEYS,
@@ -128,7 +127,7 @@ export const RecipientSafetyNotice = ({
             <PWTouchableOpacity
                 style={styles.acknowledge}
                 onPress={onToggleAcknowledged}
-                {...getTestProps('recipient_look_alike_acknowledge')}
+                testID='recipient_look_alike_acknowledge'
             >
                 <PWCheckbox
                     checked={isAcknowledged}

@@ -20,7 +20,6 @@ import {
     PWView,
 } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import { getTestProps } from '@utils/test-id-helper'
 import { useStyles } from './styles'
 
 export type SiteBlockedViewProps = {
@@ -75,7 +74,7 @@ export const SiteBlockedView = ({
                     <PWText
                         variant='bodySemibold'
                         style={styles.host}
-                        {...getTestProps('site_blocked_host')}
+                        testID='site_blocked_host'
                     >
                         {host}
                     </PWText>
@@ -86,14 +85,14 @@ export const SiteBlockedView = ({
                     title={t('site_safety.blocked.reject')}
                     variant='primary'
                     onPress={onReject}
-                    {...getTestProps('site_blocked_reject')}
+                    testID='site_blocked_reject'
                 />
                 {isContinueAnywayRevealed ? (
                     <>
                         <PWTouchableOpacity
                             style={styles.acknowledge}
                             onPress={onToggleRiskAcknowledged}
-                            {...getTestProps('site_blocked_acknowledge')}
+                            testID='site_blocked_acknowledge'
                         >
                             <PWCheckbox
                                 checked={isRiskAcknowledged}
@@ -108,14 +107,14 @@ export const SiteBlockedView = ({
                             variant='destructive'
                             isDisabled={!isRiskAcknowledged}
                             onPress={onContinueAnyway}
-                            {...getTestProps('site_blocked_continue')}
+                            testID='site_blocked_continue'
                         />
                     </>
                 ) : (
                     <PWTouchableOpacity
                         style={styles.continueAnyway}
                         onPress={onRevealContinueAnyway}
-                        {...getTestProps('site_blocked_continue_anyway')}
+                        testID='site_blocked_continue_anyway'
                     >
                         <PWText
                             variant='caption'

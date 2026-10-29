@@ -20,7 +20,6 @@ import {
     PWText,
     PWRoundIcon,
 } from '@components/core'
-import { getTestProps } from '@utils/test-id-helper'
 
 export type RoundButtonProps = {
     icon: IconName
@@ -55,7 +54,7 @@ export const RoundButton = (props: RoundButtonProps) => {
             <PWView style={styles.buttonSlot}>
                 <PWTouchableOpacity
                     style={dimmed}
-                    {...getTestProps(testID)}
+                    testID={testID}
                     {...rest}
                 >
                     <PWRoundIcon
