@@ -24,6 +24,7 @@ import { noI18nKeyCast } from './rules/no-i18n-key-cast.js'
 import { hdDeriveClaimed } from './rules/hd-derive-claimed.js'
 import { noManualUnitConversion } from './rules/no-manual-unit-conversion.js'
 import { sensitiveInputProps } from './rules/sensitive-input-props.js'
+import { monotonicLockoutClock } from './rules/monotonic-lockout-clock.js'
 import { noDisplayStringIdentity } from './rules/no-display-string-identity.js'
 import { fetchHasDeadline } from './rules/fetch-has-deadline.js'
 import { componentPropsType } from './rules/component-props-type.js'
@@ -55,6 +56,7 @@ export default {
         'hd-derive-claimed': hdDeriveClaimed,
         'no-manual-unit-conversion': noManualUnitConversion,
         'sensitive-input-props': sensitiveInputProps,
+        'monotonic-lockout-clock': monotonicLockoutClock,
         'no-display-string-identity': noDisplayStringIdentity,
         'fetch-has-deadline': fetchHasDeadline,
         'component-props-type': componentPropsType,
