@@ -165,8 +165,15 @@ export const hardwareSignActor = fromCallback<
                 return strategy.sign(group, account, callbacks)
             }
             default: {
+                // Fail closed: returning here would report an unknown group
+                // type (e.g. from a stale build) as GROUP_SIGNED.
                 const exhaustive: never = group.data
-                return exhaustive
+                throw new HardwareWalletError(
+                    'unsupported_data_type',
+                    new Error(
+                        `Unsupported group type: ${(exhaustive as { type: string }).type}`,
+                    ),
+                )
             }
         }
     }
