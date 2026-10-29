@@ -918,6 +918,57 @@ describe('createEip1193ConnectionHandler', () => {
             expect(messages).toHaveLength(0)
         })
 
+        it('answers message methods the chain refuses with 4200, never raises them, and still raises the eth_sendTransaction queued behind them', async () => {
+            const { transport, registry, messages } = setup([
+                connectedOn('ethereum'),
+            ])
+            const adapter = dappRequestChainAdapters.get('ethereum')
+            const v2 = adapter.walletConnect.v2
+            if (!v2) throw new Error('the fake serves v2')
+            dappRequestChainAdapters.reset()
+            dappRequestChainAdapters.register({
+                ...adapter,
+                walletConnect: {
+                    ...adapter.walletConnect,
+                    v2: {
+                        ...v2,
+                        handleRequest: (method, params) =>
+                            method === 'personal_sign' ||
+                            method === 'eth_signTypedData_v4'
+                                ? {
+                                      kind: 'refused',
+                                      error: { code: 4200, message: 'off' },
+                                  }
+                                : v2.handleRequest(method, params),
+                    },
+                },
+            })
+            await registry.initialize()
+
+            const personal = transport.send(ORIGIN, 'personal_sign', [
+                { from: ADDR_X },
+            ])
+            const typed = transport.send(ORIGIN, 'eth_signTypedData_v4', [
+                { from: ADDR_X },
+            ])
+            void transport.send(ORIGIN, 'eth_sendTransaction', [
+                { from: ADDR_X },
+            ])
+
+            expect(errorOf(await personal)?.code).toBe(
+                EIP1193_ERROR_CODE.unsupportedMethod,
+            )
+            expect(errorOf(await typed)?.code).toBe(
+                EIP1193_ERROR_CODE.unsupportedMethod,
+            )
+            await flush()
+            expect(messages).toHaveLength(1)
+            expect(messages[0]).toMatchObject({
+                kind: 'request',
+                operation: { type: 'send-transaction' },
+            })
+        })
+
         it('a signing request from an unconnected site gets 4100 and is never raised', async () => {
             const { transport, registry, messages } = setup()
             await registry.initialize()

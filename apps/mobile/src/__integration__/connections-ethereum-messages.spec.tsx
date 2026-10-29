@@ -438,4 +438,65 @@ describe('Flow: an eip155 dApp asks for a message signature', () => {
         expect(screen.queryByTestId('sign-request-view')).toBeNull()
         expect(kmsCore.sign).not.toHaveBeenCalled()
     })
+
+    it.each([
+        ['personal_sign', [HELLO_WORLD_HEX, SENDER]],
+        ['eth_signTypedData_v4', [SENDER, JSON.stringify(MAIL_TYPED_DATA)]],
+    ])(
+        'Given a connected session, when messageSigning is switched off for Ethereum and the dApp sends %s, then it is answered 4200 and no review opens',
+        async (method, params) => {
+            const walletKit = await connectSession()
+            setCapabilityOverrides(
+                { dappConnect: true, messageSigning: false },
+                'ethereum',
+            )
+
+            send(walletKit, method, params)
+
+            const response = await answerOf(walletKit)
+            expect(response.error).toMatchObject({ code: 4200 })
+            expect(screen.queryByTestId('sign-request-view')).toBeNull()
+            expect(screen.queryByTestId(CONFIRM_SLIDE)).toBeNull()
+            expect(kmsCore.sign).not.toHaveBeenCalled()
+        },
+    )
+
+    it('Given a personal_sign queued behind another, when messageSigning is switched off before its review is confirmed, then it is answered 4200 and only the first is signed', async () => {
+        const walletKit = await connectSession()
+        const responses = () =>
+            (walletKit.respondSessionRequest as Mock).mock.calls.map(
+                ([{ response }]) => response,
+            )
+
+        send(walletKit, 'personal_sign', [HELLO_WORLD_HEX, SENDER], 1)
+        await waitFor(
+            () => expect(screen.getByTestId(CONFIRM_SLIDE)).toBeTruthy(),
+            { timeout: 15_000 },
+        )
+        send(walletKit, 'personal_sign', [HELLO_WORLD_HEX, SENDER], 2)
+        fireEvent.click(screen.getByTestId(CONFIRM_SLIDE))
+        await waitFor(() => expect(responses()).toHaveLength(1), {
+            timeout: 15_000,
+        })
+        expect(responses()[0]).toMatchObject({
+            id: 1,
+            result: VIEM_HELLO_WORLD,
+        })
+
+        setCapabilityOverrides(
+            { dappConnect: true, messageSigning: false },
+            'ethereum',
+        )
+        await waitFor(
+            () => expect(screen.getByTestId(CONFIRM_SLIDE)).toBeTruthy(),
+            { timeout: 15_000 },
+        )
+        fireEvent.click(screen.getByTestId(CONFIRM_SLIDE))
+
+        await waitFor(() => expect(responses()).toHaveLength(2), {
+            timeout: 15_000,
+        })
+        expect(responses()[1]).toMatchObject({ id: 2, error: { code: 4200 } })
+        expect(kmsCore.sign).toHaveBeenCalledTimes(1)
+    })
 })

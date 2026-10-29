@@ -32,6 +32,7 @@ import {
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { eip155ChainIdOfNetwork } from '../blockchain/utils/caip19'
 import type { EvmChain } from '../chains/types'
+import { isMessageSigningEnabled } from '../signing/messageSigningGate'
 import { refuseUnsupportedSendCalls } from './callBatch/params'
 import {
     ethereumWalletCapabilities,
@@ -73,6 +74,23 @@ const EIP_1193_CODE: Record<DappRequestFailure, number> = {
     'unselected-chain': 4901,
     'invalid-params': -32_602,
     'limit-exceeded': -32_005,
+}
+
+const MESSAGE_SIGNING_OFF: WalletConnectRequestRoute = {
+    kind: 'refused',
+    error: {
+        code: EIP_1193_CODE['unsupported-method'],
+        message: 'This wallet does not sign messages on this chain',
+    },
+}
+
+const routeMessage = (
+    chain: EvmChain,
+    type: 'sign-message' | 'sign-typed-data',
+    params: unknown,
+): WalletConnectRequestRoute => {
+    if (!isMessageSigningEnabled(chain)) return MESSAGE_SIGNING_OFF
+    return { kind: 'operation', type, params }
 }
 
 /** EIP-3326's answer to a chain the wallet does not have; it has no `DappRequestFailure`. */
@@ -249,10 +267,10 @@ const createV2 = (
                 }
             }
             case ETHEREUM_WC_V2_METHOD.personalSign: {
-                return { kind: 'operation', type: 'sign-message', params }
+                return routeMessage(chain, 'sign-message', params)
             }
             case ETHEREUM_WC_V2_METHOD.signTypedDataV4: {
-                return { kind: 'operation', type: 'sign-typed-data', params }
+                return routeMessage(chain, 'sign-typed-data', params)
             }
             case ETHEREUM_WC_V2_METHOD.signTypedData: {
                 return routeUnversionedTypedData(params)

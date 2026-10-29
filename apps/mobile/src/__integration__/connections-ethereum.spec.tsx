@@ -554,6 +554,32 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                 })
             })
 
+            it('Given messageSigning is off for Ethereum, when a valid request is approved with a submitted hash, then the dApp still receives that hash', async () => {
+                setCapabilityOverrides(
+                    { dappConnect: true, messageSigning: false },
+                    'ethereum',
+                )
+                const walletKit = await settle()
+
+                sendTransaction(walletKit, {
+                    from: CHECKSUMMED_ETH_ADDRESS,
+                    to: RECIPIENT,
+                    value: '0x1',
+                    gasPrice: '0x3b9aca00',
+                })
+                const request = await queued()
+                await act(async () => {
+                    await request.approve([], { txIds: [HASH] })
+                })
+
+                await waitFor(() => {
+                    expect(answerOf(walletKit)).toMatchObject({
+                        id: 7,
+                        result: HASH,
+                    })
+                })
+            })
+
             it('Given a valid request, when it is queued, then the review shows the Ethereum transaction with its max fee', async () => {
                 const walletKit = await settle()
                 // Mounted first so the request FAQ is acknowledged before the
