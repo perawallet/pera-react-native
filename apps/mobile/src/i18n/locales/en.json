@@ -1112,10 +1112,6 @@
                 "title": "Asset not accepted",
                 "body": "The receiving account hasn't opted in to asset {{assetId}}. Ask the recipient to opt in, or send via the ASA Inbox."
             },
-            "asset_frozen": {
-                "title": "Asset frozen",
-                "body": "Asset {{assetId}} is frozen, so this transfer can't be completed. The asset's freeze manager must unfreeze it first."
-            },
             "duplicate_txn": {
                 "title": "Already submitted",
                 "body": "This transaction has already been processed by the network."
@@ -1259,6 +1255,10 @@
             "not_replaceable": {
                 "title": "Transaction no longer pending",
                 "body": "This transaction has already confirmed or been replaced, so it can't be sped up or cancelled."
+            },
+            "asset_frozen": {
+                "title": "Asset frozen",
+                "body": "Asset {{assetId}} is frozen, so this transfer can't be completed. The asset's freeze manager must unfreeze it first."
             }
         },
         "kms": {

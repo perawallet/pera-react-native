@@ -358,8 +358,8 @@ describe('usePromptContainer', () => {
                 vi.advanceTimersByTime(LONG_PROMPT_DISPLAY_DELAY)
             })
 
-            // Dismissal used to be the container's own state, so a remount
-            // brought the prompt straight back.
+            // Dismissal outlives the container, so a remount does not bring
+            // the prompt straight back.
             expect(second.result.current.nextPrompt).toBeUndefined()
         })
     })

@@ -11,6 +11,7 @@
  */
 
 import React from 'react'
+import { useTheme } from '@rneui/themed'
 import {
     PWButton,
     PWImage,
@@ -20,11 +21,12 @@ import {
 } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import bootsplashLogo from '@assets/bootsplash/logo.png'
-import { SPINNER_COLOR, useStyles } from './styles'
+import { useStyles } from './styles'
 import { useMigrationSplashScreen } from './useMigrationSplashScreen'
 
 export const MigrationSplashScreen = () => {
     const styles = useStyles()
+    const { theme } = useTheme()
     const { t } = useLanguage()
     const {
         status,
@@ -50,7 +52,7 @@ export const MigrationSplashScreen = () => {
                 {status === 'running' && (
                     <PWLoadingIndicator
                         size='lg'
-                        color={SPINNER_COLOR}
+                        color={theme.colors.bootsplashContent}
                         testID='migration_splash_indicator'
                     />
                 )}

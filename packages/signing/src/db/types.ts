@@ -93,9 +93,16 @@ export const STALE_OPEN_ATTEMPT_MS = 60 * 60 * 1000
  */
 export const REVIEW_APPROVAL_TTL_MS = 24 * 60 * 60 * 1000
 
+/**
+ * The ledger value for a delegation. Open attempts written before an upgrade
+ * must still match a rebuild, so the stored word never changes.
+ */
+// lanekeep-ignore-next-line pera/no-algorand-terms-in-chain-neutral-packages reason: persisted in submission_attempts.flow and intent_key_json
+export const DELEGATION_SUBMISSION_FLOW = 'rekey'
+
 export type SubmissionFlow =
     | 'pipeline'
-    | 'rekey'
+    | typeof DELEGATION_SUBMISSION_FLOW
     | 'fee-delegation'
     | 'swap'
     | 'cosign'
@@ -109,7 +116,7 @@ export type SubmissionFlow =
  * JSON for persistence.
  */
 export type IntentKey =
-    | { kind: 'rekey'; address: string }
+    | { kind: typeof DELEGATION_SUBMISSION_FLOW; address: string }
     | { kind: 'swap'; swapId: string }
     | { kind: 'cosign'; signRequestId: string; swapId?: string }
 

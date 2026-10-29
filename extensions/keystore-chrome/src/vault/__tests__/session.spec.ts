@@ -11,8 +11,8 @@
  */
 
 // The module that holds the decrypted master key for the life of an unlocked
-// session. Previously untested despite being the single place that key is
-// readable from.
+// session. It is the single place that key is readable from, so it needs
+// direct coverage.
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createChromeFake, type ChromeFake } from '../../test-utils/chrome'
 import {

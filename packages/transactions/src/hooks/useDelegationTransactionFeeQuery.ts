@@ -12,8 +12,9 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
-import { microAlgosToAlgos, toBigInt } from '@perawallet/wallet-core-shared'
+import { baseUnitsToDisplayUnits } from '@perawallet/wallet-core-shared'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { getChainDescriptor } from '@perawallet/wallet-core-chain-shared'
 import {
     resolveMinFeeForSender,
     useFeeConfig,
@@ -23,18 +24,18 @@ import { sendFlowChainAdapters, sendFlowFeatureFor } from '../chain-adapter'
 
 import type { Decimal } from 'decimal.js'
 
-export type UseRekeyTransactionFeeQueryResult = {
-    /** Fee the rekey transaction will actually pay, in ALGO. */
-    feeAlgos: Decimal | undefined
+export type UseDelegationTransactionFeeQueryResult = {
+    /** Fee the delegation transaction will actually pay, in display units of the chain's native asset. */
+    fee: Decimal | undefined
     isPending: boolean
 }
 
 /**
- * Resolves the fee a rekey transaction will pay by building the actual
+ * Resolves the fee a delegation transaction will pay by building the actual
  * transaction and reading the fee the chain sized for it. Building the real
  * transaction, rather than estimating from a byte-count constant, keeps the
  * displayed fee correct under network congestion and in lockstep with what
- * `useSubmitRekeyMutation` submits.
+ * `useSubmitDelegationMutation` submits.
  *
  * The rekey transaction is signed by `sourceAddress`'s CURRENT auth account
  * (pre-rekey), so `resolveMinFeeForSender`'s `getSignerFor` resolution is the
@@ -42,11 +43,11 @@ export type UseRekeyTransactionFeeQueryResult = {
  * PQ fee regardless of the rekey's direction. `resolveMinFeeForSender` owns the
  * network-congestion guard (`max(suggestedMinFee, configMinTxnFee)`).
  */
-export const useRekeyTransactionFeeQuery = (
+export const useDelegationTransactionFeeQuery = (
     sourceAddress: string,
-    rekeyToAddress: string,
+    authorityAddress: string,
     scope: ChainScope,
-): UseRekeyTransactionFeeQueryResult => {
+): UseDelegationTransactionFeeQueryResult => {
     const accounts = useAllAccounts()
     const { minTxnFee, pqMultiplier } = useFeeConfig(scope.chainId)
     // Shared cached query instead of a private getSuggestedParams() fetch —
@@ -71,10 +72,10 @@ export const useRekeyTransactionFeeQuery = (
         // suggestedMinFee too: the queryFn reads it from the closure, so a
         // refreshed value must produce a new cache entry.
         queryKey: [
-            'rekey-transaction-fee',
+            'delegation-transaction-fee',
             scope,
             sourceAddress,
-            rekeyToAddress,
+            authorityAddress,
             String(suggestedMinFee),
         ],
         queryFn: async () => {
@@ -93,26 +94,23 @@ export const useRekeyTransactionFeeQuery = (
             })
             // Built through the same adapter call the submit mutation uses,
             // so the fee shown is the fee paid.
-            const txn = await sendFlowFeatureFor(scope, 'rekey').buildTx({
+            const txn = await sendFlowFeatureFor(scope, 'delegation').buildTx({
                 scope,
                 sourceAddress,
-                rekeyToAddress,
+                authorityAddress,
                 minFee: resolvedMinFee,
             })
-            return microAlgosToAlgos(
-                toBigInt(
-                    sendFlowChainAdapters
-                        .get(scope.chainId)
-                        .transactionFee(txn),
-                ),
+            return baseUnitsToDisplayUnits(
+                sendFlowChainAdapters.get(scope.chainId).transactionFee(txn),
+                getChainDescriptor(scope.chainId).nativeAsset.decimals,
             )
         },
         enabled:
-            !!sourceAddress && !!rekeyToAddress && suggestedMinFee !== null,
+            !!sourceAddress && !!authorityAddress && suggestedMinFee !== null,
     })
 
     return {
-        feeAlgos: query.data,
+        fee: query.data,
         isPending: query.isPending,
     }
 }

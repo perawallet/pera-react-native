@@ -387,8 +387,8 @@ describe('logging', () => {
             expect(reported.error.message).toContain('public-id')
         })
 
-        // Credential-shaped keys that used to be absent from the sensitive
-        // list: session/OAuth tokens, PKCE material, card data, key material.
+        // Credential-shaped keys the sensitive list must cover: session/OAuth
+        // tokens, PKCE material, card data, key material.
         test.each([
             ['accessToken', 'tok-abc123'],
             ['refresh_token', 'tok-refresh456'],

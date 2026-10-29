@@ -17,6 +17,7 @@ import noAssertionlessTest from './lanekeep/rules/no-assertionless-test.js'
 import noChainIdentityInSharedPackages from './lanekeep/rules/no-chain-identity-in-shared-packages.js'
 import noChainPackageImports from './lanekeep/rules/no-chain-package-imports.js'
 import noChromeImportsOutsideWeb from './lanekeep/rules/no-chrome-imports-outside-web.js'
+import noColorLiteralsOutsideTheme from './lanekeep/rules/no-color-literals-outside-theme.js'
 import noCrossProtocolImports from './lanekeep/rules/no-cross-protocol-imports.js'
 import noDeepModuleImports from './lanekeep/rules/no-deep-module-imports.js'
 import noEmptyStyleObjects from './lanekeep/rules/no-empty-style-objects.js'
@@ -50,10 +51,10 @@ import translationKeyExists from './lanekeep/rules/translation-key-exists.js'
 import vitestPoolConfig from './lanekeep/rules/vitest-pool-config.js'
 
 export default defineConfig({
-    // Every TS/JS file in the repo. A rule about shipped source narrows itself
-    // with lanekeep/shared/scope.ts; the repo-wide rules need tests and
-    // tooling in view.
-    include: ['**/*.{ts,tsx,mts,cts,js,jsx,mjs,cjs}'],
+    // Every TS/JS file in the repo, plus Python (the e2e harness). A rule about
+    // shipped source narrows itself with lanekeep/shared/scope.ts; the
+    // repo-wide rules need tests and tooling in view.
+    include: ['**/*.{ts,tsx,mts,cts,js,jsx,mjs,cjs,py}'],
     // lanekeep also skips gitignored files on top of the excludes below, so a generated
     // file like packages/config/src/generated-env.ts can match `include` and still never
     // appear here — expected, not a glob bug.
@@ -101,6 +102,7 @@ export default defineConfig({
         noTypographyInStyles,
         noEmptyStyleObjects,
         noNumericSizes,
+        noColorLiteralsOutsideTheme,
         noRawErrorToast,
         i18nKeyExists,
         errorParamsMatchCopy,

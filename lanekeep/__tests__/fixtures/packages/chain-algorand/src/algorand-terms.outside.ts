@@ -2,3 +2,4 @@
 export const family = 'algorand'
 
 export const isRekeyed = (account: { rekeyed: boolean }) => account.rekeyed
+export const algodClient = { scheme: 'falcon-1024' }

@@ -174,7 +174,11 @@ describe('useSigningActionButtons', () => {
 
     it('opens security guard sheet instead of signing when rekey warnings exist', () => {
         setupPipeline([
-            { type: 'rekey', senderAddress: 'addr1', targetAddress: 'addr2' },
+            {
+                type: 'delegation',
+                senderAddress: 'addr1',
+                targetAddress: 'addr2',
+            },
         ])
 
         const { result } = renderHook(() => useSigningActionButtons())
@@ -208,7 +212,11 @@ describe('useSigningActionButtons', () => {
 
     it('proceeds with signing when security guard resolves with confirm', async () => {
         setupPipeline([
-            { type: 'rekey', senderAddress: 'addr1', targetAddress: 'addr2' },
+            {
+                type: 'delegation',
+                senderAddress: 'addr1',
+                targetAddress: 'addr2',
+            },
         ])
         mockRequestBottomSheet.mockResolvedValue('confirm')
 
@@ -228,7 +236,11 @@ describe('useSigningActionButtons', () => {
 
     it('navigates to settings and resets the slider when guard resolves with go-to-settings', async () => {
         setupPipeline([
-            { type: 'rekey', senderAddress: 'addr1', targetAddress: 'addr2' },
+            {
+                type: 'delegation',
+                senderAddress: 'addr1',
+                targetAddress: 'addr2',
+            },
         ])
         mockRequestBottomSheet.mockResolvedValue('go-to-settings')
 
@@ -249,7 +261,11 @@ describe('useSigningActionButtons', () => {
 
     it('does not call next and resets the slider when guard is dismissed', async () => {
         setupPipeline([
-            { type: 'rekey', senderAddress: 'addr1', targetAddress: 'addr2' },
+            {
+                type: 'delegation',
+                senderAddress: 'addr1',
+                targetAddress: 'addr2',
+            },
         ])
         mockRequestBottomSheet.mockResolvedValue(undefined)
 
@@ -480,7 +496,7 @@ describe('useSigningActionButtons', () => {
             setupPipeline(
                 [
                     {
-                        type: 'rekey',
+                        type: 'delegation',
                         senderAddress: 'addr1',
                         targetAddress: 'addr2',
                     },
