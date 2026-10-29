@@ -87,14 +87,11 @@ export const PortfolioView = ({ ...props }: PortfolioViewProps) => {
     }
 
     // The native headline reads its scrubbed value from the single-chain
-    // series, so only the native basis fetches it; it shares the summed
-    // chart's cache entry there.
+    // series, so only the native basis fetches it. There `chartSources` are
+    // all on `scope`'s chain, so it shares the summed chart's cache entry.
     const nativeAddresses = useMemo(
-        () =>
-            chartSources.flatMap(source =>
-                source.scope.chainId === scope.chainId ? [source.address] : [],
-            ),
-        [chartSources, scope.chainId],
+        () => chartSources.map(({ address }) => address),
+        [chartSources],
     )
     const { data: nativeHistoryData } = useAccountBalancesHistoryQuery(
         nativeAddresses,

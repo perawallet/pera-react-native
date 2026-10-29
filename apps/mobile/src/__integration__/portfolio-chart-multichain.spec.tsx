@@ -262,6 +262,23 @@ describe('Flow: Portfolio chart across Algorand and Ethereum', () => {
         expect(screen.queryByTestId('balance-chart-retry')).toBeNull()
     })
 
+    it('Given Algorand has no history and Ethereum does, when the chart is shown, then it plots Ethereum instead of an empty chart', async () => {
+        server.use(mockAccountsBalanceHistory({ response: { results: [] } }))
+        serveEthereumHistory()
+
+        renderMenu()
+        fireEvent.click(await screen.findByText('portfolio.show_chart'))
+
+        // $1,500 at Ethereum's first point, $3,000 now.
+        await waitFor(
+            () => {
+                expect(screen.getByText(/1,500\.00/)).toBeTruthy()
+            },
+            { timeout: SLOW_WAIT_TIMEOUT_MS },
+        )
+        expect(screen.queryByText('common.wealth_chart.empty_body')).toBeNull()
+    })
+
     it('Given the chart is hidden, when the portfolio renders, then no history is requested', async () => {
         serveAlgorandHistory()
         serveEthereumHistory()
