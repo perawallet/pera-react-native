@@ -56,9 +56,7 @@ vi.mock('@perawallet/wallet-core-accounts', async () => ({
     ...(await vi.importActual<object>(
         '@packages/accounts/src/models/accounts',
     )),
-    useAccountsStore: {
-        getState: () => ({ getSelectedAccount: () => selectedAccountMock() }),
-    },
+    getSelectedAccount: () => selectedAccountMock(),
     addressOn: (
         account: { chains: Record<string, { address: string }> },
         scope: { chainId: string },

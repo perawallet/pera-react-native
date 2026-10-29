@@ -22,7 +22,7 @@ import {
     isHardwareWalletAccount,
     isWatchAccount,
     signingKeyOn,
-    useAccountsStore,
+    getAllAccounts,
     useAllAccounts,
     useCreateAccount,
     useRegisteredChainIds,
@@ -157,7 +157,7 @@ export const useNameAccountScreen = () => {
                 account ||
                 (await buildHdWalletAccount({ account: 0, keyIndex: 0 }))
 
-            const storedAccounts = useAccountsStore.getState().accounts
+            const storedAccounts = getAllAccounts()
             const targetAddress = chainAccountOf(
                 targetAccount,
                 chainId,

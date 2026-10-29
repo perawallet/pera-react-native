@@ -14,10 +14,7 @@ import { useCallback, useEffect } from 'react'
 import { LogBox } from 'react-native'
 
 import { useHasAccounts } from '@perawallet/wallet-core-accounts'
-import {
-    type Contact,
-    useContactsStore,
-} from '@perawallet/wallet-core-contacts'
+import { type Contact, replaceAllContacts } from '@perawallet/wallet-core-contacts'
 import { useBottomSheetStore } from '@modules/bottom-sheet'
 import { navigationRef } from '@routes/navigationRef'
 
@@ -91,10 +88,7 @@ const resetWhenReady = (fixture: E2eFixtureName, waitedMs = 0): void => {
         navigationRef.reset({ index: 0, routes: [tabBar] })
         return
     }
-    useContactsStore.setState({
-        contacts: FIXTURE_CONTACTS[fixture],
-        selectedContact: null,
-    })
+    replaceAllContacts(FIXTURE_CONTACTS[fixture])
     navigationRef.reset({
         index: 1,
         routes: [

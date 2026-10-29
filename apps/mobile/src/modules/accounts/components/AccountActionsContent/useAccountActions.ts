@@ -13,8 +13,8 @@
 import { useCallback, useMemo } from 'react'
 import {
     firstUnreachableChainsNote,
-    useAccountsStore,
     useAllAccounts,
+    useSelectedAccountId,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
@@ -63,6 +63,7 @@ export const useAccountActions = ({
     const navigation = useAppNavigation()
     const { requestByType } = useBottomSheet()
     const { contacts, setSelectedContact } = useContacts()
+    const { setSelectedAccountId } = useSelectedAccountId()
     const { resolve: resolveSender, pick: pickSender } =
         useSendAccountResolver()
     const canAddWatchAccount = useCapability(
@@ -94,8 +95,7 @@ export const useAccountActions = ({
     const openSendFrom = useCallback(
         (sender: WalletAccount | undefined) => {
             // The send runs on the selected account's chain.
-            if (sender)
-                useAccountsStore.getState().setSelectedAccountId(sender.id)
+            if (sender) setSelectedAccountId(sender.id)
             const sendFundsStore = useSendFundsStore.getState()
             sendFundsStore.reset()
             sendFundsStore.setDestination(address)
@@ -110,7 +110,7 @@ export const useAccountActions = ({
                 },
             )
         },
-        [address, chainId, requestByType],
+        [address, chainId, requestByType, setSelectedAccountId],
     )
 
     const openSendTransaction = useCallback(() => {
