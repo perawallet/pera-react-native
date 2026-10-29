@@ -15,7 +15,7 @@ import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { UserPreferences } from '@constants/user-preferences'
-import type { SendFundsStackParamList } from '../../../routes/send-funds/types'
+import type { SendFundsStackParamList } from '@modules/transactions/routes/send-funds/types'
 
 type UseExpressSendScreenResult = {
     handleContinue: () => void

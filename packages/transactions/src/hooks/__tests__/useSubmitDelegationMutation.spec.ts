@@ -1,0 +1,540 @@
+/*
+ Copyright 2022-2026 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+// @vitest-environment jsdom
+import React from 'react'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import {
+    QueryClient,
+    QueryClientProvider,
+    onlineManager,
+} from '@tanstack/react-query'
+import { renderHook, act } from '@testing-library/react'
+
+import {
+    mutationDefaults,
+    NoConnectionError,
+} from '@perawallet/wallet-core-shared'
+
+const mockBuildRekeyTx = vi.fn()
+const mockGetSuggestedParams = vi.fn()
+
+const mockAddSignRequest = vi.fn()
+const mockSubmitAndAutoRefresh = vi.fn()
+const mockUseAllAccounts = vi.fn()
+const mockUseFeeConfig = vi.fn()
+const mockResolveMinFeeForSender = vi.fn()
+const mockGetOpenSubmissionAttemptsForIntent = vi.fn()
+
+// Full replacement (not importActual): the real barrels pull in
+// platform-specific storage (react-native-mmkv) that can't load under
+// vitest/jsdom. `resolveMinFeeForSender`'s own rekey-chain/PQ-multiplier
+// correctness is already exhaustively covered by
+// packages/chain-algorand/src/signing/__tests__/minFeeResolver.spec.ts —
+// these tests verify only that this hook wires the resolver's inputs
+// correctly and applies the override guard on its output.
+vi.mock('@perawallet/wallet-core-accounts', () => ({
+    useAllAccounts: () => mockUseAllAccounts(),
+}))
+
+vi.mock('@perawallet/wallet-core-signing', () => ({
+    useFeeConfig: () => mockUseFeeConfig(),
+    useFetchSuggestedMinFee: () => async () =>
+        BigInt((await mockGetSuggestedParams()).minFee),
+    useSigningRequest: () => ({ addSignRequest: mockAddSignRequest }),
+    submitAndAutoRefresh: (...args: unknown[]) =>
+        mockSubmitAndAutoRefresh(...args),
+    resolveMinFeeForSender: (...args: unknown[]) =>
+        mockResolveMinFeeForSender(...args),
+    getOpenSubmissionAttemptsForIntent: (...args: unknown[]) =>
+        mockGetOpenSubmissionAttemptsForIntent(...args),
+    // Pinned against the real constant in the signing package's types.spec.ts.
+    DELEGATION_SUBMISSION_FLOW: 'rekey',
+    STALE_OPEN_ATTEMPT_MS: 60 * 60 * 1000,
+}))
+
+import { useSubmitDelegationMutation } from '../useSubmitDelegationMutation'
+import { DelegationError } from '../../errors'
+import { sendFlowChainAdapters } from '../../chain-adapter'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+
+const SIGNING_METADATA = {
+    name: 'Source account',
+    description: 'Sign to rekey this account',
+}
+
+type MockSignRequest = {
+    txs: unknown[]
+    headless?: boolean
+    approve?: (signed: unknown[]) => void | Promise<void>
+    reject?: () => void | Promise<void>
+}
+
+const wrapper = ({ children }: { children: React.ReactNode }) => {
+    const queryClient = new QueryClient({
+        defaultOptions: {
+            queries: { retry: false },
+            // Mirror the production mutation policy (OFF-004): networkMode
+            // 'always' so the mutationFn runs offline and rejects fast
+            // instead of pausing/auto-resuming.
+            mutations: { ...mutationDefaults, retry: false },
+        },
+    })
+    return React.createElement(
+        QueryClientProvider,
+        { client: queryClient },
+        children,
+    )
+}
+
+describe('useSubmitDelegationMutation', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+        mockGetSuggestedParams.mockResolvedValue({ minFee: 1000n })
+        sendFlowChainAdapters.reset()
+        sendFlowChainAdapters.register({
+            chainId: 'algorand',
+            buildTransferTxs: vi.fn(),
+            transactionFee: vi.fn(),
+            delegation: { buildTx: mockBuildRekeyTx },
+        })
+        mockUseFeeConfig.mockReturnValue({
+            minTxnFee: 1000n,
+            pqMultiplier: 3n,
+        })
+        mockUseAllAccounts.mockReturnValue([])
+        // Default: no open ledger row — the previous attempt resolved, so
+        // the rebuild is allowed to proceed.
+        mockGetOpenSubmissionAttemptsForIntent.mockResolvedValue([])
+        // Default: no PQ signer in the chain — resolver returns the base fee.
+        mockResolveMinFeeForSender.mockReturnValue(1000n)
+    })
+
+    afterEach(() => {
+        // Prevent the forced-offline state from leaking into other tests.
+        onlineManager.setOnline(true)
+    })
+
+    it('fails fast offline: rejects with build_failed before the signing pipeline opens', async () => {
+        // OFF-004 hardening: when the device is offline, the mutation must
+        // reject immediately — no Ledger/biometric prompt on a request that
+        // can no way be submitted. assertOnline() runs BEFORE getSuggestedParams
+        // and before requestDelegationSignatures, so neither may be reached.
+        onlineManager.setOnline(false)
+
+        const { result } = renderHook(
+            () =>
+                useSubmitDelegationMutation({
+                    scope: {
+                        chainId: LEGACY_CHAIN_ID,
+                        networkId: 'testnet',
+                    } as const,
+                    signingMetadata: SIGNING_METADATA,
+                }),
+            { wrapper },
+        )
+
+        const rejection = result.current.submitAsync({
+            sourceAddress: 'SRC',
+            authorityAddress: 'TGT',
+        })
+
+        await expect(rejection).rejects.toBeInstanceOf(DelegationError)
+        await expect(rejection).rejects.toMatchObject({
+            reason: 'build_failed',
+        })
+        // The NoConnectionError is preserved as the wrapped cause.
+        await rejection.catch((error: DelegationError) => {
+            expect(error.originalError).toBeInstanceOf(NoConnectionError)
+        })
+
+        // The signing pipeline was NEVER invoked — the key guarantee.
+        expect(mockAddSignRequest).not.toHaveBeenCalled()
+        // assertOnline short-circuits before any network / build work.
+        expect(mockGetSuggestedParams).not.toHaveBeenCalled()
+        expect(mockBuildRekeyTx).not.toHaveBeenCalled()
+        expect(mockSubmitAndAutoRefresh).not.toHaveBeenCalled()
+    })
+
+    it('refuses to rebuild while an open rekey attempt exists', async () => {
+        mockGetOpenSubmissionAttemptsForIntent.mockResolvedValueOnce([
+            { id: 'attempt-1' },
+        ])
+
+        const { result } = renderHook(
+            () =>
+                useSubmitDelegationMutation({
+                    scope: {
+                        chainId: LEGACY_CHAIN_ID,
+                        networkId: 'testnet',
+                    } as const,
+                    signingMetadata: SIGNING_METADATA,
+                }),
+            { wrapper },
+        )
+
+        const rejection = result.current.submitAsync({
+            sourceAddress: 'SRC',
+            authorityAddress: 'TGT',
+        })
+
+        await expect(rejection).rejects.toBeInstanceOf(DelegationError)
+        await expect(rejection).rejects.toMatchObject({
+            reason: 'submission_pending',
+        })
+        expect(mockGetOpenSubmissionAttemptsForIntent).toHaveBeenCalledWith({
+            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'testnet' } as const,
+            sender: 'SRC',
+            intentKey: { kind: 'rekey', address: 'SRC' },
+            // Bounded like the swap guard: a row with no decodable validity
+            // window must not block this address's rekey forever.
+            unevaluatableBefore: expect.any(Number),
+        })
+        expect(mockBuildRekeyTx).not.toHaveBeenCalled()
+        expect(mockAddSignRequest).not.toHaveBeenCalled()
+        expect(mockSubmitAndAutoRefresh).not.toHaveBeenCalled()
+    })
+
+    it('rebuilds once the previous attempt resolved failed', async () => {
+        mockBuildRekeyTx.mockResolvedValueOnce({ id: 'unsigned-txn' })
+        mockAddSignRequest.mockImplementationOnce(
+            (request: MockSignRequest) => {
+                void request.approve?.([{ id: 'signed-txn' }])
+            },
+        )
+        mockSubmitAndAutoRefresh.mockResolvedValueOnce(['TX_ID'])
+
+        const { result } = renderHook(
+            () =>
+                useSubmitDelegationMutation({
+                    scope: {
+                        chainId: LEGACY_CHAIN_ID,
+                        networkId: 'testnet',
+                    } as const,
+                    signingMetadata: SIGNING_METADATA,
+                }),
+            { wrapper },
+        )
+
+        await act(async () => {
+            await result.current.submitAsync({
+                sourceAddress: 'SRC',
+                authorityAddress: 'TGT',
+            })
+        })
+
+        expect(mockGetOpenSubmissionAttemptsForIntent).toHaveBeenCalledTimes(1)
+        expect(mockBuildRekeyTx).toHaveBeenCalledTimes(1)
+        expect(mockSubmitAndAutoRefresh).toHaveBeenCalledTimes(1)
+    })
+
+    it('builds the rekey transaction, requests a signature, and submits the signed group', async () => {
+        const unsignedTxn = { id: 'unsigned-txn' }
+        const signedTxs = [{ id: 'signed-txn' }]
+        const txIds = ['TX_ID_1']
+
+        mockBuildRekeyTx.mockResolvedValueOnce(unsignedTxn)
+        mockAddSignRequest.mockImplementationOnce(
+            (request: MockSignRequest) => {
+                void request.approve?.(signedTxs)
+            },
+        )
+        mockSubmitAndAutoRefresh.mockResolvedValueOnce(txIds)
+
+        const { result } = renderHook(
+            () =>
+                useSubmitDelegationMutation({
+                    scope: {
+                        chainId: LEGACY_CHAIN_ID,
+                        networkId: 'testnet',
+                    } as const,
+                    signingMetadata: SIGNING_METADATA,
+                }),
+            {
+                wrapper,
+            },
+        )
+
+        let returned: string[] | undefined
+        await act(async () => {
+            returned = await result.current.submitAsync({
+                sourceAddress: 'SRC',
+                authorityAddress: 'TGT',
+            })
+        })
+
+        expect(mockBuildRekeyTx).toHaveBeenCalledWith({
+            scope: { chainId: 'algorand', networkId: 'testnet' },
+            sourceAddress: 'SRC',
+            authorityAddress: 'TGT',
+            minFee: 1000n,
+        })
+        expect(mockAddSignRequest).toHaveBeenCalledTimes(1)
+        const request = mockAddSignRequest.mock.calls[0][0]
+        expect(request.txs).toEqual([unsignedTxn])
+        expect(request.sourceType).toBe('local')
+        expect(mockSubmitAndAutoRefresh).toHaveBeenCalledWith(
+            { chainId: 'algorand', networkId: 'testnet' },
+            signedTxs,
+            {
+                flow: 'rekey',
+                intentKey: { kind: 'rekey', address: 'SRC' },
+                sender: 'SRC',
+            },
+        )
+        expect(returned).toEqual(txIds)
+    })
+
+    it('rejects with a user_rejected DelegationError when the signing pipeline rejects', async () => {
+        mockBuildRekeyTx.mockResolvedValueOnce({ id: 'unsigned-txn' })
+        mockAddSignRequest.mockImplementationOnce(
+            (request: MockSignRequest) => {
+                void request.reject?.()
+            },
+        )
+
+        const { result } = renderHook(
+            () =>
+                useSubmitDelegationMutation({
+                    scope: {
+                        chainId: LEGACY_CHAIN_ID,
+                        networkId: 'testnet',
+                    } as const,
+                    signingMetadata: SIGNING_METADATA,
+                }),
+            {
+                wrapper,
+            },
+        )
+
+        await expect(
+            result.current.submitAsync({
+                sourceAddress: 'SRC',
+                authorityAddress: 'TGT',
+            }),
+        ).rejects.toMatchObject({ reason: 'user_rejected' })
+        expect(mockSubmitAndAutoRefresh).not.toHaveBeenCalled()
+    })
+
+    it('wraps a failed payment build in a build_failed DelegationError', async () => {
+        const buildError = new Error('cannot build payment')
+        mockBuildRekeyTx.mockRejectedValueOnce(buildError)
+
+        const { result } = renderHook(
+            () =>
+                useSubmitDelegationMutation({
+                    scope: {
+                        chainId: LEGACY_CHAIN_ID,
+                        networkId: 'testnet',
+                    } as const,
+                    signingMetadata: SIGNING_METADATA,
+                }),
+            {
+                wrapper,
+            },
+        )
+
+        await expect(
+            result.current.submitAsync({
+                sourceAddress: 'SRC',
+                authorityAddress: 'TGT',
+            }),
+        ).rejects.toMatchObject({
+            reason: 'build_failed',
+            originalError: buildError,
+        })
+        expect(mockAddSignRequest).not.toHaveBeenCalled()
+    })
+
+    it('wraps algod submission errors in a submission_failed DelegationError', async () => {
+        const algodError = new Error('algod unreachable')
+        mockBuildRekeyTx.mockResolvedValueOnce({ id: 'unsigned-txn' })
+        mockAddSignRequest.mockImplementationOnce(
+            (request: MockSignRequest) => {
+                void request.approve?.([{ id: 'signed' }])
+            },
+        )
+        mockSubmitAndAutoRefresh.mockRejectedValueOnce(algodError)
+
+        const { result } = renderHook(
+            () =>
+                useSubmitDelegationMutation({
+                    scope: {
+                        chainId: LEGACY_CHAIN_ID,
+                        networkId: 'testnet',
+                    } as const,
+                    signingMetadata: SIGNING_METADATA,
+                }),
+            {
+                wrapper,
+            },
+        )
+
+        const rejection = result.current.submitAsync({
+            sourceAddress: 'SRC',
+            authorityAddress: 'TGT',
+        })
+        await expect(rejection).rejects.toBeInstanceOf(DelegationError)
+        await expect(rejection).rejects.toMatchObject({
+            reason: 'submission_failed',
+            originalError: algodError,
+        })
+    })
+
+    it('opts out of throwOnError so signing failures do not crash the confirm screen', async () => {
+        // Mirrors the production QueryProvider, where mutations default to
+        // throwOnError: true so unhandled errors surface to ErrorBoundary.
+        // useSubmitDelegationMutation overrides this because every caller handles
+        // signing failures locally via try/catch + showError. Without the
+        // override, a Ledger timeout would render-error the confirm screen
+        // on the next re-render even after the consumer's catch block had
+        // already shown a toast.
+        const productionLikeWrapper = ({
+            children,
+        }: {
+            children: React.ReactNode
+        }) => {
+            const queryClient = new QueryClient({
+                defaultOptions: {
+                    queries: { retry: false },
+                    mutations: { retry: false, throwOnError: true },
+                },
+            })
+            return React.createElement(
+                QueryClientProvider,
+                { client: queryClient },
+                children,
+            )
+        }
+
+        const ledgerTimeout = new Error(
+            'Connect to Ledger timed out after 10000ms',
+        )
+        mockBuildRekeyTx.mockResolvedValueOnce({ id: 'unsigned-txn' })
+        mockAddSignRequest.mockImplementationOnce(
+            (request: MockSignRequest) => {
+                void (
+                    request as MockSignRequest & {
+                        error?: (err: Error) => void | Promise<void>
+                    }
+                ).error?.(ledgerTimeout)
+            },
+        )
+
+        const { result, rerender } = renderHook(
+            () =>
+                useSubmitDelegationMutation({
+                    scope: {
+                        chainId: LEGACY_CHAIN_ID,
+                        networkId: 'testnet',
+                    } as const,
+                    signingMetadata: SIGNING_METADATA,
+                }),
+            { wrapper: productionLikeWrapper },
+        )
+
+        // Consumer awaits and catches — mirrors useUndoRekeyConfirmScreen.submit().
+        await act(async () => {
+            await expect(
+                result.current.submitAsync({
+                    sourceAddress: 'SRC',
+                    authorityAddress: 'TGT',
+                }),
+            ).rejects.toMatchObject({
+                reason: 'signing_failed',
+                originalError: ledgerTimeout,
+            })
+        })
+
+        // Re-render the hook. With throwOnError: true (the global default),
+        // useMutation would re-throw the error during render here, crashing
+        // the screen. The local override must prevent this.
+        expect(() => rerender()).not.toThrow()
+    })
+
+    it('builds with the PQ-resolved minimum fee for a quantum sender', async () => {
+        mockUseAllAccounts.mockReturnValue([
+            { address: 'SRC', custody: { kind: 'local', seed: 'quantum' } },
+        ])
+        // resolveMinFeeForSender: 1000n base * 3n multiplier = 3000n.
+        mockResolveMinFeeForSender.mockReturnValue(3000n)
+        mockBuildRekeyTx.mockResolvedValueOnce({ id: 'unsigned-txn' })
+        mockAddSignRequest.mockImplementationOnce(
+            (request: MockSignRequest) => {
+                void request.approve?.([{ id: 'signed' }])
+            },
+        )
+        mockSubmitAndAutoRefresh.mockResolvedValueOnce(['TX_ID'])
+
+        const { result } = renderHook(
+            () =>
+                useSubmitDelegationMutation({
+                    scope: {
+                        chainId: LEGACY_CHAIN_ID,
+                        networkId: 'testnet',
+                    } as const,
+                    signingMetadata: SIGNING_METADATA,
+                }),
+            { wrapper },
+        )
+
+        await act(async () => {
+            await result.current.submitAsync({
+                sourceAddress: 'SRC',
+                authorityAddress: 'TGT',
+            })
+        })
+
+        expect(mockBuildRekeyTx).toHaveBeenCalledTimes(1)
+        expect(mockBuildRekeyTx).toHaveBeenCalledWith(
+            expect.objectContaining({ minFee: 3000n }),
+        )
+        expect(mockResolveMinFeeForSender).toHaveBeenCalledWith('algorand', {
+            senderAddress: 'SRC',
+            accounts: [
+                { address: 'SRC', custody: { kind: 'local', seed: 'quantum' } },
+            ],
+            suggestedMinFee: 1000n,
+            configMinTxnFee: 1000n,
+            pqMultiplier: 3n,
+        })
+    })
+
+    it('surfaces a chain without delegation as a build_failed DelegationError', async () => {
+        sendFlowChainAdapters.reset()
+        sendFlowChainAdapters.register({
+            chainId: 'algorand',
+            buildTransferTxs: vi.fn(),
+            transactionFee: vi.fn(),
+        })
+
+        const { result } = renderHook(
+            () =>
+                useSubmitDelegationMutation({
+                    scope: {
+                        chainId: LEGACY_CHAIN_ID,
+                        networkId: 'testnet',
+                    } as const,
+                    signingMetadata: SIGNING_METADATA,
+                }),
+            { wrapper },
+        )
+
+        await expect(
+            result.current.submitAsync({
+                sourceAddress: 'SRC',
+                authorityAddress: 'TGT',
+            }),
+        ).rejects.toMatchObject({ reason: 'build_failed' })
+        expect(mockAddSignRequest).not.toHaveBeenCalled()
+    })
+})

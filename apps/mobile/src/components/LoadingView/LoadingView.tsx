@@ -11,9 +11,7 @@
  */
 
 import { type StyleProp, type ViewStyle } from 'react-native'
-import { PWSkeleton } from '@components/core/PWSkeleton'
-import { PWView } from '@components/core/PWView'
-import { PWLoadingIndicator } from '@components/core/PWLoadingIndicator'
+import { PWSkeleton, PWView, PWLoadingIndicator } from '@components/core'
 import { useTheme } from '@rneui/themed'
 import { useStyles } from './styles'
 import type { PropsWithChildren, ReactNode } from 'react'

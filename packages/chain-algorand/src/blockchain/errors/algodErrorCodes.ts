@@ -79,8 +79,8 @@ export const ALGOD_ERROR_MESSAGE_KEYS: Record<
         bodyKey: i18nKey('errors.algod.missing_opt_in.body'),
     },
     asset_frozen: {
-        titleKey: i18nKey('errors.algod.asset_frozen.title'),
-        bodyKey: i18nKey('errors.algod.asset_frozen.body'),
+        titleKey: i18nKey('errors.transaction.asset_frozen.title'),
+        bodyKey: i18nKey('errors.transaction.asset_frozen.body'),
     },
     duplicate_txn: {
         titleKey: i18nKey('errors.algod.duplicate_txn.title'),

@@ -146,8 +146,7 @@ export const signPlannedGroups = async ({
     return results
 }
 
-const messageOf = (error: unknown): string =>
-    error instanceof Error ? error.message : String(error)
+const messageOf = (error: unknown): string => toError(error).message
 
 // The same reporting the chain's own local-key signer gives a keystore fault,
 // so the user sees the same copy whichever signer ran.

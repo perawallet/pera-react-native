@@ -43,9 +43,10 @@ export const ExportShareAccountContent = ({
             <PWView style={styles.qrSection}>
                 <QRCode
                     value={exportUrl}
+                    // lanekeep-ignore-next-line pera/no-numeric-sizes reason: window width minus a 5xl margin on each side
                     size={width - theme.spacing['5xl'] * 2}
-                    color='black'
-                    backgroundColor='white'
+                    color={theme.colors.qrCodeFg}
+                    backgroundColor={theme.colors.qrCodeBg}
                     quietZone={theme.spacing.sm}
                 />
                 <PWText

@@ -10,8 +10,12 @@
  limitations under the License
  */
 
-import { PWScreen, PWTouchableIcon, PWView } from '@components/core'
-import { createPWTabNavigator } from '@components/core/PWTabView/PWTabView'
+import {
+    PWScreen,
+    PWTouchableIcon,
+    PWView,
+    createPWTabNavigator,
+} from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
 import { MessagesSpotBanners } from '@modules/banners/carousel'

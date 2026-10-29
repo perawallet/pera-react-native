@@ -52,8 +52,7 @@ export const navigateHome = (replaceCurrentScreen: boolean): void => {
  *
  * `StackActions.push`, not `navigationRef.navigate`: `navigate` would reuse an
  * already-focused Messages route and only swap its params, which silently
- * changes the back stack for the list path that previously called
- * `useAppNavigation().push`.
+ * changes the back stack instead of adding an entry.
  */
 export const pushScreen = <RouteName extends keyof AppStackParamList>(
     screenName: RouteName,

@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed'
 import { useCallback } from 'react'
 import {
     Notifier,
@@ -23,54 +22,13 @@ import {
     LONG_PROMPT_DISPLAY_DELAY,
 } from '@constants/ui'
 import { getContainerTestProps } from '@utils/test-id-helper'
+import { useToastStyles } from './styles'
 
 interface ToastMessage {
     title: string
     body: string
     type: 'error' | 'warning' | 'info' | 'success'
 }
-
-type StyleProps = { topInset: number }
-
-const useStyles = makeStyles((theme, { topInset }: StyleProps) => {
-    return {
-        notifierContainer: {
-            zIndex: theme.zIndex.toast,
-        },
-        baseStyle: {
-            zIndex: theme.zIndex.max,
-            // Push the toast below the status bar / notch — `topInset` covers
-            // the system status-bar height (or safe-area inset on iOS) so the
-            // toast doesn't overlap battery / clock / camera cutout.
-            marginTop: topInset + theme.spacing.sm,
-            borderWidth: theme.borders.none,
-        },
-        successStyle: {
-            backgroundColor: theme.colors.success,
-        },
-        successStyleText: {
-            color: theme.colors.alertContent,
-        },
-        errorStyle: {
-            backgroundColor: theme.colors.alertNegative,
-        },
-        errorStyleText: {
-            color: theme.colors.alertContent,
-        },
-        infoStyle: {
-            backgroundColor: theme.colors.background,
-        },
-        infoStyleText: {
-            color: theme.colors.textMain,
-        },
-        warningStyle: {
-            backgroundColor: theme.colors.warning,
-        },
-        warningStyleText: {
-            color: theme.colors.textMain,
-        },
-    }
-})
 
 const DELAY_MAP = {
     none: 0,
@@ -85,7 +43,7 @@ type ToastOptions = ShowNotificationParams & {
 
 export const useToast = () => {
     const insets = useSafeAreaInsets()
-    const styles = useStyles({ topInset: insets.top })
+    const styles = useToastStyles({ topInset: insets.top })
 
     const showToast = useCallback(
         (message: ToastMessage, options?: ToastOptions) => {

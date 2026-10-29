@@ -33,6 +33,7 @@ export {
 export { subscribeToSubmissionLedger } from './ledger-events'
 export { SubmissionAttemptsSchema, TransactionBatchesSchema } from './schema'
 export {
+    DELEGATION_SUBMISSION_FLOW,
     LANDABLE_SUBMISSION_STATUSES,
     OPEN_SUBMISSION_STATUSES,
     REVIEW_APPROVAL_TTL_MS,

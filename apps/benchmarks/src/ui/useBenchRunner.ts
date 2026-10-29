@@ -11,6 +11,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { toError } from '@perawallet/wallet-core-shared'
 import { compareRuns, isComparable } from '../runner/compare'
 import { buildRunMeta } from '../runner/runMeta'
 import { runSelection } from '../runner/runSelection'
@@ -52,8 +53,7 @@ export type UseBenchRunnerResult = {
     importBaseline: () => Promise<void>
 }
 
-const messageOf = (error: unknown): string =>
-    error instanceof Error ? error.message : String(error)
+const messageOf = (error: unknown): string => toError(error).message
 
 /**
  * `getContext` is read when a run starts, not held in this component's props:

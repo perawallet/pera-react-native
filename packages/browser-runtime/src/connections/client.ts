@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { isPromiseLike } from '@perawallet/wallet-core-shared'
+import { isPromiseLike, toError } from '@perawallet/wallet-core-shared'
 
 import {
     DB_CONTROL_SCOPE,
@@ -174,8 +174,7 @@ export const onConnectionsControlMessage = (
     return () => chrome.runtime.onMessage.removeListener(listener)
 }
 
-const describeError = (error: unknown): string =>
-    error instanceof Error ? error.message : String(error)
+const describeError = (error: unknown): string => toError(error).message
 
 // Best-effort: every popup closed is the normal steady state, and Chrome
 // reports "nobody is listening" as a rejection.

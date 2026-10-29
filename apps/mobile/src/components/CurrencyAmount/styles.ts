@@ -16,6 +16,7 @@ import { getTypography } from '@theme/typography'
 
 import type { CurrencyAmountProps } from './CurrencyAmount'
 
+// lanekeep-ignore-next-line pera/no-numeric-sizes reason: amount skeleton placeholder width cap
 const SKELETON_MAX_WIDTH = 150
 
 export const useStyles = makeStyles((theme, props: CurrencyAmountProps) => {

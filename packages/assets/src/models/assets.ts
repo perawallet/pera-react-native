@@ -165,9 +165,9 @@ export const getKnownAssetId = (
     return KNOWN_ASSET_IDS[key].get(scopeKey) ?? null
 }
 
-export type AlgorandAssetPrice = {
+export type AssetUsdPrice = {
     assetId: string
     usdPrice: Decimal
 }
 
-export type AssetPrices = Map<string, AlgorandAssetPrice>
+export type AssetPrices = Map<string, AssetUsdPrice>

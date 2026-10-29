@@ -458,7 +458,7 @@ describe('useSigningPipeline', () => {
         registerFakeReviewerAdapter({
             aggregateTransactionWarnings: vi.fn(() => [
                 {
-                    type: 'rekey',
+                    type: 'delegation',
                     senderAddress: 'FOREIGN_E',
                 } as never,
             ]),
@@ -473,7 +473,7 @@ describe('useSigningPipeline', () => {
 
         const { result } = renderHook(() => useSigningPipeline())
 
-        expect(result.current.warnings.map(w => w.type)).toEqual(['rekey'])
+        expect(result.current.warnings.map(w => w.type)).toEqual(['delegation'])
     })
 
     test('subscribes to actor ref and derives stage from snapshot', () => {

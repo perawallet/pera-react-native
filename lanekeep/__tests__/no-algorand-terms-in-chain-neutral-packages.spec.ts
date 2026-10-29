@@ -65,10 +65,34 @@ describe('pera/no-algorand-terms-in-chain-neutral-packages', () => {
         ).toEqual([])
     })
 
-    it('finds nothing in backup, device or migrate source', async () => {
+    it('reports each chain word in a name, key, member or literal of the code-checked packages, and not in comments', async () => {
+        const found = await runRule(RULE, FIXTURES)
+
+        expect(
+            locations(
+                found.filter(v => v.file.endsWith('algorand-terms.code.ts')),
+            ),
+        ).toEqual(
+            [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13].map(
+                line => `algorand-terms.code.ts:${line}`,
+            ),
+        )
+    })
+
+    it('checks comments only in backup, device and migrate', async () => {
+        const found = await runRule(RULE, FIXTURES)
+
+        expect(
+            locations(
+                found.filter(v => v.file.endsWith('algorand-terms.prose.ts')),
+            ),
+        ).toEqual(['algorand-terms.prose.ts:2', 'algorand-terms.prose.ts:3'])
+    })
+
+    it('finds nothing in the chain-neutral packages', async () => {
         const found = await runRule(
             RULE,
-            'packages/{backup,device,migrate}/src/**/*.{ts,tsx}',
+            'packages/{backup,device,migrate,accounts,assets,chain-shared,connections,signing,swaps,transactions}/src/**/*.{ts,tsx}',
         )
 
         expect(found).toEqual([])

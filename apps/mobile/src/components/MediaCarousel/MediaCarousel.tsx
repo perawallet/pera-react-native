@@ -60,6 +60,7 @@ export const MediaCarousel = ({
     }, [])
 
     // VideoPlayer defaults to the full window without explicit width/height.
+    // lanekeep-ignore-next-line pera/no-numeric-sizes reason: window width minus xl padding on each side
     const mediaSize = dimensions.width - 2 * theme.spacing.xl
 
     // A model isn't its own page: its 3D badge rides on the visual media, and

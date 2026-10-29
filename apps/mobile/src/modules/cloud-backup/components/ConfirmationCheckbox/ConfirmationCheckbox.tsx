@@ -11,7 +11,6 @@
  */
 
 import { PWCheckbox, PWText, PWTouchableOpacity } from '@components/core'
-import { getTestProps } from '@utils/test-id-helper'
 
 import { useStyles } from './styles'
 
@@ -34,7 +33,7 @@ export const ConfirmationCheckbox = ({
         <PWTouchableOpacity
             style={styles.row}
             onPress={onToggle}
-            {...getTestProps(testID)}
+            testID={testID}
         >
             <PWCheckbox
                 checked={isConfirmed}
