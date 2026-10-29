@@ -13,9 +13,10 @@
 import type { AnalyticsMetadataKey as Key } from '../metadata-keys'
 import type { ChainPayload } from '../chain-payload'
 
-/** Completed on-chain transactions. */
+/** Send-flow transactions, completed or failed. */
 export enum TransactionsEvent {
     Complete = 'transaction', // A transaction completed (account type, asset, max flag, amount, tx id)
+    Failed = 'transaction_failed', // A send failed (chain, error code, retryable)
 }
 
 export interface TransactionsRequiredPayloads {
@@ -26,5 +27,10 @@ export interface TransactionsRequiredPayloads {
         // Optional: not always available at the RN send-completion point.
         [Key.AccountType]?: string
         [Key.IsMax]?: boolean
+    }
+    [TransactionsEvent.Failed]: ChainPayload & {
+        /** The failure's report code, or `unclassified` when its error declares none. */
+        [Key.ErrorCode]: string
+        [Key.IsRetryable]: boolean
     }
 }

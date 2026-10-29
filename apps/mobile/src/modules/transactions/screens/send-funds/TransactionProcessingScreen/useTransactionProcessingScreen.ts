@@ -32,6 +32,11 @@ import {
     UserRejectedSigningError,
     useSigningEvent,
 } from '@perawallet/wallet-core-signing'
+import {
+    isRetryableError,
+    reportCodeOf,
+    toError,
+} from '@perawallet/wallet-core-shared'
 import { ledgerAppNameFor } from '@perawallet/wallet-core-hardware-wallet'
 import { getChainDescriptor } from '@perawallet/wallet-core-chain-shared'
 import type { Nullable } from '@perawallet/wallet-core-shared'
@@ -48,6 +53,8 @@ import {
     registerTabResumeIntent,
 } from '@utils/tabResumeIntent'
 import type { SendFundsStackParamList } from '@modules/transactions/routes/send-funds/types'
+
+const UNCLASSIFIED_FAILURE_CODE = 'unclassified'
 
 export type UseTransactionProcessingScreenResult = {
     /** True when the sender is a hardware-wallet account; selects copy. */
@@ -214,6 +221,14 @@ export const useTransactionProcessingScreen =
                         navigation.goBack()
                         return
                     }
+                    trackEvent(TransactionsEvent.Failed, {
+                        [AnalyticsMetadataKey.ChainId]: scope.chainId,
+                        [AnalyticsMetadataKey.ErrorCode]:
+                            reportCodeOf(error) ?? UNCLASSIFIED_FAILURE_CODE,
+                        [AnalyticsMetadataKey.IsRetryable]: isRetryableError(
+                            toError(error),
+                        ),
+                    })
                     showError(error, undefined, {
                         notifier: bottomSheetNotifier.current ?? undefined,
                     })

@@ -48,6 +48,7 @@ import { useContacts } from '@perawallet/wallet-core-contacts'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     DEFAULT_EVM_RPC_RESPONSES,
+    EvmRpcErrorFixture,
     evmRpcHandlers,
 } from '@perawallet/wallet-core-chain-ethereum/test-handlers'
 import { kmsCore, SeedScheme } from '@perawallet/wallet-core-kms'
@@ -74,6 +75,7 @@ import {
     recordAnalyticsEvents,
     type AnalyticsRecorder,
 } from '@test-utils/analytics-recorder'
+import { AnalyticsMetadataKey, TransactionsEvent } from '@analytics'
 import { expectFlowEvents } from './__fixtures__/analytics-flows'
 
 const RPC_URL = 'https://mainnet.rpc.test/'
@@ -321,6 +323,47 @@ describe('Flow: send from an Ethereum account', () => {
             }),
         ).toBeTruthy()
         expect(screen.queryByTestId('send_input_note_button')).toBeNull()
+    })
+
+    it('Given an ether send, when the node refuses it as an underpriced replacement, then the flow returns to Confirm and records the failure with its EVM code', async () => {
+        selectSender(ETHEREUM_SENDER)
+        useSendFundsStore
+            .getState()
+            .setSelectedAsset({ chainId: 'ethereum', assetId: 'native' })
+        useSendFundsStore.getState().setAmount(new Decimal('0.5'))
+        useSendFundsStore.getState().setDestination(RECEIVER)
+        useSendFundsStore.getState().setSendMode('normal')
+        server.use(
+            ...evmRpcHandlers({
+                rpcUrl: RPC_URL,
+                responses: {
+                    eth_sendRawTransaction: new EvmRpcErrorFixture(
+                        -32000,
+                        'replacement transaction underpriced',
+                    ),
+                },
+            }),
+        )
+
+        renderSendConfirmationStack()
+        fireEvent.click(
+            await findEnabledByTestId('send_confirm_button', { timeout: 5000 }),
+        )
+
+        await waitFor(
+            () => expect(Notifier.showNotification).toHaveBeenCalled(),
+            { timeout: 10_000 },
+        )
+        await waitFor(() =>
+            expect(screen.getByTestId('send_confirm_button')).toBeTruthy(),
+        )
+        expectFlowEvents(analytics, 'sendFailed', 'ethereum')
+        expect(
+            analytics.events([TransactionsEvent.Failed])[0]?.payload,
+        ).toMatchObject({
+            [AnalyticsMetadataKey.ErrorCode]: 'evm.replacement_underpriced',
+            [AnalyticsMetadataKey.IsRetryable]: false,
+        })
     })
 
     it("Given an account on Algorand and Ethereum, when it sends ether, then the send runs on the asset's chain", async () => {
