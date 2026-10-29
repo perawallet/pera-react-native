@@ -21,7 +21,7 @@ ${NODE_TESTNET_RADIO}               tid=node_settings_algorand_testnet_radio
 ${ACCOUNT_MENU_ADD_BUTTON}          tid=account_menu_add_account_button
 ${ADD_ACCOUNT_IMPORT_BUTTON}        tid=add_account_import_button
 ${ADD_ACCOUNT_ADD_BUTTON}           tid=add_account_add_button
-${ADD_ACCOUNT_UNIVERSAL_BUTTON}     tid=add_account_create_universal_wallet_button
+${ADD_ACCOUNT_MULTICHAIN_BUTTON}    tid=add_account_options_multichain_button
 ${ADD_ACCOUNT_SEE_OTHER_BUTTON}     tid=add_account_see_other_options_button
 ${ADD_ACCOUNT_WATCH_BUTTON}         tid=add_account_watch_button
 ${WATCH_ADDRESS_INPUT}              tid=watch_account_address_input
@@ -108,22 +108,16 @@ Count Accounts
     RETURN    ${count}
 
 Add Account To Wallet
-    [Documentation]    Creates a key account in the current wallet; it becomes the selected one. A
-    ...                wallet with an HD wallet is offered Add Account, one without it Create
-    ...                Universal Wallet, never both.
+    [Documentation]    Creates a key account in the current wallet; it becomes the selected one. The
+    ...                multichain row derives from the HD wallet, or starts one when there is none.
     Open Account Switcher
     Tap    ${ACCOUNT_MENU_ADD_BUTTON}
     Wait Until Page Contains Element    ${ADD_ACCOUNT_IMPORT_BUTTON}    timeout=20s
-    ${offered}=    Run Keyword And Return Status
-    ...    Page Should Contain Element    ${ADD_ACCOUNT_ADD_BUTTON}
     # The tap lands - Click Element reports success and the button is on screen and enabled - and
     # the screen simply stays. Waiting it out for a minute found nothing on the way; a second tap
     # opens it at once, and the cases that follow inherited the missing account as their own failure.
-    IF    ${offered}
-        Tap Until    ${ADD_ACCOUNT_ADD_BUTTON}    ${ACCOUNT_FINISH_BUTTON}    timeout=30s
-    ELSE
-        Tap Until    ${ADD_ACCOUNT_UNIVERSAL_BUTTON}    ${ACCOUNT_FINISH_BUTTON}    timeout=30s
-    END
+    Tap Until    ${ADD_ACCOUNT_ADD_BUTTON}    ${ADD_ACCOUNT_MULTICHAIN_BUTTON}    timeout=20s
+    Tap Until    ${ADD_ACCOUNT_MULTICHAIN_BUTTON}    ${ACCOUNT_FINISH_BUTTON}    timeout=30s
     # The name field takes focus and the keyboard lifts the button; a tap while it moves misses.
     Wait Until Settled    ${ACCOUNT_FINISH_BUTTON}
     Tap    ${ACCOUNT_FINISH_BUTTON}

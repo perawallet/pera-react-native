@@ -12,55 +12,47 @@
 
 import { useCallback, useMemo, useState } from 'react'
 import {
-    offeredLocalKeyKinds,
     useCreateAccount,
     useCreateNextHDAccount,
-    useHdSeedGroups,
-    type LocalKeyCreateOption,
-    type LocalKeySeed,
-    type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
-    isPostQuantumScheme,
     LEGACY_CHAIN_ID,
     i18nKey,
     type I18nKey,
 } from '@perawallet/wallet-core-chain-contract'
 import { useAppNavigation } from '@hooks/useAppNavigation'
-import { useIsMounted } from '@hooks/useIsMounted'
 import { useIsPeraCardEnabled } from '@hooks/useIsPeraCardEnabled'
 import { useCapability } from '@hooks/useCapability'
-import { useCapableChainId } from '@hooks/useCapableChainIds'
-import { useModalState } from '@hooks/useModalState'
-import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
-import { deferToNextCycle, type Nullable } from '@perawallet/wallet-core-shared'
 import { useWebView, withLanguageParam } from '@modules/webview'
 import { config, isDebug, isStaging } from '@perawallet/wallet-core-config'
 import { useCardSession } from '@perawallet/wallet-core-card'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import type { IconName } from '@components/core'
-import { useMultisigCreationStore } from '@modules/multisig'
 import { useWatchableChainIds } from '@modules/onboarding/hooks'
 import { watchAccountCopyFor } from '@modules/onboarding/utils/watchAccountCopyFor'
 import type { AccountOption } from '@modules/onboarding/types'
-import { trackChainOnboardingEvent } from '../../utils'
+import { useRunCreateAccount } from '../../hooks/useRunCreateAccount'
+import { useLocalKeyCreateOptions } from '../../hooks/useLocalKeyCreateOptions'
 
-// A key kind's create option can override it for its own keygen.
-const DEFAULT_CREATING_TITLE_KEY = i18nKey(
-    'onboarding.create_account.processing',
-)
+export type UseAddAccountScreenResult = {
+    isCreatingAccount: boolean
+    creatingTitleKey: I18nKey
+    mainOptions: AccountOption[]
+    otherOptions: AccountOption[]
+    handleClose: () => void
+    handleTermsPress: () => void
+    handlePrivacyPress: () => void
+    isOtherOptionsVisible: boolean
+    handleToggleOtherOptions: () => void
+}
 
-export const useAddAccountScreen = () => {
+export const useAddAccountScreen = (): UseAddAccountScreenResult => {
     const navigation = useAppNavigation()
-    const isMounted = useIsMounted()
     const scope = useSelectedScope(LEGACY_CHAIN_ID)
-    const { buildHdWalletAccount, buildSingleKeyAccount } =
-        useCreateAccount(scope)
-    const { buildNextHDAccount, hasHDWallet } = useCreateNextHDAccount(scope)
-    const { hasMultipleHdSeeds } = useHdSeedGroups()
-    const { showError } = useErrorToast()
-    const { t, currentLanguage } = useLanguage()
+    const { buildHdWalletAccount } = useCreateAccount(scope)
+    const { hasHDWallet } = useCreateNextHDAccount(scope)
+    const { currentLanguage } = useLanguage()
     const { pushWebView } = useWebView()
     // TODO(card): TEMP — a completed Baanx onboarding persists `isAuthenticated`,
     // which hides this entry with no in-app way to clear it. Force it visible in
@@ -70,85 +62,22 @@ export const useAddAccountScreen = () => {
     const { isAuthenticated } = useCardSession()
     const hasCardSession = isDebug || isStaging ? false : isAuthenticated
     const isPeraCardEnabled = useIsPeraCardEnabled()
-    const multisigChainId = useCapableChainId('multisig')
-    const canUseMultisig = useCapability({
-        platform: 'sharedAccounts',
-        anyChain: 'multisig',
-    })
     const canAddWatchAccount = useCapability({ anyChain: 'watchAccounts' })
     const watchAccountCopy = watchAccountCopyFor(useWatchableChainIds())
-    const isQuantumEnabled = useCapability({
-        platform: 'quantum',
-        anyChain: 'quantumAccounts',
+
+    const { isCreatingAccount, creatingTitleKey, runCreateAccount } =
+        useRunCreateAccount()
+    const createOptions = useLocalKeyCreateOptions({
+        chainId: scope.chainId,
+        runCreateAccount,
+        isCreatingAccount,
     })
-
-    const {
-        isOpen: isCreatingAccount,
-        open: openCreatingAccount,
-        close: closeCreatingAccount,
-    } = useModalState()
-    const [creatingTitleKey, setCreatingTitleKey] = useState(
-        DEFAULT_CREATING_TITLE_KEY,
-    )
-    const {
-        isOpen: isMultisigIntroductionVisible,
-        open: openMultisigIntroduction,
-        close: closeMultisigIntroduction,
-    } = useModalState()
-
-    const resetMultisigCreation = useMultisigCreationStore(
-        state => state.resetState,
-    )
     const [isOtherOptionsVisible, setIsOtherOptionsVisible] = useState(false)
 
-    const runCreateAccount = useCallback(
-        (
-            create: () => Promise<Nullable<WalletAccount>>,
-            titleKey: I18nKey = DEFAULT_CREATING_TITLE_KEY,
-        ) => {
-            setCreatingTitleKey(titleKey)
-            openCreatingAccount()
-            void deferToNextCycle(async () => {
-                try {
-                    const newAccount = await create()
-                    if (!isMounted()) return
-                    if (newAccount) {
-                        navigation.push('NameAccount', { account: newAccount })
-                    }
-                } catch (error) {
-                    if (!isMounted()) return
-                    showError(error, t('onboarding.create_account.error_title'))
-                } finally {
-                    if (isMounted()) closeCreatingAccount()
-                }
-            })
-        },
-        [
-            isMounted,
-            openCreatingAccount,
-            closeCreatingAccount,
-            navigation,
-            showError,
-            t,
-        ],
+    const handleOpenAddAccountOptions = useCallback(
+        () => navigation.push('AddAccountOptions', { chainId: scope.chainId }),
+        [navigation, scope.chainId],
     )
-
-    const handleAddAccount = useCallback(() => {
-        if (!hasHDWallet) return
-
-        if (hasMultipleHdSeeds) {
-            navigation.push('SelectHDWallet')
-            return
-        }
-
-        runCreateAccount(buildNextHDAccount)
-    }, [
-        hasHDWallet,
-        hasMultipleHdSeeds,
-        navigation,
-        buildNextHDAccount,
-        runCreateAccount,
-    ])
 
     const handleOpenImportAccountOptions = useCallback(
         () => navigation.push('ImportAccountOptions'),
@@ -182,20 +111,6 @@ export const useAddAccountScreen = () => {
             }),
         [pushWebView, currentLanguage],
     )
-    const handleContinueMultisigIntroduction = useCallback(() => {
-        closeMultisigIntroduction()
-        resetMultisigCreation()
-        // The first multisig chain until a picker covers several.
-        navigation.navigate('Multisig', {
-            screen: 'CreateMultisig',
-            params: { chainId: multisigChainId },
-        })
-    }, [
-        closeMultisigIntroduction,
-        navigation,
-        resetMultisigCreation,
-        multisigChainId,
-    ])
 
     const handleWatchAddress = useCallback(
         () => navigation.push('WatchInfo'),
@@ -208,99 +123,25 @@ export const useAddAccountScreen = () => {
         )
     }, [buildHdWalletAccount, runCreateAccount])
 
-    // The account is built in memory; NameAccount persists it once named.
-    const handleCreateKind = useCallback(
-        (seed: LocalKeySeed, option: LocalKeyCreateOption) => {
-            trackChainOnboardingEvent(option.analyticsEvent, scope.chainId)
-            runCreateAccount(
-                () => buildSingleKeyAccount({ seed }),
-                option.progressTitleKey,
-            )
-        },
-        [buildSingleKeyAccount, runCreateAccount, scope.chainId],
-    )
-
-    const createOptions = useMemo(() => {
-        const featured: AccountOption[] = []
-        const other: AccountOption[] = []
-        for (const { kind, options } of offeredLocalKeyKinds(scope.chainId)) {
-            const option = options.create
-            if (!option) continue
-            if (isPostQuantumScheme(kind.signingScheme) && !isQuantumEnabled) {
-                continue
-            }
-            const { learnMore } = option
-            const row: AccountOption = {
-                testID: `add_account_create_${option.id}_button`,
-                titleKey: option.titleKey,
-                descriptionKey: option.descriptionKey,
-                leftIcon: option.icon as IconName,
-                onPress: () => handleCreateKind(kind.seed, option),
-                isDisabled: isCreatingAccount,
-                badge: option.badgeKey
-                    ? { labelKey: option.badgeKey, variant: 'new' }
-                    : undefined,
-                learnMore: learnMore
-                    ? {
-                          labelKey: learnMore.labelKey,
-                          onPress: () =>
-                              pushWebView({
-                                  url: learnMore.url,
-                                  id: `${option.id}-account-support`,
-                              }),
-                      }
-                    : undefined,
-            }
-            ;(option.isFeatured ? featured : other).push(row)
-        }
-        return { featured, other }
-    }, [
-        scope.chainId,
-        isQuantumEnabled,
-        isCreatingAccount,
-        handleCreateKind,
-        pushWebView,
-    ])
-
     const mainOptions: AccountOption[] = useMemo(
         () =>
             (
                 [
-                    hasHDWallet && {
+                    {
                         testID: 'add_account_add_button',
                         titleKey: i18nKey(
                             'onboarding.add_account.add_account_option_title',
                         ),
-                        descriptionKey: i18nKey(
-                            'onboarding.add_account.add_account_option_description',
-                        ),
+                        descriptionKey: hasHDWallet
+                            ? i18nKey(
+                                  'onboarding.add_account.add_account_option_description',
+                              )
+                            : i18nKey(
+                                  'onboarding.add_account_options.multichain_new_wallet_description',
+                              ),
                         leftIcon: 'wallet-add' as IconName,
-                        onPress: handleAddAccount,
+                        onPress: handleOpenAddAccountOptions,
                         isDisabled: isCreatingAccount,
-                    },
-                    !hasHDWallet && {
-                        testID: 'add_account_create_universal_wallet_button',
-                        titleKey: i18nKey(
-                            'onboarding.add_account.create_universal_wallet_option_title',
-                        ),
-                        descriptionKey: i18nKey(
-                            'onboarding.add_account.create_universal_wallet_option_description',
-                        ),
-                        leftIcon: 'wallet-with-algo' as IconName,
-                        onPress: handleCreateUniversalWallet,
-                        isDisabled: isCreatingAccount,
-                    },
-                    ...createOptions.featured,
-                    canUseMultisig && {
-                        testID: 'add_account_create_multisig_button',
-                        titleKey: i18nKey(
-                            'onboarding.add_account.create_multisig_option_title',
-                        ),
-                        descriptionKey: i18nKey(
-                            'onboarding.add_account.create_multisig_option_description',
-                        ),
-                        leftIcon: 'people' as IconName,
-                        onPress: openMultisigIntroduction,
                     },
                     isPeraCardEnabled &&
                         !hasCardSession && {
@@ -325,18 +166,14 @@ export const useAddAccountScreen = () => {
                         leftIcon: 'wallet-import' as IconName,
                         onPress: handleOpenImportAccountOptions,
                     },
-                ] satisfies (AccountOption | false | null | undefined)[]
+                ] satisfies (AccountOption | false)[]
             ).filter((option): option is AccountOption => !!option),
         [
             hasHDWallet,
-            handleAddAccount,
-            handleCreateUniversalWallet,
-            createOptions,
-            canUseMultisig,
             isCreatingAccount,
-            openMultisigIntroduction,
-            hasCardSession,
+            handleOpenAddAccountOptions,
             isPeraCardEnabled,
+            hasCardSession,
             handleAddPeraCard,
             handleOpenImportAccountOptions,
         ],
@@ -355,7 +192,7 @@ export const useAddAccountScreen = () => {
                         leftIcon: 'eye' as IconName,
                         onPress: handleWatchAddress,
                     },
-                    hasHDWallet && {
+                    {
                         testID: 'add_account_create_universal_wallet_button',
                         titleKey: i18nKey(
                             'onboarding.add_account.create_universal_wallet_option_title',
@@ -368,10 +205,9 @@ export const useAddAccountScreen = () => {
                         isDisabled: isCreatingAccount,
                     },
                     ...createOptions.other,
-                ] satisfies (AccountOption | false | null | undefined)[]
+                ] satisfies (AccountOption | false)[]
             ).filter((option): option is AccountOption => !!option),
         [
-            hasHDWallet,
             canAddWatchAccount,
             watchAccountCopy,
             handleWatchAddress,
@@ -379,6 +215,11 @@ export const useAddAccountScreen = () => {
             createOptions,
             isCreatingAccount,
         ],
+    )
+
+    const handleToggleOtherOptions = useCallback(
+        () => setIsOtherOptionsVisible(prev => !prev),
+        [],
     )
 
     return {
@@ -389,10 +230,7 @@ export const useAddAccountScreen = () => {
         handleClose: navigation.goBack,
         handleTermsPress,
         handlePrivacyPress,
-        isMultisigIntroductionVisible,
-        handleCloseMultisigIntroduction: closeMultisigIntroduction,
-        handleContinueMultisigIntroduction,
         isOtherOptionsVisible,
-        handleToggleOtherOptions: () => setIsOtherOptionsVisible(prev => !prev),
+        handleToggleOtherOptions,
     }
 }

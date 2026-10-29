@@ -35,6 +35,7 @@ export {
     backfillAccountRecords,
     useAccountsStore,
     useAccountChainStateStore,
+    useHoldingsRefreshStore,
     hydrateAccountChainStates,
     recordAuthority,
     type AccountChainStateSlice,

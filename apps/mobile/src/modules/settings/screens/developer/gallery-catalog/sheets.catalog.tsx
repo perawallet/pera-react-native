@@ -1239,7 +1239,7 @@ export const getSheetSections = (): GallerySection[] => [
                     request: () => ({
                         contents: (
                             <GallerySheetBoundary>
-                                <ImportOptionsContent />
+                                <ImportOptionsContent chainId='algorand' />
                             </GallerySheetBoundary>
                         ),
                         options: {

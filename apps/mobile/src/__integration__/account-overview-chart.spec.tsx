@@ -99,6 +99,7 @@ const renderHeader = (chartVisible: boolean) =>
                     account: TWO_CHAIN_ACCOUNT,
                     openSendFunds: noop,
                     openReceiveFunds: noop,
+                    openReceiveFundsOn: noop,
                     openAccountOptions: noop,
                 }}
             >

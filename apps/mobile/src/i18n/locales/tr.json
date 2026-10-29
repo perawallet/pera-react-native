@@ -290,6 +290,7 @@
         "transaction_list": {
             "title": "İşlemler",
             "empty_body": "İşlem bulunamadı",
+            "empty_on_network_body": "{{network}} ağında henüz işlem yok",
             "offline_empty_title": "Çevrimdışısın",
             "offline_empty_body": "Bu cihazda henüz kayıtlı işlem yok. Yeniden çevrimiçi olduğunda görünecekler.",
             "search_paused_body": "Yakın geçmişte işlem bulunamadı.",
@@ -346,6 +347,8 @@
             "empty_body": "Bu hesaba bağlı hiç varlığın yok",
             "nomatch_title": "Eşleşen varlık yok",
             "nomatch_body": "Arama terimiyle eşleşen varlık bulunamadı",
+            "funding_title": "{{network}} ağında başla",
+            "funding_body": "Bu ağı kullanmaya başlamak için para yatır. Ağ ücretlerini ödemek için {{network}} ağında biraz {{nativeSymbol}} gerekir.",
             "network_filter_all": "Tümü",
             "see_networks": "Ağları gör",
             "hide_networks": "Ağları gizle",
@@ -2178,24 +2181,25 @@
     },
     "onboarding": {
         "import_options": {
-            "title": "Passphrase türünü seç",
+            "title": "Passphrase ile kurtar",
             "hd_wallet": {
                 "title": "Universal Wallet",
-                "description": "Aynı passphrase ile yeni hesaplar türetmene olanak tanıyan cüzdan",
-                "chip": "yeni"
+                "description": "Tek bir 24 kelimelik passphrase ile farklı zincirlerde birden fazla hesap oluşturmanı sağlayan cüzdan"
             },
             "algo25": {
-                "title": "ALGO25",
+                "title": "Algo25",
                 "description": "Algorand ekosistemine özgü eski format",
-                "chip": "eski",
-                "mnemonic_info": "25 kelimelik passphrase"
+                "chip": "eski"
             },
-            "mnemonic_info": "24 kelimelik passphrase"
+            "quantum": {
+                "title": "Quantum hesabı",
+                "description": "Algorand üzerinde doğal olarak güvence altına alınan Falcon-1024 imzaları"
+            }
         },
         "import_info": {
-            "title": "Algorand cüzdanı kurtar",
-            "body": "Sonraki adımlarda, bir Algorand cüzdanını kurtarmak için kurtarma passphrase’ini gireceksin. Başlamadan önce kurtarma passphrase’ini hazır bulundur.",
-            "button": "Algorand cüzdanı kurtar"
+            "title": "Cüzdanı kurtar",
+            "body": "Sonraki adımlarda, bir cüzdanı kurtarmak için kurtarma passphrase’ini gireceksin. Başlamadan önce kurtarma passphrase’ini hazır bulundur.",
+            "button": "Cüzdanı kurtar"
         },
         "import_account": {
             "title": "Kurtarma passphrase’ini gir",
@@ -2235,12 +2239,11 @@
             "error_title": "Hesap oluşturulamadı"
         },
         "main_screen": {
-            "welcome": "Pera Wallet’a \n hoş geldin",
-            "new_to_algo": "Algorand’a yeni misin?",
-            "create_wallet": "Yeni cüzdan oluştur",
-            "already_have_account": "Hesabın var mı?",
-            "import_account": "Hesap içe aktar",
-            "privacy_agreement": "Cüzdan oluşturarak Pera Wallet’ın <0>Gizlilik Politikası</0>’nı kabul etmiş olursun"
+            "welcome": "Pera Wallet’a\nhoş geldin",
+            "new_to_pera": "Pera’ya yeni misin?",
+            "create_wallet": "Cüzdan oluştur",
+            "already_have_wallet": "Cüzdanın var mı?",
+            "import_wallet": "Cüzdan içe aktar"
         },
         "terms_sheet": {
             "title": "Şartlar ve koşullar",
@@ -2280,11 +2283,11 @@
             }
         },
         "add_account": {
-            "title": "Hesap\nekle",
+            "title": "Hesap ekle",
             "add_account_option_title": "Hesap ekle",
             "add_account_option_description": "Mevcut Universal Wallet’ına yeni bir hesap ekle",
             "import_account_option_title": "Hesap içe aktar",
-            "import_account_option_description": "Mevcut bir Algorand hesabını farklı yöntemlerle içe aktar",
+            "import_account_option_description": "Mevcut bir hesabı içe aktar veya Ledger’ını bağla",
             "qr_scan_invalid_title": "Geçersiz QR kodu",
             "qr_scan_invalid_body": "Bu QR kodu geçerli bir hesap kurtarma bağlantısı içermiyor",
             "qr_scan_invalid_mnemonic_title": "Geçersiz passphrase",
@@ -2296,17 +2299,23 @@
             "create_universal_wallet_option_description": "Aynı 24 kelimelik passphrase ile yeni hesaplar türetmene olanak tanıyan cüzdan",
             "create_algo25_option_title": "Algo25 hesabı oluştur",
             "create_algo25_option_description": "Algorand’a özgü eski format",
-            "quantum_account_option_title": "Quantum hesabı ekle",
+            "quantum_account_option_title": "Algorand Quantum hesabı",
             "quantum_account_option_description": "Algorand üzerinde doğal olarak güvence altına alınan Falcon-1024 imzaları. Anahtarların artık post-kuantum döneme hazır.",
             "quantum_account_option_badge": "YENİ",
             "quantum_account_option_learn_more": "Daha fazla bilgi",
             "quantum_creating_title": "Quantum hesabın oluşturuluyor…",
             "terms_and_privacy": "Cüzdan ekleyerek Pera Wallet’ın <0>Şartlar ve Koşullar</0> ve <1>Gizlilik Politikası</1>’nı kabul etmiş olursun",
-            "create_multisig_option_title": "Paylaşılan hesap ekle",
-            "create_multisig_option_description": "Birden fazla imzacı gerektiren, gelişmiş güvenlikli yeni bir paylaşılan hesap oluştur",
+            "create_multisig_option_title": "Algorand paylaşılan hesabı",
+            "create_multisig_option_description": "Birden fazla imzacı gerektiren, gelişmiş güvenlikli yeni bir çoklu imza hesabı oluştur",
             "pera_card_option_title": "Pera Card hesabı ekle",
             "pera_card_option_description": "Pera Card ile kriptonu gerçek dünyada harca",
             "see_other_options": "Diğer seçenekleri gör"
+        },
+        "add_account_options": {
+            "title": "Hesap ekle",
+            "multichain_title": "Multichain hesap",
+            "multichain_description": "Mevcut passphrase’ine bağlı olarak desteklenen tüm blokzincirlerinde yeni bir adres oluştur",
+            "multichain_new_wallet_description": "Tek bir cüzdandan birden fazla blokzincir ağına eriş ve onları yönet"
         },
         "import_private_key": {
             "title": "Özel anahtarı içe aktar",
@@ -2319,29 +2328,33 @@
             "backup_not_included": "Bu hesap herhangi bir bulut yedeğinde değil. Daha sonra kurtarmak için hesap seçeneklerindeki Özel anahtarı görüntüle seçeneğini kullan ve anahtarı güvenli bir yerde sakla."
         },
         "import_account_options": {
-            "title": "Hesap\niçe aktar",
-            "recover_wallet_title": "Cüzdan kurtar",
-            "recover_wallet_description": "Bir Algorand cüzdanını kurtarmak istiyorum",
-            "recover_qr_title": "QR kod ile hesap kurtar",
-            "recover_qr_description": "QR kod kullanarak bir Algorand hesabını kurtarmak istiyorum",
+            "title": "Hesap içe aktar",
+            "onboarding_title": "Cüzdan içe aktar",
+            "recover_passphrase_title": "Passphrase ile kurtar",
+            "recover_passphrase_description": "Passphrase kullanarak bir cüzdanı kurtar",
+            "recover_qr_title": "QR kod ile kurtar",
+            "recover_qr_description": "QR kod kullanarak bir Algorand cüzdanını kurtar",
             "private_key_title": "Özel anahtarı içe aktar",
             "private_key_description": "Özel anahtarından bir hesap ekleyin",
-            "pair_ledger_title": "Ledger’ı Bluetooth ile eşleştir",
-            "pair_ledger_description": "Ledger hardware wallet’ımdaki bir hesabı Bluetooth ile kurtarmak istiyorum",
-            "pair_ledger_usb_title": "Ledger’ı USB ile eşleştir",
-            "pair_ledger_usb_description": "Ledger hardware wallet’ımdaki bir hesabı USB kablosu ile kurtarmak istiyorum",
+            "pair_ledger_title": "Ledger ile eşleştir",
+            "pair_ledger_description": "Hesaplarını eşleştirilmiş bir Ledger cihazıyla yönet",
             "pair_ledger_unsupported_description": "Bu tarayıcı veya cihaz tarafından desteklenmiyor",
-            "pera_web_title": "Pera Web’den içe aktar",
-            "pera_web_description": "Pera Web’den Algorand hesapları içe aktarmak istiyorum",
-            "cloud_backup_title": "Bulut yedeklemeden içe aktar",
-            "cloud_backup_description": "Hesaplarımı ve kişilerimi 12 kelimelik yedekleme ifadem ve şifreleme anahtarımla geri yüklemek istiyorum",
+            "pera_web_title": "Eski web cüzdanından kurtar",
+            "pera_web_description": "Pera Web’den Algorand cüzdanı içe aktar",
+            "cloud_backup_title": "Bulut yedeklemeden kurtar",
+            "cloud_backup_description": "Hesaplarını ve kişilerini yeni bir uygulamada geri yükle veya diğer cihazlarınla senkronize et.",
             "cloud_backup_already_enabled_title": "Bulut yedekleme zaten açık",
             "cloud_backup_already_enabled_body": "Bu cihazda zaten bir bulut yedeklemesi var. Ayarlar › Bulut yedekleme bölümünden yönetebilirsin.",
-            "asb_title": "Algorand Secure Backup",
-            "asb_legacy_title": "Eski yedekleme",
-            "asb_description": "Hesaplarımı bir Algorand Secure Backup dosyası ve 12 kelimelik anahtar ile geri yüklemek istiyorum",
-            "quantum_title": "Quantum hesabı içe aktar",
-            "quantum_description": "25 kelimelik passphrase’ini kullanarak bir Quantum hesabı içe aktarmak istiyorum"
+            "asb_title": "Algorand Secure Backup’tan kurtar",
+            "asb_legacy_title": "Eski yedeklemeden kurtar",
+            "asb_description": "Bir Algorand Secure Backup dosyası ve 12 kelimelik anahtar ile cüzdanı geri yükle"
+        },
+        "ledger_transport_options": {
+            "title": "Ledger ile eşleştir",
+            "ble_title": "Bluetooth",
+            "ble_description": "Ledger’ını Bluetooth ile kablosuz bağla",
+            "usb_title": "USB",
+            "usb_description": "Ledger’ını doğrudan USB kablosuyla bağla"
         },
         "asb_import": {
             "info": {
