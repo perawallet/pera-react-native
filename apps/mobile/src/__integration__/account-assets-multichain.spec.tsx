@@ -397,6 +397,96 @@ describe("Flow: One account's assets across chains", () => {
         expect(screen.getByTestId(`asset_row_${LOOKALIKE}`)).toBeTruthy()
     })
 
+    const typeSearch = (value: string) =>
+        fireEvent.change(screen.getByTestId('searchable-list-search-input'), {
+            target: { value },
+        })
+
+    it("Given Base's native coin, which has no stored metadata, when 'eth' is searched on the Base chip, then Ether is listed and No Matching Assets is not", async () => {
+        server.use(http.post(BASE_RPC_URL, () => HttpResponse.error()))
+        useAccountsStore.getState().setAccounts([THREE_CHAIN_ACCOUNT])
+        renderList(THREE_CHAIN_ACCOUNT)
+        await screen.findByTestId('asset_group_row_usdc')
+        fireEvent.click(screen.getByTestId('asset_network_filter_base'))
+        await screen.findByTestId('asset_row_native')
+        typeSearch('no such asset')
+        await screen.findByText('account_details.assets.nomatch_title')
+
+        typeSearch('eth')
+
+        await screen.findByTestId('asset_row_native')
+        expect(
+            screen.queryByText('account_details.assets.nomatch_title'),
+        ).toBeNull()
+    })
+
+    it("Given All, when 'eth' is searched, then Ether on Ethereum and on Base are both listed, each naming its network", async () => {
+        server.use(http.post(BASE_RPC_URL, () => HttpResponse.error()))
+        useAccountsStore.getState().setAccounts([THREE_CHAIN_ACCOUNT])
+        renderList(THREE_CHAIN_ACCOUNT)
+        await screen.findByTestId('asset_group_row_usdc')
+
+        typeSearch('eth')
+
+        await waitFor(() => {
+            expect(screen.queryByTestId('asset_group_row_usdc')).toBeNull()
+        })
+        const rows = screen.getAllByTestId('asset_row_native')
+        expect(rows).toHaveLength(2)
+        expect(
+            rows.map(row =>
+                within(row).queryByTestId('chain_label_ethereum')
+                    ? 'ethereum'
+                    : within(row).queryByTestId('chain_label_base')
+                      ? 'base'
+                      : null,
+            ),
+        ).toEqual(expect.arrayContaining(['ethereum', 'base']))
+        expect(screen.queryByTestId(`asset_row_${LOOKALIKE}`)).toBeNull()
+    })
+
+    it("Given the Ethereum chip, when 'usd coin' is searched, then both Ethereum USD Coin tokens are listed with no network label", async () => {
+        useAccountsStore.getState().setAccounts([TWO_CHAIN_ACCOUNT])
+        renderList(TWO_CHAIN_ACCOUNT)
+        await screen.findByTestId('asset_group_row_usdc')
+        fireEvent.click(screen.getByTestId('asset_network_filter_ethereum'))
+        await screen.findByTestId('asset_row_native')
+
+        typeSearch('usd coin')
+
+        await waitFor(() => {
+            expect(screen.queryByTestId('asset_row_native')).toBeNull()
+        })
+        expect(screen.getByTestId(`asset_row_${ETH_USDC}`)).toBeTruthy()
+        expect(screen.getByTestId(`asset_row_${LOOKALIKE}`)).toBeTruthy()
+        expect(screen.queryByTestId('chain_label_ethereum')).toBeNull()
+        expect(
+            screen.queryByTestId(`asset_row_${USDC_TEST_ASSET.assetId}`),
+        ).toBeNull()
+    })
+
+    it("Given All, when 'algo' and then an Algorand asset id are searched, then ALGO and that asset are found as before", async () => {
+        useAccountsStore.getState().setAccounts([TWO_CHAIN_ACCOUNT])
+        renderList(TWO_CHAIN_ACCOUNT)
+        await screen.findByTestId('asset_group_row_usdc')
+
+        typeSearch('algo')
+
+        await waitFor(() => {
+            expect(screen.queryByTestId('asset_group_row_usdc')).toBeNull()
+        })
+        expect(
+            within(screen.getByTestId('asset_row_0')).getByTestId(
+                'chain_label_algorand',
+            ),
+        ).toBeTruthy()
+
+        typeSearch(USDC_TEST_ASSET.assetId)
+
+        await screen.findByTestId(`asset_row_${USDC_TEST_ASSET.assetId}`)
+        expect(screen.queryByTestId('asset_row_0')).toBeNull()
+    })
+
     it('Given Ethereum is selected, when the list is left and reopened, then Ethereum stays selected until a cold start', async () => {
         useAccountsStore.getState().setAccounts([TWO_CHAIN_ACCOUNT])
         const first = renderList(TWO_CHAIN_ACCOUNT)
