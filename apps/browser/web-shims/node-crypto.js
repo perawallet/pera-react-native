@@ -141,18 +141,10 @@ export function createHmac(algorithm, key) {
     return makeHmacObject(getHashFn(algorithm), key)
 }
 
+const SUBTLE_DIGEST_BY_HASH = { sha512: 'SHA-512', sha256: 'SHA-256' }
+
 function subtleDigestOf(hashName) {
-    switch (hashName) {
-        case 'sha512': {
-            return 'SHA-512'
-        }
-        case 'sha256': {
-            return 'SHA-256'
-        }
-        default: {
-            return null
-        }
-    }
+    return Object.hasOwn(SUBTLE_DIGEST_BY_HASH, hashName) ? SUBTLE_DIGEST_BY_HASH[hashName] : null
 }
 
 // Async PBKDF2 matching Node.js callback API.
