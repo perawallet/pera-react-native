@@ -130,9 +130,7 @@ describe(RULE, () => {
     it.each([
         [
             'an app-local store from a path alias',
-            importFrom('@modules/bottom-sheet', [
-                named('useBottomSheetStore'),
-            ]),
+            importFrom('@modules/bottom-sheet', [named('useBottomSheetStore')]),
             'useBottomSheetStore',
         ],
         [

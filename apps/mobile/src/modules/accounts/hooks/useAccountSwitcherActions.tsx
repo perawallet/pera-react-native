@@ -11,7 +11,10 @@
  */
 
 import { useCallback } from 'react'
-import { hasCardSession, isEscrowCardApproved } from '@perawallet/wallet-core-card'
+import {
+    hasCardSession,
+    isEscrowCardApproved,
+} from '@perawallet/wallet-core-card'
 import { trackEvent, HomeEvent } from '@analytics'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useCapability } from '@hooks/useCapability'

@@ -14,7 +14,10 @@ import { useCallback, useEffect } from 'react'
 import { LogBox } from 'react-native'
 
 import { useHasAccounts } from '@perawallet/wallet-core-accounts'
-import { type Contact, replaceAllContacts } from '@perawallet/wallet-core-contacts'
+import {
+    type Contact,
+    replaceAllContacts,
+} from '@perawallet/wallet-core-contacts'
 import { useBottomSheetStore } from '@modules/bottom-sheet'
 import { navigationRef } from '@routes/navigationRef'
 

@@ -240,7 +240,8 @@ export const readCloudBackupImportedKey = (): BackupEncryptionKey | null =>
 
 export const setCloudBackupImportedKey = (
     importedKey: BackupEncryptionKey,
-): void => useCloudBackupRestoreDraftStore.getState().setImportedKey(importedKey)
+): void =>
+    useCloudBackupRestoreDraftStore.getState().setImportedKey(importedKey)
 
 registerStore({
     name: 'cloud-backup-restore-draft-store',

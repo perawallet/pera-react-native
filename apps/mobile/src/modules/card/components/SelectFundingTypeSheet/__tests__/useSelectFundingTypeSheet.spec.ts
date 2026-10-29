@@ -44,8 +44,7 @@ vi.mock('@perawallet/wallet-core-card', async () => {
                 escrowCardScopeKey: mockEscrowCardScopeKey,
             }),
         getCardFundingType: () => mockStoredFundingType,
-        setCardFundingType: (type: unknown) =>
-            mockSetSelectedFundingType(type),
+        setCardFundingType: (type: unknown) => mockSetSelectedFundingType(type),
     }
 })
 

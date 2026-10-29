@@ -27,7 +27,8 @@ export const getSelectedAccountId = (): Nullable<string> =>
     useAccountsStore.getState().selectedAccountId
 
 export const importAccountFromPrivateKey: AccountsState['importAccountFromPrivateKey'] =
-    (...args) => useAccountsStore.getState().importAccountFromPrivateKey(...args)
+    (...args) =>
+        useAccountsStore.getState().importAccountFromPrivateKey(...args)
 
 export const addHardwareChainAccount: AccountsState['addHardwareChainAccount'] =
     (...args) => useAccountsStore.getState().addHardwareChainAccount(...args)
