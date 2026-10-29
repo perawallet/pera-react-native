@@ -152,7 +152,8 @@ const runBestEffort = async (
     try {
         await run()
     } catch (error) {
-        logger.warn(`swap cosign settle: ${label} failed (non-fatal)`, {
+        logger.warn('Swap cosign settle step failed (non-fatal)', {
+            step: label,
             error: toError(error).message,
         })
     }

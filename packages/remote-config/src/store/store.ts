@@ -14,7 +14,6 @@ import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import type { RemoteConfigStore } from '../models'
 import {
     guardedPersist,
-    logger,
     registerStore,
     type WithPersist,
     type Nullable,
@@ -23,7 +22,6 @@ import {
 import { getProvider } from '@perawallet/wallet-extension-provider'
 
 const STORE_NAME = 'remote-config-store'
-const TAG = '[RemoteConfigStore]'
 
 const getInitialState = (): Pick<RemoteConfigStore, 'configOverrides'> => ({
     configOverrides: {},
@@ -69,7 +67,6 @@ export const useRemoteConfigStore: UseBoundStore<
                 key: string,
                 value: Nullable<string | boolean | number>,
             ) => {
-                logger.debug(`${TAG} setConfigOverride("${key}", ${value})`)
                 const configOverrides = { ...get().configOverrides }
                 if (value === null) {
                     delete configOverrides[key]
@@ -78,10 +75,7 @@ export const useRemoteConfigStore: UseBoundStore<
                 }
                 set({ configOverrides })
             },
-            resetState: () => {
-                logger.debug(`${TAG} resetState() called`)
-                set(getInitialState())
-            },
+            resetState: () => set(getInitialState()),
         }),
         {
             name: STORE_NAME,
@@ -90,19 +84,6 @@ export const useRemoteConfigStore: UseBoundStore<
             partialize: state => ({
                 configOverrides: state.configOverrides,
             }),
-            onRehydrateStorage: () => {
-                logger.debug(`${TAG} rehydration starting`)
-                return (state, error) => {
-                    if (error) {
-                        logger.debug(`${TAG} rehydration ERROR:`, { error })
-                    } else {
-                        logger.debug(
-                            `${TAG} rehydration complete, configOverrides:`,
-                            state?.configOverrides,
-                        )
-                    }
-                }
-            },
         },
     ),
 )

@@ -19,19 +19,16 @@ import {
     sanitizeErrorForWebview,
     type JsonRpcErrorCode,
 } from './handlers-shared'
+import { webViewScript } from '../utils/webViewScript'
 
 export const sendMessageToWebview = (
     id: string,
     payload: unknown,
     webview: Nullable<WebView>,
 ) => {
-    const message = `window.postMessage(${JSON.stringify({
-        id,
-        jsonrpc: '2.0',
-        result: payload,
-    })});`
-    logger.debug('Sending webview interface response', { message, webview })
-    webview?.injectJavaScript(message)
+    const response = { id, jsonrpc: '2.0', result: payload }
+    logger.debug('Sending webview interface response', { response, webview })
+    webview?.injectJavaScript(webViewScript`window.postMessage(${response});`)
 }
 
 export const sendNotificationToWebview = (
@@ -39,31 +36,29 @@ export const sendNotificationToWebview = (
     params: unknown,
     webview: Nullable<WebView>,
 ) => {
-    const message = `window.postMessage(${JSON.stringify({
-        jsonrpc: '2.0',
-        method,
-        params,
-    })});`
-    logger.debug('Sending webview notification', { message })
-    webview?.injectJavaScript(message)
+    const notification = { jsonrpc: '2.0', method, params }
+    logger.debug('Sending webview notification', { notification })
+    webview?.injectJavaScript(
+        webViewScript`window.postMessage(${notification});`,
+    )
 }
 
 /**
  * Sends an `{ action, payload }` message to the webview's `message` listener.
  * Unlike {@link sendMessageToWebview} (which posts a JSON-RPC *object*), the
  * Discover web app's favorite listener runs `JSON.parse(event.data)`, so
- * `event.data` must be a JSON *string* — hence the double stringify (once for
- * the data, once to embed it as a string literal in the injected call).
+ * `event.data` must be a JSON *string*: it is stringified here, then the
+ * serializer encodes that string as a string literal in the injected call.
  */
 export const sendActionToWebview = (
     action: string,
     payload: unknown,
     webview: Nullable<WebView>,
 ) => {
-    const data = JSON.stringify({ action, payload })
-    const message = `window.postMessage(${JSON.stringify(data)});`
     logger.debug('Sending webview action', { action })
-    webview?.injectJavaScript(message)
+    webview?.injectJavaScript(
+        webViewScript`window.postMessage(${JSON.stringify({ action, payload })});`,
+    )
 }
 
 export const sendErrorToWebview = (
@@ -72,7 +67,7 @@ export const sendErrorToWebview = (
     error: Error | string,
     webview: Nullable<WebView>,
 ) => {
-    const message = `window.postMessage(${JSON.stringify({
+    const response = {
         id,
         jsonrpc: '2.0',
         error: {
@@ -82,9 +77,9 @@ export const sendErrorToWebview = (
                     ? error
                     : sanitizeErrorForWebview(error),
         },
-    })});`
-    logger.debug('Sending webview interface error', { message, webview })
-    webview?.injectJavaScript(message)
+    }
+    logger.debug('Sending webview interface error', { response, webview })
+    webview?.injectJavaScript(webViewScript`window.postMessage(${response});`)
 }
 
 export const requireSecure = createRequireSecure(sendErrorToWebview)

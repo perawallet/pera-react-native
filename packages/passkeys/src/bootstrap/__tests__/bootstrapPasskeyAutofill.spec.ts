@@ -475,7 +475,11 @@ describe('bootstrapPasskeyAutofill', () => {
         expect(service.setHdRootKeyId).toHaveBeenCalledWith('root-a')
         expect(mocks.warn).toHaveBeenCalledWith(
             expect.stringContaining('Multiple HD roots'),
-            expect.objectContaining({ step: 'configureParentKey' }),
+            expect.objectContaining({
+                step: 'configureParentKey',
+                hdRootId: 'root-a',
+                candidateCount: 2,
+            }),
         )
     })
 

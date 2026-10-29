@@ -189,6 +189,9 @@ catalogs:
     falcon-1024:
       specifier: 0.2.0
       version: 0.2.0
+    fallow:
+      specifier: 3.30.0
+      version: 3.30.0
     fast-glob:
       specifier: ^3.3.2
       version: 3.3.3
@@ -344,7 +347,7 @@ importers:
         specifier: 'catalog:'
         version: 0.2.0(patch_hash=98e2e0205624da31c2026ce165fccdfaae381fbdfb28f85cad17fedf8943ca4a)
       fallow:
-        specifier: 3.30.0
+        specifier: 'catalog:'
         version: 3.30.0
       lanekeep:
         specifier: 'catalog:'
@@ -2392,7 +2395,7 @@ importers:
         specifier: 'catalog:'
         version: 20.19.43
       fake-indexeddb:
-        specifier: ^6.2.5
+        specifier: 'catalog:'
         version: 6.2.5
       typescript:
         specifier: 'catalog:'
