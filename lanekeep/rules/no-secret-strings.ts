@@ -39,6 +39,7 @@ const COPY_CONSTRUCTORS = new Set([
 const COPY_FROM_OBJECTS = new Set([...COPY_CONSTRUCTORS, 'Array'])
 const COPY_CONSTRUCTOR_NAMES = [...COPY_CONSTRUCTORS].join('|')
 const COPY_FROM_NAMES = [...COPY_FROM_OBJECTS].join('|')
+const SLICE_METHODS = new Set(['slice', 'subarray'])
 const LENGTH_PROPERTIES = new Set([
     'length',
     'byteLength',
@@ -99,7 +100,7 @@ const SINKS = [
     // copies, which a call would otherwise hide
     `((new_expression constructor: (identifier) @ctor arguments: (arguments . (_) @sink)) (#match? @ctor "^(${COPY_CONSTRUCTOR_NAMES})$"))`,
     `((call_expression function: (member_expression object: (identifier) @object property: (property_identifier) @method) arguments: (arguments . (_) @sink)) (#match? @object "^(${COPY_FROM_NAMES})$") (#eq? @method "from"))`,
-    '((call_expression function: (member_expression object: (_) @sink property: (property_identifier) @method)) (#eq? @method "slice"))',
+    '((call_expression function: (member_expression object: (_) @sink property: (property_identifier) @method)) (#match? @method "^(slice|subarray)$"))',
 ]
 
 const interfaceFields = `((interface_declaration name: (type_identifier) @type body: (interface_body (property_signature name: (property_identifier) @field type: (type_annotation (_) @annotation)) @prop)) (#match? @type "(State|Store)$") (#match? @field "${SECRET_FIELD_NAMES}"))`
@@ -186,7 +187,9 @@ const copyOf = (ctx: RuleContext, node: Node): Node | undefined => {
         return undefined
     }
     const [object, property] = ctx.namedChildren(member)
-    if (object !== node || ctx.text(property!) !== 'slice') return undefined
+    if (object !== node || !SLICE_METHODS.has(ctx.text(property!) ?? '')) {
+        return undefined
+    }
     const outer = ctx.parent(member)
     return outer !== undefined &&
         ctx.kind(outer) === 'call_expression' &&
@@ -206,7 +209,7 @@ const isCopyForm = (ctx: RuleContext, node: Node): boolean => {
         return !callee.isMember && COPY_CONSTRUCTORS.has(callee.name)
     }
     if (!callee.isMember) return false
-    if (callee.name === 'slice') return true
+    if (SLICE_METHODS.has(callee.name)) return true
     return (
         callee.name === 'from' &&
         callee.object !== undefined &&
@@ -215,7 +218,6 @@ const isCopyForm = (ctx: RuleContext, node: Node): boolean => {
     )
 }
 
-/** Whether `node` is the receiver of a call that makes it a string. */
 const isConvertedToString = (ctx: RuleContext, node: Node): boolean => {
     const member = ctx.parent(node)
     if (member === undefined || ctx.kind(member) !== 'member_expression') {
@@ -310,6 +312,16 @@ const classifySink = (
         next = copyOf(ctx, node)
     }
     if (isConvertedToString(ctx, node)) return { cls: 'string', held: node }
+    // A copy or view made on the way still holds the secret when an encoder reads it.
+    if (node !== sink) {
+        const copyCall = callOfArgument(ctx, node)
+        if (
+            copyCall !== undefined &&
+            classifyArgument(ctx, copyCall) === 'string'
+        ) {
+            return { cls: 'string', held: node }
+        }
+    }
 
     let position = node
     for (;;) {

@@ -52,7 +52,7 @@ export const SECRET_PRODUCERS: readonly string[] = [
 
 // Helpers that hand their callback a secret and zero it afterwards. A helper
 // missing here is blind to its callback parameter. `executeWithKey` has no
-// definition today and is listed so a new one is checked.
+// definition and is listed so a new one is checked.
 export const SCOPED_SECRET_HELPERS: readonly string[] = [
     'executeWithKey',
     'executeWithMnemonic',

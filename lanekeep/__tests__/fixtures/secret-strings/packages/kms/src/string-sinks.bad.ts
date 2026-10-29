@@ -118,3 +118,21 @@ export const toUtf16 = (m: string) => {
     const seed = deriveBip39Seed(m)
     return seed.toString('utf16le')
 }
+export const slicedThenEncoded = (m: string) => {
+    const seed = deriveBip39Seed(m)
+    return bytesToHex(seed.slice(0, 32))
+}
+export const copiedThenEncoded = (m: string) => {
+    const seed = deriveBip39Seed(m)
+    return bytesToHex(new Uint8Array(seed))
+}
+export const bufferedThenEncoded = (m: string) => {
+    return withSecret(m, b => bytesToHex(Buffer.from(b)))
+}
+export const subarrayThenDecoded = (m: string) => {
+    const seed = deriveBip39Seed(m)
+    return new TextDecoder().decode(seed.subarray(0, 4))
+}
+export const subarrayThenDecoderDecoded = () => {
+    return withSecret('id', s => textDecoder.decode(s.subarray(0)))
+}
