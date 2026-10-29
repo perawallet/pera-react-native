@@ -14,13 +14,6 @@
 
 import { describe, it, expect, vi } from 'vitest'
 
-// The global mocks in vitest.setup.ts replace these packages' hooks, not the
-// pure key predicates shouldDehydrateQuery composes — this spec needs the
-// real predicates, not the hook stubs.
-vi.unmock('@perawallet/wallet-core-accounts')
-vi.unmock('@perawallet/wallet-core-assets')
-vi.unmock('@perawallet/wallet-core-chain-algorand/blockchain')
-
 import {
     QueryClient,
     dehydrate,
@@ -145,6 +138,14 @@ describe('shouldDehydrateQuery', () => {
         ).toBe(false)
         expect(
             shouldDehydrateQuery(asQuery(suggestedParametersKey, 'success')),
+        ).toBe(false)
+    })
+
+    it('never persists a key whose first element is not a string', () => {
+        expect(
+            shouldDehydrateQuery(
+                asQuery([{ scope: MAINNET }, 'banners'], 'success'),
+            ),
         ).toBe(false)
     })
 
