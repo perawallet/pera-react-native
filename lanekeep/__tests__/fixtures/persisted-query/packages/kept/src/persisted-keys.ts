@@ -15,3 +15,5 @@ export const getSecretCatalogQueryKey = () => ['secret', 'catalog'] as const
 export const getSecretHistoryQueryKey = () => ['secret', 'history'] as const
 
 export const getElsewhereQueryKey = () => ['elsewhere'] as const
+
+export const KEPT_ROOT = [MODULE_PREFIX] as const

@@ -13,7 +13,7 @@ import { TEST_SUPPORT, productionSource } from '../shared/scope.js'
  */
 export const UNTAGGED_TYPES = ['Date', 'Set', 'ReadonlySet'] as const
 
-type KeySegment = { lit: string } | { ref: string }
+type KeySegment = { lit: string } | { ref: string } | { spread: string }
 
 interface TypeSummary {
     untagged: string[]
@@ -97,9 +97,27 @@ const persistedPath = (
     return verdict === 'persist'
 }
 
+/** The builder or array a `...spread` key element names, when it is a plain reference or call. */
+const spreadName = (ctx: RuleContext, spread: Node): string | undefined => {
+    const target = ctx.namedChildren(spread)[0]
+    if (target === undefined) return undefined
+    let expression = unwrapExpression(ctx, target)
+    if (ctx.kind(expression) === 'call_expression') {
+        expression = ctx.namedChildren(expression)[0] ?? expression
+    }
+    const name = text(ctx, expression)
+    return DOTTED.test(name) ? name : undefined
+}
+
 const segmentsOf = (ctx: RuleContext, array: Node): KeySegment[] => {
     const segments: KeySegment[] = []
     for (const child of ctx.namedChildren(array)) {
+        if (ctx.kind(child) === 'spread_element') {
+            const spread = spreadName(ctx, child)
+            if (spread === undefined) break
+            segments.push({ spread })
+            continue
+        }
         const element = unwrapExpression(ctx, child)
         const kind = ctx.kind(element)
         if (kind === 'string') {
@@ -186,18 +204,24 @@ const keyFromExpression = (
     ctx: RuleContext,
     node: Node,
     depth: number,
-): SiteKey | undefined => {
+): SiteKey[] => {
     const expression = unwrapExpression(ctx, node)
     const kind = ctx.kind(expression)
-    if (kind === 'array') return { segments: segmentsOf(ctx, expression) }
+    if (kind === 'array') return [{ segments: segmentsOf(ctx, expression) }]
+    if (kind === 'ternary_expression') {
+        const [, consequence, alternative] = ctx.namedChildren(expression)
+        return [consequence, alternative].flatMap(arm =>
+            arm === undefined ? [] : keyFromExpression(ctx, arm, depth),
+        )
+    }
     if (kind === 'call_expression') {
         const callee = ctx.namedChildren(expression)[0]
         const name = callee === undefined ? '' : text(ctx, callee)
-        return DOTTED.test(name) ? { builder: name } : undefined
+        return DOTTED.test(name) ? [{ builder: name }] : []
     }
     if (kind === 'member_expression') {
         const name = text(ctx, expression)
-        return DOTTED.test(name) ? { builder: name } : undefined
+        return DOTTED.test(name) ? [{ builder: name }] : []
     }
     if (kind === 'identifier' || kind === 'shorthand_property_identifier') {
         const name = text(ctx, expression)
@@ -206,12 +230,12 @@ const keyFromExpression = (
         if (declared !== undefined) {
             return keyFromExpression(ctx, declared, depth + 1)
         }
-        return { builder: name }
+        return [{ builder: name }]
     }
-    return undefined
+    return []
 }
 
-const keyOf = (ctx: RuleContext, object: Node): SiteKey | undefined => {
+const keyOf = (ctx: RuleContext, object: Node): SiteKey[] => {
     for (const member of ctx.namedChildren(object)) {
         const kind = ctx.kind(member)
         if (kind === 'shorthand_property_identifier') {
@@ -229,7 +253,7 @@ const keyOf = (ctx: RuleContext, object: Node): SiteKey | undefined => {
         }
         return keyFromExpression(ctx, value, 0)
     }
-    return undefined
+    return []
 }
 
 const addTypeNames = (
@@ -239,7 +263,12 @@ const addTypeNames = (
     out: TypeSummary,
 ): void => {
     const kind = ctx.kind(node) ?? ''
-    if (FUNCTION_SHAPES.has(kind) || kind === 'nested_type_identifier') return
+    if (FUNCTION_SHAPES.has(kind)) return
+    if (kind === 'nested_type_identifier') {
+        const last = ctx.namedChildren(node).at(-1)
+        if (last !== undefined) addTypeNames(ctx, last, exclude, out)
+        return
+    }
     if (kind === 'type_identifier' || kind === 'identifier') {
         const name = text(ctx, node)
         if (UNTAGGED.has(name)) out.untagged.push(name)
@@ -384,8 +413,8 @@ const payloadOf = (ctx: RuleContext, value: Node): Payload | undefined => {
     }
     const typeText = text(ctx, type)
     if (
-        /^(?:unknown|any|object|\{\s*\})$/.test(typeText) ||
-        typeText.includes('ReturnType')
+        /^(?:object|\{\s*\})$/.test(typeText) ||
+        /\b(?:unknown|any|ReturnType)\b/.test(typeText)
     ) {
         return { state: 'opaque', text: typeText }
     }
@@ -455,10 +484,13 @@ const emitDeclarator = (
             if (ctx.kind(entry) !== 'pair') continue
             const [entryKey, entryValue] = ctx.namedChildren(entry)
             if (entryKey === undefined || entryValue === undefined) continue
+            const where = ctx.loc(entry)
             ctx.emitFact({
                 kind: 'policy',
                 path: text(ctx, entryKey).replace(/^['"]|['"]$/g, ''),
                 verdict: unquote(text(ctx, entryValue)),
+                line: where?.line ?? 1,
+                column: where?.column ?? 1,
             })
         }
         return
@@ -490,7 +522,7 @@ const emitQuerySite = (
 ): void => {
     const key = keyOf(ctx, object)
     const where = ctx.loc(queryFn)
-    if (key === undefined || where === undefined) return
+    if (key.length === 0 || where === undefined) return
     const payload: Payload | undefined =
         value === undefined ? { state: 'unannotated' } : payloadOf(ctx, value)
     if (payload === undefined) return
@@ -513,12 +545,19 @@ const resolveSegments = (
     file: string,
     sameFile: Map<string, string>,
     samePackage: Map<string, Set<string>>,
+    expand: (name: string, file: string) => string[] | undefined,
 ): string[] => {
     const path: string[] = []
     const pkg = packageOf(file)
     for (const segment of segments) {
         if ('lit' in segment) {
             path.push(segment.lit)
+            continue
+        }
+        if ('spread' in segment) {
+            const expanded = expand(segment.spread, file)
+            if (expanded === undefined) break
+            path.push(...expanded)
             continue
         }
         const local = sameFile.get(`${file}\0${segment.ref}`)
@@ -538,8 +577,10 @@ const resolveSegments = (
 
 const reduce = (ctx: ReduceContext): void => {
     const policy = new Map<string, string>()
+    const policyFacts = new Map<string, Fact>()
     for (const fact of ctx.facts('policy')) {
         policy.set(String(fact.path), String(fact.verdict))
+        policyFacts.set(String(fact.path), fact as Fact)
     }
     if (policy.size === 0) return
 
@@ -575,20 +616,14 @@ const reduce = (ctx: ReduceContext): void => {
         types.set(String(fact.name), list)
     }
 
-    const pathsOf = (site: Fact): string[][] => {
-        const key = site.key as SiteKey
-        if ('segments' in key) {
-            return [
-                resolveSegments(key.segments, site.file, sameFile, samePackage),
-            ]
-        }
-        const pkg = packageOf(site.file)
-        const names = new Set<string>([key.builder])
-        let frontier = [key.builder]
+    const buildersFor = (name: string, file: string): Fact[] => {
+        const pkg = packageOf(file)
+        const names = new Set<string>([name])
+        let frontier = [name]
         for (let hop = 0; hop < MAX_ALIAS_HOPS; hop++) {
             const next: string[] = []
-            for (const name of frontier) {
-                const found = aliases.get(name) ?? []
+            for (const current of frontier) {
+                const found = aliases.get(current) ?? []
                 const local = found.filter(a => packageOf(a.file) === pkg)
                 for (const alias of local.length > 0 ? local : found) {
                     const target = String(alias.target)
@@ -601,17 +636,46 @@ const reduce = (ctx: ReduceContext): void => {
             frontier = next
         }
         const found: Fact[] = []
-        for (const name of names) found.push(...(builders.get(name) ?? []))
+        for (const each of names) found.push(...(builders.get(each) ?? []))
         const local = found.filter(b => packageOf(b.file) === pkg)
-        return (local.length > 0 ? local : found).map(b =>
+        return local.length > 0 ? local : found
+    }
+
+    // Past this many nested spreads the key is left unresolved rather than looping.
+    const MAX_SPREAD_DEPTH = 4
+    const pathsOfBuilder = (
+        name: string,
+        file: string,
+        depth: number,
+    ): string[][] =>
+        buildersFor(name, file).map(b =>
             resolveSegments(
                 b.segments as KeySegment[],
                 b.file,
                 sameFile,
                 samePackage,
+                (spread, spreadFile) =>
+                    depth >= MAX_SPREAD_DEPTH
+                        ? undefined
+                        : pathsOfBuilder(spread, spreadFile, depth + 1)[0],
             ),
         )
-    }
+
+    const pathsOf = (site: Fact): string[][] =>
+        (site.key as SiteKey[]).flatMap(key =>
+            'segments' in key
+                ? [
+                      resolveSegments(
+                          key.segments,
+                          site.file,
+                          sameFile,
+                          samePackage,
+                          (spread, spreadFile) =>
+                              pathsOfBuilder(spread, spreadFile, 1)[0],
+                      ),
+                  ]
+                : pathsOfBuilder(key.builder, site.file, 0),
+        )
 
     const untaggedVia = (
         payload: { untagged: string[]; refs: string[] },
@@ -650,10 +714,21 @@ const reduce = (ctx: ReduceContext): void => {
         return undefined
     }
 
+    const reached = new Set<string>()
     for (const site of ctx.facts('query-site')) {
-        const path = pathsOf(site as Fact).find(candidate =>
-            persistedPath(policy, candidate),
-        )
+        const paths = pathsOf(site as Fact)
+        for (const candidate of paths) {
+            for (const entry of policy.keys()) {
+                const parts = entry.split('/')
+                if (
+                    parts.length <= candidate.length &&
+                    parts.every((part, i) => candidate[i] === part)
+                ) {
+                    reached.add(entry)
+                }
+            }
+        }
+        const path = paths.find(candidate => persistedPath(policy, candidate))
         if (path === undefined) continue
         const key = path.join('/')
         const payload = site.payload as Payload
@@ -682,6 +757,21 @@ const reduce = (ctx: ReduceContext): void => {
             message,
         )
     }
+
+    for (const [entry, verdict] of policy) {
+        const fact = policyFacts.get(entry)
+        if (verdict !== 'persist' || reached.has(entry) || fact === undefined) {
+            continue
+        }
+        ctx.report(
+            {
+                file: fact.file,
+                line: Number(fact.line),
+                column: Number(fact.column),
+            },
+            `QUERY_PREFIX_POLICY persists "${entry}" but no query key resolves to it; the entry is stale or its key shape changed`,
+        )
+    }
 }
 
 export default defineRule({
@@ -691,7 +781,7 @@ export default defineRule({
         message:
             'a persisted query caches a value the cache serializer does not round-trip',
         remediation:
-            "Cache the raw shape and build the value in `select`; or tag the type in `stringifyTypedJson`/`parseTypedJson` with a round-trip test; or mark the key 'never' in QUERY_PREFIX_POLICY. A persisted `queryFn` declares `(): Promise<Payload> =>`.",
+            "Cache the raw shape and build the value in `select`; or tag the type in `stringifyTypedJson`/`parseTypedJson` with a round-trip test; or mark the key 'never' in QUERY_PREFIX_POLICY. A persisted `queryFn` is an inline `(): Promise<Payload> =>` (wrap a bare `queryFn: fetchX`, even an annotated one) naming a declared type, never `unknown`/`any`.",
         examples: {
             bad: "useQuery({ queryKey: ['banners'], queryFn: (): Promise<{ at: Date }> => fetchAt() })",
             good: "useQuery({ queryKey: ['banners'], queryFn: (): Promise<{ at: string }> => fetchAt(), select: raw => ({ at: new Date(raw.at) }) })",

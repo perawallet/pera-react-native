@@ -16,6 +16,11 @@ const RULE = 'lanekeep/rules/persisted-query-serializable.ts'
 const FIXTURES = 'lanekeep/__tests__/fixtures/persisted-query/**/*.ts'
 
 const BAD_LINES = [
+    'persisted-policy.ts:5',
+    'persisted-queries-unresolved.bad.ts:9',
+    'persisted-queries-unresolved.bad.ts:15',
+    'persisted-queries-unresolved.bad.ts:21',
+    'persisted-queries-unresolved.bad.ts:27',
     'persisted-queries.bad.ts:21',
     'persisted-queries.bad.ts:27',
     'persisted-queries.bad.ts:33',
@@ -32,11 +37,12 @@ const BAD_LINES = [
     'persisted-queries.bad.ts:101',
 ]
 
-const messageAt = async (line: number): Promise<string | undefined> => {
+const messageAt = async (
+    line: number,
+    file = 'persisted-queries.bad.ts',
+): Promise<string | undefined> => {
     const found = await runRule(RULE, FIXTURES)
-    return found.find(
-        v => v.file.endsWith('persisted-queries.bad.ts') && v.line === line,
-    )?.message
+    return found.find(v => v.file.endsWith(file) && v.line === line)?.message
 }
 
 describe('pera/persisted-query-serializable', () => {
@@ -61,6 +67,32 @@ describe('pera/persisted-query-serializable', () => {
         )
         expect(await messageAt(63)).toBe(
             'persisted query "kept/opaque" declares its payload as unknown; name the payload type',
+        )
+    })
+
+    it('checks every arm of a conditional key, a spread key and a qualified type reference', async () => {
+        const file = 'persisted-queries-unresolved.bad.ts'
+
+        expect(await messageAt(9, file)).toBe(
+            'persisted query "kept/dated" caches Date (via WithDate), which the cache serializer does not round-trip',
+        )
+        expect(await messageAt(15, file)).toBe(
+            'persisted query "kept/spread" caches Date (via WithDate), which the cache serializer does not round-trip',
+        )
+        expect(await messageAt(27, file)).toBe(
+            'persisted query "kept/qualified" caches Date (via WithDate), which the cache serializer does not round-trip',
+        )
+    })
+
+    it('treats unknown or any anywhere in the payload as opaque', async () => {
+        expect(await messageAt(21, 'persisted-queries-unresolved.bad.ts')).toBe(
+            'persisted query "kept/opaque-array" declares its payload as unknown[]; name the payload type',
+        )
+    })
+
+    it('reports a persist entry that no query key reaches', async () => {
+        expect(await messageAt(5, 'persisted-policy.ts')).toBe(
+            'QUERY_PREFIX_POLICY persists "ghost/entry" but no query key resolves to it; the entry is stale or its key shape changed',
         )
     })
 
