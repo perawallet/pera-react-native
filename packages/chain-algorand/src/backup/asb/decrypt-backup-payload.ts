@@ -11,7 +11,10 @@
  */
 
 import { zeroBytes } from '@perawallet/wallet-core-kms'
-import { decodeBoundedBase64 } from '@perawallet/wallet-core-shared'
+import {
+    decodeBoundedBase64,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import { decodePrivateKeyBytes } from '../decode-key-bytes'
 import { backupIndicesToKey, generateBackupCipherKey } from './asb-crypto'
 import {
@@ -47,7 +50,7 @@ const isSecureBackupAccountKind = (
 ): value is SecureBackupAccountKind =>
     ACCOUNT_KIND_VALUES.includes(value as SecureBackupAccountKind)
 
-const parseAccount = (raw: unknown): SecureBackupAccount | null => {
+const parseAccount = (raw: unknown): Nullable<SecureBackupAccount> => {
     if (!isPlainObject(raw)) return null
 
     const { address, account_type, name, private_key } = raw
@@ -58,7 +61,7 @@ const parseAccount = (raw: unknown): SecureBackupAccount | null => {
         return null
     }
 
-    let privateKey: Uint8Array | null = null
+    let privateKey: Nullable<Uint8Array> = null
     if (account_type === SecureBackupAccountKind.Single) {
         if (!isNonEmptyString(private_key)) return null
         // ARC-35 always emits base64; we don't pass
@@ -101,9 +104,9 @@ export const decryptBackupPayload = (
     envelope: SecureBackupEnvelope,
     recoveryIndices: Uint16Array,
 ): SecureBackupPayload => {
-    let seed: Uint8Array | null = null
-    let cipherKey: Uint8Array | null = null
-    let plaintext: Uint8Array | null = null
+    let seed: Nullable<Uint8Array> = null
+    let cipherKey: Nullable<Uint8Array> = null
+    let plaintext: Nullable<Uint8Array> = null
 
     try {
         try {

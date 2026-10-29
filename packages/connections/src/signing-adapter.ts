@@ -24,6 +24,7 @@ import {
     logger,
     toError,
     type Nullable,
+    type Optional,
 } from '@perawallet/wallet-core-shared'
 import {
     MAX_DATA_SIGN_REQUESTS,
@@ -267,7 +268,7 @@ const failRequest = (
  * contract, so a handler whose ids are not plain integers (WalletConnect v1's
  * are) simply gets no post-kill delivery rather than a NaN one.
  */
-const handoffPayloadId = (correlationId: string): number | undefined => {
+const handoffPayloadId = (correlationId: string): Optional<number> => {
     if (!/^\d+$/.test(correlationId)) return undefined
     const parsed = Number(correlationId)
     return Number.isSafeInteger(parsed) ? parsed : undefined
@@ -478,7 +479,7 @@ const legacyDataItemViolation = (
     item: PeraArbitraryDataMessage,
     authorizedAccounts: string[],
     accounts: WalletAccount[],
-): Error | null => {
+): Nullable<Error> => {
     if (!authorizedAccounts.includes(item.signer)) {
         return new Error('Invalid signer')
     }

@@ -11,7 +11,10 @@
  */
 
 import { Decimal } from 'decimal.js'
-import { microAlgosToAlgos } from '@perawallet/wallet-core-shared'
+import {
+    microAlgosToAlgos,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import type { TransactionWarning } from '@perawallet/wallet-core-signing'
 import type { AlgorandTransactionView } from '../blockchain'
 
@@ -70,7 +73,7 @@ export const maxReasonableGroupFee = (
 export const detectHighGroupFee = (
     transactions: AlgorandTransactionView[],
     signableAddresses: Set<string>,
-): TransactionWarning | null => {
+): Nullable<TransactionWarning> => {
     const totalSignableFee = transactions.reduce(
         (sum, tx) =>
             signableAddresses.has(tx.sender) ? sum + (tx.fee ?? 0n) : sum,

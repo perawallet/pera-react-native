@@ -10,12 +10,14 @@
  limitations under the License
  */
 
+import type { Nullable } from '@perawallet/wallet-core-shared'
+
 export interface KeyValueStorageService {
-    getItem(key: string): string | null
+    getItem(key: string): Nullable<string>
     setItem(key: string, value: string): void
     removeItem(key: string): void
     setJSON<T>(key: string, value: T): void
-    getJSON<T>(key: string): T | null
+    getJSON<T>(key: string): Nullable<T>
     getAllKeys(): string[]
     /**
      * Compact the underlying store, physically reclaiming space left by

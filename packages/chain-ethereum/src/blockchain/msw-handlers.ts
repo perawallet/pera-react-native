@@ -27,6 +27,7 @@ import {
     type RpcTransaction,
     type RpcTransactionReceipt,
 } from 'viem'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import { MULTICALL3_ADDRESS } from './utils/erc20'
 
 export type EvmRpcResults = {
@@ -39,9 +40,9 @@ export type EvmRpcResults = {
     eth_call: Hex
     eth_sendRawTransaction: Hex
     /** `null` is how a node reports a transaction it hasn't mined yet. */
-    eth_getTransactionReceipt: RpcTransactionReceipt | null
+    eth_getTransactionReceipt: Nullable<RpcTransactionReceipt>
     /** `null` is how a node reports a hash it doesn't hold, mined or pending. */
-    eth_getTransactionByHash: RpcTransaction | null
+    eth_getTransactionByHash: Nullable<RpcTransaction>
 }
 
 export type EvmRpcMethod = keyof EvmRpcResults
@@ -145,7 +146,7 @@ const respond = <M extends EvmRpcMethod>(
 const GET_ETH_BALANCE_SELECTOR = toFunctionSelector('getEthBalance(address)')
 
 const isMulticall = (method: string, params: readonly unknown[]): boolean => {
-    const to = (params[0] as { to?: unknown } | undefined)?.to
+    const to = (params[0] as Optional<{ to?: unknown }>)?.to
     return (
         method === 'eth_call' &&
         typeof to === 'string' &&
@@ -219,7 +220,7 @@ const reply = (
     responses: Required<EvmRpcFixtures>['responses'],
 ) => {
     const responder = (
-        responses as Record<string, EvmRpcResponder<EvmRpcMethod> | undefined>
+        responses as Record<string, Optional<EvmRpcResponder<EvmRpcMethod>>>
     )[request.method]
     if (responder === undefined) {
         return errorReply(
@@ -316,7 +317,7 @@ const answerErc20Call = (
     tokens: Record<string, Erc20Fixture>,
     to: Hex,
     data: Hex,
-): Hex | null => {
+): Nullable<Hex> => {
     const token = tokens[getAddress(to)]
     if (!token) return null
     if (token.noCode) return '0x'

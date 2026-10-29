@@ -33,6 +33,7 @@ type UseCardWithdrawScreenResult = {
     /** USDC on the card, formatted. */
     balanceDisplay: string
     /** Raw typed amount string, or null/undefined when empty. */
+    // lanekeep-ignore-next-line pera/amount-types reason: the keypad's raw text, which can be a partial entry like `0.`; the Decimal is derived from it
     amount: Maybe<string>
     handleKey: (key?: string) => void
     isWithdrawDisabled: boolean

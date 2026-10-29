@@ -349,7 +349,8 @@
             "suspicious_title": "ASA sospechoso",
             "suspicious_description": "Este ASA se ha marcado como sospechoso en el programa de verificación de ASA de Pera.",
             "learn_more": "Más información sobre la verificación de ASA"
-        }
+        },
+        "copy_full_amount_hint": "Mantén pulsado para copiar el importe completo"
     },
     "accounts": {
         "legacyQuantum": {
@@ -482,6 +483,7 @@
         "hide_wallet_structure": "Ocultar estructura del wallet",
         "scan_new_addresses": "Buscar direcciones nuevas",
         "scan_new_accounts": "Buscar cuentas nuevas de {{network}}",
+        "scan_new_wallet_accounts": "Buscar cuentas nuevas",
         "universal_wallet_subtitle": "Una passphrase, todas las redes",
         "viewing": "Actual",
         "wallet_label": "Wallet n.º {{number}}",
@@ -2257,7 +2259,15 @@
             "no_new_addresses_title": "No se encontraron direcciones nuevas",
             "no_new_addresses_body": "No encontramos ninguna dirección adicional asociada a esta wallet.",
             "rekey_scan_failed_title": "No se pudieron comprobar las cuentas con rekey",
-            "rekey_scan_failed_body": "Tu cuenta se importó. No pudimos comprobar si otras cuentas tienen rekey hacia ella; puedes volver a analizarlo desde Ajustes."
+            "rekey_scan_failed_body": "Tu cuenta se importó. No pudimos comprobar si otras cuentas tienen rekey hacia ella; puedes volver a analizarlo desde Ajustes.",
+            "rekey_rescan_failed_body": "No pudimos comprobar si otras cuentas tienen rekey hacia esta wallet. Vuelve a buscar para intentarlo de nuevo.",
+            "rescan_found_title": "Búsqueda completada",
+            "rescan_found_body_one": "Se añadió o actualizó 1 cuenta.",
+            "rescan_found_body_other": "Se añadieron o actualizaron {{count}} cuentas.",
+            "rescan_partial_title": "Búsqueda incompleta",
+            "rescan_partial_body": "Algunas comprobaciones no pudieron terminar. Se añadieron las cuentas encontradas hasta ahora. Vuelve a buscar para encontrar el resto.",
+            "rescan_failed_title": "No se pudieron buscar cuentas",
+            "rescan_failed_body": "Comprueba tu conexión e inténtalo de nuevo."
         },
         "create_account": {
             "processing": "Configurando tu wallet...",

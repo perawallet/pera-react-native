@@ -13,25 +13,21 @@
 import { useState } from 'react'
 import { BottomSheetTextInput } from '@gorhom/bottom-sheet'
 import { PWButton, PWInput, PWSheetLayout, PWView } from '@components/core'
-import {
-    findAccountByAddressOn,
-    useAccountsStore,
-} from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 
 export type RenameAccountContentProps = {
-    accountAddress: string
+    accountId: string
 }
 
 export const RenameAccountContent = ({
-    accountAddress,
+    accountId,
 }: RenameAccountContentProps) => {
     const { t } = useLanguage()
     const account = useAccountsStore(s =>
-        findAccountByAddressOn(s.accounts, LEGACY_CHAIN_ID, accountAddress),
+        s.accounts.find(a => a.id === accountId),
     )
     const initialName = account?.name ?? ''
     const [name, setName] = useState(initialName)

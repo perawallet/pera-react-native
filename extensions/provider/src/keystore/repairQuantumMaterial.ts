@@ -12,7 +12,7 @@
 
 import type { Key } from '@algorandfoundation/keystore-core'
 import { MATERIAL_PREFIX } from '@algorandfoundation/react-native-keystore'
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, type Optional } from '@perawallet/wallet-core-shared'
 import {
     PQ_DERIVATION_LEGACY,
     PQ_DERIVATION_CANONICAL,
@@ -30,7 +30,7 @@ const FALCON_CHILD_TYPE = 'falcon-1024'
 export type QuantumMaterialRepairDeps = {
     /** Snapshot of the engine's reactive keys, post-hydration. */
     keys: () => Key[]
-    storage: { getString: (key: string) => string | undefined }
+    storage: { getString: (key: string) => Optional<string> }
     /**
      * Re-mints the Falcon child from its parent seed, sealing the private half.
      * `derivation` selects which entropy→keygen-seed mapping to reproduce —

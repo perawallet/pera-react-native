@@ -23,7 +23,7 @@ import {
     BACKUP_ACCESS_DOMAIN,
     type ExecuteWithMnemonicHandler,
 } from '@perawallet/wallet-core-kms'
-import type { Optional } from '@perawallet/wallet-core-shared'
+import type { Optional, Nullable } from '@perawallet/wallet-core-shared'
 
 export type UseMnemonicForAddressResult = {
     /**
@@ -42,7 +42,7 @@ const DOMAIN = BACKUP_ACCESS_DOMAIN
 
 export const useMnemonicForAddress = (
     address: Optional<string>,
-    account: WalletAccount | null,
+    account: Nullable<WalletAccount>,
 ): UseMnemonicForAddressResult => {
     const kms = useKMS()
     const kmsRef = useRef(kms)

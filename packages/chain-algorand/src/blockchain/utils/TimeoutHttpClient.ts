@@ -16,6 +16,7 @@ import type {
     BaseHTTPClientResponse,
     TokenHeader,
 } from 'algosdk'
+import type { Optional } from '@perawallet/wallet-core-shared'
 
 /**
  * A query is an optional key-value object of query parameters. Mirrors
@@ -162,8 +163,8 @@ export class TimeoutHttpClient implements BaseHTTPClient {
             return
         }
 
-        let body: Uint8Array | undefined
-        let bodyErrorMessage: string | undefined
+        let body: Optional<Uint8Array>
+        let bodyErrorMessage: Optional<string>
 
         try {
             body = await TimeoutHttpClient.readBody(res)
@@ -291,7 +292,7 @@ export class TimeoutHttpClient implements BaseHTTPClient {
             {
                 ...(customOptions ?? {}),
                 method: 'DELETE',
-                body: data as BodyInit | undefined,
+                body: data as Optional<BodyInit>,
                 headers: this.buildHeaders(requestHeaders),
             },
             this.readTimeoutMs,

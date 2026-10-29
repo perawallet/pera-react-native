@@ -16,6 +16,7 @@ import {
     getDatabase,
     type Database,
 } from '@perawallet/wallet-core-database'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import type {
     ActiveGenerations,
     PhishingListEntries,
@@ -37,7 +38,7 @@ type ListTable =
 const activeGenerationFilter = (
     generations: ActiveGenerations,
     table: ListTable = PhishingListDomainsSchema,
-): SQL | undefined => {
+): Optional<SQL> => {
     const clauses = Object.entries(generations).flatMap(
         ([source, generation]) =>
             generation === undefined

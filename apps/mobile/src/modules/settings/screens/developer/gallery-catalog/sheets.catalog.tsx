@@ -1328,7 +1328,9 @@ export const getSheetSections = (): GallerySection[] => [
                     request: () => ({
                         contents: (
                             <GallerySheetBoundary>
-                                <RenameAccountContent accountAddress={A} />
+                                <RenameAccountContent
+                                    accountId={mockAlgo25Account.id}
+                                />
                             </GallerySheetBoundary>
                         ),
                         options: { enablePanDownToClose: true },

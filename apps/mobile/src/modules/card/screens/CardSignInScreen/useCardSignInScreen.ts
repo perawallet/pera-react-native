@@ -122,7 +122,7 @@ export const useCardSignInScreen = (): UseCardSignInScreenResult => {
     const [otpPhone, setOtpPhone] = useState<Nullable<string>>(null)
     // `userId` from the login attempt that required 2FA — /v1/auth/login/otp
     // is keyed on it for both the initial send and resends.
-    const [otpUserId, setOtpUserId] = useState<string | null>(null)
+    const [otpUserId, setOtpUserId] = useState<Nullable<string>>(null)
     const [otpCode, setOtpCode] = useState('')
     const [hasOtpError, setHasOtpError] = useState(false)
     const { secondsRemaining, isActive, restart } = useCountdown(

@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { HeapSample } from './types'
 
 const BYTES_PER_MB = 1024 * 1024
@@ -30,9 +31,9 @@ type HermesGlobal = {
  * Hermes' instrumented stats and are left out where the engine does not
  * report them.
  */
-export const readHeap = (): HeapSample | null => {
+export const readHeap = (): Nullable<HeapSample> => {
     const memory = (
-        globalThis.performance as { memory?: Record<string, number | null> }
+        globalThis.performance as { memory?: Record<string, Nullable<number>> }
     ).memory
     if (typeof memory?.usedJSHeapSize !== 'number') return null
     const stats = (

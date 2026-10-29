@@ -33,7 +33,11 @@ import {
     type UnsignedTransaction,
     i18nKey,
 } from '@perawallet/wallet-core-chain-contract'
-import { toBigInt, type Nullable } from '@perawallet/wallet-core-shared'
+import {
+    toBigInt,
+    type Nullable,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
 import { areEvmAddressesEqual } from '../accounts/address-codec'
 import {
     parseEvmNftAssetId,
@@ -65,7 +69,7 @@ export type CallRecogniser = (call: {
     to?: Address
     data: Hex
     value: bigint
-}) => TransactionSummary | undefined
+}) => Optional<TransactionSummary>
 
 const NO_RECOGNITION: CallRecogniser = () => undefined
 
@@ -132,7 +136,7 @@ const AUTO_APPROVED_KINDS: ReadonlySet<TransactionSummary['kind']> = new Set([
 
 const viewOfNative = (
     transaction: ReviewedTransaction,
-): EthereumTransactionView | undefined => {
+): Optional<EthereumTransactionView> => {
     try {
         return readEthereumNative(transaction.native)
     } catch {
@@ -159,7 +163,7 @@ const isRecognising = (context: ReviewContext): boolean =>
 const recognisedCallOf = (
     transaction: ReviewedTransaction,
     context: ReviewContext,
-): EvmStandardCall | undefined =>
+): Optional<EvmStandardCall> =>
     isRecognising(context) ? viewOfNative(transaction)?.call : undefined
 
 const UNKNOWN_CONTRACT_WARNING: ReviewWarning = {
@@ -317,7 +321,7 @@ const contractCallSummary = (
 // wallet builds with must give exactly the calldata. This decodes nothing, so
 // it is no bundled-ABI recognition and `contractDecoding` doesn't gate it.
 const verifiedTokenTransfer = (
-    summary: TransactionSummary | undefined,
+    summary: Optional<TransactionSummary>,
     call: Call,
 ): EthereumTransactionView['token'] => {
     if (summary?.kind !== 'token-transfer' || !call.to || call.value !== 0n) {
@@ -355,7 +359,7 @@ const NFT_STANDARDS: readonly EvmNftStandard[] = ['erc721', 'erc1155']
 // claim naming another holder must not match. The standard is whichever
 // encoding gives exactly the calldata; an ERC-721 only ever moves one.
 const verifiedNftTransfer = (
-    summary: TransactionSummary | undefined,
+    summary: Optional<TransactionSummary>,
     call: Call,
 ): EthereumTransactionView['nft'] => {
     if (summary?.kind !== 'nft-transfer' || !call.to || call.value !== 0n) {

@@ -11,7 +11,10 @@
  */
 
 import { zeroBytes } from '@perawallet/wallet-core-kms'
-import { decodeBoundedBase64 } from '@perawallet/wallet-core-shared'
+import {
+    decodeBoundedBase64,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { backupAdapterFor } from '../../chain-adapter'
 import { secretboxOpenWithPrependedNonce } from '../../shared'
@@ -33,7 +36,7 @@ const isPlainObject = (value: unknown): value is Record<string, unknown> =>
 const isNonEmptyString = (value: unknown): value is string =>
     typeof value === 'string' && value.length > 0
 
-const firstNonEmptyString = (...values: unknown[]): string | null =>
+const firstNonEmptyString = (...values: unknown[]): Nullable<string> =>
     values.find(isNonEmptyString) ?? null
 
 /**
@@ -45,7 +48,7 @@ const firstNonEmptyString = (...values: unknown[]): string | null =>
 const parseAccount = (
     raw: unknown,
     chainId: ChainId,
-): PeraWebBackupAccount | null => {
+): Nullable<PeraWebBackupAccount> => {
     if (!isPlainObject(raw)) return null
     const {
         address,
@@ -65,7 +68,7 @@ const parseAccount = (
 
     const privateKeyValue = firstNonEmptyString(privateKey, private_key)
 
-    let decodedPrivateKey: Uint8Array | null = null
+    let decodedPrivateKey: Nullable<Uint8Array> = null
     if (privateKeyValue) {
         decodedPrivateKey = backupAdapterFor(chainId).decodePrivateKey(
             privateKeyValue,
@@ -111,7 +114,7 @@ export const decryptPeraWebBackupPayload = (
         throw new PeraWebImportError(PeraWebImportErrorReason.EmptyContent)
     }
 
-    let plaintext: Uint8Array | null = null
+    let plaintext: Nullable<Uint8Array> = null
     try {
         let ciphertext: Uint8Array
         try {

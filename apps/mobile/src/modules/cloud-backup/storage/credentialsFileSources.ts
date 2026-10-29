@@ -11,6 +11,7 @@
  */
 
 import { getProvider } from '@perawallet/wallet-extension-provider'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { isAndroid, isIOS } from '@utils/platform'
 
 import type { CredentialsFileSource } from './types'
@@ -23,7 +24,7 @@ import type { CredentialsFileSource } from './types'
 // Resolved once and kept: neither the OS nor the linked SDKs change at runtime,
 // and callers memoize on this array's identity. Not at module scope, because
 // the provider isn't wired yet when this module is first imported.
-let resolved: CredentialsFileSource[] | null = null
+let resolved: Nullable<CredentialsFileSource[]> = null
 
 const sources = (): CredentialsFileSource[] =>
     (resolved ??=

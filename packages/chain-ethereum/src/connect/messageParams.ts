@@ -16,6 +16,7 @@ import type {
     DappRequestChainAdapter,
     DappRequestValidation,
 } from '@perawallet/wallet-core-connections'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import {
     areEvmAddressesEqual,
     normalizeEvmAddress,
@@ -44,7 +45,7 @@ const invalid = (message: string): Refusal => ({
 })
 
 // Non-strict: a lowercase address is common, and its missing checksum is not a refusal.
-const addressOf = (value: unknown): string | undefined =>
+const addressOf = (value: unknown): Optional<string> =>
     typeof value === 'string' && isAddress(value, { strict: false })
         ? normalizeEvmAddress(value)
         : undefined
@@ -130,7 +131,7 @@ const validatePersonalSign = (
     }
 }
 
-export type EthereumMessageSession = { eip155ChainId: number | undefined }
+export type EthereumMessageSession = { eip155ChainId: Optional<number> }
 
 const hasDomainChainId = (typedData: Record<string, unknown>): boolean =>
     isRecord(typedData.domain) && typedData.domain.chainId !== undefined

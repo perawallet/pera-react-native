@@ -12,6 +12,7 @@
 
 import { processColor } from 'react-native'
 import spinnerAnimation from '@assets/animations/loading-spinner.json'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 type SpinnerAnimation = typeof spinnerAnimation
 
@@ -19,7 +20,7 @@ const tinted = new Map<string, SpinnerAnimation>()
 
 // Lottie colours are 0–1 RGBA floats; processColor normalises any RN colour
 // string to a 0xAARRGGBB integer on every platform.
-const toRgb = (color: string): number[] | null => {
+const toRgb = (color: string): Nullable<number[]> => {
     const argb = processColor(color)
     if (typeof argb !== 'number') return null
     return [

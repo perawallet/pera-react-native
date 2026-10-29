@@ -22,7 +22,7 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 import { getDatabase, type Database } from '@perawallet/wallet-core-database'
 import { getSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, type Optional } from '@perawallet/wallet-core-shared'
 import { accountsChainAdapters } from '../chain-adapter'
 import { chainAccountOf } from '../credentials'
 import { getAllAccountChainStateRows } from '../db'
@@ -48,7 +48,7 @@ const put = (
 const chainHolding = (
     accounts: readonly WalletAccount[],
     address: string,
-): ChainId | undefined =>
+): Optional<ChainId> =>
     CHAIN_IDS.find(
         chainId =>
             accountsChainAdapters.has(chainId) &&
@@ -127,7 +127,7 @@ export async function hydrateAccountChainStates({
             ChainScopeKey,
             Record<string, string>,
         ][]) {
-            let scope: ChainScope | undefined
+            let scope: Optional<ChainScope>
             try {
                 scope = parseScopeKey(key)
             } catch (error) {

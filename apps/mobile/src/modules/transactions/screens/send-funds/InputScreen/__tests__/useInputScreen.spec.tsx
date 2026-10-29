@@ -672,6 +672,66 @@ describe('useInputScreen', () => {
         expect(result.current.cryptoValue).toBe('99.999')
     })
 
+    describe('an 18-decimal asset', () => {
+        beforeEach(() => {
+            ;(useAssetsQuery as Mock).mockReturnValue({
+                data: new Map([['0', { id: '0', decimals: 18 }]]),
+            })
+            spendableOf({
+                balance: 1_344_293_173_000_000,
+                max: 1_344_293_173_000_000,
+            })
+        })
+
+        it('shows MAX rounded down but sends the exact maximum', async () => {
+            const { result } = renderHook(() => useInputScreen())
+            act(() => {
+                result.current.setMax()
+            })
+            expect(result.current.cryptoValue).toBe('0.001344')
+
+            await act(async () => {
+                await result.current.handleNext()
+            })
+
+            expect(mockSetAmount.mock.calls[0][0].toString()).toBe(
+                '0.001344293173',
+            )
+        })
+
+        it('rounds a display-unit prefill but sends it exactly', async () => {
+            mockSendFundsState.amount = new Decimal('0.001344293173')
+
+            const { result } = renderHook(() => useInputScreen())
+            expect(result.current.cryptoValue).toBe('0.001344')
+
+            await act(async () => {
+                await result.current.handleNext()
+            })
+
+            expect(mockSetAmount.mock.calls[0][0].toString()).toBe(
+                '0.001344293173',
+            )
+        })
+
+        it('sends the shown digits once the MAX amount is edited', async () => {
+            const { result } = renderHook(() => useInputScreen())
+            act(() => {
+                result.current.setMax()
+            })
+            act(() => {
+                result.current.handleKey()
+            })
+            expect(result.current.cryptoValue).toBe('0.00134')
+
+            await act(async () => {
+                await result.current.handleNext()
+            })
+
+            expect(mockSetAmount.mock.calls[0][0].toString()).toBe('0.00134')
+        })
+    })
+
     it('opens the firm reserve notice, not a close, for an amount above MAX', async () => {
         spendableOf({ balance: 100_000_000, max: 99_899_000, notice: 'firm' })
         mockRequestBottomSheet.mockResolvedValue(true)

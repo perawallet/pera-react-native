@@ -28,6 +28,7 @@ import {
     DP256_DEFAULT_SALT,
     genDerivedMainKeyWithSubtle,
 } from '@algorandfoundation/keystore-core'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import type { PeraMigrationContext } from '../types'
 import { safeErrorMessage, safeWarn } from '../safeLog'
 import { sealAndVerify, wipeBytes } from '../sealing'
@@ -107,7 +108,7 @@ export const migration: Migration<PeraMigrationContext> = {
             if (!key.startsWith(METADATA_PREFIX)) continue
             const id = key.slice(METADATA_PREFIX.length)
 
-            let raw: string | undefined
+            let raw: Optional<string>
             try {
                 raw = storage.getString(key)
             } catch {
@@ -195,7 +196,7 @@ export const migration: Migration<PeraMigrationContext> = {
         let declined = false
 
         await utils.secrets.use('keystore-master-key', async unlocked => {
-            let sealedEntropy: string | undefined
+            let sealedEntropy: Optional<string>
             try {
                 sealedEntropy = storage.getString(
                     MATERIAL_PREFIX + target.entropyChildId,
@@ -215,8 +216,8 @@ export const migration: Migration<PeraMigrationContext> = {
                 return
             }
 
-            let entropy: Uint8Array | undefined
-            let mainKey: Uint8Array | undefined
+            let entropy: Optional<Uint8Array>
+            let mainKey: Optional<Uint8Array>
             try {
                 entropy = base64.decode(
                     await openData(subtle, unlocked, sealedEntropy),

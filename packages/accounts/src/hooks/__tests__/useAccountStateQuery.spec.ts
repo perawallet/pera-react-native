@@ -73,6 +73,7 @@ describe('useAccountStateQuery', () => {
             { wrapper },
         )
 
+        expect(result.current.isPending).toBe(true)
         await waitFor(() => expect(result.current.isSuccess).toBe(true))
         const { toChainState, summarizeChainState } =
             fakeAccountsChain().adapter
@@ -119,7 +120,7 @@ describe('useAccountStateQuery', () => {
             { wrapper },
         )
 
-        expect(result.current.isPending).toBe(true)
+        expect(result.current.isPending).toBe(false)
         expect(mockGetAccountChainStateRow).not.toHaveBeenCalled()
     })
 
@@ -129,7 +130,7 @@ describe('useAccountStateQuery', () => {
             { wrapper },
         )
 
-        expect(result.current.isPending).toBe(true)
+        expect(result.current.isPending).toBe(false)
         expect(mockGetAccountChainStateRow).not.toHaveBeenCalled()
     })
 

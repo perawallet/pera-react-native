@@ -23,6 +23,7 @@ import {
     AppError,
     ErrorCategory,
     ErrorSeverity,
+    type Optional,
 } from '@perawallet/wallet-core-shared'
 import type { DeeplinkParseResult } from './models'
 
@@ -35,7 +36,7 @@ export interface DeeplinkChainAdapter {
     /** Never throws; text that `canParse` declines is `malformed`. */
     parse(input: string): DeeplinkParseResult
     /** Maps a chain-native asset id as a link spells it, or `undefined`. Never throws. */
-    toAssetRef(raw: string): AssetRef | undefined
+    toAssetRef(raw: string): Optional<AssetRef>
     /**
      * Builds the transaction a `chain-action` intent asks for; required of a
      * chain whose `parse` produces one. Throws {@link ChainActionBuildError}
@@ -113,5 +114,5 @@ export const deeplinkAdapters: ChainAdapterRegistry<DeeplinkChainAdapter> = {
 const SCHEME = /^([A-Za-z][A-Za-z0-9+.-]*):/
 
 /** Does not trim: a leading space is not a scheme. */
-export const uriSchemeOf = (input: string): string | undefined =>
+export const uriSchemeOf = (input: string): Optional<string> =>
     SCHEME.exec(input)?.[1].toLowerCase()

@@ -127,6 +127,7 @@ export const AccountAssetItemView = ({
                 ALGO keeps its glyph — that's the brand mark, not a unit name. */}
             <AssetAmount
                 asset={asset}
+                chainId={scope.chainId}
                 value={accountBalance.amount}
                 density='compact'
                 showSymbol={isNativeAssetId(accountBalance.assetId)}

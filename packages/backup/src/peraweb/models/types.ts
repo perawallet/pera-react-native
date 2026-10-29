@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import type { Nullable } from '@perawallet/wallet-core-shared'
+
 /** Required QR action; Rejects anything else with `unsupported_action`. */
 export const PERA_WEB_QR_ACTION_IMPORT = 'import'
 
@@ -38,10 +40,10 @@ export type PeraWebQrPayload = {
  * `encrypted_content` — base64 of `nonce(24) || ciphertext_with_mac`.
  */
 export type PeraWebBackupResponse = {
-    id: string | null
-    type: string | null
-    encrypted_content: string | null
-    creator_device: string | null
+    id: Nullable<string>
+    type: Nullable<string>
+    encrypted_content: Nullable<string>
+    creator_device: Nullable<string>
 }
 
 /**
@@ -56,10 +58,10 @@ export type PeraWebBackupResponse = {
  */
 export type PeraWebBackupAccount = {
     address: string
-    name: string | null
-    accountType: string | null
-    privateKey: Uint8Array | null
-    metadata: string | null
+    name: Nullable<string>
+    accountType: Nullable<string>
+    privateKey: Nullable<Uint8Array>
+    metadata: Nullable<string>
 }
 
 export type PeraWebBackupPayload = {

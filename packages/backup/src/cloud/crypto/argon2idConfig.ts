@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { decodeFromBase64 } from '@perawallet/wallet-core-shared'
+import { decodeFromBase64, type Nullable } from '@perawallet/wallet-core-shared'
 import { ARGON2ID_CONFIG } from './constants'
 import type { Argon2idConfig } from '../models'
 
@@ -37,7 +37,9 @@ export const isPositiveInteger = (value: unknown): value is number =>
     typeof value === 'number' && Number.isInteger(value) && value > 0
 
 /** Reads the snake_case block `serializeArgon2idConfig` writes; `null` when malformed. */
-export const readArgon2idConfig = (value: unknown): Argon2idConfig | null => {
+export const readArgon2idConfig = (
+    value: unknown,
+): Nullable<Argon2idConfig> => {
     if (!isRecord(value)) return null
     const { time_cost, memory_cost, parallelism, output_length } = value
     if (
@@ -75,7 +77,7 @@ export const isDerivableArgon2idConfig = (config: Argon2idConfig): boolean =>
     config.outputLength === REQUIRED_OUTPUT_LENGTH
 
 /** `null` unless the string is base64, which is what makes the decode safe. */
-export const decodeBase64Salt = (value: string): Uint8Array | null =>
+export const decodeBase64Salt = (value: string): Nullable<Uint8Array> =>
     BASE64_PATTERN.test(value) ? decodeFromBase64(value) : null
 
 /** `length` is in bytes. */

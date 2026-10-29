@@ -953,4 +953,32 @@ describe('useSigningActorLifecycle', () => {
         expect(releaseSpy).toHaveBeenCalledWith('tx-done')
         expect(useSigningStore.getState().pendingSignRequests).toHaveLength(0)
     })
+
+    test('a consumer whose effect runs after the request finished does not start it again', async () => {
+        const request = makeTxRequest({ id: 'tx-done' })
+        const actor = makeMockActor('tx-done')
+        // Finishes inside the first consumer's effect, so the second consumer's
+        // effect runs with a render that still lists the request.
+        actor.start.mockImplementation(() =>
+            actor.emit({
+                value: 'completed',
+                status: 'done',
+                request,
+                transportResult: { type: 'algod-submit', txIds: ['TX1'] },
+            }),
+        )
+        vi.mocked(createSigningMachine).mockReturnValue(actor as never)
+
+        const { result } = renderHook(() => {
+            useSigningActorLifecycle()
+            return useSigningActorLifecycle()
+        })
+        act(() => {
+            useSigningStore.getState().addSignRequest(request)
+        })
+        await flushQueue()
+
+        expect(createSigningMachine).toHaveBeenCalledTimes(1)
+        expect(result.current.getActorRef('tx-done')).toBeUndefined()
+    })
 })

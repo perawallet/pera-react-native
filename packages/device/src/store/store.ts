@@ -25,13 +25,14 @@ import {
     registerStore,
     type WithPersist,
     type Nullable,
+    type Optional,
 } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 
 const STORE_NAME = 'device-store'
 
 const objectToDeviceIDs = (
-    object: Partial<Record<string, Nullable<string>>> | undefined,
+    object: Optional<Partial<Record<string, Nullable<string>>>>,
 ): Map<ChainScopeKey, Nullable<string>> =>
     new Map(Object.entries(object ?? {}) as [ChainScopeKey, Nullable<string>][])
 
@@ -76,7 +77,7 @@ export const deviceIdForDeployment = (
 export const deviceIdOriginFor = (
     state: Pick<DeviceState, 'deviceIdOrigins'>,
     deployment: WalletMode,
-): DeviceIdOrigin | undefined =>
+): Optional<DeviceIdOrigin> =>
     state.deviceIdOrigins[deviceStorageKey(deployment)]
 
 const initialState = {

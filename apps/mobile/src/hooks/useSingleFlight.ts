@@ -11,12 +11,13 @@
  */
 
 import { useCallback, useRef, useState } from 'react'
+import type { Optional } from '@perawallet/wallet-core-shared'
 
 export type UseSingleFlightResult<TKey> = {
     isPending: boolean
-    pendingKey: TKey | undefined
+    pendingKey: Optional<TKey>
     /** Resolves `undefined`, without running `work`, while a call is running. */
-    run: <T>(work: () => Promise<T>, key?: TKey) => Promise<T | undefined>
+    run: <T>(work: () => Promise<T>, key?: TKey) => Promise<Optional<T>>
 }
 
 export const useSingleFlight = <

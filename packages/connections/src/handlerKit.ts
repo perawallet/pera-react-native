@@ -10,7 +10,12 @@
  limitations under the License
  */
 
-import { logger, toError, type Nullable } from '@perawallet/wallet-core-shared'
+import {
+    logger,
+    toError,
+    type Nullable,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
 import type {
     ConnectionId,
     ConnectionKind,
@@ -33,7 +38,7 @@ export const connectionScope = (id: ConnectionId): ConnectionErrorScope => ({
  * record to write them onto. Keyed by whatever the handler calls a pairing.
  */
 export interface PendingOrigins {
-    get(pairingId: string): ConnectionOrigin | undefined
+    get(pairingId: string): Optional<ConnectionOrigin>
     /** No origin clears the entry, so a re-pairing never inherits a stale one. */
     remember(pairingId: string, origin?: ConnectionOrigin): void
     forget(pairingId: string): void

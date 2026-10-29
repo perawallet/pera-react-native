@@ -12,6 +12,7 @@
 
 import { useEffect, useRef } from 'react'
 import { Accelerometer } from 'expo-sensors'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 type AccelerometerSubscription = ReturnType<typeof Accelerometer.addListener>
 
@@ -66,7 +67,7 @@ export const useShakeDetection = ({
     useEffect(() => {
         if (!enabled) return
 
-        let subscription: AccelerometerSubscription | null = null
+        let subscription: Nullable<AccelerometerSubscription> = null
         let cancelled = false
         let lastTriggerAt = 0
         const reversalsByAxis: Record<'x' | 'y' | 'z', ReversalEntry[]> = {

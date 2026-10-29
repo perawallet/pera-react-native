@@ -12,6 +12,7 @@
 
 import { PWText, PWView } from '@components/core'
 import type { MigrationRunResult } from '@perawallet/wallet-core-migrate'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useStyles } from '../styles'
 import { MigrationDataRow } from './MigrationDataRow'
 import { StackedMigrationDataRow } from './StackedMigrationDataRow'
@@ -19,8 +20,8 @@ import { AccountsResultRows } from './AccountsResultRows'
 import { ExtrasResultRows } from './ExtrasResultRows'
 
 type MigrationRunResultBannerProps = {
-    result: MigrationRunResult | null
-    error: Error | null
+    result: Nullable<MigrationRunResult>
+    error: Nullable<Error>
 }
 
 export const MigrationRunResultBanner = ({

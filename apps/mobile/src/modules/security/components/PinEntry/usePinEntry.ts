@@ -22,6 +22,8 @@ type UsePinEntryParams = {
     onErrorAnimationComplete?: () => void
     /** Must match the circle count the caller renders. */
     length?: number
+    /** A new value starts a new step, so the digits entered so far are dropped. */
+    resetKey?: string
 }
 
 type UsePinEntryResult = {
@@ -34,8 +36,16 @@ export const usePinEntry = ({
     onPinComplete,
     onPinChange,
     length = PIN_LENGTH,
+    resetKey,
 }: UsePinEntryParams): UsePinEntryResult => {
     const [pin, setPin] = useState('')
+    // Reset during render, not in an effect: a mount effect can flush after the
+    // first tap and wipe that digit, so the PIN never completes.
+    const [entryKey, setEntryKey] = useState(resetKey)
+    if (entryKey !== resetKey) {
+        setEntryKey(resetKey)
+        setPin('')
+    }
 
     const clearPin = useCallback(() => {
         setPin('')

@@ -12,10 +12,16 @@
 
 import { useCallback } from 'react'
 import {
+    chainAccountOf,
+    findAddressHolder,
     useAccountDiscovery,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import {
+    i18nKey,
+    LEGACY_CHAIN_ID,
+    type I18nKey,
+} from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { logger } from '@perawallet/wallet-core-shared'
 import { useToast } from '@hooks/useToast'
@@ -23,10 +29,26 @@ import { useLanguage } from '@hooks/useLanguage'
 
 export const REKEY_SCAN_UNAVAILABLE = 'rekey-scan-unavailable' as const
 
+/** What ran the scan, which picks the failure notice's wording. */
+export type RekeyScanTrigger = 'import' | 'rescan'
+
+const REKEY_SCAN_FAILED_BODY: Record<RekeyScanTrigger, I18nKey> = {
+    import: i18nKey('onboarding.searching_accounts.rekey_scan_failed_body'),
+    rescan: i18nKey('onboarding.searching_accounts.rekey_rescan_failed_body'),
+}
+
 export type UseDelegationScanNoticeResultResult = {
     scanRekeyed: (
         accountAddresses: string[],
+        trigger?: RekeyScanTrigger,
     ) => Promise<WalletAccount[] | typeof REKEY_SCAN_UNAVAILABLE>
+    /** The addresses `scanRekeyed` takes: each account's on the scan's chain; an account without one is skipped. */
+    rekeyScanAddressesOf: (accounts: readonly WalletAccount[]) => string[]
+    /** The candidates none of `held` already holds on the scan's chain. */
+    withoutHeld: (
+        candidates: readonly WalletAccount[],
+        held: readonly WalletAccount[],
+    ) => WalletAccount[]
 }
 
 /**
@@ -46,7 +68,10 @@ export const useDelegationScanNoticeResult =
         const { t } = useLanguage()
 
         const scanRekeyed = useCallback(
-            async (accountAddresses: string[]) => {
+            async (
+                accountAddresses: string[],
+                trigger: RekeyScanTrigger = 'import',
+            ) => {
                 try {
                     return await discoverDelegatedAccounts({ accountAddresses })
                 } catch (error) {
@@ -58,9 +83,7 @@ export const useDelegationScanNoticeResult =
                         title: t(
                             'onboarding.searching_accounts.rekey_scan_failed_title',
                         ),
-                        body: t(
-                            'onboarding.searching_accounts.rekey_scan_failed_body',
-                        ),
+                        body: t(REKEY_SCAN_FAILED_BODY[trigger]),
                     })
                     return REKEY_SCAN_UNAVAILABLE
                 }
@@ -68,5 +91,31 @@ export const useDelegationScanNoticeResult =
             [discoverDelegatedAccounts, showToast, t],
         )
 
-        return { scanRekeyed }
+        const rekeyScanAddressesOf = useCallback(
+            (accounts: readonly WalletAccount[]) =>
+                accounts.flatMap(
+                    account =>
+                        chainAccountOf(account, scope.chainId)?.address ?? [],
+                ),
+            [scope.chainId],
+        )
+
+        const withoutHeld = useCallback(
+            (
+                candidates: readonly WalletAccount[],
+                held: readonly WalletAccount[],
+            ) =>
+                candidates.filter(
+                    candidate =>
+                        findAddressHolder(
+                            held,
+                            scope,
+                            chainAccountOf(candidate, scope.chainId)?.address ??
+                                '',
+                        ) === undefined,
+                ),
+            [scope],
+        )
+
+        return { scanRekeyed, rekeyScanAddressesOf, withoutHeld }
     }

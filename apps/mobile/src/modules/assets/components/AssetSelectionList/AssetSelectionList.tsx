@@ -16,6 +16,7 @@ import type { ListRenderItemInfo } from '@shopify/flash-list'
 import { PWLoadingIndicator, PWView } from '@components/core'
 import { SearchableList } from '@components/SearchableList'
 import { AssetRowSkeleton } from '@modules/assets/components/AssetRowSkeleton'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useStyles } from './styles'
 
 type SkeletonItem = { readonly __assetSkeleton: true; readonly id: string }
@@ -43,7 +44,7 @@ export type AssetSelectionListProps<T> = {
     onEndReached?: () => void
     isFetchingNextPage?: boolean
 
-    ItemSeparatorComponent?: React.ComponentType | null
+    ItemSeparatorComponent?: Nullable<React.ComponentType>
     cardLayout?: boolean
     inBottomSheet?: boolean
 }

@@ -22,6 +22,7 @@ import {
     type PQDerivation,
     type useKMS,
 } from '@perawallet/wallet-core-kms'
+import type { Optional } from '@perawallet/wallet-core-shared'
 
 type GetKey = ReturnType<typeof useKMS>['getKey']
 
@@ -57,7 +58,7 @@ export const isLegacyQuantumChild = (
     const key = getKey(keyPairId)
     if (key?.type !== FALCON_CHILD_KEY_TYPE) return false
     const pqDerivation = (
-        key.metadata as { pqDerivation?: PQDerivation } | undefined
+        key.metadata as Optional<{ pqDerivation?: PQDerivation }>
     )?.pqDerivation
     return pqDerivation !== PQ_DERIVATION_CANONICAL
 }

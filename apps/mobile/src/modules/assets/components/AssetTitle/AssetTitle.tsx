@@ -10,52 +10,45 @@
  limitations under the License
  */
 
-import {
-    useIsNativeAssetId,
-    type PeraAsset,
-} from '@perawallet/wallet-core-assets'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import type { PeraAsset } from '@perawallet/wallet-core-assets'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { PWIcon, PWText, PWView } from '@components/core'
 import { CopyableText } from '@components/CopyableText'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
+import { useAssetTitle } from './useAssetTitle'
 import { AssetIcon } from '@components/AssetIcon'
-import { useMemo } from 'react'
 import type { TypographyVariant } from '@theme/typography'
 
 export type AssetTitleProps = {
     asset: PeraAsset
+    /** The asset's chain; decides whether it is that chain's native coin. */
+    chainId: ChainId
     showId?: boolean
     nameVariant?: TypographyVariant
 }
 
 export const AssetTitle = ({
     asset,
+    chainId,
     showId = false,
     nameVariant = 'h4',
 }: AssetTitleProps) => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const styles = useStyles()
-    const isNativeAssetId = useIsNativeAssetId(scope)
     const { t } = useLanguage()
-
-    const isAlgo = useMemo(
-        () => isNativeAssetId(asset.assetId),
-        [isNativeAssetId, asset.assetId],
-    )
-
-    const isSuspicious = useMemo(
-        () => asset.peraMetadata?.verificationTier === 'suspicious',
-        [asset.peraMetadata?.verificationTier],
-    )
-
-    const isDeleted = asset.peraMetadata?.isDeleted === true
+    const {
+        displayName,
+        verificationIcon,
+        isSuspicious,
+        isDeleted,
+        isIdVisible,
+    } = useAssetTitle({ asset, chainId, showId })
 
     return (
         <PWView style={styles.container}>
             <AssetIcon
                 asset={asset}
+                chainId={chainId}
                 size='lg'
             />
             <PWView style={styles.textContainer}>
@@ -67,24 +60,11 @@ export const AssetTitle = ({
                         }
                         truncate
                     >
-                        {isAlgo ? 'Algo' : asset.name}
+                        {displayName}
                     </PWText>
-                    {isAlgo && (
+                    {verificationIcon && (
                         <PWIcon
-                            name='assets/trusted'
-                            size={'sm'}
-                        />
-                    )}
-                    {!isAlgo &&
-                        asset.peraMetadata?.verificationTier === 'verified' && (
-                            <PWIcon
-                                name='assets/verified'
-                                size={'sm'}
-                            />
-                        )}
-                    {!isAlgo && isSuspicious && (
-                        <PWIcon
-                            name='assets/suspicious'
+                            name={verificationIcon}
                             size={'sm'}
                         />
                     )}
@@ -97,7 +77,7 @@ export const AssetTitle = ({
                         {t('asset.deleted_label')}
                     </PWText>
                 )}
-                {!isDeleted && showId && (
+                {isIdVisible && (
                     <CopyableText copyValue={String(asset.assetId)}>
                         <PWText
                             variant='caption'

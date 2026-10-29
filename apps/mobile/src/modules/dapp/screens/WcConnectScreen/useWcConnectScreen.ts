@@ -36,6 +36,7 @@ import {
     type VerificationTier,
 } from '@perawallet/wallet-core-projects'
 import type { ConnectionPeer } from '@perawallet/wallet-extension-connections'
+import type { Nullable, Maybe, Optional } from '@perawallet/wallet-core-shared'
 import {
     useSiteSafetyGate,
     type UseSiteSafetyGateResult,
@@ -57,7 +58,7 @@ export type ChainNetworkLabel = {
 
 type UseWcConnectScreenResult = {
     /** `null` until a `connection-proposal` approval has loaded. */
-    peer: ConnectionPeer | null
+    peer: Nullable<ConnectionPeer>
     /** The dApp-asserted name, cleaned and clamped for display. */
     peerName: string
     /** The methods the peer asked for; never defaulted to a full set. */
@@ -99,7 +100,7 @@ type UseWcConnectScreenResult = {
 // The active account when it is signable, otherwise nothing pre-checked
 // rather than a row that can't be granted.
 const initialSelection = (
-    activeAccountId: string | null | undefined,
+    activeAccountId: Maybe<string>,
     accounts: WalletAccount[],
     chainId: ChainId,
 ): Set<string> => {
@@ -113,7 +114,7 @@ const initialSelection = (
 // Compared as ORIGINS: a peer url routinely carries a path or trailing slash
 // where `requesterOrigin` is bare. An unparseable url counts as distinct.
 const isDistinctFromPeerUrl = (
-    requesterOrigin: string | undefined,
+    requesterOrigin: Optional<string>,
     peerUrl: string,
 ): boolean => {
     if (!requesterOrigin) return false

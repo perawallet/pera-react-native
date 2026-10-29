@@ -11,6 +11,7 @@
  */
 
 import { useSigningPipeline } from '@perawallet/wallet-core-signing'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import {
     createStackNavigator,
     type StackHeaderProps,
@@ -38,7 +39,7 @@ type InitialRouteConfig = {
     initialRoute: keyof SigningStackParamList
 }
 
-const useInitialRouteConfig = (): InitialRouteConfig | null => {
+const useInitialRouteConfig = (): Nullable<InitialRouteConfig> => {
     const { resolved } = useSigningPipeline()
     if (!resolved) return null
     switch (resolved.kind.type) {

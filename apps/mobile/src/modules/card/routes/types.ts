@@ -12,6 +12,7 @@
 
 import type { NavigatorScreenParams } from '@react-navigation/native'
 import type { CardWalletKind } from '@perawallet/wallet-core-card'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import type { CardOnboardingStackParamList } from './card-onboarding/types'
 
 /**
@@ -58,13 +59,13 @@ export type PeraCardStackParamList = {
     // `email` prefills the sign-in form (forgot-password hands it back).
     // `finishesRegistration` marks a sign-in that completes this device's
     // onboarding, the only kind that may link the stashed consent set.
-    CardSignIn: { email?: string; finishesRegistration?: boolean } | undefined
+    CardSignIn: Optional<{ email?: string; finishesRegistration?: boolean }>
     CardOnboarding: NavigatorScreenParams<CardOnboardingStackParamList>
     // Forgot-password flow. Its state rides in params, NOT the card store:
     // the store persists to disk and the reset token is a short-lived,
     // single-use secret. `email` rides along to the last screen so it can be
     // handed back to CardSignIn.
-    CardForgotPassword: { email?: string } | undefined
+    CardForgotPassword: Optional<{ email?: string }>
     CardForgotPasswordVerify: { email: string }
     CardForgotPasswordNewPassword: { email: string; token: string }
 }

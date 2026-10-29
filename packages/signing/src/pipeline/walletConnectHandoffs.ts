@@ -11,6 +11,7 @@
  */
 
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { useWalletConnectHandoffsStore } from '../store/walletConnectHandoffsStore'
 import type { SourceCallbacks, SourceType } from './types'
 
@@ -112,7 +113,7 @@ export const walletConnectHandoffs = {
     unregister: (signRequestId: string): void => {
         useWalletConnectHandoffsStore.getState().unregister(signRequestId)
     },
-    get: (signRequestId: string): PendingWalletConnectHandoff | undefined =>
+    get: (signRequestId: string): Optional<PendingWalletConnectHandoff> =>
         useWalletConnectHandoffsStore.getState().handoffs[signRequestId],
     list: (): PendingWalletConnectHandoff[] =>
         Object.values(useWalletConnectHandoffsStore.getState().handoffs),

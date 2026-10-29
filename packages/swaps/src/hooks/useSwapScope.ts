@@ -24,7 +24,7 @@ import {
     useSelectedAccount,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 
 /** The scope a swap for `account` runs on; null when none of its chains has swap. */
 export const useSwapScope = (
@@ -36,7 +36,7 @@ export const useSelectedSwapScope = (): Nullable<ChainScope> =>
 
 export const useSwapChainResolver = (): ((
     account: WalletAccount,
-) => ChainId | undefined) => useCapabilityChainResolver('swap')
+) => Optional<ChainId>) => useCapabilityChainResolver('swap')
 
 /** Accounts that something held can sign for on their swap chain. */
 export const useSwapSigningAccounts = (): WalletAccount[] => {

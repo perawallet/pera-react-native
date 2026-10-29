@@ -12,7 +12,7 @@
 
 import { useMutation } from '@tanstack/react-query'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import { createMultisigAccount } from '../api/endpoints'
 import type {
     CreateMultisigAccountRequest,
@@ -24,7 +24,7 @@ type UseCreateMultisigAccountMutationParams = {
 }
 
 export type UseCreateMultisigAccountMutationResult = {
-    data: CreateMultisigAccountResponse | undefined
+    data: Optional<CreateMultisigAccountResponse>
     error: Nullable<Error>
     isError: boolean
     isIdle: boolean

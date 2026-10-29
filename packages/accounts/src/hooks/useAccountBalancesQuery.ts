@@ -23,6 +23,7 @@ import {
     useStableIdList,
     type Maybe,
     type Nullable,
+    type Optional,
 } from '@perawallet/wallet-core-shared'
 import type {
     AccountBalances,
@@ -451,8 +452,8 @@ export const useAccountHoldingsAcrossChainsQuery = (
 }
 
 export const useAccountAssetBalanceQuery = (
-    account: WalletAccount | undefined,
-    assetId: string | undefined,
+    account: Optional<WalletAccount>,
+    assetId: Optional<string>,
     scope: ChainScope,
 ) => {
     const {

@@ -83,7 +83,7 @@ const webviewDataSignRequestBase = (
 
 export const useDataSigningHandler = (
     webview: Nullable<WebView>,
-    sourceUrl: string | null,
+    sourceUrl: Nullable<string>,
 ): BridgeHandler => {
     const { t } = useLanguage()
     const { showError } = useErrorToast()

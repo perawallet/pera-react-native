@@ -77,7 +77,7 @@ export const applyAppStateToHardwareSessions = (nextState: string): void => {
     for (const parent of actorRefsMap.values()) {
         const child = (
             parent.getSnapshot() as {
-                children?: Record<string, AnyActorRef | undefined>
+                children?: Record<string, Optional<AnyActorRef>>
             }
         ).children?.hardwareChild
         if (!child) continue
@@ -522,8 +522,11 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
     // pendingSignRequests changes and no actor is currently running.
     // Handles rehydration (mount), new requests, and queue advancement.
     useEffect(() => {
+        // The live queue, not this render's: another consumer's effect in the
+        // same flush may already have finished and removed the head, and
+        // starting it again orphans an actor that blocks the queue for good.
         const next = getNextQueuedRequest(
-            pendingSignRequests,
+            useSigningStore.getState().pendingSignRequests,
             actorRefsMap.size,
         )
         if (!next) return

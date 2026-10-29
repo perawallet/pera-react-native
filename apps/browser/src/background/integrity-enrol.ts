@@ -15,7 +15,11 @@ import {
     readIntegrityErrorCode,
 } from '@perawallet/wallet-core-app-integrity/api'
 import { config } from '@perawallet/wallet-core-config'
-import { logger } from '@perawallet/wallet-core-shared'
+import {
+    logger,
+    type Optional,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import {
     ensureDeviceInstallationID,
     isTrustedExtensionPageSender,
@@ -93,7 +97,7 @@ const isHosted = (token: string): boolean =>
     (hostPortCounts.get(token) ?? 0) > 0
 
 // Parsed rather than prefix-matched, so `/checkout` on the same origin is not the check page.
-const isCheckPageUrl = (value: string | undefined): boolean => {
+const isCheckPageUrl = (value: Optional<string>): boolean => {
     if (!value) return false
     try {
         const url = new URL(value)
@@ -114,7 +118,7 @@ const isTabOnCheckPage = async (tabId: number): Promise<boolean> => {
 }
 
 const isUnfinishedFrameAttempt = (
-    attempt: EnrolAttempt | null,
+    attempt: Nullable<EnrolAttempt>,
     token: string,
 ): attempt is EnrolAttempt =>
     attempt !== null &&

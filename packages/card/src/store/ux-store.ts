@@ -15,6 +15,7 @@ import {
     guardedPersist,
     registerStore,
     type WithPersist,
+    type Nullable,
 } from '@perawallet/wallet-core-shared'
 import {
     scopeFromNetworkColumn,
@@ -74,7 +75,7 @@ const initialState = {
     transactionFilters: {},
 }
 
-const scopeKeyOrNull = (value: unknown): ChainScopeKey | null => {
+const scopeKeyOrNull = (value: unknown): Nullable<ChainScopeKey> => {
     if (typeof value !== 'string') return null
     try {
         return toScopeKey(scopeFromNetworkColumn(value))

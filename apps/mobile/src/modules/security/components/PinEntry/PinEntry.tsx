@@ -21,7 +21,7 @@ import { usePreventScreenCapture } from '@hooks/usePreventScreenCapture'
 import { usePinEntry } from './usePinEntry'
 import { useStyles } from './styles'
 import { PIN_LENGTH } from '@perawallet/wallet-core-security'
-import { useCallback, useEffect } from 'react'
+import { useCallback } from 'react'
 
 const SCREEN_CAPTURE_TAG = 'pin-entry'
 
@@ -49,6 +49,7 @@ export const PinEntry = ({
         onPinComplete,
         onPinChange,
         onErrorAnimationComplete,
+        resetKey: title,
     })
 
     const handleNumpadKeyPress = useCallback(
@@ -57,10 +58,6 @@ export const PinEntry = ({
         },
         [handleKeyPress],
     )
-
-    useEffect(() => {
-        clearPin()
-    }, [title, clearPin])
 
     return (
         <PWView style={styles.container}>

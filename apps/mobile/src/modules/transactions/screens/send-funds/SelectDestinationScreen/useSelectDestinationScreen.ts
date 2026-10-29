@@ -13,6 +13,7 @@
 import { useSendFunds, useSendScope } from '@modules/transactions/hooks'
 import { addressOn, useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import { verifyNameAddress } from '@perawallet/wallet-core-nfd'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useChainNameWhenMultiChain } from '@hooks/useChainNameWhenMultiChain'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
@@ -85,7 +86,7 @@ export const useSelectDestinationScreen = () => {
     const { errorToast } = useToast()
     const { t } = useLanguage()
     const [isVerifyingNfd, setIsVerifyingNfd] = useState(false)
-    const verificationRef = useRef<AbortController | null>(null)
+    const verificationRef = useRef<Nullable<AbortController>>(null)
     useEffect(() => () => verificationRef.current?.abort(), [])
 
     const verifyThenResolve = useCallback(

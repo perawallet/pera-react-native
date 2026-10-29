@@ -78,10 +78,11 @@ export const useAccountCollectiblesQuery = (
         includeZeroBalance,
     })
     const signature = sourcesSignature(sourcesOfKey(queryKey))
+    const isEnabled = sources.length > 0 && enabled
 
     const query = useQuery({
         queryKey,
-        enabled: sources.length > 0 && enabled,
+        enabled: isEnabled,
         staleTime: Infinity,
         gcTime: HOLDINGS_ROWS_GC_TIME_MS,
         // Sort mode and search term are part of the key, so changing either
@@ -124,7 +125,7 @@ export const useAccountCollectiblesQuery = (
 
     return {
         collectibles: query.data ?? [],
-        isPending: query.isPending,
+        isPending: isEnabled && query.isPending,
         isPlaceholderData: query.isPlaceholderData,
         isRefetching: query.isRefetching,
         isError: query.isError,

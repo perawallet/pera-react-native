@@ -116,6 +116,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAllAccounts: vi.fn(() => [{ address: 'ACCOUNT_1' }]),
     useHasAccounts: vi.fn(() => true),
     useSyncNewAccounts: vi.fn(),
+    useRegisteredChainIds: vi.fn(() => ['algorand']),
 }))
 
 // The T&C gate is the trigger this test drives: real usePromptContainer,

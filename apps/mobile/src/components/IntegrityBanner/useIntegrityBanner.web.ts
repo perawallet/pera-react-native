@@ -25,6 +25,7 @@ import {
     type IntegrityAccessState,
 } from '@perawallet/wallet-core-browser-runtime'
 import { getSurface } from '@perawallet/wallet-extension-platform-chrome'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import {
     OFFLINE_BANNER_COLLAPSE_MS,
     OFFLINE_BANNER_COLLAPSE_TRANSLATE,
@@ -47,11 +48,11 @@ export type IntegrityBannerMode = ProblemMode | 'restored'
 
 export type UseIntegrityBannerResult = {
     isVisible: boolean
-    mode: IntegrityBannerMode | null
+    mode: Nullable<IntegrityBannerMode>
     label: string
-    description: string | null
-    actionLabel: string | null
-    onAction: (() => void) | null
+    description: Nullable<string>
+    actionLabel: Nullable<string>
+    onAction: Nullable<() => void>
     isActionPending: boolean
     isExpanded: boolean
     isExplanationRendered: boolean
@@ -62,7 +63,7 @@ export type UseIntegrityBannerResult = {
 const problemModeFor = (
     state: IntegrityAccessState,
     hasOutlastedGrace: boolean,
-): ProblemMode | null => {
+): Nullable<ProblemMode> => {
     if (state.status === 'degraded') return state.reason
     if (state.status === 'checking' && hasOutlastedGrace) return 'checking'
     return null
@@ -86,11 +87,11 @@ export const useIntegrityBanner = (): UseIntegrityBannerResult => {
     const [isExpanded, setIsExpanded] = useState(false)
     const [isExplanationRendered, setIsExplanationRendered] = useState(false)
     const [isActionPending, setIsActionPending] = useState(false)
-    const previousProblem = useRef<ProblemMode | null>(null)
+    const previousProblem = useRef<Nullable<ProblemMode>>(null)
     const previousEmphasisNonce = useRef(emphasisNonce)
-    const restoredTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-    const collapseTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-    const pendingTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+    const restoredTimer = useRef<Nullable<ReturnType<typeof setTimeout>>>(null)
+    const collapseTimer = useRef<Nullable<ReturnType<typeof setTimeout>>>(null)
+    const pendingTimer = useRef<Nullable<ReturnType<typeof setTimeout>>>(null)
     const entryProgress = useSharedValue(0)
     const expandProgress = useSharedValue(0)
 
@@ -103,7 +104,7 @@ export const useIntegrityBanner = (): UseIntegrityBannerResult => {
     const problem = isApprovalSurface
         ? null
         : problemModeFor(state, hasOutlastedGrace)
-    const mode: IntegrityBannerMode | null =
+    const mode: Nullable<IntegrityBannerMode> =
         problem ?? (isRestoredVisible ? 'restored' : null)
     const isVisible = mode !== null
 

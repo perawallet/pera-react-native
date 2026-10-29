@@ -177,6 +177,7 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
     const { Decimal: ActualDecimal } = await import('decimal.js')
     return {
         DEFAULT_PRECISION: 2,
+        ASSET_MAX_PRECISION: 6,
         ZERO_DECIMAL: new ActualDecimal(0),
         formatCurrency: vi.fn(() => '10.00'),
         formatNumber: (amount: Decimal) => amount.toFixed(),

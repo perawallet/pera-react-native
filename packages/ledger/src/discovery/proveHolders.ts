@@ -15,6 +15,7 @@ import {
     type ChainId,
 } from '@perawallet/wallet-core-chain-contract'
 import type { LedgerTransportProvider } from '@perawallet/wallet-extension-ledger-shared'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { ledgerReadableChainOf, readLedgerAddresses } from './readAddresses'
 
 /** An account already at a Ledger device position, as a proof needs it. */
@@ -39,7 +40,7 @@ export type LedgerHolderClaim = {
  */
 export const ledgerHolderClaim = (
     holder: LedgerHolder,
-): LedgerHolderClaim | undefined => {
+): Optional<LedgerHolderClaim> => {
     const held = (Object.keys(holder.addresses) as ChainId[]).filter(
         chainId => holder.addresses[chainId] !== undefined,
     )

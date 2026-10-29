@@ -56,6 +56,7 @@ export const PaymentSummaryHeader = ({
             </PWView>
             <PWView style={styles.amountContainer}>
                 <AssetAmount
+                    chainId={scope.chainId}
                     asset={nativeAsset}
                     value={amount}
                     // The signer authorizes an outgoing payment, so the amount

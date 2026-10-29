@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import type { Optional } from '@perawallet/wallet-core-shared'
+
 /**
  * Best-effort display host for a webview URL, or `undefined` when the URL has
  * no host to show.
@@ -34,7 +36,7 @@ const OPAQUE_ORIGIN_SCHEMES = [
     'file:',
 ]
 
-export const getDisplayHost = (url: string): string | undefined => {
+export const getDisplayHost = (url: string): Optional<string> => {
     const trimmed = url.trim()
     if (!trimmed) return undefined
 
@@ -45,7 +47,7 @@ export const getDisplayHost = (url: string): string | undefined => {
         return undefined
     }
 
-    const hostFrom = (value: string): string | undefined => {
+    const hostFrom = (value: string): Optional<string> => {
         try {
             return new URL(value).hostname || undefined
         } catch {

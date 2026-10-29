@@ -14,9 +14,13 @@ import type { Decimal } from 'decimal.js'
 import type {
     AssetDisplayHint,
     AssetRef,
+    ChainId,
     TransactionSummary,
 } from '@perawallet/wallet-core-chain-contract'
-import { baseUnitsToDisplayUnits } from '@perawallet/wallet-core-shared'
+import {
+    baseUnitsToDisplayUnits,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
 import type { MinimalAsset } from '@perawallet/wallet-core-assets'
 
 /** Maximum number of stacked amounts shown in a list row before overflow. */
@@ -32,8 +36,11 @@ export type AmountDisplay = {
      * `currency`.
      */
     assetId: string
+    /** The chain `assetId` is on. */
+    chainId: ChainId
     /** Unit name, display text only. */
     currency: string
+    decimals: number
     /** Also picks the colour; undefined for a zero or unsigned amount. */
     prefix?: AmountPrefix
 }
@@ -48,10 +55,10 @@ export type SummaryAmount = {
 
 const DIRECTION_PREFIX: Record<
     TransactionSummary['direction'],
-    AmountPrefix | undefined
+    Optional<AmountPrefix>
 > = { in: '+', out: '-', self: undefined, none: undefined }
 
-const signPrefix = (value: Decimal): AmountPrefix | undefined => {
+const signPrefix = (value: Decimal): Optional<AmountPrefix> => {
     if (value.isZero()) return undefined
     return value.isNegative() ? '-' : '+'
 }
@@ -93,7 +100,7 @@ export const safeDecimals = (decimals: number): number =>
 /** The asset store's facts win; the summary's own hint covers assets it doesn't hold. */
 export const toAmountDisplay = (
     amount: SummaryAmount,
-    storedAsset: MinimalAsset | undefined,
+    storedAsset: Optional<MinimalAsset>,
 ): AmountDisplay => {
     const decimals = storedAsset?.decimals ?? amount.display?.decimals ?? 0
     return {
@@ -102,7 +109,9 @@ export const toAmountDisplay = (
             safeDecimals(decimals),
         ),
         assetId: amount.assetRef.assetId,
+        chainId: amount.assetRef.chainId,
         currency: storedAsset?.unitName ?? amount.display?.symbol ?? '',
+        decimals: safeDecimals(decimals),
         prefix: amount.prefix,
     }
 }

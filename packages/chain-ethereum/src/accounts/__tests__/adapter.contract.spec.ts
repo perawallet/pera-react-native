@@ -228,6 +228,14 @@ const suites = (chain: EvmChain): void => {
                 ],
                 heldAssetId: USDC,
             },
+            // The activity check reads the whitelist for a scope with assets.
+            activity: {
+                ...sharedFixtures.activity,
+                handlers: [
+                    ...accountsRpc(),
+                    ...peraEvmHandlers({ baseUrl: TEST_PERA_URL }),
+                ],
+            },
             changeSignal: rpcChangeSignal,
         },
         'Pera assets',

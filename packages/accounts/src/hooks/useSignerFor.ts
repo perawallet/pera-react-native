@@ -12,6 +12,7 @@
 
 import { useMemo } from 'react'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import type { Maybe, Nullable } from '@perawallet/wallet-core-shared'
 import { getSignerFor } from '../signer-resolution'
 import { useAccountsStore } from '../store'
 import type { WalletAccount } from '../models'
@@ -19,9 +20,9 @@ import { useSelectedChainStates } from './useSelectedChainStates'
 
 /** The account that signs for `address` on `chainId`, or null. */
 export const useSignerFor = (
-    address: string | undefined | null,
+    address: Maybe<string>,
     chainId: ChainId,
-): WalletAccount | null => {
+): Nullable<WalletAccount> => {
     const accounts = useAccountsStore(state => state.accounts)
     const chainStates = useSelectedChainStates(chainId)
     return useMemo(

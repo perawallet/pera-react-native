@@ -13,6 +13,7 @@
 // Bundlers resolve this to the npm package; under Node (tests, the snapshot
 // script) the deprecated built-in of the same name answers instead.
 import { toASCII, toUnicode } from 'punycode'
+import type { Maybe, Optional } from '@perawallet/wallet-core-shared'
 import type { SiteHost } from './models'
 
 const SCHEME = /^[a-z][a-z0-9+.-]*:\/\//i
@@ -32,9 +33,7 @@ const withoutTrailingDots = (value: string): string => {
  * React Native's URL polyfill does no IDNA. IP literals, `localhost` and other
  * single-label hosts give `undefined`: no list or look-alike rule covers them.
  */
-export const toSiteHost = (
-    url: string | null | undefined,
-): SiteHost | undefined => {
+export const toSiteHost = (url: Maybe<string>): Optional<SiteHost> => {
     if (!url) return undefined
     const withoutScheme = url.trim().replace(SCHEME, '')
     const authority = withoutScheme.split(/[/?#]/)[0] ?? ''

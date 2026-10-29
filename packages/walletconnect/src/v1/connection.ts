@@ -16,6 +16,7 @@ import type {
     ConnectionPeer,
 } from '@perawallet/wallet-extension-connections'
 import type { ConnectionHandler } from '@perawallet/wallet-core-connections'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { isStringArray, readString } from '../shared/read'
 import { walletConnectUriVersion } from '../shared/uri'
 import type { WalletConnectV1Delivery } from './deliver'
@@ -134,7 +135,7 @@ export const isV1PairingUri = (uri: string): boolean =>
  * https and an http bridge would be checked on one host and dialed on the
  * other.
  */
-export const bridgeUrlFromV1Uri = (uri: string): string | null => {
+export const bridgeUrlFromV1Uri = (uri: string): Nullable<string> => {
     const queryStart = uri.indexOf('?')
     if (queryStart === -1) return null
     const values = new URLSearchParams(uri.slice(queryStart + 1)).getAll(

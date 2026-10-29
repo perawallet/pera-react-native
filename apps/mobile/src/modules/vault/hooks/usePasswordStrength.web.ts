@@ -14,6 +14,7 @@ import { useMemo } from 'react'
 import { ZxcvbnFactory } from '@zxcvbn-ts/core'
 import * as zxcvbnCommon from '@zxcvbn-ts/language-common'
 import * as zxcvbnEn from '@zxcvbn-ts/language-en'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 export type PasswordScore = 0 | 1 | 2 | 3 | 4
 export type PasswordStrengthError = 'too_short' | 'too_weak'
@@ -36,14 +37,14 @@ export const getPasswordScore = (password: string): PasswordScore =>
 const strengthErrorOf = (
     password: string,
     score: PasswordScore,
-): PasswordStrengthError | null => {
+): Nullable<PasswordStrengthError> => {
     if (password.length < MIN_PASSWORD_LENGTH) return 'too_short'
     return score < MIN_PASSWORD_SCORE ? 'too_weak' : null
 }
 
 type UsePasswordStrengthResult = {
     score: PasswordScore
-    error: PasswordStrengthError | null
+    error: Nullable<PasswordStrengthError>
 }
 
 export const usePasswordStrength = (

@@ -12,6 +12,7 @@
 
 import { PWText, PWView } from '@components/core'
 import type { PeraAsset } from '@perawallet/wallet-core-assets'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import { AssetIcon } from '@components/AssetIcon'
 import { AssetTierChip } from '@modules/assets'
@@ -19,6 +20,7 @@ import { useStyles } from './styles'
 
 type SwapAssetSectionProps = {
     asset: Optional<PeraAsset>
+    chainId: ChainId
     amountDisplay: string
     fiatDisplay: Optional<string>
     unitName?: string
@@ -27,6 +29,7 @@ type SwapAssetSectionProps = {
 
 export const SwapAssetSection = ({
     asset,
+    chainId,
     amountDisplay,
     fiatDisplay,
     unitName,
@@ -40,6 +43,7 @@ export const SwapAssetSection = ({
                 <PWView style={styles.assetAmountContainer}>
                     {asset && (
                         <AssetIcon
+                            chainId={chainId}
                             asset={asset}
                             size='lg'
                         />

@@ -349,7 +349,8 @@
             "suspicious_title": "Şüpheli ASA",
             "suspicious_description": "Bu ASA, Pera ASA Doğrulama programı tarafından şüpheli olarak işaretlendi.",
             "learn_more": "ASA doğrulaması hakkında daha fazla bilgi al"
-        }
+        },
+        "copy_full_amount_hint": "Tam tutarı kopyalamak için basılı tutun"
     },
     "accounts": {
         "legacyQuantum": {
@@ -482,6 +483,7 @@
         "hide_wallet_structure": "Cüzdan yapısını gizle",
         "scan_new_addresses": "Yeni adresleri tara",
         "scan_new_accounts": "Yeni {{network}} hesaplarını tara",
+        "scan_new_wallet_accounts": "Yeni hesapları tara",
         "universal_wallet_subtitle": "Tek passphrase, tüm ağlar",
         "viewing": "Görüntüleniyor",
         "wallet_label": "Cüzdan #{{number}}",
@@ -2257,7 +2259,15 @@
             "no_new_addresses_title": "Yeni adres bulunamadı",
             "no_new_addresses_body": "Bu cüzdanla ilişkili başka bir adres bulamadık.",
             "rekey_scan_failed_title": "Rekey yapılmış hesaplar kontrol edilemedi",
-            "rekey_scan_failed_body": "Hesabın içe aktarıldı. Başka hesapların bu hesaba rekey yapılıp yapılmadığını kontrol edemedik — Ayarlar'dan yeniden tarayabilirsin."
+            "rekey_scan_failed_body": "Hesabın içe aktarıldı. Başka hesapların bu hesaba rekey yapılıp yapılmadığını kontrol edemedik — Ayarlar'dan yeniden tarayabilirsin.",
+            "rekey_rescan_failed_body": "Başka hesapların bu cüzdana rekey yapılıp yapılmadığını kontrol edemedik. Tekrar denemek için yeniden tara.",
+            "rescan_found_title": "Tarama tamamlandı",
+            "rescan_found_body_one": "1 hesap eklendi veya güncellendi.",
+            "rescan_found_body_other": "{{count}} hesap eklendi veya güncellendi.",
+            "rescan_partial_title": "Tarama eksik kaldı",
+            "rescan_partial_body": "Bazı kontroller tamamlanamadı. Şimdiye kadar bulunan hesaplar eklendi. Kalanları bulmak için yeniden tara.",
+            "rescan_failed_title": "Hesaplar taranamadı",
+            "rescan_failed_body": "Bağlantını kontrol edip tekrar dene."
         },
         "create_account": {
             "processing": "Cüzdanın hazırlanıyor...",

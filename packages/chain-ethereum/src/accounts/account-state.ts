@@ -24,14 +24,16 @@ import type {
 import { upsertAssets } from '@perawallet/wallet-core-assets'
 import {
     isPeraNetworkError,
-    settleBatch,
     type Optional,
+    type Nullable,
 } from '@perawallet/wallet-core-shared'
 import type { EvmChainId } from '@perawallet/wallet-core-chain-contract'
 import type { EvmChain } from '../chains/types'
 import { ASSETS_SERVICE, NFTS_SERVICE } from '../assets/api/endpoints'
 import {
     cachedWhitelist,
+    listedTokenIds,
+    type ListedTokenIds,
     type ListedTokens,
 } from '../assets/api/whitelist-cache'
 import { isEvmNftAssetId } from '../blockchain/utils/caip19'
@@ -42,6 +44,7 @@ import {
     fetchShouldRefresh,
     type ShouldRefreshResponse,
 } from './endpoints'
+import { createEvmActivityCheck, readNativeFootprint } from './activity'
 import { readNftHoldings, type NftHoldingsRead } from './nft-holdings'
 
 export type EthereumAccountStateOps = Required<
@@ -53,30 +56,6 @@ export type EthereumAccountStateOps = Required<
         | 'fetchChangeSignal'
     >
 > & { readonly chainId: EvmChainId }
-
-type ListedTokenIds = (scope: ChainScope) => Promise<string[]>
-
-const readFootprint = async (
-    ctx: ChainContext,
-    chain: EvmChain,
-    address: string,
-    scope: ChainScope,
-) => {
-    const client = createEvmClient(scope, ctx, chain)
-    const [balance, nonce] = await Promise.all([
-        client.getBalance({ address: address as Address }),
-        client.getTransactionCount({ address: address as Address }),
-    ])
-    return balance > 0n || nonce > 0
-}
-
-const listedTokenIds =
-    (listedTokens: ListedTokens): ListedTokenIds =>
-    async scope => {
-        const rows = await listedTokens(scope)
-        // The native row is skipped: eth_getBalance reads it.
-        return rows.filter(row => row.type === 'erc20').map(row => row.assetId)
-    }
 
 // Reads arriving within this window share one block and one Multicall3 pass.
 // The syncer awaits a database read before each account, so its reads for one
@@ -287,7 +266,7 @@ const readHeadSignal = async (
     ctx: ChainContext,
     chain: EvmChain,
     scope: ChainScope,
-    cursor: number | null,
+    cursor: Nullable<number>,
 ): Promise<AccountChangeSignal> => {
     const head = Number(
         await createEvmClient(scope, ctx, chain).getBlockNumber(),
@@ -359,25 +338,19 @@ export const createEthereumAccountStateOps = (
         listedTokens?: ListedTokens
         readWindowMs?: number
     } = {},
-): EthereumAccountStateOps => ({
-    chainId: chain.row.id,
-    fetchAccountState: coalescedAccountReads(
-        ctx,
-        chain,
-        listedTokenIds(listedTokens),
-        readWindowMs,
-    ),
-    accountExists: (address, scope) =>
-        readFootprint(ctx, chain, address, scope),
-    checkActivity: async (addresses, scope) => {
-        // A failed read beside ones that answered reads as inactive, so one
-        // flaky call doesn't discard the batch's other answers.
-        const active = await settleBatch(
-            addresses,
-            address => readFootprint(ctx, chain, address, scope),
-            false,
-        )
-        return new Map(addresses.map((address, i) => [address, active[i]]))
-    },
-    fetchChangeSignal: fetchChangeSignal(ctx, chain),
-})
+): EthereumAccountStateOps => {
+    const tokenIds = listedTokenIds(listedTokens)
+    return {
+        chainId: chain.row.id,
+        fetchAccountState: coalescedAccountReads(
+            ctx,
+            chain,
+            tokenIds,
+            readWindowMs,
+        ),
+        accountExists: (address, scope) =>
+            readNativeFootprint(ctx, chain, address, scope),
+        checkActivity: createEvmActivityCheck(ctx, chain, tokenIds),
+        fetchChangeSignal: fetchChangeSignal(ctx, chain),
+    }
+}

@@ -14,6 +14,7 @@ import React from 'react'
 import { createPortal } from 'react-dom'
 import { PWButton, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useIntegrityCheckFrameHost } from '../useIntegrityCheckFrameHost.web'
 import { useStyles } from './styles.web'
 
@@ -32,7 +33,7 @@ const IFrame = 'iframe' as unknown as React.ComponentType<{
 const CHECK_FRAME_SANDBOX =
     'allow-same-origin allow-scripts allow-forms allow-popups'
 
-export const IntegrityCheckFrame = (): React.JSX.Element | null => {
+export const IntegrityCheckFrame = (): Nullable<React.JSX.Element> => {
     const { url, isExpanded, iframeRef, dismiss } = useIntegrityCheckFrameHost()
     const styles = useStyles()
     const { t } = useLanguage()

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { decodeFromBase64 } from '@perawallet/wallet-core-shared'
+import { decodeFromBase64, type Nullable } from '@perawallet/wallet-core-shared'
 import { PeraWebImportError, PeraWebImportErrorReason } from '../errors'
 import {
     PERA_WEB_QR_ACTION_IMPORT,
@@ -52,7 +52,7 @@ const decodeEncryptionKey = (raw: string): Uint8Array => {
 
     // Base64 (or url-safe base64; base64-js handles `-`/`_` as garbage and
     // drops them; this is fine when modern Pera Web emits standard base64).
-    let asBase64: Uint8Array | null = null
+    let asBase64: Nullable<Uint8Array> = null
     try {
         asBase64 = decodeFromBase64(trimmed)
     } catch {
