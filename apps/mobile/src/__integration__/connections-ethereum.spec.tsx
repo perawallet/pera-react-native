@@ -407,7 +407,7 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
             ).toEqual(['algorand', 'ethereum'])
         })
 
-        it('Given a proposal requiring eth_sign and eth_signTypedData_v3, when the user connects, then the session lists both, and calls to them, eth_signTransaction, eth_sendRawTransaction, wallet_getPermissions and the unlisted wallet_addEthereumChain are answered 4200 without a review while eth_chainId is answered', async () => {
+        it('Given a proposal requiring eth_sign and eth_signTypedData_v3, when the user connects, then the session lists both but Settings grants only eth_sendTransaction, and calls to them, eth_signTransaction, eth_sendRawTransaction, wallet_getPermissions and the unlisted wallet_addEthereumChain are answered 4200 without a review while eth_chainId is answered', async () => {
             await mountProvider()
             const walletKit = await propose({
                 requiredNamespaces: {
@@ -429,6 +429,12 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                 'eth_sendTransaction',
                 'eth_sign',
                 'eth_signTypedData_v3',
+            ])
+            // What Settings lists as granted: never the refused eth_sign.
+            const record =
+                await getProvider().connections.store.get(V2_SESSION_TOPIC)
+            expect(captured.registry!.methodsFor(record!)).toEqual([
+                'eth_sendTransaction',
             ])
             const send = (id: number, method: string) =>
                 act(() => {
