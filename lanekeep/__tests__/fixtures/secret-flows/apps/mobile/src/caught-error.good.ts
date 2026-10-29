@@ -22,3 +22,7 @@ export const snapshot = () => {
     const state = readState()
     logger.debug('state', { snapshot: JSON.stringify(state) })
 }
+
+export const onMessage = (e: WebViewMessageEvent) => {
+    logger.debug('message', JSON.stringify(e.nativeEvent.data))
+}

@@ -17,16 +17,17 @@ const SECRET_FIELDS = '^(privateKey|secretKey|mnemonic)$'
 // WalletConnect pairing URI carries the pairing secret in `key=`. These are
 // the names such a value arrives under: the parse entry points of the link
 // handlers, the scanner's `rawValue`, and the `uri` of a pairing request.
+// The webview bridge's page `sourceUrl` matches too, on purpose: a page URL can carry a token.
+// A `uri` that is no secret (an image or file URI) takes a suppression with its reason.
 const LINK_FIELDS = '^(uri|sourceUrl|rawValue)$'
 const LINK_PARAMETERS = '^uri$'
 const LINK_CALLS = '^(getInitialURL|walletConnectUriOf)$'
 const LINK_ENTRY_FUNCTIONS = '^(parseDeeplink|handleDeepLinkImpl)$'
 
-// Helpers whose result is log-safe by construction. `pair` and
-// `pairConnection` are here because a pairing outcome never echoes its URI;
-// without them the URI argument taints `result.error` by containment.
+// Helpers whose result is log-safe by construction. Not `pair`: @walletconnect/core's
+// pair() quotes the whole URI, symKey included, in the error for an unparseable one.
 const SANITIZERS =
-    '^(redactSensitiveUrl|redactWalletConnectUri|walletConnectLogContext|walletConnectUriTopic|describeUri|describeV2PairingUri|originOf|pair|pairConnection)$'
+    '^(redactSensitiveUrl|redactWalletConnectUri|walletConnectLogContext|walletConnectUriTopic|describeUri|describeV2PairingUri|originOf)$'
 
 const LOGGERS = '^(logger|console)$'
 
@@ -47,8 +48,9 @@ const CLIPBOARD_CALLEE =
 const CLIPBOARD_QUERY_PATTERN = CLIPBOARD_CALLEE.source.split('\\').join('\\\\')
 
 // The engine can't seed a `catch` binding, so a caught error is recognised by
-// its binding kind or by a parameter named like one (ky's `beforeError`).
-const CAUGHT_ERROR_PARAMETER = /^(e|err|error|cause|reason)$|Error$/
+// its binding kind or by a parameter named like one (ky's `beforeError`). `e`
+// and `reason` are left out: they name event and rejection parameters too.
+const CAUGHT_ERROR_PARAMETER = /^(err|error|cause)$|Error$/
 
 const FUNCTION_LIKE = new Set([
     'arrow_function',

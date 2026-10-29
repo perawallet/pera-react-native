@@ -24,3 +24,13 @@ export const optional = (uri?: string) => {
 export const bare = (queue: string[]) => {
     queue.forEach(uri => logger.debug('pair', { uri }))
 }
+
+export const paired = async (data: Data) => {
+    const result = await pair(data.uri, { origin })
+    logger.error('connect failed', { error: result.error })
+}
+
+export const connected = async (data: Data) => {
+    const result = await pairConnection(data.uri)
+    logger.info('connected', { result })
+}

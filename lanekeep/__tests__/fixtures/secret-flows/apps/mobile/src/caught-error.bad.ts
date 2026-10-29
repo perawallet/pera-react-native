@@ -22,3 +22,19 @@ export const wrapped = () => {
 
 export const response = (deliveryError: Error) =>
     logger.warn('x', { r: JSON.stringify(deliveryError.response) })
+
+export const bareCatch = () => {
+    try {
+        run()
+    } catch (e) {
+        logger.error('failed', { details: JSON.stringify(e) })
+    }
+}
+
+export const caughtMember = () => {
+    try {
+        run()
+    } catch (e) {
+        logger.error('failed', { details: JSON.stringify(e.response) })
+    }
+}

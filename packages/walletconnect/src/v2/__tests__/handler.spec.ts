@@ -38,7 +38,10 @@ import {
     WALLET_CONNECT_V2_KIND,
 } from '../connection'
 import { dappRequestAdapterFor } from '../../shared/chainSupport'
-import { WalletConnectRequestExpiredError } from '../../shared/errors'
+import {
+    WalletConnectError,
+    WalletConnectRequestExpiredError,
+} from '../../shared/errors'
 import { createWalletConnectV2Handler } from '../handler'
 import {
     ADDRESS,
@@ -1172,6 +1175,33 @@ describe('URI pairing', () => {
         )
 
         expect(walletKit.pair).toHaveBeenCalledWith({ uri: V2_URI })
+    })
+
+    it('drops an SDK error that quotes the URI, symKey included', async () => {
+        const { handler, walletKit } = makeHandler()
+        await handler.initialize(makeContext())
+        walletKit.pair.mockRejectedValueOnce(
+            new Error(`Missing or invalid. pair() uri: ${V2_URI}`),
+        )
+
+        const error = await uriPairing(handler)
+            .pair(V2_URI)
+            .catch((caught: unknown) => caught)
+
+        expect(error).toBeInstanceOf(WalletConnectError)
+        expect((error as WalletConnectError).message).not.toContain(SYM_KEY)
+        expect((error as WalletConnectError).originalError).toBeUndefined()
+    })
+
+    it('passes an SDK error that does not quote the URI through', async () => {
+        const { handler, walletKit } = makeHandler()
+        await handler.initialize(makeContext())
+        const sdkError = new Error(
+            `Pairing already exists: ${PAIRING_TOPIC}. Please try again with a new connection URI.`,
+        )
+        walletKit.pair.mockRejectedValueOnce(sdkError)
+
+        await expect(uriPairing(handler).pair(V2_URI)).rejects.toBe(sdkError)
     })
 
     it('describes a URI without its symKey', () => {
