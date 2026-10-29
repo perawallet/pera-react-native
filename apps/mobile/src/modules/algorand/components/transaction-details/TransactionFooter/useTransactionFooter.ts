@@ -14,10 +14,9 @@ import type { AlgorandTransactionView } from '@perawallet/wallet-core-chain-algo
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { getAlgorandChainConfig } from '@perawallet/wallet-core-config'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { useMemo } from 'react'
-import { useWebView } from '@modules/webview'
+import { toValidatedBrowserUrl, useWebView } from '@modules/webview'
 import { useSingleAssetDetailsQuery } from '@perawallet/wallet-core-assets'
-import { generateUniqueId, type Optional } from '@perawallet/wallet-core-shared'
+import { generateUniqueId } from '@perawallet/wallet-core-shared'
 
 export const useTransactionFooter = (transaction: AlgorandTransactionView) => {
     const scope = useSelectedScope(LEGACY_CHAIN_ID)
@@ -31,6 +30,7 @@ export const useTransactionFooter = (transaction: AlgorandTransactionView) => {
     const showInExplorer = explorerUrl
         ? () => {
               if (!explorerUrl) return
+              // oxlint-disable-next-line pera/no-unvalidated-open-url -- network explorerUrl config plus the transaction id
               pushWebView({
                   url: `${explorerUrl}/tx/${transaction.id}`,
                   id: generateUniqueId(),
@@ -43,20 +43,9 @@ export const useTransactionFooter = (transaction: AlgorandTransactionView) => {
         scope,
     )
 
-    const assetUrl = useMemo(() => {
-        let url: Optional<string> = undefined
-        if (transaction.assetConfigTransaction?.params?.url) {
-            url = transaction.assetConfigTransaction.params.url
-        } else if (asset?.url) {
-            url = asset.url
-        }
-
-        if (url && !url.startsWith('http')) {
-            url = `https://${url}`
-        }
-
-        return url
-    }, [asset, transaction.assetConfigTransaction?.params?.url])
+    const assetUrl = toValidatedBrowserUrl(
+        transaction.assetConfigTransaction?.params?.url || asset?.url,
+    )
 
     const showAssetUrl = () => {
         if (!assetUrl) {

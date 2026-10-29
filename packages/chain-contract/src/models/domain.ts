@@ -317,6 +317,8 @@ export interface FeePresetEstimate {
     amount: Decimal
     /** The most the transaction can be charged; the sender's balance must cover it on top of what it sends. */
     maxAmount: Decimal
+    /** Expected seconds until the transaction lands at this preset; a whole number, at least 1. */
+    estimatedWaitSeconds: number
 }
 
 export interface FeeEstimate {

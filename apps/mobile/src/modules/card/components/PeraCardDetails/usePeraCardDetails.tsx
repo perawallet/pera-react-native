@@ -23,13 +23,13 @@ import {
     type CardEligibilityReason,
     type CardIssuanceState,
 } from '@perawallet/wallet-core-card'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { trackEvent, CardEvent } from '@analytics'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { useBottomSheet } from '@modules/bottom-sheet'
-import { useWebView } from '@modules/webview'
+import { toValidatedBrowserUrl, useWebView } from '@modules/webview'
 import { useNetworkStatus } from '@modules/network'
 import { routeCapabilities } from '@routes/capabilities'
 import { useRequirePinVerification } from '@modules/security'
@@ -331,16 +331,27 @@ export const usePeraCardDetails = (): UsePeraCardDetailsResult => {
         if (!(await requirePinVerification())) return
         try {
             const session = await setPin.mutateAsync()
-            if (!routeCapabilities.inAppWebView) {
-                // oxlint-disable-next-line pera/no-unvalidated-open-url -- httpsUrlSchema at the API boundary
-                void Linking.openURL(session.hostedPageUrl)
+            const hostedPageUrl = toValidatedBrowserUrl(session.hostedPageUrl)
+            if (!hostedPageUrl) {
+                // The URL is never logged: the hosted page carries a session token.
+                logger.warn('[card] refused the set-PIN hosted page URL', {
+                    flow: 'set-pin',
+                })
+                errorToast(
+                    t('peraCard.account.error_title'),
+                    t('peraCard.account.error_body'),
+                )
                 return
             }
-            pushWebView({ url: session.hostedPageUrl, id: 'card-set-pin' })
+            if (!routeCapabilities.inAppWebView) {
+                void Linking.openURL(hostedPageUrl)
+                return
+            }
+            pushWebView({ url: hostedPageUrl, id: 'card-set-pin' })
         } catch (error) {
             await showError(error)
         }
-    }, [setPin, requirePinVerification, pushWebView, showError])
+    }, [setPin, requirePinVerification, pushWebView, showError, errorToast, t])
     const onSetPin = useCallback(() => {
         trackEvent(CardEvent.DetailsSetPin)
         void submitSetPin()

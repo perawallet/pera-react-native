@@ -15,11 +15,13 @@ import { MigrationDataSection } from '../components/MigrationDataSection'
 import { EmptyDataHint } from '../components/EmptyDataHint'
 import { SchemaReplayResultRow } from './SchemaReplayResultRow'
 
+type SchemaReplayResultsSectionProps = {
+    results: Record<string, LegacySchemaReplayResult> | undefined
+}
+
 export const SchemaReplayResultsSection = ({
     results,
-}: {
-    results: Record<string, LegacySchemaReplayResult> | undefined
-}) => {
+}: SchemaReplayResultsSectionProps) => {
     if (!results) return null
     const entries = Object.entries(results)
     return (

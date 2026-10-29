@@ -14,11 +14,13 @@ import { MigrationDataSection } from '../components/MigrationDataSection'
 import { MigrationDataRow } from '../components/MigrationDataRow'
 import type { MigrationStepRow } from '../useMigrationStepVersions'
 
+type MigrationStepsSectionProps = {
+    steps: MigrationStepRow[]
+}
+
 export const MigrationStepsSection = ({
     steps,
-}: {
-    steps: MigrationStepRow[]
-}) => {
+}: MigrationStepsSectionProps) => {
     return (
         <MigrationDataSection
             title='Migration Steps'
