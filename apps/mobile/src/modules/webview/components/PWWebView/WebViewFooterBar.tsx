@@ -11,8 +11,7 @@
  */
 
 import type { RefObject } from 'react'
-import { PWView } from '@components/core/PWView'
-import { PWIcon } from '@components/core/PWIcon'
+import { PWView, PWIcon } from '@components/core'
 import type WebView from 'react-native-webview'
 import type { WebViewNativeEvent } from 'react-native-webview/lib/RNCWebViewNativeComponent'
 import type { Nullable } from '@perawallet/wallet-core-shared'

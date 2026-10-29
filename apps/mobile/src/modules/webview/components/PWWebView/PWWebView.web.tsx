@@ -32,8 +32,7 @@ import {
     createDiscoverBridgeHost,
     openExternalTab,
 } from '@perawallet/wallet-core-browser-runtime'
-import { PWView } from '@components/core/PWView'
-import { PWButton } from '@components/core/PWButton'
+import { PWView, PWButton } from '@components/core'
 import { EmptyView } from '@components/EmptyView/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
 import { useNetworkStatus } from '@modules/network'
