@@ -28,14 +28,21 @@ type EventTargetLike = {
  * chrome.alarms.create is a cross-process call, once a minute is plenty.
  */
 export const useAutoLockActivity = (isUnlocked: boolean): void => {
-    const lastArmAt = useRef(0)
+    const lastArmAt = useRef<number | null>(null)
 
     useEffect(() => {
         if (!isUnlocked) return
         const target = globalThis as unknown as EventTargetLike
         const handleActivity = (): void => {
-            const now = Date.now()
-            if (now - lastArmAt.current < THROTTLE_MS) return
+            // performance.now(), not Date.now(): moving the system clock must
+            // not change how often this re-arms.
+            const now = performance.now()
+            if (
+                lastArmAt.current !== null &&
+                now - lastArmAt.current < THROTTLE_MS
+            ) {
+                return
+            }
             lastArmAt.current = now
             void armAutoLock()
         }

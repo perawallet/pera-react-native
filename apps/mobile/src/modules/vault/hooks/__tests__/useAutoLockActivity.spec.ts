@@ -67,6 +67,23 @@ describe('useAutoLockActivity', () => {
         expect(armAutoLock).toHaveBeenCalledTimes(2)
     })
 
+    it('re-arms after the throttle window even when the system clock was set back', () => {
+        renderHook(() => useAutoLockActivity(true))
+        fireActivity()
+        vi.setSystemTime(Date.now() - 60 * 60 * 1000)
+        vi.advanceTimersByTime(60_000)
+        fireActivity()
+        expect(armAutoLock).toHaveBeenCalledTimes(2)
+    })
+
+    it('still throttles within the window when the system clock jumps forward', () => {
+        renderHook(() => useAutoLockActivity(true))
+        fireActivity()
+        vi.setSystemTime(Date.now() + 60 * 60 * 1000)
+        fireActivity()
+        expect(armAutoLock).toHaveBeenCalledTimes(1)
+    })
+
     it('removes its listeners on unmount', () => {
         const { unmount } = renderHook(() => useAutoLockActivity(true))
         unmount()

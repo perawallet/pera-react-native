@@ -318,6 +318,39 @@ describe('useUnlockScreen', () => {
                 expect(mocks.unlockWithPasskey).not.toHaveBeenCalled()
             })
 
+            it('re-reads the lockout when the countdown reaches zero so the vault clears it', async () => {
+                mocks.getLockoutRemainingSeconds
+                    .mockResolvedValueOnce(2)
+                    .mockResolvedValue(0)
+                const { result } = renderHook(() => useUnlockScreen())
+                await settle()
+                expect(mocks.getLockoutRemainingSeconds).toHaveBeenCalledOnce()
+
+                await act(async () => {
+                    await vi.advanceTimersByTimeAsync(2000)
+                })
+
+                expect(mocks.getLockoutRemainingSeconds).toHaveBeenCalledTimes(
+                    2,
+                )
+                expect(result.current.lockoutSeconds).toBe(0)
+            })
+
+            it('restarts the countdown when the re-read still reports a lockout', async () => {
+                mocks.getLockoutRemainingSeconds
+                    .mockResolvedValueOnce(1)
+                    .mockResolvedValueOnce(5)
+                    .mockResolvedValue(0)
+                const { result } = renderHook(() => useUnlockScreen())
+                await settle()
+
+                await act(async () => {
+                    await vi.advanceTimersByTimeAsync(1000)
+                })
+
+                expect(result.current.lockoutSeconds).toBe(5)
+            })
+
             it('keeps counting down when the system clock jumps forward', async () => {
                 mocks.getLockoutRemainingSeconds.mockResolvedValue(30)
                 const { result } = renderHook(() => useUnlockScreen())
