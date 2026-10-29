@@ -11,10 +11,7 @@
  */
 
 import { describe, expect, it, vi } from 'vitest'
-import {
-    GATED_QUERY_HOOKS,
-    queryPendingGated,
-} from '../rules/query-pending-gated.js'
+import { queryPendingGated } from '../rules/query-pending-gated.js'
 import {
     call,
     id,
@@ -112,7 +109,7 @@ describe(RULE, () => {
     }
 
     describe('flagged', () => {
-        it.each(GATED_QUERY_HOOKS)(
+        it.each(['useQuery', 'useInfiniteQuery'])(
             'reports a raw isPending read of a %s gated by a name',
             hook => {
                 const report = readOf(id('isEnabled'), pendingOf(), { hook })
@@ -242,6 +239,14 @@ describe(RULE, () => {
 
     describe('allowed', () => {
         it.each([
+            [
+                'a satisfies-wrapped guarded read',
+                () =>
+                    logical('&&', id('isEnabled'), {
+                        type: 'TSSatisfiesExpression',
+                        expression: pendingOf(),
+                    }),
+            ],
             [
                 'the ticket fix: isEnabled ? query.isPending : false',
                 () => cond(id('isEnabled'), pendingOf(), lit(false)),

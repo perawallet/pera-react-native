@@ -32,6 +32,7 @@ const TRANSPARENT_TYPES = [
     'ParenthesizedExpression',
     'TSAsExpression',
     'TSNonNullExpression',
+    'TSSatisfiesExpression',
 ]
 const TYPE_WRAPPERS = [
     'ParenthesizedExpression',

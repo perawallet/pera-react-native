@@ -70,7 +70,7 @@ export const useAccountBalancesHistoryQuery = (
         // A disabled query keeps its cached (and persisted) points; drop them
         // so a kill switch takes the chart down.
         data: isUnavailableOnNetwork ? [] : (query.data ?? []),
-        isPending: isEnabled && !isUnavailableOnNetwork && query.isPending,
+        isPending: isEnabled && query.isPending,
         isSuccess: query.isSuccess,
         isError: query.isError,
         isPaused: query.isPaused,
