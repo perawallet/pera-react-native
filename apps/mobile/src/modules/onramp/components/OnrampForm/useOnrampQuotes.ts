@@ -119,7 +119,7 @@ export const useOnrampQuotes = ({
                         scope,
                         pair: pairId,
                         destinationAddress: selectedAccountAddress,
-                        sourceAmount: meldAmount?.toNumber() ?? null,
+                        sourceAmount: meldAmount,
                     })
                     if (requestId !== requestIdRef.current) return
 

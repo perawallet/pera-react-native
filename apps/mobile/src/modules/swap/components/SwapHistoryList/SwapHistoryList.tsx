@@ -51,10 +51,11 @@ export const SwapHistoryList = ({
         ({ item }: { item: SwapHistoryItem }) => (
             <SwapHistoryListItem
                 item={item}
+                chainId={scope.chainId}
                 onPress={handleItemPress}
             />
         ),
-        [handleItemPress],
+        [handleItemPress, scope.chainId],
     )
 
     const ItemSeparator = useCallback(

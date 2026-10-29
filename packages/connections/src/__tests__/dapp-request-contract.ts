@@ -190,7 +190,7 @@ export const dappRequestContractTests = (
                         ).not.toBeNull()
                     })
 
-                    it('routes every other served method to public data, or to showing a batch, never to signing', () => {
+                    it('routes every other served method to public data, showing a batch or a refusal, never to signing', () => {
                         const publicMethods = v2.methods.filter(
                             method => !v2.signingMethods.includes(method),
                         )
@@ -199,7 +199,9 @@ export const dappRequestContractTests = (
                             if (route.kind === 'operation') {
                                 expect(route.type).toBe('show-batch')
                             } else {
-                                expect(route.kind).toBe('public-data')
+                                expect(['public-data', 'refused']).toContain(
+                                    route.kind,
+                                )
                             }
                         }
                     })

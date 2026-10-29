@@ -26,6 +26,7 @@ import {
     CHART_PRESS_FAIL_OFFSET_Y,
 } from '@constants/ui'
 import { getChartYAxisRange } from '@utils/chart'
+import type { Optional, Nullable } from '@perawallet/wallet-core-shared'
 import { useBalanceLineChart } from './useBalanceLineChart'
 import { ChartPressIndicator } from './ChartPressIndicator'
 import { useChartPressSelection } from './useChartPressSelection'
@@ -56,11 +57,11 @@ const HIDDEN_Y_AXIS = [{ lineWidth: 0 }]
 // caller is just its query plus this component.
 type BalanceLineChartProps<T> = {
     /** Source series as fetched; undefined while the query has no data. */
-    series: T[] | undefined
+    series: Optional<T[]>
     /** Extracts the plotted value from a series item. */
     getValue: (item: T) => number
     /** Reports the scrub-focused series item, or null when the touch ends. */
-    onSelectionChanged: (item: T | null) => void
+    onSelectionChanged: (item: Nullable<T>) => void
     isPending: boolean
     emptyBody: string
     /** When true, render an error state (with retry) instead of the empty copy. */

@@ -11,7 +11,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { toError } from '@perawallet/wallet-core-shared'
+import { toError, type Nullable } from '@perawallet/wallet-core-shared'
 import { compareRuns, isComparable } from '../runner/compare'
 import { buildRunMeta } from '../runner/runMeta'
 import { runSelection } from '../runner/runSelection'
@@ -38,14 +38,14 @@ export type UseBenchRunnerResult = {
     selectedScales: BenchScaleName[]
     setSelectedScales: (scales: BenchScaleName[]) => void
     isRunning: boolean
-    progress: BenchProgress | null
-    latest: ResultsFile | null
-    baseline: ResultsFile | null
+    progress: Nullable<BenchProgress>
+    latest: Nullable<ResultsFile>
+    baseline: Nullable<ResultsFile>
     /** Null when there is nothing to compare, or the two runs are not comparable. */
-    comparison: ComparisonRow[] | null
+    comparison: Nullable<ComparisonRow[]>
     /** Why there is no comparison, when a baseline exists. */
-    comparisonNote: string | null
-    error: string | null
+    comparisonNote: Nullable<string>
+    error: Nullable<string>
     runScenarios: (ids: string[]) => Promise<void>
     runAll: () => Promise<void>
     saveAsBaseline: () => void
@@ -67,10 +67,10 @@ export const useBenchRunner = (
         'S',
     ])
     const [isRunning, setIsRunning] = useState(false)
-    const [progress, setProgress] = useState<BenchProgress | null>(null)
-    const [latest, setLatest] = useState<ResultsFile | null>(null)
-    const [baseline, setBaseline] = useState<ResultsFile | null>(null)
-    const [error, setError] = useState<string | null>(null)
+    const [progress, setProgress] = useState<Nullable<BenchProgress>>(null)
+    const [latest, setLatest] = useState<Nullable<ResultsFile>>(null)
+    const [baseline, setBaseline] = useState<Nullable<ResultsFile>>(null)
+    const [error, setError] = useState<Nullable<string>>(null)
 
     useEffect(() => {
         try {

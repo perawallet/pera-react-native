@@ -17,6 +17,7 @@ import type {
     ChainTransactionData,
     TransactionSummary,
 } from '@perawallet/wallet-core-chain-contract'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 /**
  * What a history list shows for an attempt until its chain's history lists
@@ -125,23 +126,23 @@ export type SubmissionAttempt = {
     /** Raw column value, a scope key. Decode with parseScopeKey. */
     network: string
     txIds: string[]
-    intentKey: IntentKey | null
+    intentKey: Nullable<IntentKey>
     flow: SubmissionFlow
-    sender: string | null
+    sender: Nullable<string>
     status: SubmissionStatus
     /** What the chain's reconciler bounds the attempt by; null when nothing. */
-    chainData: ChainSubmissionData | null
+    chainData: Nullable<ChainSubmissionData>
     /**
      * The account sequence number the transaction consumes, on chains that
      * order an account's transactions by one; null otherwise.
      */
-    nonce: number | null
+    nonce: Nullable<number>
     createdAt: number
-    resolvedAt: number | null
+    resolvedAt: Nullable<number>
     /** The broadcast transaction in its chain's own encoding; only the owning chain reads it. */
-    rawTransaction: string | null
+    rawTransaction: Nullable<string>
     /** Id of the attempt this one re-prices at the same sequence number; null when it replaces none. */
-    replacesAttemptId: string | null
+    replacesAttemptId: Nullable<string>
 }
 
 export type SubmissionAttemptWithHistoryEntry = SubmissionAttempt & {
@@ -153,14 +154,14 @@ export type ReplaceableSubmissionAttempt = SubmissionAttempt & {
     rawTransaction: string
     nonce: number
     /** Null when the attempt recorded none, or it can't be read. */
-    historyEntry: SubmissionHistoryEntry | null
+    historyEntry: Nullable<SubmissionHistoryEntry>
 }
 
 export type UnsyncedSubmissionSpend = SubmissionAttempt & {
     /** Base units of the native asset: the most the transaction can be charged; null when unknown. */
-    maxFee: Decimal | null
+    maxFee: Nullable<Decimal>
     /** Null when the attempt recorded none, or it can't be read. */
-    historyEntry: SubmissionHistoryEntry | null
+    historyEntry: Nullable<SubmissionHistoryEntry>
 }
 
 /**
@@ -189,7 +190,7 @@ export interface TransactionBatch {
     /** `txIds[i]` is the hash of position i, recorded before it was sent. */
     txIds: string[]
     /** Hex of the signed transaction at `position` until it lands; null otherwise. */
-    signedRaw: string | null
+    signedRaw: Nullable<string>
     /** The transaction being run, or where the run stopped. */
     position: number
     outcome: TransactionBatchOutcome

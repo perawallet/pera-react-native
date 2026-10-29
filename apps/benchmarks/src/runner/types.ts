@@ -17,6 +17,7 @@ import type {
     RestoreCloudBackupVariables,
 } from '@perawallet/wallet-core-backup'
 import type { LocalSigningFunction } from '@perawallet/wallet-core-signing'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { FixtureNetwork } from '../network/fixtureNetwork'
 
 export type BenchScaleName = 'S' | 'M' | 'L' | 'XL'
@@ -132,8 +133,8 @@ export type ScenarioRun = {
     scenarioId: string
     scale: BenchScaleName
     iterations: number
-    timing: TimingStats | null
-    heap: HeapStats | null
+    timing: Nullable<TimingStats>
+    heap: Nullable<HeapStats>
     /** Present for long runs that sample the heap over time. */
     heapSeries?: HeapPoint[]
     error?: string
@@ -170,9 +171,9 @@ export type Verdict =
 
 export type ComparisonRow = {
     key: string
-    current: ScenarioRun | null
-    baseline: ScenarioRun | null
-    deltaPct: number | null
+    current: Nullable<ScenarioRun>
+    baseline: Nullable<ScenarioRun>
+    deltaPct: Nullable<number>
     verdict: Verdict
     heapVerdict: Verdict
 }

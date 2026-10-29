@@ -301,10 +301,7 @@ describe('a proposal spanning algorand and eip155', () => {
         expect(record.accounts).toEqual([ADDRESS, ETH])
         expect(record.metadata).toMatchObject({
             chains: [MAINNET_CHAIN_ID, ETH_MAINNET],
-            methods: expect.arrayContaining([
-                'algo_signTxn',
-                'eth_sendTransaction',
-            ]),
+            methods: ['algo_signTxn', 'eth_sendTransaction'],
         })
     })
 
@@ -798,6 +795,41 @@ describe('restore', () => {
                 methods: ['algo_signTxn', 'eth_sendTransaction'],
             },
         })
+    })
+
+    it('reports only the prompting methods as granted, not the listed ones refused per call', async () => {
+        const session = makeSession({
+            namespaces: {
+                algorand: {
+                    chains: [MAINNET_CHAIN_ID],
+                    accounts: [`${MAINNET_CHAIN_ID}:${ADDRESS}`],
+                    methods: ['algo_signTxn'],
+                    events: [],
+                },
+                eip155: {
+                    chains: [ETH_MAINNET],
+                    accounts: [`${ETH_MAINNET}:${ETH}`],
+                    methods: [
+                        'eth_sendTransaction',
+                        'eth_sign',
+                        'eth_chainId',
+                        'wallet_switchEthereumChain',
+                    ],
+                    events: [],
+                },
+            },
+        })
+        const { handler } = await open(
+            [],
+            createFakeWalletKit({ [TOPIC]: session }),
+        )
+
+        const [restored] = await handler.restore()
+
+        expect(handler.methodsFor(restored)).toEqual([
+            'algo_signTxn',
+            'eth_sendTransaction',
+        ])
     })
 })
 

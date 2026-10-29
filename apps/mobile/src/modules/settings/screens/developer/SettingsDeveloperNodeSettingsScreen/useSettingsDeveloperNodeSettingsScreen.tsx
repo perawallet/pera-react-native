@@ -26,6 +26,7 @@ import {
     useNetworkStore,
 } from '@perawallet/wallet-core-chain-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { chainUiFor } from '@modules/chain-ui'
@@ -39,7 +40,7 @@ export type NodeSettingsNetworkRow = {
     isDefault: boolean
     isSelected: boolean
     /** Host only, so a provider key in the URL's path never shows. */
-    endpointHost: string | undefined
+    endpointHost: Optional<string>
     isEndpointOverridden: boolean
     canOverrideEndpoint: boolean
 }

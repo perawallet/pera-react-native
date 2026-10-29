@@ -41,6 +41,7 @@ const STABLE = 'stable'
 const SUSPICIOUS = 'suspicious-token'
 const UNPRICED = 'unpriced-token'
 const VERIFIED_UNPRICED = 'verified-unpriced-token'
+const UNSYNCED = 'unsynced-token'
 
 const DECIMALS: Record<string, number> = {
     [NATIVE]: 6,
@@ -57,6 +58,7 @@ const USD_PRICES: Record<string, string> = {
     [NATIVE]: '0.2',
     [STABLE]: '1',
     [SUSPICIOUS]: '1',
+    [UNSYNCED]: '1',
 }
 
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
@@ -87,6 +89,7 @@ type RecordInput = {
     kind?: TransactionSummary['kind']
     /** Defaults to the account for a send and to the counterparty otherwise. */
     initiator?: string
+    displayDecimals?: number
 }
 
 let nextId = 0
@@ -98,6 +101,7 @@ const record = ({
     status = 'confirmed',
     kind = 'transfer',
     initiator = direction === 'out' ? ME : counterparty,
+    displayDecimals,
 }: RecordInput): TransactionRecord => ({
     id: `tx-${nextId++}`,
     scope: SCOPE,
@@ -113,6 +117,9 @@ const record = ({
         amount: {
             assetRef: { chainId: SCOPE.chainId, assetId },
             value: new Decimal(value),
+            ...(displayDecimals !== undefined && {
+                display: { symbol: '', decimals: displayDecimals },
+            }),
         },
     },
 })
@@ -204,13 +211,15 @@ describe('fetchTrustedCounterparties', () => {
         })
         vi.mocked(getAssetsByIds).mockImplementation(
             async ({ assetIds }) =>
-                assetIds.map(assetId => ({
-                    assetId,
-                    decimals: DECIMALS[assetId] ?? 0,
-                    peraMetadata: {
-                        verificationTier: TIERS[assetId] ?? 'verified',
-                    },
-                })) as never,
+                assetIds
+                    .filter(assetId => assetId !== UNSYNCED)
+                    .map(assetId => ({
+                        assetId,
+                        decimals: DECIMALS[assetId] ?? 0,
+                        peraMetadata: {
+                            verificationTier: TIERS[assetId] ?? 'verified',
+                        },
+                    })) as never,
         )
         vi.mocked(getAssetPricesByIds).mockImplementation(
             async ({ assetIds }) =>
@@ -309,6 +318,36 @@ describe('fetchTrustedCounterparties', () => {
             expect(await trustedFor()).toEqual([])
         },
     )
+
+    it("values a stored token by its stored decimals, not the history's claimed ones", async () => {
+        historyOf([
+            record({
+                direction: 'in',
+                counterparty: 'POISONER',
+                kind: 'token-transfer',
+                assetId: STABLE,
+                value: '1',
+                displayDecimals: 0,
+            }),
+        ])
+
+        expect(await trustedFor()).toEqual([])
+    })
+
+    it("values a token missing from the store by the history's decimals", async () => {
+        historyOf([
+            record({
+                direction: 'in',
+                counterparty: 'PAYER',
+                kind: 'token-transfer',
+                assetId: UNSYNCED,
+                value: '1000000',
+                displayDecimals: 6,
+            }),
+        ])
+
+        expect(await trustedFor()).toEqual([payer('PAYER')])
+    })
 
     it("does not trust a worthless send someone else signed in the account's name", async () => {
         historyOf([

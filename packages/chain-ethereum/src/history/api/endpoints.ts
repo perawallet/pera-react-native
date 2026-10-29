@@ -72,3 +72,27 @@ export const fetchHistoryPage = async (
         next,
     }
 }
+
+/**
+ * Whether the backend lists any row for `address`: one GET for the newest row,
+ * never a cursor. Raw rows count, since one this client predates still proves
+ * history, and a cursor means older rows exist behind an empty page. Rejects
+ * the way `fetchHistoryPage` does.
+ */
+export const fetchHasHistory = async (
+    scope: ChainScope,
+    chain: EvmChain,
+    address: string,
+): Promise<boolean> => {
+    const { data } = await queryClient<unknown>({
+        backend: 'pera',
+        service: HISTORY_SERVICE,
+        scope,
+        method: 'GET',
+        url: historyPath(eip155ChainIdOf(scope, chain), address.toLowerCase()),
+        params: { limit: 1 },
+        headers: buildIntegrityHeaders(),
+    })
+    const { next, results } = evmHistoryPageSchema.parse(data)
+    return results.length > 0 || next !== null
+}

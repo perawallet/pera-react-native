@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { HeapPoint } from './types'
 
 const MS_PER_MINUTE = 60_000
@@ -21,7 +22,7 @@ const MS_PER_MINUTE = 60_000
  */
 export const heapGrowthPerMinute = (
     series: readonly HeapPoint[],
-): number | null => {
+): Nullable<number> => {
     if (series.length < 2) return null
     const n = series.length
     const meanX = series.reduce((sum, p) => sum + p.atMs, 0) / n

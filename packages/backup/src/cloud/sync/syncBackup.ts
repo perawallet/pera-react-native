@@ -15,6 +15,7 @@ import {
     isNotFoundError,
     logger,
     toError,
+    type Nullable,
 } from '@perawallet/wallet-core-shared'
 import { batchUpsertItems, deleteItem, fetchManifest, readItems } from '../api'
 import { decryptItemPayload } from '../crypto/itemPayload'
@@ -62,7 +63,7 @@ const hasPendingWork = (state: SyncState): boolean =>
  *  below and makes every sync a full delta + read + push. */
 const fetchManifestOrNull = async (
     deps: SyncEngineDeps,
-): Promise<Manifest | null> => {
+): Promise<Nullable<Manifest>> => {
     try {
         return await fetchManifest(deps.backupId, deps.deviceId)
     } catch (error) {

@@ -15,6 +15,7 @@ import {
     LONG_ADDRESS_LENGTH,
     type Optional,
     truncateAlgorandAddress,
+    type Nullable,
 } from '@perawallet/wallet-core-shared'
 import {
     findAccountByAddressOn,
@@ -60,8 +61,8 @@ type ResolvedLabels = {
 }
 
 type UseAddressDisplayResult = {
-    account: WalletAccount | null
-    contact: Contact | null
+    account: Nullable<WalletAccount>
+    contact: Nullable<Contact>
     nfdName: Optional<string>
     truncatedAddress: string
     fallbackIconName: IconName
@@ -76,8 +77,8 @@ const resolveUnifiedLabels = ({
     truncatedAddress,
     showSecondaryAddress,
 }: {
-    account: WalletAccount | null
-    contact: Contact | null
+    account: Nullable<WalletAccount>
+    contact: Nullable<Contact>
     nfdName: Optional<string>
     truncatedAddress: string
     showSecondaryAddress: boolean

@@ -26,7 +26,12 @@ import {
     type WalletOperationType,
 } from '@perawallet/wallet-core-connections'
 import { createHandlerKit } from '@perawallet/wallet-core-connections/handlerKit'
-import { generateOrderedUniqueId, logger } from '@perawallet/wallet-core-shared'
+import {
+    generateOrderedUniqueId,
+    logger,
+    type Nullable,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
 import type {
     Connection,
     ConnectionId,
@@ -138,7 +143,7 @@ const isOnChain = (connection: Eip1193Connection, chainId: ChainId): boolean =>
     connection.metadata.chainId === chainId
 
 // EIP-3326 carries the target as `[{ chainId: '0x…' }]`.
-const requestedChainOf = (params: unknown): Eip155HexChainId | null => {
+const requestedChainOf = (params: unknown): Nullable<Eip155HexChainId> => {
     const first: unknown = Array.isArray(params) ? params[0] : undefined
     return isRecord(first) ? parseEip155HexChainId(first.chainId) : null
 }
@@ -157,7 +162,7 @@ export const createEip1193ConnectionHandler = (
             new Error('eip1193 handler is not initialized'),
     })
     const { requireContext, store } = kit
-    let unsubscribe: (() => void) | null = null
+    let unsubscribe: Nullable<() => void> = null
     const openProposals = new Set<string>()
     const pendingTimers = new Set<ReturnType<typeof setTimeout>>()
     // Index 0 is the request on screen; per origin, so every tab of a site
@@ -166,7 +171,7 @@ export const createEip1193ConnectionHandler = (
 
     const getConnectionById = async (
         id: ConnectionId,
-    ): Promise<Eip1193Connection | undefined> => {
+    ): Promise<Optional<Eip1193Connection>> => {
         const connection = await store().get(id)
         return connection && isEip1193Connection(connection)
             ? connection
@@ -190,7 +195,7 @@ export const createEip1193ConnectionHandler = (
         networkId: deps.getNetworkId(chainId),
     })
 
-    const chainOn = (chainId: ChainId): ServedChain | undefined => {
+    const chainOn = (chainId: ChainId): Optional<ServedChain> => {
         const scope = scopeOf(chainId)
         const hexChainId = eip155HexChainIdOf(scope)
         return hexChainId ? { scope, hexChainId } : undefined

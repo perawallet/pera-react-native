@@ -41,7 +41,7 @@ export interface ConnectionRegistryClient {
     /** No-op for an id this registry never issued or a handler without `abandonPairing`. */
     abandonPairing(pairingId: string): void
     /** Empty when nothing claims the URI. Never contains the URI itself. */
-    describeUri(uri: string): Record<string, string | null>
+    describeUri(uri: string): Record<string, Nullable<string>>
     /** Empty for a kind with no registered handler. */
     scopesFor(connection: Connection): ChainScope[]
     /**

@@ -41,7 +41,7 @@ import { useWalletConnectHandler } from './bridge/useWalletConnectHandler'
 export const usePeraWebviewInterface = (
     webview: Nullable<WebView>,
     securedConnection: boolean,
-    sourceUrl: string | null,
+    sourceUrl: Nullable<string>,
     onCloseRequested?: () => void,
     onBackRequested?: () => void,
 ) => {

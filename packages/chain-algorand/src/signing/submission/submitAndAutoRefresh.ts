@@ -13,7 +13,7 @@
 import type { AlgorandClient } from '@algorandfoundation/algokit-utils'
 import type { SignedTransaction } from '@perawallet/wallet-core-chain-contract'
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import type { Database } from '@perawallet/wallet-core-database'
 import {
     SubmissionError,
@@ -187,14 +187,14 @@ export const submitAndAutoRefreshCore = async (
  */
 const recordLedgerRow = async (
     input: SubmitAndAutoRefreshCoreInput,
-): Promise<string | null> => {
+): Promise<Nullable<string>> => {
     const txIds = input.signedTxns
         .map(signed => signed.txn.txID?.())
         .filter(Boolean)
     if (txIds.length === 0) return null
 
     const firstTxn = input.signedTxns[0]?.txn
-    let attemptId: string | null = null
+    let attemptId: Nullable<string> = null
     await runLedgerBestEffort(async () => {
         attemptId = await recordSubmissionAttempt({
             db: input.db,
@@ -256,7 +256,7 @@ const verifyLandedWithRetries = async (
 const backgroundConfirmAndRefresh = async (
     input: SubmitAndAutoRefreshCoreInput,
     txIds: string[],
-    attemptId: string | null,
+    attemptId: Nullable<string>,
 ): Promise<void> => {
     if (txIds.length === 0) return
 

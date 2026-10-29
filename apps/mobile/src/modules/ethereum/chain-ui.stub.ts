@@ -11,10 +11,11 @@
  */
 
 import type { EvmChainId } from '@perawallet/wallet-core-chain-contract'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import type { ChainUi, ChainUiOverride } from '@modules/chain-ui'
 
-export const ethereumChainUi: ChainUi | undefined = undefined
+export const ethereumChainUi: Optional<ChainUi> = undefined
 
-export const evmChainUiOverrides:
-    | Partial<Record<EvmChainId, ChainUiOverride>>
-    | undefined = undefined
+export const evmChainUiOverrides: Optional<
+    Partial<Record<EvmChainId, ChainUiOverride>>
+> = undefined

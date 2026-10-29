@@ -130,6 +130,7 @@ export const OptOutConfirmationContent = ({
                         {t('asset_opt_out.fee_label')}
                     </PWText>
                     <AssetAmount
+                        chainId={scope.chainId}
                         asset={nativeAsset}
                         value={fee}
                         showSymbol

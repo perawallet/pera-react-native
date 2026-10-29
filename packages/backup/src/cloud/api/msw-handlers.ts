@@ -14,7 +14,11 @@ import { http, HttpResponse, type HttpHandler, type PathParams } from 'msw'
 import { base32nopad } from '@scure/base'
 import nacl from 'tweetnacl'
 import { sha256 } from '@noble/hashes/sha2.js'
-import { bytesToHex, decodeFromBase64 } from '@perawallet/wallet-core-shared'
+import {
+    bytesToHex,
+    decodeFromBase64,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
 import { encryptItemPayload } from '../crypto/itemPayload'
 import { backupIdToAddress } from '../crypto/backupIdToAddress'
 import {
@@ -324,7 +328,7 @@ const createFakeBackend = (initial: { key: string; payload: string }[]) => {
 
     return {
         putItem,
-        getItem: (key: string): SyncStoreItem | undefined => items.get(key),
+        getItem: (key: string): Optional<SyncStoreItem> => items.get(key),
         deleteItem: (key: string): number => {
             items.delete(key)
             seq += 1
@@ -517,7 +521,7 @@ export type BuildSyncHandlersParams = SignatureVerification & {
 
 export type SyncHandlerHandle = {
     handlers: HttpHandler[]
-    getItem: (key: string) => SyncStoreItem | undefined
+    getItem: (key: string) => Optional<SyncStoreItem>
     /** Force the next upsert of `key` to report VERSION_CONFLICT. */
     forceConflict: (key: string) => void
     /** Payload must already be encrypted, as it arrives on the wire. Advances

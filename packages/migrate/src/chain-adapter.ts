@@ -19,6 +19,7 @@ import type {
     LegacyAccount,
     LegacyPreferences,
 } from '@perawallet/wallet-extension-platform'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { MigrateAccountArgs } from './migrate/types'
 
 /** The per-account steps of a Pera 6 migration; registered by the chain package. */
@@ -37,7 +38,7 @@ export interface MigrationChainAdapter {
      */
     legacyPreferenceFlags(
         preferences: LegacyPreferences,
-    ): Readonly<Record<string, boolean | null>>
+    ): Readonly<Record<string, Nullable<boolean>>>
 }
 
 export const migrationChainAdapters =

@@ -15,13 +15,13 @@ import {
     readPasskeySetupPending,
     writePasskeySetupPending,
 } from '@perawallet/wallet-extension-keystore-chrome'
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 
 // Not persisted here: the truth lives in chrome.storage.session, which the
 // keystore owns, so a popup closed by the OS passkey sheet reopens on the step.
 type PasskeySetupStoreState = {
     /** null until hydrated from session storage. */
-    isPending: boolean | null
+    isPending: Nullable<boolean>
 }
 
 type PasskeySetupStoreActions = {

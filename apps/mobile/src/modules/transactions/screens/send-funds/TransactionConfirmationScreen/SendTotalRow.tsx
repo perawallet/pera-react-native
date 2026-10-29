@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { AssetAmount } from '@components/AssetAmount'
 import { KeyValueRow } from '@components/KeyValueRow'
 import { PreferredAmount } from '@components/PreferredAmount'
@@ -17,9 +18,9 @@ import { useLanguage } from '@hooks/useLanguage'
 import type { UseSendTotalResult } from './useSendTotal'
 import { useStyles } from './styles'
 
-type SendTotalRowProps = { total: UseSendTotalResult }
+type SendTotalRowProps = { total: UseSendTotalResult; chainId: ChainId }
 
-export const SendTotalRow = ({ total }: SendTotalRowProps) => {
+export const SendTotalRow = ({ total, chainId }: SendTotalRowProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
 
@@ -30,6 +31,7 @@ export const SendTotalRow = ({ total }: SendTotalRowProps) => {
         >
             {total.isPending ? (
                 <AssetAmount
+                    chainId={chainId}
                     asset={undefined}
                     value={undefined}
                     isLoading
@@ -37,6 +39,7 @@ export const SendTotalRow = ({ total }: SendTotalRowProps) => {
             ) : (
                 total.lines.map((line, index) => (
                     <AssetAmount
+                        chainId={chainId}
                         key={line.asset.assetId}
                         asset={line.asset}
                         value={line.amount}

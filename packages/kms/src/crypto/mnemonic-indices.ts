@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { zeroBytes } from './secure-memory'
 import { WORDLIST } from './wordlist'
 
@@ -43,7 +44,9 @@ const WORD_TO_INDEX: Map<string, number> = new Map(
  * unvalidated input (e.g. a scanned, possibly-typo'd phrase) can fall back to a
  * raw byte representation rather than losing the value.
  */
-export const mnemonicWordsToIndices = (words: string[]): Uint16Array | null => {
+export const mnemonicWordsToIndices = (
+    words: string[],
+): Nullable<Uint16Array> => {
     const indices = new Uint16Array(words.length)
     for (let i = 0; i < words.length; i++) {
         const index = WORD_TO_INDEX.get(words[i])

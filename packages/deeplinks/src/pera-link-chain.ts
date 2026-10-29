@@ -18,6 +18,7 @@ import {
     type ChainId,
     type ChainPaymentData,
 } from '@perawallet/wallet-core-chain-contract'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { deeplinkAdapters } from './chain-adapter'
 import type { ChainLinkTarget, DeeplinkParseFailure } from './models'
 import { readBaseUnits, readPeraAppLink } from './utils'
@@ -62,7 +63,7 @@ export type PeraLinkTargetResolution =
 
 /** `chain` is the raw CAIP-2 param; absent means the legacy chain with no network. */
 export const resolvePeraLinkTarget = (
-    chain: string | undefined,
+    chain: Optional<string>,
 ): PeraLinkTargetResolution => {
     if (chain === undefined) return { ok: true, target: peraLinkTarget() }
 
@@ -85,7 +86,7 @@ export const resolvePeraLinkTarget = (
  */
 export const peraLinkChainFailure = (
     url: string,
-): PeraLinkChainFailure | undefined => {
+): Optional<PeraLinkChainFailure> => {
     const link = readPeraAppLink(url)
     if (!link || !isChainScopedPeraPath(link.action)) return undefined
     const resolution = resolvePeraLinkTarget(link.params.chain)
@@ -93,7 +94,7 @@ export const peraLinkChainFailure = (
 }
 
 /** The parsers pass optional params straight through, so an absent one is simply not an address. */
-export const isPeraLinkAddress = (address: string | undefined): boolean =>
+export const isPeraLinkAddress = (address: Optional<string>): boolean =>
     !!address &&
     addressCodecs.has(PERA_LINK_CHAIN_ID) &&
     addressCodecs.get(PERA_LINK_CHAIN_ID).isValid(address)
@@ -102,12 +103,12 @@ export const isPeraLinkAddress = (address: string | undefined): boolean =>
 export const toLinkAssetRef = (
     target: ChainLinkTarget,
     raw: string,
-): AssetRef | undefined =>
+): Optional<AssetRef> =>
     deeplinkAdapters.has(target.chainId)
         ? deeplinkAdapters.get(target.chainId).toAssetRef(raw)
         : undefined
 
-export const toPeraLinkAssetRef = (raw: string): AssetRef | undefined =>
+export const toPeraLinkAssetRef = (raw: string): Optional<AssetRef> =>
     toLinkAssetRef(peraLinkTarget(), raw)
 
 export type PeraKeyregParams = {
@@ -147,7 +148,7 @@ const inferKeyregType = (params: PeraKeyregParams): 'online' | 'offline' =>
 /** `undefined` when `feeParam` is present and not digits. */
 export const toPeraKeyregAction = (
     params: PeraKeyregParams,
-): ChainActionData | undefined => {
+): Optional<ChainActionData> => {
     const fee = params.feeParam ? readBaseUnits(params.feeParam) : undefined
     if (params.feeParam && !fee) return undefined
 
@@ -169,6 +170,6 @@ export const toPeraKeyregAction = (
 }
 
 export const toPeraPaymentData = (
-    xnote: string | undefined,
-): ChainPaymentData | undefined =>
+    xnote: Optional<string>,
+): Optional<ChainPaymentData> =>
     xnote ? { family: 'algorand', xnote } : undefined

@@ -15,6 +15,7 @@ import {
     type MultisigSignRequest,
     type SignRequestStatus,
 } from '@perawallet/wallet-core-multisig'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { SignerStatus } from '../components/SignerStatusListItem'
 
 export type SignerRow = {
@@ -33,7 +34,7 @@ export type SignerRow = {
 
 type BuildSignerRowsParams = {
     signRequest: MultisigSignRequest
-    status: SignRequestStatus | null
+    status: Nullable<SignRequestStatus>
     hardwareUnsignedSet: Set<string>
     inFlightCosignAddresses: Set<string>
 }

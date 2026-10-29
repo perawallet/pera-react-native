@@ -13,6 +13,7 @@
 import { useCallback, useEffect, useRef } from 'react'
 import type { NativeScrollEvent, NativeSyntheticEvent } from 'react-native'
 import { pauseSync, resumeSync } from '@perawallet/wallet-core-background'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 type ScrollEvent = NativeSyntheticEvent<NativeScrollEvent>
 type ScrollHandler = (event: ScrollEvent) => void
@@ -51,7 +52,7 @@ export const useSyncPauseOnInteraction = (
     // decrement another mounted list's pause (the account tabs all stay
     // mounted). Keeps this list's calls balanced however its events arrive.
     const isHoldingPause = useRef(false)
-    const releaseTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+    const releaseTimer = useRef<Nullable<ReturnType<typeof setTimeout>>>(null)
 
     const cancelPendingRelease = useCallback(() => {
         if (releaseTimer.current !== null) {

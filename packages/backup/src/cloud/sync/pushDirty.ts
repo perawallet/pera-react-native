@@ -14,6 +14,9 @@ import {
     isNotFoundError,
     logger,
     toError,
+    type Nullable,
+    type Maybe,
+    type Optional,
 } from '@perawallet/wallet-core-shared'
 import {
     UpsertResult,
@@ -81,7 +84,7 @@ type DeleteItemDeps<TResponse> = Pick<
 export const deleteItemIfPresent = async <TResponse>(
     deps: DeleteItemDeps<TResponse>,
     key: BackupItemKey,
-): Promise<TResponse | null> => {
+): Promise<Nullable<TResponse>> => {
     try {
         return await deps.deleteItem(deps.backupId, deps.deviceId, key)
     } catch (error) {
@@ -92,10 +95,7 @@ export const deleteItemIfPresent = async <TResponse>(
 
 /** Inject the LWW timestamp into payloads that carry one before encrypting.
  *  Secrets have no `updatedAt` field, so they are deliberately left alone. */
-const withUpdatedAt = (
-    item: LocalItem,
-    updatedAt: number | null | undefined,
-): string => {
+const withUpdatedAt = (item: LocalItem, updatedAt: Maybe<number>): string => {
     const carriesUpdatedAt =
         isAccountKey(item.key) ||
         isContactKey(item.key) ||
@@ -112,8 +112,8 @@ const withUpdatedAt = (
 const plaintextFor = (
     key: BackupItemKey,
     tracked: SyncItemState,
-    local: LocalItem | undefined,
-): string | null => {
+    local: Optional<LocalItem>,
+): Nullable<string> => {
     if (isSettingsItemKey(key)) {
         return tracked.settingsFields
             ? canonicalJson(settingsDocumentToPayload(tracked.settingsFields))

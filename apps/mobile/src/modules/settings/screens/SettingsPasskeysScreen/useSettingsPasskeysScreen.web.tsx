@@ -25,6 +25,7 @@ import {
 } from '@perawallet/wallet-core-passkeys'
 import { useHasHDWallet } from '@perawallet/wallet-core-accounts'
 import { usePreferences } from '@perawallet/wallet-core-settings'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { trackEvent, PasskeysEvent } from '@analytics'
 
 // Mirrors the native hook's state/notice unions (kept as a separate literal
@@ -41,7 +42,7 @@ export type SettingsPasskeysScreenState =
 // No 'biometric' notice: native's warns about a missing screen lock, but the
 // extension's passkeys verify the user with the vault password, and a browser
 // can't see the computer's lock anyway.
-export type PasskeysNotice = 'hd-wallet' | null
+export type PasskeysNotice = Nullable<'hd-wallet'>
 
 export type UseSettingsPasskeysScreenResult = {
     state: SettingsPasskeysScreenState

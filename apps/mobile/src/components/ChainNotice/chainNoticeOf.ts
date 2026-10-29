@@ -11,7 +11,11 @@
  */
 
 import type { TransactionNotice } from '@perawallet/wallet-core-chain-contract'
-import { formatDatetime, type Nullable } from '@perawallet/wallet-core-shared'
+import {
+    formatDatetime,
+    type Nullable,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
 import type { ChainNoticeProps } from './ChainNotice'
 
 export type ChainNoticeContent = Pick<
@@ -21,7 +25,7 @@ export type ChainNoticeContent = Pick<
 
 /** Resolves a summary's notice into ChainNotice props, formatting `since` into the `since` param. */
 export const chainNoticeOf = (
-    notice: TransactionNotice | undefined,
+    notice: Optional<TransactionNotice>,
 ): Nullable<ChainNoticeContent> => {
     if (!notice) return null
     const { kind, title, since } = notice

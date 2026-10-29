@@ -43,10 +43,6 @@ export type RawFastLookupResponse = {
 /**
  * Single-address on-chain presence probe that DISTINGUISHES "not on chain"
  * (`false`) from "probe unavailable" (network/API failure, which THROWS).
- * {@link fetchAccountFastLookup} reads a failed lookup as inactive while
- * others in its batch answer — right for HD onboarding's best-effort batches,
- * wrong for callers that must degrade to a capped scan when the probe is down
- * (Ledger funded-account discovery).
  */
 export const fetchAccountExists = async (
     address: string,
@@ -62,21 +58,23 @@ export const fetchAccountExists = async (
 }
 
 /**
- * A lookup that fails while others in the batch answer reads as inactive,
- * mirroring iOS's recoverAccounts, where a failed lookup counts toward the gap.
- * Rejects when every lookup fails, so an offline batch isn't read as empty.
+ * One entry per address that answered: a lookup that fails while others in
+ * the batch answer is left out, so the HD walk reads it as inactive (it still
+ * counts toward the gap, as in iOS's recoverAccounts) and reports the batch
+ * as partly answered. Rejects when every lookup fails, so an offline batch
+ * isn't read as empty.
  */
 export const fetchAccountFastLookup = async (
     addresses: string[],
     scope: ChainScope,
 ): Promise<AccountFastLookupResponse> => {
-    const exists = await settleBatch(
+    const exists = await settleBatch<string, boolean | undefined>(
         addresses,
         address => fetchAccountExists(address, scope),
-        false,
+        undefined,
     )
-    return addresses.map((address, i) => ({
-        address,
-        accountExists: exists[i],
-    }))
+    return addresses.flatMap((address, i) => {
+        const accountExists = exists[i]
+        return accountExists === undefined ? [] : [{ address, accountExists }]
+    })
 }

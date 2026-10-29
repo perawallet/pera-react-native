@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import type { Nullable } from '@perawallet/wallet-core-shared'
+
 /**
  * chrome.storage.session: the flow the toolbar popup handed to a tab
  * (`expanded.html?flow=resume`). Session storage because the popup and the tab
@@ -36,7 +38,7 @@ export const TAB_RESUME_RESULT_SESSION_KEY = 'tab-resume:result'
 export const TAB_RESUME_DONE_SCOPE = 'tab-resume:done'
 
 export const isTabResumeDoneMessage = (message: unknown): boolean =>
-    (message as { scope?: unknown } | null)?.scope === TAB_RESUME_DONE_SCOPE
+    (message as Nullable<{ scope?: unknown }>)?.scope === TAB_RESUME_DONE_SCOPE
 
 /**
  * Stores the popup's toast, then asks the service worker to close this tab and

@@ -18,7 +18,10 @@ import {
     nativeAssetFor,
     PeraAssetVerificationTier,
 } from '@perawallet/wallet-core-assets'
-import { baseUnitsToDisplayUnits } from '@perawallet/wallet-core-shared'
+import {
+    baseUnitsToDisplayUnits,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import type {
@@ -68,7 +71,7 @@ export const useLedgerAccountPreview = (
     )
     const { data: prices } = useAssetPricesQuery(scope, priceIds)
 
-    const preview = useMemo<LedgerAccountPreview | undefined>(() => {
+    const preview = useMemo<Optional<LedgerAccountPreview>>(() => {
         if (!onChain.data) return undefined
 
         const nativeBalance = onChain.data.nativeBalance

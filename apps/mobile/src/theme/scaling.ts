@@ -12,6 +12,7 @@
 
 import { Dimensions } from 'react-native'
 import { isAndroid } from '@utils/platform'
+import type { Optional } from '@perawallet/wallet-core-shared'
 
 const BASE_WIDTH = 375
 const MIN_SCALE = 1
@@ -41,11 +42,11 @@ export const moderateScale = (
 // constant — scaling the whole box would multiply the leading too,
 // ballooning vertical rhythm in rows and multi-line titles (Issue 2).
 export const scaleLineHeight = (
-    lineHeight: number | undefined,
-    fontSize: number | undefined,
+    lineHeight: Optional<number>,
+    fontSize: Optional<number>,
     fontScale: number,
     maxMultiplier: number,
-): number | undefined => {
+): Optional<number> => {
     if (lineHeight === undefined) return undefined
     if (fontScale <= 0 || fontScale === 1) return lineHeight
     const clampedScale = Math.min(fontScale, maxMultiplier)

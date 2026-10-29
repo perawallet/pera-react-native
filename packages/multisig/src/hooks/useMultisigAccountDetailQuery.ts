@@ -13,6 +13,7 @@
 import { useCallback } from 'react'
 import { useQuery, type RefetchOptions } from '@tanstack/react-query'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import type { MultiSigAccount } from '../models'
 import { getMultisigAccountDetail } from '../api/endpoints'
 import { mapMultiSigAccount } from '../mappers'
@@ -25,7 +26,7 @@ type UseMultisigAccountDetailQueryParams = {
 }
 
 export type UseMultisigAccountDetailQueryResult = {
-    data: MultiSigAccount | undefined
+    data: Optional<MultiSigAccount>
     isLoading: boolean
     isFetching: boolean
     isError: boolean

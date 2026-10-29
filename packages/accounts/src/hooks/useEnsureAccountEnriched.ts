@@ -17,7 +17,7 @@ import {
     fetchAndPersistAssets,
     fetchAndPersistPrices,
 } from '@perawallet/wallet-core-assets'
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, type Optional } from '@perawallet/wallet-core-shared'
 import { getAccountHoldings } from '../db'
 import { ensureAccountFetched } from '../sync/account-syncer'
 import { invalidateAccountQueriesForAddresses } from './querykeys'
@@ -36,7 +36,7 @@ import { invalidateAccountQueriesForAddresses } from './querykeys'
  * assets, so repeat views are cheap.
  */
 export const useEnsureAccountEnriched = (
-    address: string | undefined,
+    address: Optional<string>,
     scope: ChainScope,
 ): void => {
     const queryClient = useQueryClient()

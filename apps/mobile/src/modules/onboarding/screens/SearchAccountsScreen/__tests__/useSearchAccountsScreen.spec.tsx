@@ -20,15 +20,13 @@ const {
     mockErrorToast,
     mockGoBack,
     mockReplace,
-    mockDiscoverAccounts,
+    mockRescanHdWallet,
     mockDiscoverDelegatedAccounts,
     mockDiscoverImportAccounts,
     mockCancelImport,
     mockExitAccountFlow,
     mockSetShouldPlayConfetti,
     mockSetSelectedAccountId,
-    mockBuildHdWalletAccount,
-    mockAllAccounts,
     mockBeforeRemoveListeners,
     mockRouteParams,
 } = vi.hoisted(() => ({
@@ -36,15 +34,13 @@ const {
     mockErrorToast: vi.fn(),
     mockGoBack: vi.fn(),
     mockReplace: vi.fn(),
-    mockDiscoverAccounts: vi.fn(),
+    mockRescanHdWallet: vi.fn(),
     mockDiscoverDelegatedAccounts: vi.fn(),
     mockDiscoverImportAccounts: vi.fn(),
     mockCancelImport: vi.fn(),
     mockExitAccountFlow: vi.fn(),
     mockSetShouldPlayConfetti: vi.fn(),
     mockSetSelectedAccountId: vi.fn(),
-    mockBuildHdWalletAccount: vi.fn(),
-    mockAllAccounts: { current: [] as unknown[] },
     mockBeforeRemoveListeners: { current: [] as (() => void)[] },
     mockRouteParams: {
         current: {
@@ -62,8 +58,6 @@ const {
                     hd: { account: 0, keyIndex: 0 },
                 },
             },
-            createIfEmpty: undefined as boolean | undefined,
-            notifyOnEmpty: undefined as boolean | undefined,
         } as SearchAccountsParams,
     },
 }))
@@ -84,22 +78,11 @@ vi.mock('@hooks/useToast', () => ({
     }),
 }))
 
-vi.mock('@perawallet/wallet-core-kms', () => ({
-    // useSearchAccountsScreen walks child→seed via seedIdOf to derive the
-    // walletKeyId it hands to the discovery API. Tests pre-stamp accounts
-    // with `keyPairId = 'wallet-1'` (used as a seed id directly) so map
-    // identity → identity for this test surface.
-    useKMS: () => ({
-        seedIdOf: (childId?: string) => childId,
-    }),
-}))
-
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
     ...(await importOriginal<
         typeof import('@perawallet/wallet-core-accounts')
     >()),
     useAccountDiscovery: () => ({
-        discoverAccounts: mockDiscoverAccounts,
         discoverDelegatedAccounts: mockDiscoverDelegatedAccounts,
     }),
     useHDImportSession: () => ({
@@ -111,10 +94,10 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
     useSelectedAccountId: () => ({
         setSelectedAccountId: mockSetSelectedAccountId,
     }),
-    useCreateAccount: () => ({
-        buildHdWalletAccount: mockBuildHdWalletAccount,
-    }),
-    useAllAccounts: () => mockAllAccounts.current,
+}))
+
+vi.mock('../useHdWalletRescan', () => ({
+    useHdWalletRescan: () => ({ rescanHdWallet: mockRescanHdWallet }),
 }))
 
 vi.mock('../../../hooks', () => ({
@@ -181,9 +164,7 @@ describe('useSearchAccountsScreen', () => {
         vi.clearAllMocks()
         mockBeforeRemoveListeners.current = []
         // Default success mocks
-        mockDiscoverAccounts.mockResolvedValue([])
         mockDiscoverDelegatedAccounts.mockResolvedValue([])
-        mockAllAccounts.current = []
         mockRouteParams.current = {
             account: {
                 id: '1',
@@ -199,312 +180,21 @@ describe('useSearchAccountsScreen', () => {
                     hd: { account: 0, keyIndex: 0 },
                 },
             },
-            createIfEmpty: undefined,
-            notifyOnEmpty: undefined,
         } as SearchAccountsParams
     })
 
-    it('navigates back and shows toast on error', async () => {
-        mockDiscoverAccounts.mockRejectedValue(new Error('Search failed'))
+    it('hands an HD account to the wallet rescan and does nothing else', async () => {
+        const account = (mockRouteParams.current as { account: unknown })
+            .account
 
         renderHook(() => useSearchAccountsScreen())
 
         await waitFor(() => {
-            expect(mockErrorToast).toHaveBeenCalledWith(
-                'onboarding.import_account.failed_title',
-                'onboarding.import_account.failed_body',
-            )
-            expect(mockGoBack).toHaveBeenCalled()
+            expect(mockRescanHdWallet).toHaveBeenCalledExactlyOnceWith(account)
         })
-    })
-
-    it('navigates to ImportSelectAddresses when several HD accounts are discovered', async () => {
-        const discovered = [0, 1].map(keyIndex => ({
-            id: `hd-${keyIndex}`,
-            chains: { algorand: { address: `ADDRESS_${keyIndex}` } },
-            custody: {
-                kind: 'local',
-                seed: 'bip39',
-                hd: { account: 0, keyIndex },
-            },
-        }))
-        mockDiscoverAccounts.mockResolvedValue(discovered)
-
-        renderHook(() => useSearchAccountsScreen())
-
-        await waitFor(() => {
-            expect(mockReplace).toHaveBeenCalledWith('ImportSelectAddresses', {
-                accounts: discovered,
-            })
-        })
-    })
-
-    it('shows the error toast and goes back when the HD search answers with no accounts', async () => {
-        mockDiscoverAccounts.mockResolvedValue([])
-
-        renderHook(() => useSearchAccountsScreen())
-
-        await waitFor(() => {
-            expect(mockErrorToast).toHaveBeenCalledWith(
-                'onboarding.import_account.failed_title',
-                'onboarding.import_account.failed_body',
-            )
-            expect(mockGoBack).toHaveBeenCalled()
-        })
+        expect(mockDiscoverDelegatedAccounts).not.toHaveBeenCalled()
         expect(mockReplace).not.toHaveBeenCalled()
-        expect(mockSetSelectedAccountId).not.toHaveBeenCalled()
-    })
-
-    it('selects the imported account, scans for rekeyed accounts, and exits when only one HD account is discovered with no rekeys', async () => {
-        const singleAccount = {
-            id: '1',
-            chains: { algorand: { address: 'MOCK_ADDRESS' } },
-            custody: {
-                kind: 'local',
-                seed: 'bip39',
-                hd: { account: 0, keyIndex: 0 },
-            },
-        }
-        mockDiscoverAccounts.mockResolvedValue([singleAccount])
-        mockDiscoverDelegatedAccounts.mockResolvedValue([])
-
-        renderHook(() => useSearchAccountsScreen())
-
-        await waitFor(() => {
-            expect(mockSetSelectedAccountId).toHaveBeenCalledWith('1')
-            expect(mockExitAccountFlow).toHaveBeenCalled()
-        })
-    })
-
-    it('navigates to ImportRekeyedAddresses when single HD account has rekeyed accounts', async () => {
-        const singleAccount = {
-            id: '1',
-            chains: { algorand: { address: 'MOCK_ADDRESS' } },
-            custody: {
-                kind: 'local',
-                seed: 'bip39',
-                hd: { account: 0, keyIndex: 0 },
-            },
-        }
-        const rekeyedAccounts = [
-            {
-                id: 'rekeyed-1',
-                chains: { algorand: { address: 'REKEYED_ADDRESS' } },
-                custody: { kind: 'watch' },
-            },
-        ]
-        mockDiscoverAccounts.mockResolvedValue([singleAccount])
-        mockDiscoverDelegatedAccounts.mockResolvedValue(rekeyedAccounts)
-
-        renderHook(() => useSearchAccountsScreen())
-
-        await waitFor(() => {
-            expect(mockReplace).toHaveBeenCalledWith('ImportRekeyedAddresses', {
-                accounts: rekeyedAccounts,
-            })
-        })
-    })
-
-    it('creates next derivation and navigates to NameAccount when createIfEmpty without scanning for rekeys', async () => {
-        mockRouteParams.current = {
-            account: {
-                id: '1',
-                chains: {
-                    algorand: {
-                        address: 'MOCK_ADDRESS',
-                        keyPairId: 'wallet-1',
-                    },
-                },
-                custody: {
-                    kind: 'local',
-                    seed: 'bip39',
-                    hd: { account: 0, keyIndex: 0 },
-                },
-            },
-            createIfEmpty: true,
-        } as SearchAccountsParams
-        mockAllAccounts.current = [
-            {
-                id: '1',
-                chains: {
-                    algorand: {
-                        address: 'MOCK_ADDRESS',
-                        keyPairId: 'wallet-1',
-                    },
-                },
-                custody: {
-                    kind: 'local',
-                    seed: 'bip39',
-                    hd: { account: 0, keyIndex: 0 },
-                },
-            },
-        ]
-
-        const singleAccount = {
-            id: '1',
-            chains: { algorand: { address: 'MOCK_ADDRESS' } },
-            custody: {
-                kind: 'local',
-                seed: 'bip39',
-                hd: { account: 0, keyIndex: 0 },
-            },
-        }
-        mockDiscoverAccounts.mockResolvedValue([singleAccount])
-
-        const newAccount = {
-            id: 'new-id',
-            chains: { algorand: { address: 'NEW_ADDRESS' } },
-            custody: {
-                kind: 'local',
-                seed: 'bip39',
-                hd: { account: 0, keyIndex: 0 },
-            },
-        }
-        mockBuildHdWalletAccount.mockResolvedValue(newAccount)
-
-        renderHook(() => useSearchAccountsScreen())
-
-        await waitFor(() => {
-            expect(mockBuildHdWalletAccount).toHaveBeenCalledWith({
-                walletId: 'wallet-1',
-                account: 0,
-                keyIndex: 1,
-            })
-            expect(mockDiscoverDelegatedAccounts).not.toHaveBeenCalled()
-            expect(mockReplace).toHaveBeenCalledWith('NameAccount', {
-                account: newAccount,
-            })
-        })
-
-        expect(mockExitAccountFlow).not.toHaveBeenCalled()
-    })
-
-    it('shows "no new addresses" toast and exits when notifyOnEmpty is true and only the master HD account is discovered with no rekeys', async () => {
-        ;(
-            mockRouteParams.current as Extract<
-                SearchAccountsParams,
-                { account: unknown }
-            >
-        ).notifyOnEmpty = true
-        const singleAccount = {
-            id: '1',
-            chains: { algorand: { address: 'MOCK_ADDRESS' } },
-            custody: {
-                kind: 'local',
-                seed: 'bip39',
-                hd: { account: 0, keyIndex: 0 },
-            },
-        }
-        mockDiscoverAccounts.mockResolvedValue([singleAccount])
-        mockDiscoverDelegatedAccounts.mockResolvedValue([])
-
-        renderHook(() => useSearchAccountsScreen())
-
-        await waitFor(() => {
-            expect(mockShowToast).toHaveBeenCalledWith({
-                type: 'info',
-                title: 'onboarding.searching_accounts.no_new_addresses_title',
-                body: 'onboarding.searching_accounts.no_new_addresses_body',
-            })
-            expect(mockExitAccountFlow).toHaveBeenCalled()
-            expect(mockBuildHdWalletAccount).not.toHaveBeenCalled()
-            expect(mockReplace).not.toHaveBeenCalled()
-        })
-    })
-
-    it('does not show "no new addresses" toast when notifyOnEmpty is true but rekeyed accounts are found', async () => {
-        ;(
-            mockRouteParams.current as Extract<
-                SearchAccountsParams,
-                { account: unknown }
-            >
-        ).notifyOnEmpty = true
-        const singleAccount = {
-            id: '1',
-            chains: { algorand: { address: 'MOCK_ADDRESS' } },
-            custody: {
-                kind: 'local',
-                seed: 'bip39',
-                hd: { account: 0, keyIndex: 0 },
-            },
-        }
-        const rekeyedAccounts = [
-            {
-                id: 'rekeyed-1',
-                chains: { algorand: { address: 'REKEYED_ADDRESS' } },
-                custody: { kind: 'watch' },
-            },
-        ]
-        mockDiscoverAccounts.mockResolvedValue([singleAccount])
-        mockDiscoverDelegatedAccounts.mockResolvedValue(rekeyedAccounts)
-
-        renderHook(() => useSearchAccountsScreen())
-
-        await waitFor(() => {
-            expect(mockReplace).toHaveBeenCalledWith('ImportRekeyedAddresses', {
-                accounts: rekeyedAccounts,
-            })
-        })
-        expect(mockShowToast).not.toHaveBeenCalled()
-        expect(mockExitAccountFlow).not.toHaveBeenCalled()
-    })
-
-    it('shows error toast and goes back when createIfEmpty account creation fails', async () => {
-        mockRouteParams.current = {
-            account: {
-                id: '1',
-                chains: {
-                    algorand: {
-                        address: 'MOCK_ADDRESS',
-                        keyPairId: 'wallet-1',
-                    },
-                },
-                custody: {
-                    kind: 'local',
-                    seed: 'bip39',
-                    hd: { account: 0, keyIndex: 0 },
-                },
-            },
-            createIfEmpty: true,
-        } as SearchAccountsParams
-        mockAllAccounts.current = [
-            {
-                id: '1',
-                chains: {
-                    algorand: {
-                        address: 'MOCK_ADDRESS',
-                        keyPairId: 'wallet-1',
-                    },
-                },
-                custody: {
-                    kind: 'local',
-                    seed: 'bip39',
-                    hd: { account: 0, keyIndex: 0 },
-                },
-            },
-        ]
-
-        const singleAccount = {
-            id: '1',
-            chains: { algorand: { address: 'MOCK_ADDRESS' } },
-            custody: {
-                kind: 'local',
-                seed: 'bip39',
-                hd: { account: 0, keyIndex: 0 },
-            },
-        }
-        mockDiscoverAccounts.mockResolvedValue([singleAccount])
-        mockBuildHdWalletAccount.mockRejectedValue(new Error('Creation failed'))
-
-        renderHook(() => useSearchAccountsScreen())
-
-        await waitFor(() => {
-            expect(mockErrorToast).toHaveBeenCalledWith(
-                'onboarding.import_account.failed_title',
-                'onboarding.import_account.failed_body',
-            )
-            expect(mockGoBack).toHaveBeenCalled()
-        })
+        expect(mockErrorToast).not.toHaveBeenCalled()
     })
 
     it('in import mode, always navigates to ImportSelectAddresses with the discovered accounts', async () => {
@@ -613,7 +303,6 @@ describe('useSearchAccountsScreen', () => {
         }
         mockRouteParams.current = {
             account: algo25Account,
-            createIfEmpty: undefined,
         } as SearchAccountsParams
         mockDiscoverDelegatedAccounts.mockResolvedValue([])
 
@@ -646,7 +335,6 @@ describe('useSearchAccountsScreen', () => {
         ]
         mockRouteParams.current = {
             account: algo25Account,
-            createIfEmpty: undefined,
         } as SearchAccountsParams
         mockDiscoverDelegatedAccounts.mockResolvedValue(rekeyedAccounts)
 
@@ -671,7 +359,6 @@ describe('useSearchAccountsScreen', () => {
         }
         mockRouteParams.current = {
             account: quantumAccount,
-            createIfEmpty: undefined,
         } as SearchAccountsParams
         mockDiscoverDelegatedAccounts.mockResolvedValue([])
 
@@ -703,7 +390,6 @@ describe('useSearchAccountsScreen', () => {
         ]
         mockRouteParams.current = {
             account: quantumAccount,
-            createIfEmpty: undefined,
         } as SearchAccountsParams
         mockDiscoverDelegatedAccounts.mockResolvedValue(rekeyedAccounts)
 
@@ -728,7 +414,6 @@ describe('useSearchAccountsScreen', () => {
         }
         mockRouteParams.current = {
             account: algo25Account,
-            createIfEmpty: undefined,
         } as SearchAccountsParams
         mockDiscoverDelegatedAccounts.mockRejectedValue(
             new Error('indexer 500'),
@@ -742,52 +427,6 @@ describe('useSearchAccountsScreen', () => {
             })
         })
         expect(mockErrorToast).not.toHaveBeenCalled()
-        expect(mockGoBack).not.toHaveBeenCalled()
-    })
-
-    it('HD account with a failed rekey scan: exits the flow without claiming no new addresses were found', async () => {
-        mockRouteParams.current = {
-            account: {
-                id: '1',
-                chains: {
-                    algorand: {
-                        address: 'MOCK_ADDRESS',
-                        keyPairId: 'wallet-1',
-                    },
-                },
-                custody: {
-                    kind: 'local',
-                    seed: 'bip39',
-                    hd: { account: 0, keyIndex: 0 },
-                },
-            },
-            createIfEmpty: false,
-            notifyOnEmpty: true,
-        } as SearchAccountsParams
-        const singleAccount = {
-            id: '1',
-            chains: { algorand: { address: 'MOCK_ADDRESS' } },
-            custody: {
-                kind: 'local',
-                seed: 'bip39',
-                hd: { account: 0, keyIndex: 0 },
-            },
-        }
-        mockDiscoverAccounts.mockResolvedValue([singleAccount])
-        mockDiscoverDelegatedAccounts.mockRejectedValue(
-            new Error('indexer 500'),
-        )
-
-        renderHook(() => useSearchAccountsScreen())
-
-        await waitFor(() => {
-            expect(mockExitAccountFlow).toHaveBeenCalled()
-        })
-        expect(mockShowToast).not.toHaveBeenCalledWith(
-            expect.objectContaining({
-                title: 'onboarding.searching_accounts.no_new_addresses_title',
-            }),
-        )
         expect(mockGoBack).not.toHaveBeenCalled()
     })
 })

@@ -14,6 +14,7 @@ import {
     decodeFromBase64,
     encodeToBase64,
     toUrlSafeBase64,
+    type Nullable,
 } from '@perawallet/wallet-core-shared'
 
 /**
@@ -96,7 +97,7 @@ export type SerializedAssertionResponse = {
     clientDataJSON: string
     authenticatorData: string
     signature: string
-    userHandle: string | null
+    userHandle: Nullable<string>
 }
 
 export type SerializedCredential = {
@@ -123,7 +124,7 @@ export type RawAssertionResponse = {
     clientDataJSON: Uint8Array
     authenticatorData: Uint8Array
     signature: Uint8Array
-    userHandle: Uint8Array | null
+    userHandle: Nullable<Uint8Array>
 }
 
 const isRawAssertionResponse = (

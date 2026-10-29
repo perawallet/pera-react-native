@@ -11,6 +11,7 @@
  */
 
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import type { MinFeeForSenderResult } from '../chain-adapter'
 import { usePlannerHook } from './usePlannerHook'
 
@@ -26,7 +27,7 @@ const NO_MIN_FEE: MinFeeForSenderResult = {
  * transactions. No fee on a chain with no planner.
  */
 export const useMinFeeForSender = (
-    senderAddress: string | undefined,
+    senderAddress: Optional<string>,
     chainId: ChainId,
 ): MinFeeForSenderResult =>
     // Only the chain's own planner sees the sender.

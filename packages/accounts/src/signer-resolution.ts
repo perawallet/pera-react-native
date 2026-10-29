@@ -12,6 +12,7 @@
 
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { getSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { authorityOf, chainAccountOf } from './credentials'
 import type { MultiSigAccount, WalletAccount } from './models'
 import {
@@ -70,7 +71,7 @@ export const getSignerFor = (
     address: string,
     accounts: WalletAccount[],
     chainId: ChainId,
-): WalletAccount | null => {
+): Nullable<WalletAccount> => {
     const r = resolveSignerFor(address, accounts, chainId)
     return r.kind === 'ok' ? r.signer : null
 }
@@ -112,7 +113,7 @@ export const getAuthAccount = (
     account: WalletAccount,
     accounts: WalletAccount[],
     chainId: ChainId,
-): WalletAccount | null =>
+): Nullable<WalletAccount> =>
     accountsChainAdapters
         .get(chainId)
         .getAuthAccount(account, accounts, getSelectedScope(chainId))
@@ -141,7 +142,7 @@ export const getDelegatedAccount = (
     address: string,
     accounts: WalletAccount[],
     chainId: ChainId,
-): WalletAccount | null => {
+): Nullable<WalletAccount> => {
     const account = findAccountByAddressOn(accounts, chainId, address)
     if (!account || !isDelegatedAccount(account, chainId)) return null
     return getAuthAccount(account, accounts, chainId)
@@ -167,7 +168,7 @@ export const delegateTransitionFor = (
     account: WalletAccount,
     accounts: WalletAccount[],
     chainId: ChainId,
-): DelegateTransition | null => {
+): Nullable<DelegateTransition> => {
     if (!isDelegatedAccount(account, chainId)) return null
     const r = resolveSignerForAccount(account, accounts, chainId)
     return r.kind === 'ok' ? { from: account, to: r.signer } : null

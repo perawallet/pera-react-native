@@ -13,6 +13,7 @@
 import { useMemo } from 'react'
 import { type StyleProp, type ViewStyle } from 'react-native'
 import { mnemonicIndexToWord } from '@perawallet/wallet-core-kms'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { PWText, PWView } from '@components/core'
 import { useStyles } from './styles'
 
@@ -21,7 +22,7 @@ export type PassphraseGridProps = {
      * Wordlist indices, not words: each word is resolved at render so the full
      * phrase is never held as a `string[]`. See `mnemonicIndexToWord`.
      */
-    wordIndices: Uint16Array | null
+    wordIndices: Nullable<Uint16Array>
     style?: StyleProp<ViewStyle>
 }
 

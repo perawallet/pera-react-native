@@ -20,7 +20,10 @@ import {
     useSelectedAccountId,
 } from '@perawallet/wallet-core-accounts'
 import { isCollectible, type PeraAsset } from '@perawallet/wallet-core-assets'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import {
+    LEGACY_CHAIN_ID,
+    type ChainId,
+} from '@perawallet/wallet-core-chain-contract'
 import { type Contact, useContacts } from '@perawallet/wallet-core-contacts'
 import {
     SEARCH_SCOPES,
@@ -68,6 +71,8 @@ export type SearchRow =
       }
 
 export type UseSearchScreenResult = {
+    /** The chain the asset results are on. */
+    chainId: ChainId
     value: string
     setValue: (text: string) => void
     rows: SearchRow[]
@@ -277,6 +282,7 @@ export const useSearchScreen = (): UseSearchScreenResult => {
     )
 
     return {
+        chainId: scope.chainId,
         value,
         setValue,
         rows,

@@ -39,6 +39,7 @@ export const CollectibleRowText = ({ item }: CollectibleRowTextProps) => {
                 )
             ) : (
                 <AssetAmount
+                    chainId={item.chainId}
                     asset={item.asset}
                     value={item.amount}
                     sign={signOf(item)}

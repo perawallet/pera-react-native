@@ -18,7 +18,11 @@ import {
     type ChainScope,
     type ChainScopeKey,
 } from '@perawallet/wallet-core-chain-contract'
-import { registerStore } from '@perawallet/wallet-core-shared'
+import {
+    registerStore,
+    type Optional,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 
 /** Keyed like the `account_chain_state` row: scope key, then the account's address on that scope. */
 export type AccountChainStateSlice = Partial<
@@ -120,9 +124,11 @@ registerStore({
 export const getAccountChainState = (
     scope: ChainScope,
     address: string,
-): AccountChainState | undefined =>
+): Optional<AccountChainState> =>
     useAccountChainStateStore.getState().states[toScopeKey(scope)]?.[address]
 
 // Narrows on the field, never on `family`, so no chain id leaks into shared code.
-export const authorityAddressOf = (state: AccountChainState): string | null =>
+export const authorityAddressOf = (
+    state: AccountChainState,
+): Nullable<string> =>
     'authAddress' in state ? (state.authAddress ?? null) : null

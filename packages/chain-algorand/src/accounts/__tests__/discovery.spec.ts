@@ -62,6 +62,16 @@ describe('checkAlgorandActivity', () => {
         )
     })
 
+    it('leaves out an address whose lookup failed, so the walk counts the batch as partial', async () => {
+        mockFetchAccountFastLookup.mockResolvedValue([
+            { address: 'B', accountExists: false },
+        ])
+
+        const activity = await checkAlgorandActivity(['A', 'B'], 'testnet')
+
+        expect(activity).toEqual(new Map([['B', false]]))
+    })
+
     it('rejects a failed probe rather than reading the batch as inactive', async () => {
         vi.spyOn(logger, 'warn').mockImplementation(() => {})
         const offline = new Error('offline')

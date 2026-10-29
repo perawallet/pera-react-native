@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import type { Nullable } from '@perawallet/wallet-core-shared'
+
 const SEQUENCE = 0x30
 const INTEGER = 0x02
 const OCTET_STRING = 0x04
@@ -23,7 +25,7 @@ const P256_SCALAR_LENGTH = 32
 
 type Tlv = { tag: number; value: Uint8Array; end: number }
 
-const readTlv = (bytes: Uint8Array, offset: number): Tlv | null => {
+const readTlv = (bytes: Uint8Array, offset: number): Nullable<Tlv> => {
     if (offset + 2 > bytes.length) return null
     const tag = bytes[offset]!
     let length = bytes[offset + 1]!
@@ -50,7 +52,9 @@ const equals = (value: Uint8Array, expected: readonly number[]): boolean =>
 /** `null` for anything but a P-256 key. Android's provider stores
  *  `PrivateKey.encoded` (PKCS#8); iOS and this app store the raw scalar. The
  *  result is a copy the caller owns. */
-export const p256PrivateKeyFromPkcs8 = (der: Uint8Array): Uint8Array | null => {
+export const p256PrivateKeyFromPkcs8 = (
+    der: Uint8Array,
+): Nullable<Uint8Array> => {
     const outer = readTlv(der, 0)
     if (outer?.tag !== SEQUENCE || outer.end !== der.length) return null
 

@@ -99,6 +99,7 @@ describe('useAccountSummaryQuery', () => {
             },
         )
 
+        expect(result.current.isPending).toBe(true)
         await waitFor(() => expect(result.current.isPending).toBe(false))
 
         // USD: 80 + 10*$2 = 100. Native: 10 + 80/$2 = 50.
@@ -137,6 +138,7 @@ describe('useAccountSummaryQuery', () => {
         )
         expect(mockGetAccountPortfolioTotals).not.toHaveBeenCalled()
         expect(result.current.portfolioUsdValue).toEqual(new Decimal(0))
+        expect(result.current.isPending).toBe(false)
     })
 
     it('still shows the native balance when its price is unknown', async () => {

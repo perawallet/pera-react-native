@@ -12,11 +12,12 @@
 
 import { useQuery } from '@tanstack/react-query'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { delegatedAddressesQueryOptions } from './delegatedAddressesQueryOptions'
 
 type UseDelegatedAddressesQueryResult = {
     /** Addresses delegated to `address`; `undefined` until the query resolves */
-    delegatedAddresses: string[] | undefined
+    delegatedAddresses: Optional<string[]>
     isLoading: boolean
     isError: boolean
     refetch: () => void

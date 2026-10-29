@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import type { Optional } from '@perawallet/wallet-core-shared'
+
 const hostFromMaybeUrl = (value: string): string => {
     const trimmed = value.trim().toLowerCase()
     // A bare authority with a port ("example.io:8080", the shape of a sign-in
@@ -39,7 +41,7 @@ const hostFromMaybeUrl = (value: string): string => {
  */
 export const isAuthDataOriginMismatch = (
     domain: string,
-    verifiedOrigin: string | undefined,
+    verifiedOrigin: Optional<string>,
 ): boolean => {
     if (!verifiedOrigin) {
         return false

@@ -13,11 +13,12 @@
 import { PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { useLanguage } from '@hooks/useLanguage'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useStyles } from './styles'
 
 type CardFundingAccountSectionProps = {
     /** Connected funding-source address; the row offers Connect only when absent. */
-    address: string | null
+    address: Nullable<string>
     /** Fires from the Connect affordance; unreachable once an address is set. */
     onChange: () => void
 }

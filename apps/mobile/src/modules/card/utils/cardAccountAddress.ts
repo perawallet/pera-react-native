@@ -16,7 +16,7 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 
 export class CardAccountAddressMissingError extends Error {
     constructor() {
@@ -28,7 +28,7 @@ export class CardAccountAddressMissingError extends Error {
 export const cardAccountAddressOf = (
     account: WalletAccount,
     chainId: ChainId,
-): string | undefined => chainAccountOf(account, chainId)?.address
+): Optional<string> => chainAccountOf(account, chainId)?.address
 
 export const requireCardAccountAddress = (
     account: WalletAccount,
@@ -44,5 +44,5 @@ export const findCardAccount = (
     accounts: readonly WalletAccount[],
     address: Nullable<string>,
     chainId: ChainId,
-): WalletAccount | undefined =>
+): Optional<WalletAccount> =>
     address ? findAccountByAddressOn(accounts, chainId, address) : undefined

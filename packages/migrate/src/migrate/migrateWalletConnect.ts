@@ -23,7 +23,7 @@ import {
     type WalletConnectV1SessionKeyStore,
 } from '@perawallet/wallet-core-walletconnect'
 import { getProvider } from '@perawallet/wallet-extension-provider'
-import { toError } from '@perawallet/wallet-core-shared'
+import { toError, type Nullable } from '@perawallet/wallet-core-shared'
 import { migratedAddressOf } from './accountStoreOps'
 
 export type WalletConnectMigrationResult = {
@@ -39,9 +39,9 @@ const normalizeTimestampMs = (value: number): number =>
     value > 0 && value < 10_000_000_000 ? value * 1000 : value
 
 type ParsedSessionMeta = {
-    bridge: string | null
-    key: string | null
-    topic: string | null
+    bridge: Nullable<string>
+    key: Nullable<string>
+    topic: Nullable<string>
 }
 
 const parseSessionMeta = (json: string): ParsedSessionMeta => {
@@ -79,12 +79,12 @@ type ReconstructedLegacySession = {
 }
 
 type ResolvedSessionFields = {
-    bridge: string | null
-    topic: string | null
-    key: string | null
-    clientId: string | null
-    peerId: string | null
-    chainId: number | null
+    bridge: Nullable<string>
+    topic: Nullable<string>
+    key: Nullable<string>
+    clientId: Nullable<string>
+    peerId: Nullable<string>
+    chainId: Nullable<number>
     accounts: string[]
 }
 
@@ -107,7 +107,7 @@ const isSessionValid = (
 
 const toConnection = (
     legacy: LegacyWalletConnectV1Session,
-): ReconstructedLegacySession | null => {
+): Nullable<ReconstructedLegacySession> => {
     const meta = parseSessionMeta(legacy.sessionMetaJson)
     const fields: ResolvedSessionFields = {
         bridge: meta.bridge,
@@ -180,7 +180,7 @@ export const migrateWalletConnect = async (
     // An I/O failure must not be folded into `skipped`: the caller stamps the
     // step complete whenever nothing escapes, which would orphan an already
     // committed session key with no retry path. Attempt the rest, then rethrow.
-    let firstFailure: Error | null = null
+    let firstFailure: Nullable<Error> = null
 
     for (const session of sessions) {
         const reconstructed = toConnection(session)

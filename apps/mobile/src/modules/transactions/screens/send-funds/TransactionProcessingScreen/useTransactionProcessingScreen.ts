@@ -34,6 +34,7 @@ import {
 } from '@perawallet/wallet-core-signing'
 import { ledgerAppNameFor } from '@perawallet/wallet-core-hardware-wallet'
 import { getChainDescriptor } from '@perawallet/wallet-core-chain-shared'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 import { bottomSheetNotifier } from '@components/core'
@@ -52,9 +53,9 @@ export type UseTransactionProcessingScreenResult = {
     /** True when the sender is a hardware-wallet account; selects copy. */
     isHardwareSender: boolean
     /** The hardware device's display name when known, otherwise null. */
-    hardwareDeviceName: string | null
+    hardwareDeviceName: Nullable<string>
     /** The device app the send's chain opens; null unless `isHardwareSender`. */
-    ledgerAppName: string | null
+    ledgerAppName: Nullable<string>
     isAwaitingConfirmation: boolean
     networkName: string
 }

@@ -11,6 +11,7 @@
  */
 
 import { base64 } from '@scure/base'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { isPasskeyCredentialType } from './passkeyCredentialTypes'
 
 /**
@@ -48,7 +49,7 @@ export type SplitProviderCredential = {
      * when `record.privateKeyEnc` is set. `undefined` for a credential with no
      * material, which re-derives at sign time.
      */
-    material: Uint8Array | undefined
+    material: Optional<Uint8Array>
 }
 
 const LIFTED_FIELDS = ['origin', 'userHandle', 'userId', 'count'] as const
@@ -116,7 +117,7 @@ export const liftCredentialMetadata = <T extends Record<string, unknown>>(
 export const splitProviderCredential = (
     id: string,
     flat: FlatProviderCredential,
-): SplitProviderCredential | undefined => {
+): Optional<SplitProviderCredential> => {
     if (!isPasskeyCredentialType(flat.type)) return undefined
     if (!isBytes(flat.publicKey) || flat.publicKey.length === 0)
         return undefined

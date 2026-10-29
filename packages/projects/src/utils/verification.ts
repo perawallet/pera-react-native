@@ -10,10 +10,11 @@
  limitations under the License
  */
 
+import type { Maybe, Optional } from '@perawallet/wallet-core-shared'
 import type { PeraProject, VerificationTier } from '../models/types'
 
 /** Lowercased host of a URL, tolerant of a missing scheme; undefined if unparseable. */
-const hostOf = (url: string | null | undefined): string | undefined => {
+const hostOf = (url: Maybe<string>): Optional<string> => {
     if (!url) return undefined
     const withoutScheme = url.replace(/^[a-z][a-z0-9+.-]*:\/\//i, '')
     const authority = withoutScheme.split(/[/?#]/)[0] ?? ''
@@ -21,10 +22,7 @@ const hostOf = (url: string | null | undefined): string | undefined => {
     return host ? host.toLowerCase() : undefined
 }
 
-const hostMatches = (
-    a: string | null | undefined,
-    b: string | null | undefined,
-): boolean => {
+const hostMatches = (a: Maybe<string>, b: Maybe<string>): boolean => {
     const hostA = hostOf(a)
     return hostA !== undefined && hostA === hostOf(b)
 }
@@ -46,10 +44,10 @@ const hostMatches = (
  * `undefined` to render nothing.
  */
 export const resolveDisplayableVerificationTier = (
-    project: PeraProject | null | undefined,
-    verifiedOrigin: string | null | undefined,
+    project: Maybe<PeraProject>,
+    verifiedOrigin: Maybe<string>,
     hasSiteWarning = false,
-): VerificationTier | undefined => {
+): Optional<VerificationTier> => {
     if (hasSiteWarning) return 'suspicious'
 
     const tier = project?.verificationTier

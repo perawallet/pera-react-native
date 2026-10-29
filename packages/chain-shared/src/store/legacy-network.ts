@@ -24,6 +24,7 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 import { isCustomNetworkConfig } from '@perawallet/wallet-core-config'
 import { getProvider } from '@perawallet/wallet-extension-provider'
+import type { Optional, Nullable } from '@perawallet/wallet-core-shared'
 
 // Folded in on hydrate, never written. Kept on disk so a crash mid-migration
 // or a downgraded build still finds the config.
@@ -33,7 +34,7 @@ type Overrides = Partial<Record<ChainId, NetworkId>>
 
 export const selectionForLegacyNetwork = (
     network: string,
-): { mode: WalletMode; legacyOverride: NetworkId | undefined } => {
+): { mode: WalletMode; legacyOverride: Optional<NetworkId> } => {
     if (network === 'mainnet') {
         return { mode: 'live', legacyOverride: undefined }
     }
@@ -45,7 +46,7 @@ export const selectionForLegacyNetwork = (
 
 export const withLegacyOverride = (
     overrides: Overrides,
-    legacyOverride: NetworkId | undefined,
+    legacyOverride: Optional<NetworkId>,
 ): Overrides => {
     const { [LEGACY_CHAIN_ID]: _dropped, ...rest } = overrides
     return legacyOverride === undefined
@@ -77,7 +78,7 @@ export const readLegacyCustomNetworks = (): unknown[] => {
     if (raw === null) return []
     try {
         const legacy = (
-            JSON.parse(raw) as { state?: { customNetwork?: unknown } } | null
+            JSON.parse(raw) as Nullable<{ state?: { customNetwork?: unknown } }>
         )?.state?.customNetwork
         return typeof legacy === 'object' && legacy !== null
             ? [{ ...legacy, id: CUSTOM_NETWORK_ID }]
@@ -89,7 +90,8 @@ export const readLegacyCustomNetworks = (): unknown[] => {
 
 const migrateV1 = (persisted: unknown): unknown => ({
     selectedNetworkByChain: {
-        [LEGACY_CHAIN_ID]: (persisted as { network?: unknown } | null)?.network,
+        [LEGACY_CHAIN_ID]: (persisted as Nullable<{ network?: unknown }>)
+            ?.network,
     },
     customNetworksByChain: { [LEGACY_CHAIN_ID]: readLegacyCustomNetworks() },
 })

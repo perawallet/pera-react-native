@@ -74,6 +74,7 @@ export const AssetTransferRequestItem = ({
         >
             <PWView style={styles.iconContainer}>
                 <AssetIcon
+                    chainId={scope.chainId}
                     asset={resolvedAsset}
                     size='xl'
                 />
@@ -86,6 +87,7 @@ export const AssetTransferRequestItem = ({
                         textStyle={styles.nameText}
                     />
                     <AssetAmount
+                        chainId={scope.chainId}
                         value={amount}
                         asset={asset}
                         density='compact'
