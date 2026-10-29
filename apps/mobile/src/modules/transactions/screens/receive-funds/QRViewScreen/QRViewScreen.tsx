@@ -117,7 +117,7 @@ export const QRViewScreen = () => {
                         {...getTestProps('receive_qr_code')}
                         value={paymentUri}
                         size={qrSize}
-                        color='black'
+                        color={theme.colors.qrCodeFg}
                         backgroundColor={theme.colors.qrCodeBg}
                         quietZone={theme.spacing.sm}
                         ecl='H'

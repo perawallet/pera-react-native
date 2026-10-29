@@ -44,8 +44,8 @@ export const ExportShareAccountContent = ({
                 <QRCode
                     value={exportUrl}
                     size={width - theme.spacing['5xl'] * 2}
-                    color='black'
-                    backgroundColor='white'
+                    color={theme.colors.qrCodeFg}
+                    backgroundColor={theme.colors.qrCodeBg}
                     quietZone={theme.spacing.sm}
                 />
                 <PWText

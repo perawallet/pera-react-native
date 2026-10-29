@@ -104,8 +104,8 @@ export const ContactQRContent = ({
                     <QRCode
                         value={address}
                         size={qrSize}
-                        color='black'
-                        backgroundColor='white'
+                        color={theme.colors.qrCodeFg}
+                        backgroundColor={theme.colors.qrCodeBg}
                         quietZone={theme.spacing.sm}
                     />
                 </PWView>

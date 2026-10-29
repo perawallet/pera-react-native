@@ -193,6 +193,7 @@ export const lightColorTokens = {
     // QR Scanner
     qrScannerBg: tints.blackAlpha70,
     qrCodeBg: palette.white,
+    qrCodeFg: palette.black,
 
     // Backdrop
     backdropModalBg: 'rgba(0, 0, 0, 0.64)',

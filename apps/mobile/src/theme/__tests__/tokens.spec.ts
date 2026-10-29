@@ -47,6 +47,7 @@ describe('colour tokens', () => {
         'chartAreaFill',
         'bannerCloseButtonBg',
         'qrCodeBg',
+        'qrCodeFg',
         'bootsplashContent',
     ] as const)('%s is the same in light and dark', token => {
         expect(darkColorTokens[token]).toBe(lightColorTokens[token])

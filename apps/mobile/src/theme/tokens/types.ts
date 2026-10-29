@@ -180,6 +180,8 @@ export interface AppColors {
     qrScannerBg: string
     /** White in both modes: a QR code must stay dark-on-light to scan. */
     qrCodeBg: string
+    /** Black in both modes, for the same reason. */
+    qrCodeFg: string
 
     // Backdrop
     backdropModalBg: string

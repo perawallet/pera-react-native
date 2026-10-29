@@ -109,8 +109,8 @@ export const OnrampPayInCard = ({
                 <QRCode
                     value={payInAddress}
                     size={QR_SIZE}
-                    color='black'
-                    backgroundColor='white'
+                    color={theme.colors.qrCodeFg}
+                    backgroundColor={theme.colors.qrCodeBg}
                     quietZone={theme.spacing.sm}
                     {...(sourceLogo ? { logo: { uri: sourceLogo } } : {})}
                 />
