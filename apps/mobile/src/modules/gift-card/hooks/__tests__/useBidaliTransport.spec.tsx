@@ -101,7 +101,13 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
     const { displayUnitsToBaseUnits } = await vi.importActual<
         typeof import('@packages/shared/src/utils/unit-conversion')
     >('@packages/shared/src/utils/unit-conversion')
+    // Error classes in the import graph extend AppError at module load.
+    const { AppError, ErrorCategory } = await vi.importActual<
+        typeof import('@packages/shared/src/errors/base')
+    >('@packages/shared/src/errors/base')
     return {
+        AppError,
+        ErrorCategory,
         generateOrderedUniqueId: () => 'test-id-123',
         logger: {
             warn: vi.fn(),
