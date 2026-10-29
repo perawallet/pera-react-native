@@ -260,7 +260,7 @@ describe('Flow: Account management', () => {
 
     it('Given a Ledger account imported without an id, when the user removes it via the options sheet, then it is gone from the store and sibling accounts from the same device stay', async () => {
         // Hardware accounts from the Ledger pairing flow carry no `id`
-        // (they are deduped by address). Removal used to silently no-op
+        // (they are deduped by address). Removal must not silently no-op
         // for them while still showing the success toast.
         const ledgerAccount = (
             address: string,

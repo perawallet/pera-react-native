@@ -30,9 +30,6 @@ type AddAssetScreenProps = {
     chainId: Nullable<ChainId>
 }
 
-// AssetSearchItem draws its own full-width separator; render no list divider.
-const NoSeparator = () => null
-
 export const AddAssetView = ({
     variant = 'asset',
     chainId,
@@ -140,7 +137,8 @@ export const AddAssetView = ({
                 onEndReached={handleEndReached}
                 isFetchingNextPage={isFetchingNextPage}
                 ListHeaderComponent={collectibleNote ?? incompleteNotice}
-                ItemSeparatorComponent={NoSeparator}
+                // AssetSearchItem draws its own full-width separator; render no list divider.
+                ItemSeparatorComponent={null}
                 ListEmptyComponent={
                     // No retry affordance: the search re-runs on the next
                     // keystroke, and reconnecting refetches on its own.

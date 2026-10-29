@@ -11,9 +11,10 @@
  */
 
 import React, { type ReactNode } from 'react'
-import { makeStyles } from '@rneui/themed'
 
 import { PWText, PWView } from '@components/core'
+
+import { useVariantPreviewStyles } from './styles'
 
 type VariantPreviewItem = {
     label: string
@@ -24,20 +25,8 @@ type VariantPreviewProps = {
     items: VariantPreviewItem[]
 }
 
-const useStyles = makeStyles(theme => ({
-    container: {
-        gap: theme.spacing.lg,
-    },
-    row: {
-        gap: theme.spacing.xs,
-    },
-    label: {
-        color: theme.colors.textGray,
-    },
-}))
-
 export const VariantPreview = ({ items }: VariantPreviewProps) => {
-    const styles = useStyles()
+    const styles = useVariantPreviewStyles()
 
     return (
         <PWView style={styles.container}>

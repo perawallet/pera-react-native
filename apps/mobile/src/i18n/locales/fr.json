@@ -1112,10 +1112,6 @@
                 "title": "Actif non accepté",
                 "body": "Le compte destinataire n’a pas ajouté l’actif {{assetId}}. Demandez au destinataire de l’ajouter, ou envoyez-le via la boîte de réception d’actifs."
             },
-            "asset_frozen": {
-                "title": "Actif gelé",
-                "body": "L’actif {{assetId}} est gelé, ce transfert ne peut donc pas aboutir. Le gestionnaire de gel de l’actif doit d’abord le dégeler."
-            },
             "duplicate_txn": {
                 "title": "Déjà soumise",
                 "body": "Cette transaction a déjà été traitée par le réseau."
@@ -1259,6 +1255,10 @@
             "not_replaceable": {
                 "title": "Transaction plus en attente",
                 "body": "Cette transaction a déjà été confirmée ou remplacée et ne peut plus être accélérée ni annulée."
+            },
+            "asset_frozen": {
+                "title": "Actif gelé",
+                "body": "L’actif {{assetId}} est gelé, ce transfert ne peut donc pas aboutir. Le gestionnaire de gel de l’actif doit d’abord le dégeler."
             }
         },
         "kms": {

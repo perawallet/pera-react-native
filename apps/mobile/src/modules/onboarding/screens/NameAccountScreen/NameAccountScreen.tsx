@@ -60,6 +60,7 @@ export const NameAccountScreen = () => {
                         <ChainIcon
                             key={chainId}
                             chainId={chainId}
+                            // lanekeep-ignore-next-line pera/no-numeric-sizes reason: chain icon size (20)
                             size={20}
                         />
                     ))}

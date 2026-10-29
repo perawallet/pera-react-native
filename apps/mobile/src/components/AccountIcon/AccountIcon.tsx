@@ -14,7 +14,7 @@ import type { ViewStyle } from 'react-native'
 import type { SvgProps } from 'react-native-svg'
 
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import { PWRoundIcon, type PWRoundIconSize } from '@components/core/PWRoundIcon'
+import { PWRoundIcon, type PWRoundIconSize } from '@components/core'
 import { useAccountIcon, type AccountDisplayState } from './useAccountIcon'
 
 export type { AccountDisplayState } from './useAccountIcon'

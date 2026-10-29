@@ -28,6 +28,7 @@ export const useStyles = makeStyles(theme => {
         },
         key: {
             width: theme.spacing['4xl'],
+            // lanekeep-ignore-next-line pera/no-numeric-sizes reason: number pad key height (60)
             height: theme.spacing.xl * 2.5,
             alignItems: 'center',
             justifyContent: 'center',

@@ -33,7 +33,9 @@ export const useStyles = makeStyles(theme => ({
     },
     hero: {
         width: '100%',
+        // lanekeep-ignore-next-line pera/no-numeric-sizes reason: hero artwork max width (288)
         maxWidth: theme.spacing['5xl'] * 3,
+        // lanekeep-ignore-next-line pera/no-numeric-sizes reason: hero artwork height (192)
         height: theme.spacing['5xl'] * 2,
     },
     balanceSection: {
@@ -45,6 +47,7 @@ export const useStyles = makeStyles(theme => ({
         textAlign: 'center',
     },
     balanceSkeleton: {
+        // lanekeep-ignore-next-line pera/no-numeric-sizes reason: balance skeleton width (192)
         width: theme.spacing['5xl'] * 2,
         height: theme.spacing['3xl'],
         borderRadius: theme.spacing.sm,

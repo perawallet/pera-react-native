@@ -26,7 +26,7 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 
-import type { RekeyToQuantumStackParamList } from '../../../routes/rekey-to-quantum/types'
+import type { RekeyToQuantumStackParamList } from '@modules/rekey/routes/rekey-to-quantum/types'
 
 export type UseRekeyToQuantumSelectTargetScreenResult = {
     sourceAddress: string

@@ -154,8 +154,8 @@ export class CreatorCannotOptOutError extends TransactionError {
 }
 
 const ASSET_FROZEN_KEYS: ErrorMessageKeys = {
-    titleKey: i18nKey('errors.algod.asset_frozen.title'),
-    bodyKey: i18nKey('errors.algod.asset_frozen.body'),
+    titleKey: i18nKey('errors.transaction.asset_frozen.title'),
+    bodyKey: i18nKey('errors.transaction.asset_frozen.body'),
 }
 
 export class AssetFrozenError extends TransactionError {
@@ -169,21 +169,21 @@ export class AssetFrozenError extends TransactionError {
 }
 
 /**
- * The stage of a rekey flow that failed. Confirm screens map this to
+ * The stage of a delegation flow that failed. Confirm screens map this to
  * failure-specific copy instead of a single generic "something went wrong".
  *
  *  - `user_rejected`     — source cancelled signing (Close on the Ledger
  *                          approval sheet, or rejected on device).
- *  - `build_failed`      — the unsigned rekey payment could not be built.
+ *  - `build_failed`      — the unsigned delegation transaction could not be built.
  *  - `signing_failed`    — the signing pipeline errored (Ledger timeout,
  *                          transport failure, device error).
  *  - `submission_failed` — algod rejected or could not receive the signed
  *                          group (fee too low, network, node error).
- *  - `submission_pending` — an earlier attempt of the same rekey is still
+ *  - `submission_pending` — an earlier attempt of the same delegation is still
  *                          open in the submission ledger; rebuilding now
  *                          would mint a new txid algod cannot dedupe.
  */
-export type RekeyErrorReason =
+export type DelegationErrorReason =
     | 'user_rejected'
     | 'build_failed'
     | 'signing_failed'
@@ -191,7 +191,7 @@ export type RekeyErrorReason =
     | 'submission_pending'
 
 /**
- * Typed error for every rekey failure. The {@link RekeyErrorReason} lets
+ * Typed error for every delegation failure. The {@link DelegationErrorReason} lets
  * callers branch on the failed stage; `originalError` preserves the raw
  * cause so it can still be routed through the algod error translator.
  *
@@ -199,12 +199,12 @@ export type RekeyErrorReason =
  * caught values are not guaranteed to be `Error` instances, and downstream
  * consumers rely on it being one.
  */
-export class RekeyError extends AppError {
-    readonly reason: RekeyErrorReason
+export class DelegationError extends AppError {
+    readonly reason: DelegationErrorReason
 
-    constructor(reason: RekeyErrorReason, originalError?: unknown) {
+    constructor(reason: DelegationErrorReason, originalError?: unknown) {
         super(
-            `Rekey failed: ${reason}`,
+            `Delegation failed: ${reason}`,
             {
                 severity:
                     reason === 'user_rejected'
@@ -214,7 +214,7 @@ export class RekeyError extends AppError {
             },
             originalError === undefined ? undefined : toError(originalError),
         )
-        this.name = 'RekeyError'
+        this.name = 'DelegationError'
         this.reason = reason
     }
 }

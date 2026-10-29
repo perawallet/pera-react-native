@@ -45,3 +45,19 @@ export const useStyles = makeStyles(
         },
     }),
 )
+
+export const useSelectHeaderStyles = makeStyles(theme => ({
+    selectHeader: {
+        paddingTop: theme.spacing.sm,
+        gap: theme.spacing.md,
+        width: '100%',
+        minWidth: 0,
+    },
+    selectTitle: {
+        minWidth: 0,
+    },
+    selectDescription: {
+        color: theme.colors.textGray,
+        minWidth: 0,
+    },
+}))

@@ -14,6 +14,7 @@ import { makeStyles } from '@rneui/themed'
 
 type StyleProps = { surfaceColor: string }
 
+// lanekeep-ignore-next-line pera/no-numeric-sizes reason: asset pair icon container size
 const CONTAINER_SIZE = 40
 
 export const useStyles = makeStyles((theme, { surfaceColor }: StyleProps) => ({

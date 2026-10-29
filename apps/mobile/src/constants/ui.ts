@@ -138,7 +138,7 @@ export const PROMPT_REVEAL_OFFSET = 32
 
 // Web-only: caps the app's content width on the wide "expanded" browser-tab
 // surface (the UI is designed for a 360px popup and looks broken stretched
-// edge-to-edge across a full desktop tab). Shared by AppShell.web.tsx (the
+// edge-to-edge across a full desktop tab). Shared by app-root/styles.web.ts (the
 // app's own root card) and PWBottomSheet.web.tsx (so sheets, which portal to
 // document.body and would otherwise fill the whole viewport, match the same
 // card width). Never binds in the popup, which is already narrower than it.

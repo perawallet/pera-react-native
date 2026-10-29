@@ -52,11 +52,11 @@ export interface PQSignatureProvider {
  * package's own `Falcon` type so consumers of this type — the provider, the
  * off-device accessor — need nothing from `react-native-nitro-modules`.
  *
- * That is narrower than it used to be: `falconModule.native.ts` imports the
- * module's VALUE, and its `Falcon` type extends nitro's `HybridObject`, so
- * typechecking that one file does pull those types in. Hence the explicit
- * `react-native-nitro-modules` devDependency — it was previously resolving
- * only through pnpm's nesting under `@joe-p/react-native-falcon`.
+ * Typechecking `falconModule.native.ts` still pulls in nitro's types: it
+ * imports the module's VALUE, and its `Falcon` type extends nitro's
+ * `HybridObject`. Hence the explicit `react-native-nitro-modules`
+ * devDependency — pnpm's nesting under `@joe-p/react-native-falcon` is not a
+ * resolution to rely on.
  *
  * All buffers are raw `ArrayBuffer`s: keys are exact-length Falcon-1024 byte
  * blobs. `signCompressed`/`verify` are deliberately absent even though the

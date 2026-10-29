@@ -15,7 +15,7 @@ import '../../../__tests__/registerAlgorandAccounts'
 
 // Same stub as buildKeylessAccount.spec.ts. Without it, the importActual of
 // buildKeylessAccount below loads the real Algorand runtime (algosdk), which
-// under CI's coverage instrumentation takes ~5s — right at the test timeout.
+// under CI's coverage instrumentation takes seconds — right at the test timeout.
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     // The accounts barrel installs a network-switch subscription at load.
     useNetworkStore: {

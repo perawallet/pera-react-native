@@ -11,9 +11,9 @@
  */
 
 import { PWView, PWText, PWIcon, PWButton } from '@components/core'
-import { useStyles } from './LockoutView.style'
 import { useLanguage } from '@hooks/useLanguage'
 import { formatTime } from '@perawallet/wallet-core-shared'
+import { useLockoutViewStyles } from './styles'
 
 type LockoutViewProps = {
     remainingSeconds: number
@@ -24,7 +24,7 @@ export const LockoutView = ({
     remainingSeconds,
     onResetData,
 }: LockoutViewProps) => {
-    const styles = useStyles()
+    const styles = useLockoutViewStyles()
     const { t } = useLanguage()
 
     return (
