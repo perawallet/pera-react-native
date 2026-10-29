@@ -14,6 +14,7 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import type { Nullable } from '@perawallet/wallet-core-shared'
+import { EXPIRED_AUTO_LOCK_START } from '../../autoLock'
 
 const registerStoreMock = vi.hoisted(() => vi.fn())
 
@@ -54,13 +55,16 @@ describe('services/security/store', () => {
 
         const { result } = renderHook(() => useSecurityStore())
 
-        const lockTime = Date.now()
+        const start = {
+            wallNowMs: Date.now(),
+            monotonic: { bootId: 'boot-1', elapsedMs: 5_000 },
+        }
 
         act(() => {
-            result.current.setAutoLockStartedAt(lockTime)
+            result.current.setAutoLockStartedAt(start)
         })
 
-        expect(result.current.autoLockStartedAt).toBe(lockTime)
+        expect(result.current.autoLockStartedAt).toEqual(start)
 
         act(() => {
             result.current.setAutoLockStartedAt(null)
@@ -69,13 +73,15 @@ describe('services/security/store', () => {
         expect(result.current.autoLockStartedAt).toBeNull()
     })
 
-    test('rehydration coerces a tampered autoLockStartedAt so auto-lock fails closed', async () => {
+    test('rehydration maps an unreadable autoLockStartedAt to an expired start so auto-lock fails closed', async () => {
         const { getProvider } =
             await import('@perawallet/wallet-extension-provider')
         for (const tampered of [
-            Date.now() + 60 * 60 * 1000, // future
-            -1, // negative
-            'not-a-number', // wrong type
+            Date.now() - 1000, // epoch ms written by the previous build
+            -1,
+            'not-a-number',
+            { wallNowMs: -1, monotonic: null },
+            { wallNowMs: 1, monotonic: { bootId: '', elapsedMs: 1 } },
         ]) {
             vi.resetModules()
             getProvider().keyValueStorage.setItem(
@@ -86,22 +92,25 @@ describe('services/security/store', () => {
                 }),
             )
             const { useSecurityStore } = await import('../store')
-            // Coerced to epoch 0 → consumer reads a long-elapsed timer and
-            // locks, rather than trusting the tampered value (which never fires).
-            expect(useSecurityStore.getState().autoLockStartedAt).toBe(0)
+            expect(useSecurityStore.getState().autoLockStartedAt).toEqual(
+                EXPIRED_AUTO_LOCK_START,
+            )
         }
     })
 
-    test('rehydration preserves a valid past autoLockStartedAt', async () => {
+    test('rehydration preserves a valid autoLockStartedAt', async () => {
         const { getProvider } =
             await import('@perawallet/wallet-extension-provider')
-        const past = Date.now() - 1000
+        const start = {
+            wallNowMs: Date.now() - 1000,
+            monotonic: { bootId: 'boot-1', elapsedMs: 5_000 },
+        }
         getProvider().keyValueStorage.setItem(
             'security-store',
-            JSON.stringify({ state: { autoLockStartedAt: past }, version: 1 }),
+            JSON.stringify({ state: { autoLockStartedAt: start }, version: 1 }),
         )
         const { useSecurityStore } = await import('../store')
-        expect(useSecurityStore.getState().autoLockStartedAt).toBe(past)
+        expect(useSecurityStore.getState().autoLockStartedAt).toEqual(start)
     })
 
     test('incrementFailedAttempts increases the counter', async () => {
@@ -186,7 +195,10 @@ describe('services/security/store', () => {
                 lockoutEndTime: Date.now(),
                 monotonicLockout: null,
             })
-            result.current.setAutoLockStartedAt(Date.now())
+            result.current.setAutoLockStartedAt({
+                wallNowMs: Date.now(),
+                monotonic: null,
+            })
         })
 
         expect(result.current.failedAttempts).toBe(1)
