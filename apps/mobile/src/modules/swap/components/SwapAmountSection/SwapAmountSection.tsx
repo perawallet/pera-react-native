@@ -102,6 +102,7 @@ export const SwapAmountSection = (props: SwapAmountSectionProps) => {
                     <PWText
                         variant='body'
                         style={styles.balance}
+                        truncate
                     >
                         <Trans
                             i18nKey='swap.form.balance_label'
@@ -115,6 +116,7 @@ export const SwapAmountSection = (props: SwapAmountSectionProps) => {
                                     }
                                     variant='body'
                                     style={styles.balance}
+                                    isInline
                                 />,
                             ]}
                         />

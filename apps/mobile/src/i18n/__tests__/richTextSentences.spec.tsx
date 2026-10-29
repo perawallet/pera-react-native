@@ -11,14 +11,14 @@
  */
 
 import React from 'react'
+import { Decimal } from 'decimal.js'
 import i18next, { type i18n } from 'i18next'
 import { Trans } from 'react-i18next'
 import { describe, it, expect } from 'vitest'
 import { render, screen } from '@test-utils/render'
 import { PWText } from '@components/core'
+import { AssetAmount } from '@components/AssetAmount'
 import { TRANSLATION_BUNDLES } from '../locales'
-
-const SelfRenderingAmount = () => <PWText>12 ALGO</PWText>
 
 const createInstance = async (locale: string): Promise<i18n> => {
     const instance = i18next.createInstance()
@@ -56,7 +56,19 @@ const SwapSentences = ({
             <Trans
                 i18n={instance}
                 i18nKey='swap.form.balance_label'
-                components={[<SelfRenderingAmount key='balance' />]}
+                components={[
+                    <AssetAmount
+                        key='balance'
+                        asset={{
+                            assetId: '31566704',
+                            unitName: 'USDC',
+                            decimals: 6,
+                        }}
+                        value={new Decimal(12)}
+                        symbolPosition='end'
+                        isInline
+                    />,
+                ]}
             />
         </PWText>
         <PWText testID='history'>
@@ -81,9 +93,10 @@ describe('swap sentences rendered through Trans', () => {
             render(<SwapSentences instance={instance} />)
 
             expect(screen.getByTestId('brand').textContent).toBe('P.E.R.A.')
-            expect(screen.getByTestId('balance').textContent).toContain(
-                '12 ALGO',
-            )
+            const balance = screen.getByTestId('balance')
+            expect(balance.textContent).toContain('12 USDC')
+            // RN-web renders a View as <div>; one inside the label would escape its truncation.
+            expect(balance.querySelector('div')).toBeNull()
             const history = screen.getByTestId('history').textContent
             expect(history).toContain('5 ALGO')
             expect(history).toContain('10 USDC')
