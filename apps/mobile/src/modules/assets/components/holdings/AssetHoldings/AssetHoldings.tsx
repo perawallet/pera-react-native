@@ -12,7 +12,7 @@
 
 import { formatDatetime } from '@perawallet/wallet-core-shared'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import { PWText, PWView } from '@components/core'
+import { PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { AssetWealthChart } from '../AssetWealthChart/AssetWealthChart'
 import { ChartPeriodSelection } from '@components/ChartPeriodSelection'
 import { useMemo } from 'react'
@@ -21,6 +21,7 @@ import { AssetActionButtons } from '../AssetActionButtons/AssetActionButtons'
 import { AssetTransactionList } from '../AssetTransactionList/AssetTransactionList'
 
 import { useStyles } from './styles'
+import { useAssetHoldings } from './useAssetHoldings'
 import {
     AssetFavoriteButton,
     AssetNotificationButton,
@@ -85,6 +86,8 @@ export const AssetHoldings = ({
             : (assetHolding?.amount ?? new Decimal(0))
         return currentCrypto
     }, [assetHolding, selectedPoint])
+    const { canCopyAmount, copyAmountHint, handleCopyAmount } =
+        useAssetHoldings(cryptoAmount, asset)
 
     // A scrubbed point with no preferred value has no rate behind it; passing
     // null through renders the placeholder rather than claiming the holding
@@ -133,14 +136,21 @@ export const AssetHoldings = ({
                         />
                     )}
 
-                    <PWView style={styles.primaryValueContainer}>
+                    <PWTouchableOpacity
+                        style={styles.primaryValueContainer}
+                        activeOpacity={1}
+                        disabled={!canCopyAmount}
+                        onLongPress={handleCopyAmount}
+                        accessibilityHint={copyAmountHint}
+                    >
                         <AssetAmount
                             chainId={scope.chainId}
                             variant='h1'
                             value={cryptoAmount}
                             asset={asset}
+                            shouldFitWidth
                         />
-                    </PWView>
+                    </PWTouchableOpacity>
 
                     <PWView style={styles.secondaryValueContainer}>
                         {selectedPoint ? (

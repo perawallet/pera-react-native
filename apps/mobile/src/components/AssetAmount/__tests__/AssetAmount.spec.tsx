@@ -54,7 +54,7 @@ describe('AssetAmount', () => {
         })
     })
 
-    it("density='compact' renders a fixed 2dp (compact) and omits assetDecimals", () => {
+    it("density='compact' renders at compact precision with the asset decimals", () => {
         render(
             <AssetAmount
                 chainId={LEGACY_CHAIN_ID}
@@ -66,8 +66,8 @@ describe('AssetAmount', () => {
         expect(lastChildProps()).toMatchObject({
             currency: 'USDC',
             precision: 'compact',
+            assetDecimals: 6,
         })
-        expect(lastChildProps()?.assetDecimals).toBeUndefined()
     })
 
     it("density='significant' renders at significant precision with the asset decimals", () => {

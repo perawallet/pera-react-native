@@ -107,6 +107,24 @@ describe('useAssetGroupRow', () => {
         })
     })
 
+    it("takes the most precise member's decimals, so the summed amount keeps its digits", () => {
+        const { result } = renderHook(() =>
+            useAssetGroupRow({
+                item: groupOf(
+                    [
+                        member('algorand', { ...USDC, decimals: 6 }),
+                        member('ethereum', { ...USDC, decimals: 18 }),
+                        member('ethereum', null, 'unsynced'),
+                    ],
+                    null,
+                ),
+                convertFiat: toEur,
+            }),
+        )
+
+        expect(result.current.decimals).toBe(18)
+    })
+
     it("has no icon while the first member's metadata hasn't synced", () => {
         const { result } = renderHook(() =>
             useAssetGroupRow({

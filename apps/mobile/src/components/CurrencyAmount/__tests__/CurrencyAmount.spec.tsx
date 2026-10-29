@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { render } from '@test-utils/render'
+import { render, screen } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { formatCurrency } from '@perawallet/wallet-core-shared'
 import { CurrencyAmount, getAlgoSymbolWeight } from '../CurrencyAmount'
@@ -129,6 +129,24 @@ describe('CurrencyAmount', () => {
         // formatCurrency(value, precision, currency, ..., minPrecision) — the
         // assetFull variant resolves precision to the asset's own decimals.
         expect(vi.mocked(formatCurrency).mock.calls[0][1]).toBe(6)
+    })
+
+    it('hands the formatter an 18-decimal amount already rounded down', () => {
+        vi.mocked(formatCurrency).mockClear()
+        render(
+            <CurrencyAmount
+                value={new Decimal('0.0013449999')}
+                currency='ETH'
+                assetId='eth'
+                chainId={null}
+                precision='assetFull'
+                assetDecimals={18}
+            />,
+        )
+        // The formatter rounds half-up, which would show 0.001345.
+        const [value, precision] = vi.mocked(formatCurrency).mock.calls[0]
+        expect(String(value)).toBe('0.001344')
+        expect(precision).toBe(6)
     })
 
     it('hands the formatter PREFERRED_MAX_PRECISION for the preferredFull variant', () => {
@@ -538,5 +556,39 @@ describe('CurrencyAmount native-coin glyph per chain', () => {
             />,
         )
         expect(container.textContent).not.toContain('¦')
+    })
+})
+
+describe('CurrencyAmount shouldFitWidth', () => {
+    const props = {
+        value: new Decimal('1234.5'),
+        currency: 'ETH',
+        assetId: 'eth',
+        chainId: null,
+        precision: 'assetFull',
+        assetDecimals: 18,
+    } as const
+
+    it('keeps the unit in its own text by default', () => {
+        render(<CurrencyAmount {...props} />)
+
+        expect(screen.getByText('ETH')).toBeTruthy()
+    })
+
+    it('renders the unit and the figure as one text, so they shrink together', () => {
+        const { container, unmount } = render(
+            <CurrencyAmount
+                {...props}
+                shouldFitWidth
+            />,
+        )
+        expect(screen.queryByText('ETH')).toBeNull()
+        const fittedText = container.textContent?.replace(/\s/g, '')
+        unmount()
+
+        const { container: blockContainer } = render(
+            <CurrencyAmount {...props} />,
+        )
+        expect(fittedText).toBe(blockContainer.textContent?.replace(/\s/g, ''))
     })
 })

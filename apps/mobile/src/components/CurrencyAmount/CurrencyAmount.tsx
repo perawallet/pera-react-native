@@ -50,14 +50,21 @@ export const getAlgoSymbolWeight = (
  * The precision policy is expressed semantically (see {@link PrecisionVariant}),
  * never as raw digit counts — that is the single door through which every
  * currency figure picks up its decimals. `assetDecimals` is only meaningful
- * for (and only accepted by) the `assetFull` and `significant` variants.
+ * for (and only accepted by) the `assetFull`, `significant` and `compact`
+ * variants.
  */
 type PrecisionProps =
     | {
-          precision: Exclude<PrecisionVariant, 'assetFull' | 'significant'>
+          precision: Exclude<
+              PrecisionVariant,
+              'assetFull' | 'significant' | 'compact'
+          >
           assetDecimals?: never
       }
-    | { precision: 'assetFull' | 'significant'; assetDecimals?: number }
+    | {
+          precision: 'assetFull' | 'significant' | 'compact'
+          assetDecimals?: number
+      }
 
 export type CurrencyAmountProps = {
     /**
@@ -112,6 +119,12 @@ export type CurrencyAmountProps = {
      * and sits off the baseline on Android, so the parent owns truncation.
      */
     isInline?: boolean
+    /**
+     * Shrinks the whole figure, unit included, to fit one line rather than
+     * cutting digits off with an ellipsis. Opt-in: Android re-measures fitted
+     * text several times, too costly for list rows.
+     */
+    shouldFitWidth?: boolean
 } & PrecisionProps &
     Omit<PWTextProps, 'children' | 'variant'>
 
@@ -136,6 +149,7 @@ export const CurrencyAmount = (props: CurrencyAmountProps) => {
         ignorePrivacyMode = false,
         variant = 'body',
         isInline = false,
+        shouldFitWidth = false,
         ...rest
     } = props
 
@@ -143,12 +157,16 @@ export const CurrencyAmount = (props: CurrencyAmountProps) => {
     const isAssetMode = assetId != null
     const fiatFloor = resolveFiatFloor(precisionVariant, isFiat, value)
     // A floored amount is formatted as the floor itself, behind a bound marker.
-    const shownValue = fiatFloor ?? value
-    const { precision, minPrecision } = resolvePrecision(
+    const flooredValue = fiatFloor ?? value
+    const { precision, minPrecision, rounding } = resolvePrecision(
         precisionVariant,
         assetDecimals,
-        shownValue,
+        flooredValue,
     )
+    const shownValue =
+        rounding != null && flooredValue != null
+            ? flooredValue.toDecimalPlaces(precision, rounding)
+            : flooredValue
     const nativeGlyph =
         chainId === null || assetId === null
             ? undefined
@@ -249,37 +267,62 @@ export const CurrencyAmount = (props: CurrencyAmountProps) => {
     const showNativeGlyphStart = showNativeGlyph && symbolPosition === 'start'
     const showNativeGlyphEnd = showNativeGlyph && symbolPosition === 'end'
 
+    // The spaces stand in for the container's gap between the parts. One
+    // Text holds every part, so a parent's truncation or a fit-to-width
+    // shrink applies to the unit and the figure alike.
+    const amountRuns = (
+        <>
+            {showNativeGlyphStart && (
+                <PWText
+                    variant={variant}
+                    weight={nativeGlyphWeight}
+                    style={props.style}
+                >
+                    {`${nativeGlyph.glyph} `}
+                </PWText>
+            )}
+            {showUnitSymbolStart && `${currency} `}
+            {prefix ? prefix : ''}
+            {sign ? sign : ''}
+            {displayValue}
+            {trailingSymbol}
+            {showNativeGlyphEnd && (
+                <PWText
+                    variant={variant}
+                    weight={nativeGlyphWeight}
+                    style={props.style}
+                >
+                    {` ${nativeGlyph.glyph}`}
+                </PWText>
+            )}
+        </>
+    )
+
     if (isInline) {
-        // The spaces stand in for the container's gap between the parts.
         return (
             <PWText
                 variant={variant}
                 {...rest}
             >
-                {showNativeGlyphStart && (
-                    <PWText
-                        variant={variant}
-                        weight={nativeGlyphWeight}
-                        style={props.style}
-                    >
-                        {`${nativeGlyph.glyph} `}
-                    </PWText>
-                )}
-                {showUnitSymbolStart && `${currency} `}
-                {prefix ? prefix : ''}
-                {sign ? sign : ''}
-                {displayValue}
-                {trailingSymbol}
-                {showNativeGlyphEnd && (
-                    <PWText
-                        variant={variant}
-                        weight={nativeGlyphWeight}
-                        style={props.style}
-                    >
-                        {` ${nativeGlyph.glyph}`}
-                    </PWText>
-                )}
+                {amountRuns}
             </PWText>
+        )
+    }
+
+    if (shouldFitWidth) {
+        return (
+            <PWView style={themeStyle.container}>
+                <PWView style={themeStyle.textContainer}>
+                    <PWText
+                        variant={variant}
+                        truncate
+                        adjustsFontSizeToFit
+                        {...rest}
+                    >
+                        {amountRuns}
+                    </PWText>
+                </PWView>
+            </PWView>
         )
     }
 

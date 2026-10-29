@@ -86,6 +86,7 @@ describe('resolvePrecision', () => {
         expect(resolvePrecision('assetFull', 6)).toEqual({
             precision: 6,
             minPrecision: 2,
+            rounding: Decimal.ROUND_DOWN,
         })
     })
 
@@ -93,6 +94,7 @@ describe('resolvePrecision', () => {
         expect(resolvePrecision('assetFull', 1)).toEqual({
             precision: 1,
             minPrecision: 1,
+            rounding: Decimal.ROUND_DOWN,
         })
     })
 
@@ -100,13 +102,39 @@ describe('resolvePrecision', () => {
         expect(resolvePrecision('assetFull', 0)).toEqual({
             precision: 0,
             minPrecision: 0,
+            rounding: Decimal.ROUND_DOWN,
         })
+    })
+
+    it('assetFull → caps an 18-decimal asset at 6 dp', () => {
+        expect(
+            resolvePrecision('assetFull', 18, new Decimal('0.001344293173')),
+        ).toEqual({
+            precision: 6,
+            minPrecision: 2,
+            rounding: Decimal.ROUND_DOWN,
+        })
+    })
+
+    it('compact → follows assetFull for an asset with more than 6 decimals', () => {
+        expect(
+            resolvePrecision('compact', 18, new Decimal('0.001344293173')),
+        ).toEqual(
+            resolvePrecision('assetFull', 18, new Decimal('0.001344293173')),
+        )
+    })
+
+    it('compact → keeps 2 dp for an asset with up to 6 decimals', () => {
+        expect(
+            resolvePrecision('compact', 6, new Decimal('1234.5678')),
+        ).toEqual({ precision: 2, minPrecision: 2 })
     })
 
     it('assetFull → falls back to 2 dp when decimals are unknown', () => {
         expect(resolvePrecision('assetFull')).toEqual({
             precision: 2,
             minPrecision: 2,
+            rounding: Decimal.ROUND_DOWN,
         })
     })
 

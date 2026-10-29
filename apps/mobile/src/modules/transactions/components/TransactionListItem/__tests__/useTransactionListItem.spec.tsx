@@ -135,6 +135,7 @@ describe('useTransactionListItem', () => {
                     assetId: '0',
                     chainId: 'algorand',
                     currency: 'ALGO',
+                    decimals: 6,
                     prefix: '-',
                 },
             ])

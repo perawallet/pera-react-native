@@ -50,6 +50,7 @@ const AssetGroupRowBase = <T extends GroupableHolding>({
         isSuspicious,
         subtitle,
         chainIds,
+        decimals,
         fiat,
     } = useAssetGroupRow({ item, convertFiat })
 
@@ -107,6 +108,7 @@ const AssetGroupRowBase = <T extends GroupableHolding>({
                         chainId={null}
                         value={amount}
                         precision='compact'
+                        assetDecimals={decimals}
                         style={styles.primaryAmount}
                         numberOfLines={1}
                     />

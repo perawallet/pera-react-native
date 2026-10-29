@@ -67,6 +67,8 @@ export type UseAssetGroupRowResult = {
     chainIds: ChainId[]
     /** The chain of the member `icon` is drawn from. */
     iconChainId: Nullable<ChainId>
+    /** The most precise member's, so the summed amount loses none of its digits. */
+    decimals: number
     /** Null value while any member's is unknown. */
     fiat: AssetFiatValue
 }
@@ -126,6 +128,11 @@ export const useAssetGroupRow = <T extends GroupableHolding>({
             : group.symbol
     }, [members, group.symbol])
 
+    const decimals = useMemo(
+        () => Math.max(0, ...members.map(({ asset }) => asset?.decimals ?? 0)),
+        [members],
+    )
+
     return {
         icon: members[0]?.asset ?? null,
         verificationIcon: tier ? getVerificationIcon(tier) : null,
@@ -133,6 +140,7 @@ export const useAssetGroupRow = <T extends GroupableHolding>({
         subtitle,
         chainIds,
         iconChainId: members[0]?.holding.scope.chainId ?? null,
+        decimals,
         fiat,
     }
 }
