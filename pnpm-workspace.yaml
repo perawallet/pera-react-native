@@ -6,6 +6,13 @@ packages:
   - conformance-evm
 
 catalog:
+  # A `# pin:` line directly above an entry is checked against pnpm-lock.yaml by
+  # pera/catalog-versions. `lockstep <group>`: every entry in the group resolves
+  # to one version. `follows <entry>`: resolves to the version that entry's
+  # resolved release depends on. `hold <version>`: resolves at or below it.
+  # The note above a marker is its reason; raise a hold only after redoing the
+  # check that note names.
+
   "@algorandfoundation/algokit-utils": 9.2.2
   "@algorandfoundation/dp256": 1.1.0
   "@algorandfoundation/keystore-core": 1.0.0-canary.5
@@ -28,16 +35,23 @@ catalog:
   "@ledgerhq/hw-transport-webhid": ^6.36.0
   "@ledgerhq/react-native-hid": ^6.39.1
   "@noble/ciphers": ^2.2.0
+  # Each "@scure/bip32" release pins this exactly; see the note there.
+  # pin: follows @scure/bip32
   "@noble/hashes": ^2.4.0
   "@noble/secp256k1": ^3.2.0
   "@perawallet/walletconnect": 1.0.3
   "@playwright/test": ^1.53.0
   # Exact: every module peers on the identical app version; move all five
   # together.
+  # pin: lockstep firebase
   "@react-native-firebase/analytics": 27.0.0
+  # pin: lockstep firebase
   "@react-native-firebase/app": 27.0.0
+  # pin: lockstep firebase
   "@react-native-firebase/crashlytics": 27.0.0
+  # pin: lockstep firebase
   "@react-native-firebase/messaging": 27.0.0
+  # pin: lockstep firebase
   "@react-native-firebase/remote-config": 27.0.0
   # Pinned exactly, not ranged: WalletKit and @walletconnect/core share an
   # internal protocol contract, so a floating minor on one side can pair with
@@ -45,7 +59,7 @@ catalog:
   "@reown/walletkit": 1.6.0
   "@scure/base": 2.4.0
   # Pinned exactly: each release pins @noble/hashes exactly, so move it with
-  # the @noble/hashes floor below or the tree carries two hashes copies.
+  # the @noble/hashes floor above or the tree carries two hashes copies.
   "@scure/bip32": 2.4.0
   "@scure/bip39": ^2.2.0
   "@sqlite.org/sqlite-wasm": 3.53.0-build1
@@ -62,13 +76,17 @@ catalog:
   "@vitejs/plugin-react": 6.1.2
   "@vitest/coverage-v8": ^5.0.3
   # Kept in step with "@reown/walletkit" above; see the note there.
+  # pin: follows @reown/walletkit
+  # pin: lockstep walletconnect
   "@walletconnect/core": 2.25.0
   # Same release train as core: it installs the `global.NetInfo` and
   # `global.Platform` shims core's utils read, so bump the two together.
+  # pin: lockstep walletconnect
   "@walletconnect/react-native-compat": 2.25.0
   # The exact version "@walletconnect/core" depends on: `buildApprovedNamespaces`
   # encodes the namespace rules the relay and the dApp both enforce, so a copy
   # out of step with core's would build sessions core then rejects.
+  # pin: follows @walletconnect/core
   "@walletconnect/utils": 2.25.0
   # 3.7.0 is a floor, not a preference: the `pqsig` field and the
   # scheme-agnostic PQ signer surface Pera's quantum accounts sign with landed
@@ -94,6 +112,11 @@ catalog:
   expo-sqlite: 58.0.13
   fake-indexeddb: 6.2.5
   falcon-1024: 0.2.0
+  # 3.33.1 fails the required Dead Code job on an unchanged .fallowrc.jsonc
+  # (unused exports and files that 3.30.0 doesn't report); raise this only with
+  # `pnpm fallow` green on the new release.
+  # pin: hold 3.30.0
+  fallow: 3.30.0
   fast-glob: ^3.3.2
   jsdom: ^30.0.1
   ky: ^2.0.2
@@ -115,6 +138,7 @@ catalog:
   uuid: 14.0.3
   # Metro, Hermes and the extension bundles were verified against this exact
   # version; re-run those checks before a bump.
+  # pin: hold 2.57.7
   viem: 2.57.7
   vite: ~8.3.4
   vitest: ^5.0.3
