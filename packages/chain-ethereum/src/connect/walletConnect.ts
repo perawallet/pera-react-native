@@ -30,9 +30,9 @@ import {
     type WalletConnectRequestRoute,
 } from '@perawallet/wallet-core-connections'
 import type { Nullable } from '@perawallet/wallet-core-shared'
-import { getProvider } from '@perawallet/wallet-extension-provider'
 import { eip155ChainIdOfNetwork } from '../blockchain/utils/caip19'
 import type { EvmChain } from '../chains/types'
+import { isMessageSigningEnabled } from '../signing/messageSigningGate'
 import { refuseUnsupportedSendCalls } from './callBatch/params'
 import {
     ethereumWalletCapabilities,
@@ -75,15 +75,6 @@ const MESSAGE_SIGNING_OFF: WalletConnectRequestRoute = {
         code: EIP_1193_CODE['unsupported-method'],
         message: 'This wallet does not sign messages on this chain',
     },
-}
-
-// Read per request, not at registration, so remote config and Feature Flags reach sessions already approved.
-const isMessageSigningEnabled = (chain: EvmChain): boolean => {
-    const { chains } = getProvider()
-    return (
-        chains.has(chain.row.id) &&
-        chains.capabilities(chain.row.id).messageSigning
-    )
 }
 
 const routeMessage = (
