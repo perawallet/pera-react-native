@@ -3540,7 +3540,7 @@
             "rekey_are_you_sure_title": "Voulez-vous continuer ?",
             "rekey_are_you_sure_description": "Cette signature inclut une transaction de rekey, qui donne le contrôle de vos comptes à une autre adresse. Assurez-vous de bien comprendre les conséquences avant de continuer.",
             "rekey_are_you_sure_continue": "Continuer",
-            "high_fee_warning": "Cette demande paie des frais de réseau anormalement élevés de {{fee}} ALGO. Assurez-vous de faire confiance à la source avant de signer.",
+            "high_fee_warning": "Cette demande paie des frais de réseau anormalement élevés de {{fee}}. Assurez-vous de faire confiance à la source avant de signer.",
             "asset_freeze_warning": "Cette transaction gèle ou dégèle des actifs pour l’adresse suivante : {{address}}.",
             "asset_freeze_group_warning": "Ce groupe de transactions gèle ou dégèle des actifs pour l’un des comptes de ce groupe. Veuillez l’examiner attentivement avant de signer.",
             "asset_freeze_warning_bold": "Cela peut empêcher le compte ciblé d’effectuer des transactions avec l’actif gelé. Veuillez l’examiner attentivement avant de signer.",

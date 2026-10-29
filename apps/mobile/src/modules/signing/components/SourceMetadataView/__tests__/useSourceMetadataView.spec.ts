@@ -28,6 +28,13 @@ vi.mock('@perawallet/wallet-core-projects', async importOriginal => ({
     useProjectByUrlQuery: vi.fn(),
 }))
 
+vi.mock('@perawallet/wallet-core-signing', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-signing')
+    >()),
+    useSigningRequest: () => ({ currentRequest: undefined }),
+}))
+
 const mocks = vi.hoisted(() => ({ pushWebView: vi.fn() }))
 
 vi.mock('@modules/webview/hooks/useWebViewStore', () => ({

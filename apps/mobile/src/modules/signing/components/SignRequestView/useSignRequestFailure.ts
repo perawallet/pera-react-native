@@ -13,12 +13,7 @@
 import { useEffect, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { DelegationTargetNotFoundError } from '@perawallet/wallet-core-accounts'
-import {
-    LEGACY_CHAIN_ID,
-    i18nKey,
-    type I18nKey,
-} from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 import { config, deploymentOf } from '@perawallet/wallet-core-config'
 import { useDeploymentDeviceID } from '@perawallet/wallet-core-device'
 import {
@@ -34,6 +29,7 @@ import {
 import { useNodeErrorMessage } from '@hooks/useNodeErrorMessage'
 import { useLanguage } from '@hooks/useLanguage'
 import { resolveErrorCopy } from '@i18n/resolveErrorCopy'
+import { useSignRequestScope } from '../../hooks/useSignRequestScope'
 
 export type UseSignRequestFailureResult = {
     /**
@@ -92,7 +88,7 @@ export const useSignRequestFailure = (
 ): UseSignRequestFailureResult => {
     const { t } = useLanguage()
     const { getMessage } = useNodeErrorMessage()
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const scope = useSignRequestScope(request)
     const deviceId = useDeploymentDeviceID(deploymentOf(scope)) ?? ''
     const queryClient = useQueryClient()
 
