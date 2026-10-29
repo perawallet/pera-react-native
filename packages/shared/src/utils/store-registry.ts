@@ -10,8 +10,6 @@
  limitations under the License
  */
 
-import { logger } from './logging'
-
 interface RegisteredStore {
     name: string
     clearStorage: () => void
@@ -26,7 +24,6 @@ const registry: RegisteredStore[] = []
  */
 export const registerStore = (entry: RegisteredStore): void => {
     registry.push(entry)
-    logger.debug(`Registered store: ${entry.name}`)
 }
 
 /**
@@ -36,14 +33,9 @@ export const registerStore = (entry: RegisteredStore): void => {
 export const clearAllStores = (options?: { skip?: string[] }): void => {
     const skip = options?.skip
     for (const store of registry) {
-        if (skip?.includes(store.name)) {
-            logger.debug(`Skipping store: ${store.name}`)
-            continue
-        }
-        logger.debug(`Clearing store: ${store.name}`)
+        if (skip?.includes(store.name)) continue
         store.clearStorage()
         store.resetState()
-        logger.debug(`Store ${store.name} cleared`)
     }
 }
 
