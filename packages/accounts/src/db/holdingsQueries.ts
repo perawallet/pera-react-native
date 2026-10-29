@@ -122,6 +122,30 @@ const nativeHoldingsMatching = (
     })
 }
 
+// A native id is a placeholder ('native' on EVM chains), not something a user
+// pastes, so it matches only in full: "nat" must not list every network's coin.
+const assetIdMatching = (
+    sources: readonly AccountHoldingSource[],
+    term: string,
+): SQL => {
+    const isIdMatch = like(AccountAssetHoldingsSchema.assetId, `%${term}%`)
+    const nativeIds = [
+        ...new Set(
+            sources.flatMap(
+                ({ scope }) => findNativeAsset(scope.chainId)?.assetId ?? [],
+            ),
+        ),
+    ]
+    if (nativeIds.length === 0) return isIdMatch
+    return and(
+        isIdMatch,
+        or(
+            notInArray(AccountAssetHoldingsSchema.assetId, nativeIds),
+            eq(AccountAssetHoldingsSchema.assetId, term),
+        ),
+    )!
+}
+
 /**
  * Sorting (favorites first, then value/name with unsynced NULLs last),
  * filtering, searching and windowing all happen in SQL, across every source in
@@ -193,7 +217,7 @@ async function queryHoldingRows({
             or(
                 like(AssetsNodeSchema.name, `%${term}%`),
                 like(AssetsNodeSchema.unitName, `%${term}%`),
-                like(AccountAssetHoldingsSchema.assetId, `%${term}%`),
+                assetIdMatching(sources, term),
                 ...nativeHoldingsMatching(sources, term),
             )!,
         )

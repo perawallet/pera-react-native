@@ -557,6 +557,10 @@ describe('account holdings queries', () => {
             expect(await pageIds({ search: '30' })).toEqual(['300'])
         })
 
+        it('still finds ALGO by its full id', async () => {
+            expect(await pageIds({ search: '0' })).toContain('0')
+        })
+
         describe('across sources', () => {
             const ETH_SCOPE = {
                 chainId: 'ethereum',
@@ -806,6 +810,13 @@ describe('account holdings queries', () => {
         it('returns nothing for a term that matches no asset', async () => {
             expect(await search('xyz')).toEqual([])
         })
+
+        it.each(['nat', 'ati', 'tive'])(
+            'does not match the native coin by a fragment of its id (%s)',
+            async term => {
+                expect(await search(term)).toEqual([])
+            },
+        )
 
         it('keeps another network of the same chain out of the results', async () => {
             expect(
