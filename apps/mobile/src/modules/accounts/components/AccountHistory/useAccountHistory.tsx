@@ -15,11 +15,16 @@ import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import {
     addressOn,
+    useAccountHoldingSources,
     useAccountScope,
     useSelectedAccount,
 } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
+    LEGACY_CHAIN_ID,
+    type ChainId,
+} from '@perawallet/wallet-core-chain-contract'
+import {
+    chainDisplayNameOf,
     useChainCapability,
     useIsCapabilityRestricted,
 } from '@perawallet/wallet-core-chain-shared'
@@ -41,6 +46,7 @@ import {
 } from '@analytics'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useNetworkStatus } from '@modules/network'
+import { useSelectedNetworkSource } from '../../hooks/useSelectedNetworkSource'
 import {
     TransactionFilter,
     TransactionsFilterContent,
@@ -96,6 +102,10 @@ export type UseAccountHistoryResult = {
     isRefreshing: boolean
     /** Whether data is empty */
     isEmpty: boolean
+    /** The network the history is narrowed to by the Assets chip; null reads the account's own chain. */
+    networkChainId: Nullable<ChainId>
+    /** What an empty history says, naming the network when narrowed to one. */
+    emptyBody: string
     /**
      * Empty *because* nothing is cached and we're offline, rather than because
      * the account has no transactions. The history query reads SQLite with
@@ -130,8 +140,15 @@ export type UseAccountHistoryResult = {
  */
 export const useAccountHistory = (): UseAccountHistoryResult => {
     const account = useSelectedAccount()
-    const scope = useAccountScope(account, LEGACY_CHAIN_ID)
-    const accountAddress = account ? addressOn(account, scope) : undefined
+    const ownScope = useAccountScope(account, LEGACY_CHAIN_ID)
+    const sources = useAccountHoldingSources(account)
+    const selectedSource = useSelectedNetworkSource(sources)
+    const scope = selectedSource?.scope ?? ownScope
+    const accountAddress = selectedSource
+        ? selectedSource.address
+        : account
+          ? addressOn(account, ownScope)
+          : undefined
     const { hasInternet } = useNetworkStatus()
     const navigation =
         useNavigation<NativeStackNavigationProp<AppStackParamList>>()
@@ -301,6 +318,14 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
     const isCsvExportVisible =
         transactionCount > 0 && (hasCsvExport || isCsvExportRestricted)
 
+    const networkChainId = selectedSource?.scope.chainId ?? null
+    const emptyBody =
+        networkChainId === null
+            ? t('asset_details.transaction_list.empty_body')
+            : t('asset_details.transaction_list.empty_on_network_body', {
+                  network: chainDisplayNameOf(networkChainId) ?? networkChainId,
+              })
+
     return {
         rows,
         isLoading,
@@ -321,6 +346,8 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
         handleRefresh,
         isRefreshing,
         isEmpty,
+        networkChainId,
+        emptyBody,
         isOfflineEmpty,
         handleExportCsv,
         isExportingCsv,

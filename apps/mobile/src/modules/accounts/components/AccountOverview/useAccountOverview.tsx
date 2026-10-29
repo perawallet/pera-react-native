@@ -196,9 +196,16 @@ export const useAccountOverview = ({
             account,
             openSendFunds,
             openReceiveFunds,
+            openReceiveFundsOn,
             openAccountOptions,
         }),
-        [account, openSendFunds, openReceiveFunds, openAccountOptions],
+        [
+            account,
+            openSendFunds,
+            openReceiveFunds,
+            openReceiveFundsOn,
+            openAccountOptions,
+        ],
     )
 
     return {

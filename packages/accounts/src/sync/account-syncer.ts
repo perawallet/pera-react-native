@@ -14,6 +14,7 @@ import type { QueryClient } from '@tanstack/react-query'
 import {
     fetchAndPersistAssets,
     fetchAndPersistPrices,
+    findNativeAsset,
 } from '@perawallet/wallet-core-assets'
 import {
     toScopeKey,
@@ -25,6 +26,7 @@ import {
     refreshAccountHoldings,
     getAccountChainStateRow,
     getAccountHoldings,
+    insertAssetHolding,
 } from '../db'
 // Imported directly (not via the hooks barrel) to avoid a module cycle:
 // hooks/useEnsureAccountEnriched imports from this file.
@@ -145,6 +147,26 @@ export async function syncAndEnrichNewAccount(
     }
 }
 
+// Only after a failed first read: a read that succeeds writes the native row
+// itself, and seeding ahead of it would flash 0 over a funded account. The
+// failure flag tells the list this zero is a placeholder, not the balance.
+async function seedUnreadNetwork(
+    address: string,
+    scope: ChainScope,
+): Promise<void> {
+    const native = findNativeAsset(scope.chainId)
+    if (native) {
+        await insertAssetHolding({
+            accountAddress: address,
+            assetId: native.assetId,
+            scope,
+        })
+    }
+    useHoldingsRefreshStore
+        .getState()
+        .setHoldingsRefreshFailed(scope, address, true)
+}
+
 async function doFetchAndPersistAccount(
     address: string,
     scope: ChainScope,
@@ -163,9 +185,24 @@ async function doFetchAndPersistAccount(
         holdings,
         observedRound,
         unrefreshedHoldings,
-    } = await adapter.fetchAccountState(address, scope, {
-        priorChainState: prior?.chainData,
-    })
+    } = await adapter
+        .fetchAccountState(address, scope, {
+            priorChainState: prior?.chainData,
+        })
+        .catch(async (error: unknown) => {
+            if (!prior) {
+                await seedUnreadNetwork(address, scope).catch(
+                    (seedError: unknown) => {
+                        logger.warn('Native holding seed failed', {
+                            address,
+                            scope,
+                            error: seedError,
+                        })
+                    },
+                )
+            }
+            throw error
+        })
 
     // ASA amount changes are caught by refreshAccountHoldings below; this
     // covers the native balance and everything in chainState (opt-in counts,

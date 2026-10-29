@@ -290,6 +290,7 @@
         "transaction_list": {
             "title": "Transaktionen",
             "empty_body": "Keine Transaktionen gefunden",
+            "empty_on_network_body": "Noch keine Transaktionen auf {{network}}",
             "offline_empty_title": "Du bist offline",
             "offline_empty_body": "Auf diesem Gerät sind noch keine Transaktionen gespeichert. Sie erscheinen, sobald du wieder online bist.",
             "search_paused_body": "Keine Transaktionen im jüngsten Verlauf gefunden.",
@@ -346,6 +347,8 @@
             "empty_body": "Diesem Konto sind keine Assets zugeordnet",
             "nomatch_title": "Keine passenden Assets",
             "nomatch_body": "Keine Assets entsprechen deinem Suchbegriff",
+            "funding_title": "Erste Schritte auf {{network}}",
+            "funding_body": "Zahle Guthaben ein, um dieses Netzwerk zu nutzen. Du brauchst etwas {{nativeSymbol}} auf {{network}}, um Netzwerkgebühren zu bezahlen.",
             "network_filter_all": "Alle",
             "see_networks": "Netzwerke anzeigen",
             "hide_networks": "Netzwerke ausblenden",

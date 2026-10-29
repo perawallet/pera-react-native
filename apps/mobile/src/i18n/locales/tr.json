@@ -290,6 +290,7 @@
         "transaction_list": {
             "title": "İşlemler",
             "empty_body": "İşlem bulunamadı",
+            "empty_on_network_body": "{{network}} ağında henüz işlem yok",
             "offline_empty_title": "Çevrimdışısın",
             "offline_empty_body": "Bu cihazda henüz kayıtlı işlem yok. Yeniden çevrimiçi olduğunda görünecekler.",
             "search_paused_body": "Yakın geçmişte işlem bulunamadı.",
@@ -346,6 +347,8 @@
             "empty_body": "Bu hesaba bağlı hiç varlığın yok",
             "nomatch_title": "Eşleşen varlık yok",
             "nomatch_body": "Arama terimiyle eşleşen varlık bulunamadı",
+            "funding_title": "{{network}} ağında başla",
+            "funding_body": "Bu ağı kullanmaya başlamak için para yatır. Ağ ücretlerini ödemek için {{network}} ağında biraz {{nativeSymbol}} gerekir.",
             "network_filter_all": "Tümü",
             "see_networks": "Ağları gör",
             "hide_networks": "Ağları gizle",
