@@ -16,6 +16,7 @@ import { renderHook, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { onlineManager } from '@tanstack/react-query'
 import { AnalyticsMetadataKey, SettingsEvent } from '@analytics'
+import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { useSettingsNotificationsScreen } from '../useSettingsNotificationsScreen'
 import { useSystemNotificationPermission } from '../../../hooks/useSystemNotificationPermission'
 
@@ -24,7 +25,12 @@ const mocks = vi.hoisted(() => ({
     isTogglePending: vi.fn(() => false),
     showToast: vi.fn(),
     trackEvent: vi.fn(),
+    notificationsChainOf: vi.fn(),
 }))
+
+type ChainsOf = { chains: Record<string, { address: string }> }
+const defaultNotificationsChainOf = (account: ChainsOf) =>
+    account.chains.algorand ? 'algorand' : undefined
 
 vi.mock('@analytics', async importOriginal => ({
     ...(await importOriginal<typeof import('@analytics')>()),
@@ -32,11 +38,13 @@ vi.mock('@analytics', async importOriginal => ({
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
-    addressOn: (
-        account: { chains: Record<string, { address: string }> },
-        scope: { chainId: string },
-    ) => account.chains[scope.chainId]?.address,
+    chainAccountOf: (account: ChainsOf, chainId: string) =>
+        account.chains[chainId],
     useAllAccounts: vi.fn(() => []),
+}))
+
+vi.mock('@hooks/useNotificationsChainResolver', () => ({
+    useNotificationsChainResolver: () => mocks.notificationsChainOf,
 }))
 
 vi.mock('@perawallet/wallet-core-messages', () => ({
@@ -81,6 +89,9 @@ describe('useSettingsNotificationsScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         isPushSupported.mockReturnValue(true)
+        mocks.notificationsChainOf.mockImplementation(
+            defaultNotificationsChainOf,
+        )
     })
 
     afterEach(() => onlineManager.setOnline(true))
@@ -206,5 +217,82 @@ describe('useSettingsNotificationsScreen', () => {
         // The screen must not add its own generic toast on top of the shared
         // hook's cause-appropriate one.
         expect(mocks.showToast).not.toHaveBeenCalled()
+    })
+
+    describe('an Ethereum account', () => {
+        const algorandAccount = {
+            id: 'algo',
+            chains: { algorand: { address: 'ADDR1' } },
+        }
+        const ethereumAccount = {
+            id: 'eth',
+            chains: { ethereum: { address: '0xabc' } },
+        }
+
+        it('lists only the accounts whose chain can notify them', () => {
+            vi.mocked(useAllAccounts).mockReturnValue([
+                algorandAccount,
+                ethereumAccount,
+            ] as any)
+
+            const { result } = renderHook(() =>
+                useSettingsNotificationsScreen(),
+            )
+
+            expect(result.current.accounts).toEqual([algorandAccount])
+        })
+
+        it('lists nothing when every account is on a chain that cannot notify', () => {
+            vi.mocked(useAllAccounts).mockReturnValue([ethereumAccount] as any)
+
+            const { result } = renderHook(() =>
+                useSettingsNotificationsScreen(),
+            )
+
+            expect(result.current.accounts).toEqual([])
+        })
+
+        it('toggles through its own address and tracks its chain once the chain can notify', async () => {
+            mocks.notificationsChainOf.mockReturnValue('ethereum')
+            mocks.toggleAccountNotification.mockResolvedValue(true)
+
+            const { result } = renderHook(() =>
+                useSettingsNotificationsScreen(),
+            )
+            await act(async () => {
+                result.current.handleAccountNotificationToggle(
+                    ethereumAccount as any,
+                    true,
+                )
+            })
+
+            expect(mocks.toggleAccountNotification).toHaveBeenCalledWith(
+                '0xabc',
+                true,
+            )
+            expect(mocks.trackEvent).toHaveBeenCalledWith(
+                SettingsEvent.ChangeNotificationFilter,
+                expect.objectContaining({
+                    [AnalyticsMetadataKey.ChainId]: 'ethereum',
+                }),
+            )
+        })
+
+        it('does nothing when its chain cannot notify', async () => {
+            mocks.notificationsChainOf.mockReturnValue(undefined)
+
+            const { result } = renderHook(() =>
+                useSettingsNotificationsScreen(),
+            )
+            await act(async () => {
+                result.current.handleAccountNotificationToggle(
+                    ethereumAccount as any,
+                    true,
+                )
+            })
+
+            expect(mocks.toggleAccountNotification).not.toHaveBeenCalled()
+            expect(mocks.trackEvent).not.toHaveBeenCalled()
+        })
     })
 })

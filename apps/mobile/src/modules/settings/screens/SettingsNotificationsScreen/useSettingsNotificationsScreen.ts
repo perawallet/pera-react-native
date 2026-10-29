@@ -10,17 +10,16 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
+import { useCallback, useMemo } from 'react'
 import {
-    addressOn,
+    chainAccountOf,
     useAllAccounts,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useNotificationPreferences } from '@perawallet/wallet-core-messages'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { useAccountNotificationToggle } from '@hooks/useAccountNotificationToggle'
+import { useNotificationsChainResolver } from '@hooks/useNotificationsChainResolver'
 import { useSystemNotificationPermission } from '../../hooks/useSystemNotificationPermission'
 import { trackEvent, SettingsEvent, AnalyticsMetadataKey } from '@analytics'
 
@@ -31,6 +30,7 @@ type UseSettingsNotificationsScreenResult = {
     isPushServiceUnavailable: boolean
     /** Whether this platform can deliver push at all (static platform fact). */
     isPushSupported: boolean
+    /** Only accounts whose chain can notify them. */
     accounts: WalletAccount[]
     /**
      * The raw list of addresses with notifications disabled. Exposed so the
@@ -57,8 +57,15 @@ export const useSettingsNotificationsScreen =
     (): UseSettingsNotificationsScreenResult => {
         const { isEnabled, isLoading, isPushServiceUnavailable, openSettings } =
             useSystemNotificationPermission()
-        const accounts = useAllAccounts()
-        const scope = useSelectedScope(LEGACY_CHAIN_ID)
+        const allAccounts = useAllAccounts()
+        const notificationsChainOf = useNotificationsChainResolver()
+        const accounts = useMemo(
+            () =>
+                allAccounts.filter(
+                    account => notificationsChainOf(account) !== undefined,
+                ),
+            [allAccounts, notificationsChainOf],
+        )
         const { isAccountEnabled, disabledAccounts } =
             useNotificationPreferences()
         const { toggleAccountNotification, isTogglePending } =
@@ -70,16 +77,18 @@ export const useSettingsNotificationsScreen =
 
         const handleAccountNotificationToggle = useCallback(
             (account: WalletAccount, enabled: boolean) => {
-                const address = addressOn(account, scope)
+                const chainId = notificationsChainOf(account)
+                if (chainId === undefined) return
+                const address = chainAccountOf(account, chainId)?.address
                 if (address === undefined) return
                 trackEvent(SettingsEvent.ChangeNotificationFilter, {
                     [AnalyticsMetadataKey.AccountAddress]: address,
                     [AnalyticsMetadataKey.AllowNotifications]: enabled,
-                    [AnalyticsMetadataKey.ChainId]: scope.chainId,
+                    [AnalyticsMetadataKey.ChainId]: chainId,
                 })
                 void toggleAccountNotification(address, enabled)
             },
-            [toggleAccountNotification, scope],
+            [toggleAccountNotification, notificationsChainOf],
         )
 
         return {

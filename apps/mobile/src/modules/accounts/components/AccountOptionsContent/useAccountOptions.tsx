@@ -13,6 +13,7 @@
 import { useCallback, useMemo, useState } from 'react'
 import {
     type WalletAccount,
+    accountChainIdOf,
     addressOn,
     authorityOf,
     hasRecoverySeed,
@@ -22,17 +23,16 @@ import {
     multisigParametersOf,
     standaloneSecretOf,
     useAccountCapabilityScope,
-    useAccountChainId,
     useAllAccounts,
     useAuthorityOf,
     useCanSignWith,
     useFindAccountByAddress,
     useMultisigDetailsBackfill,
+    useRegisteredChainIds,
     useRemoveAccount,
     useUpdateAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
-    LEGACY_CHAIN_ID,
     i18nKey,
     type ChainId,
     type I18nKey,
@@ -50,6 +50,7 @@ import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useCapability } from '@hooks/useCapability'
 import { rekeyRequirementFor } from '@hooks/capabilityRequirements'
 import { useAccountNotificationToggle } from '@hooks/useAccountNotificationToggle'
+import { useNotificationsChainResolver } from '@hooks/useNotificationsChainResolver'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import {
     useRevealPrivateKeyFlow,
@@ -93,7 +94,7 @@ export type UseAccountOptionsResult = {
     sheetTitle: string
     /** Names the account when more than one chain is active. */
     networksTitle: string
-    /** Rename, notifications, remove, then the account's secret if it has one. */
+    /** Rename, notifications where the account's chain can notify it, remove, then the account's secret if it has one. */
     topActions: SheetOption[]
     sharedAccountOptions: SheetOption[]
     networks: UseAccountNetworksResult
@@ -131,8 +132,11 @@ export const useAccountOptions = ({
     const { openViewPassphraseFlow } = useViewPassphraseFlow()
     const { openRevealPrivateKeyFlow } = useRevealPrivateKeyFlow()
     const isCloudBackupAvailable = useIsCloudBackupAvailable()
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
-    const accountChainId = useAccountChainId(account, LEGACY_CHAIN_ID)
+    const registeredChainIds = useRegisteredChainIds()
+    const accountChainId = accountChainIdOf(account, registeredChainIds)
+    const scope = useSelectedScope(accountChainId)
+    const notificationsChainOf = useNotificationsChainResolver()
+    const canToggleNotifications = notificationsChainOf(account) !== undefined
     const { getAccountName } = useAccountName()
     const isMultichain = useIsMultichain()
     const sheetTitle = getAccountName(account, accountChainId)
@@ -253,7 +257,7 @@ export const useAccountOptions = ({
         })
         onClose()
         const newName = await requestBottomSheet<string>({
-            contents: <RenameAccountContent accountAddress={address} />,
+            contents: <RenameAccountContent accountId={account.id} />,
             options: {
                 size: 'auto',
                 enablePanDownToClose: true,
@@ -275,7 +279,6 @@ export const useAccountOptions = ({
         onClose,
         requestBottomSheet,
         account,
-        address,
         updateAccount,
         showToast,
         t,
@@ -469,7 +472,10 @@ export const useAccountOptions = ({
                 title: t('account_options.rename_account'),
                 onPress: () => void handleOpenRename(),
             },
-            {
+        ]
+
+        if (canToggleNotifications) {
+            items.push({
                 id: 'toggle-notifications',
                 icon: 'bell',
                 title: notificationsEnabled
@@ -477,15 +483,16 @@ export const useAccountOptions = ({
                     : t('account_options.unmute_notifications'),
                 onPress: handleToggleNotifications,
                 disabled: isNotificationTogglePending,
-            },
-            {
-                id: 'remove-account',
-                icon: 'unlink',
-                title: t('account_options.remove_account'),
-                onPress: () => void handleOpenRemoveConfirm(),
-                variant: 'destructive',
-            },
-        ]
+            })
+        }
+
+        items.push({
+            id: 'remove-account',
+            icon: 'unlink',
+            title: t('account_options.remove_account'),
+            onPress: () => void handleOpenRemoveConfirm(),
+            variant: 'destructive',
+        })
 
         if (showPassphrase) {
             items.push({
@@ -510,6 +517,7 @@ export const useAccountOptions = ({
         t,
         showPassphrase,
         showPrivateKey,
+        canToggleNotifications,
         notificationsEnabled,
         isNotificationTogglePending,
         handleViewPassphrase,
