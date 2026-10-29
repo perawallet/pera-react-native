@@ -25,10 +25,14 @@ import {
 import type { BackupActionOutcome } from '@perawallet/wallet-core-backup'
 import {
     registerAlgorandAccountsAdapter,
+    registerAlgorandDeviceAdapter,
     registerAlgorandMultisigAdapter,
     seedAuthority,
 } from '@test-utils/algorandAccountsAdapter'
-import { registerEthereumAccountsAdapter } from '@test-utils/ethereumAccountsAdapter'
+import {
+    registerEthereumAccountsAdapter,
+    registerEthereumDeviceAdapter,
+} from '@test-utils/ethereumAccountsAdapter'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { setCapabilityOverrides } from '@test-utils/capability-overrides'
 import { addressCodecs } from '@perawallet/wallet-core-chain-contract'
@@ -160,7 +164,10 @@ vi.mock('@hooks/useAppNavigation', () => ({
     }),
 }))
 
-vi.mock('@perawallet/wallet-core-messages', () => ({
+vi.mock('@perawallet/wallet-core-messages', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-messages')
+    >()),
     useNotificationPreferences: () => ({
         disabledAccounts: [],
         isAccountEnabled: mockIsAccountEnabled,
@@ -295,6 +302,7 @@ describe('useAccountOptions', () => {
     beforeEach(() => {
         registerLegacyAddressCodec(() => true)
         registerAlgorandAccountsAdapter()
+        registerAlgorandDeviceAdapter()
         registerAlgorandMultisigAdapter()
         vi.clearAllMocks()
         useAccountChainStateStore.getState().resetState()
@@ -623,23 +631,50 @@ describe('useAccountOptions', () => {
                 }),
             )
 
+        const enableDeviceRegistrationV4 = () =>
+            useRemoteConfigStore
+                .getState()
+                .setConfigOverride('enable_device_registration_v4', true)
+
         beforeEach(() => {
             registerEthereumChain()
             registerEthereumAccountsAdapter()
         })
         afterEach(restoreAlgorandOnlyChains)
 
-        it('has no notifications row while they are off for its chain', () => {
+        it('keeps the notifications row while they are off for its chain, since v4 registration still sends its address', () => {
+            registerEthereumDeviceAdapter()
+            enableDeviceRegistrationV4()
+
             const { result } = render(ethWatchAccount)
 
             const ids = sheetOptionsOf(result.current).map(o => o.id)
             expect(ids).toContain('rename-account')
             expect(ids).toContain('remove-account')
+            expect(ids).toContain('toggle-notifications')
+        })
+
+        it('has no notifications row while v4 registration is off, since v3 leaves its address out', () => {
+            registerEthereumDeviceAdapter()
+
+            const { result } = render(ethWatchAccount)
+
+            const ids = sheetOptionsOf(result.current).map(o => o.id)
             expect(ids).not.toContain('toggle-notifications')
         })
 
-        it('mutes its own address once notifications are on for its chain', async () => {
-            setCapabilityOverrides({ notifications: true }, ETHEREUM_CHAIN_ID)
+        it('has no notifications row when its chain registers nothing with the device', () => {
+            enableDeviceRegistrationV4()
+
+            const { result } = render(ethWatchAccount)
+
+            const ids = sheetOptionsOf(result.current).map(o => o.id)
+            expect(ids).not.toContain('toggle-notifications')
+        })
+
+        it('mutes its own address', async () => {
+            registerEthereumDeviceAdapter()
+            enableDeviceRegistrationV4()
             const { result } = render(ethWatchAccount)
 
             await act(async () => {

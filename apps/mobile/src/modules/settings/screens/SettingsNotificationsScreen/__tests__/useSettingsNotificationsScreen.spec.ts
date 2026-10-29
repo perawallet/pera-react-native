@@ -43,11 +43,8 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAllAccounts: vi.fn(() => []),
 }))
 
-vi.mock('@hooks/useNotificationsChainResolver', () => ({
-    useNotificationsChainResolver: () => mocks.notificationsChainOf,
-}))
-
 vi.mock('@perawallet/wallet-core-messages', () => ({
+    useNotificationsChainResolver: () => mocks.notificationsChainOf,
     useNotificationPreferences: vi.fn(() => ({
         setAccountEnabled: vi.fn(),
         isAccountEnabled: vi.fn(() => true),
@@ -229,7 +226,7 @@ describe('useSettingsNotificationsScreen', () => {
             chains: { ethereum: { address: '0xabc' } },
         }
 
-        it('lists only the accounts whose chain can notify them', () => {
+        it('lists only the accounts registered for push', () => {
             vi.mocked(useAllAccounts).mockReturnValue([
                 algorandAccount,
                 ethereumAccount,
@@ -242,7 +239,7 @@ describe('useSettingsNotificationsScreen', () => {
             expect(result.current.accounts).toEqual([algorandAccount])
         })
 
-        it('lists nothing when every account is on a chain that cannot notify', () => {
+        it('lists nothing when no account is registered for push', () => {
             vi.mocked(useAllAccounts).mockReturnValue([ethereumAccount] as any)
 
             const { result } = renderHook(() =>
@@ -252,7 +249,7 @@ describe('useSettingsNotificationsScreen', () => {
             expect(result.current.accounts).toEqual([])
         })
 
-        it('toggles through its own address and tracks its chain once the chain can notify', async () => {
+        it('toggles through its own address and tracks its chain once registered for push', async () => {
             mocks.notificationsChainOf.mockReturnValue('ethereum')
             mocks.toggleAccountNotification.mockResolvedValue(true)
 
@@ -278,7 +275,7 @@ describe('useSettingsNotificationsScreen', () => {
             )
         })
 
-        it('does nothing when its chain cannot notify', async () => {
+        it('does nothing when it is not registered for push', async () => {
             mocks.notificationsChainOf.mockReturnValue(undefined)
 
             const { result } = renderHook(() =>

@@ -16,10 +16,12 @@ import {
     useAllAccounts,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { useNotificationPreferences } from '@perawallet/wallet-core-messages'
+import {
+    useNotificationPreferences,
+    useNotificationsChainResolver,
+} from '@perawallet/wallet-core-messages'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { useAccountNotificationToggle } from '@hooks/useAccountNotificationToggle'
-import { useNotificationsChainResolver } from '@hooks/useNotificationsChainResolver'
 import { useSystemNotificationPermission } from '../../hooks/useSystemNotificationPermission'
 import { trackEvent, SettingsEvent, AnalyticsMetadataKey } from '@analytics'
 
@@ -30,7 +32,7 @@ type UseSettingsNotificationsScreenResult = {
     isPushServiceUnavailable: boolean
     /** Whether this platform can deliver push at all (static platform fact). */
     isPushSupported: boolean
-    /** Only accounts whose chain can notify them. */
+    /** Only accounts device registration tells the backend about. */
     accounts: WalletAccount[]
     /**
      * The raw list of addresses with notifications disabled. Exposed so the

@@ -38,7 +38,10 @@ import {
     type I18nKey,
 } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import { useNotificationPreferences } from '@perawallet/wallet-core-messages'
+import {
+    useNotificationPreferences,
+    useNotificationsChainResolver,
+} from '@perawallet/wallet-core-messages'
 import { getBackupSyncManager } from '@perawallet/wallet-core-backup'
 import { logger, toError } from '@perawallet/wallet-core-shared'
 import type { SheetOption } from '@components/SheetOptionRow'
@@ -50,7 +53,6 @@ import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useCapability } from '@hooks/useCapability'
 import { rekeyRequirementFor } from '@hooks/capabilityRequirements'
 import { useAccountNotificationToggle } from '@hooks/useAccountNotificationToggle'
-import { useNotificationsChainResolver } from '@hooks/useNotificationsChainResolver'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import {
     useRevealPrivateKeyFlow,

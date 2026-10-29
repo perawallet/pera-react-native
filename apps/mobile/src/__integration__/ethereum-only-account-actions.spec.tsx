@@ -33,6 +33,7 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { EVM_CHAIN_NETWORKS } from '@perawallet/wallet-core-chain-contract'
+import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { evmRpcHandlers } from '@perawallet/wallet-core-chain-ethereum/test-handlers'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import {
@@ -109,6 +110,10 @@ describe('Flow: an Ethereum-only account in its options sheet, Settings → Noti
         resetTestKeystore()
         useAccountsStore.getState().setAccounts([])
         vi.mocked(Clipboard.setStringAsync).mockClear()
+        // v3 registration names no chain and takes only Algorand addresses.
+        useRemoteConfigStore
+            .getState()
+            .setConfigOverride('enable_device_registration_v4', true)
         const [mainnet] = EVM_CHAIN_NETWORKS.ethereum.networks
         server.use(
             ...evmRpcHandlers({
@@ -123,6 +128,7 @@ describe('Flow: an Ethereum-only account in its options sheet, Settings → Noti
 
     afterEach(() => {
         useAccountsStore.getState().setAccounts([])
+        useRemoteConfigStore.getState().resetState()
     })
 
     const renderOptions = (account: WalletAccount) =>
@@ -137,7 +143,7 @@ describe('Flow: an Ethereum-only account in its options sheet, Settings → Noti
             />,
         )
 
-    it('Given an Ethereum-only account, when its options sheet opens, then it offers rename and remove but no notifications row', async () => {
+    it('Given an Ethereum-only account, when its options sheet opens, then it offers rename, remove and the notifications row its device registration needs', async () => {
         useAccountsStore.getState().setAccounts([ETH_WATCH])
 
         renderOptions(ETH_WATCH)
@@ -145,8 +151,8 @@ describe('Flow: an Ethereum-only account in its options sheet, Settings → Noti
         await screen.findByTestId('account_option_rename-account')
         expect(screen.getByTestId('account_option_remove-account')).toBeTruthy()
         expect(
-            screen.queryByTestId('account_option_toggle-notifications'),
-        ).toBeNull()
+            screen.getByTestId('account_option_toggle-notifications'),
+        ).toBeTruthy()
     })
 
     it('Given an Ethereum-only account, when the user taps rename, then the input opens holding its current name', async () => {
@@ -161,7 +167,7 @@ describe('Flow: an Ethereum-only account in its options sheet, Settings → Noti
         expect((input as HTMLInputElement).value).toBe('Eth watch')
     })
 
-    it('Given an Algorand and an Ethereum account, when the user opens Settings → Notifications, then only the Algorand account is listed', async () => {
+    it('Given an Algorand and an Ethereum account, when the user opens Settings → Notifications, then both are listed', async () => {
         useAccountsStore.getState().setAccounts([ALGO_WATCH, ETH_WATCH])
 
         renderWithNavigation(
@@ -170,7 +176,7 @@ describe('Flow: an Ethereum-only account in its options sheet, Settings → Noti
         )
 
         expect(await screen.findByText('Algo watch')).toBeTruthy()
-        expect(screen.queryByText('Eth watch')).toBeNull()
+        expect(screen.getByText('Eth watch')).toBeTruthy()
     })
 
     it('Given an Ethereum account selected, when the user long-presses the account header, then its 0x address is copied', async () => {
