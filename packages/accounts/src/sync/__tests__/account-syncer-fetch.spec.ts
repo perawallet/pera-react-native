@@ -32,7 +32,16 @@ const mockRefreshAccountHoldings = vi.fn()
 const mockGetAccountChainStateRow = vi.fn()
 const mockInsertAssetHolding = vi.fn()
 
+const { mockGetAddedTokenIdsByAccount } = vi.hoisted(() => ({
+    mockGetAddedTokenIdsByAccount: vi.fn(
+        async ({ accountAddresses }: { accountAddresses: string[] }) =>
+            new Map(accountAddresses.map(address => [address, [] as string[]])),
+    ),
+}))
+
 vi.mock('../../db', () => ({
+    getAddedTokenIdsByAccount: (...args: unknown[]) =>
+        mockGetAddedTokenIdsByAccount(...(args as [never])),
     insertAssetHolding: (...args: unknown[]) => mockInsertAssetHolding(...args),
     upsertAccountChainState: (...args: unknown[]) =>
         mockUpsertAccountChainState(...args),
@@ -132,7 +141,7 @@ describe('fetchAndPersistAccount', () => {
         expect(fetchAccountState()).toHaveBeenCalledWith(
             'ADDR1',
             MAINNET_SCOPE,
-            { priorChainState: undefined },
+            { priorChainState: undefined, addedTokenIds: [] },
         )
         expect(mockUpsertAccountChainState).toHaveBeenCalledWith({
             accountAddress: 'ADDR1',
@@ -156,6 +165,35 @@ describe('fetchAndPersistAccount', () => {
         })
     })
 
+    it("hands the chain the account's added tokens with the read", async () => {
+        mockGetAddedTokenIdsByAccount.mockResolvedValueOnce(
+            new Map([['ADDR1', ['0xTOKEN']]]),
+        )
+
+        await fetchAndPersistAccount('ADDR1', MAINNET_SCOPE)
+
+        expect(fetchAccountState()).toHaveBeenCalledWith(
+            'ADDR1',
+            MAINNET_SCOPE,
+            expect.objectContaining({ addedTokenIds: ['0xTOKEN'] }),
+        )
+    })
+
+    it('still syncs, with no added tokens, when they cannot be read', async () => {
+        mockGetAddedTokenIdsByAccount.mockRejectedValueOnce(
+            new Error('disk I/O error'),
+        )
+
+        await fetchAndPersistAccount('ADDR1', MAINNET_SCOPE)
+
+        expect(fetchAccountState()).toHaveBeenCalledWith(
+            'ADDR1',
+            MAINNET_SCOPE,
+            expect.objectContaining({ addedTokenIds: [] }),
+        )
+        expect(mockRefreshAccountHoldings).toHaveBeenCalled()
+    })
+
     it("hands the chain the prior row's chain state", async () => {
         const priorChainState = {
             family: 'algorand' as const,
@@ -176,7 +214,7 @@ describe('fetchAndPersistAccount', () => {
         expect(fetchAccountState()).toHaveBeenCalledWith(
             'ADDR1',
             MAINNET_SCOPE,
-            { priorChainState },
+            { priorChainState, addedTokenIds: [] },
         )
     })
 
@@ -311,7 +349,7 @@ describe('ensureAccountFetched', () => {
         expect(fetchAccountState()).toHaveBeenCalledWith(
             'ADDR1',
             MAINNET_SCOPE,
-            { priorChainState: undefined },
+            { priorChainState: undefined, addedTokenIds: [] },
         )
     })
 

@@ -29,6 +29,7 @@ import {
     getChainDescriptor,
 } from '@perawallet/wallet-core-chain-shared'
 import {
+    addressCodecs,
     assetRefKey,
     type ChainId,
 } from '@perawallet/wallet-core-chain-contract'
@@ -140,7 +141,7 @@ export const useAddAssetToken = (
     // stored record yet to read its name back from.
     // Pera flagged a suspicious token, so it gets its own, harder warning.
     const confirmUnverified = useCallback(
-        (assetName: string, isSuspicious: boolean) =>
+        (assetName: string, address: string, isSuspicious: boolean) =>
             request<boolean>({
                 contents: (
                     <ConfirmActionContent
@@ -155,7 +156,7 @@ export const useAddAssetToken = (
                             isSuspicious
                                 ? 'add_asset.token.suspicious_body'
                                 : 'add_asset.token.unverified_body',
-                            { assetName },
+                            { assetName, address },
                         )}
                         confirmLabel={t('add_asset.token.unverified_confirm')}
                         cancelLabel={t('common.cancel.label')}
@@ -215,6 +216,9 @@ export const useAddAssetToken = (
                     tier !== PeraAssetVerificationTier.verified &&
                     (await confirmUnverified(
                         assetName,
+                        addressCodecs
+                            .get(result.scope.chainId)
+                            .truncate(result.asset.assetId),
                         tier === PeraAssetVerificationTier.suspicious,
                     )) !== true
                 ) {

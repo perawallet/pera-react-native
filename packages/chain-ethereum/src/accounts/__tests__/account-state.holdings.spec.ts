@@ -400,12 +400,7 @@ describe('fetchAccountState whitelist reuse', () => {
 })
 
 describe('fetchAccountState added tokens', () => {
-    const addedFor =
-        (...assetIds: string[]) =>
-        async (addresses: string[]) =>
-            new Map(addresses.map(address => [address, assetIds]))
-
-    it('reads the balance of an added token off the list, leaving zeros to the syncer', async () => {
+    it('reads the balance of an added token off the list, leaving zeros to the holdings write', async () => {
         server.use(
             ...rpcAtBlock(
                 '0x64',
@@ -419,16 +414,12 @@ describe('fetchAccountState added tokens', () => {
         const ops = createEthereumAccountStateOps(
             testChainContext({ services: ['assets'] }),
             ETHEREUM,
-            {
-                addedTokenIds: addedFor(
-                    USDC,
-                    DAI.toLowerCase(),
-                    'not-an-address',
-                ),
-            },
         )
 
-        const state = await ops.fetchAccountState(ADDRESS, SCOPE, HINT)
+        const state = await ops.fetchAccountState(ADDRESS, SCOPE, {
+            ...HINT,
+            addedTokenIds: [USDC, DAI.toLowerCase(), 'not-an-address'],
+        })
 
         expect(
             state.holdings.map(h => [h.assetId, h.amount.toFixed()]),
@@ -442,13 +433,12 @@ describe('fetchAccountState added tokens', () => {
         server.use(
             ...rpcAtBlock('0x64', erc20CallResponder({ [DAI]: token(3n) })),
         )
-        const ops = createEthereumAccountStateOps(
-            testChainContext(),
-            ETHEREUM,
-            { addedTokenIds: addedFor(DAI) },
-        )
+        const ops = createEthereumAccountStateOps(testChainContext(), ETHEREUM)
 
-        const state = await ops.fetchAccountState(ADDRESS, SCOPE, HINT)
+        const state = await ops.fetchAccountState(ADDRESS, SCOPE, {
+            ...HINT,
+            addedTokenIds: [DAI],
+        })
 
         expect(state.holdings.map(h => h.assetId)).toEqual(['native', DAI])
     })

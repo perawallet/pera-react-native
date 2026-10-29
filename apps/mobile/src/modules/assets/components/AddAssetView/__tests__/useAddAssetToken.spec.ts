@@ -87,6 +87,13 @@ vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
     }),
 }))
 
+vi.mock('@perawallet/wallet-core-chain-contract', async importOriginal => ({
+    ...(await importOriginal<object>()),
+    addressCodecs: {
+        get: () => ({ truncate: (address: string) => `${address}…short` }),
+    },
+}))
+
 vi.mock('@modules/bottom-sheet', () => ({
     useBottomSheet: () => ({ request: mocks.request }),
 }))
@@ -177,6 +184,23 @@ describe('useAddAssetToken', () => {
 
         expect(mocks.request).toHaveBeenCalledTimes(1)
         expect(mocks.addToken).not.toHaveBeenCalled()
+    })
+
+    it("names the token's shortened contract address on the warning", async () => {
+        mocks.request.mockResolvedValueOnce(undefined)
+        const { result } = render()
+
+        await act(async () => {
+            await result.current.handleAddToken(onEthereum('0xNEW'))
+        })
+
+        expect(mocks.t).toHaveBeenCalledWith(
+            'add_asset.token.unverified_body',
+            {
+                assetName: 'USDC',
+                address: '0xNEW…short',
+            },
+        )
     })
 
     it('gives a suspicious token its own, harder warning', async () => {

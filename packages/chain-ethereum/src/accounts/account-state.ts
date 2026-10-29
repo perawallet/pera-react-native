@@ -16,11 +16,10 @@ import type {
     ChainContext,
     ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
-import {
-    getAddedTokenIdsByAccount,
-    type AccountChangeSignal,
-    type AccountsChainAdapter,
-    type AccountStateSnapshot,
+import type {
+    AccountChangeSignal,
+    AccountsChainAdapter,
+    AccountStateSnapshot,
 } from '@perawallet/wallet-core-accounts'
 import { upsertAssets } from '@perawallet/wallet-core-assets'
 import {
@@ -57,15 +56,6 @@ export type EthereumAccountStateOps = Required<
 
 type ListedTokenIds = (scope: ChainScope) => Promise<string[]>
 
-/** The tokens each address added, keyed by the address as asked. */
-type AddedTokenIds = (
-    addresses: string[],
-    scope: ChainScope,
-) => Promise<Map<string, string[]>>
-
-const storedAddedTokenIds: AddedTokenIds = (accountAddresses, scope) =>
-    getAddedTokenIdsByAccount({ accountAddresses, scope })
-
 const readFootprint = async (
     ctx: ChainContext,
     chain: EvmChain,
@@ -95,6 +85,7 @@ const ACCOUNT_READ_WINDOW_MS = 10
 
 type PendingRead = {
     address: string
+    addedTokenIds: readonly string[]
     resolve: (snapshot: AccountStateSnapshot) => void
     reject: (error: unknown) => void
 }
@@ -170,7 +161,6 @@ const readBatch = async (
     ctx: ChainContext,
     chain: EvmChain,
     listedTokenIds: ListedTokenIds,
-    addedTokenIds: AddedTokenIds,
     scope: ChainScope,
     reads: PendingRead[],
 ): Promise<void> => {
@@ -186,20 +176,16 @@ const readBatch = async (
               ),
           ).then(settled => persistNftReads(scope, settled))
         : Promise.resolve(reads.map(() => undefined))
-    const [blockNumber, tokenIds, addedByAccount] = await Promise.all([
+    const [blockNumber, tokenIds] = await Promise.all([
         client.getBlockNumber(),
         hasWhitelist ? listedTokenIds(scope) : [],
-        addedTokenIds(
-            reads.map(read => read.address),
-            scope,
-        ),
     ])
     // Added tokens off the list need their balances read too; the syncer
     // shows them at zero. Checksummed, so a listed token that was also added
     // is read once; a stored id that isn't an address is skipped, not thrown.
     const readTokenIds = [
         ...new Set(
-            [...tokenIds, ...[...addedByAccount.values()].flat()]
+            [...tokenIds, ...reads.flatMap(read => read.addedTokenIds)]
                 .filter(id => isAddress(id))
                 .map(id => getAddress(id)),
         ),
@@ -254,7 +240,6 @@ const coalescedAccountReads = (
     ctx: ChainContext,
     chain: EvmChain,
     listedTokenIds: ListedTokenIds,
-    addedTokenIds: AddedTokenIds,
     windowMs: number,
 ): EthereumAccountStateOps['fetchAccountState'] => {
     const batches = new Map<
@@ -265,18 +250,13 @@ const coalescedAccountReads = (
         const batch = batches.get(key)
         batches.delete(key)
         if (!batch) return
-        readBatch(
-            ctx,
-            chain,
-            listedTokenIds,
-            addedTokenIds,
-            batch.scope,
-            batch.reads,
-        ).catch((error: unknown) => {
-            batch.reads.forEach(read => read.reject(error))
-        })
+        readBatch(ctx, chain, listedTokenIds, batch.scope, batch.reads).catch(
+            (error: unknown) => {
+                batch.reads.forEach(read => read.reject(error))
+            },
+        )
     }
-    return (address, scope) =>
+    return (address, scope, hint) =>
         new Promise<AccountStateSnapshot>((resolve, reject) => {
             // Rejected alone: in the batch, one bad address would fail every
             // read sharing its balance pass.
@@ -291,7 +271,12 @@ const coalescedAccountReads = (
                 batches.set(key, batch)
                 setTimeout(() => flush(key), windowMs)
             }
-            batch.reads.push({ address, resolve, reject })
+            batch.reads.push({
+                address,
+                addedTokenIds: hint.addedTokenIds ?? [],
+                resolve,
+                reject,
+            })
         })
 }
 
@@ -369,12 +354,10 @@ export const createEthereumAccountStateOps = (
         now = Date.now,
         listedTokens = cachedWhitelist(chain, now),
         readWindowMs = ACCOUNT_READ_WINDOW_MS,
-        addedTokenIds = storedAddedTokenIds,
     }: {
         now?: () => number
         listedTokens?: ListedTokens
         readWindowMs?: number
-        addedTokenIds?: AddedTokenIds
     } = {},
 ): EthereumAccountStateOps => ({
     chainId: chain.row.id,
@@ -382,7 +365,6 @@ export const createEthereumAccountStateOps = (
         ctx,
         chain,
         listedTokenIds(listedTokens),
-        addedTokenIds,
         readWindowMs,
     ),
     accountExists: (address, scope) =>

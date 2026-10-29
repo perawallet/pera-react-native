@@ -37,7 +37,16 @@ const mockRefreshAccountHoldings = vi.fn()
 const mockGetAccountChainStateRow = vi.fn()
 const mockGetAccountHoldings = vi.fn()
 
+const { mockGetAddedTokenIdsByAccount } = vi.hoisted(() => ({
+    mockGetAddedTokenIdsByAccount: vi.fn(
+        async ({ accountAddresses }: { accountAddresses: string[] }) =>
+            new Map(accountAddresses.map(address => [address, [] as string[]])),
+    ),
+}))
+
 vi.mock('../../db', () => ({
+    getAddedTokenIdsByAccount: (...args: unknown[]) =>
+        mockGetAddedTokenIdsByAccount(...(args as [never])),
     insertAssetHolding: vi.fn(),
     upsertAccountChainState: vi.fn(),
     refreshAccountHoldings: (...args: unknown[]) =>
@@ -90,7 +99,7 @@ describe('syncAndEnrichNewAccount', () => {
         expect(fetchAccountState()).toHaveBeenCalledWith(
             'ADDR1',
             MAINNET_SCOPE,
-            { priorChainState: undefined },
+            { priorChainState: undefined, addedTokenIds: [] },
         )
         expect(mockFetchAndPersistAssets).toHaveBeenCalledWith(['0', '100'], {
             chainId: 'algorand',

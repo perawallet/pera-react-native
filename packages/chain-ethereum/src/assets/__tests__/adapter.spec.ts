@@ -1046,6 +1046,36 @@ describe('search', () => {
         ])
     })
 
+    it('reports a pasted quarantined address as suspicious, caching nothing', async () => {
+        server.use(
+            ...peraEvmAssetHandlers({
+                baseUrl: TEST_PERA_URL,
+                whitelist: {
+                    1: [
+                        nativeWhitelistItem(1),
+                        listed(USDC, 'USD Coin', 'USDC'),
+                    ],
+                },
+                assets: { [DAI_CAIP19]: quarantinedDai },
+            }),
+            ...rpc({ [DAI]: daiOnChain }),
+        )
+        const { node, full } = memoryPersistence()
+
+        const page = await searchWith(DAI.toLowerCase())
+
+        expect(page.results).toEqual([
+            expect.objectContaining({
+                assetId: DAI,
+                peraMetadata: expect.objectContaining({
+                    verificationTier: 'suspicious',
+                }),
+            }),
+        ])
+        expect(node).toEqual([])
+        expect(full).toEqual([])
+    })
+
     it('finds nothing for a pasted address that is not a token', async () => {
         server.use(
             ...peraEvmAssetHandlers({ baseUrl: TEST_PERA_URL, whitelist }),
