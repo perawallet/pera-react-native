@@ -32,6 +32,7 @@ import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { testAccount } from '../../__tests__/accountFactory'
 import { refreshAccountHoldings } from '../../db'
+import { accountValueKey } from '../../models'
 import { useAccountBalancesQuery } from '../useAccountBalancesQuery'
 import { useAccountSummaryQuery } from '../useAccountSummaryQuery'
 import { useAccountValueTotalsQuery } from '../useAccountValueTotalsQuery'
@@ -254,7 +255,9 @@ describe('portfolio values for Algorand accounts', () => {
             portfolioNativeValue: '28',
         })
 
-        const total = totals.accountValueTotals.get('ADDR1')
+        const total = totals.accountValueTotals.get(
+            accountValueKey('algorand', 'ADDR1'),
+        )
         expect({
             nativeValue: str(total?.nativeValue ?? null),
             usdValue: str(total?.usdValue ?? null),
@@ -318,7 +321,9 @@ describe('portfolio values for Algorand accounts', () => {
             nativeFiat: null,
         })
 
-        const total = totals.accountValueTotals.get('ADDR2')
+        const total = totals.accountValueTotals.get(
+            accountValueKey('algorand', 'ADDR2'),
+        )
         expect({
             nativeValue: str(total?.nativeValue ?? null),
             usdValue: str(total?.usdValue ?? null),
