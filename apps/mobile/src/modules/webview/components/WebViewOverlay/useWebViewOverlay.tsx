@@ -43,6 +43,7 @@ export const useWebViewOverlay = (): void => {
                 contents: (
                     <PWWebView
                         requestId={view.id}
+                        // oxlint-disable-next-line pera/no-unvalidated-open-url -- only URLs from pushWebView call sites, which this rule checks
                         url={view.url}
                         enablePeraConnect={view.enablePeraConnect ?? false}
                         showControls

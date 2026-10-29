@@ -75,6 +75,7 @@ export const TermsAcceptanceView = ({
             }
         >
             <PWStaticWebView
+                // oxlint-disable-next-line pera/no-unvalidated-open-url -- bundled terms HTML or withLanguageParam(config.termsOfServiceUrl)
                 source={source}
                 startInLoadingState={showLoading}
                 onLoad={onLoad}

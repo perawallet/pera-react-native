@@ -66,7 +66,6 @@ export const useExternalUriHandlers = (
             }
             void Linking.canOpenURL(url).then(supported => {
                 if (supported) {
-                    // oxlint-disable-next-line pera/no-unvalidated-open-url -- toValidatedBrowserUrl above
                     void Linking.openURL(url)
                 } else {
                     sendUnsupportedUrl(message.id, url)

@@ -20,7 +20,6 @@ export {
     type WebViewRequest,
 } from './hooks/useWebViewStore'
 export {
-    isSafeBrowserUrl,
     isSafeRelativePath,
     isTrustedWebviewOrigin,
     openValidatedBrowserUrl,

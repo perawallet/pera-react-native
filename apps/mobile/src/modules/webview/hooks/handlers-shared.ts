@@ -202,7 +202,6 @@ export const openValidatedBrowserUrl = (raw: unknown): boolean => {
         return false
     }
     // No OS handler for the URL is a device condition, not our bug.
-    // oxlint-disable-next-line pera/no-unvalidated-open-url -- validated just above
     Linking.openURL(url).catch(err =>
         logger.warn('Failed to open external URL', { url, err }),
     )

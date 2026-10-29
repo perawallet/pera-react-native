@@ -16,11 +16,13 @@ import { MigrationDataSection } from '../components/MigrationDataSection'
 import { EmptyDataHint } from '../components/EmptyDataHint'
 import { SchemaReplayResultRow } from './SchemaReplayResultRow'
 
+type SchemaReplayResultsSectionProps = {
+    results: Optional<Record<string, LegacySchemaReplayResult>>
+}
+
 export const SchemaReplayResultsSection = ({
     results,
-}: {
-    results: Optional<Record<string, LegacySchemaReplayResult>>
-}) => {
+}: SchemaReplayResultsSectionProps) => {
     if (!results) return null
     const entries = Object.entries(results)
     return (

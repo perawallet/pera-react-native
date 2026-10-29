@@ -43,13 +43,15 @@ const describeDeviceIdOrigin = (
     return `${id ?? 'null'} (${deviceIdOriginStatusOf(origin)})`
 }
 
+type DeviceIdentifiersSectionProps = {
+    deviceIdentifiers: LegacyDeviceIdentifiers
+    rn: RNMigrationSnapshot
+}
+
 export const DeviceIdentifiersSection = ({
     deviceIdentifiers,
     rn,
-}: {
-    deviceIdentifiers: LegacyDeviceIdentifiers
-    rn: RNMigrationSnapshot
-}) => {
+}: DeviceIdentifiersSectionProps) => {
     return (
         <MigrationDataSection title='Device Identifiers'>
             <MigrationDataRow

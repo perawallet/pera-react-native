@@ -16,15 +16,17 @@ import { MigrationDataSection } from '../components/MigrationDataSection'
 import { LegacyVsRnRow } from '../components/LegacyVsRnRow'
 import type { RNMigrationSnapshot } from '../useRNMigrationSnapshot'
 
+type AuthSectionProps = {
+    auth: LegacyMigrationData['auth']
+    biometricEnabled: Nullable<boolean>
+    rn: RNMigrationSnapshot
+}
+
 export const AuthSection = ({
     auth,
     biometricEnabled,
     rn,
-}: {
-    auth: LegacyMigrationData['auth']
-    biometricEnabled: Nullable<boolean>
-    rn: RNMigrationSnapshot
-}) => {
+}: AuthSectionProps) => {
     const legacyPinBytes = auth.pin?.length ?? null
     const rnPinDesc = rn.auth.hasPin
         ? `PinRecord v${rn.auth.pinRecordVersion ?? '?'} (${rn.auth.pinRecordBytes ?? '?'} B)`

@@ -16,11 +16,11 @@ import { EmptyDataHint } from '../components/EmptyDataHint'
 import { MigrationDataRow } from '../components/MigrationDataRow'
 import { MigrationDataSubBlock } from '../components/MigrationDataSubBlock'
 
-export const PasskeysSection = ({
-    passkeys,
-}: {
+type PasskeysSectionProps = {
     passkeys: LegacyPasskey[]
-}) => {
+}
+
+export const PasskeysSection = ({ passkeys }: PasskeysSectionProps) => {
     return (
         <MigrationDataSection
             title='Passkeys'

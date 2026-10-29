@@ -64,6 +64,7 @@ export const useTransactionHashRow = (
             void Linking.openURL(explorerUrl)
             return
         }
+        // oxlint-disable-next-line pera/no-unvalidated-open-url -- built by the card adapter from the network's explorer config
         pushWebView({ url: explorerUrl, id: generateUniqueId() })
     }, [explorerUrl, pushWebView])
 

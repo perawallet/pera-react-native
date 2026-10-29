@@ -19,6 +19,11 @@ import {
 } from '@perawallet/wallet-core-database'
 import { createTestDatabase } from '@perawallet/wallet-core-database/test-utils'
 import {
+    FAKE_NATIVE_ASSET,
+    fakeAssetsAdapter,
+} from '@perawallet/wallet-core-assets/testing'
+import {
+    assetsChainAdapters,
     upsertAssets,
     upsertAssetPrices,
     nativeAssetFor,
@@ -552,6 +557,10 @@ describe('account holdings queries', () => {
             expect(await pageIds({ search: '30' })).toEqual(['300'])
         })
 
+        it('still finds ALGO by its full id', async () => {
+            expect(await pageIds({ search: '0' })).toContain('0')
+        })
+
         describe('across sources', () => {
             const ETH_SCOPE = {
                 chainId: 'ethereum',
@@ -688,6 +697,196 @@ describe('account holdings queries', () => {
                     await getAccountHoldingsLite({ db, sources: [] }),
                 ).toEqual([])
             })
+        })
+    })
+
+    describe('native asset search', () => {
+        const ETH_MAINNET = {
+            chainId: 'ethereum',
+            networkId: 'mainnet',
+        } as const
+        const ETH_SEPOLIA = {
+            chainId: 'ethereum',
+            networkId: 'sepolia',
+        } as const
+        const BASE_MAINNET = { chainId: 'base', networkId: 'mainnet' } as const
+        const WETH = '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2'
+        const USDC = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
+        const ETHER: PeraAsset = {
+            ...FAKE_NATIVE_ASSET,
+            assetId: 'native',
+            name: 'Ether',
+            unitName: 'ETH',
+            decimals: 18,
+        }
+        const mainnetSource = { address: '0xETH', scope: ETH_MAINNET }
+        const sepoliaSource = { address: '0xETH', scope: ETH_SEPOLIA }
+
+        const token = (assetId: string, name: string, unitName: string) =>
+            ({
+                ...FAKE_NATIVE_ASSET,
+                assetId,
+                name,
+                unitName,
+                decimals: 6,
+            }) satisfies PeraAsset
+
+        const search = async (
+            term: string,
+            params: Partial<Parameters<typeof getAccountHoldingsLite>[0]> = {},
+        ) =>
+            (
+                await getAccountHoldingsLite({
+                    db,
+                    sources: [mainnetSource, sepoliaSource],
+                    search: term,
+                    ...params,
+                })
+            )
+                .map(row => `${row.scope.networkId}:${row.assetId}`)
+                .sort()
+
+        beforeEach(async () => {
+            assetsChainAdapters.register(
+                fakeAssetsAdapter({
+                    chainId: 'ethereum',
+                    getNativeAsset: () => ETHER,
+                }),
+            )
+            await refreshAccountHoldings({
+                db,
+                accountAddress: '0xETH',
+                scope: ETH_MAINNET,
+                holdings: [
+                    { assetId: 'native', amount: new Decimal(1) },
+                    { assetId: WETH, amount: new Decimal(1) },
+                    { assetId: USDC, amount: new Decimal(1) },
+                ],
+            })
+            await upsertAssets({
+                db,
+                scope: ETH_MAINNET,
+                items: [
+                    token(WETH, 'Wrapped Ether', 'WETH'),
+                    token(USDC, 'USD Coin', 'USDC'),
+                ],
+            })
+            await refreshAccountHoldings({
+                db,
+                accountAddress: '0xETH',
+                scope: ETH_SEPOLIA,
+                holdings: [{ assetId: 'native', amount: new Decimal(1) }],
+            })
+        })
+
+        it.each(['eth', 'ETH', 'Ether'])(
+            'finds the native coin, which has no metadata row, by %s',
+            async term => {
+                expect(
+                    await search(term, { sources: [mainnetSource] }),
+                ).toContain('mainnet:native')
+            },
+        )
+
+        it('returns the native coin and the token whose name contains the term', async () => {
+            expect(await search('eth', { sources: [mainnetSource] })).toEqual([
+                `mainnet:${WETH}`,
+                'mainnet:native',
+            ])
+        })
+
+        it('finds a token by name, symbol and a lower-case address', async () => {
+            const sources = [mainnetSource]
+            const expected = [`mainnet:${USDC}`]
+
+            expect(await search('usd coin', { sources })).toEqual(expected)
+            expect(await search('USDC', { sources })).toEqual(expected)
+            expect(await search('0xa0b869', { sources })).toEqual(expected)
+            expect(await search(USDC.toLowerCase(), { sources })).toEqual(
+                expected,
+            )
+        })
+
+        it('returns nothing for a term that matches no asset', async () => {
+            expect(await search('xyz')).toEqual([])
+        })
+
+        it.each(['nat', 'ati', 'tive'])(
+            'does not match the native coin by a fragment of its id (%s)',
+            async term => {
+                expect(await search(term)).toEqual([])
+            },
+        )
+
+        it('keeps another network of the same chain out of the results', async () => {
+            expect(
+                await search('eth', { sources: [mainnetSource] }),
+            ).not.toContain('sepolia:native')
+        })
+
+        it('finds the native coin on each network when both are searched', async () => {
+            expect(await search('eth')).toEqual(
+                expect.arrayContaining(['mainnet:native', 'sepolia:native']),
+            )
+        })
+
+        it('still hides a zero-balance native coin that matches the term', async () => {
+            await refreshAccountHoldings({
+                db,
+                accountAddress: '0xETH',
+                scope: ETH_SEPOLIA,
+                holdings: [{ assetId: 'native', amount: new Decimal(0) }],
+            })
+
+            expect(
+                await search('eth', {
+                    sources: [sepoliaSource],
+                    hideZeroBalance: true,
+                }),
+            ).toEqual([])
+        })
+
+        it('pairs the scope with the native id, so another chain sharing that id is not matched', async () => {
+            assetsChainAdapters.register(
+                fakeAssetsAdapter({
+                    chainId: 'base',
+                    getNativeAsset: () => ({
+                        ...ETHER,
+                        name: 'Other Coin',
+                        unitName: 'OTH',
+                    }),
+                }),
+            )
+            await refreshAccountHoldings({
+                db,
+                accountAddress: '0xETH',
+                scope: BASE_MAINNET,
+                holdings: [{ assetId: 'native', amount: new Decimal(1) }],
+            })
+
+            expect(
+                await search('eth', {
+                    sources: [
+                        mainnetSource,
+                        { address: '0xETH', scope: BASE_MAINNET },
+                    ],
+                }),
+            ).toEqual([`mainnet:${WETH}`, 'mainnet:native'])
+        })
+
+        it('adds no match, and does not throw, for a chain without an assets adapter', async () => {
+            await refreshAccountHoldings({
+                db,
+                accountAddress: '0xETH',
+                scope: BASE_MAINNET,
+                holdings: [{ assetId: 'native', amount: new Decimal(1) }],
+            })
+
+            expect(
+                await search('eth', {
+                    sources: [{ address: '0xETH', scope: BASE_MAINNET }],
+                }),
+            ).toEqual([])
         })
     })
 
