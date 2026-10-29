@@ -19,6 +19,7 @@ import {
     type AssetRef,
     type ChainId,
     type ChainScope,
+    type NetworkId,
     type PaymentUriOpts,
 } from '@perawallet/wallet-core-chain-contract'
 import {
@@ -227,15 +228,27 @@ export const createEvmDeeplinkAdapter = (
     }
 }
 
-export const parseEvmPaymentUri = (
-    chain: EvmChain,
-    input: string,
-): DeeplinkParseResult =>
+export const parseEvmPaymentUri = (input: string): DeeplinkParseResult =>
     parseEip681Uri(input, {
         resolve: resolveEvmScope,
-        defaultChainId: chain.row.id,
+        defaultChainId: resolveEvmScope(EIP681_DEFAULT_EIP155_CHAIN_ID)
+            ?.chainId,
         nativeAssetOf: nativeAssetOfEvmChain,
     })
+
+// A link without `@<chain id>` is chain 1's, so every other chain names its
+// mainnet when no network is given.
+const eip155ChainIdOfLink = (
+    chain: EvmChain,
+    networkId: NetworkId | undefined,
+): number | undefined => {
+    if (networkId !== undefined) return eip155ChainIdOfNetwork(chain, networkId)
+    const mainnet = chain.descriptor.networks.find(n => n.tier === 'mainnet')
+    const eip155ChainId = mainnet && eip155ChainIdOfNetwork(chain, mainnet.id)
+    return eip155ChainId === EIP681_DEFAULT_EIP155_CHAIN_ID
+        ? undefined
+        : eip155ChainId
+}
 
 export const toEip681Uri = (
     chain: EvmChain,
@@ -250,7 +263,7 @@ export const toEip681Uri = (
     }
     // toFixed: Decimal#toString gives "1e+21", which EIP-681 cannot parse.
     const amount = opts?.amount?.toFixed()
-    const eip155ChainId = eip155ChainIdOfNetwork(chain, opts?.networkId)
+    const eip155ChainId = eip155ChainIdOfLink(chain, opts?.networkId)
     const chainSuffix = eip155ChainId === undefined ? '' : `@${eip155ChainId}`
     const assetRef = opts?.assetRef
 
