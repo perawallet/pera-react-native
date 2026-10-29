@@ -126,6 +126,9 @@ describe('queryClient mutation error policy', () => {
                 mutationKey: ['http-failure'],
             }),
         )
+        expect(Object.keys(errorSpy.mock.calls[0][1] as object)[0]).toBe(
+            'errorSummary',
+        )
     })
 
     it('skips central error logging for transient network failures', async () => {
@@ -231,6 +234,11 @@ describe('queryClient query error policy', () => {
                 error: expect.any(Error),
                 errorSummary: 'Error',
             }),
+        )
+        // The report body serializes the context in key order and Crashlytics
+        // truncates it, so the summary must precede the stack-bearing error.
+        expect(Object.keys(errorSpy.mock.calls[0][1] as object)[0]).toBe(
+            'errorSummary',
         )
     })
 })

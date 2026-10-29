@@ -185,8 +185,8 @@ export const useSelectFundingTypeSheet =
                 resolve('applied')
             } catch (error) {
                 logger.error('Funding type switch failed', {
-                    error,
                     errorSummary: describeError(error),
+                    error,
                 })
                 await showError(error)
             } finally {

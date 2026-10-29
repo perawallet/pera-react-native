@@ -76,8 +76,8 @@ const cache = new QueryCache({
             return
         }
         logger.error('Query failed', {
-            error,
             errorSummary: describeError(error),
+            error,
         })
     },
 })
@@ -94,8 +94,8 @@ const mutationCache = new MutationCache({
             return
         }
         logger.error('Mutation failed', {
-            error,
             errorSummary: describeError(error),
+            error,
             mutationKey: mutation.options.mutationKey,
         })
     },
