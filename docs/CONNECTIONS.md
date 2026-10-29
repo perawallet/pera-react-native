@@ -123,6 +123,10 @@ goes only under the namespace whose chain's address codec accepts it (no codec, 
 request routes by its CAIP-2 id to a chain's selected network only. Existing sessions and their
 requests never read the capability, so turning it off leaves them listed and revocable.
 
+Message signing is gated per request instead: an EVM chain's route table reads `messageSigning` on
+every `personal_sign` and `eth_signTypedData_v4` and refuses both with 4200 while it is off, in
+sessions already approved and on extension sites alike; transactions are unaffected.
+
 The app's `watchWalletNotices` feeds `ConnectionRegistry.notify` with each chain's network and
 account changes, and v2 emits `chainChanged` and `accountsChanged` only for a chain whose support
 declares `sessionEvents`. `chainChanged` goes only to a session that already holds the new network.

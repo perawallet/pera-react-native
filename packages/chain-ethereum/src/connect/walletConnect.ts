@@ -30,6 +30,7 @@ import {
     type WalletConnectRequestRoute,
 } from '@perawallet/wallet-core-connections'
 import type { Nullable } from '@perawallet/wallet-core-shared'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import { eip155ChainIdOfNetwork } from '../blockchain/utils/caip19'
 import type { EvmChain } from '../chains/types'
 import { refuseUnsupportedSendCalls } from './callBatch/params'
@@ -66,6 +67,32 @@ const EIP_1193_CODE: Record<DappRequestFailure, number> = {
     'unselected-chain': 4901,
     'invalid-params': -32_602,
     'limit-exceeded': -32_005,
+}
+
+const MESSAGE_SIGNING_OFF: WalletConnectRequestRoute = {
+    kind: 'refused',
+    error: {
+        code: EIP_1193_CODE['unsupported-method'],
+        message: 'This wallet does not sign messages on this chain',
+    },
+}
+
+// Read per request, not at registration, so remote config and Feature Flags reach sessions already approved.
+const isMessageSigningEnabled = (chain: EvmChain): boolean => {
+    const { chains } = getProvider()
+    return (
+        chains.has(chain.row.id) &&
+        chains.capabilities(chain.row.id).messageSigning
+    )
+}
+
+const routeMessage = (
+    chain: EvmChain,
+    type: 'sign-message' | 'sign-typed-data',
+    params: unknown,
+): WalletConnectRequestRoute => {
+    if (!isMessageSigningEnabled(chain)) return MESSAGE_SIGNING_OFF
+    return { kind: 'operation', type, params }
 }
 
 /** EIP-3326's answer to a chain the wallet does not have; it has no `DappRequestFailure`. */
@@ -215,10 +242,10 @@ const createV2 = (
                 }
             }
             case ETHEREUM_WC_V2_METHOD.personalSign: {
-                return { kind: 'operation', type: 'sign-message', params }
+                return routeMessage(chain, 'sign-message', params)
             }
             case ETHEREUM_WC_V2_METHOD.signTypedDataV4: {
-                return { kind: 'operation', type: 'sign-typed-data', params }
+                return routeMessage(chain, 'sign-typed-data', params)
             }
             case ETHEREUM_WC_V2_METHOD.switchChain: {
                 return routeSwitch(chain, params)

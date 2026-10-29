@@ -389,4 +389,26 @@ describe('Flow: an eip155 dApp asks for a message signature', () => {
         expect(screen.queryByTestId('sign-request-view')).toBeNull()
         expect(kmsCore.sign).not.toHaveBeenCalled()
     })
+
+    it.each([
+        ['personal_sign', [HELLO_WORLD_HEX, SENDER]],
+        ['eth_signTypedData_v4', [SENDER, JSON.stringify(MAIL_TYPED_DATA)]],
+    ])(
+        'Given a connected session, when messageSigning is switched off for Ethereum and the dApp sends %s, then it is answered 4200 and no review opens',
+        async (method, params) => {
+            const walletKit = await connectSession()
+            setCapabilityOverrides(
+                { dappConnect: true, messageSigning: false },
+                'ethereum',
+            )
+
+            send(walletKit, method, params)
+
+            const response = await answerOf(walletKit)
+            expect(response.error).toMatchObject({ code: 4200 })
+            expect(screen.queryByTestId('sign-request-view')).toBeNull()
+            expect(screen.queryByTestId(CONFIRM_SLIDE)).toBeNull()
+            expect(kmsCore.sign).not.toHaveBeenCalled()
+        },
+    )
 })
