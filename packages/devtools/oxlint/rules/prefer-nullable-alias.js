@@ -47,7 +47,7 @@ const matchNullableUnion = node => {
     }
 
     const [member] = members
-    // `readonly` is a type operator that an alias argument cannot carry through.
+    // Deliberately left as written: `readonly X[] | null` reads better than Nullable<readonly X[]>.
     if (member.type === 'TSTypeOperator' && member.operator === 'readonly') {
         return undefined
     }

@@ -103,6 +103,21 @@ tester.run(RULE, preferNullableAlias, {
             errors: [{ messageId: 'nullable' }],
         },
         {
+            code: '/** doc */\ntype A = string | null',
+            output: `import type { Nullable } from '${S}'\n\n/** doc */\ntype A = Nullable<string>`,
+            errors: [{ messageId: 'nullable' }],
+        },
+        {
+            code: '/*\n Copyright 2022 Pera Wallet, LDA\n */\n\n// why\ntype A = string | null',
+            output: `/*\n Copyright 2022 Pera Wallet, LDA\n */\n\nimport type { Nullable } from '${S}'\n\n// why\ntype A = Nullable<string>`,
+            errors: [{ messageId: 'nullable' }],
+        },
+        {
+            code: '/*\n Copyright 2022 Pera Wallet, LDA\n */\n\ntype A = string | null',
+            output: `/*\n Copyright 2022 Pera Wallet, LDA\n */\n\nimport type { Nullable } from '${S}'\n\ntype A = Nullable<string>`,
+            errors: [{ messageId: 'nullable' }],
+        },
+        {
             code: `import type { Nullable } from '${S}'\ntype A = (() => void) | null`,
             output: `import type { Nullable } from '${S}'\ntype A = Nullable<() => void>`,
             errors: [{ messageId: 'nullable' }],

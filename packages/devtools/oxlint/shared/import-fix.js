@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+const LICENSE_HEADER = /Copyright|Licensed under/
+
 // `declaration` is one full `import … from '…'` line, without a newline.
 // Placement follows the repo's import order: after the last @perawallet/
 // import, else ahead of the first relative import, else after the last import.
@@ -31,5 +33,19 @@ export const insertImportDeclaration = (fixer, program, declaration) => {
     }
 
     if (imports.length > 0) return fixer.insertTextAfter(imports.at(-1), text)
-    return fixer.insertTextBefore(program.body[0], `${declaration}\n\n`)
+
+    // A node's range excludes its leading comments, so inserting at the node would
+    // detach its doc comment. Land ahead of them, below the license header.
+    const first = program.body[0]
+    const [header, ...rest] = program.comments.filter(
+        c => c.range[1] <= first.range[0],
+    )
+    const leading =
+        header?.type === 'Block' && LICENSE_HEADER.test(header.value)
+            ? rest
+            : [header, ...rest].filter(Boolean)
+    return fixer.insertTextBefore(
+        leading[0] ?? first,
+        `${declaration}\n\n`,
+    )
 }
