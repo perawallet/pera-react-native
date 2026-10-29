@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { toError } from '@perawallet/wallet-core-shared'
 import { collectGarbage, readHeap } from './memory'
 import { summarize } from './stats'
 import type {
@@ -23,8 +24,7 @@ import type {
 const DEFAULT_ITERATIONS = 10
 const DEFAULT_WARMUP = 2
 
-const messageOf = (error: unknown): string =>
-    error instanceof Error ? error.message : String(error)
+const messageOf = (error: unknown): string => toError(error).message
 
 export const runScenario = async (
     scenario: Scenario,

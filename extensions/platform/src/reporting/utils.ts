@@ -10,13 +10,10 @@
  limitations under the License
  */
 
+import { toError, type LogErrorSeverity } from '@perawallet/wallet-core-shared'
 import type { CrashReportingService } from './models'
 
-// Mirrors `LogErrorSeverity` in `packages/shared/src/utils/error-report.ts`, whose
-// 'expected' downgrade this router consumes. This extension deliberately does
-// not depend on that package, so nothing checks the two unions against each
-// other — the literals have to be kept in step by hand.
-type LogSeverity = 'debug' | 'info' | 'warn' | 'error' | 'critical' | 'expected'
+type LogSeverity = 'debug' | 'info' | 'warn' | LogErrorSeverity
 
 export type ErrorReportPayload = {
     severity: LogSeverity
@@ -42,7 +39,7 @@ const describeForBreadcrumb = (
     error: unknown,
     groupingKey?: string,
 ): string => {
-    const message = error instanceof Error ? error.message : String(error)
+    const message = toError(error).message
     return groupingKey ? `${groupingKey}: ${message}` : message
 }
 

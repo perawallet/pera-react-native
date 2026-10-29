@@ -12,6 +12,8 @@
 
 import i18n from 'i18next'
 
+import { toError } from '@perawallet/wallet-core-shared'
+
 import {
     useBottomSheetStore,
     type InternalRequest,
@@ -129,7 +131,7 @@ export const runTourStep = async ({
     try {
         launchOutcome = launchGalleryEntry(step.entry)
     } catch (error) {
-        const reason = error instanceof Error ? error.message : String(error)
+        const reason = toError(error).message
         console.log(`${TOUR_ERROR_MARKER}|${stepId}|${reason}`)
         return 'launch-error'
     }

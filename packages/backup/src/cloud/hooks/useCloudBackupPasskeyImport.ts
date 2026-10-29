@@ -16,6 +16,7 @@ import {
     decodeFromBase64,
     encodeToBase64,
     logger,
+    toError,
 } from '@perawallet/wallet-core-shared'
 import {
     deriveEnginePasskeyEntry,
@@ -272,10 +273,7 @@ export const useCloudBackupPasskeyImport = (
                     } catch (error) {
                         summary.failed.push({
                             credentialId,
-                            reason:
-                                error instanceof Error
-                                    ? error.message
-                                    : String(error),
+                            reason: toError(error).message,
                         })
                     } finally {
                         // writeNativePasskeyEntry seals its own copy; this one is ours.

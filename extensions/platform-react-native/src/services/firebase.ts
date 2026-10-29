@@ -64,7 +64,7 @@ import {
     type RemoteConfigDefaultsMap,
 } from '@perawallet/wallet-extension-platform'
 import { config, isDebug } from '@perawallet/wallet-core-config'
-import { logger, withTimeout } from '@perawallet/wallet-core-shared'
+import { logger, withTimeout, toError } from '@perawallet/wallet-core-shared'
 
 const ANDROID_CHANNEL_ID = 'default'
 
@@ -473,8 +473,7 @@ export class RNFirebaseService
             return
         }
 
-        const reportable =
-            error instanceof Error ? error : new Error(String(error))
+        const reportable = toError(error)
         recordError(this.crashlytics, reportable, groupingKey)
     }
 
