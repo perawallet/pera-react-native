@@ -37,7 +37,7 @@ export const useIsMultisigAddressQuery = ({
 }: UseIsMultisigAddressQueryParams): UseIsMultisigAddressQueryResult => {
     const query = useQuery({
         queryKey: getMultisigAccountDetailQueryKey(scope, address),
-        queryFn: async () => {
+        queryFn: async (): Promise<MultisigAddressCheckResult> => {
             const isMultisig = await checkIsMultisigAddress(scope, address)
             return { isMultisig }
         },

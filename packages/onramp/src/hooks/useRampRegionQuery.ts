@@ -33,7 +33,10 @@ export const useRampRegionQuery = ({
 }: UseRampRegionQueryParams): UseRampRegionQueryResult => {
     const query = useQuery({
         queryKey: onrampQueryKeys.region(scope),
-        queryFn: scope === null ? skipToken : () => getRampRegion(scope),
+        queryFn:
+            scope === null
+                ? skipToken
+                : (): Promise<RampRegion> => getRampRegion(scope),
         enabled,
     })
 

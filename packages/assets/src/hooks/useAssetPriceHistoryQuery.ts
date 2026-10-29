@@ -12,7 +12,10 @@
 
 import type { HistoryPeriod, Optional } from '@perawallet/wallet-core-shared'
 import { useQuery, type RefetchOptions } from '@tanstack/react-query'
-import { fetchAssetPriceHistory } from '../chain-adapter'
+import {
+    fetchAssetPriceHistory,
+    type PriceHistoryPoint,
+} from '../chain-adapter'
 import { getAssetPriceHistoryQueryKey } from './querykeys'
 import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
@@ -44,7 +47,8 @@ export const useAssetPriceHistoryQuery = (
 
     const query = useQuery({
         queryKey,
-        queryFn: () => fetchAssetPriceHistory(assetID, period, scope),
+        queryFn: (): Promise<PriceHistoryPoint[]> =>
+            fetchAssetPriceHistory(assetID, period, scope),
         enabled: !isUnavailableOnNetwork,
         // The cache persists, and its serializer keeps Decimals but not Dates.
         select: points =>

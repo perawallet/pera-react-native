@@ -78,7 +78,7 @@ export const useDelegationTransactionFeeQuery = (
             authorityAddress,
             String(suggestedMinFee),
         ],
-        queryFn: async () => {
+        queryFn: async (): Promise<Decimal> => {
             // The rekey txn is signed by `sourceAddress`'s CURRENT auth
             // account (pre-rekey) — resolveMinFeeForSender resolves the
             // effective signer via getSignerFor, so a sender currently

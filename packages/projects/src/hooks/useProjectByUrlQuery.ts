@@ -31,7 +31,7 @@ export const useProjectByUrlQuery = (
 
     return useQuery({
         queryKey: projectQueryKeys.byUrl(url ?? '', scope),
-        queryFn: async ({ signal }) => {
+        queryFn: async ({ signal }): Promise<PeraProject> => {
             const projects = await fetchProjectByUrl({
                 sourceUrl: url!,
                 scope,

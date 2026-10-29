@@ -15,6 +15,7 @@ import { useQuery, type RefetchOptions } from '@tanstack/react-query'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { MultiSigAccount } from '../models'
 import { getMultisigAccountDetail } from '../api/endpoints'
+import type { CreateMultisigAccountResponse } from '../api/schema'
 import { mapMultiSigAccount } from '../mappers'
 import { getMultisigAccountDetailQueryKey } from './querykeys'
 
@@ -39,7 +40,8 @@ export const useMultisigAccountDetailQuery = ({
 }: UseMultisigAccountDetailQueryParams): UseMultisigAccountDetailQueryResult => {
     const query = useQuery({
         queryKey: getMultisigAccountDetailQueryKey(scope, address),
-        queryFn: () => getMultisigAccountDetail(scope, address),
+        queryFn: (): Promise<CreateMultisigAccountResponse> =>
+            getMultisigAccountDetail(scope, address),
         enabled: enabled && !!address,
         select: useCallback(mapMultiSigAccount, []),
     })

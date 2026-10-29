@@ -37,7 +37,7 @@ export const useAssetInboxRequestsQuery = (
 
     const query = useQuery({
         queryKey: getAssetInboxRequestsQueryKey(address ?? '', scope),
-        queryFn: () =>
+        queryFn: (): Promise<AssetInboxRequest[]> =>
             sendFlowFeatureFor(scope, 'assetInbox').fetchRequests({
                 scope,
                 address: address!,
