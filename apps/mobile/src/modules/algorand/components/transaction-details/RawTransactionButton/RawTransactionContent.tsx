@@ -40,7 +40,9 @@ export const RawTransactionContent = ({
     }, [transaction.rawTransaction])
 
     const copyText = () => {
-        void copyToClipboard(rawText, bottomSheetNotifier.current ?? undefined)
+        void copyToClipboard(rawText, {
+            notifier: bottomSheetNotifier.current ?? undefined,
+        })
     }
 
     return (

@@ -325,7 +325,8 @@
             "suspicious_title": "ASA suspect",
             "suspicious_description": "Cet ASA a été signalé comme suspect par le programme de vérification des ASA de Pera.",
             "learn_more": "En savoir plus sur la vérification des ASA"
-        }
+        },
+        "copy_full_amount_hint": "Appuyez longuement pour copier le montant complet"
     },
     "accounts": {
         "legacyQuantum": {

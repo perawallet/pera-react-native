@@ -325,7 +325,8 @@
             "suspicious_title": "Şüpheli ASA",
             "suspicious_description": "Bu ASA, Pera ASA Doğrulama programı tarafından şüpheli olarak işaretlendi.",
             "learn_more": "ASA doğrulaması hakkında daha fazla bilgi al"
-        }
+        },
+        "copy_full_amount_hint": "Tam tutarı kopyalamak için basılı tutun"
     },
     "accounts": {
         "legacyQuantum": {

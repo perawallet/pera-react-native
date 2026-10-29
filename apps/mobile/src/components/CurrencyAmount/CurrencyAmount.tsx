@@ -53,14 +53,21 @@ export const getAlgoSymbolWeight = (
  * The precision policy is expressed semantically (see {@link PrecisionVariant}),
  * never as raw digit counts — that is the single door through which every
  * currency figure picks up its decimals. `assetDecimals` is only meaningful
- * for (and only accepted by) the `assetFull` and `significant` variants.
+ * for (and only accepted by) the `assetFull`, `significant` and `compact`
+ * variants.
  */
 type PrecisionProps =
     | {
-          precision: Exclude<PrecisionVariant, 'assetFull' | 'significant'>
+          precision: Exclude<
+              PrecisionVariant,
+              'assetFull' | 'significant' | 'compact'
+          >
           assetDecimals?: never
       }
-    | { precision: 'assetFull' | 'significant'; assetDecimals?: number }
+    | {
+          precision: 'assetFull' | 'significant' | 'compact'
+          assetDecimals?: number
+      }
 
 export type CurrencyAmountProps = {
     /**
@@ -141,12 +148,16 @@ export const CurrencyAmount = (props: CurrencyAmountProps) => {
     const isAssetMode = assetId != null
     const fiatFloor = resolveFiatFloor(precisionVariant, isFiat, value)
     // A floored amount is formatted as the floor itself, behind a bound marker.
-    const shownValue = fiatFloor ?? value
-    const { precision, minPrecision } = resolvePrecision(
+    const flooredValue = fiatFloor ?? value
+    const { precision, minPrecision, rounding } = resolvePrecision(
         precisionVariant,
         assetDecimals,
-        shownValue,
+        flooredValue,
     )
+    const shownValue =
+        rounding != null && flooredValue != null
+            ? flooredValue.toDecimalPlaces(precision, rounding)
+            : flooredValue
     const isAlgo = isNativeAssetId(assetId)
     // Passed explicitly rather than left to formatCurrency's getActiveLocale()
     // default so a mid-session language switch actually invalidates the memo.
@@ -298,9 +309,12 @@ export const CurrencyAmount = (props: CurrencyAmountProps) => {
                 </PWText>
             )}
             <PWView style={themeStyle.textContainer}>
+                {/* A cut-off amount misreads as a different number, so shrink
+                    it to fit before the ellipsis kicks in. */}
                 <PWText
                     variant={variant}
                     truncate
+                    adjustsFontSizeToFit
                     {...rest}
                 >
                     {prefix ? prefix : ''}

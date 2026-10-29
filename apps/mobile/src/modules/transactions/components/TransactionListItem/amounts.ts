@@ -34,6 +34,7 @@ export type AmountDisplay = {
     assetId: string
     /** Unit name, display text only. */
     currency: string
+    decimals: number
     /** Also picks the colour; undefined for a zero or unsigned amount. */
     prefix?: AmountPrefix
 }
@@ -103,6 +104,7 @@ export const toAmountDisplay = (
         ),
         assetId: amount.assetRef.assetId,
         currency: storedAsset?.unitName ?? amount.display?.symbol ?? '',
+        decimals: safeDecimals(decimals),
         prefix: amount.prefix,
     }
 }

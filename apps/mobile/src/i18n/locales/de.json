@@ -325,7 +325,8 @@
             "suspicious_title": "Verdächtiges ASA",
             "suspicious_description": "Dieses ASA wurde vom Pera ASA-Verifizierungsprogramm als verdächtig markiert.",
             "learn_more": "Mehr über die ASA-Verifizierung erfahren"
-        }
+        },
+        "copy_full_amount_hint": "Lange drücken, um den vollen Betrag zu kopieren"
     },
     "accounts": {
         "legacyQuantum": {
