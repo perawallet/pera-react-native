@@ -13,6 +13,7 @@
 import React from 'react'
 import { describe, it, expect, vi } from 'vitest'
 import { render, act, screen } from '@test-utils/render'
+import { webViewScript } from '../../../utils/webViewScript'
 import { PWWebView } from '../PWWebView'
 
 import type { WebViewNativeEvent } from 'react-native-webview/lib/WebViewTypes'
@@ -22,6 +23,8 @@ import type { WebViewNativeEvent } from 'react-native-webview/lib/WebViewTypes'
 type CapturedNavState = Pick<WebViewNativeEvent, 'url' | 'loading'>
 
 type CapturedWebViewProps = {
+    injectedJavaScript?: string
+    injectedJavaScriptBeforeContentLoaded?: string
     onNavigationStateChange?: (navState: CapturedNavState) => void
 }
 
@@ -118,5 +121,55 @@ describe('PWWebView title bar host', () => {
         // `t` returns the key under test setup.
         expect(screen.getByText('common.webview.unknown_host')).toBeTruthy()
         expect(screen.queryByText('good.xyz')).toBeNull()
+    })
+})
+
+describe('PWWebView injected scripts', () => {
+    const renderWith = (props: { enablePeraConnect: boolean }, extra = {}) =>
+        render(
+            <PWWebView
+                url='https://good.xyz/landing'
+                {...props}
+                {...extra}
+            />,
+        )
+
+    it('injects no before-content script, and no bridge in the document-end one, without Pera Connect', () => {
+        renderWith({ enablePeraConnect: false })
+
+        const { injectedJavaScript, injectedJavaScriptBeforeContentLoaded } =
+            capturedWebViewProps.current ?? {}
+        expect(injectedJavaScriptBeforeContentLoaded).toBeUndefined()
+        expect(injectedJavaScript).toContain('updateTheme?.(')
+        expect(injectedJavaScript).not.toContain('peraMobileInterface')
+    })
+
+    it('injects the bridge before content and again at document end with Pera Connect', () => {
+        renderWith({ enablePeraConnect: true })
+
+        const { injectedJavaScript, injectedJavaScriptBeforeContentLoaded } =
+            capturedWebViewProps.current ?? {}
+        expect(injectedJavaScript).toContain('setupPeraMobileInterface')
+        expect(injectedJavaScriptBeforeContentLoaded).toContain(
+            'setupPeraMobileInterface',
+        )
+        expect(injectedJavaScriptBeforeContentLoaded).toContain(
+            'setupPeraConnect',
+        )
+        expect(injectedJavaScriptBeforeContentLoaded?.endsWith('true;')).toBe(
+            true,
+        )
+    })
+
+    it('places the caller script between the bridge and the theme update', () => {
+        renderWith(
+            { enablePeraConnect: true },
+            { customJavaScript: webViewScript`window.__custom = 1;` },
+        )
+
+        const bundle = capturedWebViewProps.current?.injectedJavaScript ?? ''
+        const custom = bundle.indexOf('window.__custom = 1;')
+        expect(custom).toBeGreaterThan(bundle.indexOf('setupPeraConnect'))
+        expect(custom).toBeLessThan(bundle.indexOf('updateTheme?.('))
     })
 })

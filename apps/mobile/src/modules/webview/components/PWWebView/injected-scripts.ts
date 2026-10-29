@@ -11,8 +11,9 @@
  */
 
 import { PERAWALLET_WC_SCHEME, WC_SCHEME } from '@modules/deeplink/core'
+import { webViewScript } from '../../utils/webViewScript'
 
-export const baseJS = `var css = '*{-webkit-touch-callout:none;-webkit-user-select:none}textarea,input{user-select:text;-webkit-user-select:text;}';
+export const baseJS = webViewScript`var css = '*{-webkit-touch-callout:none;-webkit-user-select:none}textarea,input{user-select:text;-webkit-user-select:text;}';
 var head = document.head || document.getElementsByTagName('head')[0];
 var style = document.createElement('style'); style.type = 'text/css';
 style.appendChild(document.createTextNode(css)); head.appendChild(style);`
@@ -27,11 +28,11 @@ style.appendChild(document.createTextNode(css)); head.appendChild(style);`
 // fallback bundle — the guard makes the second pass a no-op. A page
 // pre-defining peraRPC only sabotages its own bridge (and at
 // before-content-loaded time we run before any page script anyway).
-export const peraMobileInterfaceJS = (bridgeToken: string) => `
+export const peraMobileInterfaceJS = (bridgeToken: string) => webViewScript`
 console.log('peraMobileInterfaceJS setup');
 (function setupPeraMobileInterface(){
 if (window.peraRPC && window.peraMobileInterface) { return; }
-var __peraBridgeToken = ${JSON.stringify(bridgeToken)};
+var __peraBridgeToken = ${bridgeToken};
 function __stampToken(request) {
     var obj;
     try {
@@ -90,7 +91,7 @@ window.peraMobileInterface = {
 })();
 `
 
-export const peraConnectJS = `
+export const peraConnectJS = webViewScript`
     (function setupPeraConnect(){
         // Idempotency: this bundle runs at injectedJavaScriptBeforeContentLoaded
         // AND again as the document-end fallback. Re-running would re-wrap
@@ -112,7 +113,7 @@ export const peraConnectJS = `
             return typeof s === 'string'
                 && s.length > 0
                 && s.length <= MAX_URI_LENGTH
-                && (s.indexOf('${WC_SCHEME}:') === 0 || s.indexOf('${PERAWALLET_WC_SCHEME}:') === 0);
+                && (s.indexOf(${`${WC_SCHEME}:`}) === 0 || s.indexOf(${`${PERAWALLET_WC_SCHEME}:`}) === 0);
         }
         function sendUri(uri) {
             if (!isWcUri(uri)) return false;
