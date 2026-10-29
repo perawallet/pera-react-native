@@ -11,58 +11,18 @@
  */
 
 import React from 'react'
-import {
-    PWImage,
-    PWText,
-    PWToolbar,
-    PWTouchableIcon,
-    PWView,
-} from '@components/core'
-import { VideoPlayer } from '@components/VideoPlayer'
-import { AudioPlayer } from '@components/AudioPlayer'
+import { PWText, PWToolbar, PWTouchableIcon, PWView } from '@components/core'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
 import { useFullScreenMediaViewer } from './useFullScreenMediaViewer.web'
 import { useStyles } from './styles.web'
+import { FullScreenMediaPage } from './FullScreenMediaPage'
+import type { FullScreenMediaItem } from './types'
 
-export type FullScreenMediaItem = {
-    uri: string
-    type: 'image' | 'video' | 'audio'
-    posterUri?: string
-}
+export type { FullScreenMediaItem } from './types'
 
 export type FullScreenMediaViewerProps = {
     media: FullScreenMediaItem[]
     initialIndex?: number
-}
-
-const FullScreenMediaPage = ({ item }: { item: FullScreenMediaItem }) => {
-    const styles = useStyles()
-    switch (item.type) {
-        case 'video': {
-            return <VideoPlayer uri={item.uri} />
-        }
-        case 'audio': {
-            return (
-                <AudioPlayer
-                    uri={item.uri}
-                    posterUri={item.posterUri}
-                />
-            )
-        }
-        case 'image': {
-            return (
-                <PWImage
-                    source={{ uri: item.uri }}
-                    style={styles.image}
-                    resizeMode='contain'
-                />
-            )
-        }
-        default: {
-            const exhaustive: never = item.type
-            return exhaustive
-        }
-    }
 }
 
 // No PagerView or pinch-zoom on web: one item at a time with arrow controls,

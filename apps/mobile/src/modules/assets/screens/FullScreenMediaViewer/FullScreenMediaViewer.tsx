@@ -13,44 +13,16 @@
 import React, { useCallback, useState } from 'react'
 import PagerView from 'react-native-pager-view'
 import { PWText, PWToolbar, PWTouchableIcon, PWView } from '@components/core'
-import { ZoomableImage } from '@components/ZoomableImage'
-import { VideoPlayer } from '@components/VideoPlayer'
-import { AudioPlayer } from '@components/AudioPlayer'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
 import { useStyles } from './styles'
+import { FullScreenMediaPage } from './FullScreenMediaPage'
+import type { FullScreenMediaItem } from './types'
 
-export type FullScreenMediaItem = {
-    uri: string
-    type: 'image' | 'video' | 'audio'
-    posterUri?: string
-}
+export type { FullScreenMediaItem } from './types'
 
 export type FullScreenMediaViewerProps = {
     media: FullScreenMediaItem[]
     initialIndex?: number
-}
-
-const FullScreenMediaPage = ({ item }: { item: FullScreenMediaItem }) => {
-    switch (item.type) {
-        case 'video': {
-            return <VideoPlayer uri={item.uri} />
-        }
-        case 'audio': {
-            return (
-                <AudioPlayer
-                    uri={item.uri}
-                    posterUri={item.posterUri}
-                />
-            )
-        }
-        case 'image': {
-            return <ZoomableImage uri={item.uri} />
-        }
-        default: {
-            const exhaustive: never = item.type
-            return exhaustive
-        }
-    }
 }
 
 export const FullScreenMediaViewer = ({
