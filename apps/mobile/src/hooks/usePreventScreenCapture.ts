@@ -16,7 +16,7 @@ import {
     allowScreenCaptureAsync,
 } from 'expo-screen-capture'
 import { config } from '@perawallet/wallet-core-config'
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, toError } from '@perawallet/wallet-core-shared'
 
 // One shared native lock, ref-counted in JS (prevent on 0->1, allow on 1->0):
 // expo fires a native prevent per DISTINCT tag and iOS `preventScreenshots()`
@@ -38,7 +38,7 @@ const acquireCaptureLock = (tag: string): Promise<void> => {
                 'usePreventScreenCapture: failed to prevent screen capture',
                 {
                     tag,
-                    error: err instanceof Error ? err.message : String(err),
+                    error: toError(err).message,
                 },
             )
         })
@@ -54,7 +54,7 @@ const releaseCaptureLock = (tag: string): void => {
         // condition, not a defect we can fix from here.
         logger.warn(
             'usePreventScreenCapture: failed to re-allow screen capture',
-            { tag, error: err instanceof Error ? err.message : String(err) },
+            { tag, error: toError(err).message },
         )
     })
 }

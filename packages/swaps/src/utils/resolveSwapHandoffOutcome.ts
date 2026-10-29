@@ -14,7 +14,7 @@ import type {
     ChainScope,
     ChainSubmissionData,
 } from '@perawallet/wallet-core-chain-contract'
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, toError } from '@perawallet/wallet-core-shared'
 import {
     completeMultisigHandoff,
     deriveSubmissionAttemptFromBytes,
@@ -139,10 +139,7 @@ const markAttemptOutcome = async (
         }
     } catch (markError) {
         logger.warn('resolveSwapHandoffOutcome: attempt marker write failed', {
-            error:
-                markError instanceof Error
-                    ? markError.message
-                    : String(markError),
+            error: toError(markError).message,
         })
     }
 }

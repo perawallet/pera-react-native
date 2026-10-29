@@ -16,6 +16,7 @@ import {
     decodeFromBase64,
     decodeLongString,
     logger,
+    toError,
 } from '@perawallet/wallet-core-shared'
 import {
     type KeyValueStorageService,
@@ -285,8 +286,7 @@ const decodeBase64 = (value: unknown): Uint8Array | null => {
     return decodeFromBase64(value)
 }
 
-const errorMessage = (err: unknown): string =>
-    err instanceof Error ? err.message : String(err)
+const errorMessage = (err: unknown): string => toError(err).message
 
 const decodePerEntry = <Raw, Decoded>(
     entries: Raw[],

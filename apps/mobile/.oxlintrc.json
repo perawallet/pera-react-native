@@ -258,7 +258,7 @@
     {
       "files": ["src/**"],
       "excludeFiles": ["src/**/__tests__/**", "src/**/__mocks__/**", "src/**/test-utils/**", "src/**/__integration__/**", "src/**/*.spec.{ts,tsx}", "src/**/*.test.{ts,tsx}"],
-      "rules": { "pera/fetch-has-deadline": "error" }
+      "rules": { "pera/no-display-string-identity": "error", "pera/fetch-has-deadline": "error" }
     },
     {
       "files": ["src/**"],
@@ -283,7 +283,7 @@
     {
       "files": ["src/**"],
       "excludeFiles": ["src/**/__tests__/**", "src/**/__mocks__/**", "src/**/test-utils/**", "src/**/__integration__/**", "src/**/*.spec.{ts,tsx}", "src/**/*.test.{ts,tsx}"],
-      "rules": { "pera/logger-static-message": "error" }
+      "rules": { "pera/logger-static-message": "error", "pera/prefer-to-error": "error" }
     },
     {
       "files": ["src/**/__tests__/**", "src/**/*.spec.{ts,tsx}", "src/**/__integration__/**", "src/**/test-utils/**", "vitest*.ts"],

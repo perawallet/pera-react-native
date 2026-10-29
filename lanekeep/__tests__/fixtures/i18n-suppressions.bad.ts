@@ -6,3 +6,5 @@ export const b = 2
 export const c = 3
 // lanekeep-ignore-next-line pera/i18n-key-exists reason: missing
 export const d = 4
+// lanekeep-ignore-next-line pera/no-split-sentences reason: fragment
+export const e = 5

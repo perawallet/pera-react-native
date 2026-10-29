@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { logger, type Nullable } from '@perawallet/wallet-core-shared'
+import { logger, toError, type Nullable } from '@perawallet/wallet-core-shared'
 import type {
     ConnectionId,
     ConnectionKind,
@@ -69,9 +69,6 @@ export interface HandlerKit {
     recordActivity(id: ConnectionId): void
     readonly pendingOrigins: PendingOrigins
 }
-
-const toError = (value: unknown): Error =>
-    value instanceof Error ? value : new Error(String(value))
 
 export const createHandlerKit = (
     kind: ConnectionKind,
