@@ -12,7 +12,7 @@
 
 // The offscreen document is the architecture's long-lived stateful process
 // (sqlite worker, WalletConnect sockets, warm polling), and this is the only
-// thing that creates it. Its create-race guard was previously untested.
+// thing that creates it, so its create-race guard needs direct coverage.
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ensureOffscreenDocument } from '../offscreen'
 

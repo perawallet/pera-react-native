@@ -792,7 +792,7 @@ describe('Flow: Onramp buy (native XO)', () => {
         })
 
         // ALGO at $0.50 so the fiat value line cannot be confused with the
-        // ALGO amount (or with the quote's $6 fee, which it used to show).
+        // ALGO amount (or with the quote's $6 fee).
         const pair = buildMeldPair()
         pair.destination_token.price_in_usd = '0.5'
 

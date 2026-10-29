@@ -13,33 +13,11 @@
 import React, { type ReactNode } from 'react'
 import { ErrorCategory } from '@perawallet/wallet-core-shared'
 import { BaseErrorBoundary } from '@components/BaseErrorBoundary'
-import { useLanguage } from '@hooks/useLanguage'
-import { EmptyView } from '@components/EmptyView'
-import { PWButton } from '@components/core'
+import { StakingErrorFallback } from './StakingErrorFallback'
 
 export type StakingErrorBoundaryProps = {
     children: ReactNode
     t: (key: string, options?: Record<string, unknown>) => string
-}
-
-type StakingErrorFallbackProps = { reset: () => void }
-
-const StakingErrorFallback = ({ reset }: StakingErrorFallbackProps) => {
-    const { t } = useLanguage()
-
-    return (
-        <EmptyView
-            title={t('common.error.title')}
-            body={t('common.error.body')}
-            button={
-                <PWButton
-                    title={t('common.retry.label')}
-                    variant='primary'
-                    onPress={reset}
-                />
-            }
-        />
-    )
 }
 
 export const StakingErrorBoundary: React.FC<StakingErrorBoundaryProps> = ({

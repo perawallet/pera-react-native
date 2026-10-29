@@ -86,9 +86,9 @@ const mockInitialize = vi.fn(async () => void order.push('initialize'))
 
 // Captures the listener `useConnectionsProvider` passes to
 // `subscribeToProposals`, so tests can call it directly to simulate a
-// proposal arriving — the no-op version this used to be couldn't drive any
-// of the subscription's own logic (the double-open guard, dismiss-on-settle,
-// the release-on-failure catch path, or the queue) at all.
+// proposal arriving — a no-op listener couldn't drive any of the
+// subscription's own logic (the double-open guard, dismiss-on-settle, the
+// release-on-failure catch path, or the queue) at all.
 const proposalSubscription: {
     listener: ((proposal: MockProposal) => void) | null
 } = { listener: null }

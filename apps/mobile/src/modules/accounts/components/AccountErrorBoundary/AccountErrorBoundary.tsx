@@ -13,33 +13,11 @@
 import React, { type ReactNode } from 'react'
 import { ErrorCategory } from '@perawallet/wallet-core-shared'
 import { BaseErrorBoundary } from '@components/BaseErrorBoundary'
-import { useLanguage } from '@hooks/useLanguage'
-import { EmptyView } from '@components/EmptyView'
-import { PWButton } from '@components/core'
+import { AccountErrorFallback } from './AccountErrorFallback'
 
 export interface AccountErrorBoundaryProps {
     children: ReactNode
     t: (key: string, options?: Record<string, unknown>) => string
-}
-
-type AccountErrorFallbackProps = { reset: () => void }
-
-const AccountErrorFallback = ({ reset }: AccountErrorFallbackProps) => {
-    const { t } = useLanguage()
-
-    return (
-        <EmptyView
-            title={t('errors.account.title')}
-            body={t('errors.account.body')}
-            button={
-                <PWButton
-                    title={t('common.go_back.label')}
-                    variant='primary'
-                    onPress={reset}
-                />
-            }
-        />
-    )
 }
 
 /**

@@ -29,57 +29,15 @@ import {
 } from '@react-navigation/native'
 import { PWButton, PWTouchableIcon, PWView } from '@components/core'
 import { BaseErrorBoundary } from '@components/BaseErrorBoundary'
-import { AppError, ErrorCategory } from '@perawallet/wallet-core-shared'
+import { ErrorCategory } from '@perawallet/wallet-core-shared'
 import { SiteSafetyGate } from '@modules/site-safety'
 import { useSignRequestFailure } from './useSignRequestFailure'
 import { useSignRequestSiteSafety } from './useSignRequestSiteSafety'
 import { useStyles } from './styles'
+import { SignRequestErrorFallback } from './SignRequestErrorFallback'
 
 export type SignRequestViewProps = {
     request: SignRequest
-}
-
-type SignRequestErrorFallbackProps = {
-    error: AppError | Error
-    reset: () => void
-    /**
-     * Drops the offending request from the queue so the next render
-     * doesn't reproduce the same crash. Without this, the error boundary
-     * `reset` just re-runs the same render against the same store state
-     * and the user is trapped in the failed sheet (especially bad for
-     * persisted requests that survive restart).
-     */
-    onDismiss: () => void
-}
-
-const SignRequestErrorFallback = ({
-    error,
-    reset,
-    onDismiss,
-}: SignRequestErrorFallbackProps) => {
-    const { t } = useLanguage()
-    const appError = error instanceof AppError ? error : null
-    const handleGoBack = () => {
-        onDismiss()
-        reset()
-    }
-    return (
-        <EmptyView
-            title={t('errors.general.title')}
-            body={
-                appError?.metadata.messageKey
-                    ? t(appError.metadata.messageKey, appError.metadata.params)
-                    : t('errors.general.body')
-            }
-            button={
-                <PWButton
-                    title={t('common.go_back.label')}
-                    variant='primary'
-                    onPress={handleGoBack}
-                />
-            }
-        />
-    )
 }
 
 export const SignRequestView = ({ request }: SignRequestViewProps) => {

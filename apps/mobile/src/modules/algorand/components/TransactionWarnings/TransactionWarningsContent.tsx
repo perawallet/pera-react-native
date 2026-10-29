@@ -58,7 +58,7 @@ const WARNING_DISPLAYS: WarningDisplay[] = [
         copyKey: i18nKey('transactions.warning.close_asset_warning'),
     },
     {
-        type: 'rekey',
+        type: 'delegation',
         icon: 'rekey',
         copyKey: i18nKey('transactions.warning.rekey_warning'),
         boldKey: i18nKey('transactions.warning.rekey_warning_bold'),

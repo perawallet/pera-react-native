@@ -166,9 +166,9 @@ describe('services/device/hooks', () => {
     })
 
     // The only test here that re-imports the whole graph AND drains a queued
-    // registration: 0.7s to 2.4s locally against 5-41ms for its siblings, and
-    // Bitrise runs this package ~6x slower (3s local, 19s there), so the 5s
-    // default is under the slow case and the nightly gate fails on it.
+    // registration: far slower than its siblings, and Bitrise runs this
+    // package several times slower than a dev machine, so the 5s default is
+    // under the slow case and the nightly gate fails on it.
     test('registers without an id when no device id is stored', async () => {
         vi.resetModules()
 

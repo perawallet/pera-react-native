@@ -11,16 +11,12 @@
  */
 
 import { PWText, PWView } from '@components/core'
-import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
-import type {
-    MigrationResult,
-    MigrationRunResult,
-} from '@perawallet/wallet-core-migrate'
+import type { MigrationRunResult } from '@perawallet/wallet-core-migrate'
 import { useStyles } from '../styles'
 import { MigrationDataRow } from './MigrationDataRow'
 import { StackedMigrationDataRow } from './StackedMigrationDataRow'
-
-type ExtrasMigrationResult = NonNullable<MigrationRunResult['extras']>
+import { AccountsResultRows } from './AccountsResultRows'
+import { ExtrasResultRows } from './ExtrasResultRows'
 
 type MigrationRunResultBannerProps = {
     result: MigrationRunResult | null
@@ -80,95 +76,3 @@ export const MigrationRunResultBanner = ({
         </PWView>
     )
 }
-
-type AccountsResultRowsProps = { accounts: MigrationResult }
-
-const AccountsResultRows = ({ accounts }: AccountsResultRowsProps) => (
-    <>
-        <MigrationDataRow
-            label='Imported'
-            value={accounts.imported}
-        />
-        <MigrationDataRow
-            label='Skipped (already present)'
-            value={accounts.skipped}
-        />
-        <MigrationDataRow
-            label='Failed'
-            value={accounts.failed.length}
-        />
-        {accounts.failed.map((f, i) => (
-            <StackedMigrationDataRow
-                key={`${f.address}-${i}`}
-                label={`${f.name || truncateAlgorandAddress(f.address)}`}
-                value={f.reason}
-            />
-        ))}
-    </>
-)
-
-type ExtrasResultRowsProps = { extras: ExtrasMigrationResult }
-
-const ExtrasResultRows = ({ extras }: ExtrasResultRowsProps) => (
-    <>
-        <MigrationDataRow
-            label='preferences'
-            value={extras.preferences}
-        />
-        <MigrationDataRow
-            label='swaps'
-            value={extras.swaps}
-        />
-        <MigrationDataRow
-            label='deviceIdentifiers'
-            value={extras.deviceIdentifiers}
-        />
-        <MigrationDataRow
-            label='contacts imported'
-            value={extras.contacts.imported}
-        />
-        <MigrationDataRow
-            label='contacts skipped'
-            value={extras.contacts.skipped}
-        />
-        <MigrationDataRow
-            label='notifications muted'
-            value={extras.notifications.muted}
-        />
-        <MigrationDataRow
-            label='pin migrated'
-            value={extras.auth.pinMigrated}
-        />
-        <MigrationDataRow
-            label='biometric migrated'
-            value={extras.auth.biometricMigrated}
-        />
-        <MigrationDataRow
-            label='lockout migrated'
-            value={extras.auth.lockoutMigrated}
-        />
-        <MigrationDataRow
-            label='passkeys imported'
-            value={extras.passkeys.imported}
-        />
-        <MigrationDataRow
-            label='passkeys skipped'
-            value={extras.passkeys.skipped}
-        />
-        <MigrationDataRow
-            label='wc history blob stashed'
-            value={extras.stashed.walletConnectHistoryBlobStashed}
-        />
-        <MigrationDataRow
-            label='extras steps failed'
-            value={extras.failed.length}
-        />
-        {extras.failed.map((f, i) => (
-            <StackedMigrationDataRow
-                key={`${f.step}-${i}`}
-                label={f.step}
-                value={f.reason}
-            />
-        ))}
-    </>
-)

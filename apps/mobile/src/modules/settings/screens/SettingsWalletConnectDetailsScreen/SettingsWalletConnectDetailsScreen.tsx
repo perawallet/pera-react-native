@@ -30,45 +30,17 @@ import { InfoButton } from '@components/InfoButton'
 import { useLanguage } from '@hooks/useLanguage'
 import { AccountDisplay } from '@components/AccountDisplay'
 import { PermissionItem } from '@modules/walletconnect'
-import {
-    useSettingsWalletConnectDetailsScreen,
-    type ConnectedNetworkLabel,
-} from './useSettingsWalletConnectDetailsScreen'
+import { useSettingsWalletConnectDetailsScreen } from './useSettingsWalletConnectDetailsScreen'
 import { useStyles } from './styles'
 
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import type { WalletConnectSettingsStackParamsList } from '@modules/settings/routes'
+import { ConnectedNetworks } from './ConnectedNetworks'
 
 export type SettingsWalletConnectDetailsScreenProps = NativeStackScreenProps<
     WalletConnectSettingsStackParamsList,
     'WalletConnectSettingsDetails'
 >
-
-type ConnectedNetworksProps = {
-    networks: ConnectedNetworkLabel[]
-}
-
-const ConnectedNetworks = ({ networks }: ConnectedNetworksProps) => {
-    const styles = useStyles()
-    const textStyleFor = (tone: ConnectedNetworkLabel['tone']) => {
-        if (tone === 'mainnet') return styles.mainnetText
-        if (tone === 'testnet') return styles.testnetText
-        return styles.otherNetworkText
-    }
-
-    return (
-        <PWView style={styles.networkContainer}>
-            {networks.map(network => (
-                <PWText
-                    key={network.key}
-                    style={textStyleFor(network.tone)}
-                >
-                    {network.label}
-                </PWText>
-            ))}
-        </PWView>
-    )
-}
 
 export const SettingsWalletConnectDetailsScreen = ({
     route,

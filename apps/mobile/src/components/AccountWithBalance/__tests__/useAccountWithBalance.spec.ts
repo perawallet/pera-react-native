@@ -39,14 +39,19 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
     return {
         useAccountChainId: chainOf,
         useAccountValueBasis: () => mockBasis.current,
+        accountValueKey: (chainId: string, address: string) =>
+            `${chainId}|${address}`,
         accountValueOf: (
             account: WalletAccount,
             chainId: string,
             values: Map<string, unknown>,
         ) =>
             values.get(
-                (account.chains as Record<string, { address: string }>)[chainId]
-                    ?.address ?? '',
+                `${chainId}|${
+                    (account.chains as Record<string, { address: string }>)[
+                        chainId
+                    ]?.address ?? ''
+                }`,
             ),
         useAccountValueTotalsQuery: (...args: unknown[]) => {
             mockTotalsQuery(...args)
@@ -121,10 +126,10 @@ describe('useAccountWithBalance', () => {
     })
 
     it("reads the given chain's address, scope and native asset over the account's own chain", () => {
-        mockAccountValueTotals.set(ALGO_ADDRESS, {
+        mockAccountValueTotals.set(`algorand|${ALGO_ADDRESS}`, {
             nativeValue: new Decimal(1),
         })
-        mockAccountValueTotals.set(ETH_ADDRESS, {
+        mockAccountValueTotals.set(`ethereum|${ETH_ADDRESS}`, {
             nativeValue: new Decimal(2),
         })
 
@@ -141,7 +146,7 @@ describe('useAccountWithBalance', () => {
     })
 
     it('renders an Algorand-only wallet as a single-chain row', () => {
-        mockAccountValueTotals.set(ALGO_ADDRESS, {
+        mockAccountValueTotals.set(`algorand|${ALGO_ADDRESS}`, {
             nativeValue: new Decimal(12),
         })
 
@@ -158,7 +163,7 @@ describe('useAccountWithBalance', () => {
     it('values an Ethereum account in ETH on its own chain', () => {
         registerEthereumChain()
         mockBasis.current = 'fiat'
-        mockAccountValueTotals.set(ETH_ADDRESS, {
+        mockAccountValueTotals.set(`ethereum|${ETH_ADDRESS}`, {
             nativeValue: new Decimal('1.5'),
             fiatValue: new Decimal(3000),
         })
@@ -178,7 +183,9 @@ describe('useAccountWithBalance', () => {
     })
 
     it('keeps an unknown native value unknown rather than 0', () => {
-        mockAccountValueTotals.set(ETH_ADDRESS, { nativeValue: null })
+        mockAccountValueTotals.set(`ethereum|${ETH_ADDRESS}`, {
+            nativeValue: null,
+        })
 
         const { result } = renderHook(() => useAccountWithBalance(ETH_ACCOUNT))
 
@@ -191,7 +198,7 @@ describe('useAccountWithBalance', () => {
         })
 
         it("is the account's fiat value in the preferred currency", () => {
-            mockAccountValueTotals.set(ETH_ADDRESS, {
+            mockAccountValueTotals.set(`ethereum|${ETH_ADDRESS}`, {
                 nativeValue: new Decimal('1.5'),
                 fiatValue: new Decimal(3000),
             })
@@ -204,7 +211,7 @@ describe('useAccountWithBalance', () => {
         })
 
         it('is unknown, not 0, when the balance has no price', () => {
-            mockAccountValueTotals.set(ETH_ADDRESS, {
+            mockAccountValueTotals.set(`ethereum|${ETH_ADDRESS}`, {
                 nativeValue: new Decimal('5.77'),
                 fiatValue: null,
             })
@@ -217,7 +224,7 @@ describe('useAccountWithBalance', () => {
         })
 
         it('is unknown when the native balance is unpriced, even with priced tokens', () => {
-            mockAccountValueTotals.set(ETH_ADDRESS, {
+            mockAccountValueTotals.set(`ethereum|${ETH_ADDRESS}`, {
                 nativeValue: null,
                 fiatValue: null,
             })
@@ -230,7 +237,7 @@ describe('useAccountWithBalance', () => {
         })
 
         it('is a real 0 for a zero balance', () => {
-            mockAccountValueTotals.set(ETH_ADDRESS, {
+            mockAccountValueTotals.set(`ethereum|${ETH_ADDRESS}`, {
                 nativeValue: new Decimal(0),
                 fiatValue: new Decimal(0),
             })
@@ -243,7 +250,7 @@ describe('useAccountWithBalance', () => {
         })
 
         it('is undefined until the totals have loaded', () => {
-            mockAccountValueTotals.set(ALGO_ADDRESS, {
+            mockAccountValueTotals.set(`algorand|${ALGO_ADDRESS}`, {
                 nativeValue: new Decimal(0),
                 fiatValue: new Decimal(0),
                 isPending: true,
@@ -294,11 +301,11 @@ describe('useAccountWithBalance', () => {
         })
 
         it("sums the account's fiat value across its chains, in the preferred currency", () => {
-            mockAccountValueTotals.set(ALGO_ADDRESS, {
+            mockAccountValueTotals.set(`algorand|${ALGO_ADDRESS}`, {
                 nativeValue: new Decimal(1),
                 fiatValue: new Decimal(10),
             })
-            mockAccountValueTotals.set(ETH_ADDRESS, {
+            mockAccountValueTotals.set(`ethereum|${ETH_ADDRESS}`, {
                 nativeValue: new Decimal(2),
                 fiatValue: new Decimal(20),
             })
@@ -313,12 +320,43 @@ describe('useAccountWithBalance', () => {
             })
         })
 
-        it('is unknown, not a partial sum, when one chain is unpriced', () => {
-            mockAccountValueTotals.set(ALGO_ADDRESS, {
+        it('counts each EVM chain at a shared address on its own', () => {
+            const onThreeChains: WalletAccount = {
+                ...BOTH_CHAINS,
+                chains: {
+                    ...BOTH_CHAINS.chains,
+                    base: { address: ETH_ADDRESS },
+                },
+            }
+            mockAccountValueTotals.set(`algorand|${ALGO_ADDRESS}`, {
                 nativeValue: new Decimal(1),
                 fiatValue: new Decimal(10),
             })
-            mockAccountValueTotals.set(ETH_ADDRESS, {
+            mockAccountValueTotals.set(`ethereum|${ETH_ADDRESS}`, {
+                nativeValue: new Decimal(2),
+                fiatValue: new Decimal(20),
+            })
+            mockAccountValueTotals.set(`base|${ETH_ADDRESS}`, {
+                nativeValue: new Decimal(0),
+                fiatValue: new Decimal(5),
+            })
+
+            const { result } = renderHook(() =>
+                useAccountWithBalance(onThreeChains),
+            )
+
+            expect(result.current.crossChainTotal).toEqual({
+                kind: 'fiat',
+                value: new Decimal(70),
+            })
+        })
+
+        it('is unknown, not a partial sum, when one chain is unpriced', () => {
+            mockAccountValueTotals.set(`algorand|${ALGO_ADDRESS}`, {
+                nativeValue: new Decimal(1),
+                fiatValue: new Decimal(10),
+            })
+            mockAccountValueTotals.set(`ethereum|${ETH_ADDRESS}`, {
                 nativeValue: new Decimal(2),
                 fiatValue: null,
             })
@@ -334,11 +372,11 @@ describe('useAccountWithBalance', () => {
         })
 
         it("is still loading while any chain's totals are", () => {
-            mockAccountValueTotals.set(ALGO_ADDRESS, {
+            mockAccountValueTotals.set(`algorand|${ALGO_ADDRESS}`, {
                 nativeValue: new Decimal(1),
                 fiatValue: null,
             })
-            mockAccountValueTotals.set(ETH_ADDRESS, {
+            mockAccountValueTotals.set(`ethereum|${ETH_ADDRESS}`, {
                 nativeValue: new Decimal(0),
                 fiatValue: new Decimal(0),
                 isPending: true,
@@ -365,11 +403,11 @@ describe('useAccountWithBalance', () => {
                     scope: { chainId: 'ethereum', networkId: 'mainnet' },
                 },
             ])
-            mockAccountValueTotals.set(ALGO_ADDRESS, {
+            mockAccountValueTotals.set(`algorand|${ALGO_ADDRESS}`, {
                 nativeValue: new Decimal(1),
                 fiatValue: new Decimal(10),
             })
-            mockAccountValueTotals.set(ETH_ADDRESS, {
+            mockAccountValueTotals.set(`ethereum|${ETH_ADDRESS}`, {
                 nativeValue: new Decimal(2),
                 fiatValue: new Decimal(20),
             })

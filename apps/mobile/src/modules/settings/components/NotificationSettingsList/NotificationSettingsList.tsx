@@ -10,82 +10,23 @@
  limitations under the License
  */
 
-import {
-    PWFlatList,
-    PWSwitch,
-    PWText,
-    type PWTextProps,
-    PWView,
-} from '@components/core'
+import { PWFlatList, PWSwitch, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useSettingsNotificationsScreen } from '@modules/settings/screens/SettingsNotificationsScreen/useSettingsNotificationsScreen'
-import {
-    chainAccountOf,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
+import { chainAccountOf } from '@perawallet/wallet-core-accounts'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { EmptyView } from '@components/EmptyView'
 import { ListItemDivider } from '@components/ListItemDivider'
-import { AccountDisplay } from '@components/AccountDisplay'
 import { useMemo } from 'react'
-import type { AccountIconProps } from '@components/AccountIcon'
 import { useStyles } from './styles'
 import type { StyleProp, ViewStyle } from 'react-native'
+import { AccountNotificationItem } from './AccountNotificationItem'
 
 export type NotificationSettingsListProps = {
     style?: StyleProp<ViewStyle>
     contentContainerStyle?: StyleProp<ViewStyle>
     inBottomSheet?: boolean
     testID?: string
-}
-
-const iconProps = {
-    size: 'lg',
-} as AccountIconProps
-
-type AccountNotificationItemProps = {
-    account: WalletAccount
-    isEnabled: boolean
-    isPending: boolean
-    onToggle: (enabled: boolean) => void
-}
-
-const AccountNotificationItem = ({
-    account,
-    isEnabled,
-    isPending,
-    onToggle,
-}: AccountNotificationItemProps) => {
-    const styles = useStyles()
-
-    const textProps = useMemo<PWTextProps>(
-        () => ({
-            style: styles.mainText,
-            variant: 'h4',
-        }),
-        [styles],
-    )
-
-    return (
-        <PWView style={styles.accountItem}>
-            <PWView style={styles.accountInfo}>
-                <AccountDisplay
-                    account={account}
-                    showChevron={false}
-                    iconProps={iconProps}
-                    textProps={textProps}
-                    style={styles.accountDisplay}
-                />
-            </PWView>
-            <PWView style={styles.switchContainer}>
-                <PWSwitch
-                    value={isEnabled}
-                    onValueChange={onToggle}
-                    disabled={isPending}
-                />
-            </PWView>
-        </PWView>
-    )
 }
 
 export const NotificationSettingsList = ({

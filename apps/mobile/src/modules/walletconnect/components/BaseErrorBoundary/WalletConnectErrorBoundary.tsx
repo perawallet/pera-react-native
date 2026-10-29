@@ -13,47 +13,14 @@
 import React, { type ReactNode } from 'react'
 import { ErrorCategory } from '@perawallet/wallet-core-shared'
 import { BaseErrorBoundary } from '@components/BaseErrorBoundary'
-import { useLanguage } from '@hooks/useLanguage'
-import { EmptyView } from '@components/EmptyView'
-import { PWButton, bottomSheetNotifier } from '@components/core'
+import { bottomSheetNotifier } from '@components/core'
 import { WalletConnectError } from '@perawallet/wallet-core-walletconnect'
 import { useErrorToast } from '@hooks/useErrorToast'
+import { WalletConnectErrorFallback } from './WalletConnectErrorFallback'
 
 export interface WalletConnectErrorBoundaryProps {
     children: ReactNode
     t: (key: string, options?: Record<string, unknown>) => string
-}
-
-type WalletConnectErrorFallbackProps = {
-    error: Error
-    reset: () => void
-    children: ReactNode
-}
-
-const WalletConnectErrorFallback = ({
-    error,
-    reset,
-    children,
-}: WalletConnectErrorFallbackProps) => {
-    const { t } = useLanguage()
-
-    if (error instanceof WalletConnectError) {
-        return children
-    }
-
-    return (
-        <EmptyView
-            title={t('errors.walletconnect.title')}
-            body={t('errors.walletconnect.body')}
-            button={
-                <PWButton
-                    title={t('common.go_back.label')}
-                    variant='primary'
-                    onPress={reset}
-                />
-            }
-        />
-    )
 }
 
 export const WalletConnectErrorBoundary: React.FC<

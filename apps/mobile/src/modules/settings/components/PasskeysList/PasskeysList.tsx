@@ -11,21 +11,17 @@
  */
 
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { PWFlatList, PWView } from '@components/core'
+import { PWFlatList } from '@components/core'
 import type { Passkey } from '@perawallet/wallet-core-passkeys'
 import { PasskeyListItem } from '../PasskeyListItem'
 import { useStyles } from './styles'
+import { ItemSeparator } from './ItemSeparator'
 
 export type PasskeysListProps = {
     passkeys: Passkey[]
     /** Rows this returns false for are rendered without a remove action. */
     canRemove: (passkey: Passkey) => boolean
     onRequestDelete: (passkey: Passkey) => void
-}
-
-const ItemSeparator = () => {
-    const styles = useStyles()
-    return <PWView style={styles.separator} />
 }
 
 export const PasskeysList = ({

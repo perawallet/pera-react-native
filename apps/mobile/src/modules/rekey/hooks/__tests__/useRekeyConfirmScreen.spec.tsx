@@ -98,15 +98,15 @@ vi.mock('@perawallet/wallet-core-transactions', async importOriginal => ({
     ...(await importOriginal<
         typeof import('@perawallet/wallet-core-transactions')
     >()),
-    useSubmitRekeyMutation: () => ({
+    useSubmitDelegationMutation: () => ({
         submitAsync: mockSubmitAsync,
         isPending: false,
     }),
-    useRekeyTransactionFeeQuery: () => ({
-        feeAlgos: new Decimal('0.001'),
+    useDelegationTransactionFeeQuery: () => ({
+        fee: new Decimal('0.001'),
         isPending: false,
     }),
-    useRekeyFeePreflight: () => ({ isUnderfunded: mockIsUnderfunded }),
+    useDelegationFeePreflight: () => ({ isUnderfunded: mockIsUnderfunded }),
 }))
 
 const mockRequestBottomSheet = vi.fn()
@@ -194,7 +194,7 @@ describe('useRekeyConfirmScreen - quantum downgrade gate', () => {
         await waitFor(() => {
             expect(mockSubmitAsync).toHaveBeenCalledWith({
                 sourceAddress: 'SRC',
-                rekeyToAddress: 'TGT',
+                authorityAddress: 'TGT',
             })
         })
     })
@@ -384,7 +384,7 @@ describe('useRekeyConfirmScreen - no-op rekey guard', () => {
         await waitFor(() => {
             expect(mockSubmitAsync).toHaveBeenCalledWith({
                 sourceAddress: 'SRC',
-                rekeyToAddress: 'TGT',
+                authorityAddress: 'TGT',
             })
         })
     })

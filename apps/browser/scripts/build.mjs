@@ -82,7 +82,7 @@ const POPUP_CSS =
 // viewport), these colors paint instead of the browser's default grey/white.
 // They can only see the OS theme, not an in-app light/dark override -- that
 // override is handled authoritatively once mounted by the themed root View
-// in AppShell.web.tsx (theme.colors.background via ThemeProvider), which
+// in app-root/AppShellThemedRoot (theme.colors.background via ThemeProvider), which
 // takes precedence visually because it paints on top. Hex values mirror
 // apps/mobile/src/theme/colors.ts: light = palette.white (#FFFFFF), dark =
 // palette.gray[900] (#18181B), matching theme.ts's light/dark `background`.

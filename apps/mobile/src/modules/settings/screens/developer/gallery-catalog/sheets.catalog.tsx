@@ -60,7 +60,7 @@ import { LedgerAccountInfoContent } from '@modules/ledger/components/LedgerAccou
 import { LedgerConnectingContent } from '@modules/ledger/components/LedgerConnectingContent'
 import { LedgerHowItWorksContent } from '@modules/ledger/components/LedgerHowItWorksContent'
 import { AddParticipantContent } from '@modules/multisig/components/AddParticipantContent'
-import { useCapableChainId } from '@hooks/useCapableChainIds'
+import { CapableChainPreview } from './CapableChainPreview'
 import { BeforeYouCreateContent } from '@modules/multisig/components/BeforeYouCreateContent'
 import { ExportShareAccountContent } from '@modules/multisig/components/ExportShareAccountContent'
 import { InboxInfoContent } from '@modules/messages/components/InboxInfoContent'
@@ -88,20 +88,6 @@ import type { Connection } from '@perawallet/wallet-extension-connections'
 
 const A = MOCK_ADDRESS
 
-// The Ledger sheets preview on the first chain with Ledger on, as the flow does.
-const GalleryLedgerAccountInfo = () => (
-    <LedgerAccountInfoContent
-        address={A}
-        accountIndex={0}
-        chainId={useCapableChainId('ledger')}
-    />
-)
-
-const GalleryLedgerHowItWorks = () => (
-    <LedgerHowItWorksContent
-        appName={ledgerAppNameFor(useCapableChainId('ledger'))}
-    />
-)
 const A2 = MOCK_ADDRESS_2
 
 // Lazy: RatingsContent is the only entry in this catalog backed by a
@@ -118,17 +104,6 @@ const RatingsGalleryContent = React.lazy(() =>
 // The mock asset and accounts are on the first registered chain.
 const firstChainScope = () =>
     getSelectedScope(getProvider().chains.list()[0].id)
-
-const AddAssetPreview = () => (
-    <AddAssetContent
-        variant='asset'
-        chainId={useCapableChainId('manageAssets')}
-    />
-)
-
-const AddParticipantPreview = () => (
-    <AddParticipantContent chainId={useCapableChainId('multisig')} />
-)
 
 export const getSheetSections = (): GallerySection[] => [
     {
@@ -405,7 +380,14 @@ export const getSheetSections = (): GallerySection[] => [
                     request: () => ({
                         contents: (
                             <GallerySheetBoundary>
-                                <AddAssetPreview />
+                                <CapableChainPreview capability='manageAssets'>
+                                    {chainId => (
+                                        <AddAssetContent
+                                            variant='asset'
+                                            chainId={chainId}
+                                        />
+                                    )}
+                                </CapableChainPreview>
                             </GallerySheetBoundary>
                         ),
                         // Match the real invocation: autoCreateContainer:false
@@ -843,7 +825,16 @@ export const getSheetSections = (): GallerySection[] => [
                     request: () => ({
                         contents: (
                             <GallerySheetBoundary>
-                                <GalleryLedgerAccountInfo />
+                                {/* The Ledger sheets preview on the first chain with Ledger on, as the flow does. */}
+                                <CapableChainPreview capability='ledger'>
+                                    {chainId => (
+                                        <LedgerAccountInfoContent
+                                            address={A}
+                                            accountIndex={0}
+                                            chainId={chainId}
+                                        />
+                                    )}
+                                </CapableChainPreview>
                             </GallerySheetBoundary>
                         ),
                         options: {
@@ -876,7 +867,13 @@ export const getSheetSections = (): GallerySection[] => [
                     request: () => ({
                         contents: (
                             <GallerySheetBoundary>
-                                <GalleryLedgerHowItWorks />
+                                <CapableChainPreview capability='ledger'>
+                                    {chainId => (
+                                        <LedgerHowItWorksContent
+                                            appName={ledgerAppNameFor(chainId)}
+                                        />
+                                    )}
+                                </CapableChainPreview>
                             </GallerySheetBoundary>
                         ),
                         options: {
@@ -899,7 +896,13 @@ export const getSheetSections = (): GallerySection[] => [
                     request: () => ({
                         contents: (
                             <GallerySheetBoundary>
-                                <AddParticipantPreview />
+                                <CapableChainPreview capability='multisig'>
+                                    {chainId => (
+                                        <AddParticipantContent
+                                            chainId={chainId}
+                                        />
+                                    )}
+                                </CapableChainPreview>
                             </GallerySheetBoundary>
                         ),
                         options: {

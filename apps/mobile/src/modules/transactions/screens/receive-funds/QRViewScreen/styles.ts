@@ -25,8 +25,8 @@ export const useStyles = makeStyles(theme => ({
         position: 'absolute',
         padding: theme.spacing.xs,
         borderRadius: theme.borderRadius.full,
-        // Matches the QR's own fixed white background, not the theme's.
-        backgroundColor: 'white',
+        // Matches the QR code's background, which is white in both modes.
+        backgroundColor: theme.colors.qrCodeBg,
     },
     addressContainer: {
         alignItems: 'center',

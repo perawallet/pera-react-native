@@ -6,13 +6,44 @@ import { defineRule } from 'lanekeep'
 import { ownText, referencesQuery } from '../shared/references.js'
 import { TEST_SUPPORT, withoutTests } from '../shared/scope.js'
 
-// A package joins once its Algorand half sits behind adapters.
-const CHAIN_NEUTRAL_PACKAGES = ['backup', 'device', 'migrate']
+// A package joins once its chain half sits behind adapters. These three also
+// keep their comments chain-free; the others explain adapter behaviour in
+// prose, so only their names and literals are checked.
+const PROSE_CHECKED_PACKAGES = ['backup', 'device', 'migrate']
+const CODE_CHECKED_PACKAGES = [
+    'accounts',
+    'assets',
+    'chain-shared',
+    'connections',
+    'signing',
+    'swaps',
+    'transactions',
+]
 
 // Word-bounded `Networks` so `useNetworks` stays legal; the rest match inside
 // names (`rekeyed`, `onRekey`, `ARC59_APP_ID`, `AsbImport…`, `ALGORAND_…`).
-const TERMS =
+const ALGORAND_TERMS =
     /\bNetworks\b|algorand|Algorand|ALGORAND|rekey|Rekey|REKEY|arc59|Arc59|ARC59|asb|Asb|ASB/
+
+const CHAIN_TERMS = new RegExp(
+    [
+        ALGORAND_TERMS.source,
+        'falcon|Falcon|FALCON',
+        'algod|Algod|ALGOD',
+        'algokit|Algokit|AlgoKit|ALGOKIT',
+        'ed25519|Ed25519|ED25519',
+        'peikert|Peikert|PEIKERT',
+        'lsig|Lsig|LSig|LSIG',
+        'secp256k1|Secp256k1|SECP256K1',
+        'ethereum|Ethereum|ETHEREUM',
+        '\\bevm|Evm|EVM',
+    ].join('|'),
+)
+
+const PROSE_KINDS = new Set(['comment', 'jsx_text'])
+const PROSE_CHECKED_PATH = new RegExp(
+    `(^|/)packages/(${PROSE_CHECKED_PACKAGES.join('|')})/src/`,
+)
 
 type Allowed = {
     file: string
@@ -31,30 +62,34 @@ export default defineRule({
     id: 'pera/no-algorand-terms-in-chain-neutral-packages',
     severity: 'error',
     card: {
-        message: 'a chain-neutral package names an Algorand concept',
+        message: 'a chain-neutral package names a chain-specific concept',
         remediation:
-            "backup, device and migrate reach Algorand only through their chain adapters (BackupChainAdapter, DeviceChainAdapter, MigrationChainAdapter) and chain-contract's legacy helpers (LEGACY_CHAIN_ID, LEGACY_CHAIN_FAMILY). Put the Algorand-specific code in packages/chain-algorand and call it through the adapter, or name the concept neutrally (secure-backup, delegation).",
+            "Reach a chain through the package's chain adapter: put chain code in packages/chain-algorand or packages/chain-ethereum, or name the concept neutrally (delegation/authority for rekey, quantum or pq for falcon, node or network for algod). A value already persisted under the old word stays, suppressed with the reason. App feature modules such as apps/mobile/src/modules/rekey are outside the rule and keep their product's word.",
         examples: {
-            bad: 'const prefix = ALGORAND_SIGN_PREFIX',
-            good: 'const prefix = BACKUP_PROOF_PREFIX',
+            bad: 'export class RekeyError extends AppError {}',
+            good: 'export class DelegationError extends AppError {}',
         },
     },
     gates: withoutTests({
         pathMatches: [
-            `**/packages/{${CHAIN_NEUTRAL_PACKAGES.join(',')}}/src/**`,
+            `**/packages/{${[...PROSE_CHECKED_PACKAGES, ...CODE_CHECKED_PACKAGES].join(',')}}/src/**`,
         ],
         pathNotMatches: [...TEST_SUPPORT],
     }),
-    query: referencesQuery(TERMS),
+    query: referencesQuery(CHAIN_TERMS),
     check(ctx, m) {
         const token = m.token
         if (token === undefined) return
         if (ALLOWED.some(entry => ctx.filePath.endsWith(entry.file))) return
-        const hit = TERMS.exec(ownText(ctx, token))
+        const isProse = PROSE_KINDS.has(ctx.kind(token))
+        if (isProse && !PROSE_CHECKED_PATH.test(ctx.filePath)) return
+        const hit = (isProse ? ALGORAND_TERMS : CHAIN_TERMS).exec(
+            ownText(ctx, token),
+        )
         if (hit === null) return
         ctx.report(
             token,
-            `"${hit[0]}" is an Algorand term in a chain-neutral package`,
+            `"${hit[0]}" is a chain-specific term in a chain-neutral package`,
         )
     },
 })
