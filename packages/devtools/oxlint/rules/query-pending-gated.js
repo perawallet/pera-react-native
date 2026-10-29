@@ -58,31 +58,24 @@ const childNodes = node => {
 // The children that can hold a reference to a name: property names, binding
 // patterns, parameters and type annotations only declare or label things.
 const referenceChildren = node => {
-    switch (node.type) {
-        case 'MemberExpression':
-            return node.computed ? [node.object, node.property] : [node.object]
-        case 'Property':
-            return node.computed ? [node.key, node.value] : [node.value]
-        case 'CallExpression':
-            return node.callee.type === 'Identifier'
-                ? node.arguments
-                : [node.callee, ...node.arguments]
-        case 'ObjectPattern':
-            return []
-        case 'AssignmentPattern':
-            return [node.right]
-        case 'VariableDeclarator':
-            return node.init ? [node.init] : []
-        default:
-            if (FUNCTION_TYPES.includes(node.type)) return [node.body]
-            if (
-                node.type.startsWith('TS') &&
-                !TYPE_WRAPPERS.includes(node.type)
-            ) {
-                return []
-            }
-            return childNodes(node)
+    const { type } = node
+    if (type === 'MemberExpression') {
+        return node.computed ? [node.object, node.property] : [node.object]
     }
+    if (type === 'Property') {
+        return node.computed ? [node.key, node.value] : [node.value]
+    }
+    if (type === 'CallExpression') {
+        return node.callee.type === 'Identifier'
+            ? node.arguments
+            : [node.callee, ...node.arguments]
+    }
+    if (type === 'ObjectPattern') return []
+    if (type === 'AssignmentPattern') return [node.right]
+    if (type === 'VariableDeclarator') return node.init ? [node.init] : []
+    if (FUNCTION_TYPES.includes(type)) return [node.body]
+    if (type.startsWith('TS') && !TYPE_WRAPPERS.includes(type)) return []
+    return childNodes(node)
 }
 
 const visit = (node, fn) => {
