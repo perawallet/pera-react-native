@@ -10,6 +10,10 @@
  limitations under the License
  */
 
+// Side-effect import: the backup row's asset count is an interpolated
+// translation, which renders as the bare key without the English resources.
+import '../i18n'
+
 import {
     afterAll,
     afterEach,
@@ -20,7 +24,7 @@ import {
     it,
     vi,
 } from 'vitest'
-import { fireEvent, screen, waitFor } from '@testing-library/react'
+import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { Decimal } from 'decimal.js'
 
 import {
@@ -50,6 +54,7 @@ import { AccountMenu } from '@modules/accounts/components/AccountMenu/AccountMen
 import { useAssetListViewStore } from '@modules/accounts/hooks/useAssetListViewStore'
 import { AccountOverviewHeader } from '@modules/accounts/components/AccountOverview/AccountOverviewHeader'
 import { AccountOverviewModalContext } from '@modules/accounts/components/AccountOverview/AccountOverviewModalContext'
+import { CloudBackupAccountsScreen } from '@modules/cloud-backup/screens/CloudBackupAccountsScreen'
 import { ETH_ADDRESS, ETH_SCOPE } from './__fixtures__/multichainHoldings'
 import { ALGO25_TEST_ADDRESS } from './__fixtures__/onboarding'
 
@@ -275,6 +280,24 @@ describe('Flow: Account overview fiat total', () => {
                     `account_switcher_row_${ALGO25_TEST_ADDRESS}`,
                 ).textContent,
             ).toMatch(/3\.16/)
+        })
+
+        it('Given the cloud backup accounts list, when it renders, then the row counts the assets on every network and reads the same $3.16 as the overview', async () => {
+            renderWithNavigation(
+                CloudBackupAccountsScreen,
+                'CloudBackupAccounts',
+            )
+
+            const row = await screen.findByTestId(
+                `cloud_backup_account_${ALGO25_TEST_ADDRESS}`,
+            )
+
+            await waitFor(() => {
+                expect(
+                    within(row).getByTestId('backup_account_summary_fiat')
+                        .textContent,
+                ).toMatch(/^2 assets・\$ ?3\.16$/)
+            })
         })
     })
 })
