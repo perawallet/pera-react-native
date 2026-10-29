@@ -28,6 +28,7 @@ const object = (...properties: Node[]): Node => ({
     type: 'ObjectExpression',
     properties,
 })
+const spread = (argument: Node): Node => ({ type: 'SpreadElement', argument })
 const array = (...elements: Node[]): Node => ({
     type: 'ArrayExpression',
     elements,
@@ -229,6 +230,24 @@ describe('pera/no-unvalidated-open-url', () => {
         )
     })
 
+    it('reports a spread after the url, which can override it', () => {
+        const node = call(id('pushWebView'), [
+            object(property('url', literal('https://x')), spread(id('view'))),
+        ])
+
+        expect(lint('CallExpression', node)).toHaveBeenCalledWith(
+            expect.objectContaining({ messageId: 'unvalidated' }),
+        )
+    })
+
+    it('allows a spread before the url, which the url then overrides', () => {
+        const node = call(id('pushWebView'), [
+            object(spread(id('view')), property('url', literal('https://x'))),
+        ])
+
+        expect(lint('CallExpression', node)).not.toHaveBeenCalled()
+    })
+
     it('checks a shorthand url property through its binding', () => {
         const node = call(id('pushWebView'), [
             object(property('url', id('url'), true)),
@@ -312,6 +331,26 @@ describe('pera/no-unvalidated-open-url', () => {
             )
 
             expect(lint('JSXOpeningElement', node)).not.toHaveBeenCalled()
+        })
+
+        it.each([
+            ['{ ...source }', object(spread(id('source')))],
+            [
+                '{ uri, ...source }',
+                object(
+                    property('uri', literal('https://x')),
+                    spread(id('source')),
+                ),
+            ],
+        ])('reports a source of %s', (_label, source) => {
+            const node = element(
+                'WebView',
+                expressionAttribute('source', source),
+            )
+
+            expect(lint('JSXOpeningElement', node)).toHaveBeenCalledWith(
+                expect.objectContaining({ messageId: 'unvalidated' }),
+            )
         })
 
         it.each(['WebView', 'PWStaticWebView'])(

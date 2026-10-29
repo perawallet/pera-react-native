@@ -116,10 +116,21 @@ const propertyNamed = (object, name) =>
                     property.key.value === name)),
     )
 
+// A spread after the property can override it with an unchecked value; with
+// no property at all, the spread is the only possible source.
+const isOverriddenBySpread = (object, property) =>
+    object.properties.some(
+        (entry, index) =>
+            entry.type === 'SpreadElement' &&
+            (!property || index > object.properties.indexOf(property)),
+    )
+
 const sinkUrl = argument => {
     if (!argument) return null
     if (argument.type !== 'ObjectExpression') return argument
-    return propertyNamed(argument, 'url')?.value ?? null
+    const property = propertyNamed(argument, 'url')
+    if (!property || isOverriddenBySpread(argument, property)) return null
+    return property.value
 }
 
 const attributeExpression = attribute => {
@@ -165,8 +176,17 @@ export const noUnvalidatedOpenUrl = {
                     })
                     return
                 }
-                url = propertyNamed(expression, 'uri')?.value
-                if (!url) return
+                const property = propertyNamed(expression, 'uri')
+                if (isOverriddenBySpread(expression, property)) {
+                    context.report({
+                        node: attribute,
+                        messageId: 'unvalidated',
+                        data: { sink },
+                    })
+                    return
+                }
+                if (!property) return
+                url = property.value
             }
             if (!isTrustedUrl(url, sourceCode)) {
                 context.report({
