@@ -276,6 +276,11 @@
       "rules": { "pera/hook-result-type": "error" }
     },
     {
+      "files": ["src/modules/vault/**"],
+      "excludeFiles": ["src/**/__tests__/**", "src/**/*.spec.{ts,tsx}"],
+      "rules": { "pera/monotonic-lockout-clock": "error" }
+    },
+    {
       "files": ["src/**/__tests__/**", "src/**/*.spec.{ts,tsx}", "src/**/__integration__/**", "src/**/test-utils/**", "vitest*.ts"],
       "rules": { "pera/no-algorand-sdk-imports": "off" }
     }
