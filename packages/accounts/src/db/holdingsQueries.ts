@@ -101,8 +101,8 @@ const isFromSources = (sources: readonly AccountHoldingSource[]) =>
         ),
     )!
 
-// EVM native coins have no stored metadata row for the name/unit LIKEs to hit.
-// The pair (scope, id) is required: every EVM chain's native id is `native`.
+// A chain may keep no metadata row for its native coin, and chains can share one
+// native id, so the match pairs the scope with the id.
 const nativeHoldingsMatching = (
     sources: readonly AccountHoldingSource[],
     term: string,

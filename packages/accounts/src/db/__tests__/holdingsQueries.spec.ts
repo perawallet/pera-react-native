@@ -835,6 +835,34 @@ describe('account holdings queries', () => {
             ).toEqual([])
         })
 
+        it('pairs the scope with the native id, so another chain sharing that id is not matched', async () => {
+            assetsChainAdapters.register(
+                fakeAssetsAdapter({
+                    chainId: 'base',
+                    getNativeAsset: () => ({
+                        ...ETHER,
+                        name: 'Other Coin',
+                        unitName: 'OTH',
+                    }),
+                }),
+            )
+            await refreshAccountHoldings({
+                db,
+                accountAddress: '0xETH',
+                scope: BASE_MAINNET,
+                holdings: [{ assetId: 'native', amount: new Decimal(1) }],
+            })
+
+            expect(
+                await search('eth', {
+                    sources: [
+                        mainnetSource,
+                        { address: '0xETH', scope: BASE_MAINNET },
+                    ],
+                }),
+            ).toEqual([`mainnet:${WETH}`, 'mainnet:native'])
+        })
+
         it('adds no match, and does not throw, for a chain without an assets adapter', async () => {
             await refreshAccountHoldings({
                 db,
