@@ -33,12 +33,31 @@ const failAttempts = async (count: number): Promise<void> => {
     for (let i = 0; i < count; i++) await failAttempt()
 }
 
+const HOUR_MS = 60 * 60 * 1000
+const CONTEXT_KEY = String(performance.timeOrigin)
+
 describe('vault lockout', () => {
     let fake: ChromeFake
+    let performanceOffsetMs: number
+
+    // Moves this context's monotonic clock; the system clock is left alone.
+    const advanceMonotonic = (ms: number): void => {
+        performanceOffsetMs += ms
+    }
+    const stored = () =>
+        fake.data.get('vault:lockout') as {
+            failedAttempts: number
+            lockoutDeadlines: Record<string, number> | null
+        }
 
     beforeEach(() => {
         fake = createChromeFake()
         globalThis.chrome = fake.chrome
+        performanceOffsetMs = 0
+        const realNow = performance.now.bind(performance)
+        vi.spyOn(performance, 'now').mockImplementation(
+            () => realNow() + performanceOffsetMs,
+        )
     })
 
     afterEach(() => {
@@ -58,16 +77,8 @@ describe('vault lockout', () => {
 
     it('doubles the lockout each block: 10th failure -> 60s', async () => {
         await failAttempts(5)
-        // The 6th-10th attempts need the first lockout to have passed.
-        const lockout = fake.data.get('vault:lockout') as Record<
-            string,
-            unknown
-        >
-        fake.data.set('vault:lockout', {
-            ...lockout,
-            lockoutEndTime: 0,
-            monotonicLockout: undefined,
-        })
+        // The 6th-10th attempts need the first lockout to have been served.
+        advanceMonotonic(30_001)
         await failAttempts(5)
         expect(await getLockoutRemainingSeconds()).toBeGreaterThan(58)
     })
@@ -109,26 +120,124 @@ describe('vault lockout', () => {
     it('stays locked out when the system clock jumps forward', async () => {
         await failAttempts(5)
         const now = Date.now()
-        vi.spyOn(Date, 'now').mockReturnValue(now + 60 * 60 * 1000)
+        vi.spyOn(Date, 'now').mockReturnValue(now + HOUR_MS)
 
         expect(await getLockoutRemainingSeconds()).toBeGreaterThan(28)
     })
 
-    it('falls back to the wall clock for a lockout another context recorded', async () => {
+    it('stays locked out when the system clock is set back', async () => {
         await failAttempts(5)
-        const lockout = fake.data.get('vault:lockout') as {
-            monotonicLockout: { timeOrigin: number; endTime: number }
-        }
-        fake.data.set('vault:lockout', {
-            ...lockout,
-            monotonicLockout: {
-                ...lockout.monotonicLockout,
-                timeOrigin: performance.timeOrigin - 1,
-            },
-        })
-        vi.spyOn(Date, 'now').mockReturnValue(Date.now() + 60 * 60 * 1000)
+        const now = Date.now()
+        vi.spyOn(Date, 'now').mockReturnValue(now - HOUR_MS)
+
+        expect(await getLockoutRemainingSeconds()).toBeGreaterThan(28)
+    })
+
+    it('ends the lockout once the monotonic clock passes the deadline, whatever the system clock says', async () => {
+        await failAttempts(5)
+        vi.spyOn(Date, 'now').mockReturnValue(Date.now() - HOUR_MS)
+        advanceMonotonic(30_001)
 
         expect(await getLockoutRemainingSeconds()).toBe(0)
+        expect(stored().lockoutDeadlines).toBeNull()
+    })
+
+    describe('another context', () => {
+        const lockedByAnotherContext = (): void => {
+            fake.data.set('vault:lockout', {
+                failedAttempts: 5,
+                lockoutDeadlines: { 'other-context': 0 },
+            })
+        }
+
+        it('serves the full window itself, whatever the system clock says', async () => {
+            lockedByAnotherContext()
+            vi.spyOn(Date, 'now').mockReturnValue(Date.now() + HOUR_MS)
+
+            expect(await getLockoutRemainingSeconds()).toBe(30)
+        })
+
+        it('leaves the other deadline untouched while it serves its own', async () => {
+            lockedByAnotherContext()
+
+            await getLockoutRemainingSeconds()
+            advanceMonotonic(10_000)
+
+            expect(await getLockoutRemainingSeconds()).toBe(20)
+            expect(stored().lockoutDeadlines).toMatchObject({
+                'other-context': 0,
+                [CONTEXT_KEY]: expect.any(Number),
+            })
+        })
+
+        it('clears the lockout for both once this context has served the window', async () => {
+            lockedByAnotherContext()
+            await getLockoutRemainingSeconds()
+            advanceMonotonic(30_001)
+
+            expect(await getLockoutRemainingSeconds()).toBe(0)
+            expect(stored().lockoutDeadlines).toBeNull()
+            expect(stored().failedAttempts).toBe(5)
+        })
+
+        it('refuses an attempt until this context has served the window', async () => {
+            lockedByAnotherContext()
+            const attempt = vi.fn(async () => 'unlocked')
+
+            await expect(
+                runThrottledAttempt(attempt, isWrongPassword),
+            ).rejects.toBeInstanceOf(VaultLockedOutError)
+            expect(attempt).not.toHaveBeenCalled()
+        })
+    })
+
+    describe('a record from before per-context deadlines', () => {
+        it('serves the full window when its last failure started a lockout', async () => {
+            fake.data.set('vault:lockout', {
+                failedAttempts: 5,
+                lockoutEndTime: 0,
+                monotonicLockout: { timeOrigin: 1, endTime: 1 },
+            })
+
+            expect(await getLockoutRemainingSeconds()).toBe(30)
+        })
+
+        it('is not locked out between lockout blocks', async () => {
+            fake.data.set('vault:lockout', {
+                failedAttempts: 6,
+                lockoutEndTime: 0,
+            })
+
+            expect(await getLockoutRemainingSeconds()).toBe(0)
+        })
+
+        it('treats a malformed deadline map as a started lockout', async () => {
+            fake.data.set('vault:lockout', {
+                failedAttempts: 5,
+                lockoutEndTime: 123,
+                lockoutDeadlines: { [CONTEXT_KEY]: 'soon' },
+            })
+
+            expect(await getLockoutRemainingSeconds()).toBe(30)
+        })
+
+        it('serves the full window for a malformed deadline map without lockoutEndTime', async () => {
+            fake.data.set('vault:lockout', {
+                failedAttempts: 5,
+                lockoutDeadlines: [],
+            })
+
+            expect(await getLockoutRemainingSeconds()).toBe(30)
+        })
+
+        it('locks out when the stored counter is not a whole number', async () => {
+            fake.data.set('vault:lockout', {
+                failedAttempts: 'x',
+                lockoutDeadlines: null,
+            })
+
+            expect(await getLockoutRemainingSeconds()).toBe(30)
+        })
     })
 
     // Surfaces open at once (popup, expanded tab, approval window) each used to
