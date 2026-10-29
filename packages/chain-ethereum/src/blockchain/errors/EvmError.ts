@@ -10,7 +10,10 @@
  limitations under the License
  */
 
-import { BlockchainError } from '@perawallet/wallet-core-shared'
+import {
+    BlockchainError,
+    isExpectedError,
+} from '@perawallet/wallet-core-shared'
 import { EvmErrorCode, TRAITS } from './evmErrorCodes'
 
 /** `symbol` is the chain's native coin, as the insufficient-funds copy names it. */
@@ -43,7 +46,15 @@ export class EvmError extends BlockchainError {
             {
                 severity,
                 retryable,
-                expected,
+                // A timeout or dropped connection classifies `unknown` but is
+                // the environment's fault, so it must not report as a crash.
+                expected:
+                    expected ??
+                    (originalError !== undefined &&
+                    isExpectedError(originalError)
+                        ? true
+                        : undefined),
+                reportCode: `evm.${code}`,
                 // An explicit `messageKey: undefined` would wipe the generic default.
                 ...(titleKey && { titleKey }),
                 ...(messageKey && { messageKey }),

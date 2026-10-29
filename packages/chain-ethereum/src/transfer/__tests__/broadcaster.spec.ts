@@ -33,6 +33,7 @@ import {
     type TransactionSerializableEIP1559,
 } from 'viem'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { logger } from '@perawallet/wallet-core-shared'
 import {
     getOpenSubmissionAttempts,
     SubmissionError,
@@ -130,6 +131,23 @@ describe('Ethereum broadcaster adapter', () => {
     })
 
     const rows = () => db.select().from(SubmissionAttemptsSchema).all()
+    const reporter = vi.fn()
+    const reports = () =>
+        reporter.mock.calls.map(
+            call => call[0] as { severity: string; groupingKey?: string },
+        )
+
+    beforeEach(() => {
+        reporter.mockClear()
+        logger.setErrorReporter(reporter)
+        vi.spyOn(console, 'warn').mockImplementation(() => {})
+        vi.spyOn(console, 'error').mockImplementation(() => {})
+    })
+
+    afterEach(() => {
+        logger.setErrorReporter(undefined)
+        vi.restoreAllMocks()
+    })
 
     describe('submitAndAutoRefresh', () => {
         const SIGNED = [{ scope: SCOPE, id: HASH, bytes: BYTES }]
@@ -550,6 +568,76 @@ describe('Ethereum broadcaster adapter', () => {
         })
     })
 
+    describe('reporting a failed submit', () => {
+        const SIGNED = [{ scope: SCOPE, id: HASH, bytes: BYTES }]
+        const sendOnTransport = () =>
+            adapter
+                .createSubmitTransport(SCOPE)
+                .send(signedTransactions, SOURCE)
+
+        it.each([
+            [
+                'replacement transaction underpriced',
+                'evm.replacement_underpriced',
+            ],
+            [
+                'insufficient funds for gas * price + value',
+                'evm.insufficient_funds',
+            ],
+        ])('groups a node refusal of "%s" under %s', async (message, key) => {
+            useRpc({
+                eth_sendRawTransaction: new EvmRpcErrorFixture(-32000, message),
+            })
+
+            await expect(sendOnTransport()).rejects.toBeInstanceOf(
+                SubmissionError,
+            )
+
+            expect(reports()).toEqual([
+                expect.objectContaining({
+                    severity: 'error',
+                    groupingKey: key,
+                }),
+            ])
+        })
+
+        it('reports a rate limit only as a breadcrumb', async () => {
+            server.use(
+                http.post(
+                    TEST_RPC_URL,
+                    () => new HttpResponse(null, { status: 429 }),
+                ),
+            )
+
+            await expect(sendOnTransport()).rejects.toThrow()
+
+            expect(reports().length).toBeGreaterThan(0)
+            expect(reports().map(report => report.severity)).toEqual(
+                reports().map(() => 'expected'),
+            )
+        })
+
+        it('reports a refused submitAndAutoRefresh under its code', async () => {
+            useRpc({
+                eth_sendRawTransaction: new EvmRpcErrorFixture(
+                    -32000,
+                    'nonce too low',
+                ),
+            })
+
+            await expect(
+                adapter.submitAndAutoRefresh(SCOPE, SIGNED),
+            ).rejects.toBeInstanceOf(SubmissionError)
+
+            expect(reports()).toEqual([
+                expect.objectContaining({
+                    severity: 'error',
+                    groupingKey: 'evm.nonce_too_low',
+                }),
+            ])
+        })
+    })
+
     describe('a replacement at a nonce an open send holds', () => {
         const sendBytes = (hex: `0x${string}`) =>
             adapter.createSubmitTransport(SCOPE).send(
@@ -642,6 +730,12 @@ describe('Ethereum broadcaster adapter', () => {
             )
             expect(sends).not.toHaveBeenCalled()
             expect(await rows()).toHaveLength(1)
+            expect(reports()).toEqual([
+                expect.objectContaining({
+                    severity: 'error',
+                    groupingKey: 'evm.replacement_underpriced',
+                }),
+            ])
         })
 
         it('says the transaction already confirmed when the node finds the nonce used', async () => {

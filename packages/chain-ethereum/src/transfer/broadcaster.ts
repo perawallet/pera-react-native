@@ -27,12 +27,14 @@ import {
     TransportError,
     type BroadcasterChainAdapter,
     type DataTransport,
+    type SubmissionFlow,
 } from '@perawallet/wallet-core-signing'
 import { EvmError, EvmErrorCode, toEvmError } from '../blockchain/errors'
 import { createEvmClient } from '../blockchain/utils/createEvmClient'
 import type { EvmChain } from '../chains/types'
 import {
     reconcileEthereumSubmissions,
+    type ProbeFailureStreaks,
     type SubmissionSettledHandlers,
 } from './reconcile'
 import { resumeEthereumCallBatches } from '../connect/callBatch/executor'
@@ -58,7 +60,30 @@ export const createEvmBroadcasterAdapter = (
         options.confirmationTimeoutMs ?? ETHEREUM_CONFIRMATION_TIMEOUT_MS
     const clientFor = (scope: ChainScope) => createEvmClient(scope, ctx, chain)
     const settleHandlers: SubmissionSettledHandlers = new Map()
+    const probeFailures: ProbeFailureStreaks = new Map()
     const nativeSymbol = chain.row.nativeAsset.symbol
+
+    // Logs the node's error rather than the SubmissionError wrapper:
+    // `isExpectedError` reads only the outer error, and only the node error
+    // knows whether the failure is the environment's.
+    const reportSubmitFailure = (
+        error: unknown,
+        flow: SubmissionFlow,
+    ): void => {
+        logger.error(
+            toEvmError(
+                error instanceof SubmissionError ? error.nodeError : error,
+                nativeSymbol,
+            ),
+            {
+                chainId: chain.row.id,
+                flow,
+                ...(error instanceof SubmissionError && {
+                    classification: error.classification,
+                }),
+            },
+        )
+    }
 
     return {
         chainId: chain.row.id,
@@ -105,6 +130,7 @@ export const createEvmBroadcasterAdapter = (
                         flow: 'pipeline',
                     })
                 } catch (error) {
+                    reportSubmitFailure(error, 'pipeline')
                     // Keeps the classification: wrapping would make a node
                     // refusal look retryable.
                     if (error instanceof SubmissionError) throw error
@@ -130,21 +156,28 @@ export const createEvmBroadcasterAdapter = (
         // Confirmation is the reconciler's, as for the pipeline's transport.
         submitAndAutoRefresh: async (scope, signedTransactions, options) => {
             const bytes = signedTransactions.map(signed => signed.bytes)
-            return submitAndRecordEthereumTransactions({
-                client: clientFor(scope),
-                chain,
-                scope,
-                signedTransactions: bytes,
-                historyEntries: await Promise.all(
-                    bytes.map(serialized =>
-                        historyEntryOfSigned(
-                            bytesToHex(serialized) as TransactionSerialized,
-                            chain,
-                        ),
+            const historyEntries = await Promise.all(
+                bytes.map(serialized =>
+                    historyEntryOfSigned(
+                        bytesToHex(serialized) as TransactionSerialized,
+                        chain,
                     ),
                 ),
-                flow: options?.flow ?? 'pipeline',
-            })
+            )
+            const flow = options?.flow ?? 'pipeline'
+            try {
+                return await submitAndRecordEthereumTransactions({
+                    client: clientFor(scope),
+                    chain,
+                    scope,
+                    signedTransactions: bytes,
+                    historyEntries,
+                    flow,
+                })
+            } catch (error) {
+                reportSubmitFailure(error, flow)
+                throw error
+            }
         },
         // An unsigned request has no hash yet.
         isRequestGroupAlreadySubmitted: async () => false,
@@ -155,6 +188,7 @@ export const createEvmBroadcasterAdapter = (
             const summary = await reconcileEthereumSubmissions({
                 chain,
                 settleHandlers,
+                probeFailures,
                 getClient: clientFor,
             })
             void resumeEthereumCallBatches(ctx, chain, {

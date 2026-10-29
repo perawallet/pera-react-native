@@ -29,6 +29,7 @@ import {
     BlockchainError,
     ErrorCategory,
     ErrorSeverity,
+    isExpectedError,
 } from '@perawallet/wallet-core-shared'
 import { EvmError, toEvmError } from '..'
 
@@ -274,5 +275,39 @@ describe('toEvmError', () => {
         const error = new EvmError('nonce_too_low')
 
         expect(toEvmError(error, 'ETH')).toBe(error)
+    })
+
+    describe('report codes', () => {
+        it('declares evm.<code> through a wrapped viem error', () => {
+            const error = toEvmError(
+                wrapped(new InsufficientFundsError()),
+                'ETH',
+            )
+
+            expect(error.metadata.reportCode).toBe('evm.insufficient_funds')
+        })
+
+        it('declares the resolved code, not the requested one', () => {
+            const error = new EvmError('reverted_with_reason', { reason: '' })
+
+            expect(error.metadata.reportCode).toBe('evm.reverted')
+        })
+
+        it('treats a timeout as an expected unknown failure', () => {
+            const timeout = Object.assign(new Error('timed out'), {
+                name: 'TimeoutError',
+            })
+
+            const error = toEvmError(timeout, 'ETH')
+
+            expect(error.code).toBe('unknown')
+            expect(isExpectedError(error)).toBe(true)
+        })
+
+        it('keeps an unclassified failure reportable', () => {
+            const error = toEvmError(new Error('boom'), 'ETH')
+
+            expect(isExpectedError(error)).toBe(false)
+        })
     })
 })
