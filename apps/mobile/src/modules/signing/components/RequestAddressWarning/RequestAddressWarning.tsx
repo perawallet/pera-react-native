@@ -33,7 +33,6 @@ import {
     diffAddresses,
     KNOWN_LABEL_KEYS,
 } from '@modules/transactions'
-import { getTestProps } from '@utils/test-id-helper'
 import {
     useRequestAddressSafety,
     type FlaggedRequestAddress,
@@ -83,7 +82,7 @@ const ListedAddress = ({
             </PWView>
             <PWText
                 style={styles.fullAddress}
-                {...getTestProps(`request_address_listed_${index}`)}
+                testID={`request_address_listed_${index}`}
             >
                 {flagged.address}
             </PWText>
@@ -177,7 +176,7 @@ export const RequestAddressWarning = ({
             {hasListed && (
                 <PWText
                     style={styles.body}
-                    {...getTestProps('request_address_listed_body')}
+                    testID='request_address_listed_body'
                 >
                     {t('signing.address_safety.listed_body')}
                 </PWText>
@@ -186,7 +185,7 @@ export const RequestAddressWarning = ({
             {hasLookAlike && (
                 <PWText
                     style={styles.body}
-                    {...getTestProps('request_address_look_alike_body')}
+                    testID='request_address_look_alike_body'
                 >
                     {t('signing.address_safety.look_alike_body')}
                 </PWText>
@@ -210,7 +209,7 @@ export const RequestAddressWarning = ({
             <PWTouchableOpacity
                 style={styles.acknowledge}
                 onPress={toggleAcknowledged}
-                {...getTestProps('request_address_acknowledge')}
+                testID='request_address_acknowledge'
             >
                 <PWCheckbox
                     checked={isAcknowledged}
