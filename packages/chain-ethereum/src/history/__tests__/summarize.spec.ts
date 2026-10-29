@@ -706,6 +706,69 @@ describe('summarizeEthereumHistoryItem', () => {
             expect(summary.balanceChanges).toEqual([])
         })
 
+        describe.each([
+            ['leave out the top-level call', () => []],
+            [
+                'list the top-level call',
+                (from: string, to: string, value: string) => [
+                    internal(from, to, value),
+                ],
+            ],
+        ])('when the internal transfers %s', (_, topLevelOf) => {
+            it('reads a plain ETH receive as a transfer of its value', () => {
+                const summary = summarize(
+                    row({
+                        from: PEER,
+                        to: ME,
+                        value: '1000',
+                        internal_transfers: topLevelOf(PEER, ME, '1000'),
+                    }),
+                )
+
+                expect(summary).toMatchObject({
+                    kind: 'transfer',
+                    direction: 'in',
+                    amount: { assetRef: NATIVE, value: new Decimal(1000) },
+                })
+            })
+
+            it('reads a plain ETH send as a transfer of its value', () => {
+                const summary = summarize(
+                    row({
+                        from: ME,
+                        to: PEER,
+                        value: '1000',
+                        internal_transfers: topLevelOf(ME, PEER, '1000'),
+                    }),
+                )
+
+                expect(summary).toMatchObject({
+                    kind: 'transfer',
+                    direction: 'out',
+                    amount: { assetRef: NATIVE, value: new Decimal(1000) },
+                })
+            })
+
+            it('counts the value a call paid us once', () => {
+                const summary = summarize(
+                    row({
+                        from: PEER,
+                        to: ME,
+                        method: 'forward',
+                        value: '1000',
+                        internal_transfers: [
+                            ...topLevelOf(PEER, ME, '1000'),
+                            internal(ME, OTHER, '400'),
+                        ],
+                    }),
+                )
+
+                expect(summary.balanceChanges).toEqual([
+                    { assetRef: NATIVE, value: new Decimal(600) },
+                ])
+            })
+        })
+
         it('drops an unreadable internal transfer, not the row', () => {
             const parsed = evmHistoryItemSchema.safeParse(
                 evmHistoryItem({

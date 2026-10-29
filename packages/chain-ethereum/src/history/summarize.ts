@@ -100,13 +100,32 @@ const tokenDisplayOf = (leg: EvmTokenTransfer): AssetDisplayHint | undefined =>
         ? undefined
         : { symbol: leg.token_symbol ?? '', decimals: leg.token_decimals }
 
+// Some trace APIs list the top-level call as an internal frame. The schema
+// carries no depth, so the leg mirroring the row's own call is dropped, or its
+// value would count twice.
+const nestedInternalLegsOf = (
+    item: EvmHistoryItem,
+): EvmHistoryItem['internal_transfers'] => {
+    const { from, to, value } = item
+    if (from === null) return item.internal_transfers
+    const topLevel = item.internal_transfers.findIndex(
+        leg =>
+            areEqual(leg.from, from) &&
+            (leg.to === null || to === null
+                ? leg.to === to
+                : areEqual(leg.to, to)) &&
+            new Decimal(leg.value).eq(value ?? '0'),
+    )
+    return item.internal_transfers.filter((_, index) => index !== topLevel)
+}
+
 /** Wei `address` receives minus wei it sends through the row's successful internal calls. */
 const internalNativeNetOf = (
     item: EvmHistoryItem,
     address: string,
 ): Decimal => {
     if (item.status !== 'success') return new Decimal(0)
-    return item.internal_transfers.reduce((net, leg) => {
+    return nestedInternalLegsOf(item).reduce((net, leg) => {
         if (leg.status !== 'success') return net
         const value = new Decimal(leg.value)
         const received = leg.to !== null && areEqual(leg.to, address)
