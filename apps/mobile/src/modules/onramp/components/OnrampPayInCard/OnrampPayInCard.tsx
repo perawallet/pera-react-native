@@ -12,12 +12,11 @@
 
 import { useTheme } from '@rneui/themed'
 import QRCode from 'react-native-qrcode-svg'
-import { PWButton, PWText, PWTouchableIcon, PWView } from '@components/core'
-import { CopyableText } from '@components/CopyableText'
+import { PWButton, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useStyles } from './styles'
-import { useClipboard } from '@hooks/useClipboard'
+import { PayInAddressBlock } from './PayInAddressBlock'
 
 const QR_SIZE = 180
 
@@ -33,45 +32,6 @@ export type OnrampPayInCardProps = {
     /** Renders the "Cancel Order" action when provided. */
     onCancel?: () => void
     isCancelling?: boolean
-}
-
-const PayInAddressBlock = ({
-    label,
-    value,
-}: {
-    label: string
-    value: string
-}) => {
-    const styles = useStyles()
-    const { copyToClipboard } = useClipboard()
-
-    return (
-        <PWView style={styles.addressBlock}>
-            <PWText
-                variant='footnoteMedium'
-                style={styles.addressLabel}
-            >
-                {label}
-            </PWText>
-            <CopyableText
-                copyValue={value}
-                style={styles.addressRow}
-            >
-                <PWText
-                    variant='body'
-                    style={styles.addressValue}
-                >
-                    {value}
-                </PWText>
-                <PWTouchableIcon
-                    name='copy'
-                    size='sm'
-                    variant='secondary'
-                    onPress={() => void copyToClipboard(value)}
-                />
-            </CopyableText>
-        </PWView>
-    )
 }
 
 export const OnrampPayInCard = ({

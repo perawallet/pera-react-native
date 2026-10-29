@@ -11,12 +11,9 @@
  */
 
 import { PWScrollView, PWText, PWView } from '@components/core'
-import type {
-    BundledMigrationSummary,
-    MigrationPlanSummary,
-} from '@perawallet/wallet-extension-platform'
 import { useStyles } from './styles'
 import { useMigrationPlans } from './useMigrationPlans'
+import { PlanCard } from './PlanCard'
 
 export const SettingsDeveloperMigrationInfoScreen = () => {
     const styles = useStyles()
@@ -70,65 +67,5 @@ export const SettingsDeveloperMigrationInfoScreen = () => {
                 ))
             )}
         </PWScrollView>
-    )
-}
-
-const PlanCard = ({ plan }: { plan: MigrationPlanSummary }) => {
-    const styles = useStyles()
-    return (
-        <PWView style={styles.planCard}>
-            <PWView style={styles.planHeader}>
-                <PWText
-                    variant='h4'
-                    style={styles.planTitle}
-                >
-                    {plan.dbName}
-                </PWText>
-                <PWText
-                    variant='caption'
-                    style={styles.planMeta}
-                >
-                    {`target v${plan.targetVersion} · floor v${plan.oldestSupported}`}
-                </PWText>
-            </PWView>
-
-            <PWText
-                variant='body'
-                style={styles.readerImpact}
-            >
-                {plan.readerImpact}
-            </PWText>
-
-            {plan.migrations.map(migration => (
-                <MigrationRow
-                    key={`${migration.from}-${migration.to}`}
-                    migration={migration}
-                />
-            ))}
-        </PWView>
-    )
-}
-
-const MigrationRow = ({
-    migration,
-}: {
-    migration: BundledMigrationSummary
-}) => {
-    const styles = useStyles()
-    return (
-        <PWView style={styles.migrationRow}>
-            <PWText
-                variant='body'
-                style={styles.migrationStep}
-            >
-                {`${migration.from} → ${migration.to}`}
-            </PWText>
-            <PWText
-                variant='body'
-                style={styles.migrationDescription}
-            >
-                {migration.description}
-            </PWText>
-        </PWView>
     )
 }

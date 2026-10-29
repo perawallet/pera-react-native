@@ -10,20 +10,19 @@
  limitations under the License
  */
 
-import type {
-    LegacyWalletConnectV1Session,
-    LegacyWalletConnectV2Session,
-} from '@perawallet/wallet-extension-platform'
-import { MigrationDataSection } from '../components/MigrationDataSection'
-import { EmptyDataHint } from '../components/EmptyDataHint'
-import { MigrationDataRow } from '../components/MigrationDataRow'
-import { MigrationDataSubBlock } from '../components/MigrationDataSubBlock'
+import type { LegacyWalletConnectV1Session } from '@perawallet/wallet-extension-platform'
+import { MigrationDataSection } from '../../components/MigrationDataSection'
+import { EmptyDataHint } from '../../components/EmptyDataHint'
+import { MigrationDataRow } from '../../components/MigrationDataRow'
+import { MigrationDataSubBlock } from '../../components/MigrationDataSubBlock'
+
+export type WalletConnectV1SectionProps = {
+    sessions: LegacyWalletConnectV1Session[]
+}
 
 export const WalletConnectV1Section = ({
     sessions,
-}: {
-    sessions: LegacyWalletConnectV1Session[]
-}) => {
+}: WalletConnectV1SectionProps) => {
     return (
         <MigrationDataSection
             title='WalletConnect v1'
@@ -104,47 +103,6 @@ export const WalletConnectV1Section = ({
                         <MigrationDataRow
                             label='chainId'
                             value={s.chainId}
-                        />
-                    </MigrationDataSubBlock>
-                ))
-            )}
-        </MigrationDataSection>
-    )
-}
-
-export const WalletConnectV2Section = ({
-    sessions,
-}: {
-    sessions: LegacyWalletConnectV2Session[]
-}) => {
-    return (
-        <MigrationDataSection
-            title='WalletConnect v2'
-            count={sessions.length}
-        >
-            {sessions.length === 0 ? (
-                <EmptyDataHint />
-            ) : (
-                sessions.map((s, i) => (
-                    <MigrationDataSubBlock
-                        key={`${s.topic}-${i}`}
-                        title={`#${i}`}
-                    >
-                        <MigrationDataRow
-                            label='topic'
-                            value={s.topic}
-                        />
-                        <MigrationDataRow
-                            label='dateTimestampMs'
-                            value={s.dateTimestampMs}
-                        />
-                        <MigrationDataRow
-                            label='isSubscribed'
-                            value={s.isSubscribed}
-                        />
-                        <MigrationDataRow
-                            label='fallbackBrowserGroupResponse'
-                            value={s.fallbackBrowserGroupResponse}
                         />
                     </MigrationDataSubBlock>
                 ))
