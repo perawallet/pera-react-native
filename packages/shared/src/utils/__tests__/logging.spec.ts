@@ -205,6 +205,83 @@ describe('logging', () => {
             expect(payload.groupingKey).toBeUndefined()
         })
 
+        describe('report-code grouping', () => {
+            const reportedKeys = (
+                errorReporter: ReturnType<typeof vi.fn>,
+            ): Array<string | undefined> =>
+                errorReporter.mock.calls.map(
+                    call => (call[0] as { groupingKey?: string }).groupingKey,
+                )
+
+            test.each([
+                ['without context', undefined],
+                ['with context', { step: 'submit' }],
+            ])('keys an Error by its declared code %s', (_label, context) => {
+                const errorReporter = vi.fn()
+                logger.setErrorReporter(errorReporter)
+
+                logger.error(
+                    new AppError('boom', { reportCode: 'test.x' }),
+                    context,
+                )
+
+                expect(reportedKeys(errorReporter)).toEqual(['test.x'])
+            })
+
+            test('gives two codes two different keys', () => {
+                const errorReporter = vi.fn()
+                logger.setErrorReporter(errorReporter)
+
+                logger.error(new AppError('same', { reportCode: 'test.a' }))
+                logger.error(new AppError('same', { reportCode: 'test.b' }))
+
+                expect(reportedKeys(errorReporter)).toEqual([
+                    'test.a',
+                    'test.b',
+                ])
+            })
+
+            test('takes the wrapped error code when the wrapper declares none', () => {
+                const errorReporter = vi.fn()
+                logger.setErrorReporter(errorReporter)
+                const inner = new AppError('inner', { reportCode: 'test.x' })
+
+                logger.error(new AppError('outer', {}, inner))
+
+                expect(reportedKeys(errorReporter)).toEqual(['test.x'])
+            })
+
+            test('keys a string log by the context error code, not the message', () => {
+                const errorReporter = vi.fn()
+                logger.setErrorReporter(errorReporter)
+                const coded = new AppError('refused', { reportCode: 'test.x' })
+
+                logger.error('Query failed: AppError', { error: coded })
+
+                expect(reportedKeys(errorReporter)).toEqual(['test.x'])
+            })
+
+            test('reports an expected coded error only as a breadcrumb under its code', () => {
+                const errorReporter = vi.fn()
+                logger.setErrorReporter(errorReporter)
+
+                logger.error(
+                    new AppError('offline', {
+                        reportCode: 'test.x',
+                        expected: true,
+                    }),
+                )
+
+                expect(errorReporter).toHaveBeenCalledTimes(1)
+                expect(errorReporter).toHaveBeenCalledWith(
+                    expect.objectContaining({
+                        severity: 'expected',
+                        groupingKey: 'test.x',
+                    }),
+                )
+            })
+        })
+
         test.each(['error', 'cause', 'reason'])(
             'adopts the stack of an Error passed in context.%s',
             key => {
