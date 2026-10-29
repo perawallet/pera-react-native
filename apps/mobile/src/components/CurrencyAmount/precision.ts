@@ -38,12 +38,16 @@ export const PREFERRED_MAX_PRECISION = 6
  * 0-decimal assets resolve to 0 dp. Pair with `assetDecimals`.
  * - `preferredFull` — a preferred-currency value (fiat or ALGO) on a detail surface:
  * trims {@link DEFAULT_PRECISION} → {@link PREFERRED_MAX_PRECISION} dp.
+ * - `significant` — a small asset amount on a dense surface (a fee): keeps
+ * {@link SIGNIFICANT_DIGITS} significant digits, between
+ * {@link DEFAULT_PRECISION} and the asset's `decimals`. Pair with `assetDecimals`.
  */
 export type PrecisionVariant =
     | 'noDecimal'
     | 'compact'
     | 'assetFull'
     | 'preferredFull'
+    | 'significant'
 
 export type ResolvedPrecision = {
     /** Max decimals retained before trailing zeros are trimmed. */
@@ -67,6 +71,27 @@ const resolveCompactPrecision = (value: Maybe<Decimal>): number => {
         return DEFAULT_PRECISION
     }
     return -value.e
+}
+
+export const SIGNIFICANT_DIGITS = 3
+
+/**
+ * Decimals that keep {@link SIGNIFICANT_DIGITS} significant digits of an
+ * amount under 1 (an 18-decimal gas fee otherwise prints 18 digits), never
+ * fewer than {@link DEFAULT_PRECISION} nor more than `assetDecimals`.
+ */
+export const resolveSignificantPrecision = (
+    value: Maybe<Decimal>,
+    assetDecimals?: number,
+): number => {
+    const maxPrecision = assetDecimals ?? DEFAULT_PRECISION
+    if (value == null || value.isZero()) {
+        return Math.min(DEFAULT_PRECISION, maxPrecision)
+    }
+    return Math.min(
+        maxPrecision,
+        Math.max(DEFAULT_PRECISION, SIGNIFICANT_DIGITS - 1 - value.e),
+    )
 }
 
 /**
@@ -106,6 +131,15 @@ export const resolvePrecision = (
             return {
                 precision: decimals,
                 minPrecision: Math.min(DEFAULT_PRECISION, decimals),
+            }
+        }
+        case 'significant': {
+            return {
+                precision: resolveSignificantPrecision(value, assetDecimals),
+                minPrecision: Math.min(
+                    DEFAULT_PRECISION,
+                    assetDecimals ?? DEFAULT_PRECISION,
+                ),
             }
         }
     }

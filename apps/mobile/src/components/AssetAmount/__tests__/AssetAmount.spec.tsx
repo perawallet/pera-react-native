@@ -67,6 +67,21 @@ describe('AssetAmount', () => {
         expect(lastChildProps()?.assetDecimals).toBeUndefined()
     })
 
+    it("density='significant' renders at significant precision with the asset decimals", () => {
+        render(
+            <AssetAmount
+                asset={{ assetId: 'native', unitName: 'ETH', decimals: 18 }}
+                value={new Decimal('0.000008523')}
+                density='significant'
+            />,
+        )
+        expect(lastChildProps()).toMatchObject({
+            currency: 'ETH',
+            precision: 'significant',
+            assetDecimals: 18,
+        })
+    })
+
     it("passes Algo's asset id (the glyph decision) along with its unit and decimals", () => {
         render(
             <AssetAmount
