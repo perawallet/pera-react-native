@@ -17,10 +17,7 @@ import {
     useNavigationContainerRef,
     type ParamListBase,
 } from '@react-navigation/native'
-import {
-    CreatePasswordScreen,
-    PasskeyUnlockSetupScreen,
-} from '@modules/vault'
+import { CreatePasswordScreen, PasskeyUnlockSetupScreen } from '@modules/vault'
 import { OnboardingStackNavigator } from '@modules/onboarding/routes'
 import { useLedgerHandoffTabExit } from '@modules/ledger'
 import { FullScreenLoadingView } from '@components/FullScreenLoadingView'
