@@ -61,13 +61,13 @@ export type MergedHistory = {
     suspectedPoisoningById: ReadonlyMap<string, SuspectedPoisoning>
     /** Keyed by transaction id. */
     scopeByTransactionId: ReadonlyMap<string, ChainScope>
-    /** Networks whose last read failed; their rows may be missing from `rows`. */
+    /** Networks that failed with nothing loaded, so none of their rows are in `rows`. */
     failedChainIds: ChainId[]
     /** Indexes of the feeds whose next page decides what shows next. */
     blockingFeeds: number[]
     /** Indexes of the feeds whose search paused; Search Older resumes them. */
     pausedFeeds: number[]
-    /** Indexes of the feeds whose last read failed. */
+    /** Indexes of the feeds whose last read failed, a later page's included; Retry re-reads them. */
     failedFeeds: number[]
 }
 
@@ -89,12 +89,13 @@ export const mergeHistoryFeeds = (
         })),
     )
 
-    // A failed or paused feed loads nothing more on its own, so it holds nothing back.
+    // A feed that loaded nothing or paused holds nothing back. One whose later
+    // page failed still does: its missing rows may be newer than others' next ones.
     const frontierOf = (index: number): Nullable<number> => {
         const feed = feeds[index]
         // Not reported yet: it could hold the newest rows.
         if (!feed) return Number.POSITIVE_INFINITY
-        if (feed.isError || feed.isSearchPaused) return null
+        if (feed.isLoadFailed || feed.isSearchPaused) return null
         if (feed.isFetched && !feed.hasNextPage) return null
         return Math.min(
             Number.POSITIVE_INFINITY,
@@ -126,11 +127,12 @@ export const mergeHistoryFeeds = (
     const pausedFeeds = feeds.flatMap((feed, index) =>
         feed?.isSearchPaused ? [index] : [],
     )
+    const failed = failedFeeds.map(index => feeds[index]!)
+    const loadFailed = failed.filter(feed => feed.isLoadFailed)
     const isLoadFailed =
         visible.length === 0 &&
         blockingFeeds.length === 0 &&
-        failedFeeds.length > 0
-    const failed = failedFeeds.map(index => feeds[index]!)
+        loadFailed.length > 0
 
     const scopeByTransactionId = new Map<string, ChainScope>()
     const suspectedPoisoningById = new Map<string, SuspectedPoisoning>()
@@ -155,16 +157,19 @@ export const mergeHistoryFeeds = (
         error: failed[0]?.error ?? null,
         isLoadFailed,
         isLoadUnavailable:
-            isLoadFailed && failed.every(feed => feed.isLoadUnavailable),
+            isLoadFailed && loadFailed.every(feed => feed.isLoadUnavailable),
         isLoadIntegrityBlocked:
-            isLoadFailed && failed.some(feed => feed.isLoadIntegrityBlocked),
+            isLoadFailed &&
+            loadFailed.some(feed => feed.isLoadIntegrityBlocked),
         hasNextPage: blockingFeeds.length > 0,
         isSearchPaused: blockingFeeds.length === 0 && pausedFeeds.length > 0,
         isRetrying: reported.some(feed => feed.isRetrying),
         isRefreshing: reported.some(feed => feed.isRefreshing),
         suspectedPoisoningById,
         scopeByTransactionId,
-        failedChainIds: [...new Set(failed.map(feed => feed.scope.chainId))],
+        failedChainIds: [
+            ...new Set(loadFailed.map(feed => feed.scope.chainId)),
+        ],
         blockingFeeds,
         pausedFeeds,
         failedFeeds,

@@ -120,12 +120,18 @@ export const useAccountHistoryRows = ({
         ...history
     } = isMerged ? merged : single
 
-    // A paused search waits for Search Older, not for the list's end.
+    // A paused search waits for Search Older, not for the list's end. The
+    // merge queues a request itself, so a busy network mustn't drop it here.
     const handleLoadMore = useCallback(() => {
-        if (hasNextPage && !isFetchingNextPage && !isSearchPaused) {
-            fetchNextPage()
-        }
-    }, [hasNextPage, isFetchingNextPage, isSearchPaused, fetchNextPage])
+        if (!hasNextPage || isSearchPaused) return
+        if (isMerged || !isFetchingNextPage) fetchNextPage()
+    }, [
+        hasNextPage,
+        isSearchPaused,
+        isMerged,
+        isFetchingNextPage,
+        fetchNextPage,
+    ])
 
     const { scopeByTransactionId, failedChainIds } = merged
     const scopeOf = useCallback(

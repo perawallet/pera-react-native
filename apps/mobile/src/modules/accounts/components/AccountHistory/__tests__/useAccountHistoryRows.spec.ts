@@ -150,6 +150,30 @@ describe('useAccountHistoryRows', () => {
         expect(result.current.scopeOf('unknown')).toEqual(ALGORAND)
     })
 
+    it('hands Load More to the merge even while a network is busy, since the merge queues it', () => {
+        mockSources.current = TWO_NETWORKS
+        const merged = mergedHistory({
+            hasNextPage: true,
+            isFetchingNextPage: true,
+        })
+        vi.mocked(useMergedTransactionHistoryRows).mockReturnValue(merged)
+
+        const { result } = renderHook(() => useAccountHistoryRows({}))
+        act(() => result.current.handleLoadMore())
+
+        expect(merged.fetchNextPage).toHaveBeenCalledTimes(1)
+    })
+
+    it('drops Load More on a single network while a page is in flight', () => {
+        const single = history({ hasNextPage: true, isFetchingNextPage: true })
+        vi.mocked(useTransactionHistoryRows).mockReturnValue(single)
+
+        const { result } = renderHook(() => useAccountHistoryRows({}))
+        act(() => result.current.handleLoadMore())
+
+        expect(single.fetchNextPage).not.toHaveBeenCalled()
+    })
+
     it('names networks that failed while others show, and leaves a total failure to the load-failed state', () => {
         mockSources.current = TWO_NETWORKS
         vi.mocked(useMergedTransactionHistoryRows).mockReturnValue(

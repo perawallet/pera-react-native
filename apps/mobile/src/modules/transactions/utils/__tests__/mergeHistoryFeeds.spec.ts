@@ -178,6 +178,7 @@ describe('mergeHistoryFeeds', () => {
             feed({ chainId: 'base', networkId: 'mainnet' }, [], {
                 hasNextPage: true,
                 isError: true,
+                isLoadFailed: true,
             }),
         ])
 
@@ -187,6 +188,29 @@ describe('mergeHistoryFeeds', () => {
         expect(merged.pausedFeeds).toEqual([1])
         expect(merged.failedFeeds).toEqual([2])
         expect(merged.failedChainIds).toEqual(['base'])
+        expect(merged.isLoadFailed).toBe(false)
+    })
+
+    it('keeps a network whose later page failed holding the others back, without calling it failed', () => {
+        const merged = mergeHistoryFeeds([
+            feed(
+                ALGORAND,
+                buildTransactionListRows([
+                    algoAt('algo-new', JAN_1 + 3 * HOUR),
+                    algoAt('algo-old', JAN_1),
+                ]),
+            ),
+            feed(
+                ETHEREUM,
+                buildRecordListRows([ethAt('eth', JAN_1 + 2 * HOUR)]),
+                { hasNextPage: true, isError: true },
+            ),
+        ])
+
+        expect(entryKeys(merged.rows)).toEqual(['algo-new', 'eth'])
+        expect(merged.blockingFeeds).toEqual([1])
+        expect(merged.failedFeeds).toEqual([1])
+        expect(merged.failedChainIds).toEqual([])
         expect(merged.isLoadFailed).toBe(false)
     })
 

@@ -19,6 +19,7 @@ import type {
 import type { HistoryFeedSnapshot } from '../../../utils/mergeHistoryFeeds'
 import { buildRecordListRows } from '../../../utils/transactionListRows'
 import {
+    MAX_MERGED_LOAD_ROUNDS,
     useMergedTransactionHistoryRows,
     type HistoryFeedActions,
     type HistoryFeedSource,
@@ -158,6 +159,106 @@ describe('useMergedTransactionHistoryRows', () => {
 
         expect(baseActions.fetchNextPage).toHaveBeenCalledTimes(1)
         expect(ethereumActions.fetchNextPage).not.toHaveBeenCalled()
+    })
+
+    describe('a Load More request', () => {
+        // Base holds the list back: its oldest loaded row is newer than Ethereum's.
+        const setUp = () => {
+            const hook = renderHook(() =>
+                useMergedTransactionHistoryRows({ sources: SOURCES }),
+            )
+            const [ethereumFeed, baseFeed] = hook.result.current.feeds
+            const baseActions = makeActions()
+            const reportBase = (
+                records: TransactionRecord[],
+                overrides: Partial<HistoryFeedSnapshot> = {},
+            ) =>
+                act(() =>
+                    baseFeed!.onChange(
+                        baseFeed!.feedKey,
+                        snapshot(BASE, records, {
+                            hasNextPage: true,
+                            ...overrides,
+                        }),
+                        baseActions,
+                    ),
+                )
+            act(() =>
+                ethereumFeed!.onChange(
+                    ethereumFeed!.feedKey,
+                    snapshot(ETHEREUM, [recordAt('eth', ETHEREUM, 1000)], {
+                        hasNextPage: true,
+                    }),
+                    makeActions(),
+                ),
+            )
+            return { ...hook, baseActions, reportBase }
+        }
+        const BASE_ROW = recordAt('base', BASE, 2000)
+
+        it('waits out a busy network instead of dropping, then reads the one holding the list back', () => {
+            const { result, baseActions, reportBase } = setUp()
+            reportBase([BASE_ROW], { isFetchingNextPage: true })
+
+            act(() => result.current.fetchNextPage())
+
+            expect(baseActions.fetchNextPage).not.toHaveBeenCalled()
+            expect(result.current.isFetchingNextPage).toBe(true)
+
+            reportBase([BASE_ROW])
+
+            expect(baseActions.fetchNextPage).toHaveBeenCalledTimes(1)
+        })
+
+        it('reads again after a page that shows nothing new, and stops once a row shows', () => {
+            const { result, baseActions, reportBase } = setUp()
+            reportBase([BASE_ROW])
+
+            act(() => result.current.fetchNextPage())
+            reportBase([BASE_ROW])
+
+            expect(baseActions.fetchNextPage).toHaveBeenCalledTimes(2)
+
+            reportBase([BASE_ROW, recordAt('base-older', BASE, 1500)])
+            reportBase([BASE_ROW, recordAt('base-older', BASE, 1500)])
+
+            expect(baseActions.fetchNextPage).toHaveBeenCalledTimes(2)
+            expect(result.current.isFetchingNextPage).toBe(false)
+        })
+
+        it(`pauses for Search Older after ${MAX_MERGED_LOAD_ROUNDS} reads with nothing new, and Search Older reads on`, () => {
+            const { result, baseActions, reportBase } = setUp()
+            reportBase([BASE_ROW])
+
+            act(() => result.current.fetchNextPage())
+            for (let round = 0; round < MAX_MERGED_LOAD_ROUNDS; round++) {
+                reportBase([BASE_ROW])
+            }
+
+            expect(baseActions.fetchNextPage).toHaveBeenCalledTimes(
+                MAX_MERGED_LOAD_ROUNDS,
+            )
+            expect(result.current.isSearchPaused).toBe(true)
+            expect(result.current.isFetchingNextPage).toBe(false)
+
+            act(() => result.current.searchOlder())
+
+            expect(baseActions.fetchNextPage).toHaveBeenCalledTimes(
+                MAX_MERGED_LOAD_ROUNDS + 1,
+            )
+            expect(result.current.isSearchPaused).toBe(false)
+        })
+
+        it('pauses on a failed later page rather than reading it again unasked', () => {
+            const { result, baseActions, reportBase } = setUp()
+            reportBase([BASE_ROW])
+
+            act(() => result.current.fetchNextPage())
+            reportBase([BASE_ROW], { isError: true })
+
+            expect(baseActions.fetchNextPage).toHaveBeenCalledTimes(1)
+            expect(result.current.isSearchPaused).toBe(true)
+        })
     })
 
     it('resumes paused networks, retries failed ones and refreshes all', () => {
