@@ -17,7 +17,7 @@ import {
     useSigningEvent,
     type SignRequest,
 } from '@perawallet/wallet-core-signing'
-import { useConnectionsStore } from '@perawallet/wallet-core-connections'
+import { findConnection } from '@perawallet/wallet-core-connections'
 import type { ConnectionOrigin } from '@perawallet/wallet-extension-connections'
 import { getPreferredDappIcon } from '@modules/walletconnect'
 import { SigningCompletedContent } from '../SigningCompletedContent'
@@ -32,10 +32,7 @@ const resolveSessionOrigin = (
     req: SignRequest,
 ): ConnectionOrigin | undefined =>
     req.sourceType === 'walletconnect' && req.transportId
-        ? useConnectionsStore
-              .getState()
-              .connections.find(connection => connection.id === req.transportId)
-              ?.origin
+        ? findConnection(req.transportId)?.origin
         : undefined
 
 /** Only external-browser sessions get the "Return to the dApp" hand-off. */

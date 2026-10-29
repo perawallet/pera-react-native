@@ -17,7 +17,7 @@ import {
     useRoute,
 } from '@react-navigation/native'
 import {
-    useAccountsStore,
+    getAllAccounts,
     useAllAccounts,
     useSetAccounts,
     useSelectedAccountId,
@@ -168,7 +168,7 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
                     // Read the store fresh: this is a replace-array write,
                     // and a concurrent store write since render must not be
                     // dropped with the stale snapshot.
-                    const currentAccounts = useAccountsStore.getState().accounts
+                    const currentAccounts = getAllAccounts()
                     setAccounts([...currentAccounts, ...accountsToAdd])
                     hasCommittedRef.current = true
                     setSelectedAccountId(accountsToAdd[0].id)

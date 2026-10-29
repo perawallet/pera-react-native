@@ -323,6 +323,11 @@
       "rules": { "pera/hook-result-type": "error" }
     },
     {
+      "files": ["src/modules/**", "src/components/**"],
+      "excludeFiles": ["src/**/__tests__/**", "src/**/__mocks__/**", "src/**/test-utils/**", "src/**/__integration__/**", "src/**/*.spec.{ts,tsx}", "src/**/*.test.{ts,tsx}"],
+      "rules": { "pera/no-package-store-internals": "error" }
+    },
+    {
       "files": ["src/**/*.{ts,tsx}"],
       "excludeFiles": ["src/**/__tests__/**", "src/**/__mocks__/**", "src/**/test-utils/**", "src/**/__integration__/**", "src/**/*.spec.{ts,tsx}", "src/**/*.test.{ts,tsx}"],
       "rules": { "pera/make-styles-location": "error" }

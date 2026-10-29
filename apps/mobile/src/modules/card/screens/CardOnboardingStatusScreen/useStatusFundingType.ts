@@ -11,7 +11,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react'
-import { FundingType, useCardStore } from '@perawallet/wallet-core-card'
+import { FundingType, getCardFundingType } from '@perawallet/wallet-core-card'
 import {
     isLedgerAccount,
     type WalletAccount,
@@ -52,7 +52,7 @@ export const useStatusFundingType = (
     // Seed from the persisted choice (so a prior selection survives a
     // re-entry/cold resume); default to Auto to match the design.
     const [selectedFundingType, setSelectedFundingType] = useState<FundingType>(
-        () => useCardStore.getState().selectedFundingType ?? FundingType.Auto,
+        () => getCardFundingType() ?? FundingType.Auto,
     )
     const handleSelectFundingType = useCallback((type: FundingType) => {
         trackEvent(

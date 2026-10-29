@@ -12,3 +12,4 @@
 
 export { useSecurityStore } from './store'
 export { whenAppUnlocked } from './whenAppUnlocked'
+export { isAppLocked } from './isAppLocked'

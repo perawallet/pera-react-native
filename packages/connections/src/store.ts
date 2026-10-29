@@ -89,3 +89,18 @@ export const isConnectionAlive = (connectionId: ConnectionId): boolean => {
     if (!isHydrated) return true
     return connections.some(connection => connection.id === connectionId)
 }
+
+/** Looks in the mirror, so a record not yet hydrated reads as missing. */
+export const findConnection = (
+    connectionId: ConnectionId,
+): Connection | undefined =>
+    useConnectionsStore
+        .getState()
+        .connections.find(connection => connection.id === connectionId)
+
+/** Re-lists `api` into the mirror, for writes made in another realm. */
+export const reloadConnections = async (
+    api: ConnectionStoreAPI,
+): Promise<void> => {
+    useConnectionsStore.getState().setConnections(await api.list())
+}

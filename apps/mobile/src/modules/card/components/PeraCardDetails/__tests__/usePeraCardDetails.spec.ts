@@ -70,27 +70,19 @@ vi.mock('@perawallet/wallet-core-card', async () => {
     const actual = await vi.importActual<object>('@perawallet/wallet-core-card')
     return {
         ...actual,
-        // Selector reads come from the mock state; the Connect action writes
-        // through getState(), so expose that too.
-        useCardStore: Object.assign(
-            (
-                selector: (state: {
-                    lastKnownPanLast4: string | null
-                    connectedFundingSourceAddress: string | null
-                    selectedFundingType: string | null
-                }) => unknown,
-            ) =>
-                selector({
-                    lastKnownPanLast4: mocks.panLast4,
-                    connectedFundingSourceAddress: mocks.fundingAddress,
-                    selectedFundingType: mocks.selectedFundingType,
-                }),
-            {
-                getState: () => ({
-                    setConnectedFundingSourceAddress: mocks.setFundingAddress,
-                }),
-            },
-        ),
+        useCardStore: (
+            selector: (state: {
+                lastKnownPanLast4: string | null
+                connectedFundingSourceAddress: string | null
+                selectedFundingType: string | null
+            }) => unknown,
+        ) =>
+            selector({
+                lastKnownPanLast4: mocks.panLast4,
+                connectedFundingSourceAddress: mocks.fundingAddress,
+                selectedFundingType: mocks.selectedFundingType,
+            }),
+        setCardFundingSourceAddress: mocks.setFundingAddress,
         useCardStatusQuery: () => ({
             data: mocks.status == null ? null : { status: mocks.status },
             fetchStatus: mocks.fetchStatus,

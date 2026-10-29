@@ -156,6 +156,10 @@ export const useContactsStore: UseBoundStore<
     ),
 )
 
+export const replaceAllContacts = (contacts: Contact[]): void => {
+    useContactsStore.setState({ contacts, selectedContact: null })
+}
+
 registerStore({
     name: STORE_NAME,
     clearStorage: () =>
