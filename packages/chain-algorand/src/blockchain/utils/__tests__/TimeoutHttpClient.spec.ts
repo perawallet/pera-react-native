@@ -345,9 +345,9 @@ describe('TimeoutHttpClient', () => {
     describe('body reading path', () => {
         // React Native's Response.arrayBuffer() routes through the
         // Blob/FileReader polyfill, whose per-char conversion is quadratic on
-        // Hermes — a ~110KB indexer page measured ~19s of JS and ~1.5GB of
-        // allocations on device. Textual bodies must go through
-        // the native text() path instead.
+        // Hermes — a ~110KB indexer page blocks the JS thread for many seconds
+        // and allocates over a gigabyte on device. Textual bodies must go
+        // through the native text() path instead.
         it('reads JSON bodies via text(), never arrayBuffer()', async () => {
             const payload = JSON.stringify({ assets: [{ 'asset-id': 1 }] })
             const response = new Response(payload, {

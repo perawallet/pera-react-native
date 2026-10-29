@@ -429,8 +429,8 @@ describe('vault', () => {
 
     // Every password check shares one throttle. These two are reachable from
     // an already-unlocked session, where the value at stake is the password
-    // itself — and they used to check it without consulting or recording an
-    // attempt, making them unmetered guessing oracles.
+    // itself — and checking it without consulting or recording an attempt
+    // would make them unmetered guessing oracles.
     describe('brute-force throttling covers every password entry point', () => {
         it('locks out changePassword after repeated wrong current passwords', async () => {
             await createVault('the-password')

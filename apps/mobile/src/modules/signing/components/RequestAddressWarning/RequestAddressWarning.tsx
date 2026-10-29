@@ -10,15 +10,7 @@
  limitations under the License
  */
 
-import { useMemo } from 'react'
-import {
-    addressCodecs,
-    type ChainId,
-} from '@perawallet/wallet-core-chain-contract'
-import type {
-    ReviewedAddress,
-    ReviewedAddressRole,
-} from '@perawallet/wallet-core-signing'
+import type { ReviewedAddress } from '@perawallet/wallet-core-signing'
 import {
     PWCheckbox,
     PWRoundIcon,
@@ -27,111 +19,14 @@ import {
     PWView,
 } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import { ProjectVerificationIcon } from '@modules/projects'
-import {
-    ComparedAddress,
-    diffAddresses,
-    KNOWN_LABEL_KEYS,
-} from '@modules/transactions'
-import {
-    useRequestAddressSafety,
-    type FlaggedRequestAddress,
-} from '../../hooks/useRequestAddressSafety'
+import { useRequestAddressSafety } from '../../hooks/useRequestAddressSafety'
 import { useStyles } from './styles'
+import { ListedAddress } from './ListedAddress'
+import { LookAlikeAddress } from './LookAlikeAddress'
 
 export type RequestAddressWarningProps = {
     /** Defaults to the addresses of the request's transactions. */
     addresses?: readonly ReviewedAddress[]
-}
-
-const ROLE_LABEL_KEYS = {
-    recipient: 'signing.address_safety.role.recipient',
-    'token-recipient': 'signing.address_safety.role.token_recipient',
-    'close-recipient': 'signing.address_safety.role.close_recipient',
-    'new-authorizer': 'signing.address_safety.role.new_authorizer',
-    'referenced-account': 'signing.address_safety.role.referenced_account',
-    target: 'signing.address_safety.role.target',
-    spender: 'signing.address_safety.role.spender',
-    operator: 'signing.address_safety.role.operator',
-} as const satisfies Record<ReviewedAddressRole, string>
-
-const ListedAddress = ({
-    flagged,
-    index,
-}: {
-    flagged: FlaggedRequestAddress
-    index: number
-}) => {
-    const styles = useStyles()
-    const { t } = useLanguage()
-
-    return (
-        <PWView style={styles.address}>
-            <PWView style={styles.addressHeader}>
-                <ProjectVerificationIcon
-                    tier='suspicious'
-                    size='sm'
-                    testID={`request_address_listed_badge_${index}`}
-                />
-                <PWText
-                    variant='caption'
-                    style={styles.label}
-                >
-                    {t(ROLE_LABEL_KEYS[flagged.role])}
-                </PWText>
-            </PWView>
-            <PWText
-                style={styles.fullAddress}
-                testID={`request_address_listed_${index}`}
-            >
-                {flagged.address}
-            </PWText>
-        </PWView>
-    )
-}
-
-const LookAlikeAddress = ({
-    flagged,
-    index,
-    chainId,
-}: {
-    flagged: FlaggedRequestAddress
-    index: number
-    chainId: ChainId
-}) => {
-    const styles = useStyles()
-    const { t } = useLanguage()
-    const comparison = useMemo(() => {
-        if (flagged.assessment.kind !== 'look-alike') return undefined
-        const codec = addressCodecs.get(chainId)
-        const { knownAddress } = flagged.assessment
-        return {
-            diff: diffAddresses(
-                codec.normalize(flagged.address),
-                codec.normalize(knownAddress.address),
-            ),
-            knownLabel: t(KNOWN_LABEL_KEYS[knownAddress.source], {
-                name: knownAddress.name ?? codec.truncate(knownAddress.address),
-            }),
-        }
-    }, [flagged, chainId, t])
-
-    if (!comparison) return null
-
-    return (
-        <PWView style={styles.address}>
-            <ComparedAddress
-                label={t(ROLE_LABEL_KEYS[flagged.role])}
-                segments={comparison.diff.a}
-                testID={`request_address_look_alike_${index}`}
-            />
-            <ComparedAddress
-                label={comparison.knownLabel}
-                segments={comparison.diff.b}
-                testID={`request_address_look_alike_known_${index}`}
-            />
-        </PWView>
-    )
 }
 
 export const RequestAddressWarning = ({

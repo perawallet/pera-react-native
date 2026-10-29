@@ -23,48 +23,8 @@ import { BottomSheetManager } from '@modules/bottom-sheet'
 import { LedgerSigningOverlays } from '@modules/signing/shell'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import { getNavigationTheme } from '@theme/theme'
-import { FullScreenLoadingView } from '@components/FullScreenLoadingView'
-import { useDappRequest } from '../hooks/useDappRequest.web'
-import { PasskeyApprovalScreen } from '../screens/PasskeyApprovalScreen'
-import { SignRequestApprovalScreen } from '../screens/SignRequestApprovalScreen'
-import { WcConnectScreen } from '../screens/WcConnectScreen'
-import { WcErrorScreen } from '../screens/WcErrorScreen'
 import { useStyles } from './styles'
-
-// Routes on `approval.kind` rather than a react-navigation stack: each kind
-// is a self-contained flow, so there is nothing to navigate between.
-const DappRequestSurface = (): React.JSX.Element => {
-    const { approval, isLoading } = useDappRequest()
-
-    if (isLoading || !approval) {
-        return <FullScreenLoadingView />
-    }
-
-    switch (approval.kind) {
-        case 'connection-request': {
-            return <SignRequestApprovalScreen />
-        }
-        case 'passkey-create':
-        case 'passkey-get': {
-            return <PasskeyApprovalScreen />
-        }
-        // Notification-only: the host already refused the peer; the screen
-        // explains why and settles the approval to close the window.
-        case 'connection-error': {
-            return <WcErrorScreen />
-        }
-        // The pairing handshake, unlike 'connection-request' above, which is
-        // one operation on a connection that already exists.
-        case 'connection-proposal': {
-            return <WcConnectScreen />
-        }
-        // The bridge is versioned independently of this bundle; an unknown
-        // kind holds the spinner rather than rendering a blank window.
-        default: {
-            return <FullScreenLoadingView />
-        }
-    }
-}
+import { DappRequestSurface } from './DappRequestSurface'
 
 export const DappRequestRoutes = (): React.JSX.Element => {
     const isDarkMode = useIsDarkMode()

@@ -176,7 +176,7 @@ describe('useSignRequestDriver', () => {
     it('waits for a bottom-sheet host before opening', () => {
         // BottomSheetManager can be unmounted during route-tree swaps
         // (migration/onboarding gates). Requesting a sheet then rejects and
-        // previously wedged the queue — the driver must hold the request and
+        // would wedge the queue — the driver must hold the request and
         // open once a host registers.
         hostCountState.current = 0
         mockQueue([wcRequest])

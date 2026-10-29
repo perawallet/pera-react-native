@@ -35,7 +35,7 @@ export {
     type ExpressTransferTxsParams,
     type AssetOptInTxsParams,
     type AssetOptOutTxsParams,
-    type RekeyTxParams,
+    type DelegationTxParams,
     type KeyRegistrationTxParams,
 } from './chain-adapter'
 export {
@@ -122,6 +122,6 @@ export {
     CreatorCannotOptOutError,
     AssetFrozenError,
     TransactionNotReplaceableError,
-    RekeyError,
-    type RekeyErrorReason,
+    DelegationError,
+    type DelegationErrorReason,
 } from './errors'

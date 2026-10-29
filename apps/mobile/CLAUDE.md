@@ -36,10 +36,12 @@ ComponentName/              # PascalCase
 ├── index.ts                # Barrel: export { ComponentName } and type
 ├── __tests__/
 │   └── ComponentName.spec.tsx
-└── SubComponent.tsx        # NOT re-exported, used only by parent
+└── SubComponent/           # Own folder (same shape); NOT re-exported, used only by parent
 ```
 
 Folder naming: component folders = `PascalCase`, grouping/utility folders = `kebab-case`.
+
+One component per `.tsx` (`react/no-multi-comp`): a second component moves to its own `Name/` folder beside the file that uses it.
 
 If creating a core component, update `apps/mobile/src/components/core/index.ts` barrel.
 

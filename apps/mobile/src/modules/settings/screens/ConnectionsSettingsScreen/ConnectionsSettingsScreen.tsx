@@ -11,91 +11,22 @@
  */
 
 import {
-    PWBadge,
     PWButton,
     PWFlatList,
     PWIcon,
-    PWImage,
     PWScreen,
-    PWText,
-    PWTouchableIcon,
     PWView,
 } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { QRScannerView } from '@components/QRScannerView'
 import { useLanguage } from '@hooks/useLanguage'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
-import { isSiteConnectionKind } from './connectionsSettingsHelpers'
 import {
     useConnectionsSettingsScreen,
     type UnifiedConnection,
 } from './useConnectionsSettingsScreen'
 import { useStyles } from './styles'
-
-type ConnectionRowProps = {
-    connection: UnifiedConnection
-    onRevoke: (connection: UnifiedConnection) => void
-}
-
-const ConnectionRow = ({ connection, onRevoke }: ConnectionRowProps) => {
-    const styles = useStyles()
-    const { t } = useLanguage()
-    const isWalletConnect = !isSiteConnectionKind(connection.kind)
-
-    return (
-        <PWView
-            style={styles.connectionRow}
-            testID={`connection_row_${connection.id}`}
-        >
-            {connection.iconUrl ? (
-                <PWImage
-                    source={{ uri: connection.iconUrl }}
-                    style={styles.icon}
-                />
-            ) : (
-                <PWIcon
-                    name={isWalletConnect ? 'wallet-connect' : 'globe'}
-                    style={styles.icon}
-                />
-            )}
-            <PWView style={styles.connectionInfo}>
-                <PWView style={styles.titleRow}>
-                    <PWText
-                        variant='h4'
-                        numberOfLines={1}
-                        style={styles.title}
-                    >
-                        {connection.title}
-                    </PWText>
-                    <PWBadge
-                        variant='secondary'
-                        value={
-                            connection.badgeLabel ??
-                            t(
-                                isWalletConnect
-                                    ? 'settings.connections.badge_wallet_connect'
-                                    : 'settings.connections.badge_dapp',
-                            )
-                        }
-                    />
-                </PWView>
-                <PWText
-                    variant='caption'
-                    numberOfLines={1}
-                    style={styles.subtitle}
-                >
-                    {connection.subtitle}
-                </PWText>
-            </PWView>
-            <PWTouchableIcon
-                name='trash'
-                variant='secondary'
-                onPress={() => onRevoke(connection)}
-                testID={`connection_revoke_${connection.id}`}
-            />
-        </PWView>
-    )
-}
+import { ConnectionRow } from './ConnectionRow'
 
 export const ConnectionsSettingsScreen = () => {
     const { t } = useLanguage()

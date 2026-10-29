@@ -1,0 +1,185 @@
+/*
+ Copyright 2022-2026 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import { useMutation } from '@tanstack/react-query'
+
+import type {
+    ChainScope,
+    UnsignedTransaction,
+} from '@perawallet/wallet-core-chain-contract'
+import { useAllAccounts } from '@perawallet/wallet-core-accounts'
+import {
+    getOpenSubmissionAttemptsForIntent,
+    DELEGATION_SUBMISSION_FLOW,
+    STALE_OPEN_ATTEMPT_MS,
+    resolveMinFeeForSender,
+    submitAndAutoRefresh,
+    useFeeConfig,
+    useFetchSuggestedMinFee,
+    useSigningRequest,
+} from '@perawallet/wallet-core-signing'
+import { assertOnline } from '@perawallet/wallet-core-shared'
+import { DelegationError } from '../errors'
+import { sendFlowFeatureFor } from '../chain-adapter'
+import { requestDelegationSignatures } from './requestDelegationSignatures'
+
+export type SubmitDelegationParams = {
+    /** Account the delegation applies to. */
+    sourceAddress: string
+    /** Address that signs for `sourceAddress` once this lands. */
+    authorityAddress: string
+}
+
+export type UseSubmitDelegationMutationOptions = {
+    scope: ChainScope
+    /**
+     * Localized strings shown in the signing pipeline's review UI. The
+     * hook lives in a package and intentionally doesn't know about app
+     * i18n — callers pass already-localized values.
+     */
+    signingMetadata: {
+        name: string
+        description: string
+    }
+}
+
+export type UseSubmitDelegationMutationResult = {
+    submitAsync: (params: SubmitDelegationParams) => Promise<string[]>
+    isPending: boolean
+}
+
+/**
+ * End-to-end submit for a delegation transaction:
+ * 1. Build the unsigned delegation transaction through the chain adapter.
+ * 2. Hand it to the signing pipeline so the canonical Ledger approval UI
+ *    can surface when the source's auth chain ends at a hardware account.
+ * 3. Submit via `submitAndAutoRefresh` so the source account's balance and
+ *    auth state are refreshed once algod accepts — otherwise the success
+ *    screen would render against a stale authority until periodic sync.
+ *    Return the resulting tx IDs.
+ *
+ * Every failure propagates as a {@link DelegationError} tagged with the stage
+ * that failed (`build_failed`, `signing_failed`, `submission_failed`,
+ * `submission_pending`, `user_rejected`) so confirm screens can show
+ * failure-specific copy.
+ *
+ * The rekey transaction is signed by `sourceAddress`'s CURRENT auth account
+ * (pre-rekey), so `resolveMinFeeForSender`'s `getSignerFor` resolution is the
+ * correct fee basis — a sender currently rekeyed to a quantum auth (e.g.
+ * mid undo-rekey) pays the PQ fee regardless of the rekey's direction. The
+ * network-congestion guard (`max(suggestedMinFee, configMinTxnFee)`) lives
+ * in `resolveMinFeeForSender` too.
+ */
+export const useSubmitDelegationMutation = ({
+    scope,
+    signingMetadata,
+}: UseSubmitDelegationMutationOptions): UseSubmitDelegationMutationResult => {
+    const { addSignRequest } = useSigningRequest()
+    const accounts = useAllAccounts()
+    const { minTxnFee, pqMultiplier } = useFeeConfig(scope.chainId)
+    const fetchSuggestedMinFee = useFetchSuggestedMinFee(scope.chainId)
+
+    const mutation = useMutation({
+        // `mutationDefaults` (@perawallet/wallet-core-shared) already sets
+        // throwOnError: false. This explicit override is kept as a load-bearing
+        // reminder: every caller (rekey-to-standard/-ledger/-shared, undo-rekey
+        // confirm screens) wraps submitAsync in a try/catch that surfaces errors
+        // via showError/showToast. A re-throw on the next render (TanStack keeps
+        // mutation.error populated until reset()) would crash the confirm screen
+        // into a Render Error overlay after the toast had already been shown.
+        throwOnError: false,
+        mutationFn: async ({
+            sourceAddress,
+            authorityAddress,
+        }: SubmitDelegationParams): Promise<string[]> => {
+            // A still-open ledger row for the same rekey may land any
+            // moment — a rebuild would mint a new txid algod cannot dedupe.
+            const openAttempts = await getOpenSubmissionAttemptsForIntent({
+                scope,
+                sender: sourceAddress,
+                intentKey: {
+                    kind: DELEGATION_SUBMISSION_FLOW,
+                    address: sourceAddress,
+                },
+                unevaluatableBefore: Date.now() - STALE_OPEN_ATTEMPT_MS,
+            })
+            if (openAttempts.length > 0) {
+                throw new DelegationError(
+                    'submission_pending',
+                    new Error(
+                        'previous delegation attempt still being verified',
+                    ),
+                )
+            }
+
+            let unsignedTxn: UnsignedTransaction
+            try {
+                // OFF-004: fail fast offline BEFORE the signing pipeline opens
+                // (no Ledger prompt / no biometric on a request that can't be
+                // submitted). Surfaces through the existing build_failed path.
+                assertOnline()
+                // Shared min-fee source (same query cache as the
+                // useDelegationTransactionFeeQuery display) — the fee submitted
+                // and the fee shown read the same entry.
+                const suggestedMinFee = await fetchSuggestedMinFee()
+                // The rekey txn is signed by sourceAddress's CURRENT auth
+                // (pre-rekey) — resolveMinFeeForSender resolves the
+                // effective signer via getSignerFor, so this is the correct
+                // fee basis even when undoing a rekey to a quantum auth.
+                const resolvedMinFee = resolveMinFeeForSender(scope.chainId, {
+                    senderAddress: sourceAddress,
+                    accounts,
+                    suggestedMinFee,
+                    configMinTxnFee: minTxnFee,
+                    pqMultiplier,
+                })
+                unsignedTxn = await sendFlowFeatureFor(
+                    scope,
+                    'delegation',
+                ).buildTx({
+                    scope,
+                    sourceAddress,
+                    authorityAddress,
+                    minFee: resolvedMinFee,
+                })
+            } catch (error) {
+                throw new DelegationError('build_failed', error)
+            }
+
+            // requestDelegationSignatures already rejects with a DelegationError
+            // (`user_rejected` / `signing_failed`), so it is not re-wrapped.
+            const signed = await requestDelegationSignatures(
+                addSignRequest,
+                signingMetadata,
+                [unsignedTxn],
+            )
+
+            try {
+                return await submitAndAutoRefresh(scope, signed, {
+                    flow: DELEGATION_SUBMISSION_FLOW,
+                    intentKey: {
+                        kind: DELEGATION_SUBMISSION_FLOW,
+                        address: sourceAddress,
+                    },
+                    sender: sourceAddress,
+                })
+            } catch (error) {
+                throw new DelegationError('submission_failed', error)
+            }
+        },
+    })
+
+    return {
+        submitAsync: mutation.mutateAsync,
+        isPending: mutation.isPending,
+    }
+}
