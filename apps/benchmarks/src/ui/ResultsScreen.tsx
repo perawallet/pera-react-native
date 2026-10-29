@@ -20,12 +20,27 @@ import { Button } from './Button'
 import { colors, styles } from './styles'
 import type { UseBenchRunnerResult } from './useBenchRunner'
 
-const verdictColor = (verdict: Verdict): string =>
-    verdict === 'worse' || verdict === 'error'
-        ? colors.bad
-        : verdict === 'better' || verdict === 'fixed'
-          ? colors.good
-          : colors.neutral
+const verdictColor = (verdict: Verdict): string => {
+    switch (verdict) {
+        case 'worse':
+        case 'error': {
+            return colors.bad
+        }
+        case 'better':
+        case 'fixed': {
+            return colors.good
+        }
+        case 'same':
+        case 'new':
+        case 'missing': {
+            return colors.neutral
+        }
+        default: {
+            const exhaustive: never = verdict
+            return exhaustive
+        }
+    }
+}
 
 const ms = (value: number | undefined): string =>
     value === undefined ? '-' : `${value.toFixed(1)} ms`

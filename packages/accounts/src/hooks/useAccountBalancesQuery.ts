@@ -147,11 +147,14 @@ export const summarizeHoldings = (
         // The native asset's value in native terms is just its amount
         // (1:1), independent of price. Others convert via its rate,
         // and are unknown while either price is.
-        const nativeAssetValue = isNative
-            ? assetAmount
-            : nativeUsdPrice.isZero() || holding.usdPrice === null
-              ? null
-              : assetAmount.times(usdAssetPrice).div(nativeUsdPrice)
+        const nativeAssetValueOf = () => {
+            if (isNative) return assetAmount
+            if (nativeUsdPrice.isZero() || holding.usdPrice === null) {
+                return null
+            }
+            return assetAmount.times(usdAssetPrice).div(nativeUsdPrice)
+        }
+        const nativeAssetValue = nativeAssetValueOf()
         if (nativeAssetValue) {
             nativeValue = nativeValue.plus(nativeAssetValue)
         } else if (!usdAssetPrice.isZero()) {

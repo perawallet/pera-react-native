@@ -4563,7 +4563,6 @@
             "passkey_disable": "Disable passkey unlock",
             "passkey_password_placeholder": "Wallet password",
             "passkey_error": "Could not enable passkey unlock. Check your password and try again.",
-            "passkey_enable_error": "Couldn't enable passkey unlock. Please try again.",
             "change_password_title": "Change password",
             "change_password_current_placeholder": "Current password",
             "change_password_new_placeholder": "New password",
@@ -4575,6 +4574,26 @@
             "change_password_error_unexpected": "Something went wrong changing your password. Please try again.",
             "change_password_success": "Password changed successfully.",
             "change_password_submit": "Change password"
+        },
+        "passkey_setup": {
+            "title": "Unlock with a passkey",
+            "offer_title": "Unlock faster next time",
+            "body": "Unlock Pera Wallet with Touch ID, Windows Hello, your phone or a security key instead of typing your password. Your password still works as a backup.",
+            "enable_button": "Set up passkey",
+            "not_now_button": "Not now",
+            "retry_button": "Try again",
+            "continue_button": "Continue",
+            "pending_hint": "Follow your browser's prompts. You may be asked to confirm twice.",
+            "success_title": "Passkey unlock is on",
+            "success_body": "Next time, unlock Pera Wallet with your passkey. Your password still works.",
+            "error_not_saved": "The passkey wasn't saved.",
+            "error_prf_unsupported": "This passkey can't unlock Pera Wallet.",
+            "error_unexpected": "Couldn't turn on passkey unlock.",
+            "hint_not_saved_title": "Try a different place to save it",
+            "hint_not_saved_body": "The prompt was closed, or your password manager couldn't save the passkey. Try again and choose another option in the browser prompt, such as Google Password Manager, iCloud Keychain or a security key. If a password manager keeps taking over, turn off passkey saving in its settings.",
+            "hint_prf_title": "Save it somewhere else",
+            "hint_prf_body": "The passkey was saved, but your password manager or security key doesn't support the feature Pera Wallet needs to unlock (PRF). Try again with Google Password Manager, iCloud Keychain or a security key that supports PRF, then delete the unused passkey.",
+            "reauth_description": "Confirm your password to turn on passkey unlock."
         },
         "approval": {
             "placeholder": "Approval surface — coming in M4."

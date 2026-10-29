@@ -11,7 +11,10 @@
  */
 
 import { useCallback } from 'react'
-import { hasCardSession, useCardStore } from '@perawallet/wallet-core-card'
+import {
+    hasCardSession,
+    isEscrowCardApproved,
+} from '@perawallet/wallet-core-card'
 import { trackEvent, HomeEvent } from '@analytics'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useCapability } from '@hooks/useCapability'
@@ -62,9 +65,7 @@ export const useAccountSwitcherActions =
             // Baanx auth finishing doesn't mean the escrow card itself was
             // ever created/approved — send an authenticated-but-incomplete
             // user back into the setup checklist rather than the dashboard.
-            const { escrowCardAddress, escrowCardApproved } =
-                useCardStore.getState()
-            if (!escrowCardAddress || !escrowCardApproved) {
+            if (!isEscrowCardApproved()) {
                 navigation.navigate('PeraCard', {
                     screen: 'CardOnboarding',
                     params: { screen: 'CardOnboardingStatus', params: {} },

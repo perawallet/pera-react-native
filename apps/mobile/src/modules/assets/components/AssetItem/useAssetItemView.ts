@@ -61,11 +61,11 @@ export const useAssetItemView = (
     const isSuspicious = tier === 'suspicious'
     const isDeleted = meta?.isDeleted === true
 
-    const verificationIcon: Nullable<IconName> = isAlgo
-        ? 'assets/trusted'
-        : tier
-          ? getVerificationIcon(tier)
-          : null
+    const verificationIconOf = (): Nullable<IconName> => {
+        if (isAlgo) return 'assets/trusted'
+        return tier ? getVerificationIcon(tier) : null
+    }
+    const verificationIcon = verificationIconOf()
 
     const chainId = options?.chainId
     const shownAssetId =
@@ -80,21 +80,26 @@ export const useAssetItemView = (
 
     // `||` (not `??`) so empty-string names fall back to `Asset #<id>`,
     // matching the prior AccountAssetItemView behavior.
-    const displayName = isAlgo
-        ? 'Algo'
-        : isCollectible
-          ? collectibleTitle || asset.name || `Asset #${shownAssetId}`
-          : asset.name || `Asset #${shownAssetId}`
+    const displayNameOf = () => {
+        if (isAlgo) return 'Algo'
+        if (isCollectible) {
+            return collectibleTitle || asset.name || `Asset #${shownAssetId}`
+        }
+        return asset.name || `Asset #${shownAssetId}`
+    }
+    const displayName = displayNameOf()
 
     const subtitleLeading = isCollectible
         ? (collectionName ?? asset.unitName)
         : asset.unitName
 
-    const secondaryText = isAlgo
-        ? (asset.unitName ?? '')
-        : subtitleLeading
-          ? `${subtitleLeading} · ${shownAssetId}`
-          : shownAssetId
+    const secondaryTextOf = () => {
+        if (isAlgo) return asset.unitName ?? ''
+        return subtitleLeading
+            ? `${subtitleLeading} · ${shownAssetId}`
+            : shownAssetId
+    }
+    const secondaryText = secondaryTextOf()
 
     const copyAssetId = useCallback(
         () => void copyToClipboard(String(asset.assetId)),

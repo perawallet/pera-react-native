@@ -19,6 +19,7 @@ import {
     getCardApiError,
     isDuplicateError,
     isOnboardingNotFoundError,
+    getCardOnboardingProgress,
     isUserAlreadyCreatedError,
     OnboardingStep,
     US_ISO,
@@ -110,11 +111,9 @@ export const useCardOnboardingAddressScreen =
         // session (resumed sign-in), so the consents must be re-collected here
         // instead of silently recorded as "denied". Snapshotted so the boxes
         // don't vanish mid-interaction once the first tick makes them non-null.
-        const [showsConsentOptIns] = useState(() => {
-            const { allowMarketing: marketing, allowSms: sms } =
-                useCardStore.getState()
-            return marketing === null || sms === null
-        })
+        const [showsConsentOptIns] = useState(
+            () => allowMarketing === null || allowSms === null,
+        )
         const submitAddress = useSubmitAddressMutation(scope)
         const submitConsent = useSubmitConsentMutation(scope)
         // Read only on a duplicate, to see where an earlier save left the record.
@@ -363,7 +362,7 @@ export const useCardOnboardingAddressScreen =
                         t('peraCard.address.already_registered_body'),
                     )
                     navigation.navigate('CardSignIn', {
-                        email: useCardStore.getState().email ?? undefined,
+                        email: getCardOnboardingProgress().email ?? undefined,
                         finishesRegistration: true,
                     })
                     return

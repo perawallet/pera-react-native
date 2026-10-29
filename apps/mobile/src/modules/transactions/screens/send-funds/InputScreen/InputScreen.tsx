@@ -235,6 +235,7 @@ export const InputScreen = () => {
                             }
                             ignorePrivacyMode
                             sourceAssetId={accountAssetBalance?.assetId ?? ''}
+                            scope={scope}
                             showSymbol
                             variant='h1'
                             style={styles.amountPlaceholder}

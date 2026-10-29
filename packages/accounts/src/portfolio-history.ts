@@ -17,14 +17,16 @@ import type { PortfolioHistoryPoint } from './chain-adapter'
  * The fiat sum of several chains' histories, each oldest first. Chains sample
  * on their own grids, so each contributes its latest point at or before every
  * timestamp. The sum starts once every chain has a point, since an earlier one
- * would leave a chain out and draw a cliff. Empty when any chain has no points:
- * the others alone would understate the total. Native values are dropped:
- * they're in each chain's own unit and don't sum.
+ * would leave a chain out and draw a cliff. A chain with no points is skipped:
+ * that's an address with no activity, which holds nothing to add, and a failed
+ * fetch is reported as an error rather than reaching here. Native values are
+ * dropped: they're in each chain's own unit and don't sum.
  */
 export const sumPortfolioHistories = (
-    series: PortfolioHistoryPoint[][],
+    allSeries: PortfolioHistoryPoint[][],
 ): Array<Pick<PortfolioHistoryPoint, 'timestamp' | 'usdValue'>> => {
-    if (series.length === 0 || series.some(points => points.length === 0)) {
+    const series = allSeries.filter(points => points.length > 0)
+    if (series.length === 0) {
         return []
     }
 

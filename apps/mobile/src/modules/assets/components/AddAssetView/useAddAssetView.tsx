@@ -163,12 +163,14 @@ export const useAddAssetView = (
     // offered falls back to All, or to the first offered chain without one.
     const wantedChainId =
         pickedChainId === undefined ? options.chainId : pickedChainId
-    const selectedChainId =
-        wantedChainId !== null && offeredChainIds.includes(wantedChainId)
-            ? wantedChainId
-            : isAllOffered
-              ? null
-              : (offeredChainIds[0] ?? null)
+    const selectedChainIdOf = (): Nullable<ChainId> => {
+        if (wantedChainId !== null && offeredChainIds.includes(wantedChainId)) {
+            return wantedChainId
+        }
+        if (isAllOffered) return null
+        return offeredChainIds[0] ?? null
+    }
+    const selectedChainId = selectedChainIdOf()
     const searchedChainIds = useMemo(
         () => (selectedChainId === null ? offeredChainIds : [selectedChainId]),
         [selectedChainId, offeredChainIds],
@@ -196,11 +198,11 @@ export const useAddAssetView = (
         isError && isAssetSearchUnavailableError(error) ? error : undefined
     const isSearchUnavailable =
         isKnownUnavailable || failedUnavailable !== undefined
-    const unavailableReasons = isKnownUnavailable
-        ? knownReasons
-        : failedUnavailable
-          ? [failedUnavailable]
-          : []
+    const unavailableReasonsOf = () => {
+        if (isKnownUnavailable) return knownReasons
+        return failedUnavailable ? [failedUnavailable] : []
+    }
+    const unavailableReasons = unavailableReasonsOf()
     // A missing Pera service (BetaNet, a custom node) says nothing about the
     // chain being listed, so only a backend refusal gets the not-listed copy.
     const isNotListed =
@@ -320,6 +322,14 @@ export const useAddAssetView = (
         [handleRequestAdd],
     )
 
+    const unavailableBodyOf = () => {
+        if (!isNotListed) return undefined
+        if (selectedChainId === null) return t('add_asset.not_listed.body_all')
+        return t('add_asset.not_listed.body', {
+            chain: chainDisplayNameOf(selectedChainId) ?? selectedChainId,
+        })
+    }
+
     return {
         chainOptions,
         selectedChainId,
@@ -338,15 +348,7 @@ export const useAddAssetView = (
         unavailableTitle: isNotListed
             ? t('add_asset.not_listed.title')
             : undefined,
-        unavailableBody: isNotListed
-            ? selectedChainId !== null
-                ? t('add_asset.not_listed.body', {
-                      chain:
-                          chainDisplayNameOf(selectedChainId) ??
-                          selectedChainId,
-                  })
-                : t('add_asset.not_listed.body_all')
-            : undefined,
+        unavailableBody: unavailableBodyOf(),
         isFetchingNextPage,
         hasNextPage,
         fetchNextPage,

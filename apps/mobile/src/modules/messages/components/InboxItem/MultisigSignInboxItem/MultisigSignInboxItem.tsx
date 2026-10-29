@@ -46,11 +46,11 @@ export const MultisigSignInboxItem = ({
         timeRemaining,
     } = useMultisigSignInboxItem(item)
 
-    const statusStyle = isFailure
-        ? styles.statusTextFailure
-        : isSuccess
-          ? styles.statusTextSuccess
-          : styles.statusTextWaiting
+    const statusStyleOf = () => {
+        if (isFailure) return styles.statusTextFailure
+        return isSuccess ? styles.statusTextSuccess : styles.statusTextWaiting
+    }
+    const statusStyle = statusStyleOf()
 
     return (
         <InboxItemShell

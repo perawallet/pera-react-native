@@ -24,6 +24,7 @@ import {
 import { eip155ChainIdOf, toCaip19 } from '../../blockchain/utils/caip19'
 import type { EvmChain } from '../../chains/types'
 import {
+    assetItemSchema,
     assetsResponseSchema,
     chartResponseSchema,
     nftHoldingsPageSchema,
@@ -60,14 +61,15 @@ export const nftHoldingsPath = (
 ): string => `/api/v3/evm/${eip155ChainId}/accounts/${address}/nfts/`
 
 /**
- * One item per id, in request order; at most `ASSETS_MAX_IDS` ids. Rejects
- * with a `PeraNetworkError` on a failed request.
+ * One entry per id, in request order, null where the row is one this client
+ * can't read; at most `ASSETS_MAX_IDS` ids. Rejects with a `PeraNetworkError`
+ * on a failed request.
  */
 export const fetchAssetItems = async (
     scope: ChainScope,
     chain: EvmChain,
     assetIds: string[],
-): Promise<AssetItemSchemaOutput[]> => {
+): Promise<Nullable<AssetItemSchemaOutput>[]> => {
     if (assetIds.length === 0) return []
     const ids = assetIds.map(id => toCaip19(id, scope, chain))
     const { data } = await queryClient<unknown>({
@@ -92,7 +94,10 @@ export const fetchAssetItems = async (
             `Pera assets for ${scope.chainId}/${scope.networkId} answered out of request order`,
         )
     }
-    return results
+    return results.map(row => {
+        const parsed = assetItemSchema.safeParse(row)
+        return parsed.success ? parsed.data : null
+    })
 }
 
 /**

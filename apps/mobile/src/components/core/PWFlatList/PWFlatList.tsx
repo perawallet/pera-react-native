@@ -107,11 +107,10 @@ export const PWFlatList = forwardRef<PWFlatListRef, PWFlatListProps<unknown>>(
         const isVerticalList = !isHorizontal && !fillEmpty
 
         const defaultSeparator = cardLayout ? CardSeparator : ListSeparator
-        const resolvedSeparator = isHorizontal
-            ? ItemSeparatorComponent
-            : ItemSeparatorComponent === undefined
-              ? defaultSeparator
-              : ItemSeparatorComponent
+        const resolvedSeparator =
+            !isHorizontal && ItemSeparatorComponent === undefined
+                ? defaultSeparator
+                : ItemSeparatorComponent
 
         // Wraps the caller's own scroll handlers rather than replacing them.
         const syncPauseHandlers = useSyncPauseOnInteraction(

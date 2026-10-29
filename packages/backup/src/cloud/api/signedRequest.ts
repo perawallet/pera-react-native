@@ -10,7 +10,11 @@
  limitations under the License
  */
 
-import { queryClient } from '@perawallet/wallet-core-shared'
+import {
+    AppError,
+    ErrorCategory,
+    queryClient,
+} from '@perawallet/wallet-core-shared'
 import { buildBackupRequestProof } from '../crypto/buildBackupRequestProof'
 import { withBackupAuthSecretKey } from '../credentials/keyStorage'
 import type { BackupId, DeviceId } from '../models'
@@ -26,9 +30,11 @@ type SignedRequestParams<TData> = {
     responseType?: 'json' | 'text'
 }
 
-export class BackupAuthKeyMissingError extends Error {
+export class BackupAuthKeyMissingError extends AppError {
     constructor() {
-        super('Backup auth key is not available in the keystore')
+        super('Backup auth key is not available in the keystore', {
+            category: ErrorCategory.STORAGE,
+        })
         this.name = 'BackupAuthKeyMissingError'
     }
 }

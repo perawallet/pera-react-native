@@ -11,10 +11,11 @@
  */
 
 import type { z } from 'zod'
+import { AppError, ErrorCategory } from '@perawallet/wallet-core-shared'
 
-export class BackupResponseParseError extends Error {
+export class BackupResponseParseError extends AppError {
     constructor(message: string) {
-        super(message)
+        super(message, { category: ErrorCategory.STORAGE })
         this.name = 'BackupResponseParseError'
     }
 }
