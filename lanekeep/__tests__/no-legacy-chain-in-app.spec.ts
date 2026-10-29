@@ -112,7 +112,6 @@ const LEGACY_CHAIN_BASELINE: readonly string[] = [
     'apps/mobile/src/modules/onboarding/screens/ImportRekeyedAddressesScreen/RekeyedAccountInfoContent/RekeyedAccountInfoContent.tsx',
     'apps/mobile/src/modules/onboarding/screens/ImportRekeyedAddressesScreen/RekeyedAccountInfoContent/useRekeyedAccountInfoContent.ts',
     'apps/mobile/src/modules/onboarding/screens/ImportRekeyedAddressesScreen/useImportRekeyedAddressesScreen.ts',
-    'apps/mobile/src/modules/onboarding/screens/ImportSelectAddressesScreen/ImportSelectAddressesScreen.tsx',
     'apps/mobile/src/modules/onboarding/screens/ImportSelectAddressesScreen/useImportSelectAddressesScreen.ts',
     'apps/mobile/src/modules/onboarding/screens/NameAccountScreen/useNameAccountScreen.ts',
     'apps/mobile/src/modules/onboarding/screens/OnboardingScreen/useOnboardingScreen.tsx',

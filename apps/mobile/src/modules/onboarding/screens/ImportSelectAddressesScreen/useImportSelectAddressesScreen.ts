@@ -24,7 +24,9 @@ import {
     useHDImportSession,
     chainAccountOf,
     hdIndexOf,
+    importableCandidate,
     signingKeyOn,
+    useSyncCandidateAccounts,
     type LocalAccount,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -54,13 +56,15 @@ type ImportSelectAddressesRouteProp = RouteProp<
 
 export type UseImportSelectAddressesScreenResult = {
     accounts: LocalAccount[]
-    selectedAddresses: Set<string>
+    selectedAccountIds: Set<string>
     isAllSelected: boolean
     areAllImported: boolean
     canContinue: boolean
     isProcessing: boolean
-    alreadyImportedAddresses: Set<string>
-    toggleSelection: (address: string) => void
+    importedAccountIds: Set<string>
+    /** Some account holds more than one distinct address, so rows and copy speak of accounts rather than addresses. */
+    hasLinkedAddresses: boolean
+    toggleSelection: (accountId: string) => void
     toggleSelectAll: () => void
     handleContinue: () => void
     t: (key: string, options?: Record<string, unknown>) => string
@@ -94,29 +98,67 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
     const { setAccounts } = useSetAccounts()
     const { seedIdOf } = useKMS()
 
-    const alreadyImportedAddresses = useMemo(() => {
-        return new Set(allAccounts.map(addressOf))
-    }, [allAccounts, addressOf])
-
-    const newAccounts = useMemo(() => {
-        return accounts.filter(
-            acc => !alreadyImportedAddresses.has(addressOf(acc)),
-        )
-    }, [accounts, alreadyImportedAddresses, addressOf])
-
-    const selectableAddresses = useMemo(
-        () => newAccounts.map(addressOf),
-        [newAccounts, addressOf],
+    // An account already held is shown whole and disabled; any other shows
+    // and imports only the addresses no other account holds.
+    const importable = useMemo(
+        () =>
+            new Map(
+                accounts.map(acc => [
+                    acc.id,
+                    importableCandidate(allAccounts, acc),
+                ]),
+            ),
+        [accounts, allAccounts],
     )
 
+    const candidates = useMemo(
+        () => accounts.map(acc => importable.get(acc.id) ?? acc),
+        [accounts, importable],
+    )
+
+    const importedAccountIds = useMemo(
+        () =>
+            new Set(
+                accounts.flatMap(acc =>
+                    importable.get(acc.id) ? [] : [acc.id],
+                ),
+            ),
+        [accounts, importable],
+    )
+
+    const newAccounts = useMemo(
+        () => candidates.filter(acc => !importedAccountIds.has(acc.id)),
+        [candidates, importedAccountIds],
+    )
+
+    const selectableAccountIds = useMemo(
+        () => newAccounts.map(acc => acc.id),
+        [newAccounts],
+    )
+
+    const hasLinkedAddresses = useMemo(
+        () =>
+            candidates.some(
+                acc =>
+                    new Set(
+                        Object.values(acc.chains).flatMap(entry =>
+                            entry ? [entry.address] : [],
+                        ),
+                    ).size > 1,
+            ),
+        [candidates],
+    )
+
+    useSyncCandidateAccounts(candidates)
+
     const {
-        selectedAddresses,
+        selectedAddresses: selectedAccountIds,
         isAllSelected,
         toggle: toggleSelection,
         toggleSelectAll,
-    } = useAddressSelection(selectableAddresses, {
-        initial: newAccounts.length > 0 ? [addressOf(newAccounts[0])] : [],
-        disabledAddresses: alreadyImportedAddresses,
+    } = useAddressSelection(selectableAccountIds, {
+        initial: newAccounts.length > 0 ? [newAccounts[0].id] : [],
+        disabledAddresses: importedAccountIds,
     })
     const [isProcessing, setIsProcessing] = useState(false)
     const hasCommittedRef = useRef(false)
@@ -125,16 +167,13 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
         setIsProcessing(true)
 
         void deferToNextCycle(async () => {
-            const accountsToAdd = accounts.filter(acc =>
-                selectedAddresses.has(addressOf(acc)),
+            const accountsToAdd = newAccounts.filter(acc =>
+                selectedAccountIds.has(acc.id),
             )
 
             try {
                 if (isImportMode && importWalletKeyId) {
                     if (accountsToAdd.length > 0) {
-                        // Commit: persists keystore root + appends selected
-                        // accounts to the accounts store. After this returns
-                        // the import session is cleared.
                         await commitImport({
                             walletKeyId: importWalletKeyId,
                             selectedAccounts: accountsToAdd,
@@ -142,10 +181,11 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
                         hasCommittedRef.current = true
                         setSelectedAccountId(accountsToAdd[0].id)
                     } else {
-                        // Re-import path: every selected address was already in
-                        // the store, so there's nothing to commit but the
-                        // session still proved possession and must not be
-                        // cancelled by the beforeRemove listener.
+                        // Re-import path: every selected account was already in
+                        // the store, so there's nothing to commit. The session
+                        // still proved possession, so it is cancelled here and
+                        // not by the beforeRemove listener.
+                        cancelImport()
                         hasCommittedRef.current = true
                     }
                     // Re-entering the mnemonic proves possession, so mark the
@@ -191,17 +231,20 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
                 // addresses would let the user persist watch accounts
                 // rekeyed to an auth address we don't hold.
                 const scanAddresses = [
-                    ...new Set([
-                        ...accountsToAdd.map(addressOf),
-                        ...allAccounts
-                            .filter(a => hdIndexOf(a) !== undefined)
-                            .filter(
-                                a =>
-                                    seedIdOf(signingKeyOn(a, scope.chainId)) ===
-                                    walletKeyId,
-                            )
-                            .map(addressOf),
-                    ]),
+                    ...new Set(
+                        [
+                            ...accountsToAdd.map(addressOf),
+                            ...allAccounts
+                                .filter(a => hdIndexOf(a) !== undefined)
+                                .filter(
+                                    a =>
+                                        seedIdOf(
+                                            signingKeyOn(a, scope.chainId),
+                                        ) === walletKeyId,
+                                )
+                                .map(addressOf),
+                        ].filter(address => address !== ''),
+                    ),
                 ]
                 const discoveredRekeyedAccounts =
                     await scanRekeyed(scanAddresses)
@@ -252,11 +295,13 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
         })
     }, [
         accounts,
-        selectedAddresses,
+        newAccounts,
+        selectedAccountIds,
         allAccounts,
         isImportMode,
         importWalletKeyId,
         commitImport,
+        cancelImport,
         markBackupComplete,
         scanRekeyed,
         exitAccountFlow,
@@ -285,16 +330,17 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
     }, [isImportMode, reactNavigation, cancelImport])
 
     const areAllImported = newAccounts.length === 0
-    const canContinue = areAllImported || selectedAddresses.size > 0
+    const canContinue = areAllImported || selectedAccountIds.size > 0
 
     return {
-        accounts,
-        selectedAddresses,
+        accounts: candidates,
+        selectedAccountIds,
         isAllSelected,
         areAllImported,
         canContinue,
         isProcessing,
-        alreadyImportedAddresses,
+        importedAccountIds,
+        hasLinkedAddresses,
         toggleSelection,
         toggleSelectAll,
         handleContinue: () => void handleContinue(),

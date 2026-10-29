@@ -29,6 +29,7 @@ export const hasRecentPasswordAuth = async (): Promise<boolean> => {
     const stored = await chrome.storage.session.get(PASSWORD_AUTH_AT_KEY)
     const at = stored[PASSWORD_AUTH_AT_KEY]
     if (typeof at !== 'number') return false
+    // oxlint-disable-next-line pera/monotonic-lockout-clock -- the stamp crosses realms, see stampPasswordAuth
     const elapsed = Date.now() - at
     // A negative elapsed means the clock moved back; fail towards the password.
     return elapsed >= 0 && elapsed <= PASSKEY_ENABLE_REAUTH_WINDOW_MS
