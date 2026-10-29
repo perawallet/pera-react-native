@@ -70,6 +70,10 @@ export const hasAutoLockExpired = (
             return true
         }
         elapsedMs = now.monotonic.elapsedMs - start.monotonic.elapsedMs
+    } else if (start.monotonic) {
+        // The device has the clock, so a missing reading now is a failed native
+        // call; the wall clock fallback is the one moving the clock back beats.
+        return true
     } else {
         elapsedMs = now.wallNowMs - start.wallNowMs
     }

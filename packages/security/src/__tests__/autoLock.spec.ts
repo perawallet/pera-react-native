@@ -79,6 +79,15 @@ describe('hasAutoLockExpired', () => {
         )
     })
 
+    it('locks when the start has a monotonic reading but none exists now', () => {
+        const wallOnlyNow: LockoutClocks = {
+            wallNowMs: 1_000_000 - HOUR_MS,
+            monotonic: null,
+        }
+
+        expect(hasAutoLockExpired(start, wallOnlyNow)).toBe(true)
+    })
+
     it('locks when the monotonic reading went backwards within a boot', () => {
         expect(hasAutoLockExpired(start, clocks(1_000_000, 4_000))).toBe(true)
     })
