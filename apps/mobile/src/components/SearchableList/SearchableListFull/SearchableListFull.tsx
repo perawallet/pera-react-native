@@ -47,6 +47,11 @@ const renderHeaderNode = (
 
 export type SearchableListFullProps<T> = SearchableListProps<T>
 
+type WrappedSeparatorProps = {
+    leadingItem?: unknown
+    trailingItem?: unknown
+}
+
 const SearchableListFullInner = <T,>(
     props: SearchableListFullProps<T>,
     ref: React.ForwardedRef<PWFlatListRef>,
@@ -245,10 +250,7 @@ const SearchableListFullInner = <T,>(
         const WrappedSeparator = ({
             leadingItem,
             trailingItem,
-        }: {
-            leadingItem?: unknown
-            trailingItem?: unknown
-        }) => {
+        }: WrappedSeparatorProps) => {
             if (isSeparatorSuppressed(leadingItem, trailingItem)) {
                 return null
             }

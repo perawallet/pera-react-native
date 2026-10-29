@@ -99,4 +99,16 @@ describe('resolvePrecision + real formatNumber', () => {
         expect(floored('0.004')).toBe('0.01')
         expect(floored('-0.004')).toBe('-0.01')
     })
+
+    it('significant shows a tiny fee to its first significant digits', () => {
+        expect(format('0.000008523412345678', 'significant', 18)).toBe(
+            '0.00000852',
+        )
+        expect(format('0.00000850', 'significant', 18)).toBe('0.0000085')
+        expect(format('0.00001067', 'significant', 18)).toBe('0.0000107')
+    })
+
+    it('significant keeps 2 dp for an amount of one or more', () => {
+        expect(format('1.5', 'significant', 18)).toBe('1.50')
+    })
 })

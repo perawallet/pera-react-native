@@ -14,11 +14,20 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import {
     discoverAccounts,
     discoverDelegatedAccounts,
+    discoverWalletCandidates,
 } from '../account-discovery'
 import type { GetPublicKey } from '../chain-adapter'
 import { fakeAccountsChain, TESTNET_SCOPE } from './fakeAccountsChain'
 import { addressOn, authorityOf, hdIndexOf, signingKeyOn } from '../credentials'
 import type { WalletAccount } from '../models'
+import {
+    ALGORAND,
+    BASE,
+    ETHEREUM,
+    familyHdAddress,
+    familyHdKeyId,
+    registerChainFamilies,
+} from './chainFamilies'
 
 // The chain's activity probe takes the addresses and answers per address; the
 // fast-lookup shape these specs were written against maps straight onto it.
@@ -347,5 +356,107 @@ describe('discoverDelegatedAccounts', () => {
                 scope: TESTNET_SCOPE,
             }),
         ).rejects.toBe(offline)
+    })
+})
+
+describe('discoverWalletCandidates', () => {
+    const CHAIN_IDS = [ALGORAND, ETHEREUM, BASE]
+
+    const activeOn = (
+        families: ReturnType<typeof registerChainFamilies>,
+        chainId: typeof ALGORAND,
+        addresses: readonly string[],
+    ) =>
+        families.checkActivity
+            .get(chainId)!
+            .mockImplementation(
+                async (probed: string[]) =>
+                    new Map(probed.map(a => [a, addresses.includes(a)])),
+            )
+
+    beforeEach(() => {
+        vi.clearAllMocks()
+    })
+
+    it('returns an index active only on a non-default chain with the default chains derived address and that chain', async () => {
+        const families = registerChainFamilies(CHAIN_IDS)
+        activeOn(families, ALGORAND, [])
+        activeOn(families, ETHEREUM, [])
+        activeOn(families, BASE, [familyHdAddress('evm', 2, 0)])
+
+        const found = await discoverWalletCandidates({
+            walletKeyId: 'seed',
+            chainIds: CHAIN_IDS,
+        })
+
+        expect(found).toHaveLength(1)
+        expect(hdIndexOf(found[0])).toEqual({ account: 2, keyIndex: 0 })
+        expect(found[0].chains).toEqual({
+            [ALGORAND]: expect.objectContaining({
+                address: familyHdAddress('algorand', 2, 0),
+                keyPairId: familyHdKeyId('seed', 'algorand', 2, 0),
+                enabledBy: 'created',
+            }),
+            [ETHEREUM]: expect.objectContaining({
+                address: familyHdAddress('evm', 2, 0),
+                keyPairId: familyHdKeyId('seed', 'evm', 2, 0),
+                enabledBy: 'created',
+            }),
+            [BASE]: expect.objectContaining({
+                address: familyHdAddress('evm', 2, 0),
+                keyPairId: familyHdKeyId('seed', 'evm', 2, 0),
+                enabledBy: 'discovery',
+            }),
+        })
+    })
+
+    it('returns the first account alone when nothing is active', async () => {
+        const families = registerChainFamilies(CHAIN_IDS)
+        activeOn(families, ALGORAND, [])
+        activeOn(families, ETHEREUM, [])
+        activeOn(families, BASE, [])
+
+        const found = await discoverWalletCandidates({
+            walletKeyId: 'seed',
+            chainIds: CHAIN_IDS,
+        })
+
+        expect(found.map(hdIndexOf)).toEqual([{ account: 0, keyIndex: 0 }])
+        expect(Object.keys(found[0].chains)).toEqual([ALGORAND, ETHEREUM])
+    })
+
+    it('returns nothing when no activity probe answered', async () => {
+        const families = registerChainFamilies(CHAIN_IDS)
+        for (const checkActivity of families.checkActivity.values()) {
+            checkActivity.mockRejectedValue(new Error('offline'))
+        }
+
+        await expect(
+            discoverWalletCandidates({
+                walletKeyId: 'seed',
+                chainIds: CHAIN_IDS,
+            }),
+        ).resolves.toEqual([])
+    })
+
+    it('orders accounts by path', async () => {
+        const families = registerChainFamilies(CHAIN_IDS)
+        activeOn(families, ALGORAND, [
+            familyHdAddress('algorand', 1, 0),
+            familyHdAddress('algorand', 0, 0),
+        ])
+        activeOn(families, ETHEREUM, [familyHdAddress('evm', 0, 1)])
+        activeOn(families, BASE, [])
+
+        const found = await discoverWalletCandidates({
+            walletKeyId: 'seed',
+            chainIds: CHAIN_IDS,
+        })
+
+        expect(found.map(hdIndexOf)).toEqual([
+            { account: 0, keyIndex: 0 },
+            { account: 0, keyIndex: 1 },
+            { account: 1, keyIndex: 0 },
+        ])
     })
 })

@@ -2269,9 +2269,14 @@
             "title": "Sélectionnez les adresses à ajouter",
             "description": "Nous avons trouvé {{count}} adresses enregistrées sur ce wallet",
             "addresses_count": "{{count}} adresses",
+            "description_linked_one": "Nous avons trouvé {{count}} compte dans ce wallet. Il comprend ses adresses Algorand et EVM.",
+            "description_linked_other": "Nous avons trouvé {{count}} comptes dans ce wallet. Chaque compte comprend ses adresses Algorand et EVM.",
+            "accounts_count_one": "{{count}} compte",
+            "accounts_count_other": "{{count}} comptes",
             "select_all": "Tout sélectionner",
             "already_imported": "déjà importé",
-            "finish_button": "Terminer la création",
+            "import_button": "Importer les comptes",
+            "total_value": "<0/> au total",
             "all_imported_title": "Déjà dans votre wallet",
             "all_imported_body": "Toutes les adresses dérivées par ce wallet figurent déjà dans Pera, y compris celles que vous ne faites que suivre. Supprimez une adresse pour l’ajouter à nouveau avec sa clé privée."
         },
@@ -2952,7 +2957,11 @@
             "slow": "Lente",
             "normal": "Normale",
             "fast": "Rapide",
-            "max_fee": "Frais maximum"
+            "max_fee": "Frais maximum",
+            "max_fee_for_preset": "Frais maximum ({{preset}})",
+            "max_fee_info": "Le maximum que vous paierez si les frais du réseau augmentent. Vous payez généralement moins.",
+            "wait_seconds": "~{{seconds}} s",
+            "wait_minutes": "~{{minutes}} min"
         },
         "confirmation": {
             "add_to_contacts": "+ Ajouter aux contacts",
@@ -2964,6 +2973,7 @@
             "network": "Réseau",
             "fee": "Frais",
             "current_balance": "Solde actuel",
+            "total": "Total",
             "note": "Note",
             "recipient_below_mbr": {
                 "title": "Montant inférieur au minimum du destinataire",

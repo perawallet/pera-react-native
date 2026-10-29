@@ -89,7 +89,13 @@ const renderHDImportFromOnboarding = () =>
         ],
     })
 
-const importMnemonicAndKeepSelection = async () => {
+const importMnemonic = async ({
+    isSelectingAll = false,
+    onAddressesListed,
+}: {
+    isSelectingAll?: boolean
+    onAddressesListed?: () => void
+} = {}) => {
     renderHDImportFromOnboarding()
     fireEvent.click(screen.getByTestId('onboarding_import_account_button'))
     await waitFor(() =>
@@ -124,11 +130,20 @@ const importMnemonicAndKeepSelection = async () => {
             ).toBeTruthy(),
         { timeout: SLOW_WAIT_TIMEOUT_MS },
     )
+    onAddressesListed?.()
+    if (isSelectingAll) {
+        fireEvent.click(
+            screen.getByTestId('import_select_addresses_select_all_checkbox'),
+        )
+    }
     fireEvent.click(
         screen.getByTestId('import_select_addresses_continue_button'),
     )
-    await waitFor(() => screen.getByTestId('name_account_finish_button'))
-    fireEvent.click(screen.getByTestId('name_account_finish_button'))
+    // More than one imported account skips the naming step.
+    if (!isSelectingAll) {
+        await waitFor(() => screen.getByTestId('name_account_finish_button'))
+        fireEvent.click(screen.getByTestId('name_account_finish_button'))
+    }
     await waitFor(
         () => expect(useOnboardingStore.getState().isOnboarding).toBe(false),
         { timeout: SLOW_WAIT_TIMEOUT_MS },
@@ -142,8 +157,7 @@ describe('Flow: Import HD wallet → discover the other chains it was used on', 
         useOnboardingStore.getState().reset()
     })
 
-    it('Given a seed used on Algorand at its first address and on Ethereum alone at a later account, when the user imports it keeping the selection, then that later account is added holding Ethereum, and nothing past the gap', async () => {
-        const ethereumOnlyAddress = await ethereumAddressAt(2, 0)
+    const serveSeedActivity = (ethereumOnlyAddress: string) =>
         server.use(
             mockAccountFastLookup({
                 address: HD_TEST_ADDRESS,
@@ -166,27 +180,53 @@ describe('Flow: Import HD wallet → discover the other chains it was used on', 
             }),
         )
 
-        await importMnemonicAndKeepSelection()
+    it('Given a seed used on Algorand at its first address and on Ethereum alone at a later account, when the user imports it keeping the selection, then that later account is listed but not added, and nothing past the gap', async () => {
+        const ethereumOnlyAddress = await ethereumAddressAt(2, 0)
+        serveSeedActivity(ethereumOnlyAddress)
+        const walk = vi.spyOn(
+            useAccountsStore.getState(),
+            'discoverWalletAccounts',
+        )
+
+        await importMnemonic({
+            onAddressesListed: () =>
+                expect(
+                    screen.getByTestId(
+                        `import_select_addresses_address_${ethereumOnlyAddress}`,
+                    ),
+                ).toBeTruthy(),
+        })
+
+        await waitFor(() => expect(walk).toHaveBeenCalledOnce())
+        await walk.mock.results[0].value
+        const accounts = useAccountsStore.getState().accounts
+        expect(accounts).toHaveLength(1)
+        expect(hdIndexOf(accounts[0])).toEqual({ account: 0, keyIndex: 0 })
+        expect(chainAccountOf(accounts[0], 'algorand')?.address).toBe(
+            HD_TEST_ADDRESS,
+        )
+    })
+
+    it('Given a seed used on Ethereum alone at a later account, when the user selects every listed account, then that account is stored holding Algorand and Ethereum with its Ethereum key in the keystore', async () => {
+        const ethereumOnlyAddress = await ethereumAddressAt(2, 0)
+        serveSeedActivity(ethereumOnlyAddress)
+
+        await importMnemonic({ isSelectingAll: true })
 
         await waitFor(
             () => expect(useAccountsStore.getState().accounts).toHaveLength(2),
             { timeout: SLOW_WAIT_TIMEOUT_MS },
         )
-        const accounts = useAccountsStore.getState().accounts
-        const first = accounts.find(
-            account => hdIndexOf(account)?.account === 0,
-        )
-        const discovered = accounts.find(
-            account => hdIndexOf(account)?.account === 2,
-        )
-        expect(chainAccountOf(first!, 'algorand')?.address).toBe(
-            HD_TEST_ADDRESS,
-        )
+        const discovered = useAccountsStore
+            .getState()
+            .accounts.find(account => hdIndexOf(account)?.account === 2)
         expect(hdIndexOf(discovered!)).toEqual({ account: 2, keyIndex: 0 })
-        expect(Object.keys(discovered!.chains)).toEqual(['ethereum'])
-        expect(chainAccountOf(discovered!, 'ethereum')).toMatchObject({
-            address: ethereumOnlyAddress,
-            enabledBy: 'discovery',
-        })
+        expect(Object.keys(discovered!.chains).sort()).toEqual([
+            'algorand',
+            'ethereum',
+        ])
+        const ethereumEntry = chainAccountOf(discovered!, 'ethereum')
+        expect(ethereumEntry?.address).toBe(ethereumOnlyAddress)
+        expect(await kmsCore.getKey(ethereumEntry!.keyPairId!)).toBeTruthy()
     })
 })

@@ -34,13 +34,12 @@ const getInnerTransactionCount = (tx: AlgorandTransactionView): number => {
     return tx.innerTxns?.length ?? 0
 }
 
-export const TxTypeDetails = ({
-    tx,
-    isExternal,
-}: {
+type TxTypeDetailsProps = {
     tx: AlgorandTransactionView
     isExternal?: boolean
-}) => {
+}
+
+export const TxTypeDetails = ({ tx, isExternal }: TxTypeDetailsProps) => {
     const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const nativeAsset = useNativeAsset(scope)
     const txType = getTransactionType(tx)

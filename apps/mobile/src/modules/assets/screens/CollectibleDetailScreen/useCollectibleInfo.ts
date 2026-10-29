@@ -86,6 +86,7 @@ export const useCollectibleInfo = (
                 void Linking.openURL(url)
                 return
             }
+            // oxlint-disable-next-line pera/no-unvalidated-open-url -- callers build on the chain descriptor's explorer
             pushWebView({ url })
         },
         [pushWebView],

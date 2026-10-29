@@ -20,6 +20,7 @@ import {
     isNull,
     like,
     sql,
+    type SQL,
 } from 'drizzle-orm'
 import { Decimal } from 'decimal.js'
 import { getDatabase, type Database } from '@perawallet/wallet-core-database'
@@ -69,7 +70,11 @@ type HoldingsReadParams = {
     db?: Database
     /** Sort order applied in SQL. Defaults to balanceDesc. */
     sortMode?: AssetSortMode
-    /** Case-insensitive substring match against name, unit name or asset id. */
+    /**
+     * Case-insensitive substring match against name, unit name or asset id. A
+     * chain's native asset also matches on its adapter's name and unit name,
+     * since not every chain stores a metadata row for it.
+     */
     search?: string
     /** Page size. Omit for an unbounded read (all matching holdings). */
     limit?: number
@@ -95,6 +100,51 @@ const isFromSources = (sources: readonly AccountHoldingSource[]) =>
             ),
         ),
     )!
+
+// A chain may keep no metadata row for its native coin, and chains can share one
+// native id, so the match pairs the scope with the id.
+const nativeHoldingsMatching = (
+    sources: readonly AccountHoldingSource[],
+    term: string,
+): SQL[] => {
+    const needle = term.toLowerCase()
+    return sources.flatMap(({ scope }) => {
+        const native = findNativeAsset(scope.chainId)
+        if (!native) return []
+        const isMatch = [native.name, native.unitName].some(text =>
+            text?.toLowerCase().includes(needle),
+        )
+        if (!isMatch) return []
+        return and(
+            eq(AccountAssetHoldingsSchema.scope, toScopeKey(scope)),
+            eq(AccountAssetHoldingsSchema.assetId, native.assetId),
+        )!
+    })
+}
+
+// A native id is a placeholder ('native' on EVM chains), not something a user
+// pastes, so it matches only in full: "nat" must not list every network's coin.
+const assetIdMatching = (
+    sources: readonly AccountHoldingSource[],
+    term: string,
+): SQL => {
+    const isIdMatch = like(AccountAssetHoldingsSchema.assetId, `%${term}%`)
+    const nativeIds = [
+        ...new Set(
+            sources.flatMap(
+                ({ scope }) => findNativeAsset(scope.chainId)?.assetId ?? [],
+            ),
+        ),
+    ]
+    if (nativeIds.length === 0) return isIdMatch
+    return and(
+        isIdMatch,
+        or(
+            notInArray(AccountAssetHoldingsSchema.assetId, nativeIds),
+            eq(AccountAssetHoldingsSchema.assetId, term),
+        ),
+    )!
+}
 
 /**
  * Sorting (favorites first, then value/name with unsynced NULLs last),
@@ -167,7 +217,8 @@ async function queryHoldingRows({
             or(
                 like(AssetsNodeSchema.name, `%${term}%`),
                 like(AssetsNodeSchema.unitName, `%${term}%`),
-                like(AccountAssetHoldingsSchema.assetId, `%${term}%`),
+                assetIdMatching(sources, term),
+                ...nativeHoldingsMatching(sources, term),
             )!,
         )
     }

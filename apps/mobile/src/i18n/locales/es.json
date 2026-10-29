@@ -2269,9 +2269,14 @@
             "title": "Selecciona las direcciones que añadir",
             "description": "Encontramos {{count}} direcciones registradas en esta wallet",
             "addresses_count": "{{count}} direcciones",
+            "description_linked_one": "Encontramos {{count}} cuenta en esta wallet. Incluye sus direcciones de Algorand y EVM.",
+            "description_linked_other": "Encontramos {{count}} cuentas en esta wallet. Cada cuenta incluye sus direcciones de Algorand y EVM.",
+            "accounts_count_one": "{{count}} cuenta",
+            "accounts_count_other": "{{count}} cuentas",
             "select_all": "Seleccionar todo",
             "already_imported": "ya importada",
-            "finish_button": "Finalizar creación de cuenta",
+            "import_button": "Importar cuentas",
+            "total_value": "<0/> en total",
             "all_imported_title": "Ya están en tu wallet",
             "all_imported_body": "Todas las direcciones que deriva tu wallet ya están en Pera, incluidas las que solo estás observando. Elimina una dirección para volver a añadirla con su clave privada."
         },
@@ -2952,7 +2957,11 @@
             "slow": "Lenta",
             "normal": "Normal",
             "fast": "Rápida",
-            "max_fee": "Comisión máxima"
+            "max_fee": "Comisión máxima",
+            "max_fee_for_preset": "Comisión máxima ({{preset}})",
+            "max_fee_info": "Lo máximo que pagarás si suben las comisiones de la red. Normalmente pagas menos.",
+            "wait_seconds": "~{{seconds}} s",
+            "wait_minutes": "~{{minutes}} min"
         },
         "confirmation": {
             "add_to_contacts": "+ Añadir a contactos",
@@ -2964,6 +2973,7 @@
             "network": "Red",
             "fee": "Comisión",
             "current_balance": "Saldo actual",
+            "total": "Total",
             "note": "Nota",
             "recipient_below_mbr": {
                 "title": "Cantidad inferior al mínimo del destinatario",

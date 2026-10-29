@@ -27,6 +27,7 @@ const {
     mockExitAccountFlow,
     mockSetShouldPlayConfetti,
     mockSetSelectedAccountId,
+    mockBeforeRemoveListeners,
     mockRouteParams,
 } = vi.hoisted(() => ({
     mockShowToast: vi.fn(),
@@ -40,6 +41,7 @@ const {
     mockExitAccountFlow: vi.fn(),
     mockSetShouldPlayConfetti: vi.fn(),
     mockSetSelectedAccountId: vi.fn(),
+    mockBeforeRemoveListeners: { current: [] as (() => void)[] },
     mockRouteParams: {
         current: {
             account: {
@@ -146,6 +148,12 @@ vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
 }))
 
 vi.mock('@react-navigation/native', () => ({
+    useNavigation: () => ({
+        addListener: (_event: string, listener: () => void) => {
+            mockBeforeRemoveListeners.current.push(listener)
+            return () => undefined
+        },
+    }),
     useRoute: () => ({
         params: mockRouteParams.current,
     }),
@@ -154,6 +162,7 @@ vi.mock('@react-navigation/native', () => ({
 describe('useSearchAccountsScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        mockBeforeRemoveListeners.current = []
         // Default success mocks
         mockDiscoverDelegatedAccounts.mockResolvedValue([])
         mockRouteParams.current = {
@@ -256,6 +265,32 @@ describe('useSearchAccountsScreen', () => {
             )
             expect(mockGoBack).toHaveBeenCalled()
         })
+    })
+
+    it('in import mode, leaving mid-search cancels the session and ignores the late result', async () => {
+        mockRouteParams.current = {
+            mode: 'import',
+            walletKeyId: 'w-1',
+        } as SearchAccountsParams
+        let finishDiscovery: (accounts: unknown[]) => void = () => undefined
+        mockDiscoverImportAccounts.mockReturnValue(
+            new Promise(resolve => {
+                finishDiscovery = resolve
+            }),
+        )
+
+        renderHook(() => useSearchAccountsScreen())
+        await waitFor(() => {
+            expect(mockBeforeRemoveListeners.current.length).toBeGreaterThan(0)
+            expect(mockDiscoverImportAccounts).toHaveBeenCalled()
+        })
+        mockBeforeRemoveListeners.current.at(-1)!()
+        finishDiscovery([{ id: '1' }])
+        await new Promise(resolve => setTimeout(resolve, 0))
+
+        expect(mockCancelImport).toHaveBeenCalledOnce()
+        expect(mockReplace).not.toHaveBeenCalled()
+        expect(mockErrorToast).not.toHaveBeenCalled()
     })
 
     it('algo25 account with no rekeyed: navigates to NameAccount to let the user name the import', async () => {

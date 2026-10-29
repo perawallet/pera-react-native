@@ -2273,9 +2273,14 @@
             "title": "Selecione os endereços a adicionar",
             "description": "Encontramos {{count}} endereços registrados nesta wallet",
             "addresses_count": "{{count}} endereços",
+            "description_linked_one": "Encontramos {{count}} conta nesta wallet. Ela inclui seus endereços Algorand e EVM.",
+            "description_linked_other": "Encontramos {{count}} contas nesta wallet. Cada conta inclui seus endereços Algorand e EVM.",
+            "accounts_count_one": "{{count}} conta",
+            "accounts_count_other": "{{count}} contas",
             "select_all": "Selecionar todos",
             "already_imported": "já importado",
-            "finish_button": "Concluir criação da conta",
+            "import_button": "Importar contas",
+            "total_value": "<0/> no total",
             "all_imported_title": "Já está na sua wallet",
             "all_imported_body": "Todos os endereços que esta wallet deriva já estão na Pera, incluindo os que você apenas observa. Remova um endereço para adicioná-lo novamente com a chave privada dele."
         },
@@ -2968,7 +2973,11 @@
             "slow": "Lenta",
             "normal": "Normal",
             "fast": "Rápida",
-            "max_fee": "Taxa máxima"
+            "max_fee": "Taxa máxima",
+            "max_fee_for_preset": "Taxa máxima ({{preset}})",
+            "max_fee_info": "O máximo que você vai pagar se as taxas da rede subirem. Normalmente você paga menos.",
+            "wait_seconds": "~{{seconds}} s",
+            "wait_minutes": "~{{minutes}} min"
         },
         "confirmation": {
             "add_to_contacts": "+ Adicionar aos contatos",
@@ -2980,6 +2989,7 @@
             "network": "Rede",
             "fee": "Taxa",
             "current_balance": "Saldo atual",
+            "total": "Total",
             "note": "Nota",
             "recipient_below_mbr": {
                 "title": "Valor abaixo do mínimo do destinatário",

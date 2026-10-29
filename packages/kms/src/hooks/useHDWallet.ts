@@ -24,6 +24,10 @@ export type HDWalletKeyResult = {
     seedKey: Key
 }
 
+export type PersistHDMasterKeyOptions = {
+    shouldMintPasskeyMainKey?: boolean
+}
+
 export const useHDWallet = () => {
     const { keyStore } = useKMSService()
     const { ensurePasskeyMainKey } = usePasskeyMainKey()
@@ -42,11 +46,30 @@ export const useHDWallet = () => {
         })
     }
 
-    const persistHDMasterKey = async (prepared: {
-        keyId: string
-        rootKey: Uint8Array
-        entropy: Uint8Array
-    }): Promise<HDWalletKeyResult> => {
+    // Degraded, not broken: the wallet is complete without a passkey main key,
+    // and `repairs/0003-mint-passkey-main-key` back-fills it on a later launch.
+    // Rolling the seed back here would destroy a wallet the user can still use.
+    const mintPasskeyMainKey = async (keyId: string): Promise<void> => {
+        try {
+            await ensurePasskeyMainKey(keyId)
+        } catch (error) {
+            logger.error('ensurePasskeyMainKey failed', { error })
+        }
+    }
+
+    /**
+     * Saves the seed and its entropy child, zeroing `rootKey` and `entropy`.
+     * `shouldMintPasskeyMainKey: false` leaves the passkey main key to a later
+     * `mintPasskeyMainKey`, for a seed saved before the user confirmed it.
+     */
+    const persistHDMasterKey = async (
+        prepared: {
+            keyId: string
+            rootKey: Uint8Array
+            entropy: Uint8Array
+        },
+        { shouldMintPasskeyMainKey = true }: PersistHDMasterKeyOptions = {},
+    ): Promise<HDWalletKeyResult> => {
         const { keyId, rootKey, entropy } = prepared
 
         const metadata = buildSeedMetadata({ scheme: SeedScheme.Bip39 })
@@ -89,15 +112,7 @@ export const useHDWallet = () => {
                 throw error
             }
 
-            // Degraded, not broken: the wallet is complete without a passkey
-            // main key, and `repairs/0003-mint-passkey-main-key` back-fills it
-            // on a later launch. Rolling the seed back here would destroy a
-            // wallet the user can still use.
-            try {
-                await ensurePasskeyMainKey(keyId)
-            } catch (error) {
-                logger.error('ensurePasskeyMainKey failed', { error })
-            }
+            if (shouldMintPasskeyMainKey) await mintPasskeyMainKey(keyId)
         } finally {
             zeroBytes(rootKey, entropy)
         }
@@ -116,5 +131,6 @@ export const useHDWallet = () => {
     return {
         createHDWalletKey,
         persistHDMasterKey,
+        mintPasskeyMainKey,
     }
 }
