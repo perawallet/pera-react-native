@@ -693,34 +693,56 @@ describe('useAccountHistory', () => {
             )
         })
 
-        it("falls back to the account's own chain when the stored chip names a chain the account doesn't have", () => {
+        it('merges every network on All, reading none through the single-network query', () => {
+            const { result } = renderHook(() => useAccountHistory())
+
+            expect(result.current.isMerged).toBe(true)
+            expect(
+                result.current.historyFeeds.map(feed => feed.source),
+            ).toEqual(mockSources.current)
+            expect(useTransactionHistoryQuery).toHaveBeenCalledWith(
+                expect.objectContaining({ accountAddress: '' }),
+            )
+            expect(result.current.networkChainId).toBeNull()
+            expect(result.current.isCsvExportVisible).toBe(false)
+            expect(result.current.emptyBody).toBe(
+                'asset_details.transaction_list.empty_body',
+            )
+        })
+
+        it("shows All when the stored chip names a network the account doesn't have", () => {
             useAssetListViewStore.setState({ selectedChainId: 'base' })
 
             const { result } = renderHook(() => useAccountHistory())
 
-            expect(useTransactionHistoryQuery).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    accountAddress: ACCOUNT_ADDRESS,
-                    scope: { chainId: 'algorand', networkId: 'mainnet' },
-                }),
-            )
             expect(result.current.networkChainId).toBeNull()
-            expect(result.current.emptyBody).toBe(
-                'asset_details.transaction_list.empty_body',
-            )
+            expect(result.current.isMerged).toBe(true)
         })
 
-        it("reads the account's own chain on All", () => {
+        it('offers an All chip and one per network, written to the store the Assets chips read', () => {
             const { result } = renderHook(() => useAccountHistory())
 
-            expect(useTransactionHistoryQuery).toHaveBeenCalledWith(
-                expect.objectContaining({ accountAddress: ACCOUNT_ADDRESS }),
+            expect(
+                result.current.chainFilterOptions.map(option => option.value),
+            ).toEqual([null, 'algorand', 'ethereum'])
+
+            act(() => result.current.handleSelectChain('ethereum'))
+
+            expect(useAssetListViewStore.getState().selectedChainId).toBe(
+                'ethereum',
             )
-            expect(result.current.networkChainId).toBeNull()
-            expect(result.current.emptyBody).toBe(
-                'asset_details.transaction_list.empty_body',
-            )
+            expect(result.current.networkChainId).toBe('ethereum')
+            expect(result.current.isMerged).toBe(false)
+            expect(result.current.historyFeeds).toEqual([])
         })
+    })
+
+    it('offers no chips and no merge on a single-network account', () => {
+        const { result } = renderHook(() => useAccountHistory())
+
+        expect(result.current.chainFilterOptions).toEqual([])
+        expect(result.current.isMerged).toBe(false)
+        expect(result.current.historyFeeds).toEqual([])
     })
 
     it('offers to search older history, not a skeleton, once the records search pauses', () => {

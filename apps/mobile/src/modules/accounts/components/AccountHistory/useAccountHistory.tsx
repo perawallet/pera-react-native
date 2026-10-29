@@ -13,16 +13,8 @@
 import { useMemo, useCallback, useState } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import {
-    addressOn,
-    useAccountHoldingSources,
-    useAccountScope,
-    useSelectedAccount,
-} from '@perawallet/wallet-core-accounts'
-import {
-    LEGACY_CHAIN_ID,
-    type ChainId,
-} from '@perawallet/wallet-core-chain-contract'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import type { FilterOption } from '@components/FilterSelection'
 import {
     chainDisplayNameOf,
     useChainCapability,
@@ -30,7 +22,6 @@ import {
 } from '@perawallet/wallet-core-chain-shared'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
-import { useSyncRefresh } from '@hooks/useSyncRefresh'
 import {
     CSV_MIME_TYPE,
     historyItemGroupToOpen,
@@ -46,7 +37,6 @@ import {
 } from '@analytics'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useNetworkStatus } from '@modules/network'
-import { useSelectedNetworkSource } from '../../hooks/useSelectedNetworkSource'
 import {
     TransactionFilter,
     TransactionsFilterContent,
@@ -55,10 +45,11 @@ import {
 } from '../TransactionsFilterContent'
 import type { AppStackParamList } from '@routes/types'
 import { getFilterTimes } from './utils'
-import {
-    useTransactionHistoryRows,
-    type TransactionListRow,
+import type {
+    HistoryFeedProps,
+    TransactionListRow,
 } from '@modules/transactions'
+import { useAccountHistoryRows } from './useAccountHistoryRows'
 import {
     PeraServiceUnavailableError,
     type Nullable,
@@ -102,8 +93,18 @@ export type UseAccountHistoryResult = {
     isRefreshing: boolean
     /** Whether data is empty */
     isEmpty: boolean
-    /** The network the history is narrowed to by the Assets chip; null reads the account's own chain. */
+    /** The network the history is narrowed to by the network chip; null is All. */
     networkChainId: Nullable<ChainId>
+    /** Empty when the account is on one network, so no chips show. */
+    chainFilterOptions: FilterOption<Nullable<ChainId>>[]
+    /** Shared with the Assets chips, so both tabs show the same network. */
+    handleSelectChain: (chainId: Nullable<ChainId>) => void
+    /** All on an account with several networks: the rows interleave them and each names its own. */
+    isMerged: boolean
+    /** One per network on a merged history; mount a `TransactionHistoryFeed` for each. */
+    historyFeeds: HistoryFeedProps[]
+    /** Networks a merged history couldn't read while the others' rows show; retried by `handleRetry`. */
+    failedNetworkNames: string[]
     /** What an empty history says, naming the network when narrowed to one. */
     emptyBody: string
     /**
@@ -139,16 +140,6 @@ export type UseAccountHistoryResult = {
  * hook pattern described in the project rules.
  */
 export const useAccountHistory = (): UseAccountHistoryResult => {
-    const account = useSelectedAccount()
-    const ownScope = useAccountScope(account, LEGACY_CHAIN_ID)
-    const sources = useAccountHoldingSources(account)
-    const selectedSource = useSelectedNetworkSource(sources)
-    const scope = selectedSource?.scope ?? ownScope
-    const accountAddress = selectedSource
-        ? selectedSource.address
-        : account
-          ? addressOn(account, ownScope)
-          : undefined
     const { hasInternet } = useNetworkStatus()
     const navigation =
         useNavigation<NativeStackNavigationProp<AppStackParamList>>()
@@ -159,6 +150,44 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
     const [customRange, setCustomRange] = useState<CustomDateRange>()
     const { request: requestBottomSheet } = useBottomSheet()
 
+    const { afterTime, beforeTime } = useMemo(
+        () => getFilterTimes(activeFilter, customRange),
+        [activeFilter, customRange],
+    )
+
+    const {
+        rows,
+        transactionCount,
+        isLoading,
+        isFetched,
+        isFetchingNextPage,
+        isError,
+        error,
+        hasNextPage,
+        isSearchPaused,
+        retry: handleRetry,
+        isRetrying,
+        isLoadFailed,
+        isLoadUnavailable,
+        isLoadIntegrityBlocked,
+        suspectedPoisoningById,
+        scope,
+        accountAddress,
+        networkChainId,
+        isMerged,
+        chainFilterOptions,
+        handleSelectChain,
+        historyFeeds,
+        failedNetworkNames,
+        handleLoadMore,
+        handleSearchOlder,
+        handleRefresh,
+        isRefreshing,
+        scopeOf,
+    } = useAccountHistoryRows({ afterTime, beforeTime })
+
+    // The event needs one chain, so on All it names the account's own; a
+    // filter there covers every network.
     const handleOpenFilter = useCallback(async () => {
         trackEvent(AccountDetailsEvent.TransactionFilter, {
             [AnalyticsMetadataKey.ChainId]: scope.chainId,
@@ -178,51 +207,6 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
             setCustomRange(result.customRange)
         }
     }, [requestBottomSheet, activeFilter, customRange, scope.chainId])
-
-    const { afterTime, beforeTime } = useMemo(
-        () => getFilterTimes(activeFilter, customRange),
-        [activeFilter, customRange],
-    )
-
-    const {
-        rows,
-        transactionCount,
-        isLoading,
-        isFetched,
-        isFetchingNextPage,
-        isError,
-        error,
-        hasNextPage,
-        isSearchPaused,
-        fetchNextPage,
-        retry: handleRetry,
-        isRetrying,
-        isLoadFailed,
-        isLoadUnavailable,
-        isLoadIntegrityBlocked,
-        suspectedPoisoningById,
-    } = useTransactionHistoryRows({
-        accountAddress,
-        scope,
-        afterTime,
-        beforeTime,
-    })
-
-    // A paused search waits for Search Older, not for the list's end.
-    const handleLoadMore = useCallback(() => {
-        if (hasNextPage && !isFetchingNextPage && !isSearchPaused) {
-            fetchNextPage()
-        }
-    }, [hasNextPage, isFetchingNextPage, isSearchPaused, fetchNextPage])
-
-    const refreshAddresses = useMemo(
-        () => (accountAddress ? [accountAddress] : []),
-        [accountAddress],
-    )
-    const { isRefreshing, refresh: handleRefresh } = useSyncRefresh({
-        addresses: refreshAddresses,
-        scope,
-    })
 
     const { t } = useLanguage()
     const { showError } = useErrorToast()
@@ -269,12 +253,16 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
 
     const handleTransactionPress = useCallback(
         (transaction: TransactionHistoryItem) => {
-            const groupId = historyItemGroupToOpen(transaction, scope.chainId)
+            const rowScope = scopeOf(transaction.id)
+            const groupId = historyItemGroupToOpen(
+                transaction,
+                rowScope.chainId,
+            )
             if (groupId) {
                 navigation.navigate('GroupTransactionList', { groupId })
             } else {
                 navigation.navigate('TransactionDetails', {
-                    scope,
+                    scope: rowScope,
                     transactionId: transaction.id,
                     historyTransaction: transaction,
                     suspectedPoisoning: suspectedPoisoningById.get(
@@ -283,7 +271,7 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
                 })
             }
         },
-        [navigation, scope, suspectedPoisoningById],
+        [navigation, scopeOf, suspectedPoisoningById],
     )
 
     // Gated on `isFetched`, not `!isLoading`: the query is disabled until the
@@ -315,10 +303,12 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
         scope.chainId,
         'csvExport',
     )
+    // Export is per network: on a merged history it would cover only one of them.
     const isCsvExportVisible =
-        transactionCount > 0 && (hasCsvExport || isCsvExportRestricted)
+        !isMerged &&
+        transactionCount > 0 &&
+        (hasCsvExport || isCsvExportRestricted)
 
-    const networkChainId = selectedSource?.scope.chainId ?? null
     const emptyBody =
         networkChainId === null
             ? t('asset_details.transaction_list.empty_body')
@@ -337,7 +327,7 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
         handleRetry,
         isRetrying,
         isSearchPaused,
-        handleSearchOlder: fetchNextPage,
+        handleSearchOlder,
         isFetchingNextPage,
         isError,
         error,
@@ -347,6 +337,11 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
         isRefreshing,
         isEmpty,
         networkChainId,
+        chainFilterOptions,
+        handleSelectChain,
+        isMerged,
+        historyFeeds,
+        failedNetworkNames,
         emptyBody,
         isOfflineEmpty,
         handleExportCsv,

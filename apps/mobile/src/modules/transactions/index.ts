@@ -17,6 +17,7 @@ export { TransactionDateHeader } from './components/TransactionDateHeader'
 export { TransactionListItem } from './components/TransactionListItem'
 export { TransactionHistoryLoadState } from './components/TransactionHistoryLoadState'
 export { TransactionHistorySearchOlder } from './components/TransactionHistorySearchOlder'
+export { TransactionHistoryFeed } from './components/TransactionHistoryFeed'
 export { SendAccountSelectionContent } from './components/send-funds/SendAccountSelectionContent'
 export { SuspectedPoisoningNotice } from './components/address-safety/SuspectedPoisoningNotice'
 export {
@@ -32,6 +33,10 @@ export {
     useKnownAddresses,
     useSuspectedAddressReuseGuard,
     useTransactionHistoryRows,
+    useMergedTransactionHistoryRows,
+    type HistoryFeedProps,
+    type HistoryFeedSource,
+    type UseTransactionHistoryRowsResult,
     type SendAccountResolution,
     type UseKnownAddressesParams,
     type UseKnownAddressesResult,
