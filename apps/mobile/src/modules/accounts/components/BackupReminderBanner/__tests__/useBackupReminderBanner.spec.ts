@@ -23,8 +23,8 @@ vi.mock('@modules/backup', () => ({
 // useShouldPromptMnemonicBackup in wallet-core-backup.
 const mockShouldPrompt = vi.fn()
 vi.mock('@perawallet/wallet-core-backup', () => ({
-    useShouldPromptMnemonicBackup: (account: WalletAccount | null) =>
-        mockShouldPrompt(account),
+    useShouldPromptMnemonicBackup: (...args: unknown[]) =>
+        mockShouldPrompt(...args),
 }))
 
 import { useBackupReminderBanner } from '../useBackupReminderBanner'
@@ -46,7 +46,10 @@ describe('useBackupReminderBanner', () => {
 
         const { result } = renderHook(() => useBackupReminderBanner(accountHD))
         expect(result.current.isVisible).toBe(true)
-        expect(mockShouldPrompt).toHaveBeenCalledWith(accountHD)
+        expect(mockShouldPrompt).toHaveBeenCalledWith(
+            accountHD,
+            expect.objectContaining({ chainId: 'algorand' }),
+        )
 
         mockShouldPrompt.mockReturnValue(false)
         const { result: hidden } = renderHook(() =>
@@ -61,5 +64,21 @@ describe('useBackupReminderBanner', () => {
         const { result } = renderHook(() => useBackupReminderBanner(accountHD))
         act(() => result.current.onPress())
         expect(mockLaunch).toHaveBeenCalledWith(accountHD)
+    })
+
+    test("asks about an Ethereum-only account's own chain", () => {
+        mockShouldPrompt.mockReturnValue(false)
+        const evmOnly: WalletAccount = {
+            id: 'evm-account',
+            custody: { kind: 'local', seed: 'bip39' },
+            chains: { ethereum: { address: '0xE1', keyPairId: 'kp-evm' } },
+        }
+
+        renderHook(() => useBackupReminderBanner(evmOnly))
+
+        expect(mockShouldPrompt).toHaveBeenCalledWith(
+            evmOnly,
+            expect.objectContaining({ chainId: 'ethereum' }),
+        )
     })
 })
