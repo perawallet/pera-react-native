@@ -12,7 +12,16 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles(theme => {
+export const useStyles = makeStyles(() => ({
+    navigator: {
+        flex: 1,
+    },
+    scene: {
+        flex: 1,
+    },
+}))
+
+export const useTabBarStyles = makeStyles(theme => {
     return {
         externalContainer: {
             paddingHorizontal: theme.spacing.lg,

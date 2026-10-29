@@ -13,7 +13,7 @@
 import React from 'react'
 import './i18n'
 import { BottomSheetManager } from '@modules/bottom-sheet'
-import { ThemeProvider, makeStyles } from '@rneui/themed'
+import { ThemeProvider } from '@rneui/themed'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import {
@@ -67,11 +67,14 @@ import { OfflineBanner } from '@components/OfflineBanner'
 import { useNetworkStatusListener } from '@modules/network'
 import { usePhishingListRehydration } from '@modules/site-safety/web'
 import { useNetworkSwitchInvalidation } from '@hooks/useNetworkSwitchInvalidation'
-import { WEB_EXPANDED_CARD_MAX_WIDTH } from '@constants/ui'
 import { subscribeToIntegrityReady } from '@hooks/useIntegrityAccessStore.web'
 import { useIntegrityAccessSync } from '@hooks/useIntegrityAccessSync.web'
 import { useWebAppShell } from './useWebAppShell.web'
 import { useIntegrityTokenSync } from './useIntegrityTokenSync.web'
+import {
+    useAppShellRootStyles,
+    useApprovalPlaceholderStyles,
+} from './styles.web'
 
 // Platform hydration is complete before this module evaluates (App.web.tsx
 // ensures this), so getProvider() is safe to call at module scope here. The
@@ -81,32 +84,6 @@ const persister = createAsyncStoragePersister({
     serialize: stringifyTypedJson,
     deserialize: parseTypedJson,
 })
-
-// Theme-aware paint for the whole app area, below ThemeProvider so it sees
-// in-app overrides; build.mjs's global CSS is only the pre-mount fallback.
-// `card` caps content to a popup-like width: the UI was designed for a 360px
-// popup. PWBottomSheet.web applies the same cap, since gorhom-on-web portals to document.body.
-const useAppShellRootStyles = makeStyles(theme => ({
-    root: {
-        flex: 1,
-        backgroundColor: theme.colors.layerGrayLighter,
-    },
-    card: {
-        flex: 1,
-        width: '100%',
-        maxWidth: WEB_EXPANDED_CARD_MAX_WIDTH,
-        alignSelf: 'center',
-        backgroundColor: theme.colors.background,
-    },
-}))
-
-const useApprovalPlaceholderStyles = makeStyles(() => ({
-    container: {
-        flex: 1,
-        alignItems: 'center' as const,
-        justifyContent: 'center' as const,
-    },
-}))
 
 const ApprovalPlaceholder = (): React.JSX.Element => {
     const { t } = useLanguage()

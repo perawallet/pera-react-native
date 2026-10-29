@@ -12,7 +12,29 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles(theme => ({
+export const useDetailsViewStyles = makeStyles(theme => ({
+    titleSection: {
+        alignItems: 'center',
+        gap: theme.spacing.md,
+    },
+    description: {
+        textAlign: 'center',
+    },
+    section: {
+        borderBottomWidth: theme.borders.sm,
+        borderBottomColor: theme.colors.layerGrayLightest,
+        paddingVertical: theme.spacing.lg,
+        gap: theme.spacing.md,
+    },
+    resources: {
+        gap: theme.spacing.xs,
+    },
+    errorText: {
+        color: theme.colors.negative,
+    },
+}))
+
+export const useSummaryViewStyles = makeStyles(theme => ({
     container: {
         flexGrow: 1,
     },

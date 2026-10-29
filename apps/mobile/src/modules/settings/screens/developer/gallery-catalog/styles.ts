@@ -12,20 +12,22 @@
 
 import { makeStyles } from '@rneui/themed'
 
-// Moved verbatim from the Swap and Fund screens, which carried identical copies
-// before the select header became shared.
-export const useSelectHeaderStyles = makeStyles(theme => ({
-    selectHeader: {
-        paddingTop: theme.spacing.sm,
-        gap: theme.spacing.md,
-        width: '100%',
-        minWidth: 0,
+export const useVariantPreviewStyles = makeStyles(theme => ({
+    container: {
+        gap: theme.spacing.lg,
     },
-    selectTitle: {
-        minWidth: 0,
+    row: {
+        gap: theme.spacing.xs,
     },
-    selectDescription: {
+    label: {
         color: theme.colors.textGray,
-        minWidth: 0,
     },
+}))
+
+export const useLottiePreviewStyles = makeStyles(theme => ({
+    media: { width: theme.spacing['4xl'], height: theme.spacing['4xl'] },
+}))
+
+export const useThumbPreviewStyles = makeStyles(theme => ({
+    thumb: { width: theme.spacing['4xl'], height: theme.spacing['4xl'] },
 }))

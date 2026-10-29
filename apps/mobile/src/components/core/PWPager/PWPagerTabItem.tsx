@@ -17,7 +17,7 @@ import Animated, {
 import { PWText } from '../PWText'
 import { PWTouchableOpacity } from '../PWTouchableOpacity'
 import { PWView } from '../PWView'
-import { useStyles } from '../PWTabView/tabBarStyles'
+import { useTabBarStyles } from '../PWTabView/styles'
 
 export type PWPagerTabItemProps = {
     title: string
@@ -48,7 +48,7 @@ export const PWPagerTabItem = ({
     offset,
     onPress,
 }: PWPagerTabItemProps) => {
-    const styles = useStyles()
+    const styles = useTabBarStyles()
 
     // 1 when the pager sits on this tab, 0 once a full page away.
     const activeOpacity = useAnimatedStyle(

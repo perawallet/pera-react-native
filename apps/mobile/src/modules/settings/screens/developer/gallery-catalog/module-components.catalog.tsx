@@ -12,7 +12,7 @@
 
 import React from 'react'
 import { Decimal } from 'decimal.js'
-import { makeStyles, useTheme } from '@rneui/themed'
+import { useTheme } from '@rneui/themed'
 
 import { PWView } from '@components/core'
 
@@ -103,11 +103,8 @@ import type { HardwareWalletDevice } from '@perawallet/wallet-core-hardware-wall
 import type { SignRequestSource } from '@perawallet/wallet-core-signing'
 import type { StakingProject } from '@perawallet/wallet-core-staking'
 import type { DexSwapAsset, SwapQuote } from '@perawallet/wallet-core-swaps'
+import { useThumbPreviewStyles } from './styles'
 import type { GallerySection } from './types'
-
-const useThumbPreviewStyles = makeStyles(theme => ({
-    thumb: { width: theme.spacing['4xl'], height: theme.spacing['4xl'] },
-}))
 
 const AssetsCollectibleThumbnailPreview = () => {
     const styles = useThumbPreviewStyles()
