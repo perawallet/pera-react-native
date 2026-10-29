@@ -27,6 +27,7 @@ describe('AssetSelector', () => {
             <AssetSelector
                 variant='pay'
                 asset={undefined}
+                chainId={null}
                 label='USDC'
                 onPress={onPress}
                 testID='asset-selector'

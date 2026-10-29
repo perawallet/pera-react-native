@@ -73,6 +73,7 @@ export const SwapTopPairItem = ({
             <SwapAssetPairIcon
                 assetIn={pair.assetA}
                 assetOut={pair.assetB}
+                chainId={scope.chainId}
                 surfaceColor={theme.colors.background}
             />
             <PWView style={styles.itemLabelContainer}>

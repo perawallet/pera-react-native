@@ -106,6 +106,7 @@ export const RekeyConfirmView = ({
                             {t(copy.feeLabelKey)}
                         </PWText>
                         <AssetAmount
+                            chainId={scope.chainId}
                             asset={nativeAsset}
                             value={feeAlgos}
                             variant='bodyLarge'

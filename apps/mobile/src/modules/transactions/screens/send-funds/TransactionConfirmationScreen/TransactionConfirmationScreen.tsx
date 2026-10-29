@@ -124,6 +124,7 @@ export const TransactionConfirmationScreen = () => {
             <PWView style={styles.scrollContent}>
                 <KeyValueRow title={t('send_funds.confirmation.amount')}>
                     <AssetAmount
+                        chainId={scope.chainId}
                         variant='h3'
                         asset={asset}
                         showSymbol
@@ -193,13 +194,19 @@ export const TransactionConfirmationScreen = () => {
                         isQuantumFee ? <QuantumFeeExplainer /> : undefined
                     }
                 />
-                {total && <SendTotalRow total={total} />}
+                {total && (
+                    <SendTotalRow
+                        total={total}
+                        chainId={scope.chainId}
+                    />
+                )}
                 <PWDivider />
                 {currentBalance && (
                     <KeyValueRow
                         title={t('send_funds.confirmation.current_balance')}
                     >
                         <AssetAmount
+                            chainId={scope.chainId}
                             asset={asset}
                             showSymbol
                             value={currentBalance.amount}

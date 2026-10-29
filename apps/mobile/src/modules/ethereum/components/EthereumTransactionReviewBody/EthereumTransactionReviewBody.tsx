@@ -99,6 +99,7 @@ export const EthereumTransactionReviewBody = ({
                         </PWText>
                         {maxFee ? (
                             <AssetAmount
+                                chainId={scope.chainId}
                                 asset={maxFee.asset}
                                 value={maxFee.value}
                                 showSymbol

@@ -16,6 +16,7 @@ import {
     type CurrencyAmountProps,
 } from '@components/CurrencyAmount'
 import type { MinimalAsset } from '@perawallet/wallet-core-assets'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type { Maybe } from '@perawallet/wallet-core-shared'
 
 /**
@@ -31,15 +32,16 @@ export type AssetAmountDensity = 'compact' | 'detailed' | 'significant'
 export type AssetAmountProps = {
     /**
      * The asset whose amount is shown. Supplies both the displayed unit (its
-     * `unitName`, which is `'ALGO'` for Algo so the glyph renders) and the
-     * decimals the precision is trimmed to.
+     * `unitName`) and the decimals the precision is trimmed to.
      */
     asset: Maybe<MinimalAsset>
+    /** The asset's chain; decides whether `asset` is its native coin. */
+    chainId: ChainId
     value: Maybe<Decimal>
     density?: AssetAmountDensity
 } & Omit<
     CurrencyAmountProps,
-    'currency' | 'value' | 'precision' | 'assetDecimals' | 'assetId'
+    'currency' | 'value' | 'precision' | 'assetDecimals' | 'assetId' | 'chainId'
 >
 
 /**
@@ -49,6 +51,7 @@ export type AssetAmountProps = {
  */
 export const AssetAmount = ({
     asset,
+    chainId,
     value,
     density = 'detailed',
     ...displayProps
@@ -63,6 +66,7 @@ export const AssetAmount = ({
             <CurrencyAmount
                 currency={currency}
                 assetId={assetId}
+                chainId={chainId}
                 value={value}
                 precision='compact'
                 assetDecimals={asset?.decimals}
@@ -75,6 +79,7 @@ export const AssetAmount = ({
         <CurrencyAmount
             currency={currency}
             assetId={assetId}
+            chainId={chainId}
             value={value}
             precision={density === 'significant' ? 'significant' : 'assetFull'}
             assetDecimals={asset?.decimals}

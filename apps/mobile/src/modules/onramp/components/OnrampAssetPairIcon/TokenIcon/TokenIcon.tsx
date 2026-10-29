@@ -31,6 +31,7 @@ export const TokenIcon = ({ token }: TokenIconProps) => {
         />
     ) : (
         <AssetIcon
+            chainId={scope?.chainId ?? null}
             asset={buildDisplayableAssetFromRampToken(token, scope)}
             logoUrl={token.logo ?? undefined}
             size='md'

@@ -34,6 +34,7 @@ export const FeeAmount = ({ scope, amount, testID }: FeeAmountProps) => {
     return (
         <PWView style={styles.feeAmount}>
             <AssetAmount
+                chainId={scope.chainId}
                 asset={asset}
                 value={wholeAmount}
                 density='significant'
