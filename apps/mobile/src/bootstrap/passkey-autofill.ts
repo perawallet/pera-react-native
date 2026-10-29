@@ -83,10 +83,7 @@ export const usePasskeyAutofillLifecycle = (): void => {
                         // fail on these exact records at the next cold start.
                         logger.error(
                             'Passkey autofill reconcile skipped undecodable records',
-                            {
-                                step: 'passkeyAutofillReconcile',
-                                recordIds: failedIds,
-                            },
+                            { recordIds: failedIds },
                         )
                     }
                 })
