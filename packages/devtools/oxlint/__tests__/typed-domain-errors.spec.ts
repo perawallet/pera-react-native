@@ -85,6 +85,10 @@ describe('pera/typed-domain-errors', () => {
         ['no superclass', null],
         ['extends errors.Error', member(id('errors'), 'Error')],
         ['extends TypeError', id('TypeError')],
+        [
+            "extends globalThis['Error']",
+            { ...member(id('globalThis'), 'Error'), computed: true },
+        ],
     ])('allows %s', (_label, superClass) => {
         expect(
             lint('ClassDeclaration', declaration(superClass)),

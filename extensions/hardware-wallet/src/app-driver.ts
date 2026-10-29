@@ -48,7 +48,7 @@ export interface LedgerAppDriver {
     ): HardwareWalletTransport
 }
 
-// oxlint-disable-next-line pera/typed-domain-errors -- classifyLedgerError turns a plain error into a retryable LedgerConnectionError and passes an AppError through, so a missing driver stays plain to reach the user as a Ledger connection failure
+// oxlint-disable-next-line pera/typed-domain-errors -- classifyLedgerError must make this a retryable LedgerConnectionError; an AppError passes through
 export class LedgerAppDriverNotRegisteredError extends Error {
     readonly chainId: string
 
