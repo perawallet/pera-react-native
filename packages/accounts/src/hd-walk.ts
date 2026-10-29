@@ -155,7 +155,8 @@ export async function walkHdTree({
 
     if (hasHitLimit) {
         logger.warn(
-            `HD walk stopped at its limit of ${accountIndexLimit} account indexes and ${keyIndexLimit} key indexes each, with activity still being found`,
+            'HD walk stopped at its index limits with activity still being found',
+            { accountIndexLimit, keyIndexLimit },
         )
     }
     return found.sort(byPath)

@@ -26,7 +26,6 @@ import {
     parseTypedJson,
     stringifyTypedJson,
     type Nullable,
-    toError,
 } from '@perawallet/wallet-core-shared'
 import {
     readRemoteConfigWithOverrides,
@@ -194,7 +193,8 @@ export const useAppBootstrap = (): UseAppBootstrapResult => {
                             // will fail the strict hydration at the next cold
                             // start — surface them while the app still boots.
                             logger.error(
-                                `Keystore reconcile skipped undecodable records: ${failedDecodeIds.join(', ')}`,
+                                'Keystore reconcile skipped undecodable records',
+                                { recordIds: failedDecodeIds },
                             )
                         }
                         if (repair.repaired > 0 || repair.failed > 0) {
@@ -203,9 +203,9 @@ export const useAppBootstrap = (): UseAppBootstrapResult => {
                         if (passkeySplit.failed.length > 0) {
                             // Hidden from the Android chooser until a later
                             // launch splits them; the pass retries every launch.
-                            logger.warn(
-                                `Passkey credentials left flat: ${passkeySplit.failed.join(', ')}`,
-                            )
+                            logger.warn('Passkey credentials left flat', {
+                                credentialIds: passkeySplit.failed,
+                            })
                         }
                     })
                     .catch(err => {
@@ -276,11 +276,7 @@ export const useAppBootstrap = (): UseAppBootstrapResult => {
 
                 setBootstrapped(true)
             } catch (err) {
-                // The console transport drops the metadata object entirely, so
-                // the underlying cause must live in the message string itself.
-                logger.error(`App bootstrap failed: ${toError(err).message}`, {
-                    error: err,
-                })
+                logger.error('App bootstrap failed', { error: err })
                 setInitError(
                     err instanceof KeystoreHydrationError
                         ? 'keystore'
