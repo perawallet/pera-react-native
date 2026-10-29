@@ -319,7 +319,7 @@
     {
       "files": ["src/**"],
       "excludeFiles": ["src/**/__tests__/**", "src/**/__mocks__/**", "src/**/test-utils/**", "src/**/__integration__/**", "src/**/*.spec.{ts,tsx}", "src/**/*.test.{ts,tsx}"],
-      "rules": { "pera/hook-result-type": "error" }
+      "rules": { "pera/hook-result-type": "error", "pera/query-pending-gated": "error" }
     },
     {
       "files": ["src/modules/vault/**"],
