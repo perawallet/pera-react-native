@@ -54,7 +54,7 @@ const WORKSPACE = [
     'catalog:',
     '  expo: 58.0.17',
     '  react-native-mmkv: ^4.2.0',
-    '  # exact on purpose',
+    '  # a comment between entries',
     '  react-native-quick-base64: ^3.0.0',
     '  typescript: ^7.0.2',
     '',
@@ -198,6 +198,45 @@ describe('pera/native-exact-pins', () => {
 
         expect(found.map(f => [f[0], f[2]])).toEqual([
             ['app.config.js', 'apps/mobile/package.json is not valid JSON'],
+        ])
+    })
+
+    it('reports a manifest that parses to null on the anchor instead of throwing', async () => {
+        const found = await check({
+            'apps/mobile/package.json': 'null',
+            'pnpm-workspace.yaml': WORKSPACE,
+        })
+
+        expect(found.map(f => [f[0], f[2]])).toEqual([
+            ['app.config.js', 'apps/mobile/package.json is not valid JSON'],
+        ])
+    })
+
+    it('reports a catalog entry once when two sections use it, and reads optionalDependencies', async () => {
+        const text = [
+            '{',
+            '  "dependencies": { "react-native-mmkv": "catalog:" },',
+            '  "devDependencies": { "react-native-mmkv": "catalog:default" },',
+            '  "optionalDependencies": { "react-native-svg": "^15.16.0" }',
+            '}',
+            '',
+        ].join('\n')
+        const found = await check({
+            'apps/mobile/package.json': text,
+            'pnpm-workspace.yaml': 'catalog:\n  react-native-mmkv: ^4.2.0\n',
+        })
+
+        expect(found).toEqual([
+            [
+                'package.json',
+                lineOf(text, '"react-native-svg"'),
+                '"react-native-svg" is "^15.16.0" in optionalDependencies, not an exact version',
+            ],
+            [
+                'pnpm-workspace.yaml',
+                2,
+                '"react-native-mmkv" is "^4.2.0" in the catalog, not an exact version',
+            ],
         ])
     })
 

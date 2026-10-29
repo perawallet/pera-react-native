@@ -117,7 +117,11 @@ export default defineRule({
 
         let manifest: Record<string, unknown>
         try {
-            manifest = JSON.parse(manifestRaw) as Record<string, unknown>
+            const parsed: unknown = JSON.parse(manifestRaw)
+            if (typeof parsed !== 'object' || parsed === null) {
+                throw new TypeError('manifest is not an object')
+            }
+            manifest = parsed as Record<string, unknown>
         } catch {
             ctx.report(file, 'apps/mobile/package.json is not valid JSON')
             return
