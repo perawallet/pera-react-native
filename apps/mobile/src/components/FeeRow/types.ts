@@ -13,7 +13,7 @@
 import type { ReactNode } from 'react'
 import type { Decimal } from 'decimal.js'
 import type {
-    ChainId,
+    ChainScope,
     FeePreset,
     FeePresetEstimate,
 } from '@perawallet/wallet-core-chain-contract'
@@ -22,7 +22,7 @@ import type { Optional } from '@perawallet/wallet-core-shared'
 export const FEE_ROW_TEST_ID = 'transaction_fee_row'
 
 export type FeeRowProps = {
-    chainId: ChainId
+    scope: ChainScope
     /** Base units of the chain's native asset: the headline fee. */
     amount: Optional<Decimal>
     /** Base units of the chain's native asset. Set by a chain whose fee model has presets. */

@@ -17,11 +17,11 @@ import {
     i18nKey,
     type I18nKey,
 } from '@perawallet/wallet-core-chain-contract'
-import { nativeAssetFor, toWholeUnits } from '@perawallet/wallet-core-assets'
 import { PWRadioButton, PWText, PWView } from '@components/core'
-import { AssetAmount } from '@components/AssetAmount'
-import { KeyValueRow } from '@components/KeyValueRow'
+import { InfoButton } from '@components/InfoButton'
 import { useLanguage } from '@hooks/useLanguage'
+import { FeeAmount } from './FeeAmount'
+import { describeFeeWait } from './feeWait'
 import { FEE_ROW_TEST_ID, type FeeRowProps } from './types'
 import { useStyles } from './styles'
 
@@ -34,11 +34,13 @@ const FEE_PRESET_LABELS: Record<FeePreset, I18nKey> = {
 
 type GasFeeEditorProps = Pick<
     FeeRowProps,
-    'chainId' | 'selectedPreset' | 'onPresetChange' | 'accessory'
+    'scope' | 'selectedPreset' | 'onPresetChange' | 'accessory'
 > & { presets: Record<FeePreset, FeePresetEstimate> }
 
+// Full width rather than a KeyValueRow: the value column there is too narrow
+// for a tier, its wait and two amounts on a small screen.
 export const GasFeeEditor = ({
-    chainId,
+    scope,
     presets,
     selectedPreset,
     onPresetChange,
@@ -46,50 +48,73 @@ export const GasFeeEditor = ({
 }: GasFeeEditorProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const asset = nativeAssetFor(chainId)
 
     return (
-        <KeyValueRow
+        <PWView
             testID={FEE_ROW_TEST_ID}
-            title={t('send_funds.confirmation.fee')}
+            style={styles.section}
         >
-            {FEE_PRESETS.map(preset => (
-                <PWRadioButton
-                    key={preset}
-                    testID={`fee_preset_${preset}`}
-                    isSelected={preset === selectedPreset}
-                    onPress={() => onPresetChange(preset)}
-                >
-                    <PWView style={styles.presetRow}>
-                        <PWText>{t(FEE_PRESET_LABELS[preset])}</PWText>
-                        <AssetAmount
-                            asset={asset}
-                            showSymbol
-                            ignorePrivacyMode
-                            value={toWholeUnits(presets[preset].amount, asset)}
-                        />
-                    </PWView>
-                </PWRadioButton>
-            ))}
+            <PWText
+                variant='bodyCompact'
+                style={styles.secondaryText}
+            >
+                {t('send_funds.confirmation.fee')}
+            </PWText>
+            {FEE_PRESETS.map(preset => {
+                const wait = describeFeeWait(
+                    presets[preset].estimatedWaitSeconds,
+                )
+                return (
+                    <PWRadioButton
+                        key={preset}
+                        testID={`fee_preset_${preset}`}
+                        isSelected={preset === selectedPreset}
+                        onPress={() => onPresetChange(preset)}
+                    >
+                        <PWView style={styles.presetRow}>
+                            <PWView style={styles.presetLabel}>
+                                <PWText>{t(FEE_PRESET_LABELS[preset])}</PWText>
+                                <PWText
+                                    variant='caption'
+                                    style={styles.secondaryText}
+                                    testID={`fee_preset_${preset}_wait`}
+                                >
+                                    {t(wait.key, wait.params)}
+                                </PWText>
+                            </PWView>
+                            <FeeAmount
+                                scope={scope}
+                                amount={presets[preset].amount}
+                                testID={`fee_preset_${preset}_amount`}
+                            />
+                        </PWView>
+                    </PWRadioButton>
+                )
+            })}
             <PWView style={styles.maxFeeRow}>
-                <PWText
-                    variant='caption'
-                    style={styles.maxFeeLabel}
-                >
-                    {t('send_funds.fee.max_fee')}
-                </PWText>
-                <AssetAmount
+                <PWView style={styles.maxFeeLabel}>
+                    <PWText
+                        variant='caption'
+                        style={styles.secondaryText}
+                    >
+                        {t('send_funds.fee.max_fee_for_preset', {
+                            preset: t(FEE_PRESET_LABELS[selectedPreset]),
+                        })}
+                    </PWText>
+                    <InfoButton
+                        testID='fee_max_info'
+                        title={t('send_funds.fee.max_fee')}
+                    >
+                        {t('send_funds.fee.max_fee_info')}
+                    </InfoButton>
+                    {accessory}
+                </PWView>
+                <FeeAmount
+                    scope={scope}
+                    amount={presets[selectedPreset].maxAmount}
                     testID='fee_preset_max'
-                    asset={asset}
-                    showSymbol
-                    ignorePrivacyMode
-                    value={toWholeUnits(
-                        presets[selectedPreset].maxAmount,
-                        asset,
-                    )}
                 />
-                {accessory}
             </PWView>
-        </KeyValueRow>
+        </PWView>
     )
 }
