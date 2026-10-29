@@ -4,7 +4,10 @@
 
 import { defineRule } from 'lanekeep'
 import type { Node, RuleContext } from 'lanekeep'
+import { isPackageOrSubpath } from '../shared/import-sources.js'
+import { resolveRelative } from '../shared/paths.js'
 import { TEST_SUPPORT, productionSource } from '../shared/scope.js'
+import { workspaceDirs } from '../shared/workspace.js'
 
 const IMPORTS_QUERY = `
     (import_statement
@@ -21,6 +24,50 @@ const REGISTER_QUERY =
 const IDENTIFIER_QUERY = '(identifier) @id'
 
 type NamedImport = { imported: string; source: string }
+
+// Metro picks `foo.web.ts` or `foo.ts` for one `./foo` import, so the variants
+// of a store share the registration that imports it.
+const PLATFORM_SUFFIX = /\.(web|native|ios|android)$/
+const EXTENSION = /\.[cm]?[jt]sx?$/
+
+const stemOf = (path: string): string =>
+    path.replace(EXTENSION, '').replace(PLATFORM_SUFFIX, '')
+
+type ImportTarget = { match: 'path' | 'package' | 'tail'; target: string }
+
+/** Where an import's store can live: a resolved path, a workspace package directory, or, for an alias, its last segment. */
+const importTarget = (
+    ctx: RuleContext,
+    source: string,
+    packages: () => Map<string, string>,
+): ImportTarget | undefined => {
+    if (source.startsWith('.')) {
+        return {
+            match: 'path',
+            target: stemOf(resolveRelative(ctx.filePath, source)),
+        }
+    }
+    for (const [name, dir] of packages()) {
+        if (isPackageOrSubpath(source, name)) {
+            return { match: 'package', target: dir }
+        }
+    }
+    const tail = stemOf(source.split('/').pop() ?? '')
+    return tail === '' ? undefined : { match: 'tail', target: tail }
+}
+
+const covers = (match: unknown, target: string, file: string): boolean => {
+    const stem = stemOf(file)
+    if (match === 'path') {
+        // A directory import reaches its stores through the index barrel.
+        return stem === target || stem.startsWith(`${target}/`)
+    }
+    if (match === 'package') return file.startsWith(`${target}/`)
+    if (match === 'tail') {
+        return stem.split('/').pop() === target || file.includes(`/${target}/`)
+    }
+    return false
+}
 
 const namedImports = (
     ctx: RuleContext,
@@ -68,7 +115,7 @@ export default defineRule({
         message:
             'a Zustand store is not registered for the delete-all-data wipe',
         remediation:
-            'Call `registerStore({ name, clearStorage, resetState })` from `@perawallet/wallet-core-shared` at module scope beside the store, naming the store inside the argument of the call: `resetState` puts it back to its initial state, `clearStorage` removes its persisted record (`() => {}` for an in-memory store). A store that a wipe would break if reset (device state, a mounted UI host) instead takes a suppression on its declaration line saying what breaks (lanekeep/README.md, "Suppressing"). A store built inside a function is not checked.',
+            'Call `registerStore({ name, clearStorage, resetState })` from `@perawallet/wallet-core-shared` at module scope beside the store, or in a file that imports it from the module that declares it, naming the store inside the argument of the call: `resetState` puts it back to its initial state, `clearStorage` removes its persisted record (`() => {}` for an in-memory store). A store that a wipe would break if reset (device state, a mounted UI host) instead takes a suppression on its declaration line saying what breaks (lanekeep/README.md, "Suppressing"). A store built inside a function is not checked.',
         examples: {
             bad: 'export const useDraftStore = create<Draft>()(set => ({ … })) // nothing registers it',
             good: "registerStore({ name: 'draft-store', clearStorage: () => {}, resetState: () => useDraftStore.getState().resetState() })",
@@ -146,6 +193,8 @@ export default defineRule({
         }
 
         if (registrars.size === 0) return
+        let packages: Map<string, string> | undefined
+        const packageDirs = () => (packages ??= workspaceDirs(ctx, ''))
         const seen = new Set<string>()
         for (const match of ctx.querySubtree(prog, REGISTER_QUERY)) {
             const fn = match.fn
@@ -160,38 +209,55 @@ export default defineRule({
                 const name = ctx.text(id)
                 if (name === undefined) continue
 
-                let fact: { name: string; via: 'local' | 'import' } | undefined
                 if (localStores.has(name)) {
-                    fact = { name, via: 'local' }
-                } else {
-                    const imported = imports.get(name)
-                    if (imported !== undefined) {
-                        fact = { name: imported.imported, via: 'import' }
-                    }
+                    const key = `local:${name}`
+                    if (seen.has(key)) continue
+                    seen.add(key)
+                    ctx.emitFact({ kind: 'registration', name, via: 'local' })
+                    continue
                 }
-                if (fact === undefined) continue
-                const key = `${fact.via}:${fact.name}`
+                const imported = imports.get(name)
+                if (imported === undefined) continue
+                const key = `import:${imported.imported}:${imported.source}`
                 if (seen.has(key)) continue
                 seen.add(key)
-                ctx.emitFact({ kind: 'registration', ...fact })
+                const at = importTarget(ctx, imported.source, packageDirs)
+                if (at === undefined) continue
+                ctx.emitFact({
+                    kind: 'registration',
+                    name: imported.imported,
+                    via: 'import',
+                    ...at,
+                })
             }
         }
     },
     reduce(ctx) {
         const local = new Set<string>()
-        const imported = new Set<string>()
+        const imported = new Map<string, { match: unknown; target: string }[]>()
         for (const fact of ctx.facts('registration')) {
+            const name = String(fact.name)
             if (fact.via === 'local') {
-                local.add(`${fact.file}::${String(fact.name)}`)
-            } else {
-                imported.add(String(fact.name))
+                local.add(`${fact.file}::${name}`)
+                continue
             }
+            const targets = imported.get(name) ?? []
+            targets.push({ match: fact.match, target: String(fact.target) })
+            imported.set(name, targets)
         }
 
         for (const fact of ctx.facts('store')) {
             const name = String(fact.name)
-            if (local.has(`${fact.file}::${name}`)) continue
-            if (fact.isExported === true && imported.has(name)) continue
+            const file = String(fact.file)
+            if (local.has(`${file}::${name}`)) continue
+            if (
+                fact.isExported === true &&
+                (imported.get(name) ?? []).some(t =>
+                    covers(t.match, t.target, file),
+                )
+            ) {
+                continue
+            }
             ctx.report(
                 {
                     file: fact.file,

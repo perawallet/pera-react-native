@@ -39,13 +39,14 @@ describe('pera/store-in-wipe-registry', () => {
     it('reports exactly the stores no registerStore call references', async () => {
         const found = await runRule(RULE, FIXTURES)
 
-        // The registered, aliased cross-file, exempt, factory and non-zustand
-        // fixtures are clean; an import registration never covers a
-        // non-exported store that merely shares the name.
+        // The registered, aliased cross-file, platform-variant, exempt, factory
+        // and non-zustand fixtures are clean; an import registration covers
+        // only the file it imports from, never a same-name store elsewhere.
         expect(locations(found).sort()).toEqual([
             'wipe-local-unregistered.ts:7',
             'wipe-persisted-unregistered.ts:8',
             'wipe-private-same-name.ts:8',
+            'wipe-same-name-unregistered.ts:8',
             'wipe-unregistered.ts:7',
         ])
     })
