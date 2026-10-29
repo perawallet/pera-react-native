@@ -38,6 +38,7 @@ import {
     trackPageErrors,
     standInForToolbarPopup,
 } from './approval-surface'
+import { skipPasskeyUnlockStep } from './passkey-unlock-step'
 
 declare global {
     interface Window {
@@ -240,6 +241,7 @@ test.beforeAll(async () => {
     await page.getByTestId('create-password-input').fill(PASSWORD)
     await page.getByTestId('create-password-confirm-input').fill(PASSWORD)
     await page.getByTestId('create-password-submit').click()
+    await skipPasskeyUnlockStep(page)
 
     await page
         .getByTestId('onboarding_create_wallet_button')

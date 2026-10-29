@@ -15,10 +15,18 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
     createVault: vi.fn(),
+    isPasskeyUnlockSupported: vi.fn<() => Promise<boolean>>(),
+    setPending: vi.fn<(isPending: boolean) => Promise<void>>(),
 }))
 
 vi.mock('@perawallet/wallet-extension-keystore-chrome', () => ({
     createVault: mocks.createVault,
+    isPasskeyUnlockSupported: mocks.isPasskeyUnlockSupported,
+}))
+vi.mock('../../../hooks/usePasskeySetupStore.web', () => ({
+    usePasskeySetupStore: (
+        selector: (state: { setPending: typeof mocks.setPending }) => unknown,
+    ) => selector({ setPending: mocks.setPending }),
 }))
 
 import { useCreatePasswordScreen } from '../useCreatePasswordScreen.web'
@@ -30,6 +38,8 @@ describe('useCreatePasswordScreen', () => {
 
     beforeEach(() => {
         mocks.createVault.mockResolvedValue(undefined)
+        mocks.isPasskeyUnlockSupported.mockResolvedValue(false)
+        mocks.setPending.mockResolvedValue(undefined)
         onDone.mockReset()
     })
 
@@ -122,5 +132,64 @@ describe('useCreatePasswordScreen', () => {
         })
 
         expect(mocks.createVault).toHaveBeenCalledTimes(1)
+    })
+
+    describe('passkey setup step', () => {
+        const renderReady = async () => {
+            const rendered = renderHook(() =>
+                useCreatePasswordScreen({ onDone }),
+            )
+            await act(async () => {})
+            act(() => rendered.result.current.setPassword(STRONG_PASSWORD))
+            act(() => rendered.result.current.setConfirmation(STRONG_PASSWORD))
+            return rendered
+        }
+
+        it('marks the step pending before creating the vault when passkeys are supported', async () => {
+            mocks.isPasskeyUnlockSupported.mockResolvedValue(true)
+            const order: string[] = []
+            mocks.setPending.mockImplementation(async isPending => {
+                order.push(`setPending:${isPending}`)
+            })
+            mocks.createVault.mockImplementation(async () => {
+                order.push('createVault')
+            })
+            const { result } = await renderReady()
+
+            await act(() => result.current.handleSubmit())
+
+            expect(order).toEqual(['setPending:true', 'createVault'])
+        })
+
+        it('leaves the flag alone when passkeys are unsupported', async () => {
+            const { result } = await renderReady()
+
+            await act(() => result.current.handleSubmit())
+
+            expect(mocks.setPending).not.toHaveBeenCalled()
+            expect(mocks.createVault).toHaveBeenCalledTimes(1)
+        })
+
+        it('clears the flag when createVault throws', async () => {
+            mocks.isPasskeyUnlockSupported.mockResolvedValue(true)
+            mocks.createVault.mockRejectedValueOnce(new Error('disk full'))
+            const { result } = await renderReady()
+
+            await act(() => result.current.handleSubmit())
+
+            expect(mocks.setPending).toHaveBeenLastCalledWith(false)
+            expect(result.current.hasError).toBe(true)
+        })
+
+        it('still creates the vault when the flag cannot be written', async () => {
+            mocks.isPasskeyUnlockSupported.mockResolvedValue(true)
+            mocks.setPending.mockRejectedValueOnce(new Error('quota'))
+            const { result } = await renderReady()
+
+            await act(() => result.current.handleSubmit())
+
+            expect(mocks.createVault).toHaveBeenCalledWith(STRONG_PASSWORD)
+            expect(onDone).toHaveBeenCalledTimes(1)
+        })
     })
 })

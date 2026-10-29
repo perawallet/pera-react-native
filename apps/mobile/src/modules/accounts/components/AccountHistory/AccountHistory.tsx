@@ -29,6 +29,7 @@ import {
     getTransactionRowType,
     type TransactionListRow,
 } from '@modules/transactions'
+import { RowSeparator } from './RowSeparator'
 
 export type AccountHistoryProps = {
     scrollEnabled?: boolean
@@ -175,25 +176,4 @@ export const AccountHistory = ({ scrollEnabled }: AccountHistoryProps) => {
             />
         </PWView>
     )
-}
-
-type RowSeparatorProps = {
-    leadingItem: TransactionListRow
-    trailingItem: TransactionListRow
-}
-
-/**
- * Hairline between two transaction rows only. A date header brings its own
- * rules, so a separator either side of one would double up — the equivalent of
- * `SectionList`'s item-vs-section separator split, which a flat list collapses
- * into a single slot.
- */
-const RowSeparator = ({ leadingItem, trailingItem }: RowSeparatorProps) => {
-    const styles = useStyles()
-
-    if (leadingItem.kind === 'header' || trailingItem.kind === 'header') {
-        return null
-    }
-
-    return <PWView style={styles.separator} />
 }

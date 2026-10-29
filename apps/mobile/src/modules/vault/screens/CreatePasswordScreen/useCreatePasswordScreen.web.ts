@@ -10,8 +10,13 @@
  limitations under the License
  */
 
-import { useCallback, useState } from 'react'
-import { createVault } from '@perawallet/wallet-extension-keystore-chrome'
+import { useCallback, useEffect, useState } from 'react'
+import {
+    createVault,
+    isPasskeyUnlockSupported,
+} from '@perawallet/wallet-extension-keystore-chrome'
+import { logger } from '@perawallet/wallet-core-shared'
+import { usePasskeySetupStore } from '../../hooks/usePasskeySetupStore.web'
 import {
     usePasswordStrength,
     type PasswordScore,
@@ -51,6 +56,20 @@ export const useCreatePasswordScreen = ({
     const [confirmation, setConfirmation] = useState('')
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [hasError, setHasError] = useState(false)
+    const [isPasskeySupported, setIsPasskeySupported] = useState(false)
+    const setPasskeySetupPending = usePasskeySetupStore(
+        state => state.setPending,
+    )
+
+    useEffect(() => {
+        let isCancelled = false
+        void isPasskeyUnlockSupported().then(isSupported => {
+            if (!isCancelled) setIsPasskeySupported(isSupported)
+        })
+        return () => {
+            isCancelled = true
+        }
+    }, [])
 
     const { score: passwordScore, error: strengthError } =
         usePasswordStrength(password)
@@ -68,15 +87,34 @@ export const useCreatePasswordScreen = ({
         if (!canSubmit) return
         setIsSubmitting(true)
         setHasError(false)
+        // Written before createVault: the shell re-routes the moment the
+        // session key lands, and this screen unmounts with it.
+        if (isPasskeySupported) {
+            try {
+                await setPasskeySetupPending(true)
+            } catch (error) {
+                // An optional step must never block creating the vault.
+                logger.warn('Passkey setup flag not written', { error })
+            }
+        }
         try {
             await createVault(password)
             onDone()
         } catch {
+            if (isPasskeySupported) {
+                await setPasskeySetupPending(false).catch(() => undefined)
+            }
             setHasError(true)
         } finally {
             setIsSubmitting(false)
         }
-    }, [canSubmit, password, onDone])
+    }, [
+        canSubmit,
+        password,
+        onDone,
+        isPasskeySupported,
+        setPasskeySetupPending,
+    ])
 
     return {
         password,

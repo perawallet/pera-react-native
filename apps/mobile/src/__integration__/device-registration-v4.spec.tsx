@@ -66,7 +66,7 @@ import { QUANTUM_TEST_ADDRESS } from './__fixtures__/quantum'
 import { SLOW_WAIT_TIMEOUT_MS } from './__fixtures__/timeouts'
 import { addressOf } from './__fixtures__/accounts'
 
-// Mirrors production's `DeviceRegistrar` in RootComponent.tsx: join the
+// Mirrors production's `DeviceRegistrar` (components/DeviceRegistrar): join the
 // accounts store + notification preferences into the registration payload
 // and drive `useDeviceRegistration`. No migration gating here — this suite
 // isn't exercising the migration flow (see migration-inbox.spec.tsx for

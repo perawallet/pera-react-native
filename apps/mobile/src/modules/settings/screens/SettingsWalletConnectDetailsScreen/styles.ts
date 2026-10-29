@@ -11,24 +11,8 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-import { getTypography } from '@theme/typography'
 
 export const useStyles = makeStyles(theme => {
-    const mainnetText = {
-        ...getTypography(theme, 'caption'),
-        color: theme.colors.positive,
-        textTransform: 'uppercase' as const,
-    }
-    const testnetText = {
-        ...getTypography(theme, 'caption'),
-        color: theme.colors.testnetBg,
-        textTransform: 'uppercase' as const,
-    }
-    const otherNetworkText = {
-        ...getTypography(theme, 'caption'),
-        color: theme.colors.textGray,
-        textTransform: 'uppercase' as const,
-    }
     return {
         container: {
             flex: 1,
@@ -74,13 +58,6 @@ export const useStyles = makeStyles(theme => {
         accountDisplay: {
             flexGrow: 1,
         },
-        networkContainer: {
-            alignItems: 'center',
-            gap: theme.spacing.xs,
-        },
-        mainnetText,
-        testnetText,
-        otherNetworkText,
         accountContainer: {
             marginTop: theme.spacing.md,
             gap: theme.spacing.lg,

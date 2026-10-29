@@ -15,7 +15,6 @@ import {
     armAutoLock,
     changePassword,
     disablePasskeyUnlock,
-    enablePasskeyUnlock,
     getAutoLockMinutes,
     InvalidPasswordError,
     isPasskeyUnlockEnabled,
@@ -26,6 +25,10 @@ import {
     AUTO_LOCK_MINUTES_OPTIONS,
 } from '@perawallet/wallet-extension-keystore-chrome'
 import { logger } from '@perawallet/wallet-core-shared'
+import {
+    usePasskeyUnlockSetup,
+    type PasskeyUnlockSetupStatus,
+} from '../../components/PasskeyUnlockSetup/usePasskeyUnlockSetup.web'
 import {
     usePasswordStrength,
     type PasswordScore,
@@ -64,7 +67,7 @@ type UseVaultSecuritySettingsScreenResult = {
     handleDisablePasskey: () => Promise<void>
     isEnablingPasskey: boolean
     hasPasskeyError: boolean
-    hasPasskeyEnableError: boolean
+    passkeySetupStatus: PasskeyUnlockSetupStatus
     currentPassword: string
     newPassword: string
     confirmNewPassword: string
@@ -85,10 +88,16 @@ export const useVaultSecuritySettingsScreen =
         const [autoLockMinutes, setMinutesState] = useState<number | null>(null)
         const [passkeyState, setPasskeyState] = useState<PasskeyState>(null)
         const [passkeyPassword, setPasskeyPassword] = useState('')
-        const [isEnablingPasskey, setIsEnablingPasskey] = useState(false)
         const [hasPasskeyError, setHasPasskeyError] = useState(false)
-        const [hasPasskeyEnableError, setHasPasskeyEnableError] =
-            useState(false)
+        const { status: passkeySetupStatus, enableWithPassword } =
+            usePasskeyUnlockSetup({
+                screen: 'settings',
+                onEnabled: () => {
+                    setPasskeyState('enabled')
+                    setPasskeyPassword('')
+                },
+            })
+        const isEnablingPasskey = passkeySetupStatus === 'pending'
 
         // Guards against the mount-time read landing after a user has already
         // selected a value: without this, a fast radio tap that resolves
@@ -142,32 +151,20 @@ export const useVaultSecuritySettingsScreen =
 
         const handleEnablePasskey = useCallback(async (): Promise<void> => {
             if (passkeyPassword.length === 0 || isEnablingPasskey) return
-            setIsEnablingPasskey(true)
             setHasPasskeyError(false)
-            setHasPasskeyEnableError(false)
             try {
-                await enablePasskeyUnlock(passkeyPassword)
-                setPasskeyState('enabled')
-                setPasskeyPassword('')
+                await enableWithPassword(passkeyPassword)
             } catch (error) {
                 if (error instanceof InvalidPasswordError) {
                     setHasPasskeyError(true)
                     setPasskeyPassword('')
-                } else if (
-                    error instanceof DOMException &&
-                    error.name === 'NotAllowedError'
-                ) {
-                    // User cancelled the passkey prompt — treat as silent no-op.
-                } else {
-                    // No key/PRF/password material here — just the error object,
-                    // for observability into otherwise-silent passkey-enable failures.
-                    logger.error('Enable passkey unlock failed', { error })
-                    setHasPasskeyEnableError(true)
+                    return
                 }
-            } finally {
-                setIsEnablingPasskey(false)
+                // Unreachable by the hook's contract; keeps this handler
+                // honest if that contract changes.
+                throw error
             }
-        }, [passkeyPassword, isEnablingPasskey])
+        }, [passkeyPassword, isEnablingPasskey, enableWithPassword])
 
         const handleDisablePasskey = useCallback(async (): Promise<void> => {
             await disablePasskeyUnlock()
@@ -238,7 +235,7 @@ export const useVaultSecuritySettingsScreen =
             handleDisablePasskey,
             isEnablingPasskey,
             hasPasskeyError,
-            hasPasskeyEnableError,
+            passkeySetupStatus,
             currentPassword,
             newPassword,
             confirmNewPassword,

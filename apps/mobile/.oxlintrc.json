@@ -323,6 +323,11 @@
     },
     {
       "files": ["src/**/*.{ts,tsx}"],
+      "excludeFiles": ["src/**/__tests__/**", "src/**/__mocks__/**", "src/**/test-utils/**", "src/**/__integration__/**", "src/**/*.spec.{ts,tsx}", "src/**/*.test.{ts,tsx}"],
+      "rules": { "pera/make-styles-location": "error" }
+    },
+    {
+      "files": ["src/**/*.{ts,tsx}"],
       "excludeFiles": ["src/components/core/**"],
       "rules": { "pera/test-id-prop": "error" }
     },
@@ -338,6 +343,11 @@
     {
       "files": ["**/__tests__/**", "**/__mocks__/**", "**/__integration__/**", "**/test-utils/**", "**/*.spec.{ts,tsx,js,jsx}", "**/*.test.{ts,tsx,js,jsx}"],
       "rules": { "no-nested-ternary": "off" }
+    },
+    {
+      "files": ["src/**"],
+      "excludeFiles": ["src/**/__tests__/**", "src/**/__mocks__/**", "src/**/test-utils/**", "src/**/__integration__/**", "src/**/*.spec.{ts,tsx}", "src/**/*.test.{ts,tsx}"],
+      "rules": { "react/no-multi-comp": ["error", { "ignoreStateless": false }] }
     },
     {
       "files": ["src/**"],

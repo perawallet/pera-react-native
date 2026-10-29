@@ -19,6 +19,7 @@ import { expect, test, chromium, type Route } from '@playwright/test'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { trackPageErrors } from './approval-surface'
+import { skipPasskeyUnlockStep } from './passkey-unlock-step'
 
 const dist = path.resolve(
     path.dirname(fileURLToPath(import.meta.url)),
@@ -84,6 +85,7 @@ test('restoring a backup during onboarding sends the registered device id', asyn
         await page.getByTestId('create-password-input').fill(PASSWORD)
         await page.getByTestId('create-password-confirm-input').fill(PASSWORD)
         await page.getByTestId('create-password-submit').click()
+        await skipPasskeyUnlockStep(page)
         await page
             .getByTestId('onboarding_import_account_button')
             .click({ timeout: 20_000 })

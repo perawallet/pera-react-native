@@ -26,16 +26,6 @@ export const useStyles = makeStyles((theme, { bottomInset }: StyleProps) => ({
     sheetBottomInset: {
         paddingBottom: theme.spacing.xl + bottomInset,
     },
-    itemSeparator: {
-        marginVertical: theme.spacing.md,
-        height: theme.borders.sm,
-        backgroundColor: theme.colors.layerGrayLighter,
-        // lanekeep-ignore-next-line pera/no-numeric-sizes reason: insets past the standard leading icon (xxl) and row gap (lg) to align with row content
-        marginLeft: theme.spacing.xxl + theme.spacing.lg,
-    },
-    cardSeparator: {
-        height: theme.spacing.md,
-    },
     fillEmpty: {
         flexGrow: 1,
     },
