@@ -48,7 +48,11 @@ const toRound = (round: Optional<bigint>): Nullable<number> =>
 const minRound = (
     a: Nullable<number>,
     b: Nullable<number>,
-): Nullable<number> => (a === null ? b : b === null ? a : Math.min(a, b))
+): Nullable<number> => {
+    if (a === null) return b
+    if (b === null) return a
+    return Math.min(a, b)
+}
 
 /**
  * Prefers a single algod read so balance and holdings come from the same round.

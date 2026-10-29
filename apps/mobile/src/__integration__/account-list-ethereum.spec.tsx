@@ -251,8 +251,8 @@ describe('Flow: Account list with Ethereum registered', () => {
                 screen.getByTestId('portfolio_total_value').textContent,
             ).toMatch(/3,003\.00/)
         })
-        // The chart plots one chain, so beside a two-chain total it would show only the $3.
-        expect(screen.queryByText('portfolio.show_chart')).toBeNull()
+        // Both chains have balance history, so the chart plots the whole total.
+        expect(screen.getByText('portfolio.show_chart')).toBeTruthy()
         expect(
             screen.queryByTestId('portfolio_total_partial_notice'),
         ).toBeNull()

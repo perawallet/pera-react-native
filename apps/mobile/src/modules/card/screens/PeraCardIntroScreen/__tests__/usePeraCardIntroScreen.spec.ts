@@ -52,11 +52,7 @@ vi.mock('@routes/capabilities', () => ({
 
 const mockResetOnboardingProgress = vi.fn()
 vi.mock('@perawallet/wallet-core-card', () => ({
-    useCardStore: Object.assign(() => {}, {
-        getState: () => ({
-            resetOnboardingProgress: mockResetOnboardingProgress,
-        }),
-    }),
+    resetCardOnboardingProgress: () => mockResetOnboardingProgress(),
 }))
 
 vi.mock('@perawallet/wallet-core-config', async () => {

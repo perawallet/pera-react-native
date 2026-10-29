@@ -12,6 +12,7 @@
 
 import { makeStyles } from '@rneui/themed'
 
+// lanekeep-ignore-next-line pera/no-numeric-sizes reason: readable content column cap on wide screens
 const CONTENT_MAX_WIDTH = 480
 
 export const useStyles = makeStyles(() => ({

@@ -15,7 +15,7 @@ import { config } from '@perawallet/wallet-core-config'
 import {
     RekeyConfirmView,
     type RekeyConfirmCopy,
-} from '../../../components/RekeyConfirmView'
+} from '@modules/rekey/components/RekeyConfirmView'
 import { useRekeyToLedgerConfirmScreen } from './useRekeyToLedgerConfirmScreen'
 
 const CONFIRM_COPY: RekeyConfirmCopy = {

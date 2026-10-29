@@ -12,12 +12,9 @@
 
 import { makeStyles } from '@rneui/themed'
 
-const AMOUNT_LINE_HEIGHT = 40
-
 export const useStyles = makeStyles(theme => {
     const h1 = {
         fontSize: theme.spacing.xxl,
-        lineHeight: AMOUNT_LINE_HEIGHT,
     }
     const amount = {
         color: theme.colors.textMain,

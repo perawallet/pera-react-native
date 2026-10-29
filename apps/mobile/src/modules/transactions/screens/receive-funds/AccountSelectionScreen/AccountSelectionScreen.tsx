@@ -29,7 +29,7 @@ import {
     useReceiveFunds,
 } from '@modules/transactions/hooks'
 
-import type { ReceiveFundsStackParamList } from '../../../routes/receive-funds/types'
+import type { ReceiveFundsStackParamList } from '@modules/transactions/routes/receive-funds/types'
 
 export const AccountSelectionScreen = () => {
     const scope = useSelectedScope(LEGACY_CHAIN_ID)

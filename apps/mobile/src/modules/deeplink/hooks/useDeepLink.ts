@@ -38,8 +38,9 @@ import {
     chainAccountOf,
     findAccountByAddressOn,
     findAccountByAnyChainAddress,
+    getAllAccounts,
+    getSelectedAccount,
     hdIndexOf,
-    useAccountsStore,
     useEnableChain,
     useSelectedAccountId,
     type WalletAccount,
@@ -133,11 +134,7 @@ export const useDeepLink = (): UseDeepLinkResult => {
     // from the same account's stored form. A link naming an address outside
     // the wallet leaves the selection alone.
     const findLinkedAccount = (chainId: ChainId, address: string) =>
-        findAccountByAddressOn(
-            useAccountsStore.getState().accounts,
-            chainId,
-            address,
-        )
+        findAccountByAddressOn(getAllAccounts(), chainId, address)
     const selectAccountByAddress = (chainId: ChainId, address: string) => {
         const account = findLinkedAccount(chainId, address)
         if (account) setSelectedAccountId(account.id)
@@ -146,10 +143,7 @@ export const useDeepLink = (): UseDeepLinkResult => {
     // Fund's provider redirects back with the address it delivered to, on
     // whichever chain the purchase was for.
     const selectAccountByAnyChainAddress = (address: string) => {
-        const account = findAccountByAnyChainAddress(
-            useAccountsStore.getState().accounts,
-            address,
-        )
+        const account = findAccountByAnyChainAddress(getAllAccounts(), address)
         if (account) setSelectedAccountId(account.id)
     }
     const { t } = useLanguage()
@@ -634,7 +628,7 @@ export const useDeepLink = (): UseDeepLinkResult => {
                                 parsedData.target.chainId,
                                 parsedData.address,
                             )) ||
-                        useAccountsStore.getState().getSelectedAccount()
+                        getSelectedAccount()
                     if (!target || swapChainOf(target) === undefined) {
                         refuse(parsedData.type)
                         return
@@ -715,11 +709,9 @@ export const useDeepLink = (): UseDeepLinkResult => {
                         // A FIDO request derives its P256 key from the HD root, so
                         // without an HD account register has nothing to derive from and
                         // assert nothing to sign with. Explain rather than dead-end in the OS flow.
-                        const hasHDWallet = useAccountsStore
-                            .getState()
-                            .accounts.some(
-                                account => hdIndexOf(account) !== undefined,
-                            )
+                        const hasHDWallet = getAllAccounts().some(
+                            account => hdIndexOf(account) !== undefined,
+                        )
                         if (!hasHDWallet) {
                             void requestByType('passkey-hd-wallet-required', {})
                             // Close the QR scanner (when present) so the sheet,

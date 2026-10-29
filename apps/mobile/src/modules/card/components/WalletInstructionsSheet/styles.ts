@@ -30,7 +30,7 @@ export const useStyles = makeStyles(theme => ({
     stepNumber: {
         width: theme.spacing.xxl,
         height: theme.spacing.xxl,
-        borderRadius: theme.spacing.xxl / 2,
+        borderRadius: theme.borderRadius.full,
         borderWidth: theme.borders.sm,
         borderColor: theme.colors.layerGray,
         alignItems: 'center',

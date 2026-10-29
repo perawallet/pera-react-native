@@ -14,10 +14,15 @@ import { useMemo } from 'react'
 import { Decimal } from 'decimal.js'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
-import type { AccountSortMode, AccountValues, WalletAccount } from '../models'
+import {
+    accountValueKey,
+    type AccountSortMode,
+    type AccountValues,
+    type WalletAccount,
+} from '../models'
 import { getAccountDisplayName } from '../utils'
 import { useAccountsStore } from '../store'
-import { chainAccountOf } from '../credentials'
+import { accountValueOf } from './useAccountChain'
 import { useAccountValueBasis } from './useAccountValueBasis'
 import {
     accountChainEntries,
@@ -45,7 +50,7 @@ const compareNullable = (
 }
 
 /**
- * `accountBalances` is keyed by address, one entry per chain an account is on;
+ * `accountBalances` has one entry per chain an account is on;
  * the address on `chainId` also names unnamed accounts. See
  * `AccountValueBasis` for which value ranks.
  */
@@ -73,14 +78,15 @@ export const useSortedAccounts = (
         const fiatOf = (account: WalletAccount): Nullable<Decimal> => {
             const entries = accountChainEntries(account, chainId, otherChainIds)
             if (entries.length === 0) return null
-            return entries.reduce<Nullable<Decimal>>((sum, { address }) => {
-                const fiatValue = accountBalances.get(address)?.fiatValue
+            return entries.reduce<Nullable<Decimal>>((sum, entry) => {
+                const fiatValue = accountBalances.get(
+                    accountValueKey(entry.chainId, entry.address),
+                )?.fiatValue
                 return sum === null || !fiatValue ? null : sum.plus(fiatValue)
             }, new Decimal(0))
         }
         const nativeOf = (account: WalletAccount): Nullable<Decimal> => {
-            const address = chainAccountOf(account, chainId)?.address
-            const values = address ? accountBalances.get(address) : undefined
+            const values = accountValueOf(account, chainId, accountBalances)
             // -1 only marks totals that haven't loaded, which keeps the
             // single-chain order as it was; `null` is a known unknown.
             return values ? values.nativeValue : new Decimal(-1)

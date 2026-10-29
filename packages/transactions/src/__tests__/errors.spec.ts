@@ -20,7 +20,7 @@ import {
     TransactionError,
     InvalidSendParamsError,
     AssetFrozenError,
-    RekeyError,
+    DelegationError,
     AlreadyOptedInError,
     InsufficientBalanceForOptInError,
     NonZeroBalanceError,
@@ -158,8 +158,8 @@ describe('AssetFrozenError', () => {
         const { titleKey, messageKey, params } = new AssetFrozenError('123')
             .metadata
 
-        expect(titleKey).toBe('errors.algod.asset_frozen.title')
-        expect(messageKey).toBe('errors.algod.asset_frozen.body')
+        expect(titleKey).toBe('errors.transaction.asset_frozen.title')
+        expect(messageKey).toBe('errors.transaction.asset_frozen.body')
         expect(params).toEqual({ assetId: '123' })
     })
 })
@@ -198,41 +198,41 @@ describe('asset holding errors', () => {
     })
 })
 
-describe('RekeyError', () => {
+describe('DelegationError', () => {
     it('tags the failed stage as the reason', () => {
-        const error = new RekeyError('submission_failed')
+        const error = new DelegationError('submission_failed')
 
         expect(error).toBeInstanceOf(Error)
-        expect(error.name).toBe('RekeyError')
+        expect(error.name).toBe('DelegationError')
         expect(error.reason).toBe('submission_failed')
     })
 
     it('preserves the original cause for downstream translation', () => {
         const cause = new Error('algod unreachable')
-        const error = new RekeyError('submission_failed', cause)
+        const error = new DelegationError('submission_failed', cause)
 
         expect(error.originalError).toBe(cause)
     })
 
     it('leaves originalError undefined when no cause is given', () => {
-        const error = new RekeyError('user_rejected')
+        const error = new DelegationError('user_rejected')
 
         expect(error.originalError).toBeUndefined()
     })
 
     it('normalizes a non-Error cause to an Error', () => {
         // Caught values are not guaranteed to be Error instances.
-        const error = new RekeyError('build_failed', 'something broke')
+        const error = new DelegationError('build_failed', 'something broke')
 
         expect(error.originalError).toBeInstanceOf(Error)
         expect(error.originalError?.message).toBe('something broke')
     })
 
     it('is an AppError with no user-facing key, so callers keep owning the copy', () => {
-        const error = new RekeyError('submission_failed')
+        const error = new DelegationError('submission_failed')
 
         expect(error).toBeInstanceOf(AppError)
-        expect(error.message).toBe('Rekey failed: submission_failed')
+        expect(error.message).toBe('Delegation failed: submission_failed')
         expect(error.metadata).toMatchObject({
             category: ErrorCategory.TRANSACTIONS,
             severity: ErrorSeverity.MEDIUM,
@@ -242,7 +242,7 @@ describe('RekeyError', () => {
     })
 
     it('treats a user rejection as low severity', () => {
-        expect(new RekeyError('user_rejected').metadata.severity).toBe(
+        expect(new DelegationError('user_rejected').metadata.severity).toBe(
             ErrorSeverity.LOW,
         )
     })

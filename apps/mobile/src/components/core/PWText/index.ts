@@ -12,3 +12,4 @@
 
 export { PWText } from './PWText'
 export type { PWTextProps } from './PWText'
+export { drainOverflow } from './overflowRegistry'

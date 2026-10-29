@@ -21,7 +21,7 @@ import { AssetAmount } from '@components/AssetAmount'
 import { ScreenHeader } from '@components/ScreenHeader'
 import { useWebView } from '@modules/webview'
 import { useLanguage } from '@hooks/useLanguage'
-import { RekeySummaryRow } from '../../../components/RekeySummaryRow'
+import { RekeySummaryRow } from '@modules/rekey/components/RekeySummaryRow'
 import { useStyles } from './styles'
 import { useUndoRekeyConfirmScreen } from './useUndoRekeyConfirmScreen'
 

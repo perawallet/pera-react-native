@@ -66,6 +66,13 @@ const RESIZE_MODE_TO_CONTENT_FIT: Record<string, ImageContentFit> = {
     repeat: 'cover',
 }
 
+const transitionDurationOf = (transition: boolean | number): number => {
+    if (transition === false) return 0
+    return typeof transition === 'number'
+        ? transition
+        : SHORT_PROMPT_DISPLAY_DELAY
+}
+
 export const PWImage = ({
     source,
     style,
@@ -99,12 +106,7 @@ export const PWImage = ({
     const contentFit = resizeMode
         ? RESIZE_MODE_TO_CONTENT_FIT[resizeMode]
         : undefined
-    const transitionDuration =
-        transition === false
-            ? 0
-            : typeof transition === 'number'
-              ? transition
-              : SHORT_PROMPT_DISPLAY_DELAY
+    const transitionDuration = transitionDurationOf(transition)
 
     const handleLoad = useCallback<NonNullable<ImageProps['onLoad']>>(
         event => {

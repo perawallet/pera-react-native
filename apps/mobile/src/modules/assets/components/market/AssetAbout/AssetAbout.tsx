@@ -19,8 +19,8 @@ import type { PeraAsset } from '@perawallet/wallet-core-assets'
 import { useLanguage } from '@hooks/useLanguage'
 import { useWebView } from '@modules/webview'
 import { useClipboard } from '@hooks/useClipboard'
-import type { AssetAboutDisplay } from '../../../types/asset-details-display'
-import { extractDomain } from '../../../utils/extractDomain'
+import type { AssetAboutDisplay } from '@modules/assets/types/asset-details-display'
+import { extractDomain } from '@modules/assets/utils/extractDomain'
 
 export type AssetAboutProps = {
     assetDetails: PeraAsset

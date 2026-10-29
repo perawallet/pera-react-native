@@ -237,11 +237,11 @@ export type AccountStateReadHint = {
 
 export type GetPublicKey = (params: HdIndex) => Promise<Uint8Array>
 
-/** The `useKMS()` call a private-key reveal makes; the hook passes its own. */
-export type PrivateKeyKeystore = Pick<
-    ReturnType<typeof useKMS>,
-    'exportSecp256k1Key'
->
+/**
+ * The `useKMS()` keystore the reveal hook passes. A chain's `revealPrivateKey`
+ * declares only the slice of it the chain reads.
+ */
+export type PrivateKeyKeystore = ReturnType<typeof useKMS>
 
 export type MintedAccount = {
     /** Not yet persisted. */

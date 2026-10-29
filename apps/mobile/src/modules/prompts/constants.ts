@@ -33,6 +33,11 @@ export const PromptPriority = {
     /** A nudge; the user can carry on without answering. */
     securityPinSetup: 200,
     /**
+     * A security setup nudge like the PIN one, offered once on the extension:
+     * under PIN setup, above the biometrics notice.
+     */
+    passkeyUnlockOffer: 190,
+    /**
      * A nudge, but about protection the user already had and just lost, so it
      * outranks the purely informational notices below it.
      */

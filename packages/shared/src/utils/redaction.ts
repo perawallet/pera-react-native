@@ -200,6 +200,19 @@ export const redactContextError = (error: Error): Record<string, unknown> =>
                 : redactSensitiveValue(field, 0, new WeakSet()),
     })
 
+const redactedValueAt = (
+    key: string,
+    value: unknown,
+    seen: WeakSet<object>,
+): unknown => {
+    if (isSensitiveKey(key)) return REDACTED
+    // A top-level Error stays `instanceof Error` and untouched: the logger
+    // serializes it with `redactContextError`, whose allowlist keeps the
+    // stack and code a nested Error's serialization drops.
+    if (value instanceof Error) return value
+    return redactSensitiveValue(value, 0, seen)
+}
+
 /**
  * Applied automatically to every logger context, so callers needn't
  * pre-sanitize, though a hot path with very large objects may still want to.
@@ -208,14 +221,7 @@ export const redactSensitiveContext = (context: LogContext): LogContext => {
     const seen = new WeakSet<object>()
     const out: LogContext = {}
     for (const [k, v] of Object.entries(context)) {
-        // A top-level Error stays `instanceof Error` and untouched: the logger
-        // serializes it with `redactContextError`, whose allowlist keeps the
-        // stack and code a nested Error's serialization drops.
-        out[k] = isSensitiveKey(k)
-            ? REDACTED
-            : v instanceof Error
-              ? v
-              : redactSensitiveValue(v, 0, seen)
+        out[k] = redactedValueAt(k, v, seen)
     }
     return out
 }

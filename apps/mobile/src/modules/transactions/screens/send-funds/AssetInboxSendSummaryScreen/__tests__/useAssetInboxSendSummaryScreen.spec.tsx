@@ -114,7 +114,7 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
     })),
 }))
 
-vi.mock('@perawallet/wallet-core-shared', () => {
+vi.mock('@perawallet/wallet-core-shared', async () => {
     class IntegrityRequiredError extends Error {
         constructor(_details: {
             code: string | null
@@ -125,6 +125,9 @@ vi.mock('@perawallet/wallet-core-shared', () => {
         }
     }
     return {
+        ...(await vi.importActual<
+            typeof import('@packages/shared/src/errors/base')
+        >('@packages/shared/src/errors/base')),
         IntegrityRequiredError,
         isIntegrityRequiredError: (error: unknown) =>
             error instanceof IntegrityRequiredError,

@@ -27,7 +27,7 @@ vi.mock('@hooks/useErrorToast', () => ({
 vi.mock('@hooks/useLanguage')
 
 import { useHandleRekeyError } from '../useHandleRekeyError'
-import { RekeyError } from '@perawallet/wallet-core-transactions'
+import { DelegationError } from '@perawallet/wallet-core-transactions'
 
 describe('useHandleRekeyError', () => {
     beforeEach(() => {
@@ -37,7 +37,7 @@ describe('useHandleRekeyError', () => {
     it('shows the cancellation toast for a user_rejected error and does not show an error toast', () => {
         const { result } = renderHook(() => useHandleRekeyError())
 
-        result.current(new RekeyError('user_rejected'))
+        result.current(new DelegationError('user_rejected'))
 
         expect(mockErrorToast).toHaveBeenCalledWith(
             'rekey.signing.user_rejected_title',
@@ -50,7 +50,7 @@ describe('useHandleRekeyError', () => {
         const cause = new Error('algod unreachable')
         const { result } = renderHook(() => useHandleRekeyError())
 
-        result.current(new RekeyError('submission_failed', cause))
+        result.current(new DelegationError('submission_failed', cause))
 
         expect(mockShowError).toHaveBeenCalledWith(
             cause,
@@ -59,8 +59,8 @@ describe('useHandleRekeyError', () => {
         expect(mockErrorToast).not.toHaveBeenCalled()
     })
 
-    it('falls back to the RekeyError itself when no original cause is attached', () => {
-        const rekeyError = new RekeyError('build_failed')
+    it('falls back to the DelegationError itself when no original cause is attached', () => {
+        const rekeyError = new DelegationError('build_failed')
         const { result } = renderHook(() => useHandleRekeyError())
 
         result.current(rekeyError)
@@ -71,7 +71,7 @@ describe('useHandleRekeyError', () => {
         )
     })
 
-    it('shows a generic error toast for non-RekeyError values', () => {
+    it('shows a generic error toast for non-DelegationError values', () => {
         const error = new Error('boom')
         const { result } = renderHook(() => useHandleRekeyError())
 

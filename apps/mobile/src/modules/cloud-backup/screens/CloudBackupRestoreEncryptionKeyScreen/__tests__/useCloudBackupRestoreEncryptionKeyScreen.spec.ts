@@ -37,12 +37,9 @@ const restoreDraftState = () => ({
 
 vi.mock('@perawallet/wallet-core-backup', async importOriginal => ({
     ...(await importOriginal<object>()),
-    // `getState` as well as the selector call: the screen reads the imported
-    // key once off the store rather than subscribing to it.
-    useCloudBackupRestoreDraftStore: Object.assign(
-        (sel: (s: unknown) => unknown) => sel(restoreDraftState()),
-        { getState: () => restoreDraftState() },
-    ),
+    useCloudBackupRestoreDraftStore: (sel: (s: unknown) => unknown) =>
+        sel(restoreDraftState()),
+    readCloudBackupImportedKey: () => importedKey,
     useRestoreCloudBackupMutation: (
         _scope: unknown,
         options: {

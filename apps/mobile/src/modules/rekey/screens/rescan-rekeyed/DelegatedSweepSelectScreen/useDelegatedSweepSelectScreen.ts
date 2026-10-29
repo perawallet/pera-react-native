@@ -25,7 +25,7 @@ import { useErrorToast } from '@hooks/useErrorToast'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 
-import type { RescanRekeyedStackParamList } from '../../../routes/rescan-rekeyed/types'
+import type { RescanRekeyedStackParamList } from '@modules/rekey/routes/rescan-rekeyed/types'
 
 export type UseDelegatedSweepSelectScreenResult = {
     /** True when scanning every signable key rather than a single one. */

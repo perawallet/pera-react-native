@@ -23,6 +23,7 @@ import {
     handleAutoLockAlarm,
     setAutoLockMinutes,
 } from '../autolock'
+import { hasRecentPasswordAuth } from '../password-auth'
 
 vi.mock('../argon2', async importOriginal =>
     (await import('../../test-utils/argon2')).fastArgon2(
@@ -95,6 +96,16 @@ describe('auto-lock', () => {
         } as chrome.alarms.Alarm)
         expect(await isUnlocked()).toBe(false)
         expect(fake.alarms.has(AUTO_LOCK_ALARM)).toBe(false)
+    })
+
+    it('handleAutoLockAlarm clears the password proof', async () => {
+        await createVault('correct horse')
+        expect(await hasRecentPasswordAuth()).toBe(true)
+        await handleAutoLockAlarm({
+            name: AUTO_LOCK_ALARM,
+            scheduledTime: Date.now(),
+        } as chrome.alarms.Alarm)
+        expect(await hasRecentPasswordAuth()).toBe(false)
     })
 
     it('lockVault disarms the auto-lock alarm', async () => {

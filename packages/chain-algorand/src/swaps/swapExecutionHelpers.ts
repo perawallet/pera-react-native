@@ -28,6 +28,8 @@ import type {
 } from '@perawallet/wallet-core-signing'
 import type { UpdateSwapStatusFn } from '@perawallet/wallet-core-swaps'
 import {
+    AppError,
+    ErrorCategory,
     generateOrderedUniqueId,
     logger,
     type Nullable,
@@ -73,7 +75,7 @@ export const QUANTUM_SWAP_PROPOSE_BLOCKED_KEY = i18nKey(
  * whole point of these guards, which is that the failure is loud AND
  * correctly attributed. `message` stays English for logs/crash reports.
  */
-export class QuantumSwapBlockedError extends Error {
+export class QuantumSwapBlockedError extends AppError {
     /**
      * Pinned as a string literal so the name survives minification, matching
      * the convention in {@link USER_REJECTION_ERROR_NAMES}.
@@ -84,7 +86,9 @@ export class QuantumSwapBlockedError extends Error {
     readonly translationKey: I18nKey
 
     constructor(translationKey: I18nKey) {
-        super(`Quantum accounts are not supported here (${translationKey})`)
+        super(`Quantum accounts are not supported here (${translationKey})`, {
+            category: ErrorCategory.TRANSACTIONS,
+        })
         this.translationKey = translationKey
     }
 }

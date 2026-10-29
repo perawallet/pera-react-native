@@ -17,7 +17,7 @@ import Animated, {
     type SharedValue,
 } from 'react-native-reanimated'
 import { PWView } from '../PWView'
-import { useStyles } from '../PWTabView/tabBarStyles'
+import { useTabBarStyles } from '../PWTabView/styles'
 import { PWPagerTabItem } from './PWPagerTabItem'
 
 export type PWPagerTab = {
@@ -47,7 +47,7 @@ export const PWPagerTabBar = ({
     onIndexChange,
     offset,
 }: PWPagerTabBarProps) => {
-    const styles = useStyles()
+    const styles = useTabBarStyles()
     const [containerWidth, setContainerWidth] = useState(0)
 
     const handleLayout = (event: LayoutChangeEvent) => {

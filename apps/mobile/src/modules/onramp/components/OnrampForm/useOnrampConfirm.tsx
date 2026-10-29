@@ -12,7 +12,7 @@
 
 import { useCallback, useState } from 'react'
 import type { Decimal } from 'decimal.js'
-import { addressOn, useAccountsStore } from '@perawallet/wallet-core-accounts'
+import { addressOn, getSelectedAccount } from '@perawallet/wallet-core-accounts'
 import {
     useCreateRampOrderMutation,
     useEnsureRampDestination,
@@ -113,9 +113,7 @@ export const useOnrampConfirm = ({
         try {
             // v2 safety: re-read the selected account at call time in case it
             // changed (or was removed) since the form first rendered.
-            const currentAccount = useAccountsStore
-                .getState()
-                .getSelectedAccount()
+            const currentAccount = getSelectedAccount()
             const currentAddress =
                 (currentAccount
                     ? addressOn(currentAccount, scope)

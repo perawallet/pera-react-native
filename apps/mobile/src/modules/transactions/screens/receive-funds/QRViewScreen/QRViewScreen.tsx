@@ -85,6 +85,7 @@ export const QRViewScreen = () => {
         )
     }
 
+    // lanekeep-ignore-next-line pera/no-numeric-sizes reason: window width minus a 5xl margin on each side
     const qrSize = width - theme.spacing['5xl'] * 2
     const logoSize = Math.round(qrSize * LOGO_RATIO)
 
@@ -116,8 +117,8 @@ export const QRViewScreen = () => {
                         testID='receive_qr_code'
                         value={paymentUri}
                         size={qrSize}
-                        color='black'
-                        backgroundColor='white'
+                        color={theme.colors.qrCodeFg}
+                        backgroundColor={theme.colors.qrCodeBg}
                         quietZone={theme.spacing.sm}
                         ecl='H'
                     />

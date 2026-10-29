@@ -103,15 +103,11 @@ vi.mock('@perawallet/wallet-core-card', async () => {
                     contactVerificationId: 'mock-contact-id',
                     email: null,
                 }),
-            {
-                getState: () => ({
-                    selectedFundingType: mockStoredFundingType,
-                    setOnboardingStep: mockSetOnboardingStep,
-                    setConnectedFundingSourceAddress:
-                        mockSetConnectedFundingSourceAddress,
-                }),
-            },
         ),
+        getCardFundingType: () => mockStoredFundingType,
+        setCardOnboardingStep: (step: unknown) => mockSetOnboardingStep(step),
+        setCardFundingSourceAddress: (address: unknown) =>
+            mockSetConnectedFundingSourceAddress(address),
     }
 })
 

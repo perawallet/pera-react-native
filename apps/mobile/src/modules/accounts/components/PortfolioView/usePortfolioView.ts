@@ -13,13 +13,12 @@
 import { useMemo } from 'react'
 import type { Decimal } from 'decimal.js'
 import {
-    accountChainIdOf,
+    allChainsHaveBalanceHistory,
     useAccountValueBasis,
     useAccountValueTotalsQuery,
-    useRegisteredChainIds,
     useSigningAccountsOnOwnChain,
+    type AccountHoldingSource,
     type AccountValueBasis,
-    type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
     LEGACY_CHAIN_ID,
@@ -34,7 +33,6 @@ import type { Nullable } from '@perawallet/wallet-core-shared'
 
 export type UsePortfolioViewResult = {
     scope: ChainScope
-    accounts: WalletAccount[]
     /** `fiat` leads with the preferred-currency total and drops the native one, which can't sum across chains. */
     basis: AccountValueBasis
     /** `null` when unknown — renders as a placeholder, not 0. */
@@ -46,9 +44,14 @@ export type UsePortfolioViewResult = {
     /** False on a test-tier scope, whose value never counts toward the fiat total. */
     hasFiatTotal: boolean
     /**
-     * Every counted account is on `scope`'s chain, which has balance history.
-     * The chart and trend plot that chain alone, so once the total counts
-     * another they'd contradict it.
+     * What the headline total sums: every counted chain on the `fiat` basis,
+     * `scope`'s chain alone on the `native` one. The chart and trend plot
+     * these added together.
+     */
+    chartSources: AccountHoldingSource[]
+    /**
+     * `chartSources` is not empty and every chain in it has balance history,
+     * so the chart can plot everything in the total beside it.
      */
     hasBalanceHistory: boolean
     isPending: boolean
@@ -68,18 +71,16 @@ export const usePortfolioView = (): UsePortfolioViewResult => {
         portfolioFiatValue,
         isPortfolioFiatValuePartial,
         hasFiatTotal,
+        nativeTotalSources,
+        fiatTotalSources,
         isPending,
     } = useAccountValueTotalsQuery(accounts, scope)
     const check = useChainCapabilityCheck()
-    const registeredChainIds = useRegisteredChainIds()
+    const chartSources =
+        basis === 'fiat' ? fiatTotalSources : nativeTotalSources
     const hasBalanceHistory =
-        accounts.every(
-            account =>
-                accountChainIdOf(account, registeredChainIds) === scope.chainId,
-        ) &&
-        check({
-            chain: { chainId: scope.chainId, capability: 'balanceHistory' },
-        })
+        chartSources.length > 0 &&
+        allChainsHaveBalanceHistory(chartSources, check)
     const portfolioPreferredValue = useMemo(
         () =>
             usdToPreferred(
@@ -90,7 +91,6 @@ export const usePortfolioView = (): UsePortfolioViewResult => {
 
     return {
         scope,
-        accounts,
         basis,
         portfolioNativeValue,
         portfolioPreferredValue,
@@ -99,6 +99,7 @@ export const usePortfolioView = (): UsePortfolioViewResult => {
             isPortfolioFiatValuePartial &&
             portfolioPreferredValue !== null,
         hasFiatTotal,
+        chartSources,
         hasBalanceHistory,
         isPending,
     }

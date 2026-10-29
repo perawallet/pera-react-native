@@ -24,9 +24,9 @@ import type {
 } from '../useAccountValueTotalsQuery'
 
 describe('account value types', () => {
-    it('lets both hooks maps satisfy AccountValues', () => {
-        expectTypeOf<AccountBalances>().toExtend<AccountValues>()
+    it('lets the totals map satisfy AccountValues, but not the address-keyed balances map', () => {
         expectTypeOf<AccountValueTotalsMap>().toExtend<AccountValues>()
+        expectTypeOf<AccountBalances>().not.toExtend<AccountValues>()
     })
 
     it('keeps fiatValue to exactly null or a Decimal', () => {
