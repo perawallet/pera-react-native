@@ -30,7 +30,7 @@ const tester = new RuleTester({
 
 const unserialized = { messageId: 'unserialized' }
 const cast = { messageId: 'cast' }
-const quoted = { messageId: 'quoted' }
+const outsideCode = { messageId: 'outsideCode' }
 
 tester.run(RULE, webviewInjectionSerializer, {
     valid: [
@@ -60,6 +60,16 @@ tester.run(RULE, webviewInjectionSerializer, {
         'const BUNDLE = webViewScript`true;`\nconst el = <WebView injectedJavaScript={BUNDLE} />',
         "const A = 'a;'\nconst B = flag ? A : joinWebViewScripts(A)\nwebview.injectJavaScript(B)",
         'tag`run("${x}")`',
+        "function f() { const script = 'true;'\nwebview.injectJavaScript(script) }",
+        'function f() { const s = webViewScript`run(${x});`\nwebview.injectJavaScript(s) }',
+        "import { useMemo } from 'react'\nfunction C() { const js = useMemo(() => joinWebViewScripts(a, b), [a, b])\nreturn <WebView injectedJavaScript={js} /> }",
+        "import React from 'react'\nfunction C() { const js = React.useMemo(() => flag ? webViewScript`a;` : undefined, [flag])\nreturn <WebView injectedJavaScriptBeforeContentLoaded={js} /> }",
+        'webview.injectJavaScript(webViewScript`say("a"); run(${x}, \'b\'); // done`)',
+        'webview.injectJavaScript(webViewScript`/* note */ run(${x})`)',
+        'webview.injectJavaScript(webViewScript`// note\nrun(${x})`)',
+        'webview.injectJavaScript(webViewScript`var re = /["\']/; run(${x});`)',
+        'webview.injectJavaScript(webViewScript`var a = b / 2; run(${x}); var c = d / 3;`)',
+        'webview.injectJavaScript(webViewScript`var s = \\`a\\${ f(${x}) }b\\`;`)',
     ],
     invalid: [
         {
@@ -68,10 +78,6 @@ tester.run(RULE, webviewInjectionSerializer, {
         },
         {
             code: "let script = 'true;'\nwebview.injectJavaScript(script)",
-            errors: [unserialized],
-        },
-        {
-            code: "function f() { const script = 'true;'\nwebview.injectJavaScript(script) }",
             errors: [unserialized],
         },
         {
@@ -144,19 +150,67 @@ tester.run(RULE, webviewInjectionSerializer, {
         },
         {
             code: 'webview.injectJavaScript(webViewScript`run("${x}")`)',
-            errors: [quoted],
+            errors: [outsideCode],
         },
         {
             code: "webview.injectJavaScript(webViewScript`run('${x}')`)",
-            errors: [quoted],
+            errors: [outsideCode],
         },
         {
             code: 'webview.injectJavaScript(webViewScript`run(\\`${x}\\`)`)',
-            errors: [quoted],
+            errors: [outsideCode],
         },
         {
             code: 'const s = webViewScript`a = "x ${y}" + "${z}";`',
-            errors: [quoted, quoted],
+            errors: [outsideCode, outsideCode],
+        },
+        {
+            code: 'webViewScript`log("value: ${v} end")`',
+            errors: [outsideCode],
+        },
+        {
+            code: 'webViewScript`/* ${v} */`',
+            errors: [outsideCode],
+        },
+        {
+            code: 'webViewScript`run(); // ${v}\nrun()`',
+            errors: [outsideCode],
+        },
+        {
+            code: "webViewScript`log('value: ${v} end')`",
+            errors: [outsideCode],
+        },
+        {
+            code: 'webViewScript`log(\\`value: ${v} end\\`)`',
+            errors: [outsideCode],
+        },
+        {
+            code: 'webViewScript`log("a \\\\" ${v}")`',
+            errors: [outsideCode],
+        },
+        {
+            code: 'webViewScript`var re = /${v}/;`',
+            errors: [outsideCode],
+        },
+        {
+            code: "const SCRIPT = 'true;'\nfunction f(SCRIPT) { webview.injectJavaScript(SCRIPT) }",
+            errors: [unserialized],
+        },
+        {
+            code: "const SCRIPT = 'true;'\nfunction f() { let SCRIPT = 'true;'\nwebview.injectJavaScript(SCRIPT) }",
+            errors: [unserialized],
+        },
+        {
+            code: 'const { SCRIPT } = scripts\nwebview.injectJavaScript(SCRIPT)',
+            errors: [unserialized],
+        },
+        {
+            code: 'function C() { const js = useMemo(() => webViewScript`a;`, [])\nreturn <WebView injectedJavaScript={js} /> }',
+            errors: [unserialized],
+        },
+        {
+            code: "import { useMemo } from 'react'\nfunction C() { const js = useMemo(() => build(), [])\nreturn <WebView injectedJavaScript={js} /> }",
+            errors: [unserialized],
         },
         {
             code: 'const x = value as WebViewScript',

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { joinWebViewScripts, webViewScript } from '../webViewScript'
 
 const evaluate = (script: string): unknown => new Function(script)()
@@ -65,6 +65,21 @@ describe('webViewScript', () => {
         new Function('record', script)((value: unknown) => calls.push(value))
 
         expect(calls).toStrictEqual([payload, 'end'])
+    })
+
+    it('keeps a double-quote concatenation payload inert when the hole sits in plain code', () => {
+        const payload = '"+alert(1)+"'
+        const alert = vi.fn()
+        const logged: unknown[] = []
+        const script = webViewScript`log("value: " + ${payload} + " end");`
+
+        new Function('log', 'alert', script)(
+            (value: unknown) => logged.push(value),
+            alert,
+        )
+
+        expect(alert).not.toHaveBeenCalled()
+        expect(logged).toStrictEqual([`value: ${payload} end`])
     })
 
     it('turns an interpolated undefined into the undefined literal', () => {

@@ -39,7 +39,7 @@ const brand = (source: string): WebViewScript =>
 /**
  * Tag for scripts injected into a WebView, which run with the page's
  * privileges. Static parts are emitted as written; each `${value}` becomes an
- * encoded JS expression, so write it bare, never inside quotes.
+ * encoded JS expression, so write it bare, never inside a string or comment.
  */
 export const webViewScript = (
     code: TemplateStringsArray,

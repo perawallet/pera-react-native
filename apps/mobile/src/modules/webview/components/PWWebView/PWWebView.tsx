@@ -344,6 +344,43 @@ export const PWWebView = (props: PWWebViewProps) => {
         })
     }, [])
 
+    // Installed before the page runs any script: @perawallet/connect calls
+    // window.open('perawallet-wc://…') on connect, possibly before document-end
+    // injection, and WKWebView drops it unless the hook is in place. Interface
+    // before connect: peraConnectJS's processModals() needs window.peraRPC.
+    // `true;` keeps iOS from choking on a non-serializable eval result.
+    // Undefined, never '', without Pera Connect: iOS would install an empty
+    // user script.
+    const preLoadJS = useMemo(
+        () =>
+            enablePeraConnect
+                ? joinWebViewScripts(
+                      peraMobileInterfaceJS(bridgeToken),
+                      peraConnectJS,
+                      webViewScript`true;`,
+                  )
+                : undefined,
+        [enablePeraConnect, bridgeToken],
+    )
+
+    // The connect/interface scripts run again at document end because
+    // before-content-loaded injection is unreliable on some Android versions;
+    // their idempotency guards make the second pass a no-op. baseJS,
+    // customJavaScript and updateTheme need the DOM, so they run here only.
+    const jsToLoad = useMemo(
+        () =>
+            joinWebViewScripts(
+                baseJS,
+                enablePeraConnect
+                    ? peraMobileInterfaceJS(bridgeToken)
+                    : undefined,
+                enablePeraConnect ? peraConnectJS : undefined,
+                customJavaScript,
+                updateTheme(theme.mode),
+            ),
+        [enablePeraConnect, customJavaScript, theme.mode, bridgeToken],
+    )
+
     const renderWebView = useCallback(() => {
         return (
             <WebView
@@ -393,45 +430,12 @@ export const PWWebView = (props: PWWebViewProps) => {
                 onMessage={handleEvent}
                 webviewDebuggingEnabled={config.debugEnabled}
                 pullToRefreshEnabled={true}
-                // Document-end bundle. The connect/interface scripts are
-                // re-included as a belt-and-braces fallback (before-content-
-                // loaded has historically been unreliable on some Android
-                // versions); their idempotency guards make the second pass a
-                // no-op. baseJS (needs document.head), customJavaScript, and
-                // updateTheme are DOM-dependent and stay document-end only.
-                injectedJavaScript={joinWebViewScripts(
-                    baseJS,
-                    enablePeraConnect
-                        ? peraMobileInterfaceJS(bridgeToken)
-                        : undefined,
-                    enablePeraConnect ? peraConnectJS : undefined,
-                    customJavaScript,
-                    updateTheme(theme.mode),
-                )}
-                // Installed BEFORE the page runs any script:
-                // @perawallet/connect fires window.open('perawallet-wc://…')
-                // the moment the user connects, possibly before document-end
-                // injection has run. Without the hook in place, WKWebView
-                // silently drops the call (popups disabled) and Android detours
-                // it through the navigation guard. Interface before connect:
-                // peraConnectJS's initial processModals() needs window.peraRPC.
-                // The trailing 'true;' keeps iOS from choking on a
-                // non-serializable eval result. Undefined, never '', without
-                // Pera Connect: iOS would install an empty user script.
-                //
+                injectedJavaScript={jsToLoad}
                 // Deliberately NOT setting
                 // injectedJavaScriptBeforeContentLoadedForMainFrameOnly: its
                 // `true` default is load-bearing for the bridge-token model
                 // (the token must stay unreadable from subframes).
-                injectedJavaScriptBeforeContentLoaded={
-                    enablePeraConnect
-                        ? joinWebViewScripts(
-                              peraMobileInterfaceJS(bridgeToken),
-                              peraConnectJS,
-                              webViewScript`true;`,
-                          )
-                        : undefined
-                }
+                injectedJavaScriptBeforeContentLoaded={preLoadJS}
                 setSupportMultipleWindows={false}
                 {...HARDENED_WEBVIEW_PROPS}
                 applicationNameForUserAgent={applicationNameForUserAgent}
@@ -460,10 +464,8 @@ export const PWWebView = (props: PWWebViewProps) => {
         onShouldStartLoadWithRequest,
         isDarkMode,
         applicationNameForUserAgent,
-        enablePeraConnect,
-        bridgeToken,
-        customJavaScript,
-        theme.mode,
+        jsToLoad,
+        preLoadJS,
         rest,
         styles.container,
         styles.webview,
