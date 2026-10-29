@@ -82,6 +82,7 @@ export const TransactionInfoTab = ({
             {feesPrefix ? (
                 <DetailRow title={t('peraCard.transactions.detail_fees')}>
                     <CurrencyAmount
+                        chainId={null}
                         value={fees.abs()}
                         currency={transaction.transactionCurrency}
                         assetId={null}

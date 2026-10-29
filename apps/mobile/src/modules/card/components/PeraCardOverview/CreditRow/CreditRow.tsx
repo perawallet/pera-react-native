@@ -43,6 +43,7 @@ export const CreditRow = ({
             right={
                 <PWView style={styles.rowRight}>
                     <CurrencyAmount
+                        chainId={null}
                         value={amount}
                         currency={currency}
                         assetId={null}

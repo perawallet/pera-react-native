@@ -441,57 +441,65 @@ test.describe('signing from a connected dApp', () => {
         expect(approvalErrors, 'approval threw an uncaught error').toEqual([])
     })
 
-    test('a connected dApp signs typed data', async () => {
-        const typedData = {
-            types: {
-                EIP712Domain: [
-                    { name: 'name', type: 'string' },
-                    { name: 'version', type: 'string' },
-                    { name: 'chainId', type: 'uint256' },
-                    { name: 'verifyingContract', type: 'address' },
-                ],
-                Permit: [
-                    { name: 'owner', type: 'address' },
-                    { name: 'spender', type: 'address' },
-                    { name: 'value', type: 'uint256' },
-                    { name: 'nonce', type: 'uint256' },
-                    { name: 'deadline', type: 'uint256' },
-                ],
-            },
-            primaryType: 'Permit',
-            domain: {
-                name: 'USD Coin',
-                version: '2',
-                chainId: Number(BigInt(hexChainId)),
-                verifyingContract: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
-            },
-            message: {
-                owner: address,
-                spender: '0x1111111254EEB25477B68fb85Ed929f73A960582',
-                value: '1000000',
-                nonce: '0',
-                deadline: String(Math.floor(Date.now() / 1000) + 3600),
-            },
-        }
-        await startRequest('typed', {
-            method: 'eth_signTypedData_v4',
-            params: [address, JSON.stringify(typedData)],
-        })
-        const { approvalPage, approvalErrors } = await openApproval()
-        await expect(
-            approvalPage.getByTestId('message-signing-spend-approval-warning'),
-        ).toBeVisible({ timeout: 20_000 })
-        await tapToConfirm(
-            approvalPage,
-            approvalPage.getByTestId('message-signing-confirm-slide'),
-        )
+    // Unversioned is served only for a v4 object, through the same review.
+    for (const method of ['eth_signTypedData_v4', 'eth_signTypedData']) {
+        test(`a connected dApp signs typed data with ${method}`, async () => {
+            const typedData = {
+                types: {
+                    EIP712Domain: [
+                        { name: 'name', type: 'string' },
+                        { name: 'version', type: 'string' },
+                        { name: 'chainId', type: 'uint256' },
+                        { name: 'verifyingContract', type: 'address' },
+                    ],
+                    Permit: [
+                        { name: 'owner', type: 'address' },
+                        { name: 'spender', type: 'address' },
+                        { name: 'value', type: 'uint256' },
+                        { name: 'nonce', type: 'uint256' },
+                        { name: 'deadline', type: 'uint256' },
+                    ],
+                },
+                primaryType: 'Permit',
+                domain: {
+                    name: 'USD Coin',
+                    version: '2',
+                    chainId: Number(BigInt(hexChainId)),
+                    verifyingContract:
+                        '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
+                },
+                message: {
+                    owner: address,
+                    spender: '0x1111111254EEB25477B68fb85Ed929f73A960582',
+                    value: '1000000',
+                    nonce: '0',
+                    deadline: String(Math.floor(Date.now() / 1000) + 3600),
+                },
+            }
+            await startRequest(`typed-${method}`, {
+                method,
+                params: [address, JSON.stringify(typedData)],
+            })
+            const { approvalPage, approvalErrors } = await openApproval()
+            await expect(
+                approvalPage.getByTestId(
+                    'message-signing-spend-approval-warning',
+                ),
+            ).toBeVisible({ timeout: 20_000 })
+            await tapToConfirm(
+                approvalPage,
+                approvalPage.getByTestId('message-signing-confirm-slide'),
+            )
 
-        const signed = await outcomeOf('typed')
-        expect(signed.code, signed.message).toBeUndefined()
-        expect(signed.result).toMatch(/^0x[0-9a-f]{130}$/)
-        await approvalPage.close().catch(() => {})
-        expect(approvalErrors, 'approval threw an uncaught error').toEqual([])
-    })
+            const signed = await outcomeOf(`typed-${method}`)
+            expect(signed.code, signed.message).toBeUndefined()
+            expect(signed.result).toMatch(/^0x[0-9a-f]{130}$/)
+            await approvalPage.close().catch(() => {})
+            expect(approvalErrors, 'approval threw an uncaught error').toEqual(
+                [],
+            )
+        })
+    }
 
     // The broadcast belongs to the offscreen document once the window hands
     // the signed send over, so closing the window mid-send changes nothing.
@@ -572,6 +580,21 @@ test.describe('signing from a connected dApp', () => {
                 .pages()
                 .some(candidate => candidate.url().includes('approval.html')),
         ).toBe(false)
+    })
+
+    test('eth_signTypedData with a v1 array is refused without opening an approval', async () => {
+        const pagesBefore = context.pages().length
+        await startRequest('typedV1', {
+            method: 'eth_signTypedData',
+            params: [
+                [{ type: 'string', name: 'Message', value: 'Hi, Alice!' }],
+                address,
+            ],
+        })
+        expect((await outcomeOf('typedV1')).code).toBe(4200)
+
+        await dappPage.waitForTimeout(NO_APPROVAL_WAIT_MS)
+        expect(context.pages()).toHaveLength(pagesBefore)
     })
 
     // Last, because it closes the wallet tab the earlier tests drive. The

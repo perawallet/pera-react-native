@@ -81,6 +81,7 @@ import { createEvmHistoryAdapter } from './history'
 import { createEvmLedgerAppDriver } from './ledger/driver'
 import { createEvmPlannerAdapter } from './signing/adapter'
 import { createEvmLocalKeySignerAdapter } from './signing/localKeySigner'
+import { withMessageSigningGate } from './signing/messageSigningGate'
 import { createEvmMessageSignerAdapter } from './signing/messages'
 import { createEthereumReviewer } from './signing/review'
 import { createEvmSigningReviewerAdapter } from './signing/signingReviewer'
@@ -123,7 +124,10 @@ const buildAdapters = (
         reviewer,
         signingReviewer: createEvmSigningReviewerAdapter(chain, reviewer),
         localKeySigner: createEvmLocalKeySignerAdapter(chain),
-        messageSigner: createEvmMessageSignerAdapter(chain),
+        messageSigner: withMessageSigningGate(
+            chain,
+            createEvmMessageSignerAdapter(chain),
+        ),
         accounts: createEthereumAccountsAdapter(ctx, chain, listedTokens),
         assets: createEthereumAssetsAdapter(ctx, chain, listedTokens),
         transfer: createEvmTransferAdapter(ctx, chain),

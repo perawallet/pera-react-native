@@ -40,6 +40,7 @@ export const AssetClaimDetailScreen = () => {
     const { t } = useLanguage()
     const {
         request,
+        chainId,
         amount,
         nativeSymbol,
         claimGainLabel,
@@ -141,6 +142,7 @@ export const AssetClaimDetailScreen = () => {
                     testID='asset_inbox_claim_asset_preview'
                 >
                     <AssetIcon
+                        chainId={chainId}
                         asset={request.asset}
                         size='3xl'
                         shape={
@@ -155,6 +157,7 @@ export const AssetClaimDetailScreen = () => {
                     }
                 />
                 <AssetAmount
+                    chainId={chainId}
                     variant='h2'
                     value={amount}
                     asset={request.asset}
@@ -221,6 +224,7 @@ export const AssetClaimDetailScreen = () => {
                             showCopy={false}
                         />
                         <AssetAmount
+                            chainId={chainId}
                             value={baseUnitsToDisplayUnits(
                                 senderItem.amount,
                                 request.asset.decimals,

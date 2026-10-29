@@ -12,7 +12,8 @@
 
 import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { type DisplayableAsset } from '@perawallet/wallet-core-assets'
-import type { Optional } from '@perawallet/wallet-core-shared'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import { AssetIcon } from '@components/AssetIcon'
 import { useStyles } from './styles'
 
@@ -26,6 +27,8 @@ export type AssetSelectorBaseProps = {
 
 export type AssetSelectorContentProps = AssetSelectorBaseProps & {
     asset: Optional<DisplayableAsset>
+    /** The asset's chain; null draws it as a token. */
+    chainId: Nullable<ChainId>
     label: string
     logoUrl?: string
 }
@@ -35,6 +38,7 @@ export const AssetSelectorContent = ({
     onPress,
     testID,
     asset,
+    chainId,
     label,
     logoUrl,
 }: AssetSelectorContentProps) => {
@@ -51,6 +55,7 @@ export const AssetSelectorContent = ({
                     <>
                         <AssetIcon
                             asset={asset}
+                            chainId={chainId}
                             logoUrl={logoUrl}
                             style={styles.icon}
                             size='lg'

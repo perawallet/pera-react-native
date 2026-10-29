@@ -35,6 +35,7 @@ export const FlatFeeRow = ({
         >
             <PWView style={styles.feeValueContainer}>
                 <AssetAmount
+                    chainId={scope.chainId}
                     asset={asset}
                     showSymbol
                     ignorePrivacyMode

@@ -27,12 +27,15 @@ import {
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
 import { baseUnitsToDisplayUnits } from '@perawallet/wallet-core-shared'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { useSignRequestScope } from '../../hooks/useSignRequestScope'
 
 export type BalanceImpactDirection = 'receive' | 'spend'
 
 export type BalanceImpactItem = {
     assetId: string
+    /** The chain `assetId` is on. */
+    chainId: ChainId
     /** Drives the asset/collectible avatar and the AssetAmount unit + decimals. */
     asset: DisplayableAsset
     isCollectible: boolean
@@ -164,6 +167,7 @@ export const useBalanceImpactSummary = (): UseBalanceImpactSummaryResult => {
 
             return {
                 assetId,
+                chainId: scope.chainId,
                 asset: displayAsset,
                 isCollectible,
                 isPureCollectible:
@@ -190,6 +194,7 @@ export const useBalanceImpactSummary = (): UseBalanceImpactSummaryResult => {
             )
             return {
                 assetId: created.key,
+                chainId: scope.chainId,
                 asset: {
                     assetId: created.key,
                     name: created.name,
@@ -229,5 +234,13 @@ export const useBalanceImpactSummary = (): UseBalanceImpactSummaryResult => {
             isSimulating,
             simulationFailed,
         }
-    }, [impact, assets, prices, isSimulating, simulationFailed, nativeAsset])
+    }, [
+        impact,
+        assets,
+        prices,
+        isSimulating,
+        simulationFailed,
+        nativeAsset,
+        scope.chainId,
+    ])
 }

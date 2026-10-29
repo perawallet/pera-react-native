@@ -10,16 +10,18 @@
  limitations under the License
  */
 
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { DappRequestCodedError } from '@perawallet/wallet-core-connections'
 import { findTransactionBatch } from '@perawallet/wallet-core-signing'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import {
     ETHEREUM_CAIP2_NAMESPACE,
     ETHEREUM_WC_V2_METHOD,
     createEvmWalletConnectSupport,
 } from '../walletConnect'
+import { evmCapabilityDefaults } from '../../capability-defaults'
 import { testChainContext } from '../../__tests__/context'
-import { ETHEREUM } from '../../__tests__/evm-chains'
+import { BASE, ETHEREUM } from '../../__tests__/evm-chains'
 
 vi.mock('@perawallet/wallet-core-signing', async importOriginal => ({
     ...(await importOriginal<
@@ -34,6 +36,15 @@ const v2 = support.v2
 if (!v2) throw new Error('Ethereum serves WalletConnect v2')
 
 const ADDRESS = '0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed'
+
+const { chains } = getProvider()
+
+beforeEach(() => {
+    chains.reset()
+    chains.register(ETHEREUM.descriptor, evmCapabilityDefaults)
+})
+
+afterEach(() => chains.reset())
 
 describe('namespace', () => {
     it('is eip155', () => {
@@ -62,11 +73,12 @@ describe('caip2ChainIdFor / networkForCaip2ChainId', () => {
 })
 
 describe('v2.methods', () => {
-    it('is exactly the eleven served methods', () => {
+    it('is exactly the seventeen listed methods', () => {
         expect(v2.methods).toEqual([
             'eth_sendTransaction',
             'personal_sign',
             'eth_signTypedData_v4',
+            'eth_signTypedData',
             'wallet_switchEthereumChain',
             'wallet_sendCalls',
             'eth_accounts',
@@ -75,21 +87,42 @@ describe('v2.methods', () => {
             'wallet_getCapabilities',
             'wallet_getCallsStatus',
             'wallet_showCallsStatus',
+            'eth_sign',
+            'eth_signTypedData_v3',
+            'eth_signTransaction',
+            'eth_sendRawTransaction',
+            'wallet_getPermissions',
         ])
     })
 
     it.each([
+        'eth_sign',
+        'eth_signTypedData_v3',
         'eth_signTransaction',
         'eth_sendRawTransaction',
-        'eth_sign',
-        'wallet_addEthereumChain',
-    ])('never lists %s', method => {
-        expect(v2.methods).not.toContain(method)
-        expect(v2.handleRequest(method, [])).toEqual({ kind: 'unsupported' })
+        'wallet_getPermissions',
+    ])('lists %s and answers every call 4200', method => {
+        expect(v2.methods).toContain(method)
+        expect(v2.signingMethods).not.toContain(method)
+        expect(v2.handleRequest(method, [ADDRESS, '0x00'])).toMatchObject({
+            kind: 'refused',
+            error: { code: 4200 },
+        })
     })
 
-    it('asks the user only for the five signing methods', () => {
-        expect(v2.signingMethods).toEqual(v2.methods.slice(0, 5))
+    it.each([
+        'wallet_addEthereumChain',
+        'eth_signTypedData_v1',
+        'wallet_watchAsset',
+    ])('never lists %s', method => {
+        expect(v2.methods).not.toContain(method)
+        expect(v2.handleRequest(method, [])).toEqual({
+            kind: 'unsupported',
+        })
+    })
+
+    it('asks the user only for the six signing methods', () => {
+        expect(v2.signingMethods).toEqual(v2.methods.slice(0, 6))
     })
 })
 
@@ -128,6 +161,26 @@ describe('v2.handleRequest', () => {
         })
     })
 
+    it('routes unversioned eth_signTypedData with a v4 object as sign-typed-data, params as sent', () => {
+        const typed = [ADDRESS, '{"types":{}}']
+
+        expect(
+            v2.handleRequest(ETHEREUM_WC_V2_METHOD.signTypedData, typed),
+        ).toEqual({
+            kind: 'operation',
+            type: 'sign-typed-data',
+            params: typed,
+        })
+    })
+
+    it('refuses unversioned eth_signTypedData with a v1 array as 4200', () => {
+        const v1 = [[{ type: 'string', name: 'Message', value: 'Hi' }], ADDRESS]
+
+        expect(
+            v2.handleRequest(ETHEREUM_WC_V2_METHOD.signTypedData, v1),
+        ).toMatchObject({ kind: 'refused', error: { code: 4200 } })
+    })
+
     it('answers eth_accounts and eth_requestAccounts with the addresses', () => {
         for (const method of [
             ETHEREUM_WC_V2_METHOD.accounts,
@@ -147,6 +200,95 @@ describe('v2.handleRequest', () => {
         expect(route.answer([], 'mainnet')).toBe('0x1')
         expect(route.answer([], 'sepolia')).toBe('0xaa36a7')
         expect(route.answer([], 'custom')).toBeNull()
+    })
+})
+
+describe('message signing gate', () => {
+    const REFUSED = {
+        kind: 'refused',
+        error: {
+            code: 4200,
+            message: 'This wallet does not sign messages on this chain',
+        },
+    }
+    const MESSAGE_METHODS = [
+        ETHEREUM_WC_V2_METHOD.personalSign,
+        ETHEREUM_WC_V2_METHOD.signTypedDataV4,
+    ]
+
+    it.each(['remote', 'developer'] as const)(
+        'refuses both message methods with 4200 when the %s layer switches it off, and still routes eth_sendTransaction',
+        layer => {
+            const transaction = { to: ADDRESS, value: '0x1' }
+            chains.setCapabilityOverrides(() => ({
+                [layer]: { ethereum: { messageSigning: false } },
+            }))
+
+            for (const method of MESSAGE_METHODS) {
+                expect(v2.handleRequest(method, [ADDRESS])).toEqual(REFUSED)
+            }
+            expect(
+                v2.handleRequest(ETHEREUM_WC_V2_METHOD.sendTransaction, [
+                    transaction,
+                ]),
+            ).toEqual({
+                kind: 'operation',
+                type: 'send-transaction',
+                params: transaction,
+            })
+        },
+    )
+
+    it('follows a change made after the table was built', () => {
+        const route = () =>
+            v2.handleRequest(ETHEREUM_WC_V2_METHOD.personalSign, [ADDRESS])
+        expect(route()).toMatchObject({ kind: 'operation' })
+
+        chains.setCapabilityOverrides(() => ({
+            developer: { ethereum: { messageSigning: false } },
+        }))
+        expect(route()).toEqual(REFUSED)
+
+        chains.setCapabilityOverrides(() => ({}))
+        expect(route()).toMatchObject({ kind: 'operation' })
+    })
+
+    it('fails closed for a chain the registry does not hold', () => {
+        chains.reset()
+
+        expect(
+            v2.handleRequest(ETHEREUM_WC_V2_METHOD.personalSign, [ADDRESS]),
+        ).toEqual(REFUSED)
+    })
+
+    it('fails closed while the chain kill switch is off', () => {
+        chains.setCapabilityOverrides(() => ({
+            chainEnabled: { ethereum: false },
+        }))
+
+        expect(
+            v2.handleRequest(ETHEREUM_WC_V2_METHOD.signTypedDataV4, [ADDRESS]),
+        ).toEqual(REFUSED)
+    })
+
+    it('reads each chain its own capability', () => {
+        chains.register(BASE.descriptor, evmCapabilityDefaults)
+        chains.setCapabilityOverrides(() => ({
+            developer: { ethereum: { messageSigning: false } },
+        }))
+        const baseV2 = createEvmWalletConnectSupport(
+            testChainContext({ chain: BASE }),
+            BASE,
+        ).v2
+
+        expect(
+            baseV2?.handleRequest(ETHEREUM_WC_V2_METHOD.personalSign, [
+                ADDRESS,
+            ]),
+        ).toMatchObject({ kind: 'operation', type: 'sign-message' })
+        expect(
+            v2.handleRequest(ETHEREUM_WC_V2_METHOD.personalSign, [ADDRESS]),
+        ).toEqual(REFUSED)
     })
 })
 

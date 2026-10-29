@@ -30,7 +30,7 @@ export type SharedPreferredProps = {
     density?: PreferredAmountDensity
 } & Omit<
     CurrencyAmountProps,
-    'currency' | 'value' | 'precision' | 'assetDecimals' | 'assetId'
+    'currency' | 'value' | 'precision' | 'assetDecimals' | 'assetId' | 'chainId'
 >
 
 /** Convert an amount in `sourceAssetId`'s units to the preferred currency. */

@@ -12,30 +12,28 @@
 
 import { useCallback } from 'react'
 import {
-    useIsNativeAssetId,
     PeraAssetType,
     type DisplayableAsset,
 } from '@perawallet/wallet-core-assets'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
     addressCodecs,
-    LEGACY_CHAIN_ID,
     type ChainId,
 } from '@perawallet/wallet-core-chain-contract'
 import type { IconName } from '@components/core'
 import { useClipboard } from '@hooks/useClipboard'
+import { nativeAssetInfoOf } from '@modules/chain-ui/icon'
 import { getVerificationIcon } from '@modules/assets/utils/verification'
 
 type UseAssetItemViewOptions = {
     copyableAssetId?: boolean
-    /** The asset's chain; an id that is an address on it shows truncated by its codec. */
-    chainId?: ChainId
+    /** The asset's chain; decides native-ness, and an id that is an address on it shows truncated by its codec. */
+    chainId: ChainId
 }
 
 type UseAssetItemViewResult = {
     isCollectible: boolean
-    isAlgo: boolean
+    isNativeAsset: boolean
     isSuspicious: boolean
     isDeleted: boolean
     displayName: string
@@ -43,33 +41,31 @@ type UseAssetItemViewResult = {
     verificationIcon: Nullable<IconName>
     iconShape: 'circle' | 'square'
     /** Row-level long-press copy. Undefined when copying is off or the asset
-     *  is ALGO — its id (0) is never what the user wants on the clipboard. */
+     *  is its chain's native coin — that id is never what the user wants on the clipboard. */
     onCopyAssetId: Optional<() => void>
 }
 
 export const useAssetItemView = (
     asset: DisplayableAsset,
-    options?: UseAssetItemViewOptions,
+    options: UseAssetItemViewOptions,
 ): UseAssetItemViewResult => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const { chainId } = options
     const { copyToClipboard } = useClipboard()
-    const isNativeAssetId = useIsNativeAssetId(scope)
     const meta = asset.peraMetadata
-    const isAlgo = isNativeAssetId(asset.assetId)
+    const nativeInfo = nativeAssetInfoOf({ chainId, assetId: asset.assetId })
+    const isNativeAsset = nativeInfo !== undefined
     const isCollectible = meta?.type === PeraAssetType.collectible
     const tier = meta?.verificationTier
     const isSuspicious = tier === 'suspicious'
     const isDeleted = meta?.isDeleted === true
 
     const verificationIconOf = (): Nullable<IconName> => {
-        if (isAlgo) return 'assets/trusted'
+        if (isNativeAsset) return 'assets/trusted'
         return tier ? getVerificationIcon(tier) : null
     }
     const verificationIcon = verificationIconOf()
 
-    const chainId = options?.chainId
     const shownAssetId =
-        chainId !== undefined &&
         addressCodecs.has(chainId) &&
         addressCodecs.get(chainId).isValid(asset.assetId)
             ? addressCodecs.get(chainId).truncate(asset.assetId)
@@ -81,7 +77,7 @@ export const useAssetItemView = (
     // `||` (not `??`) so empty-string names fall back to `Asset #<id>`,
     // matching the prior AccountAssetItemView behavior.
     const displayNameOf = () => {
-        if (isAlgo) return 'Algo'
+        if (nativeInfo) return nativeInfo.name
         if (isCollectible) {
             return collectibleTitle || asset.name || `Asset #${shownAssetId}`
         }
@@ -94,7 +90,7 @@ export const useAssetItemView = (
         : asset.unitName
 
     const secondaryTextOf = () => {
-        if (isAlgo) return asset.unitName ?? ''
+        if (isNativeAsset) return asset.unitName ?? ''
         return subtitleLeading
             ? `${subtitleLeading} · ${shownAssetId}`
             : shownAssetId
@@ -108,7 +104,7 @@ export const useAssetItemView = (
 
     return {
         isCollectible,
-        isAlgo,
+        isNativeAsset,
         isSuspicious,
         isDeleted,
         displayName,
@@ -116,6 +112,6 @@ export const useAssetItemView = (
         verificationIcon,
         iconShape: isCollectible ? 'square' : 'circle',
         onCopyAssetId:
-            options?.copyableAssetId && !isAlgo ? copyAssetId : undefined,
+            options.copyableAssetId && !isNativeAsset ? copyAssetId : undefined,
     }
 }

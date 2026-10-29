@@ -104,6 +104,7 @@ export const LedgerAccountInfoContent = ({
                             />
                             <PWView style={styles.balanceContainer}>
                                 <AssetAmount
+                                    chainId={scope.chainId}
                                     asset={nativeAsset}
                                     value={item.nativeBalance}
                                     density='compact'
@@ -167,7 +168,7 @@ export const LedgerAccountInfoContent = ({
                 }
             }
         },
-        [styles, nativeAsset],
+        [styles, nativeAsset, scope.chainId],
     )
 
     return (

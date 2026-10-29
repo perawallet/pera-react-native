@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { PWText, PWTouchableOpacity } from '@components/core'
 import type { DexSwapAsset } from '@perawallet/wallet-core-swaps'
 import { SwapAssetPairIcon } from '@modules/swap/components/SwapAssetPairIcon'
@@ -19,12 +20,14 @@ import { useStyles } from './styles'
 export type SwapPairChipProps = {
     assetIn: DexSwapAsset
     assetOut: DexSwapAsset
+    chainId: ChainId
     onPress: () => void
 }
 
 export const SwapPairChip = ({
     assetIn,
     assetOut,
+    chainId,
     onPress,
 }: SwapPairChipProps) => {
     const styles = useStyles()
@@ -40,6 +43,7 @@ export const SwapPairChip = ({
             <SwapAssetPairIcon
                 assetIn={assetIn}
                 assetOut={assetOut}
+                chainId={chainId}
                 surfaceColor={theme.colors.layerGrayLightest}
             />
             <PWText variant='body'>{label}</PWText>

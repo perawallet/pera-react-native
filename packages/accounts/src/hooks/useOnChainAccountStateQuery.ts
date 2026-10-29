@@ -87,7 +87,7 @@ export const useOnChainAccountStateQuery = (
 
     return {
         data: query.data,
-        isPending: query.isPending,
+        isPending: !!address && query.isPending,
         isLoading: query.isLoading,
         isFetching: query.isFetching,
         isSuccess: query.isSuccess,

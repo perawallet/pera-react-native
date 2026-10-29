@@ -235,7 +235,7 @@ export type WalletConnectRequestRoute =
     | { kind: 'refused'; error: { code: number; message: string } }
 
 export interface WalletConnectV2ChainSupport {
-    /** Every method the chain answers, in the order an approved namespace declares them. */
+    /** Every method the chain lists, in the order an approved namespace declares them. A listed method may still route `refused` per request. */
     readonly methods: readonly string[]
     /** The subset of `methods` that asks the user, listed as a proposal's permissions. */
     readonly signingMethods: readonly string[]

@@ -10,9 +10,14 @@
  limitations under the License
  */
 
+import { useCallback } from 'react'
 import { useMutation, type UseMutationOptions } from '@tanstack/react-query'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useWalletDeployment } from '@perawallet/wallet-core-chain-shared'
-import { useDeploymentDeviceID } from '@perawallet/wallet-core-device'
+import {
+    deviceIdForDeployment,
+    useDeviceStore,
+} from '@perawallet/wallet-core-device'
 import {
     BackupDeviceIdUnavailableError,
     BackupDraftMissingError,
@@ -28,6 +33,14 @@ export type RegisterCloudBackupMutationResult = {
     backupId: BackupId
 }
 
+// TanStack swaps a pending mutation's options on every render, so the device ID travels in the variables.
+type RegisterCloudBackupVariables = { deviceId: Nullable<string> }
+
+export type UseRegisterCloudBackupMutationResult = {
+    mutate: () => void
+    isPending: boolean
+}
+
 /**
  * Claims the drafted credentials with the backup service. Nothing reaches the
  * device: the derived keys are retained in the volatile draft until the user
@@ -37,18 +50,19 @@ export const useRegisterCloudBackupMutation = (
     options?: UseMutationOptions<
         RegisterCloudBackupMutationResult,
         Error,
-        void
+        RegisterCloudBackupVariables
     >,
-) => {
+): UseRegisterCloudBackupMutationResult => {
     const deployment = useWalletDeployment()
-    const deviceId = useDeploymentDeviceID(deployment)
     const setRegistration = useCloudBackupDraftStore(
         state => state.setRegistration,
     )
 
-    return useMutation({
+    const { mutate, isPending } = useMutation({
         throwOnError: false,
-        mutationFn: async (): Promise<RegisterCloudBackupMutationResult> => {
+        mutationFn: async ({
+            deviceId,
+        }: RegisterCloudBackupVariables): Promise<RegisterCloudBackupMutationResult> => {
             // One snapshot: the store writes the phrase and salt together, so
             // reading them a render apart can pair a phrase with another
             // draft's salt and derive the wrong keys.
@@ -82,4 +96,18 @@ export const useRegisterCloudBackupMutation = (
         },
         ...options,
     })
+
+    // Read at call time, so a callback captured before the device registered still finds its id.
+    const register = useCallback(
+        () =>
+            mutate({
+                deviceId: deviceIdForDeployment(
+                    useDeviceStore.getState(),
+                    deployment,
+                ),
+            }),
+        [mutate, deployment],
+    )
+
+    return { mutate: register, isPending }
 }
