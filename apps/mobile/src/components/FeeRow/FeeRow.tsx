@@ -25,7 +25,7 @@ const FEE_MODEL_HAS_PRESETS: Record<FeeModel, boolean> = {
 }
 
 export const FeeRow = ({
-    chainId,
+    scope,
     amount,
     presets,
     isLoading,
@@ -33,14 +33,14 @@ export const FeeRow = ({
     onPresetChange,
     accessory,
 }: FeeRowProps) => {
-    const feeModel = useChainFeeModel(chainId)
+    const feeModel = useChainFeeModel(scope.chainId)
 
     // Until presets arrive (loading, or none returned) the headline amount is
     // the best fee to show.
     if (FEE_MODEL_HAS_PRESETS[feeModel] && presets) {
         return (
             <GasFeeEditor
-                chainId={chainId}
+                scope={scope}
                 presets={presets}
                 selectedPreset={selectedPreset}
                 onPresetChange={onPresetChange}
@@ -51,7 +51,7 @@ export const FeeRow = ({
 
     return (
         <FlatFeeRow
-            chainId={chainId}
+            scope={scope}
             amount={amount}
             isLoading={isLoading}
             accessory={accessory}
