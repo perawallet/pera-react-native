@@ -5,19 +5,19 @@ export const utf8Producer = (b: Uint8Array) => bytesToHex(utf8BytesToIndices(b))
 export const executeWithKeyArg = (id: string) =>
     executeWithKey(id, b => bytesToHex(b))
 export const executeWithMnemonicArg = (id: string) =>
-    executeWithMnemonic(id, 'domain', b => bytesToHex(b))
+    executeWithMnemonic(id, 'domain', (b: Uint8Array) => bytesToHex(b))
 export const authSecretKeyArg = () =>
     withBackupAuthSecretKey(b => bytesToHex(b))
 export const encryptionKeyArg = () =>
-    withBackupEncryptionKey(b => bytesToHex(b))
+    withBackupEncryptionKey((b: Uint8Array) => bytesToHex(b))
 export const itemKeyArg = (id: string) =>
     withBackupItemKey(id, b => bytesToHex(b))
 export const mnemonicIndicesArg = () =>
-    withBackupMnemonicIndices(b => bytesToHex(b))
+    withBackupMnemonicIndices((b: Uint8Array) => bytesToHex(b))
 export const exportedKeyArg = (id: string) =>
     withExportedKey(id, b => bytesToHex(b))
 export const withSecretArg = (id: string) => withSecret(id, b => bytesToHex(b))
 export const memberHelper = (id: string) =>
     kms.withSecret(id, b => bytesToHex(b))
 export const asyncCallback = (id: string) =>
-    withSecret(id, async b => bytesToHex(b))
+    withSecret(id, async (b: Uint8Array) => bytesToHex(b))
