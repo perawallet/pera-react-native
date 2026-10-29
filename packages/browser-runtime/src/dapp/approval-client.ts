@@ -18,7 +18,11 @@ import {
     isDappUserRejection,
 } from '@perawallet/wallet-core-connections/dappRequest'
 import type { SerializedCredential } from '@perawallet/wallet-core-passkeys/webauthn'
-import { AppError, ErrorCategory, toError } from '@perawallet/wallet-core-shared'
+import {
+    AppError,
+    ErrorCategory,
+    toError,
+} from '@perawallet/wallet-core-shared'
 import {
     encodeSignedTransactions,
     isWireSignedSendOutcome,
