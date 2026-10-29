@@ -100,7 +100,10 @@ export const useRemoveCloudBackupMutation = (
         ...options,
     })
 
-    const remove = useCallback(() => mutate({ deployment }), [mutate, deployment])
+    const remove = useCallback(
+        () => mutate({ deployment }),
+        [mutate, deployment],
+    )
 
     return { mutate: remove, isPending }
 }

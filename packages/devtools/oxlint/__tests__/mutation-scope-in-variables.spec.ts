@@ -39,7 +39,9 @@ new RuleTester({
                         mutationFn: async () => remove(deployment),
                     })
                 }`,
-            errors: [captured('mutationFn', 'deployment', 'useWalletDeployment')],
+            errors: [
+                captured('mutationFn', 'deployment', 'useWalletDeployment'),
+            ],
         },
         {
             name: 'a method-shorthand callback is checked',
@@ -156,7 +158,9 @@ new RuleTester({
                         mutationFn: async () => remove(deployment),
                     })
                 }`,
-            errors: [captured('mutationFn', 'deployment', 'useWalletDeployment')],
+            errors: [
+                captured('mutationFn', 'deployment', 'useWalletDeployment'),
+            ],
         },
     ],
     valid: [
