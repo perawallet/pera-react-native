@@ -31,6 +31,7 @@ import {
     renderHook,
     screen,
     waitFor,
+    within,
 } from '@testing-library/react'
 import { Notifier } from 'react-native-notifier'
 
@@ -98,6 +99,7 @@ const ETH_SCOPE: ChainScope = { chainId: 'ethereum', networkId: 'mainnet' }
 // Hardhat accounts #0 and #1, from the public test mnemonic.
 const SENDER = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'
 const RECEIVER = '0x70997970C51812dc3A010C7d01b50e0d17dc79C8'
+const UNKNOWN_RECIPIENT = '0x000000000000000000000000000000000000dEaD'
 const TOKEN = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
 
 // An HD account, so its signing scheme resolves without the keystore loading
@@ -528,16 +530,22 @@ describe('Flow: send from an Ethereum account', () => {
             expect(screen.queryByText('Algo friend')).toBeNull()
         })
 
-        it('Given an ether send, when the user reviews it, then the review names the network, the sender by its 0x address, and the full recipient address', async () => {
+        it("Given an ether send to one of the user's accounts, when the user reviews it, then the review shows the network chip and badges, the recipient by name with its 0x address underneath, and the sender by its 0x address", async () => {
             sendEther()
             useSendFundsStore.getState().setDestination(RECEIVER)
             useSendFundsStore.getState().setSendMode('normal')
 
             renderSendConfirmationStack()
 
-            const network = await screen.findByTestId('send_confirm_network')
-            expect(network.textContent).toBe(chainDisplayNameOf('ethereum'))
-            expect(screen.getAllByText(RECEIVER).length).toBeGreaterThan(0)
+            const chip = await screen.findByTestId('send_confirm_network')
+            expect(chip.textContent).toContain(chainDisplayNameOf('ethereum'))
+            expect(
+                screen.getAllByTestId('chain_avatar_badge_ethereum'),
+            ).toHaveLength(2)
+            const recipient = screen.getByTestId('send_confirm_recipient')
+            expect(recipient.textContent).toContain('ETH Test')
+            expect(recipient.textContent).toContain(RECEIVER.slice(0, 6))
+            expect(recipient.textContent).not.toContain(RECEIVER)
             const sender = screen
                 .getByText('Eth sender')
                 .closest('div')?.parentElement
@@ -545,6 +553,40 @@ describe('Flow: send from an Ethereum account', () => {
             expect(sender?.textContent).not.toContain(
                 ALGO25_TEST_ADDRESS.slice(0, 6),
             )
+        })
+
+        it('Given a review, when the user taps the recipient, then the full address opens with a copy action', async () => {
+            sendEther()
+            useSendFundsStore.getState().setDestination(RECEIVER)
+            useSendFundsStore.getState().setSendMode('normal')
+
+            renderSendConfirmationStack()
+
+            fireEvent.click(await screen.findByTestId('send_confirm_recipient'))
+
+            const full = await screen.findByTestId(
+                'send_confirm_recipient_full_address',
+            )
+            expect(full.textContent).toBe(RECEIVER)
+            expect(
+                screen.getByTestId('send_confirm_recipient_copy'),
+            ).toBeTruthy()
+        })
+
+        it('Given an ether send to an address the user does not know, when the user reviews it, then the recipient is the full address with the network badge', async () => {
+            sendEther()
+            useSendFundsStore.getState().setDestination(UNKNOWN_RECIPIENT)
+            useSendFundsStore.getState().setSendMode('normal')
+
+            renderSendConfirmationStack()
+
+            const recipient = await screen.findByTestId(
+                'send_confirm_recipient',
+            )
+            expect(within(recipient).getByText(UNKNOWN_RECIPIENT)).toBeTruthy()
+            expect(
+                within(recipient).getByTestId('chain_avatar_badge_ethereum'),
+            ).toBeTruthy()
         })
     })
 })
