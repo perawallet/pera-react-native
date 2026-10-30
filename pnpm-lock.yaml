@@ -274,7 +274,7 @@ overrides:
   js-yaml@>=4.0.0 <4.3.1: '>=5.4.1'
   '@gorhom/portal>nanoid': 6.0.0
   '@noble/curves@1': 1.9.7
-  '@noble/hashes@1': 1.8.0
+  '@noble/hashes@<1.8.0': 1.8.0
   '@algorandfoundation/keystore-core>@noble/hashes': 2.4.0
   '@algorandfoundation/xhd-wallet-api>@noble/curves': 2.4.0
   '@walletconnect/utils>ox': 0.14.56
@@ -390,7 +390,7 @@ importers:
         version: 0.12.5
       vitest:
         specifier: 'catalog:'
-        version: 5.0.3(@types/node@26.1.2)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@1.8.0))(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
+        version: 5.0.3(@types/node@26.1.2)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@2.4.0))(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
 
   apps/benchmarks:
     dependencies:
@@ -490,7 +490,7 @@ importers:
         version: 7.0.2
       vitest:
         specifier: 'catalog:'
-        version: 5.0.3(@types/node@26.1.2)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@1.8.0))(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
+        version: 5.0.3(@types/node@26.1.2)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@2.4.0))(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
 
   apps/browser:
     dependencies:
@@ -1276,7 +1276,7 @@ importers:
         version: 7.0.2
       vitest:
         specifier: 'catalog:'
-        version: 5.0.3(@types/node@20.19.43)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@1.8.0))(msw@2.15.0(@types/node@20.19.43)(typescript@7.0.2))(vite@8.3.4(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
+        version: 5.0.3(@types/node@20.19.43)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@2.4.0))(msw@2.15.0(@types/node@20.19.43)(typescript@7.0.2))(vite@8.3.4(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
 
   conformance-evm:
     dependencies:
@@ -1337,7 +1337,7 @@ importers:
         version: 7.0.2
       vitest:
         specifier: 'catalog:'
-        version: 5.0.3(@types/node@20.19.43)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@1.8.0))(msw@2.15.0(@types/node@20.19.43)(typescript@7.0.2))(vite@8.3.4(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
+        version: 5.0.3(@types/node@20.19.43)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@2.4.0))(msw@2.15.0(@types/node@20.19.43)(typescript@7.0.2))(vite@8.3.4(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
 
   extensions/connections:
     dependencies:
@@ -1362,7 +1362,7 @@ importers:
         version: 8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3)
       vitest:
         specifier: 'catalog:'
-        version: 5.0.3(@types/node@26.1.2)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@1.8.0))(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
+        version: 5.0.3(@types/node@26.1.2)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@2.4.0))(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
 
   extensions/hardware-wallet:
     dependencies:
@@ -1387,7 +1387,7 @@ importers:
         version: 8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3)
       vitest:
         specifier: 'catalog:'
-        version: 5.0.3(@types/node@26.1.2)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@1.8.0))(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
+        version: 5.0.3(@types/node@26.1.2)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@2.4.0))(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
 
   extensions/keystore-chrome:
     dependencies:
@@ -1470,7 +1470,7 @@ importers:
         version: 8.3.4(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3)
       vitest:
         specifier: 'catalog:'
-        version: 5.0.3(@types/node@20.19.43)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@1.8.0))(msw@2.15.0(@types/node@20.19.43)(typescript@7.0.2))(vite@8.3.4(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
+        version: 5.0.3(@types/node@20.19.43)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@2.4.0))(msw@2.15.0(@types/node@20.19.43)(typescript@7.0.2))(vite@8.3.4(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
 
   extensions/ledger-react-native-usb:
     dependencies:
@@ -1501,7 +1501,7 @@ importers:
         version: 8.3.4(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3)
       vitest:
         specifier: 'catalog:'
-        version: 5.0.3(@types/node@20.19.43)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@1.8.0))(msw@2.15.0(@types/node@20.19.43)(typescript@7.0.2))(vite@8.3.4(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
+        version: 5.0.3(@types/node@20.19.43)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@2.4.0))(msw@2.15.0(@types/node@20.19.43)(typescript@7.0.2))(vite@8.3.4(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
 
   extensions/ledger-shared:
     dependencies:
@@ -1535,7 +1535,7 @@ importers:
         version: 8.3.4(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3)
       vitest:
         specifier: 'catalog:'
-        version: 5.0.3(@types/node@20.19.43)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@1.8.0))(msw@2.15.0(@types/node@20.19.43)(typescript@7.0.2))(vite@8.3.4(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
+        version: 5.0.3(@types/node@20.19.43)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@2.4.0))(msw@2.15.0(@types/node@20.19.43)(typescript@7.0.2))(vite@8.3.4(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
 
   extensions/ledger-web-ble:
     dependencies:
@@ -1569,7 +1569,7 @@ importers:
         version: 8.3.4(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3)
       vitest:
         specifier: 'catalog:'
-        version: 5.0.3(@types/node@20.19.43)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@1.8.0))(msw@2.15.0(@types/node@20.19.43)(typescript@7.0.2))(vite@8.3.4(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
+        version: 5.0.3(@types/node@20.19.43)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@2.4.0))(msw@2.15.0(@types/node@20.19.43)(typescript@7.0.2))(vite@8.3.4(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
 
   extensions/ledger-web-usb:
     dependencies:
@@ -1600,7 +1600,7 @@ importers:
         version: 8.3.4(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3)
       vitest:
         specifier: 'catalog:'
-        version: 5.0.3(@types/node@20.19.43)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@1.8.0))(msw@2.15.0(@types/node@20.19.43)(typescript@7.0.2))(vite@8.3.4(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
+        version: 5.0.3(@types/node@20.19.43)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@2.4.0))(msw@2.15.0(@types/node@20.19.43)(typescript@7.0.2))(vite@8.3.4(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
 
   extensions/passkey-autofill:
     dependencies:
@@ -1634,7 +1634,7 @@ importers:
         version: 8.3.4(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3)
       vitest:
         specifier: 'catalog:'
-        version: 5.0.3(@types/node@20.19.43)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@1.8.0))(msw@2.15.0(@types/node@20.19.43)(typescript@7.0.2))(vite@8.3.4(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
+        version: 5.0.3(@types/node@20.19.43)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@2.4.0))(msw@2.15.0(@types/node@20.19.43)(typescript@7.0.2))(vite@8.3.4(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
 
   extensions/platform:
     dependencies:
@@ -1677,7 +1677,7 @@ importers:
         version: 8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3)
       vitest:
         specifier: 'catalog:'
-        version: 5.0.3(@types/node@26.1.2)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@1.8.0))(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
+        version: 5.0.3(@types/node@26.1.2)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@2.4.0))(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
 
   extensions/platform-chrome:
     dependencies:
@@ -1723,7 +1723,7 @@ importers:
         version: 8.3.4(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3)
       vitest:
         specifier: 'catalog:'
-        version: 5.0.3(@types/node@20.19.43)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@1.8.0))(msw@2.15.0(@types/node@20.19.43)(typescript@7.0.2))(vite@8.3.4(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
+        version: 5.0.3(@types/node@20.19.43)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@2.4.0))(msw@2.15.0(@types/node@20.19.43)(typescript@7.0.2))(vite@8.3.4(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
 
   extensions/platform-driver:
     dependencies:
@@ -2018,7 +2018,7 @@ importers:
         version: 8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3)
       vitest:
         specifier: 'catalog:'
-        version: 5.0.3(@types/node@26.1.2)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@1.8.0))(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
+        version: 5.0.3(@types/node@26.1.2)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@2.4.0))(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
 
   packages/app-integrity:
     dependencies:
@@ -2073,7 +2073,7 @@ importers:
         version: 8.3.4(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3)
       vitest:
         specifier: 'catalog:'
-        version: 5.0.3(@types/node@20.19.43)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@1.8.0))(msw@2.15.0(@types/node@20.19.43)(typescript@7.0.2))(vite@8.3.4(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
+        version: 5.0.3(@types/node@20.19.43)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@2.4.0))(msw@2.15.0(@types/node@20.19.43)(typescript@7.0.2))(vite@8.3.4(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
 
   packages/assets:
     dependencies:
@@ -2140,7 +2140,7 @@ importers:
         version: 8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3)
       vitest:
         specifier: 'catalog:'
-        version: 5.0.3(@types/node@26.1.2)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@1.8.0))(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
+        version: 5.0.3(@types/node@26.1.2)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@2.4.0))(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
 
   packages/background:
     dependencies:
@@ -2207,7 +2207,7 @@ importers:
         version: 8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3)
       vitest:
         specifier: 'catalog:'
-        version: 5.0.3(@types/node@26.1.2)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@1.8.0))(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
+        version: 5.0.3(@types/node@26.1.2)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@2.4.0))(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
 
   packages/backup:
     dependencies:
@@ -2377,7 +2377,7 @@ importers:
         version: 8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3)
       vitest:
         specifier: 'catalog:'
-        version: 5.0.3(@types/node@26.1.2)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@1.8.0))(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
+        version: 5.0.3(@types/node@26.1.2)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@2.4.0))(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
 
   packages/browser-runtime:
     dependencies:
@@ -2423,7 +2423,7 @@ importers:
         version: 8.3.4(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3)
       vitest:
         specifier: 'catalog:'
-        version: 5.0.3(@types/node@20.19.43)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@1.8.0))(msw@2.15.0(@types/node@20.19.43)(typescript@7.0.2))(vite@8.3.4(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
+        version: 5.0.3(@types/node@20.19.43)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@2.4.0))(msw@2.15.0(@types/node@20.19.43)(typescript@7.0.2))(vite@8.3.4(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
 
   packages/card:
     dependencies:
@@ -2502,7 +2502,7 @@ importers:
         version: 8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3)
       vitest:
         specifier: 'catalog:'
-        version: 5.0.3(@types/node@26.1.2)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@1.8.0))(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
+        version: 5.0.3(@types/node@26.1.2)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@2.4.0))(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
 
   packages/chain-algorand:
     dependencies:
@@ -2693,7 +2693,7 @@ importers:
         version: 8.3.4(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3)
       vitest:
         specifier: 'catalog:'
-        version: 5.0.3(@types/node@20.19.43)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@1.8.0))(msw@2.15.0(@types/node@20.19.43)(typescript@7.0.2))(vite@8.3.4(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
+        version: 5.0.3(@types/node@20.19.43)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@2.4.0))(msw@2.15.0(@types/node@20.19.43)(typescript@7.0.2))(vite@8.3.4(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
 
   packages/chain-ethereum:
     dependencies:
@@ -2781,7 +2781,7 @@ importers:
         version: 8.3.4(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3)
       vitest:
         specifier: 'catalog:'
-        version: 5.0.3(@types/node@20.19.43)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@1.8.0))(msw@2.15.0(@types/node@20.19.43)(typescript@7.0.2))(vite@8.3.4(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
+        version: 5.0.3(@types/node@20.19.43)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@2.4.0))(msw@2.15.0(@types/node@20.19.43)(typescript@7.0.2))(vite@8.3.4(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
 
   packages/chain-shared:
     dependencies:
@@ -2839,7 +2839,7 @@ importers:
         version: 8.3.4(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3)
       vitest:
         specifier: 'catalog:'
-        version: 5.0.3(@types/node@20.19.43)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@1.8.0))(msw@2.15.0(@types/node@20.19.43)(typescript@7.0.2))(vite@8.3.4(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
+        version: 5.0.3(@types/node@20.19.43)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@2.4.0))(msw@2.15.0(@types/node@20.19.43)(typescript@7.0.2))(vite@8.3.4(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
 
   packages/config:
     dependencies:
@@ -2870,7 +2870,7 @@ importers:
         version: 5.0.3(vitest@5.0.3)
       jsdom:
         specifier: 'catalog:'
-        version: 30.0.1(@noble/hashes@1.8.0)
+        version: 30.0.1(@noble/hashes@2.4.0)
       oxfmt:
         specifier: 'catalog:'
         version: 0.73.0
@@ -2888,7 +2888,7 @@ importers:
         version: 8.3.4(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3)
       vitest:
         specifier: 'catalog:'
-        version: 5.0.3(@types/node@20.19.43)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@1.8.0))(msw@2.15.0(@types/node@20.19.43)(typescript@7.0.2))(vite@8.3.4(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
+        version: 5.0.3(@types/node@20.19.43)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@2.4.0))(msw@2.15.0(@types/node@20.19.43)(typescript@7.0.2))(vite@8.3.4(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
 
   packages/connections:
     dependencies:
@@ -2949,7 +2949,7 @@ importers:
         version: 8.3.4(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3)
       vitest:
         specifier: 'catalog:'
-        version: 5.0.3(@types/node@20.19.43)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@1.8.0))(msw@2.15.0(@types/node@20.19.43)(typescript@7.0.2))(vite@8.3.4(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
+        version: 5.0.3(@types/node@20.19.43)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@2.4.0))(msw@2.15.0(@types/node@20.19.43)(typescript@7.0.2))(vite@8.3.4(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
 
   packages/contacts:
     dependencies:
@@ -2995,7 +2995,7 @@ importers:
         version: 8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3)
       vitest:
         specifier: 'catalog:'
-        version: 5.0.3(@types/node@26.1.2)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@1.8.0))(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
+        version: 5.0.3(@types/node@26.1.2)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@2.4.0))(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
 
   packages/currencies:
     dependencies:
@@ -3065,7 +3065,7 @@ importers:
         version: 8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3)
       vitest:
         specifier: 'catalog:'
-        version: 5.0.3(@types/node@26.1.2)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@1.8.0))(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
+        version: 5.0.3(@types/node@26.1.2)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@2.4.0))(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
 
   packages/dapp:
     dependencies:
@@ -3093,7 +3093,7 @@ importers:
         version: 8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3)
       vitest:
         specifier: 'catalog:'
-        version: 5.0.3(@types/node@26.1.2)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@1.8.0))(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
+        version: 5.0.3(@types/node@26.1.2)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@2.4.0))(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
 
   packages/database:
     dependencies:
@@ -3130,7 +3130,7 @@ importers:
         version: 8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3)
       vitest:
         specifier: 'catalog:'
-        version: 5.0.3(@types/node@26.1.2)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@1.8.0))(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
+        version: 5.0.3(@types/node@26.1.2)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@2.4.0))(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
 
   packages/deeplinks:
     dependencies:
@@ -3164,7 +3164,7 @@ importers:
         version: 8.3.4(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3)
       vitest:
         specifier: 'catalog:'
-        version: 5.0.3(@types/node@20.19.43)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@1.8.0))(msw@2.15.0(@types/node@20.19.43)(typescript@7.0.2))(vite@8.3.4(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
+        version: 5.0.3(@types/node@20.19.43)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@2.4.0))(msw@2.15.0(@types/node@20.19.43)(typescript@7.0.2))(vite@8.3.4(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
 
   packages/dev-fixtures:
     dependencies:
@@ -3204,7 +3204,7 @@ importers:
         version: 8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3)
       vitest:
         specifier: 'catalog:'
-        version: 5.0.3(@types/node@26.1.2)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@1.8.0))(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
+        version: 5.0.3(@types/node@26.1.2)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@2.4.0))(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
 
   packages/device:
     dependencies:
@@ -3268,7 +3268,7 @@ importers:
         version: 8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3)
       vitest:
         specifier: 'catalog:'
-        version: 5.0.3(@types/node@26.1.2)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@1.8.0))(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
+        version: 5.0.3(@types/node@26.1.2)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@2.4.0))(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
 
   packages/devtools:
     dependencies:
@@ -3290,7 +3290,7 @@ importers:
         version: 8.3.4(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3)
       vitest:
         specifier: 'catalog:'
-        version: 5.0.3(@types/node@20.19.43)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@1.8.0))(msw@2.15.0(@types/node@20.19.43)(typescript@7.0.2))(vite@8.3.4(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
+        version: 5.0.3(@types/node@20.19.43)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@2.4.0))(msw@2.15.0(@types/node@20.19.43)(typescript@7.0.2))(vite@8.3.4(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
 
   packages/hardware-wallet:
     dependencies:
@@ -3315,7 +3315,7 @@ importers:
         version: 8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3)
       vitest:
         specifier: 'catalog:'
-        version: 5.0.3(@types/node@26.1.2)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@1.8.0))(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
+        version: 5.0.3(@types/node@26.1.2)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@2.4.0))(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
 
   packages/kms:
     dependencies:
@@ -3434,7 +3434,7 @@ importers:
         version: 8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3)
       vitest:
         specifier: 'catalog:'
-        version: 5.0.3(@types/node@26.1.2)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@1.8.0))(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
+        version: 5.0.3(@types/node@26.1.2)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@2.4.0))(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
 
   packages/messages:
     dependencies:
@@ -3504,7 +3504,7 @@ importers:
         version: 8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3)
       vitest:
         specifier: 'catalog:'
-        version: 5.0.3(@types/node@26.1.2)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@1.8.0))(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
+        version: 5.0.3(@types/node@26.1.2)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@2.4.0))(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
 
   packages/migrate:
     dependencies:
@@ -3644,7 +3644,7 @@ importers:
         version: 8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3)
       vitest:
         specifier: 'catalog:'
-        version: 5.0.3(@types/node@26.1.2)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@1.8.0))(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
+        version: 5.0.3(@types/node@26.1.2)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@2.4.0))(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
 
   packages/nfd:
     dependencies:
@@ -3702,7 +3702,7 @@ importers:
         version: 8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3)
       vitest:
         specifier: 'catalog:'
-        version: 5.0.3(@types/node@26.1.2)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@1.8.0))(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
+        version: 5.0.3(@types/node@26.1.2)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@2.4.0))(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
 
   packages/onramp:
     dependencies:
@@ -3760,7 +3760,7 @@ importers:
         version: 8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3)
       vitest:
         specifier: 'catalog:'
-        version: 5.0.3(@types/node@26.1.2)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@1.8.0))(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
+        version: 5.0.3(@types/node@26.1.2)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@2.4.0))(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
 
   packages/passkeys:
     dependencies:
@@ -3861,7 +3861,7 @@ importers:
         version: 19.3.0
       jsdom:
         specifier: 'catalog:'
-        version: 30.0.1(@noble/hashes@1.8.0)
+        version: 30.0.1(@noble/hashes@2.4.0)
       msw:
         specifier: 'catalog:'
         version: 2.15.0(@types/node@26.1.2)(typescript@7.0.2)
@@ -3876,7 +3876,7 @@ importers:
         version: 8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3)
       vitest:
         specifier: 'catalog:'
-        version: 5.0.3(@types/node@26.1.2)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@1.8.0))(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
+        version: 5.0.3(@types/node@26.1.2)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@2.4.0))(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
 
   packages/remote-config:
     dependencies:
@@ -3928,7 +3928,7 @@ importers:
         version: 8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3)
       vitest:
         specifier: 'catalog:'
-        version: 5.0.3(@types/node@26.1.2)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@1.8.0))(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
+        version: 5.0.3(@types/node@26.1.2)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@2.4.0))(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
 
   packages/search:
     dependencies:
@@ -3980,7 +3980,7 @@ importers:
         version: 8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3)
       vitest:
         specifier: 'catalog:'
-        version: 5.0.3(@types/node@26.1.2)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@1.8.0))(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
+        version: 5.0.3(@types/node@26.1.2)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@2.4.0))(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
 
   packages/security:
     dependencies:
@@ -4029,7 +4029,7 @@ importers:
         version: 8.3.4(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3)
       vitest:
         specifier: 'catalog:'
-        version: 5.0.3(@types/node@20.19.43)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@1.8.0))(msw@2.15.0(@types/node@20.19.43)(typescript@7.0.2))(vite@8.3.4(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
+        version: 5.0.3(@types/node@20.19.43)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@2.4.0))(msw@2.15.0(@types/node@20.19.43)(typescript@7.0.2))(vite@8.3.4(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
 
   packages/settings:
     dependencies:
@@ -4069,7 +4069,7 @@ importers:
         version: 8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3)
       vitest:
         specifier: 'catalog:'
-        version: 5.0.3(@types/node@26.1.2)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@1.8.0))(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
+        version: 5.0.3(@types/node@26.1.2)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@2.4.0))(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
 
   packages/shared:
     dependencies:
@@ -4236,7 +4236,7 @@ importers:
         version: 8.3.4(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3)
       vitest:
         specifier: 'catalog:'
-        version: 5.0.3(@types/node@20.19.43)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@1.8.0))(msw@2.15.0(@types/node@20.19.43)(typescript@7.0.2))(vite@8.3.4(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
+        version: 5.0.3(@types/node@20.19.43)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@2.4.0))(msw@2.15.0(@types/node@20.19.43)(typescript@7.0.2))(vite@8.3.4(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
 
   packages/site-safety:
     dependencies:
@@ -4282,7 +4282,7 @@ importers:
         version: 19.3.0
       jsdom:
         specifier: 'catalog:'
-        version: 30.0.1(@noble/hashes@1.8.0)
+        version: 30.0.1(@noble/hashes@2.4.0)
       msw:
         specifier: 'catalog:'
         version: 2.15.0(@types/node@26.1.2)(typescript@7.0.2)
@@ -4297,7 +4297,7 @@ importers:
         version: 8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3)
       vitest:
         specifier: 'catalog:'
-        version: 5.0.3(@types/node@26.1.2)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@1.8.0))(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
+        version: 5.0.3(@types/node@26.1.2)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@2.4.0))(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
 
   packages/staking:
     dependencies:
@@ -4352,7 +4352,7 @@ importers:
         version: 8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3)
       vitest:
         specifier: 'catalog:'
-        version: 5.0.3(@types/node@26.1.2)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@1.8.0))(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
+        version: 5.0.3(@types/node@26.1.2)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@2.4.0))(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
 
   packages/swaps:
     dependencies:
@@ -4428,7 +4428,7 @@ importers:
         version: 8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3)
       vitest:
         specifier: 'catalog:'
-        version: 5.0.3(@types/node@26.1.2)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@1.8.0))(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
+        version: 5.0.3(@types/node@26.1.2)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@2.4.0))(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
 
   packages/transactions:
     dependencies:
@@ -4486,7 +4486,7 @@ importers:
         version: 19.3.0
       jsdom:
         specifier: 'catalog:'
-        version: 30.0.1(@noble/hashes@1.8.0)
+        version: 30.0.1(@noble/hashes@2.4.0)
       msw:
         specifier: 'catalog:'
         version: 2.15.0(@types/node@26.1.2)(typescript@7.0.2)
@@ -4501,7 +4501,7 @@ importers:
         version: 8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3)
       vitest:
         specifier: 'catalog:'
-        version: 5.0.3(@types/node@26.1.2)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@1.8.0))(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
+        version: 5.0.3(@types/node@26.1.2)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@2.4.0))(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
 
   packages/walletconnect:
     dependencies:
@@ -4577,7 +4577,7 @@ importers:
         version: 8.3.4(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3)
       vitest:
         specifier: 'catalog:'
-        version: 5.0.3(@types/node@20.19.43)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@1.8.0))(msw@2.15.0(@types/node@20.19.43)(typescript@7.0.2))(vite@8.3.4(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
+        version: 5.0.3(@types/node@20.19.43)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@2.4.0))(msw@2.15.0(@types/node@20.19.43)(typescript@7.0.2))(vite@8.3.4(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
 
 packages:
 
@@ -5537,7 +5537,7 @@ packages:
     resolution: {integrity: sha512-S6mL0yNB/Abt9Ei4tq8gDhcczc4S3+vQ4ra7vxnAf+YHC02srtqxKKZghx2Dq6p0e66THKwR6r8N6P95wEty7Q==}
     engines: {node: ^20.19.0 || ^22.12.0 || >=24.0.0}
     peerDependencies:
-      '@noble/hashes': 1.8.0
+      '@noble/hashes': ^1.8.0 || ^2.0.0
     peerDependenciesMeta:
       '@noble/hashes':
         optional: true
@@ -12804,10 +12804,6 @@ snapshots:
       '@ethersproject/properties': 5.8.0
       '@ethersproject/strings': 5.8.0
 
-  '@exodus/bytes@1.15.1(@noble/hashes@1.8.0)':
-    optionalDependencies:
-      '@noble/hashes': 1.8.0
-
   '@exodus/bytes@1.15.1(@noble/hashes@2.4.0)':
     optionalDependencies:
       '@noble/hashes': 2.4.0
@@ -15262,7 +15258,7 @@ snapshots:
       obug: 2.2.1
       std-env: 4.3.0
       tinyrainbow: 3.2.0
-      vitest: 5.0.3(@types/node@26.1.2)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@1.8.0))(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
+      vitest: 5.0.3(@types/node@20.19.43)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@2.4.0))(msw@2.15.0(@types/node@20.19.43)(typescript@7.0.2))(vite@8.3.4(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
 
   '@vitest/istanbul-lib-coverage@1.0.2': {}
 
@@ -16228,13 +16224,6 @@ snapshots:
       d3-interpolate: 3.0.1
       d3-selection: 3.0.0
       d3-transition: 3.0.1(d3-selection@3.0.0)
-
-  data-urls@7.0.0(@noble/hashes@1.8.0):
-    dependencies:
-      whatwg-mimetype: 5.0.0
-      whatwg-url: 16.0.1(@noble/hashes@1.8.0)
-    transitivePeerDependencies:
-      - '@noble/hashes'
 
   data-urls@7.0.0(@noble/hashes@2.4.0):
     dependencies:
@@ -17234,12 +17223,6 @@ snapshots:
     dependencies:
       lru-cache: 10.4.3
 
-  html-encoding-sniffer@6.0.0(@noble/hashes@1.8.0):
-    dependencies:
-      '@exodus/bytes': 1.15.1(@noble/hashes@1.8.0)
-    transitivePeerDependencies:
-      - '@noble/hashes'
-
   html-encoding-sniffer@6.0.0(@noble/hashes@2.4.0):
     dependencies:
       '@exodus/bytes': 1.15.1(@noble/hashes@2.4.0)
@@ -17450,32 +17433,6 @@ snapshots:
       argparse: 2.0.1
 
   jsc-safe-url@0.2.4: {}
-
-  jsdom@30.0.1(@noble/hashes@1.8.0):
-    dependencies:
-      '@asamuzakjp/css-color': 6.0.7
-      '@asamuzakjp/dom-selector': 8.3.2
-      '@bramus/specificity': 2.4.2
-      '@csstools/css-syntax-patches-for-csstree': 1.1.9(css-tree@3.2.1)
-      '@exodus/bytes': 1.15.1(@noble/hashes@1.8.0)
-      css-tree: 3.2.1
-      data-urls: 7.0.0(@noble/hashes@1.8.0)
-      decimal.js: 10.6.0
-      html-encoding-sniffer: 6.0.0(@noble/hashes@1.8.0)
-      is-potential-custom-element-name: 1.0.1
-      lru-cache: 11.5.2
-      parse5: 8.0.1
-      saxes: 6.0.0
-      symbol-tree: 3.2.4
-      tough-cookie: 6.0.2
-      undici: 8.10.2
-      w3c-xmlserializer: 5.0.0
-      webidl-conversions: 8.0.1
-      whatwg-mimetype: 5.0.0
-      whatwg-url: 17.1.0(@noble/hashes@1.8.0)
-      xml-name-validator: 5.0.0
-    transitivePeerDependencies:
-      - '@noble/hashes'
 
   jsdom@30.0.1(@noble/hashes@2.4.0):
     dependencies:
@@ -19433,29 +19390,6 @@ snapshots:
       tsx: 4.23.15
       yaml: 2.8.3
 
-  vitest@5.0.3(@types/node@20.19.43)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@1.8.0))(msw@2.15.0(@types/node@20.19.43)(typescript@7.0.2))(vite@8.3.4(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3)):
-    dependencies:
-      '@types/chai': 5.2.3
-      '@vitest/mocker': 5.0.3(msw@2.15.0(@types/node@20.19.43)(typescript@7.0.2))(vite@8.3.4(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
-      chai: 6.2.2
-      es-module-lexer: 2.3.2
-      expect-type: 1.4.0
-      magic-string: 1.4.3
-      obug: 2.2.1
-      picomatch: 4.0.4
-      std-env: 4.3.0
-      tinybench: 6.2.1
-      tinyexec: 1.3.1
-      tinyglobby: 0.2.17
-      vite: 8.3.4(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3)
-      why-is-node-running: 3.2.1
-    optionalDependencies:
-      '@types/node': 20.19.43
-      '@vitest/coverage-v8': 5.0.3(vitest@5.0.3)
-      jsdom: 30.0.1(@noble/hashes@1.8.0)
-    transitivePeerDependencies:
-      - msw
-
   vitest@5.0.3(@types/node@20.19.43)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@2.4.0))(msw@2.15.0(@types/node@20.19.43)(typescript@7.0.2))(vite@8.3.4(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3)):
     dependencies:
       '@types/chai': 5.2.3
@@ -19476,29 +19410,6 @@ snapshots:
       '@types/node': 20.19.43
       '@vitest/coverage-v8': 5.0.3(vitest@5.0.3)
       jsdom: 30.0.1(@noble/hashes@2.4.0)
-    transitivePeerDependencies:
-      - msw
-
-  vitest@5.0.3(@types/node@26.1.2)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@1.8.0))(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3)):
-    dependencies:
-      '@types/chai': 5.2.3
-      '@vitest/mocker': 5.0.3(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
-      chai: 6.2.2
-      es-module-lexer: 2.3.2
-      expect-type: 1.4.0
-      magic-string: 1.4.3
-      obug: 2.2.1
-      picomatch: 4.0.4
-      std-env: 4.3.0
-      tinybench: 6.2.1
-      tinyexec: 1.3.1
-      tinyglobby: 0.2.17
-      vite: 8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3)
-      why-is-node-running: 3.2.1
-    optionalDependencies:
-      '@types/node': 26.1.2
-      '@vitest/coverage-v8': 5.0.3(vitest@5.0.3)
-      jsdom: 30.0.1(@noble/hashes@1.8.0)
     transitivePeerDependencies:
       - msw
 
@@ -19575,25 +19486,9 @@ snapshots:
       punycode: 2.3.1
       webidl-conversions: 5.0.0
 
-  whatwg-url@16.0.1(@noble/hashes@1.8.0):
-    dependencies:
-      '@exodus/bytes': 1.15.1(@noble/hashes@1.8.0)
-      tr46: 6.0.0
-      webidl-conversions: 8.0.1
-    transitivePeerDependencies:
-      - '@noble/hashes'
-
   whatwg-url@16.0.1(@noble/hashes@2.4.0):
     dependencies:
       '@exodus/bytes': 1.15.1(@noble/hashes@2.4.0)
-      tr46: 6.0.0
-      webidl-conversions: 8.0.1
-    transitivePeerDependencies:
-      - '@noble/hashes'
-
-  whatwg-url@17.1.0(@noble/hashes@1.8.0):
-    dependencies:
-      '@exodus/bytes': 1.15.1(@noble/hashes@1.8.0)
       tr46: 6.0.0
       webidl-conversions: 8.0.1
     transitivePeerDependencies:
