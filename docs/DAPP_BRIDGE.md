@@ -248,8 +248,10 @@ stores the site's own EVM chain (`metadata.chainId`); the EIP-155 id reported
 is that chain's network as the wallet has selected it, and a dApp's
 `wallet_switchEthereumChain` moves only that record, never the wallet's
 selection. The chains on offer are the `eip155` chain adapters with
-`dappConnect` on; a network the wallet hasn't selected answers 4902, and
-`wallet_addEthereumChain` is refused.
+`dappConnect` on; a network the wallet hasn't selected answers 4902.
+`wallet_addEthereumChain` for a chain Pera serves is a switch to it (queued and
+approved like `wallet_switchEthereumChain`); for any other chain it answers 4200,
+because Pera supports only the chains it ships.
 
 ### Routing
 
