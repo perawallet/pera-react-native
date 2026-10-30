@@ -7,13 +7,13 @@
  distributed under the License is distributed on an "AS IS" BASIS,
  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  See the License for the specific language governing permissions and
- limitations under the License.
+ limitations under the License
  */
 
 import React from 'react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { act, renderHook } from '@testing-library/react'
-import { usePWWebView } from '../usePWWebView'
+import { usePWWebView, type PWWebViewProps } from '../usePWWebView'
 
 const mocks = vi.hoisted(() => ({
     removeWebView: vi.fn(),
@@ -22,7 +22,8 @@ const mocks = vi.hoisted(() => ({
 }))
 
 vi.mock('react-native-webview', () => ({
-    WebView: (props: unknown) => React.createElement('div', props),
+    WebView: (props: Record<string, unknown>) =>
+        React.createElement('div', props),
 }))
 
 vi.mock('@modules/webview/hooks', () => ({
@@ -64,10 +65,10 @@ vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({ t: (key: string) => key }),
 }))
 
-const baseProps = {
+const baseProps: PWWebViewProps = {
     url: 'https://good.xyz/landing',
     enablePeraConnect: false,
-} as never
+}
 
 describe('usePWWebView', () => {
     beforeEach(() => {
@@ -83,7 +84,7 @@ describe('usePWWebView', () => {
     it('closes the caller when no request is tracked', () => {
         const onClose = vi.fn()
         const { result } = renderHook(() =>
-            usePWWebView({...baseProps, onClose}),
+            usePWWebView({ ...baseProps, onClose }),
         )
 
         act(() => result.current.onCloseRequested())
@@ -94,7 +95,7 @@ describe('usePWWebView', () => {
 
     it('removes the tracked web view when the request is known', () => {
         const { result } = renderHook(() =>
-            usePWWebView({...baseProps, requestId: 'request-1'}),
+            usePWWebView({ ...baseProps, requestId: 'request-1' }),
         )
 
         act(() => result.current.onCloseRequested())
@@ -107,8 +108,10 @@ describe('usePWWebView', () => {
 
         const element = result.current.renderWebView()
 
-        expect(element.props.source).toEqual({
-            uri: 'https://good.xyz/landing',
-        })
+        expect(element.props).toEqual(
+            expect.objectContaining({
+                source: { uri: 'https://good.xyz/landing' },
+            }),
+        )
     })
 })

@@ -7,12 +7,13 @@
  distributed under the License is distributed on an "AS IS" BASIS,
  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  See the License for the specific language governing permissions and
- limitations under the License.
+ limitations under the License
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { act, renderHook } from '@testing-library/react'
 import { usePWWebView } from '../usePWWebView.web'
+import type { PWWebViewProps } from '../PWWebView'
 
 const mocks = vi.hoisted(() => ({
     createDiscoverBridgeHost: vi.fn(),
@@ -41,10 +42,10 @@ vi.mock('@modules/network', () => ({
     useNetworkStatus: () => ({ hasInternet: true }),
 }))
 
-const props = {
+const props: PWWebViewProps = {
     url: 'https://good.xyz/landing',
     enablePeraConnect: false,
-} as never
+}
 
 describe('usePWWebView (web)', () => {
     beforeEach(() => {

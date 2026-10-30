@@ -7,12 +7,15 @@
  distributed under the License is distributed on an "AS IS" BASIS,
  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  See the License for the specific language governing permissions and
- limitations under the License.
+ limitations under the License
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { act, renderHook } from '@testing-library/react'
-import { useInputScreenActions } from '../useInputScreenActions'
+import {
+    useInputScreenActions,
+    type UseInputScreenActionsProps,
+} from '../useInputScreenActions'
 
 const mocks = vi.hoisted(() => ({
     navigate: vi.fn(),
@@ -45,16 +48,16 @@ vi.mock('@modules/transactions/hooks', () => ({
     useSendScope: () => ({ chainId: 'algorand' }),
 }))
 
-const props = {
+const props: UseInputScreenActionsProps = {
     asset: undefined,
-    accountAssetBalance: undefined,
+    accountAssetBalance: null,
     isBalanceReady: false,
     cryptoValue: undefined,
     isResolvingDestination: false,
     handleKey: vi.fn(),
     handlePaste: vi.fn(),
     handleNext: vi.fn(),
-} as never
+}
 
 describe('useInputScreenActions', () => {
     beforeEach(() => {
@@ -68,7 +71,7 @@ describe('useInputScreenActions', () => {
 
     it('goes back to the asset picker when the send can pick an asset', () => {
         const { result } = renderHook(() =>
-            useInputScreenActions({...props, canSelectAsset: true}),
+            useInputScreenActions({ ...props, canSelectAsset: true }),
         )
 
         act(() => result.current.handleBack())
@@ -79,7 +82,7 @@ describe('useInputScreenActions', () => {
     it('finishes the send when no asset can be picked', () => {
         const onFinished = vi.fn()
         const { result } = renderHook(() =>
-            useInputScreenActions({...props, onFinished}),
+            useInputScreenActions({ ...props, onFinished }),
         )
 
         act(() => result.current.handleBack())
