@@ -29,6 +29,8 @@ const mockHookResult = {
     preferredValue: undefined as Decimal | null | undefined,
     isMultiChain: false,
     crossChainTotal: undefined as CrossChainTotal | undefined,
+    singleNetworkChainId: undefined as string | undefined,
+    jointParticipantCount: undefined as number | undefined,
 }
 const mockUseAccountWithBalance = vi.fn(() => mockHookResult)
 const mockAccountDisplay = vi.fn((_props: unknown) => null)
@@ -41,10 +43,28 @@ vi.mock('../useAccountWithBalance', () => ({
 }))
 
 vi.mock('@components/AccountDisplay', () => ({
-    AccountDisplay: (props: { badges?: ReactNode }) => {
+    AccountDisplay: (props: {
+        badges?: ReactNode
+        secondaryContent?: ReactNode
+        avatarBadge?: ReactNode
+    }) => {
         mockAccountDisplay(props)
-        return <PWView testID='account_display'>{props.badges}</PWView>
+        return (
+            <PWView testID='account_display'>
+                {props.badges}
+                {props.secondaryContent}
+                <PWView testID='account_avatar_badge'>
+                    {props.avatarBadge}
+                </PWView>
+            </PWView>
+        )
     },
+}))
+
+vi.mock('@modules/chain-ui/icon', () => ({
+    ChainLabel: ({ chainId }: { chainId: string }) => (
+        <PWView testID={`chain_label_${chainId}`} />
+    ),
 }))
 
 vi.mock('@components/AssetAmount', () => ({
@@ -66,6 +86,8 @@ describe('AccountWithBalance', () => {
         mockHookResult.isMultiChain = false
         mockHookResult.preferredValue = undefined
         mockHookResult.crossChainTotal = undefined
+        mockHookResult.singleNetworkChainId = undefined
+        mockHookResult.jointParticipantCount = undefined
         mockPreferredAmount.mockClear()
         mockAssetAmount.mockClear()
         mockAccountDisplay.mockClear()
@@ -171,6 +193,48 @@ describe('AccountWithBalance', () => {
             expect(mockPreferredAmount).toHaveBeenCalledWith(
                 expect.objectContaining({ value: total }),
             )
+        })
+
+        it('shows the network a single-network watch account sits on under its name, in place of the type', () => {
+            mockHookResult.crossChainTotal = { kind: 'fiat', value: undefined }
+            mockHookResult.singleNetworkChainId = 'ethereum'
+
+            render(<AccountWithBalance account={ACCOUNT} />)
+
+            expect(screen.getByTestId('chain_label_ethereum')).toBeTruthy()
+        })
+
+        it('shows no network line when the account has no single network', () => {
+            mockHookResult.crossChainTotal = { kind: 'fiat', value: undefined }
+
+            render(<AccountWithBalance account={ACCOUNT} />)
+
+            expect(screen.queryByTestId('chain_label_ethereum')).toBeNull()
+        })
+
+        it("badges a joint account's avatar with its member count", () => {
+            mockHookResult.crossChainTotal = { kind: 'fiat', value: undefined }
+            mockHookResult.jointParticipantCount = 3
+
+            render(<AccountWithBalance account={ACCOUNT} />)
+
+            expect(
+                within(screen.getByTestId('account_avatar_badge')).getByText(
+                    '3',
+                ),
+            ).toBeTruthy()
+        })
+
+        it('shows no avatar badge for an account that is not joint', () => {
+            mockHookResult.crossChainTotal = { kind: 'fiat', value: undefined }
+
+            render(<AccountWithBalance account={ACCOUNT} />)
+
+            expect(
+                within(screen.getByTestId('account_avatar_badge')).queryByText(
+                    /\d/,
+                ),
+            ).toBeNull()
         })
 
         it('shows no value and no tier badge when every chain is on a test network', () => {

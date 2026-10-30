@@ -15,6 +15,8 @@ import { Decimal } from 'decimal.js'
 import {
     accountValueKey,
     accountValueOf,
+    isWatchAccount,
+    multisigParametersOf,
     useAccountChainId,
     useAccountHoldingSources,
     useAccountValueBasis,
@@ -62,10 +64,18 @@ export type UseAccountWithBalanceResult = {
     /** Once the wallet holds accounts on another chain, so rows tell chains apart. */
     isMultiChain: boolean
     /**
-     * Set when no chain was asked for and the wallet spans chains: the row then
-     * stands for the whole account, so it shows this in place of one chain's balance.
+     * Set when no chain was asked for: the row then stands for the whole
+     * account, so it shows this in place of one chain's balance.
      */
     crossChainTotal: Optional<CrossChainTotal>
+    /**
+     * The one network a watch account sits on, on a row that stands for the
+     * whole account. Unset for an account that spans networks or that the
+     * wallet can sign for, whose type already says what it is.
+     */
+    singleNetworkChainId: Optional<ChainId>
+    /** The member count of a joint account, which the avatar badge shows. */
+    jointParticipantCount: Optional<number>
 }
 
 /**
@@ -111,7 +121,7 @@ export const useAccountWithBalance = (
     const basis = useAccountValueBasis(LEGACY_CHAIN_ID)
     const { usdToPreferred } = useCurrency(homeScope)
     const availability = useChainAvailability(chainId)
-    const isChainAgnostic = chainOverride === undefined && basis === 'fiat'
+    const isChainAgnostic = chainOverride === undefined
     // Leaves out switched-off chains, so their last-synced values can't count.
     const sources = useAccountHoldingSources(account)
     const { accountValueTotals } = useAccountValueTotalsQuery(
@@ -132,6 +142,14 @@ export const useAccountWithBalance = (
         [isChainAgnostic, sources, accountValueTotals, usdToPreferred],
     )
 
+    const singleNetworkChainId =
+        isChainAgnostic && isWatchAccount(account) && sources.length === 1
+            ? sources[0]?.scope.chainId
+            : undefined
+    const jointParticipantCount = isChainAgnostic
+        ? multisigParametersOf(account, accountChainId)?.addresses.length
+        : undefined
+
     return {
         scope,
         chainName,
@@ -143,5 +161,7 @@ export const useAccountWithBalance = (
                 : undefined,
         isMultiChain: basis === 'fiat',
         crossChainTotal,
+        singleNetworkChainId,
+        jointParticipantCount,
     }
 }

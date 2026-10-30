@@ -110,6 +110,19 @@ describe('AccountDisplay', () => {
         ).toBeTruthy()
     })
 
+    it('puts secondary content on the line under the name in place of the secondary label', () => {
+        render(
+            <AccountDisplay
+                account={ACCOUNT}
+                secondaryContent={<PWText>NETWORK</PWText>}
+            />,
+        )
+
+        const secondaryRow = screen.getByTestId(SECONDARY_ROW)
+        expect(within(secondaryRow).getByText('NETWORK')).toBeTruthy()
+        expect(within(secondaryRow).queryByText('Standard')).toBeNull()
+    })
+
     it('renders no second line with neither badges nor a secondary label', () => {
         mockDisplayResult.secondaryText = undefined
         mockDisplayResult.renderSecondary = false
