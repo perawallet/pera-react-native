@@ -12,7 +12,7 @@
 
 import { AssetMarkets } from '@modules/assets/components/market/AssetMarkets'
 import { AssetHoldings } from '@modules/assets/components/holdings/AssetHoldings'
-import { ChainLabel } from '@modules/assets/components/ChainLabel'
+import { ChainLabel } from '@modules/chain-ui/icon'
 import { EmptyView } from '@components/EmptyView'
 import { LoadingView } from '@components/LoadingView'
 import { useLanguage } from '@hooks/useLanguage'

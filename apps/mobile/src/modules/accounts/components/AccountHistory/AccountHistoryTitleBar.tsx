@@ -16,7 +16,7 @@ import type { Nullable } from '@perawallet/wallet-core-shared'
 import { PWButton, PWText, PWView } from '@components/core'
 import { ChainNotice } from '@components/ChainNotice'
 import { FilterSelection, type FilterOption } from '@components/FilterSelection'
-import { ChainLabel } from '@modules/assets'
+import { ChainLabel } from '@modules/chain-ui/icon'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 

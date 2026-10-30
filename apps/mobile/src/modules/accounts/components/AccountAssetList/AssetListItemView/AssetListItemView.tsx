@@ -21,9 +21,9 @@ import {
     AssetItemView,
     CollectibleListItem,
     AssetRowSkeleton,
-    ChainLabel,
     type AssetFiatConverter,
 } from '@modules/assets'
+import { ChainLabel } from '@modules/chain-ui/icon'
 import { useStyles } from './styles'
 import { useAssetListItemView } from './useAssetListItemView'
 
