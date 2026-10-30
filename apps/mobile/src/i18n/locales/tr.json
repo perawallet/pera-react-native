@@ -557,7 +557,7 @@
         },
         "compatibility": {
             "title": "Bu passphrase’i başka cüzdanlarda kullanmak",
-            "evm": "Ethereum uyumlu ağlar: MetaMask gibi standart BIP39 cüzdanları bu kelimeleri içe aktarabilir ve ilk hesabının adresi aynı olur. Pera’da sonradan eklediğin hesaplar bu cüzdanlarda varsayılan olarak görünmeyebilir.",
+            "evm": "Ethereum uyumlu ağlar: MetaMask, Uniswap veya Rabby gibi standart BIP39 cüzdanları bu kelimeleri içe aktarabilir ve ilk hesabının adresi aynı olur. İçe aktardıktan sonra yalnızca bu ilk adresi görebilirsin. Bazı cüzdanlar diğer adreslerini kullanıldıktan sonra gösterir; bazılarında ise onları manuel olarak eklemen gerekir. Adresler, Pera’daki hesaplarınla aynı sırada görünür.",
             "algorand": "Algorand: Pera’da ve 24 kelimelik Algorand HD cüzdanlarını destekleyen diğer cüzdanlarda çalışır. 25 kelimelik eski Algorand cüzdanları bunu içe aktaramaz.",
             "warning": "Bu kelimelere sahip olan herkes tüm ağlardaki fonlarını kontrol eder. Onları asla bir web sitesine girme ve kimseyle paylaşma."
         }
