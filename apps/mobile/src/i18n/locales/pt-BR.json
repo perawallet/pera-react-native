@@ -2976,6 +2976,7 @@
             "max": "MÁX",
             "next": "Avançar",
             "amount_label": "Valor",
+            "fee_reserve_hint": "Um pequeno valor é mantido para cobrir as taxas da rede. A taxa não utilizada fica na sua conta.",
             "error_title": "Valor inválido",
             "error_body": "Digite um valor maior que {{min}}.",
             "exceeds_max_title": "Saldo insuficiente",

@@ -2960,6 +2960,7 @@
             "max": "MAX",
             "next": "Next",
             "amount_label": "Amount",
+            "fee_reserve_hint": "A small amount is kept to cover network fees. Any unused fee stays in your account.",
             "error_title": "Invalid Amount",
             "error_body": "Please enter an amount greater than {{min}}.",
             "exceeds_max_title": "Insufficient Balance",

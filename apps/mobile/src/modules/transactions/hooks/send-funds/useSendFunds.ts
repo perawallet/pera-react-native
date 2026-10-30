@@ -55,6 +55,10 @@ type SendFundsState = {
      */
     shouldContinueToConfirm: boolean
     feePreset: FeePreset
+    /** The amount is the most the balance allows, so the review re-sizes it to the chosen fee speed. */
+    isMaxAmount: boolean
+    /** Base units of the native asset: the max fee shown on the review, which the build must stay within. */
+    confirmedMaxFee?: Decimal
 }
 
 type SendFundsActions = {
@@ -72,6 +76,8 @@ type SendFundsActions = {
     setIsCloseAccount: (isClose: boolean) => void
     setShouldContinueToConfirm: (shouldContinue: boolean) => void
     setFeePreset: (preset: FeePreset) => void
+    setIsMaxAmount: (isMax: boolean) => void
+    setConfirmedMaxFee: (fee?: Decimal) => void
     reset: () => void
     resetState: () => void
 }
@@ -93,6 +99,8 @@ const initialState: SendFundsState = {
     isCloseAccount: false,
     shouldContinueToConfirm: false,
     feePreset: 'normal',
+    isMaxAmount: false,
+    confirmedMaxFee: undefined,
 }
 
 export const useSendFundsStore = create<SendFundsStore>()(set => ({
@@ -114,6 +122,8 @@ export const useSendFundsStore = create<SendFundsStore>()(set => ({
     setShouldContinueToConfirm: shouldContinue =>
         set({ shouldContinueToConfirm: shouldContinue }),
     setFeePreset: preset => set({ feePreset: preset }),
+    setIsMaxAmount: isMax => set({ isMaxAmount: isMax }),
+    setConfirmedMaxFee: fee => set({ confirmedMaxFee: fee }),
     reset: () => set(initialState),
     resetState: () => set(initialState),
     clearStorage: () => {},
@@ -143,6 +153,8 @@ type UseSendFundsResult = {
     isCloseAccount: boolean
     shouldContinueToConfirm: boolean
     feePreset: FeePreset
+    isMaxAmount: boolean
+    confirmedMaxFee?: Decimal
     setSelectedAsset: (asset?: AssetRef) => void
     setChainId: (chainId?: ChainId) => void
     setCanSelectAsset: (canSelect: boolean) => void
@@ -157,6 +169,8 @@ type UseSendFundsResult = {
     setIsCloseAccount: (isClose: boolean) => void
     setShouldContinueToConfirm: (shouldContinue: boolean) => void
     setFeePreset: (preset: FeePreset) => void
+    setIsMaxAmount: (isMax: boolean) => void
+    setConfirmedMaxFee: (fee?: Decimal) => void
     reset: () => void
 }
 
@@ -207,6 +221,12 @@ export const useSendFunds = (): UseSendFundsResult => {
     )
     const feePreset = useSendFundsStore(state => state.feePreset)
     const setFeePreset = useSendFundsStore(state => state.setFeePreset)
+    const isMaxAmount = useSendFundsStore(state => state.isMaxAmount)
+    const setIsMaxAmount = useSendFundsStore(state => state.setIsMaxAmount)
+    const confirmedMaxFee = useSendFundsStore(state => state.confirmedMaxFee)
+    const setConfirmedMaxFee = useSendFundsStore(
+        state => state.setConfirmedMaxFee,
+    )
     const reset = useSendFundsStore(state => state.reset)
 
     return {
@@ -225,6 +245,8 @@ export const useSendFunds = (): UseSendFundsResult => {
         isCloseAccount,
         shouldContinueToConfirm,
         feePreset,
+        isMaxAmount,
+        confirmedMaxFee,
         setSelectedAsset,
         setChainId,
         setCanSelectAsset,
@@ -239,6 +261,8 @@ export const useSendFunds = (): UseSendFundsResult => {
         setIsCloseAccount,
         setShouldContinueToConfirm,
         setFeePreset,
+        setIsMaxAmount,
+        setConfirmedMaxFee,
         reset,
     }
 }

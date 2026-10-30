@@ -2960,6 +2960,7 @@
             "max": "MAKS",
             "next": "İleri",
             "amount_label": "Tutar",
+            "fee_reserve_hint": "Ağ ücretlerini karşılamak için küçük bir tutar ayrılır. Kullanılmayan ücret hesabında kalır.",
             "error_title": "Geçersiz miktar",
             "error_body": "Lütfen {{min}} değerinden büyük bir miktar gir.",
             "exceeds_max_title": "Yetersiz bakiye",

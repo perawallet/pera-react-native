@@ -48,6 +48,7 @@ export const InputScreen = () => {
         isBalanceReady,
         cryptoValue,
         isMaxReady,
+        isFeeReserveHintVisible,
         setMax,
         handleKey,
         handlePaste,
@@ -243,6 +244,15 @@ export const InputScreen = () => {
                             variant='h1'
                             style={styles.amountPlaceholder}
                         />
+                    )}
+                    {isFeeReserveHintVisible && (
+                        <PWText
+                            variant='caption'
+                            style={styles.feeReserveHint}
+                            testID='send_input_fee_reserve_hint'
+                        >
+                            {t('send_funds.input.fee_reserve_hint')}
+                        </PWText>
                     )}
 
                     <PWView style={styles.buttonContainer}>

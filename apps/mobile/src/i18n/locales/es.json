@@ -2960,6 +2960,7 @@
             "max": "MÁX",
             "next": "Siguiente",
             "amount_label": "Importe",
+            "fee_reserve_hint": "Se reserva una pequeña cantidad para cubrir las comisiones de red. La comisión que no se use permanece en tu cuenta.",
             "error_title": "Cantidad no válida",
             "error_body": "Introduce una cantidad mayor que {{min}}.",
             "exceeds_max_title": "Saldo insuficiente",

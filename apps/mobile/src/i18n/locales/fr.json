@@ -2960,6 +2960,7 @@
             "max": "MAX",
             "next": "Suivant",
             "amount_label": "Montant",
+            "fee_reserve_hint": "Un petit montant est conservé pour couvrir les frais de réseau. Les frais non utilisés restent sur votre compte.",
             "error_title": "Montant invalide",
             "error_body": "Veuillez saisir un montant supérieur à {{min}}.",
             "exceeds_max_title": "Solde insuffisant",

@@ -39,6 +39,7 @@ import {
 import { useToast } from '@hooks/useToast'
 import {
     registerEthereumChain,
+    registerEvmChain,
     restoreAlgorandOnlyChains,
 } from '@test-utils/chain-fixtures'
 
@@ -175,6 +176,7 @@ const mockSetAmount = vi.fn()
 const mockSetNote = vi.fn()
 const mockSetIsCloseAccount = vi.fn()
 const mockSetShouldContinueToConfirm = vi.fn()
+const mockSetIsMaxAmount = vi.fn()
 const mockSendFundsState = {
     selectedAssetId: '0',
     canSelectAsset: true,
@@ -190,6 +192,7 @@ const mockSendFundsState = {
     setDestination: vi.fn(),
     setSendMode: vi.fn(),
     setIsCloseAccount: mockSetIsCloseAccount,
+    setIsMaxAmount: mockSetIsMaxAmount,
     reset: vi.fn(),
 }
 
@@ -776,6 +779,84 @@ describe('useInputScreen', () => {
         expect(sheetProps().title).toBe('send_funds.input.min_balance_title')
         expect(mockSetIsCloseAccount).not.toHaveBeenCalledWith(true)
         expect(mockSetAmount.mock.calls[0][0].toString()).toBe('99.899')
+    })
+
+    describe('the fee reserve hint', () => {
+        const useEvmSender = (chainId: 'ethereum' | 'base') => {
+            registerEvmChain(chainId)
+            mockSendScope.current = { chainId, networkId: 'mainnet' }
+            ;(useSelectedAccount as Mock).mockReturnValue({
+                id: 'test-account',
+                custody: { kind: 'local', seed: null },
+                chains: { [chainId]: { address: '0xSENDER' } },
+            })
+            spendableOf({ balance: 100_000_000, max: 99_999_000 })
+        }
+
+        afterEach(() => {
+            restoreAlgorandOnlyChains()
+        })
+
+        it.each(['ethereum', 'base'] as const)(
+            'shows once MAX fills the native coin on %s, and goes when the amount is edited',
+            chainId => {
+                useEvmSender(chainId)
+                const { result } = renderHook(() => useInputScreen())
+                expect(result.current.isFeeReserveHintVisible).toBe(false)
+
+                act(() => {
+                    result.current.setMax()
+                })
+                expect(result.current.isFeeReserveHintVisible).toBe(true)
+
+                act(() => {
+                    result.current.handleKey('1')
+                })
+                expect(result.current.isFeeReserveHintVisible).toBe(false)
+            },
+        )
+
+        it('stays hidden for a token on an EVM chain', () => {
+            useEvmSender('ethereum')
+            mockSendFundsState.selectedAssetId = '1'
+            spendableOf({ balance: 50, max: 50 })
+
+            const { result } = renderHook(() => useInputScreen())
+            act(() => {
+                result.current.setMax()
+            })
+
+            expect(result.current.isFeeReserveHintVisible).toBe(false)
+        })
+
+        it('stays hidden on Algorand', () => {
+            const { result } = renderHook(() => useInputScreen())
+            act(() => {
+                result.current.setMax()
+            })
+
+            expect(result.current.isFeeReserveHintVisible).toBe(false)
+        })
+
+        it('tells the store a MAX amount is MAX, and a typed one is not', async () => {
+            spendableOf({ balance: 100_000_000, max: 99_999_000 })
+            const { result } = renderHook(() => useInputScreen())
+            act(() => {
+                result.current.setMax()
+            })
+            await act(async () => {
+                await result.current.handleNext()
+            })
+            expect(mockSetIsMaxAmount).toHaveBeenLastCalledWith(true)
+
+            act(() => {
+                result.current.setCryptoValue('1')
+            })
+            await act(async () => {
+                await result.current.handleNext()
+            })
+            expect(mockSetIsMaxAmount).toHaveBeenLastCalledWith(false)
+        })
     })
 
     describe('handlePaste', () => {

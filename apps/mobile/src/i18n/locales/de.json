@@ -2952,6 +2952,7 @@
             "max": "MAX",
             "next": "Weiter",
             "amount_label": "Betrag",
+            "fee_reserve_hint": "Ein kleiner Betrag wird für die Netzwerkgebühren zurückbehalten. Nicht verbrauchte Gebühren bleiben in deinem Konto.",
             "error_title": "Ungültiger Betrag",
             "error_body": "Bitte gib einen Betrag größer als {{min}} ein.",
             "exceeds_max_title": "Unzureichendes Guthaben",
