@@ -55,6 +55,10 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
     }),
 }))
 
+vi.mock('@perawallet/wallet-core-remote-config', () => ({
+    useRegionRestrictedFeatures: () => ['crypto_promotion', 'swap'],
+}))
+
 vi.mock('@hooks/useIsDarkMode', () => ({
     useIsDarkMode: vi.fn(() => false),
 }))
@@ -112,6 +116,7 @@ describe('useSettingsHandlers', () => {
                 currency: 'USD',
                 region: 'US',
                 language: 'en-US',
+                restrictedFeatures: ['crypto_promotion', 'swap'],
                 // The bridge's negotiation signal; see
                 // docs/WEBVIEW_ARCHITECTURE.md.
                 protocolVersion: '3',
