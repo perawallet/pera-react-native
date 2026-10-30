@@ -258,9 +258,15 @@ const isConvertedToString = (ctx: RuleContext, node: Node): boolean => {
 const SETTER_PATTERN_QUERY =
     '((variable_declarator name: (array_pattern) @pattern value: (call_expression function: [(identifier) @hook (member_expression property: (property_identifier) @hook)])) (#eq? @hook "useState"))'
 
-// A node handle is an integer, so the file path is the only stable key; the
-// map holds one small set per file the rule has read.
-const setterNamesByFile = new Map<string, Set<string>>()
+// A node handle is an integer, so the file path is the only stable key. One
+// slot rather than a map, and keyed on the content: in a long-lived watcher
+// or server an edited file re-runs the rule with a new text (or a renamed or
+// newly added setter), so a path-keyed map would keep serving the set from
+// the first read and grow one entry per file for the life of the process.
+// Every sink match in a file arrives back to back, so the last read wins.
+let cachedSetters:
+    | { path: string; text: string; names: Set<string> }
+    | undefined
 
 /**
  * The setter of every `useState` in this file: the second slot of the array
@@ -270,8 +276,13 @@ const setterNamesByFile = new Map<string, Set<string>>()
  * write.
  */
 const stateSetterNames = (ctx: RuleContext): Set<string> => {
-    const cached = setterNamesByFile.get(ctx.filePath)
-    if (cached !== undefined) return cached
+    // Comparing the text as well as the path keeps an edited file (watch mode)
+    // from reusing a setter set read before the edit.
+    if (
+        cachedSetters?.path === ctx.filePath &&
+        cachedSetters.text === ctx.fileText
+    )
+        return cachedSetters.names
 
     const names = new Set<string>()
     for (const match of ctx.querySubtree(ctx.root, SETTER_PATTERN_QUERY)) {
@@ -289,7 +300,7 @@ const stateSetterNames = (ctx: RuleContext): Set<string> => {
             continue
         names.add(ctx.text(slots[0]) ?? '')
     }
-    setterNamesByFile.set(ctx.filePath, names)
+    cachedSetters = { path: ctx.filePath, text: ctx.fileText, names }
 
     return names
 }

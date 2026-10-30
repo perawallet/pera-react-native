@@ -78,6 +78,9 @@ describe('pera/no-secret-strings', () => {
     })
 
     it('names the sink each finding is about', async () => {
+        expect(await messageAt('holder-sinks.bad.ts', 50)).toBe(
+            'key material is held in React state',
+        )
         expect(await messageAt('string-sinks.bad.ts', 3)).toBe(
             'key material becomes a string here, which cannot be zeroed',
         )
