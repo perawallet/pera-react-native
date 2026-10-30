@@ -194,6 +194,17 @@ The native-app upgrade path, `migrateWalletConnect` in `packages/migrate`, takes
 through `MigrationDeps.walletConnectSessionKeys`. All three writers build the record with
 `buildWalletConnectV1Connection` (`src/v1/connection.ts`), so the persisted shape has one definition.
 
+## Reaching Pera from a mobile browser
+
+A dApp built on Reown AppKit builds its wallet link from the wallet's Reown explorer listing, as
+`<native link>wc?uri=` or `<universal link>/wc?uri=`. The listing, kept in the Reown project and not
+in this repo, must therefore declare Pera's native link as `perawallet-wc://` and its universal link
+as `https://perawallet.app/qr/perawallet-wc/`, trailing slash included: the bare host matches no app link, while both of those
+reach the WalletConnect pairing route in `packages/deeplinks`. The listing's chains decide whether EVM
+dApps offer Pera, so it must list the `eip155` chains Pera serves alongside Algorand. The v2 client's
+metadata carries the same two links as `redirect`, so a dApp can bring the user back to Pera for a
+later request.
+
 ## WalletConnect v2 refusal codes
 
 A chain answers refusals in its namespace's codes through `walletConnect.toWireErrorCode`; a chain
