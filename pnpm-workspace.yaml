@@ -1,438 +1,458 @@
 packages:
-  - apps/*
-  - packages/*
-  - extensions/*
-  - conformance
-  - conformance-evm
+    - apps/*
+    - packages/*
+    - extensions/*
+    - conformance
+    - conformance-evm
 
 catalog:
-  # A `# pin:` line directly above an entry is checked against pnpm-lock.yaml by
-  # pera/catalog-versions. `lockstep <group>`: every entry in the group resolves
-  # to one version. `follows <entry>`: resolves to the version that entry's
-  # resolved release depends on. `hold <version>`: resolves at or below it.
-  # The note above a marker is its reason; raise a hold only after redoing the
-  # check that note names. A dependabot PR bumping a held package past its hold
-  # fails Lint until that package is dropped from the PR; a matching `ignore`
-  # entry in .github/dependabot.yml stops the bot proposing it.
+    # A `# pin:` line directly above an entry is checked against pnpm-lock.yaml by
+    # pera/catalog-versions. `lockstep <group>`: every entry in the group resolves
+    # to one version. `follows <entry>`: resolves to the version that entry's
+    # resolved release depends on. `hold <version>`: resolves at or below it.
+    # The note above a marker is its reason; raise a hold only after redoing the
+    # check that note names. A dependabot PR bumping a held package past its hold
+    # fails Lint until that package is dropped from the PR; a matching `ignore`
+    # entry in .github/dependabot.yml stops the bot proposing it.
 
-  "@algorandfoundation/algokit-utils": 9.2.2
-  "@algorandfoundation/dp256": 1.1.0
-  "@algorandfoundation/keystore-core": 1.0.0-canary.5
-  "@algorandfoundation/keystore-web": 1.0.0-canary.6
-  "@algorandfoundation/ledger-algorand-js": ^1.4.3
-  "@algorandfoundation/provider-migrations": 1.0.0-canary.1
-  "@algorandfoundation/react-native-keystore": 1.0.0-canary.21
-  "@algorandfoundation/react-native-passkey-autofill": 1.0.0-canary.29
-  "@algorandfoundation/wallet-provider": 1.0.0-canary.6
-  "@algorandfoundation/xhd-wallet-api": ^2.0.0-canary.1
-  "@lottiefiles/dotlottie-react": 0.20.0
-  "@babel/runtime": ^7.29.2
-  "@expensify/react-native-wallet": 0.1.41
-  "@expo/app-integrity": 58.0.2
-  "@joe-p/react-native-falcon": 0.1.0
-  "@ledgerhq/errors": ^6.35.0
-  # Exact: each release pins its own axios and @ledgerhq/* dependencies exactly,
-  # so a range would drift the Ledger transport copies out from under it.
-  "@ledgerhq/hw-app-eth": 7.11.0
-  "@ledgerhq/hw-transport-web-ble": ^6.35.0
-  "@ledgerhq/hw-transport-webhid": ^6.36.0
-  "@ledgerhq/react-native-hid": 6.39.5
-  "@noble/ciphers": ^2.2.0
-  # Each "@scure/bip32" release pins this exactly; see the note there.
-  # pin: follows @scure/bip32
-  "@noble/hashes": ^2.4.0
-  "@noble/secp256k1": ^3.2.0
-  "@perawallet/walletconnect": 1.0.3
-  "@playwright/test": ^1.53.0
-  # Exact: every module peers on the identical app version; move all five
-  # together.
-  # pin: lockstep firebase
-  "@react-native-firebase/analytics": 27.0.0
-  # pin: lockstep firebase
-  "@react-native-firebase/app": 27.0.0
-  # pin: lockstep firebase
-  "@react-native-firebase/crashlytics": 27.0.0
-  # pin: lockstep firebase
-  "@react-native-firebase/messaging": 27.0.0
-  # pin: lockstep firebase
-  "@react-native-firebase/remote-config": 27.0.0
-  # Pinned exactly, not ranged: WalletKit and @walletconnect/core share an
-  # internal protocol contract, so a floating minor on one side can pair with
-  # a core it was never built against. Bump the two together.
-  "@reown/walletkit": 1.6.0
-  "@scure/base": 2.4.0
-  # Pinned exactly: each release pins @noble/hashes exactly, so move it with
-  # the @noble/hashes floor above or the tree carries two hashes copies.
-  "@scure/bip32": 2.4.0
-  "@scure/bip39": ^2.2.0
-  "@sqlite.org/sqlite-wasm": 3.53.0-build1
-  "@tanstack/query-async-storage-persister": ^5.99.0
-  "@tanstack/react-query": ^5.99.0
-  "@tanstack/react-query-persist-client": ^5.99.0
-  "@tanstack/store": 0.11.2
-  "@testing-library/react": 16.3.3
-  "@types/chrome": ^0.3.0
-  "@types/node": ^20.19.39
-  "@types/react": ~19.3.0
-  "@types/w3c-web-hid": ^1.0.7
-  "@types/web-bluetooth": ^0.0.21
-  "@vitejs/plugin-react": 6.1.2
-  "@vitest/coverage-v8": ^5.0.3
-  # Kept in step with "@reown/walletkit" above; see the note there.
-  # pin: follows @reown/walletkit
-  # pin: lockstep walletconnect
-  "@walletconnect/core": 2.25.0
-  # Same release train as core: it installs the `global.NetInfo` and
-  # `global.Platform` shims core's utils read, so bump the two together.
-  # pin: lockstep walletconnect
-  "@walletconnect/react-native-compat": 2.25.0
-  # The exact version "@walletconnect/core" depends on: `buildApprovedNamespaces`
-  # encodes the namespace rules the relay and the dApp both enforce, so a copy
-  # out of step with core's would build sessions core then rejects.
-  # pin: follows @walletconnect/core
-  "@walletconnect/utils": 2.25.0
-  # 3.7.0 is a floor, not a preference: the `pqsig` field and the
-  # scheme-agnostic PQ signer surface Pera's quantum accounts sign with landed
-  # in that release (algorand/js-algorand-sdk PR #1102). 3.6.x still resolves
-  # and type-checks, it just silently cannot sign a quantum account — so
-  # tools/check-single-algosdk.mjs enforces this range against the *resolved*
-  # version, and packages/chain-algorand/src/blockchain/pq/__tests__/algosdkPqSupport.spec.ts
-  # asserts the surface itself.
-  algosdk: ^3.7.0
-  before-after-hook: ^4.0.0
-  buffer: ^6.0.3
-  decimal.js: ^10.6.0
-  drizzle-orm: ^0.45.2
-  esbuild: ^0.28.1
-  eslint: 9.39.5
-  eslint-plugin-unused-imports: 4.4.1
-  expo: 58.0.17
-  expo-application: 58.1.2
-  expo-device: 58.0.5
-  expo-local-authentication: 58.0.2
-  expo-localization: 58.0.5
-  expo-notifications: 58.1.6
-  expo-sqlite: 58.0.13
-  fake-indexeddb: 6.2.5
-  falcon-1024: 0.2.0
-  # 3.33.1 fails the required Dead Code job on an unchanged .fallowrc.jsonc
-  # (unused exports and files that 3.30.0 doesn't report); raise this only with
-  # `pnpm fallow` green on the new release.
-  # pin: hold 3.30.0
-  fallow: 3.30.0
-  fast-glob: ^3.3.2
-  jsdom: ^30.0.1
-  ky: ^2.0.2
-  lanekeep: 0.14.0
-  msw: ^2.14.6
-  oxfmt: ^0.73.0
-  punycode: ^2.3.1
-  react: 19.3.0
-  react-dom: 19.3.0
-  react-native: 0.88.0
-  react-native-mmkv: 4.3.2
-  react-native-quick-base64: 3.0.0
-  react-native-quick-crypto: 1.1.6
-  react-native-ssl-public-key-pinning: 1.2.6
-  tsx: ^4.22.3
-  tweetnacl: ^1.0.3
-  typescript: ^7.0.2
-  util: ^0.12.5
-  uuid: 14.0.3
-  # Metro, Hermes and the extension bundles were verified against this exact
-  # version; re-run those checks before a bump.
-  # pin: hold 2.57.7
-  viem: 2.57.7
-  vite: ~8.3.4
-  vitest: ^5.0.3
-  xstate: ^5.28.0
-  zod: ^4.6.7
-  zustand: ^5.0.12
+    '@algorandfoundation/algokit-utils': 9.2.2
+    '@algorandfoundation/dp256': 1.1.0
+    '@algorandfoundation/keystore-core': 1.0.0-canary.5
+    '@algorandfoundation/keystore-web': 1.0.0-canary.6
+    '@algorandfoundation/ledger-algorand-js': ^1.4.3
+    '@algorandfoundation/provider-migrations': 1.0.0-canary.1
+    '@algorandfoundation/react-native-keystore': 1.0.0-canary.21
+    '@algorandfoundation/react-native-passkey-autofill': 1.0.0-canary.29
+    '@algorandfoundation/wallet-provider': 1.0.0-canary.6
+    '@algorandfoundation/xhd-wallet-api': ^2.0.0-canary.1
+    '@lottiefiles/dotlottie-react': 0.20.0
+    '@babel/runtime': ^7.29.2
+    '@expensify/react-native-wallet': 0.1.41
+    '@expo/app-integrity': 58.0.2
+    '@joe-p/react-native-falcon': 0.1.0
+    '@ledgerhq/errors': ^6.35.0
+    # Exact: each release pins its own axios and @ledgerhq/* dependencies exactly,
+    # so a range would drift the Ledger transport copies out from under it.
+    '@ledgerhq/hw-app-eth': 7.11.0
+    '@ledgerhq/hw-transport-web-ble': ^6.35.0
+    '@ledgerhq/hw-transport-webhid': ^6.36.0
+    '@ledgerhq/react-native-hid': 6.39.5
+    '@noble/ciphers': ^2.2.0
+    # Each "@scure/bip32" and "@scure/bip39" release pins this exactly; see the
+    # notes there.
+    # pin: follows @scure/bip32
+    # pin: follows @scure/bip39
+    '@noble/hashes': ^2.4.0
+    '@noble/secp256k1': ^3.2.0
+    '@perawallet/walletconnect': 1.0.3
+    '@playwright/test': ^1.53.0
+    # Exact: every module peers on the identical app version; move all five
+    # together.
+    # pin: lockstep firebase
+    '@react-native-firebase/analytics': 27.0.0
+    # pin: lockstep firebase
+    '@react-native-firebase/app': 27.0.0
+    # pin: lockstep firebase
+    '@react-native-firebase/crashlytics': 27.0.0
+    # pin: lockstep firebase
+    '@react-native-firebase/messaging': 27.0.0
+    # pin: lockstep firebase
+    '@react-native-firebase/remote-config': 27.0.0
+    # Pinned exactly, not ranged: WalletKit and @walletconnect/core share an
+    # internal protocol contract, so a floating minor on one side can pair with
+    # a core it was never built against. Bump the two together.
+    '@reown/walletkit': 1.6.0
+    '@scure/base': 2.4.0
+    # Pinned exactly: each release pins @noble/hashes exactly, so move it with
+    # the @noble/hashes floor above or the tree carries two hashes copies.
+    '@scure/bip32': 2.4.0
+    # Pinned exactly for the same reason as "@scure/bip32".
+    '@scure/bip39': 2.4.0
+    '@sqlite.org/sqlite-wasm': 3.53.0-build1
+    '@tanstack/query-async-storage-persister': ^5.99.0
+    '@tanstack/react-query': ^5.99.0
+    '@tanstack/react-query-persist-client': ^5.99.0
+    '@tanstack/store': 0.11.2
+    '@testing-library/react': 16.3.3
+    '@types/chrome': ^0.3.0
+    '@types/node': ^20.19.39
+    '@types/react': ~19.3.0
+    '@types/w3c-web-hid': ^1.0.7
+    '@types/web-bluetooth': ^0.0.21
+    '@vitejs/plugin-react': 6.1.2
+    '@vitest/coverage-v8': ^5.0.3
+    # Kept in step with "@reown/walletkit" above; see the note there.
+    # pin: follows @reown/walletkit
+    # pin: lockstep walletconnect
+    '@walletconnect/core': 2.25.0
+    # Same release train as core: it installs the `global.NetInfo` and
+    # `global.Platform` shims core's utils read, so bump the two together.
+    # pin: lockstep walletconnect
+    '@walletconnect/react-native-compat': 2.25.0
+    # The exact version "@walletconnect/core" depends on: `buildApprovedNamespaces`
+    # encodes the namespace rules the relay and the dApp both enforce, so a copy
+    # out of step with core's would build sessions core then rejects.
+    # pin: follows @walletconnect/core
+    '@walletconnect/utils': 2.25.0
+    # 3.7.0 is a floor, not a preference: the `pqsig` field and the
+    # scheme-agnostic PQ signer surface Pera's quantum accounts sign with landed
+    # in that release (algorand/js-algorand-sdk PR #1102). 3.6.x still resolves
+    # and type-checks, it just silently cannot sign a quantum account — so
+    # tools/check-single-algosdk.mjs enforces this range against the *resolved*
+    # version, and packages/chain-algorand/src/blockchain/pq/__tests__/algosdkPqSupport.spec.ts
+    # asserts the surface itself.
+    algosdk: ^3.7.0
+    before-after-hook: ^4.0.0
+    buffer: ^6.0.3
+    decimal.js: ^10.6.0
+    drizzle-orm: ^0.45.2
+    esbuild: ^0.28.1
+    eslint: 9.39.5
+    eslint-plugin-unused-imports: 4.4.1
+    expo: 58.0.17
+    expo-application: 58.1.2
+    expo-device: 58.0.5
+    expo-local-authentication: 58.0.2
+    expo-localization: 58.0.5
+    expo-notifications: 58.1.6
+    expo-sqlite: 58.0.13
+    fake-indexeddb: 6.2.5
+    falcon-1024: 0.2.0
+    # 3.33.1 fails the required Dead Code job on an unchanged .fallowrc.jsonc
+    # (unused exports and files that 3.30.0 doesn't report); raise this only with
+    # `pnpm fallow` green on the new release.
+    # pin: hold 3.30.0
+    fallow: 3.30.0
+    fast-glob: ^3.3.2
+    jsdom: ^30.0.1
+    ky: ^2.0.2
+    lanekeep: 0.14.0
+    msw: ^2.14.6
+    oxfmt: ^0.73.0
+    punycode: ^2.3.1
+    react: 19.3.0
+    react-dom: 19.3.0
+    react-native: 0.88.0
+    react-native-mmkv: 4.3.2
+    react-native-quick-base64: 3.0.0
+    react-native-quick-crypto: 1.1.6
+    react-native-ssl-public-key-pinning: 1.2.6
+    tsx: ^4.22.3
+    tweetnacl: ^1.0.3
+    typescript: ^7.0.2
+    util: ^0.12.5
+    uuid: 14.0.3
+    # Metro, Hermes and the extension bundles were verified against this exact
+    # version; re-run those checks before a bump.
+    # pin: hold 2.57.7
+    viem: 2.57.7
+    vite: ~8.3.4
+    vitest: ^5.0.3
+    xstate: ^5.28.0
+    zod: ^4.6.7
+    zustand: ^5.0.12
 
 packageExtensions:
-  # The compat lists async-storage as a required peer for core's default
-  # storage adapter. Pera injects its own (`packages/walletconnect/src/v2/storage.ts`),
-  # and `ignoreMissing` only silences the warning: auto-install still adds the
-  # package, and its presence re-keys every Firebase auth lockfile entry.
-  # Optional peers are not auto-installed.
-  '@walletconnect/react-native-compat':
-    peerDependenciesMeta:
-      '@react-native-async-storage/async-storage':
-        optional: true
+    # The compat lists async-storage as a required peer for core's default
+    # storage adapter. Pera injects its own (`packages/walletconnect/src/v2/storage.ts`),
+    # and `ignoreMissing` only silences the warning: auto-install still adds the
+    # package, and its presence re-keys every Firebase auth lockfile entry.
+    # Optional peers are not auto-installed.
+    '@walletconnect/react-native-compat':
+        peerDependenciesMeta:
+            '@react-native-async-storage/async-storage':
+                optional: true
 
 minimumReleaseAge: 10080
 
 auditConfig:
-  ignoreGhsas:
-    # node-forge has no patched release (first_patched_version: null; npm's
-    # latest is 1.4.0). Its only consumers are @expo/cli and
-    # @expo/code-signing-certificates, dev/build tooling that never ships to a
-    # device. Drop this entry once a fix lands.
-    - GHSA-86w9-cpqp-85rv # node-forge: lax RSA PKCS#1 v1.5 signature verification
-    # braces has no patched release (first_patched_version: null; npm's latest
-    # is 3.0.3). Its only consumer is micromatch under metro-file-map and
-    # @expo/metro-file-map, which match our own build globs, never user input,
-    # and never ship to a device. Drop this entry once braces publishes a fix.
-    - GHSA-vfj7-8cjw-p6xm # braces: stack exhaustion via deeply nested patterns
-    # zod 3.x has no patched release (fixed only in 4.6.6). The only 3.x copy is
-    # @expo/cli's, which never ships to a device; the zod override floors every
-    # 4.x copy. Drop this entry once @expo/cli moves to zod 4.
-    - GHSA-mrhx-c7xc-m3w5 # zod: memory exhaustion validating oversized arrays
+    ignoreGhsas:
+        # node-forge has no patched release (first_patched_version: null; npm's
+        # latest is 1.4.0). Its only consumers are @expo/cli and
+        # @expo/code-signing-certificates, dev/build tooling that never ships to a
+        # device. Drop this entry once a fix lands.
+        - GHSA-86w9-cpqp-85rv # node-forge: lax RSA PKCS#1 v1.5 signature verification
+        # braces has no patched release (first_patched_version: null; npm's latest
+        # is 3.0.3). Its only consumer is micromatch under metro-file-map and
+        # @expo/metro-file-map, which match our own build globs, never user input,
+        # and never ship to a device. Drop this entry once braces publishes a fix.
+        - GHSA-vfj7-8cjw-p6xm # braces: stack exhaustion via deeply nested patterns
+        # zod 3.x has no patched release (fixed only in 4.6.6). The only 3.x copy is
+        # @expo/cli's, which never ships to a device; the zod override floors every
+        # 4.x copy. Drop this entry once @expo/cli moves to zod 4.
+        - GHSA-mrhx-c7xc-m3w5 # zod: memory exhaustion validating oversized arrays
 
 minimumReleaseAgeExclude:
-  # @algorandfoundation/keystore is deliberately NOT listed: nothing in the
-  # workspace depends on it (extensions/keystore-chrome vendors the canary.17
-  # key types it needs), so it needs no freshness exemption of its own.
-  # keystore-core and keystore-web ARE direct dependencies that share the
-  # keystore canary publish date, so they keep their exemption independent of
-  # the removed keystore pin: keystore-core is consumed by
-  # extensions/provider, extensions/passkey-autofill, packages/kms and
-  # packages/passkeys; keystore-web only by extensions/provider.
-  # keystore-node is not listed: it arrives transitively, and its own
-  # canary.3 publish (2026-08-13) already clears the 7-day minimumReleaseAge
-  # window unaided, so no exclude entry is needed for it either.
-  - '@algorandfoundation/keystore-core'
-  - '@algorandfoundation/keystore-web'
-  - '@algorandfoundation/provider-migrations'
-  - '@algorandfoundation/react-native-keystore'
-  - '@algorandfoundation/react-native-passkey-autofill'
-  - '@joe-p/react-native-falcon'
-  - '@perawallet/walletconnect'
-  - falcon-1024
-  # First-party: sole maintainer fredamsouza, SLSA provenance on the launcher and
-  # all four platform packages, no install scripts (checked for 0.12.0). Repeat
-  # those checks before adopting a release younger than the gate.
-  - lanekeep
-  - '@lanekeep/*'
-  - expo
-  - expo-*
-  - '@expo/*'
-  - babel-preset-expo
-  # Expo's Rust transformer, a hard dependency of @expo/metro-config. Published
-  # from expo/noxcturnal by GitHub Actions trusted publishing, sole maintainer
-  # philpl (also an `expo` maintainer), no install scripts in it or its
-  # platform binaries. Inert here: it only runs under
-  # `experiments.noxcturnalTransformWorker`, which a project with custom Babel
-  # plugins can't use anyway.
-  - noxcturnal
-  - '@noxcturnal/*'
-  # Apache Cordova's pbxproj editor, which @expo/config-plugins moved to ^4 in
-  # the SDK 58 line; prebuild-only. 4.0.0 is byte-identical to the rel/4.0.0
-  # tag, published by the same releaser as 3.0.1, no install scripts. Pinned
-  # to the version so the next release clears the gate on its own.
-  - xcode@4.0.0
-  # Firebase Apple 13 is SPM-only and CocoaPods trunk goes read-only, so 27.0.0
-  # is needed ahead of the gate. Same four maintainers as 26.x, SLSA provenance
-  # on all five, and only `prepare` scripts, which a registry install never
-  # runs. Pinned to the version so the next release clears the gate on its own.
-  - '@react-native-firebase/analytics@27.0.0'
-  - '@react-native-firebase/app@27.0.0'
-  - '@react-native-firebase/crashlytics@27.0.0'
-  - '@react-native-firebase/messaging@27.0.0'
-  - '@react-native-firebase/remote-config@27.0.0'
-  # The fast-uri audit floor (see the override). Same six fastify maintainers as
-  # 4.1.5, SLSA provenance, no install scripts. Pinned to the version so it
-  # stops applying once 4.2.3 clears the gate on its own.
-  - fast-uri@4.2.3
+    # @algorandfoundation/keystore is deliberately NOT listed: nothing in the
+    # workspace depends on it (extensions/keystore-chrome vendors the canary.17
+    # key types it needs), so it needs no freshness exemption of its own.
+    # keystore-core and keystore-web ARE direct dependencies that share the
+    # keystore canary publish date, so they keep their exemption independent of
+    # the removed keystore pin: keystore-core is consumed by
+    # extensions/provider, extensions/passkey-autofill, packages/kms and
+    # packages/passkeys; keystore-web only by extensions/provider.
+    # keystore-node is not listed: it arrives transitively, and its own
+    # canary.3 publish (2026-08-13) already clears the 7-day minimumReleaseAge
+    # window unaided, so no exclude entry is needed for it either.
+    - '@algorandfoundation/keystore-core'
+    - '@algorandfoundation/keystore-web'
+    - '@algorandfoundation/provider-migrations'
+    - '@algorandfoundation/react-native-keystore'
+    - '@algorandfoundation/react-native-passkey-autofill'
+    - '@joe-p/react-native-falcon'
+    - '@perawallet/walletconnect'
+    - falcon-1024
+    # First-party: sole maintainer fredamsouza, SLSA provenance on the launcher and
+    # all four platform packages, no install scripts (checked for 0.12.0). Repeat
+    # those checks before adopting a release younger than the gate.
+    - lanekeep
+    - '@lanekeep/*'
+    - expo
+    - expo-*
+    - '@expo/*'
+    - babel-preset-expo
+    # Expo's Rust transformer, a hard dependency of @expo/metro-config. Published
+    # from expo/noxcturnal by GitHub Actions trusted publishing, sole maintainer
+    # philpl (also an `expo` maintainer), no install scripts in it or its
+    # platform binaries. Inert here: it only runs under
+    # `experiments.noxcturnalTransformWorker`, which a project with custom Babel
+    # plugins can't use anyway.
+    - noxcturnal
+    - '@noxcturnal/*'
+    # Apache Cordova's pbxproj editor, which @expo/config-plugins moved to ^4 in
+    # the SDK 58 line; prebuild-only. 4.0.0 is byte-identical to the rel/4.0.0
+    # tag, published by the same releaser as 3.0.1, no install scripts. Pinned
+    # to the version so the next release clears the gate on its own.
+    - xcode@4.0.0
+    # Firebase Apple 13 is SPM-only and CocoaPods trunk goes read-only, so 27.0.0
+    # is needed ahead of the gate. Same four maintainers as 26.x, SLSA provenance
+    # on all five, and only `prepare` scripts, which a registry install never
+    # runs. Pinned to the version so the next release clears the gate on its own.
+    - '@react-native-firebase/analytics@27.0.0'
+    - '@react-native-firebase/app@27.0.0'
+    - '@react-native-firebase/crashlytics@27.0.0'
+    - '@react-native-firebase/messaging@27.0.0'
+    - '@react-native-firebase/remote-config@27.0.0'
+    # The fast-uri audit floor (see the override). Same six fastify maintainers as
+    # 4.1.5, SLSA provenance, no install scripts. Pinned to the version so it
+    # stops applying once 4.2.3 clears the gate on its own.
+    - fast-uri@4.2.3
 
 onlyBuiltDependencies:
-  - '@firebase/util'
-  - '@tailwindcss/oxide'
-  - better-sqlite3
-  - electron
-  - electron-winstaller
-  - es5-ext
-  - esbuild
-  - msw
-  - protobufjs
-  - react-native-nitro-modules
-  - sharp
-  - simple-git-hooks
+    - '@firebase/util'
+    - '@tailwindcss/oxide'
+    - better-sqlite3
+    - electron
+    - electron-winstaller
+    - es5-ext
+    - esbuild
+    - msw
+    - protobufjs
+    - react-native-nitro-modules
+    - sharp
+    - simple-git-hooks
 
 patchedDependencies:
-  # The engine has no secp256k1 path: `deriveFromSeed` only derives
-  # BIP32-Ed25519 from an `hd-root-key`, and `sign`/`import` know no secp256k1
-  # type. The patch routes `curve: 'secp256k1'` to the provider's shim: the
-  # child is derived from an HD wallet's BIP39 entropy and sealed at birth,
-  # signing opens only that child, and imported raw keys are sealed too, and
-  # released by `export` only when imported extractable; derived children never
-  # are. Drop once upstream takes these branches.
-  "@algorandfoundation/keystore-core@1.0.0-canary.5": patches/@algorandfoundation__keystore-core@1.0.0-canary.5.patch
-  # `shims` is typed as an array, though it is handed unchanged to keystore-core's
-  # `createKeyStore`, which also takes a lazy function. The provider needs the
-  # lazy form to fold the asynchronously loaded native Falcon binding in next to
-  # the secp256k1 shim. Type-only; drop once upstream widens it.
-  # Some StrongBox chips take about a second per AES operation, and every
-  # master-key read costs two, so a slow read gets a TEE-held copy of the same
-  # master key that later reads prefer; the StrongBox copy is never removed.
-  # Needs the react-native-keychain patch's TEE storage. Drop once upstream can
-  # keep a key out of StrongBox.
-  "@algorandfoundation/react-native-keystore@1.0.0-canary.21": patches/@algorandfoundation__react-native-keystore@1.0.0-canary.21.patch
-  # Six unrelated reasons, none configurable through plugin options:
-  # - The Android credential provider keeps the legacy native app's service
-  #   class name, so Credential Manager carries the user's enablement across
-  #   the upgrade.
-  # - Android WebAuthn registration through a browser: an allowlisted browser's
-  #   clientDataHash is honoured (upstream honours it only on assertion), and the
-  #   response carries the authenticatorData / publicKeyAlgorithm / publicKey
-  #   fields without which Chrome rejects it. Drop the fields once upstream
-  #   ships them.
-  # - The package's iOS strings name its own product ("Rocca"), including the
-  #   Face ID usage text and the biometric / passcode prompt reasons.
-  # - Android credentials live in the keystore's `k/`+`m/` split layout: the
-  #   credential chooser lists plaintext `k/` metadata without decrypting
-  #   anything, and one credential's sealed `m/` material is opened only after
-  #   the user selects it. Upstream lists flat records by opening each one.
-  # - Android assertion keys open only under a Keystore-enforced proof that the
-  #   user authenticated: a biometric-wrapped key is never re-derived, and
-  #   re-deriving a key or reading the PRF parent secret needs a biometric
-  #   cipher the user unlocked. Upstream re-derives any key it cannot open.
-  # - expo-modules-core 58 removed `AppContext.hostingRuntimeContext`, the
-  #   module's fallback after `reactContext`; the Android build fails on it.
-  "@algorandfoundation/react-native-passkey-autofill@1.0.0-canary.29": patches/@algorandfoundation__react-native-passkey-autofill@1.0.0-canary.29.patch
-  # The CJS build's Emscripten glue reads a bare `__filename`, which a Metro web
-  # bundle never defines, so evaluating it throws a ReferenceError. The value
-  # only seeds a script-directory lookup the inlined WASM never uses; guard it
-  # with `typeof`. Drop once upstream's build stops emitting the bare read.
-  "falcon-1024@0.2.0": patches/falcon-1024@0.2.0.patch
-  # RN 0.87 removed InteractionManager (undefined in release, a throw in dev),
-  # and the list calls it whenever its data's keys change, i.e. on every
-  # reorder. requestIdleCallback is RN's documented replacement. Patches the
-  # two builds Metro reads (`src` on native, `lib/module` on web); tests mock
-  # the package. Drop once upstream ships a release without it.
-  "react-native-draggable-flatlist@4.0.3": patches/react-native-draggable-flatlist@4.0.3.patch
-  # Type-only: 14.0.1 defaults the class's extra-props generic to `undefined`,
-  # so `WebViewProps & undefined` is `never` and every JSX prop fails to
-  # type-check. 13.x defaulted it to `{}`. Drop once upstream restores it.
-  "react-native-webview@14.0.1": patches/react-native-webview@14.0.1.patch
-  # RN 0.88 removed the legacy `RCTBaseTextInputView.h`; the Swift bridging
-  # header still imports it though no source uses the class. Drop once
-  # upstream ships a release without the import.
-  "react-native-advanced-input-mask@1.4.6": patches/react-native-advanced-input-mask@1.4.6.patch
-  # Android: adds the `KeystoreAESGCM_NoAuth_TEE` storage, whose key is never
-  # generated in StrongBox; upstream always prefers StrongBox when the device
-  # has it (oblador/react-native-keychain#817). Only chosen by name, never by
-  # default.
-  "react-native-keychain@10.0.0": patches/react-native-keychain@10.0.0.patch
-  # Android: ScreenFragment.onDestroy never clears Screen.fragmentWrapper, and
-  # Fabric's tagToViewState keeps the Screen view alive for the surface's
-  # lifetime, so every dismissed screen's fragment (plus its view subtree) is
-  # retained — LeakCanary flags a handful per navigation session. Clears the
-  # back-reference on destroy ONLY when the screen is gone from its container:
-  # below-top fragments are destroyed on push and the same instance re-attaches
-  # on pop without addScreen re-running, so an unconditional clear would strand
-  # reused screens (software-mansion/react-native-screens#3755). Drop once
-  # upstream ships the fix.
-  "react-native-screens@4.30.0": patches/react-native-screens@4.30.0.patch
+    # The engine has no secp256k1 path: `deriveFromSeed` only derives
+    # BIP32-Ed25519 from an `hd-root-key`, and `sign`/`import` know no secp256k1
+    # type. The patch routes `curve: 'secp256k1'` to the provider's shim: the
+    # child is derived from an HD wallet's BIP39 entropy and sealed at birth,
+    # signing opens only that child, and imported raw keys are sealed too, and
+    # released by `export` only when imported extractable; derived children never
+    # are. Drop once upstream takes these branches.
+    '@algorandfoundation/keystore-core@1.0.0-canary.5': patches/@algorandfoundation__keystore-core@1.0.0-canary.5.patch
+    # `shims` is typed as an array, though it is handed unchanged to keystore-core's
+    # `createKeyStore`, which also takes a lazy function. The provider needs the
+    # lazy form to fold the asynchronously loaded native Falcon binding in next to
+    # the secp256k1 shim. Type-only; drop once upstream widens it.
+    # Some StrongBox chips take about a second per AES operation, and every
+    # master-key read costs two, so a slow read gets a TEE-held copy of the same
+    # master key that later reads prefer; the StrongBox copy is never removed.
+    # Needs the react-native-keychain patch's TEE storage. Drop once upstream can
+    # keep a key out of StrongBox.
+    '@algorandfoundation/react-native-keystore@1.0.0-canary.21': patches/@algorandfoundation__react-native-keystore@1.0.0-canary.21.patch
+    # Six unrelated reasons, none configurable through plugin options:
+    # - The Android credential provider keeps the legacy native app's service
+    #   class name, so Credential Manager carries the user's enablement across
+    #   the upgrade.
+    # - Android WebAuthn registration through a browser: an allowlisted browser's
+    #   clientDataHash is honoured (upstream honours it only on assertion), and the
+    #   response carries the authenticatorData / publicKeyAlgorithm / publicKey
+    #   fields without which Chrome rejects it. Drop the fields once upstream
+    #   ships them.
+    # - The package's iOS strings name its own product ("Rocca"), including the
+    #   Face ID usage text and the biometric / passcode prompt reasons.
+    # - Android credentials live in the keystore's `k/`+`m/` split layout: the
+    #   credential chooser lists plaintext `k/` metadata without decrypting
+    #   anything, and one credential's sealed `m/` material is opened only after
+    #   the user selects it. Upstream lists flat records by opening each one.
+    # - Android assertion keys open only under a Keystore-enforced proof that the
+    #   user authenticated: a biometric-wrapped key is never re-derived, and
+    #   re-deriving a key or reading the PRF parent secret needs a biometric
+    #   cipher the user unlocked. Upstream re-derives any key it cannot open.
+    # - expo-modules-core 58 removed `AppContext.hostingRuntimeContext`, the
+    #   module's fallback after `reactContext`; the Android build fails on it.
+    '@algorandfoundation/react-native-passkey-autofill@1.0.0-canary.29': patches/@algorandfoundation__react-native-passkey-autofill@1.0.0-canary.29.patch
+    # The CJS build's Emscripten glue reads a bare `__filename`, which a Metro web
+    # bundle never defines, so evaluating it throws a ReferenceError. The value
+    # only seeds a script-directory lookup the inlined WASM never uses; guard it
+    # with `typeof`. Drop once upstream's build stops emitting the bare read.
+    'falcon-1024@0.2.0': patches/falcon-1024@0.2.0.patch
+    # RN 0.87 removed InteractionManager (undefined in release, a throw in dev),
+    # and the list calls it whenever its data's keys change, i.e. on every
+    # reorder. requestIdleCallback is RN's documented replacement. Patches the
+    # two builds Metro reads (`src` on native, `lib/module` on web); tests mock
+    # the package. Drop once upstream ships a release without it.
+    'react-native-draggable-flatlist@4.0.3': patches/react-native-draggable-flatlist@4.0.3.patch
+    # Type-only: 14.0.1 defaults the class's extra-props generic to `undefined`,
+    # so `WebViewProps & undefined` is `never` and every JSX prop fails to
+    # type-check. 13.x defaulted it to `{}`. Drop once upstream restores it.
+    'react-native-webview@14.0.1': patches/react-native-webview@14.0.1.patch
+    # RN 0.88 removed the legacy `RCTBaseTextInputView.h`; the Swift bridging
+    # header still imports it though no source uses the class. Drop once
+    # upstream ships a release without the import.
+    'react-native-advanced-input-mask@1.4.6': patches/react-native-advanced-input-mask@1.4.6.patch
+    # Android: adds the `KeystoreAESGCM_NoAuth_TEE` storage, whose key is never
+    # generated in StrongBox; upstream always prefers StrongBox when the device
+    # has it (oblador/react-native-keychain#817). Only chosen by name, never by
+    # default.
+    'react-native-keychain@10.0.0': patches/react-native-keychain@10.0.0.patch
+    # Android: ScreenFragment.onDestroy never clears Screen.fragmentWrapper, and
+    # Fabric's tagToViewState keeps the Screen view alive for the surface's
+    # lifetime, so every dismissed screen's fragment (plus its view subtree) is
+    # retained — LeakCanary flags a handful per navigation session. Clears the
+    # back-reference on destroy ONLY when the screen is gone from its container:
+    # below-top fragments are destroyed on push and the same instance re-attaches
+    # on pop without addScreen re-running, so an unconditional clear would strand
+    # reused screens (software-mansion/react-native-screens#3755). Drop once
+    # upstream ships the fix.
+    'react-native-screens@4.30.0': patches/react-native-screens@4.30.0.patch
 
 overrides:
-  # No `algosdk` override: official 3.7.0 satisfies @algorandfoundation/
-  # algokit-utils' `^3.5.2` peer on its own, so the catalog range alone yields a
-  # single copy. (A prerelease never satisfied that peer by semver, which is why
-  # the vendored build had to be forced here.) One copy is still load-bearing —
-  # two break cross-boundary `instanceof Transaction`/`instanceof Address` and
-  # msgpack schema identity — so tools/check-single-algosdk.mjs keeps asserting
-  # it on every pre-push.
+    # No `algosdk` override: official 3.7.0 satisfies @algorandfoundation/
+    # algokit-utils' `^3.5.2` peer on its own, so the catalog range alone yields a
+    # single copy. (A prerelease never satisfied that peer by semver, which is why
+    # the vendored build had to be forced here.) One copy is still load-bearing —
+    # two break cross-boundary `instanceof Transaction`/`instanceof Address` and
+    # msgpack schema identity — so tools/check-single-algosdk.mjs keeps asserting
+    # it on every pre-push.
 
-  # No @algorandfoundation/keystore override, and no catalog entry either:
-  # keystore-chrome vendors the canary.17 key types and error class its WebAuthn
-  # signer uses (src/keystore/), so nothing in the workspace depends on this
-  # package. The catalog pin was
-  # dropped because it resolved to nothing in the lockfile — no importer, no
-  # resolution — leaving Dependabot to bump a spec no consumer used and no test
-  # could validate.
-  '@algorandfoundation/keystore-core': 1.0.0-canary.5
-  '@algorandfoundation/keystore-web': 1.0.0-canary.6
-  '@algorandfoundation/react-native-keystore': 1.0.0-canary.21
-  # Four upstream packages (keystore-core, keystore@canary.17,
-  # provider-migrations, react-native-keystore) pin `wallet-provider` at exact
-  # `1.0.0-canary.5`, so bumping the catalog alone can't drag them forward and
-  # yields two installed copies. `wallet-provider` exports `Provider` as a
-  # class, so two copies break cross-boundary `instanceof` the same way a
-  # second algosdk copy would. Forcing it here is safe only because canary.5
-  # and canary.6's dists are byte-identical (verified with `diff -r` between
-  # the two installed copies) — retire this override once those four
-  # packages move past canary.5.
-  # While this override stands the catalog entry above is inert — pnpm resolves
-  # 'catalog:' through the override, so bumping line 16 alone changes nothing.
-  # Move both together, or not at all.
-  '@algorandfoundation/wallet-provider': 1.0.0-canary.6
-  '@expo/dom-webview': 58.0.2
-  # Force the SDK-bundled versions across the tree. Both reach us only
-  # transitively with floating ranges that drift past the installed SDK:
-  # expo-asset pulls `expo-constants` through a tilde range and
-  # react-native-quick-crypto declares an optional `expo-build-properties: *`
-  # peer — each resolves to the newest published patch, spawning a
-  # second copy that diverges from the prebuilt native pods. The duplicate
-  # expo-constants specifically breaks the iOS "Generate app.config for
-  # prebuilt Constants.manifest" archive phase. A direct spec can't hold these
-  # down (the float is inside the dependents' ranges), so pin them here.
-  expo-constants: 58.0.13
-  # One copy only, for the same reason as algosdk and wallet-provider: two
-  # @types/react mean two ref/JSX type universes, and
-  # `React.ComponentRef<typeof PWFlatList>` collapses to `never` the moment a
-  # second one appears — apps/mobile's FlashList refs stop type-checking and
-  # `mobile#build` fails.
-  # It splits on its own: @types/react-native 0.70.x (reached through
-  # @gorhom/bottom-sheet) asks for @types/react over a much wider range than
-  # the catalog, so it only takes a few more peer contexts in the graph — the
-  # ones @rneui/base 5.0.0 adds by declaring @testing-library/jest-native and
-  # @testing-library/react-native as non-optional peers — for pnpm to stop
-  # collapsing the two ranges into one resolution. Mirroring the catalog range
-  # here gives every consumer the same spec, so it resolves once. Move this
-  # with the catalog entry, not on its own.
-  '@types/react': ~19.3.0
-  expo-build-properties: 58.0.11
-  # GHSA-m9gg-hp2v-232j floor. @firebase/firestore still declares ~1.9.0 and
-  # 1.9.x has no patched release, so this forces it past its range; safe
-  # because grpc-js is only loaded by firestore's Node entry, which no bundle
-  # here reaches (the browser and RN builds use webchannel).
-  '@grpc/grpc-js@<1.13.6': 1.13.6
-  # Single copy across the expo config-plugin toolchain; 0.8.15 is the
-  # GHSA-6gmq-8vp8-gcm6 floor (XML fragment injection, patched >=0.8.15).
-  # Stay on the 0.8 line — 0.9 changed the package's API surface.
-  '@xmldom/xmldom': 0.8.15
-  esbuild@<0.25.0: ">=0.25.0"
-  # GHSA-g7r4-m6w7-qqqr (arbitrary file read via the dev server on Windows).
-  esbuild@>=0.27.3 <0.28.1: ">=0.28.1"
-  # GHSA-7p8r-x3mc-p8w7 (host confusion via backslash authority introducer),
-  # then GHSA-5jgf-p345-68v8, GHSA-f65p-4m7j-42xc, GHSA-fph4-wmhf-6fwf and
-  # GHSA-jqff-g426-hqxp (host confusion / SSRF via IDN, IPv6 and
-  # percent-decoding normalization), patched in 4.1.3; then GHSA-qw65-cvwx-89v3
-  # (authority injection via an unvalidated port) and GHSA-58mr-gqgx-xq4g (host
-  # confusion via an unclosed bracket), patched in 4.1.4; then
-  # GHSA-hrr3-gc8f-f4qj and GHSA-jvvf-x445-j334 (mailto header injection),
-  # patched in 4.1.5; then GHSA-w74x-v6f9-j3xg, GHSA-wjr9-j795-jxcr,
-  # GHSA-xhq7-xmqj-769h and GHSA-333x-w4r6-6crp (scheme spoofing, host
-  # confusion, path equivalence, scheme injection), patched in 4.2.3. Pinned to
-  # the lowest patched version rather than latest.
-  fast-uri@<4.2.3: 4.2.3
-  happy-dom@>=19.0.0 <20.0.2: '>=20.0.2'
-  # The 4.x consumers already resolve to 5.x through this open range; the floor
-  # names the patched 5.x so a stale lock entry cannot hold them below it.
-  js-yaml@>=4.0.0 <4.3.1: '>=5.4.1'
-  # Keep the production-proven resolution: in the tree since #996 and shipped in
-  # v7.0.0. Deliberately outside @gorhom/portal's declared `^3.3.1`.
-  '@gorhom/portal>nanoid': 6.0.0
-  picomatch@3: 3.0.1
-  picomatch@4: 4.0.4
-  react: 19.3.0
-  react-dom: 19.3.0
-  react-native: 0.88.0
-  # @ledgerhq/react-native-hw-transport-ble brings its own exact 3.4.0, a second
-  # copy whose JS would drive the 3.5.1 native code apps/mobile autolinks.
-  react-native-ble-plx: 3.5.1
-  react-native-nitro-modules: 0.36.5
-  react-native-quick-base64: 3.0.0
-  react-native-quick-crypto: 1.1.6
-  uuid@<14: 14.0.0
-  ws@>=7.0.0 <7.5.11: 7.5.11
-  ws@>=8.0.0 <8.20.1: '>=8.20.1'
-  yaml@2: 2.8.3
-  # GHSA-mrhx-c7xc-m3w5 floor for every 4.x copy, so that advisory's audit
-  # ignore can only ever cover the unpatchable 3.x line.
-  zod@>=4.0.0 <4.6.6: ^4.6.7
+    # No @algorandfoundation/keystore override, and no catalog entry either:
+    # keystore-chrome vendors the canary.17 key types and error class its WebAuthn
+    # signer uses (src/keystore/), so nothing in the workspace depends on this
+    # package. The catalog pin was
+    # dropped because it resolved to nothing in the lockfile — no importer, no
+    # resolution — leaving Dependabot to bump a spec no consumer used and no test
+    # could validate.
+    '@algorandfoundation/keystore-core': 1.0.0-canary.5
+    '@algorandfoundation/keystore-web': 1.0.0-canary.6
+    '@algorandfoundation/react-native-keystore': 1.0.0-canary.21
+    # Four upstream packages (keystore-core, keystore@canary.17,
+    # provider-migrations, react-native-keystore) pin `wallet-provider` at exact
+    # `1.0.0-canary.5`, so bumping the catalog alone can't drag them forward and
+    # yields two installed copies. `wallet-provider` exports `Provider` as a
+    # class, so two copies break cross-boundary `instanceof` the same way a
+    # second algosdk copy would. Forcing it here is safe only because canary.5
+    # and canary.6's dists are byte-identical (verified with `diff -r` between
+    # the two installed copies) — retire this override once those four
+    # packages move past canary.5.
+    # While this override stands the catalog entry above is inert — pnpm resolves
+    # 'catalog:' through the override, so bumping line 16 alone changes nothing.
+    # Move both together, or not at all.
+    '@algorandfoundation/wallet-provider': 1.0.0-canary.6
+    '@expo/dom-webview': 58.0.2
+    # Force the SDK-bundled versions across the tree. Both reach us only
+    # transitively with floating ranges that drift past the installed SDK:
+    # expo-asset pulls `expo-constants` through a tilde range and
+    # react-native-quick-crypto declares an optional `expo-build-properties: *`
+    # peer — each resolves to the newest published patch, spawning a
+    # second copy that diverges from the prebuilt native pods. The duplicate
+    # expo-constants specifically breaks the iOS "Generate app.config for
+    # prebuilt Constants.manifest" archive phase. A direct spec can't hold these
+    # down (the float is inside the dependents' ranges), so pin them here.
+    expo-constants: 58.0.13
+    # One copy only, for the same reason as algosdk and wallet-provider: two
+    # @types/react mean two ref/JSX type universes, and
+    # `React.ComponentRef<typeof PWFlatList>` collapses to `never` the moment a
+    # second one appears — apps/mobile's FlashList refs stop type-checking and
+    # `mobile#build` fails.
+    # It splits on its own: @types/react-native 0.70.x (reached through
+    # @gorhom/bottom-sheet) asks for @types/react over a much wider range than
+    # the catalog, so it only takes a few more peer contexts in the graph — the
+    # ones @rneui/base 5.0.0 adds by declaring @testing-library/jest-native and
+    # @testing-library/react-native as non-optional peers — for pnpm to stop
+    # collapsing the two ranges into one resolution. Mirroring the catalog range
+    # here gives every consumer the same spec, so it resolves once. Move this
+    # with the catalog entry, not on its own.
+    '@types/react': ~19.3.0
+    expo-build-properties: 58.0.11
+    # GHSA-m9gg-hp2v-232j floor. @firebase/firestore still declares ~1.9.0 and
+    # 1.9.x has no patched release, so this forces it past its range; safe
+    # because grpc-js is only loaded by firestore's Node entry, which no bundle
+    # here reaches (the browser and RN builds use webchannel).
+    '@grpc/grpc-js@<1.13.6': 1.13.6
+    # Single copy across the expo config-plugin toolchain; 0.8.15 is the
+    # GHSA-6gmq-8vp8-gcm6 floor (XML fragment injection, patched >=0.8.15).
+    # Stay on the 0.8 line — 0.9 changed the package's API surface.
+    '@xmldom/xmldom': 0.8.15
+    esbuild@<0.25.0: '>=0.25.0'
+    # GHSA-g7r4-m6w7-qqqr (arbitrary file read via the dev server on Windows).
+    esbuild@>=0.27.3 <0.28.1: '>=0.28.1'
+    # GHSA-7p8r-x3mc-p8w7 (host confusion via backslash authority introducer),
+    # then GHSA-5jgf-p345-68v8, GHSA-f65p-4m7j-42xc, GHSA-fph4-wmhf-6fwf and
+    # GHSA-jqff-g426-hqxp (host confusion / SSRF via IDN, IPv6 and
+    # percent-decoding normalization), patched in 4.1.3; then GHSA-qw65-cvwx-89v3
+    # (authority injection via an unvalidated port) and GHSA-58mr-gqgx-xq4g (host
+    # confusion via an unclosed bracket), patched in 4.1.4; then
+    # GHSA-hrr3-gc8f-f4qj and GHSA-jvvf-x445-j334 (mailto header injection),
+    # patched in 4.1.5; then GHSA-w74x-v6f9-j3xg, GHSA-wjr9-j795-jxcr,
+    # GHSA-xhq7-xmqj-769h and GHSA-333x-w4r6-6crp (scheme spoofing, host
+    # confusion, path equivalence, scheme injection), patched in 4.2.3. Pinned to
+    # the lowest patched version rather than latest.
+    fast-uri@<4.2.3: 4.2.3
+    happy-dom@>=19.0.0 <20.0.2: '>=20.0.2'
+    # The 4.x consumers already resolve to 5.x through this open range; the floor
+    # names the patched 5.x so a stale lock entry cannot hold them below it.
+    js-yaml@>=4.0.0 <4.3.1: '>=5.4.1'
+    # Keep the production-proven resolution: in the tree since #996 and shipped in
+    # v7.0.0. Deliberately outside @gorhom/portal's declared `^3.3.1`.
+    '@gorhom/portal>nanoid': 6.0.0
+    # One copy of each crypto library per major, enforced by
+    # pera/single-copy-packages. The 1.x lines are closed (1.9.7 and 1.8.0 are
+    # their last releases), and every 1.x consumer imports only subpaths and
+    # functions those releases export. The hashes selector is bounded below 1.8.0
+    # because @exodus/bytes accepts '^1.8.0 || ^2.0.0' and must keep that range.
+    '@noble/curves@1': 1.9.7
+    '@noble/hashes@<1.8.0': 1.8.0
+    # The scoped 2.x pins take the copy @scure/bip32 brings and move with it.
+    # keystore-core imports only sha512_256 from @noble/hashes/sha2.js, and
+    # xhd-wallet-api imports only ed25519, x25519, mod and the LE number
+    # helpers; 2.4.0 exports all of them.
+    '@algorandfoundation/keystore-core>@noble/hashes': 2.4.0
+    '@algorandfoundation/xhd-wallet-api>@noble/curves': 2.4.0
+    # Takes viem's copy and moves with viem. @walletconnect/utils calls only
+    # Signature.fromHex and Secp256k1.recoverAddress, signature-identical in 0.9
+    # and 0.14, on its session_authenticate path.
+    '@walletconnect/utils>ox': 0.14.56
+    picomatch@3: 3.0.1
+    picomatch@4: 4.0.4
+    react: 19.3.0
+    react-dom: 19.3.0
+    react-native: 0.88.0
+    # @ledgerhq/react-native-hw-transport-ble brings its own exact 3.4.0, a second
+    # copy whose JS would drive the 3.5.1 native code apps/mobile autolinks.
+    react-native-ble-plx: 3.5.1
+    react-native-nitro-modules: 0.36.5
+    react-native-quick-base64: 3.0.0
+    react-native-quick-crypto: 1.1.6
+    uuid@<14: 14.0.0
+    ws@>=7.0.0 <7.5.11: 7.5.11
+    ws@>=8.0.0 <8.20.1: '>=8.20.1'
+    yaml@2: 2.8.3
+    # GHSA-mrhx-c7xc-m3w5 floor for every 4.x copy, so that advisory's audit
+    # ignore can only ever cover the unpatchable 3.x line.
+    zod@>=4.0.0 <4.6.6: ^4.6.7
 
 supportedArchitectures:
-  cpu: [x64, arm64]
-  os: [win32, darwin, current]
+    cpu: [x64, arm64]
+    os: [win32, darwin, current]

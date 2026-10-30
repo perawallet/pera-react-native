@@ -71,6 +71,14 @@ describe('parsePnpmLock', () => {
         ])
     })
 
+    it('records the 1-based line of the first snapshot entry of each release', () => {
+        expect([...lock.snapshotLines]).toEqual([
+            ['@scope/a@1.2.3', 25],
+            ['plain@2.0.0', 36],
+            ['tail@1.0.0', 38],
+        ])
+    })
+
     it('parses a single-line empty snapshot and reads only dependencies', () => {
         expect(lock.snapshots.get('plain@2.0.0')?.map(d => d.size)).toEqual([0])
         expect(lock.snapshots.get('tail@1.0.0')?.map(d => d.size)).toEqual([0])
