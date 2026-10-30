@@ -1044,7 +1044,9 @@
         },
         "wealth_chart": {
             "empty_body": "Sobald ein Guthabenverlauf vorliegt, wird hier ein Diagramm angezeigt",
-            "asset_empty_body": "Sobald für dieses Asset auf diesem Konto ein Guthabenverlauf vorliegt, wird hier ein Diagramm angezeigt"
+            "asset_empty_body": "Sobald für dieses Asset auf diesem Konto ein Guthabenverlauf vorliegt, wird hier ein Diagramm angezeigt",
+            "excludes_networks": "Dieses Diagramm enthält noch keine {{networks}}-Assets",
+            "networks_list": "{{first}} und {{last}}"
         },
         "webview": {
             "failed_title": "Seite konnte nicht geladen werden",

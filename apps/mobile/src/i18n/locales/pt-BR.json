@@ -1052,7 +1052,9 @@
         },
         "wealth_chart": {
             "empty_body": "Você verá um gráfico aqui quando tiver histórico de saldo",
-            "asset_empty_body": "Você verá um gráfico aqui quando tiver histórico de saldo deste ativo nesta conta"
+            "asset_empty_body": "Você verá um gráfico aqui quando tiver histórico de saldo deste ativo nesta conta",
+            "excludes_networks": "Este gráfico ainda não inclui os ativos de {{networks}}",
+            "networks_list": "{{first}} e {{last}}"
         },
         "webview": {
             "failed_title": "Falha ao carregar a página",

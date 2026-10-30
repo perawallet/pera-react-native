@@ -31,6 +31,7 @@ import {
     CHART_QUERY_TIMEOUT_MS,
     baseUnitsToDisplayUnits,
     isPeraNetworkError,
+    logger,
     partition,
     queryClient,
     type HistoryPeriod,
@@ -317,6 +318,9 @@ export const createEthereumBalanceHistoryOps = (
         assetIdByCaip19: Map<string, string>,
         points: GridPoint[],
         period: HistoryPeriod,
+        // A portfolio leaves out a token it can't price rather than fail the
+        // chain; a holding's own chart is that one token, so it fails instead.
+        { shouldSkipFailedTokens }: { shouldSkipFailedTokens: boolean },
     ): Promise<Map<string, PricedAsset>> => {
         const query = {
             from: toUtcDay(points[0]!.timestamp),
@@ -341,23 +345,44 @@ export const createEthereumBalanceHistoryOps = (
         // import, fresh install); dropping it would read the history low.
         const unknown = tokenIds.filter(id => !decimals.has(id))
         for (const batch of partition(unknown, ASSETS_MAX_IDS)) {
-            const items = await fetchAssetItems(scope, chain, batch)
-            items.forEach((item, index) => {
-                if (item && item.fraction_decimals !== null) {
-                    decimals.set(batch[index]!, item.fraction_decimals)
-                }
-            })
+            try {
+                const items = await fetchAssetItems(scope, chain, batch)
+                items.forEach((item, index) => {
+                    if (item && item.fraction_decimals !== null) {
+                        decimals.set(batch[index]!, item.fraction_decimals)
+                    }
+                })
+            } catch (error) {
+                if (!shouldSkipFailedTokens) throw error
+                logger.warn('ethereum balance history: asset read failed', {
+                    error,
+                })
+            }
         }
         const priced = await Promise.all(
             [...assetIdByCaip19].map(async ([caip19, assetId]) => {
                 const assetDecimals = decimals.get(assetId)
                 if (assetDecimals === undefined) return null
+                // The native coin can't be skipped: without it the whole chain
+                // would read as worthless.
                 const prices = await fetchPriceChart(
                     scope,
                     chain,
                     assetId,
                     query,
-                )
+                ).catch((error: unknown) => {
+                    if (
+                        !shouldSkipFailedTokens ||
+                        assetId === chain.nativeAsset.assetId
+                    ) {
+                        throw error
+                    }
+                    logger.warn('ethereum balance history: price read failed', {
+                        error,
+                    })
+                    return null
+                })
+                if (prices === null) return null
                 return [caip19, { decimals: assetDecimals, prices }] as const
             }),
         )
@@ -413,6 +438,7 @@ export const createEthereumBalanceHistoryOps = (
                 ),
                 points,
                 period,
+                { shouldSkipFailedTokens: true },
             )
             return valuePortfolio(points, assets, nativeCaip19)
         }
@@ -443,6 +469,7 @@ export const createEthereumBalanceHistoryOps = (
                     new Map([[caip19, assetId]]),
                     points,
                     period,
+                    { shouldSkipFailedTokens: false },
                 )
             ).get(caip19)
             return asset ? valueHolding(points, caip19, asset) : []

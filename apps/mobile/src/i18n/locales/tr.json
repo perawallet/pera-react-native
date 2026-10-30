@@ -1052,7 +1052,9 @@
         },
         "wealth_chart": {
             "empty_body": "Bakiye geçmişin olduğunda burada bir grafik göreceksin",
-            "asset_empty_body": "Bu hesapta bu varlık için bakiye geçmişin olduğunda burada bir grafik göreceksin"
+            "asset_empty_body": "Bu hesapta bu varlık için bakiye geçmişin olduğunda burada bir grafik göreceksin",
+            "excludes_networks": "Bu grafik henüz {{networks}} varlıklarını içermiyor",
+            "networks_list": "{{first}} ve {{last}}"
         },
         "webview": {
             "failed_title": "Sayfa yüklenemedi",

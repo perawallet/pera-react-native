@@ -13,8 +13,13 @@
 import { makeStyles } from '@rneui/themed'
 import { CHART_HEIGHT } from '@constants/ui'
 
-export const useStyles = makeStyles(() => ({
+export const useStyles = makeStyles(theme => ({
     container: {
         height: CHART_HEIGHT,
+    },
+    excludedNote: {
+        color: theme.colors.textGray,
+        textAlign: 'center',
+        marginTop: theme.spacing.sm,
     },
 }))
