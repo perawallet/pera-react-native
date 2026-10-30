@@ -236,7 +236,8 @@ const present = (
 
 /**
  * Reads an approval always and a transfer only while `contractDecoding` is on,
- * as the reviewer does, so the unknown-contract notice matches its warning.
+ * the same gate the reviewer applies to a dApp's call, so the unknown-contract
+ * notice matches its warning.
  * The calldata can't say whether `approve` or `transferFrom` moves an amount
  * or a token id, so the token's own records decide: a fungible record first,
  * then an NFT record for that id, and neither means an unknown token shown in

@@ -864,6 +864,7 @@ describe("a dApp's standard token calls", () => {
                 expect.objectContaining({
                     type: 'token-approval',
                     severity: 'danger',
+                    message: expect.stringContaining('in this collection'),
                 }),
             ])
         })
