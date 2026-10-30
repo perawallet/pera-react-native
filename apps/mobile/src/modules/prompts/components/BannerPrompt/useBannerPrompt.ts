@@ -16,6 +16,7 @@ import {
     useVisibleBanners,
     type Banner,
 } from '@perawallet/wallet-core-banners'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { useBannerLinkRouter } from '@modules/banners'
 import type { PromptViewProps } from '@modules/prompts/models'
 
@@ -24,7 +25,7 @@ export const BANNER_PROMPT_ID = 'banner_prompt'
 export type UseBannerPromptResult = {
     banners: Banner[]
     isForced: boolean
-    shown: Banner | undefined
+    shown: Optional<Banner>
     finish: () => void
     handlePressCTA: (banner: Banner) => void
     handleDismiss: (banner: Banner) => void

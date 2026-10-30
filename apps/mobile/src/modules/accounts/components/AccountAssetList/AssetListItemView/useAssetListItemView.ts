@@ -39,7 +39,7 @@ export type UseAssetListItemViewResult = {
     amount: Decimal
     fiat: AssetFiatValue
     fiatAssetId: Nullable<string>
-    collectibleItem: CollectibleDisplayItem | null
+    collectibleItem: Nullable<CollectibleDisplayItem>
 }
 
 export const useAssetListItemView = ({

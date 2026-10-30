@@ -16,7 +16,6 @@ import { ConfirmAction, CONFIRM_ACTION_LAYOUT } from '@components/ConfirmAction'
 import { EmptyView } from '@components/EmptyView'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
 import { useRemoveAssetsScreen } from './useRemoveAssetsScreen'
-import { useStyles } from './styles'
 
 export const RemoveAssetsScreen = () => {
     const {

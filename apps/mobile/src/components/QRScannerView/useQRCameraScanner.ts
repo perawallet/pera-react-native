@@ -17,7 +17,7 @@ import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import { isAndroid } from '@utils/platform'
 
 export type UseQRCameraScannerResult = {
-    cameraRef: RefObject<CameraRef | null>
+    cameraRef: RefObject<Nullable<CameraRef>>
     handleLayout: (event: LayoutChangeEvent) => void
     focusCenter: () => void
 }

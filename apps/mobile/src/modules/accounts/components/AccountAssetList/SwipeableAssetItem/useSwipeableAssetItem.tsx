@@ -18,6 +18,7 @@ import {
     PWView,
 } from '@components/core'
 import type { AccountHoldingsLiteRow } from '@perawallet/wallet-core-accounts'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useStyles } from './styles'
 
 export type UseSwipeableAssetItemProps = {
@@ -27,7 +28,7 @@ export type UseSwipeableAssetItemProps = {
 }
 
 export type UseSwipeableAssetItemResult = {
-    swipeableRef: RefObject<PWSwipeableRef | null>
+    swipeableRef: RefObject<Nullable<PWSwipeableRef>>
     handleSwipeOpen: () => void
     handlePress: (event: GestureResponderEvent) => void
     renderRightActions: () => ReactElement

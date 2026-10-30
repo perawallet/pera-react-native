@@ -17,6 +17,7 @@ import {
 } from '@perawallet/wallet-core-assets'
 import type { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { CollectibleDisplayItem } from '../../types/collectible'
 
 export type UseAccountAssetItemViewProps = {
@@ -27,7 +28,7 @@ export type UseAccountAssetItemViewProps = {
 
 export type UseAccountAssetItemViewResult = {
     asset: AssetWithAccountBalance['asset']
-    item: CollectibleDisplayItem | null
+    item: Nullable<CollectibleDisplayItem>
 }
 
 export const useAccountAssetItemView = ({

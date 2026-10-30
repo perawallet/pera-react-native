@@ -50,21 +50,18 @@ import {
 } from '../TransactionsFilterContent'
 import type { AppStackParamList } from '@routes/types'
 import { getFilterTimes } from './utils'
-import type {
-    HistoryFeedProps,
-    TransactionListRow,
+import {
+    TransactionHistoryRow,
+    TransactionHistorySearchOlder,
+    type HistoryFeedProps,
+    type TransactionListRow,
 } from '@modules/transactions'
 import { useAccountHistoryRows } from './useAccountHistoryRows'
 import {
     PeraServiceUnavailableError,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
-import {
-    PWFlatList,
-    PWLoadingIndicator,
-    PWView,
-} from '@components/core'
-import { TransactionHistorySearchOlder } from '@modules/transactions'
+import { PWLoadingIndicator, PWView } from '@components/core'
 import { useStyles } from './styles'
 
 /**

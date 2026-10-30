@@ -25,6 +25,7 @@ import {
 import { VideoPlayer } from '@components/VideoPlayer'
 import { AudioPlayer } from '@components/AudioPlayer'
 import { useLanguage } from '@hooks/useLanguage'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { useStyles } from './styles'
 import { resolveMediaImageUri, type MediaItem } from './resolveMediaImageUri'
 
@@ -49,7 +50,7 @@ export type UseMediaCarouselResult = {
 
 const carouselPagesOf = (
     visualMedia: MediaItem[],
-    modelItem: MediaItem | undefined,
+    modelItem: Optional<MediaItem>,
 ): MediaItem[] => {
     if (visualMedia.length > 0) return visualMedia
     return modelItem ? [modelItem] : []

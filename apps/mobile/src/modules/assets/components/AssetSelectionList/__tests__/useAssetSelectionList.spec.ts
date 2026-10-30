@@ -10,7 +10,7 @@
  limitations under the License.
  */
 
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import type { ListRenderItemInfo } from '@shopify/flash-list'
 import { useAssetSelectionList } from '../useAssetSelectionList'

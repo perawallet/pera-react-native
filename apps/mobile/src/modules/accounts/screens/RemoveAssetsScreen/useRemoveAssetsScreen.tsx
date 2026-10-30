@@ -43,7 +43,7 @@ import { useAssetOptOutMutation } from '@perawallet/wallet-core-transactions'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
-import type { Optional } from '@perawallet/wallet-core-shared'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import { useStyles } from './styles'
 
 type UseRemoveAssetsScreenResult = {
@@ -60,7 +60,7 @@ type UseRemoveAssetsScreenResult = {
     handleToggleSelectAll: () => void
     handleRemoveSelected: () => void
     t: (key: string, params?: Record<string, string | number>) => string
-    listRef: RefObject<PWFlatListRef | null>
+    listRef: RefObject<Nullable<PWFlatListRef>>
     renderItem: (params: {
         item: AssetWithAccountBalance
     }) => ReactElement
