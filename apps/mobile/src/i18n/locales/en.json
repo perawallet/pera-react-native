@@ -1323,7 +1323,10 @@
             "connection_timeout_body": "Couldn't reach WalletConnect to deliver your signed transaction. Check your connection and try again.",
             "bridge_connection_body": "Couldn't connect to WalletConnect. Check your internet connection and try again.",
             "session_request_expired_body": "This connection request has expired. Start a new connection from the dApp and try again.",
-            "request_expired_body": "This signing request expired before it was answered. Ask the app to send it again."
+            "request_expired_body": "This signing request expired before it was answered. Ask the app to send it again.",
+            "unsupported_method_body": "{{dappName}} asked for {{method}}, which Pera doesn't support, so the request was declined.",
+            "unsupported_network_body": "{{dappName}} asked to use the network with chain ID {{chainId}}, which Pera doesn't support, so the request was declined.",
+            "unsupported_chains_body": "This app asked to use a network Pera doesn't support, so the connection was declined."
         },
         "signing": {
             "title": "An error occurred processing the signing request",

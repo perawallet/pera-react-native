@@ -1315,7 +1315,10 @@
             "connection_timeout_body": "WalletConnect konnte nicht erreicht werden, um deine signierte Transaktion zu übermitteln. Überprüfe deine Verbindung und versuche es erneut.",
             "bridge_connection_body": "Verbindung zu WalletConnect konnte nicht hergestellt werden. Überprüfe deine Internetverbindung und versuche es erneut.",
             "session_request_expired_body": "Diese Verbindungsanfrage ist abgelaufen. Starte eine neue Verbindung über die dApp und versuche es erneut.",
-            "request_expired_body": "Diese Signaturanfrage ist abgelaufen, bevor sie beantwortet wurde. Lass die App sie erneut senden."
+            "request_expired_body": "Diese Signaturanfrage ist abgelaufen, bevor sie beantwortet wurde. Lass die App sie erneut senden.",
+            "unsupported_method_body": "{{dappName}} hat {{method}} angefragt, was Pera nicht unterstützt. Die Anfrage wurde abgelehnt.",
+            "unsupported_network_body": "{{dappName}} wollte das Netzwerk mit der Chain-ID {{chainId}} verwenden, das Pera nicht unterstützt. Die Anfrage wurde abgelehnt.",
+            "unsupported_chains_body": "Diese App wollte ein Netzwerk verwenden, das Pera nicht unterstützt. Die Verbindung wurde abgelehnt."
         },
         "signing": {
             "title": "Bei der Verarbeitung der Signaturanfrage ist ein Fehler aufgetreten",
