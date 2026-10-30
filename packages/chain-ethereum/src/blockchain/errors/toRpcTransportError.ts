@@ -16,7 +16,7 @@ import {
     LimitExceededRpcError,
     TimeoutError,
 } from 'viem'
-import { PeraNetworkError } from '@perawallet/wallet-core-shared'
+import { PeraNetworkError, type Optional } from '@perawallet/wallet-core-shared'
 
 /**
  * A node that didn't answer, as the typed network error that
@@ -27,7 +27,7 @@ import { PeraNetworkError } from '@perawallet/wallet-core-shared'
  */
 export const toRpcTransportError = (
     error: unknown,
-): PeraNetworkError | undefined => {
+): Optional<PeraNetworkError> => {
     if (!(error instanceof BaseError)) return undefined
     if (error.walk(cause => cause instanceof TimeoutError) !== null) {
         return new PeraNetworkError('timeout', { originalError: error })
