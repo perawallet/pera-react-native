@@ -58,3 +58,19 @@ export const classified = () => {
         Sentry.captureMessage('request failed')
     }
 }
+
+export const reportedNonFatal = () => {
+    try {
+        run()
+    } catch (error) {
+        crashReporting.recordNonFatalError(error, { tags: { screen: 'send' } })
+    }
+}
+
+export const recordedModular = () => {
+    try {
+        run()
+    } catch (error) {
+        crashlytics.recordError(crashlytics, error, 'send')
+    }
+}

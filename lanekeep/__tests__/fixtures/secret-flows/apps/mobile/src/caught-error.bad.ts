@@ -62,3 +62,19 @@ export const tracked = () => {
         analytics.logEvent('failed', { details: JSON.stringify(error) })
     }
 }
+
+export const reportedNonFatal = () => {
+    try {
+        run()
+    } catch (error) {
+        crashReporting.recordNonFatalError(JSON.stringify(error))
+    }
+}
+
+export const recordedModular = () => {
+    try {
+        run()
+    } catch (error) {
+        crashlytics.recordError(crashlytics, JSON.stringify(error))
+    }
+}

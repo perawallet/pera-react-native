@@ -21,6 +21,8 @@ describe('pera/no-secret-in-logs', () => {
             'caught-error.bad.ts:46',
             'caught-error.bad.ts:54',
             'caught-error.bad.ts:62',
+            'caught-error.bad.ts:70',
+            'caught-error.bad.ts:78',
             'clipboard.bad.ts:2',
             'clipboard.bad.ts:6',
             'clipboard.bad.ts:11',
