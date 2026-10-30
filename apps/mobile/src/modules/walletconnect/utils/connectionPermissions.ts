@@ -39,6 +39,7 @@ const METHOD_PERMISSIONS: Readonly<Record<string, ConnectionPermission>> = {
     requestDataSigning: 'sign-messages',
     personal_sign: 'sign-messages',
     eth_signTypedData_v4: 'sign-messages',
+    eth_signTypedData: 'sign-messages',
     wallet_switchEthereumChain: 'switch-networks',
 }
 

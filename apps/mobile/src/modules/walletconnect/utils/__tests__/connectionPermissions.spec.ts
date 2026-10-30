@@ -33,6 +33,13 @@ describe('toConnectionPermissions', () => {
         ])
     })
 
+    it('lists signing messages for unversioned eth_signTypedData alone', () => {
+        expect(toConnectionPermissions(['eth_signTypedData'])).toEqual([
+            'view-accounts',
+            'sign-messages',
+        ])
+    })
+
     it('maps the Algorand v1 permissions and v2 methods', () => {
         expect(
             toConnectionPermissions([
