@@ -13,8 +13,8 @@
 import {
     commitSecret,
     hasSecret,
-    mnemonicWordsToIndices,
     removeSecret,
+    utf8BytesToIndices,
     withSecret,
     zeroBytes,
 } from '@perawallet/wallet-core-kms'
@@ -112,12 +112,9 @@ export const withBackupMnemonicIndices = async <T>(
     handler: (indices: Uint16Array) => T | Promise<T>,
 ): Promise<Nullable<T>> =>
     withSecret<Nullable<T>>(CLOUD_BACKUP_MNEMONIC_ID, async bytes => {
-        // The keystore holds UTF-8 text, so words exist for this one expression.
-        const indices = mnemonicWordsToIndices(
-            new TextDecoder().decode(bytes).split(' '),
-        )
-        // Safe to throw here: `mnemonicWordsToIndices` zeroes its partial
-        // buffer before returning null, so nothing survives the unwind.
+        const indices = utf8BytesToIndices(bytes)
+        // Safe to throw here: `utf8BytesToIndices` zeroes its partial buffer
+        // before returning null, so nothing survives the unwind.
         if (!indices) throw new BackupMnemonicParseError()
 
         try {

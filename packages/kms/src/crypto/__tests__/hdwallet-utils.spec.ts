@@ -268,11 +268,12 @@ describe('indicesToEntropy', () => {
 describe('deriveLiquidAuthMainKey', () => {
     const ZERO_MNEMONIC =
         'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about'
+    const ZERO_MNEMONIC_BYTES = () => new TextEncoder().encode(ZERO_MNEMONIC)
     const DP256_GOLDEN_HEX =
         '80ec8c0fc085095e052d18e461bd46d792d37c4d4e0e4b25f3a9b49650bf8af7e3760656b3ca62ad50c9a2b64115a205e16bc27712ba76db014d06ed4ac31670'
 
     test('matches the dp256 derived main key byte-for-byte', async () => {
-        const key = await deriveLiquidAuthMainKey(ZERO_MNEMONIC)
+        const key = await deriveLiquidAuthMainKey(ZERO_MNEMONIC_BYTES())
 
         expect(Buffer.from(key).toString('hex')).toBe(DP256_GOLDEN_HEX)
         expect(key.byteLength).toBe(64)
@@ -281,7 +282,7 @@ describe('deriveLiquidAuthMainKey', () => {
     test('zeroes the pbkdf2 output once the key is copied out', async () => {
         pbkdf2Outputs.length = 0
 
-        const key = await deriveLiquidAuthMainKey(ZERO_MNEMONIC)
+        const key = await deriveLiquidAuthMainKey(ZERO_MNEMONIC_BYTES())
 
         expect(pbkdf2Outputs).toHaveLength(1)
         expect(pbkdf2Outputs[0]!.every(byte => byte === 0)).toBe(true)
@@ -289,7 +290,7 @@ describe('deriveLiquidAuthMainKey', () => {
     })
 
     test('differs from the BIP39 seed (different salt and iterations)', async () => {
-        const mainKey = await deriveLiquidAuthMainKey(ZERO_MNEMONIC)
+        const mainKey = await deriveLiquidAuthMainKey(ZERO_MNEMONIC_BYTES())
         const { seed } = await generateHDMasterKey(
             mnemonicWordsToIndices(ZERO_MNEMONIC.split(' '))!,
         )
