@@ -23,6 +23,7 @@ import {
     upsertAssets,
     upsertAssetPrices,
     PeraAssetType,
+    PeraAssetVerificationTier,
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
 import {
@@ -385,6 +386,88 @@ describe('account portfolio queries', () => {
             })
 
             expect(funded).toEqual([`${FIXTURE_CHAIN_ID}/mainnet`])
+        })
+
+        const tokenWithTier = (
+            assetId: string,
+            verificationTier: PeraAssetVerificationTier,
+        ): PeraAsset => ({
+            assetId,
+            decimals: 18,
+            creator: { address: 'CREATOR' },
+            totalSupply: new Decimal(1_000_000),
+            name: assetId,
+            unitName: assetId,
+            peraMetadata: {
+                isDeleted: false,
+                verificationTier,
+                isFavorited: false,
+                isPriceAlertEnabled: false,
+                type: PeraAssetType.standard_asset,
+            },
+        })
+
+        it('leaves out a token Pera flags suspicious', async () => {
+            await refreshAccountHoldings({
+                db,
+                accountAddress: 'ADDR1',
+                scope: FIXTURE_SCOPE,
+                holdings: [
+                    { assetId: 'native', amount: new Decimal(0) },
+                    { assetId: 'scam', amount: new Decimal(1000) },
+                ],
+            })
+            await upsertAssets({
+                db,
+                scope: FIXTURE_SCOPE,
+                items: [
+                    tokenWithTier('scam', PeraAssetVerificationTier.suspicious),
+                ],
+            })
+
+            const funded = await getAccountFundedNetworks({
+                db,
+                accountAddress: 'ADDR1',
+                chainId: FIXTURE_CHAIN_ID,
+            })
+
+            expect(funded).toEqual([])
+        })
+
+        it('still counts an unflagged token and one with no metadata yet', async () => {
+            await refreshAccountHoldings({
+                db,
+                accountAddress: 'ADDR1',
+                scope: FIXTURE_SCOPE,
+                holdings: [{ assetId: 'airdrop', amount: new Decimal(5) }],
+            })
+            await refreshAccountHoldings({
+                db,
+                accountAddress: 'ADDR1',
+                scope: { chainId: FIXTURE_CHAIN_ID, networkId: 'testnet' },
+                holdings: [{ assetId: 'unsynced', amount: new Decimal(5) }],
+            })
+            await upsertAssets({
+                db,
+                scope: FIXTURE_SCOPE,
+                items: [
+                    tokenWithTier(
+                        'airdrop',
+                        PeraAssetVerificationTier.unverified,
+                    ),
+                ],
+            })
+
+            const funded = await getAccountFundedNetworks({
+                db,
+                accountAddress: 'ADDR1',
+                chainId: FIXTURE_CHAIN_ID,
+            })
+
+            expect(funded.sort()).toEqual([
+                `${FIXTURE_CHAIN_ID}/mainnet`,
+                `${FIXTURE_CHAIN_ID}/testnet`,
+            ])
         })
 
         it('ignores zero holdings and other accounts', async () => {

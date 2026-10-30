@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { eq, and, like, sql } from 'drizzle-orm'
+import { eq, and, or, isNull, ne, like, sql } from 'drizzle-orm'
 import { Decimal } from 'decimal.js'
 import {
     toScopeKey,
@@ -20,7 +20,9 @@ import {
 import { getDatabase, type Database } from '@perawallet/wallet-core-database'
 import {
     AssetsNodeSchema,
+    AssetsPeraSchema,
     AssetPricesSchema,
+    PeraAssetVerificationTier,
     nativeAssetFor,
 } from '@perawallet/wallet-core-assets'
 import {
@@ -124,6 +126,9 @@ export async function getAccountPortfolioTotals({
  * Networks of `chainId` on which the account holds a non-zero balance of any
  * asset: a token with no native coin beside it is still lost with the keys.
  *
+ * EVM addresses receive tokens unasked, so a token Pera flags `suspicious` is
+ * left out. An unflagged airdrop still counts: nothing tells it from real funds.
+ *
  * Deliberately unfiltered by network: a warning about losing access to an
  * account must not vanish because the user switched to a network where that
  * account happens to be empty. Only networks a prior sync persisted rows for
@@ -141,9 +146,19 @@ export async function getAccountFundedNetworks({
     const rows = await db
         .selectDistinct({ network: AccountAssetHoldingsSchema.scope })
         .from(AccountAssetHoldingsSchema)
+        .leftJoin(AssetsPeraSchema, holdingJoin(AssetsPeraSchema))
         .where(
             and(
                 eq(AccountAssetHoldingsSchema.accountAddress, accountAddress),
+                // No metadata yet still counts, so real funds aren't hidden
+                // until enrichment lands.
+                or(
+                    isNull(AssetsPeraSchema.verificationTier),
+                    ne(
+                        AssetsPeraSchema.verificationTier,
+                        PeraAssetVerificationTier.suspicious,
+                    ),
+                ),
                 // EVM chains share one address, so the chain must scope it.
                 like(AccountAssetHoldingsSchema.scope, `${chainId}/%`),
                 // Amounts are stored as TEXT; compare numerically so '0' and a
