@@ -26,6 +26,7 @@ import {
     registerStore,
     type WithPersist,
     type Nullable,
+    type Optional,
 } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 
@@ -55,7 +56,7 @@ const heldFamilies = (addresses: ContactAddresses): Set<ChainFamily> =>
 const removedFamiliesAfterEdit = (
     previous: Contact,
     next: NewContact,
-): ChainFamily[] | undefined => {
+): Optional<ChainFamily[]> => {
     const held = heldFamilies(next.addresses)
     const removed = new Set([
         ...(previous.removedFamilies ?? []),

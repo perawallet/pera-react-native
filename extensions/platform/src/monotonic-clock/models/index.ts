@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import type { Nullable } from '@perawallet/wallet-core-shared'
+
 export type MonotonicReading = {
     /** Changes on every reboot; a reading is only comparable to one with the same id. */
     bootId: string
@@ -19,5 +21,5 @@ export type MonotonicReading = {
 
 export interface MonotonicClockService {
     /** Synchronous. `null` when the platform has no monotonic source. */
-    now(): MonotonicReading | null
+    now(): Nullable<MonotonicReading>
 }

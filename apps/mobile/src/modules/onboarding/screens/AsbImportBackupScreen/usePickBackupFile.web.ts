@@ -13,6 +13,7 @@
 import { useCallback } from 'react'
 import { getSurface } from '@perawallet/wallet-extension-platform-chrome'
 import { openExpandedTab } from '@perawallet/wallet-core-browser-runtime'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { pickTextFile } from '@utils/pickTextFile.web'
 import type {
     PickedBackupFile,
@@ -33,7 +34,9 @@ import type {
 export const usePickBackupFile = (): UsePickBackupFileResult => {
     const isPopupHandoff = getSurface() === 'popup'
 
-    const pickFile = useCallback(async (): Promise<PickedBackupFile | null> => {
+    const pickFile = useCallback(async (): Promise<
+        Nullable<PickedBackupFile>
+    > => {
         if (isPopupHandoff) {
             void openExpandedTab('asb-import')
             return null

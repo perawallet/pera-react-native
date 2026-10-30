@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import type { Nullable } from '@perawallet/wallet-core-shared'
+
 export type BackupId = string
 
 export type DeviceId = string
@@ -69,7 +71,7 @@ export type DeltaEntry = {
     ver: number
     status: BackupItemStatus
     op: DeltaOperation
-    hash: ItemHash | null
+    hash: Nullable<ItemHash>
 }
 
 export type FetchedItem = {

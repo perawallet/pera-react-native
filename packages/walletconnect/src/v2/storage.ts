@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, type Optional } from '@perawallet/wallet-core-shared'
 import type { KeyValueStorageService } from '@perawallet/wallet-extension-platform'
 
 /**
@@ -23,7 +23,7 @@ import type { KeyValueStorageService } from '@perawallet/wallet-extension-platfo
 export interface WalletConnectV2Storage {
     getKeys(): Promise<string[]>
     getEntries<T>(): Promise<[string, T][]>
-    getItem<T>(key: string): Promise<T | undefined>
+    getItem<T>(key: string): Promise<Optional<T>>
     setItem<T>(key: string, value: T): Promise<void>
     removeItem(key: string): Promise<void>
 }
@@ -87,7 +87,7 @@ export const createWalletConnectV2Storage = (
     // A row that will not parse is unusable either way; reported absent so
     // WalletKit rebuilds it instead of throwing out of an unrelated read.
     // `key` is always the unprefixed name, the one WalletKit asked for.
-    const parse = <T>(key: string, raw: string): T | undefined => {
+    const parse = <T>(key: string, raw: string): Optional<T> => {
         try {
             return JSON.parse(raw) as T
         } catch {

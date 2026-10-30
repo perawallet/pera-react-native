@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { INTEGRITY_TOKEN_SESSION_KEY } from './storage-keys'
 
 export { INTEGRITY_TOKEN_SESSION_KEY }
@@ -43,7 +44,7 @@ const ensureAccessLevel = async (): Promise<void> => {
 const isSessionIntegrityToken = (
     value: unknown,
 ): value is SessionIntegrityToken => {
-    const candidate = value as Partial<SessionIntegrityToken> | null
+    const candidate = value as Nullable<Partial<SessionIntegrityToken>>
     return (
         typeof candidate?.integrityToken === 'string' &&
         typeof candidate.expiresAt === 'string' &&
@@ -59,14 +60,13 @@ export const putSessionIntegrityToken = async (
     await chrome.storage.session.set({ [INTEGRITY_TOKEN_SESSION_KEY]: token })
 }
 
-export const getSessionIntegrityToken =
-    async (): Promise<SessionIntegrityToken | null> => {
-        const stored = await chrome.storage.session.get(
-            INTEGRITY_TOKEN_SESSION_KEY,
-        )
-        const value = stored[INTEGRITY_TOKEN_SESSION_KEY]
-        return isSessionIntegrityToken(value) ? value : null
-    }
+export const getSessionIntegrityToken = async (): Promise<
+    Nullable<SessionIntegrityToken>
+> => {
+    const stored = await chrome.storage.session.get(INTEGRITY_TOKEN_SESSION_KEY)
+    const value = stored[INTEGRITY_TOKEN_SESSION_KEY]
+    return isSessionIntegrityToken(value) ? value : null
+}
 
 export const clearSessionIntegrityToken = async (): Promise<void> => {
     await chrome.storage.session.remove(INTEGRITY_TOKEN_SESSION_KEY)

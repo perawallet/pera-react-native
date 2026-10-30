@@ -12,6 +12,7 @@
 
 import type { AlgorandClient } from '@algorandfoundation/algokit-utils'
 import type { modelsv2 } from 'algosdk'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { HOLDINGS_PAGE_LIMIT } from './constants'
 
 export type OnChainAccountInformationResponse = modelsv2.Account
@@ -32,7 +33,7 @@ export const fetchAccountAssetOptInRounds = async (
     address: string,
 ): Promise<Map<string, number>> => {
     const rounds = new Map<string, number>()
-    let next: string | undefined
+    let next: Optional<string>
 
     do {
         let request = algokit.client.indexer

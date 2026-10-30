@@ -15,6 +15,7 @@ import {
     TransactionSign,
 } from '@perawallet/wallet-core-card'
 import { type I18nKey, i18nKey } from '@perawallet/wallet-core-chain-contract'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 
 export type CardTransactionSection<T = CardTransaction> = {
     /** Stable `YYYY-MM` key for the month. */
@@ -52,7 +53,7 @@ const timeFormatter = new Intl.DateTimeFormat('en-US', {
 // malformed row can't crash `Intl.format` (which throws on an Invalid Date).
 const UNKNOWN_MONTH_KEY = 'unknown'
 
-const parseDateTime = (dateTime: string): Date | null => {
+const parseDateTime = (dateTime: string): Nullable<Date> => {
     const date = new Date(dateTime)
     return Number.isNaN(date.getTime()) ? null : date
 }
@@ -161,8 +162,7 @@ const MERCHANT_TYPE_LABEL_KEYS = new Map<string, I18nKey>([
 
 export const getCardMerchantTypeLabelKey = (
     merchantType: string,
-): I18nKey | undefined =>
-    MERCHANT_TYPE_LABEL_KEYS.get(merchantType.toLowerCase())
+): Optional<I18nKey> => MERCHANT_TYPE_LABEL_KEYS.get(merchantType.toLowerCase())
 
 /**
  * Friendly-label i18n keys for Baanx `mccCategory` — a documented closed enum
@@ -188,7 +188,7 @@ const MCC_CATEGORY_LABEL_KEYS = new Map<string, I18nKey>([
 
 export const getCardMccCategoryLabelKey = (
     mccCategory: string,
-): I18nKey | undefined => MCC_CATEGORY_LABEL_KEYS.get(mccCategory.toUpperCase())
+): Optional<I18nKey> => MCC_CATEGORY_LABEL_KEYS.get(mccCategory.toUpperCase())
 
 /** Relative date as a translatable descriptor; the row maps it to copy. */
 export type CardTransactionRelativeDate =

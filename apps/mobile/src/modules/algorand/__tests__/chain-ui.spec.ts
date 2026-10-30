@@ -15,7 +15,8 @@
 import { describe, expect, it } from 'vitest'
 import type { PeraAsset } from '@perawallet/wallet-core-assets'
 import { algorandDescriptor } from '@perawallet/wallet-core-chain-algorand/descriptor'
-import { resolveAlgorandAssetAbout } from '../chain-ui'
+import { Decimal } from 'decimal.js'
+import { algorandChainUi, resolveAlgorandAssetAbout } from '../chain-ui'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 const about = (isNativeAsset: boolean, explorerUrl: string | undefined) =>
@@ -60,4 +61,26 @@ describe('resolveAlgorandAssetAbout', () => {
             expect(about(false, url).explorerLink).toBeNull()
         },
     )
+})
+
+describe('algorandChainUi.assetDetails.resolveSupply', () => {
+    const supplyOf = (totalSupply: Decimal) =>
+        algorandChainUi.assetDetails!.resolveSupply({
+            asset: { assetId: '31566704', totalSupply } as PeraAsset,
+            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
+            descriptor: algorandDescriptor,
+            isNativeAsset: false,
+        })
+
+    it('keeps the total supply label and copy', () => {
+        expect(supplyOf(new Decimal('10000000000'))).toEqual({
+            labelKey: 'asset_details.markets.total_supply',
+            infoBodyKey: 'asset_details.markets.total_supply_info_body',
+            amount: new Decimal('10000000000'),
+        })
+    })
+
+    it('has no figure for an asset whose supply never loaded', () => {
+        expect(supplyOf(new Decimal(0)).amount).toBeNull()
+    })
 })

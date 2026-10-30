@@ -17,11 +17,12 @@ import {
     type DevicePlatform,
 } from '@perawallet/wallet-extension-platform'
 import { config } from '@perawallet/wallet-core-config'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { ensureDeviceInstallationID } from '../device-installation-id'
 import { detectBrowser } from './browser'
 
 export class ChromeDeviceInfoService implements DeviceInfoService {
-    private idPromise: Promise<string> | null = null
+    private idPromise: Nullable<Promise<string>> = null
 
     getAppName(): string {
         return chrome.runtime.getManifest().name

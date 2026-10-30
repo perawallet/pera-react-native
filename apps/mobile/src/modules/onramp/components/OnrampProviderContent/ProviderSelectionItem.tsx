@@ -92,6 +92,7 @@ export const ProviderSelectionItem = ({
                 </PWView>
                 <PWView style={styles.rightColumn}>
                     <CurrencyAmount
+                        chainId={chainId}
                         currency={destinationCurrency}
                         assetId={assetIdOf(destinationCurrency)}
                         value={quoteDestinationAmount(quote, sourceAmount)}
@@ -103,6 +104,7 @@ export const ProviderSelectionItem = ({
                     />
                     {destinationValueInUsd ? (
                         <CurrencyAmount
+                            chainId={chainId}
                             currency={USD_CURRENCY}
                             assetId={assetIdOf(USD_CURRENCY)}
                             value={destinationValueInUsd}

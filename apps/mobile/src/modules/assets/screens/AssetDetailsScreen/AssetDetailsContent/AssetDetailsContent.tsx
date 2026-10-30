@@ -52,6 +52,7 @@ export const AssetDetailsContent = ({
         headerSecondary,
         assetDetailsDisplay,
         about,
+        supply,
         isNetworkLineVisible,
         isMarketsTabVisible,
     } = useAssetDetailsScreen({
@@ -95,7 +96,7 @@ export const AssetDetailsContent = ({
         )
     }
 
-    if (isLoading || !asset || !account || !about) {
+    if (isLoading || !asset || !account || !about || !supply) {
         return (
             <LoadingView
                 variant='skeleton'
@@ -141,6 +142,7 @@ export const AssetDetailsContent = ({
                                 scope={scope}
                                 assetDetailsDisplay={assetDetailsDisplay}
                                 about={about}
+                                supply={supply}
                                 isNetworkLineVisible={isNetworkLineVisible}
                             />
                         )}

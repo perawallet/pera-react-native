@@ -79,7 +79,7 @@ export type UseMnemonicWordEntryResult = {
     /** Fresh zeroable buffer built straight from the slot indices — no
      * string pass. Null while any slot is not a wordlist word. Caller owns
      * zeroing the returned buffer. */
-    getMnemonicIndices: () => Uint16Array | null
+    getMnemonicIndices: () => Nullable<Uint16Array>
 }
 
 /**
@@ -127,7 +127,7 @@ export const useMnemonicWordEntry = ({
         [slots],
     )
 
-    const getMnemonicIndices = useCallback((): Uint16Array | null => {
+    const getMnemonicIndices = useCallback((): Nullable<Uint16Array> => {
         const current = slotsRef.current
         const indices = new Uint16Array(current.length)
         for (let i = 0; i < current.length; i++) {

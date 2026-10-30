@@ -16,6 +16,7 @@ import {
     type ChainId,
 } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { useAccountChainStateStore } from '../store'
 
 /**
@@ -25,7 +26,7 @@ import { useAccountChainStateStore } from '../store'
  */
 export const useSelectedChainStates = (
     chainId: ChainId,
-): Readonly<Record<string, AccountChainState>> | undefined => {
+): Optional<Readonly<Record<string, AccountChainState>>> => {
     const scope = useSelectedScope(chainId)
     return useAccountChainStateStore(state => state.states[toScopeKey(scope)])
 }

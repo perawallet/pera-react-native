@@ -31,7 +31,7 @@ const WC_CONNECT_THROTTLE_WINDOW_MS = 2000
 
 export const useWalletConnectHandler = (
     webview: Nullable<WebView>,
-    sourceUrl: string | null,
+    sourceUrl: Nullable<string>,
 ): BridgeHandler => {
     const { hasInternet } = useNetworkStatus()
     const { pair, describeUri } = useConnectionPairing()

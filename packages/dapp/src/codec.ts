@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import type { Optional } from '@perawallet/wallet-core-shared'
+
 export const MAX_ERROR_LENGTH = 200
 const GENERIC_ERROR_MESSAGE = 'An error occurred during signing'
 const GENERIC_REJECT_REASON = 'The user rejected the connection'
@@ -52,7 +54,7 @@ export const sanitizeErrorForWebview = (
  * other page-bound string rather than crossing verbatim. Control characters go
  * because the page renders this text.
  */
-export const sanitizeRejectReason = (reason: string | undefined): string => {
+export const sanitizeRejectReason = (reason: Optional<string>): string => {
     const cleaned = reason?.replace(/\p{C}/gu, ' ').trim()
     return cleaned ? cleaned.slice(0, MAX_ERROR_LENGTH) : GENERIC_REJECT_REASON
 }

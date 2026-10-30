@@ -335,7 +335,7 @@ describe('useOnrampForm', () => {
                 scope: { chainId: 'algorand', networkId: 'mainnet' },
                 pair: 'pair-meld',
                 destinationAddress: 'ACCOUNT_ADDRESS',
-                sourceAmount: 100,
+                sourceAmount: new Decimal(100),
             }),
         )
     })
@@ -589,7 +589,7 @@ describe('useOnrampForm', () => {
         })
 
         expect(mockCreateQuote).toHaveBeenLastCalledWith(
-            expect.objectContaining({ sourceAmount: 600 }),
+            expect.objectContaining({ sourceAmount: new Decimal(600) }),
         )
         expect(result.current.errorMessage).toBeNull()
         // Limits stay sticky after success so the pill remains available.

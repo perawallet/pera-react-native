@@ -79,6 +79,8 @@ export interface ExplorerUrlBuilders {
 export interface ChainExplorer extends ExplorerUrlBuilders {
     /** A brand name ("Etherscan"), shown untranslated. */
     name: string
+    /** The explorer's front page, for an asset that has no page of its own. */
+    homeUrl?(networkId: NetworkId): string | undefined
 }
 
 export type ChainFinality =

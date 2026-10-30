@@ -13,6 +13,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import type { DisplayableAsset } from '@perawallet/wallet-core-assets'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import {
     registerEthereumChain,
     restoreAlgorandOnlyChains,
@@ -32,9 +33,14 @@ const make = (overrides: Partial<DisplayableAsset> = {}): DisplayableAsset => ({
     ...overrides,
 })
 
+const useView = (
+    asset: DisplayableAsset,
+    options: { chainId?: ChainId; copyableAssetId?: boolean } = {},
+) => useAssetItemView(asset, { chainId: 'algorand', ...options })
+
 describe('useAssetItemView', () => {
     it('derives a standard asset row', () => {
-        const { result } = renderHook(() => useAssetItemView(make()))
+        const { result } = renderHook(() => useView(make()))
         expect(result.current.isCollectible).toBe(false)
         expect(result.current.displayName).toBe('Test Asset')
         expect(result.current.secondaryText).toBe('TST · 123')
@@ -42,33 +48,25 @@ describe('useAssetItemView', () => {
     })
 
     it('falls back to "Asset #<id>" when unnamed', () => {
-        const { result } = renderHook(() =>
-            useAssetItemView(make({ name: undefined })),
-        )
+        const { result } = renderHook(() => useView(make({ name: undefined })))
         expect(result.current.displayName).toBe('Asset #123')
     })
 
     it('falls back to "Asset #<id>" when the name is an empty string', () => {
-        const { result } = renderHook(() =>
-            useAssetItemView(make({ name: '' })),
-        )
+        const { result } = renderHook(() => useView(make({ name: '' })))
         expect(result.current.displayName).toBe('Asset #123')
     })
 
     it('renders the verified verification icon from the tier', () => {
         const { result } = renderHook(() =>
-            useAssetItemView(
-                make({ peraMetadata: { verificationTier: 'verified' } }),
-            ),
+            useView(make({ peraMetadata: { verificationTier: 'verified' } })),
         )
         expect(result.current.verificationIcon).toBe('assets/verified')
     })
 
     it('marks suspicious assets', () => {
         const { result } = renderHook(() =>
-            useAssetItemView(
-                make({ peraMetadata: { verificationTier: 'suspicious' } }),
-            ),
+            useView(make({ peraMetadata: { verificationTier: 'suspicious' } })),
         )
         expect(result.current.isSuspicious).toBe(true)
         expect(result.current.verificationIcon).toBe('assets/suspicious')
@@ -76,11 +74,9 @@ describe('useAssetItemView', () => {
 
     it('treats ALGO specially', () => {
         const { result } = renderHook(() =>
-            useAssetItemView(
-                make({ assetId: '0', name: 'Algo', unitName: 'ALGO' }),
-            ),
+            useView(make({ assetId: '0', name: 'Algo', unitName: 'ALGO' })),
         )
-        expect(result.current.isAlgo).toBe(true)
+        expect(result.current.isNativeAsset).toBe(true)
         expect(result.current.displayName).toBe('Algo')
         expect(result.current.verificationIcon).toBe('assets/trusted')
         expect(result.current.secondaryText).toBe('ALGO')
@@ -88,7 +84,7 @@ describe('useAssetItemView', () => {
 
     it('derives a collectible row (square icon, collection subtitle)', () => {
         const { result } = renderHook(() =>
-            useAssetItemView(
+            useView(
                 make({
                     name: undefined,
                     peraMetadata: {
@@ -110,7 +106,7 @@ describe('useAssetItemView', () => {
 
     it('exposes the deleted flag', () => {
         const { result } = renderHook(() =>
-            useAssetItemView(make({ peraMetadata: { isDeleted: true } })),
+            useView(make({ peraMetadata: { isDeleted: true } })),
         )
         expect(result.current.isDeleted).toBe(true)
     })
@@ -122,7 +118,7 @@ describe('useAssetItemView', () => {
 
         it('copies the asset id when copyableAssetId is on', () => {
             const { result } = renderHook(() =>
-                useAssetItemView(make(), { copyableAssetId: true }),
+                useView(make(), { copyableAssetId: true }),
             )
 
             result.current.onCopyAssetId?.()
@@ -132,18 +128,59 @@ describe('useAssetItemView', () => {
         })
 
         it('is undefined when copyableAssetId is off', () => {
-            const { result } = renderHook(() => useAssetItemView(make()))
+            const { result } = renderHook(() => useView(make()))
             expect(result.current.onCopyAssetId).toBeUndefined()
         })
 
         it('is undefined for ALGO even when copyableAssetId is on', () => {
             const { result } = renderHook(() =>
-                useAssetItemView(
+                useView(
                     make({ assetId: '0', name: 'Algo', unitName: 'ALGO' }),
-                    { copyableAssetId: true },
+                    {
+                        copyableAssetId: true,
+                    },
                 ),
             )
             expect(result.current.onCopyAssetId).toBeUndefined()
+        })
+    })
+
+    describe('a native coin on an EVM chain', () => {
+        beforeEach(() => {
+            registerEthereumChain()
+        })
+
+        afterEach(() => {
+            restoreAlgorandOnlyChains()
+        })
+
+        const eth = make({ assetId: 'native', name: 'Ether', unitName: 'ETH' })
+
+        it("reads as the chain's native coin, with the bare unit as its subtitle", () => {
+            const { result } = renderHook(() =>
+                useView(eth, { chainId: 'ethereum' }),
+            )
+            expect(result.current.isNativeAsset).toBe(true)
+            expect(result.current.displayName).toBe('Ether')
+            expect(result.current.secondaryText).toBe('ETH')
+            expect(result.current.verificationIcon).toBe('assets/trusted')
+        })
+
+        it('offers no copy of its id even when copyableAssetId is on', () => {
+            const { result } = renderHook(() =>
+                useView(eth, { chainId: 'ethereum', copyableAssetId: true }),
+            )
+            expect(result.current.onCopyAssetId).toBeUndefined()
+        })
+
+        it('treats the Algorand native id as a token', () => {
+            const token = make({ assetId: '0', name: 'Zero', unitName: 'ZRO' })
+            const { result } = renderHook(() =>
+                useView(token, { chainId: 'ethereum', copyableAssetId: true }),
+            )
+            expect(result.current.isNativeAsset).toBe(false)
+            expect(result.current.secondaryText).toBe('ZRO · 0')
+            expect(result.current.onCopyAssetId).toBeDefined()
         })
     })
 
@@ -160,7 +197,7 @@ describe('useAssetItemView', () => {
 
         it('shows truncated by the chain codec in the subtitle', () => {
             const { result } = renderHook(() =>
-                useAssetItemView(make({ assetId: DAI, unitName: 'DAI' }), {
+                useView(make({ assetId: DAI, unitName: 'DAI' }), {
                     chainId: 'ethereum',
                 }),
             )
@@ -169,7 +206,7 @@ describe('useAssetItemView', () => {
 
         it('shows truncated in the fallback title of an unnamed token', () => {
             const { result } = renderHook(() =>
-                useAssetItemView(make({ assetId: DAI, name: undefined }), {
+                useView(make({ assetId: DAI, name: undefined }), {
                     chainId: 'ethereum',
                 }),
             )
@@ -178,7 +215,7 @@ describe('useAssetItemView', () => {
 
         it('leaves a numeric Algorand id as it is', () => {
             const { result } = renderHook(() =>
-                useAssetItemView(make(), { chainId: 'algorand' }),
+                useView(make(), { chainId: 'algorand' }),
             )
             expect(result.current.secondaryText).toBe('TST · 123')
         })
@@ -186,23 +223,16 @@ describe('useAssetItemView', () => {
         it('leaves an id that is not an address as it is, such as an NFT token id', () => {
             const nftId = `${DAI}/1234`
             const { result } = renderHook(() =>
-                useAssetItemView(make({ assetId: nftId, unitName: 'APE' }), {
+                useView(make({ assetId: nftId, unitName: 'APE' }), {
                     chainId: 'ethereum',
                 }),
             )
             expect(result.current.secondaryText).toBe(`APE · ${nftId}`)
         })
 
-        it('leaves the id as it is with no chain', () => {
-            const { result } = renderHook(() =>
-                useAssetItemView(make({ assetId: DAI, unitName: 'DAI' })),
-            )
-            expect(result.current.secondaryText).toBe(`DAI · ${DAI}`)
-        })
-
         it('still copies the full address on long-press', () => {
             const { result } = renderHook(() =>
-                useAssetItemView(make({ assetId: DAI }), {
+                useView(make({ assetId: DAI }), {
                     chainId: 'ethereum',
                     copyableAssetId: true,
                 }),

@@ -15,6 +15,13 @@ describe('pera/amount-types', () => {
             'model.ts:4',
             'model.ts:5',
             'model.ts:6',
+            'nullable.ts:5',
+            'nullable.ts:6',
+            'nullable.ts:7',
+            'nullable.ts:8',
+            'nullable.ts:9',
+            'nullable.ts:15',
+            'nullable.ts:16',
         ])
     })
 })

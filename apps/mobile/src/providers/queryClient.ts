@@ -27,6 +27,7 @@ import {
     logger,
     mutationDefaults,
     type PeraServiceUnavailableError,
+    type Optional,
 } from '@perawallet/wallet-core-shared'
 
 type PeraBackendUnavailableHandler = (
@@ -36,7 +37,7 @@ type PeraBackendUnavailableHandler = (
 // Set by QueryProvider (a React subtree that can reach the toast layer); this
 // module itself stays free of react-native imports so the browser extension's
 // offscreen document can share the same QueryClient instance.
-let peraBackendUnavailableHandler: PeraBackendUnavailableHandler | undefined
+let peraBackendUnavailableHandler: Optional<PeraBackendUnavailableHandler>
 
 /**
  * Registers the single handler notified whenever a `backend: 'pera'` request

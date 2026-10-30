@@ -23,7 +23,7 @@ import {
     useSelectedAccountId,
 } from '@perawallet/wallet-core-accounts'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import { useSwapChainResolver } from '@perawallet/wallet-core-swaps'
 import { useSendFundsDeeplink } from '@modules/deeplink'
 import { useCapability } from '@hooks/useCapability'
@@ -44,8 +44,8 @@ const isString = (value: unknown): value is string =>
     typeof value === 'string' && value.length > 0
 
 // The record comes back from storage, so it is checked rather than trusted.
-const toFreshIntent = (value: unknown, now: number): StoredIntent | null => {
-    const record = value as Partial<Record<string, unknown>> | null
+const toFreshIntent = (value: unknown, now: number): Nullable<StoredIntent> => {
+    const record = value as Nullable<Partial<Record<string, unknown>>>
     if (!record || typeof record.createdAt !== 'number') return null
     if (now - record.createdAt > TAB_RESUME_MAX_AGE_MS) return null
     if (!isString(record.accountAddress)) return null
@@ -83,7 +83,7 @@ export const useTabResume = (
 
     return useCallback(() => {
         void (async () => {
-            let intent: StoredIntent | null
+            let intent: Nullable<StoredIntent>
             try {
                 intent = toFreshIntent(await takeTabResumeIntent(), Date.now())
             } catch (error) {
@@ -153,9 +153,9 @@ export const useTabResumeResultToast = (): void => {
         if (getSurface() !== 'popup') return
         void takeTabResumeResult()
             .then(value => {
-                const result = value as Partial<
-                    Record<'title' | 'body' | 'createdAt', unknown>
-                > | null
+                const result = value as Nullable<
+                    Partial<Record<'title' | 'body' | 'createdAt', unknown>>
+                >
                 if (
                     !result ||
                     typeof result.title !== 'string' ||

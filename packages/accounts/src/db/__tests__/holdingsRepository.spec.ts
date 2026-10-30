@@ -35,6 +35,7 @@ import {
     getHeldAssetIdsByAccount,
     deleteAllAssetHoldingsForAccount,
 } from '../holdingsRepository'
+import { addAccountToken } from '../addedTokensRepository'
 import { getAccountHoldingsPage } from '../holdingsQueries'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
@@ -60,6 +61,125 @@ describe('account holdings repository', () => {
 
     afterEach(() => {
         teardown()
+    })
+
+    describe('added tokens', () => {
+        const ETHEREUM = { chainId: 'ethereum', networkId: 'mainnet' } as const
+        const TOKEN = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
+        const amountOf = async () =>
+            (
+                await getAccountHoldings({
+                    db,
+                    accountAddress: 'A',
+                    scope: ETHEREUM,
+                })
+            )
+                .find(h => h.assetId === TOKEN)
+                ?.amount.toFixed()
+
+        it('keeps a token added during the read at zero', async () => {
+            await addAccountToken({
+                db,
+                accountAddress: 'A',
+                scope: ETHEREUM,
+                assetId: TOKEN,
+            })
+            await insertAssetHolding({
+                db,
+                accountAddress: 'A',
+                scope: ETHEREUM,
+                assetId: TOKEN,
+            })
+
+            await refreshAccountHoldings({
+                db,
+                accountAddress: 'A',
+                holdings: [],
+                scope: ETHEREUM,
+            })
+
+            expect(await amountOf()).toBe('0')
+        })
+
+        it('writes a zero row for an added token that has no holding row', async () => {
+            await addAccountToken({
+                db,
+                accountAddress: 'A',
+                scope: ETHEREUM,
+                assetId: TOKEN,
+            })
+
+            const changed = await refreshAccountHoldings({
+                db,
+                accountAddress: 'A',
+                holdings: [],
+                scope: ETHEREUM,
+            })
+
+            expect(changed).toBe(true)
+            expect(await amountOf()).toBe('0')
+        })
+
+        it('keeps the balance the chain read for an added token', async () => {
+            await addAccountToken({
+                db,
+                accountAddress: 'A',
+                scope: ETHEREUM,
+                assetId: TOKEN,
+            })
+
+            await refreshAccountHoldings({
+                db,
+                accountAddress: 'A',
+                holdings: [{ assetId: TOKEN, amount: new Decimal(7) }],
+                scope: ETHEREUM,
+            })
+
+            expect(await amountOf()).toBe('7')
+        })
+
+        it('brings an added token back to zero once its balance is spent', async () => {
+            await addAccountToken({
+                db,
+                accountAddress: 'A',
+                scope: ETHEREUM,
+                assetId: TOKEN,
+            })
+            await insertAssetHolding({
+                db,
+                accountAddress: 'A',
+                scope: ETHEREUM,
+                assetId: TOKEN,
+                amount: new Decimal(5),
+            })
+
+            await refreshAccountHoldings({
+                db,
+                accountAddress: 'A',
+                holdings: [],
+                scope: ETHEREUM,
+            })
+
+            expect(await amountOf()).toBe('0')
+        })
+
+        it('lets a removed token go even when the read still listed it at zero', async () => {
+            await insertAssetHolding({
+                db,
+                accountAddress: 'A',
+                scope: ETHEREUM,
+                assetId: TOKEN,
+            })
+
+            await refreshAccountHoldings({
+                db,
+                accountAddress: 'A',
+                holdings: [],
+                scope: ETHEREUM,
+            })
+
+            expect(await amountOf()).toBeUndefined()
+        })
     })
 
     describe('holdings', () => {

@@ -11,10 +11,11 @@
  */
 
 import type { LegacyPreferences } from '@perawallet/wallet-extension-platform'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 export const algorandLegacyPreferenceFlags = (
     preferences: LegacyPreferences,
-): Readonly<Record<string, boolean | null>> => ({
+): Readonly<Record<string, Nullable<boolean>>> => ({
     rekeySupport: preferences.rekeySupport,
     arc59ExpressSendWarningEnabled: preferences.arc59ExpressSendWarningEnabled,
 })

@@ -12,17 +12,20 @@
 
 import { Decimal } from 'decimal.js'
 import {
+    ASSET_MAX_PRECISION,
     DEFAULT_PRECISION,
+    resolveAssetDisplayPrecision,
     type Maybe,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 
 /**
- * Detailed max decimals for a preferred-currency value (fiat OR ALGO). 6 is
- * ALGO's native precision; for fiat it lets sub-cent values and unit prices
- * keep their digits instead of collapsing to `0.00`.
+ * Detailed max decimals for a preferred-currency value (fiat OR ALGO): ALGO's
+ * native precision, shared with the asset display cap. For fiat it lets
+ * sub-cent values and unit prices keep their digits instead of collapsing to
+ * `0.00`.
  */
-export const PREFERRED_MAX_PRECISION = 6
+export const PREFERRED_MAX_PRECISION = ASSET_MAX_PRECISION
 
 /**
  * Semantic precision policy for a currency figure. A caller declares *what kind*
@@ -30,12 +33,15 @@ export const PREFERRED_MAX_PRECISION = 6
  * - `noDecimal` — whole units / counts (e.g. NFT quantity): 0 dp.
  * - `compact` — a dense list/row or a summary total, asset OR preferred: a fixed
  * {@link DEFAULT_PRECISION} dp, extended only for amounts that would
- * otherwise round to zero (see {@link resolveCompactPrecision}). A fiat amount
+ * otherwise round to zero (see {@link resolveCompactPrecision}). An asset with
+ * more than {@link ASSET_MAX_PRECISION} decimals (ETH, ERC-20s) follows
+ * `assetFull` instead, so its row reads like its detail. A fiat amount
  * never extends: a non-zero one under a cent renders as `< 0.01` (`> -0.01`
  * when negative; see {@link resolveFiatFloor}).
  * - `assetFull` — an asset amount on a detail surface: trims
- * {@link DEFAULT_PRECISION} → the asset's own `decimals`. Collectibles /
- * 0-decimal assets resolve to 0 dp. Pair with `assetDecimals`.
+ * {@link DEFAULT_PRECISION} → the asset's own `decimals`, capped at
+ * {@link ASSET_MAX_PRECISION} (see `resolveAssetDisplayPrecision`).
+ * Collectibles / 0-decimal assets resolve to 0 dp. Pair with `assetDecimals`.
  * - `preferredFull` — a preferred-currency value (fiat or ALGO) on a detail surface:
  * trims {@link DEFAULT_PRECISION} → {@link PREFERRED_MAX_PRECISION} dp.
  * - `significant` — a small asset amount on a dense surface (a fee): keeps
@@ -54,6 +60,11 @@ export type ResolvedPrecision = {
     precision: number
     /** Floor decimals kept even when trailing zeros would otherwise trim. */
     minPrecision: number
+    /**
+     * Set when the amount must be pre-rounded this way before formatting;
+     * the formatter itself rounds half-up.
+     */
+    rounding?: Decimal.Rounding
 }
 
 /**
@@ -97,11 +108,11 @@ export const resolveSignificantPrecision = (
 /**
  * Single source of truth mapping a {@link PrecisionVariant} to the
  * `{ precision, minPrecision }` pair the formatter consumes. `assetDecimals` is
- * consulted only for `assetFull` and `significant`; when absent it falls back to
+ * consulted only for `assetFull`, `significant` and `compact`; when absent it falls back to
  * {@link DEFAULT_PRECISION}, matching the legacy `asset?.decimals ?? DEFAULT_PRECISION`.
- * `value` is consulted only for `compact`, whose fixed 2 dp is the one policy
- * that can hide an amount entirely, and `significant`, which falls back to
- * 2 dp without it.
+ * `value` is consulted only for `compact` and `assetFull`, whose caps can
+ * hide an amount entirely, and `significant`, which falls back to 2 dp
+ * without it.
  *
  * This is the only place precision policy lives. `CurrencyAmount` delegates to
  * it and never branches on asset-vs-preferred itself.
@@ -116,6 +127,9 @@ export const resolvePrecision = (
             return { precision: 0, minPrecision: 0 }
         }
         case 'compact': {
+            if (assetDecimals != null && assetDecimals > ASSET_MAX_PRECISION) {
+                return resolvePrecision('assetFull', assetDecimals, value)
+            }
             return {
                 precision: resolveCompactPrecision(value),
                 minPrecision: DEFAULT_PRECISION,
@@ -130,8 +144,10 @@ export const resolvePrecision = (
         case 'assetFull': {
             const decimals = assetDecimals ?? DEFAULT_PRECISION
             return {
-                precision: decimals,
+                precision: resolveAssetDisplayPrecision(value, decimals),
                 minPrecision: Math.min(DEFAULT_PRECISION, decimals),
+                // Down, so a balance never reads as more than the account holds.
+                rounding: Decimal.ROUND_DOWN,
             }
         }
         case 'significant': {

@@ -52,6 +52,7 @@ export const SearchScreen = () => {
         onAssetPress,
         onExpandSection,
         openFilterSheet,
+        chainId,
     } = useSearchScreen()
 
     useNavigationHeader({
@@ -120,6 +121,7 @@ export const SearchScreen = () => {
                         >
                             <AssetTitle
                                 asset={item.asset}
+                                chainId={chainId}
                                 showId
                                 nameVariant='body'
                             />
@@ -156,6 +158,7 @@ export const SearchScreen = () => {
             onContactPress,
             onAssetPress,
             onExpandSection,
+            chainId,
             styles,
             t,
         ],

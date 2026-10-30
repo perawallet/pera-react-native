@@ -33,6 +33,7 @@ export const OnrampTokenIcon = ({
 
     return (
         <AssetIcon
+            chainId={scope?.chainId ?? null}
             asset={buildDisplayableAssetFromRampToken(token, scope)}
             logoUrl={token.logo ?? undefined}
             size={size}

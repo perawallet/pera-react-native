@@ -23,20 +23,20 @@ import { SheetHeader } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { useWebView } from '@modules/webview'
 import { config } from '@perawallet/wallet-core-config'
+import { useAddAssetInfoContent } from './useAddAssetInfoContent'
 import { useStyles } from './styles'
 
 import verificationBadgeLight from '@assets/images/verification-info-badge.png'
 import verificationBadgeDark from '@assets/images/verification-info-badge-dark.png'
 
-export type AsaVerificationInfoContentProps = Record<string, never>
+export type AddAssetInfoContentProps = Record<string, never>
 
-export const AsaVerificationInfoContent = (
-    _: AsaVerificationInfoContentProps = {},
-) => {
+export const AddAssetInfoContent = (_: AddAssetInfoContentProps = {}) => {
     const styles = useStyles()
     const { theme } = useTheme()
     const { t } = useLanguage()
     const { pushWebView } = useWebView()
+    const { hasAddingNotes, hasOptInNote } = useAddAssetInfoContent()
 
     const heroImage =
         theme.mode === 'dark' ? verificationBadgeDark : verificationBadgeLight
@@ -73,6 +73,25 @@ export const AsaVerificationInfoContent = (
                 <PWText style={styles.paragraph}>
                     {t('asa_verification_info.body_3')}
                 </PWText>
+
+                {hasAddingNotes && (
+                    <>
+                        <PWText
+                            variant='h4'
+                            style={styles.sectionTitle}
+                        >
+                            {t('add_asset.info.adding_title')}
+                        </PWText>
+                        {hasOptInNote && (
+                            <PWText style={styles.paragraph}>
+                                {t('add_asset.info.adding_opt_in')}
+                            </PWText>
+                        )}
+                        <PWText style={styles.paragraph}>
+                            {t('add_asset.info.adding_evm')}
+                        </PWText>
+                    </>
+                )}
 
                 <PWButton
                     title={t('asa_verification_info.learn_more')}

@@ -27,7 +27,12 @@ import {
     type MultisigSignRequest,
     type SignRequestStatus,
 } from '@perawallet/wallet-core-multisig'
-import { formatTimeRemaining, logger } from '@perawallet/wallet-core-shared'
+import {
+    formatTimeRemaining,
+    logger,
+    type Nullable,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
 import { useSigningRequest } from '@perawallet/wallet-core-signing'
 import { trackEvent, MultisigEvent, AnalyticsMetadataKey } from '@analytics'
 import { useBottomSheet, useBottomSheetResult } from '@modules/bottom-sheet'
@@ -51,8 +56,8 @@ import { splitLocalUnsignedSigners } from '../../utils/splitLocalUnsignedSigners
 
 export type UsePendingSignaturesContentResult = {
     isLoading: boolean
-    signRequest: MultisigSignRequest | null
-    status: SignRequestStatus | null
+    signRequest: Nullable<MultisigSignRequest>
+    status: Nullable<SignRequestStatus>
     /**
      * Keyed on {@link bannerVariant}, so the header can never disagree with the
      * banner rendered beneath it.
@@ -66,8 +71,8 @@ export type UsePendingSignaturesContentResult = {
     failureBannerKey: I18nKey
     signedCount: number
     threshold: number
-    timeRemaining: string | null
-    failReason: string | null
+    timeRemaining: Nullable<string>
+    failReason: Nullable<string>
     signers: SignerRow[]
     handleClose: () => void
     /**
@@ -454,8 +459,8 @@ export const usePendingSignaturesContent =
  * pending — no responses exist until a Ledger row bootstraps the real propose.
  */
 const synthesizeDraftSignRequest = (
-    draft: DraftSignRequest | undefined,
-): MultisigSignRequest | null => {
+    draft: Optional<DraftSignRequest>,
+): Nullable<MultisigSignRequest> => {
     if (!draft) return null
     return {
         id: draft.localId,

@@ -26,6 +26,7 @@ export const BalanceImpactRow = ({ item }: BalanceImpactRowProps) => {
     return (
         <PWView style={styles.row}>
             <AssetIcon
+                chainId={item.chainId}
                 asset={item.asset}
                 size='lg'
                 shape={item.isCollectible ? 'square' : 'circle'}

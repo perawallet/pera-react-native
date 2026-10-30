@@ -31,8 +31,8 @@ import {
 import { useMnemonicForAddress } from './useMnemonicForAddress'
 
 export type UseRandomMnemonicForAddressResult = {
-    picks: MnemonicWordAtPosition[] | null
-    error: Error | null
+    picks: Nullable<MnemonicWordAtPosition[]>
+    error: Nullable<Error>
     isLoading: boolean
 }
 

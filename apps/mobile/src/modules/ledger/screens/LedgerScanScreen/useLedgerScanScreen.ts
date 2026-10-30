@@ -137,7 +137,7 @@ const BLE_ONLY_TRANSPORTS: LedgerTransportType[] = ['ble']
 const connectionOptionsOf = (
     canScanBle: boolean,
     isBleOnly: boolean,
-): { transportTypes: LedgerTransportType[] } | undefined => {
+): Optional<{ transportTypes: LedgerTransportType[] }> => {
     if (!canScanBle) return { transportTypes: USB_ONLY_TRANSPORTS }
     return isBleOnly ? { transportTypes: BLE_ONLY_TRANSPORTS } : undefined
 }

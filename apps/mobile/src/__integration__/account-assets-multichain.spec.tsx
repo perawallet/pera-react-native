@@ -291,6 +291,8 @@ describe("Flow: One account's assets across chains", () => {
 
         const native = await screen.findByTestId('asset_row_native')
         expect(within(native).getByText(/0\.00/)).toBeTruthy()
+        // A native coin's subtitle is its bare unit, never `<unit> · native`.
+        expect(within(native).queryByText(/native/)).toBeNull()
         // The read failed, so the zero is a placeholder, not an unfunded balance.
         expect(screen.queryByTestId('network_funding_state')).toBeNull()
         expect(

@@ -19,6 +19,7 @@
     },
     "dependencies": {
         "@ledgerhq/hw-transport-web-ble": "catalog:",
+        "@perawallet/wallet-core-shared": "workspace:*",
         "@perawallet/wallet-extension-hardware-wallet": "workspace:*",
         "@perawallet/wallet-extension-ledger-shared": "workspace:*"
     },

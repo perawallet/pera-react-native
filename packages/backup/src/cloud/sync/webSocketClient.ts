@@ -22,14 +22,14 @@ export type BackupWebSocketEvent =
     | { kind: 'connected' }
     | { kind: 'itemsUpdated'; fromSeq: number; toSeq: number }
     | { kind: 'backupDeleted' }
-    | { kind: 'disconnected'; code: number | null; reason: string | null }
+    | { kind: 'disconnected'; code: Nullable<number>; reason: Nullable<string> }
     | { kind: 'error'; error: Error }
 
 export type WebSocketLike = {
-    onopen: (() => void) | null
-    onmessage: ((ev: { data: unknown }) => void) | null
-    onerror: ((ev: unknown) => void) | null
-    onclose: ((ev: { code?: number; reason?: string }) => void) | null
+    onopen: Nullable<() => void>
+    onmessage: Nullable<(ev: { data: unknown }) => void>
+    onerror: Nullable<(ev: unknown) => void>
+    onclose: Nullable<(ev: { code?: number; reason?: string }) => void>
     close: (code?: number, reason?: string) => void
 }
 
@@ -168,7 +168,10 @@ export class BackupWebSocketClient {
         }
     }
 
-    private handleClose(code: number | null, _reason: string | null): void {
+    private handleClose(
+        code: Nullable<number>,
+        _reason: Nullable<string>,
+    ): void {
         this.socket = null
         this.params.onEvent({ kind: 'disconnected', code, reason: _reason })
         if (this.stopped || code === NORMAL_CLOSE) return

@@ -12,6 +12,7 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { freezeCard } from '../api/card'
 import { CardStatus, type Card } from '../models/card'
 import { cardMutationKeys, cardQueryKeys } from './querykeys'
@@ -32,7 +33,7 @@ export const useFreezeCardMutation = (
             // On success, reflect the frozen state in the cache so dependent UI
             // (the Card Frozen banner) updates immediately; the invalidation
             // then reconciles with the server.
-            queryClient.setQueryData<Card | null>(
+            queryClient.setQueryData<Nullable<Card>>(
                 cardQueryKeys.status(scope),
                 prev => (prev ? { ...prev, status: CardStatus.Frozen } : prev),
             )

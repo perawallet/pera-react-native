@@ -27,6 +27,7 @@ import { useStyles } from './styles'
 import type { Decimal } from 'decimal.js'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 
 // Shared presentation for the rekey-to-{ledger,shared,standard} confirm screens.
 // They share an identical layout and differ only in their copy, testID prefix,
@@ -45,10 +46,10 @@ type RekeyConfirmViewProps = {
     copy: RekeyConfirmCopy
     testIDPrefix: string
     supportUrl: string
-    source: WalletAccount | null
-    target: WalletAccount | null
-    currentAuth: WalletAccount | null
-    feeAlgos: Decimal | undefined
+    source: Nullable<WalletAccount>
+    target: Nullable<WalletAccount>
+    currentAuth: Nullable<WalletAccount>
+    feeAlgos: Optional<Decimal>
     feePending: boolean
     hasPreviousRekey: boolean
     isSubmitting: boolean
@@ -106,6 +107,7 @@ export const RekeyConfirmView = ({
                             {t(copy.feeLabelKey)}
                         </PWText>
                         <AssetAmount
+                            chainId={scope.chainId}
                             asset={nativeAsset}
                             value={feeAlgos}
                             variant='bodyLarge'

@@ -21,7 +21,7 @@ type PassphraseColumnProps = {
     /** Index in the whole phrase of this column's first word. */
     startIndex: number
     lastIndex: number
-    focused: number | null
+    focused: Nullable<number>
     onChangeWord: (value: string, index: number) => void
     onFocusWord: (index: number) => void
     onSubmitWord: (index: number) => void

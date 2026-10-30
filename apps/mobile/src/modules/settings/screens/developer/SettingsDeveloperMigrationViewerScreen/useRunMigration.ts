@@ -24,13 +24,13 @@ import {
     runMigration,
     type MigrationRunResult,
 } from '@perawallet/wallet-core-migrate'
-import { toError } from '@perawallet/wallet-core-shared'
+import { toError, type Nullable } from '@perawallet/wallet-core-shared'
 
 export type UseRunMigrationResult = {
     run: () => Promise<MigrationRunResult>
     isMigrating: boolean
-    result: MigrationRunResult | null
-    error: Error | null
+    result: Nullable<MigrationRunResult>
+    error: Nullable<Error>
 }
 
 export const useRunMigration = (): UseRunMigrationResult => {
@@ -40,8 +40,8 @@ export const useRunMigration = (): UseRunMigrationResult => {
     const { createHDWalletKey, hasSeedWithEntropy } = useKMS()
     const markAccountBackedUp = useMarkMnemonicBackupComplete(scope.chainId)
     const [isMigrating, setIsMigrating] = useState(false)
-    const [result, setResult] = useState<MigrationRunResult | null>(null)
-    const [error, setError] = useState<Error | null>(null)
+    const [result, setResult] = useState<Nullable<MigrationRunResult>>(null)
+    const [error, setError] = useState<Nullable<Error>>(null)
 
     const run = useCallback(async (): Promise<MigrationRunResult> => {
         setIsMigrating(true)

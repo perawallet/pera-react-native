@@ -61,6 +61,7 @@ describe('useAccountFundedNetworksQuery', () => {
             { wrapper: wrapper() },
         )
 
+        expect(result.current.isPending).toBe(true)
         await waitFor(() => expect(result.current.isPending).toBe(false))
 
         expect(result.current.isFunded).toBe(true)
@@ -94,6 +95,7 @@ describe('useAccountFundedNetworksQuery', () => {
         )
 
         expect(result.current.isFunded).toBe(false)
+        expect(result.current.isPending).toBe(false)
         expect(mockGetAccountFundedNetworks).not.toHaveBeenCalled()
     })
 })

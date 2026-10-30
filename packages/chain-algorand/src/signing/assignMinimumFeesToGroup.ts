@@ -22,7 +22,7 @@ import {
 } from '../blockchain'
 
 import { Transaction } from 'algosdk'
-import { bytesToHex } from '@perawallet/wallet-core-shared'
+import { bytesToHex, type Optional } from '@perawallet/wallet-core-shared'
 import type { FeeAdjustment } from '@perawallet/wallet-core-signing'
 
 import { validateTransactionGroupIntegrity } from './validateTransactionGroupIntegrity'
@@ -90,7 +90,7 @@ export type AssignMinimumFeesToGroupParams = {
 const resolveAuthorizer = (
     transactions: PeraTransaction[],
     signableIndices: number[],
-    signerOverrides: Map<number, string> | undefined,
+    signerOverrides: Optional<Map<number, string>>,
     subsetIndex: number,
 ): string =>
     signerOverrides?.get(subsetIndex) ??

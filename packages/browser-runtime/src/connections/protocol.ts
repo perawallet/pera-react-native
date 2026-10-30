@@ -37,6 +37,7 @@ import {
     ErrorCategory,
     parseTypedJson,
     stringifyTypedJson,
+    type Optional,
 } from '@perawallet/wallet-core-shared'
 import type {
     Connection,
@@ -51,7 +52,7 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 const isStringArray = (value: unknown): value is string[] =>
     Array.isArray(value) && value.every(item => typeof item === 'string')
 
-const isOptionalString = (value: unknown): value is string | undefined =>
+const isOptionalString = (value: unknown): value is Optional<string> =>
     value === undefined || typeof value === 'string'
 
 // chrome.runtime.sendMessage is JSON; the only non-JSON fields on an

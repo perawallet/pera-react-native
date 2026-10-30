@@ -16,10 +16,11 @@ import {
     isVaultInitialized,
     onLockStateChanged,
 } from '@perawallet/wallet-extension-keystore-chrome'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 type UseVaultLockStateResult = {
-    isInitialized: boolean | null
-    isUnlocked: boolean | null
+    isInitialized: Nullable<boolean>
+    isUnlocked: Nullable<boolean>
     refresh: () => Promise<void>
 }
 
@@ -28,8 +29,8 @@ type UseVaultLockStateResult = {
 // process-local Zustand store would just shadow it. This hook subscribes to
 // the cross-context change feed directly.
 export const useVaultLockState = (): UseVaultLockStateResult => {
-    const [isInitialized, setIsInitialized] = useState<boolean | null>(null)
-    const [isUnlocked, setIsUnlocked] = useState<boolean | null>(null)
+    const [isInitialized, setIsInitialized] = useState<Nullable<boolean>>(null)
+    const [isUnlocked, setIsUnlocked] = useState<Nullable<boolean>>(null)
 
     // Guards against a lock-state change event landing between refresh()'s
     // async reads and its setState: without this, the event's authoritative

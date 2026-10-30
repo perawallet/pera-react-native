@@ -163,6 +163,30 @@ export const fetchNftHoldings = async (
 }
 
 /**
+ * Whether `address` holds any NFT the backend lists: one GET of the first
+ * page, never a cursor. Rejects with a `PeraNetworkError` on a failed request.
+ */
+export const fetchHasNftHoldings = async (
+    scope: ChainScope,
+    chain: EvmChain,
+    address: string,
+): Promise<boolean> => {
+    const { data } = await queryClient<unknown>({
+        backend: 'pera',
+        service: NFTS_SERVICE,
+        scope,
+        method: 'GET',
+        url: nftHoldingsPath(
+            eip155ChainIdOf(scope, chain),
+            address.toLowerCase(),
+        ),
+        headers: buildIntegrityHeaders(),
+    })
+    const { results, next } = nftHoldingsPageSchema.parse(data)
+    return results.length > 0 || next !== null
+}
+
+/**
  * One entry per CAIP-19 id, in request order, null where the backend knows
  * none; at most `NFTS_MAX_IDS` ids. Rejects with a `PeraNetworkError` on a
  * failed request.

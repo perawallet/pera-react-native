@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import type { Optional } from '@perawallet/wallet-core-shared'
+
 export type BrowserInfo = {
     /** Host browser name, e.g. "Chrome", "Firefox", "Edge". */
     name: string
@@ -69,7 +71,7 @@ const detectOSVersion = (ua: string, platformHint?: string): string => {
     return 'unknown'
 }
 
-let cached: BrowserInfo | undefined
+let cached: Optional<BrowserInfo>
 
 /**
  * Resolves the host browser's name, version, and OS from the user-agent

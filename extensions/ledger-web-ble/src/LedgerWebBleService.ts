@@ -22,6 +22,7 @@ import {
     classifyLedgerError,
     LedgerDevicePickerUnavailableError,
 } from '@perawallet/wallet-extension-ledger-shared'
+import type { Optional } from '@perawallet/wallet-core-shared'
 
 type WebBluetoothDevice = { id: string; name?: string }
 
@@ -42,7 +43,7 @@ export type LedgerWebBleServiceOptions = {
  * "Stax 1234"). Defaults to 'nanoX', mirroring resolveDeviceModel's own
  * fallback for an unrecognized UUID.
  */
-const resolveModelFromName = (name: string | undefined): string => {
+const resolveModelFromName = (name: Optional<string>): string => {
     const lower = (name ?? '').toLowerCase()
     if (lower.includes('stax')) return 'stax'
     if (lower.includes('flex')) return 'flex'

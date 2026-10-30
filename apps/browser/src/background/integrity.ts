@@ -23,6 +23,8 @@ import {
     isPeraNetworkError,
     logger,
     setIntegrityTokenProvider,
+    type Nullable,
+    type Optional,
 } from '@perawallet/wallet-core-shared'
 import {
     ensureDeviceInstallationID,
@@ -84,9 +86,9 @@ const mintBackoff = createSessionBackoff({
 // This realm's own view of the token — the SW can't use useAppIntegrityStore
 // (see packages/app-integrity/src/api.ts for why). Seeded from
 // chrome.storage.session on every read, written on every successful mint.
-let cachedToken: SessionIntegrityToken | null = null
+let cachedToken: Nullable<SessionIntegrityToken> = null
 
-const readCachedIntegrityToken = (): string | null => {
+const readCachedIntegrityToken = (): Nullable<string> => {
     if (!cachedToken) return null
     const expiry = Date.parse(cachedToken.expiresAt)
     return Number.isFinite(expiry) && expiry > Date.now()
@@ -148,7 +150,7 @@ const isMarkedEnrolled = async (deployment: WalletMode): Promise<boolean> => {
 }
 
 const isForbidden = (error: unknown): boolean =>
-    (error as { status?: number } | null)?.status === 403
+    (error as Nullable<{ status?: number }>)?.status === 403
 
 // No answer at all: the network, not the backend. Retrying costs nothing, so
 // such a failure must not cost the user five minutes of backoff.
@@ -156,12 +158,12 @@ const isTransportFailure = (error: unknown): boolean =>
     isConnectivityError(error) ||
     (isPeraNetworkError(error) && error.kind === 'timeout')
 
-const statusOf = (error: unknown): number | undefined => {
-    const status = (error as { status?: unknown } | null)?.status
+const statusOf = (error: unknown): Optional<number> => {
+    const status = (error as Nullable<{ status?: unknown }>)?.status
     return typeof status === 'number' ? status : undefined
 }
 
-const isTokenAlive = (token: SessionIntegrityToken | null): boolean => {
+const isTokenAlive = (token: Nullable<SessionIntegrityToken>): boolean => {
     if (!token) return false
     const expiresAt = Date.parse(token.expiresAt)
     return Number.isFinite(expiresAt) && expiresAt > Date.now()
@@ -334,7 +336,7 @@ export const replaceTokenAfterEnrolment = async (): Promise<void> => {
 }
 
 let lastRetryAt = 0
-let lastRejectedToken: string | null = null
+let lastRejectedToken: Nullable<string> = null
 
 // An enrolled token the backend refuses within this long of issuing it was not
 // stale: it is the backend's answer (bearer acceptance off), and minting again
@@ -343,7 +345,7 @@ const FRESH_TOKEN_MS = 60 * 1000
 
 const isNamedToken = (
     token: SessionIntegrityToken,
-    tokenExpiresAt: number | null,
+    tokenExpiresAt: Nullable<number>,
 ): boolean =>
     tokenExpiresAt === null ||
     Math.floor(Date.parse(token.expiresAt) / 1000) ===
@@ -353,7 +355,7 @@ const isNamedToken = (
 // revocation the token predates). Once per token, and only the token it names:
 // refusals of one already replaced must not take its successor down.
 const replaceRejectedToken = async (
-    tokenExpiresAt: number | null,
+    tokenExpiresAt: Nullable<number>,
 ): Promise<void> => {
     const current = await getSessionIntegrityToken()
     if (!current) {

@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import {
     BACKUP_SECRETS_KEY_PREFIX,
     BackupItemStatus,
@@ -86,7 +87,7 @@ const isSecretOfLiveRecord = (state: SyncState, item: LocalItem): boolean =>
                 cachedRecordSeedReference(tracked.record) === item.address),
     )
 
-const legacyMatcherOf = (key: string): ((key: string) => boolean) | null => {
+const legacyMatcherOf = (key: string): Nullable<(key: string) => boolean> => {
     if (isAccountRecordKey(key)) return isAccountItemKey
     if (isContactRecordKey(key)) return isContactItemKey
     return null

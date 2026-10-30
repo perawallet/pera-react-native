@@ -17,6 +17,7 @@ import {
     type Eip1193Event,
     type JsonRpcNotification,
 } from '@perawallet/wallet-core-browser-runtime'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import {
     PERA_EIP6963_ICON,
     PERA_EIP6963_NAME,
@@ -68,7 +69,7 @@ export const createEip1193Provider = (
 } => {
     const listeners = new Map<Eip1193Event, Set<Listener>>()
     let accounts: string[] = []
-    let chainId: string | null = null
+    let chainId: Nullable<string> = null
     let hasAnnouncedConnect = false
 
     const emit = (event: Eip1193Event, payload: unknown): void => {
@@ -106,7 +107,7 @@ export const createEip1193Provider = (
 
     // React StrictMode and wagmi's reconnect both double-fire this; the wallet
     // would refuse the second as already pending.
-    let requestAccountsInFlight: Promise<unknown> | null = null
+    let requestAccountsInFlight: Nullable<Promise<unknown>> = null
 
     const request = (args: Eip1193RequestArguments): Promise<unknown> => {
         if (!isRecord(args) || typeof args.method !== 'string') {

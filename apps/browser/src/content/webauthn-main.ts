@@ -48,11 +48,12 @@ import type {
     WebauthnCeremonyRequest,
     WebauthnCeremonyResponse,
 } from '@perawallet/wallet-core-browser-runtime'
+import type { Optional, Nullable } from '@perawallet/wallet-core-shared'
 
 // Must be captured BEFORE anything assigns to navigator.credentials — running
 // after installProvider() would stash our own wrapper as "the original" and
 // every fall-through would recurse instead of reaching the real implementation.
-const nativeCredentials: CredentialsContainer | undefined =
+const nativeCredentials: Optional<CredentialsContainer> =
     typeof navigator !== 'undefined' ? navigator.credentials : undefined
 const origCreate = nativeCredentials?.create?.bind(nativeCredentials)
 const origGet = nativeCredentials?.get?.bind(nativeCredentials)
@@ -222,7 +223,7 @@ const reconstructCredential = (
 // `null` on timeout; callers treat that and `{decline:true}` identically.
 const callRelay = (
     request: WebauthnCeremonyRequest,
-): Promise<WebauthnCeremonyResponse | null> =>
+): Promise<Nullable<WebauthnCeremonyResponse>> =>
     new Promise(resolve => {
         const id = `${channelSeq++}`
         const timer = setTimeout(() => {
@@ -241,9 +242,9 @@ const callRelay = (
     })
 
 const fallThrough = <T>(
-    original: ((options?: T) => Promise<Credential | null>) | undefined,
-    options: T | undefined,
-): Promise<Credential | null> => {
+    original: Optional<(options?: T) => Promise<Nullable<Credential>>>,
+    options: Optional<T>,
+): Promise<Nullable<Credential>> => {
     if (!original) {
         // No CredentialsContainer at all — reject as a browser without
         // WebAuthn support would.
@@ -265,10 +266,10 @@ const rejectWithAuthenticatorError = (name: string): never => {
 
 const wrappedCreate = async (
     options?: CredentialCreationOptions,
-): Promise<Credential | null> => {
+): Promise<Nullable<Credential>> => {
     if (!options?.publicKey) return fallThrough(origCreate, options)
 
-    let response: WebauthnCeremonyResponse | null
+    let response: Nullable<WebauthnCeremonyResponse>
     try {
         response = await callRelay({
             kind: 'create',
@@ -297,7 +298,7 @@ const wrappedCreate = async (
 
 const wrappedGet = async (
     options?: CredentialRequestOptions,
-): Promise<Credential | null> => {
+): Promise<Nullable<Credential>> => {
     // Conditional mediation and non-publicKey requests are out of scope, so
     // defer without ever touching the relay. `create()` needs only the
     // publicKey check above — mediation is a `get()`-only concept.
@@ -305,7 +306,7 @@ const wrappedGet = async (
         return fallThrough(origGet, options)
     }
 
-    let response: WebauthnCeremonyResponse | null
+    let response: Nullable<WebauthnCeremonyResponse>
     try {
         response = await callRelay({
             kind: 'get',

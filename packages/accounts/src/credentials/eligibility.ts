@@ -28,6 +28,7 @@ import {
     getKeystoreStore,
     getProvider,
 } from '@perawallet/wallet-extension-provider'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { accountsChainAdapters } from '../chain-adapter'
 import type {
     HardwareWalletAccount,
@@ -45,7 +46,7 @@ import type { KeystoreSnapshot } from './credentialScheme'
  */
 export const seedMintableScheme = (
     chainId: ChainId,
-): SigningScheme | undefined => {
+): Optional<SigningScheme> => {
     const { chains } = getProvider()
     if (!chains.has(chainId)) return undefined
     const { schemes, derivationPaths } = chains.get(chainId).descriptor.signing
@@ -208,7 +209,7 @@ export const defaultChains = (account: WalletAccount): ChainId[] =>
 /** The first default chain among `chainIds`, else the first of them. */
 export const preferDefaultChain = (
     chainIds: readonly ChainId[],
-): ChainId | undefined => chainIds.find(isEnabledByDefault) ?? chainIds[0]
+): Optional<ChainId> => chainIds.find(isEnabledByDefault) ?? chainIds[0]
 
 /** Whether the chain imports an account from raw private-key bytes. */
 export const canImportRawKey = (chainId: ChainId): boolean => {
@@ -226,7 +227,7 @@ export const findPathHolder = (
     walletId: string,
     index: HdIndex,
     keys?: KeystoreSnapshot,
-): WalletAccount | undefined =>
+): Optional<WalletAccount> =>
     accounts.find(account => {
         const held = hdIndexOf(account)
         // The index test goes first because `seedOf` scans the keystore.
@@ -263,7 +264,7 @@ const isAtHardwarePosition = (
 export const findHardwareHolder = (
     accounts: readonly WalletAccount[],
     details: HardwarePosition,
-): HardwareWalletAccount | undefined =>
+): Optional<HardwareWalletAccount> =>
     accounts.find(account => isAtHardwarePosition(account, details))
 
 /**
@@ -318,5 +319,5 @@ export const findAddressHolder = (
     accounts: readonly WalletAccount[],
     scope: ChainScope,
     address: string,
-): WalletAccount | undefined =>
+): Optional<WalletAccount> =>
     findAccountByAddressOn(accounts, scope.chainId, address)

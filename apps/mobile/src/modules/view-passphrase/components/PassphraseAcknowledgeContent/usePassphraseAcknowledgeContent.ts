@@ -28,7 +28,7 @@ export type UsePassphraseAcknowledgeContentResult = {
     checked: boolean[]
     allChecked: boolean
     toggle: (index: number) => void
-    scrollRef: RefObject<PWSheetLayoutScrollHandle | null>
+    scrollRef: RefObject<Nullable<PWSheetLayoutScrollHandle>>
 }
 
 const SINGLE_NETWORK_ROW_KEYS = [

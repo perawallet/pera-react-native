@@ -11,10 +11,11 @@
  */
 
 import { createContext, useContext, useRef } from 'react'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { PeraProvider } from './pera-provider'
 import { getProvider } from './singleton'
 
-const PeraWalletContext = createContext<PeraProvider | null>(null)
+const PeraWalletContext = createContext<Nullable<PeraProvider>>(null)
 
 interface PeraWalletProviderProps {
     children: React.ReactNode
@@ -30,7 +31,7 @@ interface PeraWalletProviderProps {
  * singletons — no onProviderReady callback is needed.
  */
 export const PeraWalletProvider = ({ children }: PeraWalletProviderProps) => {
-    const providerRef = useRef<PeraProvider | null>(null)
+    const providerRef = useRef<Nullable<PeraProvider>>(null)
 
     if (providerRef.current === null) {
         providerRef.current = getProvider()

@@ -20,6 +20,7 @@ import {
 import { useCloudBackupStore } from '@perawallet/wallet-core-backup'
 import { zeroBytes } from '@perawallet/wallet-core-kms'
 import { getProvider } from '@perawallet/wallet-extension-provider'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useCapability } from '@hooks/useCapability'
 import { useErrorToast } from '@hooks/useErrorToast'
@@ -93,7 +94,7 @@ export const useImportPrivateKeyScreen =
             isImportingRef.current = true
             setIsImporting(true)
             void (async () => {
-                let privateKey: Uint8Array | undefined
+                let privateKey: Optional<Uint8Array>
                 try {
                     privateKey = parsePrivateKey(chainId, inputRef.current)
                     inputRef.current = ''

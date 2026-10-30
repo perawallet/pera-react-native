@@ -14,12 +14,13 @@ import {
     finishTabResume,
     getConsumedExpandedFlow,
 } from '@perawallet/wallet-core-browser-runtime'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { TabResumeIntent, TabResumeResult } from './tabResumeIntent'
 
 // Memory-only and per page: set while a flow is signing, so "Open in Tab" on a
 // signing error knows what to reopen. Flows clear it once signing settles, or
 // a later, unrelated error would resume a finished flow.
-let current: TabResumeIntent | null = null
+let current: Nullable<TabResumeIntent> = null
 
 export const registerTabResumeIntent = (intent: TabResumeIntent): void => {
     current = intent
@@ -29,7 +30,7 @@ export const clearTabResumeIntent = (): void => {
     current = null
 }
 
-export const peekTabResumeIntent = (): TabResumeIntent | null => current
+export const peekTabResumeIntent = (): Nullable<TabResumeIntent> => current
 
 // The tab only existed to finish the popup's flow: once it succeeds, the
 // service worker closes it and reopens the popup, which shows `result`.

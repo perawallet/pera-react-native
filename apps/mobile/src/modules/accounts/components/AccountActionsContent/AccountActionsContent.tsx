@@ -11,6 +11,7 @@
  */
 
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import {
     type IconName,
     PWDivider,
@@ -86,7 +87,7 @@ export const AccountActionsContent = ({
                   },
               ]
 
-    const sendActionOf = (): ActionRow | null => {
+    const sendActionOf = (): Nullable<ActionRow> => {
         if (canSend) {
             return {
                 id: 'send-transaction',

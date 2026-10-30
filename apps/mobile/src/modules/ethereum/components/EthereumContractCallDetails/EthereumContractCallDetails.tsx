@@ -62,6 +62,7 @@ export const EthereumContractCallDetails = ({
                 title={t('transactions.common.amount')}
             >
                 <AssetAmount
+                    chainId={presentation.scope.chainId}
                     asset={value.asset}
                     value={value.value}
                     showSymbol

@@ -20,7 +20,11 @@ import {
     type TransactionReviewer,
     type UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
-import { toBigInt, toError } from '@perawallet/wallet-core-shared'
+import {
+    toBigInt,
+    toError,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import {
     reviewerChainAdapters,
@@ -61,7 +65,7 @@ const reviewContextOf = (
 /** Undefined for a group of data rather than transactions. */
 const unsignedTransactionsOf = (
     group: SignableGroup,
-): UnsignedTransaction[] | undefined =>
+): Optional<UnsignedTransaction[]> =>
     group.data.type === 'transactions' ? group.data.transactions : undefined
 
 const toDecodedTransactions = (

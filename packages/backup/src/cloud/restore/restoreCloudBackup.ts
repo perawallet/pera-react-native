@@ -17,6 +17,7 @@ import {
     isPeraNetworkError,
     logger,
     toError,
+    type Nullable,
 } from '@perawallet/wallet-core-shared'
 import { deleteBackupKeys, persistBackupKeys } from '../credentials/keyStorage'
 import {
@@ -213,7 +214,7 @@ const importPasskeysSafely = async (
  *  either defaults or older than anything the backup has been told. */
 const importSettingsSafely = (
     importSettings: SettingsImportFn,
-    settings: PulledSettings | null,
+    settings: Nullable<PulledSettings>,
 ): void => {
     if (settings === null) return
     try {
@@ -240,7 +241,7 @@ const incompleteAccounts = (
  *  wrote as this device's baseline rather than as an edit to push. */
 const withPulledSettings = (
     items: Record<BackupItemKey, SyncItemState>,
-    settings: PulledSettings | null,
+    settings: Nullable<PulledSettings>,
 ): Record<BackupItemKey, SyncItemState> => {
     const tracked = settings ? items[settings.key] : undefined
     if (!settings || !tracked) return items

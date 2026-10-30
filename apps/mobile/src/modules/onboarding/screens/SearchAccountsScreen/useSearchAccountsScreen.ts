@@ -25,22 +25,18 @@ import {
     hasCustody,
     hdIndexOf,
     signingKeyOn,
-    useAccountDiscovery,
-    useAllAccounts,
-    useCreateAccount,
     useHDImportSession,
     useSelectedAccountId,
 } from '@perawallet/wallet-core-accounts'
-import { useKMS } from '@perawallet/wallet-core-kms'
 import { logger } from '@perawallet/wallet-core-shared'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import type { OnboardingStackParamList } from '../../routes/types'
 import {
-    useExitAccountFlow,
     useDelegationScanNoticeResult,
     REKEY_SCAN_UNAVAILABLE,
 } from '../../hooks'
+import { useHdWalletRescan } from './useHdWalletRescan'
 
 export type UseSearchAccountsScreenResult = {
     t: (key: string) => string
@@ -58,18 +54,14 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
         useRoute<RouteProp<OnboardingStackParamList, 'SearchAccounts'>>()
     const params = route.params
     const { t } = useLanguage()
-    const { showToast, errorToast } = useToast()
+    const { errorToast } = useToast()
     const navigation = useAppNavigation()
     const reactNavigation = useNavigation()
     const scope = useSelectedScope(LEGACY_CHAIN_ID)
-    const { discoverAccounts } = useAccountDiscovery(scope)
     const { discoverImportAccounts, cancelImport } = useHDImportSession(scope)
-    const { exitAccountFlow } = useExitAccountFlow()
     const { scanRekeyed } = useDelegationScanNoticeResult()
+    const { rescanHdWallet } = useHdWalletRescan()
     const { setSelectedAccountId } = useSelectedAccountId()
-    const { buildHdWalletAccount } = useCreateAccount(scope)
-    const allAccounts = useAllAccounts()
-    const { seedIdOf } = useKMS()
 
     const dotOpacities = useRef(
         Array.from(
@@ -144,107 +136,22 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
                 return
             }
 
-            // Existing mode: an account already exists; we may auto-select it
-            // if discovery returns only the master, or open the selection
-            // screen if multiple accounts have on-chain history.
-            // We narrow the discriminated union via the `mode === 'import'`
-            // branch above; here `params` is the existing-mode variant.
-            const existingParams = params as Extract<
+            // Existing mode: `params` is the variant the import branch above
+            // ruled out.
+            const { account } = params as Extract<
                 typeof params,
                 { account: unknown }
             >
-            const account = existingParams.account
-            const createIfEmpty = existingParams.createIfEmpty
-            const notifyOnEmpty = existingParams.notifyOnEmpty
-            // account.keyPairId is the derived child id; discovery
-            // operates against the bip39 seed parent. For algo25 the
-            // rekey scan goes through the address-only path and never
-            // actually derives, so its walletKeyId is just a label —
-            // we fall back to the keyPairId itself when the kms
-            // reactive map hasn't observed the freshly-committed seed
-            // yet (race between createAlgo25Key and useKeystoreKeys
-            // re-render).
-            const keyPairId = signingKeyOn(account, scope.chainId)
+            if (hdIndexOf(account) !== undefined) {
+                await rescanHdWallet(account)
+                return
+            }
+
+            if (!signingKeyOn(account, scope.chainId)) return
             const accountAddress =
                 chainAccountOf(account, scope.chainId)?.address ?? ''
-            const walletKeyId = seedIdOf(keyPairId) ?? keyPairId
-            if (!walletKeyId) return
 
-            if (hdIndexOf(account) !== undefined) {
-                const discoveredAccounts = await discoverAccounts({
-                    walletKeyId,
-                })
-
-                if (!discoveredAccounts) return
-                // Empty only when no activity probe answered: fail as import does
-                // rather than offer a selection screen with nothing on it.
-                if (discoveredAccounts.length === 0) {
-                    throw new Error('HD discovery returned no accounts')
-                }
-
-                if (discoveredAccounts.length === 1) {
-                    if (createIfEmpty) {
-                        const walletKeyIndexes = allAccounts
-                            .filter(
-                                a =>
-                                    signingKeyOn(a, scope.chainId) ===
-                                    keyPairId,
-                            )
-                            .flatMap(a => hdIndexOf(a)?.keyIndex ?? [])
-                        const nextKeyIndex =
-                            walletKeyIndexes.length > 0
-                                ? Math.max(...walletKeyIndexes) + 1
-                                : 0
-
-                        const newAccount = await buildHdWalletAccount({
-                            walletId: keyPairId,
-                            account: 0,
-                            keyIndex: nextKeyIndex,
-                        })
-
-                        navigation.replace('NameAccount', {
-                            account: newAccount,
-                        })
-                    } else {
-                        setSelectedAccountId(account.id)
-
-                        const rekeyedAccounts = await scanRekeyed([
-                            accountAddress,
-                        ])
-
-                        if (
-                            rekeyedAccounts !== REKEY_SCAN_UNAVAILABLE &&
-                            rekeyedAccounts.length > 0
-                        ) {
-                            navigation.replace('ImportRekeyedAddresses', {
-                                accounts: rekeyedAccounts,
-                            })
-                        } else {
-                            // Don't claim "no new addresses" when the scan
-                            // itself failed — scanRekeyed already said so.
-                            if (
-                                notifyOnEmpty &&
-                                rekeyedAccounts !== REKEY_SCAN_UNAVAILABLE
-                            ) {
-                                showToast({
-                                    type: 'info',
-                                    title: t(
-                                        'onboarding.searching_accounts.no_new_addresses_title',
-                                    ),
-                                    body: t(
-                                        'onboarding.searching_accounts.no_new_addresses_body',
-                                    ),
-                                })
-                            }
-                            exitAccountFlow()
-                        }
-                    }
-                } else {
-                    navigation.replace('ImportSelectAddresses', {
-                        accounts: discoveredAccounts,
-                    })
-                }
-            } else if (hasCustody(account, 'local')) {
+            if (hasCustody(account, 'local')) {
                 // Quantum accounts are flat single-key accounts like algo25:
                 // discovery is an address-only rekey scan (no derivation), and
                 // an empty result must still move the flow on to NameAccount —
@@ -288,19 +195,14 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
         }
     }, [
         params,
-        discoverAccounts,
         discoverImportAccounts,
         cancelImport,
+        rescanHdWallet,
         scanRekeyed,
         navigation,
         t,
-        showToast,
         errorToast,
-        exitAccountFlow,
         setSelectedAccountId,
-        buildHdWalletAccount,
-        allAccounts,
-        seedIdOf,
         scope.chainId,
     ])
 

@@ -13,7 +13,7 @@
 import { useMemo } from 'react'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
-import { type Nullable } from '@perawallet/wallet-core-shared'
+import { type Nullable, type Optional } from '@perawallet/wallet-core-shared'
 import { useQuery } from '@tanstack/react-query'
 import type { Decimal } from 'decimal.js'
 import { getAccountPortfolioTotals } from '../db'
@@ -69,7 +69,7 @@ export const readAccountSummary = async (
  * to express the total in native terms.
  */
 export const useAccountSummaryQuery = (
-    address: string | undefined,
+    address: Optional<string>,
     scope: ChainScope,
 ): UseAccountSummaryResult => {
     const hasPricing = useChainCapability(scope.chainId, 'pricing')
@@ -105,7 +105,7 @@ export const useAccountSummaryQuery = (
             // its metadata (the enrichment pass has caught up).
             isComplete:
                 !!query.data && (query.data.missingMetadataCount ?? 0) === 0,
-            isPending: query.isPending,
+            isPending: !!address && query.isPending,
             isError: query.isError,
             isPaused: query.isPaused,
         }
@@ -114,6 +114,7 @@ export const useAccountSummaryQuery = (
         query.isPending,
         query.isError,
         query.isPaused,
+        address,
         hasPricing,
         isUnconvertibleUnknown,
     ])

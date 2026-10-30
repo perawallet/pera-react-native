@@ -75,7 +75,7 @@ const assertSupportedScheme = (scheme: string): void => {
     }
 }
 
-const assertId = (id: string | undefined): void => {
+const assertId = (id: Optional<string>): void => {
     if (typeof id !== 'string' || id.length === 0) {
         throw new KeyManagementError('A key id is required')
     }

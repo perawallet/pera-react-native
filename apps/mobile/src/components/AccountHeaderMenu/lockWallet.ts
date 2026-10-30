@@ -10,5 +10,7 @@
  limitations under the License
  */
 
+import type { Nullable } from '@perawallet/wallet-core-shared'
+
 // Only the extension vault has a manual lock; native locks through the app PIN.
-export const lockWallet: (() => Promise<void>) | null = null
+export const lockWallet: Nullable<() => Promise<void>> = null

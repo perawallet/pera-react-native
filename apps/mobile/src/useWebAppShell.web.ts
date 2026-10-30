@@ -85,9 +85,8 @@ export const useWebAppShell = (): UseWebAppShellResult => {
     // the approval surface below, discovering a pending approval here (enable
     // OR sign: both open in the toolbar popup) means an async round-trip over
     // runtime messaging. null = still checking.
-    const [hasPendingApproval, setHasPendingApproval] = useState<
-        boolean | null
-    >(null)
+    const [hasPendingApproval, setHasPendingApproval] =
+        useState<Nullable<boolean>>(null)
     const pendingApprovalCheckStarted = useRef(false)
 
     useEffect(() => {

@@ -21,6 +21,7 @@ import {
     AppError,
     ErrorCategory,
     encodeToBase64,
+    type Nullable,
 } from '@perawallet/wallet-core-shared'
 import type { Argon2idConfig } from '../models'
 import {
@@ -101,7 +102,7 @@ export const encryptBackupSyncQr = async ({
     code,
 }: EncryptParams): Promise<string> => {
     const qrSalt = new Uint8Array(randomBytes(QR_SALT_LENGTH))
-    let key: Uint8Array | null = null
+    let key: Nullable<Uint8Array> = null
     try {
         key = await deriveQrKey(code, qrSalt)
         const payload = sealAesGcm(
@@ -223,7 +224,7 @@ export const decryptBackupSyncQr = async (
     raw: string,
     code: string,
 ): Promise<BackupSyncQrContents> => {
-    let key: Uint8Array | null = null
+    let key: Nullable<Uint8Array> = null
     try {
         const { version, payload, kdfSalt, kdfConfig } =
             parseBackupSyncQrEnvelope(raw)

@@ -12,7 +12,11 @@
 
 import { useCallback, useRef } from 'react'
 import { Linking } from 'react-native'
-import { logger, type Maybe } from '@perawallet/wallet-core-shared'
+import {
+    logger,
+    type Maybe,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
 import { useToast } from '@hooks/useToast'
 import { nativeAssetFor } from '@perawallet/wallet-core-assets'
 import {
@@ -83,7 +87,7 @@ import { openCardsDeeplink } from '../handlers/openCardsDeeplink'
 
 type HandleDeepLink = (
     url: string,
-    replaceCurrentScreen: boolean | undefined,
+    replaceCurrentScreen: Optional<boolean>,
     source: LinkSource,
     onError?: () => void,
     onSuccess?: () => void,

@@ -27,6 +27,7 @@ import type {
     SuspectedPoisoning,
     TransactionHistoryItem,
 } from '@perawallet/wallet-core-transactions'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import type { MessagesStackParamList } from '@modules/messages'
 import type { MultisigStackParamList } from '@modules/multisig'
 import type {
@@ -69,7 +70,7 @@ export type RootStackParamList = {
     /** Discover page pushed over the current screen; `path` is a relative
      * Discover route (e.g. `token-detail/ALGO`), validated on load. */
     DiscoverDetail: { path: string }
-    BannersCarouselModal: { bannerId?: string } | undefined
+    BannersCarouselModal: Optional<{ bannerId?: string }>
     GroupTransactionList: {
         groupId: string
     }
