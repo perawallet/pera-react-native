@@ -20,7 +20,7 @@ export const useStyles = makeStyles(theme => ({
         color: theme.colors.alertNegative,
     },
     itemFlat: {
-        color: theme.colors.textGray,
+        color: theme.colors.textMain,
     },
     loading: {
         width: '35%',

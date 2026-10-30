@@ -131,7 +131,8 @@ export const WealthTrend = (props: WealthTrendProps) => {
     return (
         <PWText
             testID='wealth_trend'
-            variant='h4'
+            variant='bodyLarge'
+            weight={500}
             style={directionStyle}
             numberOfLines={1}
         >
@@ -141,7 +142,8 @@ export const WealthTrend = (props: WealthTrendProps) => {
                 prefix={sign}
                 value={trendAbsolute.abs().toDecimalPlaces(2)}
                 density='compact'
-                variant='h4'
+                variant='bodyLarge'
+                weight={500}
                 style={directionStyle}
             />
             {percentageText && ` (${sign}${percentageText})`}
