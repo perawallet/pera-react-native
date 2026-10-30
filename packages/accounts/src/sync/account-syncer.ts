@@ -21,6 +21,7 @@ import {
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import { getChainDescriptor } from '@perawallet/wallet-core-chain-shared'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import {
     getAddedTokenIdsByAccount,
@@ -175,8 +176,12 @@ async function readAddedTokenIds(
     address: string,
     scope: ChainScope,
 ): Promise<readonly string[]> {
-    // An opt-in chain adds on chain, so its sync tick skips the query.
-    if (getChainDescriptor(scope.chainId).protocol.requiresAssetOptIn) {
+    // An opt-in chain adds on chain, so its sync tick skips the query. Only a
+    // known descriptor can say so: the lookup throws for any other chain.
+    if (
+        getProvider().chains.has(scope.chainId) &&
+        getChainDescriptor(scope.chainId).protocol.requiresAssetOptIn
+    ) {
         return []
     }
     try {

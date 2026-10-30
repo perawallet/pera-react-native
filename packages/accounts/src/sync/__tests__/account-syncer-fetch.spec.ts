@@ -196,6 +196,15 @@ describe('fetchAndPersistAccount', () => {
         )
     })
 
+    it('reads the added tokens of a chain with no registered descriptor', async () => {
+        getProvider().chains.reset()
+
+        await fetchAndPersistAccount('ADDR1', MAINNET_SCOPE)
+
+        expect(mockGetAddedTokenIdsByAccount).toHaveBeenCalled()
+        expect(fetchAccountState()).toHaveBeenCalled()
+    })
+
     it('still syncs, with no added tokens, when they cannot be read', async () => {
         mockGetAddedTokenIdsByAccount.mockRejectedValueOnce(
             new Error('disk I/O error'),
