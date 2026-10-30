@@ -11,6 +11,7 @@
  */
 
 import { z } from 'zod'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { normalizeListedAddresses } from './addresses'
 import { toSiteHost } from './host'
 import type { PhishingListEntries, PhishingListSource } from './models'
@@ -41,7 +42,7 @@ const polkadotListSchema = z.object({
 
 export const parseMetaMaskPhishingConfig = (
     raw: unknown,
-): PhishingListEntries | undefined => {
+): Optional<PhishingListEntries> => {
     const parsed = metaMaskConfigSchema.safeParse(raw)
     if (!parsed.success) return undefined
     return {
@@ -56,7 +57,7 @@ export const parseMetaMaskPhishingConfig = (
 // hints; read as an allowlist it would exempt every site hosted on them.
 export const parsePolkadotPhishingList = (
     raw: unknown,
-): PhishingListEntries | undefined => {
+): Optional<PhishingListEntries> => {
     const parsed = polkadotListSchema.safeParse(raw)
     if (!parsed.success) return undefined
     return {
@@ -71,7 +72,7 @@ const mewDarklistSchema = z.array(z.object({ address: z.string() }))
 
 export const parseMewDarklist = (
     raw: unknown,
-): PhishingListEntries | undefined => {
+): Optional<PhishingListEntries> => {
     const parsed = mewDarklistSchema.safeParse(raw)
     if (!parsed.success) return undefined
     return {

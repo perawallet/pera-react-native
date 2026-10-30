@@ -398,3 +398,48 @@ describe('fetchAccountState whitelist reuse', () => {
         expect(state.holdings.map(h => h.assetId)).toEqual(['native', USDC])
     })
 })
+
+describe('fetchAccountState added tokens', () => {
+    it('reads the balance of an added token off the list, leaving zeros to the holdings write', async () => {
+        server.use(
+            ...rpcAtBlock(
+                '0x64',
+                erc20CallResponder({
+                    [USDC]: token(0n),
+                    [DAI]: token(7n),
+                }),
+            ),
+            ...whitelist(USDC),
+        )
+        const ops = createEthereumAccountStateOps(
+            testChainContext({ services: ['assets'] }),
+            ETHEREUM,
+        )
+
+        const state = await ops.fetchAccountState(ADDRESS, SCOPE, {
+            ...HINT,
+            addedTokenIds: [USDC, DAI.toLowerCase(), 'not-an-address'],
+        })
+
+        expect(
+            state.holdings.map(h => [h.assetId, h.amount.toFixed()]),
+        ).toEqual([
+            ['native', '1'],
+            [DAI, '7'],
+        ])
+    })
+
+    it('reads added tokens without the Pera token list', async () => {
+        server.use(
+            ...rpcAtBlock('0x64', erc20CallResponder({ [DAI]: token(3n) })),
+        )
+        const ops = createEthereumAccountStateOps(testChainContext(), ETHEREUM)
+
+        const state = await ops.fetchAccountState(ADDRESS, SCOPE, {
+            ...HINT,
+            addedTokenIds: [DAI],
+        })
+
+        expect(state.holdings.map(h => h.assetId)).toEqual(['native', DAI])
+    })
+})

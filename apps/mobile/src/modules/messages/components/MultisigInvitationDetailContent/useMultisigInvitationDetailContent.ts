@@ -20,6 +20,7 @@ import {
     useAllAccounts,
 } from '@perawallet/wallet-core-accounts'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { trackEvent, MultisigEvent, AnalyticsMetadataKey } from '@analytics'
@@ -32,7 +33,7 @@ type UseMultisigInvitationDetailContentParams = {
 }
 
 export type UseMultisigInvitationDetailContentResult = {
-    renderedInvitation: MultisigInvitationParam | null
+    renderedInvitation: Nullable<MultisigInvitationParam>
     totalParticipants: number
     isIgnoring: boolean
     isUserIncluded: boolean

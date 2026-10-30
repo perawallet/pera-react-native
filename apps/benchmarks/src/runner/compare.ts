@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import type {
     ComparisonRow,
     HeapStats,
@@ -83,8 +84,8 @@ export const compareRuns = (
 
     const rowFor = (
         key: string,
-        now: ScenarioRun | null,
-        before: ScenarioRun | null,
+        now: Nullable<ScenarioRun>,
+        before: Nullable<ScenarioRun>,
     ): ComparisonRow => {
         if (!before) {
             return {

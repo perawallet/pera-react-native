@@ -24,7 +24,7 @@ import {
     VaultCorruptedError,
     AUTO_LOCK_MINUTES_OPTIONS,
 } from '@perawallet/wallet-extension-keystore-chrome'
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import {
     usePasskeyUnlockSetup,
     type PasskeyUnlockSetupStatus,
@@ -45,7 +45,7 @@ type ChangePasswordError = 'invalid_current' | 'corrupted' | 'unexpected' | null
 const changePasswordValidationErrorOf = (
     newPassword: string,
     confirmNewPassword: string,
-    newPasswordStrengthError: PasswordStrengthError | null,
+    newPasswordStrengthError: Nullable<PasswordStrengthError>,
 ): ChangePasswordValidationError => {
     if (newPassword.length > 0 && newPasswordStrengthError) {
         return newPasswordStrengthError
@@ -56,7 +56,7 @@ const changePasswordValidationErrorOf = (
 }
 
 type UseVaultSecuritySettingsScreenResult = {
-    autoLockMinutes: number | null
+    autoLockMinutes: Nullable<number>
     autoLockOptions: readonly number[]
     selectMinutes: (minutes: number) => Promise<void>
     handleLockNow: () => Promise<void>
@@ -85,7 +85,8 @@ type UseVaultSecuritySettingsScreenResult = {
 
 export const useVaultSecuritySettingsScreen =
     (): UseVaultSecuritySettingsScreenResult => {
-        const [autoLockMinutes, setMinutesState] = useState<number | null>(null)
+        const [autoLockMinutes, setMinutesState] =
+            useState<Nullable<number>>(null)
         const [passkeyState, setPasskeyState] = useState<PasskeyState>(null)
         const [passkeyPassword, setPasskeyPassword] = useState('')
         const [hasPasskeyError, setHasPasskeyError] = useState(false)

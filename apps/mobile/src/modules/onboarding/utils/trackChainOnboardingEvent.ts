@@ -11,6 +11,7 @@
  */
 
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { trackEvent, OnboardingEvent, AnalyticsMetadataKey } from '@analytics'
 
 // The events a chain's key kinds may name: each carries only the chain.
@@ -32,7 +33,7 @@ const isKeyKindOnboardingEvent = (
  * onboarding catalog lists for key kinds is tracked.
  */
 export const trackChainOnboardingEvent = (
-    name: string | undefined,
+    name: Optional<string>,
     chainId: ChainId,
 ): void => {
     if (name !== undefined && isKeyKindOnboardingEvent(name)) {

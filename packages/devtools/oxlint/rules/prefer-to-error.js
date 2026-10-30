@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import { insertImportDeclaration } from '../shared/import-fix.js'
+
 /**
  * Code that cannot import `@perawallet/wallet-core-shared`, relative to the
  * repo root. The root override lists every entry in `excludeFiles`.
@@ -120,8 +122,6 @@ const isSharedImport = variable =>
 
 const importFix = (fixer, program) => {
     const imports = program.body.filter(n => n.type === 'ImportDeclaration')
-    const text = `\n${IMPORT_TO_ERROR}`
-
     const shared = imports.find(
         n =>
             n.source.value === TO_ERROR_SOURCE &&
@@ -133,21 +133,7 @@ const importFix = (fixer, program) => {
         return fixer.insertTextAfter(shared.specifiers.at(-1), ', toError')
     }
 
-    const lastPera = imports.findLast(n =>
-        n.source.value.startsWith('@perawallet/'),
-    )
-    if (lastPera) return fixer.insertTextAfter(lastPera, text)
-
-    const firstRelative = imports.findIndex(n => n.source.value.startsWith('.'))
-    if (firstRelative > 0) {
-        return fixer.insertTextAfter(imports[firstRelative - 1], text)
-    }
-    if (firstRelative === 0) {
-        return fixer.insertTextBefore(imports[0], `${IMPORT_TO_ERROR}\n`)
-    }
-
-    if (imports.length > 0) return fixer.insertTextAfter(imports.at(-1), text)
-    return fixer.insertTextBefore(program.body[0], `${IMPORT_TO_ERROR}\n\n`)
+    return insertImportDeclaration(fixer, program, IMPORT_TO_ERROR)
 }
 
 export const preferToError = {

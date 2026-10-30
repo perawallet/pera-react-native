@@ -29,8 +29,8 @@ import { useStyles } from './styles'
 
 export type AssetItemViewProps = {
     asset: DisplayableAsset
-    /** The asset's chain; an id that is an address on it shows truncated by that chain's codec. */
-    chainId?: ChainId
+    /** The asset's chain; decides native-ness, and an id that is an address on it shows truncated by that chain's codec. */
+    chainId: ChainId
     /** Right-hand content: balance display (account) or add button (search). */
     right?: ReactNode
     /** Trails the name in the title row, such as the holding's network. */
@@ -122,6 +122,7 @@ export const AssetItemView = ({
         >
             <AssetIcon
                 asset={asset}
+                chainId={chainId}
                 logoUrl={logoUrl}
                 size={iconSize}
                 shape={iconShape}

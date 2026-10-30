@@ -17,6 +17,7 @@ import {
     readMasterKey,
     storage as keystoreStorage,
 } from '@algorandfoundation/react-native-keystore'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import {
     fromStandardBase64,
     isNativeProviderRecordPayload,
@@ -44,13 +45,13 @@ export type PasskeyPrivateKeyReaderDeps = {
  *  when the record holds none this process can read. */
 export type PasskeyPrivateKeyReader = ((
     credentialId: string,
-) => Promise<Uint8Array | null>) & {
+) => Promise<Nullable<Uint8Array>>) & {
     /** Zeroes the cached master key; await after the last read. */
     dispose: () => Promise<void>
 }
 
 /** Takes ownership of `material`: it is returned, or zeroed. */
-const toRawScalar = (material: Uint8Array): Uint8Array | null => {
+const toRawScalar = (material: Uint8Array): Nullable<Uint8Array> => {
     if (material.length === P256_PRIVATE_KEY_LENGTH) return material
     try {
         return p256PrivateKeyFromPkcs8(material)
@@ -59,7 +60,7 @@ const toRawScalar = (material: Uint8Array): Uint8Array | null => {
     }
 }
 
-const toPrivateKey = (value: unknown): Uint8Array | null => {
+const toPrivateKey = (value: unknown): Nullable<Uint8Array> => {
     if (!Array.isArray(value)) return null
     if (!value.every(byte => typeof byte === 'number')) return null
     const bytes = Uint8Array.from(value as number[])
@@ -76,7 +77,7 @@ export const createPasskeyPrivateKeyReader = ({
     readMasterKey: readKey = readMasterKey,
     openData = keystoreOpenData,
 }: PasskeyPrivateKeyReaderDeps): PasskeyPrivateKeyReader => {
-    let masterKeyPromise: Promise<Uint8Array> | undefined
+    let masterKeyPromise: Optional<Promise<Uint8Array>>
 
     const resolveMasterKey = (): Promise<Uint8Array> => {
         if (!masterKeyPromise) {
@@ -90,7 +91,7 @@ export const createPasskeyPrivateKeyReader = ({
 
     const readBareRecord = async (
         payload: string,
-    ): Promise<Uint8Array | null> => {
+    ): Promise<Nullable<Uint8Array>> => {
         if (!isNativeProviderRecordPayload(payload)) return null
         const record = (await openNativeProviderRecord(
             subtle,
@@ -103,7 +104,7 @@ export const createPasskeyPrivateKeyReader = ({
 
     const readSplitRecord = async (
         credentialId: string,
-    ): Promise<Uint8Array | null> => {
+    ): Promise<Nullable<Uint8Array>> => {
         const metadata = storage.getString(METADATA_PREFIX + credentialId)
         const sealed = storage.getString(MATERIAL_PREFIX + credentialId)
         if (metadata === undefined || sealed === undefined) return null

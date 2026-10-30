@@ -17,6 +17,7 @@ import type {
     DecodedAccountRecord,
     HardwareWalletDetails,
 } from '@perawallet/wallet-core-accounts'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
 import type {
     AccountType,
@@ -42,10 +43,10 @@ type LegacyRecord = {
     multisigDetails?: MultiSigDetails
 }
 
-const asLegacyRecord = (raw: unknown): LegacyRecord | undefined =>
+const asLegacyRecord = (raw: unknown): Optional<LegacyRecord> =>
     typeof raw === 'object' && raw !== null ? (raw as LegacyRecord) : undefined
 
-const entryOf = (record: LegacyRecord): ChainAccount | undefined => {
+const entryOf = (record: LegacyRecord): Optional<ChainAccount> => {
     if (typeof record.address !== 'string') return undefined
     const { multisigDetails } = record
     return {
@@ -73,7 +74,7 @@ const entryOf = (record: LegacyRecord): ChainAccount | undefined => {
  * index or a device. A record missing only its key or multisig parameters
  * keeps its kind without them; the multisig backfill heals the parameters.
  */
-const custodyFromType = (record: LegacyRecord): AccountCustody | undefined => {
+const custodyFromType = (record: LegacyRecord): Optional<AccountCustody> => {
     switch (record.type) {
         case 'algo25':
         case 'standalone': {
@@ -115,7 +116,7 @@ const currentCustody = (custody: LegacyCustody): AccountCustody =>
  */
 export const decodeAlgorandLegacyRecord = (
     raw: unknown,
-): DecodedAccountRecord | undefined => {
+): Optional<DecodedAccountRecord> => {
     const record = asLegacyRecord(raw)
     if (!record) return undefined
     const entry = record.chains?.[ALGORAND_CHAIN_ID] ?? entryOf(record)

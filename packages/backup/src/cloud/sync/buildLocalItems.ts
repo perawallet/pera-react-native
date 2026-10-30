@@ -11,6 +11,7 @@
  */
 
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import type { Nullable, Maybe } from '@perawallet/wallet-core-shared'
 import {
     accountRecordAddresses,
     accountRecordType,
@@ -82,7 +83,9 @@ const identifiersOf = (
 
 export const buildLocalItems = async (
     accounts: WalletAccount[],
-    serializeAccount: (a: WalletAccount) => Promise<SerializedAccount | null>,
+    serializeAccount: (
+        a: WalletAccount,
+    ) => Promise<Nullable<SerializedAccount>>,
 ): Promise<LocalSnapshot> => {
     // Keyed map dedupes shared items (the hdSeed secret repeats across every
     // child of a seed with identical content). Last write wins; safe because
@@ -95,7 +98,7 @@ export const buildLocalItems = async (
             skipped += 1
             continue
         }
-        const items: (SerializedItem | null)[] = [
+        const items: Nullable<SerializedItem>[] = [
             serialized.record,
             serialized.secrets,
             ...(serialized.extraItems ?? []),
@@ -114,7 +117,7 @@ const isRecordKey = (key: string): boolean =>
 
 const isNewerRecord = (
     key: string,
-    record: Record<string, unknown> | null | undefined,
+    record: Maybe<Record<string, unknown>>,
 ): boolean =>
     isContactRecordKey(key)
         ? isNewerContactRecord(record)

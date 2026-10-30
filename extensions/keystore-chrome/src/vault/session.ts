@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { SESSION_MASTER_KEY } from '../storage-keys'
 import { VaultLockedError } from '../errors'
 
@@ -46,7 +47,7 @@ export const putSessionMasterKey = async (key: Uint8Array): Promise<void> => {
     await chrome.storage.session.set({ [SESSION_MASTER_KEY]: toHex(key) })
 }
 
-export const getSessionMasterKey = async (): Promise<Uint8Array | null> => {
+export const getSessionMasterKey = async (): Promise<Nullable<Uint8Array>> => {
     const stored = await chrome.storage.session.get(SESSION_MASTER_KEY)
     const raw = stored[SESSION_MASTER_KEY]
     return typeof raw === 'string' && raw.length === 64 ? fromHex(raw) : null

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { toError } from '@perawallet/wallet-core-shared'
+import { toError, type Optional } from '@perawallet/wallet-core-shared'
 
 import { drainOverflow } from '@components/core'
 
@@ -68,7 +68,7 @@ export const runTour = async ({
     let consecutiveNavigationNotReady = 0
 
     for (const step of steps) {
-        let outcome: RunTourStepOutcome | undefined
+        let outcome: Optional<RunTourStepOutcome>
         try {
             outcome = await runTourStep({ stepId: step.id, locale })
         } catch (error) {

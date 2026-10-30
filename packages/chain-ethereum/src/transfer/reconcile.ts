@@ -23,7 +23,11 @@ import {
     type ChainScopeKey,
 } from '@perawallet/wallet-core-chain-contract'
 import type { Database } from '@perawallet/wallet-core-database'
-import { logger } from '@perawallet/wallet-core-shared'
+import {
+    logger,
+    type Optional,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import {
     getOpenSubmissionAttempts,
     getSubmissionAttemptsAtNonce,
@@ -64,7 +68,7 @@ const readReceipt = async (client: PublicClient, hash: Hex) => {
 type ProbeContext = {
     client: PublicClient
     scope: ChainScope
-    db: Database | undefined
+    db: Optional<Database>
     receiptOf: (hash: Hex) => ReturnType<typeof readReceipt>
 }
 
@@ -76,7 +80,7 @@ const isOlder = (a: SubmissionAttempt, b: SubmissionAttempt): boolean =>
 const hasNewerOpenSibling = async (
     attempt: SubmissionAttempt,
     scope: ChainScope,
-    db: Database | undefined,
+    db: Optional<Database>,
 ): Promise<boolean> => {
     const { sender, nonce } = attempt
     if (sender === null || nonce === null) return false
@@ -99,8 +103,8 @@ const hasNewerOpenSibling = async (
 const probe = async (
     attempt: SubmissionAttempt,
     { client, scope, db, receiptOf }: ProbeContext,
-): Promise<Verdict | null> => {
-    const hash = attempt.txIds[0] as Hex | undefined
+): Promise<Nullable<Verdict>> => {
+    const hash = attempt.txIds[0] as Optional<Hex>
     if (hash === undefined) return null
 
     // Read before the receipt: a transaction mined between the two reads then
@@ -155,7 +159,7 @@ const loserVerdict = async (
     // already lost the nonce to another hash.
     for (const sibling of siblings) {
         if (winner) break
-        const hash = sibling.txIds[0] as Hex | undefined
+        const hash = sibling.txIds[0] as Optional<Hex>
         if (hash === undefined || sibling.status === 'replaced') continue
         if (await receiptOf(hash)) winner = sibling
     }

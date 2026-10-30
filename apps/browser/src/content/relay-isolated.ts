@@ -20,6 +20,7 @@ import {
     isDappProvider,
     type DappProvider,
 } from '@perawallet/wallet-core-browser-runtime'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import {
     CHANNEL_HANDSHAKE_EVENT,
     CHANNEL_RELAY_READY_EVENT,
@@ -34,8 +35,8 @@ import {
 // handshake, then carries page requests out to the service worker and carries
 // its answers and wallet-initiated notifications back in, dispatching both on
 // the response channel.
-let requestEventName: string | null = null
-let responseEventName: string | null = null
+let requestEventName: Nullable<string> = null
+let responseEventName: Nullable<string> = null
 
 // A prerendered page is not frame 0 until it activates, and the worker answers
 // only the top frame, so its requests wait for activation instead of being refused.

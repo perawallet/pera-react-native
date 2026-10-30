@@ -15,14 +15,17 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
+import {
+    truncateAlgorandAddress,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import { PWListItemLayout, PWText, PWView } from '@components/core'
 import { AccountIcon } from '@components/AccountIcon'
 import { useAccountName } from '@hooks/useAccountName'
 import { useStyles } from './styles'
 
 export type RekeySummaryRowProps = {
-    account: WalletAccount | null
+    account: Nullable<WalletAccount>
     /**
      * Render the icon for the account's base type, ignoring its rekey state.
      * Used by the undo-rekey "after" row to preview what the source will look

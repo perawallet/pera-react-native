@@ -12,6 +12,7 @@
 
 import { addressCodecs } from '@perawallet/wallet-core-chain-contract'
 import { isWalletConnectScheme } from '@perawallet/wallet-core-walletconnect/shared/deeplink'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { linkFromIntent } from './chain-links'
 import {
     FIDO_SCHEME,
@@ -57,7 +58,7 @@ const hasValidAddressesOnTarget = (link: AnyParsedDeeplink): boolean => {
  *   /qr/perawallet/<rest>             → perawallet://<rest>
  *   /qr/perawallet-wc/<rest>          → perawallet-wc://<rest>
  */
-const parseUniversalLink = (path: string): AnyParsedDeeplink | null => {
+const parseUniversalLink = (path: string): Nullable<AnyParsedDeeplink> => {
     const appPrefix = `/qr/${PERAWALLET_SCHEME}/app/`
     const wcPrefix = `/qr/${PERAWALLET_WC_SCHEME}/`
     const legacyPrefix = `/qr/${PERAWALLET_SCHEME}/`
@@ -83,7 +84,7 @@ const parseUniversalLink = (path: string): AnyParsedDeeplink | null => {
  * `{"version":1,"mnemonic":"..."}` with no scheme. `sourceUrl` is dropped:
  * the payload IS the mnemonic.
  */
-const parseLegacyMnemonicJson = (url: string): AnyParsedDeeplink | null => {
+const parseLegacyMnemonicJson = (url: string): Nullable<AnyParsedDeeplink> => {
     const trimmed = url.trim()
     if (!trimmed.startsWith('{') || !trimmed.endsWith('}')) return null
     try {
@@ -104,7 +105,7 @@ const parseLegacyMnemonicJson = (url: string): AnyParsedDeeplink | null => {
     }
 }
 
-const parseUncheckedDeeplink = (url: string): AnyParsedDeeplink | null => {
+const parseUncheckedDeeplink = (url: string): Nullable<AnyParsedDeeplink> => {
     if (!url || typeof url !== 'string') return null
 
     // Raw JSON, not a URI, so it goes before the URL-based parsers.
@@ -167,7 +168,7 @@ const parseUncheckedDeeplink = (url: string): AnyParsedDeeplink | null => {
     return null
 }
 
-export const parseDeeplink = (url: string): AnyParsedDeeplink | null => {
+export const parseDeeplink = (url: string): Nullable<AnyParsedDeeplink> => {
     const parsed = parseUncheckedDeeplink(url)
     return parsed && hasValidAddressesOnTarget(parsed) ? parsed : null
 }

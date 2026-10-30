@@ -105,7 +105,9 @@ A chain URI is resolved in the same terms as a Pera link with `chain=`:
   account (`resolveSendAccount` in `apps/mobile/src/modules/transactions`).
 - **Network.** A link that names a network (`ethereum:0x…@11155111`, `algorand://net:testnet/…`) is refused
   while that chain is on another one, never switched. One that names none runs on the chain's selected
-  network.
+  network. An `ethereum:` link that names no chain id is Ethereum's (EIP-681 reads it as chain 1), and is
+  refused when Ethereum isn't registered rather than paid on another EVM chain. For the same reason a
+  payment URI the wallet writes for any other EVM chain always names its chain id, mainnet included.
 - **Refusals.** A chain switched off by remote config shows the network-unavailable error. A link the
   chain reads but won't act on shows "Link not supported": an EIP-681 `approve` or any function
   other than `transfer` (an approval from a link is a drain vector, and the wallet decodes no

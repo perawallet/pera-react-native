@@ -19,6 +19,7 @@ import {
     type AnimatedStyle,
 } from 'react-native-reanimated'
 import type { ViewStyle } from 'react-native'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 // A single Y-axis flip: 0 = masked front shown, 1 = secure back shown.
 const FLIP_DURATION_MS = 500
@@ -42,7 +43,7 @@ type UsePeraCardVisualResult = {
      * URL mounted on the back face. Tracks `secureImageUrl` but lingers through
      * the flip-back so the card can animate closed before it unmounts.
      */
-    backImageUrl: string | null
+    backImageUrl: Nullable<string>
     frontAnimatedStyle: AnimatedStyle<ViewStyle>
     backAnimatedStyle: AnimatedStyle<ViewStyle>
     /** Wire to the back image's onLoad: flips the card open once it's ready. */
@@ -55,7 +56,7 @@ export const usePeraCardVisual = ({
     onSecureImageLoad,
 }: UsePeraCardVisualParams): UsePeraCardVisualResult => {
     const flip = useSharedValue(0)
-    const [backImageUrl, setBackImageUrl] = useState<string | null>(
+    const [backImageUrl, setBackImageUrl] = useState<Nullable<string>>(
         secureImageUrl ?? null,
     )
 

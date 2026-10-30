@@ -25,6 +25,8 @@ import {
     decodeFromBase64,
     logger,
     toError,
+    type Nullable,
+    type Optional,
 } from '@perawallet/wallet-core-shared'
 import {
     addSignature,
@@ -51,7 +53,7 @@ import { resolveSwapHandoffOutcome } from '../utils'
 /** Stable accessors (module-level so the core's filter memo isn't busted). */
 const handoffKey = (handoff: SwapHandoffRecord): string => handoff.signRequestId
 
-const handoffExpiresAt = (detail: SignRequestResponse): number | null => {
+const handoffExpiresAt = (detail: SignRequestResponse): Nullable<number> => {
     const expiresAt = new Date(detail.expected_expire_datetime).getTime()
     return Number.isNaN(expiresAt) ? null : expiresAt
 }
@@ -263,7 +265,7 @@ export const useSwapCosignResolver = ({
         (
             outcome: TerminalHandoffOutcome,
             handoff: SwapHandoffRecord,
-            detail: SignRequestResponse | undefined,
+            detail: Optional<SignRequestResponse>,
         ) => {
             // Proposer address from the poll — the only local participant
             // allowed to cancel the request on a terminal failure. Absent when

@@ -26,7 +26,11 @@ import {
     type HardwareWalletTransport,
 } from '@perawallet/wallet-core-hardware-wallet'
 import { fetchAccountExistsOn } from '@perawallet/wallet-core-accounts'
-import type { AppError, Nullable } from '@perawallet/wallet-core-shared'
+import type {
+    AppError,
+    Nullable,
+    Optional,
+} from '@perawallet/wallet-core-shared'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import type { AddAccountStackParamList } from '@modules/onboarding'
 import { useBottomSheet } from '@modules/bottom-sheet'
@@ -59,7 +63,7 @@ type UseLedgerFetchAccountsScreenResult = {
     handleRetry: () => void
     handleTroubleshoot: () => void
     /** Closes a Ledger pairing tab; undefined anywhere else. */
-    handleCancel: (() => void) | undefined
+    handleCancel: Optional<() => void>
 }
 
 export const useLedgerFetchAccountsScreen =
@@ -86,7 +90,7 @@ export const useLedgerFetchAccountsScreen =
 
         const hasStartedRef = useRef(false)
         const transportRef = useRef<Nullable<HardwareWalletTransport>>(null)
-        const openIdRef = useRef<string | null>(null)
+        const openIdRef = useRef<Nullable<string>>(null)
 
         const run = useCallback(async () => {
             setError(null)

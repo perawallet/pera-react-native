@@ -24,6 +24,7 @@ import {
     zeroBytes,
 } from '@perawallet/wallet-core-kms'
 import { useMarkMnemonicBackupComplete } from '@perawallet/wallet-core-backup'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
 
 /**
@@ -47,7 +48,7 @@ export type UseImportAlgo25FromSeedResult = {
         /** 32- or 64-byte private key from the backup. */
         privateKey: Uint8Array
         /** Optional user-supplied account name; persisted post-import. */
-        name?: string | null
+        name?: Nullable<string>
     }) => Promise<WalletAccount>
 }
 
@@ -81,14 +82,14 @@ export const useImportAlgo25FromSeed = (): UseImportAlgo25FromSeedResult => {
         async (params: {
             address: string
             privateKey: Uint8Array
-            name?: string | null
+            name?: Nullable<string>
         }): Promise<WalletAccount> => {
             if (!isValidAlgorandAddress(params.address)) {
                 throw new Error(`Invalid Algorand address: ${params.address}`)
             }
 
             const seed = sliceSeed(params.privateKey)
-            let mnemonicIndices: Uint16Array | null = null
+            let mnemonicIndices: Nullable<Uint16Array> = null
             try {
                 mnemonicIndices = algo25SeedToIndices(seed)
                 const imported = await importAlgo25({

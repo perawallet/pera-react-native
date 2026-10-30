@@ -10,7 +10,11 @@
  limitations under the License
  */
 
-import { stripUrlScheme } from '@perawallet/wallet-core-shared'
+import {
+    stripUrlScheme,
+    type Maybe,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
 
 // Embedding, override and isolate controls plus the implicit direction marks:
 // a peer can use them to make its name or URL read backwards on screen.
@@ -25,7 +29,7 @@ export const PEER_TEXT_MAX_LENGTH = 60
  * `maxLength` code points with an ellipsis.
  */
 export const toPeerDisplayText = (
-    value: string | null | undefined,
+    value: Maybe<string>,
     maxLength: number = PEER_TEXT_MAX_LENGTH,
 ): string => {
     const cleaned = (value ?? '')
@@ -47,9 +51,7 @@ export const toPeerDisplayText = (
  * `a`) reads as `xn--pple-43d.com` instead of passing for the real one. React
  * Native's `URL` is regex-based and returns the host as written.
  */
-export const toPeerHostLabel = (
-    url: string | null | undefined,
-): string | undefined => {
+export const toPeerHostLabel = (url: Maybe<string>): Optional<string> => {
     if (!url) return undefined
     try {
         const { host } = new URL(url)

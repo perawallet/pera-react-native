@@ -12,7 +12,7 @@
 
 import type { HardwareWalletService } from '@perawallet/wallet-extension-hardware-wallet'
 import { ledgerAppDriverRegistry } from '@perawallet/wallet-extension-hardware-wallet'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import type {
     HardwareWalletDevice,
     HardwareWalletTransport,
@@ -41,7 +41,7 @@ type LedgerHIDDescriptor = {
  * app restart, so this is not a durable handle — `connect` treats a non-match
  * as "id unknown" rather than a hard failure.
  */
-const descriptorId = (descriptor: LedgerHIDDescriptor): string | undefined => {
+const descriptorId = (descriptor: LedgerHIDDescriptor): Optional<string> => {
     const id = descriptor.deviceId ?? descriptor.productId
     return id === undefined ? undefined : String(id)
 }

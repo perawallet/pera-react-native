@@ -10,14 +10,12 @@
  limitations under the License
  */
 
+import type { Maybe } from '@perawallet/wallet-core-shared'
 import type { PeraTransaction } from '../../blockchain/models/algosdk-shapes'
 
 type Stringable = { toString(): string }
 
-const addAddress = (
-    set: Set<string>,
-    value: Stringable | null | undefined,
-): void => {
+const addAddress = (set: Set<string>, value: Maybe<Stringable>): void => {
     if (!value) return
     const str = value.toString()
     if (str) set.add(str)

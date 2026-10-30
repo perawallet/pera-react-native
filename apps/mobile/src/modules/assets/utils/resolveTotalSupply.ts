@@ -10,21 +10,17 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed'
+import { i18nKey } from '@perawallet/wallet-core-chain-contract'
+import type {
+    AssetDisplayParams,
+    AssetSupplyDisplay,
+} from '../types/asset-details-display'
 
-export const useStyles = makeStyles(theme => ({
-    heroImage: {
-        width: '100%',
-        aspectRatio: 16 / 9,
-    },
-    content: {
-        paddingHorizontal: theme.spacing.lg,
-    },
-    title: {
-        marginVertical: theme.spacing.xl,
-    },
-    paragraph: {
-        color: theme.colors.textGray,
-        marginBottom: theme.spacing.xl,
-    },
-}))
+// A zero supply is how a source with no figure reads, so it shows as unknown.
+export const resolveTotalSupply = ({
+    asset,
+}: AssetDisplayParams): AssetSupplyDisplay => ({
+    labelKey: i18nKey('asset_details.markets.total_supply'),
+    infoBodyKey: i18nKey('asset_details.markets.total_supply_info_body'),
+    amount: asset.totalSupply.isZero() ? null : asset.totalSupply,
+})

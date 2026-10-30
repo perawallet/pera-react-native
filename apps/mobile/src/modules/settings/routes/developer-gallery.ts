@@ -11,6 +11,7 @@
  */
 
 import type React from 'react'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { SettingsDeveloperGalleryScreen } from '../screens/developer/SettingsDeveloperGalleryScreen'
 import { GalleryCategoryScreen } from '../screens/developer/GalleryCategoryScreen'
 import { GalleryComponentPreviewScreen } from '../screens/developer/GalleryComponentPreviewScreen'
@@ -24,7 +25,7 @@ export type DeveloperGalleryScreens = {
 // The gallery's only way into the app graph: metro.config.js swaps this for
 // developer-gallery.stub.ts in production bundles, dropping every screen and
 // catalog module behind it. Import gallery screens from here, never directly.
-export const developerGalleryScreens: DeveloperGalleryScreens | null = {
+export const developerGalleryScreens: Nullable<DeveloperGalleryScreens> = {
     GalleryScreen: SettingsDeveloperGalleryScreen,
     GalleryCategoryScreen,
     GalleryPreviewScreen: GalleryComponentPreviewScreen,

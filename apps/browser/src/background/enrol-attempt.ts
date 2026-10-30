@@ -19,6 +19,7 @@ import {
     INTEGRITY_ENROL_BACKOFF_SESSION_KEY,
     INTEGRITY_ENROL_NEEDED_SESSION_KEY,
 } from '@perawallet/wallet-core-browser-runtime'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import { createSessionBackoff } from './session-backoff'
 
 const MINUTE_MS = 60 * 1000
@@ -46,13 +47,13 @@ export type EnrolAttempt = {
 
 const PHASES: readonly string[] = ['checking', 'enrolling', 'done']
 
-export const readAttempt = async (): Promise<EnrolAttempt | null> => {
+export const readAttempt = async (): Promise<Nullable<EnrolAttempt>> => {
     const stored = await chrome.storage.session.get(
         INTEGRITY_ENROL_ATTEMPT_SESSION_KEY,
     )
-    const value = stored[INTEGRITY_ENROL_ATTEMPT_SESSION_KEY] as
-        | Partial<EnrolAttempt>
-        | undefined
+    const value = stored[INTEGRITY_ENROL_ATTEMPT_SESSION_KEY] as Optional<
+        Partial<EnrolAttempt>
+    >
     if (
         typeof value?.token !== 'string' ||
         typeof value.kid !== 'string' ||

@@ -11,13 +11,14 @@
  */
 
 import type { FieldError } from 'react-hook-form'
+import type { Optional } from '@perawallet/wallet-core-shared'
 
 /** A server rejection shows its own message; a client one waits until the field has a value. */
 export const fieldErrorMessageOf = (
-    error: FieldError | undefined,
+    error: Optional<FieldError>,
     value: string,
     invalidMessage: string,
-): string | undefined => {
+): Optional<string> => {
     if (error?.type === 'server') return error.message
     return error && value ? invalidMessage : undefined
 }

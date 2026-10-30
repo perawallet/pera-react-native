@@ -18,6 +18,8 @@ import {
     decodeFromBase64,
     encodeToBase64,
     logger,
+    type Nullable,
+    type Optional,
 } from '@perawallet/wallet-core-shared'
 import { toDerivationUserHandle } from '../authenticator/authenticator'
 import { b64urlToBytes } from '../authenticator/wire'
@@ -39,7 +41,7 @@ export const passkeyMainKeyIdFromSeedKeyId = (seedKeyId: string): string =>
 
 export const seedKeyIdFromPasskeyMainKeyId = (
     mainKeyId: string,
-): string | null => {
+): Nullable<string> => {
     if (!mainKeyId.endsWith(PASSKEY_MAIN_KEY_SUFFIX)) return null
     const seedKeyId = mainKeyId.slice(0, -PASSKEY_MAIN_KEY_SUFFIX.length)
     return seedKeyId.length > 0 ? seedKeyId : null
@@ -70,7 +72,7 @@ export type PasskeyBackupInputs = {
 const readString = (
     metadata: Record<string, unknown>,
     field: string,
-): string | undefined =>
+): Optional<string> =>
     typeof metadata[field] === 'string'
         ? (metadata[field] as string)
         : undefined
@@ -84,7 +86,7 @@ const readString = (
  * plain string it's given. A value that isn't valid base64 yields no decoded
  * candidate — the raw form is still tried on its own.
  */
-const decodedBase64Candidate = (value: string): string | undefined => {
+const decodedBase64Candidate = (value: string): Optional<string> => {
     try {
         return toDerivationUserHandle(decodeFromBase64(value))
     } catch {
@@ -153,7 +155,7 @@ export const passkeyPublicKeyToSpkiDer = (
  *  labels credentials by it, and stores no `userName`; iOS keeps the opaque
  *  user id in both fields. Without this a restored Android credential is
  *  labelled with its base64 user id. */
-const userNameOf = (metadata: Record<string, unknown>): string | undefined => {
+const userNameOf = (metadata: Record<string, unknown>): Optional<string> => {
     const userName = readString(metadata, 'userName')
     if (userName) return userName
     const userHandle = readString(metadata, 'userHandle')
@@ -166,7 +168,7 @@ const userNameOf = (metadata: Record<string, unknown>): string | undefined => {
  *  `userHandleOriginal`. Restated in standard base64, the alphabet iOS writes
  *  and Android's restore converts from, so every restore answers the relying
  *  party with its own user id. */
-const userIdOf = (metadata: Record<string, unknown>): string | undefined => {
+const userIdOf = (metadata: Record<string, unknown>): Optional<string> => {
     const userId = readString(metadata, 'userId')
     if (userId) return userId
     const original = readString(metadata, 'userHandleOriginal')
@@ -193,7 +195,7 @@ const createdAtOf = (metadata: Record<string, unknown>): number =>
 export const storedPasskeyBackupInputs = (
     key: Key,
     privateKey: Uint8Array,
-): PasskeyBackupInputs | null => {
+): Nullable<PasskeyBackupInputs> => {
     const metadata = (key.metadata ?? {}) as Record<string, unknown>
     const origin = readString(metadata, 'origin')
     if (
@@ -251,7 +253,7 @@ export const storedPasskeyBackupInputs = (
  */
 export const passkeyBackupInputs = async (
     key: Key,
-    resolveSeedEntropy: (seedKeyId: string) => Promise<Uint8Array | null>,
+    resolveSeedEntropy: (seedKeyId: string) => Promise<Nullable<Uint8Array>>,
     subtle?: SubtleCrypto,
     /** Shared across a sweep so a user's credentials, which cluster on one
      *  seed, pay one 210,000-iteration PBKDF2 between them rather than one
@@ -259,8 +261,8 @@ export const passkeyBackupInputs = async (
      *  concurrently, so caching only resolved values would still start every
      *  derivation. A cached key outlives this call, so it is the sweep's to
      *  zero, not this function's. */
-    mainKeyCache?: Map<string, Promise<Uint8Array | null>>,
-): Promise<PasskeyBackupInputs | null> => {
+    mainKeyCache?: Map<string, Promise<Nullable<Uint8Array>>>,
+): Promise<Nullable<PasskeyBackupInputs>> => {
     if (key.type !== PASSKEY_KEY_TYPE) return null
 
     const metadata = (key.metadata ?? {}) as Record<string, unknown>
@@ -306,7 +308,7 @@ export const passkeyBackupInputs = async (
     const counter =
         typeof metadata.counter === 'number' ? (metadata.counter as number) : 0
 
-    let ownedMainKey: Uint8Array | null = null
+    let ownedMainKey: Nullable<Uint8Array> = null
     let mainKey: Uint8Array
     if (mainKeyCache) {
         if (!mainKeyCache.has(seedKeyId)) {

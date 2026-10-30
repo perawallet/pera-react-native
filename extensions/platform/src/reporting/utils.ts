@@ -10,7 +10,11 @@
  limitations under the License
  */
 
-import { toError, type LogErrorSeverity } from '@perawallet/wallet-core-shared'
+import {
+    toError,
+    type LogErrorSeverity,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import type { CrashReportingService } from './models'
 
 type LogSeverity = 'debug' | 'info' | 'warn' | LogErrorSeverity
@@ -44,7 +48,7 @@ const describeForBreadcrumb = (
 }
 
 export const createCrashReportingErrorReporter = (
-    crashReporting?: CrashReportingAdapter | null,
+    crashReporting?: Nullable<CrashReportingAdapter>,
 ) => {
     return ({ severity, error, groupingKey }: ErrorReportPayload) => {
         try {

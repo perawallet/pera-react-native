@@ -21,6 +21,7 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 import { getDatabase, type Database } from '@perawallet/wallet-core-database'
 import type { CustomNetworkConfig } from '@perawallet/wallet-core-config'
+import type { Optional } from '@perawallet/wallet-core-shared'
 
 /**
  * Keyed on genesis hash, NOT URL: the same chain behind a new host (LAN address
@@ -29,7 +30,7 @@ import type { CustomNetworkConfig } from '@perawallet/wallet-core-config'
  * configuration returns false; there's nothing cached yet.
  */
 export const shouldClearCustomCache = (
-    previous: CustomNetworkConfig | undefined,
+    previous: Optional<CustomNetworkConfig>,
     next: CustomNetworkConfig,
 ): boolean =>
     previous !== undefined && previous.genesisHash !== next.genesisHash
@@ -45,6 +46,7 @@ const CUSTOM_SCOPE: ChainScope = {
 // compares this list against the migrated schema, so a new table fails a test.
 export const NETWORK_PARTITIONED_TABLES = [
     'account_asset_holdings',
+    'account_added_tokens',
     'account_chain_state',
     'assets_node',
     'assets_pera',

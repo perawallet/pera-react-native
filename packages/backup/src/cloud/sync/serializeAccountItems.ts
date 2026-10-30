@@ -18,6 +18,7 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import type { Optional, Nullable } from '@perawallet/wallet-core-shared'
 import { backupChainAdapters, type BackupHdContext } from '../../chain-adapter'
 import {
     ACCOUNT_RECORD_FORMAT_VERSION,
@@ -34,12 +35,7 @@ type BackupChainEntry = { chain: ChainId; entry: ChainAccount }
 /** The account's chains this build backs up, in chain-id order. */
 const backupChainEntriesOf = (account: WalletAccount): BackupChainEntry[] =>
     orderAccountRecordChains(
-        (
-            Object.entries(account.chains) as [
-                ChainId,
-                ChainAccount | undefined,
-            ][]
-        )
+        (Object.entries(account.chains) as [ChainId, Optional<ChainAccount>][])
             .filter(
                 (pair): pair is [ChainId, ChainAccount] =>
                     pair[1] !== undefined && isBackupChain(pair[0]),
@@ -65,7 +61,7 @@ export const accountAddressesOf = (account: WalletAccount): string[] => [
  *  entry on the scope chain records (null when it has none there). */
 export type RecordHdContext = {
     seedFirstDerivedAddress: string
-    publicKeyHex: string | null
+    publicKeyHex: Nullable<string>
 }
 
 /**
@@ -75,8 +71,8 @@ export type RecordHdContext = {
 const formatEntry = (
     account: WalletAccount,
     address: string,
-    hd: RecordHdContext | undefined,
-): AccountEntryPayload | null => {
+    hd: Optional<RecordHdContext>,
+): Nullable<AccountEntryPayload> => {
     if (hasCustody(account, 'watch')) {
         return { type: BackupAccountType.watch, address, customName: null }
     }
@@ -116,9 +112,9 @@ const entryFor = (
     account: WalletAccount,
     { chain, entry }: BackupChainEntry,
     updatedAt: number,
-    hd: RecordHdContext | undefined,
-): AccountRecordChain | null => {
-    const adapterContext: BackupHdContext | undefined =
+    hd: Optional<RecordHdContext>,
+): Nullable<AccountRecordChain> => {
+    const adapterContext: Optional<BackupHdContext> =
         hd?.publicKeyHex != null
             ? {
                   seedFirstDerivedAddress: hd.seedFirstDerivedAddress,
@@ -159,7 +155,7 @@ const entryFor = (
 export const buildAccountRecord = (
     account: WalletAccount,
     { updatedAt, hd }: { updatedAt: number; hd?: RecordHdContext },
-): AccountRecordPayload | null => {
+): Nullable<AccountRecordPayload> => {
     if (hdIndexOf(account) && !hd) return null
     const chains = backupChainEntriesOf(account).flatMap(chainEntry => {
         const entry = entryFor(account, chainEntry, updatedAt, hd)

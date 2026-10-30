@@ -28,6 +28,7 @@ import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useMarkMnemonicBackupComplete } from '@perawallet/wallet-core-backup'
 import { MNEMONIC_WORDLIST } from '@perawallet/wallet-core-kms'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import {
@@ -46,7 +47,7 @@ export type UseBackupVerificationScreenResult = {
     isFilled: boolean
     hasAccount: boolean
     isLoading: boolean
-    error: Error | null
+    error: Nullable<Error>
 }
 
 export const useBackupVerificationScreen =
@@ -66,7 +67,7 @@ export const useBackupVerificationScreen =
 
         const address = route.params?.address
         const scope = useSelectedScope(LEGACY_CHAIN_ID)
-        const account = useMemo<WalletAccount | null>(() => {
+        const account = useMemo<Nullable<WalletAccount>>(() => {
             if (!address) return null
             return findAddressHolder(accounts, scope, address) ?? null
         }, [address, accounts, scope])

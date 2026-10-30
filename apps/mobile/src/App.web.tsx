@@ -22,6 +22,7 @@ import {
     hydratePlatform,
     installOffscreenStorageShim,
 } from '@perawallet/wallet-extension-platform-chrome/bootstrap'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { OffscreenStatus } from './app-root/OffscreenStatus'
 import { RootBoundary } from './app-root/RootBoundary'
 
@@ -39,8 +40,8 @@ const registerTransports = async (): Promise<void> => {
 }
 
 export const App = (): React.JSX.Element => {
-    const [Shell, setShell] = useState<ShellComponent | null>(null)
-    const [error, setError] = useState<string | null>(null)
+    const [Shell, setShell] = useState<Nullable<ShellComponent>>(null)
+    const [error, setError] = useState<Nullable<string>>(null)
 
     useEffect(() => {
         const bootstrap = async (): Promise<void> => {

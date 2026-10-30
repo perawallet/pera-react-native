@@ -16,3 +16,10 @@ import type { SvgProps } from 'react-native-svg'
 import AlgoAssetIcon from '@assets/icons/assets/algo.svg'
 
 export const algorandChainIcon = (): ComponentType<SvgProps> => AlgoAssetIcon
+
+export const algorandNativeAssetIcon = (): ComponentType<SvgProps> =>
+    AlgoAssetIcon
+
+// U+00A6, which the bundled DMSans draws as the Algo mark.
+// oxlint-disable-next-line pera/no-hardcoded-ui-strings -- Algo is a brand name, never translated
+export const algorandNativeAssetGlyph = { glyph: '¦', label: 'Algo' }

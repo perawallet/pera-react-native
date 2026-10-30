@@ -12,6 +12,7 @@ import domSpecEnvironment from './lanekeep/rules/dom-spec-environment.js'
 import errorParamsMatchCopy from './lanekeep/rules/error-params-match-copy.js'
 import localeKeyParity from './lanekeep/rules/locale-key-parity.js'
 import localePlaceholderSuffix from './lanekeep/rules/locale-placeholder-suffix.js'
+import nativeExactPins from './lanekeep/rules/native-exact-pins.js'
 import noAlgorandAccountVocabulary from './lanekeep/rules/no-algorand-account-vocabulary.js'
 import noAlgorandTermsInChainNeutralPackages from './lanekeep/rules/no-algorand-terms-in-chain-neutral-packages.js'
 import noAssertionlessTest from './lanekeep/rules/no-assertionless-test.js'
@@ -138,6 +139,7 @@ export default defineConfig({
         noSecretInLogs,
         secretBufferZeroed,
         conformanceWorkflowPaths,
+        nativeExactPins,
         catalogVersions,
         persistedQuerySerializable,
     ],

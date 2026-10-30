@@ -15,6 +15,7 @@ import {
     InvalidKeyDataError,
     MaterialAccessError,
 } from '@algorandfoundation/keystore-core'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import type { Secp256k1Binding } from './binding'
 import { parseBip32Path } from './binding'
 import { bip39SeedFromEntropy } from './bip39Seed'
@@ -101,7 +102,7 @@ export const withSubtleSecp256k1 = (
             )
         }
         const entropy = paramBytes(algorithm, 'entropy')
-        let seed: Uint8Array | undefined
+        let seed: Optional<Uint8Array>
         try {
             const path = (algorithm as Secp256k1Params).path
             if (typeof path !== 'string') {

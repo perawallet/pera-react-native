@@ -100,6 +100,8 @@
     "add_asset": {
         "title": "Add Asset",
         "search_placeholder": "Search by name or asset ID",
+        "search_placeholder_evm": "Search by name, symbol or contract address",
+        "search_placeholder_all": "Search by name, symbol, asset ID or address",
         "no_results": "No assets found",
         "partial_results": "Some networks couldn't be searched, so results may be missing.",
         "not_listed": {
@@ -126,7 +128,28 @@
         },
         "collectible_title": "Opt-in to NFT",
         "collectible_note": "You need to opt-in to the NFT ASA ID to be able to transfer it to your wallet. Paste the ASA ID in the search bar.",
-        "collectible_search_placeholder": "Search Asset ID or NFT name"
+        "collectible_search_placeholder": "Search Asset ID or NFT name",
+        "token": {
+            "added_title": "Token added",
+            "added_body": "{{assetName}} added to {{chain}}",
+            "add_failed_title": "Couldn't add token",
+            "unverified_title": "Unverified token",
+            "unverified_body": "Pera hasn't verified {{assetName}}. Anyone can create a token with any name or logo, so check that its contract address, {{address}}, is the one you expect before you add it.",
+            "unverified_confirm": "Add anyway",
+            "suspicious_title": "Suspicious token",
+            "suspicious_body": "Pera has flagged {{assetName}} ({{address}}) as suspicious. It may imitate another token or be part of a scam. Add it only if you trust where it came from.",
+            "remove_title": "Remove {{assetName}}?",
+            "remove_body": "It will no longer show in this account on {{chain}}. Nothing is sent on chain, and you can add it again any time.",
+            "remove_confirm": "Remove",
+            "removed_title": "Token removed",
+            "removed_body": "{{assetName}} removed from {{chain}}",
+            "remove_failed_title": "Couldn't remove token"
+        },
+        "info": {
+            "adding_title": "Adding assets",
+            "adding_opt_in": "On Algorand, adding an asset is an opt-in: a transaction with a small fee that also locks a minimum balance until you opt out.",
+            "adding_evm": "On EVM networks such as Ethereum, adding a token is free and needs no transaction. It only changes which tokens Pera shows for this account."
+        }
     },
     "asa_verification_info": {
         "title": "ASA Verification",
@@ -278,8 +301,10 @@
             "description": "Description",
             "social_media": "Social Media",
             "chart_empty_body": "You will see a chart here once you have some balance history",
-            "total_supply_info_title": "Total Supply",
-            "total_supply_info_body": "The total supply of an asset is set at creation time and it corresponds to the asset's total created units."
+            "total_supply_info_body": "The total supply of an asset is set at creation time and it corresponds to the asset's total created units.",
+            "circulating_supply": "Circulating Supply",
+            "circulating_supply_info_body": "The circulating supply is the number of coins in public circulation right now. A network's native coin has no fixed total, so this figure changes as coins are issued or burned.",
+            "token_total_supply_info_body": "The total supply is the number of tokens the contract has issued, minus any burned. It changes when the issuer mints or burns tokens."
         },
         "action_buttons": {
             "swap": "Swap",
@@ -1097,7 +1122,8 @@
             "title": "An error occurred processing this account",
             "body": "Something appears to have gone wrong. Please try again and contact support if the issue persists.",
             "generic": "An error occurred processing this account.",
-            "no_hd_wallet": "Could not find the Universal Wallet for this account."
+            "no_hd_wallet": "Could not find the Universal Wallet for this account.",
+            "token_unreadable": "Pera couldn't read this token's details. Check the address and try again."
         },
         "blockchain": {
             "generic": "Something went wrong accessing the blockchain."

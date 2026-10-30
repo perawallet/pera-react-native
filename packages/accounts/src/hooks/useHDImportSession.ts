@@ -24,6 +24,7 @@ import {
     selectChainNetworkId,
     useNetworkStore,
 } from '@perawallet/wallet-core-chain-shared'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { useHDImportSessionStore } from '../import-session'
 import {
     discoverAccounts,
@@ -216,7 +217,7 @@ export const useHDImportSession = (
                         const derivedKeyIds = new Set<string>()
                         for (const [chainId, entry] of Object.entries(
                             acc.chains,
-                        ) as [ChainId, ChainAccount | undefined][]) {
+                        ) as [ChainId, Optional<ChainAccount>][]) {
                             const keyPairId = entry?.keyPairId
                             if (keyPairId === undefined) continue
                             if (derivedKeyIds.has(keyPairId)) continue

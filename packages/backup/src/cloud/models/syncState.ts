@@ -11,6 +11,7 @@
  */
 
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { BackupItemKind, BackupSettings } from './payloads'
 import type {
     BackupGlobalHash,
@@ -29,7 +30,7 @@ export type SettingsFieldState<T> = {
     /** Canonical JSON of this device's own value when last observed, which is
      *  what separates a user edit from a remote value this device declined to
      *  apply. Null until observed: seeded by a restore or an import. */
-    observed: string | null
+    observed: Nullable<string>
 }
 
 export type SettingsDocument = {
@@ -43,9 +44,9 @@ export type SyncItemState = {
     isDirty: boolean
     status: BackupItemStatus
     /** Server's opaque item hash; detects REMOTE changes only. */
-    lastRemoteHash: ItemHash | null
+    lastRemoteHash: Nullable<ItemHash>
     /** SHA-256 of canonical PLAINTEXT (sans updatedAt); detects LOCAL changes. */
-    localContentHash?: string | null
+    localContentHash?: Nullable<string>
     pendingDelete?: boolean
     /** Live in the backup but deliberately absent here: this device deleted the
      *  account, then another device backed it up again. Held for the user to
@@ -55,25 +56,25 @@ export type SyncItemState = {
      *  failed. Capped by `MAX_IMPORT_ATTEMPTS`. */
     importFailures?: number
     /** Epoch millis local content last diverged; written as payload.updatedAt. */
-    localUpdatedAt?: number | null
+    localUpdatedAt?: Nullable<number>
     /** Display name cached for CONTACT and PASSKEY items, so an item that
      *  lives only in the backup can be named in the review list without
      *  downloading it there. Null for every other type; safe to cache because
      *  neither payload holds secret material. */
-    label?: string | null
+    label?: Nullable<string>
     /** Null means never decrypted — unknown, never "not ours". An account
      *  record's primary address. */
-    address?: string | null
+    address?: Nullable<string>
     /** Account and contact records only: every chain's address, so an action
      *  on any of them finds the record. */
-    addresses?: string[] | null
+    addresses?: Nullable<string[]>
     /** Account and contact records only: the content last seen or written. A
      *  write is laid over it (`mergeAccountRecord`, `mergeContactRecord`) so
      *  what this build can't read survives,
      *  and a record a newer client wrote is never overwritten. Holds no key
      *  material; that lives in `secrets/` items. */
-    record?: Record<string, unknown> | null
-    accountType?: BackupItemKind | null
+    record?: Nullable<Record<string, unknown>>
+    accountType?: Nullable<BackupItemKind>
     /** SETTINGS only. Unlike every other type, a settings push is built from
      *  this document rather than from the device's current values, so a
      *  remote value this device could not apply is not overwritten by it. */
@@ -84,11 +85,11 @@ export type BackupSyncResult = 'SUCCESS' | 'FAILED'
 
 export type SyncState = {
     backupId: BackupId
-    lastKnownBackupHash: BackupGlobalHash | null
+    lastKnownBackupHash: Nullable<BackupGlobalHash>
     lastSyncedSeq: number
     /** Epoch millis of the last completed sync; null until first sync. */
-    lastSyncedAt: number | null
-    lastSyncResult: BackupSyncResult | null
+    lastSyncedAt: Nullable<number>
+    lastSyncResult: Nullable<BackupSyncResult>
     /** Sorted chains this client could read at its last sync. A change re-reads
      *  the account items it skipped. Absent on state that predates it. */
     readableChains?: ChainId[]

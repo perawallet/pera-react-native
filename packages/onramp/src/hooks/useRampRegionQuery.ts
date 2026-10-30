@@ -12,7 +12,7 @@
 
 import { skipToken, useQuery } from '@tanstack/react-query'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 
 import { getRampRegion } from '../api'
 import type { RampRegion } from '../models'
@@ -24,7 +24,7 @@ export type UseRampRegionQueryParams = {
 }
 
 export type UseRampRegionQueryResult = {
-    data: RampRegion | undefined
+    data: Optional<RampRegion>
 }
 
 export const useRampRegionQuery = ({

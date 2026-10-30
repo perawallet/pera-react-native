@@ -20,6 +20,7 @@ import {
     type DeeplinkChainAdapter,
     type DeeplinkParseResult,
 } from '@perawallet/wallet-core-deeplinks'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { isValidAlgorandAddress } from '../blockchain'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
 import {
@@ -51,7 +52,7 @@ const ok = (intent: ChainDeeplinkIntent): DeeplinkParseResult => ({
 })
 
 // Digits when present, so a bad round or fee is refused here rather than at the keyreg sheet.
-const isDigitsOrAbsent = (value: string | undefined): boolean =>
+const isDigitsOrAbsent = (value: Optional<string>): boolean =>
     value === undefined || DIGITS.test(value)
 
 const parseKeyreg = (

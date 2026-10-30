@@ -145,7 +145,7 @@ export type LocalPasskey = BackupPasskey & { privateKey: Uint8Array }
 
 export type SerializedAccount = {
     record: SerializedItem
-    secrets: SerializedItem | null
+    secrets: Nullable<SerializedItem>
     /** Shared items emitted alongside this account (e.g. the hdSeed secret keyed
      *  at the hashed seedFirstDerivedAddress); deduped by key downstream. */
     extraItems?: SerializedItem[]
@@ -156,13 +156,13 @@ export type SerializedAccount = {
  *  maps the signing key back to its seed. Null when unavailable. */
 export type SerializeMnemonicResolver = (
     account: LocalAccount,
-) => Promise<string | null>
+) => Promise<Nullable<string>>
 
 /** A seed's secrets, read once and shared by every account of the seed.
  *  Scoped to one sync, so they are not held past it. */
 export type SeedSecretsCache = Map<
     string,
-    Promise<{ seedHex: string; entropyHex: string } | null>
+    Promise<Nullable<{ seedHex: string; entropyHex: string }>>
 >
 
 /** Resolves an HD account's derived/seed material for serialization. Hook-bound
@@ -170,21 +170,23 @@ export type SeedSecretsCache = Map<
 export type SerializeHdResolver = (
     account: LocalAccount,
     seedSecrets?: SeedSecretsCache,
-) => Promise<{
-    seedFirstDerivedAddress: string
-    /** Null for an account with no key on the scope chain, which has no entry
-     *  there to record it in. */
-    publicKeyHex: string | null
-    seedHex: string
-    entropyHex: string
-} | null>
+) => Promise<
+    Nullable<{
+        seedFirstDerivedAddress: string
+        /** Null for an account with no key on the scope chain, which has no entry
+         *  there to record it in. */
+        publicKeyHex: Nullable<string>
+        seedHex: string
+        entropyHex: string
+    }>
+>
 
 /** Reads a private-key account's raw key. The caller zeroes the bytes; null
  *  means unavailable, which skips the account. */
 export type SerializePrivateKeyResolver = (
     chainId: ChainId,
     keyPairId: string,
-) => Promise<Uint8Array | null>
+) => Promise<Nullable<Uint8Array>>
 
 /** A local item with its content hash (sha256 of canonical payload sans
  *  updatedAt). `address`/`accountType` are lifted out of the payload for the
@@ -194,7 +196,7 @@ export type LocalItem = SerializedItem & {
     address: string
     /** A record's every address; absent for anything else. */
     addresses?: string[]
-    accountType: BackupItemKind | null
+    accountType: Nullable<BackupItemKind>
 }
 
 export type LocalSnapshot = {
@@ -249,7 +251,7 @@ export type PasskeySkipReason =
  *  `passkey-secrets/` item is absent or unreadable. */
 export type PulledPasskey = {
     payload: PasskeyBackupPayload
-    secret: PasskeySecretsBackupPayload | null
+    secret: Nullable<PasskeySecretsBackupPayload>
 }
 
 export type PasskeyImportSummary = {
@@ -280,7 +282,7 @@ export type SyncEngineDeps = {
      *  because resolving an account's secret (mnemonic) is async. */
     serializeAccount: (
         account: WalletAccount,
-    ) => Promise<SerializedAccount | null>
+    ) => Promise<Nullable<SerializedAccount>>
     /** Decrypted remote accounts → wallet (import/update). */
     importAccounts: SyncImportFn
     /** True once `stop()` or the app lock lands mid-run; the engine then throws

@@ -20,6 +20,7 @@ import {
     fetchAccountFastLookup,
     isPeraServiceUnavailableError,
     logger,
+    type Optional,
 } from '@perawallet/wallet-core-shared'
 import { existsOnChain } from './endpoints'
 import { type AlgorandNetworkId, algorandScope } from '../network-id'
@@ -86,7 +87,7 @@ async function checkRekeyed(
     address: string,
 ): Promise<indexerModels.Account[]> {
     const accounts: indexerModels.Account[] = []
-    let next: string | undefined
+    let next: Optional<string>
     let pages = 0
 
     // Follow the indexer's pagination token so accounts beyond the first

@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import type { Optional } from '@perawallet/wallet-core-shared'
+
 export type MediaItem = {
     type: string
     previewUrl?: string
@@ -20,7 +22,7 @@ export type MediaItem = {
 export const resolveMediaImageUri = (
     item?: MediaItem,
     fallbackImageUrl?: string,
-): string | undefined => {
+): Optional<string> => {
     // A model's downloadUrl is the 3D asset, not an inline image.
     if (item?.type === 'model') {
         return item.previewUrl ?? fallbackImageUrl

@@ -62,6 +62,7 @@ export const AccountSummaryLine = ({
             )}
             {value.kind === 'native' && (
                 <AssetAmount
+                    chainId={scope.chainId}
                     asset={value.asset}
                     value={value.value}
                     density='compact'
