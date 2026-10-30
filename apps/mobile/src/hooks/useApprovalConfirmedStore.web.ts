@@ -11,6 +11,7 @@
  */
 
 import { create } from 'zustand'
+import { registerStore } from '@perawallet/wallet-core-shared'
 import { APPROVAL_SUCCESS_CLOSE_DELAY_MS } from '@constants/ui'
 
 // Set once an approval window's decision has reached the dApp, so the primary
@@ -38,6 +39,12 @@ export const useApprovalConfirmedStore = create<ApprovalConfirmedStore>()(
         resetState: () => set(initialState),
     }),
 )
+
+registerStore({
+    name: 'approval-confirmed-store',
+    clearStorage: () => {},
+    resetState: () => useApprovalConfirmedStore.getState().resetState(),
+})
 
 /**
  * Call only after the dApp's answer is delivered. The bridge leaves a

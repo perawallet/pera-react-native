@@ -11,6 +11,7 @@
  */
 
 import { create } from 'zustand'
+import { registerStore } from '@perawallet/wallet-core-shared'
 
 type State = {
     /**
@@ -40,3 +41,9 @@ export const usePairingProgressStore = create<Store>(set => ({
         set(state => ({ pendingCount: Math.max(0, state.pendingCount - 1) })),
     resetState: () => set(initialState),
 }))
+
+registerStore({
+    name: 'pairing-progress-store',
+    clearStorage: () => {},
+    resetState: () => usePairingProgressStore.getState().resetState(),
+})

@@ -26,6 +26,7 @@ const initialState: NetworkStatusState = {
     hasInternet: true,
 }
 
+// lanekeep-ignore-next-line pera/store-in-wipe-registry reason: device connectivity from NetInfo; a reset reports online until the next connectivity event
 export const useNetworkStatusStore = create<NetworkStatusStore>()(set => ({
     ...initialState,
     setHasInternet: (hasInternet: boolean) => set({ hasInternet }),

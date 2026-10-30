@@ -45,6 +45,7 @@ vi.mock('@perawallet/wallet-core-shared', async () => ({
         typeof import('@packages/shared/src/errors/base')
     >('@packages/shared/src/errors/base')),
     logger: { warn: vi.fn() },
+    registerStore: vi.fn(),
 }))
 
 describe('useDiscoverScreen', () => {

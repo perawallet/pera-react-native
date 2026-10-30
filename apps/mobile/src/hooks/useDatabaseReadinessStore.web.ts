@@ -33,6 +33,7 @@ const initialState: DatabaseReadinessStoreState = {
     readiness: 'pending',
 }
 
+// lanekeep-ignore-next-line pera/store-in-wipe-registry reason: the wipe empties tables in place and the database stays open; a reset to pending leaves readers waiting forever
 export const useDatabaseReadinessStore = create<DatabaseReadinessStore>()(
     set => ({
         ...initialState,
