@@ -34,7 +34,7 @@ import { createEvmClient } from '../blockchain/utils/createEvmClient'
 import type { EvmChain } from '../chains/types'
 import type { EthereumTransactionPayload } from '../signing/adapter'
 import { ethereumCallSummary } from '../signing/review'
-import { readEvmFeePresets } from './fees'
+import { readEvmFeePresets, type EvmPricedTransaction } from './fees'
 import { cancelSummary } from './summary'
 
 /** Gas units of a plain transfer, all a cancel needs. */
@@ -74,13 +74,10 @@ export const meetsReplacementBump = (
     replacement.maxPriorityFeePerGas >=
         bumpReplacementFee(original.maxPriorityFeePerGas)
 
-type ReplaceableTransaction = TransactionSerializableEIP1559 &
-    FeeValuesEIP1559 & { chainId: number; nonce: number; gas: bigint }
-
 /** The signed EIP-1559 transaction an attempt broadcast; null for anything else. */
 export const readReplaceableTransaction = (
     rawTransaction: string,
-): Nullable<ReplaceableTransaction> => {
+): Nullable<EvmPricedTransaction> => {
     let parsed: ReturnType<typeof parseTransaction>
     try {
         parsed = parseTransaction(rawTransaction as TransactionSerialized)
@@ -99,7 +96,7 @@ export const readReplaceableTransaction = (
     ) {
         return null
     }
-    return parsed as ReplaceableTransaction
+    return parsed as EvmPricedTransaction
 }
 
 /**

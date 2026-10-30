@@ -10,11 +10,32 @@
  limitations under the License
  */
 
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+    afterAll,
+    afterEach,
+    beforeAll,
+    beforeEach,
+    describe,
+    expect,
+    it,
+    vi,
+} from 'vitest'
 import { Decimal } from 'decimal.js'
+import { setupServer } from 'msw/node'
+import { hexToBytes, keccak256, parseTransaction } from 'viem'
+import type { TransactionSerializableEIP1559 } from 'viem'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import type { InFlightSpend } from '@perawallet/wallet-core-transactions'
+import {
+    getInFlightSpends,
+    type InFlightSpend,
+} from '@perawallet/wallet-core-transactions'
+import {
+    initializeDatabase,
+    resetDatabase,
+    type Database,
+} from '@perawallet/wallet-core-database'
+import { createTestDatabase } from '@perawallet/wallet-core-database/test-utils'
 
 const mocks = vi.hoisted(() => ({
     getAccountChainStateRow: vi.fn(),
@@ -29,7 +50,15 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
 }))
 
 import { createEvmSpendableBalance } from '../spendable-balance'
-import { ETHEREUM } from '../../__tests__/evm-chains'
+import { createEvmBroadcasterAdapter } from '../broadcaster'
+import { evmRpcHandlers } from '../../blockchain/msw-handlers'
+import { TEST_RPC_URL, testChainContext } from '../../__tests__/context'
+import { BASE, ETHEREUM, evmScopeOf } from '../../__tests__/evm-chains'
+import {
+    SENDER as SIGNER,
+    VIEM_TRANSFER_NONCE_0,
+} from '../../signing/__tests__/fixtures'
+import { opStackOracleResponder, unsignedEncodingOf } from './op-stack-oracle'
 
 const readEthereumSpendableBalance = createEvmSpendableBalance(ETHEREUM)
 
@@ -256,5 +285,121 @@ describe('readEthereumSpendableBalance', () => {
 
             expect(result.max).toEqual(new Decimal(0))
         })
+    })
+})
+
+describe('with an open Base send', () => {
+    const BASE_SCOPE = evmScopeOf(BASE)
+    const BASE_ACCOUNT: WalletAccount = {
+        id: 'sender',
+        custody: { kind: 'watch' },
+        chains: { base: { address: SIGNER } },
+    }
+    const SEND_VALUE = 10n ** 18n
+    const GAS_FEE = 420_000_000_000_000n
+    const L1_FEE = 5_000_000_000n
+    const OPERATOR_FEE = 7_000n
+    const NEXT_FEE = new Decimal(1_000_000)
+    const BALANCE = new Decimal((5n * 10n ** 18n).toString())
+
+    const server = setupServer()
+    let db: Database
+    let teardown: () => void
+
+    beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
+    afterAll(() => server.close())
+
+    beforeEach(async () => {
+        vi.clearAllMocks()
+        const result = createTestDatabase()
+        db = result.db
+        teardown = result.teardown
+        await initializeDatabase({
+            getDatabase: async () => db,
+        } as unknown as Parameters<typeof initializeDatabase>[0])
+        server.use(
+            ...evmRpcHandlers({
+                rpcUrl: TEST_RPC_URL,
+                responses: {
+                    eth_call: opStackOracleResponder({
+                        l1Fees: new Map([
+                            [
+                                unsignedEncodingOf(
+                                    parseTransaction(
+                                        VIEM_TRANSFER_NONCE_0,
+                                    ) as TransactionSerializableEIP1559,
+                                ),
+                                L1_FEE,
+                            ],
+                        ]),
+                        operatorFee: OPERATOR_FEE,
+                    }),
+                },
+            }),
+        )
+    })
+
+    afterEach(() => {
+        server.resetHandlers()
+        resetDatabase()
+        teardown()
+    })
+
+    const givenBalanceAt = (latestNonce: number) => {
+        mocks.getAccountChainStateRow.mockResolvedValue({
+            accountAddress: SIGNER,
+            nativeBalance: BALANCE,
+            chainData: {
+                family: 'evm',
+                nonce: { latest: latestNonce, pending: latestNonce },
+            },
+        })
+    }
+
+    const submitOpenSend = () =>
+        createEvmBroadcasterAdapter(
+            testChainContext({ chain: BASE }),
+            BASE,
+        ).submitAndAutoRefresh(BASE_SCOPE, [
+            {
+                scope: BASE_SCOPE,
+                id: keccak256(VIEM_TRANSFER_NONCE_0),
+                bytes: hexToBytes(VIEM_TRANSFER_NONCE_0),
+            },
+        ])
+
+    const readNextSend = async () =>
+        createEvmSpendableBalance(BASE)({
+            account: BASE_ACCOUNT,
+            asset: { chainId: 'base', assetId: 'native' },
+            scope: BASE_SCOPE,
+            fee: NEXT_FEE,
+            inFlight: await getInFlightSpends({
+                address: SIGNER,
+                scope: BASE_SCOPE,
+            }),
+        })
+
+    it("leaves room on MAX for the open send's value, gas and L1 fee, and for the next send's fee", async () => {
+        givenBalanceAt(0)
+        await submitOpenSend()
+
+        const result = await readNextSend()
+
+        const reserved = new Decimal(
+            (SEND_VALUE + GAS_FEE + L1_FEE + OPERATOR_FEE).toString(),
+        )
+        expect(result.reserved).toEqual(reserved)
+        expect(result.max).toEqual(BALANCE.sub(reserved).sub(NEXT_FEE))
+    })
+
+    it('holds nothing back once the synced nonce has passed the send', async () => {
+        givenBalanceAt(1)
+        await submitOpenSend()
+
+        const result = await readNextSend()
+
+        expect(result.reserved).toEqual(new Decimal(0))
+        expect(result.max).toEqual(BALANCE.sub(NEXT_FEE))
     })
 })
