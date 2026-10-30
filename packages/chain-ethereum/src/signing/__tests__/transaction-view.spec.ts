@@ -143,6 +143,25 @@ describe('the Ethereum transaction view', () => {
         expect(readEthereumNative(toEthereumNative(NFT_VIEW))).toEqual(NFT_VIEW)
     })
 
+    it.each([
+        [
+            'with the fee paid',
+            { isMined: true as const, feePaid: new Decimal(21_000) },
+        ],
+        ['without a fee', { isMined: true as const }],
+    ])('round-trips a mined view %s', (_, mined) => {
+        const view: EthereumTransactionView = {
+            kind: 'contract-call',
+            from: SENDER,
+            to: TOKEN,
+            value: new Decimal(0),
+            data: '0x',
+            ...mined,
+        }
+
+        expect(readEthereumNative(toEthereumNative(view))).toEqual(view)
+    })
+
     it("refuses another family's transaction", () => {
         expect(() =>
             readEthereumNative({ family: 'algorand', transaction: VIEW }),
@@ -163,6 +182,17 @@ describe('the Ethereum transaction view', () => {
         [
             'an NFT whose token id is not decimal',
             { ...NFT_VIEW, nft: { ...NFT_VIEW.nft, tokenId: '0x7' } },
+        ],
+        [
+            'a mined view whose fee is not a Decimal',
+            {
+                kind: 'transfer',
+                from: SENDER,
+                value: new Decimal(0),
+                data: '0x',
+                isMined: true,
+                feePaid: '21000',
+            },
         ],
         [
             'a standard call on a transfer view',

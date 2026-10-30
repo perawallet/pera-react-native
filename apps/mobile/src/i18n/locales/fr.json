@@ -2998,7 +2998,8 @@
             "amount": "Montant",
             "account": "Compte",
             "to": "Destinataire",
-            "network": "Réseau",
+            "send_on_network": "Envoyer {{asset}} sur {{network}}",
+            "view_full_address": "Affiche l’adresse complète",
             "fee": "Frais",
             "current_balance": "Solde actuel",
             "total": "Total",
@@ -3536,8 +3537,13 @@
             "interpreted_title": "{{title}}",
             "swap_subtitle": "{{amountIn}} {{assetIn}} contre {{amountOut}} {{assetOut}}",
             "nft_subtitle": "{{collection}} #{{tokenId}}",
+            "nft_batch_subtitle": "{{collection}} · {{count}} éléments",
             "inner_transaction_count": "{{innerCount}} transactions internes",
             "cancel_transaction": "Annulation"
+        },
+        "record_detail": {
+            "read_failed": "Impossible de lire depuis le réseau les détails de l’appel de cette transaction.",
+            "transaction_id": "ID de transaction"
         },
         "contract_call": {
             "warning": "Pera ne peut pas déterminer ce que fait cet appel de contrat.",

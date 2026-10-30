@@ -218,3 +218,17 @@ export class DelegationError extends AppError {
         this.reason = reason
     }
 }
+
+/** The chain holds no such transaction, or has no way to read one for a detail screen. */
+export class TransactionDetailNotFoundError extends TransactionError {
+    constructor(transactionId: string) {
+        super(
+            `No detail is available for transaction ${transactionId}`,
+            undefined,
+            {
+                severity: ErrorSeverity.LOW,
+            },
+        )
+        this.name = 'TransactionDetailNotFoundError'
+    }
+}

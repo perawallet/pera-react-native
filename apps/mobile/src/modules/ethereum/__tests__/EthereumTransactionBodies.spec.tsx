@@ -357,6 +357,40 @@ describe('Ethereum transaction bodies', () => {
         })
     })
 
+    describe('detail of a transaction already on chain', () => {
+        const PRICING = ['fee', 'nonce', 'gas', 'isPreview']
+        const mined = (feePaid?: Decimal): TransactionNative => ({
+            family: 'evm',
+            transaction: {
+                ...Object.fromEntries(
+                    Object.entries(
+                        natives.transfer.transaction as object,
+                    ).filter(([key]) => !PRICING.includes(key)),
+                ),
+                isMined: true,
+                ...(feePaid && { feePaid }),
+            },
+        })
+
+        it('shows the fee it cost in place of a max fee', () => {
+            render(
+                <TransactionDetailBody
+                    transaction={mined(new Decimal('21000000000000'))}
+                />,
+            )
+
+            expect(textOf('ethereum_fee_paid')).toContain('0.000021')
+            expect(screen.queryByTestId('ethereum_max_fee')).toBeNull()
+        })
+
+        it('shows no fee row, and no promise of one, when the history gave none', () => {
+            render(<TransactionDetailBody transaction={mined()} />)
+
+            expect(screen.queryByTestId('ethereum_fee_paid')).toBeNull()
+            expect(screen.queryByTestId('ethereum_max_fee')).toBeNull()
+        })
+    })
+
     describe('preview row', () => {
         it('shows the title and counterparty, and forwards a press', () => {
             const onPress = vi.fn()

@@ -22,6 +22,7 @@ import type { AccountStackParamsList } from '@modules/accounts'
 import type {
     ChainScope,
     TransactionNative,
+    TransactionRecord,
 } from '@perawallet/wallet-core-chain-contract'
 import type {
     SuspectedPoisoning,
@@ -86,6 +87,8 @@ export type RootStackParamList = {
          * `SigningStackParamList['TransactionDetails']`.
          */
         historyTransaction?: TransactionHistoryItem
+        /** The history record the user tapped, on a chain that keeps no cached rows; see the same param on `SigningStackParamList['TransactionDetails']`. */
+        historyRecord?: TransactionRecord
         /** Set when the history marked the entry; the screen explains it and guards copying its counterparty. */
         suspectedPoisoning?: SuspectedPoisoning
         groupId?: string

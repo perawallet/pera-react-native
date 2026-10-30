@@ -24,6 +24,7 @@ export {
 export { TransactionReviewLayout } from './transactions/TransactionReviewLayout'
 export type {
     DetailBodyProps,
+    RecordDetailBodyProps,
     PreviewRowProps,
     RelatedTransactionsProps,
     ReviewBodyProps,

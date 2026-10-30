@@ -34,7 +34,7 @@ export const useApplicationQuery = (
 
     return useQuery({
         queryKey: projectQueryKeys.application(applicationId, scope),
-        queryFn: async ({ signal }) =>
+        queryFn: async ({ signal }): Promise<Nullable<PeraApplication>> =>
             fetchApplication({
                 applicationId,
                 scope,

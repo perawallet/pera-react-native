@@ -10,11 +10,18 @@
  limitations under the License
  */
 
-import { PWButton, PWDivider, PWScreen, PWText, PWView } from '@components/core'
+import {
+    PWButton,
+    PWDivider,
+    PWScreen,
+    PWTouchableOpacity,
+    PWView,
+} from '@components/core'
 import { ConfirmAction, CONFIRM_ACTION_LAYOUT } from '@components/ConfirmAction'
 
 import { KeyValueRow } from '@components/KeyValueRow'
 import { AssetAmount } from '@components/AssetAmount'
+import { AssetIcon } from '@components/AssetIcon'
 import { PreferredAmount } from '@components/PreferredAmount'
 import { Decimal } from 'decimal.js'
 import { AccountDisplay } from '@components/AccountDisplay'
@@ -23,6 +30,8 @@ import { AddressDisplay } from '@components/AddressDisplay'
 import { InfoCallout } from '@components/InfoCallout'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
+import { useNavigationHeader } from '@hooks/useNavigationHeader'
+import { ChainChip } from '@modules/chain-ui/icon'
 import { LoadingView } from '@components/LoadingView'
 import { useTransactionConfirmationScreen } from './useTransactionConfirmationScreen'
 import { CloseAccountWarning } from './CloseAccountWarning'
@@ -41,7 +50,7 @@ export const TransactionConfirmationScreen = () => {
         selectedAccount,
         selectedAssetId,
         scope,
-        networkName,
+        title,
         feeAmount,
         feePresets,
         isFeePending,
@@ -54,6 +63,7 @@ export const TransactionConfirmationScreen = () => {
         FeeSection,
         TrailingSection,
         openNote,
+        openRecipientAddress,
         handleConfirm,
         isCollectible,
         isReady,
@@ -71,6 +81,8 @@ export const TransactionConfirmationScreen = () => {
         scope,
         isSigning,
     )
+
+    useNavigationHeader({ title })
 
     if (!isReady) {
         return <LoadingView variant='circle' />
@@ -123,15 +135,27 @@ export const TransactionConfirmationScreen = () => {
         >
             <PWView style={styles.scrollContent}>
                 <KeyValueRow title={t('send_funds.confirmation.amount')}>
-                    <AssetAmount
-                        chainId={scope.chainId}
-                        variant='h3'
-                        asset={asset}
-                        showSymbol
-                        ignorePrivacyMode
-                        value={amount ?? new Decimal(0)}
-                        testID='send_confirm_amount'
-                    />
+                    <PWView style={styles.amountRow}>
+                        {!!asset && (
+                            <AssetIcon
+                                asset={asset}
+                                chainId={scope.chainId}
+                                size='md'
+                                shape={isCollectible ? 'square' : 'circle'}
+                            />
+                        )}
+                        <PWView style={styles.amount}>
+                            <AssetAmount
+                                chainId={scope.chainId}
+                                variant='h3'
+                                asset={asset}
+                                showSymbol
+                                ignorePrivacyMode
+                                value={amount ?? new Decimal(0)}
+                                testID='send_confirm_amount'
+                            />
+                        </PWView>
+                    </PWView>
                     {!isCollectible && (
                         <PreferredAmount
                             style={styles.secondaryAmount}
@@ -142,6 +166,11 @@ export const TransactionConfirmationScreen = () => {
                             ignorePrivacyMode
                         />
                     )}
+                    <ChainChip
+                        chainId={scope.chainId}
+                        style={styles.networkChip}
+                        testID='send_confirm_network'
+                    />
                 </KeyValueRow>
                 <PWDivider />
                 {!!selectedAccount && (
@@ -150,18 +179,29 @@ export const TransactionConfirmationScreen = () => {
                             account={selectedAccount}
                             chainId={scope.chainId}
                             showChevron={false}
+                            showChainBadge
                         />
                     </KeyValueRow>
                 )}
                 {!!destination && (
                     <KeyValueRow title={t('send_funds.confirmation.to')}>
-                        <AddressDisplay
-                            address={destination}
-                            addressFormat='full'
-                            scope={scope}
-                            showCopy={false}
-                            showSecondaryAddress
-                        />
+                        <PWTouchableOpacity
+                            onPress={openRecipientAddress}
+                            accessibilityRole='button'
+                            accessibilityHint={t(
+                                'send_funds.confirmation.view_full_address',
+                            )}
+                            testID='send_confirm_recipient'
+                        >
+                            <AddressDisplay
+                                address={destination}
+                                scope={scope}
+                                forceShowIcon
+                                showChainBadge
+                                unnamedAddressFormat='full'
+                                showCopy={false}
+                            />
+                        </PWTouchableOpacity>
                         {canSaveRecipient ? (
                             <PWButton
                                 variant='linkPositive'
@@ -174,13 +214,6 @@ export const TransactionConfirmationScreen = () => {
                                 testID='send_save_recipient_contact_button'
                             />
                         ) : null}
-                    </KeyValueRow>
-                )}
-                {!!networkName && (
-                    <KeyValueRow title={t('send_funds.confirmation.network')}>
-                        <PWText testID='send_confirm_network'>
-                            {networkName}
-                        </PWText>
                     </KeyValueRow>
                 )}
                 <FeeSection
