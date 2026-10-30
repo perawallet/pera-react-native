@@ -13,14 +13,18 @@
 import { useQuery } from '@tanstack/react-query'
 import { Decimal } from 'decimal.js'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import type { Nullable } from '@perawallet/wallet-core-shared'
-import { fetchOnChainAsset } from '../chain-adapter'
+import {
+    isTransientNetworkError,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
+import { fetchOnChainTotalSupply } from '../chain-adapter'
 import { getAssetOnChainSupplyQueryKey } from './querykeys'
 
 const ON_CHAIN_SUPPLY_STALE_TIME_MS = 5 * 60 * 1000
+const ON_CHAIN_SUPPLY_MAX_RETRIES = 2
 
 export type UseAssetOnChainSupplyQueryResult = {
-    /** Base units; null until the chain answers, and when it can't. */
+    /** Base units. Null until the chain answers; zero when the token has no supply to report. */
     totalSupply: Nullable<Decimal>
 }
 
@@ -34,9 +38,14 @@ export const useAssetOnChainSupplyQuery = (
         queryKey: getAssetOnChainSupplyQueryKey(assetId, scope),
         // A string, not a Decimal: the query cache is persisted as JSON.
         queryFn: async () =>
-            (await fetchOnChainAsset(assetId, scope)).totalSupply.toFixed(),
+            (await fetchOnChainTotalSupply(assetId, scope)).toFixed(),
         enabled: enabled && assetId.length > 0,
         staleTime: ON_CHAIN_SUPPLY_STALE_TIME_MS,
+        // The app's default is no retry, and the RPC transport retries nothing
+        // either, so a dropped read would show the placeholder for the visit.
+        retry: (failureCount, error) =>
+            failureCount < ON_CHAIN_SUPPLY_MAX_RETRIES &&
+            isTransientNetworkError(error),
     })
 
     return { totalSupply: data === undefined ? null : new Decimal(data) }
