@@ -17,6 +17,7 @@ import {
     ErrorSeverity,
     ErrorCategory,
     isRetryableError,
+    reportCodeOf,
 } from '../base'
 
 describe('ErrorSeverity', () => {
@@ -284,5 +285,40 @@ describe('AppError messageKey', () => {
         expect(error.toJSON().metadata.messageKey).toBe(
             'errors.webview.invalid_method',
         )
+    })
+})
+
+describe('reportCodeOf', () => {
+    test('returns an error own code', () => {
+        const error = new AppError('x', { reportCode: 'test.own' })
+
+        expect(reportCodeOf(error)).toBe('test.own')
+    })
+
+    test('returns the code of the error it wraps', () => {
+        const inner = new AppError('inner', { reportCode: 'test.inner' })
+
+        expect(reportCodeOf(new AppError('outer', {}, inner))).toBe(
+            'test.inner',
+        )
+    })
+
+    test('prefers the outermost declared code', () => {
+        const inner = new AppError('inner', { reportCode: 'test.inner' })
+        const outer = new AppError('outer', { reportCode: 'test.outer' }, inner)
+
+        expect(reportCodeOf(outer)).toBe('test.outer')
+    })
+
+    test.each([
+        ['a plain Error', new Error('x')],
+        ['a string', 'x'],
+        ['null', null],
+        [
+            'an AppError wrapping only a plain Error',
+            new AppError('x', {}, new Error('y')),
+        ],
+    ])('returns undefined for %s', (_label, value) => {
+        expect(reportCodeOf(value)).toBeUndefined()
     })
 })

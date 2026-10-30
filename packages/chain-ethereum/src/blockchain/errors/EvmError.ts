@@ -10,11 +10,21 @@
  limitations under the License
  */
 
-import { BlockchainError } from '@perawallet/wallet-core-shared'
+import {
+    BlockchainError,
+    isExpectedError,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
 import { EvmErrorCode, TRAITS } from './evmErrorCodes'
+import { toRpcTransportError } from './toRpcTransportError'
 
 /** `symbol` is the chain's native coin, as the insufficient-funds copy names it. */
 export type EvmErrorParams = { reason?: string; symbol?: string }
+
+// A node that didn't answer is the environment's fault, not ours.
+const isEnvironmentFailure = (cause: Optional<Error>): boolean =>
+    cause !== undefined &&
+    (isExpectedError(cause) || toRpcTransportError(cause) !== undefined)
 
 /**
  * A viem or JSON-RPC failure classified into a stable {@link EvmErrorCode}.
@@ -43,7 +53,16 @@ export class EvmError extends BlockchainError {
             {
                 severity,
                 retryable,
-                expected,
+                expected:
+                    expected ??
+                    (isEnvironmentFailure(originalError) ? true : undefined),
+                // `unknown` keeps stack or log-message grouping: a declared code
+                // here would merge every unclassified failure into one
+                // Crashlytics issue. Analytics still reads `unclassified` from
+                // the code's absence.
+                ...(code !== EvmErrorCode.UNKNOWN && {
+                    reportCode: `evm.${code}`,
+                }),
                 // An explicit `messageKey: undefined` would wipe the generic default.
                 ...(titleKey && { titleKey }),
                 ...(messageKey && { messageKey }),
