@@ -1320,7 +1320,10 @@
             "connection_timeout_body": "Impossible de joindre WalletConnect pour transmettre votre transaction signée. Vérifiez votre connexion, puis réessayez.",
             "bridge_connection_body": "Impossible de se connecter à WalletConnect. Vérifiez votre connexion internet, puis réessayez.",
             "session_request_expired_body": "Cette demande de connexion a expiré. Lancez une nouvelle connexion depuis la dApp, puis réessayez.",
-            "request_expired_body": "Cette demande de signature a expiré avant d’être traitée. Demandez à l’application de la renvoyer."
+            "request_expired_body": "Cette demande de signature a expiré avant d’être traitée. Demandez à l’application de la renvoyer.",
+            "unsupported_method_body": "{{dappName}} a demandé {{method}}, que Pera ne prend pas en charge. La demande a été refusée.",
+            "unsupported_network_body": "{{dappName}} a voulu utiliser le réseau dont l’ID de chaîne est {{chainId}}, que Pera ne prend pas en charge. La demande a été refusée.",
+            "unsupported_chains_body": "Cette application a voulu utiliser un réseau que Pera ne prend pas en charge. La connexion a été refusée."
         },
         "signing": {
             "title": "Une erreur est survenue lors du traitement de la demande de signature",

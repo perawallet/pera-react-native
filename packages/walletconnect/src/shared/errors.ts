@@ -96,6 +96,50 @@ export class WalletConnectInvalidNetworkError extends WalletConnectError {
     }
 }
 
+/** The dApp asked for a method Pera does not serve; named so the user knows what was declined. */
+export class WalletConnectUnsupportedMethodError extends WalletConnectError {
+    constructor(dappName: string, method: string) {
+        super(
+            `${dappName} asked for ${method}, which Pera does not serve`,
+            undefined,
+            {
+                messageKey: i18nKey(
+                    'errors.walletconnect.unsupported_method_body',
+                ),
+                params: { dappName, method },
+                expected: true,
+            },
+        )
+    }
+}
+
+/** A connection request that names only chains Pera does not serve; there is no record yet to name the dApp from. */
+export class WalletConnectUnsupportedChainsError extends WalletConnectError {
+    constructor() {
+        super('The connection request names no chain Pera serves', undefined, {
+            messageKey: i18nKey('errors.walletconnect.unsupported_chains_body'),
+            expected: true,
+        })
+    }
+}
+
+/** `chainId` is the CAIP-2 reference (the decimal id on EIP-155): a switch request carries nothing a name could come from. */
+export class WalletConnectUnsupportedNetworkError extends WalletConnectError {
+    constructor(dappName: string, chainId: string) {
+        super(
+            `${dappName} asked to use chain ${chainId}, which Pera does not serve`,
+            undefined,
+            {
+                messageKey: i18nKey(
+                    'errors.walletconnect.unsupported_network_body',
+                ),
+                params: { dappName, chainId },
+                expected: true,
+            },
+        )
+    }
+}
+
 /**
  * v1 silently queues outgoing messages into a dead WebSocket, so the registry
  * throws this when a recreated socket cannot open in time. `retryable` because
