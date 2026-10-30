@@ -35,7 +35,7 @@ import { AccountDisplay } from '@components/AccountDisplay'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { AssetTitle } from '@modules/assets'
 import { useLanguage } from '@hooks/useLanguage'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import { useStyles } from './styles'
 import type { SearchScope } from '@perawallet/wallet-core-search'
 import type { SearchRow } from './useSearchScreen'
@@ -47,7 +47,7 @@ export type UseSearchScreenListProps = {
     onExpandSection: (kind: SearchScope) => void
     chainId: ChainId
     /** The address the row's test id names. */
-    getAccountAddress: (account: WalletAccount) => string | undefined
+    getAccountAddress: (account: WalletAccount) => Optional<string>
     /** The query and the scopes it spans; either change scrolls the list back to the top. */
     value: string
     scopes: SearchScope[]

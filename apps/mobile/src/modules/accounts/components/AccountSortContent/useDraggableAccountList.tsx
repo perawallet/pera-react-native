@@ -16,6 +16,7 @@ import {
     type RenderItemParams,
 } from 'react-native-draggable-flatlist'
 import { type WalletAccount } from '@perawallet/wallet-core-accounts'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { PWIcon, PWTouchableOpacity, PWView } from '@components/core'
 import { AccountDisplay } from '@components/AccountDisplay'
 import { useStyles } from './styles'
@@ -23,7 +24,7 @@ import { useStyles } from './styles'
 export type UseDraggableAccountListProps = {
     onReorder: (orderedIds: string[]) => void
     /** The address the row's test id names. */
-    getAccountAddress: (account: WalletAccount) => string | undefined
+    getAccountAddress: (account: WalletAccount) => Optional<string>
 }
 
 export type UseDraggableAccountListResult = {
