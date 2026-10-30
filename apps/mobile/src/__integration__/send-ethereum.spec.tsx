@@ -241,6 +241,10 @@ describe('Flow: send from an Ethereum account', () => {
         useAccountsStore.getState().setAccounts([])
         useAccountChainStateStore.getState().resetState()
         useSendFundsStore.getState().reset()
+        useSettingsStore.getState().resetState()
+        useSettingsStore
+            .getState()
+            .setPreference(UserPreferences.transactionInfoAgreed, true)
         vi.mocked(Notifier.showNotification).mockClear()
         sentRawTransactions.length = 0
         vi.spyOn(kmsCore, 'sign').mockImplementation(signWithSenderKey)
@@ -298,9 +302,6 @@ describe('Flow: send from an Ethereum account', () => {
     })
 
     it('Given an ether send, when the amount screen opens, then it offers MAX but no note', async () => {
-        useSettingsStore
-            .getState()
-            .setPreference(UserPreferences.transactionInfoAgreed, true)
         await insertAssetHolding({
             accountAddress: SENDER,
             assetId: nativeAssetFor('ethereum').assetId,
