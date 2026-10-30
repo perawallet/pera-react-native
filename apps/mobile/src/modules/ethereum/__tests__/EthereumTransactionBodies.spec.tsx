@@ -422,7 +422,26 @@ describe('Ethereum transaction bodies', () => {
             ).toBeNull()
         })
 
-        it("details a dApp's token transfer by its holder, recipient, token and amount", () => {
+        it("keeps a dApp's token transfer an unknown call with its warning while contractDecoding is off", () => {
+            render(
+                <TransactionReviewBody
+                    transaction={withCall({
+                        kind: 'transfer',
+                        contract: ETHEREUM_FIXTURE_TOKEN,
+                        from: ETHEREUM_FIXTURE_SENDER,
+                        to: ETHEREUM_FIXTURE_RECIPIENT,
+                        value: new Decimal(5_000_000),
+                    })}
+                />,
+            )
+
+            expect(
+                screen.getByTestId('ethereum_contract_call_warning'),
+            ).toBeTruthy()
+        })
+
+        it("details a dApp's token transfer by its holder, recipient, token and amount while contractDecoding is on", () => {
+            vi.mocked(useChainCapability).mockReturnValue(true)
             render(
                 <TransactionDetailBody
                     transaction={withCall({
@@ -446,7 +465,8 @@ describe('Ethereum transaction bodies', () => {
             ).toBeNull()
         })
 
-        it('lists every item of an NFT batch, a repeated token id included', () => {
+        it('lists every item of an NFT batch, a repeated token id included, while contractDecoding is on', () => {
+            vi.mocked(useChainCapability).mockReturnValue(true)
             render(
                 <TransactionReviewBody
                     transaction={withCall({
