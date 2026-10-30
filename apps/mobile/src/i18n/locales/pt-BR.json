@@ -3740,12 +3740,10 @@
         },
         "request": {
             "title": "{{name}} quer se conectar à sua conta",
-            "permissions_title_zero": "{{count}} permissões solicitadas",
-            "permissions_title_one": "{{count}} permissão solicitada",
-            "permissions_title_other": "{{count}} permissões solicitadas",
-            "permissions_request_accounts": "Ver o endereço e os saldos da sua wallet",
-            "permissions_sign_transaction": "Solicitar assinatura de transações",
-            "permissions_sign_data": "Solicitar assinatura de dados arbitrários",
+            "title_network": "{{name}} quer se conectar à sua conta {{network}}",
+            "title_networks": "{{name}} quer se conectar às suas contas {{network}} e {{otherNetwork}}",
+            "network_not_added": "Não adicionada",
+            "origin_verified": "Verificado pelo WalletConnect",
             "accounts_title": "SELECIONAR CONTAS",
             "no_accounts": "Nenhuma das suas contas pode se conectar nesta rede.",
             "success_sheet_title": "Conexão estabelecida com {{name}}",
@@ -3763,6 +3761,13 @@
             "quantum_fee_delivery_failed": "Não foi possível concluir a solicitação. Este app pode não suportar as taxas de rede mais altas exigidas por contas Quantum.",
             "origin_scam": "Este app foi sinalizado como um risco de segurança. Não se conecte, a menos que você confie nele.",
             "origin_unverified": "A Pera não conseguiu verificar o site deste app."
+        },
+        "permissions": {
+            "heading": "Este app poderá",
+            "view_accounts": "Ver seu endereço e saldos",
+            "approve_transactions": "Pedir que você aprove transações",
+            "sign_messages": "Pedir que você assine mensagens",
+            "switch_networks": "Pedir para trocar de rede"
         },
         "connection": {
             "approve_delivery_failed": "Não foi possível contatar o dApp para confirmar a conexão. Verifique sua conexão com a internet e tente novamente."

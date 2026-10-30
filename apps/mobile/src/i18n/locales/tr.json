@@ -3718,11 +3718,10 @@
         },
         "request": {
             "title": "{{name}} hesabına bağlanmak istiyor",
-            "permissions_title_one": "{{count}} izin istendi",
-            "permissions_title_other": "{{count}} izin istendi",
-            "permissions_request_accounts": "Cüzdan adresini ve bakiyelerini görüntüleme",
-            "permissions_sign_transaction": "İşlem imzalama talep etme",
-            "permissions_sign_data": "Serbest veri imzalama talep etme",
+            "title_network": "{{name}} {{network}} hesabına bağlanmak istiyor",
+            "title_networks": "{{name}} {{network}} ve {{otherNetwork}} hesaplarına bağlanmak istiyor",
+            "network_not_added": "Eklenmedi",
+            "origin_verified": "WalletConnect tarafından doğrulandı",
             "accounts_title": "HESAPLARI SEÇ",
             "no_accounts": "Hesaplarından hiçbiri bu ağda bağlanamıyor.",
             "success_sheet_title": "{{name}} bağlantısı kuruldu",
@@ -3740,6 +3739,13 @@
             "quantum_fee_delivery_failed": "İstek tamamlanamadı. Bu uygulama, Quantum hesapları için gereken daha yüksek ağ ücretlerini desteklemiyor olabilir.",
             "origin_scam": "Bu uygulama güvenlik riski olarak işaretlendi. Güvenmiyorsan bağlanma.",
             "origin_unverified": "Pera bu uygulamanın web sitesini doğrulayamadı."
+        },
+        "permissions": {
+            "heading": "Bu uygulama şunları yapabilir",
+            "view_accounts": "Adresini ve bakiyelerini görüntüleme",
+            "approve_transactions": "İşlemleri onaylamanı isteme",
+            "sign_messages": "Mesajları imzalamanı isteme",
+            "switch_networks": "Ağ değiştirmeyi isteme"
         },
         "connection": {
             "approve_delivery_failed": "Bağlantıyı onaylamak için dApp’e ulaşılamadı. İnternet bağlantını kontrol et ve tekrar dene."

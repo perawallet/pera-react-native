@@ -10,20 +10,12 @@
  limitations under the License
  */
 
-// Only the requester rows live here; everything shared with
+// Only the delivery-failure notice lives here; everything shared with
 // ConnectionApprovalView comes from its stylesheet so the two cannot drift.
 // Mobile pairs by QR or deeplink, so it has no requesting tab to attribute.
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-    verifiedBadge: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.xs,
-    },
-    verifiedBadgeText: {
-        color: theme.colors.verifiedBannerContent,
-    },
     // No mobile counterpart: this window has lost the service worker's pending
     // entry and can only tell the user to start the request again from the site.
     deliveryError: {
