@@ -301,8 +301,10 @@
             "description": "Descrição",
             "social_media": "Redes sociais",
             "chart_empty_body": "Um gráfico aparecerá aqui quando você tiver histórico de saldo",
-            "total_supply_info_title": "Fornecimento total",
-            "total_supply_info_body": "O fornecimento total de um ativo é definido no momento da criação e corresponde ao total de unidades criadas do ativo."
+            "total_supply_info_body": "O fornecimento total de um ativo é definido no momento da criação e corresponde ao total de unidades criadas do ativo.",
+            "circulating_supply": "Fornecimento circulante",
+            "circulating_supply_info_body": "O fornecimento circulante é o número de moedas atualmente em circulação. A moeda nativa de uma rede não tem um total fixo, então esse valor muda conforme moedas são emitidas ou queimadas.",
+            "token_total_supply_info_body": "O fornecimento total é o número de tokens que o contrato emitiu, menos os queimados. Ele muda quando o emissor cria ou queima tokens."
         },
         "action_buttons": {
             "swap": "Converter",

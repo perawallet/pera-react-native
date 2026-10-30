@@ -301,8 +301,10 @@
             "description": "Description",
             "social_media": "Social Media",
             "chart_empty_body": "You will see a chart here once you have some balance history",
-            "total_supply_info_title": "Total Supply",
-            "total_supply_info_body": "The total supply of an asset is set at creation time and it corresponds to the asset's total created units."
+            "total_supply_info_body": "The total supply of an asset is set at creation time and it corresponds to the asset's total created units.",
+            "circulating_supply": "Circulating Supply",
+            "circulating_supply_info_body": "The circulating supply is the number of coins in public circulation right now. A network's native coin has no fixed total, so this figure changes as coins are issued or burned.",
+            "token_total_supply_info_body": "The total supply is the number of tokens the contract has issued, minus any burned. It changes when the issuer mints or burns tokens."
         },
         "action_buttons": {
             "swap": "Swap",

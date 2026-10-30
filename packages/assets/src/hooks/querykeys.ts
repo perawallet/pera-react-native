@@ -128,6 +128,12 @@ export const getAssetAuthoritiesQueryKey = (
     scope: ChainScope,
 ) => [MODULE_PREFIX, 'authorities', { assetId, scope }]
 
+/** The asset's total supply as the chain reports it, in base units. */
+export const getAssetOnChainSupplyQueryKey = (
+    assetId: string,
+    scope: ChainScope,
+) => [MODULE_PREFIX, 'on-chain-supply', { assetId, scope }]
+
 export function invalidateAssetQueries(queryClient: QueryClient): void {
     void queryClient.invalidateQueries({
         predicate: query => query.queryKey[0] === MODULE_PREFIX,

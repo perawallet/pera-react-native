@@ -13,6 +13,8 @@
 import { Decimal } from 'decimal.js'
 import {
     BaseError,
+    ContractFunctionRevertedError,
+    ContractFunctionZeroDataError,
     decodeFunctionResult,
     encodeFunctionData,
     erc20Abi,
@@ -35,6 +37,7 @@ import {
 } from '@perawallet/wallet-core-assets'
 import { partition, type Nullable } from '@perawallet/wallet-core-shared'
 import type { EvmChain } from '../../chains/types'
+import { toRpcTransportError } from '../errors/toRpcTransportError'
 import { createEvmClient } from './createEvmClient'
 
 const bytes32TextAbi = [
@@ -82,6 +85,44 @@ const readText = async (
                 throw error
             })
         return hexToString(packed, { size: 32 })
+    }
+}
+
+// A contract that reverts, or answers with no data, has no supply to report;
+// the caller reads zero as unknown. Anything else is a failed read.
+const hasNoSupplyAnswer = (error: unknown): boolean =>
+    error instanceof BaseError &&
+    error.walk(
+        cause =>
+            cause instanceof ContractFunctionRevertedError ||
+            cause instanceof ContractFunctionZeroDataError,
+    ) !== null
+
+/**
+ * Base units; one call, for a caller that needs only the supply. Zero when the
+ * contract has none to read. A node that can't be reached rejects with a
+ * transient `PeraNetworkError`.
+ */
+export const readErc20TotalSupply = async (
+    ctx: ChainContext,
+    chain: EvmChain,
+    assetId: string,
+    scope: ChainScope,
+): Promise<Decimal> => {
+    try {
+        const totalSupply = await createEvmClient(
+            scope,
+            ctx,
+            chain,
+        ).readContract({
+            address: getAddress(assetId),
+            abi: erc20Abi,
+            functionName: 'totalSupply',
+        })
+        return new Decimal(totalSupply.toString())
+    } catch (error) {
+        if (hasNoSupplyAnswer(error)) return new Decimal(0)
+        throw toRpcTransportError(error) ?? error
     }
 }
 
