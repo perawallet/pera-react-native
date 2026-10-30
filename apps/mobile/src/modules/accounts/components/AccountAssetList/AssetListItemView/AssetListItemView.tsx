@@ -10,21 +10,13 @@
  limitations under the License
  */
 
-import React, { useMemo } from 'react'
+import React from 'react'
 import type { GestureResponderEvent, StyleProp, ViewStyle } from 'react-native'
 import { AssetAmount } from '@components/AssetAmount'
 import { CurrencyAmount } from '@components/CurrencyAmount'
 import { PWView } from '@components/core'
-import {
-    displayCurrencyToAssetId,
-    isCollectible,
-} from '@perawallet/wallet-core-assets'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
-import {
-    assetFromHoldingLiteRow,
-    type AccountHoldingsLiteRow,
-} from '@perawallet/wallet-core-accounts'
-import { pow10 } from '@perawallet/wallet-core-shared'
+import { type AccountHoldingsLiteRow } from '@perawallet/wallet-core-accounts'
 import {
     AssetItemView,
     CollectibleListItem,
@@ -33,6 +25,7 @@ import {
     type AssetFiatConverter,
 } from '@modules/assets'
 import { useStyles } from './styles'
+import { useAssetListItemView } from './useAssetListItemView'
 
 export type AssetListItemViewProps = {
     holding: AccountHoldingsLiteRow
@@ -69,38 +62,8 @@ const AssetListItemViewBase = ({
 }: AssetListItemViewProps) => {
     const styles = useStyles()
 
-    const asset = useMemo(
-        () => assetFromHoldingLiteRow(holding, chainId),
-        [holding, chainId],
-    )
-
-    const amount = useMemo(
-        () =>
-            asset ? holding.amount.div(pow10(asset.decimals)) : holding.amount,
-        [holding.amount, asset],
-    )
-
-    const fiat = useMemo(
-        () =>
-            convertFiat(
-                { chainId, assetId: holding.assetId },
-                holding.usdPrice,
-                amount,
-            ),
-        [convertFiat, chainId, holding.assetId, holding.usdPrice, amount],
-    )
-
-    const collectibleItem = useMemo(() => {
-        if (asset && isCollectible(asset)) {
-            return {
-                assetId: holding.assetId,
-                asset,
-                collectible: asset.peraMetadata?.collectible,
-                amount,
-            }
-        }
-        return null
-    }, [asset, holding.assetId, amount])
+    const { asset, amount, fiat, fiatAssetId, collectibleItem } =
+        useAssetListItemView({ holding, chainId, convertFiat })
 
     if (!asset) {
         return <AssetRowSkeleton style={style} />
@@ -114,8 +77,6 @@ const AssetListItemViewBase = ({
             />
         )
     }
-
-    const fiatAssetId = displayCurrencyToAssetId(fiat.displayCurrency, chainId)
 
     const balance = (
         <PWView style={styles.amountContainer}>
