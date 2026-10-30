@@ -11,6 +11,15 @@ const FIXTURES = 'lanekeep/__tests__/fixtures/secret-strings/packages/kms/src'
 const reported = async (file: string) =>
     locations(await runRule(RULE, `${FIXTURES}/${file}`))
 
+/** The message the rule gives for the finding on one line of one fixture. */
+const messageAt = async (file: string, line: number) => {
+    const found = (await runRule(RULE, `${FIXTURES}/${file}`)).find(
+        violation => violation.line === line,
+    )
+
+    return found?.message
+}
+
 const at = (file: string, lines: number[]) =>
     lines.map(line => `${file}:${line}`)
 
@@ -49,7 +58,7 @@ describe('pera/no-secret-strings', () => {
         expect(await reported('holder-sinks.bad.ts')).toEqual(
             at(
                 'holder-sinks.bad.ts',
-                [3, 5, 9, 12, 15, 19, 23, 27, 32, 36, 40, 45],
+                [3, 5, 9, 12, 15, 19, 23, 27, 32, 36, 40, 45, 50],
             ),
         )
     })
@@ -66,6 +75,27 @@ describe('pera/no-secret-strings', () => {
 
     it('accepts a handed-off buffer or a value derived from it leaving a scoped helper', async () => {
         expect(await reported('scoped-returns.good.ts')).toEqual([])
+    })
+
+    it('names the sink each finding is about', async () => {
+        expect(await messageAt('string-sinks.bad.ts', 3)).toBe(
+            'key material becomes a string here, which cannot be zeroed',
+        )
+        expect(await messageAt('holder-sinks.bad.ts', 3)).toBe(
+            'key material is held in React state',
+        )
+        expect(await messageAt('holder-sinks.bad.ts', 12)).toBe(
+            'key material is held in a useMemo result',
+        )
+        expect(await messageAt('holder-sinks.bad.ts', 19)).toBe(
+            'key material is written to a store',
+        )
+        expect(await messageAt('scoped-returns.bad.ts', 1)).toBe(
+            'key material leaves the scoped helper unmarked; pass it through handOffSecret to the owner that zeroes it',
+        )
+        expect(await messageAt('store-fields.bad.ts', 2)).toBe(
+            '`password` in `FooState` holds a secret as a string, which cannot be zeroed; hold bytes or wordlist indices',
+        )
     })
 
     it('reports a store field named for a secret and typed as a string', async () => {

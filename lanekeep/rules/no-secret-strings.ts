@@ -91,7 +91,6 @@ const SINKS = [
     `((call_expression function: (member_expression object: (_) @sink property: (property_identifier) @method)) (#match? @method "${CONVERTING_METHODS_PATTERN}"))`,
     '((call_expression function: (member_expression object: (new_expression constructor: (identifier) @ctor) property: (property_identifier) @method) arguments: (arguments (_) @sink)) (#eq? @ctor "TextDecoder") (#eq? @method "decode"))',
     '((call_expression function: (member_expression object: (identifier) @object property: (property_identifier) @method) arguments: (arguments (_) @sink)) (#match? @object "([Dd]ecoder|DECODER)$") (#eq? @method "decode"))',
-    `((call_expression function: (identifier) @fn arguments: (arguments . (_) @sink)) (#match? @fn "${STRINGIFYING_FUNCTIONS}"))`,
     '((call_expression function: (member_expression object: (identifier) @object property: (property_identifier) @method) arguments: (arguments . (_) @sink)) (#eq? @object "JSON") (#eq? @method "stringify"))',
     '((call_expression function: (member_expression object: (identifier) @object property: (property_identifier) @method) arguments: (arguments [(spread_element (_) @sink) (_) @sink])) (#eq? @object "String") (#eq? @method "fromCharCode"))',
     '((call_expression function: (member_expression object: (member_expression object: (identifier) @object property: (property_identifier) @method) property: (property_identifier) @apply) arguments: (arguments . (_) . (_) @sink)) (#eq? @object "String") (#eq? @method "fromCharCode") (#eq? @apply "apply"))',
@@ -99,9 +98,11 @@ const SINKS = [
     '((binary_expression left: (_) @sink operator: "+" right: [(string) (template_string)]))',
     '((binary_expression left: [(string) (template_string)] operator: "+" right: (_) @sink))',
     // long-lived holders
-    '((call_expression function: [(identifier) @fn (member_expression property: (property_identifier) @fn)] arguments: (arguments . (_) @sink)) (#eq? @fn "useState"))',
-    '((call_expression function: (identifier) @fn arguments: (arguments (_) @sink)) (#match? @fn "^set[A-Z]"))',
-    '((call_expression function: (identifier) @fn arguments: (arguments (_) @sink)) (#eq? @fn "set"))',
+    // A state setter is whatever name the file bound to a `useState` slot, and
+    // a query cannot know that name, so every identifier call is a candidate
+    // here and `stateSetterNames` tells the setter from any other call.
+    '((call_expression function: (identifier) @fn arguments: (arguments (_) @sink)) (#match? @fn "^[a-zA-Z_$][a-zA-Z0-9_$]*$"))',
+    '((call_expression function: (member_expression property: (property_identifier) @fn) arguments: (arguments (_) @sink)) (#eq? @fn "useState"))',
     '((call_expression function: (member_expression property: (property_identifier) @fn) arguments: (arguments (_) @sink)) (#eq? @fn "setState"))',
     ...returnedValue,
     // copies, which a call would otherwise hide
@@ -254,16 +255,42 @@ const isConvertedToString = (ctx: RuleContext, node: Node): boolean => {
     )
 }
 
-/** The `setX` of a `const [x, setX] = useState(…)` in this file. */
+const SETTER_PATTERN_QUERY =
+    '((variable_declarator name: (array_pattern) @pattern value: (call_expression function: [(identifier) @hook (member_expression property: (property_identifier) @hook)])) (#eq? @hook "useState"))'
+
+// A node handle is an integer, so the file path is the only stable key; the
+// map holds one small set per file the rule has read.
+const setterNamesByFile = new Map<string, Set<string>>()
+
+/**
+ * The setter of every `useState` in this file: the second slot of the array
+ * pattern, or its only slot when the first is a hole (`[, setSeed]`). A single
+ * binding (`const [value] = useState(…)`) has no setter, so its name is not
+ * one — treating it as a setter would make every call to that name a state
+ * write.
+ */
 const stateSetterNames = (ctx: RuleContext): Set<string> => {
+    const cached = setterNamesByFile.get(ctx.filePath)
+    if (cached !== undefined) return cached
+
     const names = new Set<string>()
-    const matches = ctx.querySubtree(
-        ctx.root,
-        '((variable_declarator name: (array_pattern (identifier) @setter .) value: (call_expression function: [(identifier) @hook (member_expression property: (property_identifier) @hook)])) (#eq? @hook "useState"))',
-    )
-    for (const m of matches) {
-        if (m.setter !== undefined) names.add(ctx.text(m.setter) ?? '')
+    for (const match of ctx.querySubtree(ctx.root, SETTER_PATTERN_QUERY)) {
+        const pattern = match.pattern
+        if (pattern === undefined) continue
+        const slots = ctx.namedChildren(pattern)
+        if (slots.length >= 2) {
+            names.add(ctx.text(slots[1]) ?? '')
+            continue
+        }
+        if (slots.length !== 1) continue
+        // `[, setSeed]` skips the value slot; `[value]` binds one and has none.
+        const [, afterBracket] = ctx.children(pattern)
+        if (afterBracket === undefined || ctx.kind(afterBracket) !== ',')
+            continue
+        names.add(ctx.text(slots[0]) ?? '')
     }
+    setterNamesByFile.set(ctx.filePath, names)
+
     return names
 }
 
@@ -301,9 +328,7 @@ const classifyArgument = (
         }
     }
     if (name === 'useState') return 'state'
-    if (!isMember && /^set[A-Z]/.test(name)) {
-        return stateSetterNames(ctx).has(name) ? 'state' : undefined
-    }
+    if (!isMember && stateSetterNames(ctx).has(name)) return 'state'
     if (!isMember && name === 'set') return 'store'
     if (isMember && name === 'setState') return 'store'
     return 'copy'
@@ -388,11 +413,7 @@ const classifySink = (
     if (callee.isMember && callee.name === 'setState') {
         return { cls: 'store', held: position }
     }
-    if (
-        !callee.isMember &&
-        /^set[A-Z]/.test(callee.name) &&
-        stateSetterNames(ctx).has(callee.name)
-    ) {
+    if (!callee.isMember && stateSetterNames(ctx).has(callee.name)) {
         return { cls: 'state', held: position }
     }
     return undefined
