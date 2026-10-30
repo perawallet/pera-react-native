@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { PWButton, PWIcon, PWScreen, PWText, PWView } from '@components/core'
+import { PWButton, PWScreen, PWView } from '@components/core'
 import { Decimal } from 'decimal.js'
 
 import { AssetAmount } from '@components/AssetAmount'
@@ -19,35 +19,19 @@ import { useStyles } from './styles'
 import { AccountAssetItemView } from '@modules/assets'
 import { NumberPad } from '@components/NumberPad'
 import { useSendFunds, useSendScope } from '@modules/transactions/hooks'
-import { AddNoteContent } from '@modules/transactions/components/send-funds/AddNoteContent'
-import { AccountDisplay } from '@components/AccountDisplay'
-import { SendFundsInfoContent } from '@modules/transactions/components/send-funds/SendFundsInfoContent'
-import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import { LoadingView } from '@components/LoadingView'
-import { useBottomSheet } from '@modules/bottom-sheet'
 import { useInputScreen } from './useInputScreen'
-import { useAmountKeyboardInput } from './useAmountKeyboardInput'
+import { useInputScreenActions } from './useInputScreenActions'
 import { useLanguage } from '@hooks/useLanguage'
-import { useIsFocused, useNavigation } from '@react-navigation/native'
-import type { StackNavigationProp } from '@react-navigation/stack'
-import type { SendFundsStackParamList } from '@modules/transactions/routes/send-funds/types'
-import { useCallback, useEffect, useMemo, useRef } from 'react'
-import type { View } from 'react-native'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
-import { usePreferences } from '@perawallet/wallet-core-settings'
-import { UserPreferences } from '@constants/user-preferences'
-import { SHORT_PROMPT_DISPLAY_DELAY } from '@constants/ui'
 
 export const InputScreen = () => {
     const styles = useStyles()
-    const navigation =
-        useNavigation<StackNavigationProp<SendFundsStackParamList>>()
     const {
         asset,
         accountAssetBalance,
         isBalanceReady,
         cryptoValue,
-        isMaxReady,
         setMax,
         handleKey,
         handlePaste,
@@ -56,118 +40,34 @@ export const InputScreen = () => {
         isCollectible,
         canAddNote,
     } = useInputScreen()
-    const selectedAccount = useSelectedAccount()
     const scope = useSendScope()
     const { canSelectAsset, note, onFinished } = useSendFunds()
     const { t } = useLanguage()
-    const { request: requestBottomSheet } = useBottomSheet()
 
-    const openNote = useCallback(() => {
-        void requestBottomSheet({
-            contents: <AddNoteContent />,
-            options: {
-                size: 'auto',
-                enablePanDownToClose: true,
-                autoCreateContainer: false,
-            },
-        })
-    }, [requestBottomSheet])
-
-    const openInfo = useCallback(() => {
-        void requestBottomSheet({
-            contents: <SendFundsInfoContent />,
-            options: {
-                size: 'auto',
-                enablePanDownToClose: true,
-                autoCreateContainer: false,
-            },
-        })
-    }, [requestBottomSheet])
-
-    const { getPreference } = usePreferences()
-    const hasAgreed = getPreference(UserPreferences.transactionInfoAgreed)
-    const hasAutoOpenedRef = useRef(false)
-    useEffect(() => {
-        if (hasAgreed || hasAutoOpenedRef.current) return
-        hasAutoOpenedRef.current = true
-        const timer = setTimeout(() => {
-            openInfo()
-        }, SHORT_PROMPT_DISPLAY_DELAY)
-        return () => clearTimeout(timer)
-    }, [hasAgreed, openInfo])
-
-    const handleBack = useCallback(() => {
-        if (canSelectAsset) {
-            navigation.navigate('AssetSelection')
-        } else {
-            onFinished?.()
-        }
-    }, [canSelectAsset, navigation, onFinished])
-
-    // Memoize the header nodes so their identities stay stable across renders.
-    // useNavigationHeader lists them as effect deps and calls setOptions; passing
-    // fresh JSX every render re-fires the effect → setOptions → re-render loop
-    // ("Maximum update depth exceeded" on the async-loading ASA path).
-    const headerLeft = useMemo(
-        () => (
-            <PWIcon
-                name={canSelectAsset ? 'chevron-left' : 'cross'}
-                onPress={handleBack}
-            />
-        ),
-        [canSelectAsset, handleBack],
-    )
-    const headerRight = useMemo(
-        () => (
-            <PWIcon
-                name='info'
-                onPress={openInfo}
-            />
-        ),
-        [openInfo],
-    )
-    const headerTitle = useMemo(
-        () => (
-            <PWView style={styles.headerTitleContainer}>
-                <PWText>
-                    {t('send_funds.input_view.title', {
-                        asset: asset?.name,
-                    })}
-                </PWText>
-                <AccountDisplay
-                    account={selectedAccount ?? undefined}
-                    chainId={scope.chainId}
-                    style={styles.accountDisplay}
-                    iconProps={{ size: 'sm' }}
-                    showChevron={false}
-                    compact
-                />
-            </PWView>
-        ),
-        [styles, t, asset?.name, selectedAccount, scope.chainId],
-    )
+    const {
+        openNote,
+        openInfo,
+        headerLeft,
+        headerRight,
+        headerTitle,
+        amountRef,
+    } = useInputScreenActions({
+        asset,
+        accountAssetBalance,
+        isBalanceReady,
+        cryptoValue,
+        isResolvingDestination,
+        handleKey,
+        handlePaste,
+        handleNext,
+        canSelectAsset,
+        onFinished,
+    })
 
     useNavigationHeader({
         left: headerLeft,
         right: headerRight,
         title: headerTitle,
-    })
-
-    const amountRef = useRef<View>(null)
-    const isFocused = useIsFocused()
-    useAmountKeyboardInput({
-        onKey: handleKey,
-        onPaste: handlePaste,
-        onSubmit: () => {
-            if (cryptoValue) void handleNext()
-        },
-        amountRef,
-        isActive:
-            isFocused &&
-            !!asset &&
-            !!accountAssetBalance &&
-            isBalanceReady &&
-            !isResolvingDestination,
     })
 
     // The min fee is deliberately NOT gated here: it derives from suggested
