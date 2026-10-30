@@ -77,6 +77,7 @@ const {
         sendMode: 'normal' as string,
         assetInboxQuote: undefined as unknown,
         isCloseAccount: false,
+        confirmedMaxFee: undefined as unknown,
     },
     sendScope: { chainId: 'algorand', networkId: 'mainnet' },
 }))
@@ -218,6 +219,7 @@ describe('useTransactionProcessingScreen', () => {
             sendMode: 'normal',
             assetInboxQuote: undefined,
             isCloseAccount: false,
+            confirmedMaxFee: undefined,
         })
         Object.assign(sendScope, { chainId: 'algorand', networkId: 'mainnet' })
         vi.mocked(useSelectedAccount).mockReturnValue(defaultSender as never)
@@ -467,6 +469,17 @@ describe('useTransactionProcessingScreen', () => {
                 asset: undefined,
                 amount: undefined,
             }),
+        })
+    })
+
+    it('builds the send within the max fee confirmed on the review', () => {
+        const confirmedMaxFee = new Decimal('1000000')
+        Object.assign(sendFundsState, { confirmedMaxFee })
+
+        renderHook(() => useTransactionProcessingScreen())
+
+        expect(mockExecute).toHaveBeenCalledWith({
+            params: expect.objectContaining({ maxFee: confirmedMaxFee }),
         })
     })
 

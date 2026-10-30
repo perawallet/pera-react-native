@@ -142,6 +142,12 @@ const SENDER_SIGNATURES: Record<string, string> = {
     // 0.5 ETH to RECEIVER.
     '4c7de634dc88b13890e379a0156d0c4f1e4dd515384bf403285c40e2e3191177':
         '923c0f4c3ec362322e052c7d1f1d6ea2a364621802f4428c6508a4fe71a655ef332789ab7ace0f5c627bcda10589e4e437c568bfb39cd09f4dc40da8789c05ac01',
+    // MAX ether to RECEIVER at the 1 / 2 / 3 gwei tips below: 10 ETH less 21000 x 3 gwei (slow) ...
+    c8ade2d7f62900de2edd5f323ecdf69ee1e9522ce2aac52d2157102b34111284:
+        '2a6df7e334bf12e2ebd184a4048c539219537cccade71b9b60bd0659754162d919cf0b6f1ea67f83954c4ff05f60f22d9132bd4a358eeee2af4b267800a55edd01',
+    // ... and 10 ETH less 21000 x 4 gwei (normal).
+    '90fac667aad1a634739d01e2823d7da0caa379757a3afa6331859377cb65ef42':
+        '791adf986b26f0aeabb69961bec577d4fed0ad0534722123c4881c9ee84cb8f21a86a6dbacc3ceacfbb595cc9f71662cb3af58fd38c082a42b613cee122e3ca100',
     // 12.5 USDC to RECEIVER.
     c5569438e751d113261af83d1392f433cd97e6fec935fb66fba51a9acbf9986b:
         'd777a894919655824d4240e1fb1c2d37302c2f9c1126bc071233c420319e8f815bb84e8b33cd492f52e793fda8414e491df508d3d72023e14d6cab50777aa75800',
@@ -374,6 +380,69 @@ describe('Flow: send from an Ethereum account', () => {
         fireEvent.click(confirm)
         expect(screen.queryByTestId('send_success')).toBeNull()
         expect(sentRawTransactions).toHaveLength(0)
+    })
+
+    describe('a MAX ether send', () => {
+        // 1 gwei base fee; tips of 1, 2 and 3 gwei for slow, normal and fast.
+        const GWEI = '0x3b9aca00'
+        const TIPS: `0x${string}`[] = ['0x3b9aca00', '0x77359400', '0xb2d05e00']
+        const TEN_ETHER = new Decimal('10000000000000000000')
+
+        beforeEach(() => {
+            server.use(
+                ...evmRpcHandlers({
+                    rpcUrl: RPC_URL,
+                    responses: {
+                        eth_feeHistory: {
+                            oldestBlock: '0x1',
+                            baseFeePerGas: [GWEI, GWEI],
+                            gasUsedRatio: [0.5],
+                            reward: [TIPS],
+                        },
+                        eth_sendRawTransaction: params => {
+                            sentRawTransactions.push(params[0] as string)
+                            const respond =
+                                DEFAULT_EVM_RPC_RESPONSES.eth_sendRawTransaction
+                            return typeof respond === 'function'
+                                ? respond(params)
+                                : respond
+                        },
+                    },
+                }),
+            )
+        })
+
+        it.each([
+            ['slow', '9999937000000000000'],
+            ['normal', '9999916000000000000'],
+        ] as const)(
+            "Given MAX ether and the %s speed, when the user confirms, then the node gets the balance less that speed's max fee and nothing else is held back",
+            async (preset, expectedWei) => {
+                selectSender(ETHEREUM_SENDER)
+                useSendFundsStore.getState().setSelectedAsset({
+                    chainId: 'ethereum',
+                    assetId: 'native',
+                })
+                // What the amount step stored at some other speed; the review re-sizes it.
+                useSendFundsStore.getState().setAmount(new Decimal('9.5'))
+                useSendFundsStore.getState().setIsMaxAmount(true)
+                useSendFundsStore.getState().setFeePreset(preset)
+                useSendFundsStore.getState().setDestination(RECEIVER)
+                useSendFundsStore.getState().setSendMode('normal')
+
+                renderSendConfirmationStack()
+                await confirmSend()
+
+                const record = await sentRecord()
+                expect(record?.summary).toMatchObject({
+                    amount: { value: new Decimal(expectedWei) },
+                })
+                // The fee is the most the send can be charged: amount plus fee is the whole balance.
+                expect(record?.fee?.toFixed()).toBe(
+                    TEN_ETHER.minus(expectedWei).toFixed(),
+                )
+            },
+        )
     })
 
     it('Given an ether send, when the user reviews it, then each speed shows its wait and the review totals the send with its fee', async () => {

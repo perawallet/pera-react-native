@@ -76,6 +76,7 @@ export const useTransactionProcessingScreen =
             assetInboxQuote,
             isCloseAccount,
             feePreset,
+            confirmedMaxFee,
             onFinished,
         } = useSendFunds()
 
@@ -151,6 +152,7 @@ export const useTransactionProcessingScreen =
                 note,
                 isCloseAccount,
                 feePreset,
+                maxFee: confirmedMaxFee,
                 assetInboxQuote,
             } as SendTransactionParams
 

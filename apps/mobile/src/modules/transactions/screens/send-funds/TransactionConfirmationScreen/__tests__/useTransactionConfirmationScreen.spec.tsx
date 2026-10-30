@@ -55,6 +55,7 @@ import { useSendTotal } from '../useSendTotal'
 import { capabilityState } from '@test-utils/capability-mock'
 
 const mockNavigate = vi.fn()
+const focus = vi.hoisted(() => ({ current: true }))
 const { recipientSafety } = vi.hoisted(() => ({
     recipientSafety: {
         current: {
@@ -76,7 +77,7 @@ vi.mock('@react-navigation/native', () => ({
     // confirmation screen — the `useEffect` that resets `isSigning` runs
     // once on first render with `isFocused === true` and is a no-op
     // (isSigning starts at `false`).
-    useIsFocused: () => true,
+    useIsFocused: () => focus.current,
 }))
 
 vi.mock('@react-navigation/stack', () => ({}))
@@ -328,11 +329,14 @@ describe('useTransactionConfirmationScreen', () => {
         setOnFinished: vi.fn(),
         feePreset: 'normal',
         setFeePreset: vi.fn(),
+        isMaxAmount: false,
+        setConfirmedMaxFee: vi.fn(),
         reset: vi.fn(),
     }
 
     beforeEach(() => {
         vi.clearAllMocks()
+        focus.current = true
         translation.echoParams = false
         recipientSafety.current = {
             ...recipientSafety.current,
@@ -663,6 +667,185 @@ describe('useTransactionConfirmationScreen', () => {
             )
 
             expect(slower.current.feeShortfall).toBeUndefined()
+        })
+
+        describe('a MAX send of the native coin', () => {
+            const spendable = (max: number) =>
+                (useSpendableBalanceQuery as Mock).mockReturnValue({
+                    data: { balance: new Decimal(max), max: new Decimal(max) },
+                    isPending: false,
+                })
+            const reviewMax = (overrides: Record<string, unknown> = {}) => {
+                ;(sendFlowChainAdapters.has as Mock).mockReturnValue(false)
+                ;(useSelectedAccount as Mock).mockReturnValue(mockAccount)
+                ;(useAssetsQuery as Mock).mockReturnValue({
+                    data: new Map([['0', { ...NATIVE_ASSET, decimals: 0 }]]),
+                })
+                const state = {
+                    ...mockSendFundsState,
+                    selectedAssetId: '0',
+                    amount: new Decimal(900),
+                    destination: 'DEST_ADDRESS',
+                    isMaxAmount: true,
+                    ...overrides,
+                }
+                ;(useSendFunds as Mock).mockReturnValue(state)
+                const { result } = renderHook(() =>
+                    useTransactionConfirmationScreen(),
+                )
+                return { result }
+            }
+
+            it("sizes the amount to the balance less the selected speed's max fee, and prices that fee at the stored amount, live", () => {
+                spendable(1000)
+
+                const { result } = reviewMax()
+
+                expect(result.current.amount?.toFixed()).toBe('500')
+                expect(useSendFeeQuery).toHaveBeenLastCalledWith(
+                    expect.objectContaining({
+                        amount: new Decimal(900),
+                        isLive: true,
+                    }),
+                )
+                expect(result.current.feeShortfall).toBeUndefined()
+            })
+
+            it('re-sizes to a slower speed instead of leaving the difference unspent', () => {
+                spendable(1000)
+                ;(useSendFeeQuery as Mock).mockReturnValue({
+                    ...ETH_FEE,
+                    maxFeeAmount: new Decimal(400),
+                })
+
+                const { result } = reviewMax({ feePreset: 'slow' })
+
+                expect(result.current.amount?.toFixed()).toBe('600')
+                expect(result.current.feeShortfall).toBeUndefined()
+            })
+
+            it('re-sizes to a faster speed without a shortfall', () => {
+                spendable(1000)
+                ;(useSendFeeQuery as Mock).mockReturnValue({
+                    ...ETH_FEE,
+                    maxFeeAmount: new Decimal(700),
+                })
+
+                const { result } = reviewMax({ feePreset: 'fast' })
+
+                expect(result.current.amount?.toFixed()).toBe('300')
+                expect(result.current.feeShortfall).toBeUndefined()
+            })
+
+            it('hands the sized amount and the confirmed max fee to the store on Confirm', () => {
+                spendable(1000)
+                const { result } = reviewMax()
+
+                act(() => {
+                    result.current.handleConfirm()
+                })
+
+                expect(mockSendFundsState.setAmount).toHaveBeenCalledWith(
+                    new Decimal(500),
+                )
+                expect(
+                    mockSendFundsState.setConfirmedMaxFee,
+                ).toHaveBeenCalledWith(new Decimal(500))
+                expect(mockNavigate).toHaveBeenCalledWith(
+                    'TransactionProcessing',
+                )
+            })
+
+            it('sizes to nothing and reports the shortfall when the balance is below the max fee', () => {
+                spendable(100)
+
+                const { result } = reviewMax()
+                act(() => {
+                    result.current.handleConfirm()
+                })
+
+                expect(result.current.amount?.toFixed()).toBe('0')
+                expect(result.current.feeShortfall).toBeDefined()
+                expect(mockNavigate).not.toHaveBeenCalled()
+            })
+
+            it('keeps the amount a send typed in, and still confirms its max fee', () => {
+                spendable(1000)
+
+                const { result } = reviewMax({
+                    isMaxAmount: false,
+                    amount: new Decimal(200),
+                })
+                act(() => {
+                    result.current.handleConfirm()
+                })
+
+                expect(result.current.amount?.toFixed()).toBe('200')
+                expect(mockSendFundsState.setAmount).not.toHaveBeenCalled()
+                expect(
+                    mockSendFundsState.setConfirmedMaxFee,
+                ).toHaveBeenCalledWith(new Decimal(500))
+            })
+
+            it('leaves an Algorand send alone: no re-size and no confirmed max fee', () => {
+                ;(useSelectedAccount as Mock).mockReturnValue(mockAccount)
+                ;(sendFlowChainAdapters.has as Mock).mockReturnValue(true)
+                ;(useAssetsQuery as Mock).mockReturnValue({
+                    data: new Map([['0', { ...NATIVE_ASSET, decimals: 0 }]]),
+                })
+                const state = {
+                    ...mockSendFundsState,
+                    selectedAssetId: '0',
+                    amount: new Decimal(900),
+                    destination: 'DEST_ADDRESS',
+                    isMaxAmount: true,
+                }
+                ;(useSendFunds as Mock).mockReturnValue(state)
+                const { result } = renderHook(() =>
+                    useTransactionConfirmationScreen(),
+                )
+                act(() => {
+                    result.current.handleConfirm()
+                })
+
+                expect(result.current.amount?.toFixed()).toBe('900')
+                expect(state.setAmount).not.toHaveBeenCalled()
+                expect(state.setConfirmedMaxFee).toHaveBeenCalledWith(undefined)
+            })
+        })
+
+        it('polls the fee only while the review is focused', () => {
+            ;(useSelectedAccount as Mock).mockReturnValue(mockAccount)
+            const { rerender } = renderHook(() =>
+                useTransactionConfirmationScreen(),
+            )
+            expect(useSendFeeQuery).toHaveBeenLastCalledWith(
+                expect.objectContaining({ isLive: true }),
+            )
+
+            focus.current = false
+            rerender()
+
+            expect(useSendFeeQuery).toHaveBeenLastCalledWith(
+                expect.objectContaining({ isLive: false }),
+            )
+        })
+
+        it('re-prices when the review regains focus after being left, not on first render', () => {
+            const refresh = vi.fn()
+            ;(useSendFeeQuery as Mock).mockReturnValue({ ...ETH_FEE, refresh })
+            ;(useSelectedAccount as Mock).mockReturnValue(mockAccount)
+            const { rerender } = renderHook(() =>
+                useTransactionConfirmationScreen(),
+            )
+            expect(refresh).not.toHaveBeenCalled()
+
+            focus.current = false
+            rerender()
+            focus.current = true
+            rerender()
+
+            expect(refresh).toHaveBeenCalledTimes(1)
         })
 
         it('reports no shortfall until the balance has loaded', () => {
@@ -1143,6 +1326,7 @@ describe('useTransactionConfirmationScreen', () => {
                 recipient: 'RECEIVER',
                 amount: new Decimal(1_500_000),
                 feePreset: 'fast',
+                isLive: true,
             })
         })
 

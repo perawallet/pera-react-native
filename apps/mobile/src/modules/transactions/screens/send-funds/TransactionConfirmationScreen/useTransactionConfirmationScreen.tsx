@@ -14,10 +14,11 @@ import {
     useCallback,
     useEffect,
     useMemo,
+    useRef,
     useState,
     type ComponentType,
 } from 'react'
-import type { Decimal } from 'decimal.js'
+import { Decimal } from 'decimal.js'
 import {
     chainAccountOf,
     useAccountAssetBalanceQuery,
@@ -134,6 +135,9 @@ export const useTransactionConfirmationScreen =
             note,
             isCloseAccount,
             feePreset,
+            isMaxAmount,
+            setAmount,
+            setConfirmedMaxFee,
             setFeePreset,
         } = useSendFunds()
         const { t, currentLanguage } = useLanguage()
@@ -155,27 +159,84 @@ export const useTransactionConfirmationScreen =
         const selectedAddress = selectedAccount
             ? chainAccountOf(selectedAccount, scope.chainId)?.address
             : undefined
-        const baseUnitAmount = useMemo(
+        const storedBaseUnitAmount = useMemo(
             () =>
                 amount && asset
                     ? displayUnitsToBaseUnits(amount, asset.decimals)
                     : undefined,
             [amount, asset],
         )
+        const isFocused = useIsFocused()
+        const isFeeCoverageChecked = !sendFlowChainAdapters.has(scope.chainId)
+        const nativeAsset = useNativeAsset(scope)
+        const isNativeAssetId = useIsNativeAssetId(scope)
+        const isMaxNativeSend =
+            isMaxAmount &&
+            isFeeCoverageChecked &&
+            isNativeAssetId(selectedAssetId)
         const {
             feeAmount,
             maxFeeAmount,
             presets: feePresets,
             isPending: isFeePending,
             isError: isFeeError,
+            refresh: refreshFee,
         } = useSendFeeQuery({
             scope,
             senderAddress: selectedAddress,
             assetId: selectedAssetId,
             recipient: destination,
-            amount: baseUnitAmount,
+            amount: storedBaseUnitAmount,
             feePreset,
+            // Nothing on screen uses a quote while processing, signing or showing the result.
+            isLive: isFocused,
         })
+
+        const nativeSpendableInput = useMemo(
+            () =>
+                isFeeCoverageChecked && selectedAccount
+                    ? {
+                          account: selectedAccount,
+                          asset: {
+                              chainId: scope.chainId,
+                              assetId: nativeAsset.assetId,
+                          },
+                          scope,
+                          fee: ZERO_DECIMAL,
+                      }
+                    : undefined,
+            [isFeeCoverageChecked, selectedAccount, nativeAsset.assetId, scope],
+        )
+        const { data: nativeSpendable } =
+            useSpendableBalanceQuery(nativeSpendableInput)
+
+        // The amount step sized MAX at the stored speed; the review re-sizes it to the speed picked
+        // here, so switching speed never leaves a shortfall or extra unspent fee. The fee is priced at
+        // the stored amount, which only changes on Confirm, so re-sizing never re-keys the quote.
+        const reviewedAmount = useMemo(() => {
+            if (
+                !isMaxNativeSend ||
+                !asset ||
+                !nativeSpendable ||
+                !maxFeeAmount
+            ) {
+                return amount
+            }
+            return toWholeUnits(
+                Decimal.max(
+                    nativeSpendable.max.minus(maxFeeAmount),
+                    ZERO_DECIMAL,
+                ),
+                asset,
+            )
+        }, [isMaxNativeSend, asset, nativeSpendable, maxFeeAmount, amount])
+        const baseUnitAmount = useMemo(
+            () =>
+                reviewedAmount && asset
+                    ? displayUnitsToBaseUnits(reviewedAmount, asset.decimals)
+                    : undefined,
+            [reviewedAmount, asset],
+        )
         const sendConfirmation = chainUiFor(
             getChainDescriptor(scope.chainId).family,
             scope.chainId,
@@ -254,27 +315,6 @@ export const useTransactionConfirmationScreen =
         // A node refuses a send its native balance can't cover at the selected
         // preset's worst-case fee, so check that before signing. Algorand's
         // amount step already sizes the send against its reserve and close-out.
-        const isFeeCoverageChecked = !sendFlowChainAdapters.has(scope.chainId)
-        const nativeAsset = useNativeAsset(scope)
-        const isNativeAssetId = useIsNativeAssetId(scope)
-        const nativeSpendableInput = useMemo(
-            () =>
-                isFeeCoverageChecked && selectedAccount
-                    ? {
-                          account: selectedAccount,
-                          asset: {
-                              chainId: scope.chainId,
-                              assetId: nativeAsset.assetId,
-                          },
-                          scope,
-                          fee: ZERO_DECIMAL,
-                      }
-                    : undefined,
-            [isFeeCoverageChecked, selectedAccount, nativeAsset.assetId, scope],
-        )
-        const { data: nativeSpendable } =
-            useSpendableBalanceQuery(nativeSpendableInput)
-
         const feeShortfall = useMemo(() => {
             if (
                 !isFeeCoverageChecked ||
@@ -336,18 +376,25 @@ export const useTransactionConfirmationScreen =
         const sendTotal = useSendTotal({
             scope,
             asset,
-            amount,
+            amount: reviewedAmount,
             feeAmount,
         })
 
         const [isSigning, setIsSigning] = useState(false)
-        const isFocused = useIsFocused()
-        // Regaining focus after failed signing resets slide-to-confirm.
+        const wasBlurredRef = useRef(false)
+        // Regaining focus after failed signing resets slide-to-confirm and re-prices: a build
+        // refused for a fee above the one confirmed must not return to the quote it was refused at.
         useEffect(() => {
-            if (isFocused) {
-                setIsSigning(false)
+            if (!isFocused) {
+                wasBlurredRef.current = true
+                return
             }
-        }, [isFocused])
+            setIsSigning(false)
+            if (wasBlurredRef.current) {
+                wasBlurredRef.current = false
+                refreshFee()
+            }
+        }, [isFocused, refreshFee])
 
         const handleConfirm = () => {
             if (isRecipientInfoPending || recipientSafety.isConfirmBlocked) {
@@ -358,7 +405,7 @@ export const useTransactionConfirmationScreen =
                 !selectedAccount ||
                 !selectedAssetId ||
                 !destination ||
-                !amount ||
+                !reviewedAmount ||
                 !asset
             ) {
                 errorToast(
@@ -409,6 +456,8 @@ export const useTransactionConfirmationScreen =
                 return
             }
 
+            if (isMaxNativeSend) setAmount(reviewedAmount)
+            setConfirmedMaxFee(isFeeCoverageChecked ? maxFeeAmount : undefined)
             setIsSigning(true)
             navigation.navigate('TransactionProcessing')
         }
@@ -416,7 +465,7 @@ export const useTransactionConfirmationScreen =
         const isReady = !!(
             selectedAccount &&
             selectedAssetId &&
-            amount &&
+            reviewedAmount &&
             asset
         )
 
@@ -432,7 +481,7 @@ export const useTransactionConfirmationScreen =
 
         return {
             asset,
-            amount,
+            amount: reviewedAmount,
             destination,
             selectedAccount,
             selectedAssetId,
