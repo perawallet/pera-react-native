@@ -27,6 +27,7 @@ const mockIsSwitchedOff = vi.fn()
 const mockBasis = { current: 'native' as AccountValueBasis }
 const mockHoldingSources = vi.fn()
 const mockTotalsQuery = vi.fn()
+const mockMultisigParameters = vi.fn()
 const mockAccountValueTotals = new Map<
     string,
     {
@@ -62,6 +63,10 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
         },
         useAccountHoldingSources: (account: WalletAccount) =>
             mockHoldingSources(account),
+        isWatchAccount: (account: WalletAccount) =>
+            account.custody.kind === 'watch',
+        multisigParametersOf: (account: WalletAccount, chainId: string) =>
+            mockMultisigParameters(account, chainId),
     }
 })
 
@@ -118,6 +123,7 @@ describe('useAccountWithBalance', () => {
         mockBasis.current = 'native'
         mockAccountValueTotals.clear()
         mockTotalsQuery.mockReset()
+        mockMultisigParameters.mockReset().mockReturnValue(undefined)
         mockHoldingSources
             .mockReset()
             .mockImplementation((account: WalletAccount) =>
@@ -148,9 +154,10 @@ describe('useAccountWithBalance', () => {
         })
     })
 
-    it('renders an Algorand-only wallet as a single-chain row', () => {
+    it('values an Algorand-only wallet in its native asset and fiat', () => {
         mockAccountValueTotals.set(`algorand|${ALGO_ADDRESS}`, {
             nativeValue: new Decimal(12),
+            fiatValue: new Decimal(24),
         })
 
         const { result } = renderHook(() => useAccountWithBalance(ALGO_ACCOUNT))
@@ -163,7 +170,7 @@ describe('useAccountWithBalance', () => {
         })
     })
 
-    it('values an Ethereum account in ETH on its own chain', () => {
+    it("reads an Ethereum account's native balance on its own chain", () => {
         registerEthereumChain()
         mockBasis.current = 'fiat'
         mockAccountValueTotals.set(`ethereum|${ETH_ADDRESS}`, {
@@ -188,6 +195,7 @@ describe('useAccountWithBalance', () => {
     it('keeps an unknown native value unknown rather than 0', () => {
         mockAccountValueTotals.set(`ethereum|${ETH_ADDRESS}`, {
             nativeValue: null,
+            fiatValue: null,
         })
 
         const { result } = renderHook(() => useAccountWithBalance(ETH_ACCOUNT))
@@ -293,14 +301,21 @@ describe('useAccountWithBalance', () => {
             expect(result.current.crossChainTotal).toBeUndefined()
         })
 
-        it('is unset while the wallet holds a single chain', () => {
+        it('is set while the wallet holds a single chain, so every row reads in fiat', () => {
             mockBasis.current = 'native'
+            mockAccountValueTotals.set(`algorand|${ALGO_ADDRESS}`, {
+                nativeValue: new Decimal(1),
+                fiatValue: new Decimal(10),
+            })
 
             const { result } = renderHook(() =>
                 useAccountWithBalance(ALGO_ACCOUNT),
             )
 
-            expect(result.current.crossChainTotal).toBeUndefined()
+            expect(result.current.crossChainTotal).toEqual({
+                kind: 'fiat',
+                value: new Decimal(20),
+            })
         })
 
         it("sums the account's fiat value across its chains, in the preferred currency", () => {
@@ -442,6 +457,24 @@ describe('useAccountWithBalance', () => {
             })
         })
 
+        it('shows no value for an Algorand-only wallet on a test network, as for any other wallet', () => {
+            mockBasis.current = 'native'
+            mockHoldingSources.mockReturnValue([
+                {
+                    address: ALGO_ADDRESS,
+                    scope: { chainId: 'algorand', networkId: 'testnet' },
+                },
+            ])
+
+            const { result } = renderHook(() =>
+                useAccountWithBalance(ALGO_ACCOUNT),
+            )
+
+            expect(result.current.crossChainTotal).toEqual({
+                kind: 'testOnly',
+            })
+        })
+
         it("is unavailable when every one of the account's chains is switched off", () => {
             mockHoldingSources.mockReturnValue([])
 
@@ -466,6 +499,106 @@ describe('useAccountWithBalance', () => {
                 expect.anything(),
                 true,
             )
+        })
+    })
+
+    describe('singleNetworkChainId', () => {
+        it('names the chain of a watch account that sits on one', () => {
+            const { result } = renderHook(() =>
+                useAccountWithBalance(ETH_ACCOUNT),
+            )
+
+            expect(result.current.singleNetworkChainId).toBe('ethereum')
+        })
+
+        it('names the chain on a single-chain wallet too', () => {
+            const { result } = renderHook(() =>
+                useAccountWithBalance(ALGO_ACCOUNT),
+            )
+
+            expect(result.current.singleNetworkChainId).toBe('algorand')
+        })
+
+        it('is unset for a watch account that spans chains', () => {
+            const { result } = renderHook(() =>
+                useAccountWithBalance(BOTH_CHAINS),
+            )
+
+            expect(result.current.singleNetworkChainId).toBeUndefined()
+        })
+
+        it('is unset for an account the wallet can sign for', () => {
+            const local: WalletAccount = {
+                ...ETH_ACCOUNT,
+                custody: { kind: 'local', seed: null },
+            }
+
+            const { result } = renderHook(() => useAccountWithBalance(local))
+
+            expect(result.current.singleNetworkChainId).toBeUndefined()
+        })
+
+        it('is unset on a row scoped to one chain', () => {
+            const { result } = renderHook(() =>
+                useAccountWithBalance(ETH_ACCOUNT, 'ethereum'),
+            )
+
+            expect(result.current.singleNetworkChainId).toBeUndefined()
+        })
+
+        it("is unset when the account's only chain is switched off", () => {
+            mockHoldingSources.mockReturnValue([])
+
+            const { result } = renderHook(() =>
+                useAccountWithBalance(ETH_ACCOUNT),
+            )
+
+            expect(result.current.singleNetworkChainId).toBeUndefined()
+        })
+    })
+
+    describe('jointParticipantCount', () => {
+        const JOINT: WalletAccount = {
+            ...ALGO_ACCOUNT,
+            custody: { kind: 'multisig' },
+        }
+
+        it("counts the members of a joint account's multisig", () => {
+            mockMultisigParameters.mockReturnValue({
+                version: 1,
+                threshold: 2,
+                addresses: ['A', 'B', 'C'],
+            })
+
+            const { result } = renderHook(() => useAccountWithBalance(JOINT))
+
+            expect(result.current.jointParticipantCount).toBe(3)
+            expect(mockMultisigParameters).toHaveBeenCalledWith(
+                JOINT,
+                'algorand',
+            )
+        })
+
+        it('is unset on a row scoped to one chain', () => {
+            mockMultisigParameters.mockReturnValue({
+                version: 1,
+                threshold: 2,
+                addresses: ['A', 'B', 'C'],
+            })
+
+            const { result } = renderHook(() =>
+                useAccountWithBalance(JOINT, 'algorand'),
+            )
+
+            expect(result.current.jointParticipantCount).toBeUndefined()
+        })
+
+        it('is unset for an account with no multisig parameters', () => {
+            const { result } = renderHook(() =>
+                useAccountWithBalance(ALGO_ACCOUNT),
+            )
+
+            expect(result.current.jointParticipantCount).toBeUndefined()
         })
     })
 })

@@ -12,12 +12,13 @@
 
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
-import { PWView, type PWViewProps } from '@components/core'
+import { PWBadge, PWView, type PWViewProps } from '@components/core'
 import { AccountDisplay } from '@components/AccountDisplay'
 import { AssetAmount } from '@components/AssetAmount'
 import { ChainBadge } from '@components/ChainBadge'
 import { ChainUnavailableNotice } from '@components/ChainNotice'
 import { PreferredAmount } from '@components/PreferredAmount'
+import { ChainLabel } from '@modules/chain-ui/icon'
 import { useStyles } from './styles'
 import { useAccountWithBalance } from './useAccountWithBalance'
 
@@ -43,6 +44,8 @@ export const AccountWithBalance = ({
         preferredValue,
         isMultiChain,
         crossChainTotal,
+        singleNetworkChainId,
+        jointParticipantCount,
     } = useAccountWithBalance(account, chainId)
     // A chain-agnostic row stands for every chain the account is on, so no one
     // chain's badge applies. No row carries a TestNet badge: developer mode puts
@@ -134,6 +137,19 @@ export const AccountWithBalance = ({
                 showAccountType
                 alwaysShowAccountType={!!crossChainTotal}
                 badges={badges}
+                secondaryContent={
+                    singleNetworkChainId ? (
+                        <ChainLabel chainId={singleNetworkChainId} />
+                    ) : undefined
+                }
+                avatarBadge={
+                    jointParticipantCount !== undefined ? (
+                        <PWBadge
+                            variant='secondary'
+                            value={jointParticipantCount}
+                        />
+                    ) : undefined
+                }
                 style={styles.accountDisplay}
             />
             {renderBalance()}
