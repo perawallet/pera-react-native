@@ -573,18 +573,21 @@ describe('reconcileEthereumSubmissions', () => {
             expect(probeFailures.size).toBe(0)
         })
 
-        it('does not report a rate limit however long it lasts', async () => {
-            await record()
-            server.use(
-                http.post(
-                    TEST_RPC_URL,
-                    () => new HttpResponse(null, { status: 429 }),
-                ),
-            )
+        it.each([429, 500])(
+            'does not report an RPC %i however long it lasts',
+            async status => {
+                await record()
+                server.use(
+                    http.post(
+                        TEST_RPC_URL,
+                        () => new HttpResponse(null, { status }),
+                    ),
+                )
 
-            await passes(N)
+                await passes(N)
 
-            expect(errorReports()).toEqual([])
-        })
+                expect(errorReports()).toEqual([])
+            },
+        )
     })
 })

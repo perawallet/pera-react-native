@@ -13,11 +13,18 @@
 import {
     BlockchainError,
     isExpectedError,
+    type Optional,
 } from '@perawallet/wallet-core-shared'
 import { EvmErrorCode, TRAITS } from './evmErrorCodes'
+import { toRpcTransportError } from './toRpcTransportError'
 
 /** `symbol` is the chain's native coin, as the insufficient-funds copy names it. */
 export type EvmErrorParams = { reason?: string; symbol?: string }
+
+// A node that didn't answer is the environment's fault, not ours.
+const isEnvironmentFailure = (cause: Optional<Error>): boolean =>
+    cause !== undefined &&
+    (isExpectedError(cause) || toRpcTransportError(cause) !== undefined)
 
 /**
  * A viem or JSON-RPC failure classified into a stable {@link EvmErrorCode}.
@@ -50,10 +57,7 @@ export class EvmError extends BlockchainError {
                 // the environment's fault, so it must not report as a crash.
                 expected:
                     expected ??
-                    (originalError !== undefined &&
-                    isExpectedError(originalError)
-                        ? true
-                        : undefined),
+                    (isEnvironmentFailure(originalError) ? true : undefined),
                 reportCode: `evm.${code}`,
                 // An explicit `messageKey: undefined` would wipe the generic default.
                 ...(titleKey && { titleKey }),

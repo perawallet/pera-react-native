@@ -256,7 +256,10 @@ describe('logging', () => {
                 logger.setErrorReporter(errorReporter)
                 const coded = new AppError('refused', { reportCode: 'test.x' })
 
-                logger.error('Query failed: AppError', { error: coded })
+                logger.error('Query failed', {
+                    errorSummary: 'AppError',
+                    error: coded,
+                })
 
                 expect(reportedKeys(errorReporter)).toEqual(['test.x'])
             })

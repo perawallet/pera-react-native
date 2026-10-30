@@ -36,10 +36,10 @@ import {
     isRetryableError,
     reportCodeOf,
     toError,
+    type Nullable,
 } from '@perawallet/wallet-core-shared'
 import { ledgerAppNameFor } from '@perawallet/wallet-core-hardware-wallet'
 import { getChainDescriptor } from '@perawallet/wallet-core-chain-shared'
-import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 import { bottomSheetNotifier } from '@components/core'

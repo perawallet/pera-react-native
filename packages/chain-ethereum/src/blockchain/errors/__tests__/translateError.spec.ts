@@ -304,10 +304,21 @@ describe('toEvmError', () => {
             expect(isExpectedError(error)).toBe(true)
         })
 
-        it('keeps an unclassified failure reportable', () => {
-            const error = toEvmError(new Error('boom'), 'ETH')
+        it('treats an RPC 5xx as an expected unknown failure', () => {
+            const error = toEvmError(
+                new HttpRequestError({ status: 503, url: URL }),
+                'ETH',
+            )
 
-            expect(isExpectedError(error)).toBe(false)
+            expect(error.code).toBe('unknown')
+            expect(isExpectedError(error)).toBe(true)
+        })
+
+        it.each([
+            ['an RPC 4xx', new HttpRequestError({ status: 400, url: URL })],
+            ['an unclassified failure', new Error('boom')],
+        ])('keeps %s reportable', (_name, cause) => {
+            expect(isExpectedError(toEvmError(cause, 'ETH'))).toBe(false)
         })
     })
 })

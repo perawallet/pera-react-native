@@ -338,7 +338,7 @@ describe('Flow: send from an Ethereum account', () => {
                 rpcUrl: RPC_URL,
                 responses: {
                     eth_sendRawTransaction: new EvmRpcErrorFixture(
-                        -32000,
+                        -32_000,
                         'replacement transaction underpriced',
                     ),
                 },
