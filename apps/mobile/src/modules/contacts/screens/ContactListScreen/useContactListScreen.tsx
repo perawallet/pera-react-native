@@ -10,11 +10,18 @@
  limitations under the License
  */
 
-import { useCallback, useMemo, useState } from 'react'
+import {
+    useCallback,
+    useMemo,
+    useState,
+    type ReactElement,
+} from 'react'
 import { Keyboard } from 'react-native'
 import { type Contact, useContacts } from '@perawallet/wallet-core-contacts'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { ContactQRContent } from '@modules/contacts/components/ContactQRContent'
+import { useAppNavigation } from '@hooks/useAppNavigation'
+import { ContactRow } from './ContactRow'
 
 export type UseContactListScreenResult = {
     allContactsCount: number
@@ -25,17 +32,12 @@ export type UseContactListScreenResult = {
     goToAddContact: () => void
     showQR: (contact: Contact) => void
     selectContact: (contact: Contact) => void
+    renderItem: (params: { item: Contact }) => ReactElement
+    keyExtractor: (contact: Contact) => string
 }
 
-type UseContactListScreenOptions = {
-    onNavigateAddContact: () => void
-    onNavigateViewContact: () => void
-}
-
-export const useContactListScreen = ({
-    onNavigateAddContact,
-    onNavigateViewContact,
-}: UseContactListScreenOptions): UseContactListScreenResult => {
+export const useContactListScreen = (): UseContactListScreenResult => {
+    const navigation = useAppNavigation()
     const {
         contacts: allContacts,
         findContacts,
@@ -55,6 +57,15 @@ export const useContactListScreen = ({
     )
 
     const isEmpty = !contacts.length && !search.length
+
+    const onNavigateAddContact = useCallback(
+        () => navigation.navigate('AddContact'),
+        [navigation],
+    )
+    const onNavigateViewContact = useCallback(
+        () => navigation.navigate('ViewContact'),
+        [navigation],
+    )
 
     const goToAddContact = useCallback(() => {
         setSelectedContact(null)
@@ -81,6 +92,19 @@ export const useContactListScreen = ({
         [onNavigateViewContact, setSelectedContact],
     )
 
+    const renderItem = useCallback(
+        ({ item }: { item: Contact }) => (
+            <ContactRow
+                contact={item}
+                onShowQR={showQR}
+                onSelect={selectContact}
+            />
+        ),
+        [selectContact, showQR],
+    )
+
+    const keyExtractor = useCallback((c: Contact) => c.id, [])
+
     return {
         allContactsCount: allContacts.length,
         contacts,
@@ -90,5 +114,7 @@ export const useContactListScreen = ({
         goToAddContact,
         showQR,
         selectContact,
+        renderItem,
+        keyExtractor,
     }
 }

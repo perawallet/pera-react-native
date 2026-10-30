@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback, useEffect } from 'react'
+import { useCallback, useEffect, type ReactElement } from 'react'
 import { useRoute, type RouteProp } from '@react-navigation/native'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
@@ -18,6 +18,9 @@ import {
     type AssetInboxRequest,
 } from '@perawallet/wallet-core-transactions'
 import { isIntegrityRequiredError } from '@perawallet/wallet-core-shared'
+import { PWDivider } from '@components/core'
+import { AssetTransferRequestItem } from '@modules/transactions/components/claim-assets/AssetTransferRequestItem'
+import { useStyles } from './styles'
 import { useClaimAssets } from '@modules/transactions/hooks'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import type { MessagesStackParamList } from '@modules/messages'
@@ -29,11 +32,18 @@ type UseAssetTransferRequestsScreenResult = {
     isUnavailableOnNetwork: boolean
     isIntegrityBlocked: boolean
     handleItemPress: (index: number) => void
+    renderItem: (params: {
+        item: AssetInboxRequest
+        index: number
+    }) => ReactElement
+    renderSeparator: () => ReactElement
+    keyExtractor: (item: AssetInboxRequest, index: number) => string
 }
 
 export const useAssetTransferRequestsScreen =
     (): UseAssetTransferRequestsScreenResult => {
         const { push } = useAppNavigation()
+        const styles = useStyles()
         const route =
             useRoute<
                 RouteProp<MessagesStackParamList, 'AssetTransferRequests'>
@@ -68,6 +78,28 @@ export const useAssetTransferRequestsScreen =
             [push, assetRequests, setAssetRequests, scope],
         )
 
+        const renderItem = useCallback(
+            ({ item, index }: { item: AssetInboxRequest; index: number }) => (
+                <AssetTransferRequestItem
+                    item={item}
+                    scope={scope}
+                    onPress={() => handleItemPress(index)}
+                />
+            ),
+            [handleItemPress, scope],
+        )
+
+        const renderSeparator = useCallback(
+            () => <PWDivider style={styles.separator} />,
+            [styles.separator],
+        )
+
+        const keyExtractor = useCallback(
+            (item: AssetInboxRequest, index: number) =>
+                String(item.id ?? '' + index),
+            [],
+        )
+
         return {
             scope,
             assetRequests: assetRequests ?? [],
@@ -75,5 +107,8 @@ export const useAssetTransferRequestsScreen =
             isUnavailableOnNetwork,
             isIntegrityBlocked,
             handleItemPress,
+            renderItem,
+            renderSeparator,
+            keyExtractor,
         }
     }
