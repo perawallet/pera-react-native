@@ -49,12 +49,14 @@ export const TRAITS: Record<EvmErrorCode, EvmErrorTraits> = {
         messageKey: i18nKey('errors.evm.reverted_with_reason.body'),
         severity: ErrorSeverity.HIGH,
         retryable: false,
+        expected: true,
     },
     out_of_gas: {
         titleKey: i18nKey('errors.evm.out_of_gas.title'),
         messageKey: i18nKey('errors.evm.out_of_gas.body'),
         severity: ErrorSeverity.MEDIUM,
         retryable: false,
+        expected: true,
     },
     nonce_too_low: {
         titleKey: i18nKey('errors.evm.nonce_too_low.title'),
@@ -67,6 +69,7 @@ export const TRAITS: Record<EvmErrorCode, EvmErrorTraits> = {
         messageKey: i18nKey('errors.evm.replacement_underpriced.body'),
         severity: ErrorSeverity.MEDIUM,
         retryable: false,
+        expected: true,
     },
     replaced_transaction_confirmed: {
         titleKey: i18nKey('errors.evm.replaced_transaction_confirmed.title'),
@@ -82,6 +85,7 @@ export const TRAITS: Record<EvmErrorCode, EvmErrorTraits> = {
         messageKey: i18nKey('errors.evm.insufficient_funds.body'),
         severity: ErrorSeverity.MEDIUM,
         retryable: false,
+        expected: true,
     },
     rate_limited: {
         titleKey: i18nKey('errors.evm.rate_limited.title'),

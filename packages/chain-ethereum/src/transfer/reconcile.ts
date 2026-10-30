@@ -11,11 +11,13 @@
  */
 
 import {
+    BaseError,
     TransactionReceiptNotFoundError,
     type Address,
     type Hex,
     type PublicClient,
 } from 'viem'
+import { toEvmError } from '../blockchain/errors'
 import {
     parseScopeKey,
     toScopeKey,
@@ -38,7 +40,6 @@ import {
     type SubmissionFlow,
     type SubmissionSettledHandler,
 } from '@perawallet/wallet-core-signing'
-import { toEvmError } from '../blockchain/errors'
 import type { EvmChain } from '../chains/types'
 import { isTransactionKnownToNode } from './submission'
 
@@ -283,10 +284,26 @@ export const reconcileEthereumSubmissions = async ({
                 const failedProbes = (probeFailures.get(attempt.id) ?? 0) + 1
                 probeFailures.set(attempt.id, failedProbes)
                 if (failedProbes === PROBE_FAILURE_ESCALATION_STREAK) {
-                    logger.error(
-                        toEvmError(error, chain.row.nativeAsset.symbol),
-                        { id: attempt.id, failedProbes },
-                    )
+                    // Only a viem error goes through toEvmError, so the
+                    // classifier keeps a rate-limited or answerless RPC a
+                    // breadcrumb however long the streak is; an unclassified
+                    // node failure groups by its site's stack.
+                    if (error instanceof BaseError) {
+                        logger.error(
+                            toEvmError(error, chain.row.nativeAsset.symbol),
+                            { error, id: attempt.id, failedProbes },
+                        )
+                    } else {
+                        // Escalates the raw error: this catch also holds app
+                        // settle handlers and the DB write, which toEvmError
+                        // would mislabel `evm.unknown`. The logger adopts the
+                        // original stack and any declared report code.
+                        logger.error('ethereum reconcile: probe kept failing', {
+                            error,
+                            id: attempt.id,
+                            failedProbes,
+                        })
+                    }
                     return
                 }
                 logger.warn('ethereum reconcile: probe failed, row left open', {

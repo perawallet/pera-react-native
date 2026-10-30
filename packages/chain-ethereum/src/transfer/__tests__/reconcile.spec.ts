@@ -121,13 +121,13 @@ describe('reconcileEthereumSubmissions', () => {
             ...overrides,
         })
 
-    const reconcile = () =>
+    const reconcile = (ledgerDb = db) =>
         reconcileEthereumSubmissions({
             chain: ETHEREUM,
             settleHandlers,
             probeFailures,
             getClient,
-            db,
+            db: ledgerDb,
         })
     const statuses = async () =>
         (await db.select().from(SubmissionAttemptsSchema).all()).map(
@@ -497,8 +497,8 @@ describe('reconcileEthereumSubmissions', () => {
                         call[0] as { severity: string; groupingKey?: string },
                 )
                 .filter(report => report.severity === 'error')
-        const passes = async (count: number) => {
-            for (let pass = 0; pass < count; pass++) await reconcile()
+        const passes = async (count: number, ledgerDb = db) => {
+            for (let pass = 0; pass < count; pass++) await reconcile(ledgerDb)
         }
 
         beforeEach(() => {
@@ -513,7 +513,7 @@ describe('reconcileEthereumSubmissions', () => {
             vi.restoreAllMocks()
         })
 
-        it('reports once, under its EVM code, on the Nth consecutive failure', async () => {
+        it('reports once, at error severity, on the Nth consecutive failure', async () => {
             await record()
             internalError()
 
@@ -522,10 +522,38 @@ describe('reconcileEthereumSubmissions', () => {
 
             await passes(1)
             expect(errorReports()).toHaveLength(1)
-            expect(errorReports()[0]?.groupingKey).toBe('evm.unknown')
+            // An unclassified node failure declares no code, so its own
+            // site's stack does the grouping.
+            expect(errorReports()[0]?.groupingKey).toBeUndefined()
 
             await passes(1)
             expect(errorReports()).toHaveLength(1)
+        })
+
+        it('escalates a non-viem failure under the escalation site, not evm.unknown', async () => {
+            await record()
+            node({ latest: 1 })
+
+            // The ledger write is the reachable non-viem failure: a closed or
+            // corrupted DB throws a plain Error into this catch, where
+            // toEvmError would have mislabeled it `evm.unknown`.
+            const failingLedger = new Proxy(db, {
+                get(target, prop, receiver) {
+                    if (prop === 'update') {
+                        throw new Error('ledger write failed')
+                    }
+                    return Reflect.get(target, prop, receiver)
+                },
+            })
+
+            await passes(N, failingLedger)
+
+            expect(errorReports()).toEqual([
+                expect.objectContaining({
+                    severity: 'error',
+                    groupingKey: 'ethereum reconcile: probe kept failing',
+                }),
+            ])
         })
 
         it('starts the streak over after a clean pass', async () => {

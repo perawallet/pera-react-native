@@ -56,7 +56,13 @@ export class EvmError extends BlockchainError {
                 expected:
                     expected ??
                     (isEnvironmentFailure(originalError) ? true : undefined),
-                reportCode: `evm.${code}`,
+                // `unknown` keeps stack or log-message grouping: a declared code
+                // here would merge every unclassified failure into one
+                // Crashlytics issue. Analytics still reads `unclassified` from
+                // the code's absence.
+                ...(code !== EvmErrorCode.UNKNOWN && {
+                    reportCode: `evm.${code}`,
+                }),
                 // An explicit `messageKey: undefined` would wipe the generic default.
                 ...(titleKey && { titleKey }),
                 ...(messageKey && { messageKey }),

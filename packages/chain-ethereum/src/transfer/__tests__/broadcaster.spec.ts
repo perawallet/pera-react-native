@@ -587,22 +587,28 @@ describe('Ethereum broadcaster adapter', () => {
                 'insufficient funds for gas * price + value',
                 'evm.insufficient_funds',
             ],
-        ])('groups a node refusal of "%s" under %s', async (message, key) => {
-            useRpc({
-                eth_sendRawTransaction: new EvmRpcErrorFixture(-32000, message),
-            })
+        ])(
+            'groups a node refusal of "%s" under %s as a breadcrumb',
+            async (message, key) => {
+                useRpc({
+                    eth_sendRawTransaction: new EvmRpcErrorFixture(
+                        -32000,
+                        message,
+                    ),
+                })
 
-            await expect(sendOnTransport()).rejects.toBeInstanceOf(
-                SubmissionError,
-            )
+                await expect(sendOnTransport()).rejects.toBeInstanceOf(
+                    SubmissionError,
+                )
 
-            expect(reports()).toEqual([
-                expect.objectContaining({
-                    severity: 'error',
-                    groupingKey: key,
-                }),
-            ])
-        })
+                expect(reports()).toEqual([
+                    expect.objectContaining({
+                        severity: 'expected',
+                        groupingKey: key,
+                    }),
+                ])
+            },
+        )
 
         it.each([429, 503])(
             'reports an RPC %i only as a breadcrumb',
@@ -738,7 +744,7 @@ describe('Ethereum broadcaster adapter', () => {
             expect(await rows()).toHaveLength(1)
             expect(reports()).toEqual([
                 expect.objectContaining({
-                    severity: 'error',
+                    severity: 'expected',
                     groupingKey: 'evm.replacement_underpriced',
                 }),
             ])

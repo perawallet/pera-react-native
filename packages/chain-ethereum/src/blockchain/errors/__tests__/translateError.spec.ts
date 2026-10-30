@@ -264,6 +264,23 @@ describe('toEvmError', () => {
         expect(result.shouldReport()).toBe(false)
     })
 
+    it('treats a user-caused refusal as expected so it stays out of crash reporting', () => {
+        const result = toEvmError(
+            wrapped(new InsufficientFundsError()),
+            'ETH',
+        )
+
+        expect(result.metadata.expected).toBe(true)
+        expect(result.shouldReport()).toBe(false)
+    })
+
+    it('leaves an unclassified failure without a declared report code, so its stack does the grouping', () => {
+        const result = toEvmError(new Error('some node said something new'), 'ETH')
+
+        expect(result.code).toBe('unknown')
+        expect(result.metadata.reportCode).toBeUndefined()
+    })
+
     it('falls back to the reasonless revert when no reason is supplied', () => {
         const error = new EvmError('reverted_with_reason', { reason: '' })
 
