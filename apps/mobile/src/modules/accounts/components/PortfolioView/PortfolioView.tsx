@@ -11,6 +11,7 @@
  */
 
 import {
+    PWBadge,
     PWDivider,
     PWIcon,
     PWText,
@@ -21,17 +22,11 @@ import {
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 
-import { AssetAmount } from '@components/AssetAmount'
 import { PreferredAmount } from '@components/PreferredAmount'
-import { useNativeAsset } from '@perawallet/wallet-core-assets'
 import { WealthChart } from '@components/WealthChart'
-import {
-    formatDatetime,
-    type HistoryPeriod,
-    type Nullable,
-} from '@perawallet/wallet-core-shared'
+import { formatDatetime, type Nullable } from '@perawallet/wallet-core-shared'
 import { trackEvent, HomeEvent } from '@analytics'
-import { useCallback, useMemo } from 'react'
+import { useCallback } from 'react'
 import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated'
 import {
     EXPANDABLE_PANEL_ANIMATION_DURATION,
@@ -40,18 +35,14 @@ import {
 import { useChartInteraction } from '@hooks/useChartInteraction'
 import { ChartPeriodSelection } from '@components/ChartPeriodSelection'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
-import {
-    type PortfolioValueHistoryItem,
-    useAccountBalancesHistoryQuery,
-} from '@perawallet/wallet-core-accounts'
+import type { PortfolioValueHistoryItem } from '@perawallet/wallet-core-accounts'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { UserPreferences } from '@constants/user-preferences'
 import { InfoButton } from '@components/InfoButton'
-import { usePortfolioTrend } from './usePortfolioTrend'
-import { usePortfolioTrendColumn } from './usePortfolioTrendColumn'
+import { usePortfolioChange } from './usePortfolioChange'
 import { usePortfolioView } from './usePortfolioView'
 import { ExpandablePanel } from '@components/ExpandablePanel'
-import { TrendIndicator } from '@components/TrendIndicator'
+import { ValueChangeLine } from '@components/ValueChangeLine'
 
 export type PortfolioViewProps = {
     onDataSelected?: (selected: Nullable<PortfolioValueHistoryItem>) => void
@@ -60,16 +51,14 @@ export type PortfolioViewProps = {
 export const PortfolioView = ({ ...props }: PortfolioViewProps) => {
     const {
         scope,
-        basis,
-        portfolioNativeValue,
         portfolioPreferredValue,
         isPreferredValuePartial,
         hasFiatTotal,
         chartSources,
         hasBalanceHistory,
         isPending,
+        isDrawerOpen,
     } = usePortfolioView()
-    const nativeAsset = useNativeAsset(scope)
     const styles = useStyles()
     const { preferredCurrency } = useCurrency(scope)
     const { t } = useLanguage()
@@ -84,49 +73,13 @@ export const PortfolioView = ({ ...props }: PortfolioViewProps) => {
         setPreference(UserPreferences.chartVisible, !isChartShown)
     }
 
-    // The native headline reads its scrubbed value from the single-chain
-    // series, so only the native basis fetches it. There `chartSources` are
-    // all on `scope`'s chain, so it shares the summed chart's cache entry.
-    const nativeAddresses = useMemo(
-        () => chartSources.map(({ address }) => address),
-        [chartSources],
-    )
-    const { data: nativeHistoryData } = useAccountBalancesHistoryQuery(
-        nativeAddresses,
-        period,
-        scope,
-        isChartShown && basis === 'native',
-    )
-    const { trendAbsolute, trendPercentage, hasNoTrend } = usePortfolioTrend(
+    const { changeAbsolute, changePercentage, hasChange } = usePortfolioChange({
         chartSources,
-        period,
         scope,
+        chartPeriod: period,
         isChartShown,
-    )
-
-    // The chart reports fiat points only; the native headline reads the same
-    // point from this single-chain series, which shares the chart's timestamps.
-    const selectedNativeValue = useMemo(
-        () =>
-            selectedPoint
-                ? (nativeHistoryData.find(
-                      point =>
-                          point.datetime.getTime() ===
-                          selectedPoint.datetime.getTime(),
-                  )?.nativeValue ?? null)
-                : null,
-        [nativeHistoryData, selectedPoint],
-    )
-
-    const trendPeriodLabel = useMemo<Record<HistoryPeriod, string>>(
-        () => ({
-            'one-day': t('portfolio.last_24_hours'),
-            'one-week': t('portfolio.last_7_days'),
-            'one-month': t('portfolio.last_30_days'),
-            'one-year': t('portfolio.last_year'),
-        }),
-        [t],
-    )
+        isEnabled: hasFiatTotal && hasBalanceHistory && isDrawerOpen,
+    })
 
     const chartSelectionChanged = useCallback(
         (selected: Nullable<PortfolioValueHistoryItem>) => {
@@ -136,8 +89,6 @@ export const PortfolioView = ({ ...props }: PortfolioViewProps) => {
         [setSelectedPoint, props],
     )
 
-    const { isTrendColumnInLayout, trendColumnStyle } =
-        usePortfolioTrendColumn(isChartShown)
     // Timed to the ExpandablePanel below so the toggle chevron moves together
     // with the chart instead of popping instantly.
     const chevronStyle = useAnimatedStyle(
@@ -181,7 +132,7 @@ export const PortfolioView = ({ ...props }: PortfolioViewProps) => {
                             </InfoButton>
                         </PWView>
                     </PWView>
-                    {basis === 'fiat' ? (
+                    {hasFiatTotal ? (
                         <>
                             <PreferredAmount
                                 testID='portfolio_total_value'
@@ -206,76 +157,22 @@ export const PortfolioView = ({ ...props }: PortfolioViewProps) => {
                             )}
                         </>
                     ) : (
-                        <>
-                            <AssetAmount
-                                chainId={scope.chainId}
-                                variant='h2'
-                                value={
-                                    selectedPoint
-                                        ? selectedNativeValue
-                                        : portfolioNativeValue
-                                }
-                                asset={nativeAsset}
-                                density='compact'
-                                style={styles.primaryCurrency}
-                                isLoading={isPending}
-                            />
-                            {hasFiatTotal && (
-                                <PreferredAmount
-                                    variant='h4'
-                                    style={styles.valueTitle}
-                                    value={
-                                        selectedPoint
-                                            ? selectedPoint.preferredValue
-                                            : portfolioPreferredValue
-                                    }
-                                    prefix='≈ '
-                                    density='compact'
-                                    isLoading={isPending}
-                                />
-                            )}
-                        </>
+                        // Test-network value never counts as money, so a fiat
+                        // total here would read as an empty wallet.
+                        <PWBadge
+                            variant='testnet'
+                            value={t('common.network_label.testnet')}
+                        />
+                    )}
+                    {hasChange && !selectedPoint && (
+                        <ValueChangeLine
+                            testID='portfolio_change_line'
+                            absolute={changeAbsolute}
+                            percentage={changePercentage}
+                            currency={preferredCurrency}
+                        />
                     )}
                 </PWView>
-
-                {/* Stays mounted while the chart is hidden so it can fade in
-                    sync with the panel collapse rather than unmount abruptly. */}
-                {hasFiatTotal &&
-                    hasBalanceHistory &&
-                    !selectedPoint &&
-                    !hasNoTrend && (
-                        <Animated.View
-                            style={[
-                                styles.rightColumn,
-                                !isTrendColumnInLayout &&
-                                    styles.rightColumnOverlay,
-                                trendColumnStyle,
-                            ]}
-                            accessibilityElementsHidden={!isChartShown}
-                            importantForAccessibility={
-                                isChartShown ? 'auto' : 'no-hide-descendants'
-                            }
-                        >
-                            <PWText
-                                variant='h4'
-                                style={styles.trendTitle}
-                                truncate
-                            >
-                                {trendPeriodLabel[period]}
-                            </PWText>
-
-                            <TrendIndicator
-                                percentage={trendPercentage}
-                                variant='h2'
-                                hasNeutralText
-                                shouldHideIconWhenZero
-                                absolute={{
-                                    amount: trendAbsolute,
-                                    currency: preferredCurrency,
-                                }}
-                            />
-                        </Animated.View>
-                    )}
 
                 {selectedPoint && (
                     <PWView style={styles.dateTimeColumn}>
@@ -292,6 +189,22 @@ export const PortfolioView = ({ ...props }: PortfolioViewProps) => {
 
             {hasBalanceHistory && (
                 <>
+                    <ExpandablePanel isExpanded={isChartShown}>
+                        <PWView style={styles.chartContainer}>
+                            <WealthChart
+                                sources={chartSources}
+                                currencyScope={scope}
+                                period={period}
+                                enabled={isChartShown && isDrawerOpen}
+                                onSelectionChanged={chartSelectionChanged}
+                            />
+                            <ChartPeriodSelection
+                                value={period}
+                                onChange={setPeriod}
+                            />
+                        </PWView>
+                    </ExpandablePanel>
+
                     <PWDivider style={styles.divider} />
 
                     <PWTouchableOpacity
@@ -314,22 +227,6 @@ export const PortfolioView = ({ ...props }: PortfolioViewProps) => {
                             />
                         </Animated.View>
                     </PWTouchableOpacity>
-
-                    <ExpandablePanel isExpanded={isChartShown}>
-                        <PWView style={styles.chartContainer}>
-                            <WealthChart
-                                sources={chartSources}
-                                currencyScope={scope}
-                                period={period}
-                                enabled={isChartShown}
-                                onSelectionChanged={chartSelectionChanged}
-                            />
-                            <ChartPeriodSelection
-                                value={period}
-                                onChange={setPeriod}
-                            />
-                        </PWView>
-                    </ExpandablePanel>
                 </>
             )}
         </PWView>

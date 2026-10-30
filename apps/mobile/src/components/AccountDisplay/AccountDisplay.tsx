@@ -64,6 +64,8 @@ export type AccountDisplayProps = {
     showChainBadge?: boolean
     /** Rendered after the secondary label, on the line under the name; never on the name's line. */
     badges?: ReactNode
+    /** Replaces the secondary label on the line under the name, e.g. with the network the account is on. */
+    secondaryContent?: ReactNode
     /** Takes the avatar's corner; the backup warning is not shown with it. */
     avatarBadge?: ReactNode
 } & PWViewProps
@@ -82,6 +84,7 @@ export const AccountDisplay = ({
     chainId,
     showChainBadge = false,
     badges,
+    secondaryContent,
     avatarBadge,
     ...rest
 }: AccountDisplayProps) => {
@@ -194,12 +197,13 @@ export const AccountDisplay = ({
                         {displayName}
                     </PWText>
                 )}
-                {(renderSecondary || !!badges) && (
+                {(renderSecondary || !!badges || !!secondaryContent) && (
                     <PWView
                         style={styles.secondaryRow}
                         testID='account_display_secondary_row'
                     >
-                        {renderSecondary && (
+                        {secondaryContent}
+                        {!secondaryContent && renderSecondary && (
                             <PWText
                                 style={[
                                     styles.addressText,

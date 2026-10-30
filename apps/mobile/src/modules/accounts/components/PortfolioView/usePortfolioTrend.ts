@@ -27,19 +27,20 @@ export type UsePortfolioTrendResult = {
     trendAbsolute: Decimal
     trendPercentage: Decimal
     hasNoTrend: boolean
+    isPending: boolean
 }
 
 export const usePortfolioTrend = (
     chartSources: AccountHoldingSource[],
     period: HistoryPeriod,
     scope: ChainScope,
-    isChartShown: boolean,
+    enabled: boolean,
 ): UsePortfolioTrendResult => {
     const { data, isPending, isPartial } = usePortfolioHistoryQuery(
         chartSources,
         period,
         scope,
-        isChartShown,
+        enabled,
     )
 
     // Points with no preferred value have no rate behind them; keeping them
@@ -66,5 +67,6 @@ export const usePortfolioTrend = (
         // default to reads as a change the wallet never had. A chain the
         // chart left out would leave the change short of the total beside it.
         hasNoTrend: (!isPending && pricedValues.length === 0) || isPartial,
+        isPending,
     }
 }

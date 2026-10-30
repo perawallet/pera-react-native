@@ -2543,10 +2543,6 @@
         "title": "Portfoliowert",
         "show_chart": "Diagramm anzeigen",
         "hide_chart": "Diagramm ausblenden",
-        "last_24_hours": "Letzte 24 Stunden",
-        "last_7_days": "Letzte 7 Tage",
-        "last_30_days": "Letzte 30 Tage",
-        "last_year": "Letztes Jahr",
         "partial_total": "Bestände ohne Preis nicht enthalten",
         "info": {
             "title": "So berechnen wir den Portfoliowert",

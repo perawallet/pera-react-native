@@ -29,7 +29,7 @@ import {
     AssetNotificationButton,
     AssetTitle,
 } from '@modules/assets/components'
-import { ChainLabel } from '../../ChainLabel'
+import { ChainLabel } from '@modules/chain-ui/icon'
 import { PreferredAmount } from '@components/PreferredAmount'
 import { AssetPriceChart } from '../AssetPriceChart/AssetPriceChart'
 import { useChartInteraction } from '@hooks/useChartInteraction'

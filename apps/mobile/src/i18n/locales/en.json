@@ -2551,10 +2551,6 @@
         "title": "Portfolio Value",
         "show_chart": "Show Chart",
         "hide_chart": "Hide Chart",
-        "last_24_hours": "Last 24 Hours",
-        "last_7_days": "Last 7 Days",
-        "last_30_days": "Last 30 Days",
-        "last_year": "Last 1 Year",
         "partial_total": "Excludes holdings without a price",
         "info": {
             "title": "How we calculate portfolio value",

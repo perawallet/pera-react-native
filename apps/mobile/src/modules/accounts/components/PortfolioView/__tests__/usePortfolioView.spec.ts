@@ -11,10 +11,10 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { createElement, type ReactNode } from 'react'
 import { renderHook } from '@testing-library/react'
 import { Decimal } from 'decimal.js'
 import {
-    useAccountValueBasis,
     useAccountValueTotalsQuery,
     useSigningAccountsOnOwnChain,
     type AccountHoldingSource,
@@ -23,6 +23,10 @@ import {
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { setCapabilityOverrides } from '@test-utils/capability-overrides'
 import { registerEthereumChain } from '@test-utils/chain-fixtures'
+import {
+    AccountDrawerContext,
+    type AccountDrawerContextValue,
+} from '../../AccountDrawer/AccountDrawerContext'
 import { usePortfolioView } from '../usePortfolioView'
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
@@ -31,7 +35,6 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
     >()),
     useAllAccounts: vi.fn(() => []),
     useSigningAccountsOnOwnChain: vi.fn(() => []),
-    useAccountValueBasis: vi.fn(),
     useAccountValueTotalsQuery: vi.fn(),
 }))
 
@@ -67,15 +70,12 @@ const totals = (
     portfolioFiatValue: Decimal | null,
     isPortfolioFiatValuePartial = false,
     sources: {
-        native?: AccountHoldingSource[]
         fiat?: AccountHoldingSource[]
     } = {},
 ) =>
     ({
         accountValueTotals: new Map(),
-        nativeTotalSources: sources.native ?? [],
         fiatTotalSources: sources.fiat ?? [],
-        portfolioNativeValue: new Decimal(50),
         portfolioUsdValue,
         portfolioFiatValue,
         isPortfolioFiatValuePartial,
@@ -89,27 +89,35 @@ describe('usePortfolioView', () => {
         )
     })
 
-    it('converts the USD total and keeps the native total with Algorand only', () => {
-        vi.mocked(useAccountValueBasis).mockReturnValue('native')
+    it.each([
+        [false, false],
+        [true, true],
+    ])('with the drawer open=%s, isDrawerOpen is %s', (isOpen, expected) => {
+        const wrapper = ({ children }: { children: ReactNode }) =>
+            createElement(
+                AccountDrawerContext.Provider,
+                { value: { isOpen } as AccountDrawerContextValue },
+                children,
+            )
 
-        const { result } = renderHook(() => usePortfolioView())
+        const { result } = renderHook(() => usePortfolioView(), { wrapper })
 
-        expect(result.current.basis).toBe('native')
-        expect(result.current.portfolioNativeValue).toEqual(new Decimal(50))
-        expect(result.current.portfolioPreferredValue).toEqual(new Decimal(20))
+        expect(result.current.isDrawerOpen).toBe(expected)
     })
 
-    it('converts the fiat total once an account is on another chain', () => {
-        vi.mocked(useAccountValueBasis).mockReturnValue('fiat')
-
+    it('counts the drawer as open where none is mounted', () => {
         const { result } = renderHook(() => usePortfolioView())
 
-        expect(result.current.basis).toBe('fiat')
+        expect(result.current.isDrawerOpen).toBe(true)
+    })
+
+    it('totals in fiat for a wallet on Algorand only too', () => {
+        const { result } = renderHook(() => usePortfolioView())
+
         expect(result.current.portfolioPreferredValue).toEqual(new Decimal(60))
     })
 
     it('leaves the total unknown, not zero, when nothing counted is priced', () => {
-        vi.mocked(useAccountValueBasis).mockReturnValue('fiat')
         vi.mocked(useAccountValueTotalsQuery).mockReturnValue(
             totals(new Decimal(10), null),
         )
@@ -121,7 +129,6 @@ describe('usePortfolioView', () => {
     })
 
     it('flags a fiat total that leaves unpriced holdings out', () => {
-        vi.mocked(useAccountValueBasis).mockReturnValue('fiat')
         vi.mocked(useAccountValueTotalsQuery).mockReturnValue(
             totals(new Decimal(10), new Decimal(30), true),
         )
@@ -132,19 +139,7 @@ describe('usePortfolioView', () => {
         expect(result.current.isPreferredValuePartial).toBe(true)
     })
 
-    it('does not flag the single-chain total, which never sums the partial fiat figure', () => {
-        vi.mocked(useAccountValueBasis).mockReturnValue('native')
-        vi.mocked(useAccountValueTotalsQuery).mockReturnValue(
-            totals(new Decimal(10), new Decimal(30), true),
-        )
-
-        const { result } = renderHook(() => usePortfolioView())
-
-        expect(result.current.isPreferredValuePartial).toBe(false)
-    })
-
     it('does not flag a total the unresolved rate leaves unknown', () => {
-        vi.mocked(useAccountValueBasis).mockReturnValue('fiat')
         vi.mocked(useAccountValueTotalsQuery).mockReturnValue(
             totals(new Decimal(10), new Decimal(30), true),
         )
@@ -168,7 +163,6 @@ describe('usePortfolioView', () => {
             },
         }
         vi.mocked(useSigningAccountsOnOwnChain).mockReturnValue([ethAccount])
-        vi.mocked(useAccountValueBasis).mockReturnValue('fiat')
 
         const { result } = renderHook(() => usePortfolioView())
 
@@ -178,12 +172,10 @@ describe('usePortfolioView', () => {
         )
     })
 
-    it('plots the chains the native total sums on the native basis', () => {
-        vi.mocked(useAccountValueBasis).mockReturnValue('native')
+    it('plots the chains the fiat total sums, on a wallet with Algorand only', () => {
         vi.mocked(useAccountValueTotalsQuery).mockReturnValue(
             totals(new Decimal(10), new Decimal(30), false, {
-                native: [ALGO_SOURCE],
-                fiat: [ALGO_SOURCE, ETH_SOURCE],
+                fiat: [ALGO_SOURCE],
             }),
         )
 
@@ -195,10 +187,8 @@ describe('usePortfolioView', () => {
 
     it('plots every chain the fiat total sums once the wallet spans chains', () => {
         registerEthereumChain()
-        vi.mocked(useAccountValueBasis).mockReturnValue('fiat')
         vi.mocked(useAccountValueTotalsQuery).mockReturnValue(
             totals(new Decimal(10), new Decimal(30), false, {
-                native: [ALGO_SOURCE],
                 fiat: [ALGO_SOURCE, ETH_SOURCE],
             }),
         )
@@ -212,7 +202,6 @@ describe('usePortfolioView', () => {
     it('drops the chart when a chain in the total has no balance history', () => {
         registerEthereumChain()
         setCapabilityOverrides({ balanceHistory: false }, 'ethereum')
-        vi.mocked(useAccountValueBasis).mockReturnValue('fiat')
         vi.mocked(useAccountValueTotalsQuery).mockReturnValue(
             totals(new Decimal(10), new Decimal(30), false, {
                 fiat: [ALGO_SOURCE, ETH_SOURCE],
@@ -225,8 +214,6 @@ describe('usePortfolioView', () => {
     })
 
     it('has no chart when nothing counted can be plotted', () => {
-        vi.mocked(useAccountValueBasis).mockReturnValue('native')
-
         const { result } = renderHook(() => usePortfolioView())
 
         expect(result.current.chartSources).toEqual([])
