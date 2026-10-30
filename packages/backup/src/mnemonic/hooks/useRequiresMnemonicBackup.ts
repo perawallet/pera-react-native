@@ -13,6 +13,7 @@
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type { Maybe } from '@perawallet/wallet-core-shared'
+import { backupChainAdapters } from '../../chain-adapter'
 import { useMnemonicBackupStore } from '../store'
 import { getMnemonicBackupKeyId } from '../utils'
 
@@ -26,7 +27,9 @@ export const useRequiresMnemonicBackup = (
 ): boolean => {
     const backedUpKeyIds = useMnemonicBackupStore(state => state.backedUpKeyIds)
 
-    if (!account) return false
+    // A read on a chain with no backup adapter is "nothing to back up";
+    // getMnemonicBackupKeyId stays loud so a wrong-chain mark-complete throws.
+    if (!account || !backupChainAdapters.has(chainId)) return false
 
     const keyId = getMnemonicBackupKeyId(account, chainId)
     if (keyId === null) return false
