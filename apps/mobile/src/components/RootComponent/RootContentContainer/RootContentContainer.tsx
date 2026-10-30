@@ -10,11 +10,7 @@
  limitations under the License
  */
 
-import {
-    useSelectedScope,
-    useWalletDeployment,
-} from '@perawallet/wallet-core-chain-shared'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useWalletDeployment } from '@perawallet/wallet-core-chain-shared'
 import { MainRoutes } from '@routes/index'
 import { useStyles } from './styles'
 import type { RootComponentProps } from '../RootComponent'
@@ -33,13 +29,14 @@ import { useNotificationReceivedListener } from '@hooks/useNotificationReceivedL
 import { PairingProgressOverlay } from '@modules/walletconnect/shell'
 import { useTokenListener } from '@modules/token'
 import { usePhishingListRefresh } from '@modules/site-safety/shell'
+import { useHomeChainScope } from '@hooks/useHomeChainScope'
 
 export type RootContentContainerProps = RootComponentProps
 
 export const RootContentContainer = ({
     fcmToken,
 }: RootContentContainerProps) => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const scope = useHomeChainScope()
     const isLive = useWalletDeployment() === 'live'
     const insets = useSafeAreaInsets()
     const styles = useStyles(insets)

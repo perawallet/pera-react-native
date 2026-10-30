@@ -20,12 +20,8 @@ const LEGACY_BRIDGE_BASELINE: readonly string[] = [
 
 // The app code that reads the deployment off the network store itself. The
 // packages' baseline above is what keeps the rule at `warn`; the app scope
-// has no such debt once these are fixed.
-const APP_BRIDGE_BASELINE: readonly string[] = [
-    'apps/mobile/src/components/AccountHeaderMenu/useAccountHeaderMenu.ts',
-    'apps/mobile/src/modules/contacts/screens/ViewContactScreen/useViewContactScreen.tsx',
-    'apps/mobile/src/modules/settings/screens/developer/SettingsDeveloperNodeSettingsScreen/useSettingsDeveloperNodeSettingsScreen.tsx',
-]
+// has no such debt, so this list is empty.
+const APP_BRIDGE_BASELINE: readonly string[] = []
 
 describe('pera/no-legacy-network-bridge', () => {
     it('reports each converter call and every reference to LEGACY_CHAIN_ID', async () => {

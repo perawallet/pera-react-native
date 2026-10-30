@@ -192,7 +192,10 @@ describe('useArc60SigningScreen', () => {
             result.current.handleApprove()
         })
 
-        expect(mockConfirmQuantumDappUsage).toHaveBeenCalledWith(['ADDR'])
+        expect(mockConfirmQuantumDappUsage).toHaveBeenCalledWith(
+            ['ADDR'],
+            'algorand',
+        )
         expect(mockPipeline.fail).toHaveBeenCalledTimes(1)
         expect(mockPipeline.next).not.toHaveBeenCalled()
     })

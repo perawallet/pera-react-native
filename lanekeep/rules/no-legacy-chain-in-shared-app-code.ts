@@ -18,9 +18,9 @@ import {
 // debt is still a warning, while the shared code is blocking.
 export default defineRule({
     id: 'pera/no-legacy-chain-in-shared-app-code',
-    // The files that still pin the legacy chain are listed by the spec's
-    // baseline, which may only shrink; flip to `error` when it is empty.
-    severity: 'warn',
+    // The spec's baseline is empty: every shared hook and component is clean,
+    // so the rule blocks on the next one that pins the legacy chain.
+    severity: 'error',
     card: {
         message:
             'A shared hook or component must not pin the Algorand scope with LEGACY_CHAIN_ID',

@@ -137,7 +137,8 @@ export const useAssetDetailsScreen = ({
         : undefined
     const { displayName: accountDisplayName } = useResolvedAddress(
         address ?? '',
-        { enabled: !!address, chainId },
+        scope,
+        { enabled: !!address },
     )
 
     // Screen-view tracking (screen_asset_detail) is centralized in the

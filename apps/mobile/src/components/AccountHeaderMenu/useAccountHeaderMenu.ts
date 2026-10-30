@@ -13,7 +13,10 @@
 import { useCallback, useMemo } from 'react'
 import type { PWDropdownItem } from '@components/core'
 import { usePreferences, useSettings } from '@perawallet/wallet-core-settings'
-import { useNetworkStore } from '@perawallet/wallet-core-chain-shared'
+import {
+    useNetworkStore,
+    useWalletDeployment,
+} from '@perawallet/wallet-core-chain-shared'
 import { getSyncService } from '@perawallet/wallet-core-background'
 import { UserPreferences } from '@constants/user-preferences'
 import { useLanguage } from '@hooks/useLanguage'
@@ -37,7 +40,7 @@ export const useAccountHeaderMenu = ({
     const navigation = useAppNavigation()
     const { getPreference, setPreference } = usePreferences()
     const { privacyMode, setPrivacyMode } = useSettings()
-    const mode = useNetworkStore(state => state.mode)
+    const mode = useWalletDeployment()
     const setMode = useNetworkStore(state => state.setMode)
     const isDeveloperMode = mode === 'developer'
     const canSearch = useCapability({ anyChain: 'assetSearch' })

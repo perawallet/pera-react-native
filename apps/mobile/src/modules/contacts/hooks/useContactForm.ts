@@ -37,6 +37,7 @@ import {
 
 import { useImagePicker } from '@hooks/useImagePicker'
 import { useNfdResolve } from '@hooks/useNfdResolve'
+import { useHomeChainScope } from '@hooks/useHomeChainScope'
 
 import type { Optional, Nullable } from '@perawallet/wallet-core-shared'
 
@@ -119,7 +120,7 @@ export const useContactForm = (
         useState<Optional<AddressFamilyMatch>>()
 
     const { resolvedAddress, isNfdResolved, isNfdResolving, nfdName } =
-        useNfdResolve(rawAddressInput)
+        useNfdResolve(rawAddressInput, useHomeChainScope())
 
     const setAddresses = useCallback(
         (next: ContactAddresses) =>

@@ -729,9 +729,10 @@ describe('useSigningActionButtons', () => {
             })
 
             expect(mockNext).toHaveBeenCalledTimes(1)
-            expect(mockConfirmQuantumDappUsage).toHaveBeenCalledWith([
-                'QUANTUMADDRESS',
-            ])
+            expect(mockConfirmQuantumDappUsage).toHaveBeenCalledWith(
+                ['QUANTUMADDRESS'],
+                'algorand',
+            )
         })
 
         it('never consults the warning for a local sign request', async () => {

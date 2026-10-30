@@ -16,25 +16,9 @@ const SHARED_APP_GLOBS = [
 ]
 
 // Delete an entry when its file is clean; never add one. The rule ships at
-// `error`, so this list is the whole debt the rule sees in shared app code.
-const SHARED_APP_BASELINE: readonly string[] = [
-    'apps/mobile/src/components/AccountDisplay/useAccountDisplay.ts',
-    'apps/mobile/src/components/AccountIcon/useAccountIcon.ts',
-    'apps/mobile/src/components/AccountWithBalance/useAccountWithBalance.ts',
-    'apps/mobile/src/components/AddressDisplay/useAddressDisplay.ts',
-    'apps/mobile/src/components/AddressListItem/AddressListItem.tsx',
-    'apps/mobile/src/components/AssetSelector/AssetSelectorById/AssetSelectorById.tsx',
-    'apps/mobile/src/components/PreferredAmount/ConvertedPreferredAmount/ConvertedPreferredAmount.tsx',
-    'apps/mobile/src/components/PreferredAmount/PrecomputedPreferredAmount/PrecomputedPreferredAmount.tsx',
-    'apps/mobile/src/components/PreferredAmount/usePreferredAmount.ts',
-    'apps/mobile/src/components/RootComponent/RootContentContainer/RootContentContainer.tsx',
-    'apps/mobile/src/components/TestnetIndicator/useTestnetIndicator.web.ts',
-    'apps/mobile/src/hooks/useAccountTypeLabel.ts',
-    'apps/mobile/src/hooks/useIsDataSigningBlocked.ts',
-    'apps/mobile/src/hooks/useNfdResolve.ts',
-    'apps/mobile/src/hooks/useQuantumDappWarning.tsx',
-    'apps/mobile/src/hooks/useResolvedAddress.ts',
-]
+// `error` and the list is empty: every shared hook and component is clean, and
+// an entry may only be added if one of them stops being clean.
+const SHARED_APP_BASELINE: readonly string[] = []
 
 const sharedAppViolations = async () => {
     const runs = await Promise.all(

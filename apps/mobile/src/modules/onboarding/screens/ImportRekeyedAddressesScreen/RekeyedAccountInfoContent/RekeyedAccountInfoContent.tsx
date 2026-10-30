@@ -51,7 +51,10 @@ export const RekeyedAccountInfoContent = ({
         authAddress,
         authAccountAlgoValue,
     } = useRekeyedAccountInfoContent({ account })
-    const { displayName: accountDisplayName } = useResolvedAddress(address)
+    const { displayName: accountDisplayName } = useResolvedAddress(
+        address,
+        scope,
+    )
 
     return (
         <PWSheetLayout header={<SheetHeader title={accountDisplayName} />}>

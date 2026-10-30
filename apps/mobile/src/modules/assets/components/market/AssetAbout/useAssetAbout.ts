@@ -18,6 +18,7 @@ import {
 } from '@perawallet/wallet-core-shared'
 import { useClipboard } from '@hooks/useClipboard'
 import { useResolvedAddress } from '@hooks/useResolvedAddress'
+import { useHomeChainScope } from '@hooks/useHomeChainScope'
 import { toValidatedBrowserUrl, useWebView } from '@modules/webview'
 import type {
     AssetAboutDisplay,
@@ -43,6 +44,7 @@ export const useAssetAbout = (
     const { copyToClipboard } = useClipboard()
     const { displayName: creatorDisplayName } = useResolvedAddress(
         assetDetails.creator?.address ?? '',
+        useHomeChainScope(),
         { enabled: !!assetDetails.creator?.address },
     )
 

@@ -30,6 +30,7 @@ import { useErrorToast } from '@hooks/useErrorToast'
 import { useIsMounted } from '@hooks/useIsMounted'
 import { useLanguage } from '@hooks/useLanguage'
 import { useNfdResolve } from '@hooks/useNfdResolve'
+import { useHomeChainScope } from '@hooks/useHomeChainScope'
 import { useWatchableChainIds } from '@modules/onboarding/hooks'
 import { watchAccountCopyFor } from '@modules/onboarding/utils/watchAccountCopyFor'
 import type { AddAccountStackParamList } from '@modules/onboarding/routes/types'
@@ -67,7 +68,7 @@ export const useWatchAccountScreen = (): UseWatchAccountScreenResult => {
     const [address, setAddress] = useState(route.params?.prefillAddress ?? '')
 
     const { resolvedAddress, isNfdResolved, isNfdResolving, nfdName } =
-        useNfdResolve(address)
+        useNfdResolve(address, useHomeChainScope())
 
     const watchableChainIds = useWatchableChainIds()
     // The default chain decides when several chains accept the same address.
