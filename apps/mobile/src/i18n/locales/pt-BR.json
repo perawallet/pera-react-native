@@ -557,7 +557,7 @@
         },
         "compatibility": {
             "title": "Usar esta passphrase em outras wallets",
-            "evm": "Redes compatíveis com Ethereum: wallets BIP39 padrão, como a MetaMask, podem importar estas palavras, e o endereço da sua primeira conta será o mesmo. Contas que você adicionar depois na Pera podem não aparecer nessas wallets por padrão.",
+            "evm": "Redes compatíveis com Ethereum: wallets BIP39 padrão, como MetaMask, Uniswap ou Rabby, podem importar estas palavras, e o endereço da sua primeira conta será o mesmo. Depois da importação, talvez você veja apenas esse primeiro endereço. Algumas wallets mostram seus outros endereços assim que eles são usados; em outras, você precisará adicioná-los manualmente. Eles aparecem na ordem em que você os criou na Pera.",
             "algorand": "Algorand: funciona na Pera e em outras wallets compatíveis com wallets HD de Algorand de 24 palavras. Wallets de Algorand antigas, de 25 palavras, não conseguem importá-la.",
             "warning": "Qualquer pessoa que tenha estas palavras controla seus fundos em todas as redes. Nunca as digite em um site nem as compartilhe com ninguém."
         }
@@ -578,12 +578,15 @@
         "info": {
             "title": "Crie um backup da passphrase de recuperação da sua conta",
             "body": "Criar um backup da passphrase de recuperação permitirá que você recupere sua conta. Sem a passphrase de recuperação, se você perder seu dispositivo, remover a conta ou excluir o app, você pode perder permanentemente o acesso à sua conta Algorand!",
+            "body_all_networks": "Sua passphrase de recuperação é a única forma de recuperar sua conta em todas as redes: {{networks}}. Se você perder seu dispositivo, remover a conta ou excluir o app sem um backup, perderá permanentemente o acesso aos seus fundos.",
             "cta": "Entendi"
         },
         "write_down": {
             "title": "Prepare-se para anotar sua passphrase de recuperação",
             "body": "A única forma de recuperar uma conta Algorand é com esta passphrase de recuperação.",
+            "body_all_networks": "Esta passphrase de recuperação é a única forma de recuperar sua conta e todos os seus endereços em todas as redes.",
             "warning": "Não compartilhe esta passphrase de recuperação com ninguém, pois ela concede acesso total à sua conta.",
+            "warning_all_networks": "Não compartilhe esta passphrase de recuperação com ninguém. Qualquer pessoa que a tenha controla seus fundos em todas as redes.",
             "cta": "Tudo pronto, começar"
         },
         "mnemonic": {
@@ -3743,12 +3746,10 @@
         },
         "request": {
             "title": "{{name}} quer se conectar à sua conta",
-            "permissions_title_zero": "{{count}} permissões solicitadas",
-            "permissions_title_one": "{{count}} permissão solicitada",
-            "permissions_title_other": "{{count}} permissões solicitadas",
-            "permissions_request_accounts": "Ver o endereço e os saldos da sua wallet",
-            "permissions_sign_transaction": "Solicitar assinatura de transações",
-            "permissions_sign_data": "Solicitar assinatura de dados arbitrários",
+            "title_network": "{{name}} quer se conectar à sua conta {{network}}",
+            "title_networks": "{{name}} quer se conectar às suas contas {{network}} e {{otherNetwork}}",
+            "network_not_added": "Não adicionada",
+            "origin_verified": "Verificado pelo WalletConnect",
             "accounts_title": "SELECIONAR CONTAS",
             "no_accounts": "Nenhuma das suas contas pode se conectar nesta rede.",
             "success_sheet_title": "Conexão estabelecida com {{name}}",
@@ -3766,6 +3767,13 @@
             "quantum_fee_delivery_failed": "Não foi possível concluir a solicitação. Este app pode não suportar as taxas de rede mais altas exigidas por contas Quantum.",
             "origin_scam": "Este app foi sinalizado como um risco de segurança. Não se conecte, a menos que você confie nele.",
             "origin_unverified": "A Pera não conseguiu verificar o site deste app."
+        },
+        "permissions": {
+            "heading": "Este app poderá",
+            "view_accounts": "Ver seu endereço e saldos",
+            "approve_transactions": "Pedir que você aprove transações",
+            "sign_messages": "Pedir que você assine mensagens",
+            "switch_networks": "Pedir para trocar de rede"
         },
         "connection": {
             "approve_delivery_failed": "Não foi possível contatar o dApp para confirmar a conexão. Verifique sua conexão com a internet e tente novamente."
@@ -3791,6 +3799,7 @@
             "disconnect_failed_title": "Não foi possível desconectar",
             "version": "Esta sessão usa o WalletConnect V{{version}}",
             "connected_accounts": "Conectado com",
+            "network_label": "{{chain}} {{network}}",
             "permissions": "Permissões avançadas",
             "permissions_info_title": "Permissões avançadas",
             "permissions_info_body": "O WalletConnect é um protocolo de comunicação para web3 que permite que wallets e dApps se conectem e interajam com segurança. Em cada nova versão, o WalletConnect traz novas formas de tratar, assinar e/ou exibir solicitações de transação vindas de projetos de terceiros."

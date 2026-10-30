@@ -36,6 +36,7 @@ import {
     type MockInstance,
 } from 'vitest'
 import { act, fireEvent, screen, waitFor } from '@testing-library/react'
+import { addressCodecs } from '@perawallet/wallet-core-chain-contract'
 import { Address, Transaction, TransactionType } from 'algosdk'
 import { http, HttpResponse } from 'msw'
 import {
@@ -458,6 +459,27 @@ describe('Flow: ConnectionsProvider pair → approve → sign', () => {
         await act(async () => {
             await dispatched
         })
+
+        // An Algorand proposal reads as before: the Algorand network, the
+        // account by its Algorand address, nothing marked as not added.
+        await waitFor(() => {
+            expect(
+                screen.getByTestId('wc_requested_network_algorand'),
+            ).toBeTruthy()
+        })
+        expect(
+            screen.getByText('walletconnect.request.title_network'),
+        ).toBeTruthy()
+        expect(
+            screen.queryByText('walletconnect.request.network_not_added'),
+        ).toBeNull()
+        expect(
+            screen.getByText(
+                addressCodecs
+                    .get('algorand')
+                    .truncate(addressOf(SIGNING_ACCOUNT)),
+            ),
+        ).toBeTruthy()
 
         await approveViaUi(SIGNING_ACCOUNT.name as string)
 

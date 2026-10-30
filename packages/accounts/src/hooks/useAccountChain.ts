@@ -35,10 +35,10 @@ import { useAccountChainStateStore, useAccountsStore } from '../store'
 import { useRegisteredChainIds } from './accountChainEntries'
 
 /**
- * The one chain an account lives on: the first registered chain, in registry
- * order, it has an address on. Every creation path writes a single chain, so
- * the fallback only covers a record whose chain isn't registered in this build;
- * a stored record always holds at least one.
+ * The account's primary chain: the first registered chain, in registry order,
+ * it has an address on. Enabling a chain later adds an entry to the same
+ * record, so this is not the only one. The fallback covers a record with no
+ * chain registered in this build; a stored record always holds at least one.
  */
 export const accountChainIdOf = (
     account: WalletAccount,

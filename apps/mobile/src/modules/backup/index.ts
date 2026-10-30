@@ -17,12 +17,16 @@ export {
     useBackupFlowLauncher,
     useBackupQuiz,
     useMnemonicForAddress,
+    usePassphraseReach,
     useRandomMnemonicForAddress,
 } from './hooks'
 export type {
     BackupQuizQuestion,
+    PassphraseLinkedAddress,
     UseBackupFlowLauncherResult,
     UseBackupQuizResult,
     UseMnemonicForAddressResult,
+    UsePassphraseReachParams,
+    UsePassphraseReachResult,
     UseRandomMnemonicForAddressResult,
 } from './hooks'

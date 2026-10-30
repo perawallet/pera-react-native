@@ -12,7 +12,10 @@
 
 import { useCallback, useMemo, useRef, useState } from 'react'
 import {
+    chainAccountOf,
+    eligibleChains,
     firstUnreachableChainsNote,
+    hasCustody,
     signingAddressesOn,
     useAccountValueTotalsQuery,
     useAllAccounts,
@@ -28,6 +31,7 @@ import {
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import type { ConnectionProposal } from '@perawallet/wallet-core-connections'
 import type { ConnectionPeerVerificationStatus } from '@perawallet/wallet-extension-connections'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import {
     AppError,
     generateOrderedUniqueId,
@@ -40,6 +44,7 @@ import {
     WalletConnectEvent,
     AnalyticsMetadataKey,
 } from '@analytics'
+import { useEnableChainAction } from '@hooks/useEnableChainAction'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
@@ -50,6 +55,10 @@ import {
 } from '@modules/site-safety'
 import { useWebView, toValidatedBrowserUrl } from '@modules/webview'
 import { toPeerDisplayText, toPeerHostLabel } from '@utils/peerDisplay'
+import {
+    toConnectionPermissions,
+    type ConnectionPermission,
+} from '../../utils/connectionPermissions'
 import { uniqueChainIds } from '../../utils/uniqueChainIds'
 
 export type ConnectionOriginWarning = 'scam' | 'mismatch' | 'unverified'
@@ -74,9 +83,43 @@ const approvedChainsOf = (
     return approved.length > 0 ? approved : [fallback]
 }
 
+export type ConnectionAccountRow = {
+    account: WalletAccount
+    /** The first requested chain the account signs on; its address is the one shown. */
+    chainId: ChainId
+}
+
+export type RequestedNetwork = {
+    chainId: ChainId
+    name: string
+    /** Some held account can sign on the chain. */
+    isAdded: boolean
+    /** Not added, but a held account that can reach the chain could add it. */
+    canAdd: boolean
+    /** The chain is being added to the accounts that can reach it. */
+    isAdding: boolean
+    /** Every requested network on this chain is a test network. */
+    isTestnet: boolean
+}
+
+// An account the chain is missing from but whose custody reaches it. A watch
+// account can't sign there, and a hardware account needs its device to derive
+// the address, which a sheet can't prompt for.
+const canAddChainTo = (account: WalletAccount, chainId: ChainId): boolean =>
+    !hasCustody(account, 'watch') &&
+    !hasCustody(account, 'hardware') &&
+    chainAccountOf(account, chainId) === undefined &&
+    eligibleChains(account).includes(chainId)
+
 export type UseConnectionApprovalViewResult = {
     /** The accounts that can sign on the proposal's chains, in the user's sort order. */
-    sortedAccounts: WalletAccount[]
+    accountRows: ConnectionAccountRow[]
+    title: string
+    requestedNetworks: RequestedNetwork[]
+    handleAddNetwork: (chainId: ChainId) => void
+    permissions: ConnectionPermission[]
+    /** WalletConnect Verify attested the origin and site safety found nothing against it. */
+    isOriginVerified: boolean
     /** Account ids; an account may connect on more than one chain. */
     selectedAccounts: string[]
     isConnecting: boolean
@@ -165,6 +208,104 @@ export const useConnectionApprovalView = (
         signingAccounts,
         accountValueTotals,
         scope.chainId,
+    )
+    const peerName = toPeerDisplayText(proposal.peer.name)
+    const chainIds = useMemo(
+        () => uniqueChainIds(proposal.requested.chains),
+        [proposal.requested.chains],
+    )
+    const accountRows = useMemo(
+        () =>
+            sortedAccounts.flatMap(account => {
+                const chainId = chainIds.find(
+                    id =>
+                        signingAddressesOn(account, accounts, [id]).length > 0,
+                )
+                return chainId === undefined ? [] : [{ account, chainId }]
+            }),
+        [sortedAccounts, accounts, chainIds],
+    )
+    const { enablingChainId: addingChainId, enableChainOnAccounts } =
+        useEnableChainAction(t('account_options.add_network_error'))
+    const requestedNetworks = useMemo(
+        () =>
+            chainIds.map((chainId): RequestedNetwork => {
+                const { chains } = getProvider()
+                const descriptor = chains.has(chainId)
+                    ? chains.get(chainId).descriptor
+                    : undefined
+                // `requested.networks` is one flat list across chains, so an id
+                // two chains share (`mainnet`) counts toward both.
+                const requested = (descriptor?.networks ?? []).filter(
+                    ({ id }) => proposal.requested.networks.includes(id),
+                )
+                const isAdded = signingAccounts.some(
+                    account =>
+                        signingAddressesOn(account, accounts, [chainId])
+                            .length > 0,
+                )
+                return {
+                    chainId,
+                    name: descriptor?.displayName ?? chainId,
+                    isAdded,
+                    canAdd:
+                        !isAdded &&
+                        accounts.some(account =>
+                            canAddChainTo(account, chainId),
+                        ),
+                    isAdding: chainId === addingChainId,
+                    isTestnet:
+                        requested.length > 0 &&
+                        requested.every(({ tier }) => tier === 'testnet'),
+                }
+            }),
+        [
+            chainIds,
+            signingAccounts,
+            accounts,
+            addingChainId,
+            proposal.requested.networks,
+        ],
+    )
+    const title = useMemo(() => {
+        const { chains } = getProvider()
+        const families = new Set<string>()
+        const names: string[] = []
+        for (const chainId of chainIds) {
+            if (!chains.has(chainId)) continue
+            const { family, displayName } = chains.get(chainId).descriptor
+            if (families.has(family)) continue
+            families.add(family)
+            names.push(displayName)
+        }
+        const [network, otherNetwork] = names
+        if (network === undefined) {
+            return t('walletconnect.request.title', { name: peerName })
+        }
+        return otherNetwork === undefined
+            ? t('walletconnect.request.title_network', {
+                  name: peerName,
+                  network,
+              })
+            : t('walletconnect.request.title_networks', {
+                  name: peerName,
+                  network,
+                  otherNetwork,
+              })
+    }, [chainIds, peerName, t])
+    const permissions = useMemo(
+        () => toConnectionPermissions(proposal.requested.methods),
+        [proposal.requested.methods],
+    )
+    const handleAddNetwork = useCallback(
+        (chainId: ChainId) => {
+            const addableIds = accounts
+                .filter(account => canAddChainTo(account, chainId))
+                .map(({ id }) => id)
+            if (addableIds.length === 0) return
+            enableChainOnAccounts(addableIds, chainId)
+        },
+        [accounts, enableChainOnAccounts],
     )
     const noAccountsNote = useMemo(
         () =>
@@ -331,13 +472,20 @@ export const useConnectionApprovalView = (
     }, [proposal, pushWebView])
 
     return {
-        sortedAccounts,
+        accountRows,
+        title,
+        requestedNetworks,
+        handleAddNetwork,
+        permissions,
+        isOriginVerified:
+            proposal.peer.verification?.status === 'valid' &&
+            siteSafety.verdict.kind === 'clear',
         selectedAccounts,
         isConnecting,
         handleAccountPress,
         handleConnect,
         handleCancel,
-        peerName: toPeerDisplayText(proposal.peer.name),
+        peerName,
         peerUrlLabel: toPeerHostLabel(proposal.peer.url),
         canOpenPeerUrl: toValidatedBrowserUrl(proposal.peer.url) !== null,
         handlePressUrl,

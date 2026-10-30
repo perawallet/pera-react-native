@@ -75,46 +75,37 @@ describe('WcConnectScreen visual fidelity with mobile ConnectionApprovalView', (
         expect(twinHeader).toContain(shared)
         expect(twinView).toContain(shared)
 
-        // The twin's local stylesheet must stay limited to the requester rows
-        // and the delivery-failure notice — the two things mobile has no
-        // counterpart for. Anything else appearing here is a value copied out
+        // The twin's local stylesheet must stay limited to the delivery-failure
+        // notice — the one thing mobile has no counterpart for. Anything else appearing here is a value copied out
         // of mobile's, which is how the two drift on spacing or colour.
         const localDeclared = [
             ...twinStyles.matchAll(/^\s{4}([A-Za-z0-9_]+):\s*\{/gm),
         ].map(m => m[1])
-        expect(localDeclared.sort()).toEqual([
-            'deliveryError',
-            'verifiedBadge',
-            'verifiedBadgeText',
-        ])
+        expect(localDeclared.sort()).toEqual(['deliveryError'])
     })
 
     it('renders mobile’s header copy, apart from the network badges the extension shows globally', () => {
-        // Catches a dropped permissions panel title or the "{{name}} wants to
-        // connect" headline — each would leave the twin looking materially
-        // different from the screen it copies.
+        // Catches a dropped copy key in the header, which would leave the twin
+        // looking materially different from the screen it copies. The headline
+        // and the network chips take their copy from the approval hook and the
+        // chip, which this source scan does not read.
         //
         // The network badges are the documented exception (owner report,
         // 2026-07-30): TestnetIndicator already states the active network at
         // the top of every extension surface and lands in the same spot, so a
         // badge here both collided with it and repeated it. See the comment at
         // the top of WcConnectHeader's returned tree.
-        const SHOWN_GLOBALLY_BY_TESTNET_INDICATOR = [
-            'walletconnect.request.networks_mainnet',
-            'walletconnect.request.networks_testnet',
-        ]
-
         // The twin attributes the request to its browser-verified tab
         // instead, so it has no use for the transport's origin verdict copy.
         const ATTRIBUTED_BY_THE_REQUESTING_TAB = [
             'walletconnect.request.origin_scam',
             'walletconnect.request.origin_unverified',
+            'walletconnect.request.origin_verified',
         ]
 
         const missing = [...i18nKeys(mobileHeader)].filter(
             key =>
                 !twinHeader.includes(key) &&
-                !SHOWN_GLOBALLY_BY_TESTNET_INDICATOR.includes(key) &&
                 !ATTRIBUTED_BY_THE_REQUESTING_TAB.includes(key),
         )
         expect(missing).toEqual([])
@@ -151,11 +142,11 @@ describe('WcConnectScreen visual fidelity with mobile ConnectionApprovalView', (
     it('reuses mobile’s leaf components rather than reimplementing them', () => {
         // These carry the look of the permissions list and the account rows.
         for (const component of [
-            'PermissionItem',
-            'TitledExpandablePanel',
+            'ConnectionPermissionsPanel',
             'ProjectVerificationIcon',
         ]) {
             expect(twinHeader).toContain(component)
+            expect(mobileHeader).toContain(component)
         }
         expect(twinView).toContain('AccountDisplay')
         expect(twinView).toContain('PWCheckbox')

@@ -20,6 +20,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import {
     toScopeKey,
+    type ChainId,
     type ChainNetwork,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
@@ -38,7 +39,12 @@ import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useModalState } from '@hooks/useModalState'
 import { useWebView, toValidatedBrowserUrl } from '@modules/webview'
-import { getPreferredDappIcon, uniqueChainIds } from '@modules/walletconnect'
+import {
+    getPreferredDappIcon,
+    toConnectionPermissions,
+    uniqueChainIds,
+    type ConnectionPermission,
+} from '@modules/walletconnect'
 import { useConnectionSettingsList } from '@modules/settings/hooks/useConnectionSettingsList'
 import type { ConnectionSettingsRow } from '@perawallet/wallet-core-connections'
 
@@ -53,12 +59,17 @@ const wcVersionFor = (
 
 export type ConnectedNetworkLabel = {
     key: string
+    chainId: ChainId
+    chainName: string
+    /** The network's own name, as its chain lists it. */
     label: string
     tone: 'mainnet' | 'testnet' | 'other'
 }
 
 export type ConnectedAccountRow = {
     account: WalletAccount
+    /** The first chain of the session the account was found on; its address is the one shown. */
+    chainId: ChainId
     networks: ConnectedNetworkLabel[]
 }
 
@@ -81,16 +92,27 @@ const toConnectedAccountRows = (
     const { chains } = getProvider()
     const rows = new Map<
         string,
-        { account: WalletAccount; labels: Map<string, ConnectedNetworkLabel> }
+        {
+            account: WalletAccount
+            chainId: ChainId
+            labels: Map<string, ConnectedNetworkLabel>
+        }
     >()
     for (const scope of scopes) {
         if (!chains.has(scope.chainId)) continue
-        const network = chains
-            .get(scope.chainId)
-            .descriptor.networks.find(({ id }) => id === scope.networkId)
+        const { descriptor } = chains.get(scope.chainId)
+        const network = descriptor.networks.find(
+            ({ id }) => id === scope.networkId,
+        )
         if (!network) continue
         const key = toScopeKey(scope)
-        const label = { key, label: network.displayName, tone: toneOf(network) }
+        const label = {
+            key,
+            chainId: scope.chainId,
+            chainName: descriptor.displayName,
+            label: network.displayName,
+            tone: toneOf(network),
+        }
         for (const address of addresses) {
             const account = findAccountByAddressOn(
                 accounts,
@@ -100,14 +122,16 @@ const toConnectedAccountRows = (
             if (!account) continue
             const row = rows.get(account.id) ?? {
                 account,
+                chainId: scope.chainId,
                 labels: new Map(),
             }
             row.labels.set(key, label)
             rows.set(account.id, row)
         }
     }
-    return [...rows.values()].map(({ account, labels }) => ({
+    return [...rows.values()].map(({ account, chainId, labels }) => ({
         account,
+        chainId,
         networks: [...labels.values()],
     }))
 }
@@ -115,6 +139,7 @@ const toConnectedAccountRows = (
 export type UseSettingsWalletConnectDetailsScreenResult = {
     preferredIcon: Optional<string>
     connectedAccounts: ConnectedAccountRow[]
+    permissions: ConnectionPermission[]
     isLoading: boolean
     deleteModalState: ReturnType<typeof useModalState>
     handleDelete: () => void
@@ -146,6 +171,10 @@ export const useSettingsWalletConnectDetailsScreen = (
     )
 
     const preferredIcon = getPreferredDappIcon(connection.peer.icons)
+    const permissions = useMemo(
+        () => toConnectionPermissions(connection.permissions),
+        [connection.permissions],
+    )
 
     const handleDelete = () => {
         setIsLoading(true)
@@ -197,6 +226,7 @@ export const useSettingsWalletConnectDetailsScreen = (
     return {
         preferredIcon,
         connectedAccounts,
+        permissions,
         isLoading,
         deleteModalState,
         handleDelete,

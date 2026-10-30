@@ -94,7 +94,8 @@ addresses before approving, because any extension page can send on the control s
 ## Composition roots
 
 - Native: `apps/mobile/src/modules/connections/providers/useConnectionsProvider.ts` creates the
-  registry, registers the WalletConnect v1 and v2 handlers, boots it through `bootConnections`
+  registry, registers the WalletConnect v1 and v2 handlers and the EIP-1193 handler that serves
+  the in-app browser's EVM pages ([DAPP_BRIDGE](DAPP_BRIDGE.md#in-app-browser)), boots it through `bootConnections`
   (`packages/connections/src/boot.ts`), and mounts the proposal queue, error toasts and signing
   adapter.
 - Extension offscreen: `apps/browser/src/offscreen/runOffscreenApp.ts` registers the WalletConnect
@@ -192,6 +193,18 @@ that was never imported from one the user has since disconnected.
 The native-app upgrade path, `migrateWalletConnect` in `packages/migrate`, takes the store too,
 through `MigrationDeps.walletConnectSessionKeys`. All three writers build the record with
 `buildWalletConnectV1Connection` (`src/v1/connection.ts`), so the persisted shape has one definition.
+
+## Reaching Pera from a mobile browser
+
+The v2 client's metadata carries `redirect` links, `perawallet-wc://` and
+`https://perawallet.app/qr/perawallet-wc/`, so a paired dApp can bring the user back to Pera for a
+later request. The universal link keeps its trailing slash: the bare host matches no app link, while
+both links reach the WalletConnect pairing route in `packages/deeplinks`.
+
+Whether a Reown AppKit dApp lists Pera in its connect modal is decided by a WalletGuide listing, which
+WalletConnect hosts outside this repo. Without one, the user pairs by scanning the QR code or pasting
+the URI. A listing's links are opened as `<native link>wc?uri=` or `<universal link>/wc?uri=`, so it
+must use the same two links, and its chains decide whether EVM dApps offer Pera.
 
 ## WalletConnect v2 refusal codes
 

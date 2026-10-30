@@ -25,6 +25,7 @@ type CapturedNavState = Pick<WebViewNativeEvent, 'url' | 'loading'>
 type CapturedWebViewProps = {
     injectedJavaScript?: string
     injectedJavaScriptBeforeContentLoaded?: string
+    onMessage?: (event: { nativeEvent: { data: string; url?: string } }) => void
     onNavigationStateChange?: (navState: CapturedNavState) => void
 }
 
@@ -32,16 +33,27 @@ type CapturedGuardOptions = {
     externalNavigation?: { onExternalNavigation: (url: string) => void }
 }
 
-const { capturedWebViewProps, capturedGuardOptions, mockPushWebView } =
-    vi.hoisted(() => ({
-        capturedWebViewProps: {
-            current: undefined as CapturedWebViewProps | undefined,
-        },
-        capturedGuardOptions: {
-            current: undefined as CapturedGuardOptions | undefined,
-        },
-        mockPushWebView: vi.fn(),
-    }))
+const {
+    capturedWebViewProps,
+    capturedGuardOptions,
+    mockPushWebView,
+    mockInterfaceHandleMessage,
+    mockEip1193,
+} = vi.hoisted(() => ({
+    capturedWebViewProps: {
+        current: undefined as CapturedWebViewProps | undefined,
+    },
+    capturedGuardOptions: {
+        current: undefined as CapturedGuardOptions | undefined,
+    },
+    mockPushWebView: vi.fn(),
+    mockInterfaceHandleMessage: vi.fn(),
+    mockEip1193: {
+        bridgeToken: '',
+        injectedScript: undefined as string | undefined,
+        handleMessage: vi.fn(() => false),
+    },
+}))
 
 vi.mock('react-native-webview', () => ({
     WebView: (props: CapturedWebViewProps) => {
@@ -52,13 +64,26 @@ vi.mock('react-native-webview', () => ({
 
 vi.mock('@modules/webview/hooks', () => ({
     useContextFingerprints: () => ({}),
-    usePeraWebviewInterface: () => ({ handleMessage: vi.fn() }),
+    usePeraWebviewInterface: () => ({
+        handleMessage: mockInterfaceHandleMessage,
+    }),
     useWebViewStore: (
         selector: (state: {
             removeWebView: () => void
             pushWebView: typeof mockPushWebView
         }) => unknown,
     ) => selector({ removeWebView: vi.fn(), pushWebView: mockPushWebView }),
+}))
+
+vi.mock('../useEip1193Bridge', () => ({
+    useEip1193Bridge: (args: { bridgeToken: string }) => {
+        mockEip1193.bridgeToken = args.bridgeToken
+        return {
+            injectedScript: mockEip1193.injectedScript,
+            handleMessage: mockEip1193.handleMessage,
+            trackNavigation: vi.fn(),
+        }
+    },
 }))
 
 vi.mock('../useWebViewNavigationGuard', () => ({
@@ -217,5 +242,77 @@ describe('PWWebView external navigation', () => {
         )
 
         expect(mockPushWebView).not.toHaveBeenCalled()
+    })
+})
+
+describe('PWWebView EIP-1193 provider', () => {
+    const renderWithPeraConnect = () =>
+        render(
+            <PWWebView
+                url='https://good.xyz/landing'
+                enablePeraConnect
+            />,
+        )
+
+    const post = (data: unknown) =>
+        capturedWebViewProps.current?.onMessage?.({
+            nativeEvent: {
+                data: JSON.stringify(data),
+                url: 'https://good.xyz/',
+            },
+        })
+
+    it('injects the provider before content and at document end, after the Pera scripts', () => {
+        mockEip1193.injectedScript = '/* eip1193 provider */'
+        renderWithPeraConnect()
+
+        const { injectedJavaScript, injectedJavaScriptBeforeContentLoaded } =
+            capturedWebViewProps.current ?? {}
+        expect(injectedJavaScriptBeforeContentLoaded).toContain(
+            '/* eip1193 provider */',
+        )
+        expect(injectedJavaScript).toContain('/* eip1193 provider */')
+        expect(injectedJavaScriptBeforeContentLoaded).toContain(
+            'setupPeraConnect',
+        )
+        mockEip1193.injectedScript = undefined
+    })
+
+    it('hands a token-stamped message the provider claims to it, and keeps it from the Pera bridge', () => {
+        mockEip1193.handleMessage.mockReturnValueOnce(true)
+        renderWithPeraConnect()
+
+        post({ provider: 'eip1193', token: mockEip1193.bridgeToken })
+
+        expect(mockEip1193.handleMessage).toHaveBeenCalledWith(
+            expect.objectContaining({ provider: 'eip1193' }),
+            'https://good.xyz/',
+        )
+        expect(mockInterfaceHandleMessage).not.toHaveBeenCalled()
+    })
+
+    it('drops a message carrying the wrong token before either handler sees it', () => {
+        mockEip1193.handleMessage.mockClear()
+        mockInterfaceHandleMessage.mockClear()
+        renderWithPeraConnect()
+
+        post({ provider: 'eip1193', token: 'forged' })
+
+        expect(mockEip1193.handleMessage).not.toHaveBeenCalled()
+        expect(mockInterfaceHandleMessage).not.toHaveBeenCalled()
+    })
+
+    it('still routes a Pera bridge message to the Pera bridge', () => {
+        mockInterfaceHandleMessage.mockClear()
+        renderWithPeraConnect()
+
+        post({
+            jsonrpc: '2.0',
+            id: 1,
+            method: 'getAddresses',
+            token: mockEip1193.bridgeToken,
+        })
+
+        expect(mockInterfaceHandleMessage).toHaveBeenCalledTimes(1)
     })
 })

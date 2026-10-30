@@ -36,6 +36,7 @@ import {
 import { Notifier } from 'react-native-notifier'
 
 import {
+    insertAssetHolding,
     upsertAccountChainState,
     useAccountChainStateStore,
     useAccountsStore,
@@ -60,7 +61,10 @@ import {
     setupTestDatabase,
     teardownTestDatabase,
 } from '@test-utils/database-setup'
+import { useSettingsStore } from '@perawallet/wallet-core-settings'
+import { UserPreferences } from '@constants/user-preferences'
 import { useSendFundsStore } from '@modules/transactions'
+import { InputScreen } from '@modules/transactions/screens/send-funds/InputScreen/InputScreen'
 import { TransactionConfirmationScreen } from '@modules/transactions/screens/send-funds/TransactionConfirmationScreen/TransactionConfirmationScreen'
 import { TransactionProcessingScreen } from '@modules/transactions/screens/send-funds/TransactionProcessingScreen/TransactionProcessingScreen'
 import { SelectDestinationScreen } from '@modules/transactions/screens/send-funds/SelectDestinationScreen/SelectDestinationScreen'
@@ -237,6 +241,10 @@ describe('Flow: send from an Ethereum account', () => {
         useAccountsStore.getState().setAccounts([])
         useAccountChainStateStore.getState().resetState()
         useSendFundsStore.getState().reset()
+        useSettingsStore.getState().resetState()
+        useSettingsStore
+            .getState()
+            .setPreference(UserPreferences.transactionInfoAgreed, true)
         vi.mocked(Notifier.showNotification).mockClear()
         sentRawTransactions.length = 0
         vi.spyOn(kmsCore, 'sign').mockImplementation(signWithSenderKey)
@@ -291,6 +299,28 @@ describe('Flow: send from an Ethereum account', () => {
             },
         })
         expectFlowEvents(analytics, 'send', 'ethereum')
+    })
+
+    it('Given an ether send, when the amount screen opens, then it offers MAX but no note', async () => {
+        await insertAssetHolding({
+            accountAddress: SENDER,
+            assetId: nativeAssetFor('ethereum').assetId,
+            scope: ETH_SCOPE,
+            amount: new Decimal('10000000000000000000'),
+        })
+        selectSender(ETHEREUM_SENDER)
+        useSendFundsStore
+            .getState()
+            .setSelectedAsset({ chainId: 'ethereum', assetId: 'native' })
+
+        renderWithNavigation(InputScreen, 'InputAmount')
+
+        expect(
+            await screen.findByTestId('send_input_max_button', undefined, {
+                timeout: 5000,
+            }),
+        ).toBeTruthy()
+        expect(screen.queryByTestId('send_input_note_button')).toBeNull()
     })
 
     it("Given an account on Algorand and Ethereum, when it sends ether, then the send runs on the asset's chain", async () => {

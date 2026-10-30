@@ -10,9 +10,19 @@
  limitations under the License
  */
 
-export { usePassphraseReach } from './usePassphraseReach'
-export type {
-    PassphraseLinkedAddress,
-    UsePassphraseReachParams,
-    UsePassphraseReachResult,
-} from './usePassphraseReach'
+import { makeStyles } from '@rneui/themed'
+
+export const useStyles = makeStyles(theme => ({
+    container: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.xs,
+        backgroundColor: theme.colors.layerGrayLighter,
+        borderRadius: theme.spacing.lg,
+        paddingVertical: theme.spacing.xs,
+        paddingHorizontal: theme.spacing.sm,
+    },
+    notAdded: {
+        color: theme.colors.textGray,
+    },
+}))

@@ -29,3 +29,15 @@ export const updaterWithoutSecret = (m: string) => {
     const seed = deriveBip39Seed(m)
     set(state => ({ ...state, size: seed.length }))
 }
+// A single binding has no setter slot, so a call to that name is not a state
+// write however the secret reaches it.
+export const singleBindingIsNotASetter = (m: string) => {
+    const [importedKey] = useState<Uint8Array>()
+    const seed = deriveBip39Seed(m)
+    importedKey(seed)
+}
+// An ordinary call is not a state write, whatever it is handed.
+export const anOrdinaryCallIsNotASetter = (m: string) => {
+    const seed = deriveBip39Seed(m)
+    registerThing(seed)
+}
