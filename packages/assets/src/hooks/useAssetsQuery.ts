@@ -50,6 +50,7 @@ export const useAssetsQuery = (
     // changes. This prevents query recomputation when callers pass a new array
     // with the same values.
     const stableIds = useStableIdList(ids)
+    const isEnabled = stableIds.length > 0
 
     const query = useQuery({
         queryKey: getAssetsQueryKey(stableIds, scope, { fetchMissing }),
@@ -57,7 +58,7 @@ export const useAssetsQuery = (
         // No ids → nothing to fetch. Skip the query entirely so callers that
         // already supply the asset (e.g. the asset-list rows pass skipFetch and
         // get an empty id list) don't mount a live observer per row.
-        enabled: stableIds.length > 0,
+        enabled: isEnabled,
         queryFn: async () => {
             if (fetchMissing) {
                 await fetchAndPersistAssets(stableIds, scope)
@@ -95,13 +96,14 @@ export const useAssetsQuery = (
     return useMemo(
         () => ({
             data,
-            isPending: query.isPending,
+            isPending: isEnabled && query.isPending,
             isFetched: query.isFetched,
             isRefetching: query.isRefetching,
             isError: query.isError,
         }),
         [
             data,
+            isEnabled,
             query.isPending,
             query.isFetched,
             query.isRefetching,

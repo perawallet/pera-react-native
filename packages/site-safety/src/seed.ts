@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import {
     countGenerationRows,
     deleteOtherGenerations,
@@ -87,7 +87,7 @@ const seedMissingSources = async (
     }
 }
 
-let inFlight: Promise<void> | null = null
+let inFlight: Nullable<Promise<void>> = null
 
 /**
  * Writes the bundled lists for any source with no usable copy: a fresh install,

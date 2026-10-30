@@ -16,6 +16,7 @@ import {
     type ErrorMetadata,
     ErrorSeverity,
     type Nullable,
+    type Optional,
 } from '@perawallet/wallet-core-shared'
 import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 
@@ -161,7 +162,7 @@ export class WalletConnectSessionRequestExpiredError extends WalletConnectError 
  */
 export const getConnectionErrorClientId = (
     error: Nullable<Error>,
-): string | undefined => {
-    const clientId = (error as { clientId?: unknown } | null)?.clientId
+): Optional<string> => {
+    const clientId = (error as Nullable<{ clientId?: unknown }>)?.clientId
     return typeof clientId === 'string' ? clientId : undefined
 }

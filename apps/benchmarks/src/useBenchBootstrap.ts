@@ -11,17 +11,17 @@
  */
 
 import { useEffect, useState } from 'react'
-import { logger, toError } from '@perawallet/wallet-core-shared'
+import { logger, toError, type Nullable } from '@perawallet/wallet-core-shared'
 import { runBenchBootstrap } from './bootstrapSteps'
 
 export type UseBenchBootstrapResult = {
     isReady: boolean
-    error: string | null
+    error: Nullable<string>
 }
 
 export const useBenchBootstrap = (): UseBenchBootstrapResult => {
     const [isReady, setIsReady] = useState(false)
-    const [error, setError] = useState<string | null>(null)
+    const [error, setError] = useState<Nullable<string>>(null)
 
     useEffect(() => {
         runBenchBootstrap()

@@ -26,7 +26,7 @@ import {
 } from '@perawallet/wallet-core-contacts'
 
 import { getBackupSyncManager } from '@perawallet/wallet-core-backup'
-import { logger, toError } from '@perawallet/wallet-core-shared'
+import { logger, toError, type Nullable } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { useSingleFlight } from '@hooks/useSingleFlight'
@@ -48,7 +48,7 @@ export type UseEditContactFormResult = UseContactFormResult & {
      * named `selectedContact` — it is no longer always the store's selection.
      * Without an `id` when the link names an address no contact holds.
      */
-    contact: NewContact | null
+    contact: Nullable<NewContact>
     /** True when removing this contact needs the cloud-backup choice first. */
     needsBackupChoice: boolean
     save: (data: ContactFormValues) => void
@@ -78,7 +78,7 @@ export const useEditContactForm = (): UseEditContactFormResult => {
     const routeAddress = route.params?.address
     const routeLabel = route.params?.label
     const family = contactFamilyOf(route.params?.chainId)
-    const targetContact = useMemo<NewContact | null>(() => {
+    const targetContact = useMemo<Nullable<NewContact>>(() => {
         if (!routeAddress) return selectedContact
         return (
             contacts.find(

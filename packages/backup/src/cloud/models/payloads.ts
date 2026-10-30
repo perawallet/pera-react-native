@@ -11,6 +11,7 @@
  */
 
 import { z } from 'zod'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 /**
  * The item kinds the backup format itself defines. Every other `type` an
@@ -228,7 +229,7 @@ export type HdBackupPosition = {
 /** Where an HD entry sits in its seed; null for every other kind. */
 export const hdPositionOf = (
     payload: AccountEntryPayload,
-): HdBackupPosition | null =>
+): Nullable<HdBackupPosition> =>
     'seedFirstDerivedAddress' in payload &&
     payload.seedFirstDerivedAddress !== undefined &&
     'account' in payload &&

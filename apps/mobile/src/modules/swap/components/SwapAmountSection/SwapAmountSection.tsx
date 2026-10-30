@@ -165,6 +165,7 @@ export const SwapAmountSection = (props: SwapAmountSectionProps) => {
                             i18nKey='swap.form.balance_label'
                             components={[
                                 <AssetAmount
+                                    chainId={scope.chainId}
                                     key='balance'
                                     value={balance ?? new Decimal(0)}
                                     asset={asset}
@@ -197,6 +198,7 @@ export const SwapAmountSection = (props: SwapAmountSectionProps) => {
             fiat={
                 isFiatInput ? (
                     <AssetAmount
+                        chainId={scope.chainId}
                         value={amount ?? new Decimal(0)}
                         asset={asset}
                         symbolPosition={isNativeAsset ? 'start' : 'end'}

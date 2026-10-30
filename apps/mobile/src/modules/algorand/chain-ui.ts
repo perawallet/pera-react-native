@@ -11,10 +11,11 @@
  */
 
 import { i18nKey } from '@perawallet/wallet-core-chain-contract'
-import type {
-    AssetAboutParams,
-    AssetAboutDisplay,
-    CollectibleDetailsDisplay,
+import {
+    resolveTotalSupply,
+    type AssetAboutDisplay,
+    type AssetDisplayParams,
+    type CollectibleDetailsDisplay,
 } from '@modules/assets'
 import type { ChainUi } from '@modules/chain-ui'
 import {
@@ -36,7 +37,7 @@ import { useAlgorandTransactionDetail } from './hooks/useAlgorandTransactionDeta
 export const resolveAlgorandAssetAbout = ({
     asset,
     isNativeAsset,
-}: AssetAboutParams): AssetAboutDisplay => {
+}: AssetDisplayParams): AssetAboutDisplay => {
     const explorerUrl = asset.peraMetadata?.explorerUrl
     return {
         idLabelKey: isNativeAsset
@@ -74,6 +75,8 @@ export const algorandChainUi: ChainUi = {
         VerificationSection: AssetVerificationCard,
         IssuerControlsSection: AssetSecurityTags,
         resolveAbout: resolveAlgorandAssetAbout,
+        // Deferred: the @modules/assets barrel loads this registry, so the export can still be undefined while this module initialises.
+        resolveSupply: params => resolveTotalSupply(params),
     },
     collectibleDetails: algorandCollectibleDetailsDisplay,
     sendConfirmation: {

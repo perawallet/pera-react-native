@@ -99,6 +99,37 @@ export const mapWithConcurrency = async <T, R>(
     return results
 }
 
+export type ConcurrencyLimit = <T>(task: () => Promise<T>) => Promise<T>
+
+/**
+ * A gate that runs at most `limit` tasks at once across every caller sharing
+ * it, queuing the rest in call order: for a backend several independent
+ * batches hit together, where a per-batch `mapWithConcurrency` would still
+ * burst. `limit` is floored at 1.
+ */
+export const createConcurrencyLimit = (limit: number): ConcurrencyLimit => {
+    const max = Math.max(1, limit)
+    let running = 0
+    const queue: (() => void)[] = []
+
+    return async task => {
+        // A finished task hands its slot straight to the next in the queue,
+        // so a caller arriving in between can't take it and overshoot `max`.
+        if (running >= max) {
+            await new Promise<void>(resolve => queue.push(resolve))
+        } else {
+            running++
+        }
+        try {
+            return await task()
+        } finally {
+            const next = queue.shift()
+            if (next) next()
+            else running--
+        }
+    }
+}
+
 /**
  * Runs `read` on every item at once. A read that fails while others answer
  * resolves to `fallback`; when every read fails, rejects with the first

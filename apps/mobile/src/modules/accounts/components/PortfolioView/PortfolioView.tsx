@@ -228,6 +228,7 @@ export const PortfolioView = ({ ...props }: PortfolioViewProps) => {
                     ) : (
                         <>
                             <AssetAmount
+                                chainId={scope.chainId}
                                 variant='h2'
                                 value={
                                     selectedPoint

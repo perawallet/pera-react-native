@@ -83,6 +83,7 @@ export const EthereumReviewHeader = ({
             {isTransfer && (!!amount || isAmountLoading) && (
                 <PWView style={styles.amountContainer}>
                     <AssetAmount
+                        chainId={presentation.scope.chainId}
                         testID='ethereum_review_amount'
                         asset={amount?.asset}
                         value={amount?.value}

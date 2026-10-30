@@ -18,6 +18,16 @@ import type { WhitelistRow } from './transformers'
 /** The backend's listed tokens for a scope, native first. */
 export type ListedTokens = (scope: ChainScope) => Promise<WhitelistRow[]>
 
+/** The ERC-20 asset ids listed for a scope; the native coin is read separately. */
+export type ListedTokenIds = (scope: ChainScope) => Promise<string[]>
+
+export const listedTokenIds =
+    (listedTokens: ListedTokens): ListedTokenIds =>
+    async scope => {
+        const rows = await listedTokens(scope)
+        return rows.filter(row => row.type === 'erc20').map(row => row.assetId)
+    }
+
 // The backend caches the whitelist for the same window, so a fresher read
 // would see the same list.
 const WHITELIST_TTL_MS = 60_000

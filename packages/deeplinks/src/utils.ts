@@ -11,6 +11,7 @@
  */
 
 import { Decimal } from 'decimal.js'
+import type { Optional, Nullable } from '@perawallet/wallet-core-shared'
 import {
     PERAWALLET_SCHEME,
     PERAWALLET_UNIVERSAL_LINK_HOST,
@@ -71,7 +72,7 @@ export const parseQueryParams = (url: string): Record<string, string> => {
  * rejects negatives, fractions and non-numerics at the parse boundary rather
  * than letting them fail later, past the account picker and confirm sheet.
  */
-export const readBaseUnits = (raw: string): Decimal | undefined =>
+export const readBaseUnits = (raw: string): Optional<Decimal> =>
     /^\d+$/.test(raw) ? new Decimal(raw) : undefined
 
 /**
@@ -106,7 +107,7 @@ export const normalizeUrl = (url: string): string => {
  * Path and query of a `https://perawallet.app/…` link, else null. Scheme and
  * host are case-insensitive; the path is not (addresses, base64).
  */
-export const getUniversalLinkPath = (url: string): string | null => {
+export const getUniversalLinkPath = (url: string): Nullable<string> => {
     const trimmed = url.trim()
     const origin = trimmed.slice(0, PERAWALLET_UNIVERSAL_LINK_HOST.length)
     const path = trimmed.slice(PERAWALLET_UNIVERSAL_LINK_HOST.length)
@@ -132,7 +133,7 @@ export const extractPath = (url: string): string => {
     }
 }
 
-const stripPrefix = (text: string, prefix: string): string | null =>
+const stripPrefix = (text: string, prefix: string): Nullable<string> =>
     text.startsWith(prefix) ? text.slice(prefix.length) : null
 
 /**
@@ -141,7 +142,7 @@ const stripPrefix = (text: string, prefix: string): string | null =>
  */
 export const readPeraAppLink = (
     url: string,
-): { action: string; params: Record<string, string> } | null => {
+): Nullable<{ action: string; params: Record<string, string> }> => {
     const universalPath = getUniversalLinkPath(url)
     const rest =
         universalPath !== null

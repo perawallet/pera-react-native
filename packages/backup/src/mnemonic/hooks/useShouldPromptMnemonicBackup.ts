@@ -18,12 +18,13 @@ import {
     useAccountsDelegatedTo,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import type { Maybe } from '@perawallet/wallet-core-shared'
 import { useRequiresMnemonicBackup } from './useRequiresMnemonicBackup'
 
 // The single visibility rule for backup warnings (reminder banner, account
 // badge), so they can never disagree.
 export const useShouldPromptMnemonicBackup = (
-    account: WalletAccount | null | undefined,
+    account: Maybe<WalletAccount>,
     scope: ChainScope,
 ): boolean => {
     const requiresBackup = useRequiresMnemonicBackup(account, scope.chainId)

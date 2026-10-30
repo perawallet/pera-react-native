@@ -33,6 +33,7 @@ import {
     generateOrderedUniqueId,
     logger,
     toError,
+    type Optional,
 } from '@perawallet/wallet-core-shared'
 import {
     trackEvent,
@@ -53,7 +54,7 @@ import { uniqueChainIds } from '../../utils/uniqueChainIds'
 
 export type ConnectionOriginWarning = 'scam' | 'mismatch' | 'unverified'
 
-type ApprovedChain = { chainId: ChainId; address: string | undefined }
+type ApprovedChain = { chainId: ChainId; address: Optional<string> }
 
 // The chains the session settles with an address, each with its first
 // selected address on that chain; a requested chain no selected account holds
@@ -100,7 +101,7 @@ export type UseConnectionApprovalViewResult = {
 
 const ORIGIN_WARNINGS: Record<
     ConnectionPeerVerificationStatus,
-    ConnectionOriginWarning | undefined
+    Optional<ConnectionOriginWarning>
 > = {
     valid: undefined,
     mismatch: 'mismatch',
@@ -115,8 +116,8 @@ export type OriginWarningMessage = {
 
 export const toOriginWarningMessage = (
     originWarning: Exclude<ConnectionOriginWarning, 'unverified'>,
-    verifiedOriginLabel: string | undefined,
-    peerUrlLabel: string | undefined,
+    verifiedOriginLabel: Optional<string>,
+    peerUrlLabel: Optional<string>,
 ): OriginWarningMessage => {
     if (originWarning === 'scam') {
         return { key: 'walletconnect.request.origin_scam' }

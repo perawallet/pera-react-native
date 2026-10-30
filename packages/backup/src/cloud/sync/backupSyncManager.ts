@@ -364,9 +364,9 @@ export class BackupSyncManager {
         })
     }
 
-    addAccountFromBackup(address: string): Promise<ImportSummary | null> {
+    addAccountFromBackup(address: string): Promise<Nullable<ImportSummary>> {
         return this.trackAction('account', address, 'add', async () => {
-            let summary: ImportSummary | null = null
+            let summary: Nullable<ImportSummary> = null
             const done = await this.withExclusiveState(async (state, deps) => {
                 const result = await importFromBackup({
                     state,
@@ -446,9 +446,9 @@ export class BackupSyncManager {
         })
     }
 
-    addContactFromBackup(id: string): Promise<ContactImportSummary | null> {
+    addContactFromBackup(id: string): Promise<Nullable<ContactImportSummary>> {
         return this.trackAction('contact', id, 'add', async () => {
-            let summary: ContactImportSummary | null = null
+            let summary: Nullable<ContactImportSummary> = null
             const done = await this.withExclusiveState(async (state, deps) => {
                 const result = await importContactFromBackup({
                     state,
@@ -499,9 +499,9 @@ export class BackupSyncManager {
 
     addPasskeyFromBackup(
         credentialId: string,
-    ): Promise<PasskeyImportSummary | null> {
+    ): Promise<Nullable<PasskeyImportSummary>> {
         return this.trackAction('passkey', credentialId, 'add', async () => {
-            let summary: PasskeyImportSummary | null = null
+            let summary: Nullable<PasskeyImportSummary> = null
             const done = await this.withExclusiveState(async (state, deps) => {
                 const result = await importPasskeyFromBackup({
                     state,

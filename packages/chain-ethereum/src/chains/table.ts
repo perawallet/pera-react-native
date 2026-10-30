@@ -14,6 +14,7 @@ import type {
     EvmChainId,
     NetworkId,
 } from '@perawallet/wallet-core-chain-contract'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { createEvmChain } from './create-evm-chain'
 import type { EvmChain, EvmChainRow } from './types'
 
@@ -146,7 +147,7 @@ export const evmChainOf = (id: EvmChainId): EvmChain => {
 
 export const evmChainOfEip155Id = (
     eip155ChainId: number,
-): { chain: EvmChain; networkId: NetworkId } | undefined => {
+): Optional<{ chain: EvmChain; networkId: NetworkId }> => {
     for (const chain of EVM_CHAINS) {
         const network = chain.descriptor.networks.find(
             n =>

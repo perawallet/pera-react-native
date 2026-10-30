@@ -22,7 +22,7 @@ export type UseWalletConnectErrorContentResult = {
     errorBody: string
 }
 
-const extractDebugCause = (cause: unknown): string | null => {
+const extractDebugCause = (cause: unknown): Nullable<string> => {
     if (typeof cause === 'string') return cause
     if (cause instanceof Error) return cause.message
     return null

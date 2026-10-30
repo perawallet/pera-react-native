@@ -18,31 +18,35 @@ import { PWText, PWView } from '@components/core'
 import { useMemo } from 'react'
 import { toWholeUnits, type PeraAsset } from '@perawallet/wallet-core-assets'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import type { AssetSupplyDisplay } from '@modules/assets/types/asset-details-display'
 import { useLanguage } from '@hooks/useLanguage'
 import { InfoButton } from '@components/InfoButton'
+import { UNKNOWN_AMOUNT_PLACEHOLDER } from '@constants/ui'
 
 export type AssetMarketStatsProps = {
     assetDetails: PeraAsset
     scope: ChainScope
+    supply: AssetSupplyDisplay
 }
 
 export const AssetMarketStats = ({
     assetDetails,
     scope,
+    supply,
 }: AssetMarketStatsProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
 
-    const supply = useMemo(() => {
-        if (!assetDetails.totalSupply) {
-            return '-'
+    const supplyText = useMemo(() => {
+        if (supply.amount === null) {
+            return UNKNOWN_AMOUNT_PLACEHOLDER
         }
 
-        const totalSupply = toWholeUnits(assetDetails.totalSupply, assetDetails)
-        const { amount, unit } = formatWithUnits(totalSupply)
+        const wholeUnits = toWholeUnits(supply.amount, assetDetails)
+        const { amount, unit } = formatWithUnits(wholeUnits)
         const { integer, fraction } = formatNumber(amount, 2)
         return `${integer}${fraction}${unit}`
-    }, [assetDetails])
+    }, [supply.amount, assetDetails])
 
     return (
         <PWView style={styles.container}>
@@ -68,26 +72,20 @@ export const AssetMarketStats = ({
                 <PWView style={styles.itemContainer}>
                     <PWView style={styles.labelContainer}>
                         <PWText style={styles.label}>
-                            {t('asset_details.markets.total_supply')}
+                            {t(supply.labelKey)}
                         </PWText>
                         <InfoButton
                             variant='secondary'
-                            title={t(
-                                'asset_details.markets.total_supply_info_title',
-                            )}
+                            title={t(supply.labelKey)}
                         >
-                            <PWText>
-                                {t(
-                                    'asset_details.markets.total_supply_info_body',
-                                )}
-                            </PWText>
+                            <PWText>{t(supply.infoBodyKey)}</PWText>
                         </InfoButton>
                     </PWView>
                     <PWText
                         style={styles.value}
                         variant='h2'
                     >
-                        {supply}
+                        {supplyText}
                     </PWText>
                 </PWView>
             </PWView>

@@ -23,6 +23,7 @@ import {
     WEBVIEW_BRIDGE_HANDSHAKE_EVENT,
     WEBVIEW_BRIDGE_RELAY_READY_EVENT,
 } from '@perawallet/wallet-core-browser-runtime'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 export type WebviewMainChannel = {
     token: string
@@ -40,7 +41,7 @@ export type WebviewMainChannel = {
  */
 export const connectWebviewMainChannel = (
     eventPrefix: string,
-): WebviewMainChannel | null => {
+): Nullable<WebviewMainChannel> => {
     const token = new URLSearchParams(window.location.search).get(
         WEBVIEW_BRIDGE_TOKEN_PARAM,
     )

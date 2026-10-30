@@ -18,6 +18,7 @@ import type {
 } from '@perawallet/wallet-core-accounts'
 import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 import { config } from '@perawallet/wallet-core-config'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
 import { algorandKeyKindOptions } from './key-kind-options'
 import { AccountTypes, type AccountType } from './vocabulary'
@@ -118,7 +119,7 @@ const isAccountType = (kindId: string): kindId is AccountType =>
 const describe = (
     kindId: string,
     { canSign }: AccountKindContext,
-): AccountKindPresentation | undefined => {
+): Optional<AccountKindPresentation> => {
     if (!isAccountType(kindId)) return undefined
     const isUnsignableMultisig = kindId === AccountTypes.multisig && !canSign
     return {
@@ -130,7 +131,7 @@ const describe = (
 const transitionLabel = (
     from: string,
     to: string,
-): AuthorityTransitionLabel | undefined => {
+): Optional<AuthorityTransitionLabel> => {
     if (!isAccountType(from) || !isAccountType(to)) return undefined
     return {
         labelKey: i18nKey('account_info.type_rekeyed_signer'),

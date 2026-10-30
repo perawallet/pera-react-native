@@ -11,14 +11,19 @@
  */
 
 import { render, screen } from '@test-utils/render'
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { formatCurrency } from '@perawallet/wallet-core-shared'
 import { CurrencyAmount, getAlgoSymbolWeight } from '../CurrencyAmount'
 import { PREFERRED_MAX_PRECISION } from '../precision'
 import { Decimal } from 'decimal.js'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useSettings } from '@perawallet/wallet-core-settings'
 import type { TypographyVariant } from '@theme/typography'
 import { UNKNOWN_AMOUNT_PLACEHOLDER } from '@constants/ui'
+import {
+    registerEthereumChain,
+    restoreAlgorandOnlyChains,
+} from '@test-utils/chain-fixtures'
 
 describe('CurrencyAmount', () => {
     it('renders formatted currency value', () => {
@@ -27,6 +32,7 @@ describe('CurrencyAmount', () => {
                 value={new Decimal(100)}
                 currency='USD'
                 assetId={null}
+                chainId={null}
                 precision='compact'
             />,
         )
@@ -41,6 +47,7 @@ describe('CurrencyAmount', () => {
                 value={null}
                 currency='USD'
                 assetId={null}
+                chainId={null}
                 precision='compact'
             />,
         )
@@ -53,6 +60,7 @@ describe('CurrencyAmount', () => {
                 value={new Decimal(100)}
                 currency='USD'
                 assetId={null}
+                chainId={null}
                 precision='compact'
                 prefix='+'
             />,
@@ -66,6 +74,7 @@ describe('CurrencyAmount', () => {
                 value={new Decimal('0.5')}
                 currency='ALGO'
                 assetId='0'
+                chainId={LEGACY_CHAIN_ID}
                 precision='preferredFull'
                 sign='-'
             />,
@@ -81,6 +90,7 @@ describe('CurrencyAmount', () => {
                 value={new Decimal(1000)}
                 currency='HIPO'
                 assetId='123456'
+                chainId={LEGACY_CHAIN_ID}
                 precision='compact'
                 sign='+'
             />,
@@ -96,6 +106,7 @@ describe('CurrencyAmount', () => {
                 value={new Decimal('0.001')}
                 currency='ALGO'
                 assetId='0'
+                chainId={LEGACY_CHAIN_ID}
                 precision='preferredFull'
             />,
         )
@@ -110,6 +121,7 @@ describe('CurrencyAmount', () => {
                 value={new Decimal('8.817812345')}
                 currency='USDC'
                 assetId='31566704'
+                chainId={LEGACY_CHAIN_ID}
                 precision='assetFull'
                 assetDecimals={6}
             />,
@@ -126,6 +138,7 @@ describe('CurrencyAmount', () => {
                 value={new Decimal('0.0013449999')}
                 currency='ETH'
                 assetId='eth'
+                chainId={null}
                 precision='assetFull'
                 assetDecimals={18}
             />,
@@ -143,6 +156,7 @@ describe('CurrencyAmount', () => {
                 value={new Decimal('8.817812345')}
                 currency='USD'
                 assetId={null}
+                chainId={null}
                 precision='preferredFull'
             />,
         )
@@ -160,6 +174,7 @@ describe('CurrencyAmount fiat floor', () => {
                 value={new Decimal('0.004')}
                 currency='EUR'
                 assetId={null}
+                chainId={null}
                 isFiat
                 precision='compact'
             />,
@@ -181,6 +196,7 @@ describe('CurrencyAmount fiat floor', () => {
                 value={new Decimal('0.004')}
                 currency='EUR'
                 assetId={null}
+                chainId={null}
                 isFiat
                 precision='compact'
             />,
@@ -193,6 +209,7 @@ describe('CurrencyAmount fiat floor', () => {
                 value={new Decimal('5')}
                 currency='EUR'
                 assetId={null}
+                chainId={null}
                 isFiat
                 precision='compact'
             />,
@@ -207,6 +224,7 @@ describe('CurrencyAmount fiat floor', () => {
                 value={new Decimal('-0.004')}
                 currency='USD'
                 assetId={null}
+                chainId={null}
                 isFiat
                 precision='compact'
             />,
@@ -224,6 +242,7 @@ describe('CurrencyAmount fiat floor', () => {
                 value={new Decimal('0.004')}
                 currency='ETH'
                 assetId={null}
+                chainId={null}
                 precision='compact'
             />,
         )
@@ -241,6 +260,7 @@ describe('CurrencyAmount fiat floor', () => {
                 value={new Decimal('0.025773')}
                 currency='USD'
                 assetId={null}
+                chainId={null}
                 isFiat
                 precision='compact'
             />,
@@ -258,6 +278,7 @@ describe('CurrencyAmount fiat floor', () => {
                 value={new Decimal('0.004')}
                 currency='ALGO'
                 assetId='0'
+                chainId={LEGACY_CHAIN_ID}
                 precision='compact'
             />,
         )
@@ -271,6 +292,7 @@ describe('CurrencyAmount fiat floor', () => {
                 value={new Decimal('0.000012')}
                 currency='USD'
                 assetId={null}
+                chainId={null}
                 isFiat
                 precision='preferredFull'
             />,
@@ -287,6 +309,7 @@ describe('CurrencyAmount fiat floor', () => {
                 value={new Decimal('0.004')}
                 currency='USD'
                 assetId={null}
+                chainId={null}
                 isFiat
                 precision='compact'
             />,
@@ -305,6 +328,7 @@ describe('CurrencyAmount identity comes from the asset id, not the unit name', (
                 value={new Decimal(1000)}
                 currency='ALGO'
                 assetId='987654321'
+                chainId={LEGACY_CHAIN_ID}
                 precision='compact'
             />,
         )
@@ -319,6 +343,7 @@ describe('CurrencyAmount identity comes from the asset id, not the unit name', (
                 value={new Decimal(1000)}
                 currency='ALGO'
                 assetId='987654321'
+                chainId={LEGACY_CHAIN_ID}
                 precision='compact'
                 symbolPosition='end'
             />,
@@ -333,6 +358,7 @@ describe('CurrencyAmount identity comes from the asset id, not the unit name', (
                 value={new Decimal(1000)}
                 currency='USD'
                 assetId='987654321'
+                chainId={LEGACY_CHAIN_ID}
                 precision='compact'
             />,
         )
@@ -348,6 +374,7 @@ describe('CurrencyAmount identity comes from the asset id, not the unit name', (
                 value={new Decimal(1000)}
                 currency='USD'
                 assetId={null}
+                chainId={null}
                 precision='compact'
             />,
         )
@@ -360,6 +387,7 @@ describe('CurrencyAmount identity comes from the asset id, not the unit name', (
                 value={new Decimal(1)}
                 currency='ALGO'
                 assetId=''
+                chainId={LEGACY_CHAIN_ID}
                 precision='compact'
             />,
         )
@@ -416,6 +444,7 @@ describe('CurrencyAmount isInline', () => {
             value: new Decimal('1234.5'),
             currency: 'USDC',
             assetId: '31566704',
+            chainId: LEGACY_CHAIN_ID,
             precision: 'assetFull',
             assetDecimals: 6,
             symbolPosition: 'end',
@@ -439,6 +468,7 @@ describe('CurrencyAmount isInline', () => {
             value: new Decimal('1234.5'),
             currency: 'ALGO',
             assetId: '0',
+            chainId: LEGACY_CHAIN_ID,
             precision: 'assetFull',
             assetDecimals: 6,
         } as const
@@ -464,6 +494,7 @@ describe('CurrencyAmount isInline', () => {
                 value={new Decimal(1)}
                 currency='USDC'
                 assetId='31566704'
+                chainId={LEGACY_CHAIN_ID}
                 precision='compact'
                 isLoading
                 isInline
@@ -475,11 +506,65 @@ describe('CurrencyAmount isInline', () => {
     })
 })
 
+describe('CurrencyAmount native-coin glyph per chain', () => {
+    beforeEach(() => {
+        registerEthereumChain()
+    })
+
+    afterEach(() => {
+        restoreAlgorandOnlyChains()
+    })
+
+    it('shows the unit for ETH native, with no Algo glyph', () => {
+        const { container } = render(
+            <CurrencyAmount
+                value={new Decimal('0.5')}
+                currency='ETH'
+                assetId='native'
+                chainId='ethereum'
+                precision='preferredFull'
+            />,
+        )
+        const text = container.textContent ?? ''
+        expect(text).toContain('ETH')
+        expect(text).not.toContain('¦')
+    })
+
+    it("treats Algorand's native id on an EVM chain as a token", () => {
+        const { container } = render(
+            <CurrencyAmount
+                value={new Decimal('3')}
+                currency='ZRO'
+                assetId='0'
+                chainId='ethereum'
+                precision='preferredFull'
+            />,
+        )
+        const text = container.textContent ?? ''
+        expect(text).toContain('ZRO')
+        expect(text).not.toContain('¦')
+    })
+
+    it('draws no glyph when the amount has no chain', () => {
+        const { container } = render(
+            <CurrencyAmount
+                value={new Decimal('3')}
+                currency='ZRO'
+                assetId='0'
+                chainId={null}
+                precision='preferredFull'
+            />,
+        )
+        expect(container.textContent).not.toContain('¦')
+    })
+})
+
 describe('CurrencyAmount shouldFitWidth', () => {
     const props = {
         value: new Decimal('1234.5'),
         currency: 'ETH',
         assetId: 'eth',
+        chainId: null,
         precision: 'assetFull',
         assetDecimals: 18,
     } as const

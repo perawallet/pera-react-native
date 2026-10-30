@@ -20,6 +20,7 @@ import type {
     SerializedCredential,
     SerializedGetOptions,
 } from '@perawallet/wallet-core-passkeys/webauthn'
+import type { Optional } from '@perawallet/wallet-core-shared'
 
 export const WEBAUTHN_RELAY_SCOPE = 'pera-webauthn-relay' as const
 
@@ -44,7 +45,7 @@ export const isWebauthnRelayMessage = (
     if (typeof value !== 'object' || value === null) return false
     const v = value as Record<string, unknown>
     if (v.scope !== WEBAUTHN_RELAY_SCOPE) return false
-    const request = v.request as Record<string, unknown> | undefined
+    const request = v.request as Optional<Record<string, unknown>>
     if (typeof request !== 'object' || request === null) return false
     return request.kind === 'create' || request.kind === 'get'
 }

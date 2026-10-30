@@ -12,8 +12,10 @@
 
 import { accountsChainAdapters } from '@perawallet/wallet-core-accounts'
 import type { ChainContext } from '@perawallet/wallet-core-chain-contract'
+import { deviceChainAdapters } from '@perawallet/wallet-core-device'
 import { createEthereumAccountsAdapter } from '@packages/chain-ethereum/src/accounts/adapter'
 import { evmChainOf } from '@packages/chain-ethereum/src/chains/table'
+import { createEvmDeviceAdapter } from '@packages/chain-ethereum/src/device'
 
 /**
  * Adds Ethereum signer resolution next to the Algorand adapter a spec
@@ -26,6 +28,15 @@ export const registerEthereumAccountsAdapter = (): void => {
                 {} as ChainContext,
                 evmChainOf('ethereum'),
             ),
+        )
+    }
+}
+
+/** Registers Ethereum accounts with the devices API the way the app bootstrap does. */
+export const registerEthereumDeviceAdapter = (): void => {
+    if (!deviceChainAdapters.has('ethereum')) {
+        deviceChainAdapters.register(
+            createEvmDeviceAdapter(evmChainOf('ethereum')),
         )
     }
 }

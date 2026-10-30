@@ -15,10 +15,10 @@ import type {
     MultisigSignRequest,
     MultisigSignRequestValidation,
 } from '@perawallet/wallet-core-multisig'
-import { decodeFromBase64 } from '@perawallet/wallet-core-shared'
+import { decodeFromBase64, type Nullable } from '@perawallet/wallet-core-shared'
 import { generateMultisigAddress } from './address'
 
-const senderOf = (rawTransactionBase64: string): string | null => {
+const senderOf = (rawTransactionBase64: string): Nullable<string> => {
     try {
         return decodeTransaction(
             decodeFromBase64(rawTransactionBase64),

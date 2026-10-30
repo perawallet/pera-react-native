@@ -210,6 +210,7 @@ export const InputScreen = () => {
                         testID='send_input_amount'
                     >
                         <AssetAmount
+                            chainId={scope.chainId}
                             asset={asset}
                             value={
                                 cryptoValue

@@ -23,6 +23,7 @@
     "@perawallet/wallet-core-assets": "workspace:*",
     "@perawallet/wallet-core-contacts": "workspace:*",
     "@perawallet/wallet-core-messages": "workspace:*",
+    "@perawallet/wallet-core-shared": "workspace:*",
     "@perawallet/wallet-core-transactions": "workspace:*",
     "decimal.js": "catalog:"
   },

@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import type { Optional, Maybe } from '@perawallet/wallet-core-shared'
+
 export type PhishingListSourceId = 'metamask' | 'polkadot' | 'mew-darklist'
 
 export type PhishingListEntryKind = 'deny' | 'allow' | 'impersonation-target'
@@ -31,7 +33,7 @@ export type PhishingListSource = {
     minimumDenyEntries: number
     /** A download with fewer addresses is treated as truncated. */
     minimumAddressEntries: number
-    parse(raw: unknown): PhishingListEntries | undefined
+    parse(raw: unknown): Optional<PhishingListEntries>
 }
 
 /** Each value is newline-joined, so Hermes parses one string instead of 100k+ literals. */
@@ -83,6 +85,6 @@ export type PhishingListRefreshOutcome =
     | 'malformed'
 
 export type AssessSiteSafetyParams = {
-    urls: readonly (string | null | undefined)[]
+    urls: readonly Maybe<string>[]
     isFlaggedByWalletConnectVerify?: boolean
 }

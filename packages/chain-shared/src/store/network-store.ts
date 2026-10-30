@@ -31,6 +31,7 @@ import {
     registerStore,
     type BaseStoreState,
     type WithPersist,
+    type Optional,
 } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import {
@@ -91,7 +92,7 @@ type NetworkState = BaseStoreState &
 const usableOverride = (
     state: NetworkSelection,
     chainId: ChainId,
-): NetworkId | undefined => {
+): Optional<NetworkId> => {
     const override = state.selectedNetworkByChain[chainId]
     if (override === undefined) return undefined
     const { chains } = getProvider()
@@ -146,14 +147,14 @@ export const selectCustomNetwork = (
     state: Pick<NetworkSelection, 'customNetworksByChain'>,
     chainId: ChainId,
     networkId: NetworkId,
-): CustomNetwork | undefined =>
+): Optional<CustomNetwork> =>
     state.customNetworksByChain[chainId]?.find(entry => entry.id === networkId)
 
 export const selectEndpointOverride = (
     state: { endpointOverridesByChain: EndpointOverridesByChain },
     chainId: ChainId,
     networkId: NetworkId,
-): string | undefined => state.endpointOverridesByChain[chainId]?.[networkId]
+): Optional<string> => state.endpointOverridesByChain[chainId]?.[networkId]
 
 // The store is created at module load, before every provider is wired, so the
 // selection is read straight off the default rather than resolved through the registry.

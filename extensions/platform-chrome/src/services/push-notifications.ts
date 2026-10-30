@@ -18,6 +18,7 @@ import type {
     PushTokenRefreshListener,
 } from '@perawallet/wallet-extension-platform'
 import { config } from '@perawallet/wallet-core-config'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { getFirebaseApp } from './firebase-app'
 import { detectBrowser } from './browser'
 
@@ -54,7 +55,7 @@ export class ChromePushNotificationService implements PushNotificationService {
         return { token: await this.getPushToken(), unsubscribe: noop }
     }
 
-    async getPushToken(): Promise<string | undefined> {
+    async getPushToken(): Promise<Optional<string>> {
         const app = getFirebaseApp()
         if (!app || !config.firebaseVapidKey) return undefined
 

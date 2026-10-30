@@ -24,6 +24,7 @@ import {
 import {
     getHeldAssetIdsByAccount,
     deleteAllAssetHoldingsForAccount,
+    deleteAllAddedTokensForAccount,
     deleteAccountChainState,
     getAllHeldAssetIdsForNetwork,
 } from '../db'
@@ -63,6 +64,7 @@ export async function cleanupRemovedAccountData({
     }
 
     await deleteAllAssetHoldingsForAccount({ db, accountAddress })
+    await deleteAllAddedTokensForAccount({ db, accountAddress })
     await deleteAccountChainState({ db, accountAddress })
     useAccountChainStateStore
         .getState()

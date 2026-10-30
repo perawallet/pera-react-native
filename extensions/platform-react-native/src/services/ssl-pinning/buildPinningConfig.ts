@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { PINNED_ROOT_SPKI_HASHES, SSL_PINNING_EXPIRATION_DATE } from './pins'
 
 /** Per-domain options shape expected by react-native-ssl-public-key-pinning. */
@@ -37,7 +38,7 @@ export type PinningConfig = Record<string, DomainPinningOptions>
 export const buildPinningConfig = (
     urls: readonly string[],
     allowedDomains: readonly string[],
-): PinningConfig | null => {
+): Nullable<PinningConfig> => {
     const config: PinningConfig = {}
 
     for (const url of urls) {

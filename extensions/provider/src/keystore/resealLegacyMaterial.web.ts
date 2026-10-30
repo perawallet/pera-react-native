@@ -21,6 +21,7 @@ import {
     type KeyStoreDatabase,
     type MaterialRecord,
 } from '@algorandfoundation/keystore-web'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { safeWarn } from './migrations/safeLog'
 import type { ResealDeps, ResealReport } from './resealTypes'
 
@@ -31,7 +32,7 @@ const tryOpen = async (
     subtle: SubtleCrypto,
     key: CryptoKey,
     record: Extract<MaterialRecord, { kind: 'bytes' }>,
-): Promise<Uint8Array | null> => {
+): Promise<Nullable<Uint8Array>> => {
     try {
         return await open(subtle, key, record)
     } catch {

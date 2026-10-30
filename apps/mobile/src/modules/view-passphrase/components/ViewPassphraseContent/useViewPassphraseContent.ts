@@ -17,7 +17,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { zeroBytes } from '@perawallet/wallet-core-kms'
-import { logger, toError } from '@perawallet/wallet-core-shared'
+import { logger, toError, type Nullable } from '@perawallet/wallet-core-shared'
 import { useMnemonicForAddress } from '@modules/backup'
 
 export type UseViewPassphraseContentParams = {
@@ -25,9 +25,9 @@ export type UseViewPassphraseContentParams = {
 }
 
 export type UseViewPassphraseContentResult = {
-    wordIndices: Uint16Array | null
+    wordIndices: Nullable<Uint16Array>
     isLoading: boolean
-    error: Error | null
+    error: Nullable<Error>
 }
 
 export const useViewPassphraseContent = ({
@@ -39,9 +39,9 @@ export const useViewPassphraseContent = ({
             null,
     )
     const { executeWithMnemonic } = useMnemonicForAddress(address, account)
-    const [indices, setIndices] = useState<Uint16Array | null>(null)
+    const [indices, setIndices] = useState<Nullable<Uint16Array>>(null)
     const [isLoading, setIsLoading] = useState(false)
-    const [error, setError] = useState<Error | null>(null)
+    const [error, setError] = useState<Nullable<Error>>(null)
 
     // Zero the retained index buffer before dropping it so the phrase doesn't
     // linger in memory waiting on GC.

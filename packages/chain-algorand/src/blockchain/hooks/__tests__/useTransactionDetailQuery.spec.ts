@@ -135,7 +135,7 @@ describe('useTransactionDetailQuery', () => {
     })
 
     test('does not fetch when isEnabled is false', () => {
-        renderHook(
+        const { result } = renderHook(
             () =>
                 useTransactionDetailQuery({
                     transactionId: 'TX123',
@@ -145,10 +145,11 @@ describe('useTransactionDetailQuery', () => {
         )
 
         expect(mockLookupTransactionById).not.toHaveBeenCalled()
+        expect(result.current.isPending).toBe(false)
     })
 
     test('does not fetch when transactionId is empty', () => {
-        renderHook(
+        const { result } = renderHook(
             () =>
                 useTransactionDetailQuery({
                     transactionId: '',
@@ -157,6 +158,7 @@ describe('useTransactionDetailQuery', () => {
         )
 
         expect(mockLookupTransactionById).not.toHaveBeenCalled()
+        expect(result.current.isPending).toBe(false)
     })
 
     test('refetches when network changes', async () => {

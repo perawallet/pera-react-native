@@ -88,6 +88,7 @@ export const AccountWithBalance = ({
         return (
             <PWView style={styles.balanceContainer}>
                 <AssetAmount
+                    chainId={scope.chainId}
                     asset={availability.nativeAsset}
                     value={nativeValue}
                     density='compact'

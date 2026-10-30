@@ -94,6 +94,7 @@ export const StakingProjectCard = ({
                         <PWText style={styles.tvlLabel}>TVL</PWText>
                         <PWView style={styles.tvlValueContainer}>
                             <AssetAmount
+                                chainId={scope.chainId}
                                 asset={nativeAsset}
                                 value={project.tvlInNative}
                                 density='compact'

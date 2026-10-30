@@ -17,6 +17,7 @@ import type {
     ConnectionKind,
     ConnectionPeer,
 } from '@perawallet/wallet-extension-connections'
+import type { Optional } from '@perawallet/wallet-core-shared'
 
 /** Kind-agnostic: nothing here assumes which handler wrote the record. Timestamps are epoch ms. */
 export type ConnectionSettingsRow = {
@@ -44,7 +45,7 @@ export type ConnectionSettingsRow = {
 }
 
 /** The `WCV1` / `WCV2` badge the settings screens have always shown. */
-const protocolVersionFor = (kind: ConnectionKind): number | undefined => {
+const protocolVersionFor = (kind: ConnectionKind): Optional<number> => {
     if (kind === 'walletconnect-v1') return 1
     if (kind === 'walletconnect-v2') return 2
     return undefined

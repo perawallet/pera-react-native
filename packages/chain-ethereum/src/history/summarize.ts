@@ -19,7 +19,7 @@ import {
     type TransactionSummary,
     i18nKey,
 } from '@perawallet/wallet-core-chain-contract'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import { transactionStatusNotice } from '@perawallet/wallet-core-transactions'
 import {
     areEvmAddressesEqual,
@@ -31,7 +31,11 @@ import {
     toEvmNftAssetId,
 } from '../blockchain/utils/caip19'
 import type { EvmChain } from '../chains/types'
-import type { EvmHistoryItem, EvmNftTransfer } from './api/schema'
+import type {
+    EvmHistoryItem,
+    EvmNftTransfer,
+    EvmTokenTransfer,
+} from './api/schema'
 
 const SEND = i18nKey('transactions.list_item.send')
 const RECEIVE = i18nKey('transactions.list_item.receive')
@@ -90,6 +94,69 @@ const nftDisplayOf = (leg: EvmNftTransfer): AssetDisplayHint => ({
     decimals: 0,
 })
 
+// Without decimals the amount would be guessed, so there is no hint.
+const tokenDisplayOf = (leg: EvmTokenTransfer): Optional<AssetDisplayHint> =>
+    leg.token_decimals === null
+        ? undefined
+        : { symbol: leg.token_symbol ?? '', decimals: leg.token_decimals }
+
+// Some trace APIs list the top-level call as an internal frame. The schema
+// carries no depth, so the leg mirroring the row's own call is dropped, or its
+// value would count twice.
+const nestedInternalLegsOf = (
+    item: EvmHistoryItem,
+): EvmHistoryItem['internal_transfers'] => {
+    const { from, to, value } = item
+    if (from === null) return item.internal_transfers
+    const topLevel = item.internal_transfers.findIndex(
+        leg =>
+            areEqual(leg.from, from) &&
+            (leg.to === null || to === null
+                ? leg.to === to
+                : areEqual(leg.to, to)) &&
+            new Decimal(leg.value).eq(value ?? '0'),
+    )
+    return item.internal_transfers.filter((_, index) => index !== topLevel)
+}
+
+/** Wei `address` receives minus wei it sends through the row's successful internal calls. */
+const internalNativeNetOf = (
+    item: EvmHistoryItem,
+    address: string,
+): Decimal => {
+    if (item.status !== 'success') return new Decimal(0)
+    return nestedInternalLegsOf(item).reduce((net, leg) => {
+        if (leg.status !== 'success') return net
+        const value = new Decimal(leg.value)
+        const received = leg.to !== null && areEqual(leg.to, address)
+        const sent = areEqual(leg.from, address)
+        if (received === sent) return net
+        return received ? net.plus(value) : net.minus(value)
+    }, new Decimal(0))
+}
+
+// A row the address sent also moves gas the legs don't carry, so only the
+// backend's impact is complete there.
+const nativeChangeOf = (
+    item: EvmHistoryItem,
+    address: string,
+    chain: EvmChain,
+): Optional<BalanceChange> => {
+    if (
+        item.status !== 'success' ||
+        (item.from !== null && areEqual(item.from, address))
+    ) {
+        return undefined
+    }
+    const paidByRow =
+        item.to !== null && areEqual(item.to, address)
+            ? new Decimal(item.value ?? '0')
+            : new Decimal(0)
+    const value = paidByRow.plus(internalNativeNetOf(item, address))
+    if (value.isZero()) return undefined
+    return { assetRef: chain.descriptor.nativeAsset.ref, value }
+}
+
 // The NFT legs `address` sends or receives; a leg whose token id this client
 // can't name drops itself.
 const nftLegsOf = (item: EvmHistoryItem, address: string): NftLeg[] =>
@@ -118,8 +185,8 @@ const nftChangeOf = (
     }
 }
 
-// The backend's impacts may leave an NFT out, so a leg it misses adds its own
-// line; a self-transfer nets to nothing and adds none.
+// The backend's impacts may leave an NFT or the native asset out, so a leg it
+// misses adds its own line; a self-transfer nets to nothing and adds none.
 const balanceChangesOf = (
     item: EvmHistoryItem,
     address: string,
@@ -127,9 +194,13 @@ const balanceChangesOf = (
     chain: EvmChain,
 ): BalanceChange[] => {
     const nftLegs = nftLegsOf(item, address)
-    const displayById = new Map(
+    const displayById = new Map<string, AssetDisplayHint>(
         nftLegs.map(({ assetId, leg }) => [assetId, nftDisplayOf(leg)]),
     )
+    for (const leg of item.token_transfers) {
+        const display = tokenDisplayOf(leg)
+        if (display) displayById.set(normalize(leg.contract), display)
+    }
     const impacts: BalanceChange[] = item.balance_impacts.flatMap(
         ({ asset_id, amount }) => {
             try {
@@ -154,7 +225,10 @@ const balanceChangesOf = (
                 isIn !== isOut && !listed.has(assetId),
         )
         .map(nftLeg => nftChangeOf(chain, nftLeg))
-    return [...impacts, ...missing]
+    const native = listed.has(chain.descriptor.nativeAsset.ref.assetId)
+        ? undefined
+        : nativeChangeOf(item, address, chain)
+    return [...(native ? [native] : []), ...impacts, ...missing]
 }
 
 const summarizeWithdrawal = (
@@ -182,14 +256,15 @@ const summarizeNativeTransfer = (
     item: EvmHistoryItem,
     address: string,
     chain: EvmChain,
-): TransactionSummary | undefined => {
+): Optional<TransactionSummary> => {
     const { from, to } = item
     if (
         from === null ||
         to === null ||
         item.method !== null ||
         item.token_transfers.length > 0 ||
-        item.nft_transfers.length > 0
+        item.nft_transfers.length > 0 ||
+        !internalNativeNetOf(item, address).isZero()
     ) {
         return undefined
     }
@@ -214,13 +289,14 @@ const summarizeTokenTransfer = (
     item: EvmHistoryItem,
     address: string,
     chain: EvmChain,
-): TransactionSummary | undefined => {
+): Optional<TransactionSummary> => {
     const [leg, ...others] = item.token_transfers
     if (
         !leg ||
         others.length > 0 ||
         item.nft_transfers.length > 0 ||
-        !new Decimal(item.value ?? '0').isZero()
+        !new Decimal(item.value ?? '0').isZero() ||
+        !internalNativeNetOf(item, address).isZero()
     ) {
         return undefined
     }
@@ -235,6 +311,7 @@ const summarizeTokenTransfer = (
     // A spender moving someone else's tokens is not a receive.
     if (!out && !areEqual(leg.to, address)) return undefined
     const direction = transferDirectionOf(out && areEqual(leg.to, address), out)
+    const display = tokenDisplayOf(leg)
     return {
         kind: 'token-transfer',
         title: { key: out ? SEND : RECEIVE },
@@ -247,6 +324,7 @@ const summarizeTokenTransfer = (
                 assetId: normalize(leg.contract),
             },
             value: new Decimal(leg.value),
+            ...(display && { display }),
         },
     }
 }
@@ -271,12 +349,13 @@ const summarizeNftTransfer = (
     item: EvmHistoryItem,
     address: string,
     chain: EvmChain,
-): TransactionSummary | undefined => {
+): Optional<TransactionSummary> => {
     const legs = nftLegsOf(item, address)
     if (
         legs.length === 0 ||
         item.token_transfers.length > 0 ||
-        !new Decimal(item.value ?? '0').isZero()
+        !new Decimal(item.value ?? '0').isZero() ||
+        !internalNativeNetOf(item, address).isZero()
     ) {
         return undefined
     }

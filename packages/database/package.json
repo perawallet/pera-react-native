@@ -24,6 +24,7 @@
     "lint": "oxlint --config ../../.oxlintrc.json src --ignore-pattern \"src/**/__tests__/**\""
   },
   "dependencies": {
+    "@perawallet/wallet-core-shared": "workspace:*",
     "@perawallet/wallet-extension-platform": "workspace:*",
     "decimal.js": "catalog:",
     "drizzle-orm": "catalog:"

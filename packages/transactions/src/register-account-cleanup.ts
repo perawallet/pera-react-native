@@ -13,6 +13,7 @@
 import {
     registerAccountCleanup,
     type AccountCleanupContext,
+    type Optional,
 } from '@perawallet/wallet-core-shared'
 import type { Database } from '@perawallet/wallet-core-database'
 import { deleteTransactionsForAccount } from './db/repository'
@@ -30,7 +31,7 @@ export const cleanupTransactionsForAccount = ({
     // `db` is typed `unknown` by the registry to keep `shared` database-free;
     // it is the same Database handle the removal flow resolved.
     deleteTransactionsForAccount({
-        db: db as Database | undefined,
+        db: db as Optional<Database>,
         accountAddress,
     })
 

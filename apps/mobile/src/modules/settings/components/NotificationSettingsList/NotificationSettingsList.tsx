@@ -13,8 +13,7 @@
 import { PWFlatList, PWSwitch, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useSettingsNotificationsScreen } from '@modules/settings/screens/SettingsNotificationsScreen/useSettingsNotificationsScreen'
-import { chainAccountOf } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { ownAddressOf } from '@perawallet/wallet-core-accounts'
 import { EmptyView } from '@components/EmptyView'
 import { ListItemDivider } from '@components/ListItemDivider'
 import { useMemo } from 'react'
@@ -75,8 +74,7 @@ export const NotificationSettingsList = ({
                 />
             }
             renderItem={({ item }) => {
-                const address =
-                    chainAccountOf(item, LEGACY_CHAIN_ID)?.address ?? ''
+                const address = ownAddressOf(item) ?? ''
                 return (
                     <AccountNotificationItem
                         account={item}

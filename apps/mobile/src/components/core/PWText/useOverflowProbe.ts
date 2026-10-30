@@ -11,6 +11,7 @@
  */
 
 import { useRef } from 'react'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 import { isTruncated, isWiderThanParent } from './detectOverflow'
 import { recordOverflow } from './overflowRegistry'
@@ -33,8 +34,8 @@ export const useOverflowProbe = ({
     testID,
     numberOfLines,
 }: UseOverflowProbeParams): OverflowProbe => {
-    const boxWidthRef = useRef<number | null>(null)
-    const maxLineWidthRef = useRef<number | null>(null)
+    const boxWidthRef = useRef<Nullable<number>>(null)
+    const maxLineWidthRef = useRef<Nullable<number>>(null)
 
     const overflowText = typeof children === 'string' ? children : ''
     const overflowKey = testID ?? overflowText.slice(0, 40)

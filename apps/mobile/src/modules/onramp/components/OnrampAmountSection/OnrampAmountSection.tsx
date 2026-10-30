@@ -132,6 +132,7 @@ export const OnrampAmountSection = (props: OnrampAmountSectionProps) => {
                             ? buildDisplayableAssetFromRampToken(token, scope)
                             : undefined
                     }
+                    chainId={scope?.chainId ?? null}
                     label={token?.symbol ?? t('onramp.form.choose_asset')}
                     logoUrl={logoUrl}
                     onPress={onAssetPress}

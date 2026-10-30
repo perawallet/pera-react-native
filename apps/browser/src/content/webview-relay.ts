@@ -27,6 +27,7 @@ import {
     WEBVIEW_BRIDGE_HANDSHAKE_EVENT,
     WEBVIEW_BRIDGE_RELAY_READY_EVENT,
 } from '@perawallet/wallet-core-browser-runtime'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 // Both worlds have read their params once the MAIN half's handshake lands, so
 // they come off the address bar: page scripts, analytics and same-origin
@@ -56,7 +57,7 @@ export const runWebviewRelay = (
         const port = chrome.runtime.connect({
             name: `${WEBVIEW_BRIDGE_PORT_PREFIX}${token}`,
         })
-        let channel: DiscoverChannelHandshake | null = null
+        let channel: Nullable<DiscoverChannelHandshake> = null
 
         port.onMessage.addListener((data: unknown) => {
             // Objects (JSON-RPC results/errors/notifications) and strings

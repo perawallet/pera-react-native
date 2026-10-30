@@ -39,6 +39,7 @@ const TOKEN_LOWER = '0x89205a3a3b2a69de6dbf7f01ed13b2108b2c43e7'
 const TOKEN = '0x89205A3A3b2A69De6Dbf7f01ED13B2108B2c43e7'
 const TO_LOWER = '0x8e23ee67d1332ad560396262c48ffbb01f93d052'
 const TO = '0x8e23Ee67d1332aD560396262C48ffbB01F93D052'
+const ONE_ETHER = new Decimal('1000000000000000000')
 const UINT256_OVERFLOW =
     '115792089237316195423570985008687907853269984665640564039457584007913129639936'
 
@@ -351,20 +352,64 @@ describe('links for other EVM chains', () => {
         expect(failure(`ethereum:${NATIVE}@43114`)).toBe('unsupported-network')
     })
 
-    it('reads a link without a chain id as Ethereum', () => {
-        expect(targetOf(`ethereum:${NATIVE}`)).toEqual({ chainId: 'ethereum' })
-    })
+    it.each([
+        ['Ethereum', ETHEREUM],
+        ['Base', BASE],
+    ] as const)(
+        'pays a link without a chain id on Ethereum when %s owns the scheme',
+        (_label, owner) => {
+            const owned = createEvmDeeplinkAdapter(owner)
 
-    it('reads a link without a chain id as the owner when Ethereum is not registered', () => {
-        registerCodecs(BASE)
-        const owned = createEvmDeeplinkAdapter(BASE)
+            const result = owned.parse(`ethereum:${NATIVE}?value=1e18`)
 
-        expect(paymentOf(owned.parse, `ethereum:${NATIVE}`)?.target).toEqual({
-            chainId: 'base',
+            expect(result).toEqual({
+                ok: true,
+                intent: {
+                    kind: 'payment',
+                    target: { chainId: 'ethereum' },
+                    recipient: NATIVE,
+                    assetRef: { chainId: 'ethereum', assetId: 'native' },
+                    amount: ONE_ETHER,
+                },
+            })
+        },
+    )
+
+    describe('when Ethereum is not registered', () => {
+        beforeEach(() => registerCodecs(BASE))
+
+        it.each([
+            `ethereum:${NATIVE}?value=1e18`,
+            `ethereum:pay-${NATIVE}`,
+            `ETHEREUM:${NATIVE}?value=1`,
+            `ethereum:${TOKEN_LOWER}/transfer?address=${TO_LOWER}&uint256=1`,
+            `ethereum:${NATIVE}@1?value=1e18`,
+        ])('refuses %s as an unsupported network', input => {
+            const owned = createEvmDeeplinkAdapter(BASE)
+
+            const result = owned.parse(input)
+
+            expect(result).toEqual({
+                ok: false,
+                reason: 'unsupported-network',
+            })
         })
-        expect(owned.parse(`ethereum:${NATIVE}@1`)).toEqual({
-            ok: false,
-            reason: 'unsupported-network',
+
+        it('still pays a link for @8453 on Base', () => {
+            const owned = createEvmDeeplinkAdapter(BASE)
+
+            const result = owned.parse(`ethereum:${NATIVE}@8453?value=1e18`)
+
+            expect(result).toEqual({
+                ok: true,
+                intent: {
+                    kind: 'payment',
+                    target: { chainId: 'base', networkId: 'mainnet' },
+                    recipient: NATIVE,
+                    assetRef: { chainId: 'base', assetId: 'native' },
+                    amount: ONE_ETHER,
+                },
+            })
         })
     })
 })

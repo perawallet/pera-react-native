@@ -172,7 +172,7 @@ export interface ReviewerChainAdapter {
     getDelegatedUnsignableReason(
         request: SignRequest,
         accounts: WalletAccount[],
-    ): DelegatedUnsignableReason | null
+    ): Nullable<DelegatedUnsignableReason>
     /** Never throws; anything that isn't cleanly printable comes back as hex. */
     decodeArbitraryDataForDisplay(data: string): ArbitraryDataDisplay
     /**
@@ -261,7 +261,7 @@ export type AssignMinimumFeesToGroupResult = {
 
 export type MinFeeForSenderResult = {
     /** Native base units; undefined while fee parameters load or when there is no sender. */
-    minFee: bigint | undefined
+    minFee: Optional<bigint>
     isPending: boolean
 }
 
@@ -380,7 +380,7 @@ export type LocalKeySigningDeps = {
      * field the adapter picks; see `useKMS.getPQSigningInfo` for why payload
      * selection and signer selection must never be able to disagree.
      */
-    getPQSigningInfo: (keyPairId: string) => PQSigningInfo | null
+    getPQSigningInfo: (keyPairId: string) => Nullable<PQSigningInfo>
     /**
      * Yields to the event loop between batches. Injectable so a headless
      * caller can run the batching logic without React's scheduling in play.
@@ -472,10 +472,10 @@ export type MsigMetadata = {
 
 export type GetMsigMetadataFn = (
     multisigAddress: string,
-) => MsigMetadata | undefined
+) => Optional<MsigMetadata>
 
 /** Injected so this package doesn't depend on the app's device-id source. */
-export type GetDeviceIdFn = () => string | undefined
+export type GetDeviceIdFn = () => Optional<string>
 
 /**
  * Everything a later per-row Sign tap needs to bootstrap the real propose from
@@ -547,13 +547,13 @@ export type DraftProposeContext = {
 export type HandoffPollDetail = {
     id?: string
     status: string
-    fail_reason_display: string | null
+    fail_reason_display: Nullable<string>
     transaction_lists: Array<{
         raw_transactions: string[]
         responses: Array<{
             address: string
             response: string
-            signatures?: (string | null)[] | null
+            signatures?: Nullable<Nullable<string>[]>
         }>
     }>
 }
@@ -572,7 +572,7 @@ export type ResolverMessages = {
 export type HandoffErrorReason =
     | { kind: 'no-transactions' }
     | { kind: 'assembly-failed'; detail: string }
-    | { kind: 'backend-failed'; displayReason: string | null }
+    | { kind: 'backend-failed'; displayReason: Nullable<string> }
     | { kind: 'session-disconnected' }
 
 /** Every variant but `keep-polling` is terminal, delivered exactly once. */
@@ -769,7 +769,7 @@ export interface PlannerChainAdapter {
      * A React hook giving the minimum fee for a transaction `senderAddress`
      * sends, from live network fee parameters and remote config.
      */
-    useMinFeeForSender(senderAddress: string | undefined): MinFeeForSenderResult
+    useMinFeeForSender(senderAddress: Optional<string>): MinFeeForSenderResult
     /**
      * A React hook giving the group fee assigner. It reads accounts at call
      * time, and its network fee fetch never throws. The assigner raises
@@ -830,7 +830,7 @@ export interface PlannerChainAdapter {
      */
     signedForAddresses(
         request: UnsignedTransactionSignRequest,
-    ): string[] | undefined
+    ): Optional<string[]>
     /**
      * The chain data of a group {@link signedForAddresses} keys by account:
      * `indices` are the group's slots in `request.txs`.
@@ -890,9 +890,7 @@ export interface PlannerChainAdapter {
         capturedScope: ChainScope,
     ): DataTransport
     /** Removes and returns the stashed context; call once, after the bootstrap propose succeeded. */
-    takeDraftProposeContext(
-        draftLocalId: string,
-    ): DraftProposeContext | undefined
+    takeDraftProposeContext(draftLocalId: string): Optional<DraftProposeContext>
     classifyHandoffPoll(
         detail: HandoffPollDetail,
         context: HandoffAssemblyContext,

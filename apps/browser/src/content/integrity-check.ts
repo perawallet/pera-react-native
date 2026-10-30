@@ -23,6 +23,7 @@ import {
     type IntegrityCheckPortMessage,
     type IntegrityFrameEvent,
 } from '@perawallet/wallet-core-browser-runtime'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 // The check page cannot reach chrome.runtime, so this relays its messages to the
 // worker and tells the hosting page when to expand or remove the frame. No check
@@ -37,8 +38,8 @@ export const runIntegrityCheckRelay = (): void => {
     // scheme); getURL('') always ends in a bare '/', so stripping it is the origin.
     const extensionOrigin = chrome.runtime.getURL('').replace(/\/$/, '')
     const isFramed = window.top !== window
-    let port: chrome.runtime.Port | null = null
-    let announcement: IntegrityCheckPortMessage | null = null
+    let port: Nullable<chrome.runtime.Port> = null
+    let announcement: Nullable<IntegrityCheckPortMessage> = null
 
     // An idle worker is evicted after 30 seconds, dropping this port mid-solve.
     // Reconnecting wakes it; re-announcing tells it the page is still alive.

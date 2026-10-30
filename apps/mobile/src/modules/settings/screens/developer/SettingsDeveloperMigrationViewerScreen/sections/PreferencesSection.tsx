@@ -11,6 +11,7 @@
  */
 
 import type { LegacyPreferences } from '@perawallet/wallet-extension-platform'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { MigrationDataSection } from '../components/MigrationDataSection'
 import { LegacyVsRnRow } from '../components/LegacyVsRnRow'
 import { MigrationDataRow } from '../components/MigrationDataRow'
@@ -88,7 +89,7 @@ const preferenceComparison = (
     key: keyof LegacyPreferences,
     p: LegacyPreferences,
     rn: RNMigrationSnapshot,
-): { legacy: unknown; rn: unknown; matches?: boolean } | null => {
+): Nullable<{ legacy: unknown; rn: unknown; matches?: boolean }> => {
     switch (key) {
         case 'theme': {
             return matchEq(p.theme, rn.preferences.theme)

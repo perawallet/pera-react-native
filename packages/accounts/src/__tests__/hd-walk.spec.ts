@@ -425,6 +425,79 @@ describe('discoverWalletActivity', () => {
         expect(probed[0].derived[ETHEREUM]).toBeUndefined()
     })
 
+    describe('onProbeSettled', () => {
+        const walkOne = async (onProbeSettled: (outcome: string) => void) =>
+            discoverWalletActivity({
+                walletId: 'seed',
+                chainIds: [ETHEREUM],
+                accountGapLimit: 1,
+                keyIndexGapLimit: 2,
+                onProbeSettled,
+            })
+
+        it('reports answered for a chain that answers every address', async () => {
+            const families = registerChainFamilies([ETHEREUM])
+            activeOn(families, ETHEREUM, [])
+            const onProbeSettled = vi.fn()
+
+            await walkOne(onProbeSettled)
+
+            expect(onProbeSettled.mock.calls).toEqual([['answered']])
+        })
+
+        it('reports partial when the answer leaves an address out, which reads as inactive', async () => {
+            const families = registerChainFamilies([ETHEREUM])
+            families.checkActivity
+                .get(ETHEREUM)!
+                .mockImplementation(
+                    async (probed: string[]) => new Map([[probed[0]!, false]]),
+                )
+            const onProbeSettled = vi.fn()
+
+            const probed = await walkOne(onProbeSettled)
+
+            expect(onProbeSettled.mock.calls).toEqual([['partial']])
+            expect(activeIndexes(probed)).toEqual([])
+        })
+
+        it('reports partial when one index fails to derive', async () => {
+            const families = registerChainFamilies([ETHEREUM])
+            activeOn(families, ETHEREUM, [])
+            vi.mocked(
+                families.derivations.get(ETHEREUM)!.deriveAccount,
+            ).mockRejectedValueOnce(new Error('keystore locked'))
+            const onProbeSettled = vi.fn()
+
+            await walkOne(onProbeSettled)
+
+            expect(onProbeSettled.mock.calls).toEqual([['partial']])
+        })
+
+        it('reports failed when the probe rejects', async () => {
+            const families = registerChainFamilies([ETHEREUM])
+            families.checkActivity
+                .get(ETHEREUM)!
+                .mockRejectedValue(new Error('rpc down'))
+            const onProbeSettled = vi.fn()
+
+            await walkOne(onProbeSettled)
+
+            expect(onProbeSettled.mock.calls).toEqual([['failed']])
+        })
+
+        it('reports failed when no index derives', async () => {
+            const families = registerChainFamilies([ETHEREUM])
+            vi.mocked(
+                families.derivations.get(ETHEREUM)!.deriveAccount,
+            ).mockRejectedValue(new Error('keystore locked'))
+            const onProbeSettled = vi.fn()
+
+            await walkOne(onProbeSettled)
+
+            expect(onProbeSettled.mock.calls).toEqual([['failed']])
+        })
+    })
+
     it('still reports the keys a batch derived when its probe throws', async () => {
         const families = registerChainFamilies([ALGORAND, ETHEREUM])
         families.checkActivity.get(ETHEREUM)!.mockImplementation(() => {

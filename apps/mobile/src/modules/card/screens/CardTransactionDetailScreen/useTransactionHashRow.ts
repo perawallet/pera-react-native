@@ -16,6 +16,7 @@ import { getCardTransactionUrl } from '@perawallet/wallet-core-card'
 import {
     generateUniqueId,
     truncateAlgorandAddress,
+    type Optional,
 } from '@perawallet/wallet-core-shared'
 import { trackEvent, CardEvent } from '@analytics'
 import { useWebView } from '@modules/webview'
@@ -34,7 +35,7 @@ type UseTransactionHashRowResult = {
      * from other chains — or the network has no explorer, so the action is
      * hidden instead of opening a guaranteed not-found page.
      */
-    onOpenExplorer: (() => void) | undefined
+    onOpenExplorer: Optional<() => void>
 }
 
 export const useTransactionHashRow = (

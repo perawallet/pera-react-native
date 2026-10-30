@@ -257,6 +257,7 @@ describe('useDelegationTransactionFeeQuery', () => {
         // No fetch should have been queued.
         expect(mockBuildRekeyTx).not.toHaveBeenCalled()
         expect(result.current.fee).toBeUndefined()
+        expect(result.current.isPending).toBe(false)
     })
 
     it('does not run the query when authorityAddress is empty', async () => {
@@ -269,6 +270,7 @@ describe('useDelegationTransactionFeeQuery', () => {
 
         expect(mockBuildRekeyTx).not.toHaveBeenCalled()
         expect(result.current.fee).toBeUndefined()
+        expect(result.current.isPending).toBe(false)
     })
 
     it('caches per network — a mainnet fee does not satisfy a testnet query', async () => {

@@ -11,25 +11,21 @@
  */
 
 import { renderHook } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { Decimal } from 'decimal.js'
 import type { PeraAsset } from '@perawallet/wallet-core-assets'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
+import {
+    registerEthereumChain,
+    restoreAlgorandOnlyChains,
+} from '@test-utils/chain-fixtures'
 import type { AssetFiatConverter } from '../../../hooks/useAssetListFiatConverter'
 import type {
     AssetGroupItem,
     GroupedHoldingMember,
 } from '../../../utils/groupedHoldings'
 import { useAssetGroupRow } from '../useAssetGroupRow'
-
-vi.mock('@perawallet/wallet-core-assets', async importOriginal => ({
-    ...(await importOriginal<
-        typeof import('@perawallet/wallet-core-assets')
-    >()),
-    findNativeAsset: (chainId: string) =>
-        chainId === 'ethereum' ? { assetId: 'eth' } : undefined,
-}))
 
 type Holding = { scope: ChainScope; assetId: string }
 
@@ -72,6 +68,14 @@ const toEur: AssetFiatConverter = (_ref, usdPrice, amount) => ({
 })
 
 describe('useAssetGroupRow', () => {
+    beforeEach(() => {
+        registerEthereumChain()
+    })
+
+    afterEach(() => {
+        restoreAlgorandOnlyChains()
+    })
+
     it("converts the group's USD total to the preferred currency, as a plain amount", () => {
         const convertFiat = vi.fn(toEur)
 
@@ -89,6 +93,7 @@ describe('useAssetGroupRow', () => {
         expect(result.current.fiat.value?.toString()).toBe('8')
         expect(convertFiat.mock.calls[0]?.[0]).toBeNull()
         expect(result.current.chainIds).toEqual(['algorand', 'ethereum'])
+        expect(result.current.iconChainId).toBe('algorand')
         expect(result.current.icon).toBe(USDC)
     })
 
@@ -136,6 +141,17 @@ describe('useAssetGroupRow', () => {
         )
 
         expect(result.current.icon).toBeNull()
+    })
+
+    it('has no icon chain with no members', () => {
+        const { result } = renderHook(() =>
+            useAssetGroupRow({
+                item: groupOf([], null),
+                convertFiat: toEur,
+            }),
+        )
+
+        expect(result.current.iconChainId).toBeNull()
     })
 
     describe('verification badge', () => {
@@ -188,10 +204,30 @@ describe('useAssetGroupRow', () => {
         it("counts a chain's native coin as trusted", () => {
             const result = badgeOf([
                 member('algorand', withTier('trusted')),
-                member('ethereum', USDC, 'eth'),
+                member('ethereum', USDC, 'native'),
             ])
 
             expect(result.verificationIcon).toBe('assets/trusted')
+        })
+
+        it("doesn't count a chain's native id on another chain as native", () => {
+            const result = badgeOf([
+                member('algorand', withTier('trusted')),
+                member('ethereum', USDC, '0'),
+            ])
+
+            expect(result.verificationIcon).toBeNull()
+        })
+
+        it("isn't trusted on a chain this build doesn't register", () => {
+            restoreAlgorandOnlyChains()
+
+            const result = badgeOf([
+                member('algorand', withTier('trusted')),
+                member('ethereum', USDC, 'native'),
+            ])
+
+            expect(result.verificationIcon).toBeNull()
         })
 
         it('shows a suspicious member before the other networks sync', () => {

@@ -15,17 +15,20 @@ import { useStyles } from './styles'
 
 import { AssetIcon } from '@components/AssetIcon'
 import type { PeraAsset } from '@perawallet/wallet-core-assets'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 
 export type AssetSelectionProps = {
     asset: PeraAsset
+    chainId: ChainId
 }
 
-export const AssetSelection = ({ asset }: AssetSelectionProps) => {
+export const AssetSelection = ({ asset, chainId }: AssetSelectionProps) => {
     const styles = useStyles()
 
     return (
         <PWView style={styles.container}>
             <AssetIcon
+                chainId={chainId}
                 asset={asset}
                 style={styles.icon}
             />

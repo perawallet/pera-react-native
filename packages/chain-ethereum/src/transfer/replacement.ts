@@ -27,6 +27,7 @@ import {
     InvalidSendParamsError,
     type TransactionReplacementRequest,
 } from '@perawallet/wallet-core-transactions'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { toEvmError } from '../blockchain/errors'
 import { eip155ChainIdOf } from '../blockchain/utils/caip19'
 import { createEvmClient } from '../blockchain/utils/createEvmClient'
@@ -76,7 +77,7 @@ export const meetsReplacementBump = (
 /** The signed EIP-1559 transaction an attempt broadcast; null for anything else. */
 export const readReplaceableTransaction = (
     rawTransaction: string,
-): EvmPricedTransaction | null => {
+): Nullable<EvmPricedTransaction> => {
     let parsed: ReturnType<typeof parseTransaction>
     try {
         parsed = parseTransaction(rawTransaction as TransactionSerialized)

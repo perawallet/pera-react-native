@@ -31,6 +31,7 @@ import {
     OFFLINE_BANNER_REEXPANDED_MS,
     OFFLINE_RECONNECT_DISPLAY_MS,
 } from '@constants/ui'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 type OfflineBannerMode = 'offline' | 'reconnected'
 
@@ -56,8 +57,9 @@ export const useOfflineBanner = (): UseOfflineBannerResult => {
         useState(isExpanded)
     const previousHasInternet = useRef(hasInternet)
     const previousEmphasisNonce = useRef(emphasisNonce)
-    const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-    const collapseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+    const timerRef = useRef<Nullable<ReturnType<typeof setTimeout>>>(null)
+    const collapseTimerRef =
+        useRef<Nullable<ReturnType<typeof setTimeout>>>(null)
     const entryProgress = useSharedValue(0)
     const expandProgress = useSharedValue(0)
 

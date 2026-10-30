@@ -11,6 +11,7 @@
  */
 
 import { base64 } from '@scure/base'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import {
     InvalidPasswordError,
     VaultCorruptedError,
@@ -184,7 +185,7 @@ const deriveKekArgon2 = async (
     salt: Uint8Array,
     params: Argon2Params,
 ): Promise<CryptoKey> => {
-    let derived: Uint8Array | undefined
+    let derived: Optional<Uint8Array>
     try {
         derived = await deriveArgon2id({
             password: new TextEncoder().encode(password),

@@ -11,7 +11,7 @@
  */
 
 import { useCallback } from 'react'
-import type { Maybe } from '@perawallet/wallet-core-shared'
+import type { Maybe, Nullable, Optional } from '@perawallet/wallet-core-shared'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
@@ -37,7 +37,7 @@ type UseHandleMultisigNotificationResult = {
 
 export const getMultisigIntentKind = (
     type: Maybe<string>,
-): MultisigIntentKind | null => {
+): Nullable<MultisigIntentKind> => {
     if (type === MULTISIG_NEW_SIGN_REQUEST_NOTIFICATION_TYPE) return 'sign'
     if (type === MULTISIG_IMPORT_ACCOUNT_NOTIFICATION_TYPE) return 'import'
     return null
@@ -69,7 +69,7 @@ export const findInboxItemForNotification = (
     items: InboxItem[],
     kind: MultisigIntentKind,
     address: Maybe<string>,
-): InboxItem | undefined => {
+): Optional<InboxItem> => {
     const ofKind = items.filter(item => item.type === inboxItemTypeFor(kind))
     if (!address) {
         return ofKind.length === 1 ? ofKind[0] : undefined

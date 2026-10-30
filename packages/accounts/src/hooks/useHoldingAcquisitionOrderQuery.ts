@@ -13,6 +13,7 @@
 import { useQuery } from '@tanstack/react-query'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { fetchHoldingAcquisitionOrder } from '../chain-adapter'
 import { getHoldingAcquisitionOrderQueryKey } from './querykeys'
 
@@ -31,7 +32,7 @@ export type UseHoldingAcquisitionOrderQueryResult = {
 }
 
 export const useHoldingAcquisitionOrderQuery = (
-    address: string | undefined,
+    address: Optional<string>,
     scope: ChainScope,
     enabled = true,
 ): UseHoldingAcquisitionOrderQueryResult => {

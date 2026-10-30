@@ -10,8 +10,6 @@
  limitations under the License
  */
 
-import { useEffect } from 'react'
-
 import {
     PWNumpad,
     PWPinCircles,
@@ -58,12 +56,9 @@ export const BackupCodeEntry = ({
     const { pin, handleKeyPress, clearPin } = usePinEntry({
         onPinComplete: onCodeComplete,
         length: SYNC_CODE_LENGTH,
+        // A new title means a new step, so the dots must not carry over.
+        resetKey: title,
     })
-
-    // A new title means a new step, so the dots must not carry over.
-    useEffect(() => {
-        clearPin()
-    }, [title, clearPin])
 
     return (
         <PWSheetLayout
