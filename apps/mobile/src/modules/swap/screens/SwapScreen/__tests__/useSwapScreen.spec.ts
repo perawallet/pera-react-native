@@ -78,10 +78,7 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-remote-config', () => ({
-    RemoteConfigKeys: {
-        swap_restricted_countries: 'swap_restricted_countries',
-    },
-    useIsDeviceCountryRestricted: mockIsCountryRestricted,
+    useIsRegionRestricted: mockIsCountryRestricted,
 }))
 
 vi.mock('../useSeedSwapRouteAssets', () => ({
@@ -163,14 +160,12 @@ describe('useSwapScreen', () => {
         expect(result.current.initialPayAmount).toBeUndefined()
     })
 
-    it('flags the region notice where swap_restricted_countries lists the device', () => {
+    it('flags the region notice where region_restrictions restricts swap there', () => {
         mockIsCountryRestricted.mockReturnValue(true)
 
         const { result } = renderHook(() => useSwapScreen())
 
-        expect(mockIsCountryRestricted).toHaveBeenCalledWith(
-            'swap_restricted_countries',
-        )
+        expect(mockIsCountryRestricted).toHaveBeenCalledWith('swap')
         expect(result.current.isRegionRestricted).toBe(true)
     })
 

@@ -11,10 +11,7 @@
  */
 
 import { useCallback } from 'react'
-import {
-    RemoteConfigKeys,
-    useIsDeviceCountryRestricted,
-} from '@perawallet/wallet-core-remote-config'
+import { useIsRegionRestricted } from '@perawallet/wallet-core-remote-config'
 import {
     useSwaps,
     useTopPairsQuery,
@@ -36,9 +33,7 @@ export type UseSwapTopPairsResult = {
 export const useSwapTopPairs = (scope: ChainScope): UseSwapTopPairsResult => {
     const { setFromAsset, setToAsset } = useSwaps(scope)
     const { analytics } = usePeraProvider()
-    const isRestricted = useIsDeviceCountryRestricted(
-        RemoteConfigKeys.crypto_promotion_restricted_countries,
-    )
+    const isRestricted = useIsRegionRestricted('crypto_promotion')
     const {
         data: pairs = [],
         isLoading,

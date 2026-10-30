@@ -19,8 +19,7 @@ import {
 } from '@tanstack/react-query'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
-    isDeviceCountryRestricted,
-    RemoteConfigKeys,
+    isRegionRestricted,
     useRemoteConfig,
 } from '@perawallet/wallet-core-remote-config'
 import type { Nullable } from '@perawallet/wallet-core-shared'
@@ -72,10 +71,9 @@ export const useRampPairsQuery = ({
 
     const remoteConfig = useRemoteConfig()
     // XO is itself a crypto swap, so leaving Swap out removes it too.
-    const isXoRestricted = [
-        RemoteConfigKeys.xo_swap_restricted_countries,
-        RemoteConfigKeys.swap_restricted_countries,
-    ].some(key => isDeviceCountryRestricted(remoteConfig, key))
+    const isXoRestricted = (['xo_swap', 'swap'] as const).some(feature =>
+        isRegionRestricted(remoteConfig, feature),
+    )
 
     const data = useMemo(
         () =>

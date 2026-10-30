@@ -23,11 +23,7 @@ const { mockTopPairsQuery, mockIsRestricted } = vi.hoisted(() => ({
 }))
 
 vi.mock('@perawallet/wallet-core-remote-config', () => ({
-    RemoteConfigKeys: {
-        crypto_promotion_restricted_countries:
-            'crypto_promotion_restricted_countries',
-    },
-    useIsDeviceCountryRestricted: mockIsRestricted,
+    useIsRegionRestricted: mockIsRestricted,
 }))
 
 vi.mock('@perawallet/wallet-core-swaps', () => ({
@@ -58,9 +54,7 @@ describe('useSwapTopPairs', () => {
     it('fetches and returns top pairs outside the promotion-restricted countries', () => {
         const { result } = renderHook(() => useSwapTopPairs(SCOPE))
 
-        expect(mockIsRestricted).toHaveBeenCalledWith(
-            'crypto_promotion_restricted_countries',
-        )
+        expect(mockIsRestricted).toHaveBeenCalledWith('crypto_promotion')
         expect(mockTopPairsQuery).toHaveBeenCalledWith(SCOPE, 5, true)
         expect(result.current.pairs).toEqual([PAIR])
     })
