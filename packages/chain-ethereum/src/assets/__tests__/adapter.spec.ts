@@ -1132,6 +1132,66 @@ describe('search', () => {
     })
 })
 
+describe('fetchOnChainTotalSupply', () => {
+    it("reads a token's supply from the contract alone", async () => {
+        server.use(
+            ...evmRpcHandlers({
+                rpcUrl: TEST_RPC_URL,
+                responses: {
+                    eth_call: erc20CallResponder({
+                        [USDC]: {
+                            name: 'USD Coin',
+                            symbol: 'USDC',
+                            decimals: 6,
+                            totalSupply: 61_234_567_890_000_000n,
+                        },
+                    }),
+                },
+            }),
+        )
+        const ops = createEthereumAssetsAdapter(
+            testChainContext({ services: [] }),
+            ETHEREUM,
+        )
+
+        const supply = await ops.fetchOnChainTotalSupply!(ref(USDC), SCOPE)
+
+        expect(supply.toFixed()).toBe('61234567890000000')
+    })
+
+    it('has no contract to read for the native coin, and no request', async () => {
+        const requests = recordRequests()
+        const ops = createEthereumAssetsAdapter(
+            testChainContext({ services: [] }),
+            ETHEREUM,
+        )
+
+        const supply = await ops.fetchOnChainTotalSupply!(
+            ref(ETHEREUM_NATIVE_ASSET.assetId),
+            SCOPE,
+        )
+
+        expect(supply.isZero()).toBe(true)
+        expect(requests).toEqual([])
+    })
+
+    it('rejects a ref on another chain before any request', async () => {
+        const requests = recordRequests()
+        const ops = createEthereumAssetsAdapter(
+            testChainContext({ services: [] }),
+            ETHEREUM,
+        )
+
+        await expect(
+            ops.fetchOnChainTotalSupply!(
+                { chainId: 'algorand', assetId: '31566704' },
+                SCOPE,
+            ),
+        ).rejects.toThrow('Not an asset on Ethereum')
+        expect(requests).toEqual([])
+    })
+})
+
 describe('foreign scopes and refs', () => {
     const ALGORAND_SCOPE: ChainScope = {
         chainId: 'algorand',

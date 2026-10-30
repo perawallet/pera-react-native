@@ -40,7 +40,7 @@ import {
     type EvmNftStandard,
 } from '../blockchain/utils/caip19'
 import type { EvmChain } from '../chains/types'
-import { readErc20 } from '../blockchain/utils/erc20'
+import { readErc20, readErc20TotalSupply } from '../blockchain/utils/erc20'
 import {
     ASSETS_MAX_IDS,
     ASSETS_SERVICE,
@@ -466,6 +466,16 @@ export const createEthereumAssetsAdapter = (
                 throw new InvalidAddressError({ address: assetId })
             }
             return readErc20(ctx, chain, assetId, scope)
+        },
+        fetchOnChainTotalSupply: async (ref, scope) => {
+            eip155ChainIdOf(scope, chain)
+            const assetId = evmAssetIdOf(chain, ref)
+            if (assetId === NATIVE_ASSET_ID)
+                return chain.nativeAsset.totalSupply
+            if (isEvmNftAssetId(assetId)) {
+                throw new InvalidAddressError({ address: assetId })
+            }
+            return readErc20TotalSupply(ctx, chain, assetId, scope)
         },
         search: search(ctx, chain, listedTokens),
         getPrices: getPrices(ctx, chain),
