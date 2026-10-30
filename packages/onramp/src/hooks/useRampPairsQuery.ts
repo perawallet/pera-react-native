@@ -60,7 +60,8 @@ export const useRampPairsQuery = ({
         queryFn:
             scope === null
                 ? skipToken
-                : () => getRampPairs(destinationTokenIds, scope),
+                : (): Promise<RampPair[]> =>
+                      getRampPairs(destinationTokenIds, scope),
         enabled: enabled && destinationTokenIds.length > 0,
     })
 

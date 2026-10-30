@@ -123,7 +123,7 @@ export const useWalletConnectHandoffResolver = ({
                 handoff.scope,
                 handoff.signRequestId,
             ),
-            queryFn: () =>
+            queryFn: (): Promise<SignRequestResponse[]> =>
                 getSignRequestsWithSignatures(handoff.scope, {
                     device_id: handoff.deviceId,
                     proposed_sign_request_ids: [handoff.signRequestId],

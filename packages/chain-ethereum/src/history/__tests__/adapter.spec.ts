@@ -31,9 +31,15 @@ import {
     TEST_API_KEY,
     TEST_INTEGRITY_TOKEN,
 } from '../../__tests__/pera-backend'
-import { getEvmTransactionHistory } from '../adapter'
+import { evmCapabilityDefaults } from '../../capability-defaults'
+import { createEvmHistoryAdapter, getEvmTransactionHistory } from '../adapter'
 import { ETHEREUM } from '../../__tests__/evm-chains'
 import { evmHistoryItem } from '../api/msw-handlers'
+import {
+    evmRpcHandlers,
+    evmRpcTransaction,
+} from '../../blockchain/msw-handlers'
+import { TEST_RPC_URL, testChainContext } from '../../__tests__/context'
 
 vi.mock('@perawallet/wallet-core-config', async importOriginal =>
     (await import('../../__tests__/pera-backend')).withEthereumPeraBackend(
@@ -253,5 +259,111 @@ describe('getEvmTransactionHistory', () => {
                 networkId: 'mainnet',
             }),
         ).rejects.toBeInstanceOf(UnknownEvmNetworkError)
+    })
+})
+
+describe('with contractDecoding', () => {
+    const swap = evmHistoryItem({
+        hash: hash(2),
+        from: ME,
+        to: PEER,
+        value: '0',
+        method: 'swapExactTokensForTokens',
+    })
+
+    // No RPC handler is registered, so a node read would fail the test.
+    it.each([
+        [true, 'transactions.list_item.interpreted_title'],
+        [false, 'transactions.list_item.contract_call'],
+    ])(
+        'reads the history without touching the node (decoding %s)',
+        async (isDecoding, titleKey) => {
+            serve([[swap]])
+            const adapter = createEvmHistoryAdapter(
+                ETHEREUM,
+                testChainContext(),
+            )
+
+            const { items } = await adapter.getTransactionHistory(
+                ME,
+                MAINNET,
+                undefined,
+                {
+                    capabilities: {
+                        ...evmCapabilityDefaults,
+                        contractDecoding: isDecoding,
+                    },
+                },
+            )
+
+            expect(items[0]?.summary.title.key).toBe(titleKey)
+        },
+    )
+
+    it('reads the capability fresh on every page', async () => {
+        serve([[swap], [swap]])
+        const adapter = createEvmHistoryAdapter(ETHEREUM, testChainContext())
+        const read = (contractDecoding: boolean, cursor?: string) =>
+            adapter.getTransactionHistory(
+                ME,
+                MAINNET,
+                cursor ? { cursor } : undefined,
+                {
+                    capabilities: {
+                        ...evmCapabilityDefaults,
+                        contractDecoding,
+                    },
+                },
+            )
+
+        const first = await read(false)
+        const second = await read(true, 'page:1')
+
+        expect(first.items[0]?.summary.title.key).toBe(
+            'transactions.list_item.contract_call',
+        )
+        expect(second.items[0]?.summary.title.key).toBe(
+            'transactions.list_item.interpreted_title',
+        )
+    })
+
+    it('reads a page without the capability as decoding off', async () => {
+        serve([[swap]])
+        const adapter = createEvmHistoryAdapter(ETHEREUM, testChainContext())
+
+        const { items } = await adapter.getTransactionHistory(ME, MAINNET)
+
+        expect(items[0]?.summary.title.key).toBe(
+            'transactions.list_item.contract_call',
+        )
+    })
+
+    it("reads a record's transaction from the node, with the fee the history gave", async () => {
+        serve([[swap]])
+        server.use(
+            ...evmRpcHandlers({
+                rpcUrl: TEST_RPC_URL,
+                responses: {
+                    eth_getTransactionByHash: evmRpcTransaction({
+                        hash: hash(2) as `0x${string}`,
+                        from: ME,
+                        to: PEER,
+                    }),
+                },
+            }),
+        )
+        const adapter = createEvmHistoryAdapter(ETHEREUM, testChainContext())
+        const { items } = await adapter.getTransactionHistory(ME, MAINNET)
+
+        const detail = await adapter.getTransactionDetail!(
+            items[0]!.id,
+            MAINNET,
+            { ...items[0]!, fee: new Decimal('7') },
+        )
+
+        expect(detail).toMatchObject({
+            family: 'evm',
+            transaction: { isMined: true, feePaid: new Decimal('7') },
+        })
     })
 })

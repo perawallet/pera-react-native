@@ -6,9 +6,10 @@ Account, asset, transaction, and price data is read from the local database
 _is_ the cache for them. What the React Query cache itself persists to disk is
 decided separately, by the prefix allowlist in
 `apps/mobile/src/providers/query-persistence.ts`: an unlisted prefix is never
-persisted. A module whose keys are split between global catalog data and
-address-keyed data classifies the catalog half under a `module/sub-key` entry,
-which overrides the module's own entry.
+persisted. Entries are key paths of any depth and the longest one matching a
+key's leading string segments wins, so a module whose keys are split between
+global catalog data and address-keyed data classifies the catalog half under a
+longer entry that overrides the module's own.
 
 Two things follow from that, and every data-backed surface has to get both right: how a DB-first
 query is configured so it actually serves SQLite while offline, and how consumers tell "offline"
@@ -72,19 +73,12 @@ so they must not reject the whole `queryFn`:
 
 ### Persisting network-only chart snapshots
 
-Chart-history queries sit under prefixes the allowlist marks `never`, but they
-are network-only (no SQLite table backs them) and carry no PII, so the last
-successful snapshot is exactly what lets a chart show last-known data on a
-cold, offline launch. `query-persistence.ts` therefore checks two query-key
-predicates ahead of the prefix table in `shouldDehydrateQuery`, dehydrated only
-when the query last resolved with `status === 'success'`:
-
-- `isAccountBalancesHistoryQuery` for `['accounts', 'balance-history', …]`
-- `isAssetPriceHistoryQuery` for `['assets', 'prices', 'history', …]`
-
-The per-account asset-history key (`['accounts', 'assets', 'balance-history',
-…]`, used by `AssetWealthChart`) is deliberately _not_ among them, so it falls
-back to its prefix's `never`.
+Chart-history queries sit under prefixes the persistence policy marks `never`,
+yet the last successful snapshot is what lets a chart show last-known data on
+a cold, offline launch. The longer `accounts/balance-history` and
+`assets/prices/history` entries in `QUERY_PREFIX_POLICY`
+(`apps/mobile/src/providers/query-persistence.ts`) carry the rationale. The
+per-account asset history (`accounts/assets/balance-history`) stays `never`.
 
 ### `CHART_QUERY_TIMEOUT_MS` is 30 s on purpose
 

@@ -14,6 +14,7 @@ import { useCallback } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { fetchProviders } from '../api'
+import type { SwapProviderItem } from '../models'
 import { swapQueryKeys } from './querykeys'
 
 type UsePrefetchProvidersResult = () => void
@@ -26,7 +27,7 @@ export const usePrefetchProviders = (
     return useCallback(() => {
         void queryClient.prefetchQuery({
             queryKey: swapQueryKeys.providers(scope),
-            queryFn: () => fetchProviders(scope),
+            queryFn: (): Promise<SwapProviderItem[]> => fetchProviders(scope),
         })
     }, [queryClient, scope])
 }

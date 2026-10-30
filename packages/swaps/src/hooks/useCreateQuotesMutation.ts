@@ -14,6 +14,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { createQuotes, fetchProviders } from '../api'
 import type { CreateQuotesRequest } from '../api'
+import type { SwapProviderItem } from '../models'
 import { swapQueryKeys } from './querykeys'
 
 export const useCreateQuotesMutation = (scope: ChainScope) => {
@@ -23,7 +24,8 @@ export const useCreateQuotesMutation = (scope: ChainScope) => {
         mutationFn: async (data: CreateQuotesRequest) => {
             const providers = await queryClient.ensureQueryData({
                 queryKey: swapQueryKeys.providers(scope),
-                queryFn: () => fetchProviders(scope),
+                queryFn: (): Promise<SwapProviderItem[]> =>
+                    fetchProviders(scope),
             })
             return createQuotes(data, scope, providers)
         },

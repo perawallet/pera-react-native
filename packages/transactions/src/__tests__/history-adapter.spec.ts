@@ -15,11 +15,13 @@ import {
     ChainAdapterNotRegisteredError,
     LEGACY_CHAIN_ID,
     type ChainScope,
+    type TransactionRecord,
 } from '@perawallet/wallet-core-chain-contract'
 import {
     assetFactsResolverFor,
     chainDataCodecFor,
     fetchMoreTransactions,
+    fetchTransactionDetail,
     fetchTransactionHistory,
     hasCachedHistoryRows,
     healCachedRows,
@@ -30,6 +32,7 @@ import {
     TransactionHistoryRowsUnsupportedError,
     type HistoryChainAdapter,
 } from '../history-adapter'
+import { TransactionDetailNotFoundError } from '../errors'
 import type { TransactionHistoryItem } from '../models/types'
 
 const RESULT = { transactions: [] }
@@ -246,6 +249,40 @@ describe('a chain whose history is not cached as rows', () => {
                 'ethereum',
             ),
         ).toBeNull()
+    })
+})
+
+describe('fetchTransactionDetail', () => {
+    const SCOPE: ChainScope = { chainId: 'ethereum', networkId: 'mainnet' }
+    const RECORD = { id: '0xabc', scope: SCOPE } as TransactionRecord
+
+    beforeEach(() => {
+        historyChainAdapters.reset()
+    })
+
+    it("asks the scope's chain adapter for the record's detail", async () => {
+        const native = { family: 'evm', transaction: {} } as const
+        const getTransactionDetail = vi.fn().mockResolvedValue(native)
+        historyChainAdapters.register(
+            makeAdapter({ chainId: 'ethereum', getTransactionDetail }),
+        )
+
+        await expect(
+            fetchTransactionDetail('0xabc', SCOPE, RECORD),
+        ).resolves.toBe(native)
+        expect(getTransactionDetail).toHaveBeenCalledWith(
+            '0xabc',
+            SCOPE,
+            RECORD,
+        )
+    })
+
+    it('rejects when the chain has no way to read one', async () => {
+        historyChainAdapters.register(makeAdapter({ chainId: 'ethereum' }))
+
+        await expect(
+            fetchTransactionDetail('0xabc', SCOPE, RECORD),
+        ).rejects.toBeInstanceOf(TransactionDetailNotFoundError)
     })
 })
 

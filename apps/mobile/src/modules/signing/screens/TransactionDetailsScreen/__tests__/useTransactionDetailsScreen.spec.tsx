@@ -14,6 +14,11 @@ import { renderHook } from '@testing-library/react'
 import { act } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { Decimal } from 'decimal.js'
+import {
+    i18nKey,
+    type ChainScope,
+    type TransactionRecord,
+} from '@perawallet/wallet-core-chain-contract'
 import { PeraNetworkError } from '@perawallet/wallet-core-shared'
 import { algorandHistoryAdapter } from '@perawallet/wallet-core-chain-algorand/transactions'
 import {
@@ -392,6 +397,79 @@ describe('useTransactionDetailsScreen', () => {
         expect(result.current.renderState).toEqual({
             kind: 'content',
             transaction: native,
+        })
+    })
+
+    describe('a history record', () => {
+        const record: TransactionRecord = {
+            id: `0x${'ab'.repeat(32)}`,
+            scope: ETHEREUM_SCOPE as ChainScope,
+            status: 'failed',
+            summary: {
+                kind: 'contract-call',
+                title: { key: i18nKey('transactions.list_item.contract_call') },
+                direction: 'none',
+                icon: 'contract-call',
+                notice: {
+                    kind: 'error',
+                    title: { key: i18nKey('transactions.notice.failed') },
+                },
+            },
+            chainData: { family: 'evm' },
+        }
+
+        beforeEach(() => {
+            getProvider().chains.register(
+                { ...fixtureEthereumDescriptor, family: 'evm' },
+                allCapabilities(false),
+            )
+        })
+
+        it("renders through the chain's record body and fetches nothing", () => {
+            routeParams.current = {
+                scope: ETHEREUM_SCOPE,
+                transactionId: record.id,
+                historyRecord: record,
+            }
+
+            const { result } = renderHook(() => useTransactionDetailsScreen())
+
+            expect(result.current.renderState).toMatchObject({
+                kind: 'record',
+                record,
+            })
+            expect(mockUseTransactionDetailQuery).not.toHaveBeenCalled()
+        })
+
+        it("flags the record's own status", () => {
+            routeParams.current = {
+                scope: ETHEREUM_SCOPE,
+                transactionId: record.id,
+                historyRecord: record,
+            }
+
+            const { result } = renderHook(() => useTransactionDetailsScreen())
+
+            expect(result.current.notice).toMatchObject({
+                kind: 'error',
+                titleKey: 'transactions.notice.failed',
+            })
+        })
+
+        it('reports the transaction unknown on a chain whose UI has no record body', () => {
+            routeParams.current = {
+                scope: ALGORAND_SCOPE,
+                transactionId: record.id,
+                historyRecord: { ...record, scope: ALGORAND_SCOPE },
+            }
+
+            const { result } = renderHook(() => useTransactionDetailsScreen())
+
+            expect(result.current.renderState).toEqual({
+                kind: 'error',
+                titleKey: 'transactions.unknown.title',
+                bodyKey: 'transactions.unknown.body',
+            })
         })
     })
 
