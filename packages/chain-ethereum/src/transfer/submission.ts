@@ -329,10 +329,9 @@ export const submitAndRecordEthereumTransactions = async ({
             serializedTransaction,
         })
         const hash = keccak256(serializedTransaction)
-        // Started before the lookup so the oracle round trip doesn't sit between
-        // the lookup and the ledger write, where an overlapping send at the same
-        // nonce would slip past the collision check. Never rejects.
-        const surcharge = readSurchargeOfSigned(
+        // Awaited before the lookup: a network hop between lookup and record lets
+        // an overlapping send at the same nonce slip past the collision check.
+        const surcharge = await readSurchargeOfSigned(
             client,
             chain,
             serializedTransaction,
@@ -361,7 +360,7 @@ export const submitAndRecordEthereumTransactions = async ({
         if (isUnderpricedReplacement(replaced, parsed)) {
             throw underpricedReplacement(hash)
         }
-        const fee = maxFeeOf(parsed, await surcharge)
+        const fee = maxFeeOf(parsed, surcharge)
         let attemptId: Optional<string>
         await bestEffort('record', async () => {
             attemptId = await recordSubmissionAttempt({

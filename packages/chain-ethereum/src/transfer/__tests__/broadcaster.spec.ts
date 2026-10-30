@@ -314,6 +314,68 @@ describe('Ethereum broadcaster adapter', () => {
                 { maxFee: new Decimal(GAS_FEE.toString()) },
             ])
         })
+
+        it('refuses a send whose oracle read was overtaken by a send recorded at the same nonce', async () => {
+            const heldEncoding = unsignedEncodingOf(
+                parseTransaction(
+                    VIEM_ERC20_TRANSFER,
+                ) as TransactionSerializableEIP1559,
+            )
+            let markHeld!: () => void
+            const isHeld = new Promise<void>(resolve => {
+                markHeld = resolve
+            })
+            let release!: () => void
+            const released = new Promise<void>(resolve => {
+                release = resolve
+            })
+            server.use(
+                ...evmRpcHandlers({
+                    rpcUrl: TEST_RPC_URL,
+                    responses: {
+                        eth_call: opStackOracleResponder({
+                            l1Fees: new Map(),
+                            operatorFee: OPERATOR_FEE,
+                        }),
+                        eth_sendRawTransaction: params =>
+                            keccak256(params[0] as Hex),
+                    },
+                }),
+            )
+            // Prepended, so it sees each request before the fixture answers it.
+            server.use(
+                http.post(TEST_RPC_URL, async ({ request }) => {
+                    const body = await request.clone().text()
+                    if (!body.includes(heldEncoding.slice(2))) return undefined
+                    markHeld()
+                    await released
+                    return undefined
+                }),
+            )
+            const sendOf = (hex: Hex) =>
+                base.submitAndAutoRefresh(BASE_SCOPE, [
+                    {
+                        scope: BASE_SCOPE,
+                        id: keccak256(hex),
+                        bytes: hexToBytes(hex),
+                    },
+                ])
+
+            const held = sendOf(VIEM_ERC20_TRANSFER).catch(
+                (caught: unknown) => caught,
+            )
+            await isHeld
+            await sendOf(VIEM_TRANSFER_NONCE_0)
+            release()
+
+            expect(await held).toMatchObject({
+                classification: 'rejected-by-node',
+                nodeError: { code: EvmErrorCode.NONCE_TOO_LOW },
+            })
+            expect(await rows()).toMatchObject([
+                { rawTransaction: VIEM_TRANSFER_NONCE_0 },
+            ])
+        })
     })
 
     describe('submit transport', () => {
