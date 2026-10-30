@@ -25,7 +25,7 @@ describe('useConfettiField', () => {
 
     it('finishes once the last piece has landed', () => {
         const onFinish = vi.fn()
-        const {result} = renderHook(() => useConfettiField({onFinish}))
+        const { result } = renderHook(() => useConfettiField({ onFinish }))
 
         const totalDurationMs = result.current.pieces.reduce(
             (max, piece) => Math.max(max, piece.delayMs + piece.durationMs),

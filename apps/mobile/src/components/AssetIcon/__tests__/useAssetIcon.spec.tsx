@@ -16,9 +16,7 @@ import { render, screen } from '@test-utils/render'
 import type { DisplayableAsset } from '@perawallet/wallet-core-assets'
 import { useAssetIcon } from '../useAssetIcon'
 
-const asset = (
-    overrides: Partial<DisplayableAsset> = {},
-): DisplayableAsset =>
+const asset = (overrides: Partial<DisplayableAsset> = {}): DisplayableAsset =>
     ({
         assetId: '31566704',
         unitName: 'Pera USD',

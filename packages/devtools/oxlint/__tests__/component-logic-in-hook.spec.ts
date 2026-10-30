@@ -25,9 +25,9 @@ const lintIn = (filename: string, visitor: string, node: Node) => {
 const lint = (visitor: string, node: Node) =>
     lintIn('/repo/apps/mobile/src/Foo.tsx', visitor, node)
 
-const hookCall = (name: string, args: Node[] = []): Node =>
-    call(id(name), args)
-const reactHookCall = (name: string): Node => call(member(id('React'), name), [])
+const hookCall = (name: string, args: Node[] = []): Node => call(id(name), args)
+const reactHookCall = (name: string): Node =>
+    call(member(id('React'), name), [])
 const block = (...statements: Node[]): Node => ({
     type: 'BlockStatement',
     body: statements,

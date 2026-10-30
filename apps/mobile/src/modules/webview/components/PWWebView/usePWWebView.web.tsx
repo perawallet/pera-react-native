@@ -85,7 +85,6 @@ export const usePWWebView = ({
     onCustomMessage,
     webviewRef,
 }: UsePWWebViewProps): UsePWWebViewResult => {
-
     // A cross-origin iframe reports only a coarse load/error signal — there is
     // no per-subresource `onError` the way react-native-webview gives native,
     // and no way to read the framed document's status. That is enough for the
@@ -294,7 +293,6 @@ export const usePWWebView = ({
             host.dispose()
         }
     }, [bridgeToken, trustedOrigins])
-
 
     return {
         status,

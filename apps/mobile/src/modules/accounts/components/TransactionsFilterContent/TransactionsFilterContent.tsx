@@ -25,7 +25,7 @@ import {
     type TransactionsFilterResult,
 } from './useTransactionsFilterContent'
 
-export type {TransactionsFilterResult}
+export type { TransactionsFilterResult }
 
 export type TransactionsFilterContentProps = {
     activeFilter: TransactionFilter

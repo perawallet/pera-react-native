@@ -30,7 +30,7 @@ describe('useOnrampPaymentMethodContent', () => {
     })
 
     it('shows each payment method once, however many providers offer it', () => {
-        const {result} = renderHook(() =>
+        const { result } = renderHook(() =>
             useOnrampPaymentMethodContent({
                 quotes: [quote('card', 'Card'), quote('card', 'Card')],
                 selectedPaymentMethodId: null,
@@ -43,7 +43,7 @@ describe('useOnrampPaymentMethodContent', () => {
     })
 
     it('resolves the payment method the user picked', () => {
-        const {result} = renderHook(() =>
+        const { result } = renderHook(() =>
             useOnrampPaymentMethodContent({
                 quotes: [quote('card', 'Card'), quote('bank', 'Bank')],
                 selectedPaymentMethodId: null,

@@ -56,5 +56,5 @@ export const useConfettiField = ({
         return () => clearTimeout(timeout)
     }, [onFinish, totalDurationMs])
 
-    return {pieces}
+    return { pieces }
 }

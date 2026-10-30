@@ -43,7 +43,9 @@ describe('useViewTextDetailsContent', () => {
         )
 
         act(() => result.current.handleSelectHex())
-        expect(result.current.textToDisplay).toBe(Buffer.from('pera').toString('hex'))
+        expect(result.current.textToDisplay).toBe(
+            Buffer.from('pera').toString('hex'),
+        )
 
         act(() => result.current.handleSelectBase64())
         expect(result.current.textToDisplay).toBe(

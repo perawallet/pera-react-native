@@ -42,8 +42,7 @@ export const AssetActionButtons = ({
     isCollectible,
 }: AssetActionButtonsProps) => {
     const styles = useStyles()
-    const navigation =
-        useNavigation<NativeStackNavigationProp<ParamListBase>>()
+    const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
     const { t } = useLanguage()
     const account = useSelectedAccount()
     const isReadOnly = !useCanSignWith(account, chainId)
@@ -59,7 +58,6 @@ export const AssetActionButtons = ({
     const goToRootPage = (name: string) => {
         navigation.replace('TabBar', { screen: name })
     }
-
 
     if (isCollectible) return null
 

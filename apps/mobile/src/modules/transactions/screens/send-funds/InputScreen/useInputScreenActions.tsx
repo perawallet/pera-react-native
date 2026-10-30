@@ -19,10 +19,7 @@ import {
     type RefObject,
 } from 'react'
 import { type View } from 'react-native'
-import {
-    useIsFocused,
-    useNavigation,
-} from '@react-navigation/native'
+import { useIsFocused, useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 import { PWIcon, PWText, PWView } from '@components/core'
 import { AccountDisplay } from '@components/AccountDisplay'

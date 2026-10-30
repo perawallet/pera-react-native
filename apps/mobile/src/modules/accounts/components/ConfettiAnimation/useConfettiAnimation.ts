@@ -49,5 +49,5 @@ export const useConfettiAnimation = ({
         onFinish?.()
     }, [onFinish])
 
-    return {isVisible, handleFinish}
+    return { isVisible, handleFinish }
 }

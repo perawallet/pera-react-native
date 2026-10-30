@@ -25,6 +25,7 @@ describe('useSearchScreenList', () => {
                 onAssetPress: async () => {},
                 onExpandSection: noop,
                 chainId: 'algorand',
+                getAccountAddress: () => 'ADDRESS',
                 value: 'pera',
                 scopes: ['assets'],
             }),
@@ -47,6 +48,7 @@ describe('useSearchScreenList', () => {
             onAssetPress: async () => {},
             onExpandSection: noop,
             chainId: 'algorand' as const,
+            getAccountAddress: () => 'ADDRESS',
             scopes: ['assets'] as never[],
             value: 'pera',
         }

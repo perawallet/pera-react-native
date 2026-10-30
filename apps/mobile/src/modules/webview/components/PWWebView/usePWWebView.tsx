@@ -11,7 +11,11 @@
  */
 
 import React, { useCallback, useMemo, useRef, useState } from 'react'
-import { WebView, type WebViewMessageEvent, type WebViewProps } from 'react-native-webview'
+import {
+    WebView,
+    type WebViewMessageEvent,
+    type WebViewProps,
+} from 'react-native-webview'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useTheme } from '@rneui/themed'
 import type {
@@ -493,7 +497,6 @@ export const usePWWebView = (props: PWWebViewProps): UsePWWebViewResult => {
         t,
         loadableUrl,
     ])
-
 
     return {
         title,

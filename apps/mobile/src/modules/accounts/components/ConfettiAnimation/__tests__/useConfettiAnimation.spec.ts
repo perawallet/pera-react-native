@@ -26,7 +26,9 @@ describe('useConfettiAnimation', () => {
     })
 
     it('shows the confetti once the render delay has passed', () => {
-        const {result} = renderHook(() => useConfettiAnimation({play: true}))
+        const { result } = renderHook(() =>
+            useConfettiAnimation({ play: true }),
+        )
 
         expect(result.current.isVisible).toBe(false)
 
@@ -39,8 +41,8 @@ describe('useConfettiAnimation', () => {
 
     it('hides the confetti and reports the end once it finishes', () => {
         const onFinish = vi.fn()
-        const {result} = renderHook(() =>
-            useConfettiAnimation({play: true, onFinish}),
+        const { result } = renderHook(() =>
+            useConfettiAnimation({ play: true, onFinish }),
         )
 
         act(() => {
@@ -56,7 +58,9 @@ describe('useConfettiAnimation', () => {
     })
 
     it('stays hidden while it is not asked to play', () => {
-        const {result} = renderHook(() => useConfettiAnimation({play: false}))
+        const { result } = renderHook(() =>
+            useConfettiAnimation({ play: false }),
+        )
 
         act(() => {
             vi.advanceTimersByTime(RENDER_DELAY_MS)

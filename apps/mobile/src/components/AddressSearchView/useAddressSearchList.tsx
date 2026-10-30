@@ -13,12 +13,7 @@
 import { useCallback, useMemo, type ReactElement } from 'react'
 import { addressOn } from '@perawallet/wallet-core-accounts'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import {
-    PWIcon,
-    PWText,
-    PWTouchableOpacity,
-    PWView,
-} from '@components/core'
+import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { ChainBadge } from '@components/ChainBadge'
 import { EmptyView } from '@components/EmptyView'
 import { AddressDisplay } from '@components/AddressDisplay'

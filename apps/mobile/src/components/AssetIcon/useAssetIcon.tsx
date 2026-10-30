@@ -144,5 +144,5 @@ export const useAssetIcon = ({
         initials,
     ])
 
-    return {icon, containerStyle: styles.container}
+    return { icon, containerStyle: styles.container }
 }

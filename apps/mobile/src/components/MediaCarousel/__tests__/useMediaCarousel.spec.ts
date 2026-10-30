@@ -19,7 +19,11 @@ vi.mock('@components/VideoPlayer', () => ({ VideoPlayer: () => null }))
 vi.mock('@components/AudioPlayer', () => ({ AudioPlayer: () => null }))
 
 const image = (id: string): MediaItem =>
-    ({ id, type: 'image', previewUrl: `https://pera.example/${id}.png` }) as MediaItem
+    ({
+        id,
+        type: 'image',
+        previewUrl: `https://pera.example/${id}.png`,
+    }) as MediaItem
 
 describe('useMediaCarousel', () => {
     beforeEach(() => {

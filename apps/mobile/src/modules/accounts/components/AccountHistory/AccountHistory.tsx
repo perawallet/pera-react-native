@@ -10,11 +10,7 @@
  limitations under the License
  */
 
-import {
-    PWFlatList,
-    PWRefreshControl,
-    PWView,
-} from '@components/core'
+import { PWFlatList, PWRefreshControl, PWView } from '@components/core'
 import { AccountHistoryTitleBar } from './AccountHistoryTitleBar'
 import { HistorySkeleton } from './HistorySkeleton'
 import { useStyles } from './styles'

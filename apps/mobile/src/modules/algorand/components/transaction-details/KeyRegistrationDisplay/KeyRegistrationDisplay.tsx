@@ -36,8 +36,8 @@ export const KeyRegistrationDisplay = ({
     const { theme } = useTheme()
     const { t } = useLanguage()
 
-    const {keyRegType, participationKeys, showWarnings, keyReg} =
-        useKeyRegistrationDisplay({transaction})
+    const { keyRegType, participationKeys, showWarnings, keyReg } =
+        useKeyRegistrationDisplay({ transaction })
 
     return (
         <PWView style={styles.container}>

@@ -12,11 +12,7 @@
 
 import { useCallback, useRef, type ReactElement, type RefObject } from 'react'
 import type { GestureResponderEvent } from 'react-native'
-import {
-    PWIcon,
-    type PWSwipeableRef,
-    PWView,
-} from '@components/core'
+import { PWIcon, type PWSwipeableRef, PWView } from '@components/core'
 import type { AccountHoldingsLiteRow } from '@perawallet/wallet-core-accounts'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useStyles } from './styles'

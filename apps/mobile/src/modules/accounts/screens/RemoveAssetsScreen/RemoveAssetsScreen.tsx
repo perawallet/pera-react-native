@@ -11,7 +11,12 @@
  */
 
 import React from 'react'
-import { PWFlatList, PWScreen, PWText, PWTouchableOpacity } from '@components/core'
+import {
+    PWFlatList,
+    PWScreen,
+    PWText,
+    PWTouchableOpacity,
+} from '@components/core'
 import { ConfirmAction, CONFIRM_ACTION_LAYOUT } from '@components/ConfirmAction'
 import { EmptyView } from '@components/EmptyView'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'

@@ -86,5 +86,5 @@ export const useAssetSelectionList = <T,>({
         [keyExtractor],
     )
 
-    return {showSkeletons, listData, renderRow, keyExtractorFn}
+    return { showSkeletons, listData, renderRow, keyExtractorFn }
 }

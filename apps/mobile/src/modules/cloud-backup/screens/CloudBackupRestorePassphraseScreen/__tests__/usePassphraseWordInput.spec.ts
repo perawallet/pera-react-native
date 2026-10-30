@@ -17,7 +17,7 @@ import { usePassphraseWordInput } from '../usePassphraseWordInput'
 describe('usePassphraseWordInput', () => {
     it('reports the edited word with the position it belongs to', () => {
         const onChangeWord = vi.fn()
-        const {result} = renderHook(() =>
+        const { result } = renderHook(() =>
             usePassphraseWordInput({
                 index: 2,
                 onChangeWord,
@@ -34,7 +34,7 @@ describe('usePassphraseWordInput', () => {
     it('reports the focused and submitted positions', () => {
         const onFocusWord = vi.fn()
         const onSubmitWord = vi.fn()
-        const {result} = renderHook(() =>
+        const { result } = renderHook(() =>
             usePassphraseWordInput({
                 index: 1,
                 onChangeWord: vi.fn(),

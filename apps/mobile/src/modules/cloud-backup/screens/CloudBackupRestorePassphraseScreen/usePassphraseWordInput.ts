@@ -44,5 +44,5 @@ export const usePassphraseWordInput = ({
         [onSubmitWord, index],
     )
 
-    return {handleChangeText, handleFocus, handleSubmitEditing}
+    return { handleChangeText, handleFocus, handleSubmitEditing }
 }

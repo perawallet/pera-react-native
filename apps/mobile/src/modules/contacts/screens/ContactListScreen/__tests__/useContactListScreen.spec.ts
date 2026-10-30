@@ -57,8 +57,8 @@ describe('useContactListScreen', () => {
     it('keys a contact row by its id', () => {
         const { result } = renderHook(() => useContactListScreen())
 
-        expect(result.current.keyExtractor({ id: 'contact-1' } as Contact)).toBe(
-            'contact-1',
-        )
+        expect(
+            result.current.keyExtractor({ id: 'contact-1' } as Contact),
+        ).toBe('contact-1')
     })
 })

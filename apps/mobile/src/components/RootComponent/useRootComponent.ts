@@ -91,5 +91,5 @@ export const useRootComponent = (): { hasAccounts: boolean } => {
         }
     }, [appStatePlatform, hasAccounts, migrationInProgress, runSyncAction])
 
-    return {hasAccounts}
+    return { hasAccounts }
 }

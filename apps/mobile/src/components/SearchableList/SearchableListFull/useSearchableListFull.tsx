@@ -10,12 +10,7 @@
  limitations under the License
  */
 
-import {
-    useCallback,
-    useMemo,
-    type ComponentType,
-    type ReactNode,
-} from 'react'
+import { useCallback, useMemo, type ComponentType, type ReactNode } from 'react'
 import { Pressable, type LayoutChangeEvent } from 'react-native'
 import { PWView } from '@components/core'
 import { SearchInputTrigger } from '@components/SearchInputTrigger'
@@ -26,10 +21,7 @@ import {
     isSeparatorSuppressed,
     type AugmentedItem,
 } from '../useSearchableList'
-import type {
-    RenderItem,
-    SearchableListSearchProps,
-} from '../SearchableList'
+import type { RenderItem, SearchableListSearchProps } from '../SearchableList'
 import { useStyles } from '../styles'
 
 const renderHeaderNode = (
@@ -230,7 +222,8 @@ export const useSearchableListFull = <T,>({
         if (CallerSeparator == null) {
             return null
         }
-        const Separator = CallerSeparator as ComponentType<WrappedSeparatorProps>
+        const Separator =
+            CallerSeparator as ComponentType<WrappedSeparatorProps>
         const WrappedSeparator = ({
             leadingItem,
             trailingItem,

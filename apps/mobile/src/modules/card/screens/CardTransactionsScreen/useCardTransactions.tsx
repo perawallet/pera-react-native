@@ -10,12 +10,7 @@
  limitations under the License
  */
 
-import {
-    useCallback,
-    useLayoutEffect,
-    useMemo,
-    type ReactElement,
-} from 'react'
+import { useCallback, useLayoutEffect, useMemo, type ReactElement } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import {

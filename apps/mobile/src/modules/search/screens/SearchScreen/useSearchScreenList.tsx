@@ -17,14 +17,8 @@ import {
     type ReactElement,
     type RefObject,
 } from 'react'
-import {
-    chainAccountOf,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
-import {
-    LEGACY_CHAIN_ID,
-    type ChainId,
-} from '@perawallet/wallet-core-chain-contract'
+import { type WalletAccount } from '@perawallet/wallet-core-accounts'
+import { type ChainId } from '@perawallet/wallet-core-chain-contract'
 import {
     primaryContactAddress,
     type Contact,
@@ -52,6 +46,8 @@ export type UseSearchScreenListProps = {
     onAssetPress: (asset: PeraAsset) => Promise<void>
     onExpandSection: (kind: SearchScope) => void
     chainId: ChainId
+    /** The address the row's test id names. */
+    getAccountAddress: (account: WalletAccount) => string | undefined
     /** The query and the scopes it spans; either change scrolls the list back to the top. */
     value: string
     scopes: SearchScope[]
@@ -69,6 +65,7 @@ export const useSearchScreenList = ({
     onAssetPress,
     onExpandSection,
     chainId,
+    getAccountAddress,
     value,
     scopes,
 }: UseSearchScreenListProps): UseSearchScreenListResult => {
@@ -96,7 +93,7 @@ export const useSearchScreenList = ({
                     return (
                         <PWTouchableOpacity
                             onPress={() => onAccountPress(item.account)}
-                            testID={`search_result_account_${chainAccountOf(item.account, LEGACY_CHAIN_ID)?.address}`}
+                            testID={`search_result_account_${getAccountAddress(item.account)}`}
                         >
                             <AccountDisplay
                                 account={item.account}
@@ -167,6 +164,7 @@ export const useSearchScreenList = ({
             onAssetPress,
             onExpandSection,
             chainId,
+            getAccountAddress,
             styles,
             t,
         ],
@@ -174,5 +172,5 @@ export const useSearchScreenList = ({
 
     const keyExtractor = useCallback((row: SearchRow) => row.key, [])
 
-    return {listRef, renderItem, keyExtractor}
+    return { listRef, renderItem, keyExtractor }
 }

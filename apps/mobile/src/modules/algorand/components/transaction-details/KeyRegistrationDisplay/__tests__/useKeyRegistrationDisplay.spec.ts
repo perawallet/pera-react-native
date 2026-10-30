@@ -28,8 +28,8 @@ const transaction = (
 
 describe('useKeyRegistrationDisplay', () => {
     it('reports an online key registration with its participation keys', () => {
-        const {result} = renderHook(() =>
-            useKeyRegistrationDisplay({transaction: transaction()}),
+        const { result } = renderHook(() =>
+            useKeyRegistrationDisplay({ transaction: transaction() }),
         )
 
         expect(result.current.keyRegType).toBe('online')
@@ -37,8 +37,8 @@ describe('useKeyRegistrationDisplay', () => {
     })
 
     it('warns when the transaction carries no id', () => {
-        const {result} = renderHook(() =>
-            useKeyRegistrationDisplay({transaction: transaction({id: ''})}),
+        const { result } = renderHook(() =>
+            useKeyRegistrationDisplay({ transaction: transaction({ id: '' }) }),
         )
 
         expect(result.current.showWarnings).toBe(true)

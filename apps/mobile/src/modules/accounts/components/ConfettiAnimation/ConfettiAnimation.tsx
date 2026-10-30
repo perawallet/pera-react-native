@@ -22,7 +22,7 @@ export const ConfettiAnimation = ({
     play,
     onFinish,
 }: ConfettiAnimationProps) => {
-    const {isVisible, handleFinish} = useConfettiAnimation({play, onFinish})
+    const { isVisible, handleFinish } = useConfettiAnimation({ play, onFinish })
 
     if (!isVisible) {
         return null

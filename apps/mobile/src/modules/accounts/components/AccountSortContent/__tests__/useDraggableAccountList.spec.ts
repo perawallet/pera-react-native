@@ -20,7 +20,12 @@ const account = (id: string): WalletAccount => ({ id }) as WalletAccount
 describe('useDraggableAccountList', () => {
     it('reports the dragged order by account id', () => {
         const onReorder = vi.fn()
-        const {result} = renderHook(() => useDraggableAccountList({onReorder}))
+        const { result } = renderHook(() =>
+            useDraggableAccountList({
+                onReorder,
+                getAccountAddress: () => 'ADDRESS',
+            }),
+        )
 
         act(() =>
             result.current.handleDragEnd({
@@ -32,8 +37,11 @@ describe('useDraggableAccountList', () => {
     })
 
     it('keys a row by its account id', () => {
-        const {result} = renderHook(() =>
-            useDraggableAccountList({onReorder: vi.fn()}),
+        const { result } = renderHook(() =>
+            useDraggableAccountList({
+                onReorder: vi.fn(),
+                getAccountAddress: () => 'ADDRESS',
+            }),
         )
 
         expect(result.current.keyExtractor(account('first'))).toBe('first')

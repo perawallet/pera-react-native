@@ -44,16 +44,16 @@ describe('useAssetVerificationCard', () => {
     })
 
     it('hides the card for an asset with no verification tier', () => {
-        const {result} = renderHook(() =>
-            useAssetVerificationCard({asset: asset(), scope}),
+        const { result } = renderHook(() =>
+            useAssetVerificationCard({ asset: asset(), scope }),
         )
 
         expect(result.current.isVisible).toBe(false)
     })
 
     it('shows the verified card for a verified asset', () => {
-        const {result} = renderHook(() =>
-            useAssetVerificationCard({asset: asset('verified'), scope}),
+        const { result } = renderHook(() =>
+            useAssetVerificationCard({ asset: asset('verified'), scope }),
         )
 
         expect(result.current.isVisible).toBe(true)
@@ -63,8 +63,8 @@ describe('useAssetVerificationCard', () => {
     })
 
     it('opens the verification guide when the learn-more link is pressed', () => {
-        const {result} = renderHook(() =>
-            useAssetVerificationCard({asset: asset('verified'), scope}),
+        const { result } = renderHook(() =>
+            useAssetVerificationCard({ asset: asset('verified'), scope }),
         )
 
         act(() => result.current.handleLearnMore())

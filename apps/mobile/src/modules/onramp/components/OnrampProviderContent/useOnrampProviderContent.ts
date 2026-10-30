@@ -64,5 +64,5 @@ export const useOnrampProviderContent = ({
         [resolve],
     )
 
-    return {sortedQuotes, bestQuoteId, handleSelect}
+    return { sortedQuotes, bestQuoteId, handleSelect }
 }

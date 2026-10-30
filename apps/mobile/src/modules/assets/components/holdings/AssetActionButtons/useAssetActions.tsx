@@ -53,8 +53,7 @@ export const useAssetActions = ({
     chainId,
     account,
 }: UseAssetActionsProps): UseAssetActionsResult => {
-    const navigation =
-        useNavigation<NativeStackNavigationProp<ParamListBase>>()
+    const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
     const { t } = useLanguage()
     const { request: requestBottomSheet } = useBottomSheet()
     const { setSelectedAsset, setCanSelectAsset } = useSendFunds()

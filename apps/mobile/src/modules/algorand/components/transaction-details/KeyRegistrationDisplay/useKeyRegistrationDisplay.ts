@@ -36,7 +36,10 @@ export type UseKeyRegistrationDisplayResult = {
 
 export const useKeyRegistrationDisplay = ({
     transaction,
-}: Pick<KeyRegistrationDisplayProps, 'transaction'>): UseKeyRegistrationDisplayResult => {
+}: Pick<
+    KeyRegistrationDisplayProps,
+    'transaction'
+>): UseKeyRegistrationDisplayResult => {
     const keyRegType = useMemo(() => getKeyRegType(transaction), [transaction])
     const participationKeys = useMemo(
         () => ({

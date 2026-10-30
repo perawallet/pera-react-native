@@ -46,7 +46,7 @@ const LEGACY_CHAIN_BASELINE: readonly string[] = [
     'apps/mobile/src/modules/accounts/components/PortfolioView/usePortfolioView.ts',
     'apps/mobile/src/modules/accounts/components/SharedAccountDetailsContent/useSharedAccountDetailsContent.ts',
     'apps/mobile/src/modules/accounts/components/WatchAccountButtonPanel/useWatchAccountButtonPanel.ts',
-    'apps/mobile/src/modules/accounts/screens/RemoveAssetsScreen/useRemoveAssetsScreen.ts',
+    'apps/mobile/src/modules/accounts/screens/RemoveAssetsScreen/useRemoveAssetsScreen.tsx',
     'apps/mobile/src/modules/assets/components/AccountAssetSelectionList/useAccountAssetSelectionList.ts',
     'apps/mobile/src/modules/assets/components/AssetItem/AccountAssetItemView.tsx',
     'apps/mobile/src/modules/assets/components/OptInAccountSelectionContent/OptInAccountSelectionContent.tsx',

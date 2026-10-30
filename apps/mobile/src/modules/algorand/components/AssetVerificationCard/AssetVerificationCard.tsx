@@ -25,8 +25,13 @@ export const AssetVerificationCard = ({
     const styles = useStyles()
     const { t } = useLanguage()
 
-    const { isVisible, cardConfig, containerStyle, textStyle, handleLearnMore } =
-        useAssetVerificationCard({ asset, scope })
+    const {
+        isVisible,
+        cardConfig,
+        containerStyle,
+        textStyle,
+        handleLearnMore,
+    } = useAssetVerificationCard({ asset, scope })
 
     if (!isVisible) {
         return null

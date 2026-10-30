@@ -43,7 +43,7 @@ describe('useOnrampProviderContent', () => {
             }),
         )
 
-        expect(result.current.sortedQuotes.map((q) => q.quoteId)).toEqual(['a'])
+        expect(result.current.sortedQuotes.map(q => q.quoteId)).toEqual(['a'])
     })
 
     it('resolves the quote the user picked', () => {

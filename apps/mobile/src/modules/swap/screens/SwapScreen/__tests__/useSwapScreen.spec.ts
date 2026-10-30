@@ -211,7 +211,9 @@ describe('useSwapScreen', () => {
 
         const { result, rerender } = renderHook(() => useSwapScreen())
 
-        await vi.waitFor(() => expect(mockRequestBottomSheet).toHaveBeenCalled())
+        await vi.waitFor(() =>
+            expect(mockRequestBottomSheet).toHaveBeenCalled(),
+        )
         rerender()
 
         expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)

@@ -27,9 +27,7 @@ describe('useTransactionsFilterContent', () => {
     })
 
     it('resolves the filter the user picked', () => {
-        const { result } = renderHook(() =>
-            useTransactionsFilterContent({}),
-        )
+        const { result } = renderHook(() => useTransactionsFilterContent({}))
 
         act(() => result.current.handleFilterPress(TransactionFilter.Today))
 
@@ -39,9 +37,7 @@ describe('useTransactionsFilterContent', () => {
     })
 
     it('opens the custom range view instead of resolving', () => {
-        const { result } = renderHook(() =>
-            useTransactionsFilterContent({}),
-        )
+        const { result } = renderHook(() => useTransactionsFilterContent({}))
 
         act(() =>
             result.current.handleFilterPress(TransactionFilter.CustomRange),

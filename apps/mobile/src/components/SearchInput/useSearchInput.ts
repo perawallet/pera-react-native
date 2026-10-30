@@ -45,5 +45,5 @@ export const useSearchInput = ({
         onChangeText?.('')
     }, [onChangeText])
 
-    return {currentValue, hasValue, handleChangeText, handleClear}
+    return { currentValue, hasValue, handleChangeText, handleClear }
 }

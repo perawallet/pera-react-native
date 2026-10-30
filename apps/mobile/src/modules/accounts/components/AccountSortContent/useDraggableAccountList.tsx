@@ -15,17 +15,15 @@ import {
     ScaleDecorator,
     type RenderItemParams,
 } from 'react-native-draggable-flatlist'
-import {
-    chainAccountOf,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { type WalletAccount } from '@perawallet/wallet-core-accounts'
 import { PWIcon, PWTouchableOpacity, PWView } from '@components/core'
 import { AccountDisplay } from '@components/AccountDisplay'
 import { useStyles } from './styles'
 
 export type UseDraggableAccountListProps = {
     onReorder: (orderedIds: string[]) => void
+    /** The address the row's test id names. */
+    getAccountAddress: (account: WalletAccount) => string | undefined
 }
 
 export type UseDraggableAccountListResult = {
@@ -36,6 +34,7 @@ export type UseDraggableAccountListResult = {
 
 export const useDraggableAccountList = ({
     onReorder,
+    getAccountAddress,
 }: UseDraggableAccountListProps): UseDraggableAccountListResult => {
     const styles = useStyles()
 
@@ -44,7 +43,7 @@ export const useDraggableAccountList = ({
             <ScaleDecorator activeScale={0.97}>
                 <PWView
                     style={styles.draggableRow}
-                    testID={`draggable_account_${chainAccountOf(item, LEGACY_CHAIN_ID)?.address}`}
+                    testID={`draggable_account_${getAccountAddress(item)}`}
                 >
                     <PWView style={styles.accountDisplayContainer}>
                         <AccountDisplay
@@ -65,7 +64,7 @@ export const useDraggableAccountList = ({
                 </PWView>
             </ScaleDecorator>
         ),
-        [styles],
+        [styles, getAccountAddress],
     )
 
     const keyExtractor = useCallback((item: WalletAccount) => item.id, [])
@@ -77,5 +76,5 @@ export const useDraggableAccountList = ({
         [onReorder],
     )
 
-    return {renderItem, keyExtractor, handleDragEnd}
+    return { renderItem, keyExtractor, handleDragEnd }
 }

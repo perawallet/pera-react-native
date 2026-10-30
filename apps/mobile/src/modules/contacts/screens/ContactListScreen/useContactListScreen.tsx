@@ -10,12 +10,7 @@
  limitations under the License
  */
 
-import {
-    useCallback,
-    useMemo,
-    useState,
-    type ReactElement,
-} from 'react'
+import { useCallback, useMemo, useState, type ReactElement } from 'react'
 import { Keyboard } from 'react-native'
 import { type Contact, useContacts } from '@perawallet/wallet-core-contacts'
 import { useBottomSheet } from '@modules/bottom-sheet'

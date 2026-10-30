@@ -17,7 +17,7 @@ import { useSearchInput } from '../useSearchInput'
 describe('useSearchInput', () => {
     it('keeps the typed text and reports it as the current value', () => {
         const onChangeText = vi.fn()
-        const {result} = renderHook(() => useSearchInput({onChangeText}))
+        const { result } = renderHook(() => useSearchInput({ onChangeText }))
 
         act(() => result.current.handleChangeText('Algorand'))
 
@@ -28,7 +28,7 @@ describe('useSearchInput', () => {
 
     it('clears the typed text and reports the empty value', () => {
         const onChangeText = vi.fn()
-        const {result} = renderHook(() => useSearchInput({onChangeText}))
+        const { result } = renderHook(() => useSearchInput({ onChangeText }))
 
         act(() => result.current.handleChangeText('Algorand'))
         act(() => result.current.handleClear())
@@ -39,7 +39,7 @@ describe('useSearchInput', () => {
     })
 
     it('follows the controlled value rather than the typed one', () => {
-        const {result} = renderHook(() => useSearchInput({value: 'alice'}))
+        const { result } = renderHook(() => useSearchInput({ value: 'alice' }))
 
         act(() => result.current.handleChangeText('Algorand'))
 

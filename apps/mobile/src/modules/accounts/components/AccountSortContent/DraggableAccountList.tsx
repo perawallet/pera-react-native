@@ -12,7 +12,11 @@
 
 import DraggableFlatList from 'react-native-draggable-flatlist'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { type WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    chainAccountOf,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useStyles } from './styles'
 import { useDraggableAccountList } from './useDraggableAccountList'
 
@@ -21,6 +25,9 @@ type DraggableAccountListProps = {
     onReorder: (orderedIds: string[]) => void
 }
 
+const accountAddressOf = (account: WalletAccount) =>
+    chainAccountOf(account, LEGACY_CHAIN_ID)?.address;
+
 export const DraggableAccountList = ({
     accounts,
     onReorder,
@@ -28,9 +35,12 @@ export const DraggableAccountList = ({
     const insets = useSafeAreaInsets()
     const styles = useStyles({ bottomInset: insets.bottom })
 
-    const { renderItem, keyExtractor, handleDragEnd } = useDraggableAccountList({
-        onReorder,
-    })
+    const { renderItem, keyExtractor, handleDragEnd } = useDraggableAccountList(
+        {
+            onReorder,
+            getAccountAddress: accountAddressOf,
+        },
+    )
 
     return (
         <DraggableFlatList

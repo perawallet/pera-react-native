@@ -21,7 +21,9 @@ import { useAccountAssetItemView } from '../useAccountAssetItemView'
 const mocks = vi.hoisted(() => ({ useAssetsQuery: vi.fn() }))
 
 vi.mock('@perawallet/wallet-core-assets', async importOriginal => ({
-    ...(await importOriginal<typeof import('@perawallet/wallet-core-assets')>()),
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-assets')
+    >()),
     useAssetsQuery: mocks.useAssetsQuery,
 }))
 

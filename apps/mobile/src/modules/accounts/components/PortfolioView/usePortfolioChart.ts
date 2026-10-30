@@ -20,7 +20,10 @@ import {
     useAccountBalancesHistoryQuery,
 } from '@perawallet/wallet-core-accounts'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import { type HistoryPeriod, type Nullable } from '@perawallet/wallet-core-shared'
+import {
+    type HistoryPeriod,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 
 export type UsePortfolioChartProps = {
     chartSources: AccountHoldingSource[]
@@ -36,7 +39,9 @@ export type UsePortfolioChartProps = {
 export type UsePortfolioChartResult = {
     selectedNativeValue: Nullable<Decimal>
     trendPeriodLabel: Record<HistoryPeriod, string>
-    chartSelectionChanged: (selected: Nullable<PortfolioValueHistoryItem>) => void
+    chartSelectionChanged: (
+        selected: Nullable<PortfolioValueHistoryItem>,
+    ) => void
 }
 
 export const usePortfolioChart = ({

@@ -19,7 +19,7 @@ import { WebViewFooterBar } from './WebViewFooterBar'
 import { useStyles } from './styles'
 import { usePWWebView, type PWWebViewProps } from './usePWWebView'
 
-export type {PWWebViewProps}
+export type { PWWebViewProps }
 
 export const PWWebView = (props: PWWebViewProps) => {
     const { t } = useLanguage()

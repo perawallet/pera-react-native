@@ -45,24 +45,19 @@ export const InputScreen = () => {
     const { canSelectAsset, note, onFinished } = useSendFunds()
     const { t } = useLanguage()
 
-    const {
-        openNote,
-        headerLeft,
-        headerRight,
-        headerTitle,
-        amountRef,
-    } = useInputScreenActions({
-        asset,
-        accountAssetBalance,
-        isBalanceReady,
-        cryptoValue,
-        isResolvingDestination,
-        handleKey,
-        handlePaste,
-        handleNext,
-        canSelectAsset,
-        onFinished,
-    })
+    const { openNote, headerLeft, headerRight, headerTitle, amountRef } =
+        useInputScreenActions({
+            asset,
+            accountAssetBalance,
+            isBalanceReady,
+            cryptoValue,
+            isResolvingDestination,
+            handleKey,
+            handlePaste,
+            handleNext,
+            canSelectAsset,
+            onFinished,
+        })
 
     useNavigationHeader({
         left: headerLeft,

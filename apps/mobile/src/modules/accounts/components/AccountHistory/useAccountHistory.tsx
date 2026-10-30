@@ -10,12 +10,7 @@
  limitations under the License
  */
 
-import {
-    useMemo,
-    useCallback,
-    useState,
-    type ReactElement,
-} from 'react'
+import { useMemo, useCallback, useState, type ReactElement } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'

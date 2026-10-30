@@ -61,9 +61,7 @@ type UseRemoveAssetsScreenResult = {
     handleRemoveSelected: () => void
     t: (key: string, params?: Record<string, string | number>) => string
     listRef: RefObject<Nullable<PWFlatListRef>>
-    renderItem: (params: {
-        item: AssetWithAccountBalance
-    }) => ReactElement
+    renderItem: (params: { item: AssetWithAccountBalance }) => ReactElement
 }
 
 export const useRemoveAssetsScreen = (): UseRemoveAssetsScreenResult => {

@@ -11,10 +11,7 @@
  */
 
 import { useMemo } from 'react'
-import {
-    isCollectible,
-    useAssetsQuery,
-} from '@perawallet/wallet-core-assets'
+import { isCollectible, useAssetsQuery } from '@perawallet/wallet-core-assets'
 import type { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'

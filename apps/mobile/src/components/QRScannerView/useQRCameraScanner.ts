@@ -73,5 +73,5 @@ export const useQRCameraScanner = (): UseQRCameraScannerResult => {
             })
     }, [])
 
-    return {cameraRef, handleLayout, focusCenter}
+    return { cameraRef, handleLayout, focusCenter }
 }

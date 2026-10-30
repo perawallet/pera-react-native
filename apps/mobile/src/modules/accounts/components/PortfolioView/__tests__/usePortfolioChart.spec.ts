@@ -18,7 +18,9 @@ import { usePortfolioChart } from '../usePortfolioChart'
 const mocks = vi.hoisted(() => ({ historyQuery: vi.fn() }))
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
-    ...(await importOriginal<typeof import('@perawallet/wallet-core-accounts')>()),
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-accounts')
+    >()),
     useAccountBalancesHistoryQuery: mocks.historyQuery,
 }))
 
@@ -46,7 +48,9 @@ describe('usePortfolioChart', () => {
             }),
         )
 
-        const point = { datetime: new Date('2024-01-01') } as PortfolioValueHistoryItem
+        const point = {
+            datetime: new Date('2024-01-01'),
+        } as PortfolioValueHistoryItem
         act(() => result.current.chartSelectionChanged(point))
 
         expect(setSelectedPoint).toHaveBeenCalledWith(point)

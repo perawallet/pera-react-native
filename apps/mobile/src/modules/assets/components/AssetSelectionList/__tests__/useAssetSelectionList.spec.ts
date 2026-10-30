@@ -22,7 +22,7 @@ const keyExtractor = (row: Row) => row.id
 
 describe('useAssetSelectionList', () => {
     it('fills the list with skeleton rows while the first load is in flight', () => {
-        const {result} = renderHook(() =>
+        const { result } = renderHook(() =>
             useAssetSelectionList<Row>({
                 data: undefined,
                 renderItem,
@@ -40,7 +40,7 @@ describe('useAssetSelectionList', () => {
     })
 
     it('keeps the rows it has once the load has finished', () => {
-        const {result} = renderHook(() =>
+        const { result } = renderHook(() =>
             useAssetSelectionList<Row>({
                 data: [{ id: 'first' }],
                 renderItem,
