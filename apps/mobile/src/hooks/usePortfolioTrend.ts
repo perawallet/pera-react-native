@@ -20,6 +20,7 @@ import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     percentChange,
     type HistoryPeriod,
+    type Nullable,
 } from '@perawallet/wallet-core-shared'
 
 export type PortfolioTrendDirection = 'up' | 'down' | 'flat'
@@ -40,18 +41,17 @@ const directionOf = (change: Decimal): PortfolioTrendDirection => {
     return change.isPositive() ? 'up' : 'down'
 }
 
-export const usePortfolioTrend = (
-    sources: AccountHoldingSource[],
-    period: HistoryPeriod,
-    currencyScope: ChainScope,
-    enabled: boolean,
+type TrendHistory = {
+    data: { preferredValue: Nullable<Decimal> }[]
+    isPending: boolean
+    isPaused: boolean
+}
+
+/** `isIncomplete` withholds a change the history can't fully back. */
+export const useHistoryTrend = (
+    { data, isPending, isPaused }: TrendHistory,
+    isIncomplete: boolean,
 ): UsePortfolioTrendResult => {
-    const { data, isPending, isPaused, isPartial } = usePortfolioHistoryQuery(
-        sources,
-        period,
-        currencyScope,
-        enabled,
-    )
     const isSettling = isPending && !isPaused
 
     // Points with no preferred value have no rate behind them; keeping them
@@ -80,7 +80,22 @@ export const usePortfolioTrend = (
         // A failed or empty chain leaves no history, and the 0 it would
         // default to reads as a change the wallet never had. A chain the
         // chart left out would leave the change short of the total beside it.
-        hasNoTrend: (!isSettling && pricedValues.length === 0) || isPartial,
+        hasNoTrend: (!isSettling && pricedValues.length === 0) || isIncomplete,
         isPending: isSettling,
     }
+}
+
+export const usePortfolioTrend = (
+    sources: AccountHoldingSource[],
+    period: HistoryPeriod,
+    currencyScope: ChainScope,
+    enabled: boolean,
+): UsePortfolioTrendResult => {
+    const history = usePortfolioHistoryQuery(
+        sources,
+        period,
+        currencyScope,
+        enabled,
+    )
+    return useHistoryTrend(history, history.isPartial)
 }

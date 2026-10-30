@@ -69,6 +69,8 @@ export type UseAccountOverviewHeaderResult = {
     isBalanceComplete: boolean
     isPending: boolean
     period: HistoryPeriod
+    /** The change line's period: the chart's while it's shown; with no chart there is none to follow, so the last 24 hours. */
+    trendPeriod: HistoryPeriod
     setPeriod: (period: HistoryPeriod) => void
     selectedPoint: Nullable<PortfolioValueHistoryItem>
     hasBalance: boolean
@@ -81,6 +83,7 @@ export type UseAccountOverviewHeaderResult = {
 
 export const useAccountOverviewHeader = (
     account: WalletAccount,
+    isChartShown: boolean,
 ): UseAccountOverviewHeaderResult => {
     const scope = useAccountScope(account, LEGACY_CHAIN_ID)
     const availability = useChainAvailability(scope.chainId)
@@ -150,6 +153,8 @@ export const useAccountOverviewHeader = (
     const { period, setPeriod, selectedPoint, setSelectedPoint } =
         useChartInteraction<PortfolioValueHistoryItem>()
 
+    const trendPeriod = isChartShown ? period : 'one-day'
+
     const { privacyMode, setPrivacyMode } = useSettings()
     const togglePrivacyMode = useCallback(() => {
         setPrivacyMode(!privacyMode)
@@ -176,6 +181,7 @@ export const useAccountOverviewHeader = (
         isBalanceComplete: isComplete,
         isPending,
         period,
+        trendPeriod,
         setPeriod,
         selectedPoint,
         // Drives the balance-vs-"get started" layout. True for any funded
