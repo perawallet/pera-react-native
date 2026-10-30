@@ -31,6 +31,8 @@ export type SendFeeQueryInput = {
     /** Base units of the sent asset; unknown before the amount is entered. */
     amount?: Decimal
     feePreset: FeePreset
+    /** Keep re-pricing while mounted; for the screen whose fee the send is capped at. */
+    isLive?: boolean
 }
 
 export type UseSendFeeQueryResult = {
@@ -43,9 +45,12 @@ export type UseSendFeeQueryResult = {
     isPending: boolean
     /** The estimate failed: the fee is unknown, never zero. */
     isError: boolean
+    /** Re-prices now; a no-op on a chain with a flat fee. */
+    refresh: () => void
 }
 
 const ZERO = new Decimal(0)
+const NO_REFRESH = () => {}
 
 /**
  * The fee a send will be built with. It picks its path with the same check
@@ -60,6 +65,7 @@ export const useSendFeeQuery = ({
     recipient,
     amount,
     feePreset,
+    isLive,
 }: SendFeeQueryInput): UseSendFeeQueryResult => {
     const hasSendFlow = sendFlowChainAdapters.has(scope.chainId)
     const { minFee, isPending: isMinFeePending } = useMinFeeForSender(
@@ -87,7 +93,8 @@ export const useSendFeeQuery = ({
         data: estimate,
         isPending: isEstimatePending,
         isError: isEstimateError,
-    } = useTransferFeeEstimateQuery(estimateInput)
+        refresh,
+    } = useTransferFeeEstimateQuery(estimateInput, { isLive })
 
     return useMemo(() => {
         if (hasSendFlow) {
@@ -101,6 +108,7 @@ export const useSendFeeQuery = ({
                 presets: undefined,
                 isPending: isMinFeePending,
                 isError: false,
+                refresh: NO_REFRESH,
             }
         }
         const preset = estimate?.presets?.[feePreset]
@@ -110,6 +118,7 @@ export const useSendFeeQuery = ({
             presets: estimate?.presets,
             isPending: isEstimatePending,
             isError: isEstimateError,
+            refresh,
         }
     }, [
         hasSendFlow,
@@ -119,5 +128,6 @@ export const useSendFeeQuery = ({
         feePreset,
         isEstimatePending,
         isEstimateError,
+        refresh,
     ])
 }
