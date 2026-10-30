@@ -340,7 +340,7 @@ const contractCallSummary = (
 // A summary is the request's own claim, so only a token transfer the payload
 // proves is honoured: re-encoding the claim with the same ERC-20 encoder the
 // wallet builds with must give exactly the calldata. This decodes nothing, so
-// it is no bundled-ABI recognition.
+// it is no bundled-ABI recognition and `contractDecoding` doesn't gate it.
 const verifiedTokenTransfer = (
     summary: Optional<TransactionSummary>,
     call: Call,

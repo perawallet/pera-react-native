@@ -48,6 +48,8 @@ const viewOf = (
     }
 }
 
+// `view.call` is read whatever `contractDecoding` is set to: a spender is just
+// as dangerous when the review doesn't name it.
 export const ethereumReviewedAddresses = (
     transaction: TransactionNative,
 ): ReviewedAddress[] => {
