@@ -3343,6 +3343,7 @@
         },
         "spend_approval": {
             "spend_warning": "Bu imza, başka bir adresin hesabından sana tekrar sormadan token hareket ettirmesine izin verir.",
+            "nft_spend_warning": "Bu imza, başka bir adresin bu NFT’yi hesabından sana tekrar sormadan hareket ettirmesine izin verir.",
             "spend_warning_bold": "Yalnızca bu uygulamaya güveniyorsan imzala.",
             "spender_caption": "Yetkili adres: {{address}}",
             "unlimited_warning": "Tutar sınırsız, bu yüzden yetkili adres bu tokenden sahip olduğun her şeyi alabilir.",

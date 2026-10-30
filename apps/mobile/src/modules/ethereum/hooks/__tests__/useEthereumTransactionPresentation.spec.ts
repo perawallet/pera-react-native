@@ -17,6 +17,7 @@ import { useFindAccountByAddress } from '@perawallet/wallet-core-accounts'
 import { useSingleAssetDetailsQuery } from '@perawallet/wallet-core-assets'
 import type { TransactionNative } from '@perawallet/wallet-core-chain-contract'
 import type { EvmStandardCall } from '@perawallet/wallet-core-chain-ethereum'
+import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 import { registerEthereumChain } from '@test-utils/chain-fixtures'
 import {
     ETHEREUM_FIXTURE_NFT_ID,
@@ -27,6 +28,13 @@ import {
     type EthereumDisplayFixtureKind,
 } from '@test-utils/ethereum-display-fixtures'
 import { useEthereumTransactionPresentation } from '../useEthereumTransactionPresentation'
+
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
+    useChainCapability: vi.fn(),
+}))
 
 const USDC = { assetId: ETHEREUM_FIXTURE_TOKEN, decimals: 6, unitName: 'USDC' }
 
@@ -57,6 +65,7 @@ describe('useEthereumTransactionPresentation', () => {
     beforeEach(() => {
         mockAssetQuery({ data: null, isPending: false })
         vi.mocked(useFindAccountByAddress).mockReturnValue(null)
+        vi.mocked(useChainCapability).mockReturnValue(false)
     })
 
     it('presents a transfer as a send of the recipient and the ether moved', () => {
@@ -255,6 +264,10 @@ describe('useEthereumTransactionPresentation', () => {
                 : native
         }
 
+        beforeEach(() => {
+            vi.mocked(useChainCapability).mockReturnValue(true)
+        })
+
         it('presents an approve as an approval to its spender, not a transfer', () => {
             mockAssetQuery({ data: USDC, isPending: false })
 
@@ -368,6 +381,43 @@ describe('useEthereumTransactionPresentation', () => {
             expect(result.current?.nftItems).toEqual(items)
             expect(result.current?.amount).toBeUndefined()
             expect(result.current?.isAmountLoading).toBe(false)
+        })
+
+        it("keeps a dApp's token transfer an unrecognised contract call while contractDecoding is off", () => {
+            vi.mocked(useChainCapability).mockReturnValue(false)
+            mockAssetQuery({ data: USDC, isPending: false })
+
+            const { result } = renderHook(() =>
+                useEthereumTransactionPresentation(
+                    callNative({
+                        kind: 'transfer',
+                        contract: ETHEREUM_FIXTURE_TOKEN,
+                        from: ETHEREUM_FIXTURE_SENDER,
+                        to: ETHEREUM_FIXTURE_RECIPIENT,
+                        value: new Decimal(5_000_000),
+                    }),
+                ),
+            )
+
+            expect(result.current?.titleKey).toBe(
+                'transactions.list_item.contract_call',
+            )
+            expect(result.current?.standardCall).toBeNull()
+            expect(result.current?.isTransfer).toBe(false)
+        })
+
+        it('still presents an approve as an approval while contractDecoding is off', () => {
+            vi.mocked(useChainCapability).mockReturnValue(false)
+            mockAssetQuery({ data: USDC, isPending: false })
+
+            const { result } = renderHook(() =>
+                useEthereumTransactionPresentation(callNative()),
+            )
+
+            expect(result.current?.titleKey).toBe(
+                'transactions.list_item.approval',
+            )
+            expect(result.current?.standardCall?.kind).toBe('token-approval')
         })
     })
 })

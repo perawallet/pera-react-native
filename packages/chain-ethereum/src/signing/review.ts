@@ -54,6 +54,7 @@ import type { EvmStandardCall } from './standard-call-types'
 import {
     approvalWarningOf,
     decodeEvmStandardCall,
+    isEvmApprovalCall,
     standardCallSummary,
 } from './standard-calls'
 import {
@@ -157,14 +158,15 @@ const isAutoApproved = (transaction: ReviewedTransaction): boolean => {
 }
 
 // The wallet's own calls are explained by the proofs their summaries pass.
-const isRecognising = (context: ReviewContext): boolean =>
-    !context.isWalletBuilt
-
 const recognisedCallOf = (
-    transaction: ReviewedTransaction,
+    call: Optional<EvmStandardCall>,
     context: ReviewContext,
 ): Optional<EvmStandardCall> =>
-    isRecognising(context) ? viewOfNative(transaction)?.call : undefined
+    call &&
+    !context.isWalletBuilt &&
+    (context.capabilities.contractDecoding || isEvmApprovalCall(call))
+        ? call
+        : undefined
 
 const UNKNOWN_CONTRACT_WARNING: ReviewWarning = {
     type: 'unknown-contract',
@@ -494,8 +496,9 @@ const reviewCall = async (
     }
     const view = contractCallView(call)
     const native = toEthereumNative(view)
-    if (view.call && isRecognising(context)) {
-        return { summary: standardCallSummary(view.call, chain), native }
+    const standard = recognisedCallOf(view.call, context)
+    if (standard) {
+        return { summary: standardCallSummary(standard, chain), native }
     }
     const recognised = context.capabilities.contractDecoding
         ? recogniseCall({ to: call.to, data: call.data, value: call.value })
@@ -508,10 +511,10 @@ const reviewCall = async (
 
 /**
  * Native transfers and the wallet's own token and NFT transfers are explained
- * by their proofs. A dApp's standard token transfers and approvals are read
- * from their calldata whatever the chain's capabilities; any other call is
- * unrecognised unless `recogniseCall` reads it, which it is asked only while
- * `contractDecoding` is on.
+ * by their proofs. A dApp's standard token approvals are read from their
+ * calldata whatever the chain's capabilities. While `contractDecoding` is on,
+ * its standard token transfers are read too, and any other call is
+ * unrecognised unless `recogniseCall` reads it.
  */
 export const createEthereumReviewer = ({
     chain,
@@ -563,7 +566,10 @@ export const createEthereumReviewer = ({
                 : decoded.transactions
                       .filter(t => !isAutoApproved(t))
                       .flatMap(t => {
-                          const standard = recognisedCallOf(t, context)
+                          const standard = recognisedCallOf(
+                              viewOfNative(t)?.call,
+                              context,
+                          )
                           if (!standard)
                               return [{ ...UNKNOWN_CONTRACT_WARNING }]
                           const warning = approvalWarningOf(standard)

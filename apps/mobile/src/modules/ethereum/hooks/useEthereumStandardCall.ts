@@ -21,12 +21,14 @@ import type {
     SpendApproval,
 } from '@perawallet/wallet-core-chain-contract'
 import {
+    isEvmApprovalCall,
     spendApprovalOfCall,
     toEvmNftAssetId,
     type EthereumTransactionView,
     type EvmNftItem,
     type EvmStandardCall,
 } from '@perawallet/wallet-core-chain-ethereum'
+import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import { useBaseUnitsAmount } from '@hooks/useBaseUnitsAmount'
 
@@ -233,6 +235,8 @@ const present = (
 }
 
 /**
+ * Reads an approval always and a transfer only while `contractDecoding` is on,
+ * as the reviewer does, so the unknown-contract notice matches its warning.
  * The calldata can't say whether `approve` or `transferFrom` moves an amount
  * or a token id, so the token's own records decide: a fungible record first,
  * then an NFT record for that id, and neither means an unknown token shown in
@@ -242,7 +246,11 @@ export const useEthereumStandardCall = (
     view: Nullable<EthereumTransactionView>,
     scope: ChainScope,
 ): UseEthereumStandardCallResult => {
-    const call = view?.call
+    const isDecoding = useChainCapability(scope.chainId, 'contractDecoding')
+    const call =
+        view?.call && (isDecoding || isEvmApprovalCall(view.call))
+            ? view.call
+            : undefined
 
     const fungible = useBaseUnitsAmount(
         call && isFungibleCandidate(call) ? call.contract : '',

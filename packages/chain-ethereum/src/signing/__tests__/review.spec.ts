@@ -394,6 +394,11 @@ describe('ethereumReviewerAdapter', () => {
                 }),
                 WALLET_BUILT,
             ],
+            [
+                'on a request the app did not build',
+                unsigned(TOKEN_TRANSFER, { summary: tokenClaim() }),
+                CONTEXT,
+            ],
         ])('is a contract call %s', async (_, transaction, context) => {
             const { reviewed, summary, view } = await reviewOne(
                 transaction,
@@ -404,20 +409,6 @@ describe('ethereumReviewerAdapter', () => {
             expect(summary.title).toEqual({
                 key: 'transactions.list_item.contract_call',
             })
-            expect(view.token).toBeUndefined()
-            expect(
-                ethereumReviewerAdapter.policy.autoApproveLocal(reviewed),
-            ).toBe(false)
-        })
-
-        it('is read from its calldata as a token transfer on a request the app did not build, and never signs unreviewed', async () => {
-            const { reviewed, summary, view } = await reviewOne(
-                unsigned(TOKEN_TRANSFER, { summary: tokenClaim() }),
-                CONTEXT,
-            )
-
-            expect(summary.kind).toBe('token-transfer')
-            expect(view.kind).toBe('contract-call')
             expect(view.token).toBeUndefined()
             expect(
                 ethereumReviewerAdapter.policy.autoApproveLocal(reviewed),
@@ -556,6 +547,11 @@ describe('ethereumReviewerAdapter', () => {
                 unsigned(ERC1155_TRANSFER, { summary: nftClaim(3) }),
                 WALLET_BUILT,
             ],
+            [
+                'on a request the app did not build',
+                unsigned(ERC721_TRANSFER, { summary: nftClaim(1) }),
+                CONTEXT,
+            ],
         ])(
             'is a contract call %s, with the warning',
             async (_, transaction, context) => {
@@ -575,21 +571,6 @@ describe('ethereumReviewerAdapter', () => {
                 ).toBe(false)
             },
         )
-
-        it('is read from its calldata as an nft transfer on a request the app did not build, and never signs unreviewed', async () => {
-            const { reviewed, summary, view } = await reviewOne(
-                unsigned(ERC721_TRANSFER, { summary: nftClaim(1) }),
-                CONTEXT,
-            )
-
-            expect(summary.kind).toBe('nft-transfer')
-            expect(view.kind).toBe('contract-call')
-            expect(view.nft).toBeUndefined()
-            expect(reviewed.warnings).toEqual([])
-            expect(
-                ethereumReviewerAdapter.policy.autoApproveLocal(reviewed),
-            ).toBe(false)
-        })
     })
 
     describe('other calls', () => {
@@ -912,10 +893,22 @@ describe("a dApp's standard token calls", () => {
             expect(reviewed.warnings).toEqual([])
         })
 
-        it('reviews a token transfer as a send without a warning, and still never signs it unreviewed', async () => {
+        it('keeps a token transfer an unrecognised contract call with the unknown-contract warning, since a selector match proves no token', async () => {
             const { reviewed, summary } = await reviewOne(
                 unsigned(TOKEN_TRANSFER),
                 CONTEXT,
+            )
+
+            expect(summary.kind).toBe('contract-call')
+            expect(reviewed.warnings).toEqual([
+                expect.objectContaining({ type: 'unknown-contract' }),
+            ])
+        })
+
+        it('reviews a token transfer as a send without a warning while contractDecoding is on, and still never signs it unreviewed', async () => {
+            const { reviewed, summary } = await reviewOne(
+                unsigned(TOKEN_TRANSFER),
+                DECODING,
             )
 
             expect(summary).toMatchObject({
@@ -962,7 +955,6 @@ describe("a dApp's standard token calls", () => {
         ['a revocation', REVOKE],
         ['a collection approval', SET_APPROVAL_FOR_ALL],
         ['a collection revocation', SET_APPROVAL_FOR_ALL_REVOKE],
-        ['a token transfer', TOKEN_TRANSFER],
     ])(
         'reviews %s the same with contractDecoding on',
         async (_, transaction) => {

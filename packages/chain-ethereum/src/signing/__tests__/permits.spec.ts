@@ -265,6 +265,10 @@ describe('spend approval recognition', () => {
                         assetId: `${getAddress(PERMIT_POSITIONS)}/123456`,
                     },
                     amount: new Decimal(1),
+                    nft: {
+                        collection: getAddress(PERMIT_POSITIONS),
+                        tokenId: '123456',
+                    },
                 },
             ],
             deadline: 1769817600000,

@@ -187,6 +187,16 @@ export const decodeEvmStandardCall = (call: {
     }
 }
 
+/**
+ * An approval carries its own warning, so it is read whatever the chain's
+ * capabilities. A transfer isn't: a selector match proves the encoding, not
+ * that the target is a token, so it is read only while `contractDecoding` is on.
+ */
+export const isEvmApprovalCall = (call: EvmStandardCall): boolean =>
+    call.kind === 'approve' ||
+    call.kind === 'increase-allowance' ||
+    call.kind === 'set-approval-for-all'
+
 const isRevocation = (call: EvmStandardCall): boolean =>
     (call.kind === 'approve' && call.value.isZero()) ||
     (call.kind === 'set-approval-for-all' && !call.isApproved)

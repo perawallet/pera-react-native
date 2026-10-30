@@ -158,7 +158,7 @@ const toAllowance = (
 const toNftAllowance = (
     contract: unknown,
     tokenId: unknown,
-): TokenAllowance | undefined => {
+): Optional<TokenAllowance> => {
     const address = toAddress(contract)
     const id = toUint(tokenId)
     if (address === undefined || id === undefined || id > maxUint256) {
@@ -167,6 +167,7 @@ const toNftAllowance = (
     return {
         assetId: toEvmNftAssetId(address, id.toString()),
         amount: new Decimal(1),
+        nft: { collection: address, tokenId: id.toString() },
     }
 }
 

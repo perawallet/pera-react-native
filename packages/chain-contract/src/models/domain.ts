@@ -404,6 +404,8 @@ export interface SpendAllowance {
     assetRef: AssetRef
     /** Base units of assetRef; absent when unlimited. */
     amount?: Decimal
+    /** Set when the allowance is one non-fungible token; `collection` is its contract, in the chain's address format. */
+    nft?: { collection: string; tokenId: string }
 }
 
 export interface SpendApproval {

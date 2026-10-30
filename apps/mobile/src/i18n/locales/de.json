@@ -3335,6 +3335,7 @@
         },
         "spend_approval": {
             "spend_warning": "Diese Signatur erlaubt einer anderen Adresse, Token ohne erneute Rückfrage von deinem Konto zu bewegen.",
+            "nft_spend_warning": "Diese Signatur erlaubt einer anderen Adresse, dieses NFT ohne erneute Rückfrage von deinem Konto zu bewegen.",
             "spend_warning_bold": "Signiere nur, wenn du dieser Anwendung vertraust.",
             "spender_caption": "Berechtigte Adresse: {{address}}",
             "unlimited_warning": "Der Betrag ist unbegrenzt, daher kann die berechtigte Adresse alle deine Token dieser Art nehmen.",

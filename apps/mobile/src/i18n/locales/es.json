@@ -3343,6 +3343,7 @@
         },
         "spend_approval": {
             "spend_warning": "Esta firma permite que otra dirección mueva tokens de tu cuenta sin volver a preguntarte.",
+            "nft_spend_warning": "Esta firma permite que otra dirección mueva este NFT de tu cuenta sin volver a preguntarte.",
             "spend_warning_bold": "Firma solo si confías en esta aplicación.",
             "spender_caption": "Dirección autorizada: {{address}}",
             "unlimited_warning": "La cantidad es ilimitada, así que la dirección autorizada puede quedarse con todo el saldo que tengas de este token.",

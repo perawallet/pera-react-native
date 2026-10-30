@@ -43,6 +43,7 @@ import {
 import { useSigningStore } from '@packages/signing/src/store'
 import { __resetSigningActorRegistryForTests } from '@packages/signing/src/hooks/useSigningActorLifecycle'
 import {
+    ERC721_PERMIT_TYPED_DATA,
     MAIL_TYPED_DATA,
     PERMIT2_SINGLE_TYPED_DATA,
     PERMIT2_SINGLE_UNLIMITED_TYPED_DATA,
@@ -96,6 +97,7 @@ const TYPED_DATA_WARNING = 'message-signing-typed-data-warning'
 const SPEND_APPROVAL_WARNING = 'message-signing-spend-approval-warning'
 const SPEND_APPROVAL_SPENDER = 'message-signing-spend-approval-spender'
 const SPEND_APPROVAL_AMOUNT = 'message-signing-spend-approval-amount-0'
+const SPEND_APPROVAL_ASSET = 'message-signing-spend-approval-asset-0'
 
 const ETHEREUM_ACCOUNT: WalletAccount = {
     id: 'eth-msg-account',
@@ -395,6 +397,39 @@ describe('Flow: an eip155 dApp asks for a message signature', () => {
         expect(
             screen.getByTestId(SPEND_APPROVAL_AMOUNT).textContent,
         ).not.toContain('signing.spend_approval.unlimited')
+        fireEvent.click(screen.getByTestId(REJECT_BUTTON))
+        await answerOf(walletKit)
+    })
+
+    it('Given a connected session, when the dApp sends an ERC-721 Permit, then the review shows the NFT by collection and token id, with no amount and the NFT spend warning', async () => {
+        const walletKit = await connectSession()
+
+        send(walletKit, 'eth_signTypedData_v4', [
+            SENDER,
+            JSON.stringify(ERC721_PERMIT_TYPED_DATA),
+        ])
+        await waitFor(
+            () =>
+                expect(screen.getByTestId(SPEND_APPROVAL_WARNING)).toBeTruthy(),
+            { timeout: 15_000 },
+        )
+        expect(screen.getByTestId(SPEND_APPROVAL_ASSET).textContent).toContain(
+            'transactions.list_item.nft_subtitle',
+        )
+        expect(screen.queryByTestId(SPEND_APPROVAL_AMOUNT)).toBeNull()
+
+        fireEvent.click(screen.getByTestId(SPEND_APPROVAL_WARNING))
+        await waitFor(() =>
+            expect(
+                screen.getByTestId('message-signing-spend-approval-row-spend')
+                    .textContent,
+            ).toContain('signing.spend_approval.nft_spend_warning'),
+        )
+        expect(
+            screen.queryByTestId(
+                'message-signing-spend-approval-row-unlimited',
+            ),
+        ).toBeNull()
         fireEvent.click(screen.getByTestId(REJECT_BUTTON))
         await answerOf(walletKit)
     })
