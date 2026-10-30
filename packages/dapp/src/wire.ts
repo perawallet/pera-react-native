@@ -15,3 +15,4 @@
 export * from './codec'
 export * from './protocol'
 export * from './eip1193Protocol'
+export * from './eip6963'

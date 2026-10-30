@@ -770,7 +770,7 @@ describe('createEip1193ConnectionHandler', () => {
     })
 
     describe('other methods', () => {
-        it('refuses to add a chain', async () => {
+        it('wallet_addEthereumChain for a chain Pera does not ship is refused without a prompt', async () => {
             const { transport, registry } = setup([connectedOn('ethereum')])
             await registry.initialize()
             const response = await transport.send(
@@ -781,6 +781,53 @@ describe('createEip1193ConnectionHandler', () => {
             expect(errorOf(response)?.code).toBe(
                 EIP1193_ERROR_CODE.unsupportedMethod,
             )
+        })
+
+        describe('wallet_addEthereumChain for a chain Pera serves', () => {
+            const addChain = (transport: FakeDappTransport, params: unknown) =>
+                transport.send(ORIGIN, 'wallet_addEthereumChain', params)
+
+            it('asks the user and then moves only this site to that chain', async () => {
+                const { transport, registry, messages, store } = setup([
+                    connectedOn('ethereum'),
+                ])
+                await registry.initialize()
+                const pending = addChain(transport, [{ chainId: '0x2105' }])
+                await flush()
+
+                const message = messages[0]
+                if (message.kind !== 'request') throw new Error('not a request')
+                expect(message.chainId).toBe('base')
+                expect(message.operation.type).toBe('switch-network')
+                await message.respond({ type: 'switch-network' })
+                expect(resultOf(await pending)).toBeNull()
+                expect((await store.get(ID))?.metadata).toEqual({
+                    chainId: 'base',
+                })
+                expect(notificationsOf(transport, 'chainChanged')).toEqual([
+                    { origin: ORIGIN, params: '0x2105' },
+                ])
+            })
+
+            it('answers at once when the site is already on the chain', async () => {
+                const { transport, registry, messages } = setup([
+                    connectedOn('ethereum'),
+                ])
+                await registry.initialize()
+                expect(
+                    resultOf(await addChain(transport, [{ chainId: '0x1' }])),
+                ).toBeNull()
+                expect(messages).toHaveLength(0)
+            })
+
+            it('refuses params without a hex chain id', async () => {
+                const { transport, registry } = setup([connectedOn('ethereum')])
+                await registry.initialize()
+                expect(
+                    errorOf(await addChain(transport, [{ chainId: 8453 }]))
+                        ?.code,
+                ).toBe(EIP1193_ERROR_CODE.invalidParams)
+            })
         })
 
         it('wallet_revokePermissions disconnects the site and tells its tabs', async () => {

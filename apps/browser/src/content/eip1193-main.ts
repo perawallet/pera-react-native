@@ -14,15 +14,13 @@ import {
     EIP1193_ERROR_CODE,
     EIP1193_EVENT,
     EIP1193_METHOD,
+    PERA_EIP6963_ICON,
+    PERA_EIP6963_NAME,
+    PERA_EIP6963_RDNS,
     type Eip1193Event,
     type JsonRpcNotification,
 } from '@perawallet/wallet-core-browser-runtime'
 import type { Nullable } from '@perawallet/wallet-core-shared'
-import {
-    PERA_EIP6963_ICON,
-    PERA_EIP6963_NAME,
-    PERA_EIP6963_RDNS,
-} from './eip6963'
 
 // MAIN-world EIP-1193 provider. No chrome.* here: requests go out through the
 // same bridge as window.pera, tagged as this provider.
