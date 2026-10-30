@@ -185,7 +185,7 @@ describe('Flow: Asset details on its own network', () => {
         expect(
             await screen.findByText('asset_details.markets.circulating_supply'),
         ).toBeTruthy()
-        expect(screen.getByText('—')).toBeTruthy()
+        expect(screen.getByText('---')).toBeTruthy()
         expect(
             screen.queryByText('asset_details.markets.total_supply'),
         ).toBeNull()
@@ -223,7 +223,7 @@ describe('Flow: Asset details on its own network', () => {
         ).toBeNull()
     })
 
-    it('Given an ERC-20 whose contract cannot be read, when its Markets tab renders, then the supply reads —', async () => {
+    it('Given an ERC-20 whose contract cannot be read, when its Markets tab renders, then the supply reads ---', async () => {
         server.use(
             ...evmRpcHandlers({
                 rpcUrl: RPC_URL,
@@ -236,7 +236,7 @@ describe('Flow: Asset details on its own network', () => {
         expect(
             await screen.findByText('asset_details.markets.total_supply'),
         ).toBeTruthy()
-        expect(screen.getByText('—')).toBeTruthy()
+        expect(screen.getByText('---')).toBeTruthy()
     })
 
     it('Given an Ethereum token, when its tabs render, then both show a chart and neither shows an unavailable notice', async () => {

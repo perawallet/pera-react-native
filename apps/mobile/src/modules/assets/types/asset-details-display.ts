@@ -41,7 +41,7 @@ export type AssetAboutDisplay = {
     explorerLink: Nullable<AssetExplorerLink>
 }
 
-/** `amount` is in base units; null renders as "—". `labelKey` also titles the info sheet. */
+/** `amount` is in base units; null renders as the unknown-amount placeholder. `labelKey` also titles the info sheet. */
 export type AssetSupplyDisplay = {
     labelKey: I18nKey
     infoBodyKey: I18nKey

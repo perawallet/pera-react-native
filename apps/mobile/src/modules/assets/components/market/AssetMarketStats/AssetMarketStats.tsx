@@ -21,8 +21,7 @@ import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { AssetSupplyDisplay } from '@modules/assets/types/asset-details-display'
 import { useLanguage } from '@hooks/useLanguage'
 import { InfoButton } from '@components/InfoButton'
-
-const EMPTY_VALUE = '—'
+import { UNKNOWN_AMOUNT_PLACEHOLDER } from '@constants/ui'
 
 export type AssetMarketStatsProps = {
     assetDetails: PeraAsset
@@ -40,7 +39,7 @@ export const AssetMarketStats = ({
 
     const supplyText = useMemo(() => {
         if (supply.amount === null) {
-            return EMPTY_VALUE
+            return UNKNOWN_AMOUNT_PLACEHOLDER
         }
 
         const wholeUnits = toWholeUnits(supply.amount, assetDetails)
