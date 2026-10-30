@@ -572,18 +572,21 @@
     },
     "backup": {
         "banner": {
-            "text": "You need to backup the recovery passphrase",
-            "cta": "Backup now"
+            "text": "You need to back up your recovery passphrase",
+            "cta": "Back Up Now"
         },
         "info": {
             "title": "Create a recovery passphrase backup for your account",
             "body": "Creating a recovery passphrase backup will allow you to recover your account. Without the recovery passphrase, if you lose your device, remove the account or delete the app, you can permanently lose access to your Algorand account!",
+            "body_all_networks": "Your recovery passphrase is the only way to recover your account on all networks: {{networks}}. If you lose your device, remove the account or delete the app without a backup, you'll permanently lose access to your funds.",
             "cta": "I Understand"
         },
         "write_down": {
             "title": "Prepare to write down your recovery passphrase",
             "body": "The only way to recover an Algorand account is with this recovery passphrase.",
+            "body_all_networks": "This recovery passphrase is the only way to recover your account and all its addresses on every network.",
             "warning": "Do not share this recovery passphrase with anyone, as it grants full access to your account.",
+            "warning_all_networks": "Never share this recovery passphrase. Anyone who has it controls your funds on every network.",
             "cta": "I'm Ready to Begin"
         },
         "mnemonic": {

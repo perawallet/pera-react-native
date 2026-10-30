@@ -47,9 +47,8 @@ export const useOtherRegisteredChainIds = (homeChainId: ChainId): ChainId[] => {
 
 /**
  * Every address the account holds on `homeChainId` or another registered
- * chain, home first. Records are written with one chain each (see
- * `accountChainIdOf`), so this holds one entry; summing over it keeps a value
- * right should a record ever hold more.
+ * chain, home first. A record is created on one chain and gains an entry for
+ * each chain enabled on it later, so this can hold several.
  */
 export const accountChainEntries = (
     account: WalletAccount,

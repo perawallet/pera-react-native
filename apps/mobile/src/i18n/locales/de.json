@@ -578,12 +578,15 @@
         "info": {
             "title": "Backup der Wiederherstellungsphrase für dein Konto erstellen",
             "body": "Ein Backup der Wiederherstellungsphrase ermöglicht es dir, dein Konto wiederherzustellen. Ohne die Wiederherstellungsphrase kannst du den Zugriff auf dein Algorand-Konto unwiderruflich verlieren, wenn du dein Gerät verlierst, das Konto entfernst oder die App löschst!",
+            "body_all_networks": "Deine Wiederherstellungsphrase ist die einzige Möglichkeit, dein Konto in allen Netzwerken wiederherzustellen: {{networks}}. Wenn du ohne Backup dein Gerät verlierst, das Konto entfernst oder die App löschst, verlierst du den Zugriff auf dein Guthaben unwiderruflich.",
             "cta": "Ich verstehe"
         },
         "write_down": {
             "title": "Bereite dich darauf vor, deine Wiederherstellungsphrase aufzuschreiben",
             "body": "Die einzige Möglichkeit, ein Algorand-Konto wiederherzustellen, ist diese Wiederherstellungsphrase.",
+            "body_all_networks": "Diese Wiederherstellungsphrase ist die einzige Möglichkeit, dein Konto und alle seine Adressen in allen Netzwerken wiederherzustellen.",
             "warning": "Teile diese Wiederherstellungsphrase mit niemandem, da sie vollen Zugriff auf dein Konto gewährt.",
+            "warning_all_networks": "Teile diese Wiederherstellungsphrase mit niemandem. Wer sie hat, kontrolliert dein Guthaben in allen Netzwerken.",
             "cta": "Ich bin bereit zu beginnen"
         },
         "mnemonic": {
