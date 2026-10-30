@@ -11,6 +11,7 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest'
+import { clearAllStores } from '@perawallet/wallet-core-shared'
 import { useHardwareSigningStore } from '../hardwareSigningStore'
 
 describe('useHardwareSigningStore', () => {
@@ -32,6 +33,16 @@ describe('useHardwareSigningStore', () => {
     it('closeTroubleshooting flips the flag off', () => {
         useHardwareSigningStore.getState().openTroubleshooting()
         useHardwareSigningStore.getState().closeTroubleshooting()
+        expect(
+            useHardwareSigningStore.getState().isTroubleshootingVisible,
+        ).toBe(false)
+    })
+
+    it('is reset by a wipe', () => {
+        useHardwareSigningStore.getState().openTroubleshooting()
+
+        clearAllStores()
+
         expect(
             useHardwareSigningStore.getState().isTroubleshootingVisible,
         ).toBe(false)

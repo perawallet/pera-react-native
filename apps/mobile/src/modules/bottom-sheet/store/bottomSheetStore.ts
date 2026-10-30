@@ -71,6 +71,7 @@ const initialState: BottomSheetState = {
 // Captured value per id, populated by resolve, delivered on remove.
 const pendingValues = new Map<string, unknown>()
 
+// lanekeep-ignore-next-line pera/store-in-wipe-registry reason: tracks mounted sheet hosts and presentation holds; a reset zeroes hostCount, so the delete-success sheet and every later request reject
 export const useBottomSheetStore: UseBoundStore<StoreApi<BottomSheetStore>> =
     create<BottomSheetStore>()((set, get) => ({
         ...initialState,

@@ -17,7 +17,7 @@ import {
     type ChainId,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
-import type { Optional } from '@perawallet/wallet-core-shared'
+import { registerStore, type Optional } from '@perawallet/wallet-core-shared'
 import {
     chainIdOfSignRequest,
     isExternalCallbackSource,
@@ -69,6 +69,13 @@ export const useAddressWarningAcknowledgementStore = create<
     setAcknowledgedRequestId: id => set({ acknowledgedRequestId: id }),
     resetState: () => set({ acknowledgedRequestId: undefined }),
 }))
+
+registerStore({
+    name: 'address-warning-acknowledgement-store',
+    clearStorage: () => {},
+    resetState: () =>
+        useAddressWarningAcknowledgementStore.getState().resetState(),
+})
 
 const NO_ADDRESSES: ReviewedAddress[] = []
 

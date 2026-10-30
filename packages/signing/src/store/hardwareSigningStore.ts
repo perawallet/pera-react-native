@@ -11,6 +11,7 @@
  */
 
 import { create } from 'zustand'
+import { registerStore } from '@perawallet/wallet-core-shared'
 
 type State = {
     /**
@@ -40,3 +41,9 @@ export const useHardwareSigningStore = create<Store>(set => ({
     closeTroubleshooting: () => set({ isTroubleshootingVisible: false }),
     resetState: () => set(initialState),
 }))
+
+registerStore({
+    name: 'hardware-signing-store',
+    clearStorage: () => {},
+    resetState: () => useHardwareSigningStore.getState().resetState(),
+})

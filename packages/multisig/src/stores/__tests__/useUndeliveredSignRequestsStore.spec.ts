@@ -11,6 +11,7 @@
  */
 
 import { beforeEach, describe, expect, it } from 'vitest'
+import { clearAllStores } from '@perawallet/wallet-core-shared'
 import {
     UNDELIVERED_SIGN_REQUEST_LIMIT,
     useUndeliveredSignRequestsStore,
@@ -61,6 +62,16 @@ describe('useUndeliveredSignRequestsStore', () => {
         expect(state.signRequestIds).toHaveLength(
             UNDELIVERED_SIGN_REQUEST_LIMIT,
         )
+    })
+
+    it('is emptied by a wipe', () => {
+        useUndeliveredSignRequestsStore.getState().markUndelivered('sr-1')
+
+        clearAllStores()
+
+        expect(
+            useUndeliveredSignRequestsStore.getState().signRequestIds,
+        ).toEqual([])
     })
 
     it('does not duplicate a re-marked id', () => {

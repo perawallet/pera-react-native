@@ -100,13 +100,8 @@ export const useAccountDisplay = ({
     const secondaryText = compact ? rawSecondary : dedupedSecondary
     const renderSecondary = compact || Boolean(dedupedSecondary)
 
-    // Mnemonic backup reads the backup adapter before its capability gate, and
-    // only Algorand registers one; an account with no Algorand address is never prompted.
-    const legacyScope = useSelectedScope(LEGACY_CHAIN_ID)
-    const shouldPromptBackup = useShouldPromptMnemonicBackup(
-        account,
-        legacyScope,
-    )
+    const ownScope = useSelectedScope(accountChainId)
+    const shouldPromptBackup = useShouldPromptMnemonicBackup(account, ownScope)
     // Every non-`sm` account-icon size renders the 40px round-icon format
     // (the account-selector size); `sm` is the 24px format, too small for a
     // legible badge.

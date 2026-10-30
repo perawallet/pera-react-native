@@ -12,7 +12,7 @@
 
 import { create } from 'zustand'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import { registerStore, type Nullable } from '@perawallet/wallet-core-shared'
 
 // Not persisted: the selection lasts for the app session and a cold start
 // comes back on All with every group collapsed.
@@ -44,3 +44,9 @@ export const useAssetListViewStore = create<AssetListViewStore>()(set => ({
                 : [...state.expandedGroupIds, groupId],
         })),
 }))
+
+registerStore({
+    name: 'asset-list-view-store',
+    clearStorage: () => {},
+    resetState: () => useAssetListViewStore.setState(initialState),
+})
