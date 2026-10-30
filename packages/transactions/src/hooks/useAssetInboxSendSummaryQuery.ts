@@ -41,7 +41,7 @@ export const useAssetInboxSendSummaryQuery = (
 
     const query = useQuery({
         queryKey: getAssetInboxSendSummaryQueryKey(receiver, assetId, scope),
-        queryFn: () =>
+        queryFn: (): Promise<AssetInboxSendSummary> =>
             sendFlowFeatureFor(scope, 'assetInbox').fetchSendSummary({
                 scope,
                 receiver,

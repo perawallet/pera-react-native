@@ -12,7 +12,11 @@
 
 import type { MigrationPlanSummary } from '@perawallet/wallet-extension-platform'
 import { getProvider } from '@perawallet/wallet-extension-provider'
-import { registerStore, toError, type Nullable } from '@perawallet/wallet-core-shared'
+import {
+    registerStore,
+    toError,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import { create } from 'zustand'
 
 export type SimulationOutcome =

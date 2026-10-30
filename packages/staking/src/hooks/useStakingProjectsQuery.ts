@@ -123,7 +123,8 @@ export const useStakingProjectsQuery = (
     // result would be discarded by mapProjects anyway.
     const query = useQuery({
         queryKey: getStakingProjectsQueryKey(scope),
-        queryFn: () => fetchStakingProjectsInfo(scope),
+        queryFn: (): Promise<StakingProjectsApiResponse> =>
+            fetchStakingProjectsInfo(scope),
         enabled: !parsedConfig.error,
     })
 

@@ -22,6 +22,7 @@ const mockDisplayResult = {
     renderSecondary: true,
     showTypeAsSecondary: true,
     showBackupBadge: false,
+    chainId: 'ethereum',
 }
 
 vi.mock('../useAccountDisplay', () => ({
@@ -44,6 +45,38 @@ describe('AccountDisplay', () => {
     beforeEach(() => {
         mockDisplayResult.secondaryText = 'Standard'
         mockDisplayResult.renderSecondary = true
+        mockDisplayResult.showBackupBadge = false
+    })
+
+    it("badges the avatar with the displayed chain's icon when asked", () => {
+        render(
+            <AccountDisplay
+                account={ACCOUNT}
+                showChainBadge
+            />,
+        )
+
+        expect(screen.getByTestId('chain_avatar_badge_ethereum')).toBeTruthy()
+    })
+
+    it('shows no chain badge unless asked', () => {
+        render(<AccountDisplay account={ACCOUNT} />)
+
+        expect(screen.queryByTestId('chain_avatar_badge_ethereum')).toBeNull()
+    })
+
+    it('shows the chain badge beside the backup badge on the same avatar', () => {
+        mockDisplayResult.showBackupBadge = true
+
+        render(
+            <AccountDisplay
+                account={ACCOUNT}
+                showChainBadge
+            />,
+        )
+
+        expect(screen.getByTestId('account_backup_badge')).toBeTruthy()
+        expect(screen.getByTestId('chain_avatar_badge_ethereum')).toBeTruthy()
     })
 
     it('puts the badges on the line under the name, beside the secondary label', () => {

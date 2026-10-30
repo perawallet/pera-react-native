@@ -43,12 +43,16 @@ import {
     formatCurrency,
     ZERO_DECIMAL,
 } from '@perawallet/wallet-core-shared'
-import type {
-    ChainScope,
-    FeeEstimate,
-    FeePreset,
+import {
+    addressCodecs,
+    type ChainScope,
+    type FeeEstimate,
+    type FeePreset,
 } from '@perawallet/wallet-core-chain-contract'
-import { getChainDescriptor } from '@perawallet/wallet-core-chain-shared'
+import {
+    chainDisplayNameOf,
+    getChainDescriptor,
+} from '@perawallet/wallet-core-chain-shared'
 import {
     sendFlowChainAdapters,
     useRecipientWarningQuery,
@@ -60,7 +64,6 @@ import { bottomSheetNotifier } from '@components/core'
 import { resolvePrecision } from '@components/CurrencyAmount'
 import type { FeeRowProps } from '@components/FeeRow'
 import { useCapability } from '@hooks/useCapability'
-import { useChainNameWhenMultiChain } from '@hooks/useChainNameWhenMultiChain'
 import { useToast } from '@hooks/useToast'
 import {
     useRecipientSafety,
@@ -72,6 +75,7 @@ import { useBottomSheet } from '@modules/bottom-sheet'
 import { chainUiFor } from '@modules/chain-ui'
 import type { SendTrailingSectionProps } from '@modules/transactions/types/send-confirmation-display'
 import { AddNoteContent } from '@modules/transactions/components/send-funds/AddNoteContent'
+import { RecipientAddressContent } from '@modules/transactions/components/send-funds/RecipientAddressContent'
 import { useIsFocused, useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 import type { SendFundsStackParamList } from '@modules/transactions/routes/send-funds/types'
@@ -86,8 +90,8 @@ type useTransactionConfirmationScreenResult = {
     selectedAccount: Nullable<WalletAccount>
     selectedAssetId: Optional<string>
     scope: ChainScope
-    /** Set when the wallet spans chains, so the review says which network this send is on. */
-    networkName: Optional<string>
+    /** The asset and network being sent; unset until the asset resolves. */
+    title: Optional<string>
     /** Base units of the chain's native asset. */
     feeAmount: Optional<Decimal>
     feePresets: FeeEstimate['presets']
@@ -101,6 +105,7 @@ type useTransactionConfirmationScreenResult = {
     FeeSection: ComponentType<FeeRowProps>
     TrailingSection: Optional<ComponentType<SendTrailingSectionProps>>
     openNote: () => void
+    openRecipientAddress: () => void
     handleConfirm: () => void
     isCollectible: boolean
     isReady: boolean
@@ -120,7 +125,6 @@ type useTransactionConfirmationScreenResult = {
 export const useTransactionConfirmationScreen =
     (): useTransactionConfirmationScreenResult => {
         const scope = useSendScope()
-        const networkName = useChainNameWhenMultiChain(scope.chainId)
         const navigation =
             useNavigation<StackNavigationProp<SendFundsStackParamList>>()
         const {
@@ -197,6 +201,24 @@ export const useTransactionConfirmationScreen =
                 },
             })
         }, [requestBottomSheet])
+
+        const openRecipientAddress = useCallback(() => {
+            if (!destination) return
+            void requestBottomSheet({
+                contents: (
+                    <RecipientAddressContent
+                        address={addressCodecs
+                            .get(scope.chainId)
+                            .normalize(destination)}
+                    />
+                ),
+                options: {
+                    size: 'auto',
+                    enablePanDownToClose: true,
+                    autoCreateContainer: false,
+                },
+            })
+        }, [requestBottomSheet, destination, scope.chainId])
 
         const { data: currentBalance, isPending: currentBalancePending } =
             useAccountAssetBalanceQuery(
@@ -399,6 +421,14 @@ export const useTransactionConfirmationScreen =
 
         const isCollectibleAsset = asset ? isCollectible(asset) : false
 
+        const assetLabel = asset?.unitName || asset?.name
+        const title = assetLabel
+            ? t('send_funds.confirmation.send_on_network', {
+                  asset: assetLabel,
+                  network: chainDisplayNameOf(scope.chainId) ?? scope.chainId,
+              })
+            : undefined
+
         return {
             asset,
             amount,
@@ -406,7 +436,7 @@ export const useTransactionConfirmationScreen =
             selectedAccount,
             selectedAssetId,
             scope,
-            networkName,
+            title,
             feeAmount,
             feePresets,
             isFeePending,
@@ -419,6 +449,7 @@ export const useTransactionConfirmationScreen =
             FeeSection: sendConfirmation?.FeeSection ?? NeutralSendFeeSection,
             TrailingSection: sendConfirmation?.TrailingSection,
             openNote,
+            openRecipientAddress,
             handleConfirm,
             isCollectible: isCollectibleAsset,
             isReady,

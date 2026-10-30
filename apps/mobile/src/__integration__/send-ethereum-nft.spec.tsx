@@ -340,11 +340,13 @@ describe('Flow: send an NFT from an Ethereum account', () => {
         prefillSend(APE_ID, 1)
 
         renderSendConfirmationStack()
-        // The amount row shows the NFT itself and no fiat value beside it.
+        // The amount row shows the NFT itself and no fiat value beside it:
+        // the amount is followed directly by the network chip.
         await waitFor(() =>
-            expect(document.body.textContent).toContain(
-                'send_funds.confirmation.amountBORE1send_funds.confirmation.account',
-            ),
+            expect(
+                screen.getByTestId('send_confirm_network')
+                    .previousElementSibling?.textContent,
+            ).toMatch(/BORE1$/),
         )
         await confirmSend()
 

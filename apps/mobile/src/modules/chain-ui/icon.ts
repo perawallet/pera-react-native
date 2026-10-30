@@ -22,3 +22,8 @@ export {
     nativeAssetInfoOf,
     type NativeAssetGlyph,
 } from './nativeAsset'
+export { ChainChip, type ChainChipProps } from './components/ChainChip'
+export {
+    ChainAvatarBadge,
+    type ChainAvatarBadgeProps,
+} from './components/ChainAvatarBadge'

@@ -43,7 +43,7 @@ export const useNfdSearchQuery = (
 
     const query = useQuery({
         queryKey: nfdQueryKeys.search(normalizedName, scope),
-        queryFn: ({ signal }) =>
+        queryFn: ({ signal }): Promise<NfdSearchResult[]> =>
             fetchNfdSearch({ name: normalizedName, scope, signal }),
         enabled,
     })

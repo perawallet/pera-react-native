@@ -58,6 +58,11 @@ export const useStyles = makeStyles((theme, { hugContent }: StyleProps) => {
             minWidth: 0,
             justifyContent: 'center',
         },
+        // PWText only shrinks when truncating; a full address wraps, so it must shrink beside the avatar or the row clips its lines.
+        unnamedAddress: {
+            flexShrink: 1,
+            minWidth: 0,
+        },
         primaryText: {
             color: theme.colors.textMain,
         },
