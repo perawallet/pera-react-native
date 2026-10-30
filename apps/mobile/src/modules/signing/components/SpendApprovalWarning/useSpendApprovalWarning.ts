@@ -62,6 +62,8 @@ const ROW_COPY: Record<SpendRowType, RowCopy> = {
     },
 }
 
+const NFT_SPEND_MESSAGE = i18nKey('signing.spend_approval.nft_spend_warning')
+
 export const useSpendApprovalWarning = (
     approval: SpendApproval,
 ): UseSpendApprovalWarningResult => {
@@ -69,6 +71,7 @@ export const useSpendApprovalWarning = (
 
     return useMemo(() => {
         const { spender, allowances, deadline, isLongLived } = approval
+        const isNftOnly = allowances.every(allowance => !!allowance.nft)
         const types: SpendRowType[] = ['spend']
         if (allowances.some(allowance => allowance.amount === undefined)) {
             types.push('unlimited')
@@ -84,7 +87,9 @@ export const useSpendApprovalWarning = (
             return {
                 type,
                 icon,
-                message: t(message),
+                message: t(
+                    type === 'spend' && isNftOnly ? NFT_SPEND_MESSAGE : message,
+                ),
                 emphasis: emphasis ? t(emphasis) : undefined,
                 caption:
                     type === 'spend'

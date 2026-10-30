@@ -40,35 +40,52 @@ export const SpendAllowanceRow = ({
         allowance.amount,
         scope,
     )
+    const { nft } = allowance
 
     return (
         <>
-            <KeyValueRow title={t('transactions.common.asset')}>
+            <KeyValueRow
+                testID={`message-signing-spend-approval-asset-${index}`}
+                title={t('transactions.common.asset')}
+            >
                 <PWView style={styles.asset}>
-                    {!!asset && <PWText>{asset.unitName}</PWText>}
+                    {nft ? (
+                        <PWText>
+                            {t('transactions.list_item.nft_subtitle', {
+                                collection:
+                                    asset?.peraMetadata?.collectible?.collection
+                                        ?.name ?? nft.collection,
+                                tokenId: nft.tokenId,
+                            })}
+                        </PWText>
+                    ) : (
+                        !!asset && <PWText>{asset.unitName}</PWText>
+                    )}
                     <AddressDisplay
-                        address={allowance.assetRef.assetId}
+                        address={nft?.collection ?? allowance.assetRef.assetId}
                         displayType='address-only'
                     />
                 </PWView>
             </KeyValueRow>
-            <KeyValueRow
-                testID={`message-signing-spend-approval-amount-${index}`}
-                title={t('transactions.common.amount')}
-            >
-                {allowance.amount === undefined ? (
-                    <PWText>{t('signing.spend_approval.unlimited')}</PWText>
-                ) : (
-                    <AssetAmount
-                        chainId={scope.chainId}
-                        asset={asset}
-                        value={value}
-                        isLoading={isLoading}
-                        showSymbol
-                        ignorePrivacyMode
-                    />
-                )}
-            </KeyValueRow>
+            {!nft && (
+                <KeyValueRow
+                    testID={`message-signing-spend-approval-amount-${index}`}
+                    title={t('transactions.common.amount')}
+                >
+                    {allowance.amount === undefined ? (
+                        <PWText>{t('signing.spend_approval.unlimited')}</PWText>
+                    ) : (
+                        <AssetAmount
+                            chainId={scope.chainId}
+                            asset={asset}
+                            value={value}
+                            isLoading={isLoading}
+                            showSymbol
+                            ignorePrivacyMode
+                        />
+                    )}
+                </KeyValueRow>
+            )}
         </>
     )
 }

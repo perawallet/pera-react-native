@@ -48,6 +48,12 @@ const APPROVE: TransactionSerializableEIP1559 = {
     gas: 60_000n,
 }
 
+// No standard token function has this selector.
+const OPAQUE_CALL: TransactionSerializableEIP1559 = {
+    ...APPROVE,
+    data: '0x5ae401dc',
+}
+
 const unsignedOn =
     (chain: EvmChain) =>
     (
@@ -90,7 +96,7 @@ for (const chain of EVM_TEST_CHAINS) {
         ],
         riskyGroup: [unsigned(APPROVE)],
         foreignGroup: [unsigned(APPROVE, STRANGER)],
-        opaqueGroup: [unsigned(APPROVE)],
+        opaqueGroup: [unsigned(OPAQUE_CALL)],
         opaqueAutoApproves: false,
         wrongNetworkGroup: [
             unsigned({ ...TRANSFER, chainId: eip155IdOf(chain, 'testnet') }),

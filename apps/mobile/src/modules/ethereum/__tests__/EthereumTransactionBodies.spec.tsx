@@ -21,7 +21,7 @@ import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { registerEthereumChain } from '@test-utils/chain-fixtures'
 import {
-    ETHEREUM_FIXTURE_APPROVE_DATA,
+    ETHEREUM_FIXTURE_CONTRACT_CALL_DATA,
     ETHEREUM_FIXTURE_NFT_ID,
     ETHEREUM_FIXTURE_RECIPIENT,
     ETHEREUM_FIXTURE_SENDER,
@@ -100,7 +100,7 @@ const USDC = {
 const SIGNER_NAME = 'Fixture Signer'
 const SHORT_RECIPIENT = truncateAlgorandAddress(ETHEREUM_FIXTURE_RECIPIENT)
 const SHORT_TOKEN = truncateAlgorandAddress(ETHEREUM_FIXTURE_TOKEN)
-const COLLAPSED_APPROVE_DATA = `${ETHEREUM_FIXTURE_APPROVE_DATA.slice(0, 74)}...`
+const COLLAPSED_CALL_DATA = `${ETHEREUM_FIXTURE_CONTRACT_CALL_DATA.slice(0, 74)}...`
 
 const natives = {} as Record<EthereumDisplayFixtureKind, TransactionNative>
 
@@ -115,6 +115,7 @@ describe('Ethereum transaction bodies', () => {
             'token-transfer',
             'nft-transfer',
             'contract-call',
+            'approval',
             'contract-creation',
         ] as const) {
             natives[kind] = await reviewEthereumFixture(kind)
@@ -201,7 +202,7 @@ describe('Ethereum transaction bodies', () => {
                 'transactions.contract_call.warning',
             )
             expect(textOf('ethereum_contract_call_selector')).toContain(
-                '0x095ea7b3',
+                '0x5ae401dc',
             )
             expect(textOf('ethereum_contract_call_to')).toContain(SHORT_TOKEN)
             expect(screen.queryByTestId('ethereum_review_amount')).toBeNull()
@@ -215,7 +216,7 @@ describe('Ethereum transaction bodies', () => {
             )
 
             expect(textOf('ethereum_contract_call_data')).toContain(
-                COLLAPSED_APPROVE_DATA,
+                COLLAPSED_CALL_DATA,
             )
             expect(textOf('ethereum_contract_call_data')).toContain(
                 'common.show_more',
@@ -224,7 +225,7 @@ describe('Ethereum transaction bodies', () => {
             fireEvent.click(screen.getByText('common.show_more'))
 
             expect(textOf('ethereum_contract_call_data')).toContain(
-                ETHEREUM_FIXTURE_APPROVE_DATA,
+                ETHEREUM_FIXTURE_CONTRACT_CALL_DATA,
             )
             expect(textOf('ethereum_contract_call_data')).toContain(
                 'common.show_less',
@@ -333,10 +334,10 @@ describe('Ethereum transaction bodies', () => {
                 screen.getByTestId('ethereum_contract_call_warning'),
             ).toBeTruthy()
             expect(textOf('ethereum_contract_call_selector')).toContain(
-                '0x095ea7b3',
+                '0x5ae401dc',
             )
             expect(textOf('ethereum_contract_call_data')).toContain(
-                COLLAPSED_APPROVE_DATA,
+                COLLAPSED_CALL_DATA,
             )
             expect(textOf('ethereum_contract_call_to')).toContain(SHORT_TOKEN)
             expect(textOf('ethereum_contract_call_value')).toMatch(/ETH.*0/)
@@ -409,31 +410,23 @@ describe('Ethereum transaction bodies', () => {
         })
     })
 
-    describe('with contractDecoding on', () => {
+    describe("a dApp's standard token calls", () => {
         const HOLDER = '0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC'
 
-        // The contract-call fixture is a dApp's unlimited approve; its view
+        // The approval fixture is a dApp's unlimited approve; its view
         // already carries the decoded call.
         const withCall = (
             call: Record<string, unknown>,
         ): TransactionNative => ({
             family: 'evm',
             transaction: {
-                ...(natives['contract-call'].transaction as object),
+                ...(natives.approval.transaction as object),
                 call,
             },
         })
 
-        beforeEach(() => {
-            vi.mocked(useChainCapability).mockReturnValue(true)
-        })
-
         it('reviews an unlimited approve as an approval with the spend warning, not as an unknown call', () => {
-            render(
-                <TransactionReviewBody
-                    transaction={natives['contract-call']}
-                />,
-            )
+            render(<TransactionReviewBody transaction={natives.approval} />)
 
             expect(
                 screen.getByText('transactions.list_item.approval'),
@@ -447,11 +440,7 @@ describe('Ethereum transaction bodies', () => {
         })
 
         it('details an approval opened from a list with the spend warning and the raw call it was read from', () => {
-            render(
-                <TransactionDetailBody
-                    transaction={natives['contract-call']}
-                />,
-            )
+            render(<TransactionDetailBody transaction={natives.approval} />)
 
             expect(
                 screen.getByText('transactions.list_item.approval'),
@@ -467,7 +456,26 @@ describe('Ethereum transaction bodies', () => {
             ).toBeNull()
         })
 
-        it("details a dApp's token transfer by its holder, recipient, token and amount", () => {
+        it("keeps a dApp's token transfer an unknown call with its warning while contractDecoding is off", () => {
+            render(
+                <TransactionReviewBody
+                    transaction={withCall({
+                        kind: 'transfer',
+                        contract: ETHEREUM_FIXTURE_TOKEN,
+                        from: ETHEREUM_FIXTURE_SENDER,
+                        to: ETHEREUM_FIXTURE_RECIPIENT,
+                        value: new Decimal(5_000_000),
+                    })}
+                />,
+            )
+
+            expect(
+                screen.getByTestId('ethereum_contract_call_warning'),
+            ).toBeTruthy()
+        })
+
+        it("details a dApp's token transfer by its holder, recipient, token and amount while contractDecoding is on", () => {
+            vi.mocked(useChainCapability).mockReturnValue(true)
             render(
                 <TransactionDetailBody
                     transaction={withCall({
@@ -491,7 +499,8 @@ describe('Ethereum transaction bodies', () => {
             ).toBeNull()
         })
 
-        it('lists every item of an NFT batch, a repeated token id included', () => {
+        it('lists every item of an NFT batch, a repeated token id included, while contractDecoding is on', () => {
+            vi.mocked(useChainCapability).mockReturnValue(true)
             render(
                 <TransactionReviewBody
                     transaction={withCall({
@@ -518,7 +527,7 @@ describe('Ethereum transaction bodies', () => {
         it('titles the preview row of an approval as one', () => {
             render(
                 <TransactionPreviewRow
-                    transaction={natives['contract-call']}
+                    transaction={natives.approval}
                     onPress={vi.fn()}
                 />,
             )

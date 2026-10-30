@@ -53,7 +53,7 @@ export type EthereumTransactionPresentation = {
         | 'transactions.list_item.approval'
         | 'transactions.list_item.revoke_approval'
     iconName: IconName
-    /** A contract call read as a standard token call; null while `contractDecoding` is off. */
+    /** A contract call read as a standard token call; null for any other call. */
     standardCall: Nullable<EthereumStandardCallPresentation>
     /** Moves value: a transfer view, or a contract call read as a token or NFT transfer. */
     isTransfer: boolean

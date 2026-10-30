@@ -55,6 +55,7 @@ describe('useEthereumTransactionPresentation', () => {
             'token-transfer',
             'nft-transfer',
             'contract-call',
+            'approval',
             'contract-creation',
         ] as const) {
             natives[kind] = await reviewEthereumFixture(kind)
@@ -250,13 +251,13 @@ describe('useEthereumTransactionPresentation', () => {
         expect(malformed.result.current).toBeNull()
     })
 
-    describe('with contractDecoding on', () => {
+    describe('a decoded standard call', () => {
         const HOLDER = '0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC'
 
-        // The contract-call fixture is a dApp approve, so its view already
+        // The approval fixture is a dApp approve, so its view already
         // carries the decoded call; these swap in other calls on the same target.
         const callNative = (call?: EvmStandardCall): TransactionNative => {
-            const native = natives['contract-call']
+            const native = natives.approval
             const transaction = native.transaction as Record<string, unknown>
             return call
                 ? { ...native, transaction: { ...transaction, call } }
@@ -381,20 +382,43 @@ describe('useEthereumTransactionPresentation', () => {
             expect(result.current?.amount).toBeUndefined()
             expect(result.current?.isAmountLoading).toBe(false)
         })
-    })
 
-    it('keeps a decoded call an unrecognised contract call while contractDecoding is off', () => {
-        mockAssetQuery({ data: USDC, isPending: false })
+        it("keeps a dApp's token transfer an unrecognised contract call while contractDecoding is off", () => {
+            vi.mocked(useChainCapability).mockReturnValue(false)
+            mockAssetQuery({ data: USDC, isPending: false })
 
-        const { result } = renderHook(() =>
-            useEthereumTransactionPresentation(natives['contract-call']),
-        )
+            const { result } = renderHook(() =>
+                useEthereumTransactionPresentation(
+                    callNative({
+                        kind: 'transfer',
+                        contract: ETHEREUM_FIXTURE_TOKEN,
+                        from: ETHEREUM_FIXTURE_SENDER,
+                        to: ETHEREUM_FIXTURE_RECIPIENT,
+                        value: new Decimal(5_000_000),
+                    }),
+                ),
+            )
 
-        expect(result.current?.titleKey).toBe(
-            'transactions.list_item.contract_call',
-        )
-        expect(result.current?.standardCall).toBeNull()
-        expect(result.current?.isTransfer).toBe(false)
+            expect(result.current?.titleKey).toBe(
+                'transactions.list_item.contract_call',
+            )
+            expect(result.current?.standardCall).toBeNull()
+            expect(result.current?.isTransfer).toBe(false)
+        })
+
+        it('still presents an approve as an approval while contractDecoding is off', () => {
+            vi.mocked(useChainCapability).mockReturnValue(false)
+            mockAssetQuery({ data: USDC, isPending: false })
+
+            const { result } = renderHook(() =>
+                useEthereumTransactionPresentation(callNative()),
+            )
+
+            expect(result.current?.titleKey).toBe(
+                'transactions.list_item.approval',
+            )
+            expect(result.current?.standardCall?.kind).toBe('token-approval')
+        })
     })
 
     describe('a transaction already on chain', () => {

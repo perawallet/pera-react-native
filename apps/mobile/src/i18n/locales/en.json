@@ -3346,6 +3346,7 @@
         },
         "spend_approval": {
             "spend_warning": "This signature lets another address move tokens out of your account without asking you again.",
+            "nft_spend_warning": "This signature lets another address move this NFT out of your account without asking you again.",
             "spend_warning_bold": "Only sign if you trust this application.",
             "spender_caption": "Spender: {{address}}",
             "unlimited_warning": "The amount is unlimited, so the spender can take all of this token you hold.",

@@ -81,6 +81,14 @@ const approve = (
     value: new Decimal(value.toString()),
 })
 
+const transfer: EvmStandardCall = {
+    kind: 'transfer',
+    contract: TOKEN,
+    from: SIGNER,
+    to: SPENDER,
+    value: new Decimal(5_000_000),
+}
+
 const render = (call: EvmStandardCall) =>
     renderHook(() => useEthereumStandardCall(viewWith(call), SCOPE)).result
         .current
@@ -91,18 +99,58 @@ describe('useEthereumStandardCall', () => {
         mockRecords({})
     })
 
-    it('reads nothing while contractDecoding is off', () => {
+    it('reads an approval while contractDecoding is off, since it carries its own warning', () => {
         vi.mocked(useChainCapability).mockReturnValue(false)
         mockRecords({ [TOKEN]: USDC })
 
-        expect(render(approve(5n))).toEqual({
-            standardCall: null,
-            isLoading: false,
+        expect(render(approve(5n)).standardCall).toMatchObject({
+            kind: 'token-approval',
+            spender: SPENDER,
         })
         expect(useChainCapability).toHaveBeenCalledWith(
             'ethereum',
             'contractDecoding',
         )
+    })
+
+    it.each([
+        ['a collection grant', true],
+        ['a collection revocation', false],
+    ])('reads %s while contractDecoding is off', (_label, isApproved) => {
+        vi.mocked(useChainCapability).mockReturnValue(false)
+
+        expect(
+            render({
+                kind: 'set-approval-for-all',
+                contract: NFT,
+                operator: SPENDER,
+                isApproved,
+            }).standardCall,
+        ).toMatchObject({ kind: 'collection-approval', isApproved })
+    })
+
+    it('reads an increaseAllowance while contractDecoding is off', () => {
+        vi.mocked(useChainCapability).mockReturnValue(false)
+        mockRecords({ [TOKEN]: USDC })
+
+        expect(
+            render({
+                kind: 'increase-allowance',
+                contract: TOKEN,
+                spender: SPENDER,
+                value: new Decimal(5_000_000),
+            }).standardCall,
+        ).toMatchObject({ kind: 'token-approval', spender: SPENDER })
+    })
+
+    it('reads no transfer while contractDecoding is off, so the unknown-contract notice stays', () => {
+        vi.mocked(useChainCapability).mockReturnValue(false)
+        mockRecords({ [TOKEN]: USDC })
+
+        expect(render(transfer)).toEqual({
+            standardCall: null,
+            isLoading: false,
+        })
     })
 
     it('reads nothing from a view without a decoded call', () => {
@@ -241,15 +289,7 @@ describe('useEthereumStandardCall', () => {
     it("presents a token transfer in the token's display units", () => {
         mockRecords({ [TOKEN]: USDC })
 
-        expect(
-            render({
-                kind: 'transfer',
-                contract: TOKEN,
-                from: SIGNER,
-                to: SPENDER,
-                value: new Decimal(5_000_000),
-            }).standardCall,
-        ).toEqual({
+        expect(render(transfer).standardCall).toEqual({
             kind: 'token-transfer',
             contract: TOKEN,
             from: SIGNER,

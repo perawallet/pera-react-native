@@ -3362,6 +3362,7 @@
         },
         "spend_approval": {
             "spend_warning": "Esta assinatura permite que outro endereço movimente tokens da sua conta sem pedir sua confirmação de novo.",
+            "nft_spend_warning": "Esta assinatura permite que outro endereço movimente este NFT da sua conta sem pedir sua confirmação de novo.",
             "spend_warning_bold": "Assine somente se você confia neste aplicativo.",
             "spender_caption": "Endereço autorizado: {{address}}",
             "unlimited_warning": "O valor é ilimitado, então o endereço autorizado pode pegar todos os seus tokens deste tipo.",

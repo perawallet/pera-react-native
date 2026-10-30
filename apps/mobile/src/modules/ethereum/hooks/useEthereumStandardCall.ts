@@ -21,6 +21,7 @@ import type {
     SpendApproval,
 } from '@perawallet/wallet-core-chain-contract'
 import {
+    isEvmApprovalCall,
     spendApprovalOfCall,
     toEvmNftAssetId,
     type EthereumTransactionView,
@@ -234,17 +235,22 @@ const present = (
 }
 
 /**
- * Reads the decoded call only while `contractDecoding` is on. The calldata
- * can't say whether `approve` or `transferFrom` moves an amount or a token id,
- * so the token's own records decide: a fungible record first, then an NFT
- * record for that id, and neither means an unknown token shown in base units.
+ * Reads an approval always and a transfer only while `contractDecoding` is on,
+ * as the reviewer gates a dApp's call.
+ * The calldata can't say whether `approve` or `transferFrom` moves an amount
+ * or a token id, so the token's own records decide: a fungible record first,
+ * then an NFT record for that id, and neither means an unknown token shown in
+ * base units.
  */
 export const useEthereumStandardCall = (
     view: Nullable<EthereumTransactionView>,
     scope: ChainScope,
 ): UseEthereumStandardCallResult => {
     const isDecoding = useChainCapability(scope.chainId, 'contractDecoding')
-    const call = isDecoding ? view?.call : undefined
+    const call =
+        view?.call && (isDecoding || isEvmApprovalCall(view.call))
+            ? view.call
+            : undefined
 
     const fungible = useBaseUnitsAmount(
         call && isFungibleCandidate(call) ? call.contract : '',

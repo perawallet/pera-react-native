@@ -383,8 +383,11 @@ describe('ethereumMessageSignerAdapter.reviewedAddresses', () => {
         ])
     })
 
-    it('names the spender of a DAI permit the permit parser does not recognise', () => {
-        const request = typed(DAI_PERMIT_TYPED_DATA)
+    it('names the spender of a DAI permit that revokes, which grants nothing', () => {
+        const request = typed({
+            ...DAI_PERMIT_TYPED_DATA,
+            message: { ...DAI_PERMIT_TYPED_DATA.message, allowed: false },
+        })
 
         expect(adapter.describe(request).spendApproval).toBeUndefined()
         expect(adapter.reviewedAddresses(request)).toContainEqual({
