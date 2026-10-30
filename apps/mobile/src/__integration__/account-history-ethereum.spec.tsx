@@ -369,7 +369,7 @@ describe('Flow: History on an Ethereum account', () => {
             )
         }
         const trackRpc = ({ request }: { request: Request }) => {
-            if (request.url.startsWith('https://mainnet.rpc.test')) {
+            if (new URL(request.url).hostname === 'mainnet.rpc.test') {
                 rpcRequests.push(request.url)
             }
         }
