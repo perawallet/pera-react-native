@@ -20,10 +20,9 @@ import {
 } from '@perawallet/wallet-core-shared'
 
 /**
- * Detailed max decimals for a preferred-currency value (fiat OR ALGO): ALGO's
- * native precision, shared with the asset display cap. For fiat it lets
- * sub-cent values and unit prices keep their digits instead of collapsing to
- * `0.00`.
+ * Max decimals for a unit price, and for a non-fiat preferred value on a
+ * detail surface: ALGO's native precision, shared with the asset display cap,
+ * so a sub-cent token price keeps its digits instead of reading `< 0.01`.
  */
 export const PREFERRED_MAX_PRECISION = ASSET_MAX_PRECISION
 
@@ -42,8 +41,13 @@ export const PREFERRED_MAX_PRECISION = ASSET_MAX_PRECISION
  * {@link DEFAULT_PRECISION} → the asset's own `decimals`, capped at
  * {@link ASSET_MAX_PRECISION} (see `resolveAssetDisplayPrecision`).
  * Collectibles / 0-decimal assets resolve to 0 dp. Pair with `assetDecimals`.
- * - `preferredFull` — a preferred-currency value (fiat or ALGO) on a detail surface:
- * trims {@link DEFAULT_PRECISION} → {@link PREFERRED_MAX_PRECISION} dp.
+ * - `preferredFull` — a preferred-currency amount on a detail surface. Fiat
+ * shows {@link DEFAULT_PRECISION} dp, a non-zero amount under a cent as
+ * `< 0.01` like `compact`; non-fiat trims {@link DEFAULT_PRECISION} →
+ * {@link PREFERRED_MAX_PRECISION} dp.
+ * - `unitPrice` — the price of one unit of an asset: trims
+ * {@link DEFAULT_PRECISION} → {@link PREFERRED_MAX_PRECISION} dp, fiat or
+ * not, since a cheap token's price is all sub-cent digits.
  * - `significant` — a small asset amount on a dense surface (a fee): keeps
  * {@link SIGNIFICANT_DIGITS} significant digits, between
  * {@link DEFAULT_PRECISION} and the asset's `decimals`. Pair with `assetDecimals`.
@@ -53,6 +57,7 @@ export type PrecisionVariant =
     | 'compact'
     | 'assetFull'
     | 'preferredFull'
+    | 'unitPrice'
     | 'significant'
 
 export type ResolvedPrecision = {
@@ -112,7 +117,7 @@ export const resolveSignificantPrecision = (
  * {@link DEFAULT_PRECISION}, matching the legacy `asset?.decimals ?? DEFAULT_PRECISION`.
  * `value` is consulted only for `compact` and `assetFull`, whose caps can
  * hide an amount entirely, and `significant`, which falls back to 2 dp
- * without it.
+ * without it. `isFiat` is consulted only for `preferredFull`.
  *
  * This is the only place precision policy lives. `CurrencyAmount` delegates to
  * it and never branches on asset-vs-preferred itself.
@@ -121,6 +126,7 @@ export const resolvePrecision = (
     variant: PrecisionVariant,
     assetDecimals?: number,
     value?: Maybe<Decimal>,
+    isFiat = false,
 ): ResolvedPrecision => {
     switch (variant) {
         case 'noDecimal': {
@@ -136,6 +142,15 @@ export const resolvePrecision = (
             }
         }
         case 'preferredFull': {
+            if (isFiat) {
+                return {
+                    precision: DEFAULT_PRECISION,
+                    minPrecision: DEFAULT_PRECISION,
+                }
+            }
+            return resolvePrecision('unitPrice')
+        }
+        case 'unitPrice': {
             return {
                 precision: PREFERRED_MAX_PRECISION,
                 minPrecision: DEFAULT_PRECISION,
@@ -163,18 +178,23 @@ export const resolvePrecision = (
 }
 
 /**
- * The smallest fiat amount a `compact` figure shows. A non-zero fiat amount
- * under it reads as "< 0.01" instead of extending to its first significant
- * digit, which only suits crypto. The floor keeps the amount's sign, so a
- * small loss gives -0.01 and reads as a lower bound ("> -0.01") rather than
- * losing its minus. `null` when the amount renders normally.
+ * The smallest fiat amount a `compact` or `preferredFull` figure shows. A
+ * non-zero fiat amount under it reads as "< 0.01" instead of extending to its
+ * first significant digit, which only suits crypto. The floor keeps the
+ * amount's sign, so a small loss gives -0.01 and reads as a lower bound
+ * ("> -0.01") rather than losing its minus. `null` when the amount renders normally.
  */
 export const resolveFiatFloor = (
     variant: PrecisionVariant,
     isFiat: boolean,
     value: Maybe<Decimal>,
 ): Nullable<Decimal> => {
-    if (variant !== 'compact' || !isFiat || value == null || value.isZero()) {
+    if (
+        (variant !== 'compact' && variant !== 'preferredFull') ||
+        !isFiat ||
+        value == null ||
+        value.isZero()
+    ) {
         return null
     }
     // Built on call, from a string, so a spec that mocks the shared package

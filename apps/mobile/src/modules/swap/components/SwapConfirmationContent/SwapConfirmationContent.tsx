@@ -62,8 +62,8 @@ export const SwapConfirmationContent = ({
         isCommitted,
         payDisplay,
         receiveDisplay,
-        payFiatDisplay,
-        receiveFiatDisplay,
+        payFiatValue,
+        receiveFiatValue,
         rateDisplay,
         minimumReceivedDisplay,
         peraFeeDisplay,
@@ -109,7 +109,7 @@ export const SwapConfirmationContent = ({
                     asset={inAsset}
                     chainId={scope.chainId}
                     amountDisplay={payDisplay}
-                    fiatDisplay={payFiatDisplay}
+                    fiatValue={payFiatValue}
                     unitName={quote.assetIn.unitName}
                     verificationTier={quote.assetIn.verificationTier}
                 />
@@ -129,7 +129,7 @@ export const SwapConfirmationContent = ({
                     asset={outAsset}
                     chainId={scope.chainId}
                     amountDisplay={receiveDisplay}
-                    fiatDisplay={receiveFiatDisplay}
+                    fiatValue={receiveFiatValue}
                     unitName={quote.assetOut.unitName}
                     verificationTier={quote.assetOut.verificationTier}
                 />

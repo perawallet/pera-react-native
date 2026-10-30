@@ -107,8 +107,8 @@ describe('useSwapConfirmation', () => {
             outAsset: undefined,
             payDisplay: '-',
             receiveDisplay: '-',
-            payFiatDisplay: undefined,
-            receiveFiatDisplay: undefined,
+            payFiatValue: null,
+            receiveFiatValue: null,
             rateDisplay: '-',
             minimumReceivedDisplay: '-',
             peraFeeDisplay: '-',
@@ -172,8 +172,8 @@ describe('useSwapConfirmation', () => {
 
         const { result } = renderConfirmation(quote)
 
-        expect(result.current.payFiatDisplay).toBe('EUR20')
-        expect(result.current.receiveFiatDisplay).toBe('EUR19')
+        expect(result.current.payFiatValue?.toString()).toBe('20')
+        expect(result.current.receiveFiatValue?.toString()).toBe('19')
     })
 
     it('omits the fiat lines while the exchange rate is unresolved', () => {
@@ -185,8 +185,8 @@ describe('useSwapConfirmation', () => {
 
         const { result } = renderConfirmation(quote)
 
-        expect(result.current.payFiatDisplay).toBeUndefined()
-        expect(result.current.receiveFiatDisplay).toBeUndefined()
+        expect(result.current.payFiatValue).toBeNull()
+        expect(result.current.receiveFiatValue).toBeNull()
     })
 
     it('formats the rate at the out asset precision', () => {

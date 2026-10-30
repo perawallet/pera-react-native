@@ -181,6 +181,7 @@ export const AssetMarkets = ({
                         {selectedPoint ? (
                             <PreferredAmount
                                 variant='h1'
+                                density='unitPrice'
                                 value={usdToPreferred(
                                     new Decimal(selectedPoint.usdPrice),
                                 )}
@@ -188,6 +189,7 @@ export const AssetMarkets = ({
                         ) : (
                             <PreferredAmount
                                 variant='h1'
+                                density='unitPrice'
                                 sourceAmount={new Decimal(1)}
                                 sourceAssetId={asset.assetId}
                                 scope={scope}

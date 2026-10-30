@@ -13,7 +13,6 @@
 import { useMemo } from 'react'
 import { Decimal } from 'decimal.js'
 import {
-    formatCurrency,
     formatNumber,
     type Nullable,
     type Optional,
@@ -52,8 +51,9 @@ type UseSwapConfirmationResult = {
     isCommitted: boolean
     payDisplay: string
     receiveDisplay: string
-    payFiatDisplay: Optional<string>
-    receiveFiatDisplay: Optional<string>
+    /** In the preferred currency; null until a rate resolves. */
+    payFiatValue: Nullable<Decimal>
+    receiveFiatValue: Nullable<Decimal>
     rateDisplay: string
     minimumReceivedDisplay: string
     peraFeeDisplay: string
@@ -70,7 +70,7 @@ export const useSwapConfirmation = ({
 }: UseSwapConfirmationParams): UseSwapConfirmationResult => {
     const styles = useStyles()
     const selectedAccount = useSelectedAccount()
-    const { preferredCurrency, usdToPreferred } = useCurrency(scope)
+    const { usdToPreferred } = useCurrency(scope)
 
     const assetInId = quote?.assetIn.assetId
     const assetOutId = quote?.assetOut.assetId
@@ -109,20 +109,23 @@ export const useSwapConfirmation = ({
         })
     }, [quote?.amountOut, quote?.assetOut])
 
-    const payFiatDisplay = useMemo(() => {
-        if (!quote?.amountInUsdValue) return undefined
-        const value = usdToPreferred(new Decimal(quote.amountInUsdValue))
-        // No rate yet — omit the fiat line rather than quoting the swap at 0.
-        if (!value) return undefined
-        return formatCurrency(value, 2, preferredCurrency)
-    }, [quote?.amountInUsdValue, usdToPreferred, preferredCurrency])
+    // No rate yet gives null, so the fiat line is omitted rather than quoting
+    // the swap at 0.
+    const payFiatValue = useMemo(
+        () =>
+            quote?.amountInUsdValue
+                ? usdToPreferred(new Decimal(quote.amountInUsdValue))
+                : null,
+        [quote?.amountInUsdValue, usdToPreferred],
+    )
 
-    const receiveFiatDisplay = useMemo(() => {
-        if (!quote?.amountOutUsdValue) return undefined
-        const value = usdToPreferred(new Decimal(quote.amountOutUsdValue))
-        if (!value) return undefined
-        return formatCurrency(value, 2, preferredCurrency)
-    }, [quote?.amountOutUsdValue, usdToPreferred, preferredCurrency])
+    const receiveFiatValue = useMemo(
+        () =>
+            quote?.amountOutUsdValue
+                ? usdToPreferred(new Decimal(quote.amountOutUsdValue))
+                : null,
+        [quote?.amountOutUsdValue, usdToPreferred],
+    )
 
     const rateDisplay = useMemo(() => {
         if (!quote?.price) return '-'
@@ -184,8 +187,8 @@ export const useSwapConfirmation = ({
         isCommitted,
         payDisplay,
         receiveDisplay,
-        payFiatDisplay,
-        receiveFiatDisplay,
+        payFiatValue,
+        receiveFiatValue,
         rateDisplay,
         minimumReceivedDisplay,
         peraFeeDisplay,

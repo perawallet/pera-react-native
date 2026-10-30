@@ -30,6 +30,7 @@ let format: (
     amount: string,
     variant: PrecisionVariant,
     decimals?: number,
+    isFiat?: boolean,
 ) => string
 
 beforeAll(async () => {
@@ -37,12 +38,13 @@ beforeAll(async () => {
         typeof import('@perawallet/wallet-core-shared')
     >('@perawallet/wallet-core-shared')
 
-    format = (amount, variant, decimals) => {
+    format = (amount, variant, decimals, isFiat) => {
         const value = new Decimal(amount)
         const { precision, minPrecision, rounding } = resolvePrecision(
             variant,
             decimals,
             value,
+            isFiat,
         )
         const { sign, integer, fraction } = formatNumber(
             rounding != null
@@ -99,9 +101,18 @@ describe('resolvePrecision + real formatNumber', () => {
         expect(format('0.001344293173', 'compact', 18)).toBe('0.001344')
     })
 
-    it('preferredFull keeps sub-cent fiat digits up to 6 dp', () => {
-        expect(format('0.005', 'preferredFull')).toBe('0.005')
-        expect(format('0.123456', 'preferredFull')).toBe('0.123456')
+    it('unitPrice keeps sub-cent digits up to 6 dp', () => {
+        expect(format('0.005', 'unitPrice')).toBe('0.005')
+        expect(format('0.123456', 'unitPrice')).toBe('0.123456')
+    })
+
+    it('preferredFull rounds a fiat amount to cents', () => {
+        expect(format('1.112055', 'preferredFull', undefined, true)).toBe(
+            '1.11',
+        )
+        expect(format('1234.5', 'preferredFull', undefined, true)).toBe(
+            '1,234.50',
+        )
     })
 
     it('noDecimal renders whole units with no fraction', () => {
