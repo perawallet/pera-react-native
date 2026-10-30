@@ -31,7 +31,9 @@ export const RecipientAddressContent = ({
     const { copyToClipboard } = useClipboard()
 
     const handleCopy = () => {
-        void copyToClipboard(address, bottomSheetNotifier.current ?? undefined)
+        void copyToClipboard(address, {
+            notifier: bottomSheetNotifier.current ?? undefined,
+        })
     }
 
     return (
