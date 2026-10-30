@@ -13,6 +13,7 @@
 export { ExternalTransactionInfoContent } from './components/ExternalTransactionInfoContent'
 export { GroupDetailHeader } from './screens/GroupDetailScreen/GroupDetailHeader'
 export { SourceMetadataBadge } from './components/SourceMetadataBadge'
+export { useSignRequestScope } from './hooks/useSignRequestScope'
 export {
     CollectionApprovalWarning,
     type CollectionApprovalWarningProps,
