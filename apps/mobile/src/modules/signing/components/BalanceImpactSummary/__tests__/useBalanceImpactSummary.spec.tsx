@@ -18,7 +18,12 @@ import {
     useAssetPricesQuery,
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
-import { useImpactTransactions } from '@perawallet/wallet-core-signing'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import {
+    useImpactTransactions,
+    useSigningRequest,
+    type SignRequest,
+} from '@perawallet/wallet-core-signing'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import { registerAlgorandPlannerAdapter } from '@test-utils/plannerChainAdapter'
 import { useBalanceImpactSummary } from '../useBalanceImpactSummary'
@@ -29,6 +34,7 @@ vi.mock('@perawallet/wallet-core-signing', async importOriginal => ({
         typeof import('@perawallet/wallet-core-signing')
     >()),
     useImpactTransactions: vi.fn(),
+    useSigningRequest: vi.fn(),
 }))
 
 const NATIVE_ASSET = vi.hoisted(() => ({
@@ -38,14 +44,33 @@ const NATIVE_ASSET = vi.hoisted(() => ({
     decimals: 6,
 }))
 
+const ETH_NATIVE_ASSET = vi.hoisted(() => ({
+    assetId: 'native',
+    name: 'Ether',
+    unitName: 'ETH',
+    decimals: 18,
+}))
+
 vi.mock('@perawallet/wallet-core-assets', async importOriginal => ({
     ...(await importOriginal<
         typeof import('@perawallet/wallet-core-assets')
     >()),
-    useNativeAsset: () => NATIVE_ASSET,
+    useNativeAsset: (scope?: { chainId: string }) =>
+        scope?.chainId === 'ethereum' ? ETH_NATIVE_ASSET : NATIVE_ASSET,
     useAssetsQuery: vi.fn(),
     useAssetPricesQuery: vi.fn(),
 }))
+
+const ALGO_SCOPE: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
+const ETH_SCOPE: ChainScope = { chainId: 'ethereum', networkId: 'sepolia' }
+
+const requestOn = (scope: ChainScope) =>
+    ({
+        id: 'req-1',
+        type: 'transactions',
+        transport: 'callback',
+        txs: [{ scope, payload: {} }],
+    }) as unknown as SignRequest
 
 const USER = 'USER_ADDRESS'
 const OTHER = 'OTHER_ADDRESS'
@@ -150,6 +175,9 @@ const mockTransactions = (
 
 beforeEach(() => {
     registerAlgorandPlannerAdapter()
+    vi.mocked(useSigningRequest).mockReturnValue({
+        currentRequest: requestOn(ALGO_SCOPE),
+    } as unknown as ReturnType<typeof useSigningRequest>)
     vi.mocked(useAssetsQuery).mockReturnValue({
         data: new Map([
             ['100', NFT],
@@ -171,6 +199,27 @@ beforeEach(() => {
 })
 
 describe('useBalanceImpactSummary', () => {
+    it("reads assets, prices and impact on the request's own chain", () => {
+        vi.mocked(useSigningRequest).mockReturnValue({
+            currentRequest: requestOn(ETH_SCOPE),
+        } as unknown as ReturnType<typeof useSigningRequest>)
+        vi.mocked(useImpactTransactions).mockReturnValue({
+            transactions: [],
+            signableAddresses: new Set(),
+            isSimulating: false,
+            simulationFailed: false,
+        })
+
+        const { result } = renderHook(() => useBalanceImpactSummary())
+
+        expect(useImpactTransactions).toHaveBeenCalledWith(ETH_SCOPE)
+        expect(useAssetPricesQuery).toHaveBeenCalledWith(ETH_SCOPE, ['native'])
+        expect(useAssetsQuery).toHaveBeenCalledWith(ETH_SCOPE, [], {
+            fetchMissing: true,
+        })
+        expect(result.current.hasImpact).toBe(false)
+    })
+
     it('splits movements into spend and receive sections', () => {
         mockTransactions([spendAlgo, receiveNft])
 

@@ -36,6 +36,7 @@ import noPrimitiveRetest from './lanekeep/rules/no-primitive-retest.js'
 import noReactNativeImportsInPackages from './lanekeep/rules/no-react-native-imports-in-packages.js'
 import noRetiredQuantumCustody from './lanekeep/rules/no-retired-quantum-custody.js'
 import noSecretInLogs from './lanekeep/rules/no-secret-in-logs.js'
+import noSecretStrings from './lanekeep/rules/no-secret-strings.js'
 import noSnapshotTests from './lanekeep/rules/no-snapshot-tests.js'
 import noSplitSentences from './lanekeep/rules/no-split-sentences.js'
 import noTypographyInStyles from './lanekeep/rules/no-typography-in-styles.js'
@@ -140,6 +141,7 @@ export default defineConfig({
         amountTypes,
         noSecretInLogs,
         secretBufferZeroed,
+        noSecretStrings,
         conformanceWorkflowPaths,
         nativeExactPins,
         catalogVersions,

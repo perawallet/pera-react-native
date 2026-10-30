@@ -15,6 +15,7 @@ import { type Decimal } from 'decimal.js'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 import { BalanceLineChart } from '@components/BalanceLineChart'
+import { PWText } from '@components/core'
 import {
     isIntegrityRequiredError,
     type HistoryPeriod,
@@ -26,6 +27,7 @@ import {
     usePortfolioHistoryQuery,
 } from '@perawallet/wallet-core-accounts'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { chainDisplayNameOf } from '@perawallet/wallet-core-chain-shared'
 
 export type WealthChartProps = {
     /** Plotted as one summed series. */
@@ -63,6 +65,7 @@ export const WealthChart = memo(function WealthChart({
         isPaused,
         refetch,
         isUnavailableOnNetwork,
+        excludedChainIds,
     } = usePortfolioHistoryQuery(sources, period, currencyScope, enabled)
 
     // A point with no preferred value has no rate behind it (offline, never
@@ -73,19 +76,44 @@ export const WealthChart = memo(function WealthChart({
         [data],
     )
 
+    // Hermes has no Intl.ListFormat, so the final conjunction is translated.
+    const excludedNetworks = useMemo(() => {
+        const names = excludedChainIds.map(
+            chainId => chainDisplayNameOf(chainId) ?? chainId,
+        )
+        return names.length < 2
+            ? (names[0] ?? '')
+            : t('common.wealth_chart.networks_list', {
+                  first: names.slice(0, -1).join(', '),
+                  last: names.at(-1),
+              })
+    }, [excludedChainIds, t])
+
     return (
-        <BalanceLineChart
-            series={plottablePoints}
-            getValue={getPreferredValue}
-            onSelectionChanged={onSelectionChanged}
-            isPending={isPending}
-            isError={isError}
-            isIntegrityBlocked={isError && isIntegrityRequiredError(error)}
-            isPaused={isPaused}
-            isUnavailableOnNetwork={isUnavailableOnNetwork}
-            onRetry={() => void refetch()}
-            emptyBody={t('common.wealth_chart.empty_body')}
-            style={themeStyle.container}
-        />
+        <>
+            <BalanceLineChart
+                series={plottablePoints}
+                getValue={getPreferredValue}
+                onSelectionChanged={onSelectionChanged}
+                isPending={isPending}
+                isError={isError}
+                isIntegrityBlocked={isError && isIntegrityRequiredError(error)}
+                isPaused={isPaused}
+                isUnavailableOnNetwork={isUnavailableOnNetwork}
+                onRetry={() => void refetch()}
+                emptyBody={t('common.wealth_chart.empty_body')}
+                style={themeStyle.container}
+            />
+            {excludedNetworks !== '' && (
+                <PWText
+                    variant='caption'
+                    style={themeStyle.excludedNote}
+                >
+                    {t('common.wealth_chart.excludes_networks', {
+                        networks: excludedNetworks,
+                    })}
+                </PWText>
+            )}
+        </>
     )
 })

@@ -72,6 +72,7 @@ vi.mock('@perawallet/wallet-core-kms', () => ({
                 meta.entropyKey === true
             )
         })?.id,
+    handOffSecret: <T>(secret: T) => secret,
     withSecret: withSecretMock,
     kmsCore: {},
 }))

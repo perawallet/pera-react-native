@@ -1055,7 +1055,9 @@
         },
         "wealth_chart": {
             "empty_body": "Você verá um gráfico aqui quando tiver histórico de saldo",
-            "asset_empty_body": "Você verá um gráfico aqui quando tiver histórico de saldo deste ativo nesta conta"
+            "asset_empty_body": "Você verá um gráfico aqui quando tiver histórico de saldo deste ativo nesta conta",
+            "excludes_networks": "Este gráfico ainda não inclui os ativos de {{networks}}",
+            "networks_list": "{{first}} e {{last}}"
         },
         "webview": {
             "failed_title": "Falha ao carregar a página",
@@ -3603,7 +3605,7 @@
             "rekey_are_you_sure_title": "Tem certeza?",
             "rekey_are_you_sure_description": "Esta assinatura inclui uma transação de rekey, que dá a outro endereço o controle das suas contas. Confirme que você entende as consequências antes de continuar.",
             "rekey_are_you_sure_continue": "Continuar",
-            "high_fee_warning": "Esta solicitação paga uma taxa de rede muito acima do normal, de {{fee}} ALGO. Confirme que você confia na origem antes de assinar.",
+            "high_fee_warning": "Esta solicitação paga uma taxa de rede muito acima do normal, de {{fee}}. Confirme que você confia na origem antes de assinar.",
             "asset_freeze_warning": "Esta transação congela ou descongela ativos do seguinte endereço: {{address}}.",
             "asset_freeze_group_warning": "Este grupo de transações congela ou descongela ativos de uma das contas do grupo. Revise com atenção antes de assinar.",
             "asset_freeze_warning_bold": "Isso pode impedir que a conta de destino movimente o ativo congelado. Revise com atenção antes de assinar.",
