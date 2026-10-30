@@ -31,7 +31,7 @@ const VIEM = '  viem@2.57.7(typescript@5.9.3):'
 const clean = (): string[] => [
     CURVES_1,
     '    dependencies:',
-    '      ' + "'@noble/hashes': 1.8.0",
+    "      '@noble/hashes': 1.8.0",
     CURVES_2,
     '    dependencies:',
     "      '@noble/hashes': 2.4.0",
@@ -88,7 +88,7 @@ describe('pera/single-copy-packages', () => {
     })
 
     it('reports a second ox, naming the dependents of each copy', async () => {
-        const wcUtils = '  ' + "'@walletconnect/utils@2.25.0(zod@4.1.0)':"
+        const wcUtils = "  '@walletconnect/utils@2.25.0(zod@4.1.0)':"
         const ox = '  ox@0.9.3(typescript@5.9.3):'
         const snapshots = [
             ...clean(),
@@ -160,8 +160,12 @@ describe('pera/single-copy-packages', () => {
             without(without(without(clean(), VIEM), OX_A), OX_B),
         )
 
-        expect(found.map(f => f[2])).toEqual([
-            "'ox' is not in pnpm-lock.yaml; drop it from SINGLE_COPY_PACKAGES",
+        expect(found).toEqual([
+            [
+                LOCK,
+                1,
+                "'ox' is not in pnpm-lock.yaml; drop it from SINGLE_COPY_PACKAGES",
+            ],
         ])
     })
 

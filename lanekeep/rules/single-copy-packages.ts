@@ -14,8 +14,7 @@ interface MajorSplit {
 
 // A second copy is a second implementation in the bundle to audit. The 1.x
 // line cannot collapse into 2.x: 2.x is a breaking major (ESM `.js` subpaths,
-// dropped modules) and the pinning packages below are all on their latest
-// release.
+// dropped modules).
 const NOBLE_MAJOR_SPLIT: MajorSplit = {
     majors: [1, 2],
     reason:
@@ -154,7 +153,7 @@ export default defineRule({
         message:
             'pnpm-lock.yaml resolves a second copy of a package the bundles must carry once',
         remediation:
-            "Collapse the copies with an override in pnpm-workspace.yaml (a 'name@<major>' selector only for a closed major, 'parent>name' for an exact-pinned dependent) after checking the dependent imports only what the kept release exports, then run pnpm install. If both must stay, add a split with its reason to SINGLE_COPY_PACKAGES.",
+            "Collapse the copies with an override in pnpm-workspace.yaml (a 'name@<major>' selector only for a closed major that no '^1 || ^2' range reaches, otherwise a bounded one such as 'name@<1.8.0', or 'parent>name' for an exact-pinned dependent) after checking the dependent imports only what the kept release exports, then run pnpm install. If both must stay, add a split with its reason to SINGLE_COPY_PACKAGES.",
         examples: {
             bad: "'@noble/hashes@1.7.0' and '@noble/hashes@1.8.0' both in pnpm-lock.yaml",
             good: "one '@noble/hashes' 1.x snapshot",
