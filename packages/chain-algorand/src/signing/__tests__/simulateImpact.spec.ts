@@ -153,6 +153,21 @@ describe('simulateInnerTransactions', () => {
         expect(grouped[0].group).toBeDefined()
     })
 
+    it('leaves an ungrouped request transaction untouched when the composer groups it', async () => {
+        // The real composer assigns a group id to whatever it was handed;
+        // the request's own object must not be the thing it was handed.
+        mockSimulate.mockImplementationOnce(async () => {
+            const [added] = mockAddTransaction.mock.calls.at(-1) ?? []
+            groupTransactions([added as Transaction])
+            return simulated(5n)
+        })
+        const request = payment(1n)
+
+        await simulateInnerTransactions([request], ALGORAND_MAINNET)
+
+        expect(request.group).toBeUndefined()
+    })
+
     it('rejects when the simulation fails so the caller can fall back', async () => {
         mockSimulate.mockRejectedValue(new Error('simulate failed'))
 

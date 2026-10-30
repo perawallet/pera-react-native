@@ -1242,6 +1242,37 @@ describe('signingMachine', () => {
             expect(state.context.signingResults).toEqual([strategyResult])
         })
 
+        it('refuses to sign a group that changed after the review', async () => {
+            const request = neutralRequest()
+            const actor = createActor(machine, {
+                input: makeInput({
+                    keyStore,
+                    allAccounts: [
+                        algo25Account(SENDER, { keyPairId: 'key-1' }),
+                    ],
+                    request,
+                }),
+            })
+            actor.start()
+            await waitFor(actor, s => s.matches('awaiting_user'))
+            // What a review-time step that mutates its input would leave:
+            // a group id of a group that does not exist.
+            ;(
+                request.txs[0].payload as {
+                    transaction: { group?: Uint8Array }
+                }
+            ).transaction.group = new Uint8Array(32).fill(1)
+            actor.send({ type: 'USER_APPROVED' })
+
+            const state = await waitFor(actor, s => s.matches('failed'))
+
+            expect(state.context.error?.message).toContain(
+                'group ID does not match',
+            )
+            expect(state.context.failedDuringState).toBe('signing')
+            expect(keyStore.sign).not.toHaveBeenCalled()
+        })
+
         it('signs a multisig cosignature through the Algorand strategy, which the planner cannot assemble', async () => {
             await sign({
                 request: neutralRequest({
