@@ -38,8 +38,10 @@ catalog:
   "@ledgerhq/hw-transport-webhid": ^6.36.0
   "@ledgerhq/react-native-hid": 6.39.5
   "@noble/ciphers": ^2.2.0
-  # Each "@scure/bip32" release pins this exactly; see the note there.
+  # Each "@scure/bip32" and "@scure/bip39" release pins this exactly; see the
+  # notes there.
   # pin: follows @scure/bip32
+  # pin: follows @scure/bip39
   "@noble/hashes": ^2.4.0
   "@noble/secp256k1": ^3.2.0
   "@perawallet/walletconnect": 1.0.3
@@ -64,7 +66,8 @@ catalog:
   # Pinned exactly: each release pins @noble/hashes exactly, so move it with
   # the @noble/hashes floor above or the tree carries two hashes copies.
   "@scure/bip32": 2.4.0
-  "@scure/bip39": ^2.2.0
+  # Pinned exactly for the same reason as "@scure/bip32".
+  "@scure/bip39": 2.4.0
   "@sqlite.org/sqlite-wasm": 3.53.0-build1
   "@tanstack/query-async-storage-persister": ^5.99.0
   "@tanstack/react-query": ^5.99.0
@@ -414,6 +417,22 @@ overrides:
   # Keep the production-proven resolution: in the tree since #996 and shipped in
   # v7.0.0. Deliberately outside @gorhom/portal's declared `^3.3.1`.
   '@gorhom/portal>nanoid': 6.0.0
+  # One copy of each crypto library per major, enforced by
+  # pera/single-copy-packages. The 1.x lines are closed (1.9.7 and 1.8.0 are
+  # their last releases), and every 1.x consumer imports only subpaths and
+  # functions those releases export.
+  '@noble/curves@1': 1.9.7
+  '@noble/hashes@1': 1.8.0
+  # The scoped 2.x pins take the copy @scure/bip32 brings and move with it.
+  # keystore-core imports only sha512_256 from @noble/hashes/sha2.js, and
+  # xhd-wallet-api imports only ed25519, x25519, mod and the LE number
+  # helpers; 2.4.0 exports all of them.
+  '@algorandfoundation/keystore-core>@noble/hashes': 2.4.0
+  '@algorandfoundation/xhd-wallet-api>@noble/curves': 2.4.0
+  # Takes viem's copy and moves with viem. @walletconnect/utils calls only
+  # Signature.fromHex and Secp256k1.recoverAddress, signature-identical in 0.9
+  # and 0.14, on its session_authenticate path.
+  '@walletconnect/utils>ox': 0.14.56
   picomatch@3: 3.0.1
   picomatch@4: 4.0.4
   react: 19.3.0
