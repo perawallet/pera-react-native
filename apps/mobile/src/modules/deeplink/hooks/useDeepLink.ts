@@ -741,11 +741,10 @@ export const useDeepLink = (): UseDeepLinkResult => {
                         try {
                             // oxlint-disable-next-line pera/no-unvalidated-open-url -- parsed fido: deeplink, native only
                             await Linking.openURL(parsedData.url)
-                        } catch (err) {
-                            logger.error('Failed to open FIDO URL', {
-                                error: err,
-                                url: parsedData.sourceUrl,
-                            })
+                        } catch {
+                            // RN puts the URL in the openURL rejection message, and a
+                            // FIDO link is the handshake secret.
+                            logger.error('Failed to open FIDO URL')
                             errorToast(
                                 t('errors.deeplink.invalid_url_title'),
                                 t('errors.deeplink.invalid_url_body'),
@@ -755,9 +754,7 @@ export const useDeepLink = (): UseDeepLinkResult => {
                         }
                     } else {
                         // TODO(liquid-auth): wire the comms-protocol handler here.
-                        logger.info('liquid:// deeplink received', {
-                            url: parsedData.sourceUrl,
-                        })
+                        logger.info('liquid:// deeplink received')
                         infoToast(
                             t(
                                 'settings.passkeys.liquid_protocol_placeholder_title',

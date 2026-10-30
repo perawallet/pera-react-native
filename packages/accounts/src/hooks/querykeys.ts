@@ -112,11 +112,8 @@ export const getAccountBalancesHistoryQueryKey = (
 ) => [MODULE_PREFIX, 'balance-history', { period, addresses, scope }]
 
 /**
- * Wealth chart-history key guard. Allowlisted into query persistence:
- * balance history is network-only (no SQLite table backs it)
- * and carries no PII, so the last successful snapshot is safe and cheap to
- * persist. Deliberately excludes the per-account asset balance-history key
- * (['accounts','assets','balance-history',…]).
+ * Wealth chart-history key guard. Deliberately excludes the per-account asset
+ * balance-history key (['accounts','assets','balance-history',…]).
  */
 export const isAccountBalancesHistoryQuery = (queryKey: QueryKey): boolean =>
     queryKey[0] === MODULE_PREFIX && queryKey[1] === 'balance-history'

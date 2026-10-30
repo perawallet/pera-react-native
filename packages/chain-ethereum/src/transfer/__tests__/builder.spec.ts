@@ -602,6 +602,20 @@ describe('a transfer built for Base', () => {
         ).toBe(eip155ChainId)
     })
 
+    it('makes no oracle read when it builds, since the fee is priced at submission', async () => {
+        const reads: unknown[] = []
+        useRpc({
+            eth_call: params => {
+                reads.push(params[0])
+                return '0x'
+            },
+        })
+
+        await base.build(intentOn('native'), { scope: evmScopeOf(BASE) })
+
+        expect(reads).toEqual([])
+    })
+
     it("refuses an intent for another EVM chain's asset", async () => {
         await expect(
             base.build(nativeIntent, { scope: evmScopeOf(BASE) }),

@@ -41,6 +41,12 @@ const SEND = i18nKey('transactions.list_item.send')
 const RECEIVE = i18nKey('transactions.list_item.receive')
 const CONTRACT_CALL = i18nKey('transactions.list_item.contract_call')
 const NFT_SUBTITLE = i18nKey('transactions.list_item.nft_subtitle')
+const NFT_BATCH_SUBTITLE = i18nKey('transactions.list_item.nft_batch_subtitle')
+const INTERPRETED_TITLE = i18nKey('transactions.list_item.interpreted_title')
+
+// A verified contract's function name; anything else the backend sends in
+// `method` is a raw selector, which says nothing a reader can use.
+const FUNCTION_NAME = /^[A-Za-z_$][A-Za-z0-9_$]*$/
 
 const areEqual = areEvmAddressesEqual
 const normalize = normalizeEvmAddress
@@ -349,6 +355,7 @@ const summarizeNftTransfer = (
     item: EvmHistoryItem,
     address: string,
     chain: EvmChain,
+    isDecoding: boolean,
 ): Optional<TransactionSummary> => {
     const legs = nftLegsOf(item, address)
     if (
@@ -369,11 +376,29 @@ const summarizeNftTransfer = (
     } as const
     const [only, ...others] = legs
     if (!only || others.length > 0) {
+        const counted = legs.filter(({ isIn, isOut }) => isIn !== isOut)
+        const [first] = counted
+        const isOneCollection =
+            !!first &&
+            counted.length > 1 &&
+            counted.every(({ leg }) =>
+                areEqual(leg.contract, first.leg.contract),
+            )
         return {
             ...base,
-            balanceChanges: legs
-                .filter(({ isIn, isOut }) => isIn !== isOut)
-                .map(leg => nftChangeOf(chain, leg)),
+            ...(isDecoding &&
+                isOneCollection && {
+                    subtitle: {
+                        key: NFT_BATCH_SUBTITLE,
+                        params: {
+                            collection:
+                                first.leg.collection_name ??
+                                normalize(first.leg.contract),
+                            count: String(counted.length),
+                        },
+                    },
+                }),
+            balanceChanges: counted.map(leg => nftChangeOf(chain, leg)),
         }
     }
     const { leg, assetId } = only
@@ -419,22 +444,39 @@ const summarizeContractCall = (
 /**
  * Read from `address`'s side, from the row's kind, parties, value and
  * transfer legs alone; `method` only tells a plain value transfer from a call.
+ * While `isDecoding`, a call also takes the function name the backend gives,
+ * and a batch of NFTs from one collection names it. Neither changes what the
+ * row did to the account's balances.
  */
 export const summarizeEthereumHistoryItem = (
     item: EvmHistoryItem,
     address: string,
     scope: ChainScope,
     chain: EvmChain,
+    isDecoding = false,
 ): TransactionSummary => {
     const summary =
         item.kind === 'withdrawal'
             ? summarizeWithdrawal(item, address, scope, chain)
             : (summarizeNativeTransfer(item, address, chain) ??
               summarizeTokenTransfer(item, address, chain) ??
-              summarizeNftTransfer(item, address, chain) ??
+              summarizeNftTransfer(item, address, chain, isDecoding) ??
               summarizeContractCall(item, address, scope, chain))
+    const named =
+        isDecoding &&
+        summary.title.key === CONTRACT_CALL &&
+        item.method !== null &&
+        FUNCTION_NAME.test(item.method)
+            ? {
+                  ...summary,
+                  title: {
+                      key: INTERPRETED_TITLE,
+                      params: { title: item.method },
+                  },
+              }
+            : summary
     const notice = transactionStatusNotice(
         item.status === 'success' ? 'confirmed' : 'failed',
     )
-    return notice ? { ...summary, notice } : summary
+    return notice ? { ...named, notice } : named
 }

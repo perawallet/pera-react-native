@@ -41,7 +41,11 @@ import { eip155ChainIdOf, isEvmNftAssetId } from '../blockchain/utils/caip19'
 import { createEvmClient } from '../blockchain/utils/createEvmClient'
 import type { EvmChain } from '../chains/types'
 import type { EthereumTransactionPayload } from '../signing/adapter'
-import { readTransferFees, toEvmFeeEstimate } from './fees'
+import {
+    readTransferFees,
+    readTransferGasAndPresets,
+    toEvmFeeEstimate,
+} from './fees'
 import { allocateEthereumNonce } from './nonce-pool'
 import { encodeEvmNftTransfer, readEvmNftTransferAsset } from './nft-transfer'
 import { buildEvmReplacement } from './replacement'
@@ -183,7 +187,7 @@ const buildEvmTransfer = async (
             scope: context.scope,
             sender: call.from,
         }),
-        readTransferFees(client, call, chain, context.scope.networkId),
+        readTransferGasAndPresets(client, call, chain, context.scope.networkId),
     ]).catch((error: unknown) => {
         throw toEvmError(error, chain.row.nativeAsset.symbol)
     })

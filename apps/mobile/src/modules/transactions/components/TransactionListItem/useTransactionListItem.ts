@@ -35,6 +35,7 @@ import { useClipboard } from '@hooks/useClipboard'
 import { useLanguage } from '@hooks/useLanguage'
 import { useSuspectedPoisoningSheet } from '../../hooks/address-safety/useSuspectedPoisoningSheet'
 import { useCounterpartyName } from '../../hooks/history/useCounterpartyName'
+import { useOpenRecordDetails } from '../../hooks/history/useOpenRecordDetails'
 import { useReplaceTransaction } from '../../hooks/history/useReplaceTransaction'
 import {
     MAX_VISIBLE_AMOUNTS,
@@ -62,7 +63,7 @@ export type UseTransactionListItemResult = {
     amountsOverflowCount: number
     /** Set when the chain flags a non-final status (pending, failed, replaced). */
     notice: Nullable<ChainNoticeContent>
-    /** Unset on a row that opens nothing; long-press still copies, so the row stays touchable. */
+    /** Opens the row's detail; a history item pressed without an `onPress` opens nothing, and long-press still copies. */
     handlePress: Optional<() => void>
     /** Long-press copies the transaction id (with the shared copied toast). */
     handleLongPress: () => void
@@ -149,9 +150,10 @@ export const useTransactionListItem = (
         void handleReplace()
     }, [handleReplace])
     const replacePress = canReplace ? handleRecordPress : undefined
+    const { handleOpenDetails } = useOpenRecordDetails(record)
     const recordPress = suspectedPoisoning
         ? handleSuspectedRecordPress
-        : replacePress
+        : (replacePress ?? handleOpenDetails)
 
     const handleLongPress = useCallback(
         () => void copyToClipboard(id),

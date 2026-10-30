@@ -59,6 +59,9 @@ import {
 import {
     readEthereumNative,
     toEthereumNative,
+    type EthereumMinedView,
+    type EthereumPreviewView,
+    type EthereumPricedView,
     type EthereumTransactionView,
 } from './transaction-view'
 
@@ -190,6 +193,8 @@ type Call = {
     data: Hex
     /** Absent on a batch preview, which is priced only once it is reached. */
     pricing?: Pricing
+    /** A transaction already on chain: it carries what it cost, not what a signature commits to. */
+    mined?: { feePaid?: Decimal }
 }
 
 const toDecimal = (value: bigint): Decimal => new Decimal(value.toString())
@@ -255,6 +260,34 @@ const readCall = (
     }
 }
 
+const pricingOf = (
+    call: Call,
+):
+    | Pick<EthereumPricedView, 'nonce' | 'gas' | 'fee'>
+    | EthereumPreviewView
+    | EthereumMinedView => {
+    if (call.pricing) {
+        return {
+            nonce: call.pricing.nonce,
+            gas: call.pricing.gas,
+            fee: {
+                maxFeePerGas: toDecimal(call.pricing.maxFeePerGas),
+                maxPriorityFeePerGas: toDecimal(
+                    call.pricing.maxPriorityFeePerGas,
+                ),
+                maxFee: toDecimal(call.pricing.gas * call.pricing.maxFeePerGas),
+            },
+        }
+    }
+    if (call.mined) {
+        return {
+            isMined: true,
+            ...(call.mined.feePaid && { feePaid: call.mined.feePaid }),
+        }
+    }
+    return { isPreview: true }
+}
+
 const viewOf = (
     call: Call,
     kind: EthereumTransactionView['kind'],
@@ -272,21 +305,7 @@ const viewOf = (
     ...(size(call.data) >= SELECTOR_SIZE && {
         selector: slice(call.data, 0, SELECTOR_SIZE),
     }),
-    ...(call.pricing
-        ? {
-              nonce: call.pricing.nonce,
-              gas: call.pricing.gas,
-              fee: {
-                  maxFeePerGas: toDecimal(call.pricing.maxFeePerGas),
-                  maxPriorityFeePerGas: toDecimal(
-                      call.pricing.maxPriorityFeePerGas,
-                  ),
-                  maxFee: toDecimal(
-                      call.pricing.gas * call.pricing.maxFeePerGas,
-                  ),
-              },
-          }
-        : { isPreview: true as const }),
+    ...pricingOf(call),
     ...(token && { token }),
     ...(nft && { nft }),
     ...(standard && { call: standard }),
@@ -420,6 +439,21 @@ export const ethereumViewOf = (
     } catch {
         return null
     }
+}
+
+/**
+ * A transaction already on chain, read as a detail screen shows it: a native
+ * transfer when there is a `to` and no calldata, else a contract call with
+ * the standard call its calldata decodes to exactly, if any. `feePaid` is wei.
+ */
+export const ethereumMinedViewOf = (
+    call: { from: Address; to?: Address; data: Hex; value: bigint },
+    feePaid?: Decimal,
+): EthereumTransactionView => {
+    const mined = { ...call, mined: { feePaid } }
+    return call.to && size(call.data) === 0
+        ? viewOf(mined, 'transfer')
+        : contractCallView(mined)
 }
 
 /** A native transfer when there is a `to` and no calldata, else a contract call. */

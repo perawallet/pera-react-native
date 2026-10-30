@@ -22,4 +22,4 @@ export {
     type UseChainFamilyResult,
 } from './hooks/useChainFamily'
 export { chainUiFor } from './registry'
-export type { ChainUi } from './types'
+export type { ChainUi, ChainUiOverride } from './types'

@@ -2993,7 +2993,8 @@
             "amount": "Betrag",
             "account": "Konto",
             "to": "An",
-            "network": "Netzwerk",
+            "send_on_network": "{{asset}} auf {{network}} senden",
+            "view_full_address": "Zeigt die vollständige Adresse an",
             "fee": "Gebühr",
             "current_balance": "Aktuelles Guthaben",
             "total": "Gesamt",
@@ -3531,8 +3532,13 @@
             "interpreted_title": "{{title}}",
             "swap_subtitle": "{{amountIn}} {{assetIn}} gegen {{amountOut}} {{assetOut}}",
             "nft_subtitle": "{{collection}} #{{tokenId}}",
+            "nft_batch_subtitle": "{{collection}} · {{count}} Elemente",
             "inner_transaction_count": "{{innerCount}} innere Transaktionen",
             "cancel_transaction": "Transaktion stornieren"
+        },
+        "record_detail": {
+            "read_failed": "Die Aufrufdetails dieser Transaktion konnten nicht aus dem Netzwerk gelesen werden.",
+            "transaction_id": "Transaktions-ID"
         },
         "contract_call": {
             "warning": "Pera kann nicht erkennen, was dieser Smart-Contract-Aufruf bewirkt.",

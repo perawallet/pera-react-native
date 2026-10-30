@@ -3017,7 +3017,8 @@
             "amount": "Valor",
             "account": "Conta",
             "to": "Para",
-            "network": "Rede",
+            "send_on_network": "Enviar {{asset}} na rede {{network}}",
+            "view_full_address": "Mostra o endereço completo",
             "fee": "Taxa",
             "current_balance": "Saldo atual",
             "total": "Total",
@@ -3556,8 +3557,13 @@
             "interpreted_title": "{{title}}",
             "swap_subtitle": "{{amountIn}} {{assetIn}} por {{amountOut}} {{assetOut}}",
             "nft_subtitle": "{{collection}} #{{tokenId}}",
+            "nft_batch_subtitle": "{{collection}} · {{count}} itens",
             "inner_transaction_count": "{{innerCount}} transações internas",
             "cancel_transaction": "Cancelar transação"
+        },
+        "record_detail": {
+            "read_failed": "Não foi possível ler da rede os detalhes da chamada desta transação.",
+            "transaction_id": "ID da transação"
         },
         "contract_call": {
             "warning": "Não foi possível identificar o que esta chamada de contrato faz.",

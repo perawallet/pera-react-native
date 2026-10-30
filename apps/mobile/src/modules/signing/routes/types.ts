@@ -13,6 +13,7 @@
 import type {
     ChainScope,
     TransactionNative,
+    TransactionRecord,
 } from '@perawallet/wallet-core-chain-contract'
 import type {
     SuspectedPoisoning,
@@ -47,6 +48,12 @@ export type SigningStackParamList = {
          * non-serializability constraint described above.
          */
         historyTransaction?: TransactionHistoryItem
+        /**
+         * The history record the user tapped, on a chain that keeps no cached
+         * rows. The screen renders it through the chain's `RecordDetailBody`.
+         * Non-serializable like `historyTransaction`.
+         */
+        historyRecord?: TransactionRecord
         /** Set when the history marked the entry; the screen explains it and guards copying its counterparty. */
         suspectedPoisoning?: SuspectedPoisoning
         groupId?: string

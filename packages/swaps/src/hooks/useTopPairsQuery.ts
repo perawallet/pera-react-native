@@ -13,6 +13,7 @@
 import { useQuery } from '@tanstack/react-query'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { fetchTopPairs } from '../api'
+import type { TopPairItem } from '../models'
 import { swapQueryKeys } from './querykeys'
 
 export const useTopPairsQuery = (
@@ -22,7 +23,7 @@ export const useTopPairsQuery = (
 ) => {
     return useQuery({
         queryKey: swapQueryKeys.topPairs(limit, scope),
-        queryFn: () => fetchTopPairs(scope, limit),
+        queryFn: (): Promise<TopPairItem[]> => fetchTopPairs(scope, limit),
         enabled,
     })
 }

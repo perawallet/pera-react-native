@@ -224,7 +224,7 @@ export const useSwapCosignResolver = ({
                 handoff.scope,
                 handoff.signRequestId,
             ),
-            queryFn: () =>
+            queryFn: (): Promise<SignRequestResponse[]> =>
                 getSignRequestsWithSignatures(handoff.scope, {
                     device_id: deviceIdOf(deploymentOf(handoff.scope)) ?? '',
                     proposed_sign_request_ids: [handoff.signRequestId],

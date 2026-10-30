@@ -109,6 +109,7 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
         AppError,
         ErrorCategory,
         generateOrderedUniqueId: () => 'test-id-123',
+        registerStore: vi.fn(),
         logger: {
             warn: vi.fn(),
             error: vi.fn(),

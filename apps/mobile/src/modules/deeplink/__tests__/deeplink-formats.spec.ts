@@ -178,6 +178,7 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
     return {
         logger: { debug: vi.fn(), warn: vi.fn(), error: vi.fn() },
         generateOrderedUniqueId: vi.fn(() => 'test-id'),
+        registerStore: vi.fn(),
         decodeFromBase64: vi.fn((b64: string) =>
             Uint8Array.from(Buffer.from(b64, 'base64')),
         ),

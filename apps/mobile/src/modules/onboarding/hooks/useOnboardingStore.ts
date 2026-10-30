@@ -11,6 +11,7 @@
  */
 
 import { create } from 'zustand'
+import { registerStore } from '@perawallet/wallet-core-shared'
 
 type OnboardingState = {
     shouldPlayConfetti: boolean
@@ -37,6 +38,12 @@ export const useOnboardingStore = create<OnboardingStore>()(set => ({
     setIsOnboarding: (value: boolean) => set({ isOnboarding: value }),
     reset: () => set(initialState),
 }))
+
+registerStore({
+    name: 'onboarding-store',
+    clearStorage: () => {},
+    resetState: () => useOnboardingStore.getState().reset(),
+})
 
 // Explicit return types for decoupled access
 

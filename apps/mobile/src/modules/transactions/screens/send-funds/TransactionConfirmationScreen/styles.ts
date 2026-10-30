@@ -17,6 +17,20 @@ export const useStyles = makeStyles(theme => {
         secondaryAmount: {
             color: theme.colors.textGray,
         },
+        amountRow: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: theme.spacing.sm,
+            minWidth: 0,
+        },
+        // On a wrapper, not AssetAmount's own `style`, which lands on the unit symbol and would let it shrink.
+        amount: {
+            flexShrink: 1,
+            minWidth: 0,
+        },
+        networkChip: {
+            marginTop: theme.spacing.sm,
+        },
         addContact: {
             alignSelf: 'flex-start',
             marginTop: theme.spacing.xs,

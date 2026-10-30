@@ -14,14 +14,15 @@ import type {
     ChainModule,
     EvmChainId,
 } from '@perawallet/wallet-core-chain-contract'
-import { evmCapabilityDefaults } from './capability-defaults'
+import { evmCapabilityDefaultsOf } from './capability-defaults'
 import { EVM_CHAINS } from './chains/table'
 import type { EvmChain } from './chains/types'
 import { createEvmChainRegistration } from './register'
 
 export const createEvmChainModule = (chain: EvmChain): ChainModule => ({
     descriptor: chain.descriptor,
-    capabilityDefaults: evmCapabilityDefaults,
+    capabilityDefaults: evmCapabilityDefaultsOf(chain.row),
+    capabilityRestrictions: chain.row.restrictions,
     register: createEvmChainRegistration(chain),
 })
 

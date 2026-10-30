@@ -50,6 +50,7 @@ import {
 } from '../blockchain/errors'
 import type { EvmChain } from '../chains/types'
 import { ethereumCallSummary } from '../signing/review'
+import { readEvmSurcharge } from './fees'
 import { meetsReplacementBump, readReplaceableTransaction } from './replacement'
 
 // Nodes word a resend of a pooled transaction differently; Anvil says
@@ -148,15 +149,16 @@ export type SubmitAndRecordEthereumTransactionsParams = {
     db?: Database
 }
 
-// Wei: gas limit x max fee per gas, the most the transaction can be charged.
+// Wei: gas limit x max fee per gas plus what the chain charges on top of gas,
+// the most the transaction can be charged.
 // The signing adapter signs EIP-1559 only, so there is no legacy gasPrice.
-const maxFeeOf = ({
-    gas,
-    maxFeePerGas,
-}: ReturnType<typeof parseTransaction>): Optional<Decimal> =>
+const maxFeeOf = (
+    { gas, maxFeePerGas }: ReturnType<typeof parseTransaction>,
+    surcharge: bigint,
+): Optional<Decimal> =>
     gas === undefined || maxFeePerGas === undefined
         ? undefined
-        : new Decimal((gas * maxFeePerGas).toString())
+        : new Decimal((gas * maxFeePerGas + surcharge).toString())
 
 // The newest open attempt of the sender at this nonce under another hash; a
 // transport retry of the same bytes shares the hash, so it replaces nothing.
@@ -230,6 +232,23 @@ const bestEffort = async (label: string, write: () => Promise<unknown>) => {
     }
 }
 
+// Priced from the signed bytes, so it is the oracle's answer for the transaction sent.
+const readSurchargeOfSigned = async (
+    client: PublicClient,
+    chain: EvmChain,
+    serializedTransaction: TransactionSerialized,
+): Promise<bigint> => {
+    if (chain.row.fee.kind !== 'eip1559-op-stack') return 0n
+    try {
+        const transaction = readReplaceableTransaction(serializedTransaction)
+        if (!transaction) return 0n
+        return await readEvmSurcharge(client, chain, transaction)
+    } catch (error) {
+        logger.warn('Ethereum surcharge read failed', { error })
+        return 0n
+    }
+}
+
 const isSameAddress = (a: Maybe<string>, b: string): boolean =>
     a != null && getAddress(a) === getAddress(b)
 
@@ -288,7 +307,8 @@ export const historyEntryOfSigned = async (
  * send. A speed-up or cancel at a nonce an open attempt already holds replaces
  * it: the row links the two, and one that doesn't outbid the original by the
  * node's minimum bump is refused without being sent. Any other send at a held
- * nonce is refused the same way.
+ * nonce is refused the same way. On an OP-stack chain the recorded max fee
+ * includes the oracle's fee for the signed bytes, or gas alone when that read fails.
  */
 export const submitAndRecordEthereumTransactions = async ({
     client,
@@ -305,11 +325,17 @@ export const submitAndRecordEthereumTransactions = async ({
         const parsed = parseTransaction(serializedTransaction)
         const { nonce } = parsed
         const entry = historyEntries[index]
-        const fee = maxFeeOf(parsed)
         const sender = await recoverTransactionAddress({
             serializedTransaction,
         })
         const hash = keccak256(serializedTransaction)
+        // Awaited before the lookup: a network hop between lookup and record lets
+        // an overlapping send at the same nonce slip past the collision check.
+        const surcharge = await readSurchargeOfSigned(
+            client,
+            chain,
+            serializedTransaction,
+        )
         let replaced: Optional<SubmissionAttempt>
         if (nonce !== undefined) {
             await bestEffort('replacement lookup', async () => {
@@ -334,6 +360,7 @@ export const submitAndRecordEthereumTransactions = async ({
         if (isUnderpricedReplacement(replaced, parsed)) {
             throw underpricedReplacement(hash)
         }
+        const fee = maxFeeOf(parsed, surcharge)
         let attemptId: Optional<string>
         await bestEffort('record', async () => {
             attemptId = await recordSubmissionAttempt({

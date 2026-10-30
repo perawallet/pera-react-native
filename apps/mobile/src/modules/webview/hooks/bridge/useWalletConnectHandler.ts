@@ -121,6 +121,7 @@ export const useWalletConnectHandler = (
                 if (result.type === 'connect-failed') {
                     // Never log the URI itself: its `key=` param is the
                     // pairing secret.
+                    // lanekeep-ignore-next-line pera/no-secret-in-logs reason: the v2 handler's pairTopic drops an SDK error that quotes the URI, and v1's messages are constants
                     logger.error('[webview/wc] connect failed', {
                         error: result.error,
                         ...describeUri(parsed.uri),

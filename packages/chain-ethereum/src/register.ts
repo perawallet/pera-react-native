@@ -133,7 +133,7 @@ const buildAdapters = (
         assets: createEthereumAssetsAdapter(ctx, chain, listedTokens),
         transfer: createEvmTransferAdapter(ctx, chain),
         broadcaster: createEvmBroadcasterAdapter(ctx, chain),
-        history: createEvmHistoryAdapter(chain),
+        history: createEvmHistoryAdapter(chain, ctx),
         dappRequest: createEthereumDappRequestAdapter(ctx, chain),
         nodeEndpoint: createEvmNodeEndpointAdapter(ctx, chain),
         deeplink: createEvmDeeplinkAdapter(chain),

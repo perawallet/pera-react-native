@@ -322,6 +322,25 @@ const supportedNamespacesFor = (
         }),
     )
 
+const pairTopic = async (
+    walletKit: WalletKitClient,
+    uri: string,
+): Promise<string> => {
+    try {
+        const { topic } = await walletKit.core.pairing.pair({ uri })
+        return topic
+    } catch (error) {
+        // @walletconnect/core's pair() quotes the whole URI, symKey included,
+        // when it fails to parse it, and this error reaches logs.
+        if (/symKey=/i.test(toError(error).message)) {
+            throw new WalletConnectError(
+                'Not a parseable WalletConnect v2 pairing URI',
+            )
+        }
+        throw error
+    }
+}
+
 /**
  * WalletConnect v2 as one implementation of {@link ConnectionHandler}. Unlike
  * v1's socket per session, v2 is a single relay connection multiplexing every
@@ -1547,7 +1566,7 @@ export const createWalletConnectV2Handler = (
             // URI: they agree, but only one of them is what the relay
             // subscribed to.
             const walletKit = await ensureClient()
-            const { topic } = await walletKit.core.pairing.pair({ uri })
+            const topic = await pairTopic(walletKit, uri)
             abandonedPairings.delete(topic)
             // Cleared, not left: a re-pairing of the same topic from another
             // entry point would otherwise inherit the first one's origin.

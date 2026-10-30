@@ -27,22 +27,28 @@ export const useShouldPromptMnemonicBackup = (
     account: Maybe<WalletAccount>,
     scope: ChainScope,
 ): boolean => {
-    const requiresBackup = useRequiresMnemonicBackup(account, scope.chainId)
+    const canBackUpMnemonic = useChainCapability(
+        scope.chainId,
+        'mnemonicBackup',
+    )
+    // Hooks can't be skipped, so the capability decides what the lookups see:
+    // a chain without mnemonic backup may register no backup adapter.
+    const promptableAccount = canBackUpMnemonic ? account : undefined
+    const requiresBackup = useRequiresMnemonicBackup(
+        promptableAccount,
+        scope.chainId,
+    )
     // A balance on ANY chain or network counts, not just the one currently
     // selected: the passphrase is the same secret whichever chain the balance
     // sits on, and a warning that disappears on a network switch teaches the
     // wrong lesson.
-    const { isFunded } = useAccountFundedNetworksQuery(account, scope)
-    const address = account
-        ? chainAccountOf(account, scope.chainId)?.address
+    const { isFunded } = useAccountFundedNetworksQuery(promptableAccount, scope)
+    const address = promptableAccount
+        ? chainAccountOf(promptableAccount, scope.chainId)?.address
         : undefined
     const delegatedToThisAccount = useAccountsDelegatedTo(
         address,
         scope.chainId,
-    )
-    const canBackUpMnemonic = useChainCapability(
-        scope.chainId,
-        'mnemonicBackup',
     )
 
     // An unfunded account still holds the keys for anything that delegates its

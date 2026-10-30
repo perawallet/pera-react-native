@@ -12,7 +12,10 @@
 
 import { useCallback } from 'react'
 import { create } from 'zustand'
-import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
+import {
+    generateOrderedUniqueId,
+    registerStore,
+} from '@perawallet/wallet-core-shared'
 import { routeCapabilities } from '@routes/capabilities'
 import { openValidatedBrowserUrl } from './handlers-shared'
 
@@ -72,6 +75,12 @@ export const useWebViewStore = create<WebViewStore>()(set => ({
         })),
     clearWebViews: () => set({ openWebViews: [] }),
 }))
+
+registerStore({
+    name: 'webview-store',
+    clearStorage: () => {},
+    resetState: () => useWebViewStore.getState().clearWebViews(),
+})
 
 // Explicit return types for decoupled access
 type UseWebViewResult = {

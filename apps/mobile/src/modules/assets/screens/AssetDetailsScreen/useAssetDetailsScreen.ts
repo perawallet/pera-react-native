@@ -87,7 +87,8 @@ export const useAssetDetailsScreen = ({
     const isError = isQueryError && !asset
     const descriptor = getChainDescriptor(chainId)
     const assetDetailsDisplay =
-        chainUiFor(descriptor.family).assetDetails ?? neutralAssetDetailsDisplay
+        chainUiFor(descriptor.family, chainId).assetDetails ??
+        neutralAssetDetailsDisplay
 
     const isNative = isNativeAsset({ chainId, assetId }, descriptor)
     // Sync stores a zero supply for a token whose source carried none; one

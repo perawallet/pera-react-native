@@ -11,6 +11,7 @@
  */
 
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
+import { registerStore } from '@perawallet/wallet-core-shared'
 
 type PromptState = {
     /**
@@ -58,3 +59,9 @@ export const usePromptStore: UseBoundStore<StoreApi<PromptStore>> =
         markEntryDelayPaid: () => set({ hasPaidEntryDelay: true }),
         resetState: () => set(initialState),
     }))
+
+registerStore({
+    name: 'prompt-store',
+    clearStorage: () => {},
+    resetState: () => usePromptStore.getState().resetState(),
+})

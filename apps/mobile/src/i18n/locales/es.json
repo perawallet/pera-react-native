@@ -3001,7 +3001,8 @@
             "amount": "Cantidad",
             "account": "Cuenta",
             "to": "A",
-            "network": "Red",
+            "send_on_network": "Enviar {{asset}} en {{network}}",
+            "view_full_address": "Muestra la dirección completa",
             "fee": "Comisión",
             "current_balance": "Saldo actual",
             "total": "Total",
@@ -3539,8 +3540,13 @@
             "interpreted_title": "{{title}}",
             "swap_subtitle": "{{amountIn}} {{assetIn}} por {{amountOut}} {{assetOut}}",
             "nft_subtitle": "{{collection}} #{{tokenId}}",
+            "nft_batch_subtitle": "{{collection}} · {{count}} elementos",
             "inner_transaction_count": "{{innerCount}} transacciones internas",
             "cancel_transaction": "Cancelar transacción"
+        },
+        "record_detail": {
+            "read_failed": "No se pudieron leer de la red los detalles de la llamada de esta transacción.",
+            "transaction_id": "ID de transacción"
         },
         "contract_call": {
             "warning": "Pera no puede saber qué hace esta llamada a contrato.",
