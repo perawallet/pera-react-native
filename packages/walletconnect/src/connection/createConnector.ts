@@ -14,6 +14,7 @@ import WalletConnect, {
     type ISessionStorage,
     type IWalletConnectSession,
 } from '@perawallet/walletconnect'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { PERA_CLIENT_META } from '../shared/constants'
 
 export type CreateWalletConnectConnectorOptions = {
@@ -46,7 +47,7 @@ export const createWalletConnectConnector = (
 ): WalletConnect =>
     new WalletConnect({
         uri: options.uri,
-        session: options.session as IWalletConnectSession | undefined,
+        session: options.session as Optional<IWalletConnectSession>,
         clientMeta: PERA_CLIENT_META,
         storage: noopSessionStorage,
     })

@@ -11,12 +11,13 @@
  */
 
 import type { LegacySchemaReplayResult } from '@perawallet/wallet-extension-platform'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { MigrationDataSection } from '../components/MigrationDataSection'
 import { EmptyDataHint } from '../components/EmptyDataHint'
 import { SchemaReplayResultRow } from './SchemaReplayResultRow'
 
 type SchemaReplayResultsSectionProps = {
-    results: Record<string, LegacySchemaReplayResult> | undefined
+    results: Optional<Record<string, LegacySchemaReplayResult>>
 }
 
 export const SchemaReplayResultsSection = ({

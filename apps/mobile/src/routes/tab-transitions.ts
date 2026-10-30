@@ -11,6 +11,7 @@
  */
 
 import type { BottomTabNavigationOptions } from '@react-navigation/bottom-tabs'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 export type TabTransition = Pick<
     BottomTabNavigationOptions,
@@ -18,4 +19,5 @@ export type TabTransition = Pick<
 >
 
 /** Native keeps the navigator's default tab switch; see the `.web.ts` twin. */
-export const getTabTransition = (_width: number): TabTransition | null => null
+export const getTabTransition = (_width: number): Nullable<TabTransition> =>
+    null

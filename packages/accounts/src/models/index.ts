@@ -52,6 +52,21 @@ export type PrivateKeyImportOptions = {
     shouldDiscover?: boolean
 }
 
+/**
+ * How much of a wallet walk was answered. `unanswered`: no chain answered any
+ * batch, so nothing is known. `partial`: some answered, but a batch was only
+ * partly answered or failed, the walk threw, or an add failed for a reason
+ * other than a duplicate, so a rerun may find more. `complete`: everything
+ * answered.
+ */
+export type WalletDiscoveryCoverage = 'complete' | 'partial' | 'unanswered'
+
+export type WalletDiscoveryResult = {
+    /** The accounts the walk created or enabled a chain on, as stored after it ends. */
+    accounts: WalletAccount[]
+    coverage: WalletDiscoveryCoverage
+}
+
 export type AccountsState = BaseStoreState & {
     accounts: WalletAccount[]
     selectedAccountId: Nullable<string>
@@ -156,6 +171,8 @@ export type AccountsState = BaseStoreState & {
      * `declinedIndexes` stay untouched on every chain. Never rejects.
      * `rootKey`, the seed's XHD root, lets chains that derive from it skip a
      * keystore save per probed index; the walk zeroes it once probing ends.
+     * Resolves to the accounts it created or enabled a chain on, and how much
+     * of the walk was answered.
      */
     discoverWalletAccounts: (
         walletId: string,
@@ -163,7 +180,7 @@ export type AccountsState = BaseStoreState & {
             declinedIndexes?: readonly HdIndex[]
             rootKey?: Uint8Array
         },
-    ) => Promise<WalletAccount[]>
+    ) => Promise<WalletDiscoveryResult>
     /**
      * Adds `chainId`'s entry to the account at `index` in wallet `walletId`
      * (the seed's KMS id, as `seedOf` returns), or creates an account there.

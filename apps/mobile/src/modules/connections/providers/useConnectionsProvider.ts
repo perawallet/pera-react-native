@@ -29,6 +29,7 @@ import { createWalletConnectV1Handler } from '@perawallet/wallet-core-walletconn
 import { createWalletConnectV2Handler } from '@perawallet/wallet-core-walletconnect/v2'
 import { whenAppUnlocked } from '@perawallet/wallet-core-security'
 import { getProvider } from '@perawallet/wallet-extension-provider'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import {
     clearActiveWalletConnectV1Delivery,
     setActiveWalletConnectV1Delivery,
@@ -48,10 +49,9 @@ const getNetworkId = (chainId: ChainId) => getSelectedScope(chainId).networkId
  * `initialize()` instead.
  */
 export const useConnectionsProvider = (): ConnectionRegistry => {
-    const registryRef = useRef<ConnectionRegistry | null>(null)
-    const v1HandlerRef = useRef<ReturnType<
-        typeof createWalletConnectV1Handler
-    > | null>(null)
+    const registryRef = useRef<Nullable<ConnectionRegistry>>(null)
+    const v1HandlerRef =
+        useRef<Nullable<ReturnType<typeof createWalletConnectV1Handler>>>(null)
     if (!registryRef.current) {
         const registry = createConnectionRegistry({
             store: getProvider().connections.store,

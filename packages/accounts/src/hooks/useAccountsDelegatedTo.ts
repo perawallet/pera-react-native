@@ -12,6 +12,7 @@
 
 import { useMemo } from 'react'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import type { Maybe } from '@perawallet/wallet-core-shared'
 import { accountsChainAdapters } from '../chain-adapter'
 import { useAccountChainStateStore, useAccountsStore } from '../store'
 import type { WalletAccount } from '../models'
@@ -23,7 +24,7 @@ import type { WalletAccount } from '../models'
  * which asks the indexer.
  */
 export const useAccountsDelegatedTo = (
-    address: string | null | undefined,
+    address: Maybe<string>,
     chainId: ChainId,
 ): WalletAccount[] => {
     const accounts = useAccountsStore(state => state.accounts)

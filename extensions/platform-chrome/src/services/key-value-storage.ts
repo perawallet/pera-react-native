@@ -14,6 +14,7 @@
 
 import * as Sentry from '@sentry/browser'
 import type { KeyValueStorageService } from '@perawallet/wallet-extension-platform'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 // Namespaces app KV entries apart from other extension storage (device id,
 // dapp permissions, vault) sharing chrome.storage.local.
@@ -52,7 +53,7 @@ const reportWriteFailure = (
  * extension contexts (popup + approval window) coherent.
  */
 export class ChromeKeyValueStorageService implements KeyValueStorageService {
-    private cache: Map<string, string> | null = null
+    private cache: Nullable<Map<string, string>> = null
 
     async hydrate(): Promise<void> {
         if (this.cache !== null) return
@@ -92,7 +93,7 @@ export class ChromeKeyValueStorageService implements KeyValueStorageService {
         return this.cache
     }
 
-    getItem(key: string): string | null {
+    getItem(key: string): Nullable<string> {
         return this.ensureCache().get(key) ?? null
     }
 
@@ -114,7 +115,7 @@ export class ChromeKeyValueStorageService implements KeyValueStorageService {
         this.setItem(key, JSON.stringify(value))
     }
 
-    getJSON<T>(key: string): T | null {
+    getJSON<T>(key: string): Nullable<T> {
         const raw = this.getItem(key)
         if (raw === null) return null
         try {

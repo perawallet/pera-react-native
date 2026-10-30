@@ -11,13 +11,14 @@
  */
 
 import type { LegacyMigrationData } from '@perawallet/wallet-extension-platform'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { MigrationDataSection } from '../components/MigrationDataSection'
 import { LegacyVsRnRow } from '../components/LegacyVsRnRow'
 import type { RNMigrationSnapshot } from '../useRNMigrationSnapshot'
 
 type AuthSectionProps = {
     auth: LegacyMigrationData['auth']
-    biometricEnabled: boolean | null
+    biometricEnabled: Nullable<boolean>
     rn: RNMigrationSnapshot
 }
 

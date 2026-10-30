@@ -14,6 +14,7 @@ import { create } from 'zustand'
 import {
     registerStore,
     type BaseStoreState,
+    type Optional,
 } from '@perawallet/wallet-core-shared'
 import type {
     Connection,
@@ -93,7 +94,7 @@ export const isConnectionAlive = (connectionId: ConnectionId): boolean => {
 /** Looks in the mirror, so a record not yet hydrated reads as missing. */
 export const findConnection = (
     connectionId: ConnectionId,
-): Connection | undefined =>
+): Optional<Connection> =>
     useConnectionsStore
         .getState()
         .connections.find(connection => connection.id === connectionId)

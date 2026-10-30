@@ -21,7 +21,13 @@ import {
     withSecret,
     zeroBytes,
 } from '@perawallet/wallet-core-kms'
-import { bytesEqual, bytesToHex, logger } from '@perawallet/wallet-core-shared'
+import {
+    bytesEqual,
+    bytesToHex,
+    logger,
+    type Nullable,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
 import {
     getKeystoreStore,
     getProvider,
@@ -99,7 +105,7 @@ const resolvePlatformConvention = (): PlatformPasskeyConvention =>
 const resolveDerivationInputs = (
     passkey: LegacyPasskey,
     resolveOrigin: (siteUrl: string) => string,
-): DerivationInputs | null => {
+): Nullable<DerivationInputs> => {
     const origin = passkey.siteUrl ? resolveOrigin(passkey.siteUrl) : ''
     const userName = passkey.userName
     if (!passkey.credentialId || !origin || !userName) return null
@@ -124,9 +130,9 @@ type MigrationContext = {
     /** Whether the passkey's owning account migrated (is present in the store). */
     hasAccount: (address: string) => boolean
     /** Walk address → account → derived key → the HD seed that owns it. */
-    resolveSeedKeyId: (address: string) => string | undefined
+    resolveSeedKeyId: (address: string) => Optional<string>
     /** Recover a seed's BIP39 mnemonic from its entropy `secret-key` child (found by metadata). */
-    resolveMnemonic: (seedKeyId: string) => Promise<string | undefined>
+    resolveMnemonic: (seedKeyId: string) => Promise<Optional<string>>
     /** Derived main key per seed; PBKDF2 (210k) runs once and is reused. */
     getMainKey: (seedKeyId: string, mnemonic: string) => Promise<Uint8Array>
     /** Native passkey writer; the keystore master key is fetched once and reused. */
@@ -159,9 +165,9 @@ const createMigrationContext = (chainId: ChainId): MigrationContext => {
                 : undefined
             if (!keyPairId) return undefined
             const parentKeyId = (
-                keyById.get(keyPairId)?.metadata as
-                    | Record<string, unknown>
-                    | undefined
+                keyById.get(keyPairId)?.metadata as Optional<
+                    Record<string, unknown>
+                >
             )?.parentKeyId
             return typeof parentKeyId === 'string' ? parentKeyId : undefined
         },

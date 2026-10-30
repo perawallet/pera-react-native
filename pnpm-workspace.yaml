@@ -27,6 +27,7 @@ catalog:
   "@algorandfoundation/xhd-wallet-api": ^2.0.0-canary.1
   "@lottiefiles/dotlottie-react": 0.20.0
   "@babel/runtime": ^7.29.2
+  "@expensify/react-native-wallet": 0.1.41
   "@expo/app-integrity": 58.0.2
   "@joe-p/react-native-falcon": 0.1.0
   "@ledgerhq/errors": ^6.35.0
@@ -35,7 +36,7 @@ catalog:
   "@ledgerhq/hw-app-eth": 7.11.0
   "@ledgerhq/hw-transport-web-ble": ^6.35.0
   "@ledgerhq/hw-transport-webhid": ^6.36.0
-  "@ledgerhq/react-native-hid": ^6.39.1
+  "@ledgerhq/react-native-hid": 6.39.5
   "@noble/ciphers": ^2.2.0
   # Each "@scure/bip32" release pins this exactly; see the note there.
   # pin: follows @scure/bip32
@@ -129,10 +130,10 @@ catalog:
   react: 19.3.0
   react-dom: 19.3.0
   react-native: 0.88.0
-  react-native-mmkv: ^4.2.0
-  react-native-quick-base64: ^3.0.0
-  react-native-quick-crypto: ^1.0.17
-  react-native-ssl-public-key-pinning: ^1.2.6
+  react-native-mmkv: 4.3.2
+  react-native-quick-base64: 3.0.0
+  react-native-quick-crypto: 1.1.6
+  react-native-ssl-public-key-pinning: 1.2.6
   tsx: ^4.22.3
   tweetnacl: ^1.0.3
   typescript: ^7.0.2
@@ -418,9 +419,12 @@ overrides:
   react: 19.3.0
   react-dom: 19.3.0
   react-native: 0.88.0
+  # @ledgerhq/react-native-hw-transport-ble brings its own exact 3.4.0, a second
+  # copy whose JS would drive the 3.5.1 native code apps/mobile autolinks.
+  react-native-ble-plx: 3.5.1
   react-native-nitro-modules: 0.36.5
-  react-native-quick-base64: ^3.0.0
-  react-native-quick-crypto: ^1.0.17
+  react-native-quick-base64: 3.0.0
+  react-native-quick-crypto: 1.1.6
   uuid@<14: 14.0.0
   ws@>=7.0.0 <7.5.11: 7.5.11
   ws@>=8.0.0 <8.20.1: '>=8.20.1'

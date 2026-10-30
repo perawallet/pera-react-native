@@ -15,6 +15,7 @@ import type {
     BackupItemKind,
     CachedRecordChain,
 } from '@perawallet/wallet-core-backup'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { PWButton, PWText } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { BackupAccountRow } from '../../components/BackupAccountRow'
@@ -22,7 +23,7 @@ import { useStyles } from './styles'
 
 type AvailableFromBackupRowProps = {
     address: string
-    type: BackupItemKind | null
+    type: Nullable<BackupItemKind>
     chains: CachedRecordChain[]
     /** Only a newer version of the app can add it back, so there is no Add. */
     needsUpdate: boolean

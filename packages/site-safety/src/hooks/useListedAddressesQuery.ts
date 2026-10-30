@@ -12,6 +12,7 @@
 
 import { useCallback, useMemo } from 'react'
 import { useQuery, type Query } from '@tanstack/react-query'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { toListedAddressKey } from '../addresses'
 import { findPhishingListedAddresses } from '../listedAddresses'
 import { selectActiveGenerations, usePhishingListStore } from '../store/store'
@@ -37,11 +38,11 @@ type ListedAddressesKey = ReturnType<typeof siteSafetyQueryKeys.listedAddresses>
 const keepAnswerForSameAddresses =
     (keys: readonly string[]) =>
     (
-        previous: string[] | undefined,
-        previousQuery:
-            | Query<string[], Error, string[], ListedAddressesKey>
-            | undefined,
-    ): string[] | undefined =>
+        previous: Optional<string[]>,
+        previousQuery: Optional<
+            Query<string[], Error, string[], ListedAddressesKey>
+        >,
+    ): Optional<string[]> =>
         previousQuery?.queryKey[2].keys.join('\n') === keys.join('\n')
             ? previous
             : undefined

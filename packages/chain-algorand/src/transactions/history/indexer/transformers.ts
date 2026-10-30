@@ -10,7 +10,11 @@
  limitations under the License
  */
 
-import { logger } from '@perawallet/wallet-core-shared'
+import {
+    logger,
+    type Optional,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import { resolveAlgorandAssetFacts } from '../assetFacts'
 import { computeBalanceImpacts } from './balance-impacts'
 import {
@@ -41,11 +45,11 @@ const toNumber = (value: number | string | bigint | undefined): number =>
 const toAmountString = (value: number | string | bigint | undefined): string =>
     value === undefined ? '0' : BigInt(value).toString()
 
-const receiverOf = (tx: IndexerTransaction): string | undefined =>
+const receiverOf = (tx: IndexerTransaction): Optional<string> =>
     tx['payment-transaction']?.receiver ??
     tx['asset-transfer-transaction']?.receiver
 
-const amountOf = (tx: IndexerTransaction): string | undefined => {
+const amountOf = (tx: IndexerTransaction): Optional<string> => {
     const payment = tx['payment-transaction']
     if (payment) return toAmountString(payment.amount)
     const transfer = tx['asset-transfer-transaction']
@@ -53,24 +57,24 @@ const amountOf = (tx: IndexerTransaction): string | undefined => {
     return undefined
 }
 
-const closeToOf = (tx: IndexerTransaction): string | undefined =>
+const closeToOf = (tx: IndexerTransaction): Optional<string> =>
     tx['payment-transaction']?.['close-remainder-to'] ??
     tx['asset-transfer-transaction']?.['close-to']
 
-const closeAmountOf = (tx: IndexerTransaction): string | undefined => {
+const closeAmountOf = (tx: IndexerTransaction): Optional<string> => {
     const closeAmount =
         tx['payment-transaction']?.['close-amount'] ??
         tx['asset-transfer-transaction']?.['close-amount']
     return closeAmount === undefined ? undefined : toAmountString(closeAmount)
 }
 
-const applicationIdOf = (tx: IndexerTransaction): string | null => {
+const applicationIdOf = (tx: IndexerTransaction): Nullable<string> => {
     const id = tx['application-transaction']?.['application-id']
     return id === undefined ? null : BigInt(id).toString()
 }
 
 /** Best-effort `id` extraction from an as-yet-unvalidated row, for logging. */
-const extractRowId = (row: unknown): string | undefined => {
+const extractRowId = (row: unknown): Optional<string> => {
     if (typeof row !== 'object' || row === null || !('id' in row)) {
         return undefined
     }

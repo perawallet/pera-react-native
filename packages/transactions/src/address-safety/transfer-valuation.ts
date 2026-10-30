@@ -114,7 +114,9 @@ export const valueTransfers = async (
         const tier = asset?.peraMetadata?.verificationTier
         return {
             value: transfer.value,
-            decimals: transfer.decimalsHint ?? asset?.decimals,
+            // A token's history decimals are whatever its contract claims, so
+            // they only stand in for an asset the store doesn't have.
+            decimals: asset?.decimals ?? transfer.decimalsHint,
             usdPrice: prices.get(assetId),
             isNative: isNative(transfer),
             isVerified: tier === PeraAssetVerificationTier.verified,

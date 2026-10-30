@@ -15,6 +15,7 @@ import {
     type ChainId,
 } from '@perawallet/wallet-core-chain-contract'
 import type { SeedScheme } from '@perawallet/wallet-core-kms'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import {
     accountsChainAdapters,
     type LocalKeyKind,
@@ -61,13 +62,13 @@ export const detectImportKind = (
 export const localKeyKindOf = (
     chainId: ChainId,
     seed: LocalKeySeed | SeedScheme,
-): LocalKeyKind | undefined =>
+): Optional<LocalKeyKind> =>
     importFormatsFor(chainId).find(kind => kind.seed === seed)
 
 /** The key kind on `chainId` that signs post-quantum, or `undefined` when the chain mints none. */
 export const postQuantumKeyKindOf = (
     chainId: ChainId,
-): LocalKeyKind | undefined =>
+): Optional<LocalKeyKind> =>
     importFormatsFor(chainId).find(kind =>
         isPostQuantumScheme(kind.signingScheme),
     )
@@ -80,7 +81,7 @@ export const postQuantumKeyKindOf = (
 export const keyKindOptionsOf = (
     chainId: ChainId,
     seed: LocalKeySeed,
-): LocalKeyKindOptions | undefined =>
+): Optional<LocalKeyKindOptions> =>
     accountPresentationChainAdapters.has(chainId)
         ? accountPresentationChainAdapters.get(chainId).keyKindOptions?.(seed)
         : undefined

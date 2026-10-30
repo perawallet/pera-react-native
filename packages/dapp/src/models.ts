@@ -16,6 +16,7 @@ import type {
     ConnectionId,
     ConnectionOrigin,
 } from '@perawallet/wallet-extension-connections'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import type {
     JsonRpcNotification,
     JsonRpcRequest,
@@ -60,7 +61,7 @@ export const acknowledgedSiteWarningOf = (
 
 /** A check that fails counts as `blocked`: the approval that forces is safe. */
 export const readSiteWarning = async (
-    check: ((origin: string) => Promise<SiteWarningLevel>) | undefined,
+    check: Optional<(origin: string) => Promise<SiteWarningLevel>>,
     origin: string,
 ): Promise<SiteWarningLevel> =>
     check ? check(origin).catch((): SiteWarningLevel => 'blocked') : 'clear'

@@ -17,6 +17,7 @@ import type {
 import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { config } from '@perawallet/wallet-core-config'
 import { SeedScheme } from '@perawallet/wallet-core-kms/constants'
+import type { Optional } from '@perawallet/wallet-core-shared'
 
 const HD_OPTIONS: LocalKeyKindOptions = {
     recover: {
@@ -97,5 +98,5 @@ const OPTIONS_BY_SEED: readonly [LocalKeySeed, LocalKeyKindOptions][] = [
 
 export const algorandKeyKindOptions = (
     seed: LocalKeySeed,
-): LocalKeyKindOptions | undefined =>
+): Optional<LocalKeyKindOptions> =>
     OPTIONS_BY_SEED.find(([candidate]) => candidate === seed)?.[1]

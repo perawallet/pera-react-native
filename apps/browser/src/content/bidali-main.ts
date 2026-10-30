@@ -19,10 +19,11 @@
 // iframe) where no bridge host exists on the other side. Reuses the exact
 // handshake preamble discover-main.ts runs, via the shared
 // connectWebviewMainChannel helper (webview-main-channel.ts).
+import type { Nullable, Maybe } from '@perawallet/wallet-core-shared'
 import { BIDALI_BALANCES_PARAM, BIDALI_CURRENCIES_PARAM } from './bidali-params'
 import { connectWebviewMainChannel } from './webview-main-channel'
 
-const parseCurrencies = (raw: string | null): string[] => {
+const parseCurrencies = (raw: Nullable<string>): string[] => {
     if (!raw) return []
     try {
         const parsed: unknown = JSON.parse(raw)
@@ -37,7 +38,7 @@ const parseCurrencies = (raw: string | null): string[] => {
     }
 }
 
-const parseBalances = (raw: string | null): Record<string, string> => {
+const parseBalances = (raw: Nullable<string>): Record<string, string> => {
     if (!raw) return {}
     try {
         const parsed: unknown = JSON.parse(raw)
@@ -114,10 +115,11 @@ if (mainChannel) {
     // with anything that carries security weight.
     window.addEventListener('message', event => {
         if (event.source !== window) return
-        const data = event.data as
-            | { jsonrpc?: unknown; method?: unknown; params?: unknown }
-            | null
-            | undefined
+        const data = event.data as Maybe<{
+            jsonrpc?: unknown
+            method?: unknown
+            params?: unknown
+        }>
         if (
             !data ||
             data.jsonrpc !== '2.0' ||

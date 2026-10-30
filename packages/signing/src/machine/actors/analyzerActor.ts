@@ -15,6 +15,7 @@ import {
     toScopeKey,
     type UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { getReviewApproval } from '../../db/repository'
 import { REVIEW_APPROVAL_TTL_MS } from '../../db/types'
 import type { ReviewApprovalRef } from '../../models'
@@ -68,7 +69,7 @@ const matchesApprovedReview = (
 // the network the request signs on and while the approval is fresh.
 const approvedReviewOf = async (
     input: AnalyzerActorInput,
-): Promise<UnsignedTransaction[] | undefined> => {
+): Promise<Optional<UnsignedTransaction[]>> => {
     if (!input.reviewApproval) return undefined
     const approval = await getReviewApproval({
         token: input.reviewApproval.token,

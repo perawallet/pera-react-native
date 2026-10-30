@@ -26,7 +26,7 @@ export type UseImportAccountScreenResult = {
     handleImportAccount: () => void
     mnemonicLength: number
     titleKey: I18nKey
-    infoNoteKey: I18nKey | null
+    infoNoteKey: Nullable<I18nKey>
     t: (key: string) => string
     handleOpenSupportOptions: () => void
     isQRScannerVisible: boolean

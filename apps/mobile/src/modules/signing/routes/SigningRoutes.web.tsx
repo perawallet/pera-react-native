@@ -20,6 +20,7 @@
 // are plain Views with a display toggle, no measure-then-clip step.
 // SigningRoutes uses no JS-stack-only APIs, so the swap is a drop-in.
 import { useSigningPipeline } from '@perawallet/wallet-core-signing'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import {
     createNativeStackNavigator,
     type NativeStackHeaderProps,
@@ -47,7 +48,7 @@ type InitialRouteConfig = {
     initialRoute: keyof SigningStackParamList
 }
 
-const useInitialRouteConfig = (): InitialRouteConfig | null => {
+const useInitialRouteConfig = (): Nullable<InitialRouteConfig> => {
     const { resolved } = useSigningPipeline()
     if (!resolved) return null
     switch (resolved.kind.type) {

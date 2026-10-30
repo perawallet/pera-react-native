@@ -11,5 +11,6 @@
  */
 
 import { createContext } from 'react'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
-export const BottomSheetIdContext = createContext<string | null>(null)
+export const BottomSheetIdContext = createContext<Nullable<string>>(null)

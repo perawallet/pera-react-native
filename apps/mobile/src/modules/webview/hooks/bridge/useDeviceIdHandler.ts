@@ -14,7 +14,7 @@ import { useCallback, useEffect, useRef } from 'react'
 import type WebView from 'react-native-webview'
 import { useWalletDeployment } from '@perawallet/wallet-core-chain-shared'
 import { useDeploymentDeviceID } from '@perawallet/wallet-core-device'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import type { Nullable, Maybe } from '@perawallet/wallet-core-shared'
 import { GET_DEVICE_ID_ACTION, sendActionToWebview } from '../handlers'
 import type { BridgeHandler } from './types'
 
@@ -34,7 +34,7 @@ export const useDeviceIdHandler = (
     // hydration, migration, re-registration) is never picked up, since it never
     // retries. Pushing changes refires its favorites fetch. The initial mount is
     // skipped, since getSettings already carried that value.
-    const previousDeviceIDRef = useRef<string | null | undefined>(undefined)
+    const previousDeviceIDRef = useRef<Maybe<string>>(undefined)
     useEffect(() => {
         const previous = previousDeviceIDRef.current
         previousDeviceIDRef.current = deviceID

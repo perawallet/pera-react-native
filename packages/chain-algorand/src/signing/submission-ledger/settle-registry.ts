@@ -14,12 +14,13 @@ import type {
     SubmissionFlow,
     SubmissionSettledHandler,
 } from '@perawallet/wallet-core-signing'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 const handlers = new Map<SubmissionFlow, SubmissionSettledHandler>()
 
 export const setSubmissionSettledHandler = (
     flow: SubmissionFlow,
-    handler: SubmissionSettledHandler | null,
+    handler: Nullable<SubmissionSettledHandler>,
 ): void => {
     if (handler === null) {
         handlers.delete(flow)
@@ -30,4 +31,4 @@ export const setSubmissionSettledHandler = (
 
 export const getSubmissionSettledHandler = (
     flow: SubmissionFlow,
-): SubmissionSettledHandler | null => handlers.get(flow) ?? null
+): Nullable<SubmissionSettledHandler> => handlers.get(flow) ?? null

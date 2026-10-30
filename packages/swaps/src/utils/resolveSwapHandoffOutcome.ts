@@ -14,7 +14,7 @@ import type {
     ChainScope,
     ChainSubmissionData,
 } from '@perawallet/wallet-core-chain-contract'
-import { logger, toError } from '@perawallet/wallet-core-shared'
+import { logger, toError, type Nullable } from '@perawallet/wallet-core-shared'
 import {
     completeMultisigHandoff,
     deriveSubmissionAttemptFromBytes,
@@ -123,7 +123,7 @@ const buildGroupBytes = (
  * regardless of status, so a marker write must not mask the submit error.
  */
 const markAttemptOutcome = async (
-    attemptId: string | null,
+    attemptId: Nullable<string>,
     error: unknown,
     deps: SwapHandoffResolutionDeps,
 ): Promise<void> => {
@@ -192,7 +192,7 @@ export const resolveSwapHandoffOutcome = async ({
                         record.scope.chainId,
                         groupBytes,
                     )
-                    let attemptId: string | null = null
+                    let attemptId: Nullable<string> = null
                     if (derived.txIds.length > 0) {
                         attemptId = await deps.recordSubmissionAttempt({
                             scope: record.scope,

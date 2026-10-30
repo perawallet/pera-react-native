@@ -12,6 +12,7 @@
 
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { backupAdapterFor, backupChainAdapters } from '../../chain-adapter'
 
 /**
@@ -21,7 +22,7 @@ import { backupAdapterFor, backupChainAdapters } from '../../chain-adapter'
 export const getMnemonicBackupKeyId = (
     account: WalletAccount,
     chainId: ChainId,
-): string | null =>
+): Nullable<string> =>
     backupChainAdapters.has(chainId)
         ? backupAdapterFor(chainId).mnemonicBackupKeyId(account)
         : null

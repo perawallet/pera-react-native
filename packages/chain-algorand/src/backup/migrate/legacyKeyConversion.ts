@@ -15,6 +15,7 @@ import {
     entropyToIndices,
 } from '@perawallet/wallet-core-kms'
 import type { LegacyHDWallet } from '@perawallet/wallet-extension-platform'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 export { algo25SecretKeyToIndices }
 
@@ -32,7 +33,7 @@ export const hdWalletEntropyToIndices = (
     throw new Error(`HD wallet ${parent.walletId} has no entropy`)
 }
 
-export const describeBytes = (bytes: Uint8Array | null): string => {
+export const describeBytes = (bytes: Nullable<Uint8Array>): string => {
     if (bytes === null) return 'null'
     if (bytes.length === 0) return 'empty'
     return `${bytes.length}B`

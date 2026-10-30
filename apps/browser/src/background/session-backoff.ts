@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import type { Optional } from '@perawallet/wallet-core-shared'
+
 type BackoffRecord = { failures: number; nextAttemptAt: number }
 
 export type SessionBackoff = {
@@ -34,7 +36,7 @@ export const createSessionBackoff = ({
 }): SessionBackoff => {
     const read = async (): Promise<BackoffRecord> => {
         const stored = await chrome.storage.session.get(key)
-        const value = stored[key] as Partial<BackoffRecord> | undefined
+        const value = stored[key] as Optional<Partial<BackoffRecord>>
         return {
             failures: typeof value?.failures === 'number' ? value.failures : 0,
             nextAttemptAt:

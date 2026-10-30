@@ -73,7 +73,7 @@ export const PWBottomSheet = ({
     // but intentionally unused here: pan gestures don't exist on web, the modal
     // adapter always creates its own container, and the browser handles the
     // soft keyboard itself.
-}: PWBottomSheetProps): React.JSX.Element | null => {
+}: PWBottomSheetProps): Nullable<React.JSX.Element> => {
     const { height } = useWindowDimensions()
     const maxHeight = Math.round(height * SHEET_MAX_RATIO)
     const styles = useStyles({ maxHeight, isFixed: size !== 'auto' })

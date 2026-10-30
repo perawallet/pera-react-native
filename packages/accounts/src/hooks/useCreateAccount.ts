@@ -12,7 +12,10 @@
 
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useKMS } from '@perawallet/wallet-core-kms'
-import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
+import {
+    generateOrderedUniqueId,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
 import { useAccountsStore, withDefaultChains } from '../store'
 import type { WalletAccount } from '../models'
 import { NoHdSeedError } from '../errors'
@@ -87,7 +90,7 @@ export const useCreateAccount = (scope: ChainScope) => {
         keyIndex: number
     }): Promise<WalletAccount> => {
         const rootWalletId = walletId ?? generateOrderedUniqueId()
-        let seedKeyId: string | undefined = getKey(rootWalletId)?.id
+        let seedKeyId: Optional<string> = getKey(rootWalletId)?.id
         let createdNewSeed = false
 
         try {

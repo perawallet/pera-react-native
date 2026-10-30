@@ -17,6 +17,7 @@ import type {
     UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 import type { DappRequestValidation } from '@perawallet/wallet-core-connections'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { areEvmAddressesEqual } from '../accounts/address-codec'
 import { toEvmError } from '../blockchain/errors'
 import { eip155ChainIdOf } from '../blockchain/utils/caip19'
@@ -42,7 +43,7 @@ export type EthereumSendTransactionRequest = {
 export type EthereumSendTransactionSession = {
     authorizedAccounts: readonly string[]
     /** The active network's EIP-155 id, or undefined when it has none. */
-    eip155ChainId: number | undefined
+    eip155ChainId: Optional<number>
 }
 
 type Validation = DappRequestValidation<EthereumSendTransactionRequest>
@@ -70,7 +71,7 @@ const STORAGE_KEY_BYTES = 32
 const isRecord = (value: unknown): value is Record<string, unknown> =>
     typeof value === 'object' && value !== null && !Array.isArray(value)
 
-const readQuantity = (value: unknown): bigint | undefined =>
+const readQuantity = (value: unknown): Optional<bigint> =>
     typeof value === 'string' && QUANTITY.test(value)
         ? BigInt(value)
         : undefined
@@ -165,7 +166,7 @@ export const validateEthereumSendTransaction = (
     }
     const data: Hex = calldata[0] ?? '0x'
 
-    let gas: bigint | undefined
+    let gas: Optional<bigint>
     if (params.gas !== undefined) {
         gas = readQuantity(params.gas)
         if (gas === undefined || gas === 0n) {

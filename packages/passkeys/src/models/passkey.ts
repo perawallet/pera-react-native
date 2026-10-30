@@ -11,7 +11,11 @@
  */
 
 import type { Key } from '@algorandfoundation/keystore-core'
-import { toUrlSafeBase64 } from '@perawallet/wallet-core-shared'
+import {
+    toUrlSafeBase64,
+    type Optional,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import type { NativeStoredCredential } from '@perawallet/wallet-extension-passkey-autofill'
 
 /**
@@ -84,7 +88,7 @@ export const PASSKEY_MIGRATION_NEEDED = 'needs-migration'
  * record `repairs/0002-rematerialize-passkey-credentials` rewrites.
  */
 export const isMigrationFlagged = (
-    metadata: Record<string, unknown> | undefined,
+    metadata: Optional<Record<string, unknown>>,
 ): boolean => metadata?.migration === PASSKEY_MIGRATION_NEEDED
 
 /**
@@ -101,19 +105,13 @@ export const PASSKEY_KEY_TYPES = new Set<string>([
 export const isPasskeyKey = (key: Key): boolean =>
     PASSKEY_KEY_TYPES.has(key.type)
 
-export const isPasskeyAlgorithm = (algorithm: string | undefined): boolean =>
+export const isPasskeyAlgorithm = (algorithm: Optional<string>): boolean =>
     algorithm === 'P256'
 
-const readString = (
-    m: Record<string, unknown>,
-    k: string,
-): string | undefined =>
+const readString = (m: Record<string, unknown>, k: string): Optional<string> =>
     typeof m[k] === 'string' ? (m[k] as string) : undefined
 
-const readNumber = (
-    m: Record<string, unknown>,
-    k: string,
-): number | undefined =>
+const readNumber = (m: Record<string, unknown>, k: string): Optional<number> =>
     typeof m[k] === 'number' ? (m[k] as number) : undefined
 
 /**
@@ -140,7 +138,7 @@ const resolveAccountName = (candidates: {
  * Projects a keystore P256-derived key into a Passkey row. Returns `null` when
  * the key is missing required passkey metadata (origin + userHandle).
  */
-export const keyToPasskey = (key: Key): Passkey | null => {
+export const keyToPasskey = (key: Key): Nullable<Passkey> => {
     if (!isPasskeyKey(key)) return null
 
     const meta = (key.metadata ?? {}) as Record<string, unknown>
@@ -174,7 +172,7 @@ export const keyToPasskey = (key: Key): Passkey | null => {
  * of which {@link keyToPasskey} reads — so the projection is shared and only
  * the attribution differs.
  */
-export const flatRecordToPasskey = (record: unknown): Passkey | null => {
+export const flatRecordToPasskey = (record: unknown): Nullable<Passkey> => {
     if (typeof record !== 'object' || record === null) return null
 
     const projected = keyToPasskey(record as Key)
@@ -190,7 +188,7 @@ export const flatRecordToPasskey = (record: unknown): Passkey | null => {
  */
 export const credentialToPasskey = (
     credential: NativeStoredCredential,
-): Passkey | null => {
+): Nullable<Passkey> => {
     const origin =
         credential.rpId ??
         credential.relyingPartyIdentifier ??
@@ -225,8 +223,8 @@ export const credentialToPasskey = (
  *  iOS writes fractional seconds (`timeIntervalSince1970`); truncate to whole
  *  ms, since the backup payload schema rejects a non-integer `createdAt`. */
 export const normalizeTimestamp = (
-    value: number | undefined,
-): number | undefined => {
+    value: Optional<number>,
+): Optional<number> => {
     if (typeof value !== 'number') return undefined
     return Math.trunc(value < 10_000_000_000 ? value * 1000 : value)
 }

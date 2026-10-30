@@ -11,6 +11,7 @@
  */
 
 import type { DraftProposeContext } from '@perawallet/wallet-core-signing'
+import type { Optional } from '@perawallet/wallet-core-shared'
 
 const contexts = new Map<string, DraftProposeContext>()
 
@@ -18,10 +19,10 @@ export const draftProposeContexts = {
     set: (draftLocalId: string, context: DraftProposeContext): void => {
         contexts.set(draftLocalId, context)
     },
-    get: (draftLocalId: string): DraftProposeContext | undefined =>
+    get: (draftLocalId: string): Optional<DraftProposeContext> =>
         contexts.get(draftLocalId),
     /** Remove and return; called only after the bootstrap propose succeeded. */
-    take: (draftLocalId: string): DraftProposeContext | undefined => {
+    take: (draftLocalId: string): Optional<DraftProposeContext> => {
         const context = contexts.get(draftLocalId)
         contexts.delete(draftLocalId)
         return context

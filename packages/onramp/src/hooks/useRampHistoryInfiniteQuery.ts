@@ -60,7 +60,7 @@ export type UseRampHistoryInfiniteQueryResult = {
     isLoading: boolean
     isFetchingNextPage: boolean
     isError: boolean
-    error: Error | null
+    error: Nullable<Error>
     hasNextPage: boolean
     fetchNextPage: () => void
     refetch: () => void

@@ -16,6 +16,7 @@ import type {
     ChainId,
     SpendApproval,
 } from '@perawallet/wallet-core-chain-contract'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import type { EvmStandardCall } from './standard-call-types'
 
 /**
@@ -24,7 +25,7 @@ import type { EvmStandardCall } from './standard-call-types'
  * same however it arrives. From 2^160 is unlimited: Permit2 caps amounts at
  * uint160, and no token supply comes near it.
  */
-export const toAllowanceAmount = (baseUnits: bigint): Decimal | undefined =>
+export const toAllowanceAmount = (baseUnits: bigint): Optional<Decimal> =>
     baseUnits < maxUint160 ? new Decimal(baseUnits.toString()) : undefined
 
 /**
@@ -35,7 +36,7 @@ export const toAllowanceAmount = (baseUnits: bigint): Decimal | undefined =>
 export const spendApprovalOfCall = (
     call: EvmStandardCall,
     chainId: ChainId,
-): SpendApproval | undefined => {
+): Optional<SpendApproval> => {
     if (
         (call.kind !== 'approve' && call.kind !== 'increase-allowance') ||
         call.value.isZero()

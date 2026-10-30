@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import type { BaseStoreState } from '@perawallet/wallet-core-shared'
+import type { BaseStoreState, Nullable } from '@perawallet/wallet-core-shared'
 
 export type IntegrityPlatform = 'ios' | 'android' | 'web'
 
@@ -53,18 +53,18 @@ export type AppIntegrityStatus =
     | 'error'
 
 export type AppIntegrityStore = BaseStoreState & {
-    integrityToken: string | null
-    expiresAt: string | null
-    keyId: string | null
-    deviceInstallationId: string | null
+    integrityToken: Nullable<string>
+    expiresAt: Nullable<string>
+    keyId: Nullable<string>
+    deviceInstallationId: Nullable<string>
     status: AppIntegrityStatus
-    lastError: string | null
-    lastAttemptAt: string | null
-    lastSuccessAt: string | null
+    lastError: Nullable<string>
+    lastAttemptAt: Nullable<string>
+    lastSuccessAt: Nullable<string>
     setRegistration: (input: {
         integrityToken: string
         expiresAt: string
-        keyId: string | null
+        keyId: Nullable<string>
         deviceInstallationId: string
     }) => void
     setStatus: (status: AppIntegrityStatus) => void

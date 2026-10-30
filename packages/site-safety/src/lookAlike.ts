@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { toConfusableSkeleton } from './confusables'
 import { isWithinDomain, publicSuffixLabelCount } from './host'
 import type { ImpersonationTarget, SiteHost } from './models'
@@ -60,7 +61,7 @@ export const findImpersonatedTarget = (
     host: SiteHost,
     targets: readonly ImpersonationTarget[],
     allowDomains: readonly string[],
-): ImpersonationTarget | undefined => {
+): Optional<ImpersonationTarget> => {
     const exempt = [...targets.flatMap(ownDomainsOf), ...allowDomains]
     if (exempt.some(domain => isWithinDomain(host.ascii, domain))) {
         return undefined

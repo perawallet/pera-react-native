@@ -10,7 +10,12 @@
  limitations under the License
  */
 
-import { logger, toError } from '@perawallet/wallet-core-shared'
+import {
+    logger,
+    toError,
+    type Nullable,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
 import type {
     ConnectionOrigin,
     ConnectionOriginSource,
@@ -59,7 +64,7 @@ type ReconstructedLegacySession = {
 // `null`, never a throw, for anything unrecoverable: one malformed row must not abort the run.
 const reconstructRecord = (
     record: unknown,
-): ReconstructedLegacySession | null => {
+): Nullable<ReconstructedLegacySession> => {
     if (typeof record !== 'object' || record === null) return null
     const top = record as Record<string, unknown>
 
@@ -147,7 +152,7 @@ type LegacyState = {
 
 // `null` means "shape not understood", which the caller must treat like
 // unparseable JSON: keep the blob. An empty records array is understood.
-const readLegacyState = (parsed: unknown): LegacyState | null => {
+const readLegacyState = (parsed: unknown): Nullable<LegacyState> => {
     if (typeof parsed !== 'object' || parsed === null) return null
     const state = (parsed as { state?: unknown }).state
     if (typeof state !== 'object' || state === null) return null
@@ -166,7 +171,7 @@ const ORIGIN_SOURCES: readonly ConnectionOriginSource[] = [
 
 // Missing or malformed is `undefined`, not a reason to skip the record: the
 // connection just loses the "Return to the dApp" hand-off.
-const reconstructOrigin = (value: unknown): ConnectionOrigin | undefined => {
+const reconstructOrigin = (value: unknown): Optional<ConnectionOrigin> => {
     if (typeof value !== 'object' || value === null) return undefined
     const raw = value as Record<string, unknown>
     const source = raw.source
@@ -204,7 +209,7 @@ const readImportedIds = (storage: ConnectionPersistence): Set<string> => {
 const originFor = (
     dappOrigins: unknown,
     clientId: string,
-): ConnectionOrigin | undefined => {
+): Optional<ConnectionOrigin> => {
     if (typeof dappOrigins !== 'object' || dappOrigins === null) {
         return undefined
     }
@@ -253,7 +258,7 @@ export const importLegacyConnections = async (options: {
     // A record that throws is unattempted, not skipped; caught so one
     // permanently failing record cannot strand every record after it.
     let unattempted = 0
-    let firstFailure: Error | null = null
+    let firstFailure: Nullable<Error> = null
     const committedClientIds: string[] = []
     const presentIds = new Set((await store.list()).map(({ id }) => id))
     const importedIds = readImportedIds(storage)

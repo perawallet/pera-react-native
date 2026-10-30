@@ -12,11 +12,12 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { openValidatedBrowserUrl } from '@modules/webview'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import type { FullScreenMediaItem } from './FullScreenMediaViewer'
 
 export type UseFullScreenMediaViewerResult = {
     activeIndex: number
-    activeItem: FullScreenMediaItem | undefined
+    activeItem: Optional<FullScreenMediaItem>
     hasPrevious: boolean
     hasNext: boolean
     handlePrevious: () => void

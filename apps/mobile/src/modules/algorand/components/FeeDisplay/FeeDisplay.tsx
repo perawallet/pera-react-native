@@ -65,6 +65,7 @@ export const FeeDisplay = ({ transaction, label }: FeeDisplayProps) => {
                 </PWText>
                 <PWView style={styles.feeValueContainer}>
                     <AssetAmount
+                        chainId={scope.chainId}
                         asset={nativeAsset}
                         value={fee.mul(-1)}
                         showSymbol

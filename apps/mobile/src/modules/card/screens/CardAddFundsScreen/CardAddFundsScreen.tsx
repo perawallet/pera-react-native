@@ -35,6 +35,7 @@ export const CardAddFundsScreen = () => {
         isDepositDisabled,
         isDepositing,
         handleDeposit,
+        chainId,
     } = useCardAddFundsScreen()
 
     return (
@@ -79,6 +80,7 @@ export const CardAddFundsScreen = () => {
                             <>
                                 {sourceAsset && (
                                     <AssetIcon
+                                        chainId={chainId}
                                         asset={sourceAsset}
                                         size='sm'
                                     />

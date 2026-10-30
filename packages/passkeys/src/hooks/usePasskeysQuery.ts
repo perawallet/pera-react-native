@@ -13,7 +13,7 @@
 import { useMemo, useSyncExternalStore } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import type { Key } from '@algorandfoundation/keystore-core'
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import { getKeystoreStore } from '@perawallet/wallet-extension-provider'
 import type { NativeStoredCredential } from '@perawallet/wallet-extension-passkey-autofill'
 import {
@@ -50,7 +50,7 @@ export type UsePasskeysQueryResult = {
     passkeys: Passkey[]
     isLoading: boolean
     isError: boolean
-    error: Error | null
+    error: Nullable<Error>
     refetch: () => void
 }
 
@@ -99,7 +99,7 @@ export const usePasskeysQuery = (): UsePasskeysQueryResult => {
         passkeys,
         isLoading: nativeQuery.isLoading,
         isError: nativeQuery.isError,
-        error: nativeQuery.error as Error | null,
+        error: nativeQuery.error as Nullable<Error>,
         refetch: () => void nativeQuery.refetch(),
     }
 }

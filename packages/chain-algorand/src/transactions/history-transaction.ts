@@ -11,7 +11,11 @@
  */
 
 import { Decimal } from 'decimal.js'
-import { toBigInt, type Nullable } from '@perawallet/wallet-core-shared'
+import {
+    toBigInt,
+    type Nullable,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
 import type { TransactionHistoryItem } from '@perawallet/wallet-core-transactions'
 import type { TransactionNative } from '@perawallet/wallet-core-chain-contract'
 import { algorandHistoryDataOf } from './history-data'
@@ -23,7 +27,7 @@ const toAmountBigInt = (amount: TransactionHistoryItem['amount']): bigint =>
 
 const toCloseAmountBigInt = (
     closeAmount: Nullable<Decimal>,
-): bigint | undefined =>
+): Optional<bigint> =>
     closeAmount === null ? undefined : toBigInt(closeAmount)
 
 /**
@@ -38,7 +42,7 @@ const toCloseAmountBigInt = (
  */
 export const mapHistoryItemToDisplayableTransaction = (
     item: TransactionHistoryItem,
-): PeraDisplayableTransaction | null => {
+): Nullable<PeraDisplayableTransaction> => {
     const data = algorandHistoryDataOf(item)
     const base: PeraDisplayableTransaction = {
         id: item.id,

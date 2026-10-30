@@ -12,7 +12,7 @@
 
 import { useEffect } from 'react'
 import { Linking } from 'react-native'
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import { walletConnectUriOf } from '@perawallet/wallet-core-deeplinks'
 import { isWalletConnectFocusHint } from '@perawallet/wallet-core-walletconnect'
 import { useDeepLink } from './useDeepLink'
@@ -23,7 +23,7 @@ import { useDeeplinkErrorHandler } from '../handlers/useDeeplinkErrorHandler'
 // keeps returning the launch URL all session, so without `hasHandledInitialUrl`
 // every newly mounted layout re-handles it. `lastHandledUrl` collapses the warm-start fan-out.
 let hasHandledInitialUrl = false
-let lastHandledUrl: string | null = null
+let lastHandledUrl: Nullable<string> = null
 let lastHandledAt = 0
 const DUPLICATE_WINDOW_MS = 1500
 

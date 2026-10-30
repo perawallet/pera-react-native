@@ -27,6 +27,7 @@ import { addressCodecs } from '@perawallet/wallet-core-chain-contract'
 import { getChainDescriptor } from '@perawallet/wallet-core-chain-shared'
 import { getArc59Config } from '@perawallet/wallet-core-config'
 import { sendFlowChainAdapters } from '@perawallet/wallet-core-transactions'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -59,9 +60,8 @@ export const useSendDestinationRouter = () => {
     const accounts = useAllAccounts()
     const { accountBalances, isPending: isBalancesPending } =
         useAccountBalancesQuery(accounts, scope)
-    const [pendingExternalAddress, setPendingExternalAddress] = useState<
-        string | null
-    >(null)
+    const [pendingExternalAddress, setPendingExternalAddress] =
+        useState<Nullable<string>>(null)
 
     const assetIDs = useMemo(
         () => (selectedAssetId ? [selectedAssetId] : []),

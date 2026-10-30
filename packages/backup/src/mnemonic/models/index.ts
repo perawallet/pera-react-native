@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import type { BaseStoreState } from '@perawallet/wallet-core-shared'
+import type { BaseStoreState, Maybe } from '@perawallet/wallet-core-shared'
 
 export type MnemonicBackupState = BaseStoreState & {
     backedUpKeyIds: Record<string, boolean>
@@ -18,7 +18,7 @@ export type MnemonicBackupState = BaseStoreState & {
 
 export type MnemonicBackupActions = {
     markBackedUp: (keyId: string) => void
-    isBackedUp: (keyId: string | null | undefined) => boolean
+    isBackedUp: (keyId: Maybe<string>) => boolean
 }
 
 export type MnemonicBackupStore = MnemonicBackupState & MnemonicBackupActions

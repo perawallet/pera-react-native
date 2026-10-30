@@ -35,6 +35,7 @@ import {
     uint64IdToNumber,
     type Nullable,
     baseUnitsToDisplayUnits,
+    type Optional,
 } from '@perawallet/wallet-core-shared'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useToast } from '@hooks/useToast'
@@ -505,7 +506,7 @@ export const useSwapForm = (
                 payAmount: payAmount.toFixed(),
             })
         }
-        let result: SwapConfirmationResult | undefined
+        let result: Optional<SwapConfirmationResult>
         try {
             result = await requestBottomSheet<SwapConfirmationResult>({
                 contents: (

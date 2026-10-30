@@ -83,6 +83,7 @@ export const UndoRekeyConfirmScreen = () => {
                             {t('rekey.undo.confirm.fee_label')}
                         </PWText>
                         <AssetAmount
+                            chainId={scope.chainId}
                             asset={nativeAsset}
                             value={feeAlgos}
                             variant='bodyLarge'

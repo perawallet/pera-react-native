@@ -18,7 +18,7 @@ import {
 import { StatusCodes } from '@ledgerhq/errors'
 import type { HardwareWalletAppVersion } from '@perawallet/wallet-extension-hardware-wallet'
 import type { LedgerDeviceModel } from './types'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import type { Nullable, Maybe } from '@perawallet/wallet-core-shared'
 
 /** @ledgerhq/devices model IDs -> our user-facing names. */
 const DEVICE_MODEL_MAP: Partial<Record<DeviceModelId, LedgerDeviceModel>> = {
@@ -62,7 +62,7 @@ const USB_PRODUCT_ID_MODELS: ReadonlyMap<number, LedgerDeviceModel> = new Map([
 export const UNKNOWN_USB_LEDGER_MODEL = 'ledger'
 
 export const resolveUsbDeviceModel = (
-    productId: Nullable<number> | undefined,
+    productId: Maybe<number>,
 ): LedgerDeviceModel | typeof UNKNOWN_USB_LEDGER_MODEL =>
     (typeof productId === 'number'
         ? USB_PRODUCT_ID_MODELS.get(productId)

@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { Nullable, Maybe } from '@perawallet/wallet-core-shared'
 import {
     ACCOUNT_RECORD_FORMAT_VERSION,
     BackupAccountType,
@@ -74,7 +75,7 @@ export const accountRecordIdentity = (record: AccountRecordPayload): string => {
  *  for every other account. */
 export const accountRecordSeedReference = (
     record: AccountRecordPayload,
-): string | null => {
+): Nullable<string> => {
     for (const { payload } of parsedEntries(record)) {
         const position = hdPositionOf(payload)
         if (position) return position.seedReference
@@ -91,7 +92,7 @@ const FORMAT_KINDS: ReadonlySet<string> = new Set(
     Object.values(BackupAccountType),
 )
 
-const asItemKind = (type: string): BackupItemKind | null =>
+const asItemKind = (type: string): Nullable<BackupItemKind> =>
     FORMAT_KINDS.has(type) || isChainBackupKind(type)
         ? (type as BackupItemKind)
         : null
@@ -101,7 +102,7 @@ const asItemKind = (type: string): BackupItemKind | null =>
  *  first entry's. */
 export const accountRecordType = (
     record: AccountRecordPayload,
-): BackupItemKind | null => {
+): Nullable<BackupItemKind> => {
     const owned = record.chains.find(entry => isChainBackupKind(entry.type))
     return asItemKind((owned ?? record.chains[0])?.type ?? '')
 }
@@ -120,7 +121,7 @@ export const orderAccountRecordChains = <T extends { chain: string }>(
  * never a side effect of a write.
  */
 export const mergeAccountRecord = (
-    remote: Record<string, unknown> | null | undefined,
+    remote: Maybe<Record<string, unknown>>,
     local: AccountRecordPayload,
 ): AccountRecordPayload => {
     if (!remote) return local
@@ -152,8 +153,8 @@ export const mergeAccountRecord = (
 /** The seed of cached record content; null when it is not a readable HD
  *  record. */
 export const cachedRecordSeedReference = (
-    record: Record<string, unknown> | null | undefined,
-): string | null => {
+    record: Maybe<Record<string, unknown>>,
+): Nullable<string> => {
     const parsed = accountRecordPayloadSchema.safeParse(record)
     return parsed.success ? accountRecordSeedReference(parsed.data) : null
 }
@@ -174,7 +175,7 @@ export type CachedRecordOverview = {
 }
 
 export const cachedRecordOverview = (
-    record: Record<string, unknown> | null | undefined,
+    record: Maybe<Record<string, unknown>>,
 ): CachedRecordOverview => {
     const parsed = accountRecordPayloadSchema.safeParse(record)
     if (!parsed.success) return { needsUpdate: false, chains: [] }
@@ -190,7 +191,7 @@ export const cachedRecordOverview = (
 /** True for content cached from a record only a newer client can read; this
  *  build never writes over such a record. */
 export const isNewerAccountRecord = (
-    record: Record<string, unknown> | null | undefined,
+    record: Maybe<Record<string, unknown>>,
 ): boolean => {
     const parsed = accountRecordPayloadSchema.safeParse(record)
     return parsed.success && !isAccountRecordReadable(parsed.data)

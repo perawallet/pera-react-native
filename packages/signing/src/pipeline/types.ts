@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type {
     ChainScope,
@@ -135,7 +135,7 @@ export const INTERACTIVE_SOURCES = [
 ] as const satisfies readonly SourceType[]
 
 export const isInteractiveSource = (
-    sourceType: SourceType | undefined,
+    sourceType: Optional<SourceType>,
 ): boolean =>
     sourceType !== undefined &&
     (INTERACTIVE_SOURCES as readonly SourceType[]).includes(sourceType)
@@ -154,7 +154,7 @@ export const EXTERNAL_CALLBACK_SOURCES = [
 ] as const satisfies readonly SourceType[]
 
 export const isExternalCallbackSource = (
-    sourceType: SourceType | undefined,
+    sourceType: Optional<SourceType>,
 ): boolean =>
     sourceType !== undefined &&
     (EXTERNAL_CALLBACK_SOURCES as readonly SourceType[]).includes(sourceType)

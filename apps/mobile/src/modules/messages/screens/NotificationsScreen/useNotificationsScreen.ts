@@ -20,7 +20,10 @@ import {
     useNotificationsListQuery,
     useMarkNotificationsAsReadMutation,
 } from '@perawallet/wallet-core-messages'
-import { isIntegrityRequiredError } from '@perawallet/wallet-core-shared'
+import {
+    isIntegrityRequiredError,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import type { PWFlatListRef } from '@components/core'
 import { useNotificationPress } from '@modules/messages/hooks'
 import { useNetworkStatus } from '@modules/network'
@@ -37,7 +40,7 @@ export type UseNotificationsScreenResult = {
     loadMoreItems: () => Promise<void>
     refetch: () => void
     handleNotificationPress: (notification: PeraNotification) => void
-    listRef: RefObject<PWFlatListRef | null>
+    listRef: RefObject<Nullable<PWFlatListRef>>
     isUnavailableOnNetwork: boolean
     isDeviceUnregistered: boolean
 }

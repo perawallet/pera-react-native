@@ -67,6 +67,9 @@ describe('dapp protocol constants', () => {
         expect(dappPageTimeoutMs('eip1193', 'wallet_switchEthereumChain')).toBe(
             DAPP_QUEUED_PAGE_TIMEOUT_MS,
         )
+        expect(dappPageTimeoutMs('eip1193', 'eth_signTypedData')).toBe(
+            DAPP_QUEUED_PAGE_TIMEOUT_MS,
+        )
         expect(dappPageTimeoutMs('eip1193', 'eth_chainId')).toBe(
             DAPP_PAGE_TIMEOUT_MS,
         )

@@ -92,6 +92,7 @@ export const RekeyedAccountInfoContent = ({
                 </PWView>
                 <PWView style={styles.balanceContainer}>
                     <AssetAmount
+                        chainId={scope.chainId}
                         asset={nativeAsset}
                         value={rekeyedAccountAlgoValue}
                         showSymbol
@@ -157,6 +158,7 @@ export const RekeyedAccountInfoContent = ({
                         </PWView>
                         <PWView style={styles.balanceContainer}>
                             <AssetAmount
+                                chainId={scope.chainId}
                                 asset={nativeAsset}
                                 value={authAccountAlgoValue}
                                 showSymbol

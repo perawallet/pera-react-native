@@ -11,13 +11,14 @@
  */
 
 import { useSettingsStore } from '@perawallet/wallet-core-settings'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 export type StashedMigrationResult = {
     walletConnectHistoryBlobStashed: boolean
 }
 
 export const migrateStashed = (args: {
-    walletConnectHistoryBlob?: string | null
+    walletConnectHistoryBlob?: Nullable<string>
 }): StashedMigrationResult => {
     const settings = useSettingsStore.getState()
     const result: StashedMigrationResult = {

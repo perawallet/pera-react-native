@@ -12,6 +12,7 @@
 
 import type { ReactNode } from 'react'
 import type { LayoutChangeEvent, TextLayoutEvent } from 'react-native'
+import type { Optional } from '@perawallet/wallet-core-shared'
 
 // Shared by useOverflowProbe.ts and its .stub.ts twin, so the swap
 // metro.config.js performs is checkable against one declaration.
@@ -20,7 +21,7 @@ export type UseOverflowProbeParams = {
     children: ReactNode
     testID?: string
     /** Already resolved by PWText (`truncate` collapses to 1). */
-    numberOfLines: number | undefined
+    numberOfLines: Optional<number>
 }
 
 /** Layout handlers PWText spreads onto the underlying Text. */

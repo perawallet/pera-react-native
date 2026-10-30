@@ -15,6 +15,7 @@ import {
     getKeystoreStore,
     getProvider,
 } from '@perawallet/wallet-extension-provider'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { expiresAtOf } from '../utils'
 import { createAlgo25Key, type Algo25KeyParams } from './algo25Key'
 import { createKmsCore } from './createKmsCore'
@@ -27,7 +28,7 @@ const core = createKmsCore({
 })
 
 /** `null` for a missing key or a seed past its expiry; unlike `useKMS().getKey`, never removes it. */
-const getKey = (keyId: string): Key | null => {
+const getKey = (keyId: string): Nullable<Key> => {
     const keys = getKeystoreStore().state.keys
     const key = keys.find(k => k.id === keyId)
     if (!key) return null

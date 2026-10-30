@@ -66,7 +66,7 @@ export const isResumableRehydratedRequest = (
     return (
         !answersCaller(r.transport as SignRequestTransport) &&
         r.sourceType !== 'deeplink' &&
-        isInteractiveSource(r.sourceType as SourceType | undefined)
+        isInteractiveSource(r.sourceType as Optional<SourceType>)
     )
 }
 

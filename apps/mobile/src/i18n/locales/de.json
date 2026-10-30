@@ -100,6 +100,8 @@
     "add_asset": {
         "title": "Asset hinzufügen",
         "search_placeholder": "Nach Name oder Asset-ID suchen",
+        "search_placeholder_evm": "Nach Name, Symbol oder Vertragsadresse suchen",
+        "search_placeholder_all": "Nach Name, Symbol, Asset-ID oder Adresse suchen",
         "no_results": "Keine Assets gefunden",
         "partial_results": "Einige Netzwerke konnten nicht durchsucht werden, daher fehlen möglicherweise Ergebnisse.",
         "not_listed": {
@@ -126,7 +128,28 @@
         },
         "collectible_title": "Für NFT anmelden",
         "collectible_note": "Du musst dich für die NFT-ASA-ID anmelden, um sie in dein Wallet übertragen zu können. Füge die ASA-ID in die Suchleiste ein.",
-        "collectible_search_placeholder": "Nach Asset-ID oder NFT-Name suchen"
+        "collectible_search_placeholder": "Nach Asset-ID oder NFT-Name suchen",
+        "token": {
+            "added_title": "Token hinzugefügt",
+            "added_body": "{{assetName}} zu {{chain}} hinzugefügt",
+            "add_failed_title": "Token konnte nicht hinzugefügt werden",
+            "unverified_title": "Nicht verifizierter Token",
+            "unverified_body": "Pera hat {{assetName}} nicht verifiziert. Jeder kann einen Token mit beliebigem Namen oder Logo erstellen, also prüfe vor dem Hinzufügen, ob die Vertragsadresse {{address}} die erwartete ist.",
+            "unverified_confirm": "Trotzdem hinzufügen",
+            "suspicious_title": "Verdächtiger Token",
+            "suspicious_body": "Pera hat {{assetName}} ({{address}}) als verdächtig markiert. Er könnte einen anderen Token nachahmen oder Teil eines Betrugs sein. Füge ihn nur hinzu, wenn du seiner Herkunft vertraust.",
+            "remove_title": "{{assetName}} entfernen?",
+            "remove_body": "Er wird in diesem Konto auf {{chain}} nicht mehr angezeigt. Es wird nichts an die Chain gesendet, und du kannst ihn jederzeit wieder hinzufügen.",
+            "remove_confirm": "Entfernen",
+            "removed_title": "Token entfernt",
+            "removed_body": "{{assetName}} von {{chain}} entfernt",
+            "remove_failed_title": "Token konnte nicht entfernt werden"
+        },
+        "info": {
+            "adding_title": "Assets hinzufügen",
+            "adding_opt_in": "Auf Algorand ist das Hinzufügen eines Assets eine Anmeldung: eine Transaktion mit einer kleinen Gebühr, die außerdem ein Mindestguthaben bindet, bis du dich wieder abmeldest.",
+            "adding_evm": "In EVM-Netzwerken wie Ethereum ist das Hinzufügen eines Tokens kostenlos und braucht keine Transaktion. Es ändert nur, welche Tokens Pera für dieses Konto anzeigt."
+        }
     },
     "asa_verification_info": {
         "title": "ASA-Verifizierung",
@@ -278,8 +301,10 @@
             "description": "Beschreibung",
             "social_media": "Soziale Medien",
             "chart_empty_body": "Sobald ein Guthabenverlauf vorliegt, wird hier ein Diagramm angezeigt",
-            "total_supply_info_title": "Gesamtangebot",
-            "total_supply_info_body": "Das Gesamtangebot eines Assets wird bei der Erstellung festgelegt und entspricht der Gesamtzahl der erstellten Einheiten des Assets."
+            "total_supply_info_body": "Das Gesamtangebot eines Assets wird bei der Erstellung festgelegt und entspricht der Gesamtzahl der erstellten Einheiten des Assets.",
+            "circulating_supply": "Umlaufendes Angebot",
+            "circulating_supply_info_body": "Das umlaufende Angebot ist die Anzahl der Coins, die derzeit im Umlauf sind. Die native Währung eines Netzwerks hat kein festes Gesamtangebot, daher ändert sich diese Zahl, wenn Coins ausgegeben oder verbrannt werden.",
+            "token_total_supply_info_body": "Das Gesamtangebot ist die Anzahl der Token, die der Vertrag ausgegeben hat, abzüglich der verbrannten. Es ändert sich, wenn der Emittent Token prägt oder verbrennt."
         },
         "action_buttons": {
             "swap": "Tauschen",
@@ -460,6 +485,7 @@
         "hide_wallet_structure": "Wallet-Struktur ausblenden",
         "scan_new_addresses": "Neue Adressen scannen",
         "scan_new_accounts": "Neue {{network}}-Konten scannen",
+        "scan_new_wallet_accounts": "Nach neuen Konten scannen",
         "universal_wallet_subtitle": "Eine Wiederherstellungsphrase, alle Netzwerke",
         "viewing": "Aktuell",
         "wallet_label": "Wallet Nr. {{number}}",
@@ -1088,7 +1114,8 @@
             "title": "Bei der Verarbeitung dieses Kontos ist ein Fehler aufgetreten",
             "body": "Es scheint ein Fehler aufgetreten zu sein. Bitte versuche es erneut und wende dich an den Support, falls das Problem weiterhin besteht.",
             "generic": "Bei der Verarbeitung dieses Kontos ist ein Fehler aufgetreten.",
-            "no_hd_wallet": "Das Universal Wallet für dieses Konto konnte nicht gefunden werden."
+            "no_hd_wallet": "Das Universal Wallet für dieses Konto konnte nicht gefunden werden.",
+            "token_unreadable": "Pera konnte die Details dieses Tokens nicht lesen. Prüfe die Adresse und versuche es erneut."
         },
         "blockchain": {
             "generic": "Beim Zugriff auf die Blockchain ist ein Fehler aufgetreten."
@@ -2226,7 +2253,15 @@
             "no_new_addresses_title": "Keine neuen Adressen gefunden",
             "no_new_addresses_body": "Wir konnten keine weiteren, mit diesem Wallet verbundenen Adressen finden.",
             "rekey_scan_failed_title": "Rekeyed Konten konnten nicht geprüft werden",
-            "rekey_scan_failed_body": "Dein Konto wurde importiert. Wir konnten nicht prüfen, ob andere Konten darauf rekeyed sind — du kannst den Scan in den Einstellungen wiederholen."
+            "rekey_scan_failed_body": "Dein Konto wurde importiert. Wir konnten nicht prüfen, ob andere Konten darauf rekeyed sind — du kannst den Scan in den Einstellungen wiederholen.",
+            "rekey_rescan_failed_body": "Wir konnten nicht prüfen, ob andere Konten auf dieses Wallet rekeyed sind. Scanne erneut, um es noch einmal zu versuchen.",
+            "rescan_found_title": "Scan abgeschlossen",
+            "rescan_found_body_one": "1 Konto wurde hinzugefügt oder aktualisiert.",
+            "rescan_found_body_other": "{{count}} Konten wurden hinzugefügt oder aktualisiert.",
+            "rescan_partial_title": "Scan unvollständig",
+            "rescan_partial_body": "Einige Prüfungen konnten nicht abgeschlossen werden. Bisher gefundene Konten wurden hinzugefügt. Scanne erneut, um den Rest zu finden.",
+            "rescan_failed_title": "Konten konnten nicht gescannt werden",
+            "rescan_failed_body": "Prüfe deine Verbindung und versuche es erneut."
         },
         "create_account": {
             "processing": "Dein Wallet wird eingerichtet...",

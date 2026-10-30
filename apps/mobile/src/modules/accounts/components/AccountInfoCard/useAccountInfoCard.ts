@@ -29,7 +29,7 @@ import {
     chainDisplayNameOf,
     useSwitchedOffChainIds,
 } from '@perawallet/wallet-core-chain-shared'
-import type { Optional } from '@perawallet/wallet-core-shared'
+import type { Optional, Nullable } from '@perawallet/wallet-core-shared'
 import { useCapableChainId } from '@hooks/useCapableChainIds'
 import { useIsMultichain } from '../../hooks/useIsMultichain'
 import { useLanguage } from '@hooks/useLanguage'
@@ -143,10 +143,12 @@ export const useAccountInfoCard = ({
 
     const structureIcon: IconName = isLedger ? 'ledger' : 'wallet'
 
-    const structureGroup = useMemo<{
-        accounts: WalletAccount[]
-        firstAccount: WalletAccount
-    } | null>(() => {
+    const structureGroup = useMemo<
+        Nullable<{
+            accounts: WalletAccount[]
+            firstAccount: WalletAccount
+        }>
+    >(() => {
         if (isHDWallet && hdSeedGroupIndex >= 0) {
             return hdSeedGroups[hdSeedGroupIndex]
         }
@@ -210,26 +212,26 @@ export const useAccountInfoCard = ({
         [structureRows],
     )
 
-    // Discovery walks one chain, so the label names the chain it walks. A
+    // Only a Ledger scan walks a single chain, so its label names that chain. A
     // Ledger account on no Ledger chain falls back the way the Ledger flow does.
     const scanChainId: ChainId = hardwareDetails
         ? (ledgerChainOf(account) ?? firstLedgerChainId)
         : LEGACY_CHAIN_ID
-    const scanLabel = isMultichain
-        ? t('account_info.scan_new_accounts', {
-              network: chainDisplayNameOf(scanChainId) ?? scanChainId,
-          })
-        : t('account_info.scan_new_addresses')
+    let scanLabel = t('account_info.scan_new_addresses')
+    if (isHDWallet) {
+        scanLabel = t('account_info.scan_new_wallet_accounts')
+    } else if (isMultichain) {
+        scanLabel = t('account_info.scan_new_accounts', {
+            network: chainDisplayNameOf(scanChainId) ?? scanChainId,
+        })
+    }
 
     const handleScanAddresses = useCallback(() => {
         if (isHDWallet) {
             onClose()
             navigationRef.navigate('AddAccount', {
                 screen: 'SearchAccounts',
-                params: {
-                    account,
-                    notifyOnEmpty: true,
-                },
+                params: { account },
             })
             return
         }

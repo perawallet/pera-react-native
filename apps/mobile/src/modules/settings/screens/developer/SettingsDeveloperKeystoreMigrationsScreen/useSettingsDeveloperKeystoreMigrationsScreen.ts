@@ -16,11 +16,12 @@ import {
     readKeystoreMigrationLedger,
     resetKeystoreMigrationModule,
 } from '@perawallet/wallet-extension-provider'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 export type KeystoreMigrationModuleState = {
     id: string
     label: string
-    revision: { id: number; name: string; appliedAt: string } | null
+    revision: Nullable<{ id: number; name: string; appliedAt: string }>
 }
 
 export type UseSettingsDeveloperKeystoreMigrationsScreenResult = {

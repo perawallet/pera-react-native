@@ -18,6 +18,7 @@ import {
     type CloudFileSaveResult,
     type ReadCloudFileOptions,
 } from '@perawallet/wallet-extension-platform'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import {
     CloudStorage,
     CloudStorageErrorCode,
@@ -90,7 +91,7 @@ const listEntries = async (iCloud: CloudStorage): Promise<string[]> => {
 const readIfPresent = async (
     iCloud: CloudStorage,
     path: string,
-): Promise<string | null> => {
+): Promise<Nullable<string>> => {
     try {
         return await iCloud.readFile(path)
     } catch (error) {
@@ -109,7 +110,7 @@ const probeEntry = async (
     iCloud: CloudStorage,
     fileName: string,
     maxBytes: number,
-): Promise<string | null> => {
+): Promise<Nullable<string>> => {
     const path = `/${fileName}`
     const { size } = await iCloud.stat(path)
     // A placeholder still downloading reads as absent, so it is not a candidate

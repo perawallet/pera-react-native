@@ -19,16 +19,17 @@ import {
     useState,
 } from 'react'
 import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useStyles } from '../styles'
 
 export type ExpandAllSignal = { expand: boolean; generation: number }
 
-export const ExpandAllContext = createContext<ExpandAllSignal | null>(null)
+export const ExpandAllContext = createContext<Nullable<ExpandAllSignal>>(null)
 
 export const useExpandableState = (initial: boolean) => {
     const ctx = useContext(ExpandAllContext)
     const [expanded, setExpanded] = useState(initial)
-    const lastGen = useRef<number | null>(null)
+    const lastGen = useRef<Nullable<number>>(null)
     useEffect(() => {
         if (ctx && ctx.generation !== lastGen.current) {
             lastGen.current = ctx.generation

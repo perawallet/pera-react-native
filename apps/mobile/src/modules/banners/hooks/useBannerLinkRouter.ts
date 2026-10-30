@@ -11,7 +11,7 @@
  */
 
 import { useCallback } from 'react'
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import {
     getUniversalLinkPath,
     isNotificationAllowedDeeplinkType,
@@ -23,7 +23,7 @@ import {
 } from '@modules/webview'
 
 type RouteInput = {
-    url: string | null
+    url: Nullable<string>
 }
 
 type UseBannerLinkRouterResult = {

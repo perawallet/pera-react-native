@@ -19,6 +19,7 @@ import {
     openData,
     serializeKey,
 } from '@algorandfoundation/react-native-keystore'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import type { PeraMigrationContext } from '../migrations/types'
 import {
     createJournal,
@@ -71,15 +72,14 @@ const readSameCredentialMetadata = (
     deps: SplitStorageDeps,
     id: string,
     record: SplitCredentialRecord,
-): Record<string, unknown> | undefined => {
+): Optional<Record<string, unknown>> => {
     const raw = deps.storage.getString(METADATA_PREFIX + id)
     if (raw === undefined) return undefined
 
     try {
         const written = JSON.parse(raw) as Record<string, unknown>
-        const wrapped = (written.publicKey as { $u8?: unknown } | undefined)
-            ?.$u8
-        const metadata = written.metadata as Record<string, unknown> | undefined
+        const wrapped = (written.publicKey as Optional<{ $u8?: unknown }>)?.$u8
+        const metadata = written.metadata as Optional<Record<string, unknown>>
 
         if (written.id !== id || written.type !== record.type) return undefined
         if (
@@ -142,7 +142,7 @@ export const verifySplitProviderCredential = async (
     const written = readSameCredentialMetadata(deps, id, split.record)
     if (written === undefined) return false
 
-    const enc = written.privateKeyEnc as { iv?: unknown } | undefined
+    const enc = written.privateKeyEnc as Optional<{ iv?: unknown }>
     if (enc?.iv !== split.record.privateKeyEnc?.iv) return false
 
     return split.material === undefined
