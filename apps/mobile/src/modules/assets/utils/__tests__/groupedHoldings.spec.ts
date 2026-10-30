@@ -161,6 +161,14 @@ describe('buildGroupedHoldingItems', () => {
         expect(group.amount).not.toBeNull()
     })
 
+    it('totals USD past an unpriced member that holds none', () => {
+        const emptyUnpriced = holding(ETH_MAINNET, '0xA0b8', '0', 18, null)
+
+        const group = groupAt(build([algoUsdc, emptyUnpriced]), 0)
+
+        expect(group.usdValue?.toString()).toBe('2.5')
+    })
+
     it("leaves the sum unknown while a member's metadata hasn't synced", () => {
         const unsynced = holding(ETH_MAINNET, '0xA0b8', '1', null)
 

@@ -23,6 +23,7 @@ import {
     PeraAssetVerificationTier,
     upsertAssets,
     upsertNodeAssets,
+    type AssetGroup,
     type AssetsChainAdapter,
     type DisplayableAsset,
     type PeraAsset,
@@ -30,6 +31,7 @@ import {
 import {
     partition,
     PeraServiceUnavailableError,
+    type Maybe,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 import {
@@ -155,48 +157,96 @@ const persistQuarantined = async (
     if (items.length > 0) await upsertAssets({ items, scope })
 }
 
+// The chain table names the native coin; the backend adds only its cross-chain
+// group, so the list can fold it with the same coin on other chains. No user
+// flags: the stored favourite and price alert survive the write.
+const nativeRow = (chain: EvmChain, group: Maybe<AssetGroup>): PeraAsset => ({
+    ...chain.nativeAsset,
+    peraMetadata: {
+        isDeleted: false,
+        verificationTier: PeraAssetVerificationTier.verified,
+        crossChainAssetGroup: group,
+    },
+})
+
+const syncNativeAsset = async (
+    ctx: ChainContext,
+    chain: EvmChain,
+    scope: ChainScope,
+): Promise<void> => {
+    const hasAssetsService = hasServices(ctx, scope, ASSETS_SERVICE)
+    const stale = await getStaleOrMissingAssetIds({
+        assetIds: [NATIVE_ASSET_ID],
+        scope,
+        ttlMs: ASSET_CACHE_TTL_MS,
+        recheckUnreadGroup: hasAssetsService,
+    })
+    if (stale.length === 0) return
+    const [item] = hasAssetsService
+        ? await fetchAssetItems(scope, chain, [NATIVE_ASSET_ID])
+        : []
+    await upsertAssets({
+        items: [nativeRow(chain, item?.cross_chain_asset_group)],
+        scope,
+    })
+}
+
+const syncTokens = async (
+    ctx: ChainContext,
+    chain: EvmChain,
+    tokenIds: string[],
+    scope: ChainScope,
+): Promise<void> => {
+    if (tokenIds.length === 0) return
+    const stale = await getStaleOrMissingAssetIds({
+        assetIds: tokenIds,
+        scope,
+        ttlMs: ASSET_CACHE_TTL_MS,
+        recheckUnreadGroup: true,
+    })
+    if (stale.length === 0) return
+
+    if (!hasServices(ctx, scope, ASSETS_SERVICE)) {
+        await persistOnChain(ctx, chain, stale, scope)
+        return
+    }
+
+    const unknown: string[] = []
+    const quarantined: string[] = []
+    for (const batch of partition(stale, ASSETS_MAX_IDS)) {
+        const items = await fetchAssetItems(scope, chain, batch)
+        const known = items.flatMap((item, index) => {
+            // Left unstored so the next pass retries it: a chain read would
+            // store it without its tier, hiding a suspicious token's warning.
+            if (!item) return []
+            const { assetId, asset, isQuarantined } = toAssetMetadata(
+                batch[index]!,
+                item,
+            )
+            if (asset) return [asset]
+            if (isQuarantined) quarantined.push(assetId)
+            else unknown.push(assetId)
+            return []
+        })
+        if (known.length > 0) await upsertAssets({ items: known, scope })
+    }
+    if (unknown.length > 0) await persistOnChain(ctx, chain, unknown, scope)
+    if (quarantined.length > 0) {
+        await persistQuarantined(ctx, chain, quarantined, scope)
+    }
+}
+
 const syncAssets =
     (ctx: ChainContext, chain: EvmChain): AssetsChainAdapter['syncAssets'] =>
     async (refs, scope) => {
         eip155ChainIdOf(scope, chain)
-        const tokenIds = toTokenIds(refs.map(ref => evmAssetIdOf(chain, ref)))
-        if (tokenIds.length === 0) return
-        const stale = await getStaleOrMissingAssetIds({
-            assetIds: tokenIds,
-            scope,
-            ttlMs: ASSET_CACHE_TTL_MS,
-            recheckUnreadGroup: true,
-        })
-        if (stale.length === 0) return
-
-        if (!hasServices(ctx, scope, ASSETS_SERVICE)) {
-            await persistOnChain(ctx, chain, stale, scope)
-            return
-        }
-
-        const unknown: string[] = []
-        const quarantined: string[] = []
-        for (const batch of partition(stale, ASSETS_MAX_IDS)) {
-            const items = await fetchAssetItems(scope, chain, batch)
-            const known = items.flatMap((item, index) => {
-                // Left unstored so the next pass retries it: a chain read would
-                // store it without its tier, hiding a suspicious token's warning.
-                if (!item) return []
-                const { assetId, asset, isQuarantined } = toAssetMetadata(
-                    batch[index]!,
-                    item,
-                )
-                if (asset) return [asset]
-                if (isQuarantined) quarantined.push(assetId)
-                else unknown.push(assetId)
-                return []
-            })
-            if (known.length > 0) await upsertAssets({ items: known, scope })
-        }
-        if (unknown.length > 0) await persistOnChain(ctx, chain, unknown, scope)
-        if (quarantined.length > 0) {
-            await persistQuarantined(ctx, chain, quarantined, scope)
-        }
+        const assetIds = refs.map(ref => evmAssetIdOf(chain, ref))
+        await Promise.all([
+            assetIds.includes(NATIVE_ASSET_ID)
+                ? syncNativeAsset(ctx, chain, scope)
+                : undefined,
+            syncTokens(ctx, chain, toTokenIds(assetIds), scope),
+        ])
     }
 
 const NFT_STANDARDS: readonly EvmNftStandard[] = ['erc721', 'erc1155']

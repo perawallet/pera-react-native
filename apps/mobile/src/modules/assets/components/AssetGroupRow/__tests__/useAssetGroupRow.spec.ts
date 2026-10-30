@@ -269,6 +269,24 @@ describe('useAssetGroupRow', () => {
             expect(result.current.subtitle).toBe('USDC · 753101315')
         })
 
+        it("names the symbol alone for a native coin, whose shared id is the chains' placeholder", () => {
+            const ether = { assetId: 'native', name: 'Ether' } as PeraAsset
+            const { result } = renderHook(() =>
+                useAssetGroupRow({
+                    item: groupOf(
+                        [
+                            member('ethereum', ether, 'native'),
+                            member('ethereum', ether, 'native'),
+                        ],
+                        null,
+                    ),
+                    convertFiat: toEur,
+                }),
+            )
+
+            expect(result.current.subtitle).toBe('USDC')
+        })
+
         it('names the symbol alone when each network has its own id', () => {
             const { result } = renderHook(() =>
                 useAssetGroupRow({

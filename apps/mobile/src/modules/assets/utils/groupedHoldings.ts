@@ -129,13 +129,16 @@ const sumDisplayAmount = <T>(
 
 // Summed per member rather than amount × one price: the same asset can trade
 // at a different USD price on each network. One unknown member leaves the total
-// unknown, since a partial sum would understate the holding.
+// unknown, since a partial sum would understate the holding; a member holding
+// none adds nothing, priced or not.
 const sumUsdValue = <T>(
     members: GroupedHoldingMember<T>[],
 ): Nullable<Decimal> => {
     let total = new Decimal(0)
     for (const { displayAmount, usdPrice } of members) {
-        if (displayAmount === null || usdPrice === null) return null
+        if (displayAmount === null) return null
+        if (displayAmount.isZero()) continue
+        if (usdPrice === null) return null
         total = total.plus(displayAmount.mul(usdPrice))
     }
     return total

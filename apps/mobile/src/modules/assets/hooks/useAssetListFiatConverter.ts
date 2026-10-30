@@ -11,7 +11,7 @@
  */
 
 import { useCallback } from 'react'
-import { type Decimal } from 'decimal.js'
+import { Decimal } from 'decimal.js'
 import {
     useCurrency,
     usePreferredCurrencyPriceQuery,
@@ -60,8 +60,12 @@ export const useAssetListFiatConverter = (): AssetFiatConverter => {
     )
 
     return useCallback(
-        (ref, usdPrice, amountDisplayUnits) => {
-            if (usdPrice == null) {
+        (ref, knownUsdPrice, amountDisplayUnits) => {
+            // Holding none is worth nothing, whether or not the asset is priced.
+            const usdPrice =
+                knownUsdPrice ??
+                (amountDisplayUnits.isZero() ? new Decimal(0) : null)
+            if (usdPrice === null) {
                 return { displayCurrency: preferredCurrency, value: null }
             }
 

@@ -102,6 +102,7 @@ const DAI = '0x6B175474E89094C44Da98b954EedeAC495271d0F'
 const USDC_CAIP19 = `eip155:1/erc20:${USDC.toLowerCase()}`
 const DAI_CAIP19 = `eip155:1/erc20:${DAI.toLowerCase()}`
 const ZERO = '0x0000000000000000000000000000000000000000'
+const ETH_CAIP19 = 'eip155:1/slip44:60'
 const quarantinedDai: AssetItemResponse = {
     ...unknownAssetItem(DAI_CAIP19),
     verification_tier: 'suspicious',
@@ -362,16 +363,65 @@ describe('syncAssets', () => {
             ETHEREUM,
         )
 
-        await ops.syncAssets(
-            [ETHEREUM_NATIVE_ASSET.assetId, USDC, DAI].map(ref),
-            SCOPE,
-        )
+        await ops.syncAssets([USDC, DAI].map(ref), SCOPE)
 
         expect(persistence.getStaleOrMissingAssetIds).toHaveBeenCalledWith(
             expect.objectContaining({ assetIds: [USDC, DAI] }),
         )
         expect(requested).toEqual([{ ids: [USDC_CAIP19] }])
         expect(full.map(a => a.assetId)).toEqual([USDC])
+    })
+
+    it("stores the native coin under the chain's name with the backend's cross-chain group only", async () => {
+        const ethGroup = { id: 'eth', name: 'Ether', symbol: 'ETH' }
+        server.use(
+            ...peraEvmAssetHandlers({
+                baseUrl: TEST_PERA_URL,
+                assets: {
+                    [ETH_CAIP19]: {
+                        ...unknownAssetItem(ETH_CAIP19),
+                        name: 'Ethereum',
+                        fraction_decimals: 18,
+                        cross_chain_asset_group: ethGroup,
+                    },
+                },
+            }),
+        )
+        const { full } = memoryPersistence()
+        const ops = createEthereumAssetsAdapter(
+            testChainContext({ services: ['assets'] }),
+            ETHEREUM,
+        )
+
+        await ops.syncAssets([ref(ETHEREUM_NATIVE_ASSET.assetId)], SCOPE)
+
+        expect(full).toEqual([
+            expect.objectContaining({
+                assetId: ETHEREUM_NATIVE_ASSET.assetId,
+                name: ETHEREUM_NATIVE_ASSET.name,
+                decimals: ETHEREUM_NATIVE_ASSET.decimals,
+            }),
+        ])
+        // No favourite flag, so the user's stored one survives the write.
+        expect(full[0]?.peraMetadata).toEqual({
+            isDeleted: false,
+            verificationTier: 'verified',
+            crossChainAssetGroup: ethGroup,
+        })
+    })
+
+    it('stores the native coin without a request or a group without the assets service', async () => {
+        const requests = recordRequests()
+        const { persistence, full } = memoryPersistence()
+        const ops = createEthereumAssetsAdapter(testChainContext(), ETHEREUM)
+
+        await ops.syncAssets([ref(ETHEREUM_NATIVE_ASSET.assetId)], SCOPE)
+
+        expect(requests).toEqual([])
+        expect(persistence.getStaleOrMissingAssetIds).toHaveBeenCalledWith(
+            expect.objectContaining({ recheckUnreadGroup: false }),
+        )
+        expect(full[0]?.peraMetadata?.crossChainAssetGroup).toBeUndefined()
     })
 
     it('checks staleness under the checksummed id', async () => {
@@ -598,7 +648,6 @@ describe('syncAssets', () => {
 })
 
 describe('prices', () => {
-    const ETH_CAIP19 = 'eip155:1/slip44:60'
     const priced = (usdValue: string | null) => ({
         ...usdcFromPera,
         usd_value: usdValue,
@@ -756,7 +805,6 @@ describe('prices', () => {
 })
 
 describe('price history', () => {
-    const ETH_CAIP19 = 'eip155:1/slip44:60'
     const ETH = ref(ETHEREUM_NATIVE_ASSET.assetId)
     const point = (datetime: string, price: string) => ({ datetime, price })
 
