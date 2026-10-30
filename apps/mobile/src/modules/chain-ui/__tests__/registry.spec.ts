@@ -24,6 +24,10 @@ vi.mock('@modules/ethereum/chain-ui', async importOriginal => ({
     ...(await importOriginal<typeof import('@modules/ethereum/chain-ui')>()),
     evmChainUiOverrides: {
         base: { sendConfirmation: { FeeSection: mocks.BaseFeeSection } },
+        arbitrum: {
+            sendConfirmation: { FeeSection: mocks.BaseFeeSection },
+            assetDetails: undefined,
+        },
     },
 }))
 
@@ -76,6 +80,17 @@ describe('chainUiFor', () => {
 
         expect(ui.transactionDetails).toBe(ethereumChainUi?.transactionDetails)
         expect(ui.familyLabel).toBe('chain_families.evm')
+    })
+
+    it('returns the same merged entry on every call for an overridden chain', () => {
+        expect(chainUiFor('evm', 'base')).toBe(chainUiFor('evm', 'base'))
+    })
+
+    it("inherits the family's slot where an override sets it to undefined", () => {
+        const ui = chainUiFor('evm', 'arbitrum')
+
+        expect(ui.assetDetails).toBe(ethereumChainUi?.assetDetails)
+        expect(ui.sendConfirmation?.FeeSection).toBe(mocks.BaseFeeSection)
     })
 
     it("leaves a chain with no override on the family's entry", () => {

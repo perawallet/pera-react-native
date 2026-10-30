@@ -19,7 +19,7 @@ import {
     ethereumChainUi,
     evmChainUiOverrides,
 } from '@modules/ethereum/chain-ui'
-import type { ChainUi, ChainUiRegistry } from './types'
+import type { ChainUi, ChainUiOverride, ChainUiRegistry } from './types'
 
 export const chainUiRegistry: ChainUiRegistry = {
     families: { algorand: algorandChainUi, evm: ethereumChainUi },
@@ -28,11 +28,34 @@ export const chainUiRegistry: ChainUiRegistry = {
 
 const NO_CHAIN_UI: ChainUi = {}
 
+// The registry is static, so one merged entry per chain keeps it as stable a memo dep as a family's.
+const mergedChainUi = new Map<string, ChainUi>()
+
+const layerOverride = (
+    familyUi: ChainUi,
+    override: ChainUiOverride,
+): ChainUi => {
+    const slots = Object.fromEntries(
+        Object.entries(override).filter(([, slot]) => slot !== undefined),
+    )
+    return { ...familyUi, ...slots }
+}
+
 export const chainUiFor = (family: ChainFamily, chainId?: ChainId): ChainUi => {
     const familyUi = chainUiRegistry.families[family] ?? NO_CHAIN_UI
-    const override =
-        chainId === undefined
-            ? undefined
-            : chainUiRegistry.chains[family]?.[chainId]
-    return override ? { ...familyUi, ...override } : familyUi
+    if (chainId === undefined) {
+        return familyUi
+    }
+    const override = chainUiRegistry.chains[family]?.[chainId]
+    if (!override) {
+        return familyUi
+    }
+    const key = `${family}:${chainId}`
+    const cached = mergedChainUi.get(key)
+    if (cached) {
+        return cached
+    }
+    const merged = layerOverride(familyUi, override)
+    mergedChainUi.set(key, merged)
+    return merged
 }
