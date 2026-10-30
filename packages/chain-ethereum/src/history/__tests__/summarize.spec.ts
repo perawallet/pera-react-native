@@ -912,4 +912,222 @@ describe('summarizeEthereumHistoryItem', () => {
             },
         )
     })
+
+    describe('with contractDecoding on', () => {
+        const decoded = (item: EvmHistoryItem) =>
+            summarizeEthereumHistoryItem(item, ME, SCOPE, ETHEREUM, true)
+        const APE = '0xbc4ca0eda7647a8ab7c2061c2e118a18a936f13d'
+        const OTHER_NFT = '0x60e4d786628fea6478f785a6d7e704777c86a7c6'
+        const call = (method: string | null) =>
+            row({
+                from: ME,
+                to: USDC,
+                value: '0',
+                method,
+                fee: '46000000000000',
+                balance_impacts: [
+                    { asset_id: ETH_ID, amount: '-46000000000000' },
+                ],
+            })
+        const batch = (contracts: string[]) =>
+            row({
+                from: ME,
+                to: APE,
+                value: '0',
+                method: 'safeBatchTransferFrom',
+                nft_transfers: contracts.map((contract, index) =>
+                    evmNftTransferLeg({
+                        standard: 'erc1155',
+                        contract,
+                        token_id: String(index + 1),
+                        from: ME,
+                        to: PEER,
+                    }),
+                ),
+            })
+
+        const FIXTURES: [string, EvmHistoryItem][] = [
+            ['an ERC-1155 batch', batch([APE, APE])],
+            ['a two-collection batch', batch([APE, OTHER_NFT])],
+            ['an approve', call('approve')],
+            ['a setApprovalForAll', call('setApprovalForAll')],
+            ['a swap', call('swapExactTokensForTokens')],
+            ['a raw selector', call('0x095ea7b3')],
+            ['no method', call(null)],
+            [
+                'an ERC-721 receive',
+                row({
+                    from: PEER,
+                    to: ME,
+                    value: '0',
+                    nft_transfers: [evmNftTransferLeg({ to: ME, from: PEER })],
+                }),
+            ],
+        ]
+
+        it.each(FIXTURES)(
+            'reads %s as it does with the capability off',
+            (_, item) => {
+                expect(
+                    summarizeEthereumHistoryItem(item, ME, SCOPE, ETHEREUM),
+                ).toEqual(
+                    summarizeEthereumHistoryItem(
+                        item,
+                        ME,
+                        SCOPE,
+                        ETHEREUM,
+                        false,
+                    ),
+                )
+            },
+        )
+
+        it('names a batch from one collection, keeping every item as a balance change', () => {
+            const summary = decoded(batch([APE, APE]))
+            const off = summarize(batch([APE, APE]))
+
+            expect(summary).toMatchObject({
+                kind: 'nft-transfer',
+                title: { key: 'transactions.list_item.send' },
+                subtitle: {
+                    key: 'transactions.list_item.nft_batch_subtitle',
+                    params: { collection: 'Bored Ape Yacht Club', count: '2' },
+                },
+            })
+            expect(off.subtitle).toBeUndefined()
+            expect(summary.balanceChanges).toEqual(off.balanceChanges)
+            expect(summary.balanceChanges).toHaveLength(2)
+        })
+
+        it('names the contract when the backend has no collection name', () => {
+            const item = row({
+                from: ME,
+                to: APE,
+                value: '0',
+                method: 'safeBatchTransferFrom',
+                nft_transfers: [1, 2].map(id =>
+                    evmNftTransferLeg({
+                        standard: 'erc1155',
+                        token_id: String(id),
+                        from: ME,
+                        to: PEER,
+                        collection_name: null,
+                    }),
+                ),
+            })
+
+            expect(decoded(item).subtitle?.params?.collection).toBe(
+                getAddress(APE),
+            )
+        })
+
+        it('leaves a batch with a single counted item without a count subtitle', () => {
+            const item = row({
+                from: ME,
+                to: APE,
+                value: '0',
+                method: 'safeBatchTransferFrom',
+                nft_transfers: [
+                    evmNftTransferLeg({ token_id: '1', from: ME, to: PEER }),
+                    evmNftTransferLeg({ token_id: '2', from: ME, to: ME }),
+                ],
+            })
+
+            expect(decoded(item).subtitle).toBeUndefined()
+        })
+
+        it('leaves a batch across collections without a subtitle', () => {
+            expect(decoded(batch([APE, OTHER_NFT])).subtitle).toBeUndefined()
+        })
+
+        it('leaves a single NFT receive as it is', () => {
+            const item = FIXTURES.find(
+                ([name]) => name === 'an ERC-721 receive',
+            )![1]
+
+            expect(decoded(item)).toMatchObject({
+                title: { key: 'transactions.list_item.receive' },
+                subtitle: { key: 'transactions.list_item.nft_subtitle' },
+            })
+        })
+
+        it('titles a swap with the function name and keeps its balance changes', () => {
+            const swap = row({
+                from: ME,
+                to: PEER,
+                value: '0',
+                method: 'swapExactTokensForTokens',
+                token_transfers: [leg(ME, PEER, '250'), leg(PEER, ME, '9')],
+                balance_impacts: [{ asset_id: USDC_ID, amount: '-241' }],
+            })
+
+            const summary = decoded(swap)
+
+            expect(summary.title).toEqual({
+                key: 'transactions.list_item.interpreted_title',
+                params: { title: 'swapExactTokensForTokens' },
+            })
+            expect(summary.balanceChanges).toEqual(
+                summarize(swap).balanceChanges,
+            )
+        })
+
+        it('titles a setApprovalForAll with the function name too', () => {
+            expect(decoded(call('setApprovalForAll')).title).toEqual({
+                key: 'transactions.list_item.interpreted_title',
+                params: { title: 'setApprovalForAll' },
+            })
+        })
+
+        it('titles an approve with the function name, not as an approval', () => {
+            const summary = decoded(call('approve'))
+
+            expect(summary).toMatchObject({
+                kind: 'contract-call',
+                icon: 'contract-call',
+                title: { params: { title: 'approve' } },
+            })
+        })
+
+        it.each([
+            ['a raw selector', '0x095ea7b3'],
+            ['no method', null],
+            ['a name that is not an identifier', 'transfer(address'],
+        ])('leaves %s as a contract call', (_, method) => {
+            const router = row({
+                from: ME,
+                to: PEER,
+                value: '0',
+                method,
+                token_transfers: [leg(ME, PEER, '250'), leg(PEER, ME, '9')],
+            })
+
+            expect(decoded(router).title).toEqual({
+                key: 'transactions.list_item.contract_call',
+            })
+        })
+
+        it('keeps the failed notice on a named call', () => {
+            const failed = row({
+                from: ME,
+                to: USDC,
+                value: '0',
+                method: 'approve',
+                status: 'failed',
+            })
+
+            expect(decoded(failed)).toMatchObject({
+                title: { params: { title: 'approve' } },
+                notice: { kind: 'error' },
+            })
+        })
+
+        it('leaves a plain transfer alone', () => {
+            expect(
+                decoded(row({ from: ME, to: PEER, value: '5' })).title,
+            ).toEqual({
+                key: 'transactions.list_item.send',
+            })
+        })
+    })
 })

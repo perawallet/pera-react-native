@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback, useEffect, useMemo } from 'react'
+import { useCallback, useEffect, useMemo, type ComponentType } from 'react'
 
 import {
     useNavigation,
@@ -27,6 +27,7 @@ import {
     i18nKey,
     type ChainScope,
     type TransactionNative,
+    type TransactionRecord,
     type I18nKey,
 } from '@perawallet/wallet-core-chain-contract'
 import { getChainDescriptor } from '@perawallet/wallet-core-chain-shared'
@@ -50,6 +51,7 @@ import { chainUiFor } from '@modules/chain-ui'
 import { useNetworkStatus, useNetworkStatusStore } from '@modules/network'
 import type { SigningStackParamList } from '@modules/signing/routes'
 import { useSuspectedAddressReuseGuard } from '@modules/transactions'
+import type { RecordDetailBodyProps } from '../../transactions/types'
 import { useNoTransactionDetail } from './useNoTransactionDetail'
 
 type NavigationProp = StackNavigationProp<
@@ -64,6 +66,11 @@ type TransactionDetailsRouteProp = RouteProp<
 
 type TransactionDetailsRenderState =
     | { kind: 'content'; transaction: TransactionNative }
+    | {
+          kind: 'record'
+          record: TransactionRecord
+          RecordDetailBody: ComponentType<RecordDetailBodyProps>
+      }
     | { kind: 'loading' }
     | { kind: 'offline' }
     | { kind: 'error'; titleKey: I18nKey; bodyKey: I18nKey }
@@ -93,6 +100,7 @@ export const useTransactionDetailsScreen =
             groupId,
             isExternal,
             historyTransaction,
+            historyRecord,
             suspectedPoisoning,
         } = route.params
         const addressReuseGuard = useSuspectedAddressReuseGuard({
@@ -111,9 +119,12 @@ export const useTransactionDetailsScreen =
         }, [scope.chainId])
 
         // A route's scope never changes, so this resolves to the same hook on every render.
-        const chainUseTransactionDetail = chainUiFor(
+        const chainTransactionDetails = chainUiFor(
             getChainDescriptor(scope.chainId).family,
-        ).transactionDetails?.useTransactionDetail
+        ).transactionDetails
+        const chainUseTransactionDetail =
+            chainTransactionDetails?.useTransactionDetail
+        const RecordDetailBody = chainTransactionDetails?.RecordDetailBody
         const useTransactionDetail =
             chainUseTransactionDetail ?? useNoTransactionDetail
         const canFetchDetail = !!chainUseTransactionDetail
@@ -121,7 +132,7 @@ export const useTransactionDetailsScreen =
             scope,
             transactionId: transactionId ?? '',
             historyTransaction,
-            isEnabled: !paramTransaction && !!transactionId,
+            isEnabled: !paramTransaction && !!transactionId && !historyRecord,
         })
 
         const { hasInternet } = useNetworkStatus()
@@ -133,21 +144,30 @@ export const useTransactionDetailsScreen =
         const address = account
             ? (chainAccountOf(account, scope.chainId)?.address ?? '')
             : ''
-        const notice = useMemo(
-            () =>
-                historyTransaction
-                    ? chainNoticeOf(
-                          summarizeHistoryItem(
-                              historyTransaction,
-                              address,
-                              scope.chainId,
-                          ).notice,
-                      )
-                    : null,
-            [historyTransaction, address, scope.chainId],
-        )
+        const notice = useMemo(() => {
+            if (historyRecord)
+                return chainNoticeOf(historyRecord.summary.notice)
+            if (!historyTransaction) return null
+            return chainNoticeOf(
+                summarizeHistoryItem(historyTransaction, address, scope.chainId)
+                    .notice,
+            )
+        }, [historyRecord, historyTransaction, address, scope.chainId])
 
         const renderState = useMemo((): TransactionDetailsRenderState => {
+            if (historyRecord) {
+                return RecordDetailBody
+                    ? {
+                          kind: 'record',
+                          record: historyRecord,
+                          RecordDetailBody,
+                      }
+                    : {
+                          kind: 'error',
+                          titleKey: i18nKey('transactions.unknown.title'),
+                          bodyKey: i18nKey('transactions.unknown.body'),
+                      }
+            }
             if (transaction) {
                 return { kind: 'content', transaction }
             }
@@ -177,6 +197,8 @@ export const useTransactionDetailsScreen =
             const { titleKey, bodyKey } = getNetworkErrorMessageKeys(undefined)
             return { kind: 'error', titleKey, bodyKey }
         }, [
+            historyRecord,
+            RecordDetailBody,
             transaction,
             detail.isError,
             detail.error,

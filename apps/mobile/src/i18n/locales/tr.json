@@ -3537,8 +3537,13 @@
             "interpreted_title": "{{title}}",
             "swap_subtitle": "{{amountIn}} {{assetIn}} karşılığında {{amountOut}} {{assetOut}}",
             "nft_subtitle": "{{collection}} #{{tokenId}}",
+            "nft_batch_subtitle": "{{collection}} · {{count}} öğe",
             "inner_transaction_count": "{{innerCount}} iç işlem",
             "cancel_transaction": "İşlem iptali"
+        },
+        "record_detail": {
+            "read_failed": "Bu işlemin çağrı ayrıntıları ağdan okunamadı.",
+            "transaction_id": "İşlem Kimliği"
         },
         "contract_call": {
             "warning": "Pera bu sözleşme çağrısının ne yaptığını anlayamıyor.",
