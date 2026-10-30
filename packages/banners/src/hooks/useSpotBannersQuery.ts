@@ -36,7 +36,8 @@ export const useSpotBannersQuery = (): UseSpotBannersQueryResult => {
 
     const query = useQuery({
         queryKey: getSpotBannersQueryKey(deployment, deviceID ?? ''),
-        queryFn: () => fetchSpotBanners(deployment, deviceID ?? ''),
+        queryFn: (): Promise<SpotBannerListResponse> =>
+            fetchSpotBanners(deployment, deviceID ?? ''),
         enabled: !!deviceID?.length,
         staleTime: config.reactQueryShortLivedStaleTime,
         select: useCallback(

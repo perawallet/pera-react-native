@@ -12,6 +12,7 @@
 
 import { describe, test, expect } from 'vitest'
 import {
+    getIsMultisigAddressQueryKey,
     getMultisigAccountDetailQueryKey,
     getSignRequestDetailQueryKey,
 } from '../querykeys'
@@ -71,6 +72,25 @@ describe('getMultisigAccountDetailQueryKey', () => {
         const key2 = getMultisigAccountDetailQueryKey(TESTNET, 'ADDR')
 
         expect(key1).not.toEqual(key2)
+    })
+})
+
+describe('getIsMultisigAddressQueryKey', () => {
+    test('returns array with correct structure', () => {
+        const result = getIsMultisigAddressQueryKey(MAINNET, 'ADDR')
+
+        expect(result).toEqual([
+            'multisig',
+            'is-multisig',
+            { scope: MAINNET, address: 'ADDR' },
+        ])
+    })
+
+    test('never shares a key with the account-detail query', () => {
+        const isMultisigKey = getIsMultisigAddressQueryKey(MAINNET, 'ADDR')
+        const detailKey = getMultisigAccountDetailQueryKey(MAINNET, 'ADDR')
+
+        expect(isMultisigKey).not.toEqual(detailKey)
     })
 })
 

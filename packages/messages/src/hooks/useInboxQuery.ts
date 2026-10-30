@@ -67,7 +67,8 @@ export const useInboxQueryOptions = (scope: ChainScope) => {
         () =>
             queryOptions({
                 queryKey: getInboxQueryKey(scope, deviceID, addresses),
-                queryFn: () => fetchInbox(scope, deviceID, addresses),
+                queryFn: (): Promise<InboxResponse> =>
+                    fetchInbox(scope, deviceID, addresses),
                 enabled:
                     !!deviceID.length &&
                     !!addresses.length &&

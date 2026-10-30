@@ -44,6 +44,7 @@ import noUnusedTranslationKeys from './lanekeep/rules/no-unused-translation-keys
 import noWcImportsInConnectionsModule from './lanekeep/rules/no-wc-imports-in-connections-module.js'
 import noWorkItemRefs from './lanekeep/rules/no-work-item-refs.js'
 import noWorkspaceRequireInTests from './lanekeep/rules/no-workspace-require-in-tests.js'
+import persistedQuerySerializable from './lanekeep/rules/persisted-query-serializable.js'
 import pqLibrarySeam from './lanekeep/rules/pq-library-seam.js'
 import secp256k1LibrarySeam from './lanekeep/rules/secp256k1-library-seam.js'
 import secretBufferZeroed from './lanekeep/rules/secret-buffer-zeroed.js'
@@ -140,5 +141,6 @@ export default defineConfig({
         conformanceWorkflowPaths,
         nativeExactPins,
         catalogVersions,
+        persistedQuerySerializable,
     ],
 })

@@ -13,6 +13,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { useWalletDeployment } from '@perawallet/wallet-core-chain-shared'
 import { fetchCurrenciesList } from '../api/currencies'
+import type { Currency } from '../models'
 import { getCurrenciesQueryKey } from './querykeys'
 
 /** The wallet deployment's fiat currencies. */
@@ -20,6 +21,7 @@ export const useCurrenciesQuery = () => {
     const deployment = useWalletDeployment()
     return useQuery({
         queryKey: getCurrenciesQueryKey(deployment),
-        queryFn: ({ signal }) => fetchCurrenciesList({ deployment, signal }),
+        queryFn: ({ signal }): Promise<Currency[]> =>
+            fetchCurrenciesList({ deployment, signal }),
     })
 }
