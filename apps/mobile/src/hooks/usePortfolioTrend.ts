@@ -22,25 +22,37 @@ import {
     type HistoryPeriod,
 } from '@perawallet/wallet-core-shared'
 
+export type PortfolioTrendDirection = 'up' | 'down' | 'flat'
+
 export type UsePortfolioTrendResult = {
     /** In the preferred currency. */
     trendAbsolute: Decimal
     trendPercentage: Decimal
+    /** `flat` when the change rounds to zero at the 2 dp the trend renders at. */
+    trendDirection: PortfolioTrendDirection
     hasNoTrend: boolean
+    /** False once an offline read is paused: it won't resolve, so callers show nothing rather than a loader that never ends. */
+    isPending: boolean
+}
+
+const directionOf = (change: Decimal): PortfolioTrendDirection => {
+    if (change.toDecimalPlaces(2).isZero()) return 'flat'
+    return change.isPositive() ? 'up' : 'down'
 }
 
 export const usePortfolioTrend = (
-    chartSources: AccountHoldingSource[],
+    sources: AccountHoldingSource[],
     period: HistoryPeriod,
-    scope: ChainScope,
-    isChartShown: boolean,
+    currencyScope: ChainScope,
+    enabled: boolean,
 ): UsePortfolioTrendResult => {
-    const { data, isPending, isPartial } = usePortfolioHistoryQuery(
-        chartSources,
+    const { data, isPending, isPaused, isPartial } = usePortfolioHistoryQuery(
+        sources,
         period,
-        scope,
-        isChartShown,
+        currencyScope,
+        enabled,
     )
+    const isSettling = isPending && !isPaused
 
     // Points with no preferred value have no rate behind them; keeping them
     // would let a `?? 0` fallback below invent a cliff from (or to) zero and
@@ -59,12 +71,16 @@ export const usePortfolioTrend = (
         return [last.minus(first), percentChange(first, last)]
     }, [pricedValues])
 
+    const trendDirection = directionOf(trendAbsolute)
+
     return {
         trendAbsolute,
         trendPercentage,
+        trendDirection,
         // A failed or empty chain leaves no history, and the 0 it would
         // default to reads as a change the wallet never had. A chain the
         // chart left out would leave the change short of the total beside it.
-        hasNoTrend: (!isPending && pricedValues.length === 0) || isPartial,
+        hasNoTrend: (!isSettling && pricedValues.length === 0) || isPartial,
+        isPending: isSettling,
     }
 }
