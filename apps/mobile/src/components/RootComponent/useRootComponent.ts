@@ -14,7 +14,6 @@ import { useCallback, useEffect, useRef } from 'react'
 import { AppState } from 'react-native'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { logger } from '@perawallet/wallet-core-shared'
-import { useNeedsMigration } from '@perawallet/wallet-core-migrate'
 import { getSyncService } from '@perawallet/wallet-core-background'
 import { config } from '@perawallet/wallet-core-config'
 import {
@@ -22,7 +21,13 @@ import {
     getPollingTransitionAction,
 } from '@utils/app-state'
 
-export const useRootComponent = (): { hasAccounts: boolean } => {
+export type UseRootComponentProps = {
+    migrationInProgress: boolean
+}
+
+export const useRootComponent = ({
+    migrationInProgress,
+}: UseRootComponentProps): void => {
     const accounts = useAllAccounts()
 
     const appState = useRef(AppState.currentState)
@@ -32,9 +37,6 @@ export const useRootComponent = (): { hasAccounts: boolean } => {
     // (incl. sync ticks); depending on it directly re-arms the sync service in a
     // tight loop, so effects key on a stable scalar instead.
     const hasAccounts = (accounts?.length ?? 0) > 0
-
-    const { isChecking, needsMigration } = useNeedsMigration()
-    const migrationInProgress = isChecking || needsMigration
 
     const runSyncAction = useCallback((action: 'start' | 'stop') => {
         try {
@@ -90,6 +92,4 @@ export const useRootComponent = (): { hasAccounts: boolean } => {
             subscription.remove()
         }
     }, [appStatePlatform, hasAccounts, migrationInProgress, runSyncAction])
-
-    return { hasAccounts }
 }

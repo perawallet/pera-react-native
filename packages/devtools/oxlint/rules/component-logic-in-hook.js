@@ -14,7 +14,7 @@
 // component's own logic. The styles (useStyles), theme, translation and
 // domain hooks carry none, and the component's own use[Name] hook is the
 // extraction this rule asks for, so none of them count towards the threshold.
-export const COMPONENT_LOGIC_HOOKS = new Set([
+const COMPONENT_LOGIC_HOOKS = new Set([
     'useState',
     'useReducer',
     'useRef',
@@ -24,7 +24,7 @@ export const COMPONENT_LOGIC_HOOKS = new Set([
     'useCallback',
 ])
 
-export const HOOK_THRESHOLD = 3
+const HOOK_THRESHOLD = 3
 
 const FUNCTION_TYPES = new Set([
     'ArrowFunctionExpression',

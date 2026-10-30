@@ -11,18 +11,15 @@
  */
 
 import { useCallback, useMemo, type ReactElement } from 'react'
-import { addressOn } from '@perawallet/wallet-core-accounts'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
+import { PWView } from '@components/core'
 import { ChainBadge } from '@components/ChainBadge'
 import { EmptyView } from '@components/EmptyView'
-import { AddressDisplay } from '@components/AddressDisplay'
 import type { SearchableListSearchProps } from '@components/SearchableList'
 import { useLanguage } from '@hooks/useLanguage'
 import type { Optional } from '@perawallet/wallet-core-shared'
-import { AccountResultRow } from './AccountResultRow'
 import { AddressSearchInput } from './AddressSearchInput'
-import { PasteFromClipboardRow } from './PasteFromClipboardRow'
+import { AddressSearchRow } from './AddressSearchRow'
 import { useStyles } from './styles'
 import type { AddressSearchItem } from './useAddressSearchView'
 
@@ -37,7 +34,6 @@ export type UseAddressSearchListProps = {
 }
 
 export type UseAddressSearchListResult = {
-    chainBadge: Optional<ReactElement>
     renderItem: (params: { item: AddressSearchItem }) => ReactElement
     SearchInput: (props: SearchableListSearchProps) => ReactElement
     renderSeparator: () => ReactElement
@@ -64,130 +60,24 @@ export const useAddressSearchList = ({
     )
 
     const renderItem = useCallback(
-        ({ item }: { item: AddressSearchItem }) => {
-            switch (item.type) {
-                case 'section_header': {
-                    return <PWText variant='h4'>{t(item.title)}</PWText>
-                }
-                case 'paste': {
-                    // Fills the field instead of selecting outright, matching
-                    // native: the user still confirms the pasted address.
-                    return (
-                        <PasteFromClipboardRow
-                            address={item.address}
-                            onPress={setValue}
-                        />
-                    )
-                }
-                case 'contact': {
-                    return (
-                        <PWTouchableOpacity
-                            onPress={() => onSelected(item.address)}
-                        >
-                            <AddressDisplay
-                                scope={scope}
-                                address={item.address}
-                                showCopy={false}
-                                trailing={chainBadge}
-                                style={styles.accountDisplay}
-                            />
-                        </PWTouchableOpacity>
-                    )
-                }
-                case 'account': {
-                    const address = addressOn(item.account, scope) ?? ''
-                    return (
-                        <PWTouchableOpacity
-                            onPress={() => onSelected(address)}
-                            testID={`account_result_row_${address}`}
-                        >
-                            <AccountResultRow
-                                account={item.account}
-                                showBalance={showAccountBalance}
-                                chainId={scope.chainId}
-                                badges={chainBadge}
-                            />
-                        </PWTouchableOpacity>
-                    )
-                }
-                case 'address': {
-                    return (
-                        <PWTouchableOpacity
-                            onPress={() => onSelected(item.address)}
-                            style={showAddIcon ? styles.foreignRow : undefined}
-                        >
-                            <AddressDisplay
-                                scope={scope}
-                                address={item.address}
-                                showCopy={false}
-                                forceShowIcon
-                                style={
-                                    showAddIcon
-                                        ? styles.accountDisplayInRow
-                                        : styles.accountDisplay
-                                }
-                            />
-                            {showAddIcon && (
-                                <PWView
-                                    style={styles.addIconButton}
-                                    testID='address-search-add-icon'
-                                >
-                                    <PWIcon
-                                        name='plus'
-                                        variant='helper'
-                                        size='sm'
-                                    />
-                                </PWView>
-                            )}
-                        </PWTouchableOpacity>
-                    )
-                }
-                case 'nfd': {
-                    return (
-                        <PWTouchableOpacity
-                            onPress={() =>
-                                onSelected(item.nfd.address, item.nfd.name)
-                            }
-                            style={
-                                showAddIcon ? styles.foreignRow : styles.nfdItem
-                            }
-                        >
-                            <AddressDisplay
-                                scope={scope}
-                                address={item.nfd.address}
-                                showCopy={false}
-                                style={
-                                    showAddIcon
-                                        ? styles.accountDisplayInRow
-                                        : styles.accountDisplay
-                                }
-                            />
-                            {showAddIcon && (
-                                <PWView
-                                    style={styles.addIconButton}
-                                    testID='address-search-add-icon'
-                                >
-                                    <PWIcon
-                                        name='plus'
-                                        variant='helper'
-                                        size='sm'
-                                    />
-                                </PWView>
-                            )}
-                        </PWTouchableOpacity>
-                    )
-                }
-            }
-        },
+        ({ item }: { item: AddressSearchItem }) => (
+            <AddressSearchRow
+                item={item}
+                scope={scope}
+                onSelected={onSelected}
+                setValue={setValue}
+                chainBadge={chainBadge}
+                showAccountBalance={showAccountBalance}
+                showAddIcon={showAddIcon}
+            />
+        ),
         [
+            scope,
             onSelected,
             setValue,
-            styles,
-            t,
+            chainBadge,
             showAccountBalance,
             showAddIcon,
-            scope,
-            chainBadge,
         ],
     )
 
@@ -228,7 +118,6 @@ export const useAddressSearchList = ({
     )
 
     return {
-        chainBadge,
         renderItem,
         SearchInput,
         renderSeparator,

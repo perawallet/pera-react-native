@@ -44,8 +44,8 @@ const handleOverlayError = (error: string | Error) => {
 }
 
 export const RootComponent = ({ fcmToken }: RootComponentProps) => {
-    useRootComponent()
-
+    // Single migration-gate subscription: it feeds this component's own
+    // gates and useRootComponent's sync effect below.
     const { isChecking, needsMigration } = useNeedsMigration()
     const migrationInProgress = isChecking || needsMigration
     useSyncMultisigAccountsOnNetworkSwitch()
@@ -58,6 +58,10 @@ export const RootComponent = ({ fcmToken }: RootComponentProps) => {
     useImageMemoryRelease()
 
     useBackupSyncLifecycle()
+
+    // Called where the sync start/stop effect used to sit, after the other
+    // lifecycle hooks, so this refactor doesn't change the startup order.
+    useRootComponent({ migrationInProgress })
 
     return (
         <>

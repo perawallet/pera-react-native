@@ -10,6 +10,18 @@
  limitations under the License
  */
 
+// Web replacement for PWWebView, since react-native-webview doesn't exist on
+// web. Renders the URL in an iframe and rebuilds the bridge transport: the
+// Discover content scripts install `peraMobileInterface` inside the iframe and
+// relay over a chrome.runtime Port that createDiscoverBridgeHost accepts only
+// for this mount's token and the Discover origin.
+//
+// The usePeraWebviewInterface registry handles every op unchanged. Only
+// pushWebView is intercepted — dapps open in real tabs, where the injected
+// window.pera bridge supplies connect/sign, so there's no nested viewer.
+// walletConnect falls through to the registry, which pairs via the offscreen
+// host; that approval opens as its own window, not a sheet in this tree.
+
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import {

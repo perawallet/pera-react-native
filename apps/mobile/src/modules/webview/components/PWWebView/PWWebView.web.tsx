@@ -10,6 +10,11 @@
  limitations under the License
  */
 
+// fallow-ignore-file re-export-cycle -- false positive: fallow's
+// platform-suffix resolver matches the `./PWWebView` re-export below back to
+// this same `.web.tsx` file instead of the intended `PWWebView.tsx` sibling
+// (TypeScript itself resolves it correctly — `pnpm build` passes).
+
 import React from 'react'
 import { PWView, PWButton } from '@components/core'
 import { EmptyView } from '@components/EmptyView/EmptyView'

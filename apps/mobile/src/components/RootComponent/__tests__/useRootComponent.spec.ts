@@ -27,17 +27,13 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
     useAllAccounts: () => [],
 }))
 
-vi.mock('@perawallet/wallet-core-migrate', () => ({
-    useNeedsMigration: () => ({ isChecking: true, needsMigration: false }),
-}))
-
 describe('useRootComponent', () => {
     beforeEach(() => {
         vi.clearAllMocks()
     })
 
     it('holds the background poll while the migration is still running', () => {
-        renderHook(() => useRootComponent())
+        renderHook(() => useRootComponent({ migrationInProgress: true }))
 
         expect(mocks.stop).toHaveBeenCalled()
         expect(mocks.start).not.toHaveBeenCalled()
