@@ -180,12 +180,9 @@ class Logger {
                     readSafely(() => messageOrError.stack).value,
                 ) as typeof reportableError.stack
 
-                // A declared report code is the only key: this error's own
-                // stack separates sites better than a shared name would, and a
-                // name-derived key would prepend an identical frame above
-                // distinct stacks and merge them. A code is the exception, for
-                // an error one factory builds for many causes, whose stacks all
-                // start in that factory.
+                // Only a declared code keys an Error with its own stack: a shared
+                // name would merge distinct stacks, but a factory-built error's
+                // stacks all start in the factory.
                 this.errorReporter({
                     severity,
                     error: reportableError,

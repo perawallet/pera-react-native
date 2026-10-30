@@ -767,6 +767,9 @@ describe('Ethereum broadcaster adapter', () => {
                 'submitted',
                 'failed',
             ])
+            expect(reports().map(report => report.severity)).not.toContain(
+                'error',
+            )
         })
     })
 

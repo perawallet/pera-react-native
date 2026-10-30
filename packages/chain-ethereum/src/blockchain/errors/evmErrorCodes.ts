@@ -73,6 +73,8 @@ export const TRAITS: Record<EvmErrorCode, EvmErrorTraits> = {
         messageKey: i18nKey('errors.evm.replaced_transaction_confirmed.body'),
         severity: ErrorSeverity.MEDIUM,
         retryable: false,
+        // A speed-up or cancel losing the race to its original is ordinary timing.
+        expected: true,
     },
     insufficient_funds: {
         titleKey: i18nKey('errors.evm.insufficient_funds.title'),

@@ -53,8 +53,6 @@ export class EvmError extends BlockchainError {
             {
                 severity,
                 retryable,
-                // A timeout or dropped connection classifies `unknown` but is
-                // the environment's fault, so it must not report as a crash.
                 expected:
                     expected ??
                     (isEnvironmentFailure(originalError) ? true : undefined),
