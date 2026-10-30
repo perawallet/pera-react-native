@@ -29,6 +29,7 @@ import {
     peraConnectJS,
     peraMobileInterfaceJS,
 } from './injected-scripts'
+import { useEip1193Bridge } from './useEip1193Bridge'
 import { useStyles } from './styles'
 import {
     useContextFingerprints,
@@ -139,6 +140,11 @@ export const usePWWebView = (props: PWWebViewProps): UsePWWebViewResult => {
     // Per-mount secret stamped onto bridge messages by the main-frame-only
     // injected script; native drops messages without it (subframe-forged).
     const bridgeToken = useRef(generateBridgeToken()).current
+    const eip1193 = useEip1193Bridge({
+        webview,
+        bridgeToken,
+        isEnabled: enablePeraConnect,
+    })
     const [title, setTitle] = useState('')
     const [navigationState, setNavigationState] = useState<WebViewNativeEvent>()
     const isDarkMode = useIsDarkMode()
@@ -270,6 +276,16 @@ export const usePWWebView = (props: PWWebViewProps): UsePWWebViewResult => {
                 return
             }
 
+            // Answered by the dApp transport, which reads the posting frame's
+            // origin itself; it never reaches the Pera bridge.
+            if (
+                eip1193.handleMessage(
+                    data,
+                    resolveMessageSecurity(event).sourceUrl ?? '',
+                )
+            ) {
+                return
+            }
             logger.debug('WebView: Received onMessage event', {
                 data,
             })
@@ -287,6 +303,7 @@ export const usePWWebView = (props: PWWebViewProps): UsePWWebViewResult => {
             mobileInterface,
             bridgeToken,
             resolveMessageSecurity,
+            eip1193,
         ],
     )
 
@@ -300,6 +317,7 @@ export const usePWWebView = (props: PWWebViewProps): UsePWWebViewResult => {
             // immediately downgrades the bridge to untrusted.
             if (navState.url) {
                 trackNavigation(navState.url)
+                eip1193.trackNavigation(navState.url)
                 setCurrentUrl(navState.url)
                 // `loading: false` marks a committed navigation — including
                 // same-document ones (hash/pushState), which never "load".
@@ -308,7 +326,7 @@ export const usePWWebView = (props: PWWebViewProps): UsePWWebViewResult => {
                 }
             }
         },
-        [trackNavigation],
+        [trackNavigation, eip1193],
     )
 
     const reload = useCallback(() => {
@@ -378,10 +396,11 @@ export const usePWWebView = (props: PWWebViewProps): UsePWWebViewResult => {
                 ? joinWebViewScripts(
                       peraMobileInterfaceJS(bridgeToken),
                       peraConnectJS,
+                      eip1193.injectedScript,
                       webViewScript`true;`,
                   )
                 : undefined,
-        [enablePeraConnect, bridgeToken],
+        [enablePeraConnect, bridgeToken, eip1193.injectedScript],
     )
 
     // The connect/interface scripts run again at document end because
@@ -396,10 +415,17 @@ export const usePWWebView = (props: PWWebViewProps): UsePWWebViewResult => {
                     ? peraMobileInterfaceJS(bridgeToken)
                     : undefined,
                 enablePeraConnect ? peraConnectJS : undefined,
+                eip1193.injectedScript,
                 customJavaScript,
                 updateTheme(theme.mode),
             ),
-        [enablePeraConnect, customJavaScript, theme.mode, bridgeToken],
+        [
+            enablePeraConnect,
+            customJavaScript,
+            theme.mode,
+            bridgeToken,
+            eip1193.injectedScript,
+        ],
     )
 
     const renderWebView = useCallback(() => {
