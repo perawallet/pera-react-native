@@ -23,12 +23,14 @@ const {
     mockSetFromAsset,
     mockSetToAsset,
     mockSetSelectedAccountId,
+    mockIsCountryRestricted,
     state,
 } = vi.hoisted(() => ({
     routeParams: { current: undefined as Record<string, string> | undefined },
     mockSetFromAsset: vi.fn(),
     mockSetToAsset: vi.fn(),
     mockSetSelectedAccountId: vi.fn(),
+    mockIsCountryRestricted: vi.fn(),
     state: {
         selected: null as Account | null,
         signers: [] as Account[],
@@ -75,6 +77,10 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
     getKnownAssetId: () => '31566704',
 }))
 
+vi.mock('@perawallet/wallet-core-remote-config', () => ({
+    useIsRegionRestricted: mockIsCountryRestricted,
+}))
+
 vi.mock('../useSeedSwapRouteAssets', () => ({
     useSeedSwapRouteAssets: vi.fn(),
 }))
@@ -86,6 +92,7 @@ describe('useSwapScreen', () => {
         state.selected = { id: 'acc-1' }
         state.signers = [{ id: 'acc-1' }]
         state.swapChainAccounts = new Set(['acc-1', 'acc-2'])
+        mockIsCountryRestricted.mockReturnValue(false)
     })
 
     it("swaps on the selected account's chain scope", () => {
@@ -151,5 +158,20 @@ describe('useSwapScreen', () => {
         const { result } = renderHook(() => useSwapScreen())
 
         expect(result.current.initialPayAmount).toBeUndefined()
+    })
+
+    it('flags the region notice where region_restrictions restricts swap there', () => {
+        mockIsCountryRestricted.mockReturnValue(true)
+
+        const { result } = renderHook(() => useSwapScreen())
+
+        expect(mockIsCountryRestricted).toHaveBeenCalledWith('swap')
+        expect(result.current.isRegionRestricted).toBe(true)
+    })
+
+    it('leaves Swap open elsewhere', () => {
+        const { result } = renderHook(() => useSwapScreen())
+
+        expect(result.current.isRegionRestricted).toBe(false)
     })
 })

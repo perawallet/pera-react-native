@@ -11,6 +11,7 @@
  */
 
 import { useCallback } from 'react'
+import { useIsRegionRestricted } from '@perawallet/wallet-core-remote-config'
 import {
     useSwaps,
     useTopPairsQuery,
@@ -32,11 +33,12 @@ export type UseSwapTopPairsResult = {
 export const useSwapTopPairs = (scope: ChainScope): UseSwapTopPairsResult => {
     const { setFromAsset, setToAsset } = useSwaps(scope)
     const { analytics } = usePeraProvider()
+    const isRestricted = useIsRegionRestricted('crypto_promotion')
     const {
         data: pairs = [],
         isLoading,
         isError,
-    } = useTopPairsQuery(scope, TOP_PAIRS_LIMIT)
+    } = useTopPairsQuery(scope, TOP_PAIRS_LIMIT, !isRestricted)
 
     const handlePairPress = useCallback(
         (pair: TopPairItem) => {
@@ -56,7 +58,8 @@ export const useSwapTopPairs = (scope: ChainScope): UseSwapTopPairsResult => {
     )
 
     return {
-        pairs,
+        // The persisted query cache can still hold pairs fetched before.
+        pairs: isRestricted ? [] : pairs,
         isLoading,
         isError,
         handlePairPress,

@@ -114,7 +114,7 @@ catalog:
   vite: ^8.2.1
   vitest: ^5.0.3
   xstate: ^5.28.0
-  zod: ^4.4.3
+  zod: ^4.6.7
   zustand: ^5.0.12
 
 packageExtensions:
@@ -151,6 +151,10 @@ auditConfig:
     # @expo/metro-file-map, which match our own build globs, never user input,
     # and never ship to a device. Drop this entry once braces publishes a fix.
     - GHSA-vfj7-8cjw-p6xm # braces: stack exhaustion via deeply nested patterns
+    # zod 3.x has no patched release (fixed only in 4.6.6). The only 3.x copy is
+    # @expo/cli's, which never ships to a device; the zod override floors every
+    # 4.x copy. Drop this entry once @expo/cli moves to zod 4.
+    - GHSA-mrhx-c7xc-m3w5 # zod: memory exhaustion validating oversized arrays
 
 minimumReleaseAgeExclude:
   # @algorandfoundation/keystore is deliberately NOT listed: nothing in the
@@ -337,7 +341,11 @@ overrides:
   # patched in 4.1.5. Pinned to the lowest patched version rather than latest so
   # the resolution stays behind the minimumReleaseAge window without an exclude
   # entry.
-  fast-uri@<4.1.5: 4.1.5
+  fast-uri@<4.2.3: 4.2.3
+  # GHSA-gg6h-894w-4m9c: quadratic-time lookbehind matching in re2js 2.2.0 to
+  # 2.8.6, reached through firebase's firestore.
+  re2js@>=2.2.0 <2.8.7: 2.9.0
+  zod@>=4.0.0 <4.6.6: ^4.6.7
   happy-dom@>=19.0.0 <20.0.2: '>=20.0.2'
   # The 4.x consumers already resolve to 5.x through this open range; the floor
   # names the patched 5.x so a stale lock entry cannot hold them below it.

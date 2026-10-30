@@ -30,6 +30,7 @@ export const RemoteConfigKeys = {
     enable_ssl_pinning_pera_api: 'enable_ssl_pinning_pera_api',
     enable_language_selection: 'enable_language_selection',
     enable_gift_cards: 'enable_gift_cards',
+    region_restrictions: 'region_restrictions',
     active_locales: 'active_locales',
     terms_version: 'terms_version',
     network_reachability_url: 'network_reachability_url',
@@ -96,6 +97,11 @@ export const RemoteConfigDefaults: Readonly<
     // itself is currently unavailable; testers force it on via the
     // developer-settings flag overrides.
     enable_gift_cards: false,
+    // Client device-region guard; the backend separately enforces IP restrictions.
+    // ISO country code to restricted features, e.g. {"GB": ["crypto_promotion",
+    // "swap"]}. Features: crypto_promotion (Top Swap Pairs, Discover's Trending
+    // NFTs and Markets), swap (Swap, XO included) and xo_swap (XO in Fund).
+    region_restrictions: '{}',
     // Bump to re-prompt every user for Terms & Conditions acceptance. The app
     // compares this against the last version the user accepted (stored on disk).
     terms_version: '2',

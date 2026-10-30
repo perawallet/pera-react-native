@@ -18,6 +18,10 @@ import {
     type RefetchOptions,
 } from '@tanstack/react-query'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import {
+    isRegionRestricted,
+    useRemoteConfig,
+} from '@perawallet/wallet-core-remote-config'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
 import { getRampPairs } from '../api'
@@ -44,6 +48,7 @@ export type UseRampPairsQueryResult = {
 // One stable empty array, so memos that depend on `data` don't re-run every render.
 const NO_RESULTS: RampPair[] = []
 const NO_TOKEN_IDS: readonly string[] = []
+const XO_PROVIDER_ID = 'xo'
 
 export const useRampPairsQuery = ({
     scope,
@@ -64,9 +69,23 @@ export const useRampPairsQuery = ({
         enabled: enabled && destinationTokenIds.length > 0,
     })
 
+    const remoteConfig = useRemoteConfig()
+    // XO is itself a crypto swap, so leaving Swap out removes it too.
+    const isXoRestricted = (['xo_swap', 'swap'] as const).some(feature =>
+        isRegionRestricted(remoteConfig, feature),
+    )
+
     const data = useMemo(
-        () => query.data?.filter(isOfferedRampPair) ?? NO_RESULTS,
-        [query.data],
+        () =>
+            query.data?.filter(
+                pair =>
+                    isOfferedRampPair(pair) &&
+                    !(
+                        isXoRestricted &&
+                        pair.provider.id.toLowerCase() === XO_PROVIDER_ID
+                    ),
+            ) ?? NO_RESULTS,
+        [query.data, isXoRestricted],
     )
 
     return {

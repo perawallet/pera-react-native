@@ -3515,6 +3515,10 @@
             "title": "Top 5 des swaps",
             "volume_24h": "Volume (24 h)",
             "error": "Impossible de charger le top des swaps"
+        },
+        "region_restricted": {
+            "title": "Swap indisponible",
+            "body": "Le Swap n’est pas disponible dans votre région."
         }
     },
     "onramp": {

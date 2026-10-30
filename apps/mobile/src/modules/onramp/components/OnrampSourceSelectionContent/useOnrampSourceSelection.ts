@@ -43,6 +43,8 @@ type UseOnrampSourceSelectionResult = {
     canExpandFiat: boolean
     fiatTokens: RampToken[]
     cryptoTokens: RampToken[]
+    /** False when no pair offers a crypto source (e.g. XO left out), so the fiat/crypto chips have nothing to split. */
+    hasCryptoSources: boolean
     isFiat: (token: RampToken) => boolean
     /**
      * Lower-cased symbols shared by more than one source token (e.g. USDC on
@@ -106,6 +108,8 @@ export const useOnrampSourceSelection = (): UseOnrampSourceSelectionResult => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
         [sourceTokens, query],
     )
+
+    const hasCryptoSources = sourceTokens.some(t => !isFiatToken(t))
 
     const cryptoTokens = useMemo(
         () => sourceTokens.filter(t => !isFiatToken(t) && matchesSearch(t)),
@@ -183,6 +187,7 @@ export const useOnrampSourceSelection = (): UseOnrampSourceSelectionResult => {
         canExpandFiat,
         fiatTokens: visibleFiatTokens,
         cryptoTokens,
+        hasCryptoSources,
         isFiat: isFiatToken,
         duplicatedSymbols,
     }

@@ -71,6 +71,7 @@ vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
         },
         deviceInfo: {
             getDevicePlatform: () => 'ios',
+            getDeviceCountry: () => 'US',
             getDeviceModel: () => 'iPhone',
             getDeviceId: () => 'test-device-id',
             getVersion: () => '1.0.0',
@@ -215,6 +216,7 @@ vi.mock('@perawallet/wallet-extension-provider', async () => {
         },
         deviceInfo: {
             getDevicePlatform: () => 'ios',
+            getDeviceCountry: () => 'US',
             getDeviceModel: () => 'iPhone',
             getDeviceId: () => 'test-device-id',
             getVersion: () => '1.0.0',

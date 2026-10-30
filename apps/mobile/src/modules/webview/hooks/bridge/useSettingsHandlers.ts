@@ -15,6 +15,7 @@ import type WebView from 'react-native-webview'
 import { useNetwork } from '@perawallet/wallet-core-chain-shared'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { useDeviceID } from '@perawallet/wallet-core-device'
+import { useRegionRestrictedFeatures } from '@perawallet/wallet-core-remote-config'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { usePeraProvider } from '@perawallet/wallet-extension-provider'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
@@ -37,6 +38,7 @@ export const useSettingsHandlers = (
     const { deviceInfo } = usePeraProvider()
     const { preferredCurrency } = useCurrency()
     const { currentLanguage } = useLanguage()
+    const restrictedFeatures = useRegionRestrictedFeatures()
 
     const getSettings = useCallback<BridgeHandler>(
         message => {
@@ -56,6 +58,9 @@ export const useSettingsHandlers = (
                 // change; `language` below is the app's resolved locale.
                 region: deviceInfo.getDeviceCountry(),
                 language: resolveWebviewLanguage(currentLanguage),
+                // Discover applies the app's region_restrictions rather than
+                // its own Firebase copy, so the two can't disagree.
+                restrictedFeatures,
                 protocolVersion: '3',
             }
             sendMessageToWebview(message.id, payload, webview)
@@ -67,6 +72,7 @@ export const useSettingsHandlers = (
             theme,
             network,
             currentLanguage,
+            restrictedFeatures,
             webview,
         ],
     )

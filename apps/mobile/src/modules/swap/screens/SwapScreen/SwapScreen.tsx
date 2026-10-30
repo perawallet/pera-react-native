@@ -14,6 +14,7 @@ import { useCallback, useEffect, useRef } from 'react'
 import { useLanguage } from '@hooks/useLanguage'
 import { config } from '@perawallet/wallet-core-config'
 import { PWIcon, PWText, PWToolbar, PWView } from '@components/core'
+import { EmptyView } from '@components/EmptyView'
 import {
     AccountSelection,
     AccountDrawerPager,
@@ -32,11 +33,18 @@ export const SwapScreen = () => {
     const { pushWebView } = useWebView()
     const { isIntroductionSeen, markIntroductionSeen } = useSwapIntroduction()
     const { request: requestBottomSheet } = useBottomSheet()
-    const { scope, initialPayAmount, accountPicker } = useSwapScreen()
+    const { scope, initialPayAmount, accountPicker, isRegionRestricted } =
+        useSwapScreen()
 
     const hasShownIntroRef = useRef(false)
     useEffect(() => {
-        if (isIntroductionSeen || hasShownIntroRef.current) return
+        if (
+            isIntroductionSeen ||
+            isRegionRestricted ||
+            hasShownIntroRef.current
+        ) {
+            return
+        }
         hasShownIntroRef.current = true
         void requestBottomSheet<'start'>({
             contents: <SwapIntroductionContent />,
@@ -50,7 +58,12 @@ export const SwapScreen = () => {
                 markIntroductionSeen()
             }
         })
-    }, [isIntroductionSeen, requestBottomSheet, markIntroductionSeen])
+    }, [
+        isIntroductionSeen,
+        isRegionRestricted,
+        requestBottomSheet,
+        markIntroductionSeen,
+    ])
 
     const handleInfoPress = useCallback(() => {
         pushWebView({ url: config.swapSupportUrl })
@@ -91,13 +104,22 @@ export const SwapScreen = () => {
                     </PWText>
                 </PWView>
 
-                {scope && (
-                    <PWView style={styles.formWrapper}>
-                        <SwapForm
-                            scope={scope}
-                            initialPayAmount={initialPayAmount}
-                        />
-                    </PWView>
+                {isRegionRestricted ? (
+                    <EmptyView
+                        icon='globe'
+                        title={t('swap.region_restricted.title')}
+                        body={t('swap.region_restricted.body')}
+                        testID='swap_region_restricted'
+                    />
+                ) : (
+                    scope && (
+                        <PWView style={styles.formWrapper}>
+                            <SwapForm
+                                scope={scope}
+                                initialPayAmount={initialPayAmount}
+                            />
+                        </PWView>
+                    )
                 )}
             </PWView>
         </AccountDrawerPager>
