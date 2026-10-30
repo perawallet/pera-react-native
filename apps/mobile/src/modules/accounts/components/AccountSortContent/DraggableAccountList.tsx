@@ -26,7 +26,7 @@ type DraggableAccountListProps = {
 }
 
 const accountAddressOf = (account: WalletAccount) =>
-    chainAccountOf(account, LEGACY_CHAIN_ID)?.address;
+    chainAccountOf(account, LEGACY_CHAIN_ID)?.address
 
 export const DraggableAccountList = ({
     accounts,

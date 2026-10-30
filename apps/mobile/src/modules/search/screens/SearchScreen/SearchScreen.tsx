@@ -28,7 +28,7 @@ import { useSearchScreen } from './useSearchScreen'
 const SKELETON_ROW_COUNT = 5
 
 const accountAddressOf = (account: WalletAccount) =>
-    chainAccountOf(account, LEGACY_CHAIN_ID)?.address;
+    chainAccountOf(account, LEGACY_CHAIN_ID)?.address
 
 export const SearchScreen = () => {
     const styles = useStyles()
