@@ -557,7 +557,7 @@
         },
         "compatibility": {
             "title": "Utiliser cette passphrase dans d’autres wallets",
-            "evm": "Réseaux compatibles Ethereum : les wallets BIP39 standard, comme MetaMask, Uniswap ou Rabby, peuvent importer ces mots, et l’adresse de votre premier compte sera identique. Après l’import, il est possible que vous ne voyiez que cette première adresse. Certains wallets affichent vos autres adresses dès qu’elles ont été utilisées ; dans d’autres, vous devrez les ajouter manuellement. Elles apparaissent dans le même ordre que vos comptes dans Pera.",
+            "evm": "Réseaux compatibles Ethereum : les wallets BIP39 standard, comme MetaMask, Uniswap ou Rabby, peuvent importer ces mots, et l’adresse de votre premier compte sera identique. Après l’import, il est possible que vous ne voyiez que cette première adresse. Certains wallets affichent vos autres adresses dès qu’elles ont été utilisées ; dans d’autres, vous devrez les ajouter manuellement. Elles apparaissent dans l’ordre dans lequel vous les avez créées dans Pera.",
             "algorand": "Algorand : fonctionne dans Pera et dans les autres wallets compatibles avec les wallets HD Algorand à 24 mots. Les anciens wallets Algorand à 25 mots ne peuvent pas l’importer.",
             "warning": "Toute personne qui possède ces mots contrôle vos fonds sur tous les réseaux. Ne les saisissez jamais sur un site web et ne les partagez avec personne."
         }
