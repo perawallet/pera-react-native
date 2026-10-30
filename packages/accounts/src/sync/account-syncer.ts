@@ -20,8 +20,11 @@ import {
     toScopeKey,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
+import { getChainDescriptor } from '@perawallet/wallet-core-chain-shared'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import {
+    getAddedTokenIdsByAccount,
     upsertAccountChainState,
     refreshAccountHoldings,
     getAccountChainStateRow,
@@ -167,6 +170,36 @@ async function seedUnreadNetwork(
         .setHoldingsRefreshFailed(scope, address, true)
 }
 
+// Read before the chain call, beside the prior row, never between the chain's
+// answer and the holdings write. A failed read must not stop listed balances.
+async function readAddedTokenIds(
+    address: string,
+    scope: ChainScope,
+): Promise<readonly string[]> {
+    // An opt-in chain adds on chain, so its sync tick skips the query. Only a
+    // known descriptor can say so: the lookup throws for any other chain.
+    if (
+        getProvider().chains.has(scope.chainId) &&
+        getChainDescriptor(scope.chainId).protocol.requiresAssetOptIn
+    ) {
+        return []
+    }
+    try {
+        const byAccount = await getAddedTokenIdsByAccount({
+            accountAddresses: [address],
+            scope,
+        })
+        return byAccount.get(address) ?? []
+    } catch (error) {
+        logger.warn('Added tokens unreadable; syncing without them', {
+            address,
+            scope,
+            error,
+        })
+        return []
+    }
+}
+
 async function doFetchAndPersistAccount(
     address: string,
     scope: ChainScope,
@@ -174,10 +207,10 @@ async function doFetchAndPersistAccount(
     // The prior row tells the chain how large the account was at its last sync
     // (which can decide its read strategy) and feeds the changed-account diff.
     const adapter = accountsChainAdapters.get(scope.chainId)
-    const prior = await getAccountChainStateRow({
-        accountAddress: address,
-        scope,
-    })
+    const [prior, addedTokenIds] = await Promise.all([
+        getAccountChainStateRow({ accountAddress: address, scope }),
+        readAddedTokenIds(address, scope),
+    ])
 
     const {
         nativeBalanceBaseUnits,
@@ -188,6 +221,7 @@ async function doFetchAndPersistAccount(
     } = await adapter
         .fetchAccountState(address, scope, {
             priorChainState: prior?.chainData,
+            addedTokenIds,
         })
         .catch(async (error: unknown) => {
             if (!prior) {

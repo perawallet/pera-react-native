@@ -102,6 +102,12 @@ export interface AssetsChainAdapter {
      */
     fetchOnChainAsset(ref: AssetRef, scope: ChainScope): Promise<PeraAsset>
     /**
+     * Base units. Absent on a chain whose full on-chain read is as cheap as
+     * this one; callers then take `fetchOnChainAsset`'s supply. Rejects a ref
+     * or a scope on another chain.
+     */
+    fetchOnChainTotalSupply?(ref: AssetRef, scope: ChainScope): Promise<Decimal>
+    /**
      * Absent on a chain whose tokens carry no freeze or clawback authority.
      * Rejects a ref or a scope on another chain.
      */
@@ -264,6 +270,18 @@ export const fetchOnChainAsset = async (
     scope: ChainScope,
 ): Promise<PeraAsset> =>
     assetsAdapterFor(scope).fetchOnChainAsset(assetRefOn(scope, assetId), scope)
+
+/** The chain's own total supply in base units, by the cheapest read the chain offers. */
+export const fetchOnChainTotalSupply = async (
+    assetId: string,
+    scope: ChainScope,
+): Promise<Decimal> => {
+    const adapter = assetsAdapterFor(scope)
+    const ref = assetRefOn(scope, assetId)
+    return adapter.fetchOnChainTotalSupply
+        ? adapter.fetchOnChainTotalSupply(ref, scope)
+        : (await adapter.fetchOnChainAsset(ref, scope)).totalSupply
+}
 
 /** No authority, without a request, on a chain that declares no `fetchAssetAuthorities`. */
 export const fetchAssetAuthorities = async (

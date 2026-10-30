@@ -11,6 +11,7 @@
  */
 
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
+import { http, HttpResponse } from 'msw'
 import { setupServer } from 'msw/node'
 import {
     encodeAbiParameters,
@@ -19,8 +20,12 @@ import {
     type Hex,
 } from 'viem'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import {
+    isPeraNetworkError,
+    isTransientNetworkError,
+} from '@perawallet/wallet-core-shared'
 import { TEST_RPC_URL, testChainContext } from '../../../__tests__/context'
-import { readErc20 } from '../erc20'
+import { readErc20, readErc20TotalSupply } from '../erc20'
 import {
     erc20CallResponder,
     EvmRpcErrorFixture,
@@ -167,5 +172,131 @@ describe('readErc20', () => {
             readErc20(testChainContext(), ETHEREUM, USDC, SCOPE),
         ).rejects.toThrow(/header not found/)
         expect(nameReads).toBe(1)
+    })
+})
+
+describe('readErc20TotalSupply', () => {
+    it("reads only the contract's total supply, in base units, with one call", async () => {
+        const calls: string[] = []
+        server.use(
+            ...evmRpcHandlers({
+                rpcUrl: TEST_RPC_URL,
+                responses: {
+                    eth_call: params => {
+                        calls.push((params[0] as { data: Hex }).data)
+                        return usdcResponder(params)
+                    },
+                },
+            }),
+        )
+
+        const supply = await readErc20TotalSupply(
+            testChainContext(),
+            ETHEREUM,
+            USDC.toLowerCase(),
+            SCOPE,
+        )
+
+        expect(supply.toFixed()).toBe('1000000000000')
+        expect(calls).toEqual([toFunctionSelector('totalSupply()')])
+    })
+
+    it('reads zero when the contract reverts, which the screen shows as unknown', async () => {
+        const supply = await readErc20TotalSupply(
+            testChainContext(),
+            ETHEREUM,
+            '0x00000000000000000000000000000000000000cc',
+            SCOPE,
+        )
+
+        expect(supply.isZero()).toBe(true)
+    })
+
+    it('reads zero from an address with no contract code', async () => {
+        const NO_CODE = '0x00000000000000000000000000000000000000dd'
+        server.use(
+            ...evmRpcHandlers({
+                rpcUrl: TEST_RPC_URL,
+                responses: {
+                    eth_call: erc20CallResponder({
+                        [NO_CODE]: {
+                            name: '',
+                            symbol: '',
+                            decimals: 0,
+                            totalSupply: 0n,
+                            noCode: true,
+                        },
+                    }),
+                },
+            }),
+        )
+
+        const supply = await readErc20TotalSupply(
+            testChainContext(),
+            ETHEREUM,
+            NO_CODE,
+            SCOPE,
+        )
+
+        expect(supply.isZero()).toBe(true)
+    })
+
+    it('rejects with a transient network error when the node rate-limits the call', async () => {
+        server.use(
+            ...evmRpcHandlers({
+                rpcUrl: TEST_RPC_URL,
+                responses: {
+                    eth_call: new EvmRpcErrorFixture(-32005, 'limit exceeded'),
+                },
+            }),
+        )
+
+        const error = await readErc20TotalSupply(
+            testChainContext(),
+            ETHEREUM,
+            USDC,
+            SCOPE,
+        ).catch((reason: unknown) => reason)
+
+        expect(isPeraNetworkError(error)).toBe(true)
+        expect(isTransientNetworkError(error)).toBe(true)
+    })
+
+    it.each([
+        ['a 503 from the node', () => new HttpResponse(null, { status: 503 })],
+        ['a failed connection', () => HttpResponse.error()],
+    ])(
+        'rejects with a transient network error on %s',
+        async (_label, respond) => {
+            server.use(http.post(TEST_RPC_URL, respond))
+
+            const error = await readErc20TotalSupply(
+                testChainContext(),
+                ETHEREUM,
+                USDC,
+                SCOPE,
+            ).catch((reason: unknown) => reason)
+
+            expect(isTransientNetworkError(error)).toBe(true)
+        },
+    )
+
+    it("rejects a node's refusal of the request as it is, not as a transient failure", async () => {
+        server.use(
+            http.post(
+                TEST_RPC_URL,
+                () => new HttpResponse(null, { status: 401 }),
+            ),
+        )
+
+        const error = await readErc20TotalSupply(
+            testChainContext(),
+            ETHEREUM,
+            USDC,
+            SCOPE,
+        ).catch((reason: unknown) => reason)
+
+        expect(error).toBeInstanceOf(Error)
+        expect(isTransientNetworkError(error)).toBe(false)
     })
 })

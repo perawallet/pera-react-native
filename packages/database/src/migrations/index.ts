@@ -37,6 +37,7 @@ import m0021 from './0021_submission_attempts_replacement.sql?raw'
 import m0022 from './0022_transaction_batches.sql?raw'
 import m0023 from './0023_phishing_list_domains.sql?raw'
 import m0024 from './0024_phishing_list_addresses.sql?raw'
+import m0025 from './0025_account_added_tokens.sql?raw'
 
 // Rows cached before the close_amount column heal in place via the chain
 // backfill (chain-algorand's history-cache/close-amount-backfill.ts) — no
@@ -104,4 +105,6 @@ export const migrations: MigrationConfig = {
     '0023_phishing_list_domains': m0023,
     // Created empty; the site-safety seed fills it from the bundled lists on next launch.
     '0024_phishing_list_addresses': m0024,
+    // Created empty; rows only exist once a user adds a token.
+    '0025_account_added_tokens': m0025,
 }

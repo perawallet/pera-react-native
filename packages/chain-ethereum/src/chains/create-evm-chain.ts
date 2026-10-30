@@ -81,6 +81,7 @@ export const createEvmDescriptor = (row: EvmChainRow): ChainDescriptor => {
         },
         explorer: {
             name: row.explorerName,
+            homeUrl: networkId => row.explorerBase[networkId],
             accountUrl: explorerLink('address'),
             transactionUrl: explorerLink('tx'),
             // The native asset has no token page.

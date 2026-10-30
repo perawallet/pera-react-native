@@ -20,6 +20,7 @@ import {
     it,
     vi,
 } from 'vitest'
+import { getAddress } from 'viem'
 import { http, HttpResponse } from 'msw'
 import { setupServer } from 'msw/node'
 import type {
@@ -999,6 +1000,95 @@ describe('search', () => {
         expect(middle.results).toEqual([])
     })
 
+    it('names the native coin from the chain, not the token list', async () => {
+        server.use(
+            ...peraEvmAssetHandlers({
+                baseUrl: TEST_PERA_URL,
+                whitelist: {
+                    1: [{ ...nativeWhitelistItem(1), name: 'Ethereum' }],
+                },
+            }),
+        )
+
+        const page = await searchWith('')
+
+        expect(page.results[0]).toMatchObject({
+            name: ETHEREUM_NATIVE_ASSET.name,
+            unitName: ETHEREUM_NATIVE_ASSET.unitName,
+        })
+    })
+
+    it('reads a pasted contract address the list lacks from the chain', async () => {
+        const UNLISTED = '0x00000000000000000000000000000000000000Ab'
+        server.use(
+            ...peraEvmAssetHandlers({ baseUrl: TEST_PERA_URL, whitelist }),
+            ...rpc({
+                [getAddress(UNLISTED)]: {
+                    name: 'Fresh Token',
+                    symbol: 'FRSH',
+                    decimals: 8,
+                    totalSupply: 10n ** 12n,
+                    balances: {},
+                },
+            }),
+        )
+
+        const page = await searchWith(UNLISTED.toLowerCase())
+
+        expect(page.results).toEqual([
+            expect.objectContaining({
+                assetId: getAddress(UNLISTED),
+                unitName: 'FRSH',
+                peraMetadata: expect.objectContaining({
+                    verificationTier: 'unverified',
+                }),
+            }),
+        ])
+    })
+
+    it('reports a pasted quarantined address as suspicious, caching nothing', async () => {
+        server.use(
+            ...peraEvmAssetHandlers({
+                baseUrl: TEST_PERA_URL,
+                whitelist: {
+                    1: [
+                        nativeWhitelistItem(1),
+                        listed(USDC, 'USD Coin', 'USDC'),
+                    ],
+                },
+                assets: { [DAI_CAIP19]: quarantinedDai },
+            }),
+            ...rpc({ [DAI]: daiOnChain }),
+        )
+        const { node, full } = memoryPersistence()
+
+        const page = await searchWith(DAI.toLowerCase())
+
+        expect(page.results).toEqual([
+            expect.objectContaining({
+                assetId: DAI,
+                peraMetadata: expect.objectContaining({
+                    verificationTier: 'suspicious',
+                }),
+            }),
+        ])
+        expect(node).toEqual([])
+        expect(full).toEqual([])
+    })
+
+    it('finds nothing for a pasted address that is not a token', async () => {
+        server.use(
+            ...peraEvmAssetHandlers({ baseUrl: TEST_PERA_URL, whitelist }),
+            ...rpc({}),
+        )
+
+        const page = await searchWith(
+            '0x00000000000000000000000000000000000000cd',
+        )
+
+        expect(page.results).toEqual([])
+    })
+
     it('finds nothing for an NFT search, without a request', async () => {
         const requests = recordRequests()
 
@@ -1038,6 +1128,66 @@ describe('search', () => {
                 { chainId: 'algorand', networkId: 'mainnet' },
             ),
         ).rejects.toThrow()
+        expect(requests).toEqual([])
+    })
+})
+
+describe('fetchOnChainTotalSupply', () => {
+    it("reads a token's supply from the contract alone", async () => {
+        server.use(
+            ...evmRpcHandlers({
+                rpcUrl: TEST_RPC_URL,
+                responses: {
+                    eth_call: erc20CallResponder({
+                        [USDC]: {
+                            name: 'USD Coin',
+                            symbol: 'USDC',
+                            decimals: 6,
+                            totalSupply: 61_234_567_890_000_000n,
+                        },
+                    }),
+                },
+            }),
+        )
+        const ops = createEthereumAssetsAdapter(
+            testChainContext({ services: [] }),
+            ETHEREUM,
+        )
+
+        const supply = await ops.fetchOnChainTotalSupply!(ref(USDC), SCOPE)
+
+        expect(supply.toFixed()).toBe('61234567890000000')
+    })
+
+    it('has no contract to read for the native coin, and no request', async () => {
+        const requests = recordRequests()
+        const ops = createEthereumAssetsAdapter(
+            testChainContext({ services: [] }),
+            ETHEREUM,
+        )
+
+        const supply = await ops.fetchOnChainTotalSupply!(
+            ref(ETHEREUM_NATIVE_ASSET.assetId),
+            SCOPE,
+        )
+
+        expect(supply.isZero()).toBe(true)
+        expect(requests).toEqual([])
+    })
+
+    it('rejects a ref on another chain before any request', async () => {
+        const requests = recordRequests()
+        const ops = createEthereumAssetsAdapter(
+            testChainContext({ services: [] }),
+            ETHEREUM,
+        )
+
+        await expect(
+            ops.fetchOnChainTotalSupply!(
+                { chainId: 'algorand', assetId: '31566704' },
+                SCOPE,
+            ),
+        ).rejects.toThrow('Not an asset on Ethereum')
         expect(requests).toEqual([])
     })
 })

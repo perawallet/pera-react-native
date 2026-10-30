@@ -40,7 +40,7 @@ import {
     type EvmNftStandard,
 } from '../blockchain/utils/caip19'
 import type { EvmChain } from '../chains/types'
-import { readErc20 } from '../blockchain/utils/erc20'
+import { readErc20, readErc20TotalSupply } from '../blockchain/utils/erc20'
 import {
     ASSETS_MAX_IDS,
     ASSETS_SERVICE,
@@ -252,6 +252,50 @@ const getNftMetadata = async (
     return asset
 }
 
+type TokenRead = {
+    asset: PeraAsset
+    /** Which halves a caller that caches may store. */
+    cache: 'both' | 'node' | 'none'
+}
+
+// Pera's opinion (tier, quarantine) beside the chain's intrinsics; writes
+// nothing, so search can use it too.
+const readToken = async (
+    ctx: ChainContext,
+    chain: EvmChain,
+    tokenId: string,
+    scope: ChainScope,
+): Promise<TokenRead> => {
+    const [fromNode, pera] = await Promise.allSettled([
+        readErc20(ctx, chain, tokenId, scope),
+        hasServices(ctx, scope, ASSETS_SERVICE)
+            ? fetchAssetItems(scope, chain, [tokenId])
+            : [],
+    ])
+    const item =
+        pera.status === 'fulfilled' && pera.value[0]
+            ? toAssetMetadata(tokenId, pera.value[0])
+            : undefined
+    const fromPera = item?.asset ?? null
+    if (fromNode.status === 'rejected') {
+        // A quarantined token has no backend record to fall back on.
+        if (!fromPera) throw fromNode.reason
+        // Unverified decimals: caching them would keep them for the TTL.
+        return { asset: fromPera, cache: 'none' }
+    }
+    if (item?.isQuarantined) {
+        // Both halves, as in syncAssets: a node row alone would read as
+        // fresh and render without the tier.
+        return { asset: asSuspicious(fromNode.value), cache: 'both' }
+    }
+    return {
+        asset: fromPera
+            ? withChainIntrinsics(fromPera, fromNode.value)
+            : fromNode.value,
+        cache: 'node',
+    }
+}
+
 const getAssetMetadata =
     (
         ctx: ChainContext,
@@ -268,35 +312,15 @@ const getAssetMetadata =
         if (!isTokenAddress(tokenId)) {
             throw new InvalidAddressError({ address: assetId })
         }
-        const [fromNode, pera] = await Promise.allSettled([
-            readErc20(ctx, chain, tokenId, scope),
-            hasServices(ctx, scope, ASSETS_SERVICE)
-                ? fetchAssetItems(scope, chain, [tokenId])
-                : [],
-        ])
-        const item =
-            pera.status === 'fulfilled' && pera.value[0]
-                ? toAssetMetadata(tokenId, pera.value[0])
-                : undefined
-        const fromPera = item?.asset ?? null
-        if (fromNode.status === 'rejected') {
-            // A quarantined token has no backend record to fall back on.
-            if (!fromPera) throw fromNode.reason
-            // Unverified decimals: caching them would keep them for the TTL.
-            return fromPera
-        }
+        const { asset, cache } = await readToken(ctx, chain, tokenId, scope)
         // A failed cache write must not fail the read.
-        if (item?.isQuarantined) {
-            const asset = asSuspicious(fromNode.value)
-            // Both halves, as in syncAssets: a node row alone would read as
-            // fresh and render without the tier.
+        if (cache === 'both') {
             await upsertAssets({ items: [asset], scope }).catch(() => undefined)
-            return asset
+        } else if (cache === 'node') {
+            await upsertNodeAssets({ items: [asset], scope }).catch(
+                () => undefined,
+            )
         }
-        const asset = fromPera
-            ? withChainIntrinsics(fromPera, fromNode.value)
-            : fromNode.value
-        await upsertNodeAssets({ items: [asset], scope }).catch(() => undefined)
         return asset
     }
 
@@ -360,6 +384,26 @@ const matchesQuery =
         (asset.assetId !== NATIVE_ASSET_ID &&
             asset.assetId.toLowerCase().startsWith(needle))
 
+// A pasted contract address the list doesn't hold is read from the chain, so
+// any token can be added, with Pera's tier: pasting is how scam tokens arrive,
+// so a quarantined one must reach the warning as suspicious. One that isn't
+// an ERC-20 finds nothing.
+const unlistedToken = async (
+    ctx: ChainContext,
+    chain: EvmChain,
+    query: string,
+    scope: ChainScope,
+): Promise<DisplayableAsset[]> => {
+    if (!isAddress(query, { strict: false })) return []
+    const tokenId = getAddress(query)
+    if (!isTokenAddress(tokenId)) return []
+    try {
+        return [(await readToken(ctx, chain, tokenId, scope)).asset]
+    } catch {
+        return []
+    }
+}
+
 // The backend has no EVM token search, so its token list, which holds no
 // NFTs, is filtered here in one page.
 const search =
@@ -376,10 +420,26 @@ const search =
         if (!hasServices(ctx, scope, ASSETS_SERVICE)) {
             throw new PeraServiceUnavailableError(scope, ASSETS_SERVICE)
         }
-        const assets = (await listedTokens(scope)).map(row => row.asset)
-        const needle = query.trim().toLowerCase()
+        // The list's native row carries the backend's name for it; every
+        // other screen names it from the chain table.
+        const assets = (await listedTokens(scope)).map(({ asset }) =>
+            asset.assetId === NATIVE_ASSET_ID
+                ? {
+                      ...asset,
+                      name: chain.nativeAsset.name,
+                      unitName: chain.nativeAsset.unitName,
+                  }
+                : asset,
+        )
+        const trimmed = query.trim()
+        const needle = trimmed.toLowerCase()
+        if (!needle) return { results: assets, nextCursor: undefined }
+        const matches = assets.filter(matchesQuery(needle))
         return {
-            results: needle ? assets.filter(matchesQuery(needle)) : assets,
+            results:
+                matches.length > 0
+                    ? matches
+                    : await unlistedToken(ctx, chain, trimmed, scope),
             nextCursor: undefined,
         }
     }
@@ -406,6 +466,16 @@ export const createEthereumAssetsAdapter = (
                 throw new InvalidAddressError({ address: assetId })
             }
             return readErc20(ctx, chain, assetId, scope)
+        },
+        fetchOnChainTotalSupply: async (ref, scope) => {
+            eip155ChainIdOf(scope, chain)
+            const assetId = evmAssetIdOf(chain, ref)
+            if (assetId === NATIVE_ASSET_ID)
+                return chain.nativeAsset.totalSupply
+            if (isEvmNftAssetId(assetId)) {
+                throw new InvalidAddressError({ address: assetId })
+            }
+            return readErc20TotalSupply(ctx, chain, assetId, scope)
         },
         search: search(ctx, chain, listedTokens),
         getPrices: getPrices(ctx, chain),

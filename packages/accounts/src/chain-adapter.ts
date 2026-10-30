@@ -233,6 +233,8 @@ export type AccountChangeSignal = {
 export type AccountStateReadHint = {
     /** What the last sync on this scope persisted; undefined when it never synced. */
     priorChainState: Optional<AccountChainState>
+    /** Tokens the user added on this scope, whose balances a chain without opt-in reads too; absent means none. */
+    addedTokenIds?: readonly string[]
 }
 
 export type GetPublicKey = (params: HdIndex) => Promise<Uint8Array>

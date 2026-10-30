@@ -59,6 +59,7 @@ import { toDiscoverTokenDetailPath } from '@modules/discover'
 import type {
     AssetAboutDisplay,
     AssetDetailsDisplay,
+    AssetSupplyDisplay,
 } from '@modules/assets/types/asset-details-display'
 
 export type AssetMarketsProps = {
@@ -66,6 +67,7 @@ export type AssetMarketsProps = {
     scope: ChainScope
     assetDetailsDisplay: AssetDetailsDisplay
     about: AssetAboutDisplay
+    supply: AssetSupplyDisplay
     isNetworkLineVisible?: boolean
 }
 
@@ -74,6 +76,7 @@ export const AssetMarkets = ({
     scope,
     assetDetailsDisplay,
     about,
+    supply,
     isNetworkLineVisible = false,
 }: AssetMarketsProps) => {
     const { VerificationSection, IssuerControlsSection } = assetDetailsDisplay
@@ -257,6 +260,7 @@ export const AssetMarkets = ({
             <AssetMarketStats
                 assetDetails={assetDetails}
                 scope={scope}
+                supply={supply}
             />
 
             <AssetAbout

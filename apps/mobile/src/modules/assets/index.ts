@@ -52,11 +52,14 @@ export {
     type GroupedHoldingMember,
 } from './utils/groupedHoldings'
 export { toChainFilterOptions } from './utils/toChainFilterOptions'
+export { extractDomain } from './utils/extractDomain'
+export { resolveTotalSupply } from './utils/resolveTotalSupply'
 export type {
-    AssetAboutParams,
     AssetAboutDisplay,
     AssetChainSectionProps,
     AssetDetailsDisplay,
+    AssetDisplayParams,
     AssetExplorerLink,
+    AssetSupplyDisplay,
 } from './types/asset-details-display'
 export type { CollectibleDetailsDisplay } from './types/collectible-details-display'
