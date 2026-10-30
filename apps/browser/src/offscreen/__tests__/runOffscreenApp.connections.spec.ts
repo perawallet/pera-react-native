@@ -91,7 +91,13 @@ const {
             imported: 0,
             skipped: 0,
         })),
-        canSignWith: vi.fn((_account: TestAccount) => true),
+        canSignWith: vi.fn(
+            (
+                _account: TestAccount,
+                _accounts?: TestAccount[],
+                _chainId?: string,
+            ) => true,
+        ),
         getCustomNetworkConfig: vi.fn(),
         dappTransport,
         createChromeDappTransport: vi.fn(
