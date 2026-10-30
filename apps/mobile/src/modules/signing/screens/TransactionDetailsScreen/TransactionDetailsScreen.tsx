@@ -72,6 +72,21 @@ export const TransactionDetailsScreen = () => {
         )
     }
 
+    if (renderState.kind === 'record') {
+        const { RecordDetailBody, record } = renderState
+        return (
+            <PWScreen testID='transaction_details_screen'>
+                {notice && (
+                    <ChainNotice
+                        {...notice}
+                        testID='transaction_details_notice'
+                    />
+                )}
+                <RecordDetailBody record={record} />
+            </PWScreen>
+        )
+    }
+
     if (renderState.kind === 'loading') {
         return (
             <LoadingView
