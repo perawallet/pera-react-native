@@ -15,7 +15,7 @@ import { useTheme } from '@rneui/themed'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { chainDisplayNameOf } from '@perawallet/wallet-core-chain-shared'
 import { getIconPixelSize, PWText, PWView } from '@components/core'
-import { ChainIcon } from '@modules/chain-ui/icon'
+import { ChainIcon } from '../ChainIcon'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 

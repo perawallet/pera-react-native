@@ -20,7 +20,6 @@ export {
     AssetGroupRow,
     type AssetGroupRowProps,
 } from './components/AssetGroupRow'
-export { ChainLabel, type ChainLabelProps } from './components/ChainLabel'
 export { AccountAssetItemView, AssetItemView } from './components/AssetItem'
 export { AssetNameBadge } from './components/AssetNameBadge'
 export { AssetRowSkeleton } from './components/AssetRowSkeleton'
