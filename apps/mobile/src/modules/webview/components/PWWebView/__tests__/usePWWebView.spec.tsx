@@ -51,16 +51,6 @@ vi.mock('../useWebViewNavigationGuard', () => ({
     }),
 }))
 
-vi.mock('@perawallet/wallet-extension-provider', () => ({
-    usePeraProvider: () => ({
-        deviceInfo: {
-            getDevicePlatform: () => 'ios',
-            getAppVersion: () => '1.0.0',
-            getUserAgent: () => 'Mozilla/5.0',
-        },
-    }),
-}))
-
 vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({ t: (key: string) => key }),
 }))
