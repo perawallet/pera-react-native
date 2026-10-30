@@ -19,7 +19,13 @@ import {
     QueryClient,
     QueryClientProvider,
 } from '@tanstack/react-query'
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import {
+    CHAIN_CAPABILITIES,
+    type ChainCapabilities,
+    type ChainDescriptor,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import { useAccountFundedNetworksQuery } from '../useAccountFundedNetworksQuery'
 
 import type { WalletAccount } from '../../models'
@@ -41,6 +47,24 @@ const UNIVERSAL = accountOn({
     ethereum: { address: '0xabc', keyPairId: 'kp' },
     base: { address: '0xabc', keyPairId: 'kp' },
 })
+
+const ALL_ON = Object.fromEntries(
+    CHAIN_CAPABILITIES.map(capability => [capability, true]),
+) as ChainCapabilities
+
+const registerChains = (...ids: string[]) => {
+    for (const id of ids) {
+        getProvider().chains.register(
+            {
+                id,
+                networks: [
+                    { id: 'mainnet', tier: 'mainnet', isDefaultForTier: true },
+                ],
+            } as unknown as ChainDescriptor,
+            ALL_ON,
+        )
+    }
+}
 
 const mockGetAccountFundedNetworks = vi.fn()
 vi.mock('../../db', () => ({
@@ -65,10 +89,12 @@ const wrapper = () => {
 describe('useAccountFundedNetworksQuery', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        registerChains('algorand', 'ethereum', 'base')
     })
 
     afterEach(() => {
         onlineManager.setOnline(true)
+        getProvider().chains.reset()
     })
 
     it('reads funding across every network, not only the selected one', async () => {

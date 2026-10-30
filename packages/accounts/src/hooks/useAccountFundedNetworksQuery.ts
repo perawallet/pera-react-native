@@ -11,15 +11,15 @@
  */
 
 import { useQueries, type UseQueryResult } from '@tanstack/react-query'
-import type {
-    ChainId,
-    ChainScope,
-} from '@perawallet/wallet-core-chain-contract'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { Maybe } from '@perawallet/wallet-core-shared'
-import { chainAccountOf } from '../credentials/accessors'
 import { getAccountFundedNetworks } from '../db'
-import type { ChainAccount, WalletAccount } from '../models'
+import type { WalletAccount } from '../models'
 import { ensureAccountFetched } from '../sync/account-syncer'
+import {
+    accountChainEntries,
+    useOtherRegisteredChainIds,
+} from './accountChainEntries'
 import { getAccountFundedNetworksQueryKey } from './querykeys'
 
 export type UseAccountFundedNetworksResult = {
@@ -59,43 +59,26 @@ export const useAccountFundedNetworksQuery = (
     account: Maybe<WalletAccount>,
     scope: ChainScope,
 ): UseAccountFundedNetworksResult => {
-    const chainAccounts = account
-        ? (Object.entries(account.chains) as [ChainId, Maybe<ChainAccount>][])
+    const otherChainIds = useOtherRegisteredChainIds(scope.chainId)
+    const entries = account
+        ? accountChainEntries(account, scope.chainId, otherChainIds)
         : []
-    const activeChainAccount = account
-        ? chainAccountOf(account, scope.chainId)
-        : undefined
 
     return useQueries({
-        queries: chainAccounts.flatMap(([chainId, chainAccount]) =>
-            chainAccount
-                ? [
-                      {
-                          queryKey: getAccountFundedNetworksQueryKey(
-                              chainAccount.address,
-                              chainId,
-                              scope,
-                          ),
-                          staleTime: Infinity,
-                          // SQLite is the source of truth; run offline rather
-                          // than pausing (see useAccountSummaryQuery).
-                          networkMode: 'always' as const,
-                          queryFn: async () => {
-                              if (chainAccount === activeChainAccount) {
-                                  await ensureAccountFetched(
-                                      chainAccount.address,
-                                      scope,
-                                  )
-                              }
-                              return getAccountFundedNetworks({
-                                  accountAddress: chainAccount.address,
-                                  chainId,
-                              })
-                          },
-                      },
-                  ]
-                : [],
-        ),
+        queries: entries.map(({ chainId, address, isHome }) => ({
+            queryKey: getAccountFundedNetworksQueryKey(address, chainId, scope),
+            staleTime: Infinity,
+            // SQLite is the source of truth; run offline rather than pausing
+            // (see useAccountSummaryQuery).
+            networkMode: 'always' as const,
+            queryFn: async () => {
+                if (isHome) await ensureAccountFetched(address, scope)
+                return getAccountFundedNetworks({
+                    accountAddress: address,
+                    chainId,
+                })
+            },
+        })),
         combine: combineLookups,
     })
 }
