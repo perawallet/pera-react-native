@@ -265,17 +265,17 @@ describe('toEvmError', () => {
     })
 
     it('treats a user-caused refusal as expected so it stays out of crash reporting', () => {
-        const result = toEvmError(
-            wrapped(new InsufficientFundsError()),
-            'ETH',
-        )
+        const result = toEvmError(wrapped(new InsufficientFundsError()), 'ETH')
 
         expect(result.metadata.expected).toBe(true)
         expect(result.shouldReport()).toBe(false)
     })
 
     it('leaves an unclassified failure without a declared report code, so its stack does the grouping', () => {
-        const result = toEvmError(new Error('some node said something new'), 'ETH')
+        const result = toEvmError(
+            new Error('some node said something new'),
+            'ETH',
+        )
 
         expect(result.code).toBe('unknown')
         expect(result.metadata.reportCode).toBeUndefined()
