@@ -3724,11 +3724,10 @@
         },
         "request": {
             "title": "{{name}} quiere conectarse a tu cuenta",
-            "permissions_title_one": "Se ha solicitado {{count}} permiso",
-            "permissions_title_other": "Se han solicitado {{count}} permisos",
-            "permissions_request_accounts": "Ver la dirección y los saldos de tu wallet",
-            "permissions_sign_transaction": "Solicitar la firma de transacciones",
-            "permissions_sign_data": "Solicitar la firma de datos arbitrarios",
+            "title_network": "{{name}} quiere conectarse a tu cuenta de {{network}}",
+            "title_networks": "{{name}} quiere conectarse a tus cuentas de {{network}} y {{otherNetwork}}",
+            "network_not_added": "No añadida",
+            "origin_verified": "Verificado por WalletConnect",
             "accounts_title": "SELECCIONAR CUENTAS",
             "no_accounts": "Ninguna de tus cuentas puede conectarse en esta red.",
             "success_sheet_title": "Te has conectado a {{name}}",
@@ -3746,6 +3745,13 @@
             "quantum_fee_delivery_failed": "No se ha podido completar la solicitud. Puede que esta app no admita las comisiones de red más altas que requieren las cuentas Quantum.",
             "origin_scam": "Esta app se ha marcado como un riesgo de seguridad. No te conectes a menos que confíes en ella.",
             "origin_unverified": "Pera no pudo verificar el sitio web de esta app."
+        },
+        "permissions": {
+            "heading": "Esta app podrá",
+            "view_accounts": "Ver tu dirección y tus saldos",
+            "approve_transactions": "Pedirte que apruebes transacciones",
+            "sign_messages": "Pedirte que firmes mensajes",
+            "switch_networks": "Pedir cambiar de red"
         },
         "connection": {
             "approve_delivery_failed": "No se ha podido contactar con la dApp para confirmar la conexión. Comprueba tu conexión a internet y vuelve a intentarlo."
@@ -3771,6 +3777,7 @@
             "disconnect_failed_title": "No se pudo desconectar",
             "version": "Esta sesión usa WalletConnect V{{version}}",
             "connected_accounts": "Conectado con",
+            "network_label": "{{chain}} {{network}}",
             "permissions": "Permisos avanzados",
             "permissions_info_title": "Permisos avanzados",
             "permissions_info_body": "WalletConnect es un protocolo de comunicación para web3 que permite a las wallets y a las dApps conectarse e interactuar de forma segura. Con cada nueva versión, WalletConnect introduce nuevas formas de gestionar, firmar o mostrar las solicitudes de transacción que llegan de proyectos de terceros."

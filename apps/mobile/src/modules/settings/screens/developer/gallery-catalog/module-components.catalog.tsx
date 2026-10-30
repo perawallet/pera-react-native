@@ -684,9 +684,9 @@ registerPreview({
     id: 'comp-permission-item',
     render: () => (
         <PWView>
-            <PermissionItem permission='algo_signTxn' />
-            <PermissionItem permission='algo_signData' />
-            <PermissionItem permission='algo_getAccounts' />
+            <PermissionItem permission='approve-transactions' />
+            <PermissionItem permission='sign-messages' />
+            <PermissionItem permission='view-accounts' />
         </PWView>
     ),
 })

@@ -138,4 +138,75 @@ describe('useEnableChainAction', () => {
         await flushFrame()
         await waitFor(() => expect(mocks.enableChain).toHaveBeenCalledTimes(2))
     })
+    describe('enableChainOnAccounts', () => {
+        it('enables the accounts in order and reports once when all are done', async () => {
+            const order: string[] = []
+            mocks.enableChain.mockImplementation(async (id: string) => {
+                order.push(id)
+                return { id }
+            })
+            const onEnabled = vi.fn()
+            const { result } = renderHook(() => useEnableChainAction('Failed'))
+
+            act(() => {
+                result.current.enableChainOnAccounts(
+                    ['a', 'b'],
+                    ETHEREUM,
+                    onEnabled,
+                )
+            })
+            expect(result.current.enablingChainId).toBe(ETHEREUM)
+            await flushFrame()
+
+            await waitFor(() => expect(onEnabled).toHaveBeenCalledTimes(1))
+            expect(order).toEqual(['a', 'b'])
+            await waitFor(() =>
+                expect(result.current.enablingChainId).toBeUndefined(),
+            )
+        })
+
+        it('ignores a second call while the first is running', async () => {
+            mocks.enableChain.mockReturnValue(new Promise(() => {}))
+            const { result } = renderHook(() => useEnableChainAction('Failed'))
+
+            act(() => {
+                result.current.enableChainOnAccounts(['a'], ETHEREUM)
+                result.current.enableChainOnAccounts(['b'], ETHEREUM)
+            })
+            await flushFrame()
+
+            await waitFor(() =>
+                expect(mocks.enableChain).toHaveBeenCalledTimes(1),
+            )
+            expect(mocks.enableChain).toHaveBeenCalledWith(
+                'a',
+                ETHEREUM,
+                'user',
+            )
+        })
+
+        it('stops at the first failure and reports it once', async () => {
+            const error = new Error('derivation failed')
+            mocks.enableChain
+                .mockResolvedValueOnce({ id: 'a' })
+                .mockRejectedValueOnce(error)
+            const onEnabled = vi.fn()
+            const { result } = renderHook(() => useEnableChainAction('Failed'))
+
+            act(() => {
+                result.current.enableChainOnAccounts(
+                    ['a', 'b', 'c'],
+                    ETHEREUM,
+                    onEnabled,
+                )
+            })
+            await flushFrame()
+
+            await waitFor(() =>
+                expect(mocks.showError).toHaveBeenCalledTimes(1),
+            )
+            expect(mocks.enableChain).toHaveBeenCalledTimes(2)
+            expect(onEnabled).not.toHaveBeenCalled()
+        })
+    })
 })

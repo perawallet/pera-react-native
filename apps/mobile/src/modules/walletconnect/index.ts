@@ -13,6 +13,7 @@
 // The approval sheets and the pairing overlay are mounted by the
 // app shell and ConnectionsProvider: `@modules/walletconnect/shell`.
 export { WalletConnectErrorBoundary } from './components/BaseErrorBoundary'
+export { ConnectionPermissionsPanel } from './components/ConnectionPermissionsPanel'
 export { PermissionItem } from './components/PermissionItem'
 export { WalletConnectErrorContent } from './components/WalletConnectErrorContent'
 export { useReturnToDapp } from './hooks/useReturnToDapp'
@@ -24,5 +25,9 @@ export {
     deliverRejectInBackground,
     setActiveWalletConnectV1Delivery,
 } from './utils/activeV1Delivery'
+export {
+    toConnectionPermissions,
+    type ConnectionPermission,
+} from './utils/connectionPermissions'
 export { getPreferredDappIcon } from './utils/dapp-icon'
 export { uniqueChainIds } from './utils/uniqueChainIds'

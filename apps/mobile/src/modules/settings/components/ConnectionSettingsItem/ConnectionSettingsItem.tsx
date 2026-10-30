@@ -22,7 +22,8 @@ import {
     PWView,
 } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import { getPreferredDappIcon } from '@modules/walletconnect'
+import { ChainIconStack } from '@modules/chain-ui/icon'
+import { getPreferredDappIcon, uniqueChainIds } from '@modules/walletconnect'
 import type { ConnectionSettingsRow } from '@perawallet/wallet-core-connections'
 import { useStyles } from './styles'
 
@@ -36,6 +37,10 @@ export const ConnectionSettingsItem = ({
     const styles = useStyles()
     const { t } = useLanguage()
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
+
+    const chainIds = uniqueChainIds(
+        connection.networks.map(network => network.chainId),
+    )
 
     const handlePress = () => {
         navigation.navigate('WalletConnectSettingsDetails', { connection })
@@ -87,6 +92,7 @@ export const ConnectionSettingsItem = ({
                               ),
                           })}
                 </PWText>
+                {chainIds.length > 0 && <ChainIconStack chainIds={chainIds} />}
                 <PWBadge
                     variant={connection.isConnected ? 'positive' : 'secondary'}
                     value={

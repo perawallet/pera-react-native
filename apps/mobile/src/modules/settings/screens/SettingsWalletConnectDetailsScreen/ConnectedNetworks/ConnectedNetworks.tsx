@@ -10,7 +10,10 @@
  limitations under the License
  */
 
-import { PWText, PWView } from '@components/core'
+import { useTheme } from '@rneui/themed'
+import { getIconPixelSize, PWText, PWView } from '@components/core'
+import { useLanguage } from '@hooks/useLanguage'
+import { ChainIcon } from '@modules/chain-ui/icon'
 import { type ConnectedNetworkLabel } from '../useSettingsWalletConnectDetailsScreen'
 import { useStyles } from './styles'
 
@@ -20,6 +23,8 @@ export type ConnectedNetworksProps = {
 
 export const ConnectedNetworks = ({ networks }: ConnectedNetworksProps) => {
     const styles = useStyles()
+    const { theme } = useTheme()
+    const { t } = useLanguage()
     const textStyleFor = (tone: ConnectedNetworkLabel['tone']) => {
         if (tone === 'mainnet') return styles.mainnetText
         if (tone === 'testnet') return styles.testnetText
@@ -29,12 +34,21 @@ export const ConnectedNetworks = ({ networks }: ConnectedNetworksProps) => {
     return (
         <PWView style={styles.networkContainer}>
             {networks.map(network => (
-                <PWText
+                <PWView
                     key={network.key}
-                    style={textStyleFor(network.tone)}
+                    style={styles.networkItem}
                 >
-                    {network.label}
-                </PWText>
+                    <ChainIcon
+                        chainId={network.chainId}
+                        size={getIconPixelSize(theme, 'xs')}
+                    />
+                    <PWText style={textStyleFor(network.tone)}>
+                        {t('walletconnect.settings.network_label', {
+                            chain: network.chainName,
+                            network: network.label,
+                        })}
+                    </PWText>
+                </PWView>
             ))}
         </PWView>
     )
