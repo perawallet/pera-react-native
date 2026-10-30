@@ -44,8 +44,8 @@ export type PinRecord = {
     // leak the flag the random fill exists to hide.
     duressEnabled: 0 | 1
     failedAttempts: number
-    lockoutEndTime: number | null
-    monotonicLockout: MonotonicLockout | null
+    lockoutEndTime: Nullable<number>
+    monotonicLockout: Nullable<MonotonicLockout>
 }
 
 const encoder = new TextEncoder()
@@ -235,7 +235,7 @@ const isValidPinRecord = (value: unknown): value is PinRecord => {
     return true
 }
 
-export const parsePinRecord = (data: Uint8Array): PinRecord | null => {
+export const parsePinRecord = (data: Uint8Array): Nullable<PinRecord> => {
     try {
         const parsed: unknown = JSON.parse(decoder.decode(data))
         if (!isValidPinRecord(parsed)) return null

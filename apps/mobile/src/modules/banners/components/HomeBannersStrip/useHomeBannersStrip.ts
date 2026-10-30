@@ -14,13 +14,14 @@ import { useCallback } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useVisibleBanners, type Banner } from '@perawallet/wallet-core-banners'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { trackEvent, BannersEvent, AnalyticsMetadataKey } from '@analytics'
 import type { RootStackParamList } from '@routes/types'
 
 export type UseHomeBannersStripResult = {
     isVisible: boolean
     banners: Banner[]
-    current: Banner | null
+    current: Nullable<Banner>
     additionalCount: number
     onPress: () => void
 }

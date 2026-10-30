@@ -15,6 +15,7 @@ import {
     type ChainId,
 } from '@perawallet/wallet-core-chain-contract'
 import type { CustomNetworkConfig } from '@perawallet/wallet-core-config'
+import type { Optional } from '@perawallet/wallet-core-shared'
 
 export type CustomNodeGenesis = { genesisHash: string; genesisId: string }
 
@@ -22,7 +23,7 @@ export type CustomNodeGenesis = { genesisHash: string; genesisId: string }
 export interface CustomNodeAdapter {
     readonly chainId: ChainId
     /** The saved node, `undefined` while unconfigured. */
-    read(): CustomNetworkConfig | undefined
+    read(): Optional<CustomNetworkConfig>
     save(config: CustomNetworkConfig): void
     /** Rejects when the node is unreachable or names no genesis hash. */
     fetchGenesis(nodeUrl: string, token?: string): Promise<CustomNodeGenesis>

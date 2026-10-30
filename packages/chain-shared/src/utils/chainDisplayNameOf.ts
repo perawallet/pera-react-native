@@ -12,12 +12,13 @@
 
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { getProvider } from '@perawallet/wallet-extension-provider'
+import type { Optional } from '@perawallet/wallet-core-shared'
 
 /**
  * The chain's user-facing name; undefined for a chain this build doesn't
  * register, which has no name to show (its id isn't copy).
  */
-export const chainDisplayNameOf = (chainId: ChainId): string | undefined => {
+export const chainDisplayNameOf = (chainId: ChainId): Optional<string> => {
     const { chains } = getProvider()
     return chains.has(chainId)
         ? chains.get(chainId).descriptor.displayName

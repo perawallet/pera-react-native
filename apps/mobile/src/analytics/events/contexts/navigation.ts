@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { AnalyticsMetadataKey as Key } from '../metadata-keys'
 
 /** Cross-app navigation events, fired centrally from the route focus listener. */
@@ -22,7 +23,7 @@ export enum NavigationEvent {
 export interface NavigationRequiredPayloads {
     [NavigationEvent.PageView]: {
         [Key.PageTitle]: string
-        [Key.PreviousScreen]: string | null
+        [Key.PreviousScreen]: Nullable<string>
         [Key.Path]?: string
     }
 }

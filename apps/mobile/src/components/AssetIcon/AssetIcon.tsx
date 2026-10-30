@@ -10,14 +10,14 @@
  limitations under the License
  */
 
-import { buildPrismUrl, getInitials } from '@perawallet/wallet-core-shared'
 import {
-    useIsNativeAssetId,
-    type DisplayableAsset,
-} from '@perawallet/wallet-core-assets'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import AlgoAssetIcon from '@assets/icons/assets/algo.svg'
+    buildPrismUrl,
+    getInitials,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
+import type { DisplayableAsset } from '@perawallet/wallet-core-assets'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import { nativeAssetIconOf } from '@modules/chain-ui/icon'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { SvgProps } from 'react-native-svg'
 import {
@@ -32,6 +32,8 @@ import { useTheme } from '@rneui/themed'
 
 export type AssetIconProps = {
     asset: DisplayableAsset
+    /** The asset's chain; null (no account or chain known) draws it as a token. */
+    chainId: Nullable<ChainId>
     size?: PWIconSize
     /** Direct logo URL — used as-is, bypasses Prism optimization.
      *  Takes precedence over `asset.peraMetadata?.logo`. */
@@ -42,10 +44,16 @@ export type AssetIconProps = {
 
 //TODO: we may want a few more "local" asset icons for popular icons (e.g. USDC, DEFLY, etc)
 export const AssetIcon = (props: AssetIconProps) => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
-    const { asset, size, style, logoUrl, shape = 'circle', ...rest } = props
+    const {
+        asset,
+        chainId,
+        size,
+        style,
+        logoUrl,
+        shape = 'circle',
+        ...rest
+    } = props
     const { theme } = useTheme()
-    const isNativeAssetId = useIsNativeAssetId(scope)
     const [loadFailed, setLoadFailed] = useState(false)
 
     const iconSize = getIconPixelSize(theme, size ?? 'md')
@@ -81,9 +89,13 @@ export const AssetIcon = (props: AssetIconProps) => {
 
     const icon = useMemo(() => {
         if (!asset) return <></>
-        if (isNativeAssetId(asset.assetId))
+        const NativeIcon =
+            chainId === null
+                ? undefined
+                : nativeAssetIconOf({ chainId, assetId: asset.assetId })
+        if (NativeIcon)
             return (
-                <AlgoAssetIcon
+                <NativeIcon
                     {...rest}
                     style={styles.icon}
                     width={iconSize}
@@ -112,7 +124,7 @@ export const AssetIcon = (props: AssetIconProps) => {
             </PWView>
         )
     }, [
-        isNativeAssetId,
+        chainId,
         asset,
         rest,
         iconSize,

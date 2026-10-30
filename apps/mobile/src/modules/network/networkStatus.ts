@@ -13,6 +13,7 @@
 import NetInfo, { type NetInfoState } from '@react-native-community/netinfo'
 import { onlineManager } from '@tanstack/react-query'
 import { useNetworkStatusStore } from '@hooks/useNetworkStatusStore'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 /**
  * Must return HTTP 204 with an empty body. iOS has no native reachability
@@ -29,7 +30,7 @@ export const REACHABILITY_URL = 'https://clients3.google.com/generate_204'
  */
 export const OFFLINE_DEBOUNCE_MS = 2000
 
-let offlineTimer: ReturnType<typeof setTimeout> | null = null
+let offlineTimer: Nullable<ReturnType<typeof setTimeout>> = null
 
 /**
  * The boot seed's `fetch()` can resolve seconds later (active probing), by

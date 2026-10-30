@@ -11,6 +11,7 @@
  */
 
 import type { Extension } from '@algorandfoundation/wallet-provider'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { createConnectionStore } from './store'
 import type { ConnectionPersistence, ConnectionStoreAPI } from './models'
 
@@ -22,9 +23,7 @@ export interface ConnectionsExtension {
 export const WithConnections: Extension<ConnectionsExtension> = (
     provider: Record<string, unknown>,
 ) => {
-    const storage = provider.keyValueStorage as
-        | ConnectionPersistence
-        | undefined
+    const storage = provider.keyValueStorage as Optional<ConnectionPersistence>
     if (!storage) {
         throw new Error(
             'WithConnections requires provider.keyValueStorage — compose it after the platform extension',

@@ -10,7 +10,12 @@
  limitations under the License
  */
 
-import { logger, toError } from '@perawallet/wallet-core-shared'
+import {
+    logger,
+    toError,
+    type Nullable,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
 import { deleteItem, readItems } from '../api'
 import {
     parseAccountRecordPayload,
@@ -131,14 +136,14 @@ const liveKeyUnder = (
     state: SyncState,
     address: string,
     prefix: string,
-): BackupItemKey | null =>
+): Nullable<BackupItemKey> =>
     trackedKeysUnder(state, address, prefix).find(isLiveIn(state)) ?? null
 
 /** The record of the account `address` is on, live first. */
 const recordKeyFor = (
     state: SyncState,
     address: string,
-): BackupItemKey | null => {
+): Nullable<BackupItemKey> => {
     const keys = trackedKeysUnder(
         state,
         address,
@@ -154,7 +159,7 @@ const accountAddressesIn = (state: SyncState, address: string): string[] => {
     return (key && state.items[key]?.addresses) || [address]
 }
 
-const recordSeedReference = (item: SyncItemState | undefined): string | null =>
+const recordSeedReference = (item: Optional<SyncItemState>): Nullable<string> =>
     cachedRecordSeedReference(item?.record)
 
 const isSeedSecret = (state: SyncState, key: BackupItemKey): boolean =>
@@ -239,7 +244,7 @@ export const keepAccountInBackup = (
 
 const clearReviewed = (
     item: SyncItemState,
-    fetched: FetchedItem | undefined,
+    fetched: Optional<FetchedItem>,
 ): SyncItemState => ({
     ...item,
     pendingImport: false,
@@ -285,7 +290,7 @@ const collect = (
     }
 }
 
-const seedReferenceOf = (collected: CollectedPayloads): string | null => {
+const seedReferenceOf = (collected: CollectedPayloads): Nullable<string> => {
     for (const record of collected.records) {
         const reference = accountRecordSeedReference(record)
         if (reference) return reference
@@ -396,8 +401,8 @@ const otherLiveAccountKeys = (
 const readSeedReferences = async (
     keys: BackupItemKey[],
     deps: ReviewActionDeps,
-): Promise<Map<BackupItemKey, string | null>> => {
-    const out = new Map<BackupItemKey, string | null>()
+): Promise<Map<BackupItemKey, Nullable<string>>> => {
+    const out = new Map<BackupItemKey, Nullable<string>>()
     if (keys.length === 0) return out
 
     const fetched = await deps.readItems(deps.backupId, deps.deviceId, keys)
@@ -439,13 +444,13 @@ const seedKeyToDelete = async (
     ownKeys: readonly BackupItemKey[],
     seedReference: string,
     deps: ReviewActionDeps,
-): Promise<BackupItemKey | null> => {
+): Promise<Nullable<BackupItemKey>> => {
     // Hashed, not matched: the seed is filed under an account this device may
     // not hold, so nothing caches that address.
     const seedKey = secretsItemKey(deps.hashAddress(seedReference))
     if (!isLiveIn(state)(seedKey)) return null
     const others = otherLiveAccountKeys(state, ownKeys)
-    let references: Map<BackupItemKey, string | null>
+    let references: Map<BackupItemKey, Nullable<string>>
     try {
         references = await readSeedReferences(others, deps)
     } catch (error) {
@@ -554,7 +559,7 @@ const legacyKeysToDelete = async (
     const addressKey = liveKeyUnder(state, address, BACKUP_ACCOUNTS_KEY_PREFIX)
     if (addressKey === null) return []
 
-    let own: Map<BackupItemKey, string | null>
+    let own: Map<BackupItemKey, Nullable<string>>
     try {
         own = await readSeedReferences([addressKey], deps)
     } catch (error) {

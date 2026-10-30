@@ -22,6 +22,7 @@ import {
     decode,
     openData,
 } from '@algorandfoundation/react-native-keystore'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import type { PeraMigrationContext } from '../types'
 import { safeErrorMessage, safeWarn } from '../safeLog'
 import { wipeBytes } from '../sealing'
@@ -106,7 +107,7 @@ export const migration: Migration<PeraMigrationContext> = {
             // already has a flat copy is reprocessed, not skipped.
             // Read failures here are skipped untracked because the scan does
             // not yet know this id names a passkey credential.
-            let metadataRaw: string | undefined
+            let metadataRaw: Optional<string>
             try {
                 metadataRaw = storage.getString(key)
             } catch {
@@ -155,7 +156,7 @@ export const migration: Migration<PeraMigrationContext> = {
             for (const { id, metadataRaw } of pending) {
                 const metadataKey = METADATA_PREFIX + id
                 const materialKey = MATERIAL_PREFIX + id
-                let sealed: string | undefined
+                let sealed: Optional<string>
                 try {
                     sealed = storage.getString(materialKey)
                 } catch {
@@ -177,7 +178,7 @@ export const migration: Migration<PeraMigrationContext> = {
                 // the key untouched rather than treating "couldn't read it"
                 // as "nothing to restore" and deleting a record that might be
                 // perfectly good.
-                let priorFlat: string | undefined
+                let priorFlat: Optional<string>
                 let priorFlatUnknown = false
                 try {
                     priorFlat = storage.getString(id)
@@ -185,7 +186,7 @@ export const migration: Migration<PeraMigrationContext> = {
                     priorFlatUnknown = true
                 }
 
-                let privateKey: Uint8Array | undefined
+                let privateKey: Optional<Uint8Array>
                 try {
                     privateKey = base64.decode(
                         await openData(subtle, unlocked, sealed),

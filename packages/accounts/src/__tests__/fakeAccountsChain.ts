@@ -351,7 +351,10 @@ export const registerFakeAccountsChain = (
 }
 
 /** Registers a descriptor with the native asset's decimals and the two tiers' networks, so network selection resolves as it does before any chain registers. */
-export const registerFakeNativeAsset = (decimals = 6): void => {
+export const registerFakeNativeAsset = (
+    decimals = 6,
+    { requiresAssetOptIn = false }: { requiresAssetOptIn?: boolean } = {},
+): void => {
     getProvider().chains.register(
         {
             id: FAKE_CHAIN_ID,
@@ -360,6 +363,7 @@ export const registerFakeNativeAsset = (decimals = 6): void => {
                 { id: 'testnet', tier: 'testnet', isDefaultForTier: true },
             ],
             nativeAsset: { decimals },
+            protocol: { requiresAssetOptIn },
         } as unknown as ChainDescriptor,
         Object.fromEntries(
             CHAIN_CAPABILITIES.map(capability => [capability, false]),

@@ -18,6 +18,7 @@ import {
     PWView,
 } from '@components/core'
 import type { ChainId, NetworkId } from '@perawallet/wallet-core-chain-contract'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { INVALID_ENDPOINT_MESSAGE_KEY } from './isValidEndpoint'
@@ -41,7 +42,7 @@ export const EndpointOverrideSheet = ({
     const sheet = useEndpointOverrideSheet({ chainId, networkId })
     const { resolve, dismiss } = useBottomSheetResult<void>()
 
-    const errorMessage = (error: EndpointOverrideSheetError | undefined) => {
+    const errorMessage = (error: Optional<EndpointOverrideSheetError>) => {
         if (error === 'invalid-url') {
             return t(INVALID_ENDPOINT_MESSAGE_KEY)
         }

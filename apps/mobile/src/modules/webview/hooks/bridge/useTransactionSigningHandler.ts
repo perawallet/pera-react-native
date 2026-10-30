@@ -32,7 +32,7 @@ import { useRequiredParams } from './useRequiredParams'
 
 export const useTransactionSigningHandler = (
     webview: Nullable<WebView>,
-    sourceUrl: string | null,
+    sourceUrl: Nullable<string>,
 ): BridgeHandler => {
     const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const { t } = useLanguage()

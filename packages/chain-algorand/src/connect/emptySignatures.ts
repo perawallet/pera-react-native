@@ -45,6 +45,7 @@ import {
     encodeToBase64,
     logger,
     type Nullable,
+    type Optional,
 } from '@perawallet/wallet-core-shared'
 import { getKeystoreStore } from '@perawallet/wallet-extension-provider'
 import { PQ_SCHEMES } from '../blockchain/pq/schemes'
@@ -56,7 +57,7 @@ export type EmptySignatureFields = {
     sgnr?: Address
 }
 
-let placeholderTxn: Transaction | undefined
+let placeholderTxn: Optional<Transaction>
 
 // Only carries the signature fields through algosdk's codec; `txn` is dropped.
 const getPlaceholderTxn = (): Transaction => {

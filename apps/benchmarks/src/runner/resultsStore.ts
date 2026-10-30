@@ -13,6 +13,7 @@
 import * as Clipboard from 'expo-clipboard'
 import { File, Paths } from 'expo-file-system'
 import { Share } from 'react-native'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { parseResultsFile, serializeResults } from './resultsFile'
 import type { ResultsFile } from './types'
 
@@ -25,17 +26,17 @@ const save = (name: string, results: ResultsFile): void => {
     file.writeSync(serializeResults(results))
 }
 
-const load = (name: string): ResultsFile | null => {
+const load = (name: string): Nullable<ResultsFile> => {
     const file = fileFor(name)
     return file.exists ? parseResultsFile(file.textSync()) : null
 }
 
 export const saveLatest = (results: ResultsFile): void =>
     save('bench-latest.json', results)
-export const loadLatest = (): ResultsFile | null => load('bench-latest.json')
+export const loadLatest = (): Nullable<ResultsFile> => load('bench-latest.json')
 export const saveBaseline = (results: ResultsFile): void =>
     save('bench-baseline.json', results)
-export const loadBaseline = (): ResultsFile | null =>
+export const loadBaseline = (): Nullable<ResultsFile> =>
     load('bench-baseline.json')
 
 export const exportResults = async (results: ResultsFile): Promise<void> => {

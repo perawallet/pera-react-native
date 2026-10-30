@@ -19,6 +19,7 @@ import {
     decode,
     serializeKey,
 } from '@algorandfoundation/react-native-keystore'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import type { PeraMigrationContext } from '../types'
 import { safeWarn } from '../safeLog'
 
@@ -59,7 +60,7 @@ export const migration: Migration<PeraMigrationContext> = {
         for (const key of allKeys) {
             if (!key.startsWith(METADATA_PREFIX)) continue
 
-            let raw: string | undefined
+            let raw: Optional<string>
             try {
                 raw = storage.getString(key)
             } catch {

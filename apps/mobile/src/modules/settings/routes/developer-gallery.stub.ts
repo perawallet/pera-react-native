@@ -10,8 +10,9 @@
  limitations under the License
  */
 
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { DeveloperGalleryScreens } from './developer-gallery'
 
 export type { DeveloperGalleryScreens } from './developer-gallery'
 
-export const developerGalleryScreens: DeveloperGalleryScreens | null = null
+export const developerGalleryScreens: Nullable<DeveloperGalleryScreens> = null

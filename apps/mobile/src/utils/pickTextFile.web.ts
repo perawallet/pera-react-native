@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import type { Nullable } from '@perawallet/wallet-core-shared'
+
 export type PickedTextFile = {
     name: string
     /** Bytes. Known without reading, so a caller can refuse a large file unread. */
@@ -45,7 +47,9 @@ const readAsText = (file: globalThis.File): Promise<string> =>
  * an OS window and Chrome tears the popup down the instant it takes focus, so
  * the picker opens over a dead surface and neither listener ever runs.
  */
-export const pickTextFile = (accept: string): Promise<PickedTextFile | null> =>
+export const pickTextFile = (
+    accept: string,
+): Promise<Nullable<PickedTextFile>> =>
     new Promise(resolve => {
         const input = document.createElement('input')
         input.type = 'file'

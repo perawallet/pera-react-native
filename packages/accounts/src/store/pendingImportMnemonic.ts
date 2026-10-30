@@ -11,7 +11,7 @@
  */
 
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
-import { registerStore } from '@perawallet/wallet-core-shared'
+import { registerStore, type Nullable } from '@perawallet/wallet-core-shared'
 import {
     handOffSecret,
     mnemonicIndexToWord,
@@ -47,22 +47,22 @@ import {
  */
 type PendingImportMnemonicState = {
     /** Wordlist indices for a phrase whose every token is a wordlist word. */
-    pendingIndices: Uint16Array | null
+    pendingIndices: Nullable<Uint16Array>
     /** UTF-8 fallback for a phrase containing a non-wordlist token. */
-    pendingRawBytes: Uint8Array | null
+    pendingRawBytes: Nullable<Uint8Array>
     resetState: () => void
 }
 
 const STORE_NAME = 'pending-import-mnemonic-store'
 
 const initialState = {
-    pendingIndices: null as Uint16Array | null,
-    pendingRawBytes: null as Uint8Array | null,
+    pendingIndices: null as Nullable<Uint16Array>,
+    pendingRawBytes: null as Nullable<Uint8Array>,
 }
 
 const wipe = (state: {
-    pendingIndices: Uint16Array | null
-    pendingRawBytes: Uint8Array | null
+    pendingIndices: Nullable<Uint16Array>
+    pendingRawBytes: Nullable<Uint8Array>
 }): void => {
     zeroBytes(state.pendingIndices, state.pendingRawBytes)
 }
@@ -109,11 +109,11 @@ export const clearPendingImportMnemonic = (): void => {
  * buffer is zeroed and dropped, so the secret does not linger in the store
  * after the Import screen has read it.
  */
-export const consumePendingImportMnemonic = (): string | null => {
+export const consumePendingImportMnemonic = (): Nullable<string> => {
     const { pendingIndices, pendingRawBytes } =
         usePendingImportMnemonicStore.getState()
 
-    let mnemonic: string | null = null
+    let mnemonic: Nullable<string> = null
     if (pendingIndices) {
         // Materialize the phrase string only here, at the consumption boundary
         // (the Import screen needs it), converting one index at a time rather

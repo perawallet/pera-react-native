@@ -13,6 +13,7 @@
 import { useEffect } from 'react'
 import type { MigrationPlanSummary } from '@perawallet/wallet-extension-platform'
 import { getProvider } from '@perawallet/wallet-extension-provider'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import {
     useMigrationSimulatorStore,
     type ResultRow,
@@ -21,7 +22,7 @@ import {
 type UseMigrationSimulatorResult = {
     plans: MigrationPlanSummary[]
     isLoadingPlans: boolean
-    loadError: Error | null
+    loadError: Nullable<Error>
     selectedVersions: Record<string, number>
     setSelectedVersion: (dbName: string, version: number) => void
     includeUnroutable: boolean

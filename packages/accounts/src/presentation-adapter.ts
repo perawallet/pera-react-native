@@ -15,6 +15,7 @@ import {
     type ChainId,
     type I18nKey,
 } from '@perawallet/wallet-core-chain-contract'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import type { AccountKindId, LocalKeySeed } from './chain-adapter'
 
 /** How an account kind is shown. Keys are i18n keys; glyphs are ids the app maps to icons. */
@@ -103,14 +104,14 @@ export interface AccountPresentationChainAdapter {
     describe(
         kindId: AccountKindId,
         context: AccountKindContext,
-    ): AccountKindPresentation | undefined
+    ): Optional<AccountKindPresentation>
     /** Present only on a chain whose accounts adapter has `authority`. */
     transitionLabel?(
         from: AccountKindId,
         to: AccountKindId,
-    ): AuthorityTransitionLabel | undefined
+    ): Optional<AuthorityTransitionLabel>
     /** Undefined for a key kind (`LocalKeyKind.seed`) the onboarding screens don't offer. */
-    keyKindOptions?(seed: LocalKeySeed): LocalKeyKindOptions | undefined
+    keyKindOptions?(seed: LocalKeySeed): Optional<LocalKeyKindOptions>
 }
 
 export const accountPresentationChainAdapters =

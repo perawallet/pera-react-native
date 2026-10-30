@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import { fetchDelta, isFromSeqTooOldError } from '../api'
 import {
     BACKUP_SECRETS_KEY_PREFIX,
@@ -116,7 +116,7 @@ export const unreadAccountDeltas = (
 export const fetchDeltaOrRebuild = async (
     deps: Pick<SyncEngineDeps, 'backupId' | 'deviceId'>,
     state: SyncState,
-    getManifest: () => Promise<Manifest | null>,
+    getManifest: () => Promise<Nullable<Manifest>>,
 ): Promise<{ deltas: DeltaEntry[]; rebuiltThroughSeq: number }> => {
     try {
         const deltas = await fetchDelta(

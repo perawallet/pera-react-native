@@ -12,6 +12,7 @@
 
 import { http, HttpResponse, type HttpHandler } from 'msw'
 import { validateMockResponse } from '@perawallet/wallet-core-shared/test-utils'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import {
     loginResponseSchema,
     oauthAuthorizeResponseSchema,
@@ -160,7 +161,7 @@ export const mockOauthChain = ({
     code = 'auth-code-1',
 }: MockOauthChainParams = {}): HttpHandler[] => {
     validateMockResponse(tokenResponseSchema, tokenResponse, 'mockOauthChain')
-    let capturedState: string | null = null
+    let capturedState: Nullable<string> = null
     return [
         http.get('*/baanx/oauth/initiate', ({ request }) => {
             capturedState = new URL(request.url).searchParams.get('state')

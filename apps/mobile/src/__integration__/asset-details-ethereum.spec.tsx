@@ -26,7 +26,12 @@ import {
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import {
+    erc20CallResponder,
+    evmRpcHandlers,
+} from '@perawallet/wallet-core-chain-ethereum/test-handlers'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
+import { server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import {
     resetTestDatabase,
@@ -45,7 +50,10 @@ import {
 } from './__fixtures__/multichainHoldings'
 import { ALGO25_TEST_ADDRESS } from './__fixtures__/onboarding'
 
-// The integration setup registers whichever chains config enables.
+const RPC_URL = 'https://mainnet.rpc.test/'
+
+// The integration setup registers whichever chains config enables, and hands
+// each chain the endpoints config gives it.
 vi.mock('@perawallet/wallet-core-config', async importOriginal => {
     const actual =
         await importOriginal<typeof import('@perawallet/wallet-core-config')>()
@@ -55,6 +63,12 @@ vi.mock('@perawallet/wallet-core-config', async importOriginal => {
             ...actual.config,
             chains: { enabled: ['algorand', 'ethereum'], capabilities: {} },
         },
+        chainEndpointsFor: (
+            chainId: Parameters<typeof actual.chainEndpointsFor>[0],
+        ) =>
+            chainId === 'ethereum'
+                ? { mainnet: RPC_URL, sepolia: RPC_URL }
+                : actual.chainEndpointsFor(chainId),
     }
 })
 
@@ -164,6 +178,67 @@ describe('Flow: Asset details on its own network', () => {
         ).toBeNull()
     })
 
+    it('Given ETH, when its Markets tab renders, then it shows a circulating supply with no figure and an explorer link', async () => {
+        selectAccount(TWO_CHAIN_ACCOUNT)
+        renderDetails({ assetId: 'native', chainId: 'ethereum' })
+
+        expect(
+            await screen.findByText('asset_details.markets.circulating_supply'),
+        ).toBeTruthy()
+        expect(screen.getByText('---')).toBeTruthy()
+        expect(
+            screen.queryByText('asset_details.markets.total_supply'),
+        ).toBeNull()
+        expect(screen.getByText('etherscan.io')).toBeTruthy()
+    })
+
+    it("Given an ERC-20 whose stored supply is unknown, when its Markets tab renders, then it shows the contract's total supply", async () => {
+        server.use(
+            ...evmRpcHandlers({
+                rpcUrl: RPC_URL,
+                responses: {
+                    eth_call: erc20CallResponder({
+                        [ETH_USDC]: {
+                            name: 'USD Coin',
+                            symbol: 'USDC',
+                            decimals: 6,
+                            totalSupply: 61_234_567_890_000_000n,
+                        },
+                    }),
+                },
+            }),
+        )
+        selectAccount(TWO_CHAIN_ACCOUNT)
+        renderDetails({ assetId: ETH_USDC, chainId: 'ethereum' })
+
+        expect(
+            await screen.findByText('asset_details.markets.total_supply'),
+        ).toBeTruthy()
+        expect(await screen.findByText('61.23B')).toBeTruthy()
+        expect(
+            screen.getByText('asset_details.collectible.contract'),
+        ).toBeTruthy()
+        expect(
+            screen.queryByText('asset_details.markets.circulating_supply'),
+        ).toBeNull()
+    })
+
+    it('Given an ERC-20 whose contract cannot be read, when its Markets tab renders, then the supply reads ---', async () => {
+        server.use(
+            ...evmRpcHandlers({
+                rpcUrl: RPC_URL,
+                responses: { eth_call: erc20CallResponder({}) },
+            }),
+        )
+        selectAccount(TWO_CHAIN_ACCOUNT)
+        renderDetails({ assetId: ETH_USDC, chainId: 'ethereum' })
+
+        expect(
+            await screen.findByText('asset_details.markets.total_supply'),
+        ).toBeTruthy()
+        expect(screen.getByText('---')).toBeTruthy()
+    })
+
     it('Given an Ethereum token, when its tabs render, then both show a chart and neither shows an unavailable notice', async () => {
         selectAccount(TWO_CHAIN_ACCOUNT)
         renderDetails({ assetId: ETH_USDC, chainId: 'ethereum' })
@@ -214,6 +289,19 @@ describe('Flow: Asset details on its own network', () => {
 
         expect(await screen.findByTestId('asset_details_screen')).toBeTruthy()
         expect(screen.getAllByText('chart.one_week.label')).toHaveLength(2)
+    })
+
+    it('Given an Algorand asset, when its Markets tab renders, then it keeps the total supply and the ASA id', async () => {
+        selectAccount(ALGORAND_ACCOUNT)
+        renderDetails({
+            assetId: USDC_TEST_ASSET.assetId,
+            chainId: 'algorand',
+        })
+
+        expect(
+            await screen.findByText('asset_details.markets.total_supply'),
+        ).toBeTruthy()
+        expect(screen.getByText('asset_details.about.asa_id')).toBeTruthy()
     })
 
     it('Given an account on Algorand alone, when an ASA opens, then no network line shows and both tabs remain', async () => {

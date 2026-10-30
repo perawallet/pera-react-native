@@ -12,7 +12,7 @@
 
 import { useInfiniteQuery } from '@tanstack/react-query'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import type { Optional } from '@perawallet/wallet-core-shared'
+import type { Optional, Nullable, Maybe } from '@perawallet/wallet-core-shared'
 import { fetchSwapHistory } from '../api'
 import type { SwapHistoryItem } from '../models'
 import { swapQueryKeys } from './querykeys'
@@ -26,16 +26,14 @@ export type UseSwapHistoryInfiniteQueryResult = {
     isLoading: boolean
     isFetchingNextPage: boolean
     isError: boolean
-    error: Error | null
+    error: Nullable<Error>
     hasNextPage: boolean
     fetchNextPage: () => void
     refetch: () => void
 }
 
 // API returns the next page as a full URL — we only need the cursor query param.
-const extractCursor = (
-    nextUrl: string | null | undefined,
-): Optional<string> => {
+const extractCursor = (nextUrl: Maybe<string>): Optional<string> => {
     if (!nextUrl) return undefined
     try {
         return new URL(nextUrl).searchParams.get('cursor') ?? undefined

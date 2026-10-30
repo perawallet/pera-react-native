@@ -11,7 +11,7 @@
  */
 
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import { toError } from '@perawallet/wallet-core-shared'
+import { toError, type Optional } from '@perawallet/wallet-core-shared'
 import { assertScopeUnchanged } from '@perawallet/wallet-core-chain-shared'
 import type { MultisigProposeMode } from '@perawallet/wallet-core-multisig'
 import {
@@ -79,8 +79,8 @@ export const createMultisigProposeTransport = (
             // (so the resolver's cancel-on-failure never sees it), a retry
             // would then create a duplicate, and a draft whose bootstrap can
             // never deliver would strand a sync record at `ready` forever.
-            let msig: MsigMetadata | undefined
-            let deviceId: string | undefined
+            let msig: Optional<MsigMetadata>
+            let deviceId: Optional<string>
             if (isExternal) {
                 msig = getMsigMetadata(multisigAddress)
                 if (!msig) {

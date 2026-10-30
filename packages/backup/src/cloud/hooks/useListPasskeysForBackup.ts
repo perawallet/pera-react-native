@@ -29,7 +29,7 @@ import {
     type PasskeyBackupInputs,
     type PasskeyPrivateKeyReader,
 } from '@perawallet/wallet-core-passkeys'
-import { logger, toError } from '@perawallet/wallet-core-shared'
+import { logger, toError, type Nullable } from '@perawallet/wallet-core-shared'
 import {
     getKeystoreStore,
     keystoreSubtle,
@@ -44,7 +44,7 @@ import type { BackupPasskey, LocalPasskey } from '../sync/types'
  *  credential's own metadata. */
 const readSeedEntropy = async (
     seedKeyId: string,
-): Promise<Uint8Array | null> => {
+): Promise<Nullable<Uint8Array>> => {
     const keys = getKeystoreStore().state.keys
     const seedKey = keys.find(key => key.id === seedKeyId)
     // Gated like the HD seed read, so a seed that denies the backup domain
@@ -60,8 +60,8 @@ const readSeedEntropy = async (
 }
 
 type SweepCaches = {
-    resolveEntropy: (seedKeyId: string) => Promise<Uint8Array | null>
-    mainKeys: Map<string, Promise<Uint8Array | null>>
+    resolveEntropy: (seedKeyId: string) => Promise<Nullable<Uint8Array>>
+    mainKeys: Map<string, Promise<Nullable<Uint8Array>>>
     dispose: () => Promise<void>
 }
 
@@ -74,10 +74,12 @@ type SweepCaches = {
  * those copies.
  */
 const createSweepCaches = (): SweepCaches => {
-    const entropies = new Map<string, Promise<Uint8Array | null>>()
-    const mainKeys = new Map<string, Promise<Uint8Array | null>>()
+    const entropies = new Map<string, Promise<Nullable<Uint8Array>>>()
+    const mainKeys = new Map<string, Promise<Nullable<Uint8Array>>>()
 
-    const zeroAll = async (cache: Map<string, Promise<Uint8Array | null>>) => {
+    const zeroAll = async (
+        cache: Map<string, Promise<Nullable<Uint8Array>>>,
+    ) => {
         for (const pending of cache.values()) {
             const secret = await pending.catch(() => null)
             if (secret) zeroBytes(secret)
@@ -145,7 +147,7 @@ const resolveBackupInputs = async (
     key: KeystoreKey,
     readPrivateKey: PasskeyPrivateKeyReader,
     caches: SweepCaches,
-): Promise<PasskeyBackupInputs | null> => {
+): Promise<Nullable<PasskeyBackupInputs>> => {
     if (!isPasskeyKey(key)) return null
     const stored = await readPrivateKey(key.id)
     const fromRecord =
@@ -172,7 +174,7 @@ const sweepPasskeys = async (chainId: ChainId): Promise<LocalPasskey[]> => {
     const readPrivateKey = createPasskeyPrivateKeyReader({
         subtle: keystoreSubtle,
     })
-    let settled: PromiseSettledResult<PasskeyBackupInputs | null>[]
+    let settled: PromiseSettledResult<Nullable<PasskeyBackupInputs>>[]
     try {
         // Settled rather than `Promise.all`: one credential's failure must not
         // abandon the keys every other credential has already produced.

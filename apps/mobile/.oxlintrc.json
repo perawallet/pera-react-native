@@ -359,7 +359,7 @@
     {
       "files": ["src/**"],
       "excludeFiles": ["src/**/__tests__/**", "src/**/__mocks__/**", "src/**/test-utils/**", "src/**/__integration__/**", "src/**/*.spec.{ts,tsx}", "src/**/*.test.{ts,tsx}"],
-      "rules": { "pera/webview-injection-serializer": "error" }
+      "rules": { "pera/prefer-nullable-alias": "error", "pera/webview-injection-serializer": "error" }
     },
     {
       "files": ["src/**/__tests__/**", "src/**/*.spec.{ts,tsx}", "src/**/__integration__/**", "src/**/test-utils/**", "vitest*.ts"],

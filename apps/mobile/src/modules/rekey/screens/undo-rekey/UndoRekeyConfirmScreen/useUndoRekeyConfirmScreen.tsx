@@ -30,6 +30,7 @@ import {
     useDelegationTransactionFeeQuery,
     useSubmitDelegationMutation,
 } from '@perawallet/wallet-core-transactions'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useWebView } from '@modules/webview'
 import { useAppNavigation } from '@hooks/useAppNavigation'
@@ -45,9 +46,9 @@ import type { Decimal } from 'decimal.js'
 import type { UndoRekeyStackParamList } from '@modules/rekey/routes/undo-rekey/types'
 
 export type UseUndoRekeyConfirmScreenResult = {
-    source: WalletAccount | null
-    currentAuth: WalletAccount | null
-    feeAlgos: Decimal | undefined
+    source: Nullable<WalletAccount>
+    currentAuth: Nullable<WalletAccount>
+    feeAlgos: Optional<Decimal>
     feePending: boolean
     isSubmitting: boolean
     isUnderfunded: boolean

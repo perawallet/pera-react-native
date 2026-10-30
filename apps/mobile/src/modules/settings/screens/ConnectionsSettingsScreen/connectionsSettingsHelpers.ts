@@ -14,6 +14,7 @@ import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { DAPP_KIND, EIP1193_DAPP_KIND } from '@perawallet/wallet-core-dapp/wire'
 import type { ConnectionKind as RegistryConnectionKind } from '@perawallet/wallet-extension-connections'
 import type { ConnectionSettingsRow } from '@perawallet/wallet-core-connections'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import type { ModalState } from '@hooks/useModalState'
 
 export type ConnectionKind = RegistryConnectionKind
@@ -52,8 +53,8 @@ export type UseConnectionsSettingsScreenResult = {
 
 const badgeLabelOf = (
     row: ConnectionSettingsRow,
-    chainNameOf: (chainId: ChainId) => string | undefined,
-): string | undefined => {
+    chainNameOf: (chainId: ChainId) => Optional<string>,
+): Optional<string> => {
     if (row.kind !== EIP1193_DAPP_KIND) return undefined
     const [scope] = row.networks
     return scope ? chainNameOf(scope.chainId) : undefined
@@ -66,7 +67,7 @@ const badgeLabelOf = (
 export const toUnifiedConnection = (
     row: ConnectionSettingsRow,
     revoke: (id: string) => void,
-    chainNameOf: (chainId: ChainId) => string | undefined,
+    chainNameOf: (chainId: ChainId) => Optional<string>,
 ): UnifiedConnection => {
     const badgeLabel = badgeLabelOf(row, chainNameOf)
     return {

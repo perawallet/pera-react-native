@@ -41,6 +41,7 @@ export const AssetSelectorById = ({
         <AssetSelectorContent
             {...rest}
             asset={asset}
+            chainId={scope.chainId}
             label={asset?.unitName ?? fallbackLabel ?? ''}
         />
     )

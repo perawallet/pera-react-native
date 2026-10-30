@@ -16,6 +16,7 @@ import {
     type MessagePayload,
 } from 'firebase/messaging/sw'
 import { getFirebaseApp } from '@perawallet/wallet-extension-platform-chrome'
+import type { Optional } from '@perawallet/wallet-core-shared'
 
 declare const self: ServiceWorkerGlobalScope
 
@@ -31,7 +32,7 @@ export type PushHandlerOptions = {
 const toAllowedDeeplink = (
     url: unknown,
     { uriSchemes }: PushHandlerOptions,
-): string | undefined => {
+): Optional<string> => {
     if (typeof url !== 'string') return undefined
     const normalized = url.trim().toLowerCase()
     const prefixes = [
@@ -71,7 +72,7 @@ export const handleNotificationClick = (
     // Re-checked on click: a notification shown by an earlier worker version
     // was stored unvalidated and can outlive the update.
     const url = toAllowedDeeplink(
-        (event.notification.data as { peraUrl?: string } | undefined)?.peraUrl,
+        (event.notification.data as Optional<{ peraUrl?: string }>)?.peraUrl,
         options,
     )
     // Absent on FCM-tagged notifications and on anything we did not create.

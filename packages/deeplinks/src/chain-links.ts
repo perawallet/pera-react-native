@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { DeeplinkType, type AnyParsedDeeplink } from './links'
 import type { ChainDeeplinkIntent } from './models'
 import { parseWalletConnectDeeplink } from './wallet-connect'
@@ -17,7 +18,7 @@ import { parseWalletConnectDeeplink } from './wallet-connect'
 export const linkFromIntent = (
     intent: ChainDeeplinkIntent,
     sourceUrl: string,
-): AnyParsedDeeplink | null => {
+): Nullable<AnyParsedDeeplink> => {
     switch (intent.kind) {
         case 'address': {
             return {

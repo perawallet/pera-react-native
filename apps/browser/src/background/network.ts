@@ -15,11 +15,12 @@ import {
     isWalletMode,
     type WalletMode,
 } from '@perawallet/wallet-core-chain-contract'
+import type { Optional, Nullable } from '@perawallet/wallet-core-shared'
 
 // The service worker never hydrates the network zustand store, so it reads the persisted envelope
 // straight from chrome.storage.local. That value is a JSON string, not an object, because the store
 // persists through ChromeKeyValueStorageService, which stringifies the whole envelope.
-export const parseActiveDeployment = (raw: string | undefined): WalletMode => {
+export const parseActiveDeployment = (raw: Optional<string>): WalletMode => {
     if (raw === undefined) return 'live'
     let envelope: unknown
     try {
@@ -28,13 +29,13 @@ export const parseActiveDeployment = (raw: string | undefined): WalletMode => {
         return 'live'
     }
     const state = (
-        envelope as {
+        envelope as Nullable<{
             state?: {
                 mode?: unknown
                 selectedNetworkByChain?: { algorand?: unknown }
                 network?: unknown
             }
-        } | null
+        }>
     )?.state
     if (isWalletMode(state?.mode)) return state.mode
     // v1 and v2 predate the mode, and either may survive until a UI or offscreen context rewrites it: only MainNet was live then.

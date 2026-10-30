@@ -12,7 +12,7 @@
 
 import { useCallback } from 'react'
 import type WebView from 'react-native-webview'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import {
     BROWSER_FAVORITE_ACTION,
@@ -61,7 +61,7 @@ export const usePushWebViewHandler = ({
                 )
                 return
             }
-            const title = message.params?.title as string | undefined
+            const title = message.params?.title as Optional<string>
             const isFavorite = message.params?.isFavorite
 
             // The host (Discover) sends `isFavorite` only for pages that

@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import type { Maybe } from '@perawallet/wallet-core-shared'
+
 // Shared secure-context gate for every page-facing trust boundary (the
 // window.pera dapp router and the WebAuthn ceremony router).
 //
@@ -35,9 +37,7 @@ const LOOPBACK_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]'])
  * `https:` origin, plus `http:` on loopback. Opaque origins (the literal
  * string `'null'`, from sandboxed/`data:` frames) are always rejected.
  */
-export const isSecureDappOrigin = (
-    origin: string | null | undefined,
-): origin is string => {
+export const isSecureDappOrigin = (origin: Maybe<string>): origin is string => {
     if (!origin || origin === 'null') return false
 
     let parsed: URL

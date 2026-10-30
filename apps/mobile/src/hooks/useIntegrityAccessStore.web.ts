@@ -15,15 +15,16 @@ import {
     INTEGRITY_PENDING_GRACE_MS,
     type IntegritySnapshot,
 } from '@perawallet/wallet-core-browser-runtime'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 // Session facts mirrored from the service worker, which is their only writer;
 // nothing here is persisted.
 type IntegrityAccessStoreState = {
-    snapshot: IntegritySnapshot | null
+    snapshot: Nullable<IntegritySnapshot>
     /** Epoch ms this realm last re-derived at; moves on snapshots and timer ticks. */
     now: number
     /** Epoch ms this realm started seeing no live token; null while one lives. */
-    pendingSince: number | null
+    pendingSince: Nullable<number>
     /** Bumped on every no-token to live-token edge, for consumers that recover on it. */
     readyEpoch: number
 }
@@ -44,7 +45,7 @@ const initialState: IntegrityAccessStoreState = {
     readyEpoch: 0,
 }
 
-const hasLiveToken = (snapshot: IntegritySnapshot | null, now: number) =>
+const hasLiveToken = (snapshot: Nullable<IntegritySnapshot>, now: number) =>
     snapshot?.tokenExpiresAt != null && snapshot.tokenExpiresAt > now
 
 export const useIntegrityAccessStore = create<IntegrityAccessStore>()(set => ({
@@ -83,9 +84,9 @@ export const subscribeToIntegrityReady = (onReady: () => void): (() => void) =>
  */
 export const nextIntegrityDerivationAt = (
     snapshot: IntegritySnapshot,
-    pendingSince: number | null,
+    pendingSince: Nullable<number>,
     now: number,
-): number | null => {
+): Nullable<number> => {
     const candidates = [
         snapshot.tokenExpiresAt,
         snapshot.attempt?.deadlineAt,

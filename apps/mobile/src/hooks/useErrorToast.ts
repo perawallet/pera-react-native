@@ -12,6 +12,7 @@
 
 import { useCallback } from 'react'
 import { config } from '@perawallet/wallet-core-config'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import type {
     ShowNotificationParams,
     NotifierRoot,
@@ -74,7 +75,7 @@ const appendDebug = (body: string, error: unknown): string => {
     return `${body}\n\nDebug: ${detail}`
 }
 
-const extractDebugDetail = (error: unknown): string | null => {
+const extractDebugDetail = (error: unknown): Nullable<string> => {
     if (error instanceof Error) return error.message || error.name
     if (error == null) return null
     try {

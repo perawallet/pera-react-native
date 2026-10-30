@@ -123,6 +123,7 @@ const AssetListItemViewBase = ({
                 asset name, and a long one squeezed the amount out.
                 ALGO keeps its glyph — that's the brand mark, not a unit name. */}
             <AssetAmount
+                chainId={chainId}
                 asset={asset}
                 value={amount}
                 density='compact'
@@ -137,6 +138,7 @@ const AssetListItemViewBase = ({
                 PreferredAmount, which would force the ALGO label onto a fiat
                 value). */}
             <CurrencyAmount
+                chainId={chainId}
                 currency={fiat.displayCurrency}
                 assetId={fiatAssetId}
                 isFiat={fiatAssetId === null}

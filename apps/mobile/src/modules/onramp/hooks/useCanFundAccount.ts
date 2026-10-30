@@ -12,9 +12,8 @@
 
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { useOnrampScope } from '@perawallet/wallet-core-onramp'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import type { Maybe } from '@perawallet/wallet-core-shared'
 
 /** Whether Fund can buy onto the account, so its entry points show. */
-export const useCanFundAccount = (
-    account: Nullable<WalletAccount> | undefined,
-): boolean => useOnrampScope(account?.chains ?? null) !== null
+export const useCanFundAccount = (account: Maybe<WalletAccount>): boolean =>
+    useOnrampScope(account?.chains ?? null) !== null

@@ -15,6 +15,7 @@ import {
     closeCurrentTab,
     getConsumedExpandedFlow,
 } from '@perawallet/wallet-core-browser-runtime'
+import type { Optional } from '@perawallet/wallet-core-shared'
 
 // The pairing tab only exists to host the device picker. Once the flow ends it
 // must not become a second wallet UI next to the popup, so both the success
@@ -30,12 +31,12 @@ export const isLedgerHandoffTab = (): boolean => {
  * finished flow resetting to home), instead of showing what lies behind them.
  */
 export const useLedgerHandoffTabExit = (): ((
-    currentRouteName: string | undefined,
+    currentRouteName: Optional<string>,
 ) => void) => {
     // Only an exit counts: nested navigators can report their initial state
     // before the deep link lands on the Ledger screens.
     const hasEnteredLedgerFlow = useRef(false)
-    return useCallback((currentRouteName: string | undefined) => {
+    return useCallback((currentRouteName: Optional<string>) => {
         if (!isLedgerHandoffTab() || currentRouteName === undefined) return
         if (currentRouteName.startsWith('Ledger')) {
             hasEnteredLedgerFlow.current = true

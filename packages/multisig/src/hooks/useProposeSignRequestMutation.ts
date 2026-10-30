@@ -12,7 +12,7 @@
 
 import { useMutation } from '@tanstack/react-query'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import { proposeSignRequest } from '../api/endpoints'
 import type {
     ProposeSignRequest,
@@ -24,7 +24,7 @@ type UseProposeSignRequestMutationParams = {
 }
 
 export type UseProposeSignRequestMutationResult = {
-    data: ProposeSignRequestResponse | undefined
+    data: Optional<ProposeSignRequestResponse>
     error: Nullable<Error>
     isError: boolean
     isIdle: boolean

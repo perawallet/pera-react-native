@@ -11,7 +11,7 @@
  */
 
 import { requireOptionalNativeModule } from 'expo'
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import type {
     MonotonicClockService,
     MonotonicReading,
@@ -39,7 +39,7 @@ export class RNMonotonicClockService implements MonotonicClockService {
     // The lockout countdown reads the clock every second; one warning is enough.
     private hasWarnedMissing = false
 
-    now(): MonotonicReading | null {
+    now(): Nullable<MonotonicReading> {
         const module =
             requireOptionalNativeModule<NativePeraMonotonicClock>(
                 'PeraMonotonicClock',

@@ -25,6 +25,7 @@ import {
     useNetworkStore,
     type NodeEndpointAdapter,
 } from '@perawallet/wallet-core-chain-shared'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { endpointHostOf } from './endpointHostOf'
 import { isValidEndpoint } from './isValidEndpoint'
 
@@ -40,17 +41,17 @@ export type UseEndpointOverrideSheetParams = {
 
 export type UseEndpointOverrideSheetResult = {
     url: string
-    error: EndpointOverrideSheetError | undefined
+    error: Optional<EndpointOverrideSheetError>
     isChecking: boolean
     hasOverride: boolean
-    currentHost: string | undefined
+    currentHost: Optional<string>
     networkName: string
     handleUrlChange: (value: string) => void
     handleSave: () => Promise<boolean>
     handleReset: () => void
 }
 
-const adapterFor = (chainId: ChainId): NodeEndpointAdapter | undefined =>
+const adapterFor = (chainId: ChainId): Optional<NodeEndpointAdapter> =>
     nodeEndpointAdapters.has(chainId)
         ? nodeEndpointAdapters.get(chainId)
         : undefined

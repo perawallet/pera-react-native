@@ -22,6 +22,7 @@ import {
     withSecret,
 } from '@perawallet/wallet-core-kms'
 import { getKeystoreStore } from '@perawallet/wallet-extension-provider'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { backupSeedReference } from '../../chain-adapter'
 import type { SeedEntropyResolver } from './useCloudBackupPasskeyImport'
 
@@ -34,7 +35,7 @@ import type { SeedEntropyResolver } from './useCloudBackupPasskeyImport'
 export const resolveBackupSeedKeyId = async (
     seedAddress: string,
     chainId: ChainId,
-): Promise<string | null> => {
+): Promise<Nullable<string>> => {
     const keys = getKeystoreStore().state.keys
 
     for (const key of keys) {

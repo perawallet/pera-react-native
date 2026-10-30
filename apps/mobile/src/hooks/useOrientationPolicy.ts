@@ -16,6 +16,7 @@ import * as ScreenOrientation from 'expo-screen-orientation'
 
 import { isLargeScreen } from '@utils/screen'
 import { isAndroid } from '@utils/platform'
+import type { Optional } from '@perawallet/wallet-core-shared'
 
 /**
  * Locks phones to portrait while large screens follow the device.
@@ -38,7 +39,7 @@ export const useOrientationPolicy = (): void => {
     useEffect(() => {
         if (!isAndroid()) return
 
-        let lastIsLargeScreen: boolean | undefined
+        let lastIsLargeScreen: Optional<boolean>
 
         const applyPolicy = () => {
             const { width, height } = Dimensions.get('screen')

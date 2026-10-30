@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { logger, toError } from '@perawallet/wallet-core-shared'
+import { logger, toError, type Nullable } from '@perawallet/wallet-core-shared'
 import type {
     LegacyMigrationData,
     MigrationService,
@@ -44,10 +44,10 @@ export type MigrationRunIncompleteReason =
 
 export type MigrationRunResult = {
     completed: boolean
-    incompleteReason: MigrationRunIncompleteReason | null
-    accounts: MigrationResult | null
-    extras: ExtrasMigrationResult | null
-    error: Error | null
+    incompleteReason: Nullable<MigrationRunIncompleteReason>
+    accounts: Nullable<MigrationResult>
+    extras: Nullable<ExtrasMigrationResult>
+    error: Nullable<Error>
 }
 
 /**
@@ -307,7 +307,7 @@ const recordSucceededSteps = async (
     migration: MigrationService,
     args: {
         accountsSucceeded: boolean
-        extras: ExtrasMigrationResult | null
+        extras: Nullable<ExtrasMigrationResult>
         pendingExtras: ExtrasMigrationStepName[]
     },
 ): Promise<void> => {

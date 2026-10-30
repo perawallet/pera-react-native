@@ -45,6 +45,7 @@ export const AlgorandAccountSection = (props: AccountChainSectionProps) => {
                         title={t('min_balance_info.title')}
                         trigger={
                             <AssetAmount
+                                chainId={props.scope.chainId}
                                 asset={nativeAsset}
                                 value={minBalance}
                                 showSymbol

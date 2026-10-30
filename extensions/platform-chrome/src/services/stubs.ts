@@ -37,6 +37,7 @@ import type {
     WalletProvisioningService,
     WalletProvisioningTokenizationStatus,
 } from '@perawallet/wallet-extension-platform'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 /**
  * Chrome has no OS-level biometric API, so this stub always reports
@@ -61,7 +62,7 @@ export class ChromeBiometricsService implements BiometricsService {
         return 'unavailable'
     }
     async clearEnrollmentBinding(): Promise<void> {}
-    async armBiometricBinding(): Promise<BiometricArmResult | null> {
+    async armBiometricBinding(): Promise<Nullable<BiometricArmResult>> {
         return null
     }
     async unwrapBiometricToken(): Promise<BiometricUnwrapResult> {
@@ -113,7 +114,7 @@ export class ChromeMigrationService implements MigrationService {
         return []
     }
     async resetLegacyData(): Promise<void> {}
-    async getCompletedStepVersions(): Promise<MigrationStepVersions | null> {
+    async getCompletedStepVersions(): Promise<Nullable<MigrationStepVersions>> {
         return null
     }
     async setCompletedStepVersions(

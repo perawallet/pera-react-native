@@ -18,6 +18,7 @@ import {
     useAsbImportFlowStore,
     useExitAccountFlow,
 } from '@modules/onboarding/hooks'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import type { OnboardingStackParamList } from '../../routes/types'
 
 type UseAsbImportResultScreenResult = {
@@ -26,7 +27,7 @@ type UseAsbImportResultScreenResult = {
     failedCount: number
     variant: PWResultViewVariant
     title: string
-    body: string | undefined
+    body: Optional<string>
     handleDone: () => void
 }
 
@@ -44,7 +45,7 @@ export const useAsbImportResultScreen = (): UseAsbImportResultScreenResult => {
     const { variant, title, body } = useMemo<{
         variant: PWResultViewVariant
         title: string
-        body: string | undefined
+        body: Optional<string>
     }>(() => {
         if (importedCount > 0 && failedCount === 0) {
             return {

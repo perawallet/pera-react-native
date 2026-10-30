@@ -60,6 +60,7 @@ export const SelectDestinationScreen = () => {
         title: selectedAsset ? (
             <PWView style={styles.assetTitleContainer}>
                 <AssetIcon
+                    chainId={scope.chainId}
                     asset={selectedAsset}
                     size='md'
                 />

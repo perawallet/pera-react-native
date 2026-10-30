@@ -277,3 +277,13 @@ export class PrivateKeyRevealUnsupportedError extends AccountError {
         this.accountId = accountId
     }
 }
+
+/** Neither Pera nor the chain gave a token's details, so it can't be added. */
+export class TokenMetadataUnavailableError extends AccountError {
+    constructor(assetId: string) {
+        super('No metadata could be stored for the token', undefined, {
+            messageKey: i18nKey('errors.account.token_unreadable'),
+            params: { assetId },
+        })
+    }
+}

@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import type { Nullable } from '@perawallet/wallet-core-shared'
+
 export const LEGACY_MIGRATION_SCHEMA_VERSION = 1
 
 export const MIGRATION_SENTINEL_KEY = 'legacy-migration-v1-complete'
@@ -54,7 +56,7 @@ export interface MigrationService {
     /** Removes all legacy (v6) migration data and clears the migration sentinel. */
     resetLegacyData(): Promise<void>
     /** Returns the per-step version record, or `null` when no record has ever been written. */
-    getCompletedStepVersions(): Promise<MigrationStepVersions | null>
+    getCompletedStepVersions(): Promise<Nullable<MigrationStepVersions>>
     /** Persists the per-step version record. */
     setCompletedStepVersions(versions: MigrationStepVersions): Promise<void>
 }
@@ -100,7 +102,7 @@ export interface LegacyMigrationData {
     notificationFilters: string[]
     walletConnectV1: LegacyWalletConnectV1Session[]
     walletConnectV2: LegacyWalletConnectV2Session[]
-    walletConnectHistoryBlob?: string | null
+    walletConnectHistoryBlob?: Nullable<string>
     passkeys: LegacyPasskey[]
     deviceIdentifiers: LegacyDeviceIdentifiers
     tooltipPreferences: LegacyTooltipPreferences
@@ -128,19 +130,19 @@ export interface LegacyDismissedBanners {
 }
 
 export interface LegacyTooltipPreferences {
-    qrTooltipSeen: boolean | null
-    copyAddressTooltipSeen: boolean | null
-    copyAddressPromoSeen: boolean | null
-    transactionTutorialSeen: boolean | null
-    privacyModeTooltipSeen: boolean | null
-    jointAccountDisclaimerSeen: boolean | null
-    walletConnectWarningSeen: boolean | null
-    swapIntroSeen: boolean | null
-    giftCardsIntroSeen: boolean | null
-    ledgerPairingWarningSeen: boolean | null
-    transactionInfoDismissed: boolean | null
-    filterTutorialSeen: boolean | null
-    backupIntroSeen: boolean | null
+    qrTooltipSeen: Nullable<boolean>
+    copyAddressTooltipSeen: Nullable<boolean>
+    copyAddressPromoSeen: Nullable<boolean>
+    transactionTutorialSeen: Nullable<boolean>
+    privacyModeTooltipSeen: Nullable<boolean>
+    jointAccountDisclaimerSeen: Nullable<boolean>
+    walletConnectWarningSeen: Nullable<boolean>
+    swapIntroSeen: Nullable<boolean>
+    giftCardsIntroSeen: Nullable<boolean>
+    ledgerPairingWarningSeen: Nullable<boolean>
+    transactionInfoDismissed: Nullable<boolean>
+    filterTutorialSeen: Nullable<boolean>
+    backupIntroSeen: Nullable<boolean>
 }
 
 export type LegacyTheme = 'system' | 'light' | 'dark'
@@ -167,39 +169,39 @@ export type LegacyCollectibleSort =
 export type LegacyGalleryLayout = 'grid' | 'list'
 
 export interface LegacyPreferences {
-    theme: LegacyTheme | null
-    currency: string | null
-    termsAcceptedVersion?: number | null
+    theme: Nullable<LegacyTheme>
+    currency: Nullable<string>
+    termsAcceptedVersion?: Nullable<number>
 
-    biometricEnabled: boolean | null
-    rekeySupport: boolean | null
-    privacyMode: boolean | null
-    arc59ExpressSendWarningEnabled: boolean | null
+    biometricEnabled: Nullable<boolean>
+    rekeySupport: Nullable<boolean>
+    privacyMode: Nullable<boolean>
+    arc59ExpressSendWarningEnabled: Nullable<boolean>
 
-    applicationOpenCount: number | null
-    lockAttemptCount: number | null
-    lockPenaltyRemainingMs: number | null
-    appAtBackgroundMs: number | null
-    notificationRefreshTimestampMs: number | null
-    copyAddressCount?: number | null
+    applicationOpenCount: Nullable<number>
+    lockAttemptCount: Nullable<number>
+    lockPenaltyRemainingMs: Nullable<number>
+    appAtBackgroundMs: Nullable<number>
+    notificationRefreshTimestampMs: Nullable<number>
+    copyAddressCount?: Nullable<number>
 
-    assetFilterZeroBalance: boolean | null
-    assetFilterDisplayNFT: boolean | null
-    assetFilterDisplayOptedInNFT: boolean | null
-    collectibleFilterNotOwned: boolean | null
-    nftFilterDisplayWatchAccountNFTs: boolean | null
-    nftListingViewType: LegacyGalleryLayout | null
+    assetFilterZeroBalance: Nullable<boolean>
+    assetFilterDisplayNFT: Nullable<boolean>
+    assetFilterDisplayOptedInNFT: Nullable<boolean>
+    collectibleFilterNotOwned: Nullable<boolean>
+    nftFilterDisplayWatchAccountNFTs: Nullable<boolean>
+    nftListingViewType: Nullable<LegacyGalleryLayout>
 
-    accountSortPreference: LegacyAccountSort | null
-    assetSortPreference: LegacyAssetSort | null
-    collectibleSortPreference: LegacyCollectibleSort | null
+    accountSortPreference: Nullable<LegacyAccountSort>
+    assetSortPreference: Nullable<LegacyAssetSort>
+    collectibleSortPreference: Nullable<LegacyCollectibleSort>
 
-    swapLastUsedAddress: string | null
-    swapUseLocalCurrency: boolean | null
-    swapSlippageTolerance: number | null
-    swapTermsAccepted: boolean | null
+    swapLastUsedAddress: Nullable<string>
+    swapUseLocalCurrency: Nullable<boolean>
+    swapSlippageTolerance: Nullable<number>
+    swapTermsAccepted: Nullable<boolean>
 
-    pinSetupPromptDismissed?: boolean | null
+    pinSetupPromptDismissed?: Nullable<boolean>
 
     rawFlags: Record<string, LegacyRawFlagValue>
 }
@@ -207,7 +209,7 @@ export interface LegacyPreferences {
 export type LegacyRawFlagValue = string | number | boolean | null
 
 export interface LegacyAuth {
-    pin: Uint8Array | null
+    pin: Nullable<Uint8Array>
 }
 
 export type LegacyAccountType = 'standard' | 'ledger' | 'watch' | 'joint'
@@ -220,38 +222,38 @@ export interface LegacyAccount {
     preferredOrder: number
     isBackedUp: boolean
 
-    secretKey: Uint8Array | null
+    secretKey: Nullable<Uint8Array>
 
-    hdSeedId: string | null
+    hdSeedId: Nullable<string>
 
-    ledger: LegacyLedgerAccountDetails | null
+    ledger: Nullable<LegacyLedgerAccountDetails>
 
-    joint: LegacyJointAccountDetails | null
+    joint: Nullable<LegacyJointAccountDetails>
 
     /**
      * On-chain auth address Pera 6 had recorded for this account (rekey
      * target), when the legacy store carried one. Null when unknown — the
      * account syncer self-heals from chain state either way.
      */
-    authAddress: string | null
+    authAddress: Nullable<string>
 }
 
 export interface LegacyLedgerAccountDetails {
     bluetoothAddress: string
-    bluetoothName: string | null
+    bluetoothName: Nullable<string>
     positionInLedger: number
 }
 
 export interface LegacyJointAccountDetails {
-    threshold: number | null
+    threshold: Nullable<number>
     version: number
     participants: string[]
 }
 
 export interface LegacyHDWallet {
     walletId: string
-    name: string | null
-    entropy: Uint8Array | null
+    name: Nullable<string>
+    entropy: Nullable<Uint8Array>
     keys: LegacyHDKey[]
 }
 
@@ -261,13 +263,13 @@ export interface LegacyHDKey {
     change: number
     keyIndex: number
     derivationType: number
-    privateKey: Uint8Array | null
+    privateKey: Nullable<Uint8Array>
 }
 
 export interface LegacyContact {
     name: string
     address: string
-    avatar: string | null
+    avatar: Nullable<string>
 }
 
 export interface LegacyWalletConnectPeerMeta {
@@ -283,15 +285,15 @@ export interface LegacyWalletConnectV1Session {
     isConnected: boolean
     isSubscribed: boolean
     dateTimestampMs: number
-    fallbackBrowserGroupResponse: string | null
+    fallbackBrowserGroupResponse: Nullable<string>
     connectedAccounts: string[]
     sessionMetaJson: string
-    clientId: string | null
-    peerId: string | null
-    handshakeId: number | null
-    currentKey: string | null
-    approvedAccounts: string[] | null
-    chainId: number | null
+    clientId: Nullable<string>
+    peerId: Nullable<string>
+    handshakeId: Nullable<number>
+    currentKey: Nullable<string>
+    approvedAccounts: Nullable<string[]>
+    chainId: Nullable<number>
 }
 
 /**
@@ -309,30 +311,30 @@ export interface LegacyWalletConnectV2Session {
     topic: string
     dateTimestampMs: number
     isSubscribed: boolean
-    fallbackBrowserGroupResponse: string | null
+    fallbackBrowserGroupResponse: Nullable<string>
 }
 
 export interface LegacyPasskey {
     credentialId: string
     address: string
     siteUrl: string
-    siteName: string | null
-    userName: string | null
-    userDisplayName: string | null
-    userHandle?: string | null
-    lastUsedAtMs: number | null
+    siteName: Nullable<string>
+    userName: Nullable<string>
+    userDisplayName: Nullable<string>
+    userHandle?: Nullable<string>
+    lastUsedAtMs: Nullable<number>
 }
 
 export interface LegacyDeviceIdentifiers {
-    notificationUserId: string | null
-    mainnetDeviceId: string | null
-    testnetDeviceId: string | null
-    lastSeenNotificationId: number | null
+    notificationUserId: Nullable<string>
+    mainnetDeviceId: Nullable<string>
+    testnetDeviceId: Nullable<string>
+    lastSeenNotificationId: Nullable<number>
     /**
      * Pre-per-network single device id (iOS: `User.deviceId`; Android:
      * `notification_user_id`, mirroring Pera 6's own promotion of it to
      * `mainnet_device_id`). Used by `migrateDeviceIdentifiers` as a mainnet
      * fallback only when `mainnetDeviceId` is null.
      */
-    legacyFallbackDeviceId: string | null
+    legacyFallbackDeviceId: Nullable<string>
 }

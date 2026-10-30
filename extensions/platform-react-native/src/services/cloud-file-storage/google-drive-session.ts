@@ -17,6 +17,7 @@ import {
     GoogleDriveUnreachableError,
     GooglePlayServicesUnavailableError,
 } from '@perawallet/wallet-extension-platform'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import {
     CloudStorage,
     CloudStorageError,
@@ -50,14 +51,15 @@ export type DriveSessionResult<T> =
 // `UNAUTHENTICATED`; anything else keeps the raw status of the HTTP failure.
 const isAuthFailure = (error: unknown): boolean =>
     hasCode(error, CloudStorageErrorCode.AUTHENTICATION_FAILED) ||
-    (error as { status?: unknown } | null)?.status === 401
+    (error as Nullable<{ status?: unknown }>)?.status === 401
 
 // PeraGoogleAuth rejects with this code when Android's Play Services are
 // missing and the user doesn't install or enable them.
 const PLAY_SERVICES_NOT_AVAILABLE = 'PLAY_SERVICES_NOT_AVAILABLE'
 
 const isPlayServicesUnavailable = (error: unknown): boolean =>
-    (error as { code?: unknown } | null)?.code === PLAY_SERVICES_NOT_AVAILABLE
+    (error as Nullable<{ code?: unknown }>)?.code ===
+    PLAY_SERVICES_NOT_AVAILABLE
 
 // DRIVE_TIMEOUT_MS aborts the underlying fetch. NETWORK_ERROR only ever comes
 // from the library's native file transfers, so on the JS Drive client a dropped
@@ -120,9 +122,9 @@ const toSessionResult = <T>(
  * The token the session holds, so it can be released however the session
  * ends.
  */
-type HeldToken = { current: string | null }
+type HeldToken = { current: Nullable<string> }
 
-const authorizeInto = async (held: HeldToken): Promise<string | null> => {
+const authorizeInto = async (held: HeldToken): Promise<Nullable<string>> => {
     held.current = await authorizeGoogleDrive()
     return held.current
 }

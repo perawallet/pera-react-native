@@ -12,6 +12,7 @@
 
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type { MultisigParameters } from '@perawallet/wallet-core-multisig'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { accountsChainAdapters, requireMultisigNative } from './chain-adapter'
 import { chainAccountOf } from './credentials/accessors'
 import type { WalletAccount } from './models'
@@ -20,7 +21,7 @@ import type { WalletAccount } from './models'
 export const multisigParametersOf = (
     account: WalletAccount,
     chainId: ChainId,
-): MultisigParameters | undefined => {
+): Optional<MultisigParameters> => {
     if (account.custody.kind !== 'multisig') return undefined
     if (!accountsChainAdapters.has(chainId)) return undefined
     return accountsChainAdapters

@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import type { Nullable } from '@perawallet/wallet-core-shared'
+
 /**
  * How long a hardware signing session survives the app being backgrounded
  * before it is aborted (transport disconnected, machine sent to the
@@ -33,7 +35,7 @@ export const HARDWARE_BACKGROUND_GRACE_MS = 15_000
  * foreground, so whichever order the wake-up races resolve in, the guard
  * sees a non-null value and swallows the stale timeout.
  */
-export const appStateTracker: { backgroundedAt: number | null } = {
+export const appStateTracker: { backgroundedAt: Nullable<number> } = {
     backgroundedAt: null,
 }
 

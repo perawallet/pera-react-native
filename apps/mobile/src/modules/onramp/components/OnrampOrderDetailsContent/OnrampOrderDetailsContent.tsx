@@ -111,7 +111,7 @@ export const OnrampOrderDetailsContent = ({
                     <OnrampPayInCard
                         payInAddress={payInAddress}
                         payInAddressTag={payInAddressTag}
-                        sendToAddressAmount={sourceAmountLabel}
+                        sendToAddressAmountLabel={sourceAmountLabel}
                         sourceLogo={sourceLogo}
                         onCancel={() => void handleCancelOrder()}
                         isCancelling={isCancelling}

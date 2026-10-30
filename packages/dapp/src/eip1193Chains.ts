@@ -15,6 +15,7 @@ import type {
     ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import { dappRequestChainAdapters } from '@perawallet/wallet-core-connections'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { EIP155_NAMESPACE } from './eip1193Protocol'
 
 /** An EIP-155 chain id as EIP-1193 carries it: lowercase hex, no leading zeros. */
@@ -34,7 +35,7 @@ export const eip155ChainIds = (): ChainId[] =>
 /** `null` for a chain that is not eip155, has no adapter, or a network with no CAIP-2 identity. */
 export const eip155HexChainIdOf = (
     scope: ChainScope,
-): Eip155HexChainId | null => {
+): Nullable<Eip155HexChainId> => {
     if (!dappRequestChainAdapters.has(scope.chainId)) return null
     const { walletConnect } = dappRequestChainAdapters.get(scope.chainId)
     if (walletConnect.namespace !== EIP155_NAMESPACE) return null
@@ -46,7 +47,7 @@ export const eip155HexChainIdOf = (
 
 export const parseEip155HexChainId = (
     value: unknown,
-): Eip155HexChainId | null =>
+): Nullable<Eip155HexChainId> =>
     typeof value === 'string' && HEX_QUANTITY.test(value)
         ? toHex(BigInt(value))
         : null

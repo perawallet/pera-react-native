@@ -14,6 +14,7 @@ import {
     createChainAdapterRegistry,
     type ChainId,
 } from '@perawallet/wallet-core-chain-contract'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 /**
  * The part of a held account registration reads. Structural because the
@@ -38,7 +39,7 @@ export type DeviceRegistrableAccount = {
 export interface DeviceChainAdapter {
     readonly chainId: ChainId
     /** The devices API `account_type`; `null` for an account the chain doesn't register. */
-    accountTypeOf(account: DeviceRegistrableAccount): string | null
+    accountTypeOf(account: DeviceRegistrableAccount): Nullable<string>
     /** Which of two registrations of one address the backend is told about: higher wins. */
     rankOf(account: DeviceRegistrableAccount): number
     /** Whether the v3 devices API, which names no chain, takes this chain's accounts. */

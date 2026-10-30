@@ -12,12 +12,13 @@
 
 import { PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useStyles } from './styles'
 
 type BackupQuizItemProps = {
     position: number
     options: string[]
-    selectedWord: string | null
+    selectedWord: Nullable<string>
     onSelect: (word: string) => void
     testID?: string
 }

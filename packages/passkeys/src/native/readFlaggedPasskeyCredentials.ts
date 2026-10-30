@@ -16,6 +16,7 @@ import {
     readMasterKey,
     storage as keystoreStorage,
 } from '@algorandfoundation/react-native-keystore'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { flatRecordToPasskey, type Passkey } from '../models/passkey'
 import {
     isNativeProviderRecordPayload,
@@ -51,7 +52,7 @@ import {
 
 export type FlaggedPasskeyStorage = {
     getAllKeys: () => string[]
-    getString: (key: string) => string | undefined
+    getString: (key: string) => Optional<string>
 }
 
 export type ReadFlaggedPasskeyCredentialsDeps = {
@@ -139,7 +140,7 @@ export const readFlaggedPasskeyCredentials = async ({
         const flagged: Passkey[] = []
         let isComplete = true
         for (const id of bareIds) {
-            let payload: string | undefined
+            let payload: Optional<string>
             try {
                 payload = storage.getString(id)
             } catch {

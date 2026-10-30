@@ -16,6 +16,7 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { AnalyzedSignableGroup } from '../../pipeline/types'
 import { resolveSigningAccount } from './resolveSigningAccount'
 
@@ -34,7 +35,7 @@ export const resolveHardwareDeviceName = (
     groups: AnalyzedSignableGroup[],
     allAccounts: WalletAccount[],
     chainId: ChainId,
-): string | null => {
+): Nullable<string> => {
     const firstGroup = groups[0]
     if (!firstGroup) return null
     const signerAccount = findAccountByAddressOn(

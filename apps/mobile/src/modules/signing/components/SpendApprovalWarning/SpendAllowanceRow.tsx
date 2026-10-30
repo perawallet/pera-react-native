@@ -60,6 +60,7 @@ export const SpendAllowanceRow = ({
                     <PWText>{t('signing.spend_approval.unlimited')}</PWText>
                 ) : (
                     <AssetAmount
+                        chainId={scope.chainId}
                         asset={asset}
                         value={value}
                         isLoading={isLoading}

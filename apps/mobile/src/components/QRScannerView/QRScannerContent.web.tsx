@@ -14,7 +14,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { useDeepLink } from '@modules/deeplink'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, type Optional } from '@perawallet/wallet-core-shared'
 import { getSurface } from '@perawallet/wallet-extension-platform-chrome'
 import { openExpandedTab } from '@perawallet/wallet-core-browser-runtime'
 import {
@@ -191,7 +191,7 @@ export const QRScannerContent = ({
             return
         }
         let cancelled = false
-        let status: PermissionStatus | undefined
+        let status: Optional<PermissionStatus>
 
         navigator.permissions
             .query({ name: 'camera' })

@@ -22,6 +22,7 @@ import {
     type DelegatedUnsignableReason,
     type SignRequest,
 } from '@perawallet/wallet-core-signing'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { algorandAddressOf } from '../accounts/vocabulary'
 import { algorandRequestOf } from './algorandRequest'
 
@@ -66,7 +67,7 @@ export const resolveAllSignerAddresses = (request: SignRequest): string[] => {
 export const getRekeyedUnsignableReason = (
     request: SignRequest,
     accounts: WalletAccount[],
-): DelegatedUnsignableReason | null => {
+): Nullable<DelegatedUnsignableReason> => {
     if (request.sourceType === 'multisig-cosign') return null
 
     const uniqueSigners = [...new Set(resolveAllSignerAddresses(request))]

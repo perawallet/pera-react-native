@@ -14,10 +14,11 @@ import { useMemo } from 'react'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { useMinimumFeeConfig, useSuggestedParametersQuery } from '../blockchain'
 import type { MinFeeForSenderResult } from '@perawallet/wallet-core-signing'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { resolveMinFeeForSender } from './minFeeResolver'
 
 export const useMinFeeForSender = (
-    senderAddress: string | undefined,
+    senderAddress: Optional<string>,
 ): MinFeeForSenderResult => {
     const accounts = useAllAccounts()
     const { data: params, isPending } = useSuggestedParametersQuery()

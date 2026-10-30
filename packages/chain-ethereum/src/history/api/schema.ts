@@ -11,6 +11,7 @@
  */
 
 import { z } from 'zod'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 const address = z.string().regex(/^0x[0-9a-fA-F]{40}$/)
 const amount = z.string().regex(/^\d+$/)
@@ -28,14 +29,37 @@ const nftTransferSchema = z.object({
 })
 
 // Legs are checked one by one, so an unreadable leg drops itself, not the row.
-const nftTransfersSchema = z.array(z.unknown()).transform(legs =>
-    legs.flatMap(leg => {
-        const parsed = nftTransferSchema.safeParse(leg)
-        return parsed.success ? [parsed.data] : []
-    }),
-)
+const readableLegs = <Leg extends z.ZodType>(leg: Leg) =>
+    z.array(z.unknown()).transform(legs =>
+        legs.flatMap(candidate => {
+            const parsed = leg.safeParse(candidate)
+            return parsed.success ? [parsed.data] : []
+        }),
+    )
+
+const nftTransfersSchema = readableLegs(nftTransferSchema)
+
+const tokenTransferSchema = z.object({
+    contract: address,
+    from: address,
+    to: address,
+    value: amount,
+    token_symbol: z.string().nullable().catch(null),
+    // ERC-20 `decimals` is a uint8.
+    token_decimals: z.number().int().min(0).max(255).nullable().catch(null),
+})
+
+const internalTransferSchema = z.object({
+    from: address,
+    /** Null when the call created a contract. */
+    to: address.nullable(),
+    /** Wei. */
+    value: amount,
+    status: z.enum(['success', 'failed']),
+})
 
 export type EvmNftTransfer = z.output<typeof nftTransferSchema>
+export type EvmTokenTransfer = z.output<typeof tokenTransferSchema>
 
 /** Only the fields the adapter reads; the full wire shape is `EvmHistoryItemResponse`. */
 export const evmHistoryItemSchema = z.object({
@@ -50,14 +74,8 @@ export const evmHistoryItemSchema = z.object({
     fee: amount.nullable(),
     status: z.enum(['success', 'failed']),
     method: z.string().nullable(),
-    token_transfers: z.array(
-        z.object({
-            contract: address,
-            from: address,
-            to: address,
-            value: amount,
-        }),
-    ),
+    token_transfers: z.array(tokenTransferSchema),
+    internal_transfers: readableLegs(internalTransferSchema).catch([]),
     nft_transfers: nftTransfersSchema,
     withdrawals: z.array(z.object({ index: z.number().int().min(0) })),
     balance_impacts: z.array(
@@ -83,32 +101,32 @@ export const evmHistoryPageSchema = z.object({
 export type EvmHistoryItemResponse = {
     kind: 'transaction' | 'withdrawal'
     /** Null on a withdrawal row. */
-    hash: string | null
+    hash: Nullable<string>
     block_number: number
     /** ISO 8601. */
     block_time: string
     /** Null, with `to`, `value` and `method`, when the row is known only from a transfer stream. */
-    from: string | null
-    to: string | null
-    value: string | null
+    from: Nullable<string>
+    to: Nullable<string>
+    value: Nullable<string>
     /** Wei: the transaction's total gas cost, whoever paid it. */
     // lanekeep-ignore-next-line pera/amount-types reason: JSON wire response shape
-    fee: string | null
+    fee: Nullable<string>
     status: 'success' | 'failed'
-    method: string | null
+    method: Nullable<string>
     token_transfers: {
         asset_id: string
         contract: string
         from: string
         to: string
         value: string
-        token_name: string | null
-        token_symbol: string | null
-        token_decimals: number | null
+        token_name: Nullable<string>
+        token_symbol: Nullable<string>
+        token_decimals: Nullable<number>
     }[]
     internal_transfers: {
         from: string
-        to: string | null
+        to: Nullable<string>
         value: string
         status: 'success' | 'failed'
     }[]
@@ -119,8 +137,8 @@ export type EvmHistoryItemResponse = {
         quantity: string
         from: string
         to: string
-        collection_name: string | null
-        collection_symbol: string | null
+        collection_name: Nullable<string>
+        collection_symbol: Nullable<string>
     }[]
     // lanekeep-ignore-next-line pera/amount-types reason: JSON wire response shape
     withdrawals: { index: number; validator_index: number; amount: string }[]

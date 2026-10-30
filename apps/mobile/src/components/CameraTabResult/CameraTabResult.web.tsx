@@ -12,9 +12,10 @@
 
 import React from 'react'
 import { PWResultView } from '@components/core'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useCameraTabResult } from './useCameraTabResult.web'
 
-export const CameraTabResult = (): React.JSX.Element | null => {
+export const CameraTabResult = (): Nullable<React.JSX.Element> => {
     const {
         result,
         title,

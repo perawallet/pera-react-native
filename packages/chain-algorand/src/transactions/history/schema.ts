@@ -11,7 +11,11 @@
  */
 
 import { z } from 'zod'
-import { logger, uint64IdSchema } from '@perawallet/wallet-core-shared'
+import {
+    logger,
+    uint64IdSchema,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
 
 /**
  * Helper to coerce string to number (API sometimes returns numeric fields as
@@ -153,7 +157,7 @@ const transactionHistoryEnvelopeSchema = z.object({
 })
 
 /** Best-effort `id` extraction from an as-yet-unvalidated row, for logging. */
-const extractRowId = (row: unknown): string | undefined => {
+const extractRowId = (row: unknown): Optional<string> => {
     if (typeof row !== 'object' || row === null || !('id' in row)) {
         return undefined
     }

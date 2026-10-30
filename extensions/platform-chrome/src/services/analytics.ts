@@ -12,6 +12,7 @@
 
 import type { AnalyticsService } from '@perawallet/wallet-extension-platform'
 import { config } from '@perawallet/wallet-core-config'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { ensureDeviceInstallationID } from '../device-installation-id'
 
 const MEASUREMENT_PROTOCOL_URL = 'https://www.google-analytics.com/mp/collect'
@@ -25,7 +26,7 @@ const ANALYTICS_SEND_TIMEOUT_MS = 10_000
  * in the same GA4 property mobile's Firebase Analytics SDK reports to.
  */
 export class ChromeAnalyticsService implements AnalyticsService {
-    private clientIdPromise: Promise<string> | null = null
+    private clientIdPromise: Nullable<Promise<string>> = null
     // ponytail: on by default because the extension does not ask for analytics
     // consent yet; default it off once it does, as the mobile app is.
     private isCollectionEnabled = true

@@ -11,7 +11,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 
 // `BarcodeDetector` is a Chrome-only API (behind no flag since Chrome 83) and
 // is not part of TypeScript's lib.dom — Firefox/Safari lack it entirely, so
@@ -41,24 +41,25 @@ const DETECT_INTERVAL_MS = 200
  * match. `getSupportedFormats` throwing, or being absent on the
  * constructor, is treated the same as "unsupported": paste-only.
  */
-const getBarcodeDetectorCtor =
-    async (): Promise<BarcodeDetectorCtor | null> => {
-        if (typeof window === 'undefined') return null
-        const ctor = (window as unknown as { BarcodeDetector?: unknown })
-            .BarcodeDetector
-        if (typeof ctor !== 'function') return null
-        const BarcodeDetectorImpl = ctor as BarcodeDetectorCtor
-        try {
-            const formats = await BarcodeDetectorImpl.getSupportedFormats?.()
-            if (!formats?.includes('qr_code')) return null
-        } catch (error) {
-            logger.debug('useWebQRScanner: getSupportedFormats() failed', {
-                error,
-            })
-            return null
-        }
-        return BarcodeDetectorImpl
+const getBarcodeDetectorCtor = async (): Promise<
+    Nullable<BarcodeDetectorCtor>
+> => {
+    if (typeof window === 'undefined') return null
+    const ctor = (window as unknown as { BarcodeDetector?: unknown })
+        .BarcodeDetector
+    if (typeof ctor !== 'function') return null
+    const BarcodeDetectorImpl = ctor as BarcodeDetectorCtor
+    try {
+        const formats = await BarcodeDetectorImpl.getSupportedFormats?.()
+        if (!formats?.includes('qr_code')) return null
+    } catch (error) {
+        logger.debug('useWebQRScanner: getSupportedFormats() failed', {
+            error,
+        })
+        return null
     }
+    return BarcodeDetectorImpl
+}
 
 export type UseWebQRScannerOptions = {
     /**
@@ -80,8 +81,8 @@ export type WebCameraError = 'unsupported' | 'blocked' | 'unavailable'
 export type UseWebQRScannerResult = {
     isCameraActive: boolean
     hasCameraError: boolean
-    cameraError: WebCameraError | null
-    videoRef: React.RefObject<HTMLVideoElement | null>
+    cameraError: Nullable<WebCameraError>
+    videoRef: React.RefObject<Nullable<HTMLVideoElement>>
     pastedValue: string
     setPastedValue: (value: string) => void
     submitPasted: () => void
@@ -101,9 +102,9 @@ export const useWebQRScanner = (
     options: UseWebQRScannerOptions = {},
 ): UseWebQRScannerResult => {
     const { autoStart = true } = options
-    const videoRef = useRef<HTMLVideoElement | null>(null)
-    const streamRef = useRef<MediaStream | null>(null)
-    const rafRef = useRef<number | null>(null)
+    const videoRef = useRef<Nullable<HTMLVideoElement>>(null)
+    const streamRef = useRef<Nullable<MediaStream>>(null)
+    const rafRef = useRef<Nullable<number>>(null)
     const lastDetectAtRef = useRef(0)
     const resolvedRef = useRef(false)
 
@@ -113,7 +114,8 @@ export const useWebQRScanner = (
     onResultRef.current = onResult
 
     const [isCameraActive, setIsCameraActive] = useState(false)
-    const [cameraError, setCameraError] = useState<WebCameraError | null>(null)
+    const [cameraError, setCameraError] =
+        useState<Nullable<WebCameraError>>(null)
     const [pastedValue, setPastedValue] = useState('')
 
     const stopStream = useCallback(() => {

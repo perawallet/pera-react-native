@@ -65,6 +65,7 @@ import {
     ledgerAppDriverRegistry,
     type LedgerAppDriver,
 } from '@perawallet/wallet-extension-hardware-wallet'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import {
     createEthereumAccountsAdapter,
     createEvmAddressCodec,
@@ -81,6 +82,7 @@ import { createEvmHistoryAdapter } from './history'
 import { createEvmLedgerAppDriver } from './ledger/driver'
 import { createEvmPlannerAdapter } from './signing/adapter'
 import { createEvmLocalKeySignerAdapter } from './signing/localKeySigner'
+import { withMessageSigningGate } from './signing/messageSigningGate'
 import { createEvmMessageSignerAdapter } from './signing/messages'
 import { createEthereumReviewer } from './signing/review'
 import { createEvmSigningReviewerAdapter } from './signing/signingReviewer'
@@ -123,7 +125,10 @@ const buildAdapters = (
         reviewer,
         signingReviewer: createEvmSigningReviewerAdapter(chain, reviewer),
         localKeySigner: createEvmLocalKeySignerAdapter(chain),
-        messageSigner: createEvmMessageSignerAdapter(chain),
+        messageSigner: withMessageSigningGate(
+            chain,
+            createEvmMessageSignerAdapter(chain),
+        ),
         accounts: createEthereumAccountsAdapter(ctx, chain, listedTokens),
         assets: createEthereumAssetsAdapter(ctx, chain, listedTokens),
         transfer: createEvmTransferAdapter(ctx, chain),
@@ -153,7 +158,7 @@ export const createEvmChainRegistration = (
     // The registries ignore a repeat of the same instance but reject a new one,
     // so the adapters are built on the first registration; every context the
     // app hands in reads the same live stores.
-    let adapters: EvmChainAdapters | undefined
+    let adapters: Optional<EvmChainAdapters>
     return ctx => {
         adapters ??= buildAdapters(ctx, chain)
         addressCodecs.register(adapters.addressCodec)

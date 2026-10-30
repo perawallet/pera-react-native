@@ -11,7 +11,7 @@
  */
 
 import React, { useEffect, useRef } from 'react'
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import { useBottomSheet, useBottomSheetStore } from '@modules/bottom-sheet'
 import {
     isInteractiveSource,
@@ -56,7 +56,7 @@ export const useSignRequestDriver = () => {
     // the host count so the pending request re-presents when a host mounts
     // instead of wedging in the queue with no sheet and no dApp response.
     const hostCount = useBottomSheetStore(s => s.hostCount)
-    const openIdRef = useRef<string | null>(null)
+    const openIdRef = useRef<Nullable<string>>(null)
 
     const firstInteractive = pendingSignRequests.find(r =>
         isInteractiveSource(r.sourceType),

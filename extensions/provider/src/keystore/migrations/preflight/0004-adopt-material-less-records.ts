@@ -22,6 +22,7 @@ import {
     openData,
     serializeKey,
 } from '@algorandfoundation/react-native-keystore'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import type { PeraMigrationContext } from '../types'
 import { safeErrorMessage, safeWarn } from '../safeLog'
 import {
@@ -157,7 +158,7 @@ export const migration: Migration<PeraMigrationContext> = {
                 const sealed = storage.getString(storageKey)
                 if (sealed === undefined) continue
 
-                let record: Canary13Record | undefined
+                let record: Optional<Canary13Record>
                 try {
                     record = decode(
                         await openData(subtle, unlocked, sealed),

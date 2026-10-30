@@ -238,34 +238,44 @@ vi.mock('@perawallet/wallet-core-transactions', () => ({
     fetchAndPersistTransactions: vi.fn(() => Promise.resolve()),
 }))
 
-vi.mock('@perawallet/wallet-core-shared', () => ({
-    logger: { warn: vi.fn(), error: vi.fn(), info: vi.fn(), debug: vi.fn() },
-    isPeraNetworkError: (error: unknown) =>
-        error instanceof Error && error.name === 'PeraNetworkError',
-    partition: (arr: unknown[], size: number) => {
-        const result = []
-        for (let i = 0; i < arr.length; i += size) {
-            result.push((arr as unknown[]).slice(i, i + size))
-        }
-        return result
-    },
-    calculateBackoff: (current: number, multiplier: number, max: number) =>
-        Math.min(current * multiplier, max),
-    // Unbounded stand-in: these tests assert what gets fetched and how failures
-    // are handled, not the concurrency cap. The real limiting behaviour is
-    // covered in shared's async tests — do not read a passing suite here as
-    // evidence that the cap works.
-    mapWithConcurrency: async <T, R>(
-        items: T[],
-        limit: number,
-        mapper: (item: T, index: number) => Promise<R>,
-    ) => {
-        mockConcurrencyLimits.push({ items, limit })
-        return Promise.allSettled(
-            items.map((item, index) => mapper(item, index)),
-        )
-    },
-}))
+vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
+    const actualShared =
+        await importOriginal<typeof import('@perawallet/wallet-core-shared')>()
+    return {
+        logger: {
+            warn: vi.fn(),
+            error: vi.fn(),
+            info: vi.fn(),
+            debug: vi.fn(),
+        },
+        isPeraNetworkError: (error: unknown) =>
+            error instanceof Error && error.name === 'PeraNetworkError',
+        getHttpStatus: actualShared.getHttpStatus,
+        partition: (arr: unknown[], size: number) => {
+            const result = []
+            for (let i = 0; i < arr.length; i += size) {
+                result.push((arr as unknown[]).slice(i, i + size))
+            }
+            return result
+        },
+        calculateBackoff: (current: number, multiplier: number, max: number) =>
+            Math.min(current * multiplier, max),
+        // Unbounded stand-in: these tests assert what gets fetched and how failures
+        // are handled, not the concurrency cap. The real limiting behaviour is
+        // covered in shared's async tests — do not read a passing suite here as
+        // evidence that the cap works.
+        mapWithConcurrency: async <T, R>(
+            items: T[],
+            limit: number,
+            mapper: (item: T, index: number) => Promise<R>,
+        ) => {
+            mockConcurrencyLimits.push({ items, limit })
+            return Promise.allSettled(
+                items.map((item, index) => mapper(item, index)),
+            )
+        },
+    }
+})
 
 describe('SyncService', () => {
     let queryClient: QueryClient
@@ -1108,7 +1118,7 @@ describe('SyncService', () => {
         const { logger } = await import('@perawallet/wallet-core-shared')
 
         vi.mocked(fetchAndPersistAccount).mockRejectedValue(
-            new Error('HTTP 429 Too Many Requests'),
+            peraNetworkError(429),
         )
 
         service.start()
@@ -1389,7 +1399,7 @@ describe('SyncService', () => {
         } = await import('@perawallet/wallet-core-accounts')
 
         vi.mocked(fetchAndPersistAccount).mockRejectedValue(
-            new Error('HTTP 429 Too Many Requests'),
+            peraNetworkError(429),
         )
 
         service.start()
@@ -2433,7 +2443,7 @@ describe('SyncService', () => {
             ).toBe(6)
         })
 
-        it("keeps syncing Algorand when another scope's signal throws, and backs off", async () => {
+        it("keeps Algorand at the base interval while another scope's signal throws, backing off only that scope", async () => {
             const { logger } = await import('@perawallet/wallet-core-shared')
             const { useSyncCursorStore } = await import('../polling')
             const original = useSyncCursorStore.getState
@@ -2461,13 +2471,367 @@ describe('SyncService', () => {
                     expect.objectContaining({ scope: ETHEREUM }),
                 )
 
-                // Backed off to 6 s: nothing at the base interval.
+                // Algorand stays on the base interval; only Ethereum waits.
                 vi.mocked(fetchAndPersistAccount).mockClear()
                 await vi.advanceTimersByTimeAsync(POLL_INTERVAL)
-                expect(fetchAndPersistAccount).not.toHaveBeenCalled()
+                expect(await accountReadsOn(MAINNET)).toEqual([
+                    'ADDR1',
+                    'ADDR2',
+                ])
+                expect(ethereumSignal).toHaveBeenCalledTimes(1)
+
+                // Ethereum's own 6 s backoff has elapsed.
+                await vi.advanceTimersByTimeAsync(POLL_INTERVAL)
+                expect(ethereumSignal).toHaveBeenCalledTimes(2)
             } finally {
                 useSyncCursorStore.getState = original
                 service.stop()
+            }
+        })
+
+        describe('per-scope backoff', () => {
+            const rateLimited = () =>
+                Object.assign(new Error('HTTP request failed.'), {
+                    status: 429,
+                })
+            const OK_READ = {
+                changed: false,
+                holdingsChanged: false,
+                observedRound: 42,
+            }
+
+            const failEthereumReads = async () => {
+                const { fetchAndPersistAccount } =
+                    await import('@perawallet/wallet-core-accounts')
+                vi.mocked(fetchAndPersistAccount).mockImplementation(
+                    async (_address, scope) => {
+                        if (scope.chainId === 'ethereum') throw rateLimited()
+                        return OK_READ
+                    },
+                )
+                ethereumSignal.mockRejectedValue(rateLimited())
+                return fetchAndPersistAccount
+            }
+
+            it('syncs Algorand at the base interval while Ethereum is rate limited', async () => {
+                const { logger } =
+                    await import('@perawallet/wallet-core-shared')
+                addEthereumAccount('eth', { ethereum: { address: '0xabc' } })
+                await failEthereumReads()
+
+                service.start()
+                await vi.advanceTimersByTimeAsync(50 + 5 * POLL_INTERVAL)
+                service.stop()
+
+                expect(await accountReadsOn(MAINNET)).toHaveLength(12)
+                expect(await accountReadsOn(ETHEREUM)).toEqual([
+                    '0xabc',
+                    '0xabc',
+                ])
+                expect(ethereumSignal).toHaveBeenCalledTimes(1)
+                expect(logger.warn).toHaveBeenCalledWith(
+                    'Sync scope rate limited',
+                    { scope: ETHEREUM },
+                )
+                expect(logger.warn).not.toHaveBeenCalledWith(
+                    'Sync step failed',
+                    expect.objectContaining({ scope: ETHEREUM }),
+                )
+            })
+
+            it('reports a synced scope whose signal is rejected with a 429 as rate limited', async () => {
+                const { logger } =
+                    await import('@perawallet/wallet-core-shared')
+                const { useSyncCursorStore } = await import('../polling')
+                const original = useSyncCursorStore.getState
+                useSyncCursorStore.getState = () =>
+                    cursorState({ 'ethereum/mainnet': 5 }) as never
+                addEthereumAccount('eth', { ethereum: { address: '0xabc' } })
+                ethereumSignal.mockRejectedValue(rateLimited())
+
+                try {
+                    service.start()
+                    // A scope's first sync skips its signal; the second asks.
+                    await vi.advanceTimersByTimeAsync(50 + POLL_INTERVAL)
+                    service.stop()
+
+                    expect(ethereumSignal).toHaveBeenCalledTimes(1)
+                    expect(logger.warn).toHaveBeenCalledWith(
+                        'Sync scope rate limited',
+                        { scope: ETHEREUM },
+                    )
+                    expect(logger.warn).not.toHaveBeenCalledWith(
+                        'Sync scope failed',
+                        expect.objectContaining({ scope: ETHEREUM }),
+                    )
+                } finally {
+                    useSyncCursorStore.getState = original
+                }
+            })
+
+            it('backs off a rate-limited scope on its own and resumes the base cadence once it recovers', async () => {
+                addEthereumAccount('eth', { ethereum: { address: '0xabc' } })
+                const fetchAndPersistAccount = await failEthereumReads()
+
+                service.start()
+                await vi.advanceTimersByTimeAsync(50 + 2 * POLL_INTERVAL)
+                expect(await accountReadsOn(ETHEREUM)).toHaveLength(2)
+
+                // Ethereum's interval is now 12 s, so it is next due at 18 s.
+                vi.mocked(fetchAndPersistAccount).mockResolvedValue(OK_READ)
+                ethereumSignal.mockResolvedValue({ changed: true, cursor: 9 })
+                vi.mocked(fetchAndPersistAccount).mockClear()
+                await vi.advanceTimersByTimeAsync(3 * POLL_INTERVAL)
+                expect(await accountReadsOn(ETHEREUM)).toEqual([])
+
+                await vi.advanceTimersByTimeAsync(POLL_INTERVAL)
+                expect(await accountReadsOn(ETHEREUM)).toEqual(['0xabc'])
+
+                vi.mocked(fetchAndPersistAccount).mockClear()
+                await vi.advanceTimersByTimeAsync(POLL_INTERVAL)
+                service.stop()
+                expect(await accountReadsOn(ETHEREUM)).toEqual(['0xabc'])
+            })
+
+            it('backs off the loop when every scope that ran fails', async () => {
+                addEthereumAccount('eth', { ethereum: { address: '0xabc' } })
+                const { fetchAndPersistAccount } =
+                    await import('@perawallet/wallet-core-accounts')
+                vi.mocked(fetchAndPersistAccount).mockRejectedValue(
+                    new Error('network error'),
+                )
+
+                service.start()
+                await vi.advanceTimersByTimeAsync(50)
+                expect(mockReconcileOpenSubmissions).toHaveBeenCalledTimes(1)
+
+                await vi.advanceTimersByTimeAsync(POLL_INTERVAL)
+                expect(mockReconcileOpenSubmissions).toHaveBeenCalledTimes(1)
+                expect(await accountReadsOn(MAINNET)).toHaveLength(2)
+                expect(await accountReadsOn(ETHEREUM)).toHaveLength(1)
+
+                // Each scope's own backoff elapses together with the loop's.
+                await vi.advanceTimersByTimeAsync(POLL_INTERVAL)
+                service.stop()
+                expect(mockReconcileOpenSubmissions).toHaveBeenCalledTimes(2)
+                expect(await accountReadsOn(MAINNET)).toHaveLength(4)
+                expect(ethereumSignal).toHaveBeenCalledTimes(1)
+            })
+
+            it("runs scopes concurrently, so a slow scope does not hold up the next one's reads", async () => {
+                const { fetchAndPersistAccount } =
+                    await import('@perawallet/wallet-core-accounts')
+                let releaseGate: () => void = () => {}
+                const gate = new Promise<void>(resolve => {
+                    releaseGate = resolve
+                })
+                vi.mocked(fetchAndPersistAccount).mockImplementation(
+                    async (_address, scope) => {
+                        if (scope.chainId === 'ethereum') await gate
+                        return OK_READ
+                    },
+                )
+                const ordered = new SyncService({
+                    queryClient,
+                    stores: {
+                        ...createSyncStorePorts(),
+                        getAccountChainAddresses: () => [
+                            { chainId: 'ethereum', address: '0xabc' },
+                            { chainId: 'algorand', address: 'ADDR1' },
+                        ],
+                    },
+                    chains: chainsDep(),
+                })
+
+                try {
+                    ordered.start()
+                    await vi.advanceTimersByTimeAsync(50)
+
+                    expect(await accountReadsOn(MAINNET)).toEqual(['ADDR1'])
+                } finally {
+                    releaseGate()
+                    ordered.stop()
+                }
+            })
+
+            it('syncs a backed-off scope again after the device clock moves back', async () => {
+                addEthereumAccount('eth', { ethereum: { address: '0xabc' } })
+                await failEthereumReads()
+
+                service.start()
+                await vi.advanceTimersByTimeAsync(50)
+                expect(await accountReadsOn(ETHEREUM)).toHaveLength(1)
+
+                vi.setSystemTime(Date.now() - 60 * 60 * 1000)
+                await vi.advanceTimersByTimeAsync(POLL_INTERVAL)
+                service.stop()
+
+                expect(await accountReadsOn(ETHEREUM)).toHaveLength(2)
+            })
+
+            it('leaves the loop interval alone on a tick where every scope is still waiting', async () => {
+                mockAccounts.splice(0)
+                addEthereumAccount('eth', { ethereum: { address: '0xabc' } })
+                await failEthereumReads()
+
+                try {
+                    service.start()
+                    await vi.advanceTimersByTimeAsync(50)
+                    expect(await accountReadsOn(ETHEREUM)).toHaveLength(1)
+
+                    // The loop timer now fires before the scope's wait ends.
+                    vi.setSystemTime(Date.now() - 500)
+                    await vi.advanceTimersByTimeAsync(2 * POLL_INTERVAL + 100)
+                    expect(mockReconcileOpenSubmissions).toHaveBeenCalledTimes(
+                        2,
+                    )
+                    expect(await accountReadsOn(ETHEREUM)).toHaveLength(1)
+
+                    await vi.advanceTimersByTimeAsync(POLL_INTERVAL)
+                    expect(mockReconcileOpenSubmissions).toHaveBeenCalledTimes(
+                        2,
+                    )
+                } finally {
+                    service.stop()
+                    mockAccounts.push(
+                        {
+                            id: '1',
+                            name: 'Account 1',
+                            custody: { kind: 'watch' },
+                            chains: { algorand: { address: 'ADDR1' } },
+                        },
+                        {
+                            id: '2',
+                            name: 'Account 2',
+                            custody: { kind: 'watch' },
+                            chains: { algorand: { address: 'ADDR2' } },
+                        },
+                    )
+                }
+            })
+
+            it('syncs a scope on the tick its wait ends even when the loop timer fires slightly early', async () => {
+                mockAccounts.splice(0)
+                addEthereumAccount('eth', { ethereum: { address: '0xabc' } })
+                const fetchAndPersistAccount = await failEthereumReads()
+                vi.mocked(fetchAndPersistAccount).mockImplementation(
+                    async () => {
+                        await new Promise(resolve => setTimeout(resolve, 100))
+                        throw rateLimited()
+                    },
+                )
+
+                try {
+                    service.start()
+                    await vi.advanceTimersByTimeAsync(150)
+                    expect(await accountReadsOn(ETHEREUM)).toHaveLength(1)
+
+                    // Scope and loop both wait 6 s; the timer lands 50 ms short.
+                    vi.setSystemTime(Date.now() - 50)
+                    await vi.advanceTimersByTimeAsync(2 * POLL_INTERVAL)
+                    expect(await accountReadsOn(ETHEREUM)).toHaveLength(2)
+                } finally {
+                    service.stop()
+                    mockAccounts.push(
+                        {
+                            id: '1',
+                            name: 'Account 1',
+                            custody: { kind: 'watch' },
+                            chains: { algorand: { address: 'ADDR1' } },
+                        },
+                        {
+                            id: '2',
+                            name: 'Account 2',
+                            custody: { kind: 'watch' },
+                            chains: { algorand: { address: 'ADDR2' } },
+                        },
+                    )
+                }
+            })
+
+            it('forgets a backed-off scope once it leaves the synced set, so switching it back on syncs at once and backs off from base', async () => {
+                addEthereumAccount('eth', { ethereum: { address: '0xabc' } })
+                await failEthereumReads()
+
+                service.start()
+                await vi.advanceTimersByTimeAsync(50 + 2 * POLL_INTERVAL)
+                // Ethereum's interval is now 12 s, next due at 18 s.
+                expect(await accountReadsOn(ETHEREUM)).toHaveLength(2)
+
+                mockSwitchedOff.add('ethereum')
+                await vi.advanceTimersByTimeAsync(POLL_INTERVAL)
+                mockSwitchedOff.delete('ethereum')
+                await vi.advanceTimersByTimeAsync(POLL_INTERVAL)
+                expect(await accountReadsOn(ETHEREUM)).toHaveLength(3)
+
+                // That failure starts again from the base step: due 6 s later.
+                await vi.advanceTimersByTimeAsync(POLL_INTERVAL)
+                expect(await accountReadsOn(ETHEREUM)).toHaveLength(3)
+                await vi.advanceTimersByTimeAsync(POLL_INTERVAL)
+                service.stop()
+                expect(await accountReadsOn(ETHEREUM)).toHaveLength(4)
+            })
+
+            it('forgets per-scope backoff on reconnect, so the reconnect tick syncs every scope', async () => {
+                addEthereumAccount('eth', { ethereum: { address: '0xabc' } })
+                await failEthereumReads()
+
+                try {
+                    service.start()
+                    await vi.advanceTimersByTimeAsync(50)
+                    expect(await accountReadsOn(ETHEREUM)).toHaveLength(1)
+
+                    onlineManager.setOnline(false)
+                    onlineManager.setOnline(true)
+                    await vi.advanceTimersByTimeAsync(50)
+
+                    expect(await accountReadsOn(ETHEREUM)).toHaveLength(2)
+                } finally {
+                    onlineManager.setOnline(true)
+                    service.stop()
+                }
+            })
+
+            it('forgets per-scope backoff on restart', async () => {
+                addEthereumAccount('eth', { ethereum: { address: '0xabc' } })
+                await failEthereumReads()
+
+                service.start()
+                await vi.advanceTimersByTimeAsync(50)
+                expect(await accountReadsOn(ETHEREUM)).toHaveLength(1)
+
+                service.restart()
+                await vi.advanceTimersByTimeAsync(50)
+                service.stop()
+
+                expect(await accountReadsOn(ETHEREUM)).toHaveLength(2)
+            })
+        })
+
+        it('keeps the base interval when there are no scopes to sync', async () => {
+            mockAccounts.splice(0)
+
+            try {
+                service.start()
+                await vi.advanceTimersByTimeAsync(POLL_INTERVAL + 50)
+                service.stop()
+
+                expect(mockReconcileOpenSubmissions).toHaveBeenCalledTimes(2)
+            } finally {
+                mockAccounts.push(
+                    {
+                        id: '1',
+                        name: 'Account 1',
+                        custody: { kind: 'watch' },
+                        chains: { algorand: { address: 'ADDR1' } },
+                    },
+                    {
+                        id: '2',
+                        name: 'Account 2',
+                        custody: { kind: 'watch' },
+                        chains: { algorand: { address: 'ADDR2' } },
+                    },
+                )
             }
         })
 

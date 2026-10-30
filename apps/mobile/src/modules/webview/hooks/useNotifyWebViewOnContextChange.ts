@@ -14,7 +14,7 @@ import { useEffect, useRef } from 'react'
 import type WebView from 'react-native-webview'
 
 import { sendNotificationToWebview } from './handlers'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 
 export type ContextFingerprints = {
     settings?: string
@@ -33,7 +33,7 @@ export type ContextFingerprints = {
  */
 export function useNotifyWebViewOnContextChange(
     webviewRef: React.RefObject<Nullable<WebView>>,
-    contextFingerprints: ContextFingerprints | undefined,
+    contextFingerprints: Optional<ContextFingerprints>,
     isSecure: boolean,
 ) {
     const prevFingerprints = useRef<ContextFingerprints>({})
