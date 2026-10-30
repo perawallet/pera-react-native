@@ -73,6 +73,11 @@ vi.mock('@tanstack/react-query', () => ({
 // `instanceof` needs the same class identity the hook and resolveErrorCopy
 // import, so both must resolve to this mock.
 vi.mock('@perawallet/wallet-core-signing', () => ({
+    chainIdOfSignRequest: (request: {
+        txs: [{ scope: { chainId: string } }]
+    }) => request.txs[0].scope.chainId,
+    scopeOfSignRequest: (request: { txs: [{ scope: unknown }] }) =>
+        request.txs[0].scope,
     SubmissionError: class SubmissionError extends Error {
         readonly metadata = { retryable: true }
         constructor(
@@ -97,12 +102,16 @@ vi.mock('@hooks/useNodeErrorMessage', () => ({
     }),
 }))
 
+const ALGO_SCOPE = { chainId: 'algorand', networkId: 'mainnet' }
+const ETH_SCOPE = { chainId: 'ethereum', networkId: 'sepolia' }
+
 const COSIGN_REQUEST = {
     id: 'req-1',
     type: 'transactions',
     transport: 'callback',
     sourceType: 'multisig-cosign',
     signRequestId: 'sr-1',
+    txs: [{ scope: ALGO_SCOPE, payload: {} }],
 } as unknown as SignRequest
 
 const WALLETCONNECT_REQUEST = {
@@ -110,6 +119,7 @@ const WALLETCONNECT_REQUEST = {
     type: 'transactions',
     transport: 'callback',
     sourceType: 'walletconnect',
+    txs: [{ scope: ALGO_SCOPE, payload: {} }],
 } as unknown as SignRequest
 
 // WalletConnect failures render nothing here (SignRequestView.tsx routes them
@@ -120,6 +130,7 @@ const DEEPLINK_REQUEST = {
     type: 'transactions',
     transport: 'network',
     sourceType: 'deeplink',
+    txs: [{ scope: ALGO_SCOPE, payload: {} }],
 } as unknown as SignRequest
 
 const setStatus = (status: SignRequestStatus | null) => {
@@ -180,6 +191,20 @@ describe('useSignRequestFailure', () => {
                 { chainId: 'algorand', networkId: 'mainnet' },
                 'sr-1',
             ],
+        })
+    })
+
+    it("re-reads the status on the request's own chain", () => {
+        const ethCosign = {
+            ...COSIGN_REQUEST,
+            signRequestId: 'sr-eth',
+            txs: [{ scope: ETH_SCOPE, payload: {} }],
+        } as unknown as SignRequest
+
+        renderHook(() => useSignRequestFailure(ethCosign, new Error('boom')))
+
+        expect(mocks.invalidateQueries).toHaveBeenCalledWith({
+            queryKey: ['signRequestDetail', ETH_SCOPE, 'sr-eth'],
         })
     })
 

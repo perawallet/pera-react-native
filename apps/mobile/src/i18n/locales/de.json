@@ -3573,7 +3573,7 @@
             "rekey_are_you_sure_title": "Bist du sicher?",
             "rekey_are_you_sure_description": "Diese Signatur enthält eine Rekey-Transaktion, die einer anderen Adresse die Kontrolle über deine Konten überträgt. Stelle sicher, dass du die Auswirkungen verstehst, bevor du fortfährst.",
             "rekey_are_you_sure_continue": "Weiter",
-            "high_fee_warning": "Diese Anfrage zahlt eine ungewöhnlich hohe Netzwerkgebühr von {{fee}} ALGO. Stelle sicher, dass du der Quelle vertraust, bevor du signierst.",
+            "high_fee_warning": "Diese Anfrage zahlt eine ungewöhnlich hohe Netzwerkgebühr von {{fee}}. Stelle sicher, dass du der Quelle vertraust, bevor du signierst.",
             "asset_freeze_warning": "Diese Transaktion friert Assets für die folgende Adresse ein oder taut sie auf: {{address}}.",
             "asset_freeze_group_warning": "Diese Transaktionsgruppe friert Assets für eines der Konten in dieser Gruppe ein oder taut sie auf. Bitte prüfe sorgfältig, bevor du signierst.",
             "asset_freeze_warning_bold": "Dies kann verhindern, dass das Zielkonto mit dem eingefrorenen Asset transagiert. Bitte prüfe sorgfältig, bevor du signierst.",

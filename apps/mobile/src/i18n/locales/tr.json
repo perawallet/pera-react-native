@@ -3581,7 +3581,7 @@
             "rekey_are_you_sure_title": "Emin misin?",
             "rekey_are_you_sure_description": "Bu imza, hesaplarının kontrolünü başka bir adrese veren bir rekey işlemi içeriyor. Devam etmeden önce sonuçlarını anladığından emin ol.",
             "rekey_are_you_sure_continue": "Devam et",
-            "high_fee_warning": "Bu istek, alışılmadık şekilde yüksek bir ağ ücreti ödüyor: {{fee}} ALGO. İmzalamadan önce kaynağa güvendiğinden emin ol.",
+            "high_fee_warning": "Bu istek, alışılmadık şekilde yüksek bir ağ ücreti ödüyor: {{fee}}. İmzalamadan önce kaynağa güvendiğinden emin ol.",
             "asset_freeze_warning": "Bu işlem, şu adrese ait varlıkları dondurur veya dondurmayı kaldırır: {{address}}.",
             "asset_freeze_group_warning": "Bu işlem grubu, bu gruptaki hesaplardan biri için varlıkları dondurur veya dondurmayı kaldırır. İmzalamadan önce dikkatlice incele.",
             "asset_freeze_warning_bold": "Bu, hedef hesabın dondurulan varlıkla işlem yapmasını engelleyebilir. İmzalamadan önce dikkatlice incele.",

@@ -3581,7 +3581,7 @@
             "rekey_are_you_sure_title": "¿Estás seguro?",
             "rekey_are_you_sure_description": "Esta firma incluye una transacción de rekey, que da el control de tus cuentas a otra dirección. Asegúrate de entender las consecuencias antes de continuar.",
             "rekey_are_you_sure_continue": "Continuar",
-            "high_fee_warning": "Esta solicitud paga una comisión de red inusualmente alta de {{fee}} ALGO. Asegúrate de confiar en la fuente antes de firmar.",
+            "high_fee_warning": "Esta solicitud paga una comisión de red inusualmente alta de {{fee}}. Asegúrate de confiar en la fuente antes de firmar.",
             "asset_freeze_warning": "Esta transacción congela o descongela activos de la siguiente dirección: {{address}}.",
             "asset_freeze_group_warning": "Este grupo de transacciones congela o descongela activos de una de las cuentas del grupo. Revísalo con atención antes de firmar.",
             "asset_freeze_warning_bold": "Esto puede impedir que la cuenta afectada opere con el activo congelado. Revísalo con atención antes de firmar.",

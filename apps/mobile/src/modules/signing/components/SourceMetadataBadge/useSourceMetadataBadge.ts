@@ -21,17 +21,20 @@ import {
     resolveDisplayableVerificationTier,
     useProjectByUrlQuery,
 } from '@perawallet/wallet-core-projects'
-import type { SignRequestSource } from '@perawallet/wallet-core-signing'
+import {
+    useSigningRequest,
+    type SignRequestSource,
+} from '@perawallet/wallet-core-signing'
 import { useSiteSafetyQuery } from '@perawallet/wallet-core-site-safety'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useLanguage } from '@hooks/useLanguage'
+import { useSignRequestScope } from '../../hooks/useSignRequestScope'
 
 export const useSourceMetadataBadge = (
     metadata: SignRequestSource,
     verifiedOrigin?: string,
 ) => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const { currentRequest } = useSigningRequest()
+    const scope = useSignRequestScope(currentRequest)
     const { t } = useLanguage()
     const { data: project } = useProjectByUrlQuery({
         scope,
