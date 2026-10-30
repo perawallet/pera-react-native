@@ -168,6 +168,15 @@ describe('pera/no-legacy-chain-in-app', () => {
         ).toEqual([])
     })
 
+    it('skips the shared app code paths owned by the other rule', async () => {
+        const found = await runRule(
+            RULE,
+            'lanekeep/__tests__/fixtures/apps/mobile/src/{hooks,components}/**/*.{ts,tsx}',
+        )
+
+        expect(found).toEqual([])
+    })
+
     it('reports exactly the baseline files across the app', async () => {
         const found = await runRule(RULE, 'apps/mobile/src/**/*.{ts,tsx}')
 

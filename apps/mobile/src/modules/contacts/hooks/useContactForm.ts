@@ -34,10 +34,11 @@ import {
     type ContactFormValues,
     type NewContact,
 } from '@perawallet/wallet-core-contacts'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 import { useImagePicker } from '@hooks/useImagePicker'
+import { useCapableChainId } from '@hooks/useCapableChainIds'
 import { useNfdResolve } from '@hooks/useNfdResolve'
-import { useHomeChainScope } from '@hooks/useHomeChainScope'
 
 import type { Optional, Nullable } from '@perawallet/wallet-core-shared'
 
@@ -119,8 +120,10 @@ export const useContactForm = (
     const [pendingReplacement, setPendingReplacement] =
         useState<Optional<AddressFamilyMatch>>()
 
+    const nameChainId = useCapableChainId('nameService')
+    const nameChainScope = useSelectedScope(nameChainId)
     const { resolvedAddress, isNfdResolved, isNfdResolving, nfdName } =
-        useNfdResolve(rawAddressInput, useHomeChainScope())
+        useNfdResolve(rawAddressInput, nameChainScope)
 
     const setAddresses = useCallback(
         (next: ContactAddresses) =>

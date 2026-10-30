@@ -268,6 +268,7 @@ export const AssetMarkets = ({
             <AssetAbout
                 assetDetails={assetDetails}
                 about={about}
+                assetScope={scope}
             />
 
             {!!VerificationSection && (

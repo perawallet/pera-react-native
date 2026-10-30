@@ -17,6 +17,7 @@ import type {
 } from '@perawallet/wallet-core-chain-contract'
 import { useChainCapabilityCheck } from '@perawallet/wallet-core-chain-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
+import { useHomeChainScope } from '@hooks/useHomeChainScope'
 
 /** Registered chains with `capability` switched on, in registry order. */
 export const useCapableChainIds = (capability: ChainCapability): ChainId[] => {
@@ -31,11 +32,11 @@ export const useCapableChainIds = (capability: ChainCapability): ChainId[] => {
 }
 
 /**
- * The first registered chain with `capability` on. Falls back to the first
- * registered chain so a screen gated elsewhere still has a scope to render on.
+ * The first registered chain with `capability` on. Falls back to the home
+ * chain so a screen gated elsewhere still has a scope to render on.
  */
 export const useCapableChainId = (capability: ChainCapability): ChainId => {
     const capable = useCapableChainIds(capability)
-    const firstRegistered = getProvider().chains.list()[0]?.id
-    return (capable[0] ?? firstRegistered) as ChainId
+    const homeScope = useHomeChainScope()
+    return capable[0] ?? homeScope.chainId
 }

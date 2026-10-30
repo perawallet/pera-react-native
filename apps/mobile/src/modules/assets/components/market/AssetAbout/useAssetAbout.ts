@@ -12,13 +12,13 @@
 
 import { useCallback } from 'react'
 import type { PeraAsset } from '@perawallet/wallet-core-assets'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     generateOrderedUniqueId,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 import { useClipboard } from '@hooks/useClipboard'
 import { useResolvedAddress } from '@hooks/useResolvedAddress'
-import { useHomeChainScope } from '@hooks/useHomeChainScope'
 import { toValidatedBrowserUrl, useWebView } from '@modules/webview'
 import type {
     AssetAboutDisplay,
@@ -39,12 +39,13 @@ type UseAssetAboutResult = {
 export const useAssetAbout = (
     assetDetails: PeraAsset,
     about: AssetAboutDisplay,
+    assetScope: ChainScope,
 ): UseAssetAboutResult => {
     const { pushWebView } = useWebView()
     const { copyToClipboard } = useClipboard()
     const { displayName: creatorDisplayName } = useResolvedAddress(
         assetDetails.creator?.address ?? '',
-        useHomeChainScope(),
+        assetScope,
         { enabled: !!assetDetails.creator?.address },
     )
 
