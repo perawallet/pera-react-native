@@ -100,6 +100,8 @@
     "add_asset": {
         "title": "Añadir un activo",
         "search_placeholder": "Busca por nombre o ID de activo",
+        "search_placeholder_evm": "Busca por nombre, símbolo o dirección del contrato",
+        "search_placeholder_all": "Busca por nombre, símbolo, ID de activo o dirección",
         "no_results": "No se encontraron activos",
         "partial_results": "No se pudo buscar en algunas redes, así que podrían faltar resultados.",
         "not_listed": {
@@ -126,7 +128,28 @@
         },
         "collectible_title": "Añadir NFT",
         "collectible_note": "Necesitas añadir el ASA ID del NFT para poder transferirlo a tu wallet. Pega el ASA ID en la barra de búsqueda.",
-        "collectible_search_placeholder": "Busca por ID de activo o nombre del NFT"
+        "collectible_search_placeholder": "Busca por ID de activo o nombre del NFT",
+        "token": {
+            "added_title": "Token añadido",
+            "added_body": "{{assetName}} añadido en {{chain}}",
+            "add_failed_title": "No se pudo añadir el token",
+            "unverified_title": "Token no verificado",
+            "unverified_body": "Pera no ha verificado {{assetName}}. Cualquiera puede crear un token con cualquier nombre o logo, así que comprueba que su dirección del contrato, {{address}}, sea la que esperas antes de añadirlo.",
+            "unverified_confirm": "Añadir de todos modos",
+            "suspicious_title": "Token sospechoso",
+            "suspicious_body": "Pera ha marcado {{assetName}} ({{address}}) como sospechoso. Podría imitar a otro token o formar parte de una estafa. Añádelo solo si confías en su origen.",
+            "remove_title": "¿Quitar {{assetName}}?",
+            "remove_body": "Dejará de mostrarse en esta cuenta en {{chain}}. No se envía nada a la cadena y puedes volver a añadirlo cuando quieras.",
+            "remove_confirm": "Quitar",
+            "removed_title": "Token quitado",
+            "removed_body": "{{assetName}} quitado de {{chain}}",
+            "remove_failed_title": "No se pudo quitar el token"
+        },
+        "info": {
+            "adding_title": "Añadir activos",
+            "adding_opt_in": "En Algorand, añadir un activo es un opt-in: una transacción con una pequeña comisión que además bloquea un saldo mínimo hasta que hagas opt-out.",
+            "adding_evm": "En redes EVM como Ethereum, añadir un token es gratis y no requiere ninguna transacción. Solo cambia qué tokens muestra Pera para esta cuenta."
+        }
     },
     "asa_verification_info": {
         "title": "Verificación de ASA",
@@ -1099,7 +1122,8 @@
             "title": "Error al procesar esta cuenta",
             "body": "Algo salió mal. Inténtalo de nuevo y ponte en contacto con soporte si el problema continúa.",
             "generic": "Se produjo un error al procesar esta cuenta.",
-            "no_hd_wallet": "No se pudo encontrar la Universal Wallet de esta cuenta."
+            "no_hd_wallet": "No se pudo encontrar la Universal Wallet de esta cuenta.",
+            "token_unreadable": "Pera no pudo leer los datos de este token. Revisa la dirección e inténtalo de nuevo."
         },
         "blockchain": {
             "generic": "Algo salió mal al acceder a la blockchain."

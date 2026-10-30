@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { AsaVerificationInfoContent } from './AsaVerificationInfoContent'
-export type { AsaVerificationInfoContentProps } from './AsaVerificationInfoContent'
+export { AddAssetInfoContent } from './AddAssetInfoContent'
+export type { AddAssetInfoContentProps } from './AddAssetInfoContent'

@@ -42,6 +42,7 @@ export const AddAssetView = ({
         handleSelectChain,
         searchQuery,
         handleSearchChange,
+        searchPlaceholder,
         results,
         showsNetwork,
         isLoading,
@@ -59,6 +60,8 @@ export const AddAssetView = ({
         isOptingIn,
         canAdd,
         handleRequestAdd,
+        canRemove,
+        handleRequestRemove,
         t,
     } = useAddAssetView({ variant, chainId })
 
@@ -69,10 +72,19 @@ export const AddAssetView = ({
                 isOptedIn={isOptedIn(item)}
                 isOptingIn={isOptingIn(item)}
                 onAdd={canAdd(item) ? handleRequestAdd : undefined}
+                onRemove={canRemove(item) ? handleRequestRemove : undefined}
                 showsNetwork={showsNetwork}
             />
         ),
-        [isOptedIn, isOptingIn, canAdd, handleRequestAdd, showsNetwork],
+        [
+            isOptedIn,
+            isOptingIn,
+            canAdd,
+            handleRequestAdd,
+            canRemove,
+            handleRequestRemove,
+            showsNetwork,
+        ],
     )
 
     const handleEndReached = useCallback(() => {
@@ -125,11 +137,7 @@ export const AddAssetView = ({
                 keyExtractor={resultKey}
                 searchValue={searchQuery}
                 onSearchChange={handleSearchChange}
-                searchPlaceholder={
-                    isCollectible
-                        ? t('add_asset.collectible_search_placeholder')
-                        : t('add_asset.search_placeholder')
-                }
+                searchPlaceholder={searchPlaceholder}
                 autoFocusSearch
                 searchAccessory={chainFilter}
                 isLoading={isLoading}

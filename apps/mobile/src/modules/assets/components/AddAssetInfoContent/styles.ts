@@ -23,6 +23,9 @@ export const useStyles = makeStyles(theme => ({
     title: {
         marginVertical: theme.spacing.xl,
     },
+    sectionTitle: {
+        marginBottom: theme.spacing.md,
+    },
     paragraph: {
         color: theme.colors.textGray,
         marginBottom: theme.spacing.xl,
