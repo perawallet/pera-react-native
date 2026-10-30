@@ -57,8 +57,13 @@ vi.resetModules()
 const { setTestTheme } = await import('@test-utils/test-theme')
 const { getTheme } = await import('@theme/theme')
 setTestTheme(getTheme('light'))
-const { insertAssetHolding, upsertAccountChainState, useAccountsStore } =
-    await import('@perawallet/wallet-core-accounts')
+const {
+    hydrateAccountChainStates,
+    insertAssetHolding,
+    upsertAccountChainState,
+    useAccountChainStateStore,
+    useAccountsStore,
+} = await import('@perawallet/wallet-core-accounts')
 const { fetchAndPersistAssets, upsertAssetPrices } =
     await import('@perawallet/wallet-core-assets')
 const { useRemoteConfigStore } =
@@ -141,6 +146,8 @@ const seedNativeHoldings = async () => {
         prices: [{ assetId: 'native', usdPrice: new Decimal('2000') }],
         scope: ETH_SCOPE,
     })
+    // As at startup: both networks have been read, so Base's zero is a balance.
+    await hydrateAccountChainStates()
 }
 
 describe('Flow: native ETH across networks in the asset list', () => {
@@ -154,6 +161,7 @@ describe('Flow: native ETH across networks in the asset list', () => {
 
     beforeEach(async () => {
         await resetTestDatabase()
+        useAccountChainStateStore.getState().resetState()
         useRemoteConfigStore.getState().resetState()
         useAssetListViewStore.setState({
             selectedChainId: null,

@@ -21,6 +21,7 @@ import type { Maybe, Nullable } from '@perawallet/wallet-core-shared'
 import {
     LEGACY_CHAIN_ID,
     type AssetRef,
+    type ChainId,
 } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
@@ -45,7 +46,12 @@ export type AssetFiatConverter = (
  * `usePreferredAmount`'s conversion exactly so the result is
  * identical to the shared display component.
  */
-export const useAssetListFiatConverter = (): AssetFiatConverter => {
+const NO_CHAIN_IDS: ReadonlySet<ChainId> = new Set()
+
+/** `unreadChainIds`: chains whose holdings no read vouches for, so a zero there may be a placeholder. */
+export const useAssetListFiatConverter = (
+    unreadChainIds: ReadonlySet<ChainId> = NO_CHAIN_IDS,
+): AssetFiatConverter => {
     const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const nativeAsset = useNativeAsset(scope)
     const { preferredCurrency, fallbackCurrency, usdToPreferred } =
@@ -61,6 +67,14 @@ export const useAssetListFiatConverter = (): AssetFiatConverter => {
 
     return useCallback(
         (ref, knownUsdPrice, amountDisplayUnits) => {
+            // A placeholder zero is unknown, not worth nothing.
+            if (
+                ref !== null &&
+                amountDisplayUnits.isZero() &&
+                unreadChainIds.has(ref.chainId)
+            ) {
+                return { displayCurrency: preferredCurrency, value: null }
+            }
             // Holding none is worth nothing, whether or not the asset is priced.
             const usdPrice =
                 knownUsdPrice ??
@@ -91,6 +105,12 @@ export const useAssetListFiatConverter = (): AssetFiatConverter => {
                 value,
             }
         },
-        [preferredCurrency, fallbackCurrency, usdToPreferred, fallbackRate],
+        [
+            preferredCurrency,
+            fallbackCurrency,
+            usdToPreferred,
+            fallbackRate,
+            unreadChainIds,
+        ],
     )
 }

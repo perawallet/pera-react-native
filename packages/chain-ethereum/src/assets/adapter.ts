@@ -29,6 +29,7 @@ import {
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
 import {
+    logger,
     partition,
     PeraServiceUnavailableError,
     type Maybe,
@@ -182,8 +183,21 @@ const syncNativeAsset = async (
         recheckUnreadGroup: hasAssetsService,
     })
     if (stale.length === 0) return
+    // Best-effort: the row is ours, only the group is the backend's. An absent
+    // group keeps a stored one, or leaves the row for the unread-group recheck.
     const [item] = hasAssetsService
-        ? await fetchAssetItems(scope, chain, [NATIVE_ASSET_ID])
+        ? await fetchAssetItems(scope, chain, [NATIVE_ASSET_ID]).catch(
+              (error: unknown) => {
+                  logger.warn(
+                      'Native coin group unreadable; storing without it',
+                      {
+                          scope,
+                          error,
+                      },
+                  )
+                  return []
+              },
+          )
         : []
     await upsertAssets({
         items: [nativeRow(chain, item?.cross_chain_asset_group)],

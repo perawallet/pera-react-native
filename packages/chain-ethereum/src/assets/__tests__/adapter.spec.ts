@@ -424,6 +424,25 @@ describe('syncAssets', () => {
         expect(full[0]?.peraMetadata?.crossChainAssetGroup).toBeUndefined()
     })
 
+    it('stores the native coin without a group when the backend rejects the chain', async () => {
+        server.use(
+            ...peraEvmAssetHandlers({ baseUrl: TEST_PERA_URL, assets: 422 }),
+        )
+        const { full } = memoryPersistence()
+        const ops = createEthereumAssetsAdapter(
+            testChainContext({ services: ['assets'] }),
+            ETHEREUM,
+        )
+
+        await ops.syncAssets([ref(ETHEREUM_NATIVE_ASSET.assetId)], SCOPE)
+
+        expect(full.map(a => a.assetId)).toEqual([
+            ETHEREUM_NATIVE_ASSET.assetId,
+        ])
+        // Unread, not null: the unread-group recheck asks again.
+        expect(full[0]?.peraMetadata?.crossChainAssetGroup).toBeUndefined()
+    })
+
     it('checks staleness under the checksummed id', async () => {
         const { persistence } = memoryPersistence(() => [])
         const ops = createEthereumAssetsAdapter(

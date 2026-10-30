@@ -43,6 +43,7 @@ const member = (
     asset,
     displayAmount: new Decimal(1),
     usdPrice: new Decimal(1),
+    isUnreadZero: false,
 })
 
 const groupOf = (

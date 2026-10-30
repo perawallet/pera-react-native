@@ -290,8 +290,8 @@ describe("Flow: One account's assets across chains", () => {
         fireEvent.click(screen.getByTestId('asset_network_filter_base'))
 
         const native = await screen.findByTestId('asset_row_native')
-        // The amount and its fiat value: holding none is worth zero, priced or not.
-        expect(within(native).getAllByText(/0\.00/)).toHaveLength(2)
+        // The amount alone: no read vouches for the zero, so it has no fiat value.
+        expect(within(native).getAllByText(/0\.00/)).toHaveLength(1)
         // A native coin's subtitle is its bare unit, never `<unit> · native`.
         expect(within(native).queryByText(/native/)).toBeNull()
         // The read failed, so the zero is a placeholder, not an unfunded balance.
@@ -320,10 +320,13 @@ describe("Flow: One account's assets across chains", () => {
 
         fireEvent.click(screen.getByTestId('asset_network_filter_base'))
 
-        const native = await screen.findByTestId('asset_row_native')
-        // The amount and its fiat value: holding none is worth zero, priced or not.
-        expect(within(native).getAllByText(/0\.00/)).toHaveLength(2)
         const prompt = await screen.findByTestId('network_funding_state')
+        // The amount and its fiat value: a read zero is worth zero, priced or not.
+        expect(
+            within(screen.getByTestId('asset_row_native')).getAllByText(
+                /0\.00/,
+            ),
+        ).toHaveLength(2)
         expect(prompt.textContent).toContain(
             'account_details.assets.funding_title',
         )
