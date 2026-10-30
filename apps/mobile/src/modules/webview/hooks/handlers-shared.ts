@@ -20,6 +20,7 @@ import {
 import {
     logger,
     bytesToHex,
+    originOf,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 import type WebView from 'react-native-webview'
@@ -73,7 +74,7 @@ export const createRequireSecure =
         if (!securedConnection) {
             logger.warn('Blocked WebView bridge call from untrusted origin', {
                 operation: context.operation,
-                sourceUrl: context.sourceUrl,
+                sourceOrigin: originOf(context.sourceUrl ?? undefined),
                 messageId: context.messageId,
             })
             sendError(

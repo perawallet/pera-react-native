@@ -12,6 +12,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
+import { logger } from '@perawallet/wallet-core-shared'
 import {
     deeplinkAdapters,
     uriSchemeOf,
@@ -132,6 +133,22 @@ describe('useDeeplinkListener', () => {
         }
 
         expect(mockHandleDeepLink).toHaveBeenCalledTimes(1)
+    })
+
+    it('logs a cold-start and a warm-start link without its URL', async () => {
+        vi.useFakeTimers()
+        mockGetInitialURL.mockResolvedValue(OPT_IN_URL)
+
+        renderHook(() => useDeeplinkListener())
+        await vi.runAllTimersAsync()
+        urlListeners[0]({ url: OPT_IN_URL })
+
+        expect(logger.debug).toHaveBeenCalledWith(
+            'Deeplink: Initial URL (cold start)',
+        )
+        expect(logger.debug).toHaveBeenCalledWith(
+            'Deeplink: URL event (warm start)',
+        )
     })
 
     describe('unsupported wc: URIs', () => {

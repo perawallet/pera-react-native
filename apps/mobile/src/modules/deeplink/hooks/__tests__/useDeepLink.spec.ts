@@ -122,6 +122,7 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
     return {
         logger: {
             debug: vi.fn(),
+            info: vi.fn(),
             warn: vi.fn(),
             error: vi.fn(),
         },
@@ -255,7 +256,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
         chainId: string,
         address: string,
     ) => accounts.find(a => a.chains[chainId]?.address === address),
-    hdIndexOf: () => undefined,
+    hdIndexOf: (account: { hdIndex?: number }) => account.hdIndex,
     useAllAccounts: () => [
         {
             id: 'mock',
@@ -1563,6 +1564,47 @@ describe('useDeepLink', () => {
             expect(mockOnError).toHaveBeenCalled()
         },
     )
+
+    it('logs a liquid:// deeplink without its URL', async () => {
+        ;(parseDeeplink as Mock).mockReturnValue({
+            type: DeeplinkType.LIQUID_AUTH,
+            variant: 'liquid',
+            sourceUrl: 'liquid://secret',
+        })
+        const { result } = renderHook(() => useDeepLink())
+
+        await act(async () => {
+            await result.current.handleDeepLink(
+                'liquid://secret',
+                false,
+                'deeplink',
+            )
+        })
+
+        expect(logger.info).toHaveBeenCalledWith('liquid:// deeplink received')
+    })
+
+    it('logs a FIDO open failure without the URL the rejection carries', async () => {
+        const fidoUrl = 'FIDO:/1234567890'
+        ;(parseDeeplink as Mock).mockReturnValue({
+            type: DeeplinkType.LIQUID_AUTH,
+            variant: 'fido',
+            url: fidoUrl,
+            sourceUrl: fidoUrl,
+        })
+        accountsState.accounts = [{ id: 'hd', hdIndex: 0 } as never]
+        vi.mocked(Linking.openURL).mockRejectedValueOnce(
+            new Error(`Unable to open URL: ${fidoUrl}`),
+        )
+        const { result } = renderHook(() => useDeepLink())
+
+        await act(async () => {
+            await result.current.handleDeepLink(fidoUrl, false, 'deeplink')
+        })
+
+        expect(logger.error).toHaveBeenCalledWith('Failed to open FIDO URL')
+        expect(mockErrorToast).toHaveBeenCalled()
+    })
 
     describe('capability gating', () => {
         // The capability each gated type needs, switched off in turn.
