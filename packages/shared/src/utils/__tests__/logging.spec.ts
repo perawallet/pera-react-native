@@ -264,6 +264,16 @@ describe('logging', () => {
                 expect(reportedKeys(errorReporter)).toEqual(['test.x'])
             })
 
+            test('falls back to the context error code when a plain Error declares none', () => {
+                const errorReporter = vi.fn()
+                logger.setErrorReporter(errorReporter)
+                const coded = new AppError('refused', { reportCode: 'test.x' })
+
+                logger.error(new Error('plain'), { error: coded })
+
+                expect(reportedKeys(errorReporter)).toEqual(['test.x'])
+            })
+
             test('reports an expected coded error only as a breadcrumb under its code', () => {
                 const errorReporter = vi.fn()
                 logger.setErrorReporter(errorReporter)

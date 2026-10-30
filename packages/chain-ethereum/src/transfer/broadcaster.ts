@@ -156,16 +156,16 @@ export const createEvmBroadcasterAdapter = (
         // Confirmation is the reconciler's, as for the pipeline's transport.
         submitAndAutoRefresh: async (scope, signedTransactions, options) => {
             const bytes = signedTransactions.map(signed => signed.bytes)
-            const historyEntries = await Promise.all(
-                bytes.map(serialized =>
-                    historyEntryOfSigned(
-                        bytesToHex(serialized) as TransactionSerialized,
-                        chain,
-                    ),
-                ),
-            )
             const flow = options?.flow ?? 'pipeline'
             try {
+                const historyEntries = await Promise.all(
+                    bytes.map(serialized =>
+                        historyEntryOfSigned(
+                            bytesToHex(serialized) as TransactionSerialized,
+                            chain,
+                        ),
+                    ),
+                )
                 return await submitAndRecordEthereumTransactions({
                     client: clientFor(scope),
                     chain,

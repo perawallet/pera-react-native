@@ -136,7 +136,7 @@ export class AppError extends Error {
 
 const MAX_REPORT_CODE_DEPTH = 8
 
-/** The outermost declared `reportCode` on the `originalError` chain, looking at most 8 links deep. */
+/** The outermost declared `reportCode` on the `originalError` chain. */
 export const reportCodeOf = (error: unknown): Optional<string> => {
     let current: unknown = error
     for (

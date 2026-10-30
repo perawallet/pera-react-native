@@ -586,6 +586,8 @@ describe('reconcileEthereumSubmissions', () => {
 
                 await passes(N)
 
+                expect(probeFailures.size).toBe(1)
+                expect([...probeFailures.values()]).toEqual([N])
                 expect(errorReports()).toEqual([])
             },
         )
