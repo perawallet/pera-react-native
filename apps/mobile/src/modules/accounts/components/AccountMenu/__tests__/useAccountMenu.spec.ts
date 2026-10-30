@@ -14,6 +14,8 @@ import { renderHook, act } from '@test-utils/render'
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import type { MutableRefObject } from 'react'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import type { LayoutChangeEvent } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import type { PWFlatListRef } from '@components/core'
 
 // Mutable global-selection state + fixtures must be hoisted so the vi.mock
@@ -47,9 +49,15 @@ const mockCardState = vi.hoisted(() => ({
     connectedFundingSourceAddress: null as string | null,
 }))
 const mockPeraCardFlag = vi.hoisted(() => ({ enabled: true }))
+const mockPlatform = vi.hoisted(() => ({ isAndroid: false }))
 const mockSortState = vi.hoisted(() => ({
     sortMode: 'manual' as string,
     manualAccountOrder: [] as string[],
+}))
+
+vi.mock('@utils/platform', async importOriginal => ({
+    ...(await importOriginal<typeof import('@utils/platform')>()),
+    isAndroid: () => mockPlatform.isAndroid,
 }))
 
 vi.mock('@hooks/useIsPeraCardEnabled', () => ({
@@ -326,5 +334,45 @@ describe('useAccountMenu scroll reset on sort commit', () => {
         await flushFrame()
 
         expect(scrollToOffset).not.toHaveBeenCalled()
+    })
+})
+
+describe('useAccountMenu add-account pill', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+        mockPlatform.isAndroid = false
+        vi.mocked(useSafeAreaInsets).mockReturnValue({
+            top: 0,
+            right: 0,
+            bottom: 34,
+            left: 0,
+        })
+    })
+
+    it('measures the pill so the list can leave room under it', () => {
+        const { result } = renderHook(() => useAccountMenu(baseProps()))
+        expect(result.current.addAccountPillHeight).toBe(0)
+
+        act(() =>
+            result.current.handleAddAccountPillLayout({
+                nativeEvent: { layout: { height: 48 } },
+            } as LayoutChangeEvent),
+        )
+
+        expect(result.current.addAccountPillHeight).toBe(48)
+    })
+
+    it('lifts the pill clear of the home indicator on iOS', () => {
+        const { result } = renderHook(() => useAccountMenu(baseProps()))
+
+        expect(result.current.addAccountPillBottomInset).toBe(34)
+    })
+
+    it('leaves the inset to the drawer on Android, which already pads its nav bar', () => {
+        mockPlatform.isAndroid = true
+
+        const { result } = renderHook(() => useAccountMenu(baseProps()))
+
+        expect(result.current.addAccountPillBottomInset).toBe(0)
     })
 })

@@ -20,17 +20,15 @@ export type AccountMenuHeaderProps = {
     headerContent?: ReactNode
     hideDefaultHeader?: boolean
     onOpenSort: () => void
-    onAddAccount: () => void
 }
 
 // The full account-list header: portfolio (or a caller-supplied header) plus
-// the title row with sort/add actions. Rendered as the list header so the
+// the title row with its sort action. Rendered as the list header so the
 // whole thing scrolls away with the accounts.
 export const AccountMenuHeader = ({
     headerContent,
     hideDefaultHeader = false,
     onOpenSort,
-    onAddAccount,
 }: AccountMenuHeaderProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
@@ -65,14 +63,6 @@ export const AccountMenuHeader = ({
                             title={t('account_menu.sort')}
                             paddingStyle='dense'
                             onPress={onOpenSort}
-                        />
-                        <PWButton
-                            testID='account_menu_add_account_button'
-                            accessibilityLabel='account_menu_add_account_button'
-                            variant='helper'
-                            icon='plus'
-                            paddingStyle='dense'
-                            onPress={onAddAccount}
                         />
                     </PWView>
                 </PWView>
