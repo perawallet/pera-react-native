@@ -10,7 +10,19 @@
  limitations under the License
  */
 
-export { AccountAssetHoldingsSchema, AccountChainStateSchema } from './schema'
+export {
+    AccountAddedTokensSchema,
+    AccountAssetHoldingsSchema,
+    AccountChainStateSchema,
+} from './schema'
+export {
+    addAccountToken,
+    removeAccountToken,
+    getAddedTokenIdsByAccount,
+    deleteAllAddedTokensForAccount,
+    getAccountAddedTokens,
+    type AccountAddedToken,
+} from './addedTokensRepository'
 export {
     refreshAccountHoldings,
     getAccountHoldings,

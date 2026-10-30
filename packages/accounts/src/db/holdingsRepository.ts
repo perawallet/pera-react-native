@@ -11,6 +11,7 @@
  */
 
 import { eq, and, inArray, notInArray, ne, or, isNull, sql } from 'drizzle-orm'
+import { unionAll } from 'drizzle-orm/sqlite-core'
 import { Decimal } from 'decimal.js'
 import {
     toScopeKey,
@@ -27,7 +28,7 @@ import type { Nullable } from '@perawallet/wallet-core-shared'
 import { describeHolding } from '../chain-adapter'
 import type { HoldingRestriction } from '../models'
 import { isEqualChainData } from '../store/accountChainState'
-import { AccountAssetHoldingsSchema } from './schema'
+import { AccountAddedTokensSchema, AccountAssetHoldingsSchema } from './schema'
 
 export type HoldingRow = {
     assetId: string
@@ -59,33 +60,89 @@ type UpsertAccountHoldingsParams = {
 export async function refreshAccountHoldings({
     db = getDatabase(),
     accountAddress,
-    holdings,
+    holdings: readHoldings,
     scope,
     retain,
 }: UpsertAccountHoldingsParams): Promise<boolean> {
     const scopeKey = toScopeKey(scope)
     const now = Date.now()
 
-    const existingRows = await db
-        .select({
-            assetId: AccountAssetHoldingsSchema.assetId,
-            amount: AccountAssetHoldingsSchema.amount,
-            native: AccountAssetHoldingsSchema.native,
-        })
-        .from(AccountAssetHoldingsSchema)
-        .where(
-            and(
-                eq(AccountAssetHoldingsSchema.accountAddress, accountAddress),
-                eq(AccountAssetHoldingsSchema.scope, scopeKey),
+    const sameToken = and(
+        eq(
+            AccountAddedTokensSchema.accountAddress,
+            AccountAssetHoldingsSchema.accountAddress,
+        ),
+        eq(AccountAddedTokensSchema.scope, AccountAssetHoldingsSchema.scope),
+        eq(
+            AccountAddedTokensSchema.assetId,
+            AccountAssetHoldingsSchema.assetId,
+        ),
+    )
+    // One query, not two: an extra round trip here delays the write, and the
+    // send screen's MAX reads a query the sync tick never refreshes. The
+    // second half is an added token with no holding row, so it still gets one.
+    // Either half may be missing, so both columns read as nullable.
+    const tokenRow = {
+        amount: sql<
+            Nullable<Decimal>
+        >`${AccountAssetHoldingsSchema.amount}`.mapWith(
+            AccountAssetHoldingsSchema.amount,
+        ),
+        native: AccountAssetHoldingsSchema.native,
+        addedAt: sql<Nullable<number>>`${AccountAddedTokensSchema.addedAt}`,
+    }
+    const rows = await unionAll(
+        db
+            .select({
+                assetId: AccountAssetHoldingsSchema.assetId,
+                ...tokenRow,
+            })
+            .from(AccountAssetHoldingsSchema)
+            .leftJoin(AccountAddedTokensSchema, sameToken)
+            .where(
+                and(
+                    eq(
+                        AccountAssetHoldingsSchema.accountAddress,
+                        accountAddress,
+                    ),
+                    eq(AccountAssetHoldingsSchema.scope, scopeKey),
+                ),
             ),
-        )
-        .all()
+        db
+            .select({ assetId: AccountAddedTokensSchema.assetId, ...tokenRow })
+            .from(AccountAddedTokensSchema)
+            .leftJoin(AccountAssetHoldingsSchema, sameToken)
+            .where(
+                and(
+                    eq(AccountAddedTokensSchema.accountAddress, accountAddress),
+                    eq(AccountAddedTokensSchema.scope, scopeKey),
+                    isNull(AccountAssetHoldingsSchema.assetId),
+                ),
+            ),
+    ).all()
+
+    // An added token the chain left out holds nothing, but stays at zero.
+    // Read with the holdings, so a token added or removed while the chain
+    // read was in flight is judged by the table as it is now.
+    const readIds = new Set(readHoldings.map(h => h.assetId))
+    const holdings: UpsertHoldingInput[] = [
+        ...readHoldings,
+        ...rows
+            .filter(r => r.addedAt !== null && !readIds.has(r.assetId))
+            .map(r => ({ assetId: r.assetId, amount: new Decimal(0) })),
+    ]
 
     const existing = new Map(
-        existingRows.map(r => [
-            r.assetId,
-            { amount: r.amount, native: r.native },
-        ]),
+        rows.flatMap(r =>
+            r.amount === null
+                ? []
+                : [
+                      [
+                          r.assetId,
+                          { amount: r.amount, native: r.native },
+                      ] as const,
+                  ],
+        ),
     )
     const incomingIds = new Set(holdings.map(h => h.assetId))
 

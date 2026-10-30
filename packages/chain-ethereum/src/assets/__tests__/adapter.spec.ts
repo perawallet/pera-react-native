@@ -20,6 +20,7 @@ import {
     it,
     vi,
 } from 'vitest'
+import { getAddress } from 'viem'
 import { http, HttpResponse } from 'msw'
 import { setupServer } from 'msw/node'
 import type {
@@ -997,6 +998,95 @@ describe('search', () => {
         expect(full.results.map(asset => asset.assetId)).toEqual([USDC])
         expect(prefix.results.map(asset => asset.assetId)).toEqual([DAI])
         expect(middle.results).toEqual([])
+    })
+
+    it('names the native coin from the chain, not the token list', async () => {
+        server.use(
+            ...peraEvmAssetHandlers({
+                baseUrl: TEST_PERA_URL,
+                whitelist: {
+                    1: [{ ...nativeWhitelistItem(1), name: 'Ethereum' }],
+                },
+            }),
+        )
+
+        const page = await searchWith('')
+
+        expect(page.results[0]).toMatchObject({
+            name: ETHEREUM_NATIVE_ASSET.name,
+            unitName: ETHEREUM_NATIVE_ASSET.unitName,
+        })
+    })
+
+    it('reads a pasted contract address the list lacks from the chain', async () => {
+        const UNLISTED = '0x00000000000000000000000000000000000000Ab'
+        server.use(
+            ...peraEvmAssetHandlers({ baseUrl: TEST_PERA_URL, whitelist }),
+            ...rpc({
+                [getAddress(UNLISTED)]: {
+                    name: 'Fresh Token',
+                    symbol: 'FRSH',
+                    decimals: 8,
+                    totalSupply: 10n ** 12n,
+                    balances: {},
+                },
+            }),
+        )
+
+        const page = await searchWith(UNLISTED.toLowerCase())
+
+        expect(page.results).toEqual([
+            expect.objectContaining({
+                assetId: getAddress(UNLISTED),
+                unitName: 'FRSH',
+                peraMetadata: expect.objectContaining({
+                    verificationTier: 'unverified',
+                }),
+            }),
+        ])
+    })
+
+    it('reports a pasted quarantined address as suspicious, caching nothing', async () => {
+        server.use(
+            ...peraEvmAssetHandlers({
+                baseUrl: TEST_PERA_URL,
+                whitelist: {
+                    1: [
+                        nativeWhitelistItem(1),
+                        listed(USDC, 'USD Coin', 'USDC'),
+                    ],
+                },
+                assets: { [DAI_CAIP19]: quarantinedDai },
+            }),
+            ...rpc({ [DAI]: daiOnChain }),
+        )
+        const { node, full } = memoryPersistence()
+
+        const page = await searchWith(DAI.toLowerCase())
+
+        expect(page.results).toEqual([
+            expect.objectContaining({
+                assetId: DAI,
+                peraMetadata: expect.objectContaining({
+                    verificationTier: 'suspicious',
+                }),
+            }),
+        ])
+        expect(node).toEqual([])
+        expect(full).toEqual([])
+    })
+
+    it('finds nothing for a pasted address that is not a token', async () => {
+        server.use(
+            ...peraEvmAssetHandlers({ baseUrl: TEST_PERA_URL, whitelist }),
+            ...rpc({}),
+        )
+
+        const page = await searchWith(
+            '0x00000000000000000000000000000000000000cd',
+        )
+
+        expect(page.results).toEqual([])
     })
 
     it('finds nothing for an NFT search, without a request', async () => {
