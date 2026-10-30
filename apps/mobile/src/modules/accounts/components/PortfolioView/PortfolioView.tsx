@@ -99,8 +99,11 @@ export const PortfolioView = ({ ...props }: PortfolioViewProps) => {
         scope,
         isChartShown && basis === 'native',
     )
-    const { data: historyData, isPending: isHistoryPending } =
-        usePortfolioHistoryQuery(chartSources, period, scope, isChartShown)
+    const {
+        data: historyData,
+        isPending: isHistoryPending,
+        excludedChainIds,
+    } = usePortfolioHistoryQuery(chartSources, period, scope, isChartShown)
 
     // Points with no preferred value have no rate behind them; keeping them
     // would let a `?? 0` fallback below invent a cliff from (or to) zero and
@@ -135,8 +138,11 @@ export const PortfolioView = ({ ...props }: PortfolioViewProps) => {
     }, [historyDataPoints])
 
     // A failed or empty chain leaves no history, and the 0 it would default to
-    // reads as a change the wallet never had.
-    const hasNoTrend = !isHistoryPending && historyDataPoints.length === 0
+    // reads as a change the wallet never had. A chain the chart left out would
+    // leave the change short of the total it sits beside.
+    const hasNoTrend =
+        (!isHistoryPending && historyDataPoints.length === 0) ||
+        excludedChainIds.length > 0
 
     const trendPeriodLabel = useMemo<Record<HistoryPeriod, string>>(
         () => ({

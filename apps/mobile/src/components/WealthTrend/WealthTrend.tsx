@@ -45,7 +45,7 @@ export const WealthTrend = ({
     const styles = useStyles()
     const { privacyMode } = useSettings()
 
-    const { data, isPending, isUnavailableOnNetwork } =
+    const { data, isPending, isUnavailableOnNetwork, excludedChainIds } =
         usePortfolioHistoryQuery(sources, period, currencyScope, enabled)
 
     // Trend follows the fiat value, like the chart — the ALGO-denominated
@@ -68,8 +68,13 @@ export const WealthTrend = ({
         ] as const
     }, [data])
 
-    // A failed or empty chain leaves no history to measure a change over.
-    return isPending || !hasPoints || privacyMode || isUnavailableOnNetwork ? (
+    // A failed or empty chain leaves no history to measure a change over, and
+    // a chain the chart left out leaves the change short of the total beside it.
+    return isPending ||
+        !hasPoints ||
+        privacyMode ||
+        isUnavailableOnNetwork ||
+        excludedChainIds.length > 0 ? (
         <></>
     ) : (
         <PWView style={styles.container}>

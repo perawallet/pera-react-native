@@ -49,6 +49,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
         usePortfolioHistoryQuery: vi.fn(() => ({
             data: [],
             isPending: false,
+            excludedChainIds: [],
         })),
     }
 })
@@ -64,6 +65,7 @@ describe('WealthTrend', () => {
         vi.mocked(usePortfolioHistoryQuery).mockReturnValue({
             data: [],
             isPending: true,
+            excludedChainIds: [],
         } as unknown as ReturnType<typeof usePortfolioHistoryQuery>)
 
         const { container } = render(
@@ -87,6 +89,7 @@ describe('WealthTrend', () => {
                 },
             ],
             isPending: false,
+            excludedChainIds: [],
             isUnavailableOnNetwork: true,
         } as unknown as ReturnType<typeof usePortfolioHistoryQuery>)
 
@@ -105,6 +108,7 @@ describe('WealthTrend', () => {
         vi.mocked(usePortfolioHistoryQuery).mockReturnValue({
             data: [],
             isPending: false,
+            excludedChainIds: [],
         } as unknown as ReturnType<typeof usePortfolioHistoryQuery>)
 
         const { container } = render(
@@ -129,6 +133,7 @@ describe('WealthTrend', () => {
                 },
             ],
             isPending: false,
+            excludedChainIds: [],
         } as unknown as ReturnType<typeof usePortfolioHistoryQuery>)
 
         const { container } = render(
@@ -139,6 +144,31 @@ describe('WealthTrend', () => {
             />,
         )
         expect(container.textContent).toContain('%')
+    })
+
+    it('renders empty while the chart leaves a network out of the total', () => {
+        vi.mocked(usePortfolioHistoryQuery).mockReturnValue({
+            data: [
+                {
+                    preferredValue: new Decimal(100),
+                },
+                {
+                    preferredValue: new Decimal(120),
+                },
+            ],
+            isPending: false,
+            excludedChainIds: ['ethereum'],
+        } as unknown as ReturnType<typeof usePortfolioHistoryQuery>)
+
+        const { container } = render(
+            <WealthTrend
+                sources={SOURCES}
+                currencyScope={ALGORAND}
+                period='one-week'
+            />,
+        )
+
+        expect(container.innerHTML).toBe('')
     })
 
     it('displays negative trend with percentage', () => {
@@ -152,6 +182,7 @@ describe('WealthTrend', () => {
                 },
             ],
             isPending: false,
+            excludedChainIds: [],
         } as unknown as ReturnType<typeof usePortfolioHistoryQuery>)
 
         const { container, getByTestId } = render(
@@ -179,6 +210,7 @@ describe('WealthTrend', () => {
                 },
             ],
             isPending: false,
+            excludedChainIds: [],
         } as unknown as ReturnType<typeof usePortfolioHistoryQuery>)
 
         const { container, getByTestId } = render(
@@ -197,6 +229,7 @@ describe('WealthTrend', () => {
         vi.mocked(usePortfolioHistoryQuery).mockReturnValue({
             data: [],
             isPending: false,
+            excludedChainIds: [],
         } as unknown as ReturnType<typeof usePortfolioHistoryQuery>)
 
         render(

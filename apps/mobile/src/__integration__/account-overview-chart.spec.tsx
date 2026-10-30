@@ -242,7 +242,7 @@ describe('Flow: The balance chart of an account on Algorand and Ethereum', () =>
         expect(screen.queryByTestId(/^trend-indicator-/)).toBeNull()
     })
 
-    it('Given Ethereum history fails, when the chart is shown, then it plots Algorand and names Ethereum as left out', async () => {
+    it('Given Ethereum history fails, when the chart is shown, then it plots Algorand, names Ethereum as left out, and shows no change', async () => {
         serveHistory({
             algorand: [
                 { datetime: '2026-10-20T00:00:00Z', usd_value: '10' },
@@ -268,6 +268,7 @@ describe('Flow: The balance chart of an account on Algorand and Ethereum', () =>
         expect(
             screen.queryByText('common.network_unavailable.title'),
         ).toBeNull()
+        expect(screen.queryByTestId(/^trend-indicator-/)).toBeNull()
     })
 
     it('Given neither chain has points yet, when the chart is shown, then it explains that history will appear', async () => {

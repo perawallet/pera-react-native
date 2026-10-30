@@ -304,7 +304,7 @@ describe('Flow: Portfolio chart across Algorand and Ethereum', () => {
         ).toEqual([])
     })
 
-    it("Given Ethereum's history fails, when the chart is shown, then it plots Algorand and names Ethereum as left out", async () => {
+    it("Given Ethereum's history fails, when the chart is shown, then it plots Algorand, names Ethereum as left out, and shows no change", async () => {
         serveAlgorandHistory()
         serveEthereumHistory(503)
 
@@ -319,5 +319,7 @@ describe('Flow: Portfolio chart across Algorand and Ethereum', () => {
             ),
         ).toBeTruthy()
         expect(screen.queryByTestId('balance-chart-retry')).toBeNull()
+        // The change would cover Algorand alone beside a total that includes ETH.
+        expect(screen.queryByText('portfolio.last_7_days')).toBeNull()
     })
 })
