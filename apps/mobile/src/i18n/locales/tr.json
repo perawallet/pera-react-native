@@ -1323,7 +1323,10 @@
             "connection_timeout_body": "İmzalanan işlemi iletmek için WalletConnect’e ulaşılamadı. Bağlantını kontrol et ve tekrar dene.",
             "bridge_connection_body": "WalletConnect'e bağlanılamadı. İnternet bağlantını kontrol et ve tekrar dene.",
             "session_request_expired_body": "Bu bağlantı isteğinin süresi doldu. dApp üzerinden yeni bir bağlantı başlat ve tekrar dene.",
-            "request_expired_body": "Bu imza isteğinin süresi yanıtlanmadan önce doldu. Uygulamadan isteği tekrar göndermesini iste."
+            "request_expired_body": "Bu imza isteğinin süresi yanıtlanmadan önce doldu. Uygulamadan isteği tekrar göndermesini iste.",
+            "unsupported_method_body": "{{dappName}} uygulaması Pera’nın desteklemediği bir yöntem istedi ({{method}}). İstek reddedildi.",
+            "unsupported_network_body": "{{dappName}} uygulaması, Pera’nın desteklemediği zincir kimliği {{chainId}} olan ağı kullanmak istedi. İstek reddedildi.",
+            "unsupported_chains_body": "Bu uygulama Pera’nın desteklemediği bir ağ kullanmak istedi. Bağlantı reddedildi."
         },
         "signing": {
             "title": "İmzalama isteği işlenirken bir hata oluştu",

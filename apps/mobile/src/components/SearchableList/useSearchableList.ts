@@ -43,6 +43,9 @@ const DEFAULT_ITEM_HEIGHT_ESTIMATE = 56
 // on headerHeightRef.current — as "arrived", vs. a real subsequent user
 // scroll away from that pinned offset.
 const WEB_PIN_SETTLE_EPSILON = 1
+// The pin snap and a search tap settle on, or a fraction past, the header
+// height; only offsets beyond this mean rows are really under the pinned bar.
+const SCROLLED_UNDER_SEARCH_EPSILON = 1
 
 export type SearchSentinel = {
     readonly __searchableListSearch: true
@@ -125,6 +128,10 @@ type UseSearchableListResult<T> = {
      * the viewport. 0 when the list already has enough scrollable content.
      */
     searchFooterHeight: number
+    /** Measured height of the sticky search bar, 0 until laid out. */
+    searchStickyHeight: number
+    /** True while list rows are scrolled under the pinned search bar. */
+    isSearchDividerVisible: boolean
     /** The single focusable overlay input's ref (for programmatic focus/blur). */
     overlayRef: React.RefObject<Nullable<SearchInputRef>>
     /** Search value mirrored by both the overlay and the sticky display. */
@@ -132,6 +139,7 @@ type UseSearchableListResult<T> = {
     /** Whether the focusable overlay should be shown (i.e. search mode). */
     showOverlay: boolean
     handleHeaderLayout: (event: LayoutChangeEvent) => void
+    handleSearchStickyLayout: (event: LayoutChangeEvent) => void
     handleListLayout: (event: LayoutChangeEvent) => void
     handleContentSizeChange: (width: number, height: number) => void
     handleScroll: (event: NativeSyntheticEvent<NativeScrollEvent>) => void
@@ -164,6 +172,11 @@ export const useSearchableList = <T>({
     const currentValue = searchValue ?? query
     const showOverlay = isSearching
     const [headerHeight, setHeaderHeight] = useState(0)
+    const [searchStickyHeight, setSearchStickyHeight] = useState(0)
+    const [isScrolledUnderSearch, setIsScrolledUnderSearch] = useState(false)
+    // Scroll fires every frame; the ref lets a tick that changes nothing skip
+    // the state call entirely instead of leaning on React's bail-out.
+    const isScrolledUnderSearchRef = useRef(false)
     const [listLayoutHeight, setListLayoutHeight] = useState(0)
     // Latest measured contentSize minus the spacer footer we set last —
     // i.e. the natural (item-driven) content height.
@@ -173,6 +186,9 @@ export const useSearchableList = <T>({
     // event handlers read these refs instead of state to always see the
     // freshest measurement.
     const headerHeightRef = useRef(0)
+    // A list with no header measures 0, which is still measured: its bar pins
+    // from offset 0.
+    const hasHeaderLayoutRef = useRef(false)
     const listLayoutHeightRef = useRef(0)
     // Tracks the itemCount from the previous render. When the new count is
     // lower we know data just shrunk and can pre-emptively grow the footer
@@ -212,6 +228,9 @@ export const useSearchableList = <T>({
     }))
 
     const itemCount = data?.length ?? 0
+    // An empty list never pins the search bar, so there is nothing to underline.
+    const isSearchDividerVisible =
+        isScrolledUnderSearch && itemCount > 0 && searchStickyHeight > 0
 
     const searchFooterHeight = useMemo(() => {
         if (listLayoutHeight <= 0) {
@@ -239,10 +258,32 @@ export const useSearchableList = <T>({
         previousItemCountRef.current = itemCount
     }, [searchFooterHeight, itemCount])
 
-    const handleHeaderLayout = useCallback((event: LayoutChangeEvent) => {
-        const height = event.nativeEvent.layout.height
-        headerHeightRef.current = height
-        setHeaderHeight(height)
+    const updateIsScrolledUnderSearch = useCallback((next: boolean) => {
+        if (isScrolledUnderSearchRef.current === next) {
+            return
+        }
+        isScrolledUnderSearchRef.current = next
+        setIsScrolledUnderSearch(next)
+    }, [])
+
+    const handleHeaderLayout = useCallback(
+        (event: LayoutChangeEvent) => {
+            const height = event.nativeEvent.layout.height
+            headerHeightRef.current = height
+            hasHeaderLayoutRef.current = true
+            // A header that resizes under a standing offset moves the pin point
+            // without a scroll event.
+            updateIsScrolledUnderSearch(
+                scrollOffsetRef.current >
+                    height + SCROLLED_UNDER_SEARCH_EPSILON,
+            )
+            setHeaderHeight(height)
+        },
+        [updateIsScrolledUnderSearch],
+    )
+
+    const handleSearchStickyLayout = useCallback((event: LayoutChangeEvent) => {
+        setSearchStickyHeight(event.nativeEvent.layout.height)
     }, [])
 
     const handleListLayout = useCallback((event: LayoutChangeEvent) => {
@@ -336,6 +377,10 @@ export const useSearchableList = <T>({
             // scroll that drifted above the pin from one that is simply far down
             // the list.
             scrollOffsetRef.current = offsetY
+            updateIsScrolledUnderSearch(
+                hasHeaderLayoutRef.current &&
+                    offsetY > headerH + SCROLLED_UNDER_SEARCH_EPSILON,
+            )
             if (headerH > 0 && offsetY >= headerH) {
                 isCollapsedRef.current = true
             } else if (
@@ -384,7 +429,7 @@ export const useSearchableList = <T>({
                 }
             }
         },
-        [onScroll],
+        [onScroll, updateIsScrolledUnderSearch],
     )
 
     const handleScrollEndDrag = useCallback(
@@ -446,10 +491,13 @@ export const useSearchableList = <T>({
         augmentedKeyExtractor,
         toUserIndex,
         searchFooterHeight,
+        searchStickyHeight,
+        isSearchDividerVisible,
         overlayRef,
         currentValue,
         showOverlay,
         handleHeaderLayout,
+        handleSearchStickyLayout,
         handleListLayout,
         handleContentSizeChange,
         handleScroll,

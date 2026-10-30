@@ -22,6 +22,7 @@ import {
 } from '@components/core'
 import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
+import { PreferredAmount } from '@components/PreferredAmount'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { SwapQuote } from '@perawallet/wallet-core-swaps'
 import type { Nullable } from '@perawallet/wallet-core-shared'
@@ -122,13 +123,13 @@ export const SwapProviderContent = ({
                                 >
                                     {row.amountDisplay}
                                 </PWText>
-                                {row.fiatDisplay && (
-                                    <PWText
+                                {row.fiatValue && (
+                                    <PreferredAmount
+                                        value={row.fiatValue}
                                         variant='body'
                                         style={styles.fiatText}
-                                    >
-                                        {row.fiatDisplay}
-                                    </PWText>
+                                        ignorePrivacyMode
+                                    />
                                 )}
                             </PWView>
                         }

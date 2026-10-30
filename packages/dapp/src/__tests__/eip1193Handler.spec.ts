@@ -60,6 +60,7 @@ const EIP_1193_CODE: Record<DappRequestFailure, number> = {
     'unauthorized-account': 4100,
     'unsupported-method': 4200,
     'unselected-chain': 4901,
+    'unrecognized-chain': 4902,
     'invalid-params': -32_602,
     'limit-exceeded': -32_005,
 }

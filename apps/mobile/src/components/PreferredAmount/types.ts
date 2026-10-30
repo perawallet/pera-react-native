@@ -18,13 +18,15 @@ import { type ChainScope } from '@perawallet/wallet-core-chain-contract'
 /**
  * How precisely a preferred-currency value (fiat or ALGO) is rendered:
  * - `compact` — fixed 2 dp, for dense lists/rows and summary totals.
- * - `detailed` — trims 2 dp up to the preferred max, so small values, sub-cent
- *   fiat, and unit prices keep their digits.
+ * - `detailed` — an amount on a detail surface (send, confirm, review): fiat
+ *   at 2 dp, under a cent as "< 0.01".
+ * - `unitPrice` — the price of one unit of an asset: trims 2 dp up to the
+ *   preferred max, so a sub-cent token price keeps its digits.
  *
  * This maps to a {@link CurrencyAmount} precision variant; the digit counts
  * themselves live in `resolvePrecision`, never here.
  */
-export type PreferredAmountDensity = 'compact' | 'detailed'
+export type PreferredAmountDensity = 'compact' | 'detailed' | 'unitPrice'
 
 export type SharedPreferredProps = {
     density?: PreferredAmountDensity

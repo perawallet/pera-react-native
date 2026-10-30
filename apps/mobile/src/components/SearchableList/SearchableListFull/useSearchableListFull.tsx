@@ -61,6 +61,7 @@ export type UseSearchableListFullProps<T> = {
     handleClearQuery: () => void
     toUserIndex: (index: number) => number
     handleHeaderLayout: (event: LayoutChangeEvent) => void
+    handleSearchStickyLayout: (event: LayoutChangeEvent) => void
 }
 
 export type UseSearchableListFullResult<T> = {
@@ -89,6 +90,7 @@ export const useSearchableListFull = <T,>({
     handleClearQuery,
     toUserIndex,
     handleHeaderLayout,
+    handleSearchStickyLayout,
 }: UseSearchableListFullProps<T>): UseSearchableListFullResult<T> => {
     const styles = useStyles()
 
@@ -151,7 +153,10 @@ export const useSearchableListFull = <T,>({
                 // the overlay, but non-interactive. Keyboard dismiss is off so
                 // it doesn't fight handleEnterSearch focusing the overlay.
                 return (
-                    <PWView style={styles.searchSticky}>
+                    <PWView
+                        style={styles.searchSticky}
+                        onLayout={handleSearchStickyLayout}
+                    >
                         {/* Bounds the clear hit area to the input, so it never
                             covers the accessory below. */}
                         <PWView>
@@ -207,6 +212,7 @@ export const useSearchableListFull = <T,>({
             toUserIndex,
             ListHeaderComponent,
             handleHeaderLayout,
+            handleSearchStickyLayout,
             styles.searchSticky,
             styles.searchAccessory,
             searchAccessory,

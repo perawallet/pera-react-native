@@ -93,7 +93,8 @@ export type CurrencyAmountProps = {
     /**
      * The amount is money in a fiat currency. Opt-in because a null `assetId`
      * doesn't imply it: a token the chain package can't resolve also has none.
-     * A fiat amount under one cent shows as "< 0.01" in `compact` precision.
+     * A fiat amount shows at most 2 dp in `compact` and `preferredFull`
+     * precision, and one under a cent as "< 0.01".
      */
     isFiat?: boolean
     prefix?: string
@@ -162,6 +163,7 @@ export const CurrencyAmount = (props: CurrencyAmountProps) => {
         precisionVariant,
         assetDecimals,
         flooredValue,
+        isFiat,
     )
     const shownValue =
         rounding != null && flooredValue != null

@@ -23,6 +23,7 @@ import { useSearchableListFull } from './useSearchableListFull'
 // testID for the real (focusable) overlay input; the sticky bar is a
 // non-interactive display mirror.
 const SEARCH_INPUT_TEST_ID = 'searchable-list-search-input'
+const SEARCH_DIVIDER_TEST_ID = 'searchable-list-search-divider'
 
 export type SearchableListFullProps<T> = SearchableListProps<T>
 
@@ -62,10 +63,13 @@ const SearchableListFullInner = <T,>(
         augmentedKeyExtractor,
         toUserIndex,
         searchFooterHeight,
+        searchStickyHeight,
+        isSearchDividerVisible,
         overlayRef,
         currentValue,
         showOverlay,
         handleHeaderLayout,
+        handleSearchStickyLayout,
         handleListLayout,
         handleContentSizeChange,
         handleScroll,
@@ -114,6 +118,7 @@ const SearchableListFullInner = <T,>(
         handleClearQuery,
         toUserIndex,
         handleHeaderLayout,
+        handleSearchStickyLayout,
     })
 
     // PWFlatList's generic forwarded-ref signature doesn't unify with the
@@ -146,6 +151,16 @@ const SearchableListFullInner = <T,>(
     return (
         <PWView style={styles.root}>
             {list}
+            {isSearchDividerVisible ? (
+                <PWView
+                    testID={SEARCH_DIVIDER_TEST_ID}
+                    pointerEvents='none'
+                    style={[
+                        styles.searchStickyDivider,
+                        { top: searchStickyHeight },
+                    ]}
+                />
+            ) : null}
             <PWView
                 style={[
                     styles.searchOverlay,

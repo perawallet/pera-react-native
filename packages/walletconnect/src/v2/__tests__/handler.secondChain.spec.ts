@@ -73,6 +73,7 @@ const EIP_1193 = {
     'unauthorized-account': 4100,
     'unsupported-method': 4200,
     'unselected-chain': 4901,
+    'unrecognized-chain': 4902,
     'invalid-params': -32_602,
     'limit-exceeded': -32_005,
 } as const
@@ -85,8 +86,6 @@ if (!algorandAdapter) {
     throw new Error('the package setup file registers the Algorand adapter')
 }
 const algorandCodec = addressCodecs.get('algorand')
-
-const EIP3326_UNRECOGNIZED_CHAIN = 4902
 
 const ethereumAdapter: DappRequestChainAdapter = {
     chainId: 'ethereum',
@@ -124,18 +123,9 @@ const ethereumAdapter: DappRequestChainAdapter = {
             handleRequest: (method, params) => {
                 if (method === 'wallet_switchEthereumChain') {
                     const chainId = (params as [{ chainId: string }])[0].chainId
-                    if (chainId === '0x1') {
-                        return { kind: 'switch-network', networkId: 'mainnet' }
-                    }
-                    if (chainId === '0xaa36a7') {
-                        return { kind: 'switch-network', networkId: 'sepolia' }
-                    }
                     return {
-                        kind: 'refused',
-                        error: {
-                            code: EIP3326_UNRECOGNIZED_CHAIN,
-                            message: 'Unrecognized chain',
-                        },
+                        kind: 'switch-network',
+                        caip2ChainId: `eip155:${Number(chainId)}`,
                     }
                 }
                 if (method === 'eth_sendTransaction') {
@@ -906,7 +896,7 @@ describe('wallet_switchEthereumChain', () => {
         await flush()
     }
 
-    it('answers a refusal with the chain’s own error, without asking the registry or the user', async () => {
+    it('answers a switch to a chain no registered chain serves as unrecognized and tells the user', async () => {
         const opened = await live()
 
         await switchRequest(opened, {
@@ -916,18 +906,25 @@ describe('wallet_switchEthereumChain', () => {
         })
 
         expect(opened.context.onMessage).not.toHaveBeenCalled()
-        expect(opened.context.onError).not.toHaveBeenCalled()
         expect(opened.walletKit.respondSessionRequest).toHaveBeenCalledWith({
             topic: TOPIC,
             response: {
                 id: REQUEST_ID,
                 jsonrpc: '2.0',
-                error: {
-                    code: EIP3326_UNRECOGNIZED_CHAIN,
-                    message: 'Unrecognized chain',
-                },
+                error: expect.objectContaining({
+                    code: EIP_1193['unrecognized-chain'],
+                }),
             },
         })
+        expect(opened.context.onError).toHaveBeenCalledWith(
+            expect.objectContaining({
+                name: 'WalletConnectUnsupportedNetworkError',
+                metadata: expect.objectContaining({
+                    params: expect.objectContaining({ chainId: '137' }),
+                }),
+            }),
+            { connectionId: TOPIC },
+        )
     })
 
     it('answers a switch to the selected network the session holds at once, with no prompt', async () => {
