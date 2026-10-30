@@ -45,6 +45,7 @@ export type { EvmNftItem, EvmStandardCall } from './signing/standard-call-types'
 export {
     readEthereumNative,
     toEthereumNative,
+    type EthereumMinedView,
     type EthereumTransactionView,
 } from './signing/transaction-view'
 

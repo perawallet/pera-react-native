@@ -3551,8 +3551,13 @@
             "interpreted_title": "{{title}}",
             "swap_subtitle": "{{amountIn}} {{assetIn}} por {{amountOut}} {{assetOut}}",
             "nft_subtitle": "{{collection}} #{{tokenId}}",
+            "nft_batch_subtitle": "{{collection}} · {{count}} itens",
             "inner_transaction_count": "{{innerCount}} transações internas",
             "cancel_transaction": "Cancelar transação"
+        },
+        "record_detail": {
+            "read_failed": "Não foi possível ler da rede os detalhes da chamada desta transação.",
+            "transaction_id": "ID da transação"
         },
         "contract_call": {
             "warning": "Não foi possível identificar o que esta chamada de contrato faz.",
