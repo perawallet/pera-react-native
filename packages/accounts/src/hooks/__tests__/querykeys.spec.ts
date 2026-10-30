@@ -43,7 +43,10 @@ describe('query keys', () => {
     test.each([
         ['balance', getAccountBalancesQueryKey('ADDR1', MAINNET)],
         ['summary', getAccountSummaryQueryKey('ADDR1', MAINNET)],
-        ['funded-networks', getAccountFundedNetworksQueryKey('ADDR1', MAINNET)],
+        [
+            'funded-networks',
+            getAccountFundedNetworksQueryKey('ADDR1', 'algorand', MAINNET),
+        ],
         [
             'holdings-page',
             getAccountHoldingsPageQueryKey([

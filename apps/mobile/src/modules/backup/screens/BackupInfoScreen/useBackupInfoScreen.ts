@@ -18,9 +18,12 @@ import {
 } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { trackEvent, OnboardingEvent } from '@analytics'
+import { useLanguage } from '@hooks/useLanguage'
+import { usePassphraseReach } from '@modules/view-passphrase'
 import type { BackupStackParamList } from '../../routes/types'
 
 export type UseBackupInfoScreenResult = {
+    body: string
     onContinue: () => void
 }
 
@@ -31,6 +34,15 @@ export const useBackupInfoScreen = (): UseBackupInfoScreenResult => {
         >()
     const route = useRoute<RouteProp<BackupStackParamList, 'BackupInfo'>>()
     const address = route.params?.address
+    const { t } = useLanguage()
+    const { isMultiNetwork, networkNames } = usePassphraseReach({
+        address: address ?? '',
+    })
+    const body = isMultiNetwork
+        ? t('backup.info.body_all_networks', {
+              networks: networkNames.join(', '),
+          })
+        : t('backup.info.body')
 
     const onContinue = useCallback(() => {
         if (address) {
@@ -39,5 +51,5 @@ export const useBackupInfoScreen = (): UseBackupInfoScreenResult => {
         }
     }, [navigation, address])
 
-    return { onContinue }
+    return { body, onContinue }
 }

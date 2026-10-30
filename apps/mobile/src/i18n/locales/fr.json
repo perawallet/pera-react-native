@@ -578,12 +578,15 @@
         "info": {
             "title": "Créer une sauvegarde de la passphrase de récupération de votre compte",
             "body": "Créer une sauvegarde de la passphrase de récupération vous permettra de récupérer votre compte. Sans la passphrase de récupération, si vous perdez votre appareil, supprimez le compte ou désinstallez l’application, vous risquez de perdre définitivement l’accès à votre compte Algorand !",
+            "body_all_networks": "Votre passphrase de récupération est le seul moyen de récupérer votre compte sur tous les réseaux : {{networks}}. Si vous perdez votre appareil, supprimez le compte ou désinstallez l’application sans sauvegarde, vous perdrez définitivement l’accès à vos fonds.",
             "cta": "J’ai compris"
         },
         "write_down": {
             "title": "Préparez-vous à noter votre passphrase de récupération",
             "body": "La seule façon de récupérer un compte Algorand est d’utiliser cette passphrase de récupération.",
+            "body_all_networks": "Cette passphrase de récupération est le seul moyen de récupérer votre compte et toutes ses adresses sur tous les réseaux.",
             "warning": "Ne partagez cette passphrase de récupération avec personne : elle donne un accès total à votre compte.",
+            "warning_all_networks": "Ne partagez cette passphrase de récupération avec personne. Toute personne qui la possède contrôle vos fonds sur tous les réseaux.",
             "cta": "Tout est prêt, commencer"
         },
         "mnemonic": {

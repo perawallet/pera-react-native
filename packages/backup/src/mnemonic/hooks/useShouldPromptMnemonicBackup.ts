@@ -28,13 +28,14 @@ export const useShouldPromptMnemonicBackup = (
     scope: ChainScope,
 ): boolean => {
     const requiresBackup = useRequiresMnemonicBackup(account, scope.chainId)
-    // Funding on ANY network counts, not just the one currently selected: the
-    // passphrase is the same secret whichever chain the balance sits on, and a
-    // warning that disappears on a network switch teaches the wrong lesson.
+    // A balance on ANY chain or network counts, not just the one currently
+    // selected: the passphrase is the same secret whichever chain the balance
+    // sits on, and a warning that disappears on a network switch teaches the
+    // wrong lesson.
+    const { isFunded } = useAccountFundedNetworksQuery(account, scope)
     const address = account
         ? chainAccountOf(account, scope.chainId)?.address
         : undefined
-    const { isFunded } = useAccountFundedNetworksQuery(address, scope)
     const delegatedToThisAccount = useAccountsDelegatedTo(
         address,
         scope.chainId,

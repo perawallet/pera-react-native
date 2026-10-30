@@ -121,7 +121,8 @@ export async function getAccountPortfolioTotals({
 }
 
 /**
- * Networks of `chainId` on which the account holds a non-zero native balance.
+ * Networks of `chainId` on which the account holds a non-zero balance of any
+ * asset: a token with no native coin beside it is still lost with the keys.
  *
  * Deliberately unfiltered by network: a warning about losing access to an
  * account must not vanish because the user switched to a network where that
@@ -138,17 +139,13 @@ export async function getAccountFundedNetworks({
     chainId: ChainId
 }): Promise<string[]> {
     const rows = await db
-        .select({ network: AccountAssetHoldingsSchema.scope })
+        .selectDistinct({ network: AccountAssetHoldingsSchema.scope })
         .from(AccountAssetHoldingsSchema)
         .where(
             and(
                 eq(AccountAssetHoldingsSchema.accountAddress, accountAddress),
-                // Another chain's native id could equal this one's.
+                // EVM chains share one address, so the chain must scope it.
                 like(AccountAssetHoldingsSchema.scope, `${chainId}/%`),
-                eq(
-                    AccountAssetHoldingsSchema.assetId,
-                    nativeAssetFor(chainId).assetId,
-                ),
                 // Amounts are stored as TEXT; compare numerically so '0' and a
                 // padded zero both read as unfunded.
                 sql`CAST(${AccountAssetHoldingsSchema.amount} AS REAL) > 0`,

@@ -125,6 +125,25 @@ describe('useShouldPromptMnemonicBackup', () => {
         expect(result.current).toBe(true)
     })
 
+    test('true when only an EVM address of the account holds a balance', () => {
+        const universal: WalletAccount = {
+            ...accountHD,
+            chains: {
+                algorand: { address: 'HD1', keyPairId: 'kp' },
+                ethereum: { address: '0xabc', keyPairId: 'kp' },
+            },
+        }
+        mockRequiresBackup.mockReturnValue(true)
+        mockFundedNetworks.mockReturnValue(fundedOn('ethereum/mainnet'))
+
+        const { result } = renderHook(() =>
+            useShouldPromptMnemonicBackup(universal, SCOPE),
+        )
+
+        expect(result.current).toBe(true)
+        expect(mockFundedNetworks).toHaveBeenCalledWith(universal, SCOPE)
+    })
+
     test('true when the account requires backup and has balance > 0', () => {
         mockRequiresBackup.mockReturnValue(true)
         mockFundedNetworks.mockReturnValue(fundedOn('mainnet'))

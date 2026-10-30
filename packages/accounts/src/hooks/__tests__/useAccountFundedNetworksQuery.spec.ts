@@ -22,7 +22,25 @@ import {
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useAccountFundedNetworksQuery } from '../useAccountFundedNetworksQuery'
 
+import type { WalletAccount } from '../../models'
+
 const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
+
+const accountOn = (chains: WalletAccount['chains']): WalletAccount => ({
+    id: 'account',
+    custody: { kind: 'local', seed: 'bip39', hd: { account: 0, keyIndex: 0 } },
+    chains,
+})
+
+const ALGORAND_ONLY = accountOn({
+    algorand: { address: 'ADDR1', keyPairId: 'kp' },
+})
+
+const UNIVERSAL = accountOn({
+    algorand: { address: 'ADDR1', keyPairId: 'kp' },
+    ethereum: { address: '0xabc', keyPairId: 'kp' },
+    base: { address: '0xabc', keyPairId: 'kp' },
+})
 
 const mockGetAccountFundedNetworks = vi.fn()
 vi.mock('../../db', () => ({
@@ -54,10 +72,10 @@ describe('useAccountFundedNetworksQuery', () => {
     })
 
     it('reads funding across every network, not only the selected one', async () => {
-        mockGetAccountFundedNetworks.mockResolvedValue(['testnet'])
+        mockGetAccountFundedNetworks.mockResolvedValue(['algorand/testnet'])
 
         const { result } = renderHook(
-            () => useAccountFundedNetworksQuery('ADDR1', SCOPE),
+            () => useAccountFundedNetworksQuery(ALGORAND_ONLY, SCOPE),
             { wrapper: wrapper() },
         )
 
@@ -65,7 +83,7 @@ describe('useAccountFundedNetworksQuery', () => {
         await waitFor(() => expect(result.current.isPending).toBe(false))
 
         expect(result.current.isFunded).toBe(true)
-        expect(result.current.fundedNetworks).toEqual(['testnet'])
+        expect(result.current.fundedNetworks).toEqual(['algorand/testnet'])
         expect(mockGetAccountFundedNetworks).toHaveBeenCalledWith({
             accountAddress: 'ADDR1',
             chainId: 'algorand',
@@ -75,12 +93,40 @@ describe('useAccountFundedNetworksQuery', () => {
         expect(mockEnsureAccountFetched).toHaveBeenCalledWith('ADDR1', SCOPE)
     })
 
+    it('counts a balance held only on another chain of the account', async () => {
+        mockGetAccountFundedNetworks.mockImplementation(
+            ({ chainId }: { chainId: string }) =>
+                Promise.resolve(chainId === 'base' ? ['base/mainnet'] : []),
+        )
+
+        const { result } = renderHook(
+            () => useAccountFundedNetworksQuery(UNIVERSAL, SCOPE),
+            { wrapper: wrapper() },
+        )
+
+        await waitFor(() => expect(result.current.isPending).toBe(false))
+
+        expect(result.current.isFunded).toBe(true)
+        expect(result.current.fundedNetworks).toEqual(['base/mainnet'])
+        // Ethereum and Base share an address, so each chain is read on its own.
+        expect(mockGetAccountFundedNetworks).toHaveBeenCalledWith({
+            accountAddress: '0xabc',
+            chainId: 'ethereum',
+        })
+        expect(mockGetAccountFundedNetworks).toHaveBeenCalledWith({
+            accountAddress: '0xabc',
+            chainId: 'base',
+        })
+        expect(mockEnsureAccountFetched).toHaveBeenCalledTimes(1)
+        expect(mockEnsureAccountFetched).toHaveBeenCalledWith('ADDR1', SCOPE)
+    })
+
     it('serves from SQLite while offline', async () => {
         onlineManager.setOnline(false)
         mockGetAccountFundedNetworks.mockResolvedValue([])
 
         const { result } = renderHook(
-            () => useAccountFundedNetworksQuery('ADDR1', SCOPE),
+            () => useAccountFundedNetworksQuery(ALGORAND_ONLY, SCOPE),
             { wrapper: wrapper() },
         )
 
@@ -88,7 +134,7 @@ describe('useAccountFundedNetworksQuery', () => {
         expect(result.current.isFunded).toBe(false)
     })
 
-    it('does not query without an address', () => {
+    it('does not query without an account', () => {
         const { result } = renderHook(
             () => useAccountFundedNetworksQuery(undefined, SCOPE),
             { wrapper: wrapper() },

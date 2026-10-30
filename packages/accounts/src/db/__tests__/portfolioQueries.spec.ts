@@ -343,7 +343,7 @@ describe('account portfolio queries', () => {
             expect(funded).toEqual(['algorand/testnet'])
         })
 
-        it("does not count another chain's native id", async () => {
+        it("does not count another chain's holdings at the same address", async () => {
             await refreshAccountHoldings({
                 db,
                 accountAddress: 'ADDR1',
@@ -366,14 +366,35 @@ describe('account portfolio queries', () => {
             expect(funded).toEqual([`${FIXTURE_CHAIN_ID}/mainnet`])
         })
 
-        it('ignores ASA holdings and other accounts', async () => {
+        it('counts a non-native holding, once per network', async () => {
+            await refreshAccountHoldings({
+                db,
+                accountAddress: 'ADDR1',
+                scope: FIXTURE_SCOPE,
+                holdings: [
+                    { assetId: 'native', amount: new Decimal(0) },
+                    { assetId: 'token-a', amount: new Decimal(7) },
+                    { assetId: 'token-b', amount: new Decimal(3) },
+                ],
+            })
+
+            const funded = await getAccountFundedNetworks({
+                db,
+                accountAddress: 'ADDR1',
+                chainId: FIXTURE_CHAIN_ID,
+            })
+
+            expect(funded).toEqual([`${FIXTURE_CHAIN_ID}/mainnet`])
+        })
+
+        it('ignores zero holdings and other accounts', async () => {
             await refreshAccountHoldings({
                 db,
                 accountAddress: 'ADDR1',
                 scope: MAINNET_SCOPE,
                 holdings: [
                     { assetId: '0', amount: 0n },
-                    { assetId: '100', amount: 9_000_000n },
+                    { assetId: '100', amount: 0n },
                 ],
             })
             await refreshAccountHoldings({

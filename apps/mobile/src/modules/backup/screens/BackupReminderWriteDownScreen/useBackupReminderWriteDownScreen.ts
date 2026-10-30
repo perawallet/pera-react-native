@@ -18,9 +18,13 @@ import {
 } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { trackEvent, OnboardingEvent } from '@analytics'
+import { useLanguage } from '@hooks/useLanguage'
+import { usePassphraseReach } from '@modules/view-passphrase'
 import type { BackupStackParamList } from '../../routes/types'
 
 export type UseBackupReminderWriteDownScreenResult = {
+    body: string
+    warning: string
     onContinue: () => void
 }
 
@@ -39,6 +43,10 @@ export const useBackupReminderWriteDownScreen =
         const route =
             useRoute<RouteProp<BackupStackParamList, 'BackupWriteDown'>>()
         const address = route.params?.address
+        const { t } = useLanguage()
+        const { isMultiNetwork } = usePassphraseReach({
+            address: address ?? '',
+        })
 
         const onContinue = useCallback(() => {
             if (address) {
@@ -47,5 +55,13 @@ export const useBackupReminderWriteDownScreen =
             }
         }, [navigation, address])
 
-        return { onContinue }
+        return {
+            body: isMultiNetwork
+                ? t('backup.write_down.body_all_networks')
+                : t('backup.write_down.body'),
+            warning: isMultiNetwork
+                ? t('backup.write_down.warning_all_networks')
+                : t('backup.write_down.warning'),
+            onContinue,
+        }
     }

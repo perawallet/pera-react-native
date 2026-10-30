@@ -578,12 +578,15 @@
         "info": {
             "title": "Crie um backup da passphrase de recuperação da sua conta",
             "body": "Criar um backup da passphrase de recuperação permitirá que você recupere sua conta. Sem a passphrase de recuperação, se você perder seu dispositivo, remover a conta ou excluir o app, você pode perder permanentemente o acesso à sua conta Algorand!",
+            "body_all_networks": "Sua passphrase de recuperação é a única forma de recuperar sua conta em todas as redes: {{networks}}. Se você perder seu dispositivo, remover a conta ou excluir o app sem um backup, perderá permanentemente o acesso aos seus fundos.",
             "cta": "Entendi"
         },
         "write_down": {
             "title": "Prepare-se para anotar sua passphrase de recuperação",
             "body": "A única forma de recuperar uma conta Algorand é com esta passphrase de recuperação.",
+            "body_all_networks": "Esta passphrase de recuperação é a única forma de recuperar sua conta e todos os seus endereços em todas as redes.",
             "warning": "Não compartilhe esta passphrase de recuperação com ninguém, pois ela concede acesso total à sua conta.",
+            "warning_all_networks": "Não compartilhe esta passphrase de recuperação com ninguém. Qualquer pessoa que a tenha controla seus fundos em todas as redes.",
             "cta": "Tudo pronto, começar"
         },
         "mnemonic": {
