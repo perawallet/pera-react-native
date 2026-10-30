@@ -14,11 +14,9 @@ import { describe, expect, test, vi } from 'vitest'
 import type { RemoteConfigService } from '@perawallet/wallet-extension-platform'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import {
-    isDeviceCountryRestricted,
-    parseRestrictedCountries,
-} from '../countryRestrictions'
-
-const KEY = 'swap_restricted_countries'
+    isRegionRestricted,
+    parseRegionRestrictions,
+} from '../regionRestrictions'
 
 const remoteConfigWith = (value: string | undefined): RemoteConfigService =>
     ({
@@ -31,40 +29,46 @@ const onDeviceIn = (country: string): void => {
     } as unknown as ReturnType<typeof getProvider>)
 }
 
-describe('parseRestrictedCountries', () => {
-    test.each([
-        ['["GB", "us"]', ['GB', 'US']],
-        ['[" gb "]', ['GB']],
-        ['[]', []],
-    ])('reads %s', (json, expected) => {
-        expect(parseRestrictedCountries(json)).toEqual(expected)
+describe('parseRegionRestrictions', () => {
+    test('reads countries in any case, with their features', () => {
+        expect(parseRegionRestrictions('{" gb ": ["swap"], "us": []}')).toEqual(
+            { GB: ['swap'], US: [] },
+        )
     })
 
-    test.each(['', 'invalid', '{}', '[1]', '["GBR"]', '"GB"'])(
+    test.each(['', 'invalid', '[]', '["GB"]', '"GB"', 'null'])(
         'restricts nobody for the malformed %s',
         json => {
-            expect(parseRestrictedCountries(json)).toEqual([])
+            expect(parseRegionRestrictions(json)).toEqual({})
         },
     )
+
+    test('drops only the malformed entries', () => {
+        expect(
+            parseRegionRestrictions(
+                '{"GB": ["swap", 1], "GBR": ["swap"], "US": "swap"}',
+            ),
+        ).toEqual({ GB: ['swap'] })
+    })
 })
 
-describe('isDeviceCountryRestricted', () => {
-    test('holds when the device region is listed, whatever its case', () => {
+describe('isRegionRestricted', () => {
+    const config = remoteConfigWith('{"GB": ["swap"]}')
+
+    test('holds for a feature restricted in the device region, whatever its case', () => {
         onDeviceIn('gb')
 
-        expect(isDeviceCountryRestricted(remoteConfigWith('["GB"]'), KEY)).toBe(
-            true,
-        )
+        expect(isRegionRestricted(config, 'swap')).toBe(true)
     })
 
-    test('does not hold for an unlisted region or an unset list', () => {
-        onDeviceIn('US')
+    test('does not hold for another feature, another region or an unset map', () => {
+        onDeviceIn('GB')
+        expect(isRegionRestricted(config, 'crypto_promotion')).toBe(false)
 
-        expect(isDeviceCountryRestricted(remoteConfigWith('["GB"]'), KEY)).toBe(
+        onDeviceIn('US')
+        expect(isRegionRestricted(config, 'swap')).toBe(false)
+        expect(isRegionRestricted(remoteConfigWith(undefined), 'swap')).toBe(
             false,
         )
-        expect(
-            isDeviceCountryRestricted(remoteConfigWith(undefined), KEY),
-        ).toBe(false)
     })
 })

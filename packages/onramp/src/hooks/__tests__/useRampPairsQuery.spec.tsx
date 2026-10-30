@@ -34,8 +34,8 @@ import { getProvider } from '@perawallet/wallet-extension-provider'
 import { registerFakeRampAdapter } from '../../__tests__/fakeRampAdapter'
 import { registerFakeChain } from '../../__tests__/fakeChains'
 
-const { restrictedKeys } = vi.hoisted(() => ({
-    restrictedKeys: new Set<string>(),
+const { restrictedFeatures } = vi.hoisted(() => ({
+    restrictedFeatures: new Set<string>(),
 }))
 
 vi.mock('@perawallet/wallet-core-remote-config', async importOriginal => ({
@@ -43,8 +43,8 @@ vi.mock('@perawallet/wallet-core-remote-config', async importOriginal => ({
         typeof import('@perawallet/wallet-core-remote-config')
     >()),
     useRemoteConfig: () => ({}),
-    isDeviceCountryRestricted: (_: unknown, key: string) =>
-        restrictedKeys.has(key),
+    isRegionRestricted: (_: unknown, feature: string) =>
+        restrictedFeatures.has(feature),
 }))
 
 const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
@@ -55,7 +55,7 @@ beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
 afterEach(() => server.resetHandlers())
 afterAll(() => server.close())
 beforeEach(() => {
-    restrictedKeys.clear()
+    restrictedFeatures.clear()
     getProvider().chains.reset()
     registerFakeRampAdapter()
 })
@@ -254,13 +254,10 @@ describe('onramp/useRampPairsQuery', () => {
             expect(await offeredIds()).toEqual(['pair-1', 'pair-xo'])
         })
 
-        test.each([
-            'xo_swap_restricted_countries',
-            'swap_restricted_countries',
-        ])(
-            'leaves XO pairs out where %s lists the device country',
-            async key => {
-                restrictedKeys.add(key)
+        test.each(['xo_swap', 'swap'])(
+            'leaves XO pairs out where %s is restricted in the device region',
+            async feature => {
+                restrictedFeatures.add(feature)
 
                 expect(await offeredIds()).toEqual(['pair-1'])
             },

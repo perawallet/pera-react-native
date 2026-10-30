@@ -10,8 +10,20 @@
  limitations under the License
  */
 
-import { isDeviceCountryRestricted } from '../utils/countryRestrictions'
+import { useMemo } from 'react'
+import {
+    isRegionRestricted,
+    regionRestrictedFeatures,
+    type RegionRestrictedFeature,
+} from '../utils/regionRestrictions'
 import { useRemoteConfig } from './useRemoteConfig'
 
-export const useIsDeviceCountryRestricted = (key: string): boolean =>
-    isDeviceCountryRestricted(useRemoteConfig(), key)
+export const useIsRegionRestricted = (
+    feature: RegionRestrictedFeature,
+): boolean => isRegionRestricted(useRemoteConfig(), feature)
+
+export const useRegionRestrictedFeatures = (): string[] => {
+    // Joined so the array keeps its identity until the features change.
+    const joined = regionRestrictedFeatures(useRemoteConfig()).join(',')
+    return useMemo(() => (joined ? joined.split(',') : []), [joined])
+}
