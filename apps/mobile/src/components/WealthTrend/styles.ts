@@ -11,20 +11,21 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-import { getTypography } from '@theme/typography'
 
 export const useStyles = makeStyles(theme => ({
-    container: {
-        flexDirection: 'row',
-        gap: theme.spacing.sm,
-        alignItems: 'center',
-    },
     itemUp: {
-        ...getTypography(theme, 'h4'),
         color: theme.colors.buttonSquareIcon,
     },
     itemDown: {
-        ...getTypography(theme, 'h4'),
         color: theme.colors.alertNegative,
+    },
+    itemFlat: {
+        color: theme.colors.textMain,
+    },
+    loading: {
+        width: '35%',
+    },
+    loadingBar: {
+        height: theme.spacing.xl,
     },
 }))

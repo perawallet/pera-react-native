@@ -53,27 +53,53 @@ const mockHistory = (
     })
 
 const renderTrend = () =>
-    renderHook(() => usePortfolioTrend(SOURCES, 'one-week', SCOPE, true))
+    renderHook(() => usePortfolioTrend(SOURCES, 'one-day', SCOPE, true))
 
 describe('usePortfolioTrend', () => {
     beforeEach(() => {
         vi.clearAllMocks()
     })
 
-    it('measures the change from the first to the last priced point', () => {
+    it('measures a gain from the first to the last priced point', () => {
         mockHistory({ data: [point('100'), point(null), point('120')] })
 
         const { result } = renderTrend()
 
         expect(result.current.trendAbsolute).toEqual(new Decimal(20))
         expect(result.current.trendPercentage).toEqual(new Decimal(20))
+        expect(result.current.trendDirection).toBe('up')
         expect(result.current.hasNoTrend).toBe(false)
         expect(usePortfolioHistoryQuery).toHaveBeenLastCalledWith(
             SOURCES,
-            'one-week',
+            'one-day',
             SCOPE,
             true,
         )
+    })
+
+    it('measures a loss', () => {
+        mockHistory({ data: [point('120'), point('90')] })
+
+        const { result } = renderTrend()
+
+        expect(result.current.trendAbsolute).toEqual(new Decimal(-30))
+        expect(result.current.trendPercentage).toEqual(new Decimal(-25))
+        expect(result.current.trendDirection).toBe('down')
+    })
+
+    it('reads an unchanged value as flat', () => {
+        mockHistory({ data: [point('100'), point('100')] })
+
+        const { result } = renderTrend()
+
+        expect(result.current.trendDirection).toBe('flat')
+        expect(result.current.hasNoTrend).toBe(false)
+    })
+
+    it('reads a move under a cent as flat, since the line renders at 2 dp', () => {
+        mockHistory({ data: [point('100'), point('100.003')] })
+
+        expect(renderTrend().result.current.trendDirection).toBe('flat')
     })
 
     it('has no trend once settled without a priced point', () => {
@@ -82,10 +108,28 @@ describe('usePortfolioTrend', () => {
         expect(renderTrend().result.current.hasNoTrend).toBe(true)
     })
 
+    it('has no trend once settled with no history at all', () => {
+        mockHistory({ data: [] })
+
+        expect(renderTrend().result.current.hasNoTrend).toBe(true)
+    })
+
     it('keeps the trend slot while the history is still loading', () => {
         mockHistory({ isPending: true })
 
-        expect(renderTrend().result.current.hasNoTrend).toBe(false)
+        const { result } = renderTrend()
+
+        expect(result.current.isPending).toBe(true)
+        expect(result.current.hasNoTrend).toBe(false)
+    })
+
+    it('has no trend when an offline read will not resolve', () => {
+        mockHistory({ isPending: true, isPaused: true })
+
+        const { result } = renderTrend()
+
+        expect(result.current.isPending).toBe(false)
+        expect(result.current.hasNoTrend).toBe(true)
     })
 
     it('has no trend while the chart leaves a chain out of the total', () => {
