@@ -58,6 +58,7 @@ export const AccountOverviewHeader = ({
         hasFiatTotal,
         isPending,
         period,
+        trendPeriod,
         setPeriod,
         selectedPoint,
         hasBalance,
@@ -65,7 +66,7 @@ export const AccountOverviewHeader = ({
         canSign,
         togglePrivacyMode,
         handleChartSelectionChange,
-    } = useAccountOverviewHeader(account)
+    } = useAccountOverviewHeader(account, chartVisible)
     const isChartShown = chartVisible
 
     // While loading we always render the primary layout underneath so its mount
@@ -127,12 +128,11 @@ export const AccountOverviewHeader = ({
                                 )}
                         </PWView>
                         <PWView style={styles.secondaryValueBar}>
-                            {!selectedPoint && (
+                            {hasFiatTotal && !selectedPoint && (
                                 <WealthTrend
                                     sources={chartSources}
                                     currencyScope={currencyScope}
-                                    period={period}
-                                    enabled={isChartShown}
+                                    period={trendPeriod}
                                 />
                             )}
                             {selectedPoint && (
@@ -204,6 +204,7 @@ export const AccountOverviewHeader = ({
         isPending,
         isBalanceComplete,
         period,
+        trendPeriod,
         isChartShown,
         chartSources,
         currencyScope,

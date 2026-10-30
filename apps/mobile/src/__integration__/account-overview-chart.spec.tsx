@@ -25,7 +25,7 @@ import {
     it,
     vi,
 } from 'vitest'
-import { screen } from '@testing-library/react'
+import { screen, waitFor } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
@@ -33,6 +33,7 @@ import { server } from '@test-utils/msw-server'
 import { SLOW_WAIT_TIMEOUT_MS } from './__fixtures__/timeouts'
 import {
     ETH_ADDRESS,
+    ETH_SCOPE,
     TWO_CHAIN_ACCOUNT,
 } from './__fixtures__/multichainHoldings'
 
@@ -63,7 +64,11 @@ vi.resetModules()
 const { setTestTheme } = await import('@test-utils/test-theme')
 const { getTheme } = await import('@theme/theme')
 setTestTheme(getTheme('light'))
-const { useAccountsStore } = await import('@perawallet/wallet-core-accounts')
+const { insertAssetHolding, upsertAccountChainState, useAccountsStore } =
+    await import('@perawallet/wallet-core-accounts')
+const { nativeAssetFor, upsertAssets } =
+    await import('@perawallet/wallet-core-assets')
+const { Decimal } = await import('decimal.js')
 const { mockAccountsBalanceHistory } =
     await import('@perawallet/wallet-core-chain-algorand/test-handlers')
 const { peraEvmHandlers } =
@@ -92,6 +97,25 @@ const OTHER_ACCOUNT: WalletAccount = {
 
 const noop = () => {}
 
+// The backend never answers "now": the adapter adds that point from the
+// stored holdings, so an unseeded Ethereum would read as emptied at the end.
+const seedEthereumHolding = async (baseUnits: string) => {
+    const eth = nativeAssetFor('ethereum')
+    await upsertAssets({ items: [eth], scope: ETH_SCOPE })
+    await upsertAccountChainState({
+        accountAddress: ETH_ADDRESS,
+        scope: ETH_SCOPE,
+        nativeBalance: new Decimal(baseUnits),
+        chainData: { family: 'evm', nonce: { latest: 0, pending: 0 } },
+    })
+    await insertAssetHolding({
+        accountAddress: ETH_ADDRESS,
+        assetId: eth.assetId,
+        scope: ETH_SCOPE,
+        amount: new Decimal(baseUnits),
+    })
+}
+
 const renderHeader = (chartVisible: boolean) =>
     renderWithNavigation(
         () => (
@@ -116,6 +140,7 @@ const renderHeader = (chartVisible: boolean) =>
 
 describe('Flow: The balance chart of an account on Algorand and Ethereum', () => {
     const requests = { algorand: 0, ethereum: 0 }
+    const periods: string[] = []
 
     /** `ethereum` in wei by timestamp; omitted, the backend serves no Ethereum balance history. */
     const serveHistory = ({
@@ -166,11 +191,21 @@ describe('Flow: The balance chart of an account on Algorand and Ethereum', () =>
         await resetTestDatabase()
         requests.algorand = 0
         requests.ethereum = 0
+        periods.length = 0
         server.events.on('request:start', ({ request }) => {
             if (request.url.includes(ALGORAND_HISTORY_PATH)) {
                 requests.algorand += 1
+                periods.push(
+                    new URL(request.url).searchParams.get('period') ?? '',
+                )
             } else if (request.url.includes(ETHEREUM_HISTORY_PATH)) {
                 requests.ethereum += 1
+                void request
+                    .clone()
+                    .json()
+                    .then((body: { period: string }) =>
+                        periods.push(body.period),
+                    )
             }
         })
         useAccountsStore
@@ -204,13 +239,9 @@ describe('Flow: The balance chart of an account on Algorand and Ethereum', () =>
         renderHeader(true)
 
         expect(
-            await screen.findByTestId(
-                /^trend-indicator-(up|down)$/,
-                undefined,
-                {
-                    timeout: SLOW_WAIT_TIMEOUT_MS,
-                },
-            ),
+            await screen.findByTestId('wealth_trend', undefined, {
+                timeout: SLOW_WAIT_TIMEOUT_MS,
+            }),
         ).toBeTruthy()
         expect(requests.algorand).toBeGreaterThan(0)
         expect(requests.ethereum).toBeGreaterThan(0)
@@ -239,7 +270,7 @@ describe('Flow: The balance chart of an account on Algorand and Ethereum', () =>
         ).toBeTruthy()
         // Asked, and answered "not enabled": not short-circuited before the backend.
         expect(requests.ethereum).toBeGreaterThan(0)
-        expect(screen.queryByTestId(/^trend-indicator-/)).toBeNull()
+        expect(screen.queryByTestId('wealth_trend')).toBeNull()
     })
 
     it('Given Ethereum history fails, when the chart is shown, then it plots Algorand, names Ethereum as left out, and shows no change', async () => {
@@ -268,7 +299,7 @@ describe('Flow: The balance chart of an account on Algorand and Ethereum', () =>
         expect(
             screen.queryByText('common.network_unavailable.title'),
         ).toBeNull()
-        expect(screen.queryByTestId(/^trend-indicator-/)).toBeNull()
+        expect(screen.queryByTestId('wealth_trend')).toBeNull()
     })
 
     it('Given neither chain has points yet, when the chart is shown, then it explains that history will appear', async () => {
@@ -287,14 +318,37 @@ describe('Flow: The balance chart of an account on Algorand and Ethereum', () =>
         expect(requests.ethereum).toBeGreaterThan(0)
     })
 
-    it('Given the chart is hidden, when the header renders, then no history is fetched', async () => {
-        serveHistory({ algorand: [], ethereum: [] })
+    it("Given the chart is hidden, when the header renders, then it shows the last 24 hours' change summed over both chains", async () => {
+        serveHistory({
+            algorand: [
+                { datetime: '2026-10-20T00:00:00Z', usd_value: '10' },
+                { datetime: '2026-10-21T00:00:00Z', usd_value: '12' },
+            ],
+            ethereum: [
+                {
+                    timestamp: '2026-10-20T00:00:00Z',
+                    wei: '500000000000000000',
+                },
+                {
+                    timestamp: '2026-10-21T00:00:00Z',
+                    wei: '600000000000000000',
+                },
+            ],
+        })
+
+        await seedEthereumHolding('600000000000000000')
 
         renderHeader(false)
 
-        await screen.findByTestId('account_portfolio', undefined, {
+        const trend = await screen.findByTestId('wealth_trend', undefined, {
             timeout: SLOW_WAIT_TIMEOUT_MS,
         })
-        expect(requests).toEqual({ algorand: 0, ethereum: 0 })
+        expect(trend.textContent).toMatch(/\+.*202\.00.*\(\+20\.00%\)/)
+        expect(requests.algorand).toBeGreaterThan(0)
+        expect(requests.ethereum).toBeGreaterThan(0)
+        await waitFor(() => {
+            expect(periods).toHaveLength(requests.algorand + requests.ethereum)
+        })
+        expect(new Set(periods)).toEqual(new Set(['one-day']))
     })
 })
