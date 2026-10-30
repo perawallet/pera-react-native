@@ -109,6 +109,29 @@ describe('useAccountDisplay', () => {
         )
     })
 
+    it("reports the chain it resolved: the given one, else the account's own", () => {
+        const account: WalletAccount = {
+            id: 'account-2',
+            custody: { kind: 'watch' },
+            chains: { ethereum: { address: ETH_ADDRESS } },
+        }
+        const base = {
+            compact: false,
+            showAccountType: false,
+            iconSize: 'xl',
+        } as const
+
+        const given = renderHook(() =>
+            useAccountDisplay({ ...base, account, chainId: 'ethereum' }),
+        )
+        const inferred = renderHook(() =>
+            useAccountDisplay({ ...base, account }),
+        )
+
+        expect(given.result.current.chainId).toBe('ethereum')
+        expect(inferred.result.current.chainId).toBe('ethereum')
+    })
+
     it('names an unnamed Ethereum-only account by its truncated address', () => {
         const account: WalletAccount = {
             id: 'account-2',

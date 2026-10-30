@@ -94,6 +94,28 @@ export const DEFAULT_EVM_RPC_RESPONSES: {
     eth_getTransactionByHash: null,
 }
 
+/** A mined legacy transaction between two placeholder addresses; pass the fields the test asserts on. */
+export const evmRpcTransaction = (
+    overrides: Partial<RpcTransaction> & { hash: Hex },
+): RpcTransaction =>
+    ({
+        blockHash: `0x${'11'.repeat(32)}`,
+        blockNumber: '0x1',
+        transactionIndex: '0x0',
+        from: `0x${'00'.repeat(19)}aa`,
+        to: `0x${'00'.repeat(19)}bb`,
+        value: '0x0',
+        input: '0x',
+        nonce: '0x0',
+        gas: '0x5208',
+        gasPrice: GWEI,
+        type: '0x0',
+        v: '0x1b',
+        r: '0x1',
+        s: '0x1',
+        ...overrides,
+    }) as RpcTransaction
+
 /** A mined, successful receipt; pass the fields the test asserts on. */
 export const evmTransactionReceipt = (
     overrides: Partial<RpcTransactionReceipt> & { transactionHash: Hex },

@@ -10,4 +10,7 @@
  limitations under the License
  */
 
-export { EthereumTransactionDetailBody } from './EthereumTransactionDetailBody'
+export {
+    EthereumTransactionDetailBody,
+    type EthereumTransactionDetailBodyProps,
+} from './EthereumTransactionDetailBody'

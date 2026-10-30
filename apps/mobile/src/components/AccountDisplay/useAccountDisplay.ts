@@ -43,6 +43,8 @@ type UseAccountDisplayParams = {
 }
 
 type UseAccountDisplayResult = {
+    /** The chain whose name and address the labels show. */
+    chainId: ChainId
     displayName: string
     secondaryText: Optional<string>
     renderSecondary: boolean
@@ -111,6 +113,7 @@ export const useAccountDisplay = ({
     const showBackupBadge = shouldPromptBackup && iconSize !== 'sm'
 
     return {
+        chainId: scope.chainId,
         displayName,
         secondaryText,
         renderSecondary,

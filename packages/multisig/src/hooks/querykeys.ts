@@ -21,6 +21,14 @@ export const getMultisigAccountDetailQueryKey = (
     return [MODULE_PREFIX, 'account-detail', { scope, address }]
 }
 
+// Its own key: the detail query caches a different shape, and both persist.
+export const getIsMultisigAddressQueryKey = (
+    scope: ChainScope,
+    address: string,
+) => {
+    return [MODULE_PREFIX, 'is-multisig', { scope, address }]
+}
+
 export const getParticipantVerdictQueryKey = (
     scope: ChainScope,
     address: string,

@@ -38,6 +38,12 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
         a.toLowerCase() === b.toLowerCase(),
 }))
 
+const CAPABILITIES = vi.hoisted(() => ({ contractDecoding: true }))
+
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    getChainCapabilities: () => CAPABILITIES,
+}))
+
 const SCOPE: ChainScope = { chainId: 'ethereum', networkId: 'mainnet' }
 const ADDRESS = '0xSENDER'
 const CREATED_AT = 1_700_000_000_000
@@ -258,6 +264,21 @@ describe('getTransactionHistoryWithPending', () => {
             chainId: 'ethereum',
             getTransactionHistory,
         })
+    })
+
+    it("hands the chain the scope's capabilities with every page read", async () => {
+        getTransactionHistory.mockResolvedValue({ items: [] })
+
+        await getTransactionHistoryWithPending(ADDRESS, SCOPE, {
+            cursor: 'page-2',
+        })
+
+        expect(getTransactionHistory).toHaveBeenCalledWith(
+            ADDRESS,
+            SCOPE,
+            { cursor: 'page-2' },
+            { capabilities: CAPABILITIES },
+        )
     })
 
     it("puts the wallet's own broadcasts ahead of page one", async () => {

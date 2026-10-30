@@ -67,6 +67,13 @@ vi.mock('../../../hooks/history/useReplaceTransaction', () => ({
     useReplaceTransaction: () => mockReplace,
 }))
 
+const mockOpenRecordDetails = vi.hoisted(() => vi.fn())
+vi.mock('../../../hooks/history/useOpenRecordDetails', () => ({
+    useOpenRecordDetails: (record?: unknown) => ({
+        handleOpenDetails: record ? mockOpenRecordDetails : undefined,
+    }),
+}))
+
 const mockOpenSuspectedPoisoningSheet = vi.hoisted(() => vi.fn())
 vi.mock('../../../hooks/address-safety/useSuspectedPoisoningSheet', () => ({
     useSuspectedPoisoningSheet: () => ({
@@ -344,21 +351,24 @@ describe('useTransactionListItem with a record', () => {
         expect(useAssetsQuery).toHaveBeenCalledWith(record.scope, ['0xusdc'])
     })
 
-    it('opens nothing on press, and still copies its id on long-press', () => {
+    it('opens its details on press, and still copies its id on long-press', () => {
         const row = renderRecord()
 
-        expect(row.handlePress).toBeUndefined()
+        row.handlePress?.()
         row.handleLongPress()
+
+        expect(mockOpenRecordDetails).toHaveBeenCalledTimes(1)
         expect(mockCopyToClipboard).toHaveBeenCalledWith('0xhash')
     })
 
-    it('offers speed up and cancel on press when the wallet can re-price it', () => {
+    it('offers speed up and cancel on press, ahead of its details, when the wallet can re-price it', () => {
         mockReplace.canReplace = true
         const row = renderRecord()
 
         row.handlePress?.()
 
         expect(mockReplace.handleReplace).toHaveBeenCalled()
+        expect(mockOpenRecordDetails).not.toHaveBeenCalled()
     })
 
     it('is not marked unless suspected', () => {
@@ -377,5 +387,6 @@ describe('useTransactionListItem with a record', () => {
             record.scope,
         )
         expect(mockReplace.handleReplace).not.toHaveBeenCalled()
+        expect(mockOpenRecordDetails).not.toHaveBeenCalled()
     })
 })

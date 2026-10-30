@@ -11,6 +11,7 @@
  */
 
 import { useTheme } from '@rneui/themed'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { PWDivider, PWText, PWView } from '@components/core'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { AssetAmount } from '@components/AssetAmount'
@@ -24,13 +25,19 @@ import { EthereumTransferAssetRows } from '../EthereumTransferAssetRows'
 import { useEthereumTransactionPresentation } from '../../hooks/useEthereumTransactionPresentation'
 import { useStyles } from './styles'
 
+export type EthereumTransactionDetailBodyProps = DetailBodyProps & {
+    /** The chain the transaction is on; unset, the selected Ethereum scope. */
+    scope?: ChainScope
+}
+
 export const EthereumTransactionDetailBody = ({
     transaction,
-}: DetailBodyProps) => {
+    scope,
+}: EthereumTransactionDetailBodyProps) => {
     const styles = useStyles()
     const { theme } = useTheme()
     const { t } = useLanguage()
-    const presentation = useEthereumTransactionPresentation(transaction)
+    const presentation = useEthereumTransactionPresentation(transaction, scope)
 
     if (!presentation) {
         return null
@@ -44,6 +51,7 @@ export const EthereumTransactionDetailBody = ({
         amount,
         isAmountLoading,
         maxFee,
+        feePaid,
         standardCall,
         isTransfer,
     } = presentation
@@ -131,22 +139,41 @@ export const EthereumTransactionDetailBody = ({
 
                 {callDetails}
 
-                <KeyValueRow
-                    testID='ethereum_max_fee'
-                    title={t('send_funds.fee.max_fee')}
-                >
-                    {maxFee ? (
-                        <AssetAmount
-                            chainId={presentation.scope.chainId}
-                            asset={maxFee.asset}
-                            value={maxFee.value}
-                            showSymbol
-                            ignorePrivacyMode
-                        />
-                    ) : (
-                        <PWText>{t('ethereum.batch.fee_when_reached')}</PWText>
-                    )}
-                </KeyValueRow>
+                {'isMined' in view ? (
+                    !!feePaid && (
+                        <KeyValueRow
+                            testID='ethereum_fee_paid'
+                            title={t('transactions.common.fee')}
+                        >
+                            <AssetAmount
+                                chainId={presentation.scope.chainId}
+                                asset={feePaid.asset}
+                                value={feePaid.value}
+                                showSymbol
+                                ignorePrivacyMode
+                            />
+                        </KeyValueRow>
+                    )
+                ) : (
+                    <KeyValueRow
+                        testID='ethereum_max_fee'
+                        title={t('send_funds.fee.max_fee')}
+                    >
+                        {maxFee ? (
+                            <AssetAmount
+                                chainId={presentation.scope.chainId}
+                                asset={maxFee.asset}
+                                value={maxFee.value}
+                                showSymbol
+                                ignorePrivacyMode
+                            />
+                        ) : (
+                            <PWText>
+                                {t('ethereum.batch.fee_when_reached')}
+                            </PWText>
+                        )}
+                    </KeyValueRow>
+                )}
             </PWView>
         </PWView>
     )

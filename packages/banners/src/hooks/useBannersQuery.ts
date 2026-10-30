@@ -33,7 +33,8 @@ export const useBannersQuery = (): UseBannersQueryResult => {
 
     const query = useQuery({
         queryKey: getBannersQueryKey(deployment, deviceID ?? ''),
-        queryFn: () => fetchBanners(deployment, deviceID ?? ''),
+        queryFn: (): Promise<BannerListResponse> =>
+            fetchBanners(deployment, deviceID ?? ''),
         enabled: !!deviceID?.length,
         staleTime: config.reactQueryShortLivedStaleTime,
         select: useCallback(

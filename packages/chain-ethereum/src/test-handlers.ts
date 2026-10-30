@@ -15,6 +15,7 @@ export {
     erc20CallResponder,
     EvmRpcErrorFixture,
     evmRpcHandlers,
+    evmRpcTransaction,
     evmTransactionReceipt,
     type Erc20Fixture,
     type EvmRpcFixtures,
