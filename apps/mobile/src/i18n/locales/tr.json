@@ -3771,6 +3771,7 @@
             "disconnect_failed_title": "Bağlantı kesilemedi",
             "version": "Bu oturum WalletConnect V{{version}} kullanıyor",
             "connected_accounts": "Bağlı hesaplar",
+            "network_label": "{{chain}} {{network}}",
             "permissions": "Gelişmiş izinler",
             "permissions_info_title": "Gelişmiş izinler",
             "permissions_info_body": "WalletConnect, cüzdanların ve dApp’lerin güvenli şekilde bağlanmasını ve etkileşim kurmasını sağlayan bir web3 iletişim protokolüdür. WalletConnect her yeni sürümde, üçüncü taraf projelerden gelen işlem isteklerini işlemek, imzalamak ve/veya görüntülemek için yeni yöntemler sunar."

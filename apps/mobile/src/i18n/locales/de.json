@@ -3762,6 +3762,7 @@
             "delete_all_body": "Möchtest du wirklich alle Sitzungen löschen?  Dadurch werden alle deine aktiven Sitzungen entfernt und die Verbindung zu allen verbundenen Apps getrennt.",
             "version": "Diese Sitzung verwendet WalletConnect V{{version}}",
             "connected_accounts": "Verbunden mit",
+            "network_label": "{{chain}} {{network}}",
             "permissions": "Erweiterte Berechtigungen",
             "permissions_info_title": "Erweiterte Berechtigungen",
             "permissions_info_body": "WalletConnect ist ein Kommunikationsprotokoll für Web3, das es Wallets und dApps ermöglicht, sich sicher zu verbinden und zu interagieren. Mit jeder neuen Version führt WalletConnect neue Möglichkeiten ein, Transaktionsanfragen von Drittanbieter-Projekten zu handhaben, zu signieren und/oder anzuzeigen.",

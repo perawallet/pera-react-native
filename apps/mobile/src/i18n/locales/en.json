@@ -3771,6 +3771,7 @@
             "disconnect_failed_title": "Couldn't disconnect",
             "version": "This session is using WalletConnect V{{version}}",
             "connected_accounts": "Connected with",
+            "network_label": "{{chain}} {{network}}",
             "permissions": "Advanced Permissions",
             "permissions_info_title": "Advanced Permissions",
             "permissions_info_body": "WalletConnect is a communications protocol for web3, enabling wallets and dApps to securely connect and interact. With each new version, WalletConnect introduces new ways to handle, sign and/or display transaction requests coming from third party projects."
