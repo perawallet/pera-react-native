@@ -59,6 +59,7 @@ export const AssetTransferRequestItem = ({
     const remainingCount = senders.count - 1
     const { displayName: senderDisplayName } = useResolvedAddress(
         firstSender?.sender.address ?? '',
+        scope,
         { enabled: !!firstSender?.sender.address && !firstSender?.sender.name },
     )
 

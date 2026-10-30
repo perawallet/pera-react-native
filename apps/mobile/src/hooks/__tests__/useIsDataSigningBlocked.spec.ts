@@ -45,6 +45,7 @@ const buildArc60Request = (signer: string) =>
     ({
         id: 'req-1',
         type: 'auth-data',
+        chainId: 'algorand',
         authData: { signer, domain: 'example.com' },
     }) as unknown as SignRequest
 
@@ -52,6 +53,7 @@ const buildArbitraryDataRequest = (signers: string[]) =>
     ({
         id: 'req-1',
         type: 'arbitrary-data',
+        chainId: 'algorand',
         data: signers.map(signer => ({ signer, data: 'ZGF0YQ==' })),
     }) as unknown as SignRequest
 

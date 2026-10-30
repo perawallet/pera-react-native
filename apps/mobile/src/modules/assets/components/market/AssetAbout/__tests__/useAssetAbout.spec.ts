@@ -13,11 +13,15 @@
 import { renderHook } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { PeraAsset } from '@perawallet/wallet-core-assets'
-import { i18nKey } from '@perawallet/wallet-core-chain-contract'
+import {
+    i18nKey,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import type { AssetAboutDisplay } from '@modules/assets/types/asset-details-display'
 import { useAssetAbout } from '../useAssetAbout'
 
 const { mockPushWebView } = vi.hoisted(() => ({ mockPushWebView: vi.fn() }))
+const SCOPE: ChainScope = { chainId: 'algorand', networkId: 'mainnet' }
 
 vi.mock('@modules/webview', async () => ({
     ...(await vi.importActual<
@@ -60,7 +64,7 @@ describe('useAssetAbout', () => {
         'offers no URL, explorer or project row for %s',
         url => {
             const { result } = renderHook(() =>
-                useAssetAbout(makeAsset(url, url), makeAbout(url)),
+                useAssetAbout(makeAsset(url, url), makeAbout(url), SCOPE),
             )
 
             expect(result.current.assetLink).toBeNull()
@@ -77,6 +81,7 @@ describe('useAssetAbout', () => {
                     'https://project.example',
                 ),
                 makeAbout('https://explorer.example/asset/1'),
+                SCOPE,
             ),
         )
 

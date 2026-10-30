@@ -48,10 +48,11 @@ describe('useCounterpartyName', () => {
             'algorand',
             'nameService',
         )
-        expect(useResolvedAddress).toHaveBeenCalledWith('ADDR', {
-            enabled: true,
-            chainId: 'algorand',
-        })
+        expect(useResolvedAddress).toHaveBeenCalledWith(
+            'ADDR',
+            expect.objectContaining({ chainId: 'algorand' }),
+            { enabled: true },
+        )
     })
 
     it("only truncates with the chain's codec on a chain without one", () => {
@@ -59,10 +60,11 @@ describe('useCounterpartyName', () => {
 
         renderHook(() => useCounterpartyName('0xabc', 'ethereum'))
 
-        expect(useResolvedAddress).toHaveBeenCalledWith('0xabc', {
-            enabled: false,
-            chainId: 'ethereum',
-        })
+        expect(useResolvedAddress).toHaveBeenCalledWith(
+            '0xabc',
+            expect.objectContaining({ chainId: 'ethereum' }),
+            { enabled: false },
+        )
     })
 
     it('skips the lookup when there is no counterparty', () => {
@@ -70,9 +72,10 @@ describe('useCounterpartyName', () => {
 
         renderHook(() => useCounterpartyName('', 'algorand'))
 
-        expect(useResolvedAddress).toHaveBeenCalledWith('', {
-            enabled: false,
-            chainId: 'algorand',
-        })
+        expect(useResolvedAddress).toHaveBeenCalledWith(
+            '',
+            expect.objectContaining({ chainId: 'algorand' }),
+            { enabled: false },
+        )
     })
 })

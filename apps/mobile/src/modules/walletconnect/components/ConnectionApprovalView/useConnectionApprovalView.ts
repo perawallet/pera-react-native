@@ -400,7 +400,10 @@ export const useConnectionApprovalView = (
                     proposal.requested.chains,
                 ),
             )
-            const decision = await confirmQuantumDappUsage(addresses)
+            const decision = await confirmQuantumDappUsage(
+                addresses,
+                LEGACY_CHAIN_ID,
+            )
             if (decision === 'cancel') {
                 await rejectProposal()
                 return

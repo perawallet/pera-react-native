@@ -22,7 +22,6 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import {
     addressCodecs,
-    LEGACY_CHAIN_ID,
     type ChainId,
 } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
@@ -30,6 +29,7 @@ import { useNfdForAddressQuery } from '@perawallet/wallet-core-nfd'
 import { useShouldPromptMnemonicBackup } from '@perawallet/wallet-core-backup'
 import { useAccountTypeLabel } from '@hooks/useAccountTypeLabel'
 import { useAccountName } from '@hooks/useAccountName'
+import { useHomeChainScope } from '@hooks/useHomeChainScope'
 
 import type { AccountIconSize } from '@components/AccountIcon'
 
@@ -61,7 +61,10 @@ export const useAccountDisplay = ({
     iconSize,
     chainId,
 }: UseAccountDisplayParams): UseAccountDisplayResult => {
-    const accountChainId = useAccountChainId(account, LEGACY_CHAIN_ID)
+    const accountChainId = useAccountChainId(
+        account,
+        useHomeChainScope().chainId,
+    )
     const scope = useSelectedScope(chainId ?? accountChainId)
     const fullAddress = account ? addressOn(account, scope) : undefined
     const { getAccountName } = useAccountName()

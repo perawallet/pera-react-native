@@ -103,9 +103,10 @@ describe('useQuantumDappWarning', () => {
     it('shows the sheet when an unacknowledged quantum account is involved', async () => {
         const { result } = renderHook(() => useQuantumDappWarning())
 
-        const decision = await result.current.confirmQuantumDappUsage([
-            QUANTUM_ADDRESS,
-        ])
+        const decision = await result.current.confirmQuantumDappUsage(
+            [QUANTUM_ADDRESS],
+            'algorand',
+        )
 
         expect(mockRequest).toHaveBeenCalledTimes(1)
         expect(mockRequest).toHaveBeenCalledWith(
@@ -125,9 +126,10 @@ describe('useQuantumDappWarning', () => {
     it('shows the sheet for an ed25519 account rekeyed to a quantum auth', async () => {
         const { result } = renderHook(() => useQuantumDappWarning())
 
-        const decision = await result.current.confirmQuantumDappUsage([
-            REKEYED_TO_QUANTUM_ADDRESS,
-        ])
+        const decision = await result.current.confirmQuantumDappUsage(
+            [REKEYED_TO_QUANTUM_ADDRESS],
+            'algorand',
+        )
 
         expect(mockRequest).toHaveBeenCalledTimes(1)
         expect(decision).toBe('continue')
@@ -142,9 +144,10 @@ describe('useQuantumDappWarning', () => {
     it('continues without a sheet when no address is a quantum account', async () => {
         const { result } = renderHook(() => useQuantumDappWarning())
 
-        const decision = await result.current.confirmQuantumDappUsage([
-            STANDARD_ADDRESS,
-        ])
+        const decision = await result.current.confirmQuantumDappUsage(
+            [STANDARD_ADDRESS],
+            'algorand',
+        )
 
         expect(mockRequest).not.toHaveBeenCalled()
         expect(decision).toBe('continue')
@@ -154,9 +157,10 @@ describe('useQuantumDappWarning', () => {
         mockGetPreference.mockReturnValue(true)
         const { result } = renderHook(() => useQuantumDappWarning())
 
-        const decision = await result.current.confirmQuantumDappUsage([
-            QUANTUM_ADDRESS,
-        ])
+        const decision = await result.current.confirmQuantumDappUsage(
+            [QUANTUM_ADDRESS],
+            'algorand',
+        )
 
         expect(mockRequest).not.toHaveBeenCalled()
         expect(decision).toBe('continue')
@@ -167,9 +171,10 @@ describe('useQuantumDappWarning', () => {
         ;(useIsQuantumDappWarningEnabled as Mock).mockReturnValue(false)
         const { result } = renderHook(() => useQuantumDappWarning())
 
-        const decision = await result.current.confirmQuantumDappUsage([
-            QUANTUM_ADDRESS,
-        ])
+        const decision = await result.current.confirmQuantumDappUsage(
+            [QUANTUM_ADDRESS],
+            'algorand',
+        )
 
         expect(mockRequest).not.toHaveBeenCalled()
         expect(decision).toBe('continue')
@@ -179,7 +184,10 @@ describe('useQuantumDappWarning', () => {
     it('continues without a sheet when there are no addresses', async () => {
         const { result } = renderHook(() => useQuantumDappWarning())
 
-        const decision = await result.current.confirmQuantumDappUsage([])
+        const decision = await result.current.confirmQuantumDappUsage(
+            [],
+            'algorand',
+        )
 
         expect(mockRequest).not.toHaveBeenCalled()
         expect(decision).toBe('continue')
@@ -188,7 +196,10 @@ describe('useQuantumDappWarning', () => {
     it('persists the acknowledgement when the user continues', async () => {
         const { result } = renderHook(() => useQuantumDappWarning())
 
-        await result.current.confirmQuantumDappUsage([QUANTUM_ADDRESS])
+        await result.current.confirmQuantumDappUsage(
+            [QUANTUM_ADDRESS],
+            'algorand',
+        )
 
         expect(mockSetPreference).toHaveBeenCalledWith(
             'quantum-dapp-warning-acknowledged',
@@ -200,9 +211,10 @@ describe('useQuantumDappWarning', () => {
         mockRequest.mockResolvedValue(undefined)
         const { result } = renderHook(() => useQuantumDappWarning())
 
-        const decision = await result.current.confirmQuantumDappUsage([
-            QUANTUM_ADDRESS,
-        ])
+        const decision = await result.current.confirmQuantumDappUsage(
+            [QUANTUM_ADDRESS],
+            'algorand',
+        )
 
         expect(decision).toBe('cancel')
         expect(mockSetPreference).not.toHaveBeenCalled()
@@ -211,9 +223,10 @@ describe('useQuantumDappWarning', () => {
     it('ignores addresses that match no known account', async () => {
         const { result } = renderHook(() => useQuantumDappWarning())
 
-        const decision = await result.current.confirmQuantumDappUsage([
-            'UNKNOWN',
-        ])
+        const decision = await result.current.confirmQuantumDappUsage(
+            ['UNKNOWN'],
+            'algorand',
+        )
 
         expect(mockRequest).not.toHaveBeenCalled()
         expect(decision).toBe('continue')
@@ -224,7 +237,10 @@ describe('useQuantumDappWarning', () => {
         const { result } = renderHook(() => useQuantumDappWarning())
 
         await expect(
-            result.current.confirmQuantumDappUsage([QUANTUM_ADDRESS]),
+            result.current.confirmQuantumDappUsage(
+                [QUANTUM_ADDRESS],
+                'algorand',
+            ),
         ).rejects.toThrow('no host')
 
         expect(mockSetPreference).not.toHaveBeenCalled()

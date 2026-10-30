@@ -12,14 +12,13 @@
 
 import {
     addressCodecs,
-    LEGACY_CHAIN_ID,
+    type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import { useNfdSearchQuery } from '@perawallet/wallet-core-nfd'
 import {
     type Optional,
     useDebouncedValue,
 } from '@perawallet/wallet-core-shared'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { SEARCH_DEBOUNCE_TIME } from '@constants/ui'
 
 type UseNfdResolveResult = {
@@ -37,9 +36,9 @@ type UseNfdResolveResult = {
 
 export const useNfdResolve = (
     input: string,
+    scope: ChainScope,
     options?: { enabled?: boolean },
 ): UseNfdResolveResult => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const enabled = options?.enabled ?? true
     const debouncedInput = useDebouncedValue(input, SEARCH_DEBOUNCE_TIME)
     const isDirectAddress = addressCodecs

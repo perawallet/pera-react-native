@@ -10,13 +10,12 @@
  limitations under the License
  */
 
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { CurrencyAmount } from '@components/CurrencyAmount'
 import { usePreferredAmount } from '../usePreferredAmount'
 import { displayCurrencyToAssetId } from '@perawallet/wallet-core-assets'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { isFiatCurrency, precisionFor } from '../preferredAmountDisplay'
 import type { ConvertedPreferredAmountProps } from '../types'
+import { useHomeChainScope } from '@hooks/useHomeChainScope'
 
 export const ConvertedPreferredAmount = ({
     sourceAmount,
@@ -27,7 +26,7 @@ export const ConvertedPreferredAmount = ({
     density = 'detailed',
     ...displayProps
 }: ConvertedPreferredAmountProps) => {
-    const currencyScope = useSelectedScope(LEGACY_CHAIN_ID)
+    const currencyScope = useHomeChainScope()
     const { displayCurrency, convertedValue, isPending } = usePreferredAmount(
         sourceAmount,
         sourceAssetId,

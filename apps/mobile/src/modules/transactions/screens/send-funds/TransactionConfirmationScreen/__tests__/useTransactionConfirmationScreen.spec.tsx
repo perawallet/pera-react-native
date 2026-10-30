@@ -178,7 +178,12 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
             typeof import('@packages/shared/src/utils/unit-conversion')
         >('@packages/shared/src/utils/unit-conversion')
     const { Decimal: ActualDecimal } = await import('decimal.js')
+    // The provider's extension graph reads AppError off this package.
+    const { AppError: ActualAppError } = await vi.importActual<
+        typeof import('@perawallet/wallet-core-shared')
+    >('@perawallet/wallet-core-shared')
     return {
+        AppError: ActualAppError,
         DEFAULT_PRECISION: 2,
         ASSET_MAX_PRECISION: 6,
         ZERO_DECIMAL: new ActualDecimal(0),

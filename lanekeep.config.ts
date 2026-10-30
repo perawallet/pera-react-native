@@ -29,6 +29,7 @@ import noI18nIntegritySuppressions from './lanekeep/rules/no-i18n-integrity-supp
 import noKeystoreMetaPackage from './lanekeep/rules/no-keystore-meta-package.js'
 import noLegacyNetworkBridge from './lanekeep/rules/no-legacy-network-bridge.js'
 import noLegacyChainInApp from './lanekeep/rules/no-legacy-chain-in-app.js'
+import noLegacyChainInSharedAppCode from './lanekeep/rules/no-legacy-chain-in-shared-app-code.js'
 import noModuleComponentSpecs from './lanekeep/rules/no-module-component-specs.js'
 import noNumericSizes from './lanekeep/rules/no-numeric-sizes.js'
 import noPrimitiveRnComponents from './lanekeep/rules/no-primitive-rn-components.js'
@@ -105,6 +106,7 @@ export default defineConfig({
         noChainPackageImports,
         noLegacyNetworkBridge,
         noLegacyChainInApp,
+        noLegacyChainInSharedAppCode,
         noAlgorandAccountVocabulary,
         noAlgorandTermsInChainNeutralPackages,
         noDeepModuleImports,

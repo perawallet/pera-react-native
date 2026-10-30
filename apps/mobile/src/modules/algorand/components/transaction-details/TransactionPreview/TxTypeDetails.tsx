@@ -45,9 +45,13 @@ export const TxTypeDetails = ({ tx, isExternal }: TxTypeDetailsProps) => {
     const txType = getTransactionType(tx)
     const { t } = useLanguage()
     const styles = useStyles()
-    const { displayName: senderDisplayName } = useResolvedAddress(tx.sender, {
-        format: 'long',
-    })
+    const { displayName: senderDisplayName } = useResolvedAddress(
+        tx.sender,
+        scope,
+        {
+            format: 'long',
+        },
+    )
     const { data: asset } = useSingleAssetDetailsQuery(
         tx.assetTransferTransaction?.assetId?.toString() ?? '',
         scope,

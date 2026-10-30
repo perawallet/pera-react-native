@@ -26,6 +26,7 @@ import {
     useNetworkStore,
     useSelectedScope,
     useSwitchedOffChainIds,
+    useWalletDeployment,
 } from '@perawallet/wallet-core-chain-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 
@@ -76,7 +77,7 @@ export const useViewContactScreen = (): UseViewContactScreenResult => {
     const { request: requestBottomSheet } = useBottomSheet()
     const { copyToClipboard } = useClipboard()
     const { pushWebView } = useWebView()
-    const mode = useNetworkStore(state => state.mode)
+    const mode = useWalletDeployment()
     const selectedNetworkByChain = useNetworkStore(
         state => state.selectedNetworkByChain,
     )
