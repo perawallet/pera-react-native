@@ -24,7 +24,6 @@ import {
 } from '@perawallet/wallet-core-assets'
 import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
 import {
-    chainDisplayNameOf,
     useSelectedScope,
     useSelectedScopes,
 } from '@perawallet/wallet-core-chain-shared'
@@ -55,6 +54,12 @@ import {
     type ChainId,
 } from '@perawallet/wallet-core-chain-contract'
 import { toChainFilterOptions } from '../../utils/toChainFilterOptions'
+import {
+    addsWithoutOptIn,
+    chainNameOf,
+    resultKey,
+    useAddAssetToken,
+} from './useAddAssetToken'
 
 type UseAddAssetViewOptions = {
     variant?: AddAssetContentVariant
@@ -70,6 +75,7 @@ type UseAddAssetViewResult = {
     handleSelectChain: (chainId: Nullable<ChainId>) => void
     searchQuery: string
     handleSearchChange: (text: string) => void
+    searchPlaceholder: string
     results: ScopedAssetSearchResult[]
     /** The results span chains, so each row names its network. */
     showsNetwork: boolean
@@ -92,13 +98,11 @@ type UseAddAssetViewResult = {
     /** Off: the row offers no add action. */
     canAdd: (result: ScopedAssetSearchResult) => boolean
     handleRequestAdd: (result: ScopedAssetSearchResult) => void
+    /** On for a token added here that holds nothing: its check offers Remove. */
+    canRemove: (result: ScopedAssetSearchResult) => boolean
+    handleRequestRemove: (result: ScopedAssetSearchResult) => void
     t: (key: string, params?: Record<string, string | number>) => string
 }
-
-// Keyed by chain too, so an asset id added on one chain never reads as added
-// on another. The list keys its rows by it as well.
-export const resultKey = ({ scope, asset }: ScopedAssetSearchResult): string =>
-    assetRefKey({ chainId: scope.chainId, assetId: asset.assetId })
 
 const withKey = (keys: ReadonlySet<string>, key: string): ReadonlySet<string> =>
     new Set(keys).add(key)
@@ -233,6 +237,15 @@ export const useAddAssetView = (
     const { showError } = useErrorToast()
     const { requestByType } = useBottomSheet()
 
+    const {
+        canAddToken,
+        canRemoveToken,
+        isTokenPending,
+        isTokenAdded,
+        handleAddToken,
+        handleRemoveToken,
+    } = useAddAssetToken(selectedAccount, holdingSources)
+
     // Every chain the account is on, not just the searched ones, so picking a
     // chip doesn't start a new read.
     const { heldAssets } = useAccountHeldAssetsQuery(holdingSources)
@@ -245,23 +258,30 @@ export const useAddAssetView = (
     }, [heldAssets, recentlyOptedInKeys])
 
     const isOptedIn = useCallback(
-        (result: ScopedAssetSearchResult) => optedInKeys.has(resultKey(result)),
-        [optedInKeys],
+        (result: ScopedAssetSearchResult) =>
+            optedInKeys.has(resultKey(result)) || isTokenAdded(result),
+        [optedInKeys, isTokenAdded],
     )
     const isOptingIn = useCallback(
         (result: ScopedAssetSearchResult) =>
-            optingInKeys.has(resultKey(result)),
-        [optingInKeys],
+            optingInKeys.has(resultKey(result)) || isTokenPending(result),
+        [optingInKeys, isTokenPending],
     )
     const addScopeKey = toScopeKey(addScope)
     const canAdd = useCallback(
         (result: ScopedAssetSearchResult) =>
-            canManageAssets && toScopeKey(result.scope) === addScopeKey,
-        [canManageAssets, addScopeKey],
+            addsWithoutOptIn(result.scope.chainId)
+                ? canAddToken(result)
+                : canManageAssets && toScopeKey(result.scope) === addScopeKey,
+        [canAddToken, canManageAssets, addScopeKey],
     )
 
     const handleRequestAdd = useCallback(
         async (result: ScopedAssetSearchResult) => {
+            if (addsWithoutOptIn(result.scope.chainId)) {
+                await handleAddToken(result)
+                return
+            }
             const key = resultKey(result)
             const sender = selectedAddress
             if (!sender || !canAdd(result) || optingInKeys.has(key)) return
@@ -306,6 +326,7 @@ export const useAddAssetView = (
             }
         },
         [
+            handleAddToken,
             selectedAddress,
             canAdd,
             optingInKeys,
@@ -322,12 +343,27 @@ export const useAddAssetView = (
         (result: ScopedAssetSearchResult) => void handleRequestAdd(result),
         [handleRequestAdd],
     )
+    const requestRemove = useCallback(
+        (result: ScopedAssetSearchResult) => void handleRemoveToken(result),
+        [handleRemoveToken],
+    )
+
+    // "Asset ID" is Algorand's word; an EVM token is found by its contract.
+    const searchPlaceholderOf = (): string => {
+        if (hasCollectible) return t('add_asset.collectible_search_placeholder')
+        const localCount = searchedChainIds.filter(addsWithoutOptIn).length
+        if (localCount === 0) return t('add_asset.search_placeholder')
+        if (localCount === searchedChainIds.length) {
+            return t('add_asset.search_placeholder_evm')
+        }
+        return t('add_asset.search_placeholder_all')
+    }
 
     const unavailableBodyOf = () => {
         if (!isNotListed) return undefined
         if (selectedChainId === null) return t('add_asset.not_listed.body_all')
         return t('add_asset.not_listed.body', {
-            chain: chainDisplayNameOf(selectedChainId) ?? selectedChainId,
+            chain: chainNameOf(selectedChainId),
         })
     }
 
@@ -337,6 +373,7 @@ export const useAddAssetView = (
         handleSelectChain: setPickedChainId,
         searchQuery,
         handleSearchChange: setSearchQuery,
+        searchPlaceholder: searchPlaceholderOf(),
         results,
         showsNetwork: selectedChainId === null && offeredChainIds.length > 1,
         // Typing on an unavailable chain asks nothing, so nothing loads.
@@ -358,8 +395,11 @@ export const useAddAssetView = (
         isOptingIn,
         canAdd,
         handleRequestAdd: requestAdd,
+        canRemove: canRemoveToken,
+        handleRequestRemove: requestRemove,
         t,
     }
 }
 
+export { resultKey }
 export type { UseAddAssetViewResult }

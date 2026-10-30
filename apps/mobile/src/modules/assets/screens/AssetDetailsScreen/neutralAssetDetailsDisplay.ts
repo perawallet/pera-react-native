@@ -13,9 +13,11 @@
 import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import type { AssetDetailsDisplay } from '../../types/asset-details-display'
 import { extractDomain } from '../../utils/extractDomain'
+import { resolveTotalSupply } from '../../utils/resolveTotalSupply'
 
 /** A chain with no entry in the chain-UI registry gets no sections and its descriptor's explorer link. */
 export const neutralAssetDetailsDisplay: AssetDetailsDisplay = {
+    resolveSupply: resolveTotalSupply,
     resolveAbout: ({ asset, scope, descriptor, isNativeAsset }) => {
         const url = descriptor.explorer.assetUrl(scope.networkId, asset.assetId)
         return {

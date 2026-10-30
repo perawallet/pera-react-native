@@ -92,6 +92,13 @@ describe('the EVM chain table', () => {
         },
     )
 
+    it("gives the native coin the explorer's front page, and none on a network with no explorer", () => {
+        const { explorer } = evmChainOf('ethereum').descriptor
+
+        expect(explorer.homeUrl?.('mainnet')).toBe('https://etherscan.io')
+        expect(explorer.homeUrl?.('custom')).toBeUndefined()
+    })
+
     it('builds each chain once, so its native asset keeps one identity', () => {
         expect(evmChainOf('base')).toBe(evmChainOf('base'))
         expect(evmChainOf('ethereum').nativeAsset).toBe(
