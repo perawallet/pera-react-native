@@ -15,6 +15,7 @@ import {
     type ChainCapabilities,
     type ChainCapability,
 } from '@perawallet/wallet-core-chain-contract'
+import type { EvmChainRow } from './chains/types'
 
 // Each needs an adapter in every registry CAPABILITY_ADAPTERS lists for it; the app's parity spec fails otherwise.
 const ENABLED: ReadonlySet<ChainCapability> = new Set<ChainCapability>([
@@ -37,7 +38,13 @@ const ENABLED: ReadonlySet<ChainCapability> = new Set<ChainCapability>([
 ])
 
 // Off unless listed, so a capability added later starts off. Every EVM chain
-// shares this set: they register the same adapters.
+// starts from this set because they register the same adapters; a row's
+// `capabilities` layers over it.
 export const evmCapabilityDefaults = Object.fromEntries(
     CHAIN_CAPABILITIES.map(capability => [capability, ENABLED.has(capability)]),
 ) as ChainCapabilities
+
+export const evmCapabilityDefaultsOf = (row: EvmChainRow): ChainCapabilities =>
+    row.capabilities
+        ? { ...evmCapabilityDefaults, ...row.capabilities }
+        : evmCapabilityDefaults

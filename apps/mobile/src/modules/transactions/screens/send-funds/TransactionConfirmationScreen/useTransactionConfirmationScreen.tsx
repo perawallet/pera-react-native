@@ -178,6 +178,7 @@ export const useTransactionConfirmationScreen =
         })
         const sendConfirmation = chainUiFor(
             getChainDescriptor(scope.chainId).family,
+            scope.chainId,
         ).sendConfirmation
 
         // The quantum fee premium is driven by the effective signer (resolving

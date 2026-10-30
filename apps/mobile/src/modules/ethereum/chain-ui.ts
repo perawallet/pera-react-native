@@ -10,7 +10,10 @@
  limitations under the License
  */
 
-import { i18nKey } from '@perawallet/wallet-core-chain-contract'
+import {
+    i18nKey,
+    type EvmChainId,
+} from '@perawallet/wallet-core-chain-contract'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import {
     extractDomain,
@@ -19,7 +22,7 @@ import {
     type AssetDisplayParams,
     type AssetSupplyDisplay,
 } from '@modules/assets'
-import type { ChainUi } from '@modules/chain-ui'
+import type { ChainUi, ChainUiOverride } from '@modules/chain-ui'
 import { EthereumRecordDetailBody } from './components/EthereumRecordDetailBody'
 import { EthereumTransactionDetailBody } from './components/EthereumTransactionDetailBody'
 import { EthereumTransactionPreviewRow } from './components/EthereumTransactionPreviewRow'
@@ -93,3 +96,9 @@ export const ethereumChainUi: Optional<ChainUi> = {
         ),
     },
 }
+
+// A chain whose UI differs from the EVM family's adds its slots here, so
+// metro's stub drops them along with the family's.
+export const evmChainUiOverrides: Optional<
+    Partial<Record<EvmChainId, ChainUiOverride>>
+> = {}

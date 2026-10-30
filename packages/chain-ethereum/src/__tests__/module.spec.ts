@@ -27,7 +27,10 @@ import {
     type ChainContext,
 } from '@perawallet/wallet-core-chain-contract'
 import { ethereumModule, evmChainModules } from '..'
-import { eip155IdOf, EVM_TEST_CHAINS } from './evm-chains'
+import { evmCapabilityDefaults } from '../capability-defaults'
+import { createEvmChain } from '../chains/create-evm-chain'
+import { createEvmChainModule } from '../module'
+import { BASE, eip155IdOf, EVM_TEST_CHAINS } from './evm-chains'
 
 const context: ChainContext = {
     getScope: vi.fn(),
@@ -131,5 +134,53 @@ describe('every EVM module together', () => {
         expect(deeplinkAdapters.list().map(adapter => adapter.chainId)).toEqual(
             ['ethereum'],
         )
+    })
+})
+
+describe('a row override', () => {
+    const overridden = createEvmChainModule(
+        createEvmChain({
+            ...BASE.row,
+            capabilities: { nft: false },
+            restrictions: { pricing: ['developer'] },
+        }),
+    )
+    const registryWithOverride = () => {
+        const chains = createChainRegistry()
+        for (const module of [overridden, evmChainModules.ethereum]) {
+            chains.register(
+                module.descriptor,
+                module.capabilityDefaults,
+                module.capabilityRestrictions,
+            )
+        }
+        return chains
+    }
+
+    it('switches a capability off for its own chain only', () => {
+        const chains = registryWithOverride()
+
+        expect(chains.capabilities('base').nft).toBe(false)
+        expect(chains.capabilities('base').send).toBe(true)
+        expect(chains.capabilities('ethereum').nft).toBe(true)
+        expect(evmCapabilityDefaults.nft).toBe(true)
+    })
+
+    it('restricts a capability for its own chain only', () => {
+        const chains = registryWithOverride()
+
+        chains.setCapabilityOverrides(() => ({
+            chainMode: { base: 'developer', ethereum: 'developer' },
+        }))
+
+        expect(chains.capabilities('base').pricing).toBe(false)
+        expect(chains.capabilities('ethereum').pricing).toBe(true)
+    })
+
+    it('keeps the shared defaults for a row without overrides', () => {
+        expect(evmChainModules.base.capabilityDefaults).toBe(
+            evmCapabilityDefaults,
+        )
+        expect(evmChainModules.base.capabilityRestrictions).toBeUndefined()
     })
 })
