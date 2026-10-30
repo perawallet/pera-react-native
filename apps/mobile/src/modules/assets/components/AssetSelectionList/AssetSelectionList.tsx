@@ -10,19 +10,17 @@
  limitations under the License
  */
 
-import React, { useCallback, useMemo } from 'react'
+import React from 'react'
 import type { ListRenderItemInfo } from '@shopify/flash-list'
 
 import { PWLoadingIndicator, PWView } from '@components/core'
 import { SearchableList } from '@components/SearchableList'
-import { AssetRowSkeleton } from '@modules/assets/components/AssetRowSkeleton'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useStyles } from './styles'
-
-type SkeletonItem = { readonly __assetSkeleton: true; readonly id: string }
-
-const isSkeletonItem = (item: unknown): item is SkeletonItem =>
-    typeof item === 'object' && item !== null && '__assetSkeleton' in item
+import {
+    useAssetSelectionList,
+    type SkeletonItem,
+} from './useAssetSelectionList'
 
 export type AssetSelectionListProps<T> = {
     data: readonly T[] | null | undefined
@@ -70,42 +68,14 @@ export const AssetSelectionList = <T,>({
 }: AssetSelectionListProps<T>) => {
     const styles = useStyles()
 
-    // While the initial load is in-flight, render skeleton rows as list data so
-    // they're top-aligned and full-width (instead of a centered empty state).
-    const showSkeletons = isLoading && (data?.length ?? 0) === 0
-
-    const skeletonItems = useMemo<SkeletonItem[]>(
-        () =>
-            Array.from({ length: skeletonCount }, (_, i) => ({
-                __assetSkeleton: true as const,
-                id: `asset-skeleton-${i}`,
-            })),
-        [skeletonCount],
-    )
-
-    const listData = (
-        showSkeletons ? skeletonItems : (data ?? [])
-    ) as readonly (T | SkeletonItem)[]
-
-    const renderRow = useCallback(
-        (info: ListRenderItemInfo<T | SkeletonItem>) => {
-            if (isSkeletonItem(info.item)) {
-                return (
-                    <PWView style={styles.skeletonRow}>
-                        <AssetRowSkeleton />
-                    </PWView>
-                )
-            }
-            return renderItem(info as ListRenderItemInfo<T>)
-        },
-        [renderItem, styles],
-    )
-
-    const keyExtractorFn = useCallback(
-        (item: T | SkeletonItem) =>
-            isSkeletonItem(item) ? item.id : keyExtractor(item),
-        [keyExtractor],
-    )
+    const { showSkeletons, listData, renderRow, keyExtractorFn } =
+        useAssetSelectionList({
+            data,
+            renderItem,
+            keyExtractor,
+            isLoading,
+            skeletonCount,
+        })
 
     const footerComponent = isFetchingNextPage ? (
         <PWView style={styles.footer}>

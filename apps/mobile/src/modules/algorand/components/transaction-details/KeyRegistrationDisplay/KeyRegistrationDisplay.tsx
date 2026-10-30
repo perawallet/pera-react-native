@@ -12,7 +12,6 @@
 
 import { PWDivider, PWText, PWView } from '@components/core'
 import { KeyValueRow } from '@components/KeyValueRow'
-import type { AlgorandTransactionView } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 import { useTheme } from '@rneui/themed'
@@ -22,13 +21,12 @@ import { TransactionNoteRow } from '../TransactionNoteRow/TransactionNoteRow'
 import { TransactionWarnings } from '../../TransactionWarnings/TransactionWarnings'
 import { TransactionFooter } from '../TransactionFooter/TransactionFooter'
 import { AddressDisplay } from '@components/AddressDisplay'
-import { useMemo } from 'react'
-import { formatParticipationKey, getKeyRegType } from './utils'
+import {
+    useKeyRegistrationDisplay,
+    type KeyRegistrationDisplayProps,
+} from './useKeyRegistrationDisplay'
 
-export type KeyRegistrationDisplayProps = {
-    transaction: AlgorandTransactionView
-    isInnerTransaction?: boolean
-}
+export type { KeyRegistrationDisplayProps }
 
 export const KeyRegistrationDisplay = ({
     transaction,
@@ -38,23 +36,8 @@ export const KeyRegistrationDisplay = ({
     const { theme } = useTheme()
     const { t } = useLanguage()
 
-    const keyRegType = useMemo(() => getKeyRegType(transaction), [transaction])
-    const participationKeys = useMemo(
-        () => ({
-            vote: formatParticipationKey(
-                transaction.keyregTransaction?.voteParticipationKey,
-            ),
-            selection: formatParticipationKey(
-                transaction.keyregTransaction?.selectionParticipationKey,
-            ),
-            stateProof: formatParticipationKey(
-                transaction.keyregTransaction?.stateProofKey,
-            ),
-        }),
-        [transaction],
-    )
-    const showWarnings = useMemo(() => !transaction.id, [transaction])
-    const keyReg = transaction.keyregTransaction
+    const { keyRegType, participationKeys, showWarnings, keyReg } =
+        useKeyRegistrationDisplay({ transaction })
 
     return (
         <PWView style={styles.container}>

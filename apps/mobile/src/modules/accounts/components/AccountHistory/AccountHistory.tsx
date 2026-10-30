@@ -10,25 +10,16 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
-import {
-    PWFlatList,
-    PWLoadingIndicator,
-    PWRefreshControl,
-    PWView,
-} from '@components/core'
+import { PWFlatList, PWRefreshControl, PWView } from '@components/core'
 import { AccountHistoryTitleBar } from './AccountHistoryTitleBar'
 import { HistorySkeleton } from './HistorySkeleton'
 import { useStyles } from './styles'
 import { useAccountHistory } from './useAccountHistory'
 import {
     TransactionHistoryFeed,
-    TransactionHistoryRow,
     TransactionHistoryLoadState,
-    TransactionHistorySearchOlder,
     getTransactionRowKey,
     getTransactionRowType,
-    type TransactionListRow,
 } from '@modules/transactions'
 import { RowSeparator } from './RowSeparator'
 
@@ -49,7 +40,6 @@ export const AccountHistory = ({ scrollEnabled }: AccountHistoryProps) => {
         isRetrying,
         isSearchPaused,
         handleSearchOlder,
-        isFetchingNextPage,
         isEmpty,
         networkChainId,
         chainFilterOptions,
@@ -64,50 +54,10 @@ export const AccountHistory = ({ scrollEnabled }: AccountHistoryProps) => {
         handleExportCsv,
         isExportingCsv,
         isCsvExportVisible,
-        handleOpenFilter,
-        handleTransactionPress,
-        suspectedPoisoningById,
+        renderItem,
+        renderFooter,
+        handleFilterPress,
     } = useAccountHistory()
-
-    const renderItem = useCallback(
-        ({ item }: { item: TransactionListRow }) => (
-            <TransactionHistoryRow
-                row={item}
-                onTransactionPress={handleTransactionPress}
-                suspectedPoisoning={suspectedPoisoningById.get(item.key)}
-            />
-        ),
-        [handleTransactionPress, suspectedPoisoningById],
-    )
-
-    const renderFooter = useCallback(() => {
-        if (isFetchingNextPage) {
-            return (
-                <PWView style={styles.loadingFooter}>
-                    <PWLoadingIndicator size='sm' />
-                </PWView>
-            )
-        }
-        if (isSearchPaused) {
-            return (
-                <PWView style={styles.loadingFooter}>
-                    <TransactionHistorySearchOlder
-                        onPress={handleSearchOlder}
-                    />
-                </PWView>
-            )
-        }
-        return null
-    }, [
-        isFetchingNextPage,
-        isSearchPaused,
-        handleSearchOlder,
-        styles.loadingFooter,
-    ])
-
-    const handleFilterPress = useCallback(() => {
-        void handleOpenFilter()
-    }, [handleOpenFilter])
 
     const titleBar = (
         <AccountHistoryTitleBar

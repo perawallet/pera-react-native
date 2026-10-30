@@ -10,39 +10,21 @@
  limitations under the License
  */
 
-import React, { useCallback, useEffect, useState } from 'react'
 import { ConfettiField } from './ConfettiField'
+import {
+    useConfettiAnimation,
+    type ConfettiAnimationProps,
+} from './useConfettiAnimation'
 
-export type ConfettiAnimationProps = {
-    play: boolean
-    onFinish?: () => void
-}
-
-// Delay confetti slightly to ensure it plays after the page is fully rendered.
-const RENDER_DELAY_MS = 500
+export type { ConfettiAnimationProps }
 
 export const ConfettiAnimation = ({
     play,
     onFinish,
 }: ConfettiAnimationProps) => {
-    const [visible, setVisible] = useState(false)
+    const { isVisible, handleFinish } = useConfettiAnimation({ play, onFinish })
 
-    useEffect(() => {
-        if (play) {
-            const timeout = setTimeout(() => setVisible(true), RENDER_DELAY_MS)
-            return () => clearTimeout(timeout)
-        }
-
-        setVisible(false)
-        return undefined
-    }, [play])
-
-    const handleFinish = useCallback(() => {
-        setVisible(false)
-        onFinish?.()
-    }, [onFinish])
-
-    if (!visible) {
+    if (!isVisible) {
         return null
     }
 

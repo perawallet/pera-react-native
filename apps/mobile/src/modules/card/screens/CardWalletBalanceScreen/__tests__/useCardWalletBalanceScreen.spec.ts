@@ -21,6 +21,7 @@ import {
 } from '@perawallet/wallet-core-card'
 
 const mocks = vi.hoisted(() => ({
+    setOptions: vi.fn(),
     navigate: vi.fn(),
     routeParams: { kind: 'reward' } as
         | { kind?: 'reward' | 'credit' }
@@ -38,6 +39,7 @@ vi.mock('@hooks/useAppNavigation', () => ({
 vi.mock('@react-navigation/native', async () => ({
     ...(await vi.importActual<object>('@react-navigation/native')),
     useRoute: () => ({ params: mocks.routeParams }),
+    useNavigation: () => ({ setOptions: mocks.setOptions }),
 }))
 
 import { useCardWalletBalanceScreen } from '../useCardWalletBalanceScreen'

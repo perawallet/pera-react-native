@@ -10,24 +10,22 @@
  limitations under the License
  */
 
-import React, { useState } from 'react'
+import React from 'react'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import DateTimePicker, {
-    type DateTimePickerChangeEvent,
-} from '@react-native-community/datetimepicker'
+import DateTimePicker from '@react-native-community/datetimepicker'
 import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
 
-import { useBottomSheetResult } from '@modules/bottom-sheet'
-import { isAndroid, isIOS } from '@utils/platform'
+import { isIOS } from '@utils/platform'
 import { useStyles } from './styles'
 import { TransactionFilter, type CustomDateRange } from './types'
 import { useLanguage } from '@hooks/useLanguage'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
+import {
+    useTransactionsFilterContent,
+    type TransactionsFilterResult,
+} from './useTransactionsFilterContent'
 
-export type TransactionsFilterResult = {
-    filter: TransactionFilter
-    customRange?: CustomDateRange
-}
+export type { TransactionsFilterResult }
 
 export type TransactionsFilterContentProps = {
     activeFilter: TransactionFilter
@@ -42,22 +40,19 @@ export const TransactionsFilterContent = ({
     const styles = useStyles({ bottomInset: insets.bottom })
     const { t } = useLanguage()
     const isDarkMode = useIsDarkMode()
-    const { resolve } = useBottomSheetResult<TransactionsFilterResult>()
 
-    // Internal state
-    const [view, setView] = useState<'main' | 'custom_range'>('main')
-
-    // Custom range state
-    const [customRange, setCustomRange] = useState<CustomDateRange>(
-        initialCustomRange || {
-            from: new Date(),
-            to: new Date(),
-        },
-    )
-    const [activeDateInput, setActiveDateInput] = useState<'from' | 'to'>(
-        'from',
-    )
-    const [isPickerVisible, setIsPickerVisible] = useState(false)
+    const {
+        view,
+        setView,
+        customRange,
+        activeDateInput,
+        isPickerVisible,
+        handleFilterPress,
+        handleDatePress,
+        handleDateValueChange,
+        handlePickerDismiss,
+        handleApplyCustomRange,
+    } = useTransactionsFilterContent({ initialCustomRange })
 
     const formatDate = (date: Date) => {
         return date.toLocaleDateString('en-GB').replace(/\//g, '.')
@@ -101,48 +96,6 @@ export const TransactionsFilterContent = ({
                 return ''
             }
         }
-    }
-
-    const handleFilterPress = (filter: TransactionFilter) => {
-        if (filter === TransactionFilter.CustomRange) {
-            setView('custom_range')
-        } else {
-            resolve({ filter })
-        }
-    }
-
-    const handleDatePress = (input: 'from' | 'to') => {
-        setActiveDateInput(input)
-        setIsPickerVisible(true)
-    }
-
-    const handleDateValueChange = (
-        _event: DateTimePickerChangeEvent,
-        date: Date,
-    ) => {
-        if (isAndroid()) {
-            setIsPickerVisible(false)
-        }
-
-        setCustomRange(prev => {
-            const next = { ...prev, [activeDateInput]: date }
-            if (next.from > next.to) {
-                if (activeDateInput === 'from') {
-                    next.to = date
-                } else {
-                    next.from = date
-                }
-            }
-            return next
-        })
-    }
-
-    const handlePickerDismiss = () => {
-        setIsPickerVisible(false)
-    }
-
-    const handleApplyCustomRange = () => {
-        resolve({ filter: TransactionFilter.CustomRange, customRange })
     }
 
     const renderMainView = () => (

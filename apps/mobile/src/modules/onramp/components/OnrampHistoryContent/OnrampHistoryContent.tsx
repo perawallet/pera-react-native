@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
 import { PWFlatList, PWLoadingIndicator, PWView } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { FilterSelection } from '@components/FilterSelection'
@@ -22,10 +21,7 @@ import type {
     RampHistoryItem,
 } from '@perawallet/wallet-core-onramp'
 import type { Nullable } from '@perawallet/wallet-core-shared'
-import { useBottomSheet } from '@modules/bottom-sheet'
-import { OnrampOrderDetailsContent } from '../OnrampOrderDetailsContent'
 import { ONRAMP_STATUS_DESCRIPTORS } from '../OnrampStatusBadge'
-import { OnrampHistoryListItem } from './OnrampHistoryListItem'
 import { useOnrampHistory } from './useOnrampHistory'
 import { useStyles } from './styles'
 
@@ -50,7 +46,6 @@ export const OnrampHistoryContent = ({
 }: OnrampHistoryContentProps) => {
     const { t } = useLanguage()
     const styles = useStyles()
-    const { request: requestBottomSheet } = useBottomSheet()
 
     const {
         items,
@@ -59,46 +54,10 @@ export const OnrampHistoryContent = ({
         isLoading,
         isFetchingNextPage,
         isError,
-        hasNextPage,
-        fetchNextPage,
+        handleEndReached,
+        renderItem,
+        ItemSeparator,
     } = useOnrampHistory(isActive)
-
-    const handleEndReached = useCallback(() => {
-        if (hasNextPage && !isFetchingNextPage) {
-            fetchNextPage()
-        }
-    }, [hasNextPage, isFetchingNextPage, fetchNextPage])
-
-    const handleItemPress = useCallback(
-        (item: RampHistoryItem) => {
-            void requestBottomSheet({
-                contents: <OnrampOrderDetailsContent item={item} />,
-                options: {
-                    size: 'modal',
-                    enablePanDownToClose: true,
-                    // OnrampOrderDetailsContent uses PWSheetLayout, which
-                    // brings its own scroll container + safe-area padding.
-                    autoCreateContainer: false,
-                },
-            })
-        },
-        [requestBottomSheet],
-    )
-
-    const renderItem = useCallback(
-        ({ item }: { item: RampHistoryItem }) => (
-            <OnrampHistoryListItem
-                item={item}
-                onPress={handleItemPress}
-            />
-        ),
-        [handleItemPress],
-    )
-
-    const ItemSeparator = useCallback(
-        () => <PWView style={styles.itemSeparator} />,
-        [styles.itemSeparator],
-    )
 
     const trackOnrampEvent = useTrackOnrampEvent()
 

@@ -11,20 +11,10 @@
  */
 
 import { useStyles } from './styles'
-import { isNativeAssetId } from '@perawallet/wallet-core-assets'
-import { useTheme } from '@rneui/themed'
-import {
-    type IconName,
-    PWButton,
-    PWIcon,
-    PWText,
-    PWView,
-} from '@components/core'
-import { useMemo, useCallback } from 'react'
+import { PWButton, PWIcon, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import { useWebView } from '@modules/webview'
-import { config } from '@perawallet/wallet-core-config'
 import type { AssetChainSectionProps } from '@modules/assets'
+import { useAssetVerificationCard } from './useAssetVerificationCard'
 
 export type AssetVerificationCardProps = AssetChainSectionProps
 
@@ -33,75 +23,17 @@ export const AssetVerificationCard = ({
     scope,
 }: AssetVerificationCardProps) => {
     const styles = useStyles()
-    const { theme } = useTheme()
     const { t } = useLanguage()
-    const { pushWebView } = useWebView()
 
-    const handleLearnMore = useCallback(() => {
-        pushWebView({ url: config.asaVerificationUrl })
-    }, [pushWebView])
-    const isTrusted = isNativeAssetId(scope.chainId, asset.assetId)
-    const isVerified =
-        !isTrusted && asset.peraMetadata?.verificationTier === 'verified'
-    const isSuspicious = asset.peraMetadata?.verificationTier === 'suspicious'
+    const {
+        isVisible,
+        cardConfig,
+        containerStyle,
+        textStyle,
+        handleLearnMore,
+    } = useAssetVerificationCard({ asset, scope })
 
-    const CARD_CONFIGS = useMemo(
-        () => ({
-            trusted: {
-                title: t('asset_details.verification_card.trusted_title'),
-                description: t(
-                    'asset_details.verification_card.trusted_description',
-                ),
-                icon: 'assets/trusted' as IconName,
-            },
-            verified: {
-                title: t('asset_details.verification_card.verified_title'),
-                description: t(
-                    'asset_details.verification_card.verified_description',
-                ),
-                icon: 'assets/verified' as IconName,
-            },
-            suspicious: {
-                title: t('asset_details.verification_card.suspicious_title'),
-                description: t(
-                    'asset_details.verification_card.suspicious_description',
-                ),
-                icon: 'assets/suspicious' as IconName,
-            },
-        }),
-        [t],
-    )
-
-    const [cardConfig, containerStyle, textStyle] = useMemo(() => {
-        if (isTrusted) {
-            return [
-                CARD_CONFIGS.trusted,
-                { backgroundColor: theme.colors.trustedBannerBg },
-                { color: theme.colors.trustedBannerContent },
-            ]
-        }
-        if (isVerified) {
-            return [
-                CARD_CONFIGS.verified,
-                { backgroundColor: theme.colors.verifiedBannerBg },
-                { color: theme.colors.verifiedBannerContent },
-            ]
-        }
-        if (isSuspicious) {
-            return [
-                CARD_CONFIGS.suspicious,
-                { backgroundColor: theme.colors.suspiciousBannerBg },
-                { color: theme.colors.suspiciousBannerContent },
-            ]
-        }
-        return [
-            CARD_CONFIGS.suspicious,
-            { backgroundColor: theme.colors.suspiciousBannerBg },
-            { color: theme.colors.suspiciousBannerContent },
-        ]
-    }, [isTrusted, isVerified, isSuspicious, theme, CARD_CONFIGS])
-
-    if (!isVerified && !isTrusted && !isSuspicious) {
+    if (!isVisible) {
         return null
     }
 

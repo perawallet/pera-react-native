@@ -10,46 +10,17 @@
  limitations under the License
  */
 
-import React, { useEffect, useMemo } from 'react'
-import { useWindowDimensions } from 'react-native'
+import React from 'react'
 import { PWView } from '@components/core'
 import { ConfettiPiece } from '../ConfettiPiece'
-import { createConfettiPieces } from '../createConfettiPieces'
-import { useConfettiColors } from '../styles'
 import { useStyles } from './styles'
+import { useConfettiField, type ConfettiFieldProps } from './useConfettiField'
 
-const PIECE_COUNT = 80
-
-export type ConfettiFieldProps = {
-    onFinish: () => void
-}
+export type { ConfettiFieldProps }
 
 export const ConfettiField = ({ onFinish }: ConfettiFieldProps) => {
     const styles = useStyles()
-    const colors = useConfettiColors()
-    const { width, height } = useWindowDimensions()
-
-    const pieces = useMemo(
-        () => createConfettiPieces(PIECE_COUNT, { width, height }, colors),
-        // Generate once per mount; the field remounts on each play, so a
-        // mid-animation dimension change intentionally does not regenerate.
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-        [],
-    )
-
-    const totalDurationMs = useMemo(
-        () =>
-            pieces.reduce(
-                (max, piece) => Math.max(max, piece.delayMs + piece.durationMs),
-                0,
-            ),
-        [pieces],
-    )
-
-    useEffect(() => {
-        const timeout = setTimeout(onFinish, totalDurationMs)
-        return () => clearTimeout(timeout)
-    }, [onFinish, totalDurationMs])
+    const { pieces } = useConfettiField({ onFinish })
 
     return (
         <PWView

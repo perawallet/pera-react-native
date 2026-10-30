@@ -10,23 +10,17 @@
  limitations under the License
  */
 
-import { useCallback, useEffect } from 'react'
-import {
-    useBannersStore,
-    useVisibleBanners,
-    type Banner,
-} from '@perawallet/wallet-core-banners'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { PWIcon, PWTouchableOpacity, PWView } from '@components/core'
 // Direct subpath, not the module barrel: the barrel deliberately excludes the
 // carousel so screens that only want HomeBannersStrip don't drag it in. This
 // surface genuinely renders banners, so it takes the carousel knowingly.
 import { BannerCarousel } from '@modules/banners/carousel'
-import { useBannerLinkRouter } from '@modules/banners'
 import type { PromptViewProps } from '@modules/prompts/models'
 import { useStyles } from './styles'
+import { useBannerPrompt, BANNER_PROMPT_ID } from './useBannerPrompt'
 
-export const BANNER_PROMPT_ID = 'banner_prompt'
+export { BANNER_PROMPT_ID }
 
 /**
  * The banner surface, shown in the prompt overlay when a banner asks to open
@@ -37,47 +31,9 @@ export const BANNER_PROMPT_ID = 'banner_prompt'
 export const BannerPrompt = ({ onHide }: PromptViewProps) => {
     const insets = useSafeAreaInsets()
     const styles = useStyles(insets)
-    const { banners, forcedBanner } = useVisibleBanners()
-    const dismissBanner = useBannersStore(state => state.dismissBanner)
-    const markAutoOpened = useBannersStore(state => state.markAutoOpened)
-    const { route: routeUrl } = useBannerLinkRouter()
 
-    const isForced = forcedBanner !== null
-    const shown = banners[0]
-
-    // Marked when the banner is answered, never on mount. useBannerPrompt reads
-    // this flag to decide the prompt is due, so marking on mount made the
-    // prompt un-due the instant it appeared and it unmounted itself.
-    const finish = useCallback(() => {
-        if (shown) markAutoOpened(shown.id)
-        onHide(BANNER_PROMPT_ID)
-    }, [shown, markAutoOpened, onHide])
-
-    const handlePressCTA = useCallback(
-        (banner: Banner) => {
-            // Release the overlay first: it paints above the navigator, so a
-            // CTA that deep-links would otherwise land behind it.
-            finish()
-            routeUrl({ url: banner.buttonUrl })
-        },
-        [finish, routeUrl],
-    )
-
-    const handleDismiss = useCallback(
-        (banner: Banner) => {
-            if (isForced) return
-            dismissBanner(banner.id)
-            finish()
-        },
-        [dismissBanner, isForced, finish],
-    )
-
-    // The queue only raises this prompt while a banner is due, but the set can
-    // empty underneath it (a refetch dropping the banner); leave rather than
-    // hold an empty overlay up.
-    useEffect(() => {
-        if (!shown) finish()
-    }, [shown, finish])
+    const { banners, isForced, shown, finish, handlePressCTA, handleDismiss } =
+        useBannerPrompt({ onHide })
 
     if (!shown) return null
 

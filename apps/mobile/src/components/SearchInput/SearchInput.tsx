@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { forwardRef, useCallback, useState } from 'react'
+import { forwardRef } from 'react'
 import { useTheme } from '@rneui/themed'
 
 import {
@@ -21,6 +21,7 @@ import {
     PWIcon,
 } from '@components/core'
 import { useStyles } from './styles'
+import { useSearchInput } from './useSearchInput'
 
 export type SearchInputProps = Omit<PWInputProps, 'leftIcon' | 'rightIcon'>
 
@@ -31,22 +32,8 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(
         const styles = useStyles()
         const { theme } = useTheme()
         const { onChangeText, value } = props
-        const [internalValue, setInternalValue] = useState('')
-        const currentValue = value ?? internalValue
-        const hasValue = !!currentValue && String(currentValue).length > 0
-
-        const handleChangeText = useCallback(
-            (text: string) => {
-                setInternalValue(text)
-                onChangeText?.(text)
-            },
-            [onChangeText],
-        )
-
-        const handleClear = useCallback(() => {
-            setInternalValue('')
-            onChangeText?.('')
-        }, [onChangeText])
+        const { currentValue, hasValue, handleChangeText, handleClear } =
+            useSearchInput({ value, onChangeText })
 
         return (
             <PWInput

@@ -10,20 +10,35 @@
  limitations under the License
  */
 
-import { useCallback, useMemo } from 'react'
+import { useCallback, useLayoutEffect, useMemo, type ReactElement } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import {
     StatementFormat,
     useCardTransactionsQuery,
     useExportCardStatementMutation,
+    type CardTransaction,
 } from '@perawallet/wallet-core-card'
 import { i18nKey } from '@perawallet/wallet-core-chain-contract'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { trackEvent, CardEvent } from '@analytics'
 import { shareFile } from '@utils/shareFile'
 import { useCardScope } from '../../hooks/useCardScope'
 import { useCardErrorToast } from '../../hooks'
 import type { PeraCardAccountStackParamList } from '../../routes/types'
+import {
+    PWButton,
+    PWIcon,
+    PWLoadingIndicator,
+    PWTouchableOpacity,
+    PWView,
+} from '@components/core'
+import { EmptyView } from '@components/EmptyView'
+import { LoadingView } from '@components/LoadingView'
+import { TransactionDateHeader } from '@modules/transactions'
+import { useLanguage } from '@hooks/useLanguage'
+import { CardTransactionListItem } from '../../components/CardTransactionListItem'
+import { useStyles } from './styles'
 import {
     groupCardTransactionsByMonth,
     type CardTransactionSection,
@@ -46,6 +61,13 @@ type UseCardTransactionsResult = {
     onExport: () => void
     isExporting: boolean
     onPressTransaction: (id: string) => void
+    renderItem: (params: { item: CardTransaction }) => ReactElement
+    renderSectionHeader: (params: {
+        section: CardTransactionSection
+    }) => ReactElement
+    keyExtractor: (item: CardTransaction) => string
+    renderFooter: () => Nullable<ReactElement>
+    renderEmptyComponent: () => Nullable<ReactElement>
 }
 
 export const useCardTransactions = (): UseCardTransactionsResult => {
@@ -112,6 +134,97 @@ export const useCardTransactions = (): UseCardTransactionsResult => {
         [navigation],
     )
 
+    const { t } = useLanguage()
+    const styles = useStyles()
+
+    useLayoutEffect(() => {
+        navigation.setOptions({
+            headerRight: () => (
+                <PWTouchableOpacity
+                    onPress={onExport}
+                    disabled={isExporting}
+                    testID='card_transactions_export'
+                    accessibilityLabel={t(
+                        'peraCard.transactions.export_accessibility_label',
+                    )}
+                >
+                    <PWIcon name='download' />
+                </PWTouchableOpacity>
+            ),
+        })
+    }, [navigation, onExport, isExporting, t])
+
+    const renderItem = useCallback(
+        ({ item }: { item: CardTransaction }) => (
+            <CardTransactionListItem
+                transaction={item}
+                onPress={onPressTransaction}
+            />
+        ),
+        [onPressTransaction],
+    )
+
+    const renderSectionHeader = useCallback(
+        ({ section }: { section: CardTransactionSection }) => (
+            <TransactionDateHeader title={section.title} />
+        ),
+        [],
+    )
+
+    const keyExtractor = useCallback((item: CardTransaction) => item.id, [])
+
+    const renderFooter = useCallback(() => {
+        if (!isFetchingNextPage) return null
+        return (
+            <PWView style={styles.loadingFooter}>
+                <PWLoadingIndicator size='sm' />
+            </PWView>
+        )
+    }, [isFetchingNextPage, styles.loadingFooter])
+
+    const renderEmptyComponent = useCallback(() => {
+        if (isLoading) {
+            return (
+                <LoadingView
+                    variant='circle'
+                    size='lg'
+                    style={styles.loadingContainer}
+                />
+            )
+        }
+        if (isError) {
+            return (
+                <EmptyView
+                    title={t('peraCard.transactions.error_title')}
+                    body={t('peraCard.transactions.error_body')}
+                    button={
+                        <PWButton
+                            variant='secondary'
+                            title={t('peraCard.transactions.retry')}
+                            onPress={handleRetry}
+                            testID='card_transactions_retry'
+                        />
+                    }
+                    style={styles.emptyView}
+                />
+            )
+        }
+        return (
+            <EmptyView
+                body={t('peraCard.account.transactions_empty')}
+                style={styles.emptyView}
+                testID='card_transactions_empty'
+            />
+        )
+    }, [
+        isLoading,
+        isError,
+        handleRetry,
+        styles.loadingContainer,
+        styles.emptyView,
+        t,
+    ])
+
     return {
         sections,
         isLoading,
@@ -123,5 +236,10 @@ export const useCardTransactions = (): UseCardTransactionsResult => {
         onExport,
         isExporting,
         onPressTransaction,
+        renderItem,
+        renderSectionHeader,
+        keyExtractor,
+        renderFooter,
+        renderEmptyComponent,
     }
 }

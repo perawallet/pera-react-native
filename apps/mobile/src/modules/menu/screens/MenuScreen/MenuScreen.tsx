@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import { Linking } from 'react-native'
 import {
     PWIcon,
     PWScreen,
@@ -26,71 +25,25 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { QRScannerView } from '@components/QRScannerView'
 import { useLanguage } from '@hooks/useLanguage'
 import { useIsGiftCardsEnabled } from '@hooks/useIsGiftCardsEnabled'
-import { useBottomSheet } from '@modules/bottom-sheet'
-import { ReceiveFundsContent } from '@modules/transactions/routes'
-import { BIDALI_SHEET_OPTIONS } from '@modules/gift-card'
-import { BidaliContent } from '@modules/gift-card/routes'
-import { PasteLinkContent } from '@modules/menu/components/PasteLinkContent'
-import { useCallback } from 'react'
-import { useWebView } from '@modules/webview'
-import { config } from '@perawallet/wallet-core-config'
-import { trackEvent, MenuEvent, FundEvent } from '@analytics'
+import { trackEvent, MenuEvent } from '@analytics'
 import { routeCapabilities } from '@routes/capabilities'
 import { useMenuScreen } from './useMenuScreen'
 
 export const MenuScreen = () => {
     const styles = useStyles()
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
-    const { canStake, isScannerVisible, openScanner, closeScanner } =
-        useMenuScreen()
+    const {
+        canStake,
+        isScannerVisible,
+        openScanner,
+        closeScanner,
+        openReceiveFunds,
+        openBidali,
+        openPasteLink,
+        openHelpCenter,
+    } = useMenuScreen()
     const { t } = useLanguage()
-    const { request: requestBottomSheet } = useBottomSheet()
     const isGiftCardsEnabled = useIsGiftCardsEnabled()
-    const { pushWebView } = useWebView()
-
-    const openReceiveFunds = useCallback(() => {
-        trackEvent(MenuEvent.Receive)
-        void requestBottomSheet({
-            contents: <ReceiveFundsContent />,
-            options: {
-                size: 'modal',
-                enablePanDownToClose: true,
-                autoCreateContainer: false,
-            },
-        })
-    }, [requestBottomSheet])
-
-    const openBidali = useCallback(() => {
-        trackEvent(FundEvent.BidaliSelected)
-        void requestBottomSheet({
-            contents: <BidaliContent />,
-            options: BIDALI_SHEET_OPTIONS,
-        })
-    }, [requestBottomSheet])
-
-    const openPasteLink = useCallback(() => {
-        trackEvent(MenuEvent.PasteLink)
-        void requestBottomSheet({
-            contents: <PasteLinkContent />,
-            options: {
-                size: 'auto',
-                enablePanDownToClose: true,
-                autoCreateContainer: false,
-            },
-        })
-    }, [requestBottomSheet])
-
-    const openHelpCenter = useCallback(() => {
-        if (!routeCapabilities.inAppWebView) {
-            // react-native-web maps Linking.openURL to window.open (new tab).
-            void Linking.openURL(config.supportBaseUrl)
-            return
-        }
-        pushWebView({
-            url: config.supportBaseUrl,
-            id: 'help-center',
-        })
-    }, [pushWebView])
 
     const goToSettings = () => {
         navigation.push('Settings')

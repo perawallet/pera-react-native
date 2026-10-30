@@ -1200,4 +1200,14 @@ describe('useAccountHistory', () => {
             })
         })
     })
+
+    it('opens the filter sheet when the filter action is pressed', () => {
+        const { result } = renderHook(() => useAccountHistory())
+
+        act(() => {
+            result.current.handleFilterPress()
+        })
+
+        expect(mockRequestBottomSheet).toHaveBeenCalled()
+    })
 })

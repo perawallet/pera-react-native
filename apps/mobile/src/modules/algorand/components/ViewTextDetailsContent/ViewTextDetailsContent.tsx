@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import { useCallback, useMemo, useState } from 'react'
 import {
     PWChip,
     PWIcon,
@@ -22,7 +21,7 @@ import {
 import { SheetHeader } from '@modules/bottom-sheet'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
-import { useClipboard } from '@hooks/useClipboard'
+import { useViewTextDetailsContent } from './useViewTextDetailsContent'
 
 export type ViewTextDetailsContentProps = {
     text: string
@@ -35,31 +34,15 @@ export const ViewTextDetailsContent = ({
 }: ViewTextDetailsContentProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const { copyToClipboard } = useClipboard()
 
-    const [mode, setMode] = useState<'text' | 'hex' | 'base64'>('text')
-
-    const textToDisplay = useMemo(() => {
-        switch (mode) {
-            case 'text': {
-                return text
-            }
-            case 'hex': {
-                return Buffer.from(text).toString('hex')
-            }
-            case 'base64': {
-                return Buffer.from(text).toString('base64')
-            }
-        }
-    }, [text, mode])
-
-    const copyText = () => {
-        void copyToClipboard(textToDisplay)
-    }
-
-    const handleSelectText = useCallback(() => setMode('text'), [])
-    const handleSelectHex = useCallback(() => setMode('hex'), [])
-    const handleSelectBase64 = useCallback(() => setMode('base64'), [])
+    const {
+        mode,
+        textToDisplay,
+        copyText,
+        handleSelectText,
+        handleSelectHex,
+        handleSelectBase64,
+    } = useViewTextDetailsContent({ text })
 
     return (
         <PWSheetLayout
