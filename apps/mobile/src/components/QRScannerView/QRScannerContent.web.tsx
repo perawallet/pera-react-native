@@ -69,6 +69,8 @@ export const QRScannerContent = ({
     const {
         handleResult,
         canUseCameraInline,
+        isPopup,
+        cameraPermission,
         handleScanWithCamera,
         handleAllowCamera,
     } = useQRScannerContent({ onSuccess, skipDeepLinkHandler, onRestart })

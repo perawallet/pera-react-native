@@ -55,7 +55,6 @@ export const OnrampHistoryContent = ({
         isFetchingNextPage,
         isError,
         handleEndReached,
-        handleItemPress,
         renderItem,
         ItemSeparator,
     } = useOnrampHistory(isActive)

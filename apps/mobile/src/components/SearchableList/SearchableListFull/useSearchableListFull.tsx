@@ -16,7 +16,7 @@ import {
     type ComponentType,
     type ReactNode,
 } from 'react'
-import { Pressable } from 'react-native'
+import { Pressable, type LayoutChangeEvent } from 'react-native'
 import { PWView } from '@components/core'
 import { SearchInputTrigger } from '@components/SearchInputTrigger'
 import type { Maybe, Nullable } from '@perawallet/wallet-core-shared'
@@ -68,13 +68,13 @@ export type UseSearchableListFullProps<T> = {
     handleEnterSearch: () => void
     handleClearQuery: () => void
     toUserIndex: (index: number) => number
-    handleHeaderLayout: (event: unknown) => void
+    handleHeaderLayout: (event: LayoutChangeEvent) => void
 }
 
 export type UseSearchableListFullResult<T> = {
     augmentedFooter: ReactNode
     augmentedRenderItem: RenderItem<AugmentedItem<T>>
-    augmentedSeparator: Nullable<ComponentType<unknown>>
+    augmentedSeparator: Nullable<ComponentType<WrappedSeparatorProps>>
     augmentedExtraData: unknown
 }
 
@@ -230,7 +230,7 @@ export const useSearchableListFull = <T,>({
         if (CallerSeparator == null) {
             return null
         }
-        const Separator = CallerSeparator
+        const Separator = CallerSeparator as ComponentType<WrappedSeparatorProps>
         const WrappedSeparator = ({
             leadingItem,
             trailingItem,

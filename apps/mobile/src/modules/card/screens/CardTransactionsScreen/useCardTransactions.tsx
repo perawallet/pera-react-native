@@ -25,6 +25,7 @@ import {
     type CardTransaction,
 } from '@perawallet/wallet-core-card'
 import { i18nKey } from '@perawallet/wallet-core-chain-contract'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { trackEvent, CardEvent } from '@analytics'
 import { shareFile } from '@utils/shareFile'
 import { useCardScope } from '../../hooks/useCardScope'
@@ -70,8 +71,8 @@ type UseCardTransactionsResult = {
         section: CardTransactionSection
     }) => ReactElement
     keyExtractor: (item: CardTransaction) => string
-    renderFooter: () => ReactElement
-    renderEmptyComponent: () => ReactElement
+    renderFooter: () => Nullable<ReactElement>
+    renderEmptyComponent: () => Nullable<ReactElement>
 }
 
 export const useCardTransactions = (): UseCardTransactionsResult => {

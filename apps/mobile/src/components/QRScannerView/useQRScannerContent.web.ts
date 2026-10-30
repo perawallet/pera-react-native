@@ -33,6 +33,8 @@ export type UseQRScannerContentProps = {
 export type UseQRScannerContentResult = {
     handleResult: (value: string) => void
     canUseCameraInline: boolean
+    isPopup: boolean
+    cameraPermission: CameraPermissionState
     handleScanWithCamera: () => void
     handleAllowCamera: () => void
 }
@@ -214,6 +216,8 @@ export const useQRScannerContent = ({
     return {
         handleResult,
         canUseCameraInline,
+        isPopup,
+        cameraPermission,
         handleScanWithCamera,
         handleAllowCamera,
     }

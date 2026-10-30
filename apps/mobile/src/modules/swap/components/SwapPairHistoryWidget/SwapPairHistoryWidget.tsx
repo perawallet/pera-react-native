@@ -38,7 +38,6 @@ export const SwapPairHistoryWidget = ({
         isLoading,
         isError,
         isEnabled,
-        handlePairPress,
         handleSeeAllPress,
         renderPair,
         keyExtractor,

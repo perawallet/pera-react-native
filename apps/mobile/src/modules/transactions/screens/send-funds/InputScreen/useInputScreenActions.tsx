@@ -23,13 +23,13 @@ import {
     useIsFocused,
     useNavigation,
 } from '@react-navigation/native'
-import type { StackNavigationProp } from '@react-navigation/native-stack'
+import type { StackNavigationProp } from '@react-navigation/stack'
 import { PWIcon, PWText, PWView } from '@components/core'
 import { AccountDisplay } from '@components/AccountDisplay'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { usePreferences } from '@perawallet/wallet-core-settings'
-import { useSendScope } from '@modules/transactions'
+import { useSendScope } from '@modules/transactions/hooks'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { UserPreferences } from '@constants/user-preferences'

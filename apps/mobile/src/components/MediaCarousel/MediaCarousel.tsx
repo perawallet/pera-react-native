@@ -12,7 +12,7 @@
 
 import React from 'react'
 import { useWindowDimensions } from 'react-native'
-import { PWView } from '@components/core'
+import { type PWIconSize, PWView } from '@components/core'
 import { useStyles } from './styles'
 import { type MediaItem } from './resolveMediaImageUri'
 import PagerView from 'react-native-pager-view'

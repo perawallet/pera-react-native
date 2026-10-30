@@ -101,7 +101,7 @@ export type UseAccountHistoryResult = {
     /** Renders one transaction row for the list. */
     renderItem: (params: { item: TransactionListRow }) => ReactElement
     /** Renders the list footer: the spinner, the search-older action, or nothing. */
-    renderFooter: () => ReactElement
+    renderFooter: () => Nullable<ReactElement>
     /** Opens the filter sheet. */
     handleFilterPress: () => void
     /** Whether a refresh is in flight */

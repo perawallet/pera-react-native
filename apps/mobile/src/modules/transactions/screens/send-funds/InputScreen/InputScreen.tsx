@@ -31,6 +31,7 @@ export const InputScreen = () => {
         asset,
         accountAssetBalance,
         isBalanceReady,
+        isMaxReady,
         cryptoValue,
         setMax,
         handleKey,
@@ -46,7 +47,6 @@ export const InputScreen = () => {
 
     const {
         openNote,
-        openInfo,
         headerLeft,
         headerRight,
         headerTitle,

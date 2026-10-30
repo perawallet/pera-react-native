@@ -66,7 +66,7 @@ type UseCardWalletBalanceScreenResult = {
         section: CardTransactionSection<CardWalletHistoryEntry>
     }) => ReactElement
     keyExtractor: (item: CardWalletHistoryEntry, index: number) => string
-    renderFooter: () => ReactElement
+    renderFooter: () => Nullable<ReactElement>
 }
 
 export const useCardWalletBalanceScreen =

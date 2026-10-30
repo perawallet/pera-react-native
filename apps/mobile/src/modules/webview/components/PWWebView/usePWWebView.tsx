@@ -48,7 +48,11 @@ import { usePWWebViewLoadState } from './usePWWebViewLoadState'
 import { EmptyView } from '@components/EmptyView'
 import { PWView, PWButton } from '@components/core'
 import { LoadingView } from '@components/LoadingView'
-import { logger, type Nullable } from '@perawallet/wallet-core-shared'
+import {
+    logger,
+    type Nullable,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
 import { toLoadableUrl } from './toLoadableUrl'
 import { getWebViewUserAgent } from './getWebViewUserAgent'
 import { HARDENED_WEBVIEW_PROPS } from './hardenedWebViewProps'

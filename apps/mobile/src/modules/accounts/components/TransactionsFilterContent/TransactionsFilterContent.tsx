@@ -43,6 +43,7 @@ export const TransactionsFilterContent = ({
 
     const {
         view,
+        setView,
         customRange,
         activeDateInput,
         isPickerVisible,
@@ -51,7 +52,7 @@ export const TransactionsFilterContent = ({
         handleDateValueChange,
         handlePickerDismiss,
         handleApplyCustomRange,
-    } = useTransactionsFilterContent({ activeFilter, initialCustomRange })
+    } = useTransactionsFilterContent({ initialCustomRange })
 
     const formatDate = (date: Date) => {
         return date.toLocaleDateString('en-GB').replace(/\//g, '.')

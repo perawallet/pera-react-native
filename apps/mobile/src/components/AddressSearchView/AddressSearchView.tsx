@@ -72,7 +72,6 @@ export const AddressSearchView = ({
     })
 
     const {
-        chainBadge,
         renderItem,
         SearchInput,
         renderSeparator,

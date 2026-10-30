@@ -19,7 +19,7 @@ import {
     sortQuotesByDestinationDesc,
     type RampQuote,
 } from '@perawallet/wallet-core-onramp'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 
 export type UseOnrampProviderContentProps = {
     quotes: RampQuote[]
@@ -30,7 +30,7 @@ export type UseOnrampProviderContentProps = {
 
 export type UseOnrampProviderContentResult = {
     sortedQuotes: RampQuote[]
-    bestQuoteId: Nullable<string>
+    bestQuoteId: Optional<string>
     handleSelect: (quoteId: string) => void
 }
 

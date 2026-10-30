@@ -25,6 +25,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { QRScannerView } from '@components/QRScannerView'
 import { useLanguage } from '@hooks/useLanguage'
 import { useIsGiftCardsEnabled } from '@hooks/useIsGiftCardsEnabled'
+import { trackEvent, MenuEvent } from '@analytics'
 import { routeCapabilities } from '@routes/capabilities'
 import { useMenuScreen } from './useMenuScreen'
 

@@ -12,17 +12,14 @@
 
 import { SectionList } from 'react-native'
 import { PWScreen } from '@components/core'
-import { useLanguage } from '@hooks/useLanguage'
 import { useCardTransactions } from './useCardTransactions'
 import { useStyles } from './styles'
 
 export const CardTransactionsScreen = () => {
     const styles = useStyles()
-    const { t } = useLanguage()
     const {
         sections,
         isLoading,
-        isError,
         isEmpty,
         handleLoadMore,
         renderItem,

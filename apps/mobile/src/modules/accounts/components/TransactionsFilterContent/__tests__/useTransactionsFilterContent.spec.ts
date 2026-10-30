@@ -28,9 +28,7 @@ describe('useTransactionsFilterContent', () => {
 
     it('resolves the filter the user picked', () => {
         const { result } = renderHook(() =>
-            useTransactionsFilterContent({
-                activeFilter: TransactionFilter.AllTime,
-            }),
+            useTransactionsFilterContent({}),
         )
 
         act(() => result.current.handleFilterPress(TransactionFilter.Today))
@@ -42,9 +40,7 @@ describe('useTransactionsFilterContent', () => {
 
     it('opens the custom range view instead of resolving', () => {
         const { result } = renderHook(() =>
-            useTransactionsFilterContent({
-                activeFilter: TransactionFilter.AllTime,
-            }),
+            useTransactionsFilterContent({}),
         )
 
         act(() =>
@@ -60,7 +56,6 @@ describe('useTransactionsFilterContent', () => {
         const to = new Date('2024-01-10')
         const { result } = renderHook(() =>
             useTransactionsFilterContent({
-                activeFilter: TransactionFilter.AllTime,
                 initialCustomRange: { from, to },
             }),
         )

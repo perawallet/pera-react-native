@@ -22,12 +22,12 @@ export type TransactionsFilterResult = {
 }
 
 export type UseTransactionsFilterContentProps = {
-    activeFilter: TransactionFilter
     initialCustomRange?: CustomDateRange
 }
 
 export type UseTransactionsFilterContentResult = {
     view: 'main' | 'custom_range'
+    setView: (view: 'main' | 'custom_range') => void
     customRange: CustomDateRange
     activeDateInput: 'from' | 'to'
     isPickerVisible: boolean
@@ -42,7 +42,6 @@ export type UseTransactionsFilterContentResult = {
 }
 
 export const useTransactionsFilterContent = ({
-    activeFilter,
     initialCustomRange,
 }: UseTransactionsFilterContentProps): UseTransactionsFilterContentResult => {
     const { resolve } = useBottomSheetResult<TransactionsFilterResult>()
@@ -104,6 +103,7 @@ export const useTransactionsFilterContent = ({
 
     return {
         view,
+        setView,
         customRange,
         activeDateInput,
         isPickerVisible,
