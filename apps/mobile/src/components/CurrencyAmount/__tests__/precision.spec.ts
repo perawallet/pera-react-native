@@ -75,11 +75,35 @@ describe('resolvePrecision', () => {
         ).toEqual({ precision: 2, minPrecision: 2 })
     })
 
-    it('preferredFull → up to 6 dp, trimming trailing zeros down to 2', () => {
+    it('preferredFull → up to 6 dp for a non-fiat amount, trimming trailing zeros down to 2', () => {
         expect(resolvePrecision('preferredFull')).toEqual({
             precision: 6,
             minPrecision: 2,
         })
+    })
+
+    it('preferredFull → 2 dp for a fiat amount', () => {
+        expect(
+            resolvePrecision(
+                'preferredFull',
+                undefined,
+                new Decimal('1.112055'),
+                true,
+            ),
+        ).toEqual({ precision: 2, minPrecision: 2 })
+    })
+
+    it('unitPrice → up to 6 dp, fiat or not', () => {
+        const expected = { precision: 6, minPrecision: 2 }
+        expect(resolvePrecision('unitPrice')).toEqual(expected)
+        expect(
+            resolvePrecision(
+                'unitPrice',
+                undefined,
+                new Decimal('0.000123'),
+                true,
+            ),
+        ).toEqual(expected)
     })
 
     it('assetFull → up to the asset decimals, flooring minPrecision at 2', () => {
@@ -219,9 +243,19 @@ describe('resolveFiatFloor', () => {
         ).toBeNull()
     })
 
-    it('leaves unit prices and detail amounts at their own precision', () => {
+    it('floors a sub-cent fiat detail amount to 0.01', () => {
         expect(
-            resolveFiatFloor('preferredFull', true, new Decimal('0.000012')),
+            resolveFiatFloor(
+                'preferredFull',
+                true,
+                new Decimal('0.004'),
+            )?.toString(),
+        ).toBe('0.01')
+    })
+
+    it('leaves a unit price at its own precision', () => {
+        expect(
+            resolveFiatFloor('unitPrice', true, new Decimal('0.000012')),
         ).toBeNull()
     })
 })

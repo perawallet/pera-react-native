@@ -10,11 +10,13 @@
  limitations under the License
  */
 
-import { PWText, PWView } from '@components/core'
+import type { Decimal } from 'decimal.js'
 import type { PeraAsset } from '@perawallet/wallet-core-assets'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
-import type { Optional } from '@perawallet/wallet-core-shared'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
+import { PWText, PWView } from '@components/core'
 import { AssetIcon } from '@components/AssetIcon'
+import { PreferredAmount } from '@components/PreferredAmount'
 import { AssetTierChip } from '@modules/assets'
 import { useStyles } from './styles'
 
@@ -22,7 +24,7 @@ type SwapAssetSectionProps = {
     asset: Optional<PeraAsset>
     chainId: ChainId
     amountDisplay: string
-    fiatDisplay: Optional<string>
+    fiatValue: Nullable<Decimal>
     unitName?: string
     verificationTier: string
 }
@@ -31,7 +33,7 @@ export const SwapAssetSection = ({
     asset,
     chainId,
     amountDisplay,
-    fiatDisplay,
+    fiatValue,
     unitName,
     verificationTier,
 }: SwapAssetSectionProps) => {
@@ -55,13 +57,13 @@ export const SwapAssetSection = ({
                         >
                             {amountDisplay}
                         </PWText>
-                        {fiatDisplay && (
-                            <PWText
+                        {fiatValue && (
+                            <PreferredAmount
+                                value={fiatValue}
                                 variant='caption'
                                 style={styles.usdValue}
-                            >
-                                {fiatDisplay}
-                            </PWText>
+                                ignorePrivacyMode
+                            />
                         )}
                     </PWView>
                 </PWView>
