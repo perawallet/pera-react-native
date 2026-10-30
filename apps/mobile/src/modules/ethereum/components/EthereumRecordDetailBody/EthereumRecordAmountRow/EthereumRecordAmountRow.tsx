@@ -54,6 +54,7 @@ export const EthereumRecordAmountRow = ({
             title={t('transactions.common.amount')}
         >
             <AssetAmount
+                chainId={scope.chainId}
                 asset={known || undefined}
                 value={
                     known

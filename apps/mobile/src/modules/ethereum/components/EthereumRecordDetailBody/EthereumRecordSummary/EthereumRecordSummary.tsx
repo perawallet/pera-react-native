@@ -98,6 +98,7 @@ export const EthereumRecordSummary = ({
                         title={t('transactions.common.fee')}
                     >
                         <AssetAmount
+                            chainId={scope.chainId}
                             asset={nativeAsset}
                             value={baseUnitsToDisplayUnits(
                                 fee,
