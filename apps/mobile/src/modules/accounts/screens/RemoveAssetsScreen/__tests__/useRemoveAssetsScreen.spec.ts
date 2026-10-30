@@ -14,6 +14,7 @@ import { renderHook, act } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { Decimal } from 'decimal.js'
 import { useRemoveAssetsScreen } from '../useRemoveAssetsScreen'
+import type { PWFlatListRef } from '@components/core'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
 
@@ -63,7 +64,10 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     }
 })
 
-vi.mock('@perawallet/wallet-core-assets', () => ({
+vi.mock('@perawallet/wallet-core-assets', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-assets')
+    >()),
     useIsNativeAssetId: () => (id: unknown) => id != null && String(id) === '0',
     isNativeAssetId: (_chainId: string, id: string) => id === '0',
     useAssetsQuery: vi.fn(() => ({ data: new Map() })),
@@ -285,11 +289,12 @@ describe('useRemoveAssetsScreen', () => {
         expect(result.current.removableAssets[0].assetId).toBe('456')
     })
 
-    it('shows success toast and invokes onAfterRemove after successful opt-out', async () => {
-        const onAfterRemove = vi.fn()
-        const { result } = renderHook(() =>
-            useRemoveAssetsScreen({ onAfterRemove }),
-        )
+    it('shows success toast and scrolls the list back to the top after a successful opt-out', async () => {
+        const scrollToOffset = vi.fn()
+        const { result } = renderHook(() => useRemoveAssetsScreen())
+        result.current.listRef.current = {
+            scrollToOffset,
+        } as unknown as PWFlatListRef
 
         act(() => {
             result.current.handleToggleSelect('123')
@@ -305,17 +310,22 @@ describe('useRemoveAssetsScreen', () => {
                 type: 'success',
             }),
         )
-        expect(onAfterRemove).toHaveBeenCalledTimes(1)
+        await vi.waitFor(() =>
+            expect(scrollToOffset).toHaveBeenCalledWith({
+                offset: 0,
+                animated: true,
+            }),
+        )
     })
 
-    it('shows error toast and skips onAfterRemove when optOut rejects', async () => {
+    it('shows error toast and leaves the list where it is when optOut rejects', async () => {
         const optOutError = new Error('Rate limited')
         mockOptOut.mockRejectedValueOnce(optOutError)
-        const onAfterRemove = vi.fn()
-
-        const { result } = renderHook(() =>
-            useRemoveAssetsScreen({ onAfterRemove }),
-        )
+        const scrollToOffset = vi.fn()
+        const { result } = renderHook(() => useRemoveAssetsScreen())
+        result.current.listRef.current = {
+            scrollToOffset,
+        } as unknown as PWFlatListRef
 
         act(() => {
             result.current.handleToggleSelect('123')
@@ -329,16 +339,13 @@ describe('useRemoveAssetsScreen', () => {
             optOutError,
             'asset_opt_out.error',
         )
-        expect(onAfterRemove).not.toHaveBeenCalled()
+        expect(scrollToOffset).not.toHaveBeenCalled()
     })
 
     it('does not show an error toast when user cancels the signing overlay', async () => {
         mockOptOut.mockRejectedValueOnce(new UserRejectedSigningError())
-        const onAfterRemove = vi.fn()
 
-        const { result } = renderHook(() =>
-            useRemoveAssetsScreen({ onAfterRemove }),
-        )
+        const { result } = renderHook(() => useRemoveAssetsScreen())
 
         act(() => {
             result.current.handleToggleSelect('123')
@@ -349,6 +356,5 @@ describe('useRemoveAssetsScreen', () => {
         })
 
         expect(mockShowError).not.toHaveBeenCalled()
-        expect(onAfterRemove).not.toHaveBeenCalled()
     })
 })

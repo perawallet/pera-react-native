@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
+import { useCallback, type ReactElement } from 'react'
 import {
     useDistinctPairsHistoryQuery,
     useSwaps,
@@ -18,11 +18,14 @@ import {
 } from '@perawallet/wallet-core-swaps'
 import { addressOn, useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { PWView } from '@components/core'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { SwapHistoryContent } from '@modules/swap/components/SwapHistoryContent'
 import { trackEvent, SwapEvent, AnalyticsMetadataKey } from '@analytics'
 
 import { VISIBLE_SWAP_STATUSES } from '../../constants'
+import { SwapPairChip } from './SwapPairChip'
+import { useStyles } from './styles'
 
 export type UseSwapPairHistoryWidgetResult = {
     pairs: SwapDistinctPairItem[]
@@ -32,6 +35,9 @@ export type UseSwapPairHistoryWidgetResult = {
     address: string
     handlePairPress: (pair: SwapDistinctPairItem) => void
     handleSeeAllPress: () => void
+    renderPair: (params: { item: SwapDistinctPairItem }) => ReactElement
+    keyExtractor: (item: SwapDistinctPairItem) => string
+    renderSeparator: () => ReactElement
 }
 
 export const useSwapPairHistoryWidget = (
@@ -43,6 +49,7 @@ export const useSwapPairHistoryWidget = (
         ? (addressOn(selectedAccount, scope) ?? '')
         : ''
     const { request: requestBottomSheet } = useBottomSheet()
+    const styles = useStyles()
 
     const { data, isLoading, isError } = useDistinctPairsHistoryQuery(
         address,
@@ -83,6 +90,28 @@ export const useSwapPairHistoryWidget = (
         })
     }, [address, scope, requestBottomSheet])
 
+    const renderPair = useCallback(
+        ({ item }: { item: SwapDistinctPairItem }) => (
+            <SwapPairChip
+                assetIn={item.assetIn}
+                assetOut={item.assetOut}
+                chainId={scope.chainId}
+                onPress={() => handlePairPress(item)}
+            />
+        ),
+        [handlePairPress, scope.chainId],
+    )
+
+    const keyExtractor = useCallback(
+        (item: SwapDistinctPairItem) => item.pairKey,
+        [],
+    )
+
+    const renderSeparator = useCallback(
+        () => <PWView style={styles.separator} />,
+        [styles.separator],
+    )
+
     return {
         pairs: data ?? [],
         isLoading,
@@ -91,5 +120,8 @@ export const useSwapPairHistoryWidget = (
         address,
         handlePairPress,
         handleSeeAllPress,
+        renderPair,
+        keyExtractor,
+        renderSeparator,
     }
 }

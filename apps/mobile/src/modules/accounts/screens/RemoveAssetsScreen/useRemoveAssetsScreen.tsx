@@ -10,7 +10,21 @@
  limitations under the License
  */
 
-import { useCallback, useMemo, useState } from 'react'
+import {
+    useCallback,
+    useMemo,
+    useRef,
+    useState,
+    type RefObject,
+    type ReactElement,
+} from 'react'
+import {
+    PWCheckbox,
+    PWTouchableOpacity,
+    PWView,
+    type PWFlatListRef,
+} from '@components/core'
+import { AccountAssetItemView } from '@modules/assets'
 import {
     addressOn,
     type AssetWithAccountBalance,
@@ -30,10 +44,7 @@ import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import type { Optional } from '@perawallet/wallet-core-shared'
-
-type UseRemoveAssetsScreenProps = {
-    onAfterRemove?: () => void
-}
+import { useStyles } from './styles'
 
 type UseRemoveAssetsScreenResult = {
     removableAssets: AssetWithAccountBalance[]
@@ -49,12 +60,16 @@ type UseRemoveAssetsScreenResult = {
     handleToggleSelectAll: () => void
     handleRemoveSelected: () => void
     t: (key: string, params?: Record<string, string | number>) => string
+    listRef: RefObject<PWFlatListRef | null>
+    renderItem: (params: {
+        item: AssetWithAccountBalance
+    }) => ReactElement
 }
 
-export const useRemoveAssetsScreen = ({
-    onAfterRemove,
-}: UseRemoveAssetsScreenProps = {}): UseRemoveAssetsScreenResult => {
+export const useRemoveAssetsScreen = (): UseRemoveAssetsScreenResult => {
     const { t } = useLanguage()
+    const styles = useStyles()
+    const listRef = useRef<PWFlatListRef>(null)
     const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const isNativeAssetId = useIsNativeAssetId(scope)
     const { showToast } = useToast()
@@ -139,6 +154,15 @@ export const useRemoveAssetsScreen = ({
         }
     }, [isAllSelected, filteredRemovableAssets])
 
+    const handleAfterRemove = useCallback(() => {
+        // Defer the scroll so it runs after FlashList re-renders with the
+        // shrunken dataset; scrolling synchronously while cells are being
+        // recycled produces a jittery animation.
+        requestAnimationFrame(() => {
+            listRef.current?.scrollToOffset({ offset: 0, animated: true })
+        })
+    }, [])
+
     const handleRemoveSelected = useCallback(async () => {
         if (!selectedAddress || selectedAssetIds.size === 0 || !assets) {
             return
@@ -167,7 +191,7 @@ export const useRemoveAssetsScreen = ({
                 body: '',
                 type: 'success',
             })
-            onAfterRemove?.()
+            handleAfterRemove()
         } catch (err) {
             if (err instanceof UserRejectedSigningError) {
                 // User dismissed the LedgerSigningContent sheet — sheet already went away; no toast.
@@ -182,9 +206,34 @@ export const useRemoveAssetsScreen = ({
         optOut,
         showToast,
         t,
-        onAfterRemove,
+        handleAfterRemove,
         showError,
     ])
+
+    const renderItem = useCallback(
+        ({ item }: { item: AssetWithAccountBalance }) => {
+            const isSelected = selectedAssetIds.has(item.assetId)
+
+            return (
+                <PWTouchableOpacity
+                    style={styles.itemContainer}
+                    onPress={() => handleToggleSelect(item.assetId)}
+                    testID={`remove_asset_row_${item.assetId}`}
+                >
+                    <PWView style={styles.assetInfo}>
+                        <AccountAssetItemView
+                            accountBalance={item}
+                            iconSize='md'
+                        />
+                    </PWView>
+                    <PWView pointerEvents='none'>
+                        <PWCheckbox checked={isSelected} />
+                    </PWView>
+                </PWTouchableOpacity>
+            )
+        },
+        [selectedAssetIds, handleToggleSelect, styles],
+    )
 
     // Header Select All and footer Remove Selected only make sense when there
     // is at least one removable asset to act on. Both share the same predicate
@@ -206,5 +255,7 @@ export const useRemoveAssetsScreen = ({
         handleToggleSelectAll,
         handleRemoveSelected: () => void handleRemoveSelected(),
         t,
+        listRef,
+        renderItem,
     }
 }

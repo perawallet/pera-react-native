@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
 import {
     PWButton,
     PWFlatList,
@@ -19,9 +18,7 @@ import {
     PWView,
 } from '@components/core'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import type { SwapDistinctPairItem } from '@perawallet/wallet-core-swaps'
 import { useLanguage } from '@hooks/useLanguage'
-import { SwapPairChip } from './SwapPairChip'
 import { useSwapPairHistoryWidget } from './useSwapPairHistoryWidget'
 import { useStyles } from './styles'
 
@@ -43,29 +40,10 @@ export const SwapPairHistoryWidget = ({
         isEnabled,
         handlePairPress,
         handleSeeAllPress,
+        renderPair,
+        keyExtractor,
+        renderSeparator,
     } = useSwapPairHistoryWidget(scope)
-
-    const renderPair = useCallback(
-        ({ item }: { item: SwapDistinctPairItem }) => (
-            <SwapPairChip
-                assetIn={item.assetIn}
-                assetOut={item.assetOut}
-                chainId={scope.chainId}
-                onPress={() => handlePairPress(item)}
-            />
-        ),
-        [handlePairPress, scope.chainId],
-    )
-
-    const keyExtractor = useCallback(
-        (item: SwapDistinctPairItem) => item.pairKey,
-        [],
-    )
-
-    const renderSeparator = useCallback(
-        () => <PWView style={styles.separator} />,
-        [styles.separator],
-    )
 
     if (!isEnabled) return null
 

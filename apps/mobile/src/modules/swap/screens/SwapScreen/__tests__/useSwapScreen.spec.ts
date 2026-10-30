@@ -24,16 +24,23 @@ const {
     mockSetFromAsset,
     mockSetToAsset,
     mockSetSelectedAccountId,
+    mockRequestBottomSheet,
+    mockPushWebView,
+    mockMarkIntroductionSeen,
     state,
 } = vi.hoisted(() => ({
     routeParams: { current: undefined as Record<string, string> | undefined },
     mockSetFromAsset: vi.fn(),
     mockSetToAsset: vi.fn(),
     mockSetSelectedAccountId: vi.fn(),
+    mockRequestBottomSheet: vi.fn(),
+    mockPushWebView: vi.fn(),
+    mockMarkIntroductionSeen: vi.fn(),
     state: {
         selected: null as Account | null,
         signers: [] as Account[],
         swapChainAccounts: new Set<string>(),
+        isIntroductionSeen: false,
     },
 }))
 
@@ -80,6 +87,25 @@ vi.mock('../useSeedSwapRouteAssets', () => ({
     useSeedSwapRouteAssets: vi.fn(),
 }))
 
+vi.mock('@modules/bottom-sheet', () => ({
+    useBottomSheet: () => ({ request: mockRequestBottomSheet }),
+}))
+
+vi.mock('@modules/webview', () => ({
+    useWebView: () => ({ pushWebView: mockPushWebView }),
+}))
+
+vi.mock('@modules/swap/hooks', () => ({
+    useSwapIntroduction: () => ({
+        isIntroductionSeen: state.isIntroductionSeen,
+        markIntroductionSeen: mockMarkIntroductionSeen,
+    }),
+}))
+
+vi.mock('@modules/swap/components', () => ({
+    SwapIntroductionContent: () => null,
+}))
+
 describe('useSwapScreen', () => {
     beforeEach(() => {
         routeParams.current = undefined
@@ -87,6 +113,8 @@ describe('useSwapScreen', () => {
         state.selected = { id: 'acc-1' }
         state.signers = [{ id: 'acc-1' }]
         state.swapChainAccounts = new Set(['acc-1', 'acc-2'])
+        state.isIntroductionSeen = false
+        mockRequestBottomSheet.mockResolvedValue(undefined)
     })
 
     it("swaps on the selected account's chain scope", () => {
@@ -166,5 +194,28 @@ describe('useSwapScreen', () => {
         const { result } = renderHook(() => useSwapScreen())
 
         expect(result.current.initialPayAmount).toBeUndefined()
+    })
+
+    it('opens the support page when the info button is pressed', () => {
+        const { result } = renderHook(() => useSwapScreen())
+
+        result.current.handleInfoPress()
+
+        expect(mockPushWebView).toHaveBeenCalledWith({
+            url: expect.any(String),
+        })
+    })
+
+    it('asks for the swap introduction once, then remembers it was seen', async () => {
+        mockRequestBottomSheet.mockResolvedValue('start')
+
+        const { result, rerender } = renderHook(() => useSwapScreen())
+
+        await vi.waitFor(() => expect(mockRequestBottomSheet).toHaveBeenCalled())
+        rerender()
+
+        expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
+        expect(mockMarkIntroductionSeen).toHaveBeenCalled()
+        expect(result.current.handleInfoPress).toBeDefined()
     })
 })

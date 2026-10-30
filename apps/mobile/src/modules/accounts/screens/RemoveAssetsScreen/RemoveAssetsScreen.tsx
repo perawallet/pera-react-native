@@ -10,37 +10,15 @@
  limitations under the License
  */
 
-import React, { useCallback, useRef } from 'react'
-import {
-    PWCheckbox,
-    PWFlatList,
-    PWScreen,
-    PWText,
-    PWTouchableOpacity,
-    PWView,
-    type PWFlatListRef,
-} from '@components/core'
+import React from 'react'
+import { PWFlatList, PWScreen, PWText, PWTouchableOpacity } from '@components/core'
 import { ConfirmAction, CONFIRM_ACTION_LAYOUT } from '@components/ConfirmAction'
-import { AccountAssetItemView } from '@modules/assets'
-import type { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
 import { EmptyView } from '@components/EmptyView'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
 import { useRemoveAssetsScreen } from './useRemoveAssetsScreen'
 import { useStyles } from './styles'
 
 export const RemoveAssetsScreen = () => {
-    const styles = useStyles()
-    const listRef = useRef<PWFlatListRef>(null)
-
-    const handleAfterRemove = useCallback(() => {
-        // Defer the scroll so it runs after FlashList re-renders with the
-        // shrunken dataset; scrolling synchronously while cells are being
-        // recycled produces a jittery animation.
-        requestAnimationFrame(() => {
-            listRef.current?.scrollToOffset({ offset: 0, animated: true })
-        })
-    }, [])
-
     const {
         removableAssets,
         selectedAssetIds,
@@ -48,11 +26,12 @@ export const RemoveAssetsScreen = () => {
         isRemoving,
         isSelectAllVisible,
         isRemoveSelectedVisible,
-        handleToggleSelect,
         handleToggleSelectAll,
         handleRemoveSelected,
         t,
-    } = useRemoveAssetsScreen({ onAfterRemove: handleAfterRemove })
+        listRef,
+        renderItem,
+    } = useRemoveAssetsScreen()
 
     useNavigationHeader({
         right: isSelectAllVisible ? (
@@ -68,31 +47,6 @@ export const RemoveAssetsScreen = () => {
             </PWTouchableOpacity>
         ) : null,
     })
-
-    const renderItem = useCallback(
-        ({ item }: { item: AssetWithAccountBalance }) => {
-            const isSelected = selectedAssetIds.has(item.assetId)
-
-            return (
-                <PWTouchableOpacity
-                    style={styles.itemContainer}
-                    onPress={() => handleToggleSelect(item.assetId)}
-                    testID={`remove_asset_row_${item.assetId}`}
-                >
-                    <PWView style={styles.assetInfo}>
-                        <AccountAssetItemView
-                            accountBalance={item}
-                            iconSize='md'
-                        />
-                    </PWView>
-                    <PWView pointerEvents='none'>
-                        <PWCheckbox checked={isSelected} />
-                    </PWView>
-                </PWTouchableOpacity>
-            )
-        },
-        [selectedAssetIds, handleToggleSelect, styles],
-    )
 
     return (
         <PWScreen
