@@ -794,6 +794,7 @@ describe('useTransactionSendFlow', () => {
                         amount: new Decimal('0.5'),
                         note: 'memo',
                         feePreset: 'fast',
+                        maxFee: new Decimal('1000000'),
                     },
                 })
                 expect(id).toBe('tx1')
@@ -808,7 +809,7 @@ describe('useTransactionSendFlow', () => {
                     amount: new Decimal('500000000000000000'),
                     note: 'memo',
                 },
-                { scope, feePreset: 'fast' },
+                { scope, feePreset: 'fast', maxFee: new Decimal('1000000') },
             )
             expect(mockSubmit).toHaveBeenCalledWith(
                 expect.objectContaining({ scope, unsignedTxs: [TXN] }),
