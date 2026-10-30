@@ -33,6 +33,7 @@ import {
     useSpendableBalanceQuery,
     type ChainNotice,
 } from '@perawallet/wallet-core-transactions'
+import { getChainDescriptor } from '@perawallet/wallet-core-chain-shared'
 import { useSendFunds, useSendScope } from '@modules/transactions/hooks'
 import { useSendDestinationRouter } from '../useSendDestinationRouter'
 import { useToast } from '@hooks/useToast'
@@ -451,6 +452,9 @@ export const useInputScreen = () => {
         [asset],
     )
 
+    const canAddNote =
+        getChainDescriptor(scope.chainId).protocol.maxNoteBytes !== undefined
+
     const assetDecimalsRef = useRef(asset?.decimals)
     assetDecimalsRef.current = asset?.decimals
 
@@ -535,6 +539,7 @@ export const useInputScreen = () => {
         // screen shows a spinner until the router navigates onward.
         isResolvingDestination,
         isCollectible: isCollectibleAsset,
+        canAddNote,
         //exposed for testing only
         setCryptoValue: setValueAndRef,
         totalBalance,
