@@ -20,6 +20,12 @@ describe('describeAlgorandHolding', () => {
         ).toEqual({ restriction: 'transferBlocked' })
     })
 
+    it('places no restriction on an EVM holding', () => {
+        expect(describeAlgorandHolding({ family: 'evm' })).toEqual({
+            restriction: null,
+        })
+    })
+
     it('places no restriction on a holding that is not frozen', () => {
         expect(
             describeAlgorandHolding({ family: 'algorand', isFrozen: false }),

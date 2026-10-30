@@ -34,9 +34,11 @@ describe('algorandMultisigNative', () => {
             PARAMETERS,
         )
 
-        expect(native.multisig?.addresses).not.toBe(PARAMETERS.addresses)
+        const stored =
+            native.family === 'algorand' ? native.multisig : undefined
+        expect(stored?.addresses).not.toBe(PARAMETERS.addresses)
         expect(algorandMultisigNative.parametersOf(native)?.addresses).not.toBe(
-            native.multisig?.addresses,
+            stored?.addresses,
         )
     })
 

@@ -48,7 +48,8 @@ export const storedQuantumPublicKey = (
     account: WalletAccount,
 ): Nullable<Uint8Array> => {
     const entry = chainAccountOf(account, ALGORAND_CHAIN_ID)
-    const stored = entry?.native?.pq
+    const stored =
+        entry?.native?.family === 'algorand' ? entry.native.pq : undefined
     if (!entry || !stored) return null
     try {
         const publicKey = decodeFromBase64(stored.publicKey)
