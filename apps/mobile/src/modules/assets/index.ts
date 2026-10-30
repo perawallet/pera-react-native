@@ -63,3 +63,4 @@ export type {
     AssetSupplyDisplay,
 } from './types/asset-details-display'
 export type { CollectibleDetailsDisplay } from './types/collectible-details-display'
+export type { CollectibleDisplayItem } from './types/collectible'

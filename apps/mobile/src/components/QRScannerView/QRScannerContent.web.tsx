@@ -20,7 +20,9 @@ import {
     PWView,
 } from '@components/core'
 import { useWebQRScanner } from './useWebQRScanner'
-import { useQRScannerContent } from './useQRScannerContent'
+// Explicit `.web` suffix: the hook reaches for the chrome-only bridge, so it
+// must resolve to the web file for both Metro and vitest.
+import { useQRScannerContent } from './useQRScannerContent.web'
 // Explicit `.web` suffix (not a bare './styles' specifier): `tsc --noEmit`
 // (this repo's `build` script) has no platform-suffix resolution, so an
 // implicit `./styles` import here would always type-check against the

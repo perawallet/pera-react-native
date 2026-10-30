@@ -7,7 +7,7 @@
  distributed under the License is distributed on an "AS IS" BASIS,
  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  See the License for the specific language governing permissions and
- limitations under the License.
+ limitations under the License
  */
 
 import { useMemo } from 'react'
@@ -25,8 +25,8 @@ import { pow10, type Nullable } from '@perawallet/wallet-core-shared'
 import type {
     AssetFiatConverter,
     AssetFiatValue,
+    CollectibleDisplayItem,
 } from '@modules/assets'
-import type { CollectibleDisplayItem } from '@modules/assets/types/collectible'
 
 export type UseAssetListItemViewProps = {
     holding: AccountHoldingsLiteRow
