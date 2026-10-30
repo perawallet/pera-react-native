@@ -15,9 +15,10 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { Nullable } from '@perawallet/wallet-core-shared'
-import { PWFlatList, PWView } from '@components/core'
+import { PWButton, PWFlatList, PWView } from '@components/core'
+import { useLanguage } from '@hooks/useLanguage'
 import { CopyableText } from '@components/CopyableText'
-import { useStyles } from './styles'
+import { useAddAccountPillStyles, useStyles } from './styles'
 import { AccountWithBalance } from '@components/AccountWithBalance'
 import { PeraCardAccountItem } from '../PeraCardAccountItem'
 import { AccountMenuHeader } from './AccountMenuHeader'
@@ -47,8 +48,21 @@ export type AccountMenuProps = {
 
 export const AccountMenu = (props: AccountMenuProps) => {
     const styles = useStyles()
-    const { listItems, selectedAccountId, sortMode, flatListRef, handleTap } =
-        useAccountMenu(props)
+    const { t } = useLanguage()
+    const {
+        listItems,
+        selectedAccountId,
+        sortMode,
+        flatListRef,
+        handleTap,
+        addAccountPillHeight,
+        addAccountPillBottomInset,
+        handleAddAccountPillLayout,
+    } = useAccountMenu(props)
+    const pillStyles = useAddAccountPillStyles({
+        pillHeight: addAccountPillHeight,
+        bottomInset: addAccountPillBottomInset,
+    })
     const {
         onAddAccount,
         onOpenSort,
@@ -57,6 +71,7 @@ export const AccountMenu = (props: AccountMenuProps) => {
         headerContent,
         hideDefaultHeader,
     } = props
+    const hasAddAccountPill = !hideDefaultHeader
 
     const renderItem = useCallback(
         ({ item }: { item: AccountMenuListItem }) => {
@@ -113,13 +128,32 @@ export const AccountMenu = (props: AccountMenuProps) => {
                             headerContent={headerContent}
                             hideDefaultHeader={hideDefaultHeader}
                             onOpenSort={onOpenSort}
-                            onAddAccount={onAddAccount}
                         />
+                    }
+                    ListFooterComponent={
+                        hasAddAccountPill ? (
+                            <PWView style={pillStyles.footerSpacer} />
+                        ) : undefined
                     }
                     ItemSeparatorComponent={ListSeparator}
                     showsVerticalScrollIndicator={false}
                 />
             </PWView>
+            {hasAddAccountPill && (
+                <PWView
+                    style={pillStyles.container}
+                    onLayout={handleAddAccountPillLayout}
+                >
+                    <PWButton
+                        testID='account_menu_add_account_button'
+                        variant='primary'
+                        icon='plus'
+                        rounded
+                        title={t('onboarding.add_account.title')}
+                        onPress={onAddAccount}
+                    />
+                </PWView>
+            )}
         </PWView>
     )
 }

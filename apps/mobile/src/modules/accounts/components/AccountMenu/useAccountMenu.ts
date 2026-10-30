@@ -15,9 +15,12 @@ import {
     useEffect,
     useMemo,
     useRef,
+    useState,
     type ComponentRef,
     type MutableRefObject,
 } from 'react'
+import type { LayoutChangeEvent } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import {
     findAccountByAddressOn,
     useAllAccounts,
@@ -32,6 +35,7 @@ import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useIsPeraCardEnabled } from '@hooks/useIsPeraCardEnabled'
 import type { PWFlatList } from '@components/core'
+import { isAndroid } from '@utils/platform'
 import type { AccountMenuProps } from './AccountMenu'
 
 export type AccountMenuListItem =
@@ -44,6 +48,11 @@ type UseAccountMenuResult = {
     sortMode: string
     flatListRef: MutableRefObject<Nullable<ComponentRef<typeof PWFlatList>>>
     handleTap: (acct: WalletAccount) => void
+    /** 0 until the pill has been laid out. */
+    addAccountPillHeight: number
+    /** Android is 0: the drawer already pads its nav bar, so the pill would otherwise ride too high. */
+    addAccountPillBottomInset: number
+    handleAddAccountPillLayout: (event: LayoutChangeEvent) => void
 }
 
 export const useAccountMenu = (
@@ -80,6 +89,15 @@ export const useAccountMenu = (
     )
 
     const flatListRef = useRef<ComponentRef<typeof PWFlatList>>(null)
+
+    const [addAccountPillHeight, setAddAccountPillHeight] = useState(0)
+    const handleAddAccountPillLayout = useCallback(
+        (event: LayoutChangeEvent) =>
+            setAddAccountPillHeight(event.nativeEvent.layout.height),
+        [],
+    )
+    const insets = useSafeAreaInsets()
+    const addAccountPillBottomInset = isAndroid() ? 0 : insets.bottom
 
     // The drawer stays mounted under the sort sheet, so a committed sort
     // reorders the on-screen list in place and has to land the user back at
@@ -166,5 +184,8 @@ export const useAccountMenu = (
         sortMode,
         flatListRef,
         handleTap,
+        addAccountPillHeight,
+        addAccountPillBottomInset,
+        handleAddAccountPillLayout,
     }
 }
