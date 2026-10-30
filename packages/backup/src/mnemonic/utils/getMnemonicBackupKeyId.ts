@@ -13,16 +13,10 @@
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
-import { backupAdapterFor, backupChainAdapters } from '../../chain-adapter'
+import { backupAdapterFor } from '../../chain-adapter'
 
-/**
- * Every account one recovery phrase restores shares one backup state, kept
- * under this id. `null` too on a chain with no backup adapter.
- */
+/** Every account one recovery phrase restores shares one backup state, kept under this id. */
 export const getMnemonicBackupKeyId = (
     account: WalletAccount,
     chainId: ChainId,
-): Nullable<string> =>
-    backupChainAdapters.has(chainId)
-        ? backupAdapterFor(chainId).mnemonicBackupKeyId(account)
-        : null
+): Nullable<string> => backupAdapterFor(chainId).mnemonicBackupKeyId(account)

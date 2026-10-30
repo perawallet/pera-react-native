@@ -157,7 +157,7 @@ describe('useMarkMnemonicBackupComplete', () => {
         expect(useMnemonicBackupStore.getState().backedUpKeyIds).toEqual({})
     })
 
-    test('is a no-op on a chain with no backup adapter', async () => {
+    test('throws, and records nothing, on a chain with no backup adapter', async () => {
         const { useMnemonicBackupStore } = await import('../../store')
         const { useMarkMnemonicBackupComplete } =
             await import('../useMarkMnemonicBackupComplete')
@@ -177,10 +177,8 @@ describe('useMarkMnemonicBackupComplete', () => {
         const { result } = renderHook(() =>
             useMarkMnemonicBackupComplete('ethereum'),
         )
-        act(() => {
-            result.current(account)
-        })
 
+        expect(() => result.current(account)).toThrow()
         expect(useMnemonicBackupStore.getState().backedUpKeyIds).toEqual({})
     })
 })

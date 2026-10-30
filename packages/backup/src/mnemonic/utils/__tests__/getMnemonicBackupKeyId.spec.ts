@@ -99,7 +99,7 @@ describe('getMnemonicBackupKeyId', () => {
         expect(getMnemonicBackupKeyId(watch, 'algorand')).toBeNull()
     })
 
-    test("returns null on a chain with no backup adapter, without asking another chain's adapter", () => {
+    test("throws on a chain with no backup adapter, without asking another chain's adapter", () => {
         const mnemonicBackupKeyId = vi.fn(() => 'chain-id')
         backupChainAdapters.reset()
         backupChainAdapters.register(fakeBackupAdapter({ mnemonicBackupKeyId }))
@@ -113,7 +113,7 @@ describe('getMnemonicBackupKeyId', () => {
             chains: { ethereum: { address: '0xE1', keyPairId: 'kp-evm' } },
         }
 
-        expect(getMnemonicBackupKeyId(account, 'ethereum')).toBeNull()
+        expect(() => getMnemonicBackupKeyId(account, 'ethereum')).toThrow()
         expect(mnemonicBackupKeyId).not.toHaveBeenCalled()
     })
 })
