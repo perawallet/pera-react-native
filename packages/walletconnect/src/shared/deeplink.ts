@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 
 /** Scheme names only; call sites append `://` (hierarchical) or `:` (opaque). */
 export const WC_SCHEME = 'wc'
@@ -59,7 +59,7 @@ export const isWalletConnectFocusHint = (url: string): boolean => {
 
 // Index scans rather than a regex: `[?&]name=` followed by a greedy tail
 // backtracks polynomially, and a deep link is attacker-supplied.
-const readParamTail = (url: string, name: string): string | undefined => {
+const readParamTail = (url: string, name: string): Optional<string> => {
     const needle = `${name}=`
     for (
         let at = url.indexOf(needle);
@@ -102,7 +102,7 @@ export const parseWalletConnectUri = (
     }
 
     let wcUri = normalizedUrl
-    let browserName: string | undefined
+    let browserName: Optional<string>
     // Read to end-of-string, not to the next `&`: hand-rolled dApp redirects
     // often skip encoding the inner URI, and stopping at `&` would drop its `key=`.
     const wrappedUri = readParamTail(normalizedUrl, 'uri')

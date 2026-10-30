@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import type { Nullable } from '@perawallet/wallet-core-shared'
+
 /**
  * What a flow needs to reopen in a browser tab when the toolbar popup can't
  * finish it (a Bluetooth Ledger can only be reached from a tab). Amounts are
@@ -46,6 +48,6 @@ export const registerTabResumeIntent = (_intent: TabResumeIntent): void => {}
 
 export const clearTabResumeIntent = (): void => {}
 
-export const peekTabResumeIntent = (): TabResumeIntent | null => null
+export const peekTabResumeIntent = (): Nullable<TabResumeIntent> => null
 
 export const completeTabResume = (_result: TabResumeResult): void => {}

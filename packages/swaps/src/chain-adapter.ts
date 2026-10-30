@@ -15,7 +15,11 @@ import {
     type ChainId,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
-import { AppError, ErrorCategory } from '@perawallet/wallet-core-shared'
+import {
+    AppError,
+    ErrorCategory,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
 import { submitSignedGroup } from '@perawallet/wallet-core-signing'
 import type {
     ExecuteSwapParams,
@@ -35,10 +39,7 @@ export interface SwapChainAdapter {
     /** The asset a swap receives until the user picks one. */
     defaultReceiveAssetId: string
     /** Undefined when the item has nothing to link to or the network has no explorer. */
-    swapExplorerUrl(
-        scope: ChainScope,
-        item: SwapHistoryItem,
-    ): string | undefined
+    swapExplorerUrl(scope: ChainScope, item: SwapHistoryItem): Optional<string>
     /**
      * Validates, signs and broadcasts the backend-prepared swap for a quote.
      * Returns every expected failure as a result rather than throwing.
@@ -88,7 +89,7 @@ export const swapAdapterFor = (scope: ChainScope): SwapChainAdapter =>
 export const swapExplorerUrlFor = (
     scope: ChainScope,
     item: SwapHistoryItem,
-): string | undefined => swapAdapterFor(scope).swapExplorerUrl(scope, item)
+): Optional<string> => swapAdapterFor(scope).swapExplorerUrl(scope, item)
 
 /** Throws {@link SwapCosignUnsupportedError} when the chain can't finish a co-signed group. */
 export const submitCosignedSwapGroup = (

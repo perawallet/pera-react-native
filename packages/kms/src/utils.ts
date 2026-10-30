@@ -11,6 +11,7 @@
  */
 
 import type { Key } from '@algorandfoundation/keystore-core'
+import type { Optional, Nullable } from '@perawallet/wallet-core-shared'
 import { AccessControlPermission, type AccessControl } from './models'
 import {
     SeedScheme,
@@ -84,7 +85,7 @@ export const entropyChildMetadata = (
 export const entropyChildIdOf = (
     seedKeyId: string,
     keys: readonly Key[],
-): string | undefined =>
+): Optional<string> =>
     keys.find(k => {
         const meta = (k.metadata ?? {}) as {
             parentKeyId?: unknown
@@ -116,7 +117,7 @@ const SEED_BEARING_TYPES: ReadonlySet<string> = new Set([
  * `null` for anything that isn't a recognised wallet root — derived children,
  * secret-key entries — which must not be treated as one.
  */
-export const seedSchemeOf = (key: Key): SeedScheme | null => {
+export const seedSchemeOf = (key: Key): Nullable<SeedScheme> => {
     if (!SEED_BEARING_TYPES.has(key.type)) return null
     const scheme = seedMetadata(key).scheme
     if (
@@ -156,7 +157,7 @@ export const createdAtOf = (key: Key): Date => {
     return iso ? new Date(iso) : new Date()
 }
 
-export const expiresAtOf = (key: Key): Date | undefined => {
+export const expiresAtOf = (key: Key): Optional<Date> => {
     const iso = seedMetadata(key).pera?.expiresAt
     return iso ? new Date(iso) : undefined
 }

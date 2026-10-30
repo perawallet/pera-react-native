@@ -16,7 +16,7 @@ import { PWIcon, PWTouchableOpacity } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { SheetHeader, useBottomSheet } from '@modules/bottom-sheet'
 import { AddAssetView } from '@modules/assets/components/AddAssetView'
-import { AsaVerificationInfoContent } from '@modules/assets/components/AsaVerificationInfoContent'
+import { AddAssetInfoContent } from '@modules/assets/components/AddAssetInfoContent'
 import { useStyles } from './styles'
 
 export type AddAssetContentVariant = 'asset' | 'collectible'
@@ -40,9 +40,9 @@ export const AddAssetContent = ({
             ? t('add_asset.collectible_title')
             : t('add_asset.title')
 
-    const handleOpenVerificationInfo = () => {
+    const handleOpenInfo = () => {
         void requestBottomSheet<void>({
-            contents: <AsaVerificationInfoContent />,
+            contents: <AddAssetInfoContent />,
             options: {
                 size: 'modal',
                 enablePanDownToClose: true,
@@ -58,7 +58,7 @@ export const AddAssetContent = ({
                 rightAction={
                     <PWTouchableOpacity
                         style={styles.headerAction}
-                        onPress={handleOpenVerificationInfo}
+                        onPress={handleOpenInfo}
                     >
                         <PWIcon
                             name='info'

@@ -21,7 +21,11 @@ import {
 } from './nativeProviderRecord'
 import { notifyPasskeyChanged } from './passkeyChanges'
 import { zeroBytes } from '@perawallet/wallet-core-kms'
-import { toUrlSafeBase64 } from '@perawallet/wallet-core-shared'
+import {
+    toUrlSafeBase64,
+    type Nullable,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
 import {
     getProvider,
     keystoreSubtle,
@@ -86,7 +90,7 @@ export type WriteNativePasskeyEntryParams = {
      */
     counter?: number
     /** Optional last-used timestamp, preserved in metadata for parity. */
-    lastUsedAtMs?: number | null
+    lastUsedAtMs?: Nullable<number>
     /** Unix ms. Kept so a restored credential backs up with the same
      *  `createdAt` it was restored with, rather than a new one each sweep. */
     createdAtMs?: number
@@ -157,7 +161,7 @@ export type NativePasskeyWriter = ((
 export const createNativePasskeyWriter = (
     subtle: SubtleCrypto = keystoreSubtle,
 ): NativePasskeyWriter => {
-    let masterKeyPromise: ReturnType<typeof readMasterKey> | undefined
+    let masterKeyPromise: Optional<ReturnType<typeof readMasterKey>>
 
     const resolveMasterKey = (): ReturnType<typeof readMasterKey> => {
         if (!masterKeyPromise) {

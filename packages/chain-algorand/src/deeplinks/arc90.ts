@@ -19,6 +19,7 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 import { getChainConfig } from '@perawallet/wallet-core-config'
 import { uriSchemeOf } from '@perawallet/wallet-core-deeplinks'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { isValidAlgorandAddress } from '../blockchain'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
 import { algorandDescriptor, isAlgorandNativeAssetId } from '../descriptor'
@@ -60,7 +61,7 @@ export const UNSUPPORTED_NETWORK = {
 // Hand-written: React Native's URLSearchParams serializes differently from
 // Node's and throws on a malformed escape.
 const writeQuery = (
-    fields: ReadonlyArray<readonly [key: string, value: string | undefined]>,
+    fields: ReadonlyArray<readonly [key: string, value: Optional<string>]>,
 ): string =>
     fields
         .filter(([, value]) => value)
@@ -69,9 +70,7 @@ const writeQuery = (
 
 // `undefined` for a malformed escape or a repeated key: a scanned QR is
 // untrusted, and a repeated key makes the request ambiguous. `+` stays literal.
-export const readUriQuery = (
-    search: string,
-): Map<string, string> | undefined => {
+export const readUriQuery = (search: string): Optional<Map<string, string>> => {
     const query = new Map<string, string>()
     for (const segment of search.split('&')) {
         if (!segment) continue
@@ -89,7 +88,7 @@ export const readUriQuery = (
     return query
 }
 
-export const toAlgorandAssetRef = (raw: string): AssetRef | undefined =>
+export const toAlgorandAssetRef = (raw: string): Optional<AssetRef> =>
     DIGITS.test(raw)
         ? { chainId: ALGORAND_CHAIN_ID, assetId: BigInt(raw).toString() }
         : undefined
@@ -126,9 +125,10 @@ export const writeArc90PaymentUri = (
 const normalizeGenesisHash = (hash: string): string =>
     hash.replaceAll('-', '+').replaceAll('_', '/').replace(/=+$/, '')
 
-const savedCustomNode = ():
-    | { genesisId: string; genesisHash: string }
-    | undefined => {
+const savedCustomNode = (): Optional<{
+    genesisId: string
+    genesisHash: string
+}> => {
     try {
         return getChainConfig({
             chainId: ALGORAND_CHAIN_ID,
@@ -143,7 +143,7 @@ const savedCustomNode = ():
 const resolveNetwork = (
     kind: 'net' | 'gh',
     value: string,
-): NetworkId | undefined => {
+): Optional<NetworkId> => {
     let wanted = value
     if (kind === 'gh') {
         try {
@@ -183,7 +183,7 @@ export const readArc90Uri = (input: string): Arc90ReadResult => {
     let path = q < 0 ? body : body.slice(0, q)
     const search = q < 0 ? '' : body.slice(q + 1)
 
-    let networkId: NetworkId | undefined
+    let networkId: Optional<NetworkId>
     const named = /^(net|gh):/.exec(path)
     const slash = path.indexOf('/')
     if (named && slash >= 0) {

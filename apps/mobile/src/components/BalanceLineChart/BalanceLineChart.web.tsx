@@ -21,6 +21,7 @@ import { useChartPointerFocus } from '@hooks/useChartPointerFocus'
 import { useLanguage } from '@hooks/useLanguage'
 import { CHART_ANIMATION_DURATION, CHART_HEIGHT } from '@constants/ui'
 import { getChartYAxisRange } from '@utils/chart'
+import type { Optional, Nullable } from '@perawallet/wallet-core-shared'
 import { useBalanceLineChart } from './useBalanceLineChart'
 
 import type { StyleProp, ViewStyle } from 'react-native'
@@ -31,11 +32,11 @@ import type { StyleProp, ViewStyle } from 'react-native'
 // each caller is just its query plus this component.
 type BalanceLineChartProps<T> = {
     /** Source series as fetched; undefined while the query has no data. */
-    series: T[] | undefined
+    series: Optional<T[]>
     /** Extracts the plotted value from a series item. */
     getValue: (item: T) => number
     /** Reports the pointer-focused series item, or null when focus leaves. */
-    onSelectionChanged: (item: T | null) => void
+    onSelectionChanged: (item: Nullable<T>) => void
     isPending: boolean
     emptyBody: string
     /** When true, render an error state (with retry) instead of the empty copy. */

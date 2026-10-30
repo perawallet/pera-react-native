@@ -30,13 +30,14 @@ import {
     useSwapHistoryInvalidator,
     type SwapQuote,
 } from '@perawallet/wallet-core-swaps'
+import type { Maybe } from '@perawallet/wallet-core-shared'
 import type { SwapConfirmationResult } from './SwapConfirmationContent'
 
 const buildSwapStatusPayload = (
     quote: SwapQuote,
     scope: ChainScope,
 ): RequiredEventPayloads[SwapEvent.Failed] => {
-    const usd = (value: string | null | undefined) =>
+    const usd = (value: Maybe<string>) =>
         value != null ? Number(value) : undefined
     return {
         [AnalyticsMetadataKey.ChainId]: scope.chainId,

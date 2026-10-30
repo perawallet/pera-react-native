@@ -11,6 +11,7 @@
  */
 
 import { zeroBytes } from '@perawallet/wallet-core-kms'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { Argon2idConfig, BackupId } from '../models'
 import { decodeBase64Salt } from './argon2idConfig'
 import { deriveBackupAuthKeypair } from './deriveBackupAuthKeypair'
@@ -48,10 +49,10 @@ export const deriveBackupKeys = async ({
     salt,
     argon2id,
 }: DeriveBackupKeysParams): Promise<BackupKeys> => {
-    let password: Uint8Array | null = null
-    let masterKey: Uint8Array | null = null
-    let childKeys: BackupChildKeys | null = null
-    let secretKey: Uint8Array | null = null
+    let password: Nullable<Uint8Array> = null
+    let masterKey: Nullable<Uint8Array> = null
+    let childKeys: Nullable<BackupChildKeys> = null
+    let secretKey: Nullable<Uint8Array> = null
 
     // base64-js maps characters outside the alphabet to zero bytes, so a
     // garbled paste of the right length would otherwise derive a plausible key

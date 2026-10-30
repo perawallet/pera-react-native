@@ -19,6 +19,7 @@
 // remove the dApp's modal or auto-pair: the modal stays intact, every
 // existing option keeps working, and nothing happens until the user clicks
 // the injected row.
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { extractUriFromConnectModal, isWcUri } from './connect-modal-uri'
 
 export const INJECTED_ROW_ID = 'pera-extension-injected-row'
@@ -49,7 +50,7 @@ const ACCORDION_CONTAINER_SELECTORS = [
 // PeraWalletConnectModalDesktopMode.ts.
 const DESKTOP_MODE_TAG = 'pera-wallet-modal-desktop-mode'
 
-const modalElement = (wrapper: Element): Element | null =>
+const modalElement = (wrapper: Element): Nullable<Element> =>
     wrapper.querySelector('pera-wallet-connect-modal')
 
 // The real @perawallet/connect DOM nests two OPEN shadow roots deep:
@@ -63,7 +64,7 @@ const modalElement = (wrapper: Element): Element | null =>
 // On mobile the outer modal renders `<pera-wallet-modal-touch-screen-mode>`
 // instead — there is no desktop-mode element and thus no container at all,
 // which this degrades to `null` for, same as any other absent level.
-const desktopModeShadowRoot = (modal: Element): ShadowRoot | null =>
+const desktopModeShadowRoot = (modal: Element): Nullable<ShadowRoot> =>
     modal.shadowRoot?.querySelector(DESKTOP_MODE_TAG)?.shadowRoot ?? null
 
 export const shouldInjectRow = (wrapper: Element): boolean => {

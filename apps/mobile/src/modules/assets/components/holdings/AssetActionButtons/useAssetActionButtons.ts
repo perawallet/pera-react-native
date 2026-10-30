@@ -17,7 +17,7 @@ import {
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 import { useOnrampScope } from '@perawallet/wallet-core-onramp'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import type { Maybe } from '@perawallet/wallet-core-shared'
 import { useSwapScope } from '@perawallet/wallet-core-swaps'
 
 export type UseAssetActionButtonsResult = {
@@ -28,7 +28,7 @@ export type UseAssetActionButtonsResult = {
 }
 
 export const useAssetActionButtons = (
-    account: Nullable<WalletAccount> | undefined,
+    account: Maybe<WalletAccount>,
     chainId: ChainId,
 ): UseAssetActionButtonsResult => {
     // The account's scope can resolve to another of its chains; the action

@@ -24,7 +24,7 @@ import {
     useAllAccounts,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import type { PipelineStage, TransactionSignRequest } from '../models'
 import { reviewGroupOf } from '../models/reviewGroup'
 import {
@@ -246,7 +246,7 @@ const computeReviewOnlyDisplayData = (
 // and starved the bottom-sheet present animation. Keyed by
 // request identity + its input arrays (referentially stable from the store)
 // + the accounts reference, so it recomputes exactly when an input changes.
-let displayDataCache: {
+let displayDataCache: Nullable<{
     requestId: string
     txs: unknown
     groupContext: unknown
@@ -254,7 +254,7 @@ let displayDataCache: {
     signerOverrides: unknown
     accounts: unknown
     result: DisplayData
-} | null = null
+}> = null
 
 const getSharedDisplayData = (
     txRequest: TransactionSignRequest,
@@ -376,21 +376,21 @@ export const useSigningPipeline = (
         ): ActiveSigningChild => {
             const children = (
                 snapshot as {
-                    children?: Record<string, AnyActorRef | undefined>
+                    children?: Record<string, Optional<AnyActorRef>>
                 }
             ).children
             const hardwareChild = children?.hardwareChild
             if (!hardwareChild) return null
             const childSnapshot = (
                 hardwareChild as { getSnapshot?: () => unknown }
-            ).getSnapshot?.() as HardwareChildSnapshot | undefined
+            ).getSnapshot?.() as Optional<HardwareChildSnapshot>
             if (!childSnapshot) return null
             return { kind: 'hardware', snapshot: childSnapshot }
         }
 
         const project = (
             snapshot: MachineSnapshot,
-        ): ResolvedSignRequest | null => {
+        ): Nullable<ResolvedSignRequest> => {
             const base = buildResolvedSignRequest(snapshot.context)
             if (!base) return null
             return { ...base, activeChild: readActiveChild(snapshot) }
@@ -414,13 +414,13 @@ export const useSigningPipeline = (
         // sub-state changes; subscribing to the child directly guarantees the
         // UI re-renders on phase transitions (searching → awaiting_approval →
         // signing) and on PROGRESS events.
-        let childUnsubscribe: (() => void) | null = null
-        let lastHardwareChild: AnyActorRef | null = null
+        let childUnsubscribe: Nullable<() => void> = null
+        let lastHardwareChild: Nullable<AnyActorRef> = null
 
         const syncChildSubscription = (parentSnapshot: MachineSnapshot) => {
             const children = (
                 parentSnapshot as {
-                    children?: Record<string, AnyActorRef | undefined>
+                    children?: Record<string, Optional<AnyActorRef>>
                 }
             ).children
             const hardwareChild = children?.hardwareChild ?? null
@@ -435,14 +435,14 @@ export const useSigningPipeline = (
             // snapshot is observed without waiting for the next child event.
             const currentParent = (
                 actor as { getSnapshot?: () => unknown }
-            ).getSnapshot?.() as MachineSnapshot | undefined
+            ).getSnapshot?.() as Optional<MachineSnapshot>
             if (currentParent?.context) {
                 setResolved(project(currentParent))
             }
             const childSub = hardwareChild.subscribe(() => {
                 const nextParent = (
                     actor as { getSnapshot?: () => unknown }
-                ).getSnapshot?.() as MachineSnapshot | undefined
+                ).getSnapshot?.() as Optional<MachineSnapshot>
                 if (nextParent?.context) {
                     setResolved(project(nextParent))
                 }
@@ -515,13 +515,13 @@ export const useSigningPipeline = (
     }, [currentRequest, retryRequest])
 
     const retryHardware = useCallback(() => {
-        ;(currentActorRef as AnyActorRef | null)?.send({
+        ;(currentActorRef as Nullable<AnyActorRef>)?.send({
             type: 'RETRY_HARDWARE',
         })
     }, [currentActorRef])
 
     const acknowledgeHardwareError = useCallback(() => {
-        ;(currentActorRef as AnyActorRef | null)?.send({
+        ;(currentActorRef as Nullable<AnyActorRef>)?.send({
             type: 'ACKNOWLEDGE_HARDWARE_ERROR',
         })
     }, [currentActorRef])

@@ -17,6 +17,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import type { SigningScheme } from '@perawallet/wallet-core-chain-contract'
 import type { MultisigParameters } from '@perawallet/wallet-core-multisig'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
 import { algorandLocalKeyKinds } from './local-key-kinds'
 import { algorandMultisigNative } from './multisig-native'
@@ -25,7 +26,7 @@ import { algorandAddressOf } from './vocabulary'
 /** The multisig parameters an account carries on Algorand; `undefined` when a legacy record lacks them. */
 export const algorandMultisigOf = (
     account: WalletAccount,
-): MultisigParameters | undefined =>
+): Optional<MultisigParameters> =>
     algorandMultisigNative.parametersOf(
         chainAccountOf(account, ALGORAND_CHAIN_ID)?.native,
     )
@@ -56,7 +57,7 @@ const ownSchemeOf = (account: WalletAccount): SigningScheme => {
 export const signableParticipantAt = (
     address: string,
     accounts: readonly WalletAccount[],
-): WalletAccount | undefined => {
+): Optional<WalletAccount> => {
     const participant = accounts.find(
         account => algorandAddressOf(account) === address,
     )

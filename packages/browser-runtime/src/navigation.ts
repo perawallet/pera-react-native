@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import type { Optional, Nullable } from '@perawallet/wallet-core-shared'
+
 export type ExpandedFlow =
     | 'add-account'
     | 'scan'
@@ -42,7 +44,7 @@ const FLOWS: readonly string[] = [
  * permission — that's only needed to read url/title of tabs the extension
  * doesn't own.
  */
-const findExpandedTab = async (): Promise<chrome.tabs.Tab | undefined> => {
+const findExpandedTab = async (): Promise<Optional<chrome.tabs.Tab>> => {
     const tabs = await chrome.tabs.query({
         url: `${chrome.runtime.getURL('expanded.html')}*`,
     })
@@ -101,8 +103,8 @@ export const closeCurrentTab = async (): Promise<void> => {
 }
 
 let consumed = false
-let consumedFlow: ExpandedFlow | null = null
-let consumedChainId: string | null = null
+let consumedFlow: Nullable<ExpandedFlow> = null
+let consumedChainId: Nullable<string> = null
 
 const readSearch = (): string => {
     const testSeam = (globalThis as { __PERA_TEST_SEARCH__?: string })
@@ -144,7 +146,7 @@ const stripFlowFromUrl = (): void => {
  * navigation, and the param is stripped from the URL so a manual tab reload
  * doesn't re-trigger it either.
  */
-export const consumeInitialExpandedFlow = (): ExpandedFlow | null => {
+export const consumeInitialExpandedFlow = (): Nullable<ExpandedFlow> => {
     if (consumed) return null
     consumed = true
     const params = new URLSearchParams(readSearch())
@@ -157,11 +159,13 @@ export const consumeInitialExpandedFlow = (): ExpandedFlow | null => {
 }
 
 /** The `&chain=` the popup passed with the consumed flow; not validated here. */
-export const getConsumedExpandedChainId = (): string | null => consumedChainId
+export const getConsumedExpandedChainId = (): Nullable<string> =>
+    consumedChainId
 
 /**
  * The flow this tab was opened for, once `consumeInitialExpandedFlow` has
  * read it. Unlike that one-shot read, it stays set for the tab's lifetime, so
  * a screen deep in the flow can tell a hand-off tab from a plain one.
  */
-export const getConsumedExpandedFlow = (): ExpandedFlow | null => consumedFlow
+export const getConsumedExpandedFlow = (): Nullable<ExpandedFlow> =>
+    consumedFlow

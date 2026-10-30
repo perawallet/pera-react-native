@@ -15,6 +15,7 @@ import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     generateOrderedUniqueId,
     registerStore,
+    type Optional,
 } from '@perawallet/wallet-core-shared'
 import type { MultiSigAccount, MultisigProposeMode } from '../models'
 
@@ -60,7 +61,7 @@ type Actions = {
     /** Create a new draft and return its localId (with the `draft-` prefix). */
     createDraft: (input: DraftInput) => string
     /** Resolve a draft by its localId — undefined if missing or already swapped. */
-    getDraft: (localId: string) => DraftSignRequest | undefined
+    getDraft: (localId: string) => Optional<DraftSignRequest>
     /** Remove a draft after its backend record has been created (propose succeeded). */
     deleteDraft: (localId: string) => void
     resetState: () => void
@@ -97,7 +98,7 @@ export const useDraftSignRequestStore = create<Store>((set, get) => ({
         set(state => ({ drafts: { ...state.drafts, [localId]: draft } }))
         return localId
     },
-    getDraft: (localId: string): DraftSignRequest | undefined => {
+    getDraft: (localId: string): Optional<DraftSignRequest> => {
         return get().drafts[localId]
     },
     deleteDraft: (localId: string) => {

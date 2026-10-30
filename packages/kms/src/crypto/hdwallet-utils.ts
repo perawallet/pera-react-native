@@ -14,6 +14,7 @@ import { pbkdf2, randomBytes } from 'crypto'
 import { sha256 } from '@noble/hashes/sha2.js'
 import { entropyToMnemonic as entropyToMnemonicLib } from '@scure/bip39'
 import { wordlist } from '@scure/bip39/wordlists/english.js'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import {
     BITS_PER_BYTE,
     BITS_PER_MNEMONIC_WORD,
@@ -214,7 +215,7 @@ export const generateHDMasterKey = async (mnemonicIndices?: Uint16Array) => {
     let indices: Uint16Array
     // Set only when the indices are generated here; supplied ones are the
     // caller's to zero.
-    let generatedIndices: Uint16Array | undefined
+    let generatedIndices: Optional<Uint16Array>
     if (mnemonicIndices) {
         indices = mnemonicIndices
     } else {

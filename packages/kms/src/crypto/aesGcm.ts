@@ -18,6 +18,7 @@ import {
     concatBytes,
     decodeFromBase64,
     encodeToBase64,
+    type Nullable,
 } from '@perawallet/wallet-core-shared'
 import { zeroBytes } from './secure-memory'
 
@@ -56,7 +57,7 @@ export const sealAesGcm = (
     key: Uint8Array,
     aad: Uint8Array,
 ): string => {
-    let plaintextBytes: Uint8Array | null = null
+    let plaintextBytes: Nullable<Uint8Array> = null
     try {
         const iv = new Uint8Array(randomBytes(AES_GCM_IV_LENGTH))
         const cipher = createCipheriv(AES_GCM_ALGORITHM, key, iv)
@@ -82,9 +83,9 @@ export const openAesGcm = (
     key: Uint8Array,
     aad: Uint8Array,
 ): string => {
-    let updateBytes: Uint8Array | null = null
-    let finalBytes: Uint8Array | null = null
-    let plaintext: Uint8Array | null = null
+    let updateBytes: Nullable<Uint8Array> = null
+    let finalBytes: Nullable<Uint8Array> = null
+    let plaintext: Nullable<Uint8Array> = null
     try {
         const raw = decodeFromBase64(payloadBase64)
         if (raw.length < AES_GCM_IV_LENGTH + AES_GCM_TAG_LENGTH) {

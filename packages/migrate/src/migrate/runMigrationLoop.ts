@@ -16,7 +16,7 @@ import {
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { logger, toError } from '@perawallet/wallet-core-shared'
+import { logger, toError, type Nullable } from '@perawallet/wallet-core-shared'
 import type {
     LegacyAccount,
     LegacyHDWallet,
@@ -73,7 +73,7 @@ export const runMigrationLoop = async (
         // When this iteration removes a watch account to reconcile it, keep the
         // removed record so a failed reimport can restore it instead of
         // orphaning the user's visible account.
-        let removedForReconcile: WalletAccount | null = null
+        let removedForReconcile: Nullable<WalletAccount> = null
         if (existingAddresses.has(account.address)) {
             const existing = useAccountsStore
                 .getState()

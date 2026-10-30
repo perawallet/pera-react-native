@@ -148,11 +148,11 @@ export type DecodedLegacyAuthority = {
 export type AccountMultisigNativeOps = {
     /** `undefined` when a legacy record lacks them. */
     parametersOf(
-        native: ChainAccountNative | undefined,
-    ): MultisigParameters | undefined
+        native: Optional<ChainAccountNative>,
+    ): Optional<MultisigParameters>
     /** `native` with `parameters` stored; every other member of it is kept. */
     withParameters(
-        native: ChainAccountNative | undefined,
+        native: Optional<ChainAccountNative>,
         parameters: MultisigParameters,
     ): ChainAccountNative
 }
@@ -233,6 +233,8 @@ export type AccountChangeSignal = {
 export type AccountStateReadHint = {
     /** What the last sync on this scope persisted; undefined when it never synced. */
     priorChainState: Optional<AccountChainState>
+    /** Tokens the user added on this scope, whose balances a chain without opt-in reads too; absent means none. */
+    addedTokenIds?: readonly string[]
 }
 
 export type GetPublicKey = (params: HdIndex) => Promise<Uint8Array>
@@ -397,13 +399,13 @@ export interface AccountsChainAdapter {
      * chain's. Runs during hydration, so it never throws. Absent on a chain
      * the store never persisted in an older shape.
      */
-    decodeLegacyRecord?(raw: unknown): DecodedAccountRecord | undefined
+    decodeLegacyRecord?(raw: unknown): Optional<DecodedAccountRecord>
     /**
      * The authority a legacy record persisted beside its account fields, or
      * `undefined` when it holds none. Runs during hydration, so it never
      * throws. Absent on a chain whose records never held one.
      */
-    decodeLegacyAuthority?(raw: unknown): DecodedLegacyAuthority | undefined
+    decodeLegacyAuthority?(raw: unknown): Optional<DecodedLegacyAuthority>
     /** Absent on a chain without multisig accounts. */
     readonly multisigNative?: AccountMultisigNativeOps
     /** Absent on a chain whose only software accounts are HD. */
@@ -443,7 +445,7 @@ export interface AccountsChainAdapter {
         account: WalletAccount,
         accounts: WalletAccount[],
         scope: ChainScope,
-    ): WalletAccount | null
+    ): Nullable<WalletAccount>
     /**
      * Fills in record data this chain needs that older records lack, or
      * returns `account` itself. May read the keystore.

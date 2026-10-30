@@ -104,7 +104,7 @@ export const useAsbImportKeyScreen = (): UseAsbImportKeyScreenResult => {
         if (!envelope || isProcessing) return
 
         setIsProcessing(true)
-        let mnemonicIndices: Uint16Array | null = null
+        let mnemonicIndices: Nullable<Uint16Array> = null
         try {
             // Zeroable indices straight from the slot state — no word array
             // is assembled. `canContinue` gates on every word being a

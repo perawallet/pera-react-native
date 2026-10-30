@@ -12,6 +12,7 @@
 
 import { useMemo } from 'react'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import type { Maybe, Nullable } from '@perawallet/wallet-core-shared'
 import { chainAccountOf } from '../credentials'
 import {
     delegateTransitionFor,
@@ -21,9 +22,9 @@ import { useAccountsStore } from '../store'
 import { useSelectedChainStates } from './useSelectedChainStates'
 
 export const useDelegatedTransition = (
-    address: string | undefined | null,
+    address: Maybe<string>,
     chainId: ChainId,
-): DelegateTransition | null => {
+): Nullable<DelegateTransition> => {
     const accounts = useAccountsStore(state => state.accounts)
     const chainStates = useSelectedChainStates(chainId)
 

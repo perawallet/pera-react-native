@@ -14,12 +14,13 @@ import type {
     AgeGateSource,
     AgeGateStatus,
 } from '@perawallet/wallet-extension-platform'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 export type { AgeGateStatus, AgeGateSource }
 
 export type AgeGateDecision = {
-    status: AgeGateStatus | null
-    source: AgeGateSource | null
+    status: Nullable<AgeGateStatus>
+    source: Nullable<AgeGateSource>
 }
 
 export type AgeGateSupportLevel = 'platform' | 'manual' | 'none'

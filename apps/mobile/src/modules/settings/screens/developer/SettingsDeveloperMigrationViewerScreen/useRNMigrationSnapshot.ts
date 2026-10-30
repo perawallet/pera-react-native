@@ -48,13 +48,14 @@ import {
     type ThemeMode,
 } from '@perawallet/wallet-core-settings'
 import { useSwapsStore } from '@perawallet/wallet-core-swaps'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 export type RNAuthSnapshot = {
     hasPin: boolean
-    pinRecordVersion: number | null
-    pinRecordBytes: number | null
+    pinRecordVersion: Nullable<number>
+    pinRecordBytes: Nullable<number>
     hasBiometric: boolean
-    biometricBytes: number | null
+    biometricBytes: Nullable<number>
 }
 
 export type RNMigrationSnapshot = {
@@ -71,7 +72,7 @@ export type RNMigrationSnapshot = {
         accountSortPreference: AccountSortMode
         assetSortPreference: AssetSortMode
         collectibleSortPreference: CollectibleSortMode
-        swapSlippageTolerance: number | null
+        swapSlippageTolerance: Nullable<number>
         swapTermsAccepted: boolean
     }
     auth: RNAuthSnapshot
@@ -79,10 +80,10 @@ export type RNMigrationSnapshot = {
     manualAccountOrder: string[]
     contactsByAddress: Map<string, Contact>
     notificationDisabledAccounts: Set<string>
-    deviceIDs: { mainnet: string | null; testnet: string | null }
+    deviceIDs: { mainnet: Nullable<string>; testnet: Nullable<string> }
     deviceIdOrigins: {
-        mainnet: DeviceIdOrigin | null
-        testnet: DeviceIdOrigin | null
+        mainnet: Nullable<DeviceIdOrigin>
+        testnet: Nullable<DeviceIdOrigin>
     }
     legacyStash: Record<string, string | number | boolean>
 }

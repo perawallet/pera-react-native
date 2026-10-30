@@ -57,7 +57,9 @@ const SIGNED_TXN_MAP_HEADER_WITH_SIGNER = new Uint8Array([0x83])
  * verbatim. `null` when `snd` is absent (canonical msgpack omits a zero sender)
  * or undecodable.
  */
-const extractSenderPublicKey = (rawTxBytes: Uint8Array): Uint8Array | null => {
+const extractSenderPublicKey = (
+    rawTxBytes: Uint8Array,
+): Nullable<Uint8Array> => {
     try {
         const decoded = msgpackRawDecode(rawTxBytes) as Record<string, unknown>
         const snd = decoded.snd
@@ -76,7 +78,7 @@ const isAllZero = (bytes: Uint8Array): boolean => {
  * `null` means "no signature for this index", never an error — including for
  * an all-zero backend placeholder, matching Android's sanity filter.
  */
-const parseSignature = (sig: Nullable<string>): Uint8Array | null => {
+const parseSignature = (sig: Nullable<string>): Nullable<Uint8Array> => {
     if (!sig) return null
     let bytes: Uint8Array
     try {
@@ -95,7 +97,7 @@ const parseSignature = (sig: Nullable<string>): Uint8Array | null => {
 /** An encoded address is a 32-byte pubkey plus a 4-byte checksum, base32'd. */
 const resolvePublicKeys = (
     addresses: string[],
-): Map<string, Uint8Array> | null => {
+): Nullable<Map<string, Uint8Array>> => {
     const out = new Map<string, Uint8Array>()
     for (const addr of addresses) {
         try {
@@ -141,7 +143,7 @@ export const assembleSignedMultisigTransactions = async (
     // whether a transaction's sender is rekeyed to it. Null when no multisig
     // address was supplied or it can't be parsed — in which case no `sgnr` is
     // written (the legacy, non-rekey behavior).
-    let multisigPublicKey: Uint8Array | null = null
+    let multisigPublicKey: Nullable<Uint8Array> = null
     if (multisigAddress) {
         try {
             multisigPublicKey = Address.fromString(multisigAddress).publicKey
@@ -175,7 +177,7 @@ export const assembleSignedMultisigTransactions = async (
 
     // Collect signed-only responses keyed by participant address. Decoded
     // signature bytes are cached so we only do base64 once per (address, txIdx).
-    const sigsByAddress = new Map<string, Array<Uint8Array | null>>()
+    const sigsByAddress = new Map<string, Array<Nullable<Uint8Array>>>()
     for (const resp of responses) {
         if (resp.response !== 'signed') continue
         sigsByAddress.set(

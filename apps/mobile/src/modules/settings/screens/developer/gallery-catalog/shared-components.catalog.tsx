@@ -164,6 +164,7 @@ registerPreview({
                         <CurrencyAmount
                             currency='USD'
                             assetId={null}
+                            chainId={null}
                             value={new Decimal('1234567.89')}
                             precision='compact'
                             variant='h2'
@@ -176,6 +177,7 @@ registerPreview({
                         <CurrencyAmount
                             currency='ALGO'
                             assetId={nativeAssetFor(LEGACY_CHAIN_ID).assetId}
+                            chainId={LEGACY_CHAIN_ID}
                             value={new Decimal('42.500000')}
                             precision='assetFull'
                             assetDecimals={6}
@@ -189,6 +191,7 @@ registerPreview({
                         <CurrencyAmount
                             currency='USD'
                             assetId={null}
+                            chainId={null}
                             value={new Decimal('0.01')}
                             precision='compact'
                             variant='body'
@@ -201,6 +204,7 @@ registerPreview({
                         <CurrencyAmount
                             currency='USD'
                             assetId={null}
+                            chainId={null}
                             value={new Decimal('0')}
                             precision='compact'
                             variant='body'

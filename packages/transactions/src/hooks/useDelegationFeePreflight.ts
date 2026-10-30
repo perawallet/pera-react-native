@@ -14,7 +14,10 @@ import { useMemo } from 'react'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { getChainDescriptor } from '@perawallet/wallet-core-chain-shared'
 import { useOnChainAccountStateQuery } from '@perawallet/wallet-core-accounts'
-import { baseUnitsToDisplayUnits } from '@perawallet/wallet-core-shared'
+import {
+    baseUnitsToDisplayUnits,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
 
 import type { Decimal } from 'decimal.js'
 
@@ -38,7 +41,7 @@ export type UseDelegationFeePreflightResult = {
  */
 export const useDelegationFeePreflight = (
     sourceAddress: string,
-    fee: Decimal | undefined,
+    fee: Optional<Decimal>,
     scope: ChainScope,
 ): UseDelegationFeePreflightResult => {
     const { data: accountState } = useOnChainAccountStateQuery(

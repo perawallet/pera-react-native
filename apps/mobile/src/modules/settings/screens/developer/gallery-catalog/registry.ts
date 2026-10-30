@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { Optional } from '@perawallet/wallet-core-shared'
 import type { GalleryPreviewEntry } from './types'
 
 const registry = new Map<string, GalleryPreviewEntry>()
@@ -18,7 +19,7 @@ export const registerPreview = (entry: GalleryPreviewEntry): void => {
     registry.set(entry.id, entry)
 }
 
-export const getPreviewEntry = (id: string): GalleryPreviewEntry | undefined =>
+export const getPreviewEntry = (id: string): Optional<GalleryPreviewEntry> =>
     registry.get(id)
 
 export const resetPreviewRegistry = (): void => registry.clear()

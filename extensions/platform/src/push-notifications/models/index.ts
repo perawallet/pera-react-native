@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import type { Optional } from '@perawallet/wallet-core-shared'
+
 export type PushNotificationInitResult = {
     token?: string
     unsubscribe: () => void
@@ -50,7 +52,7 @@ export interface PushNotificationService {
      * granted at cold start, so callers use this to pick one up after the user
      * grants permission mid-session.
      */
-    getPushToken(): Promise<string | undefined>
+    getPushToken(): Promise<Optional<string>>
     /**
      * Subscribes to token rotation. The platform can reissue a token at any
      * point in a session (reinstall-restore, app-data clear, FCM-side

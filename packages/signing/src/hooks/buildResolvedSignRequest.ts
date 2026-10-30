@@ -11,6 +11,7 @@
  */
 
 import { findAccountByAddressOn } from '@perawallet/wallet-core-accounts'
+import type { Optional, Nullable } from '@perawallet/wallet-core-shared'
 import type { SigningMachineContext } from '../machine/context'
 import {
     isArbitraryDataRequest,
@@ -29,7 +30,7 @@ import type {
 } from './types'
 import { chainIdOfSignRequest } from '../models/chain'
 
-const resolveSourceKind = (sourceType: string | undefined): SourceKind =>
+const resolveSourceKind = (sourceType: Optional<string>): SourceKind =>
     (sourceType ?? 'local') as SourceKind
 
 const resolveTransportKind = (
@@ -102,7 +103,7 @@ const resolveKind = (context: SigningMachineContext): ResolvedRequestKind => {
 
 export const buildResolvedSignRequest = (
     context: SigningMachineContext,
-): ResolvedSignRequest | null => {
+): Nullable<ResolvedSignRequest> => {
     const { signerAddress, allAccounts, groupSigners } = context
 
     if (!signerAddress || !groupSigners) return null

@@ -12,9 +12,10 @@
 
 import { useCallback, useEffect, useRef } from 'react'
 import { CHART_FOCUS_DEBOUNCE_TIME } from '@constants/ui'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 
 /** Reports a focused index, or null once the touch ends. */
-export type ChartSelectionReporter = (index: number | null) => void
+export type ChartSelectionReporter = (index: Nullable<number>) => void
 
 /**
  * Throttles scrub-index changes down to the rate the header can absorb.
@@ -25,8 +26,8 @@ export type ChartSelectionReporter = (index: number | null) => void
  * live balance.
  */
 export const useChartSelectionReporter = <T>(
-    series: T[] | undefined,
-    onSelectionChanged: (item: T | null) => void,
+    series: Optional<T[]>,
+    onSelectionChanged: (item: Nullable<T>) => void,
 ): ChartSelectionReporter => {
     // Read through a ref so a new series or callback identity doesn't change
     // the reporter's identity mid-gesture.
@@ -34,9 +35,9 @@ export const useChartSelectionReporter = <T>(
     latest.current = { series, onSelectionChanged }
 
     const lastSentAt = useRef(0)
-    const trailingTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+    const trailingTimer = useRef<Nullable<ReturnType<typeof setTimeout>>>(null)
 
-    const send = useCallback((index: number | null) => {
+    const send = useCallback((index: Nullable<number>) => {
         lastSentAt.current = Date.now()
         const { series: currentSeries, onSelectionChanged: notify } =
             latest.current
@@ -51,7 +52,7 @@ export const useChartSelectionReporter = <T>(
     )
 
     return useCallback(
-        (index: number | null) => {
+        (index: Nullable<number>) => {
             if (trailingTimer.current) {
                 clearTimeout(trailingTimer.current)
                 trailingTimer.current = null

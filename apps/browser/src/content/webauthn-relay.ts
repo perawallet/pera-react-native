@@ -22,6 +22,7 @@ import {
     WEBAUTHN_RELAY_SCOPE,
     type WebauthnCeremonyResponse,
 } from '@perawallet/wallet-core-browser-runtime'
+import type { Optional, Nullable } from '@perawallet/wallet-core-shared'
 import {
     WEBAUTHN_CHANNEL_HANDSHAKE_EVENT,
     WEBAUTHN_CHANNEL_RELAY_READY_EVENT,
@@ -44,15 +45,15 @@ const isInterceptionEnabled: Promise<boolean> = chrome.storage.local
     .get(SETTINGS_STORE_KV_KEY)
     .then(raw =>
         parseWebauthnInterceptionEnabled(
-            raw[SETTINGS_STORE_KV_KEY] as string | undefined,
+            raw[SETTINGS_STORE_KV_KEY] as Optional<string>,
         ),
     )
     // A storage read failure must never crash the relay module (which would
     // orphan every future ceremony on this page) — fail closed to disabled.
     .catch(() => false)
 
-let requestEventName: string | null = null
-let responseEventName: string | null = null
+let requestEventName: Nullable<string> = null
+let responseEventName: Nullable<string> = null
 
 const respond = (id: string, response: WebauthnCeremonyResponse): void => {
     if (!responseEventName) return

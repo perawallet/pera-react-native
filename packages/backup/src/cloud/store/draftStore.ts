@@ -18,7 +18,7 @@ import {
     zeroBytes,
 } from '@perawallet/wallet-core-kms'
 import { registerStore } from '@perawallet/wallet-core-shared'
-import type { BaseStoreState } from '@perawallet/wallet-core-shared'
+import type { BaseStoreState, Nullable } from '@perawallet/wallet-core-shared'
 import type { BackupId, DeviceId } from '../models'
 import type { BackupEncryptionKey } from '../credentials/backupCredentialsFile'
 
@@ -37,9 +37,9 @@ export type CloudBackupRegistration = {
 }
 
 type CloudBackupDraftState = BaseStoreState & {
-    mnemonicIndices: Uint16Array | null
-    salt: string | null
-    registration: CloudBackupRegistration | null
+    mnemonicIndices: Nullable<Uint16Array>
+    salt: Nullable<string>
+    registration: Nullable<CloudBackupRegistration>
 }
 
 type CloudBackupDraftActions = {
@@ -58,9 +58,9 @@ export type CloudBackupDraftStore = CloudBackupDraftState &
     CloudBackupDraftActions
 
 const initialDraftState = {
-    mnemonicIndices: null as Uint16Array | null,
-    salt: null as string | null,
-    registration: null as CloudBackupRegistration | null,
+    mnemonicIndices: null as Nullable<Uint16Array>,
+    salt: null as Nullable<string>,
+    registration: null as Nullable<CloudBackupRegistration>,
 }
 
 /** Setup draft: the credentials we generate. */
@@ -136,7 +136,7 @@ export const useCloudBackupDraftStore = create<CloudBackupDraftStore>()((
 
 /** Words live only for the caller's turn; the retained form stays the zeroable
  *  index buffer in the store. */
-export const readCloudBackupDraftMnemonic = (): string[] | null => {
+export const readCloudBackupDraftMnemonic = (): Nullable<string[]> => {
     const { mnemonicIndices } = useCloudBackupDraftStore.getState()
     if (!mnemonicIndices) return null
     return Array.from(mnemonicIndices, index => mnemonicIndexToWord(index))
@@ -150,15 +150,15 @@ registerStore({
 
 type CloudBackupRestoreDraftState = BaseStoreState & {
     /** Wordlist indices, when every entered token is a wordlist word. */
-    mnemonicIndices: Uint16Array | null
+    mnemonicIndices: Nullable<Uint16Array>
     /** UTF-8 fallback for an entry containing a non-wordlist token. */
-    mnemonicRawBytes: Uint8Array | null
+    mnemonicRawBytes: Nullable<Uint8Array>
     /**
      * The key read out of a saved credentials file, carried from the options
      * sheet to the encryption-key screen. Here rather than in route params so
      * it never enters the navigation state tree.
      */
-    importedKey: BackupEncryptionKey | null
+    importedKey: Nullable<BackupEncryptionKey>
 }
 
 type CloudBackupRestoreDraftActions = {
@@ -171,9 +171,9 @@ export type CloudBackupRestoreDraftStore = CloudBackupRestoreDraftState &
     CloudBackupRestoreDraftActions
 
 const initialRestoreDraftState = {
-    mnemonicIndices: null as Uint16Array | null,
-    mnemonicRawBytes: null as Uint8Array | null,
-    importedKey: null as BackupEncryptionKey | null,
+    mnemonicIndices: null as Nullable<Uint16Array>,
+    mnemonicRawBytes: null as Nullable<Uint8Array>,
+    importedKey: null as Nullable<BackupEncryptionKey>,
 }
 
 /**
@@ -222,7 +222,7 @@ export const useCloudBackupRestoreDraftStore =
  * Leaves the retained buffer intact so a rejected attempt can be retried with a
  * different encryption key; `clearDraft` is what zeroes it.
  */
-export const readCloudBackupRestoreMnemonic = (): string[] | null => {
+export const readCloudBackupRestoreMnemonic = (): Nullable<string[]> => {
     const { mnemonicIndices, mnemonicRawBytes } =
         useCloudBackupRestoreDraftStore.getState()
 
@@ -235,7 +235,7 @@ export const readCloudBackupRestoreMnemonic = (): string[] | null => {
     return null
 }
 
-export const readCloudBackupImportedKey = (): BackupEncryptionKey | null =>
+export const readCloudBackupImportedKey = (): Nullable<BackupEncryptionKey> =>
     useCloudBackupRestoreDraftStore.getState().importedKey
 
 export const setCloudBackupImportedKey = (

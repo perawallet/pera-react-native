@@ -18,6 +18,8 @@ import {
     ErrorSeverity,
     concatBytes,
     logger,
+    type Nullable,
+    type Optional,
 } from '@perawallet/wallet-core-shared'
 import {
     authenticatorData,
@@ -142,7 +144,7 @@ export type SigningContext = {
      */
     selectCredential?: (
         candidates: DiscoverableCredentialChoice[],
-    ) => Promise<string | null>
+    ) => Promise<Nullable<string>>
 }
 
 /** The subset of a stored credential a picker needs to label a row. */
@@ -201,7 +203,7 @@ const isRegistrableSuffix = (rpId: string, hostname: string): boolean => {
  * `navigator.credentials` does.
  */
 export const resolveRpId = (
-    rpIdFromOptions: string | undefined,
+    rpIdFromOptions: Optional<string>,
     origin: string,
 ): string => {
     const hostname = extractHostname(origin)

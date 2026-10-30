@@ -12,7 +12,7 @@
 
 import { create } from 'zustand'
 import { zeroBytes } from '@perawallet/wallet-core-kms'
-import { registerStore } from '@perawallet/wallet-core-shared'
+import { registerStore, type Nullable } from '@perawallet/wallet-core-shared'
 import type { HdIndex } from '../models'
 
 /**
@@ -36,7 +36,7 @@ export type HDImportSession = {
 }
 
 type State = {
-    pending: HDImportSession | null
+    pending: Nullable<HDImportSession>
 }
 
 type Actions = {

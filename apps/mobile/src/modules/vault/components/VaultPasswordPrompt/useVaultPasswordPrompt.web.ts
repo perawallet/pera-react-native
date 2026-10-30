@@ -11,7 +11,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import {
     PasskeyUnlockError,
     VaultCorruptedError,
@@ -56,7 +56,7 @@ export const useVaultPasswordPrompt = ({
     const [hasError, setHasError] = useState(false)
     // On performance.now(), like the vault's own lockout, so moving the system
     // clock can't clear the countdown.
-    const [lockoutEndTime, setLockoutEndTime] = useState<number | null>(null)
+    const [lockoutEndTime, setLockoutEndTime] = useState<Nullable<number>>(null)
     const [lockoutSeconds, setLockoutSeconds] = useState(0)
     // Tracked separately from isSubmitting so the password stays submittable
     // while a passkey prompt is outstanding — see the auto-launch effect below.

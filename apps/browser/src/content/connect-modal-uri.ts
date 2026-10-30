@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import type { Nullable } from '@perawallet/wallet-core-shared'
+
 // Shared extraction of the WalletConnect pairing URI from a
 // @perawallet/connect connect-modal. Used by the Discover-iframe bridge
 // (discover-main.ts) and by the all-URLs connect-modal watcher. Ported from
@@ -33,8 +35,8 @@ export const isWcUri = (value: unknown): value is string =>
         value.startsWith(`${PERAWALLET_WC_SCHEME}:`))
 
 export const extractUriFromConnectModal = (
-    wrapper: Element | null,
-): string | null => {
+    wrapper: Nullable<Element>,
+): Nullable<string> => {
     if (!wrapper) return null
     // Current (@perawallet/connect >=1.3): the wc URI is set as the 'uri'
     // attribute on the <pera-wallet-connect-modal> custom element itself

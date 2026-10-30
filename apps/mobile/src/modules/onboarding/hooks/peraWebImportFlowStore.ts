@@ -16,7 +16,7 @@ import type {
     PeraWebQrPayload,
 } from '@perawallet/wallet-core-backup'
 import { zeroBytes } from '@perawallet/wallet-core-kms'
-import { registerStore } from '@perawallet/wallet-core-shared'
+import { registerStore, type Nullable } from '@perawallet/wallet-core-shared'
 
 // Transient state for the Pera Web import wizard. Holds the QR-decoded
 // payload (from the scanner) and the decrypted backup (from the loading
@@ -24,8 +24,8 @@ import { registerStore } from '@perawallet/wallet-core-shared'
 // across app launches. Mirrors `asbImportFlowStore` in shape.
 
 type State = {
-    qr: PeraWebQrPayload | null
-    payload: PeraWebBackupPayload | null
+    qr: Nullable<PeraWebQrPayload>
+    payload: Nullable<PeraWebBackupPayload>
 }
 
 type Actions = {

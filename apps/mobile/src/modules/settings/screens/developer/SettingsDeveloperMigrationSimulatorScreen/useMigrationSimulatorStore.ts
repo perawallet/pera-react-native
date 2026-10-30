@@ -12,7 +12,7 @@
 
 import type { MigrationPlanSummary } from '@perawallet/wallet-extension-platform'
 import { getProvider } from '@perawallet/wallet-extension-provider'
-import { registerStore, toError } from '@perawallet/wallet-core-shared'
+import { registerStore, toError, type Nullable } from '@perawallet/wallet-core-shared'
 import { create } from 'zustand'
 
 export type SimulationOutcome =
@@ -30,7 +30,7 @@ type MigrationSimulatorState = {
     plans: MigrationPlanSummary[]
     isLoadingPlans: boolean
     hasLoadedPlans: boolean
-    loadError: Error | null
+    loadError: Nullable<Error>
     selectedVersions: Record<string, number>
     includeUnroutable: boolean
     includeAuthState: boolean

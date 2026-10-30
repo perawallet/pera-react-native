@@ -19,6 +19,7 @@ import type { AccountsChainAdapter } from '@perawallet/wallet-core-accounts'
 import {
     createConcurrencyLimit,
     type ConcurrencyLimit,
+    type Optional,
 } from '@perawallet/wallet-core-shared'
 import type { EvmChain } from '../chains/types'
 import {
@@ -52,7 +53,7 @@ type Quiet = { address: string; index: number }
 // index batches at once, and each quiet address costs a Pera GET, so a
 // per-batch cap would still burst into the backend's rate limit.
 const PERA_LOOKUP_CONCURRENCY = 4
-let peraLookupGate: ConcurrencyLimit | undefined
+let peraLookupGate: Optional<ConcurrencyLimit>
 // Built on first use, so importing the adapter runs nothing.
 const peraLookup: ConcurrencyLimit = task => {
     peraLookupGate ??= createConcurrencyLimit(PERA_LOOKUP_CONCURRENCY)
@@ -110,7 +111,7 @@ export const createEvmActivityCheck =
     async (addresses, scope) => {
         const errors: unknown[] = []
         // One entry per source that applies; undefined when it could not answer.
-        const answers = addresses.map((): (boolean | undefined)[] => [])
+        const answers = addresses.map((): Optional<boolean>[] => [])
         const take = (
             index: number,
             result: PromiseSettledResult<boolean>,

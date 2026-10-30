@@ -14,6 +14,7 @@ import {
     INTEGRITY_LAST_FAILURE_SESSION_KEY,
     type IntegrityLastFailure,
 } from '@perawallet/wallet-core-browser-runtime'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 
 // The UI derives its access state from this; the worker never reads it to decide anything
 // beyond a soft retry, so a lost write costs a less precise banner, never a loop.
@@ -26,13 +27,16 @@ export const recordLastFailure = async (
 }
 
 /** When the last failure the network was not to blame for happened; transport failures cost nothing. */
-export const readLastAnsweredFailureAt = async (): Promise<number | null> => {
+export const readLastAnsweredFailureAt = async (): Promise<
+    Nullable<number>
+> => {
     const stored = await chrome.storage.session.get(
         INTEGRITY_LAST_FAILURE_SESSION_KEY,
     )
-    const failure = stored[INTEGRITY_LAST_FAILURE_SESSION_KEY] as
-        | { at?: unknown; isTransport?: unknown }
-        | undefined
+    const failure = stored[INTEGRITY_LAST_FAILURE_SESSION_KEY] as Optional<{
+        at?: unknown
+        isTransport?: unknown
+    }>
     if (failure?.isTransport === true) return null
     return typeof failure?.at === 'number' ? failure.at : null
 }
@@ -44,9 +48,9 @@ export const clearLastFailure = async (
     const stored = await chrome.storage.session.get(
         INTEGRITY_LAST_FAILURE_SESSION_KEY,
     )
-    const current = stored[INTEGRITY_LAST_FAILURE_SESSION_KEY] as
-        | { phase?: unknown }
-        | undefined
+    const current = stored[INTEGRITY_LAST_FAILURE_SESSION_KEY] as Optional<{
+        phase?: unknown
+    }>
     if (current?.phase === phase) {
         await chrome.storage.session.remove(INTEGRITY_LAST_FAILURE_SESSION_KEY)
     }

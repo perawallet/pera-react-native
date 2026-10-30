@@ -12,9 +12,11 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
+import { Decimal } from 'decimal.js'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import {
+    useAssetOnChainSupplyQuery,
     useSingleAssetDetailsQuery,
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
@@ -22,11 +24,11 @@ import { evmChainOf } from '@packages/chain-ethereum/src/chains/table'
 import { createEvmAddressCodec } from '@packages/chain-ethereum/src/accounts/address-codec'
 import { AnalyticsMetadataKey, AssetDetailsEvent } from '@analytics'
 import { algorandChainUi } from '@modules/algorand/chain-ui'
+import { ethereumChainUi } from '@modules/ethereum/chain-ui'
 import { registerEthereumChain } from '@test-utils/chain-fixtures'
 import { setCapabilityOverrides } from '@test-utils/capability-overrides'
 import { accountForType } from '@test-utils/accountCustody'
 import { useAssetDetailsScreen } from '../useAssetDetailsScreen'
-import { neutralAssetDetailsDisplay } from '../neutralAssetDetailsDisplay'
 
 const ethereumDescriptor = evmChainOf('ethereum').descriptor
 const ethereumAddressCodec = createEvmAddressCodec(evmChainOf('ethereum'))
@@ -68,7 +70,13 @@ const ethereumAccount = (): WalletAccount => ({
 })
 
 const assetFixture = (assetId: string, explorerUrl?: string): PeraAsset =>
-    ({ assetId, name: 'Fixture', peraMetadata: { explorerUrl } }) as PeraAsset
+    ({
+        assetId,
+        name: 'Fixture',
+        decimals: 6,
+        totalSupply: new Decimal('5000000'),
+        peraMetadata: { explorerUrl },
+    }) as PeraAsset
 
 const mockAsset = (
     result:
@@ -115,7 +123,7 @@ describe('useAssetDetailsScreen', () => {
             result.current.scope,
         )
         expect(result.current.assetDetailsDisplay).toBe(
-            neutralAssetDetailsDisplay,
+            ethereumChainUi?.assetDetails,
         )
         expect(
             result.current.assetDetailsDisplay.VerificationSection,
@@ -123,8 +131,12 @@ describe('useAssetDetailsScreen', () => {
         expect(
             result.current.assetDetailsDisplay.IssuerControlsSection,
         ).toBeUndefined()
+        expect(result.current.supply?.labelKey).toBe(
+            'asset_details.markets.total_supply',
+        )
+        expect(result.current.supply?.amount?.toFixed()).toBe('5000000')
         expect(result.current.about).toEqual({
-            idLabelKey: 'asset_details.collectible.asset_id',
+            idLabelKey: 'asset_details.collectible.contract',
             urlLabelKey: 'asset_details.about.url',
             explorerLink: { url, label: new URL(url as string).hostname },
         })
@@ -153,7 +165,7 @@ describe('useAssetDetailsScreen', () => {
         )
     })
 
-    it('hides the id row and the explorer row for ETH', () => {
+    it('hides the id row and links the explorer front page for ETH', () => {
         const nativeId = ethereumDescriptor.nativeAsset.ref.assetId
         mockAsset({ data: assetFixture(nativeId) })
 
@@ -166,7 +178,95 @@ describe('useAssetDetailsScreen', () => {
         )
 
         expect(result.current.about?.idLabelKey).toBeNull()
-        expect(result.current.about?.explorerLink).toBeNull()
+        expect(result.current.about?.explorerLink?.label).toBe('etherscan.io')
+        expect(result.current.supply).toEqual({
+            labelKey: 'asset_details.markets.circulating_supply',
+            infoBodyKey: 'asset_details.markets.circulating_supply_info_body',
+            amount: null,
+        })
+    })
+
+    describe('when the stored supply is unknown', () => {
+        const zeroSupply = (assetId: string): PeraAsset => ({
+            ...assetFixture(assetId),
+            totalSupply: new Decimal(0),
+        })
+        beforeEach(() => {
+            vi.mocked(useAssetOnChainSupplyQuery).mockReturnValue({
+                totalSupply: null,
+            })
+        })
+
+        const render = (assetId: string, isCollectible = false) =>
+            renderHook(() =>
+                useAssetDetailsScreen({
+                    assetId,
+                    chainId: 'ethereum',
+                    isCollectible,
+                }),
+            )
+
+        it("reads a token's supply from the chain and shows it", () => {
+            mockAsset({ data: zeroSupply(ERC20_ID) })
+            vi.mocked(useAssetOnChainSupplyQuery).mockReturnValue({
+                totalSupply: new Decimal('61234567890000000'),
+            })
+
+            const { result } = render(ERC20_ID)
+
+            expect(useAssetOnChainSupplyQuery).toHaveBeenCalledWith(
+                ERC20_ID,
+                result.current.scope,
+                true,
+            )
+            expect(result.current.supply?.amount?.toFixed()).toBe(
+                '61234567890000000',
+            )
+        })
+
+        it('shows no figure while the chain has not answered', () => {
+            mockAsset({ data: zeroSupply(ERC20_ID) })
+
+            const { result } = render(ERC20_ID)
+
+            expect(result.current.supply?.amount).toBeNull()
+        })
+
+        it('makes no chain read for a collectible, which has no ERC-20 surface', () => {
+            mockAsset({ data: zeroSupply(ERC20_ID) })
+            render(ERC20_ID, true)
+            mockAsset({
+                data: {
+                    ...zeroSupply(ERC20_ID),
+                    peraMetadata: {
+                        isDeleted: false,
+                        verificationTier: 'unverified',
+                        type: 'collectible',
+                    },
+                },
+            })
+            render(ERC20_ID)
+
+            expect(useAssetOnChainSupplyQuery).not.toHaveBeenCalledWith(
+                expect.anything(),
+                expect.anything(),
+                true,
+            )
+        })
+
+        it('makes no chain read for the native coin or a token with a stored supply', () => {
+            const nativeId = ethereumDescriptor.nativeAsset.ref.assetId
+            mockAsset({ data: zeroSupply(nativeId) })
+            render(nativeId)
+            mockAsset({ data: assetFixture(ERC20_ID) })
+            render(ERC20_ID)
+
+            expect(useAssetOnChainSupplyQuery).not.toHaveBeenCalledWith(
+                expect.anything(),
+                expect.anything(),
+                true,
+            )
+        })
     })
 
     it('reports an error rather than loading forever when the metadata fails', () => {
@@ -183,6 +283,7 @@ describe('useAssetDetailsScreen', () => {
         expect(result.current.isError).toBe(true)
         expect(result.current.isLoading).toBe(false)
         expect(result.current.about).toBeNull()
+        expect(result.current.supply).toBeNull()
     })
 
     it('keeps a loaded asset when a background refetch fails', () => {

@@ -14,6 +14,7 @@ import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     toEnumValueOrNull,
     type Nullable,
+    type Optional,
 } from '@perawallet/wallet-core-shared'
 import { getPeraServicesConfig } from '@perawallet/wallet-core-config'
 import { getCardApiError, isConflictError, isDuplicateError } from '../errors'
@@ -140,7 +141,7 @@ export type RegisterStepResult = {
 
 const toRegisterStepResult = (response: unknown): RegisterStepResult => {
     const parsed = registerStepResponseSchema.safeParse(
-        (response as { data?: unknown } | undefined)?.data,
+        (response as Optional<{ data?: unknown }>)?.data,
     )
     return {
         phase: parsed.success
@@ -277,10 +278,10 @@ export const fetchOnboardingDetails = async (
 export type SubmitAddressParams = ScopeParams & { address: AddressInput }
 export type SubmitAddressResult = {
     /** Usually null: the session comes from the login once KYC verifies. */
-    accessToken: string | null
+    accessToken: Nullable<string>
     onboardingId: string
     /** Permanent user id (`user.id`); null until Baanx returns the user block. */
-    userId: string | null
+    userId: Nullable<string>
 }
 export const submitAddress = async (
     params: SubmitAddressParams,
@@ -402,7 +403,7 @@ export type SubmitOnboardingConsentParams = ScopeParams &
     Omit<OnboardingConsentInput, 'tenantId'>
 export type SubmitOnboardingConsentResult = {
     /** Null when Baanx omitted it (e.g. a duplicate-onboardingId retry). */
-    consentSetId: string | null
+    consentSetId: Nullable<string>
 }
 export const submitOnboardingConsent = async (
     params: SubmitOnboardingConsentParams,

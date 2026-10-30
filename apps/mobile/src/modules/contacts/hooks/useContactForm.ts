@@ -38,7 +38,7 @@ import {
 import { useImagePicker } from '@hooks/useImagePicker'
 import { useNfdResolve } from '@hooks/useNfdResolve'
 
-import type { Optional } from '@perawallet/wallet-core-shared'
+import type { Optional, Nullable } from '@perawallet/wallet-core-shared'
 
 export type NfdState = {
     resolvedAddress: string
@@ -88,7 +88,7 @@ export type UseContactFormResult = {
  * supplies its own submit / delete behaviour on top of what this returns.
  */
 export const useContactForm = (
-    initialContact: NewContact | null,
+    initialContact: Nullable<NewContact>,
 ): UseContactFormResult => {
     const { pickFromGallery } = useImagePicker()
     const { contacts } = useContacts()

@@ -96,6 +96,7 @@ export const SelectHDWalletScreen = () => {
                     </PWView>
                     <PWView style={styles.balanceContainer}>
                         <AssetAmount
+                            chainId={scope.chainId}
                             asset={nativeAsset}
                             value={groupAlgoValue}
                             density='compact'

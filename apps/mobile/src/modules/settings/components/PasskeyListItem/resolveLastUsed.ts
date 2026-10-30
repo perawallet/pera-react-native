@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { formatDatetime } from '@perawallet/wallet-core-shared'
+import { formatDatetime, type Optional } from '@perawallet/wallet-core-shared'
 
 /**
  * How the "Last used" value should be rendered. The component maps each kind to
@@ -33,7 +33,7 @@ const isSameCalendarDay = (a: Date, b: Date): boolean =>
  * otherwise a formatted date.
  */
 export const resolveLastUsed = (
-    lastUsedAt: number | undefined,
+    lastUsedAt: Optional<number>,
     now: number = Date.now(),
 ): LastUsedDisplay => {
     if (typeof lastUsedAt !== 'number' || !Number.isFinite(lastUsedAt)) {

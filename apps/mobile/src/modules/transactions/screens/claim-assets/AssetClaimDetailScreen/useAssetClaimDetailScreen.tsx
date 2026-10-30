@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { useCallback, useMemo } from 'react'
 import { useRoute, type RouteProp } from '@react-navigation/native'
 import type { AssetInboxRequest } from '@perawallet/wallet-core-transactions'
@@ -37,6 +38,8 @@ import type { Nullable } from '@perawallet/wallet-core-shared'
 
 type UseAssetClaimDetailScreenResult = {
     request: Nullable<AssetInboxRequest>
+    /** The chain the claimed asset is on. */
+    chainId: ChainId
     receiverAccount: Nullable<WalletAccount>
     amount: Decimal
     /** The native asset's ticker, for the insufficient-funds copy. */
@@ -200,6 +203,7 @@ export const useAssetClaimDetailScreen =
 
         return {
             request,
+            chainId: scope.chainId,
             amount,
             nativeSymbol,
             claimGainLabel,

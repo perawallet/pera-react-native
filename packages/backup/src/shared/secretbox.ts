@@ -12,6 +12,7 @@
 
 import nacl from 'tweetnacl'
 import { zeroBytes } from '@perawallet/wallet-core-kms'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 // Shared secretbox primitive used by both the secure-backup and Pera Web
 // "Transfer Accounts" import flows.
@@ -47,7 +48,7 @@ const NONCE_LENGTH = 24
 export const secretboxOpenWithPrependedNonce = (
     payload: Uint8Array,
     key: Uint8Array,
-): Uint8Array | null => {
+): Nullable<Uint8Array> => {
     if (payload.length <= NONCE_LENGTH) {
         return null
     }

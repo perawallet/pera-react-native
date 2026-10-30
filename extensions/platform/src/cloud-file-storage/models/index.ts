@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import type { Nullable } from '@perawallet/wallet-core-shared'
+
 /** The personal cloud drives a saved file can live in. */
 export type CloudFileStore = 'icloud' | 'googleDrive'
 
@@ -27,7 +29,7 @@ export type CloudFileReadResult =
  * Asks the user which file to read when the folder holds more than one
  * candidate. Returning `null` backs out of the read.
  */
-export type ChooseCloudFile = (fileNames: string[]) => Promise<string | null>
+export type ChooseCloudFile = (fileNames: string[]) => Promise<Nullable<string>>
 
 export type ReadCloudFileOptions = {
     /**

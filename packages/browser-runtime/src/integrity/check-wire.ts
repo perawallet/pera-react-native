@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import type { Nullable } from '@perawallet/wallet-core-shared'
+
 // Pure wire for the Turnstile check page: constants, types, parsers and a URL
 // builder shared by the content script (relaying window.postMessage to a
 // runtime port) and the service worker (the port's other end). No chrome.*
@@ -85,7 +87,7 @@ export type IntegrityControlMessage =
           /** A guarded request was refused while this realm held a token it believed valid. */
           kind: 'token-rejected'
           /** Epoch ms expiry of the refused token, naming it; null when the refusal could not say. */
-          tokenExpiresAt: number | null
+          tokenExpiresAt: Nullable<number>
       }
 
 export type IntegrityEnrolDecision =
@@ -125,7 +127,7 @@ export const buildCheckUrl = ({
 
 export const parseCheckPageMessage = (
     data: unknown,
-): CheckPageMessage | null => {
+): Nullable<CheckPageMessage> => {
     if (!isRecord(data)) return null
     if (data.type !== INTEGRITY_CHECK_MESSAGE_TYPE) return null
     if (data.v !== INTEGRITY_CHECK_VERSION) return null
@@ -210,12 +212,12 @@ const FRAME_EVENT_BY_PAGE_EVENT: Partial<
 
 export const frameEventFor = (
     message: CheckPageMessage,
-): IntegrityFrameEvent | null =>
+): Nullable<IntegrityFrameEvent> =>
     FRAME_EVENT_BY_PAGE_EVENT[message.event] ?? null
 
 export const parseCheckPortMessage = (
     data: unknown,
-): IntegrityCheckPortMessage | null => {
+): Nullable<IntegrityCheckPortMessage> => {
     if (!isRecord(data)) return null
     if (data.v !== INTEGRITY_CHECK_VERSION) return null
     if (typeof data.kid !== 'string') return null
@@ -259,7 +261,7 @@ export const parseCheckPortMessage = (
 
 export const parseIntegrityFrameMessage = (
     data: unknown,
-): IntegrityFrameMessage | null =>
+): Nullable<IntegrityFrameMessage> =>
     isRecord(data) &&
     data.type === INTEGRITY_FRAME_MESSAGE_TYPE &&
     data.v === INTEGRITY_CHECK_VERSION &&
@@ -299,7 +301,7 @@ export const parseIntegrityEnrolDecision = (
 
 export const parseIntegrityControlMessage = (
     message: unknown,
-): IntegrityControlMessage | null => {
+): Nullable<IntegrityControlMessage> => {
     if (!isRecord(message) || message.scope !== INTEGRITY_CONTROL_SCOPE) {
         return null
     }

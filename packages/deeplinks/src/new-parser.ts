@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import {
     type AnyParsedDeeplink,
     DeeplinkType,
@@ -58,7 +59,9 @@ import { PERAWALLET_SCHEME } from './constants'
 /**
  * Parse Perawallet new-style URIs: perawallet://app/path?params
  */
-export function parsePerawalletAppUri(url: string): AnyParsedDeeplink | null {
+export function parsePerawalletAppUri(
+    url: string,
+): Nullable<AnyParsedDeeplink> {
     const normalizedUrl = normalizeUrl(url)
 
     if (
