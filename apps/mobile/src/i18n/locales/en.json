@@ -1204,6 +1204,10 @@
                 "title": "Insufficient {{symbol}}",
                 "body": "This account doesn't have enough {{symbol}} to cover the amount and the network fee. Add more {{symbol}} and try again."
             },
+            "fee_above_confirmed": {
+                "title": "Network fees went up",
+                "body": "The network fee is now above the max fee you confirmed. Review the send to see the new fee."
+            },
             "rate_limited": {
                 "title": "Network busy",
                 "body": "The network is receiving too many requests right now. Please wait a moment and try again."

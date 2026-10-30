@@ -1196,6 +1196,10 @@
                 "title": "Nicht genügend {{symbol}}",
                 "body": "Dieses Konto verfügt nicht über genügend {{symbol}}, um den Betrag und die Netzwerkgebühr zu decken. Füge mehr {{symbol}} hinzu und versuche es erneut."
             },
+            "fee_above_confirmed": {
+                "title": "Netzwerkgebühren gestiegen",
+                "body": "Die Netzwerkgebühr liegt jetzt über der von dir bestätigten maximalen Gebühr. Prüfe die Transaktion, um die neue Gebühr zu sehen."
+            },
             "rate_limited": {
                 "title": "Netzwerk ausgelastet",
                 "body": "Das Netzwerk erhält gerade zu viele Anfragen. Bitte warte einen Moment und versuche es erneut."

@@ -1204,6 +1204,10 @@
                 "title": "{{symbol}} insuficiente",
                 "body": "Esta cuenta no tiene suficiente {{symbol}} para cubrir el importe y la comisión de red. Añade más {{symbol}} y vuelve a intentarlo."
             },
+            "fee_above_confirmed": {
+                "title": "Las comisiones de red han subido",
+                "body": "La comisión de red supera ahora la comisión máxima que confirmaste. Revisa el envío para ver la nueva comisión."
+            },
             "rate_limited": {
                 "title": "Red saturada",
                 "body": "La red está recibiendo demasiadas solicitudes en este momento. Espera un momento y vuelve a intentarlo."

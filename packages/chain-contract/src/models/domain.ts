@@ -304,6 +304,11 @@ export interface BuildContext {
     chainState?: AccountChainState
     /** The speed to price at; unset means `'normal'`. A chain without presets ignores it. */
     feePreset?: FeePreset
+    /**
+     * In base units of the native asset: the most the sender confirmed the send may be charged. A
+     * chain that prices at build keeps its worst case within it and refuses to build when it can't.
+     */
+    maxFee?: Decimal
 }
 
 /** Slowest first, which is the display order. */

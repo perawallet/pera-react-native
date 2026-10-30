@@ -50,7 +50,7 @@ import {
 } from '../blockchain/errors'
 import type { EvmChain } from '../chains/types'
 import { ethereumCallSummary } from '../signing/review'
-import { readEvmSurcharge } from './fees'
+import { SURCHARGE_HEADROOM, readEvmSurcharge } from './fees'
 import { meetsReplacementBump, readReplaceableTransaction } from './replacement'
 
 // Nodes word a resend of a pooled transaction differently; Anvil says
@@ -150,7 +150,8 @@ export type SubmitAndRecordEthereumTransactionsParams = {
 }
 
 // Wei: gas limit x max fee per gas plus what the chain charges on top of gas,
-// the most the transaction can be charged.
+// the most the transaction can be charged. The surcharge carries the headroom the quote reserves:
+// the L1 fee is priced again at inclusion, so a pending send holds back what its own quote did.
 // The signing adapter signs EIP-1559 only, so there is no legacy gasPrice.
 const maxFeeOf = (
     { gas, maxFeePerGas }: ReturnType<typeof parseTransaction>,
@@ -158,7 +159,9 @@ const maxFeeOf = (
 ): Optional<Decimal> =>
     gas === undefined || maxFeePerGas === undefined
         ? undefined
-        : new Decimal((gas * maxFeePerGas + surcharge).toString())
+        : new Decimal(
+              (gas * maxFeePerGas + SURCHARGE_HEADROOM * surcharge).toString(),
+          )
 
 // The newest open attempt of the sender at this nonce under another hash; a
 // transport retry of the same bytes shares the hash, so it replaces nothing.

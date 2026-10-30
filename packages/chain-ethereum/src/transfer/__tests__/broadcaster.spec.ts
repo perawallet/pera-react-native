@@ -266,7 +266,7 @@ describe('Ethereum broadcaster adapter', () => {
                 }),
             })
 
-        it('records an open send’s max fee as gas x max fee per gas plus the oracle’s fee for the signed bytes', async () => {
+        it('records an open send’s max fee as gas x max fee per gas plus twice the oracle’s fee for the signed bytes', async () => {
             useOracle(
                 new Map([
                     [
@@ -283,7 +283,7 @@ describe('Ethereum broadcaster adapter', () => {
             await base.submitAndAutoRefresh(BASE_SCOPE, SIGNED)
 
             const expected = new Decimal(
-                (GAS_FEE + L1_FEE + OPERATOR_FEE).toString(),
+                (GAS_FEE + 2n * (L1_FEE + OPERATOR_FEE)).toString(),
             )
             const [attempt] = await getSubmissionAttemptsWithHistoryEntry({
                 db,
