@@ -98,6 +98,12 @@ Three consequences web code should know:
 the two fields answer different questions and can legitimately disagree: a user
 in Germany reading the app in Turkish reports `region: 'DE'`, `language: 'tr'`.
 
+`getSettings` also reports `restrictedFeatures`, the features the app's
+`region_restrictions` Remote Config map restricts in that region (e.g.
+`['crypto_promotion', 'swap']`). Discover applies this list instead of its own
+Firebase copy, so the wallet and Discover cannot disagree; its own config only
+serves app versions that predate the field.
+
 Whether the Discover web app can serve every locale the wallet can select is a
 separate question from what this bridge reports.
 
