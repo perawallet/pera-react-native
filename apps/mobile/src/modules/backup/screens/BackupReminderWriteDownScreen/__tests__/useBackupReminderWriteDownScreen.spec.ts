@@ -27,7 +27,7 @@ vi.mock('@analytics', () => ({
 
 vi.mock('@hooks/useLanguage')
 
-vi.mock('@modules/view-passphrase', () => ({
+vi.mock('../../../hooks', () => ({
     usePassphraseReach: (...args: unknown[]) => mockReach(...args),
 }))
 

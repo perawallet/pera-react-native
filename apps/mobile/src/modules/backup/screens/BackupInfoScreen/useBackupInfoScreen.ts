@@ -19,7 +19,7 @@ import {
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { trackEvent, OnboardingEvent } from '@analytics'
 import { useLanguage } from '@hooks/useLanguage'
-import { usePassphraseReach } from '@modules/view-passphrase'
+import { usePassphraseReach } from '../../hooks'
 import type { BackupStackParamList } from '../../routes/types'
 
 export type UseBackupInfoScreenResult = {

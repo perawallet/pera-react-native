@@ -16,7 +16,7 @@ import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { PWSheetLayoutScrollHandle } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import { usePassphraseReach } from '../../hooks'
+import { usePassphraseReach } from '@modules/backup'
 
 export type UsePassphraseAcknowledgeContentParams = {
     address: string
