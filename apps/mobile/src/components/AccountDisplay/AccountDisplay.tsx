@@ -28,6 +28,7 @@ import { useStyles } from './styles'
 import { useAccountDisplay } from './useAccountDisplay'
 
 import { AccountIcon, type AccountIconProps } from '@components/AccountIcon'
+import { ChainAvatarBadge } from '@modules/chain-ui/icon'
 
 /** Pera Card identity rendered in place of an account (header trigger). */
 export type AccountDisplayCard = {
@@ -59,6 +60,8 @@ export type AccountDisplayProps = {
     alwaysShowAccountType?: boolean
     /** The chain whose name and address to show; defaults to the legacy chain. */
     chainId?: ChainId
+    /** Pins the displayed chain's icon to the avatar's bottom-left corner, clear of the backup badge. */
+    showChainBadge?: boolean
     /** Rendered after the secondary label, on the line under the name; never on the name's line. */
     badges?: ReactNode
 } & PWViewProps
@@ -75,6 +78,7 @@ export const AccountDisplay = ({
     showAccountType = false,
     alwaysShowAccountType = false,
     chainId,
+    showChainBadge = false,
     badges,
     ...rest
 }: AccountDisplayProps) => {
@@ -82,6 +86,7 @@ export const AccountDisplay = ({
     const styles = useStyles({ noBorder })
     const iconSize = iconProps?.size ?? 'xl'
     const {
+        chainId: resolvedChainId,
         displayName,
         secondaryText,
         renderSecondary,
@@ -149,6 +154,9 @@ export const AccountDisplay = ({
                         color={theme.colors.textMain}
                         {...iconProps}
                     />
+                    {showChainBadge && (
+                        <ChainAvatarBadge chainId={resolvedChainId} />
+                    )}
                     {showBackupBadge && (
                         <PWView
                             style={styles.backupBadge}
