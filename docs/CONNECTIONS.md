@@ -120,7 +120,9 @@ neither web realm constructs it; a v2 URI there fails as `no-handler` rather tha
 A v2 session spans every chain whose `dappConnect` capability is on when a proposal arrives and again
 when it settles. Each chain's `DappRequestChainAdapter` serves its own namespace, an approved address
 goes only under the namespace whose chain's address codec accepts it (no codec, no addresses), and a
-request routes by its CAIP-2 id to a chain's selected network only. Existing sessions and their
+request routes by its CAIP-2 id to a chain's selected network only. Chains sharing a namespace (every
+EVM chain is `eip155`) are approved as one namespace entry, since a session holds a single entry per
+key and the last chain's would replace the others'. Existing sessions and their
 requests never read the capability, so turning it off leaves them listed and revocable.
 
 Message signing is gated per request instead: an EVM chain's route table reads `messageSigning` on
@@ -135,10 +137,12 @@ The app's `watchWalletNotices` feeds `ConnectionRegistry.notify` with each chain
 account changes, and v2 emits `chainChanged` and `accountsChanged` only for a chain whose support
 declares `sessionEvents`. `chainChanged` goes only to a session that already holds the new network.
 
-A dApp's switch request (`wallet_switchEthereumChain`) never moves the wallet's selection. A target
-that is not the chain's selected network is refused. The selected network is answered at once if the
-session holds it, since approval was consent to it; otherwise the user is asked before it is added to
-the session.
+A dApp's switch request (`wallet_switchEthereumChain`) never moves the wallet's selection. The target
+is resolved across every chain of the request's namespace, so a request arriving on one EVM chain can
+name another. A target no chain serves, or one a session lacks whose chain has `dappConnect` off, is
+answered with the namespace's unrecognized-chain code and the user is told; a target that is not its
+chain's selected network is refused. The selected network is answered at once if the session holds it,
+since approval was consent to it; otherwise the user is asked before it is added to the session.
 
 ## The `dapp` handler
 
