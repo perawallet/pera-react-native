@@ -178,6 +178,24 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
         )
     })
 
+    it('Given an Algorand send, when the user reviews it, then the review shows the network chip and the network badge on both avatars', async () => {
+        await seedAlgo25Sender()
+        useSendFundsStore
+            .getState()
+            .setSelectedAsset({ chainId: 'algorand', assetId: NATIVE_ASSET_ID })
+        useSendFundsStore.getState().setAmount(new Decimal(1))
+        useSendFundsStore.getState().setDestination(RECEIVER_ADDRESS)
+        useSendFundsStore.getState().setSendMode('normal')
+
+        renderSendConfirmationStack()
+
+        const chip = await screen.findByTestId('send_confirm_network')
+        expect(chip.textContent).toContain('Algorand')
+        expect(
+            screen.getAllByTestId('chain_avatar_badge_algorand'),
+        ).toHaveLength(2)
+    })
+
     it('Given a pre-filled send-funds store, when the user taps the confirm button, then the pipeline signs locally, POSTs to algod, and the success screen renders', async () => {
         const sender = await seedAlgo25Sender()
         useSendFundsStore

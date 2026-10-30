@@ -11,7 +11,15 @@
  */
 
 import { fireEvent, render, screen, waitFor } from '@test-utils/render'
-import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import {
+    afterEach,
+    beforeEach,
+    describe,
+    expect,
+    it,
+    onTestFinished,
+    vi,
+} from 'vitest'
 import {
     type Optional,
     truncateAlgorandAddress,
@@ -61,6 +69,14 @@ vi.mock('@perawallet/wallet-core-contacts', () => ({
         contacts.find(contact =>
             Object.values(contact.addresses).includes(address),
         ),
+}))
+
+vi.mock('@components/AccountDisplay', () => ({
+    AccountDisplay: (props: { chainId?: string; showChainBadge?: boolean }) => (
+        <PWText testID='account_display'>
+            {`${props.chainId}|${String(props.showChainBadge)}`}
+        </PWText>
+    ),
 }))
 
 const mockUseNfdForAddress = vi.fn(() => ({
@@ -115,6 +131,121 @@ describe('AddressDisplay', () => {
         )
 
         expect(screen.getByText('0xf39f...2266')).toBeTruthy()
+    })
+
+    describe('chain badge', () => {
+        const ETH_SCOPE = { chainId: 'ethereum', networkId: 'mainnet' } as const
+        const ETH_ADDRESS = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'
+
+        beforeEach(() => {
+            registerEthereumChain()
+        })
+        afterEach(restoreAlgorandOnlyChains)
+
+        it("names a contact and badges the avatar with the address's chain", () => {
+            mockContacts = [
+                { name: 'Eth friend', addresses: { ethereum: ETH_ADDRESS } },
+            ]
+
+            render(
+                <AddressDisplay
+                    address={ETH_ADDRESS}
+                    scope={ETH_SCOPE}
+                    showChainBadge
+                />,
+            )
+
+            expect(screen.getByText('Eth friend')).toBeTruthy()
+            expect(screen.getByText('0xf39F...2266')).toBeTruthy()
+            expect(
+                screen.getByTestId('chain_avatar_badge_ethereum'),
+            ).toBeTruthy()
+        })
+
+        it('gives an unknown address the generic avatar and the badge, never an account icon', () => {
+            render(
+                <AddressDisplay
+                    address={ETH_ADDRESS}
+                    scope={ETH_SCOPE}
+                    forceShowIcon
+                    showChainBadge
+                />,
+            )
+
+            expect(screen.getByTestId('icon-person')).toBeTruthy()
+            expect(
+                screen.getByTestId('chain_avatar_badge_ethereum'),
+            ).toBeTruthy()
+            expect(screen.queryByTestId(/algo25-account/)).toBeNull()
+        })
+
+        it("shows one of the user's own accounts on the address's chain, with the badge", () => {
+            mockUseAllAccounts.mockReturnValue([
+                {
+                    name: 'ETH Test',
+                    chains: {
+                        algorand: { address: 'A'.repeat(58) },
+                        ethereum: { address: ETH_ADDRESS },
+                    },
+                    custody: { kind: 'watch' },
+                },
+            ])
+
+            render(
+                <AddressDisplay
+                    address={ETH_ADDRESS}
+                    scope={ETH_SCOPE}
+                    showChainBadge
+                />,
+            )
+
+            expect(screen.getByTestId('account_display').textContent).toBe(
+                'ethereum|true',
+            )
+        })
+
+        it('shows an address with no name in full when asked, and a named one still shortened', () => {
+            const { unmount } = render(
+                <AddressDisplay
+                    address={ETH_ADDRESS}
+                    scope={ETH_SCOPE}
+                    unnamedAddressFormat='full'
+                />,
+            )
+            expect(screen.getByText(ETH_ADDRESS)).toBeTruthy()
+            unmount()
+
+            mockContacts = [
+                { name: 'Eth friend', addresses: { ethereum: ETH_ADDRESS } },
+            ]
+            render(
+                <AddressDisplay
+                    address={ETH_ADDRESS}
+                    scope={ETH_SCOPE}
+                    unnamedAddressFormat='full'
+                />,
+            )
+            expect(screen.getByText('Eth friend')).toBeTruthy()
+            expect(screen.getByText('0xf39F...2266')).toBeTruthy()
+            expect(screen.queryByText(ETH_ADDRESS)).toBeNull()
+        })
+
+        it('draws no badge unless asked', () => {
+            mockContacts = [
+                { name: 'Eth friend', addresses: { ethereum: ETH_ADDRESS } },
+            ]
+
+            render(
+                <AddressDisplay
+                    address={ETH_ADDRESS}
+                    scope={ETH_SCOPE}
+                />,
+            )
+
+            expect(
+                screen.queryByTestId('chain_avatar_badge_ethereum'),
+            ).toBeNull()
+        })
     })
 
     it('shows a full EVM address in its checksummed form', () => {
