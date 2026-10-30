@@ -10,31 +10,23 @@
  limitations under the License
  */
 
-import { useCallback, useLayoutEffect } from 'react'
 import { SectionList } from 'react-native'
-import { useNavigation } from '@react-navigation/native'
-import type { CardWalletHistoryEntry } from '@perawallet/wallet-core-card'
 import {
     PWButton,
     PWIcon,
     PWImage,
-    PWLoadingIndicator,
     PWScreen,
     PWSkeleton,
     PWText,
     PWView,
 } from '@components/core'
-import { TransactionDateHeader } from '@modules/transactions'
 import { useLanguage } from '@hooks/useLanguage'
-import { CardWalletHistoryItem } from '../../components/CardWalletHistoryItem'
-import type { CardTransactionSection } from '../../utils/cardTransactions'
 import { useCardWalletBalanceScreen } from './useCardWalletBalanceScreen'
 import { useStyles } from './styles'
 
 export const CardWalletBalanceScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const navigation = useNavigation()
     const {
         kind,
         copy,
@@ -49,45 +41,12 @@ export const CardWalletBalanceScreen = () => {
         refetch,
         historySections,
         hasHistory,
-        isFetchingHistory,
         handleLoadMore,
+        renderItem,
+        renderSectionHeader,
+        keyExtractor,
+        renderFooter,
     } = useCardWalletBalanceScreen()
-
-    useLayoutEffect(() => {
-        navigation.setOptions({ title: copy.navigationTitle })
-    }, [navigation, copy.navigationTitle])
-
-    const renderItem = useCallback(
-        ({ item }: { item: CardWalletHistoryEntry }) => (
-            <CardWalletHistoryItem entry={item} />
-        ),
-        [],
-    )
-
-    const renderSectionHeader = useCallback(
-        ({
-            section,
-        }: {
-            section: CardTransactionSection<CardWalletHistoryEntry>
-        }) => <TransactionDateHeader title={section.title} />,
-        [],
-    )
-
-    // Baanx sends no row id; a timestamp alone can repeat within a page.
-    const keyExtractor = useCallback(
-        (item: CardWalletHistoryEntry, index: number) =>
-            `${item.dateTime}-${index}`,
-        [],
-    )
-
-    const renderFooter = useCallback(() => {
-        if (!isFetchingHistory) return null
-        return (
-            <PWView style={styles.loadingFooter}>
-                <PWLoadingIndicator size='sm' />
-            </PWView>
-        )
-    }, [isFetchingHistory, styles.loadingFooter])
 
     const balanceBodyOf = () => {
         if (!hasBalance) return t(copy.emptyBody)

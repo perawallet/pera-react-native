@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback, useMemo } from 'react'
+import { useCallback, useLayoutEffect, useMemo, type ReactElement } from 'react'
 import type { ImageSourcePropType } from 'react-native'
 import {
     type CardWalletHistoryEntry,
@@ -19,7 +19,11 @@ import {
     useCardWalletHistoryQuery,
 } from '@perawallet/wallet-core-card'
 import { ZERO_DECIMAL, type Nullable } from '@perawallet/wallet-core-shared'
-import { useRoute, type RouteProp } from '@react-navigation/native'
+import {
+    useNavigation,
+    useRoute,
+    type RouteProp,
+} from '@react-navigation/native'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useCardScope } from '../../hooks/useCardScope'
 import type { PeraCardFlowParamList } from '../../routes/types'
@@ -32,6 +36,10 @@ import {
     type CardWalletCopy,
 } from '../../utils/cardWalletPresentation'
 import { USDC_DISPLAY_PRECISION } from '../../utils/usdc'
+import { PWLoadingIndicator, PWView } from '@components/core'
+import { TransactionDateHeader } from '@modules/transactions'
+import { CardWalletHistoryItem } from '../../components/CardWalletHistoryItem'
+import { useStyles } from './styles'
 
 type UseCardWalletBalanceScreenResult = {
     kind: CardWalletKind
@@ -53,12 +61,20 @@ type UseCardWalletBalanceScreenResult = {
     hasHistory: boolean
     isFetchingHistory: boolean
     handleLoadMore: () => void
+    renderItem: (params: { item: CardWalletHistoryEntry }) => ReactElement
+    renderSectionHeader: (params: {
+        section: CardTransactionSection<CardWalletHistoryEntry>
+    }) => ReactElement
+    keyExtractor: (item: CardWalletHistoryEntry, index: number) => string
+    renderFooter: () => ReactElement
 }
 
 export const useCardWalletBalanceScreen =
     (): UseCardWalletBalanceScreenResult => {
         const scope = useCardScope()
         const navigation = useAppNavigation()
+        const screenNavigation = useNavigation()
+        const styles = useStyles()
         const { params } =
             useRoute<RouteProp<PeraCardFlowParamList, 'CardWalletBalance'>>()
         const kind = params?.kind ?? CardWalletKind.Reward
@@ -88,6 +104,42 @@ export const useCardWalletBalanceScreen =
             if (hasNextPage && !isFetchingNextPage) fetchNextPage()
         }, [hasNextPage, isFetchingNextPage, fetchNextPage])
 
+        useLayoutEffect(() => {
+            screenNavigation.setOptions({ title: copy.navigationTitle })
+        }, [screenNavigation, copy.navigationTitle])
+
+        const renderItem = useCallback(
+            ({ item }: { item: CardWalletHistoryEntry }) => (
+                <CardWalletHistoryItem entry={item} />
+            ),
+            [],
+        )
+
+        const renderSectionHeader = useCallback(
+            ({
+                section,
+            }: {
+                section: CardTransactionSection<CardWalletHistoryEntry>
+            }) => <TransactionDateHeader title={section.title} />,
+            [],
+        )
+
+        // Baanx sends no row id; a timestamp alone can repeat within a page.
+        const keyExtractor = useCallback(
+            (item: CardWalletHistoryEntry, index: number) =>
+                `${item.dateTime}-${index}`,
+            [],
+        )
+
+        const renderFooter = useCallback(() => {
+            if (!isFetchingNextPage) return null
+            return (
+                <PWView style={styles.loadingFooter}>
+                    <PWLoadingIndicator size='sm' />
+                </PWView>
+            )
+        }, [isFetchingNextPage, styles.loadingFooter])
+
         return {
             kind,
             copy,
@@ -110,5 +162,9 @@ export const useCardWalletBalanceScreen =
             hasHistory: entries.length > 0,
             isFetchingHistory: isFetchingNextPage,
             handleLoadMore,
+            renderItem,
+            renderSectionHeader,
+            keyExtractor,
+            renderFooter,
         }
     }

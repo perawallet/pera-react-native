@@ -10,131 +10,27 @@
  limitations under the License
  */
 
-import { useCallback, useLayoutEffect } from 'react'
 import { SectionList } from 'react-native'
-import { useNavigation } from '@react-navigation/native'
-import {
-    PWButton,
-    PWIcon,
-    PWLoadingIndicator,
-    PWScreen,
-    PWTouchableOpacity,
-    PWView,
-} from '@components/core'
-import { EmptyView } from '@components/EmptyView'
-import { LoadingView } from '@components/LoadingView'
-import { TransactionDateHeader } from '@modules/transactions'
+import { PWScreen } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import type { CardTransaction } from '@perawallet/wallet-core-card'
-import { CardTransactionListItem } from '../../components/CardTransactionListItem'
-import type { CardTransactionSection } from '../../utils/cardTransactions'
 import { useCardTransactions } from './useCardTransactions'
 import { useStyles } from './styles'
 
 export const CardTransactionsScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const navigation = useNavigation()
     const {
         sections,
         isLoading,
-        isFetchingNextPage,
         isError,
         isEmpty,
         handleLoadMore,
-        handleRetry,
-        onExport,
-        isExporting,
-        onPressTransaction,
+        renderItem,
+        renderSectionHeader,
+        keyExtractor,
+        renderFooter,
+        renderEmptyComponent,
     } = useCardTransactions()
-
-    useLayoutEffect(() => {
-        navigation.setOptions({
-            headerRight: () => (
-                <PWTouchableOpacity
-                    onPress={onExport}
-                    disabled={isExporting}
-                    testID='card_transactions_export'
-                    accessibilityLabel={t(
-                        'peraCard.transactions.export_accessibility_label',
-                    )}
-                >
-                    <PWIcon name='download' />
-                </PWTouchableOpacity>
-            ),
-        })
-    }, [navigation, onExport, isExporting, t])
-
-    const renderItem = useCallback(
-        ({ item }: { item: CardTransaction }) => (
-            <CardTransactionListItem
-                transaction={item}
-                onPress={onPressTransaction}
-            />
-        ),
-        [onPressTransaction],
-    )
-
-    const renderSectionHeader = useCallback(
-        ({ section }: { section: CardTransactionSection }) => (
-            <TransactionDateHeader title={section.title} />
-        ),
-        [],
-    )
-
-    const keyExtractor = useCallback((item: CardTransaction) => item.id, [])
-
-    const renderFooter = useCallback(() => {
-        if (!isFetchingNextPage) return null
-        return (
-            <PWView style={styles.loadingFooter}>
-                <PWLoadingIndicator size='sm' />
-            </PWView>
-        )
-    }, [isFetchingNextPage, styles.loadingFooter])
-
-    const renderEmptyComponent = useCallback(() => {
-        if (isLoading) {
-            return (
-                <LoadingView
-                    variant='circle'
-                    size='lg'
-                    style={styles.loadingContainer}
-                />
-            )
-        }
-        if (isError) {
-            return (
-                <EmptyView
-                    title={t('peraCard.transactions.error_title')}
-                    body={t('peraCard.transactions.error_body')}
-                    button={
-                        <PWButton
-                            variant='secondary'
-                            title={t('peraCard.transactions.retry')}
-                            onPress={handleRetry}
-                            testID='card_transactions_retry'
-                        />
-                    }
-                    style={styles.emptyView}
-                />
-            )
-        }
-        return (
-            <EmptyView
-                body={t('peraCard.account.transactions_empty')}
-                style={styles.emptyView}
-                testID='card_transactions_empty'
-            />
-        )
-    }, [
-        isLoading,
-        isError,
-        handleRetry,
-        styles.loadingContainer,
-        styles.emptyView,
-        t,
-    ])
 
     return (
         <PWScreen
