@@ -25,6 +25,10 @@ describe('submission chain data', () => {
         expect(lastValidOf({ chainData: chainData! })).toBe(7)
     })
 
+    it('reads no round from an attempt carrying EVM chain data', () => {
+        expect(lastValidOf({ chainData: { family: 'evm' } })).toBeNull()
+    })
+
     it('reads no round from an attempt without chain data', () => {
         expect(lastValidOf({ chainData: null })).toBeNull()
     })

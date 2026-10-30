@@ -159,7 +159,12 @@ describe('Ethereum broadcaster adapter', () => {
                 fee: new Decimal('420000000000000'),
             })
             expect(await getOpenSubmissionAttempts({ db })).toMatchObject([
-                { txIds: [HASH], flow: 'pipeline', sender: SENDER },
+                {
+                    txIds: [HASH],
+                    flow: 'pipeline',
+                    sender: SENDER,
+                    chainData: { family: 'evm' },
+                },
             ])
         })
 
@@ -394,6 +399,7 @@ describe('Ethereum broadcaster adapter', () => {
                     nonce: 0,
                     sender: SENDER,
                     status: 'submitted',
+                    chainData: { family: 'evm' },
                 },
             ])
         })
@@ -764,6 +770,7 @@ describe('Ethereum broadcaster adapter', () => {
         it('derives keccak ids from the signed bytes', () => {
             expect(adapter.deriveSubmissionAttemptFromBytes([BYTES])).toEqual({
                 txIds: [HASH],
+                chainData: { family: 'evm' },
             })
         })
 

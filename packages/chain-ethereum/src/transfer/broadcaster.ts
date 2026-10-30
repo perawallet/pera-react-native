@@ -164,6 +164,7 @@ export const createEvmBroadcasterAdapter = (
         },
         deriveSubmissionAttemptFromBytes: bytesList => ({
             txIds: bytesList.map(bytes => keccak256(bytes)),
+            chainData: { family: 'evm' },
         }),
         // Ethereum confirms through the reconciler, not a completion handler.
         setOnConfirmedHandler: () => undefined,

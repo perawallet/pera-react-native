@@ -63,7 +63,10 @@ describe('multisig parameters on the account', () => {
             PARAMETERS,
         )
 
-        expect(stored.chains[FAKE_CHAIN_ID]?.native?.pq).toEqual(pq)
+        const native = stored.chains[FAKE_CHAIN_ID]?.native
+        expect(native?.family === 'algorand' ? native.pq : undefined).toEqual(
+            pq,
+        )
         expect(multisigParametersOf(stored, FAKE_CHAIN_ID)).toEqual(PARAMETERS)
     })
 

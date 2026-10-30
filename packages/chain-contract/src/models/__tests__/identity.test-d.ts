@@ -18,6 +18,7 @@ import type {
     EVM_CHAIN_NETWORKS,
     EvmChainId,
 } from '../identity'
+import type evmNetworks from '../evm-networks.json'
 
 describe('ChainId', () => {
     it('is exactly the shipped chains', () => {
@@ -36,9 +37,16 @@ describe('ChainId', () => {
 
 describe('EvmChainId', () => {
     it('keys the EVM network table', () => {
+        expectTypeOf<EvmChainId>().toEqualTypeOf<keyof typeof evmNetworks>()
         expectTypeOf<
             keyof typeof EVM_CHAIN_NETWORKS
         >().toEqualTypeOf<EvmChainId>()
+    })
+
+    it('is a chain id, and never algorand', () => {
+        expectTypeOf<EvmChainId>().toExtend<ChainId>()
+        expectTypeOf<'algorand'>().not.toExtend<EvmChainId>()
+        expectTypeOf<Exclude<ChainId, EvmChainId>>().toEqualTypeOf<'algorand'>()
     })
 })
 

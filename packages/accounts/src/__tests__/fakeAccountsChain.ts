@@ -253,9 +253,10 @@ const createFakeAccountsAdapter = (): AccountsChainAdapter => ({
     fetchPortfolioHistory: vi.fn(async () => []),
     fetchHoldingBalanceHistory: vi.fn(async () => []),
     describeHolding: vi.fn(native => ({
-        restriction: native.isFrozen
-            ? HoldingRestrictions.transferBlocked
-            : null,
+        restriction:
+            native.family === 'algorand' && native.isFrozen
+                ? HoldingRestrictions.transferBlocked
+                : null,
     })),
     accountExists: vi.fn(async () => false),
     checkActivity: vi.fn(
@@ -274,7 +275,7 @@ const createFakeAccountsAdapter = (): AccountsChainAdapter => ({
     decodeLegacyAuthority: vi.fn(decodeFakeLegacyAuthority),
     multisigNative: {
         parametersOf: vi.fn(native =>
-            native?.multisig
+            native?.family === 'algorand' && native.multisig
                 ? {
                       ...native.multisig,
                       addresses: [...native.multisig.addresses],
