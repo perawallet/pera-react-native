@@ -54,7 +54,7 @@ describe('useAssetListFiatConverter', () => {
 
     it('values a zero holding at zero without a price, and a held one as unknown', () => {
         const { result } = renderHook(() => useAssetListFiatConverter())
-        const usdc = { chainId: 'ethereum', assetId: '0xA0b8' }
+        const usdc = { chainId: 'ethereum' as const, assetId: '0xA0b8' }
 
         expect(result.current(usdc, null, new Decimal(0)).value).toEqual(
             new Decimal(0),
