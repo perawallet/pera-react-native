@@ -2548,10 +2548,6 @@
         "title": "Valor del portafolio",
         "show_chart": "Mostrar gráfico",
         "hide_chart": "Ocultar gráfico",
-        "last_24_hours": "Últimas 24 horas",
-        "last_7_days": "Últimos 7 días",
-        "last_30_days": "Últimos 30 días",
-        "last_year": "Último año",
         "partial_total": "Excluye tenencias sin precio",
         "info": {
             "title": "Cómo calculamos el valor del portafolio",

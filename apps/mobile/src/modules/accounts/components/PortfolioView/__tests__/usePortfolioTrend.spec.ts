@@ -85,7 +85,10 @@ describe('usePortfolioTrend', () => {
     it('keeps the trend slot while the history is still loading', () => {
         mockHistory({ isPending: true })
 
-        expect(renderTrend().result.current.hasNoTrend).toBe(false)
+        const { result } = renderTrend()
+
+        expect(result.current.hasNoTrend).toBe(false)
+        expect(result.current.isPending).toBe(true)
     })
 
     it('has no trend while the chart leaves a chain out of the total', () => {

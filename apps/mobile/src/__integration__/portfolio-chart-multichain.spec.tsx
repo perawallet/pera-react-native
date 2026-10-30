@@ -279,7 +279,7 @@ describe('Flow: Portfolio chart across Algorand and Ethereum', () => {
         expect(screen.queryByText('common.wealth_chart.empty_body')).toBeNull()
     })
 
-    it('Given the chart is hidden, when the portfolio renders, then no history is requested', async () => {
+    it('Given the chart is hidden, when the portfolio renders, then the card shows the last 24 hours of change', async () => {
         serveAlgorandHistory()
         serveEthereumHistory()
         const requested: string[] = []
@@ -290,18 +290,23 @@ describe('Flow: Portfolio chart across Algorand and Ethereum', () => {
         try {
             renderMenu()
             await screen.findByText('portfolio.show_chart')
-            await waitFor(() => {
-                expect(
-                    screen.getByTestId('portfolio_total_value').textContent,
-                ).toMatch(/3,003\.00/)
-            })
+            await waitFor(
+                () => {
+                    expect(
+                        screen.getByTestId('portfolio_change_line').textContent,
+                    ).toMatch(/\+\D*1,501\.00/)
+                },
+                { timeout: SLOW_WAIT_TIMEOUT_MS },
+            )
         } finally {
             server.events.removeAllListeners()
         }
 
+        const wealthRequests = requested.filter(url => /wealth/.test(url))
+        expect(wealthRequests.length).toBeGreaterThan(0)
         expect(
-            requested.filter(url => /wealth|balance-history/.test(url)),
-        ).toEqual([])
+            wealthRequests.every(url => url.includes('period=one-day')),
+        ).toBe(true)
     })
 
     it("Given Ethereum's history fails, when the chart is shown, then it plots Algorand, names Ethereum as left out, and shows no change", async () => {
@@ -320,6 +325,6 @@ describe('Flow: Portfolio chart across Algorand and Ethereum', () => {
         ).toBeTruthy()
         expect(screen.queryByTestId('balance-chart-retry')).toBeNull()
         // The change would cover Algorand alone beside a total that includes ETH.
-        expect(screen.queryByText('portfolio.last_7_days')).toBeNull()
+        expect(screen.queryByTestId('portfolio_change_line')).toBeNull()
     })
 })

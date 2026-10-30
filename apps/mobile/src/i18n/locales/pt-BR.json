@@ -2563,10 +2563,6 @@
         "title": "Valor do portfólio",
         "show_chart": "Mostrar gráfico",
         "hide_chart": "Ocultar gráfico",
-        "last_24_hours": "Últimas 24 horas",
-        "last_7_days": "Últimos 7 dias",
-        "last_30_days": "Últimos 30 dias",
-        "last_year": "Último ano",
         "partial_total": "Exclui posições sem preço",
         "info": {
             "title": "Como calculamos o valor do portfólio",

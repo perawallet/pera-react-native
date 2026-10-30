@@ -2548,10 +2548,6 @@
         "title": "Valeur du portfolio",
         "show_chart": "Afficher le graphique",
         "hide_chart": "Masquer le graphique",
-        "last_24_hours": "Dernières 24 heures",
-        "last_7_days": "Derniers 7 jours",
-        "last_30_days": "Derniers 30 jours",
-        "last_year": "Dernière année",
         "partial_total": "Exclut les avoirs sans prix",
         "info": {
             "title": "Comment nous calculons la valeur du portfolio",

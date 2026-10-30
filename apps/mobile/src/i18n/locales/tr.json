@@ -2548,10 +2548,6 @@
         "title": "Portföy değeri",
         "show_chart": "Grafiği göster",
         "hide_chart": "Grafiği gizle",
-        "last_24_hours": "Son 24 saat",
-        "last_7_days": "Son 7 gün",
-        "last_30_days": "Son 30 gün",
-        "last_year": "Son 1 yıl",
         "partial_total": "Fiyatı olmayan varlıklar hariç",
         "info": {
             "title": "Portföy değerini nasıl hesaplıyoruz",

@@ -36,24 +36,10 @@ export const useStyles = makeStyles(theme => {
             minWidth: 0,
             gap: theme.spacing.md,
         },
-        rightColumn: {
-            alignItems: 'flex-end',
-            gap: theme.spacing.md,
-            flexShrink: 0,
-            maxWidth: '45%',
-        },
-        rightColumnOverlay: {
-            position: 'absolute',
-            top: 0,
-            right: 0,
-        },
         dateTimeColumn: {
             alignItems: 'flex-end',
             flexShrink: 0,
             minWidth: 0,
-        },
-        trendTitle: {
-            color: theme.colors.textGray,
         },
         valueTitleBar: {
             flexDirection: 'row',
