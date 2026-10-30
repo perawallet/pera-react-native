@@ -10,21 +10,16 @@
  limitations under the License
  */
 
-import { useCallback, useMemo } from 'react'
 import type { Decimal } from 'decimal.js'
 import { PWSheetLayout, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import { SheetHeader, useBottomSheetResult } from '@modules/bottom-sheet'
+import { SheetHeader } from '@modules/bottom-sheet'
 import type { Nullable } from '@perawallet/wallet-core-shared'
-import {
-    filterQuotesByPaymentMethod,
-    pickBestQuote,
-    sortQuotesByDestinationDesc,
-    type RampQuote,
-} from '@perawallet/wallet-core-onramp'
+import { type RampQuote } from '@perawallet/wallet-core-onramp'
 import { ProviderSelectionItem } from './ProviderSelectionItem'
 import { getOnrampProviderName } from '../onrampQuoteDisplay'
 import { useStyles } from './styles'
+import { useOnrampProviderContent } from './useOnrampProviderContent'
 
 export type OnrampProviderContentProps = {
     quotes: RampQuote[]
@@ -46,30 +41,13 @@ export const OnrampProviderContent = ({
 }: OnrampProviderContentProps) => {
     const { t } = useLanguage()
     const styles = useStyles()
-    const { resolve } = useBottomSheetResult<string>()
 
-    // Providers are compared within one payment method: quotes on different
-    // rails price differently, and every provider quotes each rail it supports.
-    const methodQuotes = useMemo(
-        () => filterQuotesByPaymentMethod(quotes, selectedPaymentMethodId),
-        [quotes, selectedPaymentMethodId],
-    )
-
-    const sortedQuotes = useMemo(
-        () => sortQuotesByDestinationDesc(methodQuotes, sourceAmount),
-        [methodQuotes, sourceAmount],
-    )
-    const bestQuoteId = useMemo(
-        () => pickBestQuote(methodQuotes, sourceAmount)?.quoteId,
-        [methodQuotes, sourceAmount],
-    )
-
-    const handleSelect = useCallback(
-        (quoteId: string) => {
-            resolve(quoteId)
-        },
-        [resolve],
-    )
+    const { sortedQuotes, bestQuoteId, handleSelect } =
+        useOnrampProviderContent({
+            quotes,
+            sourceAmount,
+            selectedPaymentMethodId,
+        })
 
     return (
         <PWSheetLayout
