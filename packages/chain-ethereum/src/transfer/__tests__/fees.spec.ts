@@ -45,7 +45,12 @@ import {
 import type { EvmChain } from '../../chains/types'
 import { VIEM_TRANSFER_NONCE_0 } from '../../signing/__tests__/fixtures'
 import type { EvmTransferCall } from '../builder'
-import { readEvmSurcharge, readTransferFees, toEvmFeeEstimate } from '../fees'
+import {
+    maxFeePerGasWithin,
+    readEvmSurcharge,
+    readTransferFees,
+    toEvmFeeEstimate,
+} from '../fees'
 import {
     OP_STACK_ORACLE_ADDRESS,
     opStackOracleResponder,
@@ -175,6 +180,26 @@ describe('readTransferFees', () => {
 
     it('rejects an empty fee history', async () => {
         await expect(readWith({ baseFeePerGas: [] })).rejects.toThrow()
+    })
+})
+
+describe('maxFeePerGasWithin', () => {
+    it('floors the budget left after the surcharge headroom over the gas', () => {
+        expect(maxFeePerGasWithin(1_000_000n + 2n * 100n, 21_000n, 100n)).toBe(
+            47n,
+        )
+    })
+
+    it('answers zero when the surcharge headroom alone exceeds the budget', () => {
+        expect(maxFeePerGasWithin(150n, 21_000n, 100n)).toBe(0n)
+    })
+
+    it('never answers a price whose worst case exceeds the budget', () => {
+        const budget = 123_456_789n
+        const price = maxFeePerGasWithin(budget, 21_000n, 777n)
+
+        expect(21_000n * price + 2n * 777n).toBeLessThanOrEqual(budget)
+        expect(21_000n * (price + 1n) + 2n * 777n).toBeGreaterThan(budget)
     })
 })
 
@@ -368,7 +393,7 @@ describe('per-chain fee strategies', () => {
                 ).toString(),
             )
             expect(priced?.maxAmount.toFixed()).toBe(
-                (fees.gas * values.maxFeePerGas + surcharge).toString(),
+                (fees.gas * values.maxFeePerGas + 2n * surcharge).toString(),
             )
         }
     })

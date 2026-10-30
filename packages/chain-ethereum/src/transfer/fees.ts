@@ -60,6 +60,20 @@ const MS_PER_SECOND = 1000
 // Doubling the base fee survives several full blocks of base-fee growth; only base fee plus tip is charged.
 const BASE_FEE_HEADROOM = 2n
 
+// The oracle prices the L1 fee again when the transaction is broadcast, and an L1 base fee can move
+// between the read and then; doubling it keeps a send sized to the quote from being refused.
+export const SURCHARGE_HEADROOM = 2n
+
+/**
+ * The lowest max fee per gas a send is signed with: the next block's base fee grown by one more full
+ * block (EIP-1559 raises it by at most 1/8 per block) plus the tip. Below it the transaction can
+ * stall behind a single busy block, and a MAX send has nothing left to replace it with.
+ */
+export const minMaxFeePerGas = (
+    baseFeePerGas: bigint,
+    maxPriorityFeePerGas: bigint,
+): bigint => (baseFeePerGas * 9n + 7n) / 8n + maxPriorityFeePerGas
+
 const compareBigInt = (a: bigint, b: bigint): number => {
     if (a < b) return -1
     if (a > b) return 1
@@ -239,7 +253,23 @@ export const readTransferFees = async (
     return { ...fees, surcharge }
 }
 
-/** Prices each preset at gas x (base fee + tip), capped at gas x maxFeePerGas, plus the surcharge, in wei. */
+/**
+ * The highest max fee per gas whose worst case, gas x maxFeePerGas plus the surcharge headroom, fits
+ * in `maxFee`; all in wei. `0n` when the headroom alone exceeds it.
+ */
+export const maxFeePerGasWithin = (
+    maxFee: bigint,
+    gas: bigint,
+    surcharge: bigint,
+): bigint => {
+    const budget = maxFee - SURCHARGE_HEADROOM * surcharge
+    return budget <= 0n ? 0n : budget / gas
+}
+
+/**
+ * Prices each preset at gas x (base fee + tip), and its worst case at gas x maxFeePerGas plus the
+ * surcharge with its headroom, in wei.
+ */
 export const toEvmFeeEstimate = (
     fees: EvmTransferFees,
     preset: FeePreset,
@@ -259,7 +289,10 @@ export const toEvmFeeEstimate = (
                         ).toString(),
                     ),
                     maxAmount: new Decimal(
-                        (fees.gas * maxFeePerGas + fees.surcharge).toString(),
+                        (
+                            fees.gas * maxFeePerGas +
+                            SURCHARGE_HEADROOM * fees.surcharge
+                        ).toString(),
                     ),
                     estimatedWaitSeconds: Math.max(
                         1,

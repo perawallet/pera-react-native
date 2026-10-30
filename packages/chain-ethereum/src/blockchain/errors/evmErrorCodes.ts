@@ -21,6 +21,7 @@ export const EvmErrorCode = {
     REPLACEMENT_UNDERPRICED: 'replacement_underpriced',
     REPLACED_TRANSACTION_CONFIRMED: 'replaced_transaction_confirmed',
     INSUFFICIENT_FUNDS: 'insufficient_funds',
+    FEE_ABOVE_CONFIRMED: 'fee_above_confirmed',
     RATE_LIMITED: 'rate_limited',
     UNKNOWN: 'unknown',
 } as const
@@ -80,6 +81,13 @@ export const TRAITS: Record<EvmErrorCode, EvmErrorTraits> = {
         messageKey: i18nKey('errors.evm.insufficient_funds.body'),
         severity: ErrorSeverity.MEDIUM,
         retryable: false,
+    },
+    fee_above_confirmed: {
+        titleKey: i18nKey('errors.evm.fee_above_confirmed.title'),
+        messageKey: i18nKey('errors.evm.fee_above_confirmed.body'),
+        severity: ErrorSeverity.MEDIUM,
+        retryable: true,
+        expected: true,
     },
     rate_limited: {
         titleKey: i18nKey('errors.evm.rate_limited.title'),

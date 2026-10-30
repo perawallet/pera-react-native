@@ -12,8 +12,8 @@
 
 // @vitest-environment jsdom
 import React from 'react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { renderHook, waitFor } from '@testing-library/react'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { act, renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Decimal } from 'decimal.js'
 import {
@@ -70,8 +70,15 @@ describe('useTransferFeeEstimateQuery', () => {
         })
     })
 
-    const render = (input: TransferFeeEstimateInput | undefined) =>
-        renderHook(() => useTransferFeeEstimateQuery(input), {
+    afterEach(() => {
+        vi.useRealTimers()
+    })
+
+    const render = (
+        input: TransferFeeEstimateInput | undefined,
+        options?: { isLive?: boolean },
+    ) =>
+        renderHook(() => useTransferFeeEstimateQuery(input, options), {
             wrapper: wrapper(queryClient),
         })
 
@@ -83,6 +90,55 @@ describe('useTransferFeeEstimateQuery', () => {
         await waitFor(() => expect(result.current.data).toEqual(ESTIMATE))
         expect(getFeeEstimate).toHaveBeenCalledWith(INTENT, { scope: SCOPE })
         expect(result.current.isPending).toBe(false)
+    })
+
+    it('re-reads a live estimate every 15 seconds while mounted', async () => {
+        vi.useFakeTimers({ shouldAdvanceTime: true })
+        getFeeEstimate.mockResolvedValue(ESTIMATE)
+        render({ intent: INTENT, scope: SCOPE }, { isLive: true })
+        await waitFor(() => expect(getFeeEstimate).toHaveBeenCalledTimes(1))
+
+        await act(() => vi.advanceTimersByTimeAsync(15_000))
+
+        await waitFor(() => expect(getFeeEstimate).toHaveBeenCalledTimes(2))
+    })
+
+    it('leaves an estimate that is not live as read', async () => {
+        vi.useFakeTimers({ shouldAdvanceTime: true })
+        getFeeEstimate.mockResolvedValue(ESTIMATE)
+        render({ intent: INTENT, scope: SCOPE })
+        await waitFor(() => expect(getFeeEstimate).toHaveBeenCalledTimes(1))
+
+        await act(() => vi.advanceTimersByTimeAsync(60_000))
+
+        expect(getFeeEstimate).toHaveBeenCalledTimes(1)
+    })
+
+    it('keeps a held estimate error-free when a later poll fails', async () => {
+        vi.useFakeTimers({ shouldAdvanceTime: true })
+        getFeeEstimate.mockResolvedValueOnce(ESTIMATE)
+        getFeeEstimate.mockRejectedValue(new Error('rpc down'))
+        const { result } = render(
+            { intent: INTENT, scope: SCOPE },
+            { isLive: true },
+        )
+        await waitFor(() => expect(result.current.data).toEqual(ESTIMATE))
+
+        await act(() => vi.advanceTimersByTimeAsync(15_000))
+        await waitFor(() => expect(getFeeEstimate).toHaveBeenCalledTimes(2))
+
+        expect(result.current.data).toEqual(ESTIMATE)
+        expect(result.current.isError).toBe(false)
+    })
+
+    it('re-reads on refresh', async () => {
+        getFeeEstimate.mockResolvedValue(ESTIMATE)
+        const { result } = render({ intent: INTENT, scope: SCOPE })
+        await waitFor(() => expect(getFeeEstimate).toHaveBeenCalledTimes(1))
+
+        act(() => result.current.refresh())
+
+        await waitFor(() => expect(getFeeEstimate).toHaveBeenCalledTimes(2))
     })
 
     it('stays idle and not pending without an input', () => {

@@ -380,14 +380,14 @@ describe('with an open Base send', () => {
             }),
         })
 
-    it("leaves room on MAX for the open send's value, gas and L1 fee, and for the next send's fee", async () => {
+    it("leaves room on MAX for the open send's value, gas and twice its L1 fee, and for the next send's fee", async () => {
         givenBalanceAt(0)
         await submitOpenSend()
 
         const result = await readNextSend()
 
         const reserved = new Decimal(
-            (SEND_VALUE + GAS_FEE + L1_FEE + OPERATOR_FEE).toString(),
+            (SEND_VALUE + GAS_FEE + 2n * (L1_FEE + OPERATOR_FEE)).toString(),
         )
         expect(result.reserved).toEqual(reserved)
         expect(result.max).toEqual(BALANCE.sub(reserved).sub(NEXT_FEE))

@@ -1204,6 +1204,10 @@
                 "title": "{{symbol}} insuffisant",
                 "body": "Ce compte ne dispose pas d’assez de {{symbol}} pour couvrir le montant et les frais de réseau. Ajoutez plus de {{symbol}}, puis réessayez."
             },
+            "fee_above_confirmed": {
+                "title": "Les frais de réseau ont augmenté",
+                "body": "Les frais de réseau dépassent désormais les frais maximum que vous avez confirmés. Vérifiez l’envoi pour voir les nouveaux frais."
+            },
             "rate_limited": {
                 "title": "Réseau saturé",
                 "body": "Le réseau reçoit trop de requêtes en ce moment. Veuillez patienter un instant, puis réessayer."
@@ -2956,6 +2960,7 @@
             "max": "MAX",
             "next": "Suivant",
             "amount_label": "Montant",
+            "fee_reserve_hint": "Un petit montant est conservé pour couvrir les frais de réseau. Les frais non utilisés restent sur votre compte.",
             "error_title": "Montant invalide",
             "error_body": "Veuillez saisir un montant supérieur à {{min}}.",
             "exceeds_max_title": "Solde insuffisant",

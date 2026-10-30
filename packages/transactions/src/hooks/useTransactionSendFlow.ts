@@ -72,6 +72,8 @@ type SendTransactionParams = BaseSendParams & {
     isCloseAccount?: boolean
     /** The speed a gas-priced chain builds at; a flat-fee chain ignores it. */
     feePreset?: FeePreset
+    /** Base units of the native asset: the most the sender confirmed paying; a flat-fee chain ignores it. */
+    maxFee?: Decimal
     /** The inbox quote the send was confirmed against; the chain adapter validates it. */
     assetInboxQuote?: AssetInboxQuote
 }
@@ -236,7 +238,11 @@ export const useTransactionSendFlow = (
                         amount: amountInBaseUnits,
                         note: params.note,
                     },
-                    { scope, feePreset: params.feePreset },
+                    {
+                        scope,
+                        feePreset: params.feePreset,
+                        maxFee: params.maxFee,
+                    },
                 )
             }
 

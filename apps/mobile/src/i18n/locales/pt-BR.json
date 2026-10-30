@@ -1204,6 +1204,10 @@
                 "title": "{{symbol}} insuficiente",
                 "body": "Esta conta não tem {{symbol}} suficiente para cobrir o valor e a taxa de rede. Adicione mais {{symbol}} e tente novamente."
             },
+            "fee_above_confirmed": {
+                "title": "As taxas de rede subiram",
+                "body": "A taxa de rede agora está acima da taxa máxima que você confirmou. Revise o envio para ver a nova taxa."
+            },
             "rate_limited": {
                 "title": "Rede congestionada",
                 "body": "A rede está recebendo muitas solicitações no momento. Aguarde um instante e tente novamente."
@@ -2972,6 +2976,7 @@
             "max": "MÁX",
             "next": "Avançar",
             "amount_label": "Valor",
+            "fee_reserve_hint": "Um pequeno valor é mantido para cobrir as taxas da rede. A taxa não utilizada fica na sua conta.",
             "error_title": "Valor inválido",
             "error_body": "Digite um valor maior que {{min}}.",
             "exceeds_max_title": "Saldo insuficiente",

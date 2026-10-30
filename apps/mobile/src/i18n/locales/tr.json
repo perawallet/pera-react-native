@@ -1204,6 +1204,10 @@
                 "title": "Yetersiz {{symbol}}",
                 "body": "Bu hesapta tutarı ve ağ ücretini karşılamak için yeterli {{symbol}} yok. Daha fazla {{symbol}} ekle ve tekrar dene."
             },
+            "fee_above_confirmed": {
+                "title": "Ağ ücretleri yükseldi",
+                "body": "Ağ ücreti artık onayladığın maksimum ücretin üzerinde. Yeni ücreti görmek için gönderimi incele."
+            },
             "rate_limited": {
                 "title": "Ağ yoğun",
                 "body": "Ağ şu anda çok fazla istek alıyor. Biraz bekle ve tekrar dene."
@@ -2956,6 +2960,7 @@
             "max": "MAKS",
             "next": "İleri",
             "amount_label": "Tutar",
+            "fee_reserve_hint": "Ağ ücretlerini karşılamak için küçük bir tutar ayrılır. Kullanılmayan ücret hesabında kalır.",
             "error_title": "Geçersiz miktar",
             "error_body": "Lütfen {{min}} değerinden büyük bir miktar gir.",
             "exceeds_max_title": "Yetersiz bakiye",
