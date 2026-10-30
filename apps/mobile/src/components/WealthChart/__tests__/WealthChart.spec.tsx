@@ -55,6 +55,7 @@ const mockHistory = (
         isPaused: false,
         error: null,
         isUnavailableOnNetwork: false,
+        excludedChainIds: [],
         refetch: vi.fn(),
         ...overrides,
     })
@@ -114,5 +115,37 @@ describe('WealthChart', () => {
         renderChart()
 
         expect(screen.getByText('Not available on this network')).toBeTruthy()
+    })
+
+    it('names the networks the chart leaves out', () => {
+        mockHistory({ excludedChainIds: [ETHEREUM.chainId] })
+
+        renderChart()
+
+        expect(
+            screen.getByText(/This chart doesn't include \w+ assets yet/),
+        ).toBeTruthy()
+    })
+
+    it('joins several left-out networks with a translated conjunction', () => {
+        mockHistory({
+            excludedChainIds: [ETHEREUM.chainId, 'base' as ChainId],
+        })
+
+        renderChart()
+
+        expect(
+            screen.getByText(
+                /This chart doesn't include \w+ and \w+ assets yet/,
+            ),
+        ).toBeTruthy()
+    })
+
+    it('shows no note when every network is charted', () => {
+        mockHistory({})
+
+        renderChart()
+
+        expect(screen.queryByText(/doesn't include/)).toBeNull()
     })
 })

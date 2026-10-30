@@ -20,6 +20,7 @@ import type {
     ChainId,
     ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
+import { IntegrityRequiredError } from '@perawallet/wallet-core-shared'
 import { fetchPortfolioHistory } from '../../chain-adapter'
 import { usePortfolioHistoryQuery } from '../usePortfolioHistoryQuery'
 
@@ -202,7 +203,7 @@ describe('usePortfolioHistoryQuery', () => {
         ])
     })
 
-    it("reports an error when one chain's history fails", async () => {
+    it('charts the other chains and names the one whose history failed', async () => {
         history.mockImplementation(async (_addresses, _period, scope) => {
             if (scope.chainId === ETHEREUM.chainId) {
                 throw new Error('history down')
@@ -219,9 +220,112 @@ describe('usePortfolioHistoryQuery', () => {
             { wrapper },
         )
 
+        await waitFor(() =>
+            expect(result.current.excludedChainIds).toEqual([ETHEREUM.chainId]),
+        )
+        expect(result.current.isError).toBe(false)
+        expect(result.current.isPending).toBe(false)
+        expect(result.current.data).toEqual([
+            { datetime: new Date(1), preferredValue: new Decimal(20) },
+        ])
+    })
+
+    it('reports an error, not an empty chart, when the chain that loaded has no points', async () => {
+        history.mockImplementation(async (_addresses, _period, scope) => {
+            if (scope.chainId === ETHEREUM.chainId) {
+                throw new Error('history down')
+            }
+            return []
+        })
+        const sources = [
+            { address: 'ALGO', scope: ALGORAND },
+            { address: '0xeth', scope: ETHEREUM },
+        ]
+
+        const { result } = renderHook(
+            () => usePortfolioHistoryQuery(sources, 'one-day', ALGORAND),
+            { wrapper },
+        )
+
+        await waitFor(() => expect(result.current.isError).toBe(true))
+        expect(result.current.isPending).toBe(false)
+        expect(result.current.excludedChainIds).toEqual([])
+    })
+
+    it('stays loading, not failed, while the other chain is still loading', async () => {
+        let resolveAlgorand: (
+            points: ReturnType<typeof point>[],
+        ) => void = () => {}
+        history.mockImplementation((_addresses, _period, scope) =>
+            scope.chainId === ETHEREUM.chainId
+                ? Promise.reject(new Error('history down'))
+                : new Promise(resolve => {
+                      resolveAlgorand = resolve
+                  }),
+        )
+        const sources = [
+            { address: 'ALGO', scope: ALGORAND },
+            { address: '0xeth', scope: ETHEREUM },
+        ]
+
+        const { result } = renderHook(
+            () => usePortfolioHistoryQuery(sources, 'one-day', ALGORAND),
+            { wrapper },
+        )
+
+        await waitFor(() =>
+            expect(result.current.excludedChainIds).toEqual([ETHEREUM.chainId]),
+        )
+        expect(result.current.isError).toBe(false)
+        expect(result.current.isPending).toBe(true)
+
+        resolveAlgorand([point(1, '10')])
+
+        await waitFor(() => expect(result.current.isPending).toBe(false))
+        expect(result.current.data).toHaveLength(1)
+    })
+
+    it('reports an error when every chain fails', async () => {
+        history.mockRejectedValue(new Error('history down'))
+        const sources = [
+            { address: 'ALGO', scope: ALGORAND },
+            { address: '0xeth', scope: ETHEREUM },
+        ]
+
+        const { result } = renderHook(
+            () => usePortfolioHistoryQuery(sources, 'one-day', ALGORAND),
+            { wrapper },
+        )
+
         await waitFor(() => expect(result.current.isError).toBe(true))
         expect(result.current.error).toEqual(new Error('history down'))
+        expect(result.current.excludedChainIds).toEqual([])
         expect(result.current.data).toEqual([])
+    })
+
+    it('fails the chart, rather than leaving the chain out, on an integrity block', async () => {
+        const blocked = new IntegrityRequiredError({
+            code: null,
+            status: 401,
+            hadToken: false,
+        })
+        history.mockImplementation(async (_addresses, _period, scope) => {
+            if (scope.chainId === ETHEREUM.chainId) throw blocked
+            return [point(1, '10')]
+        })
+        const sources = [
+            { address: 'ALGO', scope: ALGORAND },
+            { address: '0xeth', scope: ETHEREUM },
+        ]
+
+        const { result } = renderHook(
+            () => usePortfolioHistoryQuery(sources, 'one-day', ALGORAND),
+            { wrapper },
+        )
+
+        await waitFor(() => expect(result.current.isError).toBe(true))
+        expect(result.current.error).toBe(blocked)
+        expect(result.current.excludedChainIds).toEqual([])
     })
 
     it('does not fetch while disabled', () => {
