@@ -7,42 +7,24 @@
  distributed under the License is distributed on an "AS IS" BASIS,
  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  See the License for the specific language governing permissions and
- limitations under the License
+ limitations under the License.
  */
 
-import React, { useCallback, useEffect, useState } from 'react'
 import { ConfettiField } from './ConfettiField'
+import {
+    useConfettiAnimation,
+    type ConfettiAnimationProps,
+} from './useConfettiAnimation'
 
-export type ConfettiAnimationProps = {
-    play: boolean
-    onFinish?: () => void
-}
-
-// Delay confetti slightly to ensure it plays after the page is fully rendered.
-const RENDER_DELAY_MS = 500
+export type { ConfettiAnimationProps }
 
 export const ConfettiAnimation = ({
     play,
     onFinish,
 }: ConfettiAnimationProps) => {
-    const [visible, setVisible] = useState(false)
+    const {isVisible, handleFinish} = useConfettiAnimation({play, onFinish})
 
-    useEffect(() => {
-        if (play) {
-            const timeout = setTimeout(() => setVisible(true), RENDER_DELAY_MS)
-            return () => clearTimeout(timeout)
-        }
-
-        setVisible(false)
-        return undefined
-    }, [play])
-
-    const handleFinish = useCallback(() => {
-        setVisible(false)
-        onFinish?.()
-    }, [onFinish])
-
-    if (!visible) {
+    if (!isVisible) {
         return null
     }
 
