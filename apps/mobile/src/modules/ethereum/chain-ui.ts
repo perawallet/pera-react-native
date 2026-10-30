@@ -13,6 +13,7 @@
 import { i18nKey } from '@perawallet/wallet-core-chain-contract'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import type { ChainUi } from '@modules/chain-ui'
+import { EthereumRecordDetailBody } from './components/EthereumRecordDetailBody'
 import { EthereumTransactionDetailBody } from './components/EthereumTransactionDetailBody'
 import { EthereumTransactionPreviewRow } from './components/EthereumTransactionPreviewRow'
 import { EthereumTransactionReviewBody } from './components/EthereumTransactionReviewBody'
@@ -26,6 +27,7 @@ export const ethereumChainUi: Optional<ChainUi> = {
     transactionDetails: {
         ReviewBody: EthereumTransactionReviewBody,
         DetailBody: EthereumTransactionDetailBody,
+        RecordDetailBody: EthereumRecordDetailBody,
         PreviewRow: EthereumTransactionPreviewRow,
     },
     sendConfirmation: {

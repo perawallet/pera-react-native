@@ -396,4 +396,63 @@ describe('useEthereumTransactionPresentation', () => {
         expect(result.current?.standardCall).toBeNull()
         expect(result.current?.isTransfer).toBe(false)
     })
+
+    describe('a transaction already on chain', () => {
+        const PRICING = ['fee', 'nonce', 'gas', 'isPreview']
+        const mined = (feePaid?: Decimal): TransactionNative => ({
+            family: 'evm',
+            transaction: {
+                ...Object.fromEntries(
+                    Object.entries(
+                        natives.transfer.transaction as object,
+                    ).filter(([key]) => !PRICING.includes(key)),
+                ),
+                isMined: true,
+                ...(feePaid && { feePaid }),
+            },
+        })
+
+        it('shows the fee it cost, in ether, and no max fee', () => {
+            const { result } = renderHook(() =>
+                useEthereumTransactionPresentation(
+                    mined(new Decimal('21000000000000')),
+                ),
+            )
+
+            expect(result.current?.maxFee).toBeNull()
+            expect(result.current?.feePaid?.value).toEqual(
+                new Decimal('0.000021'),
+            )
+        })
+
+        it('shows no fee when the history gave none', () => {
+            const { result } = renderHook(() =>
+                useEthereumTransactionPresentation(mined()),
+            )
+
+            expect(result.current?.maxFee).toBeNull()
+            expect(result.current?.feePaid).toBeNull()
+        })
+
+        it("reads the capability and the token on the scope it is given, and shows that chain's coin", () => {
+            vi.mocked(useChainCapability).mockReturnValue(true)
+            const scope = { chainId: 'base', networkId: 'mainnet' } as const
+
+            const { result } = renderHook(() =>
+                useEthereumTransactionPresentation(
+                    mined(new Decimal('21000000000000')),
+                    scope,
+                ),
+            )
+
+            expect(result.current?.scope).toEqual(scope)
+            expect(useChainCapability).toHaveBeenCalledWith(
+                'base',
+                'contractDecoding',
+            )
+            expect(result.current?.feePaid?.asset?.assetId).toBe(
+                result.current?.value.asset?.assetId,
+            )
+        })
+    })
 })
