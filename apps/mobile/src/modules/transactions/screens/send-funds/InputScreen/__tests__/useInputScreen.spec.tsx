@@ -323,6 +323,35 @@ describe('useInputScreen', () => {
         expect(result.current.isBalanceReady).toBe(true)
     })
 
+    describe('canAddNote', () => {
+        afterEach(() => {
+            restoreAlgorandOnlyChains()
+        })
+
+        it('offers a note on a chain with a note field', () => {
+            const { result } = renderHook(() => useInputScreen())
+
+            expect(result.current.canAddNote).toBe(true)
+        })
+
+        it('offers no note on a chain without one', () => {
+            registerEthereumChain()
+            mockSendScope.current = {
+                chainId: 'ethereum',
+                networkId: 'mainnet',
+            }
+            ;(useSelectedAccount as Mock).mockReturnValue({
+                id: 'test-account',
+                custody: { kind: 'local', seed: null },
+                chains: { ethereum: { address: '0xSENDER' } },
+            })
+
+            const { result } = renderHook(() => useInputScreen())
+
+            expect(result.current.canAddNote).toBe(false)
+        })
+    })
+
     it("converts a token's balance with the token's own decimals", () => {
         mockSendFundsState.selectedAssetId = '1'
         spendableOf({ balance: 50, max: 50 })

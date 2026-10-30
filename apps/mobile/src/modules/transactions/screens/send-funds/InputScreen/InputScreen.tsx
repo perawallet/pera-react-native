@@ -54,6 +54,7 @@ export const InputScreen = () => {
         handleNext,
         isResolvingDestination,
         isCollectible,
+        canAddNote,
     } = useInputScreen()
     const selectedAccount = useSelectedAccount()
     const scope = useSendScope()
@@ -245,17 +246,19 @@ export const InputScreen = () => {
                     )}
 
                     <PWView style={styles.buttonContainer}>
-                        <PWButton
-                            title={
-                                note
-                                    ? t('send_funds.confirmation.edit')
-                                    : t('send_funds.add_note.button')
-                            }
-                            variant='secondary'
-                            style={styles.secondaryButton}
-                            onPress={openNote}
-                            testID='send_input_note_button'
-                        />
+                        {canAddNote && (
+                            <PWButton
+                                title={
+                                    note
+                                        ? t('send_funds.confirmation.edit')
+                                        : t('send_funds.add_note.button')
+                                }
+                                variant='secondary'
+                                style={styles.secondaryButton}
+                                onPress={openNote}
+                                testID='send_input_note_button'
+                            />
+                        )}
                         <PWButton
                             title={t('send_funds.input.max')}
                             variant='secondary'
