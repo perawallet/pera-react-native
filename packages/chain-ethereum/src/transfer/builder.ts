@@ -17,7 +17,9 @@ import {
     isAddress,
     maxUint256,
     type Address,
+    type FeeValuesEIP1559,
     type Hex,
+    type PublicClient,
 } from 'viem'
 import { Decimal } from 'decimal.js'
 import {
@@ -36,15 +38,19 @@ import {
     UnsupportedTransactionIntentError,
     type TransferChainAdapter,
 } from '@perawallet/wallet-core-transactions'
-import { toEvmError } from '../blockchain/errors'
+import { EvmError, EvmErrorCode, toEvmError } from '../blockchain/errors'
 import { eip155ChainIdOf, isEvmNftAssetId } from '../blockchain/utils/caip19'
 import { createEvmClient } from '../blockchain/utils/createEvmClient'
 import type { EvmChain } from '../chains/types'
 import type { EthereumTransactionPayload } from '../signing/adapter'
 import {
+    maxFeePerGasWithin,
+    minMaxFeePerGas,
+    readEvmSurcharge,
     readTransferFees,
     readTransferGasAndPresets,
     toEvmFeeEstimate,
+    type EvmTransferFees,
 } from './fees'
 import { allocateEthereumNonce } from './nonce-pool'
 import { encodeEvmNftTransfer, readEvmNftTransferAsset } from './nft-transfer'
@@ -163,6 +169,49 @@ const toEvmTransfer = async (
     }
 }
 
+// A fee that rose after the sender confirmed must not be signed above what they saw; a ceiling
+// without a block of base-fee headroom could leave the transaction unmined, so it is refused.
+const capToConfirmedMaxFee = async ({
+    client,
+    chain,
+    call,
+    nonce,
+    fees,
+    preset,
+    maxFee,
+}: {
+    client: PublicClient
+    chain: EvmChain
+    call: EvmTransferCall
+    nonce: number
+    fees: Omit<EvmTransferFees, 'surcharge'>
+    preset: FeeValuesEIP1559
+    maxFee: bigint
+}): Promise<FeeValuesEIP1559> => {
+    const surcharge = await readEvmSurcharge(client, chain, {
+        type: 'eip1559',
+        chainId: call.chainId,
+        nonce,
+        to: call.to,
+        value: call.value,
+        data: call.data,
+        gas: fees.gas,
+        ...preset,
+    })
+    const ceiling = maxFeePerGasWithin(maxFee, fees.gas, surcharge)
+    if (
+        ceiling <
+        minMaxFeePerGas(fees.baseFeePerGas, preset.maxPriorityFeePerGas)
+    ) {
+        throw new EvmError(EvmErrorCode.FEE_ABOVE_CONFIRMED)
+    }
+    return {
+        maxPriorityFeePerGas: preset.maxPriorityFeePerGas,
+        maxFeePerGas:
+            ceiling < preset.maxFeePerGas ? ceiling : preset.maxFeePerGas,
+    }
+}
+
 const buildEvmTransfer = async (
     ctx: ChainContext,
     chain: EvmChain,
@@ -191,7 +240,20 @@ const buildEvmTransfer = async (
     ]).catch((error: unknown) => {
         throw toEvmError(error, chain.row.nativeAsset.symbol)
     })
-    const prices = fees.presets[context.feePreset ?? 'normal']
+    const preset = fees.presets[context.feePreset ?? 'normal']
+    const prices = context.maxFee
+        ? await capToConfirmedMaxFee({
+              client,
+              chain,
+              call,
+              nonce,
+              fees,
+              preset,
+              maxFee: toBigInt(context.maxFee),
+          }).catch((error: unknown) => {
+              throw toEvmError(error, chain.row.nativeAsset.symbol)
+          })
+        : preset
     const payload: EthereumTransactionPayload = {
         from: call.from,
         transaction: {
