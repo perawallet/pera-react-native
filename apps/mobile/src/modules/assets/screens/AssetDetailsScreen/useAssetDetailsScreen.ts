@@ -19,6 +19,8 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
+    isCollectible as isCollectibleAsset,
+    useAssetOnChainSupplyQuery,
     useSingleAssetDetailsQuery,
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
@@ -43,6 +45,8 @@ import { chainUiFor } from '@modules/chain-ui'
 import type {
     AssetAboutDisplay,
     AssetDetailsDisplay,
+    AssetDisplayParams,
+    AssetSupplyDisplay,
 } from '../../types/asset-details-display'
 import { neutralAssetDetailsDisplay } from './neutralAssetDetailsDisplay'
 
@@ -62,6 +66,7 @@ export type UseAssetDetailsScreenResult = {
     headerSecondary: Optional<string>
     assetDetailsDisplay: AssetDetailsDisplay
     about: Nullable<AssetAboutDisplay>
+    supply: Nullable<AssetSupplyDisplay>
     isNetworkLineVisible: boolean
     isMarketsTabVisible: boolean
 }
@@ -82,23 +87,45 @@ export const useAssetDetailsScreen = ({
     const isError = isQueryError && !asset
     const descriptor = getChainDescriptor(chainId)
     const assetDetailsDisplay =
-        chainUiFor(descriptor.family).assetDetails ?? neutralAssetDetailsDisplay
+        chainUiFor(descriptor.family, chainId).assetDetails ??
+        neutralAssetDetailsDisplay
 
-    const about = useMemo(
-        () =>
-            asset
-                ? assetDetailsDisplay.resolveAbout({
-                      asset,
-                      scope,
-                      descriptor,
-                      isNativeAsset: isNativeAsset(
-                          { chainId, assetId },
-                          descriptor,
-                      ),
-                  })
-                : null,
-        [asset, assetDetailsDisplay, scope, descriptor, chainId, assetId],
+    const isNative = isNativeAsset({ chainId, assetId }, descriptor)
+    // Sync stores a zero supply for a token whose source carried none; one
+    // chain read for the asset on screen fills it. A collectible stores zero
+    // too, and a chain can't read it as a token.
+    const { totalSupply: onChainSupply } = useAssetOnChainSupplyQuery(
+        assetId,
+        scope,
+        !!asset &&
+            !isNative &&
+            !isCollectible &&
+            !isCollectibleAsset(asset) &&
+            asset.totalSupply.isZero(),
     )
+
+    const { about, supply } = useMemo(() => {
+        if (!asset) {
+            return { about: null, supply: null }
+        }
+        const params: AssetDisplayParams = {
+            asset,
+            scope,
+            descriptor,
+            isNativeAsset: isNative,
+        }
+        return {
+            about: assetDetailsDisplay.resolveAbout(params),
+            supply: assetDetailsDisplay.resolveSupply(
+                onChainSupply
+                    ? {
+                          ...params,
+                          asset: { ...asset, totalSupply: onChainSupply },
+                      }
+                    : params,
+            ),
+        }
+    }, [asset, assetDetailsDisplay, scope, descriptor, isNative, onChainSupply])
 
     // The same test Home uses for its chain badges, so both screens agree on when a chain needs naming.
     const isNetworkLineVisible = useAccountHoldingSources(account).length > 1
@@ -144,6 +171,7 @@ export const useAssetDetailsScreen = ({
         headerSecondary,
         assetDetailsDisplay,
         about,
+        supply,
         isNetworkLineVisible,
         isMarketsTabVisible,
     }

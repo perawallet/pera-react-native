@@ -11,6 +11,7 @@
  */
 
 import type { SupportedCountry } from '@perawallet/wallet-core-card'
+import type { Optional } from '@perawallet/wallet-core-shared'
 
 /**
  * Maps an ISO 3166-1 alpha-2 code (e.g. "DE") to its display name (e.g.
@@ -18,9 +19,9 @@ import type { SupportedCountry } from '@perawallet/wallet-core-card'
  * the code is missing or not in the list, so callers can fall back to the code.
  */
 export const getCountryName = (
-    code: string | undefined,
+    code: Optional<string>,
     countries: SupportedCountry[],
-): string | undefined =>
+): Optional<string> =>
     code
         ? countries.find(country => country.iso3166alpha2 === code)?.name
         : undefined

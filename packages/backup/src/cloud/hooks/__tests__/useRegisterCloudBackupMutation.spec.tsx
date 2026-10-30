@@ -60,7 +60,8 @@ vi.mock('@perawallet/wallet-core-chain-shared', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-device', () => ({
-    useDeploymentDeviceID: deviceIdMock,
+    useDeviceStore: { getState: () => ({}) },
+    deviceIdForDeployment: deviceIdMock,
 }))
 
 import { isExpectedError } from '@perawallet/wallet-core-shared'
@@ -211,5 +212,41 @@ describe('useRegisterCloudBackupMutation', () => {
 
         await waitFor(() => expect(onError).toHaveBeenCalled())
         expect(setRegistrationMock).not.toHaveBeenCalled()
+    })
+
+    test('registers with a device id that arrived after the callback was captured', async () => {
+        deviceIdMock.mockReturnValue(null)
+        const { result } = renderHook(() => useRegisterCloudBackupMutation(), {
+            wrapper: createWrapper(),
+        })
+        const { mutate: captured } = result.current
+
+        deviceIdMock.mockReturnValue('device-123')
+        act(() => captured())
+
+        await waitFor(() => expect(setRegistrationMock).toHaveBeenCalled())
+        expect(registerCloudBackupMock).toHaveBeenCalledWith(
+            expect.objectContaining({ deviceId: 'device-123' }),
+        )
+    })
+
+    test('registers under the device it was called with when the device changes mid-request', async () => {
+        const { result, rerender } = renderHook(
+            () => useRegisterCloudBackupMutation(),
+            { wrapper: createWrapper() },
+        )
+
+        act(() => result.current.mutate())
+        deviceIdMock.mockReturnValue('device-456')
+        rerender()
+
+        await waitFor(() => expect(setRegistrationMock).toHaveBeenCalled())
+        expect(registerCloudBackupMock).toHaveBeenCalledWith(
+            expect.objectContaining({ deviceId: 'device-123' }),
+        )
+        expect(setRegistrationMock).toHaveBeenCalledWith(
+            expect.objectContaining({ deviceId: 'device-123' }),
+            SALT,
+        )
     })
 })

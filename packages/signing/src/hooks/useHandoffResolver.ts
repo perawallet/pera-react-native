@@ -12,7 +12,11 @@
 
 import { useEffect, useMemo, useRef } from 'react'
 import { useQueries, type QueryKey } from '@tanstack/react-query'
-import { logger } from '@perawallet/wallet-core-shared'
+import {
+    logger,
+    type Nullable,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
 import type {
     HandoffPollOutcome,
     TerminalHandoffOutcome,
@@ -46,10 +50,10 @@ export const resolveHandoffDeadline = ({
     registeredAt,
     fallbackMs = FALLBACK_DEADLINE_MS,
 }: {
-    expiresAt: number | null
-    registeredAt: number | null
+    expiresAt: Nullable<number>
+    registeredAt: Nullable<number>
     fallbackMs?: number
-}): number | null => {
+}): Nullable<number> => {
     const fallback = registeredAt === null ? null : registeredAt + fallbackMs
     if (expiresAt === null) return fallback
     if (fallback === null) return expiresAt
@@ -65,7 +69,7 @@ export type HandoffPollDescriptor<TRaw, TDetail> = {
     queryKey: QueryKey
     queryFn: () => Promise<TRaw>
     /** Narrow the raw response to the single matching detail (or undefined). */
-    select: (data: TRaw) => TDetail | undefined
+    select: (data: TRaw) => Optional<TDetail>
     /** Poll only while true — e.g. app foregrounded and a device id is set. */
     enabled: boolean
 }
@@ -92,7 +96,7 @@ export type UseHandoffResolverArgs<TItem, TRaw, TDetail> = {
     resolve: (
         outcome: TerminalHandoffOutcome,
         item: TItem,
-        detail: TDetail | undefined,
+        detail: Optional<TDetail>,
     ) => void | Promise<void>
     /**
      * The request's authoritative expiry (wall-clock ms) read from the latest
@@ -100,7 +104,7 @@ export type UseHandoffResolverArgs<TItem, TRaw, TDetail> = {
      * deadline: past it, an unresolved handoff self-expires to a clean
      * `soft-reject`. Omit to disable deadline enforcement.
      */
-    expiresAtOf?: (detail: TDetail) => number | null
+    expiresAtOf?: (detail: TDetail) => Nullable<number>
     /**
      * Registration timestamp (wall-clock ms) of a handoff, anchoring the fixed
      * fallback deadline that bounds a handoff whose backend never responds.
@@ -175,7 +179,7 @@ export const useHandoffResolver = <TItem, TRaw, TDetail>({
             const key = keyOf(item)
             if (resolvedRef.current.has(key)) return
 
-            const detail = result.data as TDetail | undefined
+            const detail = result.data as Optional<TDetail>
 
             // Client-side wall-clock cap. Nothing terminalizes a handoff if the
             // backend never emits a terminal status (a dropped dApp session, or

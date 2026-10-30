@@ -81,11 +81,6 @@ export const getAssetPriceHistoryQueryKey = (
     return [MODULE_PREFIX, 'prices', 'history', { assetID, period, scope }]
 }
 
-/**
- * Chart-history key guard. Allowlisted into query persistence:
- * price history is network-only (no SQLite table backs it) and carries no
- * PII, so the last successful snapshot is safe and cheap to persist.
- */
 export const isAssetPriceHistoryQuery = (queryKey: QueryKey): boolean =>
     queryKey[0] === MODULE_PREFIX &&
     queryKey[1] === 'prices' &&
@@ -127,6 +122,12 @@ export const getAssetAuthoritiesQueryKey = (
     assetId: string,
     scope: ChainScope,
 ) => [MODULE_PREFIX, 'authorities', { assetId, scope }]
+
+/** The asset's total supply as the chain reports it, in base units. */
+export const getAssetOnChainSupplyQueryKey = (
+    assetId: string,
+    scope: ChainScope,
+) => [MODULE_PREFIX, 'on-chain-supply', { assetId, scope }]
 
 export function invalidateAssetQueries(queryClient: QueryClient): void {
     void queryClient.invalidateQueries({

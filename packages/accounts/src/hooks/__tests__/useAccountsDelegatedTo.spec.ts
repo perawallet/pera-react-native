@@ -96,6 +96,23 @@ describe('useAccountsDelegatedTo', () => {
         )
         expect(result.current).toEqual([])
     })
+
+    it('returns an empty list on a chain with no accounts adapter', () => {
+        seedAuthority('A', 'PQ')
+        setAccounts([held('A'), held('PQ')])
+        const { authority } = fakeAccountsChain().adapter
+
+        const { result } = renderHook(() =>
+            useAccountsDelegatedTo('PQ', 'ethereum'),
+        )
+        const { result: noAddress } = renderHook(() =>
+            useAccountsDelegatedTo(undefined, 'ethereum'),
+        )
+
+        expect(result.current).toEqual([])
+        expect(noAddress.current).toEqual([])
+        expect(authority!.accountsDelegatedTo).not.toHaveBeenCalled()
+    })
 })
 
 describe('useDelegationAuthorities', () => {

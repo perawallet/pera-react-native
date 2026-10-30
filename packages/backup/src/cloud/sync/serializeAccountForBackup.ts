@@ -19,7 +19,11 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { zeroBytes } from '@perawallet/wallet-core-kms'
-import { bytesToHex } from '@perawallet/wallet-core-shared'
+import {
+    bytesToHex,
+    type Nullable,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
 import { backupAdapterFor } from '../../chain-adapter'
 import {
     accountRecordIdentity,
@@ -90,7 +94,7 @@ export const serializeAccountForBackup = async (
         resolvePrivateKey,
         seedSecrets,
     }: Deps,
-): Promise<SerializedAccount | null> => {
+): Promise<Nullable<SerializedAccount>> => {
     // Checked first: reading a seed or key is KMS work and can prompt.
     if (!hasBackupChains(account)) return null
 
@@ -130,7 +134,7 @@ export const serializeAccountForBackup = async (
         return { record: recordItem(payload, hashAddress), secrets: null }
     }
 
-    let secrets: SecretsBackupPayload | null
+    let secrets: Nullable<SecretsBackupPayload>
     if (standaloneSecretOf(account) === 'privateKey') {
         secrets = await privateKeySecrets(account, resolvePrivateKey)
     } else {
@@ -157,12 +161,12 @@ export const serializeAccountForBackup = async (
 const privateKeySecrets = async (
     account: WalletAccount,
     resolvePrivateKey?: SerializePrivateKeyResolver,
-): Promise<SecretsBackupPayload | null> => {
+): Promise<Nullable<SecretsBackupPayload>> => {
     const [held] = orderAccountRecordChains(
         (
             Object.entries(account.chains) as [
                 ChainId,
-                ChainAccount | undefined,
+                Optional<ChainAccount>,
             ][]
         ).flatMap(([chain, entry]) =>
             entry?.keyPairId && isBackupChain(chain) ? [{ chain, entry }] : [],

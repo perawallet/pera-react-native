@@ -17,10 +17,12 @@ import {
     SeedScheme,
     canAccess,
     entropyChildIdOf,
+    handOffSecret,
     seedSchemeOf,
     withSecret,
 } from '@perawallet/wallet-core-kms'
 import { getKeystoreStore } from '@perawallet/wallet-extension-provider'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { backupSeedReference } from '../../chain-adapter'
 import type { SeedEntropyResolver } from './useCloudBackupPasskeyImport'
 
@@ -33,7 +35,7 @@ import type { SeedEntropyResolver } from './useCloudBackupPasskeyImport'
 export const resolveBackupSeedKeyId = async (
     seedAddress: string,
     chainId: ChainId,
-): Promise<string | null> => {
+): Promise<Nullable<string>> => {
     const keys = getKeystoreStore().state.keys
 
     for (const key of keys) {
@@ -70,9 +72,8 @@ export const useResolveSeedEntropyForBackup = (
             // `withSecret` zeroes its buffer once the handler returns, so the
             // handler copies the bytes out rather than handing back the
             // reference itself.
-            const entropy = await withSecret(
-                entropyId,
-                secret => new Uint8Array(secret),
+            const entropy = await withSecret(entropyId, secret =>
+                handOffSecret(new Uint8Array(secret)),
             )
             return entropy == null ? null : { seedKeyId, entropy }
         },

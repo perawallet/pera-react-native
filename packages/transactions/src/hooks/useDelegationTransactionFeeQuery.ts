@@ -12,7 +12,10 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
-import { baseUnitsToDisplayUnits } from '@perawallet/wallet-core-shared'
+import {
+    baseUnitsToDisplayUnits,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { getChainDescriptor } from '@perawallet/wallet-core-chain-shared'
 import {
@@ -26,7 +29,7 @@ import type { Decimal } from 'decimal.js'
 
 export type UseDelegationTransactionFeeQueryResult = {
     /** Fee the delegation transaction will actually pay, in display units of the chain's native asset. */
-    fee: Decimal | undefined
+    fee: Optional<Decimal>
     isPending: boolean
 }
 
@@ -65,6 +68,9 @@ export const useDelegationTransactionFeeQuery = (
         return isSuggestedMinFeeError ? minTxnFee : null
     }
     const suggestedMinFee = suggestedMinFeeOf()
+    const hasAddresses = !!sourceAddress && !!authorityAddress
+    const isAwaitingMinFee = suggestedMinFee === null
+    const isEnabled = hasAddresses && !isAwaitingMinFee
 
     const query = useQuery({
         // Scope is part of the key — feePerByte differs between mainnet
@@ -78,7 +84,7 @@ export const useDelegationTransactionFeeQuery = (
             authorityAddress,
             String(suggestedMinFee),
         ],
-        queryFn: async () => {
+        queryFn: async (): Promise<Decimal> => {
             // The rekey txn is signed by `sourceAddress`'s CURRENT auth
             // account (pre-rekey) — resolveMinFeeForSender resolves the
             // effective signer via getSignerFor, so a sender currently
@@ -105,12 +111,15 @@ export const useDelegationTransactionFeeQuery = (
                 getChainDescriptor(scope.chainId).nativeAsset.decimals,
             )
         },
-        enabled:
-            !!sourceAddress && !!authorityAddress && suggestedMinFee !== null,
+        enabled: isEnabled,
     })
 
     return {
         fee: query.data,
-        isPending: query.isPending,
+        // Stays pending while the shared min-fee query loads: the confirm
+        // screens show the fee as loading until it can be built.
+        isPending:
+            (hasAddresses && isAwaitingMinFee) ||
+            (isEnabled && query.isPending),
     }
 }

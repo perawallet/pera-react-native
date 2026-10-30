@@ -27,7 +27,7 @@
 // walletConnect falls through to the registry, which pairs via the offscreen
 // host; that approval opens as its own window, not a sheet in this tree.
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import {
     createDiscoverBridgeHost,
     openExternalTab,
@@ -188,9 +188,8 @@ export const PWWebView = ({
     // standing up a host nothing could ever authenticate against.
     const trustedOrigins = useMemo(() => getTrustedIframeOrigins(url), [url])
 
-    const hostRef = useRef<ReturnType<typeof createDiscoverBridgeHost> | null>(
-        null,
-    )
+    const hostRef =
+        useRef<Nullable<ReturnType<typeof createDiscoverBridgeHost>>>(null)
     const transport = useMemo<WebviewBridgeTransport>(
         () => ({ postToWebview: data => hostRef.current?.post(data) }),
         [],

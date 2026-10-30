@@ -59,7 +59,7 @@ export const useNfdForAddressQuery = (
 
     const query = useQuery({
         queryKey: nfdQueryKeys.forAddress(address, scope),
-        queryFn: () => {
+        queryFn: (): Promise<NfdName[]> => {
             const valuePromise = nfdBatchQueue.enqueue(
                 address,
                 toScopeKey(scope),
@@ -73,6 +73,6 @@ export const useNfdForAddressQuery = (
 
     return {
         data: query.data ?? NO_RESULTS,
-        isPending: query.isPending,
+        isPending: enabled && query.isPending,
     }
 }

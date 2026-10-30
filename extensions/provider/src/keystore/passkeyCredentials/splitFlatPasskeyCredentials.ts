@@ -16,6 +16,7 @@ import {
     METADATA_PREFIX,
 } from '@algorandfoundation/react-native-keystore'
 import type { KeychainStorage } from '@algorandfoundation/react-native-keystore'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { isFlatCandidate } from '../migrations/flatCandidate'
 import { wipeSecrets } from '../migrations/canary13'
 import { wipeBytes } from '../migrations/sealing'
@@ -125,8 +126,8 @@ const splitOne = async (
         safeWarn(`${LOG_PREFIX}: ${key} left flat: ${reason}`)
     }
 
-    let flat: FlatProviderCredential | undefined
-    let material: Uint8Array | undefined
+    let flat: Optional<FlatProviderCredential>
+    let material: Optional<Uint8Array>
     try {
         const payload = deps.storage.getString(key)
         if (payload === undefined) return

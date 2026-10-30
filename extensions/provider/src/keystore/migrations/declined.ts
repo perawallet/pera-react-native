@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { safeErrorMessage, safeWarn } from './safeLog'
 
 /**
@@ -17,7 +18,7 @@ import { safeErrorMessage, safeWarn } from './safeLog'
  * ledger's MMKV instance in production and a plain object in tests.
  */
 export type NoteStore = {
-    getString: (key: string) => string | undefined
+    getString: (key: string) => Optional<string>
     set: (key: string, value: string) => void
 }
 
@@ -59,10 +60,10 @@ const noteKey = (module: string): string =>
 
 /** `ok: false` means the read itself threw — distinct from a note that reads back as absent. */
 type RawRead =
-    | { ok: true; raw: string | undefined }
+    | { ok: true; raw: Optional<string> }
     | { ok: false; error: unknown }
 
-const parseIds = (raw: string | undefined): string[] => {
+const parseIds = (raw: Optional<string>): string[] => {
     if (raw === undefined) return []
 
     try {

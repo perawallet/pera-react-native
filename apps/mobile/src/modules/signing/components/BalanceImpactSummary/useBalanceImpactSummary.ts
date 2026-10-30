@@ -15,6 +15,7 @@ import type { Decimal } from 'decimal.js'
 import {
     computeBalanceImpact,
     useImpactTransactions,
+    useSigningRequest,
 } from '@perawallet/wallet-core-signing'
 import {
     useNativeAsset,
@@ -25,14 +26,19 @@ import {
     type DisplayableAsset,
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
-import { baseUnitsToDisplayUnits } from '@perawallet/wallet-core-shared'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import {
+    baseUnitsToDisplayUnits,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import { useSignRequestScope } from '../../hooks/useSignRequestScope'
 
 export type BalanceImpactDirection = 'receive' | 'spend'
 
 export type BalanceImpactItem = {
     assetId: string
+    /** The chain `assetId` is on. */
+    chainId: ChainId
     /** Drives the asset/collectible avatar and the AssetAmount unit + decimals. */
     asset: DisplayableAsset
     isCollectible: boolean
@@ -79,7 +85,8 @@ export type UseBalanceImpactSummaryResult = {
 type SortableItem = BalanceImpactItem & { sortValue: Decimal }
 
 export const useBalanceImpactSummary = (): UseBalanceImpactSummaryResult => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const { currentRequest } = useSigningRequest()
+    const scope = useSignRequestScope(currentRequest)
     const nativeAsset = useNativeAsset(scope)
     const { transactions, signableAddresses, isSimulating, simulationFailed } =
         useImpactTransactions(scope)
@@ -132,8 +139,8 @@ export const useBalanceImpactSummary = (): UseBalanceImpactSummaryResult => {
                 .map(assetId => ({ assetId, amount: 0n })),
         ]
         const items = movements.map<SortableItem>(({ assetId, amount }) => {
-            const isAlgo = assetId === nativeAsset.assetId
-            const asset: PeraAsset | undefined = isAlgo
+            const isNative = assetId === nativeAsset.assetId
+            const asset: Optional<PeraAsset> = isNative
                 ? nativeAsset
                 : assets.get(assetId)
             const decimals = asset?.decimals ?? 0
@@ -163,6 +170,7 @@ export const useBalanceImpactSummary = (): UseBalanceImpactSummaryResult => {
 
             return {
                 assetId,
+                chainId: scope.chainId,
                 asset: displayAsset,
                 isCollectible,
                 isPureCollectible:
@@ -189,6 +197,7 @@ export const useBalanceImpactSummary = (): UseBalanceImpactSummaryResult => {
             )
             return {
                 assetId: created.key,
+                chainId: scope.chainId,
                 asset: {
                     assetId: created.key,
                     name: created.name,
@@ -205,7 +214,7 @@ export const useBalanceImpactSummary = (): UseBalanceImpactSummaryResult => {
             }
         })
 
-        // ALGO first, then highest-value first within each section.
+        // Native asset first, then highest-value first within each section.
         const order = (list: SortableItem[]): BalanceImpactItem[] =>
             [...list]
                 .sort((a, b) => {
@@ -228,5 +237,13 @@ export const useBalanceImpactSummary = (): UseBalanceImpactSummaryResult => {
             isSimulating,
             simulationFailed,
         }
-    }, [impact, assets, prices, isSimulating, simulationFailed, nativeAsset])
+    }, [
+        impact,
+        assets,
+        prices,
+        isSimulating,
+        simulationFailed,
+        nativeAsset,
+        scope.chainId,
+    ])
 }

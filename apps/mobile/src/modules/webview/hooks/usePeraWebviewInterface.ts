@@ -12,7 +12,7 @@
 
 import { useCallback } from 'react'
 import type WebView from 'react-native-webview'
-import { logger, type Nullable } from '@perawallet/wallet-core-shared'
+import { logger, originOf, type Nullable } from '@perawallet/wallet-core-shared'
 import { AnalyticsMetadataKey, WebviewEvent, trackEvent } from '@analytics'
 import { useLanguage } from '@hooks/useLanguage'
 import {
@@ -41,7 +41,7 @@ import { useWalletConnectHandler } from './bridge/useWalletConnectHandler'
 export const usePeraWebviewInterface = (
     webview: Nullable<WebView>,
     securedConnection: boolean,
-    sourceUrl: string | null,
+    sourceUrl: Nullable<string>,
     onCloseRequested?: () => void,
     onBackRequested?: () => void,
 ) => {
@@ -144,16 +144,19 @@ export const usePeraWebviewInterface = (
             messages.forEach(msg => {
                 const { method } = msg
                 if (!isSupportedBridgeMethod(method)) {
+                    const sourceOrigin = originOf(
+                        security.sourceUrl ?? undefined,
+                    )
                     trackEvent(WebviewEvent.BridgeMethodNotFound, {
                         [AnalyticsMetadataKey.WebviewBridgeMethod]: method,
-                        ...(security.sourceUrl
-                            ? { [AnalyticsMetadataKey.Url]: security.sourceUrl }
+                        ...(sourceOrigin
+                            ? { [AnalyticsMetadataKey.Url]: sourceOrigin }
                             : {}),
                     })
                     if (__DEV__) {
                         // eslint-disable-next-line no-console
                         console.warn(
-                            `[webview-bridge] Unknown method "${method}" from ${security.sourceUrl ?? 'unknown origin'} — not part of the v3 contract (docs/WEBVIEW_ARCHITECTURE.md)`,
+                            `[webview-bridge] Unknown method "${method}" from ${sourceOrigin ?? 'unknown origin'} — not part of the v3 contract (docs/WEBVIEW_ARCHITECTURE.md)`,
                         )
                     }
                     sendErrorToWebview(

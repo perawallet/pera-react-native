@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { Optional } from '@perawallet/wallet-core-shared'
 import type {
     RunTourParams,
     RunTourStepOutcome,
@@ -33,7 +34,7 @@ export type LocaleTourRunner = {
     runTourStep: (params: RunTourStepParams) => Promise<RunTourStepOutcome>
 }
 
-let runner: LocaleTourRunner | undefined
+let runner: Optional<LocaleTourRunner>
 
 export const registerLocaleTourRunner = (next: LocaleTourRunner): void => {
     runner = next
@@ -43,4 +44,4 @@ export const registerLocaleTourRunner = (next: LocaleTourRunner): void => {
  * `undefined` in any build where register.ts resolved to its stub — i.e. every
  * non-dev bundle. Callers treat that as "no tour here" rather than an error.
  */
-export const getLocaleTourRunner = (): LocaleTourRunner | undefined => runner
+export const getLocaleTourRunner = (): Optional<LocaleTourRunner> => runner

@@ -18,6 +18,10 @@ import {
     type UseProjectByUrlQueryResult,
 } from '@perawallet/wallet-core-projects'
 import { useSiteSafetyQuery } from '@perawallet/wallet-core-site-safety'
+import {
+    useSigningRequest,
+    type SignRequest,
+} from '@perawallet/wallet-core-signing'
 import { useSourceMetadataBadge } from '../useSourceMetadataBadge'
 
 // Keep the real `resolveDisplayableVerificationTier` so the actual trust logic
@@ -27,6 +31,13 @@ vi.mock('@perawallet/wallet-core-projects', async importOriginal => ({
         typeof import('@perawallet/wallet-core-projects')
     >()),
     useProjectByUrlQuery: vi.fn(),
+}))
+
+vi.mock('@perawallet/wallet-core-signing', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-signing')
+    >()),
+    useSigningRequest: vi.fn(() => ({ currentRequest: undefined })),
 }))
 
 const verifiedTinyman: PeraProject = {
@@ -77,6 +88,37 @@ describe('useSourceMetadataBadge — verified-badge gating', () => {
         )
 
         expect(result.current.verificationTier).toBe('suspicious')
+    })
+})
+
+describe('useSourceMetadataBadge — request chain', () => {
+    afterEach(() => {
+        vi.mocked(useSigningRequest).mockReturnValue({
+            currentRequest: undefined,
+        } as unknown as ReturnType<typeof useSigningRequest>)
+    })
+
+    it("looks the project up on the request's own network", () => {
+        stubProjectQuery(verifiedTinyman)
+        const ethScope = { chainId: 'ethereum', networkId: 'sepolia' }
+        vi.mocked(useSigningRequest).mockReturnValue({
+            currentRequest: {
+                id: 'req-1',
+                type: 'transactions',
+                transport: 'callback',
+                txs: [{ scope: ethScope, payload: {} }],
+            } as unknown as SignRequest,
+        } as unknown as ReturnType<typeof useSigningRequest>)
+
+        renderHook(() =>
+            useSourceMetadataBadge({ url: 'https://app.uniswap.org' }),
+        )
+
+        expect(useProjectByUrlQuery).toHaveBeenLastCalledWith({
+            scope: ethScope,
+            url: 'https://app.uniswap.org',
+            isEnabled: true,
+        })
     })
 })
 

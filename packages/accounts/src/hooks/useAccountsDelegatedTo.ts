@@ -12,6 +12,7 @@
 
 import { useMemo } from 'react'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import type { Maybe } from '@perawallet/wallet-core-shared'
 import { accountsChainAdapters } from '../chain-adapter'
 import { useAccountChainStateStore, useAccountsStore } from '../store'
 import type { WalletAccount } from '../models'
@@ -23,17 +24,16 @@ import type { WalletAccount } from '../models'
  * which asks the indexer.
  */
 export const useAccountsDelegatedTo = (
-    address: string | null | undefined,
+    address: Maybe<string>,
     chainId: ChainId,
 ): WalletAccount[] => {
     const accounts = useAccountsStore(state => state.accounts)
     // Reads every legacy scope, so any slice write can change the result.
     const chainStates = useAccountChainStateStore(state => state.states)
     return useMemo(() => {
+        if (!address || !accountsChainAdapters.has(chainId)) return []
         const authority = accountsChainAdapters.get(chainId).authority
-        return address && authority
-            ? authority.accountsDelegatedTo(address, accounts)
-            : []
+        return authority ? authority.accountsDelegatedTo(address, accounts) : []
         // eslint-disable-next-line react-hooks/exhaustive-deps -- chainStates re-runs the memo: accountsDelegatedTo reads the chain-state store, not its arguments
     }, [address, accounts, chainId, chainStates])
 }

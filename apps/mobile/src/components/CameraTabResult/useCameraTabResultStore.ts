@@ -11,6 +11,7 @@
  */
 
 import { create } from 'zustand'
+import { registerStore, type Nullable } from '@perawallet/wallet-core-shared'
 
 export type CameraTabResult =
     | 'account-imported'
@@ -19,7 +20,7 @@ export type CameraTabResult =
     | 'import-failed'
 
 type CameraTabResultState = {
-    result: CameraTabResult | null
+    result: Nullable<CameraTabResult>
     showResult: (result: CameraTabResult) => void
 }
 
@@ -27,3 +28,9 @@ export const useCameraTabResultStore = create<CameraTabResultState>(set => ({
     result: null,
     showResult: result => set({ result }),
 }))
+
+registerStore({
+    name: 'camera-tab-result-store',
+    clearStorage: () => {},
+    resetState: () => useCameraTabResultStore.setState({ result: null }),
+})

@@ -54,7 +54,6 @@ import { SEARCH_DEBOUNCE_TIME_SHORT } from '@constants/ui'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import {
     AddAssetContent,
-    toChainFilterOptions,
     useAssetListFiatConverter,
     useGroupedHoldings,
     type AssetFiatConverter,
@@ -62,6 +61,7 @@ import {
     type GroupedHoldingItem,
 } from '@modules/assets'
 import { useAssetListViewStore } from '../../hooks/useAssetListViewStore'
+import { useAccountChainFilterOptions } from '../../hooks/useAccountChainFilterOptions'
 import { useSelectedNetworkSource } from '../../hooks/useSelectedNetworkSource'
 import { useNftHoldingSources } from '../../hooks/useNftHoldingSources'
 import { AssetFilterContent } from '../AssetFilterContent'
@@ -113,7 +113,7 @@ type UseAccountAssetListResult = {
         /** On All, for an account on two or more chains, while a search is typed: each plain row names its network. */
         shouldShowNetwork: boolean
     }
-    listRef: React.MutableRefObject<PWFlatListRef | null>
+    listRef: React.MutableRefObject<Nullable<PWFlatListRef>>
 }
 
 const EMPTY_ITEMS: AccountAssetListItem[] = []
@@ -196,16 +196,9 @@ export const useAccountAssetList = ({
                   ),
         [sources, selectedChainId],
     )
-    const chainFilterOptions = useMemo(
-        () =>
-            toChainFilterOptions(
-                sources.map(({ scope: { chainId } }) => chainId),
-                {
-                    allLabel: t('account_details.assets.network_filter_all'),
-                    testIDPrefix: 'asset_network_filter',
-                },
-            ),
-        [sources, t],
+    const chainFilterOptions = useAccountChainFilterOptions(
+        sources,
+        'asset_network_filter',
     )
 
     // Search is debounced locally and pushed into the DB query so pagination
@@ -279,7 +272,7 @@ export const useAccountAssetList = ({
         setSearchFilter('')
     }, [account.id])
 
-    const listRef = useRef<PWFlatListRef | null>(null)
+    const listRef = useRef<Nullable<PWFlatListRef>>(null)
 
     // One reset for both triggers: switching account or sort re-reads holdings
     // under a new query key, so the rows go through a gap — empty while cold, or

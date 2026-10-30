@@ -15,6 +15,7 @@ import {
     guardedPersist,
     registerStore,
     type WithPersist,
+    type Nullable,
 } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import type { AgeGateSource, AgeGateStatus } from './models'
@@ -22,8 +23,8 @@ import type { AgeGateSource, AgeGateStatus } from './models'
 const STORE_NAME = 'age-gate-store'
 
 type AgeGateState = {
-    status: AgeGateStatus | null
-    source: AgeGateSource | null
+    status: Nullable<AgeGateStatus>
+    source: Nullable<AgeGateSource>
 }
 
 type AgeGateActions = {

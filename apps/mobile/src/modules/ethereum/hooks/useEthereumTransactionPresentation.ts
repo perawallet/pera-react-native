@@ -12,6 +12,7 @@
 
 import { useMemo } from 'react'
 import type { Decimal } from 'decimal.js'
+import { useNativeAsset, type PeraAsset } from '@perawallet/wallet-core-assets'
 import {
     useFindAccountByAddress,
     type WalletAccount,
@@ -22,7 +23,6 @@ import type {
 } from '@perawallet/wallet-core-chain-contract'
 import {
     ETHEREUM_CHAIN_ID,
-    ETHEREUM_NATIVE_ASSET,
     readEthereumNative,
     type EthereumTransactionView,
     type EvmNftItem,
@@ -31,6 +31,7 @@ import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
     baseUnitsToDisplayUnits,
     type Nullable,
+    type Optional,
 } from '@perawallet/wallet-core-shared'
 import type { IconName } from '@components/core'
 import { transactionIconName } from '@components/TransactionIcon'
@@ -79,6 +80,8 @@ export type EthereumTransactionPresentation = {
      * batch call not yet reached, which is priced only once it is.
      */
     maxFee: Nullable<EthereumAmount>
+    /** `view.feePaid` in ether, on a transaction already on chain whose history gave a fee; whoever paid it. */
+    feePaid: Nullable<EthereumAmount>
     signingAccount: Nullable<WalletAccount>
 }
 
@@ -205,16 +208,23 @@ const standardCallFields = (
     }
 }
 
-const toEther = (wei: Decimal): EthereumAmount => ({
-    asset: ETHEREUM_NATIVE_ASSET,
-    value: baseUnitsToDisplayUnits(wei, ETHEREUM_NATIVE_ASSET.decimals),
+const toNative = (wei: Decimal, asset: PeraAsset): EthereumAmount => ({
+    asset,
+    value: baseUnitsToDisplayUnits(wei, asset.decimals),
 })
 
+/**
+ * `scope` is the chain the transaction is on; unset, it is the selected
+ * Ethereum scope, which is where a review always happens.
+ */
 export const useEthereumTransactionPresentation = (
     transaction: TransactionNative,
+    scopeOverride?: ChainScope,
 ): UseEthereumTransactionPresentationResult => {
     const view = useMemo(() => readView(transaction), [transaction])
-    const scope = useSelectedScope(ETHEREUM_CHAIN_ID)
+    const selectedScope = useSelectedScope(ETHEREUM_CHAIN_ID)
+    const scope = scopeOverride ?? selectedScope
+    const nativeAsset = useNativeAsset(scope)
     const {
         asset: tokenAsset,
         value: tokenValue,
@@ -230,12 +240,13 @@ export const useEthereumTransactionPresentation = (
 
     return useMemo(() => {
         if (!view) return null
+        const toEther = (wei: Decimal) => toNative(wei, nativeAsset)
 
         const isAmountLoading =
             (view.kind === 'token-transfer' || view.kind === 'nft-transfer') &&
             isTokenLoading
 
-        let amount: EthereumAmount | undefined
+        let amount: Optional<EthereumAmount>
         if (view.kind === 'transfer') {
             amount = toEther(view.value)
         } else if (tokenValue) {
@@ -266,12 +277,17 @@ export const useEthereumTransactionPresentation = (
             ...(standardCall &&
                 standardCallFields(view, standardCall, isStandardCallLoading)),
             value: toEther(view.value),
-            maxFee: view.isPreview ? null : toEther(view.fee.maxFee),
+            maxFee: 'fee' in view ? toEther(view.fee.maxFee) : null,
+            feePaid:
+                'isMined' in view && view.feePaid
+                    ? toEther(view.feePaid)
+                    : null,
             signingAccount,
         }
     }, [
         view,
         scope,
+        nativeAsset,
         tokenAsset,
         tokenValue,
         isTokenLoading,

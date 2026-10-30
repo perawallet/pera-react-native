@@ -188,6 +188,7 @@ describe('useAccountCollectiblesQuery', () => {
         })
 
         expect(result.current.collectibles).toEqual([])
+        expect(result.current.isPending).toBe(false)
         expect(mockGetAccountCollectiblesLite).not.toHaveBeenCalled()
     })
 })

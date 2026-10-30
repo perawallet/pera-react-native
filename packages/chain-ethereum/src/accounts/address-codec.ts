@@ -70,7 +70,7 @@ export const createEvmAddressCodec = (chain: EvmChain): AddressCodec => ({
     toPaymentUri: (address, opts) => toEip681Uri(chain, address, opts),
     // A link for another EVM chain is that chain's codec's to read.
     parsePaymentUri: uri => {
-        const result = parseEvmPaymentUri(chain, uri)
+        const result = parseEvmPaymentUri(uri)
         if (!result.ok || result.intent.kind !== 'payment') return undefined
         const { target, recipient, assetRef, amount } = result.intent
         if (target.chainId !== chain.row.id) return undefined

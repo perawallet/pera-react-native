@@ -11,6 +11,7 @@
  */
 
 import { useMemo } from 'react'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useBannersQuery } from './useBannersQuery'
 import { useBannersStore } from '../store'
 import type { Banner } from '../models'
@@ -21,7 +22,7 @@ export type UseVisibleBannersResult = {
     // A forced banner is server-flagged with auto_open_mode === 'force'. When
     // one is present the visible set is *only* that banner (others are
     // suppressed) and it bypasses client-side dismissal entirely.
-    forcedBanner: Banner | null
+    forcedBanner: Nullable<Banner>
     isLoading: boolean
     isError: boolean
 }

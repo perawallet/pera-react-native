@@ -22,11 +22,13 @@ import type { AccountStackParamsList } from '@modules/accounts'
 import type {
     ChainScope,
     TransactionNative,
+    TransactionRecord,
 } from '@perawallet/wallet-core-chain-contract'
 import type {
     SuspectedPoisoning,
     TransactionHistoryItem,
 } from '@perawallet/wallet-core-transactions'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import type { MessagesStackParamList } from '@modules/messages'
 import type { MultisigStackParamList } from '@modules/multisig'
 import type {
@@ -69,7 +71,7 @@ export type RootStackParamList = {
     /** Discover page pushed over the current screen; `path` is a relative
      * Discover route (e.g. `token-detail/ALGO`), validated on load. */
     DiscoverDetail: { path: string }
-    BannersCarouselModal: { bannerId?: string } | undefined
+    BannersCarouselModal: Optional<{ bannerId?: string }>
     GroupTransactionList: {
         groupId: string
     }
@@ -85,6 +87,8 @@ export type RootStackParamList = {
          * `SigningStackParamList['TransactionDetails']`.
          */
         historyTransaction?: TransactionHistoryItem
+        /** The history record the user tapped, on a chain that keeps no cached rows; see the same param on `SigningStackParamList['TransactionDetails']`. */
+        historyRecord?: TransactionRecord
         /** Set when the history marked the entry; the screen explains it and guards copying its counterparty. */
         suspectedPoisoning?: SuspectedPoisoning
         groupId?: string

@@ -12,6 +12,7 @@
 
 import { useEffect } from 'react'
 import { create } from 'zustand'
+import { registerStore, type Optional } from '@perawallet/wallet-core-shared'
 
 type AccountDrawerRequestState = {
     isRequested: boolean
@@ -40,6 +41,16 @@ export const useAccountDrawerRequestStore = create<AccountDrawerRequestStore>()(
     }),
 )
 
+registerStore({
+    name: 'account-drawer-request-store',
+    clearStorage: () => {},
+    resetState: () =>
+        useAccountDrawerRequestStore.setState({
+            isRequested: false,
+            isFirstAccountPending: false,
+        }),
+})
+
 /** Opens the drawer for each pending request, including one made before mount. */
 export const useAccountDrawerRequest = (open: () => void): void => {
     const isRequested = useAccountDrawerRequestStore(state => state.isRequested)
@@ -58,7 +69,7 @@ export const useAccountDrawerRequest = (open: () => void): void => {
  * accounts load.
  */
 export const useFirstAccountRequest = (
-    firstAccountId: string | undefined,
+    firstAccountId: Optional<string>,
     select: (accountId: string) => void,
 ): void => {
     const isPending = useAccountDrawerRequestStore(

@@ -212,6 +212,20 @@ describe('card onboarding — password', () => {
         ).toBeTruthy()
     })
 
+    it('hardens both password fields against keyboard learning while offering them to password managers', () => {
+        renderPassword()
+
+        for (const testID of [
+            'card-onboarding-password-input',
+            'card-onboarding-confirm-password-input',
+        ]) {
+            const input = screen.getByTestId(testID)
+
+            expect(input.getAttribute('spellcheck')).toBe('false')
+            expect(input.getAttribute('autocomplete')).toBe('new-password')
+        }
+    })
+
     it('skips email/verify and advances to the phone step when an onboarding id already exists', async () => {
         // The user backed into this screen after already verifying: email/verify
         // ran (the onboarding id + password are set), so it must not fire again

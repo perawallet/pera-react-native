@@ -18,6 +18,7 @@ import {
     httpsUrlSchema,
     isAlgoAssetName,
     type Nullable,
+    type Optional,
 } from '@perawallet/wallet-core-shared'
 import type { WidgetImageRequest } from '@perawallet/wallet-extension-platform'
 
@@ -194,26 +195,26 @@ export type BuildWidgetSnapshotInput = {
     priceFeed: WidgetPriceFeed
     portfolioFeed: WidgetPortfolioFeed
     /** `undefined` while loading; written as empty rather than waited on. */
-    assetOptions: WidgetAssetOption[] | undefined
+    assetOptions: Optional<WidgetAssetOption[]>
     isPrivacyMode: boolean
     hasAccounts: boolean
     /** Price of one ALGO, display units of `currencyCode`. */
-    algoPrice:
-        | { value: Nullable<Decimal>; currencyCode: string; asOf: number }
-        | undefined
+    algoPrice: Optional<{
+        value: Nullable<Decimal>
+        currencyCode: string
+        asOf: number
+    }>
     /** Portfolio value, display units of `currencyCode`; `algoValue` in ALGO. */
-    portfolio:
-        | {
-              value: Nullable<Decimal>
-              currencyCode: string
-              /** Null when any account's value is unknown. */
-              algoValue: Nullable<Decimal>
-              asOf: number
-          }
-        | undefined
-    nfts: WidgetNftCandidate[] | undefined
+    portfolio: Optional<{
+        value: Nullable<Decimal>
+        currencyCode: string
+        /** Null when any account's value is unknown. */
+        algoValue: Nullable<Decimal>
+        asOf: number
+    }>
+    nfts: Optional<WidgetNftCandidate[]>
     cachedImageKeys: string[]
-    backup: WidgetBackup | undefined
+    backup: Optional<WidgetBackup>
     receiveTargets: WidgetReceiveTarget[]
     inboxFeed: WidgetInboxFeed
 }
@@ -283,7 +284,7 @@ const nftsSection = (
 
 export const buildWidgetSnapshot = (
     input: BuildWidgetSnapshotInput,
-): WidgetSnapshot | undefined => {
+): Optional<WidgetSnapshot> => {
     const {
         locale,
         isPrivacyMode,

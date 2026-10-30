@@ -262,7 +262,7 @@ describe('usePeraWebviewInterface', () => {
     })
 
     describe('unknown method handling', () => {
-        it('answers MethodNotFound and tracks the method with its source URL', () => {
+        it('answers MethodNotFound and tracks the method with its source origin', () => {
             const { webview, handleMessage } = render(true, TRUSTED_URL)
 
             act(() =>
@@ -275,7 +275,7 @@ describe('usePeraWebviewInterface', () => {
                 'webview_bridge_method_not_found',
                 {
                     webview_bridge_method: 'handleTokenDetailActionButtonClick',
-                    url: TRUSTED_URL,
+                    url: 'https://discover-mobile.perawallet.app',
                 },
             )
             const sent = injectedScript(webview)

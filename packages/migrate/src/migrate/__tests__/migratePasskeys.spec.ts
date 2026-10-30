@@ -23,7 +23,9 @@ const {
     entryExistsMock,
     writeEntryMock,
     disposeMock,
-    entropyToMnemonicMock,
+    entropyToIndicesMock,
+    indicesToUtf8BytesMock,
+    withSecretMock,
     platformMock,
 } = vi.hoisted(() => ({
     keystoreState: { keys: [] as Array<Record<string, unknown>> },
@@ -34,7 +36,9 @@ const {
     entryExistsMock: vi.fn(),
     writeEntryMock: vi.fn(),
     disposeMock: vi.fn(),
-    entropyToMnemonicMock: vi.fn(),
+    entropyToIndicesMock: vi.fn(),
+    indicesToUtf8BytesMock: vi.fn(),
+    withSecretMock: vi.fn(),
     platformMock: { OS: 'android' as 'android' | 'ios' },
 }))
 
@@ -55,7 +59,9 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-kms', () => ({
-    entropyToMnemonic: entropyToMnemonicMock,
+    entropyToIndices: entropyToIndicesMock,
+    indicesToUtf8Bytes: indicesToUtf8BytesMock,
+    handOffSecret: <T>(secret: T) => secret,
     // Locate the entropy child by metadata, mirroring the real entropyChildIdOf.
     entropyChildIdOf: (
         seedKeyId: string,
@@ -66,12 +72,10 @@ vi.mock('@perawallet/wallet-core-kms', () => ({
                 k.metadata?.parentKeyId === seedKeyId &&
                 k.metadata?.entropyKey === true,
         )?.id,
-    // Resolves the mnemonic only when that child's entry is in the keystore.
-    withSecret: async (id: string, handler: (bytes: Uint8Array) => unknown) =>
-        keystoreState.keys.some(k => k.id === id)
-            ? handler(Uint8Array.from([0xaa, 0xbb, 0xcc]))
-            : null,
-    zeroBytes: (...buffers: Array<Uint8Array | null | undefined>) => {
+    withSecret: withSecretMock,
+    zeroBytes: (
+        ...buffers: Array<Uint8Array | Uint16Array | null | undefined>
+    ) => {
         for (const buf of buffers) if (buf) buf.fill(0)
     },
 }))
@@ -154,7 +158,21 @@ beforeEach(() => {
     entryExistsMock.mockReset().mockReturnValue(false)
     writeEntryMock.mockReset().mockResolvedValue(undefined)
     disposeMock.mockReset()
-    entropyToMnemonicMock.mockReset().mockReturnValue('test mnemonic phrase')
+    entropyToIndicesMock
+        .mockReset()
+        .mockImplementation(() => Uint16Array.of(1, 2, 3))
+    indicesToUtf8BytesMock
+        .mockReset()
+        .mockImplementation(() => new TextEncoder().encode('test phrase'))
+    // Hands out the entropy only when that child's entry is in the keystore.
+    withSecretMock
+        .mockReset()
+        .mockImplementation(
+            async (id: string, handler: (bytes: Uint8Array) => unknown) =>
+                keystoreState.keys.some(k => k.id === id)
+                    ? handler(Uint8Array.from([0xaa, 0xbb, 0xcc]))
+                    : null,
+        )
 
     accountsState.accounts = [
         {
@@ -245,6 +263,39 @@ describe('migratePasskeys', () => {
         await migratePasskeys([buildPasskey()], 'algorand')
 
         expect(mainKey.every(byte => byte === 0)).toBe(true)
+    })
+
+    it('derives the main key from the phrase bytes and zeroes the indices and phrase buffers', async () => {
+        const indices = Uint16Array.of(1, 2, 3)
+        const phrase = new TextEncoder().encode('test phrase')
+        entropyToIndicesMock.mockReturnValueOnce(indices)
+        indicesToUtf8BytesMock.mockReturnValueOnce(phrase)
+        let phraseSeenByKdf = ''
+        deriveMainKeyMock.mockImplementationOnce(async (bytes: Uint8Array) => {
+            phraseSeenByKdf = new TextDecoder().decode(bytes)
+            return new Uint8Array(64)
+        })
+
+        await migratePasskeys([buildPasskey()], 'algorand')
+
+        expect(indicesToUtf8BytesMock).toHaveBeenCalledWith(indices)
+        expect(phraseSeenByKdf).toBe('test phrase')
+        expect(indices.every(value => value === 0)).toBe(true)
+        expect(phrase.every(byte => byte === 0)).toBe(true)
+    })
+
+    it('zeroes the indices and phrase buffers when the derivation fails', async () => {
+        const indices = Uint16Array.of(1, 2, 3)
+        const phrase = new TextEncoder().encode('test phrase')
+        entropyToIndicesMock.mockReturnValueOnce(indices)
+        indicesToUtf8BytesMock.mockReturnValueOnce(phrase)
+        deriveMainKeyMock.mockRejectedValueOnce(new Error('pbkdf2 failed'))
+
+        const result = await migratePasskeys([buildPasskey()], 'algorand')
+
+        expect(result).toEqual({ imported: 0, skipped: 1 })
+        expect(indices.every(value => value === 0)).toBe(true)
+        expect(phrase.every(byte => byte === 0)).toBe(true)
     })
 
     it('disposes the writer even when a write throws', async () => {
@@ -380,9 +431,13 @@ describe('migratePasskeys', () => {
         const result = await migratePasskeys([buildPasskey()], 'algorand')
 
         expect(result).toEqual({ imported: 0, skipped: 1 })
+        expect(deriveMainKeyMock).not.toHaveBeenCalled()
         expect(deriveCredentialMock).not.toHaveBeenCalled()
         expect(writeEntryMock).not.toHaveBeenCalled()
-        expect(loggerMock.warn).toHaveBeenCalled()
+        expect(loggerMock.warn).toHaveBeenCalledWith(
+            expect.stringContaining('seed has no entropy'),
+            expect.anything(),
+        )
     })
 
     it('skips (does not persist) when the derived id does not match the legacy id', async () => {
@@ -433,6 +488,38 @@ describe('migratePasskeys', () => {
         expect(result).toEqual({ imported: 2, skipped: 0 })
         expect(deriveMainKeyMock).toHaveBeenCalledTimes(1)
         expect(deriveCredentialMock).toHaveBeenCalledTimes(2)
+    })
+
+    it('retries the keystore read for the next passkey on a seed after a failed read', async () => {
+        const idA = new Uint8Array(32).fill(0x10)
+        const idB = new Uint8Array(32).fill(0x20)
+        deriveCredentialMock.mockImplementation(async ({ origin }) =>
+            derivedFor(origin === 'https://a.example' ? idA : idB),
+        )
+        withSecretMock.mockRejectedValueOnce(new Error('keystore busy'))
+
+        const result = await migratePasskeys(
+            [
+                buildPasskey({
+                    siteUrl: 'a.example',
+                    credentialId: Buffer.from(idA).toString('base64'),
+                }),
+                buildPasskey({
+                    siteUrl: 'b.example',
+                    credentialId: Buffer.from(idB).toString('base64'),
+                }),
+            ],
+            'algorand',
+        )
+
+        expect(result).toEqual({ imported: 1, skipped: 1 })
+        expect(withSecretMock).toHaveBeenCalledTimes(2)
+        expect(writeEntryMock).toHaveBeenCalledTimes(1)
+        expect(writeEntryMock).toHaveBeenCalledWith(
+            expect.objectContaining({
+                credentialId: Buffer.from(idB).toString('base64'),
+            }),
+        )
     })
 
     it('counts a failed write as skipped without breaking the batch', async () => {

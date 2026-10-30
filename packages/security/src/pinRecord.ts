@@ -44,8 +44,8 @@ export type PinRecord = {
     // leak the flag the random fill exists to hide.
     duressEnabled: 0 | 1
     failedAttempts: number
-    lockoutEndTime: number | null
-    monotonicLockout: MonotonicLockout | null
+    lockoutEndTime: Nullable<number>
+    monotonicLockout: Nullable<MonotonicLockout>
 }
 
 const encoder = new TextEncoder()
@@ -87,6 +87,7 @@ export const createPinRecord = async (pin: string): Promise<PinRecord> => {
         return {
             version: PIN_RECORD_VERSION,
             salt: bytesToHex(salt),
+            // lanekeep-ignore-next-line pera/no-secret-strings reason: PinRecord is persisted as JSON with the hash as hex
             hash: bytesToHex(hash),
             ...createEmptyDuressSlot(),
             failedAttempts: 0,
@@ -115,6 +116,7 @@ export const applyDuressPin = async (
         return {
             ...record,
             duressSalt: bytesToHex(salt),
+            // lanekeep-ignore-next-line pera/no-secret-strings reason: PinRecord is persisted as JSON with the hash as hex
             duressHash: bytesToHex(hash),
             duressEnabled: 1,
         }
@@ -233,7 +235,7 @@ const isValidPinRecord = (value: unknown): value is PinRecord => {
     return true
 }
 
-export const parsePinRecord = (data: Uint8Array): PinRecord | null => {
+export const parsePinRecord = (data: Uint8Array): Nullable<PinRecord> => {
     try {
         const parsed: unknown = JSON.parse(decoder.decode(data))
         if (!isValidPinRecord(parsed)) return null

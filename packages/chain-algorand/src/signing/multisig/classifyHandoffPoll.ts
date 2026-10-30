@@ -15,7 +15,7 @@ import {
     multisigAdapterFor,
     type ParticipantResponse,
 } from '@perawallet/wallet-core-multisig'
-import { logger, toError } from '@perawallet/wallet-core-shared'
+import { logger, toError, type Optional } from '@perawallet/wallet-core-shared'
 import {
     walletConnectHandoffs,
     type HandoffAssemblyContext,
@@ -379,7 +379,7 @@ const logTerminalError = (
     message: string,
     cause?: unknown,
 ): void => {
-    let causeText: string | undefined
+    let causeText: Optional<string>
     if (cause instanceof Error) causeText = cause.message
     else if (cause != null) causeText = String(cause)
 

@@ -15,6 +15,7 @@ import {
     reviewGroupOf,
     type SignRequest,
 } from '@perawallet/wallet-core-signing'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 /**
  * Returns the participant addresses that currently have an in-flight
@@ -28,7 +29,7 @@ import {
  */
 export const getInFlightCosignAddresses = (
     pendingSignRequests: SignRequest[],
-    signRequestId: string | null,
+    signRequestId: Nullable<string>,
 ): Set<string> => {
     const result = new Set<string>()
     if (!signRequestId) return result

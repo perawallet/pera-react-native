@@ -12,39 +12,52 @@
 
 import { useEffect, useRef } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
+import { useRegisteredChainIds } from '@perawallet/wallet-core-accounts'
 import {
     getSyncService,
     releaseNetworkScopedQueries,
 } from '@perawallet/wallet-core-background'
 import {
-    LEGACY_CHAIN_ID,
+    type ChainScope,
     toScopeKey,
 } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { useSelectedScopes } from '@perawallet/wallet-core-chain-shared'
+
+const departedScopes = (
+    previous: readonly ChainScope[],
+    current: readonly ChainScope[],
+): ChainScope[] => {
+    const currentKeys = new Set(current.map(toScopeKey))
+    return previous.filter(scope => !currentKeys.has(toScopeKey(scope)))
+}
 
 /**
  * Single owner of the on-network-switch query invalidation. The imperative
  * switch paths (header menu, node settings, custom-network sheet) only
  * restart() the sync service and rely on this hook — mounted once per shell
  * (RootComponent on native, AppShellThemedRoot on web) — so one switch fires
- * exactly one invalidation pass instead of two. The first-run guard keeps
- * cold start from invalidating the disk-hydrated cache before anything
+ * exactly one invalidation pass instead of two. It watches every registered
+ * chain's selected scope and releases each departed one. The first-run guard
+ * keeps cold start from invalidating the disk-hydrated cache before anything
  * changed.
  */
 export const useNetworkSwitchInvalidation = (): void => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const chainIds = useRegisteredChainIds()
+    const scopes = useSelectedScopes(chainIds)
     const queryClient = useQueryClient()
-    const previousScope = useRef(scope)
+    const previousScopes = useRef(scopes)
 
     useEffect(() => {
-        if (toScopeKey(previousScope.current) === toScopeKey(scope)) return
-        const departed = previousScope.current
-        previousScope.current = scope
-        releaseNetworkScopedQueries(queryClient, departed)
+        const departed = departedScopes(previousScopes.current, scopes)
+        previousScopes.current = scopes
+        if (departed.length === 0) return
+        for (const scope of departed) {
+            releaseNetworkScopedQueries(queryClient, scope)
+        }
         try {
             getSyncService().invalidateQueries()
         } catch {
             // SyncService not yet initialized
         }
-    }, [scope, queryClient])
+    }, [scopes, queryClient])
 }

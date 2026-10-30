@@ -12,7 +12,7 @@
 
 // The account chart plots the account's total across every chain the headline
 // counts, so a chain that can't serve history makes the chart unavailable
-// rather than a partial line. Copy is asserted by key: this project renders
+// rather than a partial line; one whose history fails is left out and named. Copy is asserted by key: this project renders
 // i18n keys.
 
 import {
@@ -26,6 +26,7 @@ import {
     vi,
 } from 'vitest'
 import { screen } from '@testing-library/react'
+import { http, HttpResponse } from 'msw'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { server } from '@test-utils/msw-server'
@@ -238,6 +239,35 @@ describe('Flow: The balance chart of an account on Algorand and Ethereum', () =>
         ).toBeTruthy()
         // Asked, and answered "not enabled": not short-circuited before the backend.
         expect(requests.ethereum).toBeGreaterThan(0)
+        expect(screen.queryByTestId(/^trend-indicator-/)).toBeNull()
+    })
+
+    it('Given Ethereum history fails, when the chart is shown, then it plots Algorand, names Ethereum as left out, and shows no change', async () => {
+        serveHistory({
+            algorand: [
+                { datetime: '2026-10-20T00:00:00Z', usd_value: '10' },
+                { datetime: '2026-10-21T00:00:00Z', usd_value: '12' },
+            ],
+        })
+        server.use(
+            http.post(`*${ETHEREUM_HISTORY_PATH}`, () =>
+                HttpResponse.json({}, { status: 500 }),
+            ),
+        )
+
+        renderHeader(true)
+
+        expect(
+            await screen.findByText(
+                'common.wealth_chart.excludes_networks',
+                undefined,
+                { timeout: SLOW_WAIT_TIMEOUT_MS },
+            ),
+        ).toBeTruthy()
+        expect(screen.queryByText('common.error.title')).toBeNull()
+        expect(
+            screen.queryByText('common.network_unavailable.title'),
+        ).toBeNull()
         expect(screen.queryByTestId(/^trend-indicator-/)).toBeNull()
     })
 

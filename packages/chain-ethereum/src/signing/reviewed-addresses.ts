@@ -12,6 +12,7 @@
 
 import type { TransactionNative } from '@perawallet/wallet-core-chain-contract'
 import type { ReviewedAddress } from '@perawallet/wallet-core-signing'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import type { EvmStandardCall } from './standard-call-types'
 import {
     readEthereumNative,
@@ -39,7 +40,7 @@ const callAddresses = (call: EvmStandardCall): ReviewedAddress[] => {
 
 const viewOf = (
     transaction: TransactionNative,
-): EthereumTransactionView | undefined => {
+): Optional<EthereumTransactionView> => {
     try {
         return readEthereumNative(transaction)
     } catch {

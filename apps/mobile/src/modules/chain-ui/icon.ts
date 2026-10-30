@@ -10,9 +10,20 @@
  limitations under the License
  */
 
-// A separate entry so the assets barrel can draw chain icons without loading the registry.
+// A separate entry so the assets barrel can draw chain and native-coin art without loading the registry.
 export { ChainIcon, type ChainIconProps } from './components/ChainIcon'
 export {
     ChainIconStack,
     type ChainIconStackProps,
 } from './components/ChainIconStack'
+export {
+    nativeAssetGlyphOf,
+    nativeAssetIconOf,
+    nativeAssetInfoOf,
+    type NativeAssetGlyph,
+} from './nativeAsset'
+export { ChainChip, type ChainChipProps } from './components/ChainChip'
+export {
+    ChainAvatarBadge,
+    type ChainAvatarBadgeProps,
+} from './components/ChainAvatarBadge'

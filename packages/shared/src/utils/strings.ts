@@ -94,7 +94,8 @@ export const decodeLongString = (
     if (!Number.isSafeInteger(parsed)) {
         const label = fieldName || 'decodeLongString'
         logger.warn(
-            `${label}: value "${value}" exceeds Number.MAX_SAFE_INTEGER; precision will be lost`,
+            'Value exceeds Number.MAX_SAFE_INTEGER; precision will be lost',
+            { field: label, value },
         )
     }
     return parsed

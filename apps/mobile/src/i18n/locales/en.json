@@ -100,6 +100,8 @@
     "add_asset": {
         "title": "Add Asset",
         "search_placeholder": "Search by name or asset ID",
+        "search_placeholder_evm": "Search by name, symbol or contract address",
+        "search_placeholder_all": "Search by name, symbol, asset ID or address",
         "no_results": "No assets found",
         "partial_results": "Some networks couldn't be searched, so results may be missing.",
         "not_listed": {
@@ -126,7 +128,28 @@
         },
         "collectible_title": "Opt-in to NFT",
         "collectible_note": "You need to opt-in to the NFT ASA ID to be able to transfer it to your wallet. Paste the ASA ID in the search bar.",
-        "collectible_search_placeholder": "Search Asset ID or NFT name"
+        "collectible_search_placeholder": "Search Asset ID or NFT name",
+        "token": {
+            "added_title": "Token added",
+            "added_body": "{{assetName}} added to {{chain}}",
+            "add_failed_title": "Couldn't add token",
+            "unverified_title": "Unverified token",
+            "unverified_body": "Pera hasn't verified {{assetName}}. Anyone can create a token with any name or logo, so check that its contract address, {{address}}, is the one you expect before you add it.",
+            "unverified_confirm": "Add anyway",
+            "suspicious_title": "Suspicious token",
+            "suspicious_body": "Pera has flagged {{assetName}} ({{address}}) as suspicious. It may imitate another token or be part of a scam. Add it only if you trust where it came from.",
+            "remove_title": "Remove {{assetName}}?",
+            "remove_body": "It will no longer show in this account on {{chain}}. Nothing is sent on chain, and you can add it again any time.",
+            "remove_confirm": "Remove",
+            "removed_title": "Token removed",
+            "removed_body": "{{assetName}} removed from {{chain}}",
+            "remove_failed_title": "Couldn't remove token"
+        },
+        "info": {
+            "adding_title": "Adding assets",
+            "adding_opt_in": "On Algorand, adding an asset is an opt-in: a transaction with a small fee that also locks a minimum balance until you opt out.",
+            "adding_evm": "On EVM networks such as Ethereum, adding a token is free and needs no transaction. It only changes which tokens Pera shows for this account."
+        }
     },
     "asa_verification_info": {
         "title": "ASA Verification",
@@ -278,8 +301,10 @@
             "description": "Description",
             "social_media": "Social Media",
             "chart_empty_body": "You will see a chart here once you have some balance history",
-            "total_supply_info_title": "Total Supply",
-            "total_supply_info_body": "The total supply of an asset is set at creation time and it corresponds to the asset's total created units."
+            "total_supply_info_body": "The total supply of an asset is set at creation time and it corresponds to the asset's total created units.",
+            "circulating_supply": "Circulating Supply",
+            "circulating_supply_info_body": "The circulating supply is the number of coins in public circulation right now. A network's native coin has no fixed total, so this figure changes as coins are issued or burned.",
+            "token_total_supply_info_body": "The total supply is the number of tokens the contract has issued, minus any burned. It changes when the issuer mints or burns tokens."
         },
         "action_buttons": {
             "swap": "Swap",
@@ -291,6 +316,7 @@
             "title": "Transactions",
             "empty_body": "No transactions found",
             "empty_on_network_body": "No transactions yet on {{network}}",
+            "network_failed": "Couldn't load transactions on {{networks}}",
             "offline_empty_title": "You're offline",
             "offline_empty_body": "No transactions are saved on this device yet. They'll appear once you're back online.",
             "search_paused_body": "No transactions found in recent history.",
@@ -325,7 +351,8 @@
             "suspicious_title": "Suspicious ASA",
             "suspicious_description": "This ASA has been flagged as suspicious by the Pera ASA Verification program.",
             "learn_more": "Learn more about ASA verification"
-        }
+        },
+        "copy_full_amount_hint": "Long press to copy the full amount"
     },
     "accounts": {
         "legacyQuantum": {
@@ -458,6 +485,7 @@
         "hide_wallet_structure": "Hide wallet structure",
         "scan_new_addresses": "Scan new addresses",
         "scan_new_accounts": "Scan for new {{network}} accounts",
+        "scan_new_wallet_accounts": "Scan for new accounts",
         "universal_wallet_subtitle": "One passphrase, all networks",
         "viewing": "Viewing",
         "wallet_label": "Wallet #{{number}}",
@@ -1024,7 +1052,9 @@
         },
         "wealth_chart": {
             "empty_body": "You will see a chart here once you have some balance history",
-            "asset_empty_body": "You will see a chart here once you have some balance history for this asset on this account"
+            "asset_empty_body": "You will see a chart here once you have some balance history for this asset on this account",
+            "excludes_networks": "This chart doesn't include {{networks}} assets yet",
+            "networks_list": "{{first}} and {{last}}"
         },
         "webview": {
             "failed_title": "Failed to load page",
@@ -1094,7 +1124,8 @@
             "title": "An error occurred processing this account",
             "body": "Something appears to have gone wrong. Please try again and contact support if the issue persists.",
             "generic": "An error occurred processing this account.",
-            "no_hd_wallet": "Could not find the Universal Wallet for this account."
+            "no_hd_wallet": "Could not find the Universal Wallet for this account.",
+            "token_unreadable": "Pera couldn't read this token's details. Check the address and try again."
         },
         "blockchain": {
             "generic": "Something went wrong accessing the blockchain."
@@ -2232,7 +2263,15 @@
             "no_new_addresses_title": "No new addresses found",
             "no_new_addresses_body": "We didn't find any additional addresses associated with this wallet.",
             "rekey_scan_failed_title": "Couldn't check for rekeyed accounts",
-            "rekey_scan_failed_body": "Your account was imported. We couldn't check whether other accounts are rekeyed to it — you can scan again from Settings."
+            "rekey_scan_failed_body": "Your account was imported. We couldn't check whether other accounts are rekeyed to it — you can scan again from Settings.",
+            "rekey_rescan_failed_body": "We couldn't check whether other accounts are rekeyed to this wallet. Scan again to try once more.",
+            "rescan_found_title": "Scan complete",
+            "rescan_found_body_one": "1 account was added or updated.",
+            "rescan_found_body_other": "{{count}} accounts were added or updated.",
+            "rescan_partial_title": "Scan incomplete",
+            "rescan_partial_body": "Some checks couldn't finish. Accounts found so far were added. Scan again to find the rest.",
+            "rescan_failed_title": "Couldn't scan for accounts",
+            "rescan_failed_body": "Check your connection and try again."
         },
         "create_account": {
             "processing": "Setting up your wallet...",
@@ -2961,7 +3000,8 @@
             "amount": "Amount",
             "account": "Account",
             "to": "To",
-            "network": "Network",
+            "send_on_network": "Send {{asset}} on {{network}}",
+            "view_full_address": "Shows the full address",
             "fee": "Fee",
             "current_balance": "Current Balance",
             "total": "Total",
@@ -3499,8 +3539,13 @@
             "interpreted_title": "{{title}}",
             "swap_subtitle": "{{amountIn}} {{assetIn}} for {{amountOut}} {{assetOut}}",
             "nft_subtitle": "{{collection}} #{{tokenId}}",
+            "nft_batch_subtitle": "{{collection}} · {{count}} items",
             "inner_transaction_count": "{{innerCount}} inner txns",
             "cancel_transaction": "Cancel transaction"
+        },
+        "record_detail": {
+            "read_failed": "Couldn't read this transaction's call details from the network.",
+            "transaction_id": "Transaction ID"
         },
         "contract_call": {
             "warning": "Pera can't tell what this contract call does.",
@@ -3538,7 +3583,7 @@
             "rekey_are_you_sure_title": "Are you sure?",
             "rekey_are_you_sure_description": "This signature includes rekey transaction, giving control over your accounts to another address. Please make sure that you understand the implications before proceeding.",
             "rekey_are_you_sure_continue": "Continue",
-            "high_fee_warning": "This request pays an unusually high network fee of {{fee}} ALGO. Make sure you trust the source before signing.",
+            "high_fee_warning": "This request pays an unusually high network fee of {{fee}}. Make sure you trust the source before signing.",
             "asset_freeze_warning": "This transaction freezes or unfreezes assets for the following address: {{address}}.",
             "asset_freeze_group_warning": "This transaction group freezes or unfreezes assets for one of the accounts in this group. Please review carefully before signing.",
             "asset_freeze_warning_bold": "This may prevent the target account from transacting with the frozen asset. Please review carefully before signing.",

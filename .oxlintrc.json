@@ -300,7 +300,7 @@
     {
       "files": ["packages/*/src/**", "extensions/*/src/**", "apps/browser/src/**"],
       "excludeFiles": ["**/__tests__/**", "**/__mocks__/**", "**/test-utils/**", "**/__integration__/**", "**/*.spec.{ts,tsx}", "**/*.test.{ts,tsx}"],
-      "rules": { "pera/hook-result-type": "error" }
+      "rules": { "pera/hook-result-type": "error", "pera/query-pending-gated": "error" }
     },
     {
       "files": ["apps/*/src/**", "packages/*/src/**", "extensions/*/src/**"],
@@ -320,9 +320,34 @@
       "rules": { "pera/prefer-to-error": "error" }
     },
     {
+      "files": ["apps/*/src/**", "packages/*/src/**", "extensions/*/src/**"],
+      "excludeFiles": [
+        "**/__tests__/**",
+        "**/__mocks__/**",
+        "**/test-utils/**",
+        "**/__integration__/**",
+        "**/*.spec.{ts,tsx}",
+        "**/*.test.{ts,tsx}",
+        "packages/shared/src/**",
+        "packages/chain-contract/src/**",
+        "packages/config/src/**"
+      ],
+      "rules": { "pera/prefer-nullable-alias": "error" }
+    },
+    {
+      "files": ["packages/*/src/**", "extensions/*/src/**", "apps/browser/src/**"],
+      "excludeFiles": ["**/__tests__/**", "**/__mocks__/**", "**/test-utils/**", "**/__integration__/**", "**/*.spec.{ts,tsx}", "**/*.test.{ts,tsx}"],
+      "rules": { "pera/mutation-scope-in-variables": "error" }
+    },
+    {
       "files": ["packages/*/src/**", "extensions/*/src/**", "apps/browser/src/**"],
       "excludeFiles": ["**/__tests__/**", "**/__mocks__/**", "**/test-utils/**", "**/__integration__/**", "**/*.spec.{ts,tsx}", "**/*.test.{ts,tsx}"],
       "rules": { "no-console": "error" }
+    },
+    {
+      "files": ["packages/*/src/**", "extensions/*/src/**", "apps/browser/src/**"],
+      "excludeFiles": ["**/__tests__/**", "**/__mocks__/**", "**/test-utils/**", "**/__integration__/**", "**/*.spec.{ts,tsx}", "**/*.test.{ts,tsx}"],
+      "rules": { "pera/logger-static-message": "error" }
     },
     {
       "files": ["packages/*/src/**", "extensions/*/src/**"],
@@ -355,6 +380,11 @@
         "packages/backup/src/cloud/hooks/useResolveHdSeedForBackup.ts"
       ],
       "rules": { "pera/hd-derive-claimed": "error" }
+    },
+    {
+      "files": ["packages/security/src/**", "extensions/keystore-chrome/src/vault/**"],
+      "excludeFiles": ["**/__tests__/**", "**/*.spec.{ts,tsx}", "**/*.test.{ts,tsx}"],
+      "rules": { "pera/monotonic-lockout-clock": "error" }
     },
     {
       "files": ["**/__tests__/**", "**/*.spec.{ts,tsx}", "**/__integration__/**", "**/vitest*.ts"],

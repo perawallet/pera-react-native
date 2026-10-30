@@ -12,13 +12,14 @@
 
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { accountBackupAddresses } from '@perawallet/wallet-core-backup'
+import type { Optional } from '@perawallet/wallet-core-shared'
 
 /**
  * The address an account's backup row is named by: its first address on a
  * chain the backup carries, which leads its record. Undefined for an account
  * on no such chain: it has no backup record.
  */
-export const backupAddressOf = (account: WalletAccount): string | undefined =>
+export const backupAddressOf = (account: WalletAccount): Optional<string> =>
     accountBackupAddresses(account)[0]
 
 export type BackupAccount = {

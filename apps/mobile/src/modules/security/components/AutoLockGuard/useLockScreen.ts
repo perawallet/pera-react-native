@@ -13,7 +13,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { AppState, type NativeEventSubscription } from 'react-native'
 import { usePinCode, useBiometrics } from '@perawallet/wallet-core-security'
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import { useDuressWipe } from '@modules/security/hooks/useDuressWipe'
 import { useShakeToLockHandler } from '@modules/security/hooks/useShakeToLockHandler'
@@ -133,7 +133,7 @@ export const useLockScreen = ({
         if (promptRef.current.isLockedOut) return
 
         let cancelled = false
-        let subscription: NativeEventSubscription | null = null
+        let subscription: Nullable<NativeEventSubscription> = null
         let isPromptPending = false
         let hasLeftForeground = false
 

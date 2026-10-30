@@ -14,6 +14,7 @@ import { useCallback } from 'react'
 import { useRevealPrivateKey } from '@perawallet/wallet-core-accounts'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { zeroBytes } from '@perawallet/wallet-core-kms'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useRequirePinVerification } from '@modules/security'
 import { useErrorToast } from '@hooks/useErrorToast'
@@ -37,7 +38,7 @@ export const useRevealPrivateKeyFlow = (): UseRevealPrivateKeyFlowResult => {
 
     const openRevealPrivateKeyFlow = useCallback(
         async (accountId: string, chainId: ChainId) => {
-            let privateKey: Uint8Array | null = null
+            let privateKey: Nullable<Uint8Array> = null
             try {
                 privateKey = await revealPrivateKey(
                     accountId,

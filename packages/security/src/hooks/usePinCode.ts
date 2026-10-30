@@ -16,8 +16,8 @@ import {
     PIN_RECORD_KEY_ID,
     LEGACY_DURESS_PIN_RECORD_KEY_ID,
     MAX_PIN_ATTEMPTS_BEFORE_LOCKOUT,
-    AUTO_LOCK_TIMEOUT_MS,
 } from '../constants'
+import { hasAutoLockExpired } from '../autoLock'
 import {
     CLEARED_LOCKOUT,
     calculateLockoutSeconds,
@@ -75,7 +75,8 @@ type UsePinCodeResult = {
     verifyPin: (pin: string) => Promise<VerifyPinResult>
     resetFailedAttempts: () => Promise<void>
     getLockoutDuration: () => number
-    setAutoLockStartedAt: (date: Nullable<number>) => void
+    startAutoLockTimer: () => void
+    clearAutoLockTimer: () => void
     saveDuressPin: (pin: Nullable<string>) => Promise<void>
     checkDuressPinEnabled: () => Promise<boolean>
 }
@@ -120,7 +121,7 @@ export const usePinCode = (): UsePinCodeResult => {
     // the time left on it does.
     const isLockedOut = getRemainingLockoutSeconds() > 0
 
-    const loadRecord = useCallback(async (): Promise<PinRecord | null> => {
+    const loadRecord = useCallback(async (): Promise<Nullable<PinRecord>> => {
         return withSecret(PIN_RECORD_KEY_ID, parsePinRecord)
     }, [withSecret])
 
@@ -381,19 +382,19 @@ export const usePinCode = (): UsePinCodeResult => {
 
     const checkAutoLock = useCallback(async () => {
         if (!(await checkPinEnabled())) return false
-        if (autoLockStartedAt == null) return false
-        // Fail closed on a tampered/corrupted persisted timestamp: a non-finite
-        // (e.g. NaN) or future value would otherwise make the elapsed check
-        // false and silently skip the lock. Treat anything but a valid past
-        // timestamp as "should lock".
-        if (
-            !Number.isFinite(autoLockStartedAt) ||
-            autoLockStartedAt > Date.now()
-        )
-            return true
-        const elapsed = Date.now() - autoLockStartedAt
-        return elapsed > AUTO_LOCK_TIMEOUT_MS
+        if (autoLockStartedAt === null) return false
+        return hasAutoLockExpired(autoLockStartedAt, readLockoutClocks())
     }, [autoLockStartedAt, checkPinEnabled])
+
+    const startAutoLockTimer = useCallback(
+        () => setAutoLockStartedAt(readLockoutClocks()),
+        [setAutoLockStartedAt],
+    )
+
+    const clearAutoLockTimer = useCallback(
+        () => setAutoLockStartedAt(null),
+        [setAutoLockStartedAt],
+    )
 
     const checkDuressPinEnabled = useCallback(async (): Promise<boolean> => {
         const record = await loadRecord()
@@ -433,7 +434,8 @@ export const usePinCode = (): UsePinCodeResult => {
         verifyPin,
         resetFailedAttempts,
         getLockoutDuration,
-        setAutoLockStartedAt,
+        startAutoLockTimer,
+        clearAutoLockTimer,
         saveDuressPin,
         checkDuressPinEnabled,
     }

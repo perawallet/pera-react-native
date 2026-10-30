@@ -17,11 +17,19 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import {
     entropyChildIdOf,
-    entropyToMnemonic,
+    entropyToIndices,
+    handOffSecret,
+    indicesToUtf8Bytes,
     withSecret,
     zeroBytes,
 } from '@perawallet/wallet-core-kms'
-import { bytesEqual, bytesToHex, logger } from '@perawallet/wallet-core-shared'
+import {
+    bytesEqual,
+    bytesToHex,
+    logger,
+    type Nullable,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
 import {
     getKeystoreStore,
     getProvider,
@@ -99,7 +107,7 @@ const resolvePlatformConvention = (): PlatformPasskeyConvention =>
 const resolveDerivationInputs = (
     passkey: LegacyPasskey,
     resolveOrigin: (siteUrl: string) => string,
-): DerivationInputs | null => {
+): Nullable<DerivationInputs> => {
     const origin = passkey.siteUrl ? resolveOrigin(passkey.siteUrl) : ''
     const userName = passkey.userName
     if (!passkey.credentialId || !origin || !userName) return null
@@ -124,17 +132,37 @@ type MigrationContext = {
     /** Whether the passkey's owning account migrated (is present in the store). */
     hasAccount: (address: string) => boolean
     /** Walk address → account → derived key → the HD seed that owns it. */
-    resolveSeedKeyId: (address: string) => string | undefined
-    /** Recover a seed's BIP39 mnemonic from its entropy `secret-key` child (found by metadata). */
-    resolveMnemonic: (seedKeyId: string) => Promise<string | undefined>
-    /** Derived main key per seed; PBKDF2 (210k) runs once and is reused. */
-    getMainKey: (seedKeyId: string, mnemonic: string) => Promise<Uint8Array>
+    resolveSeedKeyId: (address: string) => Optional<string>
+    /**
+     * Derived main key per seed, from the BIP39 phrase rebuilt out of its entropy
+     * `secret-key` child (found by metadata); `undefined` when the seed has none.
+     * PBKDF2 (210k) runs once and is reused.
+     */
+    getMainKey: (seedKeyId: string) => Promise<Optional<Uint8Array>>
     /** Native passkey writer; the keystore master key is fetched once and reused. */
     writePasskey: NativePasskeyWriter
     /** Per-platform legacy derivation convention (origin shape + id basis). */
     convention: PlatformPasskeyConvention
     /** Zeroes the secret buffers held for the batch (per-seed main keys + master key). */
     dispose: () => Promise<void>
+}
+
+// The phrase exists only as zeroable bytes for the KDF, never as a string.
+const deriveMainKeyFromEntropy = async (
+    seedKeyId: string,
+): Promise<Optional<Uint8Array>> => {
+    const entropyId = entropyChildIdOf(seedKeyId, getKeystoreStore().state.keys)
+    if (!entropyId) return undefined
+    const mainKey = await withSecret(entropyId, async entropy => {
+        const indices = entropyToIndices(entropy)
+        const phrase = indicesToUtf8Bytes(indices)
+        try {
+            return handOffSecret(await deriveMainKey(phrase))
+        } finally {
+            zeroBytes(indices, phrase)
+        }
+    })
+    return mainKey ?? undefined
 }
 
 const createMigrationContext = (chainId: ChainId): MigrationContext => {
@@ -147,7 +175,7 @@ const createMigrationContext = (chainId: ChainId): MigrationContext => {
             return address === undefined ? [] : [[address, acc] as const]
         }),
     )
-    const mainKeyBySeed = new Map<string, Promise<Uint8Array>>()
+    const mainKeyBySeed = new Map<string, Promise<Optional<Uint8Array>>>()
     const writePasskey = createNativePasskeyWriter()
 
     return {
@@ -159,30 +187,23 @@ const createMigrationContext = (chainId: ChainId): MigrationContext => {
                 : undefined
             if (!keyPairId) return undefined
             const parentKeyId = (
-                keyById.get(keyPairId)?.metadata as
-                    | Record<string, unknown>
-                    | undefined
+                keyById.get(keyPairId)?.metadata as Optional<
+                    Record<string, unknown>
+                >
             )?.parentKeyId
             return typeof parentKeyId === 'string' ? parentKeyId : undefined
         },
-        resolveMnemonic: async seedKeyId => {
-            const entropyId = entropyChildIdOf(
-                seedKeyId,
-                getKeystoreStore().state.keys,
-            )
-            if (!entropyId) return undefined
-            return (
-                (await withSecret(entropyId, entropy =>
-                    entropyToMnemonic(entropy),
-                )) ?? undefined
-            )
-        },
-        getMainKey: (seedKeyId, mnemonic) => {
-            let pending = mainKeyBySeed.get(seedKeyId)
-            if (!pending) {
-                pending = deriveMainKey(mnemonic)
-                mainKeyBySeed.set(seedKeyId, pending)
-            }
+        getMainKey: seedKeyId => {
+            const cached = mainKeyBySeed.get(seedKeyId)
+            if (cached) return cached
+            const pending = deriveMainKeyFromEntropy(seedKeyId)
+            mainKeyBySeed.set(seedKeyId, pending)
+            // A failed keystore read would otherwise skip every passkey on this seed.
+            pending.catch(() => {
+                if (mainKeyBySeed.get(seedKeyId) === pending) {
+                    mainKeyBySeed.delete(seedKeyId)
+                }
+            })
             return pending
         },
         writePasskey,
@@ -285,8 +306,8 @@ const migrateSinglePasskey = async (
         return 'skipped'
     }
 
-    const mnemonic = await ctx.resolveMnemonic(seedKeyId)
-    if (!mnemonic) {
+    const derivedMainKey = await ctx.getMainKey(seedKeyId)
+    if (!derivedMainKey) {
         logger.warn('[Migration] passkey skipped: seed has no entropy', {
             credentialId: inputs.credentialId,
             address: passkey.address,
@@ -294,7 +315,6 @@ const migrateSinglePasskey = async (
         return 'skipped'
     }
 
-    const derivedMainKey = await ctx.getMainKey(seedKeyId, mnemonic)
     const derived = await deriveLegacyPasskeyCredentialFromMainKey({
         derivedMainKey,
         origin: inputs.origin,

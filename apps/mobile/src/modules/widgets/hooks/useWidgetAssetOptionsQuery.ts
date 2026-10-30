@@ -16,11 +16,12 @@ import {
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import type { WidgetAssetOption } from '../snapshot'
 
 export type UseWidgetAssetOptionsQueryResult = {
     /** `undefined` while loading or disabled. */
-    options: WidgetAssetOption[] | undefined
+    options: Optional<WidgetAssetOption[]>
 }
 
 // Keeps the Edit Widget list usable and the snapshot small.
@@ -29,7 +30,7 @@ const NATIVE_ASSET_ID = '0'
 
 // Only verified assets: a home-screen price for a look-alike "USDC" would be
 // a phishing surface. The widget re-checks the tier on every fetch.
-const toOption = (asset: PeraAsset): WidgetAssetOption | undefined => {
+const toOption = (asset: PeraAsset): Optional<WidgetAssetOption> => {
     const metadata = asset.peraMetadata
     if (metadata?.verificationTier !== PeraAssetVerificationTier.verified) {
         return undefined

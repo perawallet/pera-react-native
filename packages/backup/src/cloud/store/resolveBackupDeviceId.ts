@@ -15,6 +15,7 @@ import {
     deviceIdForDeployment,
     useDeviceStore,
 } from '@perawallet/wallet-core-device'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { DeviceId } from '../models'
 import { useCloudBackupStore } from './store'
 
@@ -25,6 +26,6 @@ import { useCloudBackupStore } from './store'
  *  what we send. */
 export const resolveBackupDeviceId = (
     deployment: WalletMode,
-): DeviceId | null =>
+): Nullable<DeviceId> =>
     useCloudBackupStore.getState().deviceId ??
     deviceIdForDeployment(useDeviceStore.getState(), deployment)

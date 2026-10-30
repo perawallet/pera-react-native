@@ -71,8 +71,9 @@ anything deeper. Tests are exempt.
   (`lanekeep/shared/chain-package-allowlist.ts`). A chain UI module whose chain package metro can
   stub keeps its `chain-ui.ts` in `EVM_CHAIN_MODULES` (`metro-build-gates.js`) with a
   `.stub.ts` beside it, or that package lands in every bundle.
-  A feature reaches a chain's UI through `chainUiFor(family)` from `@modules/chain-ui`: one entry
-  per family, one slot per feature. The feature owns its slot's type and what renders when a family
-  has none.
+  A feature reaches a chain's UI through `chainUiFor(family, chainId?)` from `@modules/chain-ui`:
+  one entry per family, one slot per feature. A slot in `ChainUiOverride` can be replaced for one
+  chain through the family module's `chain-ui.ts` (`evmChainUiOverrides`), so a caller holding a
+  chain id passes it. The feature owns its slot's type and what renders when a family has none.
 - A test that mocks a collaborator mocks the file the entry re-exports from, or the entry itself; a
   mock of some other path under the module no longer intercepts the import.

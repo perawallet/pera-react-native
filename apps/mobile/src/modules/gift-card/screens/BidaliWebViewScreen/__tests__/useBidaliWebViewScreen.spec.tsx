@@ -91,6 +91,7 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
             typeof import('@packages/shared/src/errors/base')
         >('@packages/shared/src/errors/base')),
         generateOrderedUniqueId: () => 'id',
+        registerStore: vi.fn(),
         logger: {
             warn: vi.fn(),
             error: vi.fn(),

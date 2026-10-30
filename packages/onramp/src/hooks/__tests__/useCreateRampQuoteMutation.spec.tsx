@@ -99,7 +99,7 @@ describe('onramp/useCreateRampQuoteMutation', () => {
             scope: { chainId: 'algorand', networkId: 'mainnet' },
             pair: 'pair-1',
             destinationAddress: 'DEST_ADDRESS',
-            sourceAmount: 100,
+            sourceAmount: new Decimal(100),
         })
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true))
@@ -120,7 +120,7 @@ describe('onramp/useCreateRampQuoteMutation', () => {
             scope: { chainId: 'algorand', networkId: 'mainnet' },
             pair: 'USD__ALGO',
             destinationAddress: 'DEST_ADDRESS',
-            sourceAmount: 100,
+            sourceAmount: new Decimal(100),
         })
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true))

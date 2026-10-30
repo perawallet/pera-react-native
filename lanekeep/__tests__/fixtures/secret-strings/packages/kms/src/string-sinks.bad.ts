@@ -1,0 +1,161 @@
+export const toHex = (m: string) => {
+    const seed = deriveBip39Seed(m)
+    return seed.toString('hex')
+}
+export const toBase64 = (m: string) => {
+    const seed = deriveBip39Seed(m)
+    return seed.toString('base64')
+}
+export const toBase64Url = (m: string) => {
+    const seed = deriveBip39Seed(m)
+    return seed.toString('base64url')
+}
+export const toUtf8 = (m: string) => {
+    const seed = deriveBip39Seed(m)
+    return seed.toString('utf8')
+}
+export const toUtf8Dashed = (m: string) => {
+    const seed = deriveBip39Seed(m)
+    return seed.toString('utf-8')
+}
+export const copiedThenHex = (m: string) => {
+    const seed = deriveBip39Seed(m)
+    return Buffer.from(seed).toString('hex')
+}
+export const bytesToHexCall = (m: string) => {
+    const seed = deriveBip39Seed(m)
+    return bytesToHex(seed)
+}
+export const toHexCall = (m: string) => {
+    const seed = deriveBip39Seed(m)
+    return toHex(seed)
+}
+export const encodeToBase64Call = (m: string) => {
+    const seed = deriveBip39Seed(m)
+    return encodeToBase64(seed)
+}
+export const toBase64Call = (m: string) => {
+    const seed = deriveBip39Seed(m)
+    return toBase64(seed)
+}
+export const toBase64UrlCall = (m: string) => {
+    const seed = deriveBip39Seed(m)
+    return toBase64Url(seed)
+}
+export const bytesToBase64UrlCall = (m: string) => {
+    const seed = deriveBip39Seed(m)
+    return bytesToBase64Url(seed)
+}
+export const entropyToMnemonicCall = (m: string) => {
+    const entropy = mnemonicToEntropy(m)
+    return entropyToMnemonic(entropy)
+}
+export const memberEncoder = (m: string) => {
+    const seed = deriveBip39Seed(m)
+    return codec.bytesToHex(seed)
+}
+export const joined = (m: string) => {
+    const words = mnemonicWordsToIndices(m)
+    return words.join(' ')
+}
+export const joinedNoSeparator = (m: string) => {
+    const words = mnemonicWordsToIndices(m)
+    return words.join()
+}
+export const methodToHex = (m: string) => {
+    const seed = deriveBip39Seed(m)
+    return seed.toHex()
+}
+export const methodToBase64 = (m: string) => {
+    const seed = deriveBip39Seed(m)
+    return seed.toBase64()
+}
+export const decodedByANewDecoder = (m: string) => {
+    const seed = deriveBip39Seed(m)
+    return new TextDecoder().decode(seed)
+}
+export const decodedByAnInstance = (m: string) => {
+    const seed = deriveBip39Seed(m)
+    return decoder.decode(seed)
+}
+export const decodedByATextDecoder = (m: string) => {
+    const seed = deriveBip39Seed(m)
+    return textDecoder.decode(seed)
+}
+export const decodedByAConstant = (m: string) => {
+    const seed = deriveBip39Seed(m)
+    return UTF8_DECODER.decode(seed)
+}
+export const templated = (m: string) => {
+    const seed = deriveBip39Seed(m)
+    return `k=${seed}`
+}
+export const prefixed = (m: string) => {
+    const seed = deriveBip39Seed(m)
+    return 'k=' + seed
+}
+export const suffixed = (m: string) => {
+    const seed = deriveBip39Seed(m)
+    return seed + ''
+}
+export const mappedToWords = (m: string) => {
+    const idx = mnemonicWordsToIndices(m)
+    return Array.from(idx, indexToWord).join(' ')
+}
+export const plainToString = (m: string) => {
+    const seed = deriveBip39Seed(m)
+    return seed.toString()
+}
+export const toAscii = (m: string) => {
+    const seed = deriveBip39Seed(m)
+    return seed.toString('ascii')
+}
+export const toLatin1 = (m: string) => {
+    const seed = deriveBip39Seed(m)
+    return seed.toString('latin1')
+}
+export const toUtf16 = (m: string) => {
+    const seed = deriveBip39Seed(m)
+    return seed.toString('utf16le')
+}
+export const slicedThenEncoded = (m: string) => {
+    const seed = deriveBip39Seed(m)
+    return bytesToHex(seed.slice(0, 32))
+}
+export const copiedThenEncoded = (m: string) => {
+    const seed = deriveBip39Seed(m)
+    return bytesToHex(new Uint8Array(seed))
+}
+export const bufferedThenEncoded = (m: string) => {
+    return withSecret(m, b => bytesToHex(Buffer.from(b)))
+}
+export const subarrayThenDecoded = (m: string) => {
+    const seed = deriveBip39Seed(m)
+    return new TextDecoder().decode(seed.subarray(0, 4))
+}
+export const subarrayThenDecoderDecoded = () => {
+    return withSecret('id', s => textDecoder.decode(s.subarray(0)))
+}
+export const stringified = (m: string) => {
+    const seed = deriveBip39Seed(m)
+    return String(seed)
+}
+export const jsonStringified = (m: string) => {
+    const seed = deriveBip39Seed(m)
+    return JSON.stringify(seed)
+}
+export const fromCharCodes = (m: string) => {
+    const seed = deriveBip39Seed(m)
+    return String.fromCharCode(...seed)
+}
+export const fromCharCodesApplied = (m: string) => {
+    const seed = deriveBip39Seed(m)
+    return String.fromCharCode.apply(null, seed)
+}
+export const btoaEncoded = (m: string) => {
+    const seed = deriveBip39Seed(m)
+    return btoa(seed)
+}
+export const copiedThenStringified = () => {
+    return withSecret('id', s => JSON.stringify(s.slice()))
+}

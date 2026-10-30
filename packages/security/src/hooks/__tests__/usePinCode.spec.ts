@@ -75,6 +75,7 @@ import {
     LEGACY_DURESS_PIN_RECORD_KEY_ID,
     MAX_PIN_ATTEMPTS_BEFORE_LOCKOUT,
     INITIAL_LOCKOUT_SECONDS,
+    AUTO_LOCK_TIMEOUT_MS,
 } from '../../constants'
 import { logger } from '@perawallet/wallet-core-shared'
 import type { Nullable } from '@perawallet/wallet-core-shared'
@@ -88,6 +89,7 @@ import {
     verifyPinAgainstRecord,
     type PinRecord,
 } from '../../pinRecord'
+import type { AutoLockStart } from '../../autoLock'
 import type { MonotonicLockout } from '../../lockout'
 
 vi.mock('../../store', () => ({
@@ -191,7 +193,7 @@ describe('usePinCode', () => {
         failedAttempts: number
         lockoutEndTime: Nullable<number>
         monotonicLockout?: Nullable<MonotonicLockout>
-        autoLockStartedAt?: Nullable<number>
+        autoLockStartedAt?: Nullable<AutoLockStart>
     }) => {
         vi.mocked(useSecurityStore).mockImplementation(
             (selector: (state: unknown) => unknown) => {
@@ -923,114 +925,152 @@ describe('usePinCode', () => {
         expect(persisted?.monotonicLockout).toBeNull()
     }, 30_000)
 
-    test('checkAutoLock returns false when PIN is not enabled', async () => {
-        setupMock({ failedAttempts: 0, lockoutEndTime: null })
-
-        const { result } = renderHook(() => usePinCode())
-
-        let shouldLock = true
-        await act(async () => {
-            shouldLock = await result.current.checkAutoLock()
+    describe('auto-lock', () => {
+        const HOUR_MS = 60 * 60 * 1000
+        const startOf = (): AutoLockStart => ({
+            wallNowMs: Date.now(),
+            monotonic: clock.now(),
         })
-        expect(shouldLock).toBe(false)
+        const enablePin = async () => {
+            kmsMocks.pinBytes = serializePinRecord(
+                await createPinRecord('123456'),
+            )
+        }
+        const check = async (hook: {
+            current: ReturnType<typeof usePinCode>
+        }) => {
+            let shouldLock: Nullable<boolean> = null
+            await act(async () => {
+                shouldLock = await hook.current.checkAutoLock()
+            })
+            return shouldLock
+        }
+
+        test('checkAutoLock returns false when PIN is not enabled', async () => {
+            setupMock({ failedAttempts: 0, lockoutEndTime: null })
+
+            const { result } = renderHook(() => usePinCode())
+
+            expect(await check(result)).toBe(false)
+        })
+
+        test('checkAutoLock returns false when no timer is running', async () => {
+            setupMock({
+                failedAttempts: 0,
+                lockoutEndTime: null,
+                autoLockStartedAt: null,
+            })
+            await enablePin()
+            const { result } = renderHook(() => usePinCode())
+
+            expect(await check(result)).toBe(false)
+        }, 30_000)
+
+        test('checkAutoLock returns false when the monotonic clock is within the timeout', async () => {
+            vi.useFakeTimers({ toFake: ['Date'] })
+            setupMock({
+                failedAttempts: 0,
+                lockoutEndTime: null,
+                autoLockStartedAt: startOf(),
+            })
+            await enablePin()
+            clock.advance(60_000)
+            const { result } = renderHook(() => usePinCode())
+
+            expect(await check(result)).toBe(false)
+        }, 30_000)
+
+        test('checkAutoLock returns true when the monotonic clock is past the timeout', async () => {
+            vi.useFakeTimers({ toFake: ['Date'] })
+            setupMock({
+                failedAttempts: 0,
+                lockoutEndTime: null,
+                autoLockStartedAt: startOf(),
+            })
+            await enablePin()
+            clock.advance(AUTO_LOCK_TIMEOUT_MS + 1)
+            const { result } = renderHook(() => usePinCode())
+
+            expect(await check(result)).toBe(true)
+        }, 30_000)
+
+        test('moving the wall clock forward does not lock early', async () => {
+            vi.useFakeTimers({ toFake: ['Date'] })
+            setupMock({
+                failedAttempts: 0,
+                lockoutEndTime: null,
+                autoLockStartedAt: startOf(),
+            })
+            await enablePin()
+            vi.setSystemTime(Date.now() + HOUR_MS)
+            clock.advance(60_000)
+            const { result } = renderHook(() => usePinCode())
+
+            expect(await check(result)).toBe(false)
+        }, 30_000)
+
+        test('moving the wall clock back does not keep the app unlocked past the timeout', async () => {
+            vi.useFakeTimers({ toFake: ['Date'] })
+            setupMock({
+                failedAttempts: 0,
+                lockoutEndTime: null,
+                autoLockStartedAt: startOf(),
+            })
+            await enablePin()
+            vi.setSystemTime(Date.now() - HOUR_MS)
+            clock.advance(AUTO_LOCK_TIMEOUT_MS + 1)
+            const { result } = renderHook(() => usePinCode())
+
+            expect(await check(result)).toBe(true)
+        }, 30_000)
+
+        test('a reboot locks', async () => {
+            vi.useFakeTimers({ toFake: ['Date'] })
+            setupMock({
+                failedAttempts: 0,
+                lockoutEndTime: null,
+                autoLockStartedAt: startOf(),
+            })
+            await enablePin()
+            clock.reboot()
+            const { result } = renderHook(() => usePinCode())
+
+            expect(await check(result)).toBe(true)
+        }, 30_000)
+
+        test('falls back to the wall clock when the platform has no monotonic source', async () => {
+            vi.useFakeTimers({ toFake: ['Date'] })
+            clock.setUnavailable()
+            setupMock({
+                failedAttempts: 0,
+                lockoutEndTime: null,
+                autoLockStartedAt: startOf(),
+            })
+            await enablePin()
+            const { result } = renderHook(() => usePinCode())
+
+            vi.setSystemTime(Date.now() + 60_000)
+            expect(await check(result)).toBe(false)
+
+            vi.setSystemTime(Date.now() + AUTO_LOCK_TIMEOUT_MS)
+            expect(await check(result)).toBe(true)
+        }, 30_000)
+
+        test('startAutoLockTimer stores the current clocks and clearAutoLockTimer clears them', () => {
+            vi.useFakeTimers({ toFake: ['Date'] })
+            setupMock({ failedAttempts: 0, lockoutEndTime: null })
+            const { result } = renderHook(() => usePinCode())
+
+            act(() => result.current.startAutoLockTimer())
+            expect(mockSetAutoLockStartedAt).toHaveBeenLastCalledWith({
+                wallNowMs: Date.now(),
+                monotonic: { bootId: 'boot-1', elapsedMs: 1000 },
+            })
+
+            act(() => result.current.clearAutoLockTimer())
+            expect(mockSetAutoLockStartedAt).toHaveBeenLastCalledWith(null)
+        })
     })
-
-    test('checkAutoLock returns false when autoLockStartedAt is null', async () => {
-        setupMock({
-            failedAttempts: 0,
-            lockoutEndTime: null,
-            autoLockStartedAt: null,
-        })
-        kmsMocks.pinBytes = serializePinRecord(await createPinRecord('123456'))
-
-        const { result } = renderHook(() => usePinCode())
-
-        let shouldLock = true
-        await act(async () => {
-            shouldLock = await result.current.checkAutoLock()
-        })
-        expect(shouldLock).toBe(false)
-    }, 30_000)
-
-    test('checkAutoLock returns true when timeout exceeded', async () => {
-        vi.useFakeTimers()
-        const now = Date.now()
-        vi.setSystemTime(now)
-
-        setupMock({
-            failedAttempts: 0,
-            lockoutEndTime: null,
-            autoLockStartedAt: now - 6 * 60 * 1000,
-        })
-        kmsMocks.pinBytes = serializePinRecord(await createPinRecord('123456'))
-
-        const { result } = renderHook(() => usePinCode())
-
-        let shouldLock = false
-        await act(async () => {
-            shouldLock = await result.current.checkAutoLock()
-        })
-        expect(shouldLock).toBe(true)
-    }, 30_000)
-
-    test('checkAutoLock returns false when timeout not exceeded', async () => {
-        vi.useFakeTimers()
-        const now = Date.now()
-        vi.setSystemTime(now)
-
-        setupMock({
-            failedAttempts: 0,
-            lockoutEndTime: null,
-            autoLockStartedAt: now - 2 * 60 * 1000,
-        })
-        kmsMocks.pinBytes = serializePinRecord(await createPinRecord('123456'))
-
-        const { result } = renderHook(() => usePinCode())
-
-        let shouldLock = true
-        await act(async () => {
-            shouldLock = await result.current.checkAutoLock()
-        })
-        expect(shouldLock).toBe(false)
-    }, 30_000)
-
-    test('checkAutoLock fails closed (locks) when autoLockStartedAt is NaN', async () => {
-        setupMock({
-            failedAttempts: 0,
-            lockoutEndTime: null,
-            autoLockStartedAt: NaN,
-        })
-        kmsMocks.pinBytes = serializePinRecord(await createPinRecord('123456'))
-
-        const { result } = renderHook(() => usePinCode())
-
-        let shouldLock = false
-        await act(async () => {
-            shouldLock = await result.current.checkAutoLock()
-        })
-        expect(shouldLock).toBe(true)
-    }, 30_000)
-
-    test('checkAutoLock fails closed (locks) when autoLockStartedAt is in the future', async () => {
-        vi.useFakeTimers()
-        const now = Date.now()
-        vi.setSystemTime(now)
-
-        setupMock({
-            failedAttempts: 0,
-            lockoutEndTime: null,
-            autoLockStartedAt: now + 60 * 60 * 1000,
-        })
-        kmsMocks.pinBytes = serializePinRecord(await createPinRecord('123456'))
-
-        const { result } = renderHook(() => usePinCode())
-
-        let shouldLock = false
-        await act(async () => {
-            shouldLock = await result.current.checkAutoLock()
-        })
-        expect(shouldLock).toBe(true)
-    }, 30_000)
 
     describe('lockout clock and attempt accounting', () => {
         const stored = () => parsePinRecord(kmsMocks.pinBytes!)

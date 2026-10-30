@@ -11,6 +11,7 @@
  */
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 import { cancelRampOrder, type CancelRampOrderParams } from '../api'
 import { onrampQueryKeys } from './querykeys'
@@ -20,7 +21,7 @@ export type UseCancelRampOrderMutationResult = {
     mutateAsync: (params: WithRampScope<CancelRampOrderParams>) => Promise<void>
     isPending: boolean
     isSuccess: boolean
-    error: Error | null
+    error: Nullable<Error>
     reset: () => void
 }
 

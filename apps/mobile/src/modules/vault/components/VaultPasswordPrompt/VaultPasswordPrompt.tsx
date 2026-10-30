@@ -68,7 +68,7 @@ export const VaultPasswordPrompt = ({
                 onChangeText={setPassword}
                 secureTextEntry
                 showVisibilityToggle
-                autoCapitalize='none'
+                isSensitive
                 autoComplete='current-password'
                 autoFocus
                 blurOnSubmit={false}

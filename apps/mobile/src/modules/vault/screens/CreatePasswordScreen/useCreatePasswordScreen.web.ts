@@ -15,7 +15,7 @@ import {
     createVault,
     isPasskeyUnlockSupported,
 } from '@perawallet/wallet-extension-keystore-chrome'
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import { usePasskeySetupStore } from '../../hooks/usePasskeySetupStore.web'
 import {
     usePasswordStrength,
@@ -41,7 +41,7 @@ type UseCreatePasswordScreenResult = {
 const validationErrorOf = (
     password: string,
     confirmation: string,
-    strengthError: PasswordStrengthError | null,
+    strengthError: Nullable<PasswordStrengthError>,
 ): PasswordStrengthError | 'mismatch' | null => {
     if (password.length > 0 && strengthError) return strengthError
     return confirmation.length > 0 && confirmation !== password

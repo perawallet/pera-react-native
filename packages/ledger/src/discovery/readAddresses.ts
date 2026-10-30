@@ -19,6 +19,7 @@ import type {
     LedgerTransport,
     LedgerTransportProvider,
 } from '@perawallet/wallet-extension-ledger-shared'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { withLedgerConnectionTimeout } from './ledgerTimeouts'
 
 /**
@@ -27,7 +28,7 @@ import { withLedgerConnectionTimeout } from './ledgerTimeouts'
  */
 export const ledgerReadableChainOf = (
     chainIds: readonly ChainId[],
-): ChainId | undefined =>
+): Optional<ChainId> =>
     chainIds.find(
         chainId => hasLedgerAppDriver(chainId) && addressCodecs.has(chainId),
     )

@@ -26,6 +26,7 @@ import { ContactAvatar } from '@components/ContactAvatar'
 import type { ContactAvatarVariant } from '@components/ContactAvatar/styles'
 import { AccountDisplay } from '@components/AccountDisplay'
 import { AccountIcon } from '@components/AccountIcon'
+import { ChainAvatarBadge } from '@modules/chain-ui/icon'
 import type { SvgProps } from 'react-native-svg'
 import { useStyles } from './styles'
 import {
@@ -58,6 +59,14 @@ export type AddressDisplayProps = {
     hugContent?: boolean
     /** The address's chain; the selected Algorand scope when unset. */
     scope?: ChainScope
+    /** Pins the address's chain icon to the avatar's bottom-left corner. Not drawn by the unified layout. */
+    showChainBadge?: boolean
+    /**
+     * How the address reads when no account, contact or NFD names it;
+     * `addressFormat` when unset. `full` wraps instead of truncating, so an
+     * unknown address can be compared in full.
+     */
+    unnamedAddressFormat?: AddressFormat
 } & PWTouchableOpacityProps
 
 export const AddressDisplay = ({
@@ -74,14 +83,18 @@ export const AddressDisplay = ({
     trailing,
     hugContent = false,
     scope,
+    showChainBadge = false,
+    unnamedAddressFormat,
     ...rest
 }: AddressDisplayProps) => {
     const styles = useStyles({ hugContent })
     const {
+        chainId,
         account,
         contact,
         nfdName,
         truncatedAddress,
+        unnamedAddress,
         fallbackIconName,
         copyAddress,
         unifiedLabels,
@@ -91,9 +104,13 @@ export const AddressDisplay = ({
         displayType,
         showSecondaryAddress,
         scope,
+        unnamedAddressFormat,
     })
 
     const isUnifiedLayout = !!iconName || showSecondaryAddress
+    const chainBadge = showChainBadge ? (
+        <ChainAvatarBadge chainId={chainId} />
+    ) : null
 
     let content: ReactNode
 
@@ -143,6 +160,8 @@ export const AddressDisplay = ({
                 account={account}
                 textProps={textProps}
                 showChevron={false}
+                chainId={scope?.chainId}
+                showChainBadge={showChainBadge}
             />
         )
     } else if (contact) {
@@ -162,11 +181,14 @@ export const AddressDisplay = ({
         )
         content = (
             <PWView style={styles.contactContainer}>
-                <ContactAvatar
-                    size='md'
-                    contact={contact}
-                    variant={contactAvatarVariant}
-                />
+                <PWView>
+                    <ContactAvatar
+                        size='md'
+                        contact={contact}
+                        variant={contactAvatarVariant}
+                    />
+                    {chainBadge}
+                </PWView>
                 {showSecondary ? (
                     <PWView style={styles.addressTextStack}>
                         {primaryText}
@@ -190,10 +212,13 @@ export const AddressDisplay = ({
         content = (
             <PWView style={styles.contactContainer}>
                 {showAvatar && (
-                    <ContactAvatar
-                        size='md'
-                        variant={contactAvatarVariant}
-                    />
+                    <PWView>
+                        <ContactAvatar
+                            size='md'
+                            variant={contactAvatarVariant}
+                        />
+                        {chainBadge}
+                    </PWView>
                 )}
                 {nfdName ? (
                     <PWView style={styles.addressTextStack}>
@@ -220,10 +245,11 @@ export const AddressDisplay = ({
                         variant={textProps?.variant ?? 'bodyLarge'}
                         weight={textProps?.variant ? undefined : 500}
                         {...textProps}
-                        truncate
+                        style={[styles.unnamedAddress, textProps?.style]}
+                        truncate={unnamedAddressFormat !== 'full'}
                         ellipsizeMode='middle'
                     >
-                        {truncatedAddress}
+                        {unnamedAddress}
                     </PWText>
                 )}
             </PWView>

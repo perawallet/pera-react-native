@@ -13,18 +13,18 @@
 import { useEffect, useState } from 'react'
 import type { MigrationPlanSummary } from '@perawallet/wallet-extension-platform'
 import { getProvider } from '@perawallet/wallet-extension-provider'
-import { toError } from '@perawallet/wallet-core-shared'
+import { toError, type Nullable } from '@perawallet/wallet-core-shared'
 
 type UseMigrationPlansResult = {
     plans: MigrationPlanSummary[]
     isLoading: boolean
-    error: Error | null
+    error: Nullable<Error>
 }
 
 export const useMigrationPlans = (): UseMigrationPlansResult => {
     const [plans, setPlans] = useState<MigrationPlanSummary[]>([])
     const [isLoading, setIsLoading] = useState(true)
-    const [error, setError] = useState<Error | null>(null)
+    const [error, setError] = useState<Nullable<Error>>(null)
 
     useEffect(() => {
         let cancelled = false

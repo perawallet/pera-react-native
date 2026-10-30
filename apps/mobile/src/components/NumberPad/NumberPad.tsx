@@ -13,6 +13,7 @@
 import { memo } from 'react'
 import { useTheme } from '@rneui/themed'
 import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { useStyles } from './styles'
 
 export type NumberPadProps = {
@@ -27,7 +28,7 @@ const padArrangment = [
     ['.', '0', undefined],
 ]
 
-const keyTestIdOf = (key: string | undefined): string => {
+const keyTestIdOf = (key: Optional<string>): string => {
     if (!key) return 'numpad_key_delete'
     return key === '.' ? 'numpad_key_decimal' : `numpad_key_${key}`
 }

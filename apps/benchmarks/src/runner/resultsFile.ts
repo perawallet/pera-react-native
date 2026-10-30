@@ -10,13 +10,14 @@
  limitations under the License
  */
 
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { ResultsFile } from './types'
 
 export const serializeResults = (file: ResultsFile): string =>
     JSON.stringify(file, null, 2)
 
 export const parseResultsFile = (json: string): ResultsFile => {
-    const parsed = JSON.parse(json) as Partial<ResultsFile> | null
+    const parsed = JSON.parse(json) as Nullable<Partial<ResultsFile>>
     if (!parsed || typeof parsed !== 'object') {
         throw new Error('Not a results file')
     }

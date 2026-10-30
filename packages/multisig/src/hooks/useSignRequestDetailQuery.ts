@@ -17,6 +17,7 @@ import {
     type RefetchOptions,
 } from '@tanstack/react-query'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import type { MultisigSignRequest } from '../models'
 import { getSignRequestDetail, type SignRequestDetailResponse } from '../api'
 import { IN_FLIGHT_SIGN_REQUEST_STATUSES } from '../constants'
@@ -44,7 +45,7 @@ type UseSignRequestDetailQueryParams = {
 const PENDING_POLL_INTERVAL = 5000
 
 export type UseSignRequestDetailQueryResult = {
-    data: MultisigSignRequest | undefined
+    data: Optional<MultisigSignRequest>
     isLoading: boolean
     isError: boolean
     refetch: (options?: RefetchOptions) => unknown
@@ -72,7 +73,7 @@ export const useSignRequestDetailQuery = ({
         // signatures sheet — see `useMultisigSignRequestDecline`. This is
         // the read-path counterpart to the write-path preservation in
         // `useMultisigTransportAdapters`.
-        queryFn: async () => {
+        queryFn: async (): Promise<SignRequestDetailResponse> => {
             const fresh = await getSignRequestDetail(
                 scope,
                 deviceId,

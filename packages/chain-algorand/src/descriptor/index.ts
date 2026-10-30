@@ -17,6 +17,7 @@ import {
     type NetworkId,
 } from '@perawallet/wallet-core-chain-contract'
 import { getChainConfig } from '@perawallet/wallet-core-config'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
 
 /** UTF-8 bytes an Algorand transaction note may hold. */
@@ -68,7 +69,7 @@ const networks: readonly ChainNetwork[] = [
 
 const explorerLink =
     (path: string) =>
-    (networkId: NetworkId, id: string): string | undefined => {
+    (networkId: NetworkId, id: string): Optional<string> => {
         if (!networks.some(network => network.id === networkId)) {
             return undefined
         }

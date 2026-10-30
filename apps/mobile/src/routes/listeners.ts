@@ -13,7 +13,7 @@
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import type { ParamListBase, RouteProp } from '@react-navigation/native'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import {
     trackScreen,
     trackEvent,
@@ -66,9 +66,11 @@ type TrackedScreen = {
 const resolveTrackedScreen = (
     route: RouteProp<ParamListBase>,
 ): Nullable<TrackedScreen> => {
-    const params = route.params as
-        | { assetId?: string; chainId?: ChainId; isCollectible?: boolean }
-        | undefined
+    const params = route.params as Optional<{
+        assetId?: string
+        chainId?: ChainId
+        isCollectible?: boolean
+    }>
     // Asset and collectible routes name the chain they show.
     const metadata = params?.chainId
         ? { [AnalyticsMetadataKey.ChainId]: params.chainId }

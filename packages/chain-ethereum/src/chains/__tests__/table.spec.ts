@@ -12,7 +12,7 @@
 
 import { describe, expect, it } from 'vitest'
 import { descriptorContractTests } from '@perawallet/wallet-core-chain-contract/testing'
-import { evmCapabilityDefaults } from '../../capability-defaults'
+import { evmCapabilityDefaultsOf } from '../../capability-defaults'
 import { createEvmChain } from '../create-evm-chain'
 import {
     ETHEREUM_CHAIN_ID,
@@ -24,7 +24,10 @@ import {
 import { ETHEREUM_NATIVE_ASSET } from '../..'
 
 for (const chain of EVM_CHAINS) {
-    descriptorContractTests(chain.descriptor, evmCapabilityDefaults)
+    descriptorContractTests(
+        chain.descriptor,
+        evmCapabilityDefaultsOf(chain.row),
+    )
 }
 
 describe('the EVM chain table', () => {
@@ -88,6 +91,13 @@ describe('the EVM chain table', () => {
             )
         },
     )
+
+    it("gives the native coin the explorer's front page, and none on a network with no explorer", () => {
+        const { explorer } = evmChainOf('ethereum').descriptor
+
+        expect(explorer.homeUrl?.('mainnet')).toBe('https://etherscan.io')
+        expect(explorer.homeUrl?.('custom')).toBeUndefined()
+    })
 
     it('builds each chain once, so its native asset keeps one identity', () => {
         expect(evmChainOf('base')).toBe(evmChainOf('base'))

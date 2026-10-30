@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { AlgodErrorCode, type AlgodErrorParamsByCode } from './algodErrorCodes'
 
 /**
@@ -24,7 +25,7 @@ export type ParsedAlgodMessage = {
     }
 }[keyof AlgodErrorParamsByCode]
 
-type Matcher = (message: string) => ParsedAlgodMessage | null
+type Matcher = (message: string) => Nullable<ParsedAlgodMessage>
 
 const ADDRESS = '[A-Z2-7]{58}'
 const TXID = '[A-Z0-9]{52}'
@@ -237,7 +238,7 @@ const MATCHERS: readonly Matcher[] = [
  */
 export const parseAlgodMessage = (
     message: string,
-): ParsedAlgodMessage | null => {
+): Nullable<ParsedAlgodMessage> => {
     if (!message) return null
     for (const match of MATCHERS) {
         const result = match(message)

@@ -33,8 +33,9 @@ vi.mock('@perawallet/wallet-core-kms', () => ({
     removeSecret: removeSecretMock,
     withSecret: withSecretMock,
     hasSecret: hasSecretMock,
-    // Stand-ins for the real wordlist lookups; only the round-trip matters here.
-    mnemonicWordsToIndices: (words: string[]) => {
+    // Stand-in for the real wordlist lookup; only the round-trip matters here.
+    utf8BytesToIndices: (bytes: Uint8Array) => {
+        const words = new TextDecoder().decode(bytes).split(' ')
         const indices = new Uint16Array(words.length)
         for (let i = 0; i < words.length; i++) {
             const index = MNEMONIC.indexOf(words[i])
@@ -321,6 +322,17 @@ describe('withBackupMnemonicIndices', () => {
         withSecretMock.mockImplementation(
             async (_id: string, handler: (bytes: Uint8Array) => unknown) =>
                 handler(new TextEncoder().encode('not a wordlist phrase')),
+        )
+
+        await expect(
+            withBackupMnemonicIndices(resolved => resolved),
+        ).rejects.toBeInstanceOf(BackupMnemonicParseError)
+    })
+
+    test('throws BackupMnemonicParseError when the stored phrase has a double space', async () => {
+        withSecretMock.mockImplementation(
+            async (_id: string, handler: (bytes: Uint8Array) => unknown) =>
+                handler(new TextEncoder().encode('marble  protect crawl')),
         )
 
         await expect(

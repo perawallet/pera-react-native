@@ -18,7 +18,10 @@ import {
     type UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
 import { useNativeAsset } from '@perawallet/wallet-core-assets'
-import { baseUnitsToDisplayUnits } from '@perawallet/wallet-core-shared'
+import {
+    baseUnitsToDisplayUnits,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
 import {
     reviewGroupOf,
     useSigningPipeline,
@@ -119,7 +122,7 @@ export const useFeeAdjustment = (
 }
 
 const matchesTransaction = (
-    slot: UnsignedTransaction | undefined,
+    slot: Optional<UnsignedTransaction>,
     transaction: AlgorandTransactionView,
 ): boolean => {
     // The reviewer read the transaction out of this payload, so identity

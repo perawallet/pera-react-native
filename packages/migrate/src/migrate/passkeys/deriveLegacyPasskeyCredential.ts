@@ -18,7 +18,11 @@ import {
     p256RawPublicKey,
     p256RawPublicKeyToSpkiDer,
 } from '@perawallet/wallet-core-passkeys/crypto'
-import { decodeFromBase64, hexToBytes } from '@perawallet/wallet-core-shared'
+import {
+    decodeFromBase64,
+    hexToBytes,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 
 /**
  * Pure-JS reproduction of a legacy passkey's deterministic P-256 keypair. A
@@ -49,7 +53,9 @@ export { credentialIdBytesToStandardBase64, p256RawPublicKeyToSpkiDer }
  * and hex — the legacy DB has been seen in more than one encoding across
  * platforms. Null when it doesn't decode to a plausible 32-byte digest.
  */
-export const decodeCredentialIdToBytes = (raw: string): Uint8Array | null => {
+export const decodeCredentialIdToBytes = (
+    raw: string,
+): Nullable<Uint8Array> => {
     if (/^[0-9a-fA-F]{64}$/.test(raw)) {
         return hexToBytes(raw)
     }
@@ -67,8 +73,8 @@ export const decodeCredentialIdToBytes = (raw: string): Uint8Array | null => {
 }
 
 /** PBKDF2 is heavy, so callers cache this per HD seed across its passkeys. */
-export const deriveMainKey = (mnemonic: string): Promise<Uint8Array> =>
-    deriveLiquidAuthMainKey(mnemonic)
+export const deriveMainKey = (mnemonicBytes: Uint8Array): Promise<Uint8Array> =>
+    deriveLiquidAuthMainKey(mnemonicBytes)
 
 /**
  * Which public-key encoding the legacy platform hashed for the `credentialId` —

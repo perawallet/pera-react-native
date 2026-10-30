@@ -20,6 +20,7 @@ import {
 } from '@modules/settings/screens/developer/gallery-catalog'
 
 import type { GallerySection } from '@modules/settings/screens/developer/gallery-catalog/types'
+import type { Optional } from '@perawallet/wallet-core-shared'
 
 import type { TourCategory, TourStep } from '../types'
 
@@ -77,9 +78,9 @@ const ALL_CATEGORIES = Object.keys(bySection) as TourCategory[]
 // Safe only because the catalogs are static per process — if a catalog ever
 // became dynamic (feature flags, A/B-varied previews), this cache would keep
 // serving whatever existed at the first call.
-let stepsById: Map<string, TourStep> | undefined
+let stepsById: Optional<Map<string, TourStep>>
 
-export const getTourStep = (id: string): TourStep | undefined => {
+export const getTourStep = (id: string): Optional<TourStep> => {
     if (!stepsById) {
         stepsById = new Map(
             getTourSteps(ALL_CATEGORIES).map(step => [step.id, step]),

@@ -27,6 +27,7 @@ import {
     requireSecure,
     sanitizeErrorForWebview,
     sendActionToWebview,
+    sendMessageToWebview,
     sendNotificationToWebview,
     toValidatedBrowserUrl,
     toValidatedNativeUri,
@@ -39,13 +40,18 @@ vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useSelectedScope: (chainId: string) => ({ chainId, networkId: 'mainnet' }),
 }))
 
-vi.mock('@perawallet/wallet-core-shared', () => ({
+vi.mock('@perawallet/wallet-core-shared', async () => ({
     get logger() {
         return mockLogger
     },
     AppError: class AppError extends Error {},
     bytesToHex: (bytes: Uint8Array) =>
         Array.from(bytes, b => b.toString(16).padStart(2, '0')).join(''),
+    originOf: (
+        await vi.importActual<typeof import('@perawallet/wallet-core-shared')>(
+            '@perawallet/wallet-core-shared',
+        )
+    ).originOf,
 }))
 
 vi.mock('react-native-webview', () => ({ default: {} }))
@@ -100,6 +106,28 @@ describe('sendNotificationToWebview', () => {
                 null,
             ),
         ).not.toThrow()
+    })
+})
+
+describe('sendMessageToWebview', () => {
+    const mockInjectJavaScript = vi.fn()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const mockWebview = { injectJavaScript: mockInjectJavaScript } as any
+
+    it('encodes quotes, a closing script tag and newlines so the page receives the identical payload', () => {
+        const payload = {
+            text: `say "hi" and 'bye'\n</script><script>alert(1)</script>`,
+        }
+
+        sendMessageToWebview('1', payload, mockWebview)
+
+        const injected = mockInjectJavaScript.mock.calls[0][0] as string
+        expect(injected).not.toContain('</script>')
+        expect(injected).not.toMatch(/\n/)
+        const parsed = JSON.parse(
+            injected.replace(/^window\.postMessage\(/, '').replace(/\);$/, ''),
+        )
+        expect(parsed).toEqual({ id: '1', jsonrpc: '2.0', result: payload })
     })
 })
 
@@ -230,7 +258,7 @@ describe('requireSecure', () => {
         })
     })
 
-    it('logs the blocked request with operation and source URL', () => {
+    it('logs the blocked request with operation and source origin', () => {
         requireSecure(false, context, vi.fn())
 
         expect(mockLogger.warn).toHaveBeenCalledTimes(1)
@@ -238,7 +266,7 @@ describe('requireSecure', () => {
             'Blocked WebView bridge call from untrusted origin',
             {
                 operation: 'getSettings',
-                sourceUrl: 'https://evil.com/',
+                sourceOrigin: 'https://evil.com',
                 messageId: 'msg-1',
             },
         )

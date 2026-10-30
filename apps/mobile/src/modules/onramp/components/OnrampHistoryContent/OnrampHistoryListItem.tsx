@@ -12,7 +12,7 @@
 
 import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import { formatDatetime } from '@perawallet/wallet-core-shared'
+import { formatDatetime, type Nullable } from '@perawallet/wallet-core-shared'
 import type { RampHistoryItem } from '@perawallet/wallet-core-onramp'
 import { useTheme } from '@rneui/themed'
 import { OnrampAssetPairIcon } from '../OnrampAssetPairIcon'
@@ -26,9 +26,9 @@ export type OnrampHistoryListItemProps = {
 
 const formatAmount = (
     amount: RampHistoryItem['sourceAmount'],
-    currencyCode: string | null,
+    currencyCode: Nullable<string>,
     fallbackSymbol: string,
-): string | null => {
+): Nullable<string> => {
     if (amount === null) return null
     return `${amount.toString()} ${currencyCode ?? fallbackSymbol}`
 }

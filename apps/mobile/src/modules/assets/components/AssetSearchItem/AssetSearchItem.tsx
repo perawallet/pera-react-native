@@ -25,6 +25,8 @@ type AssetSearchItemProps = {
     isOptingIn: boolean
     /** Omitted where the asset can't be added: the row shows no add action. */
     onAdd?: (result: ScopedAssetSearchResult) => void
+    /** Set where an added asset can be removed: tapping its check offers it. */
+    onRemove?: (result: ScopedAssetSearchResult) => void
     /** Names the asset's network, for results that span chains. */
     showsNetwork?: boolean
 }
@@ -34,11 +36,13 @@ export const AssetSearchItem = ({
     isOptedIn,
     isOptingIn,
     onAdd,
+    onRemove,
     showsNetwork = false,
 }: AssetSearchItemProps) => {
     const styles = useStyles()
     const { asset, scope } = result
-    const handlePress = useCallback(() => onAdd?.(result), [onAdd, result])
+    const onPress = isOptedIn ? onRemove : onAdd
+    const handlePress = useCallback(() => onPress?.(result), [onPress, result])
 
     const renderIcon = () => {
         if (isOptingIn) return <PWLoadingIndicator size='sm' />
@@ -48,6 +52,11 @@ export const AssetSearchItem = ({
                     name='check'
                     size='sm'
                     variant='positive'
+                    testID={
+                        onRemove
+                            ? `asset_search_item_remove_${asset.assetId}`
+                            : undefined
+                    }
                 />
             )
         }
@@ -79,8 +88,8 @@ export const AssetSearchItem = ({
                         <ChainLabel chainId={scope.chainId} />
                     ) : undefined
                 }
-                onPress={onAdd ? handlePress : undefined}
-                disabled={!onAdd || isOptedIn || isOptingIn}
+                onPress={onPress ? handlePress : undefined}
+                disabled={!onPress || isOptingIn}
                 style={styles.container}
             />
             <PWView style={styles.separator} />

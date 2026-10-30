@@ -33,7 +33,10 @@ import {
     zeroBytes,
     type QuantumAddressCandidate,
 } from '@perawallet/wallet-core-kms'
-import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
+import {
+    generateOrderedUniqueId,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
 import { ALGORAND_CHAIN_ID } from '../chain-id'
 import { algorandNetworkOf } from '../network-id'
 import { algorandAddressCodec } from './address-codec'
@@ -180,7 +183,7 @@ const importQuantum = async (
     const imported: WalletAccount[] = []
     // The second derivation attaches to the SAME seed record as a second
     // child, so the entropy is never persisted twice.
-    let seedKeyId: string | undefined
+    let seedKeyId: Optional<string>
     for (const candidate of newCandidates) {
         const result = await kmsCore.createQuantumKey({
             chain: algorandQuantumDerivation,

@@ -14,6 +14,7 @@ import type { ComponentType } from 'react'
 import type {
     ChainScope,
     TransactionNative,
+    TransactionRecord,
 } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { SignRequestSource } from '@perawallet/wallet-core-signing'
@@ -30,6 +31,11 @@ export type DetailBodyProps = {
     transaction: TransactionNative
     /** A transaction reachable from this one's body, such as an inner transaction. */
     onRelatedTransactionPress?: (transaction: TransactionNative) => void
+}
+
+export type RecordDetailBodyProps = {
+    /** A history record, which a chain without cached history rows has no `TransactionNative` for. */
+    record: TransactionRecord
 }
 
 export type PreviewRowProps = {
@@ -69,6 +75,8 @@ export type UseTransactionDetailResult = {
 export type TransactionDisplay = {
     ReviewBody: ComponentType<ReviewBodyProps>
     DetailBody: ComponentType<DetailBodyProps>
+    /** What a history record opens to; unset, the record's detail screen reports the transaction unknown. */
+    RecordDetailBody?: ComponentType<RecordDetailBodyProps>
     PreviewRow: ComponentType<PreviewRowProps>
     /** Called on every render of a screen whose scope never changes, so it must stay one hook. */
     useTransactionDetail?: (

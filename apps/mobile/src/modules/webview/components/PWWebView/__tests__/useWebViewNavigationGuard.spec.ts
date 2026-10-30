@@ -431,6 +431,24 @@ describe('useWebViewNavigationGuard', () => {
             )
         })
 
+        it('hands the exact url to location.assign when it holds & and quotes', async () => {
+            vi.mocked(Linking.canOpenURL).mockResolvedValue(true)
+            vi.mocked(Linking.openURL).mockRejectedValue(new Error('no app'))
+            const injectJavaScript = vi.fn()
+            const { result } = await renderSocialGuard({
+                current: { injectJavaScript },
+            })
+            const url = `https://x.com/perawallet?a=1&b='2'&c="3"</script>`
+
+            result.current.onShouldStartLoadWithRequest(request(url))
+            await act(async () => {})
+
+            const assign = vi.fn()
+            const script = injectJavaScript.mock.calls[0][0] as string
+            new Function('window', script)({ location: { assign } })
+            expect(assign).toHaveBeenCalledExactlyOnceWith(url)
+        })
+
         it('treats a failing install check as not installed', async () => {
             vi.mocked(Linking.canOpenURL).mockRejectedValue(
                 new Error('unsupported'),

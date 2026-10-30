@@ -47,7 +47,7 @@ export const AccountNetworkRowView = ({
     const { t } = useLanguage()
     const { chainId } = row
     const scope = useSelectedScope(chainId)
-    const slot = chainUiFor(row.family).accountOptions
+    const slot = chainUiFor(row.family, chainId).accountOptions
     const sectionProps = { account: networks.account, scope, onClose }
     const useHasExpandedSection =
         slot?.useHasExpandedSection ?? useNoExpandedSection

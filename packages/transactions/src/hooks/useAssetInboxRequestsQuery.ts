@@ -35,19 +35,21 @@ export const useAssetInboxRequestsQuery = (
         'assetInbox',
     )
 
+    const isEnabled = !!address && !isUnavailableOnNetwork
+
     const query = useQuery({
         queryKey: getAssetInboxRequestsQueryKey(address ?? '', scope),
-        queryFn: () =>
+        queryFn: (): Promise<AssetInboxRequest[]> =>
             sendFlowFeatureFor(scope, 'assetInbox').fetchRequests({
                 scope,
                 address: address!,
             }),
-        enabled: !!address && !isUnavailableOnNetwork,
+        enabled: isEnabled,
     })
 
     return {
         data: query.data ?? [],
-        isPending: isUnavailableOnNetwork ? false : query.isPending,
+        isPending: isEnabled && query.isPending,
         isError: query.isError,
         error: query.error,
         isUnavailableOnNetwork,

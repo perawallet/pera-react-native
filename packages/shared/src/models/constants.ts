@@ -12,6 +12,11 @@
 
 export const DEFAULT_PAGE_SIZE = 50
 export const DEFAULT_PRECISION = 2
+/**
+ * Display cap for an asset amount, ALGO's own precision: an 18-decimal ETH
+ * balance reads like an ALGO one instead of printing every digit.
+ */
+export const ASSET_MAX_PRECISION = 6
 export const DEFAULT_PRISM_IMAGE_QUALITY = 70
 
 /**

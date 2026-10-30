@@ -11,7 +11,7 @@
  */
 
 import { requireOptionalNativeModule } from 'expo'
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import type {
     WidgetImageRequest,
     WidgetsService,
@@ -30,7 +30,7 @@ interface NativePeraWidgets {
     ): { remove(): void }
 }
 
-const getNativeModule = (): NativePeraWidgets | null =>
+const getNativeModule = (): Nullable<NativePeraWidgets> =>
     requireOptionalNativeModule<NativePeraWidgets>('PeraWidgets')
 
 // Widgets are a best-effort mirror of app state: a failed write must never

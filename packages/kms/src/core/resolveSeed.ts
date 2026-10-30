@@ -11,11 +11,12 @@
  */
 
 import type { Key } from '@algorandfoundation/keystore-core'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { InvalidKeyError, KeyNotFoundError } from '../errors'
 import { isSeedKey } from '../utils'
 
-export const parentIdOf = (key: Key | undefined): string | undefined => {
-    const parentKeyId = (key?.metadata as Record<string, unknown> | undefined)
+export const parentIdOf = (key: Optional<Key>): Optional<string> => {
+    const parentKeyId = (key?.metadata as Optional<Record<string, unknown>>)
         ?.parentKeyId
     return typeof parentKeyId === 'string' ? parentKeyId : undefined
 }

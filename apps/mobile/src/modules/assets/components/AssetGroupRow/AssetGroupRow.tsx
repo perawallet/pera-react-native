@@ -43,8 +43,16 @@ const AssetGroupRowBase = <T extends GroupableHolding>({
     const { t } = useLanguage()
     const { group, amount, isExpanded } = item
 
-    const { icon, verificationIcon, isSuspicious, subtitle, chainIds, fiat } =
-        useAssetGroupRow({ item, convertFiat })
+    const {
+        icon,
+        iconChainId,
+        verificationIcon,
+        isSuspicious,
+        subtitle,
+        chainIds,
+        decimals,
+        fiat,
+    } = useAssetGroupRow({ item, convertFiat })
 
     if (!icon) {
         return <AssetRowSkeleton style={style} />
@@ -58,6 +66,7 @@ const AssetGroupRowBase = <T extends GroupableHolding>({
         >
             <PWView style={styles.summaryRow}>
                 <AssetIcon
+                    chainId={iconChainId}
                     asset={icon}
                     size='xl'
                 />
@@ -96,14 +105,17 @@ const AssetGroupRowBase = <T extends GroupableHolding>({
                     <CurrencyAmount
                         currency=''
                         assetId=''
+                        chainId={null}
                         value={amount}
                         precision='compact'
+                        assetDecimals={decimals}
                         style={styles.primaryAmount}
                         numberOfLines={1}
                     />
                     <CurrencyAmount
                         currency={fiat.displayCurrency}
                         assetId={null}
+                        chainId={null}
                         isFiat
                         value={fiat.value}
                         precision='compact'

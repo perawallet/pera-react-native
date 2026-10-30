@@ -31,6 +31,8 @@ import {
     encodeToBase64,
     generateOrderedUniqueId,
     logger,
+    type Optional,
+    type Nullable,
 } from '@perawallet/wallet-core-shared'
 import type {
     Connection,
@@ -75,7 +77,7 @@ export type DappHandlerDeps = {
      */
     chainId: ChainId
     getNetworkId: (chainId: ChainId) => NetworkId
-    getCustomNetworkGenesisHash: () => string | undefined
+    getCustomNetworkGenesisHash: () => Optional<string>
     /**
      * The wallet's current signing-capable accounts. Read on every answer, not
      * cached: a connection's approved list is filtered down to what this still
@@ -170,7 +172,7 @@ export const createDappConnectionHandler = (
         notInitializedError: () => new Error('dapp handler is not initialized'),
     })
     const { requireContext, store } = kit
-    let unsubscribe: (() => void) | null = null
+    let unsubscribe: Nullable<() => void> = null
     const openProposals = new Set<string>()
     const pendingTimers = new Set<ReturnType<typeof setTimeout>>()
 
@@ -185,7 +187,7 @@ export const createDappConnectionHandler = (
 
     const getConnection = async (
         origin: string,
-    ): Promise<DappConnection | undefined> => {
+    ): Promise<Optional<DappConnection>> => {
         const connection = await store().get(origin)
         return connection && isDappConnection(connection)
             ? connection
@@ -228,7 +230,7 @@ export const createDappConnectionHandler = (
 
     // Looked up per request, not at construction: a realm may build the
     // handler before its bootstrap has registered the chain's adapters.
-    const chainAdapter = (): DappRequestChainAdapter | undefined =>
+    const chainAdapter = (): Optional<DappRequestChainAdapter> =>
         dappRequestChainAdapters.has(deps.chainId)
             ? dappRequestChainAdapters.get(deps.chainId)
             : undefined
@@ -686,7 +688,9 @@ export const createDappConnectionHandler = (
     const notificationFor = async (
         id: ConnectionId,
         notice: WalletNotice,
-    ): Promise<{ method: string; params: Record<string, unknown> } | null> => {
+    ): Promise<
+        Nullable<{ method: string; params: Record<string, unknown> }>
+    > => {
         if (notice.type === 'network-changed') {
             const network = chainAdapter()?.resolveReportedNetwork(
                 notice.scope,

@@ -25,7 +25,12 @@ import {
     useKMS,
     zeroBytes,
 } from '@perawallet/wallet-core-kms'
-import { bytesToHex, logger, toError } from '@perawallet/wallet-core-shared'
+import {
+    bytesToHex,
+    logger,
+    toError,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import { backupAdapterFor, backupSeedReference } from '../../chain-adapter'
 import { useSeedReferencesStore } from '../store/seedReferencesStore'
 import type { SeedSecretsCache, SerializeHdResolver } from '../sync/types'
@@ -41,6 +46,7 @@ const readEntropyHex = async (
     executeWithMnemonic(keyPairId, BACKUP_ACCESS_DOMAIN, indices => {
         const entropy = indicesToEntropy(indices)
         try {
+            // lanekeep-ignore-next-line pera/no-secret-strings reason: the backup payload is JSON whose wire format carries the entropy as hex
             return bytesToHex(entropy)
         } finally {
             zeroBytes(entropy)
@@ -50,8 +56,9 @@ const readEntropyHex = async (
 const readSeedHex = async (
     withExportedKey: KMS['withExportedKey'],
     seedKeyId: string,
-): Promise<string | null> =>
+): Promise<Nullable<string>> =>
     withExportedKey(seedKeyId, BACKUP_ACCESS_DOMAIN, keyData =>
+        // lanekeep-ignore-next-line pera/no-secret-strings reason: the backup payload is JSON whose wire format carries the seed as hex
         keyData.privateKey ? bytesToHex(keyData.privateKey) : '',
     )
 

@@ -10,7 +10,11 @@
  limitations under the License
  */
 
-import { formatDatetime, type Nullable } from '@perawallet/wallet-core-shared'
+import {
+    formatDatetime,
+    type Nullable,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
 import type { CloudBackupSummary } from '@modules/cloud-backup'
 import type { WidgetBackup } from './snapshot'
 
@@ -82,7 +86,7 @@ export const resolveWidgetBackup = ({
     passphrase,
     locale,
     t,
-}: ResolveWidgetBackupParams): WidgetBackup | undefined => {
+}: ResolveWidgetBackupParams): Optional<WidgetBackup> => {
     if (passphrase.isPending) return undefined
     return {
         cloud: resolveCloud(cloud, locale, t),

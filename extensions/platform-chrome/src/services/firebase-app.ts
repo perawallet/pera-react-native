@@ -12,8 +12,9 @@
 
 import { initializeApp, type FirebaseApp } from 'firebase/app'
 import { config } from '@perawallet/wallet-core-config'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
-let app: FirebaseApp | null = null
+let app: Nullable<FirebaseApp> = null
 
 /**
  * Lazily initializes the Firebase Web App exactly once per extension UI
@@ -22,7 +23,7 @@ let app: FirebaseApp | null = null
  * unset (community/unregistered builds) so callers degrade to static
  * defaults instead of throwing.
  */
-export const getFirebaseApp = (): FirebaseApp | null => {
+export const getFirebaseApp = (): Nullable<FirebaseApp> => {
     if (!config.firebaseProjectId) {
         return null
     }

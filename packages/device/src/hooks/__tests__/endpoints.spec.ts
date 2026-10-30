@@ -12,7 +12,11 @@
 
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { queryClient } from '@perawallet/wallet-core-shared'
-import { registerDevice, deleteDevice } from '../endpoints'
+import {
+    deleteDevice,
+    isSentInDeviceRegistration,
+    registerDevice,
+} from '../endpoints'
 import { deviceChainAdapters } from '../../registrations/chain-adapter'
 import type { DeviceRegistration } from '../../models'
 
@@ -175,6 +179,75 @@ describe('device endpoints', () => {
                 data: { id: 'DEV-1' },
                 responseType: 'text',
             }),
+        )
+    })
+})
+
+describe('isSentInDeviceRegistration', () => {
+    const onAlgorand = { chains: { algorand: { address: 'ADDR_A' } } }
+    const onEthereum = { chains: { ethereum: { address: '0xabc' } } }
+
+    beforeEach(() => {
+        mocks.isV4 = true
+        deviceChainAdapters.reset()
+        deviceChainAdapters.register({
+            chainId: 'algorand',
+            accountTypeOf: () => 'signing-kind',
+            rankOf: () => 2,
+            isOnV3DevicesApi: true,
+        })
+        deviceChainAdapters.register({
+            chainId: 'ethereum',
+            accountTypeOf: () => 'hdWallet',
+            rankOf: () => 0,
+        })
+    })
+
+    it('is true for an address on any chain with a device adapter on v4', () => {
+        expect(isSentInDeviceRegistration(onAlgorand, 'algorand', 'live')).toBe(
+            true,
+        )
+        expect(
+            isSentInDeviceRegistration(onEthereum, 'ethereum', 'developer'),
+        ).toBe(true)
+    })
+
+    it('is true only for the chains v3 takes while v4 is off', () => {
+        mocks.isV4 = false
+
+        expect(isSentInDeviceRegistration(onAlgorand, 'algorand', 'live')).toBe(
+            true,
+        )
+        expect(isSentInDeviceRegistration(onEthereum, 'ethereum', 'live')).toBe(
+            false,
+        )
+    })
+
+    it('is false for an account its chain declines to register', () => {
+        deviceChainAdapters.reset()
+        deviceChainAdapters.register({
+            chainId: 'algorand',
+            accountTypeOf: () => null,
+            rankOf: () => 0,
+            isOnV3DevicesApi: true,
+        })
+
+        expect(isSentInDeviceRegistration(onAlgorand, 'algorand', 'live')).toBe(
+            false,
+        )
+    })
+
+    it('is false on a chain the account holds no address on', () => {
+        expect(isSentInDeviceRegistration(onAlgorand, 'ethereum', 'live')).toBe(
+            false,
+        )
+    })
+
+    it('is false on a chain without a device adapter', () => {
+        deviceChainAdapters.reset()
+
+        expect(isSentInDeviceRegistration(onAlgorand, 'algorand', 'live')).toBe(
+            false,
         )
     })
 })

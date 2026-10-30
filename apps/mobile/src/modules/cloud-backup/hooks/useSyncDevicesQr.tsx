@@ -17,6 +17,7 @@ import {
     withBackupMnemonicIndices,
 } from '@perawallet/wallet-core-backup'
 import { mnemonicIndexToWord } from '@perawallet/wallet-core-kms'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useRequirePinVerification } from '@modules/security'
 import { useErrorToast } from '@hooks/useErrorToast'
@@ -37,7 +38,7 @@ export const useSyncDevicesQr = (): UseSyncDevicesQrResult => {
 
     // The confirmed code is handed back here and never reaches the keystore.
     const requestEncryptionCode = useCallback(
-        async (): Promise<string | null> =>
+        async (): Promise<Nullable<string>> =>
             (await requestBottomSheet<string>({
                 contents: <BackupCodeSetupSheet />,
                 options: {
@@ -63,13 +64,14 @@ export const useSyncDevicesQr = (): UseSyncDevicesQrResult => {
         const code = await requestEncryptionCode()
         if (!code) return
 
-        let payload: string | null = null
+        let payload: Nullable<string> = null
         try {
             // The whole seal runs inside the accessor: it zeroes the index
             // buffer as soon as this handler returns, so the words must be
             // consumed here and only the ciphertext may leave.
             payload = await withBackupMnemonicIndices(indices =>
                 encryptBackupSyncQr({
+                    // lanekeep-ignore-next-line pera/no-secret-strings reason: the sync QR payload carries the phrase as space-joined words
                     mnemonic: Array.from(indices, mnemonicIndexToWord).join(
                         ' ',
                     ),

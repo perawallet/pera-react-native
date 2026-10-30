@@ -13,17 +13,18 @@
 import { useHeldAssetDetailsQuery } from '@perawallet/wallet-core-accounts'
 import type { PeraAsset } from '@perawallet/wallet-core-assets'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { MAX_WIDGET_NFTS, type WidgetNftCandidate } from '../snapshot'
 
 export type UseWidgetNftCandidatesQueryResult = {
     /** `undefined` while loading, disabled or errored. */
-    candidates: WidgetNftCandidate[] | undefined
+    candidates: Optional<WidgetNftCandidate[]>
 }
 
 // Some collectibles have no image (audio, 3D), so read past the cap to still fill it.
 const LOOKUP_HEADROOM = 3
 
-const toCandidate = (asset: PeraAsset): WidgetNftCandidate | undefined => {
+const toCandidate = (asset: PeraAsset): Optional<WidgetNftCandidate> => {
     const collectible = asset.peraMetadata?.collectible
     const imageUrl =
         collectible?.primaryImage ??

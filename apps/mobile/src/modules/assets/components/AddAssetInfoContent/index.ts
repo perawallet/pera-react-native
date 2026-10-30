@@ -10,21 +10,5 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed'
-
-export const useStyles = makeStyles(theme => ({
-    heroImage: {
-        width: '100%',
-        aspectRatio: 16 / 9,
-    },
-    content: {
-        paddingHorizontal: theme.spacing.lg,
-    },
-    title: {
-        marginVertical: theme.spacing.xl,
-    },
-    paragraph: {
-        color: theme.colors.textGray,
-        marginBottom: theme.spacing.xl,
-    },
-}))
+export { AddAssetInfoContent } from './AddAssetInfoContent'
+export type { AddAssetInfoContentProps } from './AddAssetInfoContent'

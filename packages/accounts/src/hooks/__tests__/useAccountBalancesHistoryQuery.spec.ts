@@ -222,6 +222,24 @@ describe('useAccountBalancesHistoryQuery', () => {
             expect(result.current.isPending).toBe(true)
         })
 
+        it('is not pending while the caller disables it', async () => {
+            const { result } = renderHook(
+                () =>
+                    useAccountBalancesHistoryQuery(
+                        ['ADDR1'],
+                        'one-month',
+                        selectedScope(),
+                        false,
+                    ),
+                { wrapper: createWrapper() },
+            )
+
+            await new Promise(resolve => setTimeout(resolve, 0))
+
+            expect(result.current.isPending).toBe(false)
+            expect(portfolioHistory()).not.toHaveBeenCalled()
+        })
+
         it('handles error state', async () => {
             portfolioHistory().mockRejectedValue(new Error('Network error'))
 

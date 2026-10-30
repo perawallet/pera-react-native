@@ -100,6 +100,8 @@
     "add_asset": {
         "title": "Añadir un activo",
         "search_placeholder": "Busca por nombre o ID de activo",
+        "search_placeholder_evm": "Busca por nombre, símbolo o dirección del contrato",
+        "search_placeholder_all": "Busca por nombre, símbolo, ID de activo o dirección",
         "no_results": "No se encontraron activos",
         "partial_results": "No se pudo buscar en algunas redes, así que podrían faltar resultados.",
         "not_listed": {
@@ -126,7 +128,28 @@
         },
         "collectible_title": "Añadir NFT",
         "collectible_note": "Necesitas añadir el ASA ID del NFT para poder transferirlo a tu wallet. Pega el ASA ID en la barra de búsqueda.",
-        "collectible_search_placeholder": "Busca por ID de activo o nombre del NFT"
+        "collectible_search_placeholder": "Busca por ID de activo o nombre del NFT",
+        "token": {
+            "added_title": "Token añadido",
+            "added_body": "{{assetName}} añadido en {{chain}}",
+            "add_failed_title": "No se pudo añadir el token",
+            "unverified_title": "Token no verificado",
+            "unverified_body": "Pera no ha verificado {{assetName}}. Cualquiera puede crear un token con cualquier nombre o logo, así que comprueba que su dirección del contrato, {{address}}, sea la que esperas antes de añadirlo.",
+            "unverified_confirm": "Añadir de todos modos",
+            "suspicious_title": "Token sospechoso",
+            "suspicious_body": "Pera ha marcado {{assetName}} ({{address}}) como sospechoso. Podría imitar a otro token o formar parte de una estafa. Añádelo solo si confías en su origen.",
+            "remove_title": "¿Quitar {{assetName}}?",
+            "remove_body": "Dejará de mostrarse en esta cuenta en {{chain}}. No se envía nada a la cadena y puedes volver a añadirlo cuando quieras.",
+            "remove_confirm": "Quitar",
+            "removed_title": "Token quitado",
+            "removed_body": "{{assetName}} quitado de {{chain}}",
+            "remove_failed_title": "No se pudo quitar el token"
+        },
+        "info": {
+            "adding_title": "Añadir activos",
+            "adding_opt_in": "En Algorand, añadir un activo es un opt-in: una transacción con una pequeña comisión que además bloquea un saldo mínimo hasta que hagas opt-out.",
+            "adding_evm": "En redes EVM como Ethereum, añadir un token es gratis y no requiere ninguna transacción. Solo cambia qué tokens muestra Pera para esta cuenta."
+        }
     },
     "asa_verification_info": {
         "title": "Verificación de ASA",
@@ -278,8 +301,10 @@
             "description": "Descripción",
             "social_media": "Redes sociales",
             "chart_empty_body": "Verás un gráfico aquí cuando tengas algo de historial de saldo",
-            "total_supply_info_title": "Suministro total",
-            "total_supply_info_body": "El suministro total de un activo se fija en el momento de su creación y corresponde al total de unidades creadas del activo."
+            "total_supply_info_body": "El suministro total de un activo se fija en el momento de su creación y corresponde al total de unidades creadas del activo.",
+            "circulating_supply": "Suministro circulante",
+            "circulating_supply_info_body": "El suministro circulante es el número de monedas que están actualmente en circulación. La moneda nativa de una red no tiene un total fijo, por lo que esta cifra cambia a medida que se emiten o se queman monedas.",
+            "token_total_supply_info_body": "El suministro total es el número de tokens que ha emitido el contrato, menos los quemados. Cambia cuando el emisor acuña o quema tokens."
         },
         "action_buttons": {
             "swap": "Swap",
@@ -291,6 +316,7 @@
             "title": "Transacciones",
             "empty_body": "No se encontraron transacciones",
             "empty_on_network_body": "Aún no hay transacciones en {{network}}",
+            "network_failed": "No se pudieron cargar las transacciones en {{networks}}",
             "offline_empty_title": "Estás sin conexión",
             "offline_empty_body": "Todavía no hay transacciones guardadas en este dispositivo. Aparecerán cuando vuelvas a estar en línea.",
             "search_paused_body": "No se encontraron transacciones en el historial reciente.",
@@ -325,7 +351,8 @@
             "suspicious_title": "ASA sospechoso",
             "suspicious_description": "Este ASA se ha marcado como sospechoso en el programa de verificación de ASA de Pera.",
             "learn_more": "Más información sobre la verificación de ASA"
-        }
+        },
+        "copy_full_amount_hint": "Mantén pulsado para copiar el importe completo"
     },
     "accounts": {
         "legacyQuantum": {
@@ -458,6 +485,7 @@
         "hide_wallet_structure": "Ocultar estructura del wallet",
         "scan_new_addresses": "Buscar direcciones nuevas",
         "scan_new_accounts": "Buscar cuentas nuevas de {{network}}",
+        "scan_new_wallet_accounts": "Buscar cuentas nuevas",
         "universal_wallet_subtitle": "Una passphrase, todas las redes",
         "viewing": "Actual",
         "wallet_label": "Wallet n.º {{number}}",
@@ -1024,7 +1052,9 @@
         },
         "wealth_chart": {
             "empty_body": "Aquí verás un gráfico cuando tengas historial de saldo",
-            "asset_empty_body": "Aquí verás un gráfico cuando tengas historial de saldo de este activo en esta cuenta"
+            "asset_empty_body": "Aquí verás un gráfico cuando tengas historial de saldo de este activo en esta cuenta",
+            "excludes_networks": "Este gráfico aún no incluye los activos de {{networks}}",
+            "networks_list": "{{first}} y {{last}}"
         },
         "webview": {
             "failed_title": "No se pudo cargar la página",
@@ -1094,7 +1124,8 @@
             "title": "Error al procesar esta cuenta",
             "body": "Algo salió mal. Inténtalo de nuevo y ponte en contacto con soporte si el problema continúa.",
             "generic": "Se produjo un error al procesar esta cuenta.",
-            "no_hd_wallet": "No se pudo encontrar la Universal Wallet de esta cuenta."
+            "no_hd_wallet": "No se pudo encontrar la Universal Wallet de esta cuenta.",
+            "token_unreadable": "Pera no pudo leer los datos de este token. Revisa la dirección e inténtalo de nuevo."
         },
         "blockchain": {
             "generic": "Algo salió mal al acceder a la blockchain."
@@ -2232,7 +2263,15 @@
             "no_new_addresses_title": "No se encontraron direcciones nuevas",
             "no_new_addresses_body": "No encontramos ninguna dirección adicional asociada a esta wallet.",
             "rekey_scan_failed_title": "No se pudieron comprobar las cuentas con rekey",
-            "rekey_scan_failed_body": "Tu cuenta se importó. No pudimos comprobar si otras cuentas tienen rekey hacia ella; puedes volver a analizarlo desde Ajustes."
+            "rekey_scan_failed_body": "Tu cuenta se importó. No pudimos comprobar si otras cuentas tienen rekey hacia ella; puedes volver a analizarlo desde Ajustes.",
+            "rekey_rescan_failed_body": "No pudimos comprobar si otras cuentas tienen rekey hacia esta wallet. Vuelve a buscar para intentarlo de nuevo.",
+            "rescan_found_title": "Búsqueda completada",
+            "rescan_found_body_one": "Se añadió o actualizó 1 cuenta.",
+            "rescan_found_body_other": "Se añadieron o actualizaron {{count}} cuentas.",
+            "rescan_partial_title": "Búsqueda incompleta",
+            "rescan_partial_body": "Algunas comprobaciones no pudieron terminar. Se añadieron las cuentas encontradas hasta ahora. Vuelve a buscar para encontrar el resto.",
+            "rescan_failed_title": "No se pudieron buscar cuentas",
+            "rescan_failed_body": "Comprueba tu conexión e inténtalo de nuevo."
         },
         "create_account": {
             "processing": "Configurando tu wallet...",
@@ -2961,7 +3000,8 @@
             "amount": "Cantidad",
             "account": "Cuenta",
             "to": "A",
-            "network": "Red",
+            "send_on_network": "Enviar {{asset}} en {{network}}",
+            "view_full_address": "Muestra la dirección completa",
             "fee": "Comisión",
             "current_balance": "Saldo actual",
             "total": "Total",
@@ -3499,8 +3539,13 @@
             "interpreted_title": "{{title}}",
             "swap_subtitle": "{{amountIn}} {{assetIn}} por {{amountOut}} {{assetOut}}",
             "nft_subtitle": "{{collection}} #{{tokenId}}",
+            "nft_batch_subtitle": "{{collection}} · {{count}} elementos",
             "inner_transaction_count": "{{innerCount}} transacciones internas",
             "cancel_transaction": "Cancelar transacción"
+        },
+        "record_detail": {
+            "read_failed": "No se pudieron leer de la red los detalles de la llamada de esta transacción.",
+            "transaction_id": "ID de transacción"
         },
         "contract_call": {
             "warning": "Pera no puede saber qué hace esta llamada a contrato.",
@@ -3538,7 +3583,7 @@
             "rekey_are_you_sure_title": "¿Estás seguro?",
             "rekey_are_you_sure_description": "Esta firma incluye una transacción de rekey, que da el control de tus cuentas a otra dirección. Asegúrate de entender las consecuencias antes de continuar.",
             "rekey_are_you_sure_continue": "Continuar",
-            "high_fee_warning": "Esta solicitud paga una comisión de red inusualmente alta de {{fee}} ALGO. Asegúrate de confiar en la fuente antes de firmar.",
+            "high_fee_warning": "Esta solicitud paga una comisión de red inusualmente alta de {{fee}}. Asegúrate de confiar en la fuente antes de firmar.",
             "asset_freeze_warning": "Esta transacción congela o descongela activos de la siguiente dirección: {{address}}.",
             "asset_freeze_group_warning": "Este grupo de transacciones congela o descongela activos de una de las cuentas del grupo. Revísalo con atención antes de firmar.",
             "asset_freeze_warning_bold": "Esto puede impedir que la cuenta afectada opere con el activo congelado. Revísalo con atención antes de firmar.",

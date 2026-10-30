@@ -19,6 +19,7 @@ import {
     storage as keystoreStorage,
 } from '@algorandfoundation/react-native-keystore'
 import type { Key } from '@algorandfoundation/keystore-core'
+import type { Optional, Nullable } from '@perawallet/wallet-core-shared'
 import {
     isNativeProviderRecordPayload,
     openNativeProviderRecord,
@@ -45,7 +46,7 @@ import {
 
 export type FlatKeystoreStorage = {
     getAllKeys: () => string[]
-    getString: (key: string) => string | undefined
+    getString: (key: string) => Optional<string>
 }
 
 export type ReadFlatKeystoreRecordsDeps = {
@@ -84,7 +85,7 @@ const readMasterKeyBytes = async (): Promise<Uint8Array> => {
 /** The provider envelope carries byte fields as JSON number arrays; the
  *  keystore codec already hands back `Uint8Array`. Everything downstream reads
  *  them as bytes. */
-const toBytes = (value: unknown): Uint8Array | undefined => {
+const toBytes = (value: unknown): Optional<Uint8Array> => {
     if (value instanceof Uint8Array) return value
     if (Array.isArray(value) && value.every(byte => typeof byte === 'number')) {
         return Uint8Array.from(value as number[])
@@ -92,7 +93,7 @@ const toBytes = (value: unknown): Uint8Array | undefined => {
     return undefined
 }
 
-const toKey = (record: unknown): Key | null => {
+const toKey = (record: unknown): Nullable<Key> => {
     if (typeof record !== 'object' || record === null) return null
     const candidate = record as Partial<Key> & { publicKey?: unknown }
     if (typeof candidate.id !== 'string' || candidate.id.length === 0) {
@@ -142,7 +143,7 @@ export const readFlatKeystoreRecords = async ({
         let isComplete = true
 
         for (const id of bareIds) {
-            let payload: string | undefined
+            let payload: Optional<string>
             try {
                 payload = storage.getString(id)
             } catch {

@@ -14,6 +14,7 @@ import { pbkdf2, randomBytes } from 'crypto'
 import { sha256 } from '@noble/hashes/sha2.js'
 import { entropyToMnemonic as entropyToMnemonicLib } from '@scure/bip39'
 import { wordlist } from '@scure/bip39/wordlists/english.js'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import {
     BITS_PER_BYTE,
     BITS_PER_MNEMONIC_WORD,
@@ -74,14 +75,19 @@ const LIQUID_AUTH_SALT = 'liquid'
  * Derives the DeterministicP256 (Liquid Auth) main key (the root for passkey
  * keypairs) from a BIP39 mnemonic. Uses `crypto.pbkdf2` — native/off-thread via
  * quick-crypto — NOT dp256's synchronous `genDerivedMainKeyWithBIP39`, which
- * freezes the JS thread. Mnemonic encoded as-is (no NFKD) to stay byte-identical.
+ * freezes the JS thread. `mnemonicBytes` is the UTF-8 of the space-joined
+ * phrase, read as-is (no NFKD) to stay byte-identical; the caller zeroes it.
  */
 export const deriveLiquidAuthMainKey = (
-    mnemonic: string,
+    mnemonicBytes: Uint8Array,
 ): Promise<Uint8Array> =>
     new Promise<Uint8Array>((resolve, reject) => {
         pbkdf2(
-            Buffer.from(mnemonic, 'utf8'),
+            Buffer.from(
+                mnemonicBytes.buffer,
+                mnemonicBytes.byteOffset,
+                mnemonicBytes.byteLength,
+            ),
             Buffer.from(LIQUID_AUTH_SALT, 'utf8'),
             LIQUID_AUTH_PBKDF2_ITERATIONS,
             LIQUID_AUTH_MAIN_KEY_LENGTH,
@@ -214,7 +220,7 @@ export const generateHDMasterKey = async (mnemonicIndices?: Uint16Array) => {
     let indices: Uint16Array
     // Set only when the indices are generated here; supplied ones are the
     // caller's to zero.
-    let generatedIndices: Uint16Array | undefined
+    let generatedIndices: Optional<Uint16Array>
     if (mnemonicIndices) {
         indices = mnemonicIndices
     } else {

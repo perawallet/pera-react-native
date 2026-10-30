@@ -17,6 +17,7 @@ import {
     decodeLongString,
     logger,
     toError,
+    type Nullable,
 } from '@perawallet/wallet-core-shared'
 import {
     type KeyValueStorageService,
@@ -44,30 +45,35 @@ export class RNMigrationService implements MigrationService {
     constructor(private readonly keyValueStorage: KeyValueStorageService) {}
 
     async hasLegacyData(): Promise<boolean> {
-        log('hasLegacyData() called')
+        logger.info('[Migration] hasLegacyData() called')
         const module = getNativeModule()
         if (!module) {
-            warn(
-                'hasLegacyData() → false (native LegacyMigration module is not registered)',
+            logger.warn(
+                '[Migration] hasLegacyData() → false (native LegacyMigration module is not registered)',
             )
             return false
         }
         try {
             const present = await module.hasLegacyData()
-            log(`hasLegacyData() → ${present} (from native module)`)
+            logger.info(
+                '[Migration] hasLegacyData() resolved from the native module',
+                { present },
+            )
             return present
         } catch (err) {
-            error('hasLegacyData() native call threw', err)
+            logger.error('[Migration] hasLegacyData() native call threw', {
+                error: err,
+            })
             throw err
         }
     }
 
     async getLegacyData(): Promise<LegacyMigrationData> {
-        log('getLegacyData() called')
+        logger.info('[Migration] getLegacyData() called')
         const module = getNativeModule()
         if (!module) {
-            warn(
-                'getLegacyData() → empty payload (native LegacyMigration module is not registered)',
+            logger.warn(
+                '[Migration] getLegacyData() → empty payload (native LegacyMigration module is not registered)',
             )
             return emptyLegacyMigrationData()
         }
@@ -75,27 +81,34 @@ export class RNMigrationService implements MigrationService {
         try {
             raw = (await module.getLegacyData()) as RawLegacyMigrationData
         } catch (err) {
-            error('getLegacyData() native call threw', err)
+            logger.error('[Migration] getLegacyData() native call threw', {
+                error: err,
+            })
             throw err
         }
-        log('getLegacyData() native payload received; decoding')
+        logger.info(
+            '[Migration] getLegacyData() native payload received; decoding',
+        )
         const decoded = decodeLegacyMigrationData(raw)
-        log('getLegacyData() decoded', summarizeLegacyData(decoded))
+        logger.info(
+            '[Migration] getLegacyData() decoded',
+            summarizeLegacyData(decoded),
+        )
         return decoded
     }
 
     async isMigrationComplete(): Promise<boolean> {
         const sentinel = this.readSentinel()
         const result = sentinel !== null
-        log(
-            `isMigrationComplete() → ${result}`,
-            sentinel
+        logger.info('[Migration] isMigrationComplete() resolved', {
+            isComplete: result,
+            ...(sentinel
                 ? {
                       completedAt: new Date(sentinel.completedAt).toISOString(),
                       sourcePlatform: sentinel.sourcePlatform,
                   }
-                : undefined,
-        )
+                : {}),
+        })
         return result
     }
 
@@ -106,7 +119,7 @@ export class RNMigrationService implements MigrationService {
             completedAt: Date.now(),
             sourcePlatform,
         }
-        log('markMigrationComplete() writing sentinel', {
+        logger.info('[Migration] markMigrationComplete() writing sentinel', {
             sourcePlatform,
             completedAt: new Date(value.completedAt).toISOString(),
         })
@@ -117,7 +130,7 @@ export class RNMigrationService implements MigrationService {
     }
 
     async clearMigrationComplete(): Promise<void> {
-        log('clearMigrationComplete() removing sentinel')
+        logger.info('[Migration] clearMigrationComplete() removing sentinel')
         this.keyValueStorage.removeItem(MIGRATION_SENTINEL_KEY)
         this.keyValueStorage.removeItem(MIGRATION_STEPS_KEY)
     }
@@ -168,7 +181,7 @@ export class RNMigrationService implements MigrationService {
         this.keyValueStorage.removeItem(MIGRATION_STEPS_KEY)
     }
 
-    async getCompletedStepVersions(): Promise<MigrationStepVersions | null> {
+    async getCompletedStepVersions(): Promise<Nullable<MigrationStepVersions>> {
         const raw = this.keyValueStorage.getItem(MIGRATION_STEPS_KEY)
         if (!raw) return null
         try {
@@ -178,16 +191,18 @@ export class RNMigrationService implements MigrationService {
                 parsed === null ||
                 Array.isArray(parsed)
             ) {
-                warn('getCompletedStepVersions() ignored malformed record', {
-                    raw,
-                })
+                logger.warn(
+                    '[Migration] getCompletedStepVersions() ignored malformed record',
+                    { raw },
+                )
                 return null
             }
             return parsed as MigrationStepVersions
         } catch {
-            warn('getCompletedStepVersions() ignored non-JSON record', {
-                raw,
-            })
+            logger.warn(
+                '[Migration] getCompletedStepVersions() ignored non-JSON record',
+                { raw },
+            )
             return null
         }
     }
@@ -201,7 +216,7 @@ export class RNMigrationService implements MigrationService {
         )
     }
 
-    private readSentinel(): MigrationSentinelValue | null {
+    private readSentinel(): Nullable<MigrationSentinelValue> {
         const raw = this.keyValueStorage.getItem(MIGRATION_SENTINEL_KEY)
         if (!raw) return null
         try {
@@ -210,31 +225,21 @@ export class RNMigrationService implements MigrationService {
                 parsed.sourcePlatform !== 'android' &&
                 parsed.sourcePlatform !== 'ios'
             ) {
-                warn('readSentinel() ignored malformed sentinel value', {
-                    raw,
-                })
+                logger.warn(
+                    '[Migration] readSentinel() ignored malformed sentinel value',
+                    { raw },
+                )
                 return null
             }
             return parsed
         } catch {
-            warn('readSentinel() ignored non-JSON sentinel value', { raw })
+            logger.warn(
+                '[Migration] readSentinel() ignored non-JSON sentinel value',
+                { raw },
+            )
             return null
         }
     }
-}
-
-const LOG_TAG = '[Migration]'
-
-const log = (message: string, context?: Record<string, unknown>): void => {
-    logger.info(`${LOG_TAG} ${message}`, context)
-}
-
-const warn = (message: string, context?: Record<string, unknown>): void => {
-    logger.warn(`${LOG_TAG} ${message}`, context)
-}
-
-const error = (message: string, err: unknown): void => {
-    logger.error(`${LOG_TAG} ${message}`, { error: err })
 }
 
 // Log summary — must never include secrets (keys, PIN, entropy, contact images).
@@ -273,10 +278,10 @@ interface NativeLegacyMigrationModule {
     resetLegacyData?(): Promise<void>
 }
 
-const getNativeModule = (): NativeLegacyMigrationModule | null =>
+const getNativeModule = (): Nullable<NativeLegacyMigrationModule> =>
     requireOptionalNativeModule<NativeLegacyMigrationModule>('LegacyMigration')
 
-const decodeBase64 = (value: unknown): Uint8Array | null => {
+const decodeBase64 = (value: unknown): Nullable<Uint8Array> => {
     if (value == null) return null
     if (typeof value !== 'string') return null
     return decodeFromBase64(value)
@@ -300,19 +305,20 @@ const decodePerEntry = <Raw, Decoded>(
     return decoded
 }
 
-const decodeAuthPin = (pin: Base64): Uint8Array | null => {
+const decodeAuthPin = (pin: Base64): Nullable<Uint8Array> => {
     try {
         return decodeBase64(pin)
     } catch (err) {
-        warn('decodeBase64 failed for auth.pin; treating as no PIN', {
-            error: errorMessage(err),
-        })
+        logger.warn(
+            '[Migration] decodeBase64 failed for auth.pin; treating as no PIN',
+            { error: errorMessage(err) },
+        )
         return null
     }
 }
 
-type Base64 = string | null
-type LongString = string | null
+type Base64 = Nullable<string>
+type LongString = Nullable<string>
 
 interface RawLegacyMigrationData {
     schemaVersion: number
@@ -325,7 +331,7 @@ interface RawLegacyMigrationData {
     notificationFilters: string[]
     walletConnectV1: RawLegacyWalletConnectV1Session[]
     walletConnectV2: RawLegacyWalletConnectV2Session[]
-    walletConnectHistoryBlob?: string | null
+    walletConnectHistoryBlob?: Nullable<string>
     passkeys: RawLegacyPasskey[]
     deviceIdentifiers: RawLegacyDeviceIdentifiers
     tooltipPreferences?: Partial<LegacyMigrationData['tooltipPreferences']>
@@ -348,8 +354,8 @@ interface RawLegacyAccount extends Omit<
     'secretKey' | 'authAddress' | 'hdSeedId'
 > {
     secretKey: Base64
-    authAddress?: string | null
-    hdWalletId: string | null
+    authAddress?: Nullable<string>
+    hdWalletId: Nullable<string>
 }
 
 interface RawLegacyHDWallet extends Omit<LegacyHDWallet, 'entropy' | 'keys'> {
@@ -373,12 +379,12 @@ interface RawLegacyWalletConnectV1Session extends Omit<
 > {
     // iOS emits null when the legacy session has no stored date.
     dateTimestampMs: LongString | number | null
-    clientId?: string | null
-    peerId?: string | null
+    clientId?: Nullable<string>
+    peerId?: Nullable<string>
     handshakeId?: LongString | number | null
-    currentKey?: string | null
-    approvedAccounts?: string[] | null
-    chainId?: number | null
+    currentKey?: Nullable<string>
+    approvedAccounts?: Nullable<string[]>
+    chainId?: Nullable<number>
 }
 
 interface RawLegacyWalletConnectV2Session extends Omit<
@@ -397,7 +403,7 @@ interface RawLegacyDeviceIdentifiers extends Omit<
     'lastSeenNotificationId' | 'legacyFallbackDeviceId'
 > {
     lastSeenNotificationId: LongString
-    legacyFallbackDeviceId?: string | null
+    legacyFallbackDeviceId?: Nullable<string>
 }
 
 const decodeLegacyMigrationData = (
@@ -487,10 +493,10 @@ const decodeAccounts = (
     const undecodableAccounts: LegacyUndecodableAccount[] = []
     const accounts = decodePerEntry(raw, decodeAccount, (entry, err) => {
         const error = errorMessage(err)
-        warn('decodeAccount failed; recording account as undecodable', {
-            address: entry.address,
-            error,
-        })
+        logger.warn(
+            '[Migration] decodeAccount failed; recording account as undecodable',
+            { address: entry.address, error },
+        )
         undecodableAccounts.push({
             address: entry.address,
             name: entry.name,
@@ -508,8 +514,8 @@ const decodeHDWallet = (raw: RawLegacyHDWallet): LegacyHDWallet => ({
 
 const decodeHDWallets = (raw: RawLegacyHDWallet[]): LegacyHDWallet[] =>
     decodePerEntry(raw, decodeHDWallet, (entry, err) => {
-        warn(
-            'decodeHDWallet failed; dropping wallet (its accounts will fail migration)',
+        logger.warn(
+            '[Migration] decodeHDWallet failed; dropping wallet (its accounts will fail migration)',
             { walletId: entry.walletId, error: errorMessage(err) },
         )
     })

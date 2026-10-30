@@ -47,6 +47,12 @@ vi.mock('../../pending-history', () => ({
     },
 }))
 
+const capability = vi.hoisted(() => ({ isDecoding: false }))
+
+vi.mock('@perawallet/wallet-core-chain-shared', () => ({
+    useChainCapability: () => capability.isDecoding,
+}))
+
 const ADDRESS = '0xabc'
 const SCOPE: ChainScope = { chainId: 'ethereum', networkId: 'mainnet' }
 const USDC = '0xusdc'
@@ -82,6 +88,7 @@ describe('useTransactionRecordsQuery', () => {
 
     beforeEach(() => {
         vi.resetAllMocks()
+        capability.isDecoding = false
         onlineManager.setOnline(true)
         queryClient = new QueryClient({
             defaultOptions: { queries: { retry: false } },
@@ -96,6 +103,31 @@ describe('useTransactionRecordsQuery', () => {
     afterEach(() => {
         onlineManager.setOnline(true)
         queryClient.clear()
+    })
+
+    test('starts a fresh list when contractDecoding flips, so loaded rows never keep the old labels', async () => {
+        mocks.getTransactionHistoryWithPending.mockResolvedValue({
+            items: [record('A', JAN_10)],
+        })
+        const { result, rerender } = renderHook(
+            () =>
+                useTransactionRecordsQuery({
+                    accountAddress: ADDRESS,
+                    scope: SCOPE,
+                }),
+            { wrapper },
+        )
+        await waitFor(() => expect(result.current.records).toHaveLength(1))
+        expect(mocks.getTransactionHistoryWithPending).toHaveBeenCalledTimes(1)
+
+        capability.isDecoding = true
+        rerender()
+
+        await waitFor(() =>
+            expect(
+                mocks.getTransactionHistoryWithPending,
+            ).toHaveBeenCalledTimes(2),
+        )
     })
 
     test('lists records newest first and pages on the backend cursor', async () => {

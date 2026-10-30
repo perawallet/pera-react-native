@@ -29,7 +29,6 @@ import {
     formatDatetime,
     type HistoryPeriod,
     type Nullable,
-    percentChange,
 } from '@perawallet/wallet-core-shared'
 import { trackEvent, HomeEvent } from '@analytics'
 import { useCallback, useMemo } from 'react'
@@ -44,12 +43,11 @@ import { useCurrency } from '@perawallet/wallet-core-currencies'
 import {
     type PortfolioValueHistoryItem,
     useAccountBalancesHistoryQuery,
-    usePortfolioHistoryQuery,
 } from '@perawallet/wallet-core-accounts'
-import { Decimal } from 'decimal.js'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { UserPreferences } from '@constants/user-preferences'
 import { InfoButton } from '@components/InfoButton'
+import { usePortfolioTrend } from './usePortfolioTrend'
 import { usePortfolioTrendColumn } from './usePortfolioTrendColumn'
 import { usePortfolioView } from './usePortfolioView'
 import { ExpandablePanel } from '@components/ExpandablePanel'
@@ -99,18 +97,11 @@ export const PortfolioView = ({ ...props }: PortfolioViewProps) => {
         scope,
         isChartShown && basis === 'native',
     )
-    const { data: historyData, isPending: isHistoryPending } =
-        usePortfolioHistoryQuery(chartSources, period, scope, isChartShown)
-
-    // Points with no preferred value have no rate behind them; keeping them
-    // would let a `?? 0` fallback below invent a cliff from (or to) zero and
-    // report a swing that never happened.
-    const historyDataPoints = useMemo(
-        () =>
-            historyData?.flatMap(p =>
-                p.preferredValue ? [p.preferredValue] : [],
-            ) ?? [],
-        [historyData],
+    const { trendAbsolute, trendPercentage, hasNoTrend } = usePortfolioTrend(
+        chartSources,
+        period,
+        scope,
+        isChartShown,
     )
 
     // The chart reports fiat points only; the native headline reads the same
@@ -126,17 +117,6 @@ export const PortfolioView = ({ ...props }: PortfolioViewProps) => {
                 : null,
         [nativeHistoryData, selectedPoint],
     )
-
-    const [trendAbsolute, trendPercentage] = useMemo(() => {
-        const firstDp = historyDataPoints.at(0) ?? new Decimal(0)
-        const lastDp = historyDataPoints.at(-1) ?? new Decimal(0)
-
-        return [lastDp.minus(firstDp), percentChange(firstDp, lastDp)]
-    }, [historyDataPoints])
-
-    // A failed or empty chain leaves no history, and the 0 it would default to
-    // reads as a change the wallet never had.
-    const hasNoTrend = !isHistoryPending && historyDataPoints.length === 0
 
     const trendPeriodLabel = useMemo<Record<HistoryPeriod, string>>(
         () => ({
@@ -228,6 +208,7 @@ export const PortfolioView = ({ ...props }: PortfolioViewProps) => {
                     ) : (
                         <>
                             <AssetAmount
+                                chainId={scope.chainId}
                                 variant='h2'
                                 value={
                                     selectedPoint

@@ -21,7 +21,10 @@ import type {
     WalletAccount,
     AccountBalances,
 } from '@perawallet/wallet-core-accounts'
-import { useBidaliTransport } from '../useBidaliTransport'
+import {
+    BIDALI_PAYMENT_CURRENCIES,
+    useBidaliTransport,
+} from '../useBidaliTransport'
 
 const mockAddSignRequest = vi.fn()
 // Mutable so the "fallback network" providerJS test below can switch away
@@ -32,6 +35,7 @@ const mockBuildTransferTxs = vi.fn()
 
 vi.mock('react-native', () => ({
     Linking: { openURL: vi.fn() },
+    Platform: { OS: 'ios' },
 }))
 
 vi.mock('react-native-webview', () => ({ default: {} }))
@@ -97,8 +101,15 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
     const { displayUnitsToBaseUnits } = await vi.importActual<
         typeof import('@packages/shared/src/utils/unit-conversion')
     >('@packages/shared/src/utils/unit-conversion')
+    // Error classes in the import graph extend AppError at module load.
+    const { AppError, ErrorCategory } = await vi.importActual<
+        typeof import('@packages/shared/src/errors/base')
+    >('@packages/shared/src/errors/base')
     return {
+        AppError,
+        ErrorCategory,
         generateOrderedUniqueId: () => 'test-id-123',
+        registerStore: vi.fn(),
         logger: {
             warn: vi.fn(),
             error: vi.fn(),
@@ -160,8 +171,29 @@ describe('useBidaliTransport', () => {
             const { result } = renderHook(() =>
                 useBidaliTransport(mockAccount, emptyBalances),
             )
-            expect(result.current.providerJS).toContain("key: 'test-api-key'")
+            expect(result.current.providerJS).toContain('key: "test-api-key"')
             expect(result.current.providerJS).toContain('window.bidaliProvider')
+        })
+
+        it('exposes the key, currencies and balances on the page when run', () => {
+            const { result } = renderHook(() =>
+                useBidaliTransport(mockAccount, emptyBalances),
+            )
+            const fakeWindow: {
+                bidaliProvider?: Record<string, unknown>
+                ReactNativeWebView?: unknown
+            } = {}
+
+            new Function('window', result.current.providerJS)(fakeWindow)
+
+            expect(fakeWindow.bidaliProvider?.key).toBe('test-api-key')
+            expect(fakeWindow.bidaliProvider?.paymentCurrencies).toEqual(
+                BIDALI_PAYMENT_CURRENCIES,
+            )
+            expect(fakeWindow.bidaliProvider?.balances).toEqual({
+                algorand: '0',
+                usdcalgorand: '0',
+            })
         })
 
         it('includes supported currencies', () => {

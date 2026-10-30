@@ -24,6 +24,7 @@ import {
     type LaunchAccountMode,
     type RecordedAuthorities,
     type WalletAccount,
+    type WalletDiscoveryCoverage,
 } from '../models'
 import {
     gateWritesOnHydration,
@@ -32,6 +33,8 @@ import {
     registerStore,
     type WithPersist,
     type Nullable,
+    type Optional,
+    type Maybe,
 } from '@perawallet/wallet-core-shared'
 import {
     addressCodecs,
@@ -90,6 +93,7 @@ import {
 import {
     discoverWalletActivity,
     hdPathKey,
+    type HdProbeOutcome,
     type ProbedHdIndex,
 } from '../hd-walk'
 import { isKeyClaimed, isKeyClaimedByOthers, trackWalk } from '../key-claims'
@@ -137,7 +141,7 @@ const isObject = (value: unknown): value is Record<string, unknown> =>
 /** A record already held only as custody and chain entries, as one for a chain with no accounts adapter can be. */
 const currentShapeOf = (
     raw: PersistedRecord,
-): DecodedAccountRecord | undefined =>
+): Optional<DecodedAccountRecord> =>
     isObject(raw.custody) &&
     typeof raw.custody.kind === 'string' &&
     isObject(raw.chains) &&
@@ -148,14 +152,14 @@ const currentShapeOf = (
           }
         : undefined
 
-const decodeRecord = (raw: PersistedRecord): DecodedAccountRecord | undefined =>
+const decodeRecord = (raw: PersistedRecord): Optional<DecodedAccountRecord> =>
     CHAIN_IDS.flatMap(chainId => {
         if (!accountsChainAdapters.has(chainId)) return []
         const adapter = accountsChainAdapters.get(chainId)
         return adapter.decodeLegacyRecord?.(raw) ?? []
     })[0] ?? currentShapeOf(raw)
 
-const persistedIdOf = (raw: PersistedRecord): string | undefined =>
+const persistedIdOf = (raw: PersistedRecord): Optional<string> =>
     typeof raw.id === 'string' && raw.id !== '' ? raw.id : undefined
 
 /**
@@ -172,7 +176,7 @@ const derivedIdOf = ({ chains }: DecodedAccountRecord): string => {
 
 type MigratedRecord = {
     /** The address the record was persisted under before v5, which selection named. */
-    legacyAddress: string | undefined
+    legacyAddress: Optional<string>
     account: WalletAccount
 }
 
@@ -202,7 +206,7 @@ const liftLegacyAuthority = (
         if (!decoded) continue
         for (const [key, authority] of Object.entries(decoded.byScope) as [
             ChainScopeKey,
-            string | undefined,
+            Optional<string>,
         ][]) {
             if (authority === undefined) continue
             into.authorities[key] = {
@@ -263,7 +267,7 @@ const stripPreV2Custody = (raw: PersistedRecord): PersistedRecord => {
 
 /** The id of the account that held `address` before the migration; `null` when none did. */
 const idForLegacyAddress = (
-    address: Nullable<string> | undefined,
+    address: Maybe<string>,
     records: readonly MigratedRecord[],
 ): Nullable<string> => {
     if (!address) return null
@@ -277,7 +281,7 @@ const idForLegacyAddress = (
 // fields came from, so they are at least as recent.
 const mergeAuthorities = (
     lifted: RecordedAuthorities,
-    held: RecordedAuthorities | undefined,
+    held: Optional<RecordedAuthorities>,
 ): RecordedAuthorities => {
     const merged: RecordedAuthorities = { ...lifted }
     for (const [key, entries] of Object.entries(held ?? {}) as [
@@ -316,7 +320,7 @@ const migrateToV5 = (
         lifted,
     )
     const accounts = records.map(record => record.account)
-    const idOf = (address: Nullable<string> | undefined) =>
+    const idOf = (address: Maybe<string>) =>
         idForLegacyAddress(address, records)
     const launchAccountId = idOf(state.launchAccountAddress)
     return {
@@ -385,7 +389,7 @@ const chainAddressesOf = (account: WalletAccount): ChainAddress[] =>
 const sharedChainAddress = (
     candidate: readonly ChainAddress[],
     existing: readonly ChainAddress[],
-): ChainAddress | undefined => {
+): Optional<ChainAddress> => {
     const existingByChain = new Map(
         existing.map(({ chainId, address }) => [chainId, address]),
     )
@@ -425,7 +429,7 @@ const resolveDuplicateAccounts = (
     for (const account of accounts) {
         const addresses = chainAddressesOf(account)
         let position = -1
-        let shared: ChainAddress | undefined
+        let shared: Optional<ChainAddress>
         for (const [index, existing] of resolvedAddresses.entries()) {
             shared = sharedChainAddress(addresses, existing)
             if (shared) {
@@ -475,7 +479,7 @@ const rebindToHardware = (
     current: WalletAccount,
     details: HardwareWalletDetails,
     chainId: ChainId,
-): WalletAccount | undefined => {
+): Optional<WalletAccount> => {
     if (!chainAccountOf(current, chainId)) return undefined
     const { accountIndex, ...device } = details
     return buildAccount({
@@ -509,16 +513,14 @@ const removeUnreferencedKey = async (
     try {
         await getProvider().key.store.remove(keyPairId)
     } catch (error) {
-        logger.warn(
-            `Could not remove an unreferenced imported key: ${error instanceof Error ? error.message : 'unknown error'}`,
-        )
+        logger.warn('Could not remove an unreferenced imported key', { error })
     }
 }
 
 const assertExpectedAddress = (
     chainId: ChainId,
     derived: string,
-    expected: string | undefined,
+    expected: Optional<string>,
 ): void => {
     if (expected !== undefined && !isSameAddress(chainId, derived, expected)) {
         throw new AddressMismatchError(expected, derived)
@@ -545,6 +547,17 @@ const holdsAddressOn = (
         return held !== undefined && isSameAddress(chainId, held, address)
     })
 
+const coverageOf = (
+    outcomes: Record<HdProbeOutcome, number>,
+    isWalkIncomplete: boolean,
+): WalletDiscoveryCoverage => {
+    if (outcomes.answered + outcomes.partial === 0) return 'unanswered'
+    if (isWalkIncomplete || outcomes.partial + outcomes.failed > 0) {
+        return 'partial'
+    }
+    return 'complete'
+}
+
 const scopeOn = (chainId: ChainId): ChainScope => ({
     chainId,
     networkId: selectChainNetworkId(useNetworkStore.getState(), chainId),
@@ -570,7 +583,7 @@ const standaloneKeysByFamily = (
     return keys
 }
 
-const firstHeldAddress = (account: WalletAccount): string | undefined =>
+const firstHeldAddress = (account: WalletAccount): Optional<string> =>
     CHAIN_IDS.map(id => chainAccountOf(account, id)?.address).find(
         address => address !== undefined,
     )
@@ -663,9 +676,10 @@ const probeChainEntries = async (
             try {
                 entry = await resolveChainEntry(account, chainId)
             } catch (error) {
-                logger.warn(
-                    `Could not resolve an address on ${chainId} to probe: ${error instanceof Error ? error.message : 'unknown error'}`,
-                )
+                logger.warn('Could not resolve an address to probe', {
+                    chainId,
+                    error,
+                })
                 return undefined
             }
             // A probe that couldn't be made reads as inactive rather than
@@ -769,9 +783,7 @@ export const withDefaultChains = async <A extends WalletAccount>(
         try {
             entry = await resolveChainEntry(draft, chainId)
         } catch (error) {
-            logger.warn(
-                `Could not add default chain ${chainId}: ${error instanceof Error ? error.message : 'unknown error'}`,
-            )
+            logger.warn('Could not add a default chain', { chainId, error })
             continue
         }
         const { accounts } = useAccountsStore.getState()
@@ -803,7 +815,7 @@ const moveToHardware = (
     current: WalletAccount,
     details: HardwareWalletDetails,
     chainId: ChainId,
-    joinId: string | undefined,
+    joinId: Optional<string>,
 ): boolean => {
     if (!chainAccountOf(current, chainId)) return false
     const { accounts, selectedAccountId } = get()
@@ -849,7 +861,7 @@ const hdHolderAt = (
     walletId: string,
     index: HdIndex,
     derived: AccountChains,
-): WalletAccount | undefined =>
+): Optional<WalletAccount> =>
     findPathHolder(accounts, walletId, index) ??
     accounts.find(account => {
         const held = hdIndexOf(account)
@@ -1202,9 +1214,10 @@ export const useAccountsStore: UseBoundStore<
                         await removeUnreferencedKeys(get().accounts, unusedKeys)
                         return enabled
                     } catch (error) {
-                        logger.warn(
-                            `Chain discovery failed for ${accountId}: ${error instanceof Error ? error.message : 'unknown error'}`,
-                        )
+                        logger.warn('Chain discovery failed', {
+                            accountId,
+                            error,
+                        })
                         return []
                     }
                 }),
@@ -1212,6 +1225,12 @@ export const useAccountsStore: UseBoundStore<
                 queuedFor(`wallet:${walletId}`, () =>
                     trackWalk(async () => {
                         let probed: ProbedHdIndex[] = []
+                        const outcomes: Record<HdProbeOutcome, number> = {
+                            answered: 0,
+                            partial: 0,
+                            failed: 0,
+                        }
+                        let isWalkIncomplete = false
                         // Only the probes read the root key; the adds derive
                         // through the keystore, so it is zeroed before them.
                         try {
@@ -1219,6 +1238,9 @@ export const useAccountsStore: UseBoundStore<
                                 walletId,
                                 chainIds: hdDiscoveryChains(),
                                 onUnusedKeys: removeUnclaimedKeys,
+                                onProbeSettled: outcome => {
+                                    outcomes[outcome]++
+                                },
                                 rootKey: options.rootKey,
                                 heldAccountIndex: Math.max(
                                     -1,
@@ -1231,9 +1253,8 @@ export const useAccountsStore: UseBoundStore<
                                 ),
                             })
                         } catch (error) {
-                            logger.warn(
-                                `Wallet discovery failed: ${error instanceof Error ? error.message : 'unknown error'}`,
-                            )
+                            isWalkIncomplete = true
+                            logger.warn('Wallet discovery failed', { error })
                         } finally {
                             zeroBytes(options.rootKey)
                         }
@@ -1288,8 +1309,10 @@ export const useAccountsStore: UseBoundStore<
                                             DuplicateAccountError
                                         )
                                     ) {
+                                        isWalkIncomplete = true
                                         logger.warn(
-                                            `Could not add discovered ${chainId} entry: ${error instanceof Error ? error.message : 'unknown error'}`,
+                                            'Could not add a discovered chain entry',
+                                            { chainId, error },
                                         )
                                     }
                                     // The failed add's own claim would keep the
@@ -1318,9 +1341,12 @@ export const useAccountsStore: UseBoundStore<
                                 ),
                             )
                         }
-                        return get().accounts.filter(account =>
-                            changedIds.has(account.id),
-                        )
+                        return {
+                            accounts: get().accounts.filter(account =>
+                                changedIds.has(account.id),
+                            ),
+                            coverage: coverageOf(outcomes, isWalkIncomplete),
+                        }
                     }),
                 ),
             addChainAccount: async (
@@ -1461,7 +1487,8 @@ export const useAccountsStore: UseBoundStore<
                 const accounts = get().accounts
                 if (id && !accounts.some(a => a.id === id)) {
                     logger.warn(
-                        `Attempted to select account ${id}, but it does not exist in accounts list.`,
+                        'Attempted to select an account that is not in the accounts list',
+                        { accountId: id },
                     )
                     return
                 }
@@ -1485,7 +1512,8 @@ export const useAccountsStore: UseBoundStore<
                 const accounts = get().accounts
                 if (!id || !accounts.some(a => a.id === id)) {
                     logger.warn(
-                        `Attempted to pin launch account ${id}, but it does not exist in accounts list.`,
+                        'Attempted to pin a launch account that is not in the accounts list',
+                        { accountId: id },
                     )
                     return
                 }

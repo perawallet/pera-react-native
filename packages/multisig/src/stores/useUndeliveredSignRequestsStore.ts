@@ -11,6 +11,7 @@
  */
 
 import { create } from 'zustand'
+import { registerStore } from '@perawallet/wallet-core-shared'
 
 /** Retained ids, oldest evicted first. */
 export const UNDELIVERED_SIGN_REQUEST_LIMIT = 50
@@ -72,3 +73,9 @@ export const useUndeliveredSignRequestsStore = create<Store>((set, get) => ({
         get().signRequestIds.includes(signRequestId),
     resetState: () => set(initialState),
 }))
+
+registerStore({
+    name: 'multisig-undelivered-sign-requests-store',
+    clearStorage: () => {},
+    resetState: () => useUndeliveredSignRequestsStore.getState().resetState(),
+})

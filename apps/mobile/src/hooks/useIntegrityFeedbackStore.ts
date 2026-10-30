@@ -29,6 +29,7 @@ const initialState: IntegrityFeedbackState = {
     emphasisNonce: 0,
 }
 
+// lanekeep-ignore-next-line pera/store-in-wipe-registry reason: change counter for device integrity feedback; a reset reads as a new request and re-expands the banner
 export const useIntegrityFeedbackStore = create<IntegrityFeedbackStore>()(
     set => ({
         ...initialState,

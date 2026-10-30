@@ -43,7 +43,7 @@ type UseAccountMenuResult = {
     listItems: AccountMenuListItem[]
     selectedAccountId: Nullable<string>
     sortMode: string
-    flatListRef: MutableRefObject<ComponentRef<typeof PWFlatList> | null>
+    flatListRef: MutableRefObject<Nullable<ComponentRef<typeof PWFlatList>>>
     handleTap: (acct: WalletAccount) => void
 }
 

@@ -25,6 +25,8 @@ import {
     decodeFromBase64,
     logger,
     toError,
+    type Nullable,
+    type Optional,
 } from '@perawallet/wallet-core-shared'
 import {
     addSignature,
@@ -51,7 +53,7 @@ import { resolveSwapHandoffOutcome } from '../utils'
 /** Stable accessors (module-level so the core's filter memo isn't busted). */
 const handoffKey = (handoff: SwapHandoffRecord): string => handoff.signRequestId
 
-const handoffExpiresAt = (detail: SignRequestResponse): number | null => {
+const handoffExpiresAt = (detail: SignRequestResponse): Nullable<number> => {
     const expiresAt = new Date(detail.expected_expire_datetime).getTime()
     return Number.isNaN(expiresAt) ? null : expiresAt
 }
@@ -152,7 +154,8 @@ const runBestEffort = async (
     try {
         await run()
     } catch (error) {
-        logger.warn(`swap cosign settle: ${label} failed (non-fatal)`, {
+        logger.warn('Swap cosign settle step failed (non-fatal)', {
+            step: label,
             error: toError(error).message,
         })
     }
@@ -221,7 +224,7 @@ export const useSwapCosignResolver = ({
                 handoff.scope,
                 handoff.signRequestId,
             ),
-            queryFn: () =>
+            queryFn: (): Promise<SignRequestResponse[]> =>
                 getSignRequestsWithSignatures(handoff.scope, {
                     device_id: deviceIdOf(deploymentOf(handoff.scope)) ?? '',
                     proposed_sign_request_ids: [handoff.signRequestId],
@@ -262,7 +265,7 @@ export const useSwapCosignResolver = ({
         (
             outcome: TerminalHandoffOutcome,
             handoff: SwapHandoffRecord,
-            detail: SignRequestResponse | undefined,
+            detail: Optional<SignRequestResponse>,
         ) => {
             // Proposer address from the poll — the only local participant
             // allowed to cancel the request on a terminal failure. Absent when

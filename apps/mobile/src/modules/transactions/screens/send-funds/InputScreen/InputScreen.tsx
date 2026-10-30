@@ -210,6 +210,7 @@ export const InputScreen = () => {
                         testID='send_input_amount'
                     >
                         <AssetAmount
+                            chainId={scope.chainId}
                             asset={asset}
                             value={
                                 cryptoValue
@@ -226,6 +227,7 @@ export const InputScreen = () => {
                                 styles.h1,
                             ]}
                             showSymbol={false}
+                            shouldFitWidth
                         />
                     </PWView>
                     {!isCollectible && (

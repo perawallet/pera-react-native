@@ -161,10 +161,10 @@ export type { HardwareSigningOperation } from '../machine/children/hardwareSigni
  * Today only the hardware variant is wired up; multisig will be added in a
  * follow-up task once `multisigSigningMachine` is invoked as a child.
  */
-export type ActiveSigningChild = {
+export type ActiveSigningChild = Nullable<{
     kind: 'hardware'
     snapshot: HardwareChildSnapshot
-} | null
+}>
 
 export type ResolvedSignRequest = {
     signerType: SignerCustody

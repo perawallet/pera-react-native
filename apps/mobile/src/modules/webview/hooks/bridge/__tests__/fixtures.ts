@@ -35,6 +35,16 @@ export const TRUSTED: WebviewMessageSecurity = {
 export const injectedScript = (webview: MockWebview): string =>
     webview.injectJavaScript.mock.calls.map(call => String(call[0])).join('')
 
+export const INVALID_PARAMS_CODE = -32_602
+
+/** The JSON-RPC object of the last `window.postMessage(<json>);` sent. */
+export const lastMessage = (webview: MockWebview): unknown =>
+    JSON.parse(
+        String(webview.injectJavaScript.mock.calls.at(-1)?.[0])
+            .replace(/^window\.postMessage\(/, '')
+            .replace(/\);$/, ''),
+    )
+
 /** The `event.data` object of the last `{ action, payload }` message sent. */
 export const lastAction = (webview: MockWebview): unknown => {
     const injected = String(webview.injectJavaScript.mock.calls.at(-1)?.[0])

@@ -38,6 +38,7 @@ export const TransactionHistoryRow = ({
                 <TransactionListItem
                     record={row.record}
                     suspectedPoisoning={suspectedPoisoning}
+                    networkChainId={row.networkChainId}
                 />
             )
         }
@@ -47,6 +48,7 @@ export const TransactionHistoryRow = ({
                     transaction={row.transaction}
                     onPress={onTransactionPress}
                     suspectedPoisoning={suspectedPoisoning}
+                    networkChainId={row.networkChainId}
                 />
             )
         }

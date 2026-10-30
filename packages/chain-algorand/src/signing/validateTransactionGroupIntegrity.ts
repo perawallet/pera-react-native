@@ -16,6 +16,7 @@ import {
     bytesToHex,
     type Optional,
     toError,
+    type Nullable,
 } from '@perawallet/wallet-core-shared'
 
 import { InvalidSignableDataError } from '@perawallet/wallet-core-signing'
@@ -70,7 +71,7 @@ const validateGroupStructure = (
         { group: Uint8Array; txs: PeraTransaction[] }
     >()
     const closedGroupKeys = new Set<string>()
-    let activeGroupKey: string | null = null
+    let activeGroupKey: Nullable<string> = null
     for (const tx of transactions) {
         if (!tx.group) {
             if (activeGroupKey !== null) {

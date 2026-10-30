@@ -11,7 +11,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import {
     PasskeyUnlockError,
     VaultCorruptedError,
@@ -56,7 +56,7 @@ export const useVaultPasswordPrompt = ({
     const [hasError, setHasError] = useState(false)
     // On performance.now(), like the vault's own lockout, so moving the system
     // clock can't clear the countdown.
-    const [lockoutEndTime, setLockoutEndTime] = useState<number | null>(null)
+    const [lockoutEndTime, setLockoutEndTime] = useState<Nullable<number>>(null)
     const [lockoutSeconds, setLockoutSeconds] = useState(0)
     // Tracked separately from isSubmitting so the password stays submittable
     // while a passkey prompt is outstanding — see the auto-launch effect below.
@@ -126,17 +126,37 @@ export const useVaultPasswordPrompt = ({
             setLockoutSeconds(0)
             return
         }
+        let cancelled = false
+        let isRereading = false
         const tick = (): void => {
             const remaining = Math.max(
                 0,
                 Math.ceil((lockoutEndTime - performance.now()) / 1000),
             )
             setLockoutSeconds(remaining)
-            if (remaining === 0) setLockoutEndTime(null)
+            if (remaining > 0 || isRereading) return
+            // The vault clears a served lockout only when a read finds it
+            // past this context's deadline, so reading at 0 is what keeps a
+            // closed popup from serving the full window again on reopen.
+            isRereading = true
+            getLockoutRemainingSeconds()
+                .then(seconds => {
+                    if (cancelled) return
+                    setLockoutEndTime(
+                        seconds > 0 ? performance.now() + seconds * 1000 : null,
+                    )
+                })
+                .catch(() => {
+                    // The next attempt checks the lockout itself.
+                    if (!cancelled) setLockoutEndTime(null)
+                })
         }
         tick()
         const interval = setInterval(tick, 1000)
-        return () => clearInterval(interval)
+        return () => {
+            cancelled = true
+            clearInterval(interval)
+        }
     }, [lockoutEndTime])
 
     const handleSubmit = useCallback(async (): Promise<void> => {

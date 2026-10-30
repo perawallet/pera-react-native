@@ -12,6 +12,7 @@
 
 import { useMemo } from 'react'
 import { useQuery, type Query } from '@tanstack/react-query'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { assessSiteSafety } from '../assess'
 import { toSiteHost } from '../host'
 import type { AssessSiteSafetyParams, SiteSafetyVerdict } from '../models'
@@ -47,11 +48,11 @@ type VerdictKey = ReturnType<typeof siteSafetyQueryKeys.verdict>
 const keepVerdictForSameSite =
     (hosts: readonly string[], isFlaggedByWalletConnectVerify: boolean) =>
     (
-        previous: SiteSafetyVerdict | undefined,
-        previousQuery:
-            | Query<SiteSafetyVerdict, Error, SiteSafetyVerdict, VerdictKey>
-            | undefined,
-    ): SiteSafetyVerdict | undefined => {
+        previous: Optional<SiteSafetyVerdict>,
+        previousQuery: Optional<
+            Query<SiteSafetyVerdict, Error, SiteSafetyVerdict, VerdictKey>
+        >,
+    ): Optional<SiteSafetyVerdict> => {
         const key = previousQuery?.queryKey[2]
         const isSameSite =
             key !== undefined &&

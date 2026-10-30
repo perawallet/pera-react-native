@@ -13,6 +13,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { AppState } from 'react-native'
 import { getProvider } from '@perawallet/wallet-extension-provider'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { isBackgroundLikeAppState } from '@utils/app-state'
 import {
     buildWidgetSnapshot,
@@ -30,8 +31,8 @@ const CLEARED = 'cleared'
 export const useWidgetSnapshotWriter = (
     input: WidgetSnapshotWriterInput,
 ): void => {
-    const lastWrittenRef = useRef<string | null>(null)
-    const latestJsonRef = useRef<string | null>(null)
+    const lastWrittenRef = useRef<Nullable<string>>(null)
+    const latestJsonRef = useRef<Nullable<string>>(null)
     // Callers pass fresh objects every render; Decimals serialise to strings,
     // so the key changes exactly when the content does.
     const inputKey = JSON.stringify(input)

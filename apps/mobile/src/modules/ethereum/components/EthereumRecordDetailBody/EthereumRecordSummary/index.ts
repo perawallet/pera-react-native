@@ -10,5 +10,4 @@
  limitations under the License
  */
 
-export { AsaVerificationInfoContent } from './AsaVerificationInfoContent'
-export type { AsaVerificationInfoContentProps } from './AsaVerificationInfoContent'
+export { EthereumRecordSummary } from './EthereumRecordSummary'

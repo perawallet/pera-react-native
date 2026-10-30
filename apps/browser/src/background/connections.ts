@@ -22,7 +22,7 @@ import {
     type ConnectionsControlCommand,
 } from '@perawallet/wallet-core-browser-runtime'
 import type { ConnectionPeer } from '@perawallet/wallet-extension-connections'
-import { logger, toError } from '@perawallet/wallet-core-shared'
+import { logger, toError, type Optional } from '@perawallet/wallet-core-shared'
 import { ensureOffscreenDocument } from './offscreen'
 
 export const CONNECTIONS_HEARTBEAT_ALARM = 'pera-connections-heartbeat'
@@ -32,7 +32,7 @@ const LEGACY_HEARTBEAT_ALARM = 'pera-wc-heartbeat'
 const CONNECTIONS_HEARTBEAT_PERIOD_MINUTES = 1
 
 // dApp-asserted, display only; the browser-verified origin is `requesterOrigin`.
-const peerOrigin = (peer: ConnectionPeer | undefined): string => {
+const peerOrigin = (peer: Optional<ConnectionPeer>): string => {
     if (!peer?.url) return ''
     try {
         return new URL(peer.url).origin
@@ -114,7 +114,7 @@ export const installConnectionsApprovalRouter = ({
 
     // The decision window is gone by now, so this notice is the only surface
     // left; without it the user is told nothing and assumes the dApp heard.
-    const notifyDeliveryFailed = (peer: ConnectionPeer | undefined): void => {
+    const notifyDeliveryFailed = (peer: Optional<ConnectionPeer>): void => {
         void approvals
             .openConnectionError({
                 requestId: `connection-error-${crypto.randomUUID()}`,
@@ -183,7 +183,7 @@ export const installConnectionsApprovalRouter = ({
 
     const controlOrNotify = (
         command: ConnectionsControlCommand,
-        peer: ConnectionPeer | undefined,
+        peer: Optional<ConnectionPeer>,
     ): void => {
         void control(command).then(delivered => {
             if (!delivered) notifyDeliveryFailed(peer)

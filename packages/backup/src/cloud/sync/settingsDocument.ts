@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { Optional } from '@perawallet/wallet-core-shared'
 import {
     BACKUP_SETTINGS_FIELDS,
     type BackupSettings,
@@ -33,16 +34,16 @@ const setField = <K extends BackupSettingsField>(
 }
 
 const getField = <K extends BackupSettingsField>(
-    doc: SettingsDocument | undefined,
+    doc: Optional<SettingsDocument>,
     field: K,
-): FieldState<K> | undefined =>
-    (doc as Record<K, FieldState<K> | undefined> | undefined)?.[field]
+): Optional<FieldState<K>> =>
+    (doc as Optional<Record<K, Optional<FieldState<K>>>>)?.[field]
 
 /** Only a value that moved since it was last observed is an edit (stamped
  *  `now`). A first sighting is stamped 0, so an untouched default never
  *  outranks another device's choice. */
 export const observeLocalSettings = (
-    doc: SettingsDocument | undefined,
+    doc: Optional<SettingsDocument>,
     local: BackupSettings,
     now: number,
 ): { doc: SettingsDocument; hasChanged: boolean } => {
@@ -75,7 +76,7 @@ export const observeLocalSettings = (
  *  item type. `isRemoteBehind` means the merge kept something the server
  *  lacks, so the item has to be pushed back. */
 export const mergeRemoteSettings = (
-    doc: SettingsDocument | undefined,
+    doc: Optional<SettingsDocument>,
     remote: SettingsBackupPayload,
 ): {
     doc: SettingsDocument
@@ -88,9 +89,10 @@ export const mergeRemoteSettings = (
 
     const merge = <K extends BackupSettingsField>(field: K): void => {
         const mine = getField(doc, field)
-        const theirs = remote[field] as
-            | { value: BackupSettings[K]; updatedAt: number }
-            | undefined
+        const theirs = remote[field] as Optional<{
+            value: BackupSettings[K]
+            updatedAt: number
+        }>
 
         if (theirs === undefined) {
             if (mine === undefined) return

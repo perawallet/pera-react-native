@@ -24,6 +24,7 @@ import {
     type DappSigningParamsResult,
 } from '@perawallet/wallet-core-connections'
 import { MAX_TRANSACTION_SIGN_REQUESTS } from '@perawallet/wallet-core-signing/constants'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import {
     accountType,
     AccountTypes,
@@ -152,7 +153,7 @@ export const algorandDappRequestAdapter: DappRequestChainAdapter = {
     // forged one with a MainNet hash and an attacker's node URLs must not make
     // the wallet tell a dApp "this is MainNet" — the hash check is what a dApp
     // actually validates.
-    resolveReportedNetwork(scope, customGenesisHash): NetworkId | undefined {
+    resolveReportedNetwork(scope, customGenesisHash): Optional<NetworkId> {
         if (scope.networkId !== 'custom') return scope.networkId
         if (!customGenesisHash) return undefined
         return BAKED_NETWORKS.find(

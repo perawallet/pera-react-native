@@ -11,6 +11,7 @@
  */
 
 import type { TransactionNative } from '@perawallet/wallet-core-chain-contract'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 export type AlgorandTransactionKind =
     | 'payment'
@@ -125,7 +126,7 @@ export const toAlgorandNative = (
 
 export const readAlgorandNative = (
     native: TransactionNative,
-): AlgorandTransactionView | null =>
+): Nullable<AlgorandTransactionView> =>
     // Sound only while toAlgorandNative is the one place an `algorand` member is built.
     native.family === 'algorand'
         ? (native.transaction as AlgorandTransactionView)

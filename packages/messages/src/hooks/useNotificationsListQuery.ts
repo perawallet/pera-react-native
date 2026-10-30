@@ -88,7 +88,7 @@ export const useNotificationsListQuery =
 
         const query = useInfiniteQuery({
             queryKey: getNotificationsListQueryKey(deployment, deviceID!),
-            queryFn: ({ pageParam }) =>
+            queryFn: ({ pageParam }): Promise<NotificationsListResponse> =>
                 fetchNotificationList(
                     deployment,
                     deviceID ?? '',

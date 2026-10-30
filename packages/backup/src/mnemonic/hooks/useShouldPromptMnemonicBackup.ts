@@ -18,29 +18,36 @@ import {
     useAccountsDelegatedTo,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import type { Maybe } from '@perawallet/wallet-core-shared'
 import { useRequiresMnemonicBackup } from './useRequiresMnemonicBackup'
 
 // The single visibility rule for backup warnings (reminder banner, account
 // badge, home-screen widget), so they can never disagree.
 export const useShouldPromptMnemonicBackup = (
-    account: WalletAccount | null | undefined,
+    account: Maybe<WalletAccount>,
     scope: ChainScope,
 ): boolean => {
-    const requiresBackup = useRequiresMnemonicBackup(account, scope.chainId)
+    const canBackUpMnemonic = useChainCapability(
+        scope.chainId,
+        'mnemonicBackup',
+    )
+    // Hooks can't be skipped, so the capability decides what the lookups see:
+    // a chain without mnemonic backup may register no backup adapter.
+    const promptableAccount = canBackUpMnemonic ? account : undefined
+    const requiresBackup = useRequiresMnemonicBackup(
+        promptableAccount,
+        scope.chainId,
+    )
     // Funding on ANY network counts, not just the one currently selected: the
     // passphrase is the same secret whichever chain the balance sits on, and a
     // warning that disappears on a network switch teaches the wrong lesson.
-    const address = account
-        ? chainAccountOf(account, scope.chainId)?.address
+    const address = promptableAccount
+        ? chainAccountOf(promptableAccount, scope.chainId)?.address
         : undefined
     const { isFunded } = useAccountFundedNetworksQuery(address, scope)
     const delegatedToThisAccount = useAccountsDelegatedTo(
         address,
         scope.chainId,
-    )
-    const canBackUpMnemonic = useChainCapability(
-        scope.chainId,
-        'mnemonicBackup',
     )
 
     return isMnemonicBackupPromptDue({

@@ -12,20 +12,23 @@
 
 import { Decimal } from 'decimal.js'
 import type {
+    ChainContext,
     ChainScope,
     Page,
     PageRef,
     TransactionRecord,
 } from '@perawallet/wallet-core-chain-contract'
 import type { HistoryChainAdapter } from '@perawallet/wallet-core-transactions'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import type { EvmChain } from '../chains/types'
 import { fetchHistoryPage } from './api/endpoints'
 import type { EvmHistoryItem } from './api/schema'
+import { readEvmTransactionDetail } from './detail'
 import { summarizeEthereumHistoryItem } from './summarize'
 
 // A withdrawal row has no hash; its first EIP-4895 index is unique
 // chain-wide. Explorer links must special-case these ids.
-const recordId = (item: EvmHistoryItem): string | undefined =>
+const recordId = (item: EvmHistoryItem): Optional<string> =>
     item.kind === 'withdrawal'
         ? item.withdrawals[0] && `withdrawal:${item.withdrawals[0].index}`
         : (item.hash ?? undefined)
@@ -35,6 +38,7 @@ const toRecords = (
     address: string,
     scope: ChainScope,
     chain: EvmChain,
+    isDecoding: boolean,
 ): TransactionRecord[] => {
     const id = recordId(item)
     if (id === undefined) return []
@@ -46,7 +50,13 @@ const toRecords = (
             timestamp: Date.parse(item.block_time),
             fee: item.fee === null ? undefined : new Decimal(item.fee),
             ...(item.from !== null && { initiator: item.from }),
-            summary: summarizeEthereumHistoryItem(item, address, scope, chain),
+            summary: summarizeEthereumHistoryItem(
+                item,
+                address,
+                scope,
+                chain,
+                isDecoding,
+            ),
             chainData: { family: 'evm' },
         },
     ]
@@ -61,18 +71,35 @@ export const getEvmTransactionHistory = async (
     address: string,
     scope: ChainScope,
     page?: PageRef,
+    isDecoding = false,
 ): Promise<Page<TransactionRecord>> => {
     const { items, next } = await fetchHistoryPage(scope, chain, address, page)
     return {
-        items: items.flatMap(item => toRecords(item, address, scope, chain)),
+        items: items.flatMap(item =>
+            toRecords(item, address, scope, chain, isDecoding),
+        ),
         ...(next !== null && { next: { cursor: next } }),
     }
 }
 
+/**
+ * The capability arrives with every page read, so a change applies from the
+ * next one. The history read itself never touches the node; only
+ * `getTransactionDetail` does.
+ */
 export const createEvmHistoryAdapter = (
     chain: EvmChain,
+    ctx: ChainContext,
 ): HistoryChainAdapter => ({
     chainId: chain.row.id,
-    getTransactionHistory: (address, scope, page) =>
-        getEvmTransactionHistory(chain, address, scope, page),
+    getTransactionHistory: (address, scope, page, options) =>
+        getEvmTransactionHistory(
+            chain,
+            address,
+            scope,
+            page,
+            options?.capabilities.contractDecoding ?? false,
+        ),
+    getTransactionDetail: (txId, scope, record) =>
+        readEvmTransactionDetail(ctx, chain, scope, txId, record.fee),
 })

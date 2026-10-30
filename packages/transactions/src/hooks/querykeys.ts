@@ -57,6 +57,8 @@ export const transactionQueryKeys = {
             assetId?: string
             afterTime?: string
             beforeTime?: string
+            /** A chain words its rows by capability, so a flip starts a fresh list rather than mixing labels. */
+            contractDecoding?: boolean
         },
     ) =>
         [
@@ -64,6 +66,9 @@ export const transactionQueryKeys = {
             'records',
             { accountAddress, scope, ...filters },
         ] as const,
+
+    detail: (scope: ChainScope, transactionId: string) =>
+        [MODULE_PREFIX, 'detail', { scope, transactionId }] as const,
 
     paginatedHistory: (
         accountAddress: string,

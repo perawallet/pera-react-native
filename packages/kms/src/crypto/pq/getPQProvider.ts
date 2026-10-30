@@ -10,10 +10,11 @@
  limitations under the License
  */
 
+import type { Optional } from '@perawallet/wallet-core-shared'
 import type { PQSignatureProvider } from './types'
 import { createWasmFalconProvider } from './wasmFalconProvider'
 
-let cached: PQSignatureProvider | undefined
+let cached: Optional<PQSignatureProvider>
 
 /**
  * Returns the active PQ signature provider (memoized).

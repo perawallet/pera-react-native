@@ -11,11 +11,12 @@
  */
 
 import { create } from 'zustand'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 type IntegrityCheckFrameState = {
-    url: string | null
+    url: Nullable<string>
     /** Epoch milliseconds. */
-    deadlineAt: number | null
+    deadlineAt: Nullable<number>
     /** The check page asks to be shown: an interactive challenge waits for a click. */
     isExpanded: boolean
     // The frame is gone but the host port stays held until the worker ends
@@ -34,6 +35,7 @@ type IntegrityCheckFrameState = {
     requestVerify: () => void
 }
 
+// lanekeep-ignore-next-line pera/store-in-wipe-registry reason: device integrity challenge tied to the worker's live attempt; a reset hides a frame the attempt still holds the port for
 export const useIntegrityCheckFrameStore = create<IntegrityCheckFrameState>(
     set => ({
         url: null,

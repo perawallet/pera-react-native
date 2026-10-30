@@ -20,6 +20,8 @@ import {
     bridgeMessage,
     createMockWebview,
     injectedScript,
+    INVALID_PARAMS_CODE,
+    lastMessage,
     languageMockValue,
 } from './fixtures'
 
@@ -139,9 +141,12 @@ describe('useExternalUriHandlers', () => {
 
                 expect(Linking.canOpenURL).not.toHaveBeenCalled()
                 expect(Linking.openURL).not.toHaveBeenCalled()
-                const sent = injectedScript(webview)
-                expect(sent).toContain('"code":-32602')
-                expect(sent).toContain(`Unsupported URL: ${String(url)}`)
+                expect(lastMessage(webview)).toMatchObject({
+                    error: {
+                        code: INVALID_PARAMS_CODE,
+                        message: `Unsupported URL: ${String(url)}`,
+                    },
+                })
             },
         )
 

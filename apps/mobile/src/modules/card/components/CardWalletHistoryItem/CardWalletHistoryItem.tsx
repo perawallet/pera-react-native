@@ -66,6 +66,7 @@ export const CardWalletHistoryItem = ({
                 </PWText>
             </PWView>
             <CurrencyAmount
+                chainId={null}
                 value={entry.amount.abs()}
                 currency={entry.currency}
                 assetId={null}

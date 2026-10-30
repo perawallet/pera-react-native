@@ -17,6 +17,12 @@ export const useStyles = makeStyles(theme => ({
         marginTop: theme.spacing.sm,
         marginBottom: theme.spacing.md,
     },
+    chainFilter: {
+        marginTop: theme.spacing.md,
+    },
+    failedNotice: {
+        marginTop: theme.spacing.md,
+    },
     container: {
         // flex (not flexGrow) so the tab scene body always fills the account
         // tab pager. With flexGrow the empty branch collapsed to zero height on

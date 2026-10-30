@@ -25,6 +25,7 @@ import {
     useDelegatedTransition,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import { useWebView } from '@modules/webview'
 import { splitAccountTypeLabel } from '@utils/rekeyLabels'
@@ -39,7 +40,7 @@ type UseAccountTypeInfoResult = {
      * Signer qualifier (e.g. "(Signed by a Ledger account)"), shown on its own
      * line below the title. Null for non-rekeyed account types.
      */
-    titleQualifier: string | null
+    titleQualifier: Nullable<string>
     description: string
     handleLearnMore: () => void
 }

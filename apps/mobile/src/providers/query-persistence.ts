@@ -11,8 +11,6 @@
  */
 
 import type { Query } from '@tanstack/react-query'
-import { isAccountBalancesHistoryQuery } from '@perawallet/wallet-core-accounts'
-import { isAssetPriceHistoryQuery } from '@perawallet/wallet-core-assets'
 
 // Caches written before the serializer tagged Decimals hold them as bare
 // strings, and consumers call Decimal methods on hydrated data during render.
@@ -31,6 +29,10 @@ export const PERSISTED_CACHE_BUSTER = 'price-history-points'
  * so a new query carrying a token cannot reach unencrypted storage by
  * omission; `__tests__/query-persistence-coverage.spec.ts` fails until a new
  * prefix is classified here.
+ *
+ * Entries are `/`-joined key paths of any depth and the longest one matching a
+ * key's leading string segments wins. `pera/persisted-query-serializable`
+ * reads this table to check what every persisted entry's queries return.
  */
 export const QUERY_PREFIX_POLICY: Record<string, 'persist' | 'never'> = {
     // Two reasons to keep a module off disk. SQLite already holds it, so a
@@ -52,8 +54,6 @@ export const QUERY_PREFIX_POLICY: Record<string, 'persist' | 'never'> = {
     'site-safety': 'never',
     swaps: 'never',
     transactions: 'never',
-    // Keyed by the wallet's addresses, and rebuilt from SQLite on every launch.
-    widgets: 'never',
     // Everything else is derived from the chain or public catalogs, so a copy
     // on disk exposes nothing that isn't already public, and it is what lets
     // the app render before the first fetch lands.
@@ -68,37 +68,32 @@ export const QUERY_PREFIX_POLICY: Record<string, 'persist' | 'never'> = {
     projects: 'persist',
     staking: 'persist',
     // `onramp` and `swaps` are mixed: their history keys carry an address, but
-    // their catalogs are the same global content as the block above. A
-    // `module/sub-key` entry overrides the module, so the catalog keeps
-    // persisting while the module stays closed by default.
+    // their catalogs are the same global content as the block above. A longer
+    // entry overrides the module, so the catalog keeps persisting while the
+    // module stays closed by default.
     'onramp/pairs': 'persist',
     'onramp/region': 'persist',
     'swaps/providers': 'persist',
     'swaps/top-pairs': 'persist',
+    // Chart snapshots live under otherwise-never modules. They are
+    // network-only (no SQLite history table backs them) and carry no PII, so
+    // persisting the last successful snapshot is what lets charts render
+    // last-known data offline. The per-account asset history
+    // (`accounts/assets/balance-history`) stays closed.
+    'accounts/balance-history': 'persist',
+    'assets/prices/history': 'persist',
 }
 
 export const shouldDehydrateQuery = (query: Query): boolean => {
     if (query.state.status !== 'success') return false
 
-    // Narrower than the prefix table and checked first: chart snapshots live
-    // under otherwise-never modules. They are network-only (no SQLite history
-    // table backs them) and carry no PII, so persisting the last successful
-    // snapshot is what lets charts render last-known data offline.
-    if (
-        isAccountBalancesHistoryQuery(query.queryKey) ||
-        isAssetPriceHistoryQuery(query.queryKey)
-    ) {
-        return true
+    let verdict: 'persist' | 'never' | undefined
+    let path = ''
+    for (const segment of query.queryKey) {
+        if (typeof segment !== 'string') break
+        path = path === '' ? segment : `${path}/${segment}`
+        verdict = QUERY_PREFIX_POLICY[path] ?? verdict
     }
 
-    const prefix = query.queryKey[0]
-    if (typeof prefix !== 'string') return false
-
-    const subKey = query.queryKey[1]
-    if (typeof subKey === 'string') {
-        const scoped = QUERY_PREFIX_POLICY[`${prefix}/${subKey}`]
-        if (scoped) return scoped === 'persist'
-    }
-
-    return QUERY_PREFIX_POLICY[prefix] === 'persist'
+    return verdict === 'persist'
 }

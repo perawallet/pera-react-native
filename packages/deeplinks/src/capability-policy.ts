@@ -15,6 +15,7 @@ import type {
     ChainId,
 } from '@perawallet/wallet-core-chain-contract'
 import { getProvider } from '@perawallet/wallet-extension-provider'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import { DeeplinkType, linkTargetOf, type AnyParsedDeeplink } from './links'
 
 export type DeeplinkChainCapability =
@@ -33,7 +34,7 @@ export type DeeplinkChainCapability =
  */
 export const DEEPLINK_CHAIN_CAPABILITY: Record<
     DeeplinkType,
-    DeeplinkChainCapability | null
+    Nullable<DeeplinkChainCapability>
 > = {
     [DeeplinkType.TRANSFER]: { chain: 'send' },
     [DeeplinkType.RECEIVER_ACCOUNT_SELECTION]: { chain: 'send' },
@@ -85,7 +86,7 @@ export type DeeplinkChainRequirement = {
 /** The link's chain capability, bound to the chain the link targets. */
 export const chainRequirementOf = (
     link: AnyParsedDeeplink,
-): DeeplinkChainRequirement | null => {
+): Nullable<DeeplinkChainRequirement> => {
     const requirement = DEEPLINK_CHAIN_CAPABILITY[link.type]
     if (!requirement) return null
     if ('anyChain' in requirement) return { anyChain: requirement.anyChain }
@@ -101,7 +102,7 @@ export const chainRequirementOf = (
  */
 export const unsupportedLinkChainOf = (
     link: AnyParsedDeeplink,
-): ChainId | undefined => {
+): Optional<ChainId> => {
     if (link.type !== DeeplinkType.ASSET_OPT_IN) return undefined
     const { chainId } = link.target
     const { chains } = getProvider()

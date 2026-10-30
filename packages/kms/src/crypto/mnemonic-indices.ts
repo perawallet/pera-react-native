@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { zeroBytes } from './secure-memory'
 import { WORDLIST } from './wordlist'
 
@@ -43,7 +44,9 @@ const WORD_TO_INDEX: Map<string, number> = new Map(
  * unvalidated input (e.g. a scanned, possibly-typo'd phrase) can fall back to a
  * raw byte representation rather than losing the value.
  */
-export const mnemonicWordsToIndices = (words: string[]): Uint16Array | null => {
+export const mnemonicWordsToIndices = (
+    words: string[],
+): Nullable<Uint16Array> => {
     const indices = new Uint16Array(words.length)
     for (let i = 0; i < words.length; i++) {
         const index = WORD_TO_INDEX.get(words[i])
@@ -95,4 +98,69 @@ export const indicesToUtf8Bytes = (indices: Uint16Array): Uint8Array => {
         }
     }
     return bytes
+}
+
+/** Compares `bytes[start, end)` to `word` by char code, as the wordlist is sorted. */
+const compareTokenToWord = (
+    bytes: Uint8Array,
+    start: number,
+    end: number,
+    word: string,
+): number => {
+    const length = end - start
+    const common = Math.min(length, word.length)
+    for (let i = 0; i < common; i++) {
+        const difference = bytes[start + i] - word.charCodeAt(i)
+        if (difference !== 0) return difference
+    }
+    return length - word.length
+}
+
+const wordIndexOfToken = (
+    bytes: Uint8Array,
+    start: number,
+    end: number,
+): number => {
+    let low = 0
+    let high = WORDLIST.length - 1
+    while (low <= high) {
+        const mid = (low + high) >>> 1
+        const order = compareTokenToWord(bytes, start, end, WORDLIST[mid])
+        if (order === 0) return mid
+        if (order < 0) high = mid - 1
+        else low = mid + 1
+    }
+    return -1
+}
+
+/**
+ * Inverse of `indicesToUtf8Bytes`: parses the UTF-8 bytes of a space-joined
+ * phrase into wordlist indices without creating a word string. Binary-searches
+ * the wordlist, which `@scure/bip39` ships sorted.
+ *
+ * Returns `null` for an empty token (so a double space, a trailing space or an
+ * empty phrase), an unknown word or a non-ASCII byte. The caller owns zeroing
+ * the result.
+ */
+export const utf8BytesToIndices = (
+    phrase: Uint8Array,
+): Nullable<Uint16Array> => {
+    let tokens = 1
+    for (const byte of phrase) {
+        if (byte === 0x20) tokens++
+    }
+    const indices = new Uint16Array(tokens)
+    let start = 0
+    let slot = 0
+    for (let end = 0; end <= phrase.length; end++) {
+        if (end < phrase.length && phrase[end] !== 0x20) continue
+        const index = wordIndexOfToken(phrase, start, end)
+        if (index === -1) {
+            zeroBytes(indices)
+            return null
+        }
+        indices[slot++] = index
+        start = end + 1
+    }
+    return indices
 }

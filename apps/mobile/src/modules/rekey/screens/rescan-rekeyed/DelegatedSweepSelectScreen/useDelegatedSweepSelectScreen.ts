@@ -20,6 +20,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useToast } from '@hooks/useToast'
@@ -32,7 +33,7 @@ export type UseDelegatedSweepSelectScreenResult = {
     isSweep: boolean
     isLoading: boolean
     isError: boolean
-    scanProgress: { scanned: number; total: number } | null
+    scanProgress: Nullable<{ scanned: number; total: number }>
     /** Keys whose indexer scan failed while others succeeded. */
     failedSourceCount: number
     importedAddresses: string[]
@@ -78,10 +79,12 @@ export const useDelegatedSweepSelectScreen =
 
         const [isLoading, setIsLoading] = useState(true)
         const [isError, setIsError] = useState(false)
-        const [scanProgress, setScanProgress] = useState<{
-            scanned: number
-            total: number
-        } | null>(null)
+        const [scanProgress, setScanProgress] = useState<
+            Nullable<{
+                scanned: number
+                total: number
+            }>
+        >(null)
         const [failedSourceCount, setFailedSourceCount] = useState(0)
         const [importedAddresses, setImportedAddresses] = useState<string[]>([])
         const [candidates, setCandidates] = useState<DelegatedSweepCandidate[]>(

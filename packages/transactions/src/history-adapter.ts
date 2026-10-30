@@ -12,6 +12,7 @@
 
 import {
     createChainAdapterRegistry,
+    type ChainCapabilities,
     type ChainId,
     type ChainScope,
     type Page,
@@ -28,6 +29,7 @@ import {
     type Nullable,
     type Optional,
 } from '@perawallet/wallet-core-shared'
+import { TransactionDetailNotFoundError } from './errors'
 import type {
     TransactionHistoryItem,
     TransactionHistoryResult,
@@ -134,6 +136,12 @@ export interface HistoryChainDataCodec {
     stickyPaths: readonly string[]
 }
 
+/** What the app knows that a chain package can't read for itself. */
+export type HistoryReadOptions = {
+    /** The scope's capabilities now; a chain reads the ones that change how it words a row. */
+    capabilities: ChainCapabilities
+}
+
 /** The chain-specific history source; registered by the chain package. */
 export interface HistoryChainAdapter {
     chainId: ChainId
@@ -150,7 +158,17 @@ export interface HistoryChainAdapter {
         address: string,
         scope: ChainScope,
         page?: PageRef,
+        options?: HistoryReadOptions,
     ): Promise<Page<TransactionRecord>>
+    /**
+     * The transaction as the chain holds it, for a detail screen that needs
+     * more than the history row gives. Null when the chain no longer holds it.
+     */
+    getTransactionDetail?(
+        txId: string,
+        scope: ChainScope,
+        record: TransactionRecord,
+    ): Promise<Nullable<TransactionNative>>
     /**
      * The list row for a stored item, read from `address`'s side. Absent on a
      * chain whose history isn't cached as `TransactionHistoryItem` rows.
@@ -204,6 +222,19 @@ export const assetFactsResolverFor = (chainId: ChainId): AssetFactsResolver =>
 export const hasCachedHistoryRows = (chainId: ChainId): boolean =>
     historyChainAdapters.has(chainId) &&
     historyChainAdapters.get(chainId).fetchHistory !== undefined
+
+/** Rejects with {@link TransactionDetailNotFoundError} on a chain that declares no `getTransactionDetail`. */
+export const fetchTransactionDetail = async (
+    txId: string,
+    scope: ChainScope,
+    record: TransactionRecord,
+): Promise<Nullable<TransactionNative>> => {
+    const adapter = historyChainAdapters.get(scope.chainId)
+    if (!adapter.getTransactionDetail) {
+        throw new TransactionDetailNotFoundError(txId)
+    }
+    return adapter.getTransactionDetail(txId, scope, record)
+}
 
 /** Rejects with {@link TransactionHistoryRowsUnsupportedError} on a chain that declares no `fetchHistory`. */
 export const fetchTransactionHistory = async (

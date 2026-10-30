@@ -45,12 +45,14 @@ export const useAccountBalancesHistoryQuery = (
     const { usdToPreferred } = useCurrency(scope)
     const isCapabilityOff = !useChainCapability(scope.chainId, 'balanceHistory')
     const queryKey = getAccountBalancesHistoryQueryKey(addresses, period, scope)
+    const isEnabled = enabled && addresses.length > 0 && !isCapabilityOff
     const query = useQuery({
         queryKey,
         // Gated by callers on chart visibility — this hits a slow network
         // endpoint and is only needed to render the wealth chart/trend.
-        enabled: enabled && addresses.length > 0 && !isCapabilityOff,
-        queryFn: () => fetchPortfolioHistory(addresses, period, scope),
+        enabled: isEnabled,
+        queryFn: (): Promise<Nullable<PortfolioHistoryPoint[]>> =>
+            fetchPortfolioHistory(addresses, period, scope),
         select: useCallback(
             (
                 points: Nullable<PortfolioHistoryPoint[]>,
@@ -69,7 +71,7 @@ export const useAccountBalancesHistoryQuery = (
         // A disabled query keeps its cached (and persisted) points; drop them
         // so a kill switch takes the chart down.
         data: isUnavailableOnNetwork ? [] : (query.data ?? []),
-        isPending: isUnavailableOnNetwork ? false : query.isPending,
+        isPending: isEnabled && query.isPending,
         isSuccess: query.isSuccess,
         isError: query.isError,
         isPaused: query.isPaused,

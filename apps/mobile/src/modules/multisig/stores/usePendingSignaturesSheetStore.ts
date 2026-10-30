@@ -12,11 +12,12 @@
 
 import { create } from 'zustand'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import { registerStore, type Nullable } from '@perawallet/wallet-core-shared'
 
 type State = {
-    signRequestId: string | null
+    signRequestId: Nullable<string>
     /** Null when the opener can't tell, as with a sign-request deeplink. */
-    chainId: ChainId | null
+    chainId: Nullable<ChainId>
 }
 
 type Actions = {
@@ -39,3 +40,9 @@ export const usePendingSignaturesSheetStore = create<Store>(set => ({
     closeSheet: () => set({ signRequestId: null, chainId: null }),
     resetState: () => set(initialState),
 }))
+
+registerStore({
+    name: 'pending-signatures-sheet-store',
+    clearStorage: () => {},
+    resetState: () => usePendingSignaturesSheetStore.getState().resetState(),
+})

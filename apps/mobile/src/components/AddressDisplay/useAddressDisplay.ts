@@ -15,6 +15,7 @@ import {
     LONG_ADDRESS_LENGTH,
     type Optional,
     truncateAlgorandAddress,
+    type Nullable,
 } from '@perawallet/wallet-core-shared'
 import {
     findAccountByAddressOn,
@@ -52,6 +53,8 @@ type UseAddressDisplayProps = {
     showSecondaryAddress: boolean
     /** The address's chain; the selected Algorand scope when unset. */
     scope?: ChainScope
+    /** How the address reads when it is the only label; `addressFormat` when unset. */
+    unnamedAddressFormat?: AddressFormat
 }
 
 type ResolvedLabels = {
@@ -60,10 +63,13 @@ type ResolvedLabels = {
 }
 
 type UseAddressDisplayResult = {
-    account: WalletAccount | null
-    contact: Contact | null
+    chainId: ChainId
+    account: Nullable<WalletAccount>
+    contact: Nullable<Contact>
     nfdName: Optional<string>
     truncatedAddress: string
+    /** The address as the only label, in `unnamedAddressFormat`. */
+    unnamedAddress: string
     fallbackIconName: IconName
     copyAddress: () => void
     unifiedLabels: ResolvedLabels
@@ -76,8 +82,8 @@ const resolveUnifiedLabels = ({
     truncatedAddress,
     showSecondaryAddress,
 }: {
-    account: WalletAccount | null
-    contact: Contact | null
+    account: Nullable<WalletAccount>
+    contact: Nullable<Contact>
     nfdName: Optional<string>
     truncatedAddress: string
     showSecondaryAddress: boolean
@@ -134,6 +140,7 @@ export const useAddressDisplay = ({
     displayType,
     showSecondaryAddress,
     scope: addressScope,
+    unnamedAddressFormat,
 }: UseAddressDisplayProps): UseAddressDisplayResult => {
     const legacyScope = useSelectedScope(LEGACY_CHAIN_ID)
     const scope = addressScope ?? legacyScope
@@ -175,6 +182,16 @@ export const useAddressDisplay = ({
         [address, addressFormat, scope.chainId],
     )
 
+    const unnamedAddress = useMemo(
+        () =>
+            formatAddress(
+                address,
+                unnamedAddressFormat ?? addressFormat,
+                scope.chainId,
+            ),
+        [address, unnamedAddressFormat, addressFormat, scope.chainId],
+    )
+
     const fallbackIconName: IconName = `accounts/${isDarkMode ? 'dark' : 'light'}/algo25-account`
 
     const copyAddress = () => {
@@ -196,10 +213,12 @@ export const useAddressDisplay = ({
     )
 
     return {
+        chainId: scope.chainId,
         account,
         contact,
         nfdName,
         truncatedAddress,
+        unnamedAddress,
         fallbackIconName,
         copyAddress,
         unifiedLabels,

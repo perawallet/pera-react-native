@@ -48,14 +48,14 @@ type LegacyV2Record = {
     salt: string
     hash: string
     failedAttempts: number
-    lockoutEndTime: number | null
+    lockoutEndTime: Nullable<number>
 }
 
 const decoder = new TextDecoder()
 
 // The v2 shape: the regular slot's fields, no duress slot. Same strict hex
 // validation as v3 — a corrupted legacy record must not be carried forward.
-const parseLegacyV2 = (data: Uint8Array): LegacyV2Record | null => {
+const parseLegacyV2 = (data: Uint8Array): Nullable<LegacyV2Record> => {
     let parsed: unknown
     try {
         parsed = JSON.parse(decoder.decode(data))
@@ -89,11 +89,11 @@ const parseLegacyV2 = (data: Uint8Array): LegacyV2Record | null => {
         salt: r.salt,
         hash: r.hash,
         failedAttempts: r.failedAttempts,
-        lockoutEndTime: r.lockoutEndTime as number | null,
+        lockoutEndTime: r.lockoutEndTime as Nullable<number>,
     }
 }
 
-let inflight: Promise<PinRecordMigrationResult> | null = null
+let inflight: Nullable<Promise<PinRecordMigrationResult>> = null
 
 const runMigration = async (
     kms: KmsAccess,

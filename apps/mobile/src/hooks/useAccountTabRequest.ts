@@ -12,7 +12,7 @@
 
 import { useEffect } from 'react'
 import { create } from 'zustand'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import { registerStore, type Nullable } from '@perawallet/wallet-core-shared'
 
 /** The account screen tabs a link may open on. */
 export type RequestedAccountTab = 'History'
@@ -38,6 +38,13 @@ export const useAccountTabRequestStore = create<AccountTabRequestStore>()(
         requestAccountTab: tab => set({ requestedTab: tab }),
     }),
 )
+
+registerStore({
+    name: 'account-tab-request-store',
+    clearStorage: () => {},
+    resetState: () =>
+        useAccountTabRequestStore.setState({ requestedTab: null }),
+})
 
 /**
  * Selects the requested tab once the screen offers it. A tab the account's

@@ -58,7 +58,7 @@ export const useCollectibleInfo = (
     const { copyToClipboard } = useClipboard()
     const descriptor = getChainDescriptor(scope.chainId)
     const display =
-        chainUiFor(descriptor.family).collectibleDetails ??
+        chainUiFor(descriptor.family, scope.chainId).collectibleDetails ??
         neutralCollectibleDetailsDisplay
     const creatorAddress = asset.creator.address
 

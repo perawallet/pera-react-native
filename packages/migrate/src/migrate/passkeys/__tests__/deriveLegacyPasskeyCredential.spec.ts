@@ -34,7 +34,7 @@ const b64UrlToBytes = (b64url: string): Uint8Array =>
 let sharedMainKey: Uint8Array
 
 beforeAll(async () => {
-    sharedMainKey = await deriveMainKey(TEST_MNEMONIC)
+    sharedMainKey = await deriveMainKey(new TextEncoder().encode(TEST_MNEMONIC))
 })
 
 describe('p256RawPublicKeyToSpkiDer', () => {

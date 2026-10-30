@@ -27,6 +27,7 @@ import {
     logger,
     mutationDefaults,
     type PeraServiceUnavailableError,
+    type Optional,
 } from '@perawallet/wallet-core-shared'
 
 type PeraBackendUnavailableHandler = (
@@ -36,7 +37,7 @@ type PeraBackendUnavailableHandler = (
 // Set by QueryProvider (a React subtree that can reach the toast layer); this
 // module itself stays free of react-native imports so the browser extension's
 // offscreen document can share the same QueryClient instance.
-let peraBackendUnavailableHandler: PeraBackendUnavailableHandler | undefined
+let peraBackendUnavailableHandler: Optional<PeraBackendUnavailableHandler>
 
 /**
  * Registers the single handler notified whenever a `backend: 'pera'` request
@@ -75,7 +76,10 @@ const cache = new QueryCache({
             peraBackendUnavailableHandler?.(error)
             return
         }
-        logger.error(`Query failed: ${describeError(error)}`, { error })
+        logger.error('Query failed', {
+            errorSummary: describeError(error),
+            error,
+        })
     },
 })
 
@@ -90,7 +94,8 @@ const mutationCache = new MutationCache({
             peraBackendUnavailableHandler?.(error)
             return
         }
-        logger.error(`Mutation failed: ${describeError(error)}`, {
+        logger.error('Mutation failed', {
+            errorSummary: describeError(error),
             error,
             mutationKey: mutation.options.mutationKey,
         })

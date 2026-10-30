@@ -21,6 +21,7 @@ import {
     findTransactionBatch,
     type TransactionBatch,
 } from '@perawallet/wallet-core-signing'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { eip155ChainIdOf } from '../../blockchain/utils/caip19'
 import { createEvmClient } from '../../blockchain/utils/createEvmClient'
 import type { EvmChain } from '../../chains/types'
@@ -65,7 +66,7 @@ export const callsStatusCodeOf = ({
 export const reachedCallTxIdOf = ({
     txIds,
     position,
-}: Pick<TransactionBatch, 'txIds' | 'position'>): string | undefined =>
+}: Pick<TransactionBatch, 'txIds' | 'position'>): Optional<string> =>
     txIds[position] ?? txIds.at(-1)
 
 /**

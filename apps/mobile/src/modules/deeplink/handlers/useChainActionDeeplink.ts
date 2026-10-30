@@ -40,6 +40,7 @@ import {
     generateOrderedUniqueId,
     logger,
     withTimeout,
+    type Nullable,
 } from '@perawallet/wallet-core-shared'
 import { useDeeplinkErrorHandler } from './useDeeplinkErrorHandler'
 import { DeeplinkTimeoutError } from './timeout'
@@ -80,7 +81,7 @@ const checkSigningEligibility = (
     senderAddress: string,
     accounts: WalletAccount[],
     chainId: ChainId,
-): Ineligible | null => {
+): Nullable<Ineligible> => {
     const account = findAccountByAddressOn(accounts, chainId, senderAddress)
     if (!account) {
         return {

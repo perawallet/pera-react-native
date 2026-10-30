@@ -12,6 +12,7 @@
 
 import { useEffect } from 'react'
 import { create } from 'zustand'
+import { registerStore } from '@perawallet/wallet-core-shared'
 
 type ScannerRequestState = {
     isRequested: boolean
@@ -35,6 +36,16 @@ export const useScannerRequestStore = create<ScannerRequestStore>()(set => ({
     openScannerCount: 0,
     requestScanner: () => set({ isRequested: true }),
 }))
+
+registerStore({
+    name: 'scanner-request-store',
+    clearStorage: () => {},
+    resetState: () =>
+        useScannerRequestStore.setState({
+            isRequested: false,
+            openScannerCount: 0,
+        }),
+})
 
 /** Opens the scanner for each pending request, including one made before mount. */
 export const useScannerRequest = (open: () => void): void => {

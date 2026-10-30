@@ -12,6 +12,7 @@
 
 import { useEffect } from 'react'
 import * as QuickActions from 'expo-quick-actions'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import { routeCapabilities } from '@routes/capabilities'
 import { useDeepLink } from './useDeepLink'
@@ -19,7 +20,7 @@ import { useDeepLink } from './useDeepLink'
 const SCAN_ACTION_ID = 'scan'
 const SCAN_URL = 'perawallet://app/scan/'
 
-let handledLaunchAction: QuickActions.Action | undefined
+let handledLaunchAction: Optional<QuickActions.Action>
 
 // Ids map to fixed URLs: an action's params come from the OS and are never
 // turned into a link.

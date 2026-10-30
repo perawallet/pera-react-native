@@ -25,12 +25,13 @@ import {
     type MultisigSignRequest,
 } from '@perawallet/wallet-core-multisig'
 import {
-    chainIdOfSignRequest,
     useSigningRequest,
     type SignRequest,
 } from '@perawallet/wallet-core-signing'
 import { i18nKey, type ChainId } from '@perawallet/wallet-core-chain-contract'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useToast } from '@hooks/useToast'
+import { useSignRequestScope } from '@modules/signing'
 import { getSignedResponseCount } from '../utils/signRequestStatus'
 
 export type UseMultisigSignRequestDeclineParams =
@@ -41,7 +42,7 @@ export type UseMultisigSignRequestDeclineParams =
       }
     | {
           mode: 'cancel'
-          signRequest: MultisigSignRequest | null
+          signRequest: Nullable<MultisigSignRequest>
           /** The backend request names no chain, so the sheet showing it passes the one it resolved. */
           chainId: ChainId
       }
@@ -82,11 +83,15 @@ const CANCEL_ERROR_KEYS = {
 export const useMultisigSignRequestDecline = (
     params: UseMultisigSignRequestDeclineParams,
 ): UseMultisigSignRequestDeclineResult => {
-    const scope = useSelectedScope(
-        params.mode === 'decline'
-            ? chainIdOfSignRequest(params.request)
-            : params.chainId,
+    // A decline must hit the network the cosign was proposed on, which the
+    // transport adapters seed the detail cache under, even after a switch.
+    const requestScope = useSignRequestScope(
+        params.mode === 'decline' ? params.request : undefined,
     )
+    const selectedScope = useSelectedScope(
+        params.mode === 'cancel' ? params.chainId : requestScope.chainId,
+    )
+    const scope = params.mode === 'decline' ? requestScope : selectedScope
     const deviceId = useDeploymentDeviceID(deploymentOf(scope)) ?? ''
     const { errorToast } = useToast()
     const { rejectRequest } = useSigningRequest()

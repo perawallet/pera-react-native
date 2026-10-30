@@ -26,7 +26,11 @@ import {
 import { Decimal } from 'decimal.js'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { Database } from '@perawallet/wallet-core-database'
-import { logger } from '@perawallet/wallet-core-shared'
+import {
+    logger,
+    type Optional,
+    type Maybe,
+} from '@perawallet/wallet-core-shared'
 import {
     getSubmissionAttemptsAtNonce,
     markSubmissionUnknown,
@@ -46,6 +50,7 @@ import {
 } from '../blockchain/errors'
 import type { EvmChain } from '../chains/types'
 import { ethereumCallSummary } from '../signing/review'
+import { readEvmSurcharge } from './fees'
 import { meetsReplacementBump, readReplaceableTransaction } from './replacement'
 
 // Nodes word a resend of a pooled transaction differently; Anvil says
@@ -144,25 +149,26 @@ export type SubmitAndRecordEthereumTransactionsParams = {
     db?: Database
 }
 
-// Wei: gas limit x max fee per gas, the most the transaction can be charged.
+// Wei: gas limit x max fee per gas plus what the chain charges on top of gas,
+// the most the transaction can be charged.
 // The signing adapter signs EIP-1559 only, so there is no legacy gasPrice.
-const maxFeeOf = ({
-    gas,
-    maxFeePerGas,
-}: ReturnType<typeof parseTransaction>): Decimal | undefined =>
+const maxFeeOf = (
+    { gas, maxFeePerGas }: ReturnType<typeof parseTransaction>,
+    surcharge: bigint,
+): Optional<Decimal> =>
     gas === undefined || maxFeePerGas === undefined
         ? undefined
-        : new Decimal((gas * maxFeePerGas).toString())
+        : new Decimal((gas * maxFeePerGas + surcharge).toString())
 
 // The newest open attempt of the sender at this nonce under another hash; a
 // transport retry of the same bytes shares the hash, so it replaces nothing.
 const findReplacedAttempt = async (
-    db: Database | undefined,
+    db: Optional<Database>,
     scope: ChainScope,
     sender: string,
     nonce: number,
     hash: string,
-): Promise<SubmissionAttempt | undefined> => {
+): Promise<Optional<SubmissionAttempt>> => {
     const open = await getSubmissionAttemptsAtNonce({
         db,
         scope,
@@ -182,7 +188,7 @@ const underpricedReplacement = (hash: string) =>
     )
 
 const isUnderpricedReplacement = (
-    replaced: SubmissionAttempt | undefined,
+    replaced: Optional<SubmissionAttempt>,
     parsed: ReturnType<typeof parseTransaction>,
 ): boolean => {
     const original =
@@ -219,11 +225,31 @@ const bestEffort = async (label: string, write: () => Promise<unknown>) => {
     try {
         await write()
     } catch (error) {
-        logger.warn(`ethereum submission ledger: ${label} failed`, { error })
+        logger.warn('Ethereum submission ledger step failed', {
+            step: label,
+            error,
+        })
     }
 }
 
-const isSameAddress = (a: string | null | undefined, b: string): boolean =>
+// Priced from the signed bytes, so it is the oracle's answer for the transaction sent.
+const readSurchargeOfSigned = async (
+    client: PublicClient,
+    chain: EvmChain,
+    serializedTransaction: TransactionSerialized,
+): Promise<bigint> => {
+    if (chain.row.fee.kind !== 'eip1559-op-stack') return 0n
+    try {
+        const transaction = readReplaceableTransaction(serializedTransaction)
+        if (!transaction) return 0n
+        return await readEvmSurcharge(client, chain, transaction)
+    } catch (error) {
+        logger.warn('Ethereum surcharge read failed', { error })
+        return 0n
+    }
+}
+
+const isSameAddress = (a: Maybe<string>, b: string): boolean =>
     a != null && getAddress(a) === getAddress(b)
 
 // Two sends built before either was recorded pick the same nonce, and the
@@ -231,7 +257,7 @@ const isSameAddress = (a: string | null | undefined, b: string): boolean =>
 // A speed-up resends the original's call and a cancel sends nothing to the
 // sender; any other transaction at a held nonce is that collision.
 const isNonceCollision = (
-    replaced: SubmissionAttempt | undefined,
+    replaced: Optional<SubmissionAttempt>,
     parsed: ReturnType<typeof parseTransaction>,
     sender: string,
 ): boolean => {
@@ -281,7 +307,8 @@ export const historyEntryOfSigned = async (
  * send. A speed-up or cancel at a nonce an open attempt already holds replaces
  * it: the row links the two, and one that doesn't outbid the original by the
  * node's minimum bump is refused without being sent. Any other send at a held
- * nonce is refused the same way.
+ * nonce is refused the same way. On an OP-stack chain the recorded max fee
+ * includes the oracle's fee for the signed bytes, or gas alone when that read fails.
  */
 export const submitAndRecordEthereumTransactions = async ({
     client,
@@ -298,12 +325,18 @@ export const submitAndRecordEthereumTransactions = async ({
         const parsed = parseTransaction(serializedTransaction)
         const { nonce } = parsed
         const entry = historyEntries[index]
-        const fee = maxFeeOf(parsed)
         const sender = await recoverTransactionAddress({
             serializedTransaction,
         })
         const hash = keccak256(serializedTransaction)
-        let replaced: SubmissionAttempt | undefined
+        // Awaited before the lookup: a network hop between lookup and record lets
+        // an overlapping send at the same nonce slip past the collision check.
+        const surcharge = await readSurchargeOfSigned(
+            client,
+            chain,
+            serializedTransaction,
+        )
+        let replaced: Optional<SubmissionAttempt>
         if (nonce !== undefined) {
             await bestEffort('replacement lookup', async () => {
                 replaced = await findReplacedAttempt(
@@ -327,7 +360,8 @@ export const submitAndRecordEthereumTransactions = async ({
         if (isUnderpricedReplacement(replaced, parsed)) {
             throw underpricedReplacement(hash)
         }
-        let attemptId: string | undefined
+        const fee = maxFeeOf(parsed, surcharge)
+        let attemptId: Optional<string>
         await bestEffort('record', async () => {
             attemptId = await recordSubmissionAttempt({
                 db,

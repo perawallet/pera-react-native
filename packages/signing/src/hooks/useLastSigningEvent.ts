@@ -11,14 +11,15 @@
  */
 
 import { useEffect, useRef, useState } from 'react'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { signingEventBus } from '../pipeline/signingEventBus'
 import type { SigningLifecycleEvent } from '../pipeline/signingEvents'
 
 export const useLastSigningEvent = <E extends SigningLifecycleEvent>(
     predicate: (event: SigningLifecycleEvent) => event is E,
     requestId?: string,
-): E | null => {
-    const [last, setLast] = useState<E | null>(() => {
+): Nullable<E> => {
+    const [last, setLast] = useState<Nullable<E>>(() => {
         if (!requestId) return null
         const history = signingEventBus.replay(requestId)
         for (let i = history.length - 1; i >= 0; i--) {
