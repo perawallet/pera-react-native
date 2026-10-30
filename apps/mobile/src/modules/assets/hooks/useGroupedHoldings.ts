@@ -11,6 +11,7 @@
  */
 
 import { useMemo } from 'react'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import {
     buildGroupedHoldingItems,
     type GroupableHolding,
@@ -24,6 +25,8 @@ export type UseGroupedHoldingsParams<T extends GroupableHolding> = {
     expandedGroupIds: ReadonlySet<string>
     /** Off where nothing could fold, so no holding is asked for its group. */
     isEnabled: boolean
+    /** Chains whose holdings no read vouches for yet; a group never values their zeros. */
+    unreadChainIds?: ReadonlySet<ChainId>
 }
 
 export type UseGroupedHoldingsResult<T> = {
@@ -35,6 +38,7 @@ export const useGroupedHoldings = <T extends GroupableHolding>({
     adapter,
     expandedGroupIds,
     isEnabled,
+    unreadChainIds,
 }: UseGroupedHoldingsParams<T>): UseGroupedHoldingsResult<T> => {
     const items = useMemo(
         () =>
@@ -43,13 +47,14 @@ export const useGroupedHoldings = <T extends GroupableHolding>({
                       holdings,
                       expandedGroupIds,
                       adapter,
+                      unreadChainIds,
                   })
                 : holdings.map(holding => ({
                       kind: 'holding' as const,
                       holding,
                       isGroupMember: false,
                   })),
-        [holdings, expandedGroupIds, adapter, isEnabled],
+        [holdings, expandedGroupIds, adapter, isEnabled, unreadChainIds],
     )
 
     return { items }

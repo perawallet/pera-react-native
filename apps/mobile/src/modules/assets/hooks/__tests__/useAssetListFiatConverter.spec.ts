@@ -52,6 +52,35 @@ describe('useAssetListFiatConverter', () => {
         ).toEqual({ displayCurrency: 'EUR', value: new Decimal(12) })
     })
 
+    it('values a zero holding at zero without a price, and a held one as unknown', () => {
+        const { result } = renderHook(() => useAssetListFiatConverter())
+        const usdc = { chainId: 'ethereum' as const, assetId: '0xA0b8' }
+
+        expect(result.current(usdc, null, new Decimal(0)).value).toEqual(
+            new Decimal(0),
+        )
+        expect(result.current(usdc, null, new Decimal(1)).value).toBeNull()
+    })
+
+    it('leaves a zero no read vouches for unvalued, priced or not', () => {
+        const { result } = renderHook(() =>
+            useAssetListFiatConverter(new Set(['base'])),
+        )
+        const onBase = { chainId: 'base' as const, assetId: 'native' }
+
+        expect(
+            result.current(onBase, new Decimal(3), new Decimal(0)).value,
+        ).toBeNull()
+        expect(result.current(onBase, null, new Decimal(0)).value).toBeNull()
+        expect(
+            result.current(
+                { chainId: 'ethereum', assetId: ETHER.assetId },
+                null,
+                new Decimal(0),
+            ).value,
+        ).toEqual(new Decimal(0))
+    })
+
     it('converts a plain USD amount with no asset straight to the preferred currency', () => {
         const { result } = renderHook(() => useAssetListFiatConverter())
 

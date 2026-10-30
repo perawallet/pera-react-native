@@ -21,6 +21,7 @@ import {
     useCanSignWith,
     useHasAccountChainState,
     useIsHoldingsRefreshFailed,
+    useUnreadHoldingChainIds,
     assetFromHoldingLiteRow,
     accountChainIdOf,
     useRegisteredChainIds,
@@ -250,6 +251,7 @@ export const useAccountAssetList = ({
         () => new Set(expandedGroupIds),
         [expandedGroupIds],
     )
+    const unreadChainIds = useUnreadHoldingChainIds(sources)
     // A chain chip lists that chain's own rows, so only All over two or more
     // chains can fold anything.
     const { items } = useGroupedHoldings({
@@ -257,11 +259,12 @@ export const useAccountAssetList = ({
         adapter: homeHoldingAdapter,
         expandedGroupIds: expandedGroupIdSet,
         isEnabled: selectedChainId === null && sources.length > 1,
+        unreadChainIds,
     })
 
     // Exchange rates read once here; the visible rows convert themselves. Keeps
     // per-row render observer-free without precomputing all N holdings.
-    const convertFiat = useAssetListFiatConverter()
+    const convertFiat = useAssetListFiatConverter(unreadChainIds)
 
     const { optOut, isLoading: isOptingOut } = useAssetOptOutMutation(scope)
     const { showToast } = useToast()
