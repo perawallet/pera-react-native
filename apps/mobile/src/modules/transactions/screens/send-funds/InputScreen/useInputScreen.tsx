@@ -33,7 +33,10 @@ import {
     useSpendableBalanceQuery,
     type ChainNotice,
 } from '@perawallet/wallet-core-transactions'
-import { getChainDescriptor } from '@perawallet/wallet-core-chain-shared'
+import {
+    getChainDescriptor,
+    useChainFeeModel,
+} from '@perawallet/wallet-core-chain-shared'
 import { useSendFunds, useSendScope } from '@modules/transactions/hooks'
 import { useSendDestinationRouter } from '../useSendDestinationRouter'
 import { useToast } from '@hooks/useToast'
@@ -69,6 +72,7 @@ export const useInputScreen = () => {
         setPendingAmountBaseUnits,
         setIsCloseAccount,
         setHasUnsavedInput,
+        setIsMaxAmount,
         setShouldContinueToConfirm,
     } = useSendFunds()
     const {
@@ -132,10 +136,13 @@ export const useInputScreen = () => {
     // (MAX, close-out, prefill): Next sends this, not the shown digits. Any edit
     // clears it.
     const exactAmountRef = useRef<Maybe<Decimal>>(amount ?? undefined)
+    // Set when the field holds MAX; any edit clears it.
+    const [isMaxApplied, setIsMaxApplied] = useState(false)
     const setValueAndRef = useCallback((newValue: Maybe<string>) => {
         exactAmountRef.current = undefined
         valueRef.current = newValue
         setValue(newValue)
+        setIsMaxApplied(false)
     }, [])
     const { errorToast } = useToast()
     const { t } = useLanguage()
@@ -262,6 +269,7 @@ export const useInputScreen = () => {
     const setMax = useCallback(() => {
         if (!isMaxReady) return
         setExactAmount(isReserveReleasable ? totalBalance : maxAmount)
+        setIsMaxApplied(true)
     }, [
         isMaxReady,
         isReserveReleasable,
@@ -335,6 +343,7 @@ export const useInputScreen = () => {
 
     const confirmCloseAccount = useCallback(() => {
         setIsCloseAccount(true)
+        setIsMaxAmount(false)
         setAmount(closeAmount)
         setExactAmount(closeAmount)
         proceedToDestination()
@@ -343,6 +352,7 @@ export const useInputScreen = () => {
         proceedToDestination,
         setAmount,
         setIsCloseAccount,
+        setIsMaxAmount,
         setExactAmount,
     ])
 
@@ -350,6 +360,7 @@ export const useInputScreen = () => {
     // picking the reserve path would otherwise still send a close-out.
     const continuePastMax = useCallback(() => {
         setIsCloseAccount(false)
+        setIsMaxAmount(false)
         setAmount(maxAmount)
         setExactAmount(maxAmount)
         proceedToDestination()
@@ -358,6 +369,7 @@ export const useInputScreen = () => {
         proceedToDestination,
         setAmount,
         setIsCloseAccount,
+        setIsMaxAmount,
         setExactAmount,
     ])
 
@@ -421,6 +433,7 @@ export const useInputScreen = () => {
         }
 
         setIsCloseAccount(false)
+        setIsMaxAmount(isMaxApplied)
         setAmount(amountValue)
         proceedToDestination()
     }, [
@@ -434,7 +447,9 @@ export const useInputScreen = () => {
         t,
         emptyAccount,
         reserveNotice,
+        isMaxApplied,
         setIsCloseAccount,
+        setIsMaxAmount,
         setAmount,
         requestCloseAccountChoice,
         requestReserveConfirm,
@@ -474,6 +489,11 @@ export const useInputScreen = () => {
 
     const canAddNote =
         getChainDescriptor(scope.chainId).protocol.maxNoteBytes !== undefined
+
+    const feeModel = useChainFeeModel(scope.chainId)
+    // Only a chain that prices gas holds back more than the fee it charges.
+    const isFeeReserveHintVisible =
+        isMaxApplied && feeModel === 'gas' && isNativeAssetId(selectedAssetId)
 
     const assetDecimalsRef = useRef(asset?.decimals)
     assetDecimalsRef.current = asset?.decimals
@@ -550,6 +570,7 @@ export const useInputScreen = () => {
         isBalanceReady,
         cryptoValue: value,
         isMaxReady,
+        isFeeReserveHintVisible,
         setMax,
         handleNext,
         handleKey,

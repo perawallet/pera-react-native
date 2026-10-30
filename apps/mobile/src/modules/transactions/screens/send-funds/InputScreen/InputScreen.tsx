@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { PWButton, PWScreen, PWView } from '@components/core'
+import { PWButton, PWScreen, PWText, PWView } from '@components/core'
 import { Decimal } from 'decimal.js'
 
 import { AssetAmount } from '@components/AssetAmount'
@@ -33,6 +33,7 @@ export const InputScreen = () => {
         isBalanceReady,
         isMaxReady,
         cryptoValue,
+        isFeeReserveHintVisible,
         setMax,
         handleKey,
         handlePaste,
@@ -135,6 +136,15 @@ export const InputScreen = () => {
                             variant='h1'
                             style={styles.amountPlaceholder}
                         />
+                    )}
+                    {isFeeReserveHintVisible && (
+                        <PWText
+                            variant='caption'
+                            style={styles.feeReserveHint}
+                            testID='send_input_fee_reserve_hint'
+                        >
+                            {t('send_funds.input.fee_reserve_hint')}
+                        </PWText>
                     )}
 
                     <PWView style={styles.buttonContainer}>
