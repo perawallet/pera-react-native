@@ -49,6 +49,7 @@ import persistedQuerySerializable from './lanekeep/rules/persisted-query-seriali
 import pqLibrarySeam from './lanekeep/rules/pq-library-seam.js'
 import secp256k1LibrarySeam from './lanekeep/rules/secp256k1-library-seam.js'
 import secretBufferZeroed from './lanekeep/rules/secret-buffer-zeroed.js'
+import singleCopyPackages from './lanekeep/rules/single-copy-packages.js'
 import specFileSuffix from './lanekeep/rules/spec-file-suffix.js'
 import specImportsOwnSrc from './lanekeep/rules/spec-imports-own-src.js'
 import storeInWipeRegistry from './lanekeep/rules/store-in-wipe-registry.js'
@@ -60,8 +61,8 @@ export default defineConfig({
     // Every TS/JS file in the repo, plus Python (the e2e harness). A rule about
     // shipped source narrows itself with lanekeep/shared/scope.ts; the
     // repo-wide rules need tests and tooling in view. pnpm-workspace.yaml is
-    // here only as catalog-versions' anchor; it reads the manifests and the
-    // lockfile from beside it.
+    // here only as the anchor of catalog-versions and single-copy-packages; they
+    // read the manifests and the lockfile from beside it.
     include: ['**/*.{ts,tsx,mts,cts,js,jsx,mjs,cjs,py}', 'pnpm-workspace.yaml'],
     // lanekeep also skips gitignored files on top of the excludes below, so a generated
     // file like packages/config/src/generated-env.ts can match `include` and still never
@@ -145,6 +146,7 @@ export default defineConfig({
         conformanceWorkflowPaths,
         nativeExactPins,
         catalogVersions,
+        singleCopyPackages,
         storeInWipeRegistry,
         persistedQuerySerializable,
     ],

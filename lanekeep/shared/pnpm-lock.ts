@@ -10,6 +10,8 @@ export interface PnpmLock {
      * of it: a release resolved under several peer sets has several.
      */
     snapshots: Map<string, Map<string, string>[]>
+    /** `name@version` (peer suffix stripped) to the 1-based line of its first `snapshots` entry. */
+    snapshotLines: Map<string, number>
 }
 
 const indentOf = (line: string): number => line.length - line.trimStart().length
@@ -61,12 +63,15 @@ const parseLine = (
 export const parsePnpmLock = (raw: string): PnpmLock => {
     const catalog = new Map<string, string>()
     const snapshots = new Map<string, Map<string, string>[]>()
+    const snapshotLines = new Map<string, number>()
     let section = ''
     let inDefaultCatalog = false
     let catalogName = ''
     let snapshot: Map<string, string> | undefined
     let inDependencies = false
-    for (const text of raw.split('\n')) {
+    const lines = raw.split('\n')
+    for (let i = 0; i < lines.length; i++) {
+        const text = lines[i] ?? ''
         const trimmed = text.trim()
         if (trimmed === '' || trimmed.startsWith('#')) continue
         const indent = indentOf(text)
@@ -102,6 +107,7 @@ export const parsePnpmLock = (raw: string): PnpmLock => {
                     const list = snapshots.get(key) ?? []
                     list.push(snapshot)
                     snapshots.set(key, list)
+                    if (!snapshotLines.has(key)) snapshotLines.set(key, i + 1)
                 }
                 inDependencies = false
             } else if (indent === 4) {
@@ -111,7 +117,7 @@ export const parsePnpmLock = (raw: string): PnpmLock => {
             }
         }
     }
-    return { catalog, snapshots }
+    return { catalog, snapshots, snapshotLines }
 }
 
 const SEMVER =
