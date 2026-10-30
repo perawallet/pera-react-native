@@ -364,6 +364,21 @@ const heldPlannedSigner = (
     return account && chainAccountOf(account, scope.chainId)?.address
 }
 
+/**
+ * The chain's group check. Run at ingest and again right before signing:
+ * review-time steps (simulation, fee planning) run in between, and a group
+ * that changed since the review must not reach a signer.
+ */
+export const validateRequestGroup = (
+    request: UnsignedTransactionSignRequest,
+    scope: ChainScope,
+): void => {
+    const adapter = plannerChainAdapters.get(scope.chainId)
+    adapter.validateGroup(adapter.reviewGroupOf(request).transactions, {
+        isCosigner: request.sourceType === 'multisig-cosign',
+    })
+}
+
 // Undefined for a chain that keys by planned signer; see `signedForAddresses` on the planner adapter.
 const signedForAddresses = (
     request: UnsignedTransactionSignRequest,
@@ -371,12 +386,11 @@ const signedForAddresses = (
     scope: ChainScope,
 ): Optional<Optional<string>[]> => {
     if (!plannerChainAdapters.has(scope.chainId)) return undefined
-    const adapter = plannerChainAdapters.get(scope.chainId)
-    const addresses = adapter.signedForAddresses(request)
+    const addresses = plannerChainAdapters
+        .get(scope.chainId)
+        .signedForAddresses(request)
     if (!addresses) return undefined
-    adapter.validateGroup(adapter.reviewGroupOf(request).transactions, {
-        isCosigner: request.sourceType === 'multisig-cosign',
-    })
+    validateRequestGroup(request, scope)
     const knownAddresses = new Set(
         allAccounts.flatMap(
             a => chainAccountOf(a, scope.chainId)?.address ?? [],
