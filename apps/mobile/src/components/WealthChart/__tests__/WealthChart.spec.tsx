@@ -56,6 +56,7 @@ const mockHistory = (
         error: null,
         isUnavailableOnNetwork: false,
         excludedChainIds: [],
+        isPartial: false,
         refetch: vi.fn(),
         ...overrides,
     })
@@ -118,7 +119,7 @@ describe('WealthChart', () => {
     })
 
     it('names the networks the chart leaves out', () => {
-        mockHistory({ excludedChainIds: [ETHEREUM.chainId] })
+        mockHistory({ excludedChainIds: [ETHEREUM.chainId], isPartial: true })
 
         renderChart()
 
@@ -130,6 +131,7 @@ describe('WealthChart', () => {
     it('joins several left-out networks with a translated conjunction', () => {
         mockHistory({
             excludedChainIds: [ETHEREUM.chainId, 'base' as ChainId],
+            isPartial: true,
         })
 
         renderChart()

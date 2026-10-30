@@ -49,7 +49,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
         usePortfolioHistoryQuery: vi.fn(() => ({
             data: [],
             isPending: false,
-            excludedChainIds: [],
+            isPartial: false,
         })),
     }
 })
@@ -65,7 +65,7 @@ describe('WealthTrend', () => {
         vi.mocked(usePortfolioHistoryQuery).mockReturnValue({
             data: [],
             isPending: true,
-            excludedChainIds: [],
+            isPartial: false,
         } as unknown as ReturnType<typeof usePortfolioHistoryQuery>)
 
         const { container } = render(
@@ -89,7 +89,7 @@ describe('WealthTrend', () => {
                 },
             ],
             isPending: false,
-            excludedChainIds: [],
+            isPartial: false,
             isUnavailableOnNetwork: true,
         } as unknown as ReturnType<typeof usePortfolioHistoryQuery>)
 
@@ -108,7 +108,7 @@ describe('WealthTrend', () => {
         vi.mocked(usePortfolioHistoryQuery).mockReturnValue({
             data: [],
             isPending: false,
-            excludedChainIds: [],
+            isPartial: false,
         } as unknown as ReturnType<typeof usePortfolioHistoryQuery>)
 
         const { container } = render(
@@ -133,7 +133,7 @@ describe('WealthTrend', () => {
                 },
             ],
             isPending: false,
-            excludedChainIds: [],
+            isPartial: false,
         } as unknown as ReturnType<typeof usePortfolioHistoryQuery>)
 
         const { container } = render(
@@ -157,7 +157,7 @@ describe('WealthTrend', () => {
                 },
             ],
             isPending: false,
-            excludedChainIds: ['ethereum'],
+            isPartial: true,
         } as unknown as ReturnType<typeof usePortfolioHistoryQuery>)
 
         const { container } = render(
@@ -182,7 +182,7 @@ describe('WealthTrend', () => {
                 },
             ],
             isPending: false,
-            excludedChainIds: [],
+            isPartial: false,
         } as unknown as ReturnType<typeof usePortfolioHistoryQuery>)
 
         const { container, getByTestId } = render(
@@ -210,7 +210,7 @@ describe('WealthTrend', () => {
                 },
             ],
             isPending: false,
-            excludedChainIds: [],
+            isPartial: false,
         } as unknown as ReturnType<typeof usePortfolioHistoryQuery>)
 
         const { container, getByTestId } = render(
@@ -229,7 +229,7 @@ describe('WealthTrend', () => {
         vi.mocked(usePortfolioHistoryQuery).mockReturnValue({
             data: [],
             isPending: false,
-            excludedChainIds: [],
+            isPartial: false,
         } as unknown as ReturnType<typeof usePortfolioHistoryQuery>)
 
         render(

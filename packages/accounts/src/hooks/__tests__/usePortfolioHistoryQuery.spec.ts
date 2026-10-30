@@ -223,6 +223,7 @@ describe('usePortfolioHistoryQuery', () => {
         await waitFor(() =>
             expect(result.current.excludedChainIds).toEqual([ETHEREUM.chainId]),
         )
+        expect(result.current.isPartial).toBe(true)
         expect(result.current.isError).toBe(false)
         expect(result.current.isPending).toBe(false)
         expect(result.current.data).toEqual([
@@ -300,6 +301,7 @@ describe('usePortfolioHistoryQuery', () => {
         await waitFor(() => expect(result.current.isError).toBe(true))
         expect(result.current.error).toEqual(new Error('history down'))
         expect(result.current.excludedChainIds).toEqual([])
+        expect(result.current.isPartial).toBe(false)
         expect(result.current.data).toEqual([])
     })
 

@@ -42,6 +42,8 @@ export type UsePortfolioHistoryQueryResult = {
     isUnavailableOnNetwork: boolean
     /** Chains whose history failed while another chain's loaded: `data` plots the rest without them. */
     excludedChainIds: ChainId[]
+    /** `excludedChainIds` isn't empty: `data` falls short of the total of every source. */
+    isPartial: boolean
     refetch: () => void
 }
 
@@ -151,6 +153,9 @@ export const usePortfolioHistoryQuery = (
     })
 
     const isUnavailableOnNetwork = isCapabilityOff || combined.hasSourceMissing
+    const excludedChainIds = isUnavailableOnNetwork
+        ? EMPTY_CHAIN_IDS
+        : combined.excludedChainIds
 
     return {
         // A disabled query keeps its cached (and persisted) points; the chart
@@ -164,9 +169,8 @@ export const usePortfolioHistoryQuery = (
         isPaused: combined.isPaused,
         error: combined.error,
         isUnavailableOnNetwork,
-        excludedChainIds: isUnavailableOnNetwork
-            ? EMPTY_CHAIN_IDS
-            : combined.excludedChainIds,
+        excludedChainIds,
+        isPartial: excludedChainIds.length > 0,
         // The observer's refetch() ignores `enabled` and would still fire the
         // doomed request on a chain without the source.
         refetch: () => {

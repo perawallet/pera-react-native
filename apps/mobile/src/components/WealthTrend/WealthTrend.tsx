@@ -45,7 +45,7 @@ export const WealthTrend = ({
     const styles = useStyles()
     const { privacyMode } = useSettings()
 
-    const { data, isPending, isUnavailableOnNetwork, excludedChainIds } =
+    const { data, isPending, isUnavailableOnNetwork, isPartial } =
         usePortfolioHistoryQuery(sources, period, currencyScope, enabled)
 
     // Trend follows the fiat value, like the chart — the ALGO-denominated
@@ -74,7 +74,7 @@ export const WealthTrend = ({
         !hasPoints ||
         privacyMode ||
         isUnavailableOnNetwork ||
-        excludedChainIds.length > 0 ? (
+        isPartial ? (
         <></>
     ) : (
         <PWView style={styles.container}>
