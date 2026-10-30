@@ -94,7 +94,8 @@ addresses before approving, because any extension page can send on the control s
 ## Composition roots
 
 - Native: `apps/mobile/src/modules/connections/providers/useConnectionsProvider.ts` creates the
-  registry, registers the WalletConnect v1 and v2 handlers, boots it through `bootConnections`
+  registry, registers the WalletConnect v1 and v2 handlers and the EIP-1193 handler that serves
+  the in-app browser's EVM pages ([DAPP_BRIDGE](DAPP_BRIDGE.md#in-app-browser)), boots it through `bootConnections`
   (`packages/connections/src/boot.ts`), and mounts the proposal queue, error toasts and signing
   adapter.
 - Extension offscreen: `apps/browser/src/offscreen/runOffscreenApp.ts` registers the WalletConnect

@@ -321,6 +321,40 @@ A revoked site, from the dApp (`wallet_revokePermissions`) or from Settings,
 gets `accountsChanged([])`, not `disconnect`, because EIP-1193 reserves
 `disconnect` for a provider that has lost every chain.
 
+## In-app browser
+
+The mobile app's WebView serves the same EIP-1193 handler, so a dApp opened in
+Discover finds Pera exactly as it does in the extension: `window.ethereum` when
+nothing holds it, and always an EIP-6963 announcement.
+
+- **Page side:** `eip1193ProviderJS` in
+  `apps/mobile/src/modules/webview/components/PWWebView/eip1193-injected-script.ts`,
+  injected before content loads and again at document end, only on `https:` pages
+  and only when some EVM chain has `dappConnect` on. It mirrors
+  `apps/browser/src/content/eip1193-main.ts` by hand, because Hermes cannot
+  stringify a compiled function into the page; keep the two in step.
+- **Transport:** `apps/mobile/src/modules/webview/utils/webViewDappTransport.ts`
+  is the `DappTransport`. Requests arrive through `ReactNativeWebView.postMessage`
+  stamped with the per-load bridge token, so the existing main-frame gate drops
+  subframe forgeries. The origin is the URL the posting frame reported, never
+  anything in the payload, and a page that is not `https:` is answered 4100.
+- **Answers** are injected as a call to `window.__peraEip1193Deliver`, guarded by
+  `location.origin`, rather than a `message` event the page's own listeners would
+  see. An answer for a page that has since navigated to another origin is dropped.
+- **User gesture:** the page script stamps each request with whether a trusted
+  `pointerdown` or `keydown` happened within five seconds. Without one,
+  `eth_requestAccounts` answers 4100 and no sheet opens. Unlike the extension,
+  which stamps the flag in an isolated world, the stamp is made in the page's own
+  realm: the script captures `JSON.stringify` at install and `postMessage` at
+  install when the native bridge already exists, otherwise on first use, but a
+  page that runs before then can still forge it, so treat it as best-effort
+  against a hostile page.
+- **Timeouts:** the page script rejects an unanswered request with 4900 after the
+  same backstop the extension uses (`dappPageTimeoutMs`), so a dropped answer
+  cannot leave a pending `eth_requestAccounts` blocking later ones.
+- **Approval** is the native connection sheet and signing review, as for
+  WalletConnect. The connection is listed in Connected Apps like the extension's.
+
 ## The dApp's own connect modal
 
 A dApp on `@perawallet/connect` renders its own wallet-choice modal, and the
