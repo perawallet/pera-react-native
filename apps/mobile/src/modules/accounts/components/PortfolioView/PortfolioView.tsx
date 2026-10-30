@@ -25,13 +25,8 @@ import { AssetAmount } from '@components/AssetAmount'
 import { PreferredAmount } from '@components/PreferredAmount'
 import { useNativeAsset } from '@perawallet/wallet-core-assets'
 import { WealthChart } from '@components/WealthChart'
-import {
-    formatDatetime,
-    type HistoryPeriod,
-    type Nullable,
-} from '@perawallet/wallet-core-shared'
+import { formatDatetime, type Nullable } from '@perawallet/wallet-core-shared'
 import { trackEvent, HomeEvent } from '@analytics'
-import { useCallback, useMemo } from 'react'
 import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated'
 import {
     EXPANDABLE_PANEL_ANIMATION_DURATION,
@@ -40,16 +35,14 @@ import {
 import { useChartInteraction } from '@hooks/useChartInteraction'
 import { ChartPeriodSelection } from '@components/ChartPeriodSelection'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
-import {
-    type PortfolioValueHistoryItem,
-    useAccountBalancesHistoryQuery,
-} from '@perawallet/wallet-core-accounts'
+import { type PortfolioValueHistoryItem } from '@perawallet/wallet-core-accounts'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { UserPreferences } from '@constants/user-preferences'
 import { InfoButton } from '@components/InfoButton'
 import { usePortfolioTrend } from './usePortfolioTrend'
 import { usePortfolioTrendColumn } from './usePortfolioTrendColumn'
 import { usePortfolioView } from './usePortfolioView'
+import { usePortfolioChart } from './usePortfolioChart'
 import { ExpandablePanel } from '@components/ExpandablePanel'
 import { TrendIndicator } from '@components/TrendIndicator'
 
@@ -84,19 +77,6 @@ export const PortfolioView = ({ ...props }: PortfolioViewProps) => {
         setPreference(UserPreferences.chartVisible, !isChartShown)
     }
 
-    // The native headline reads its scrubbed value from the single-chain
-    // series, so only the native basis fetches it. There `chartSources` are
-    // all on `scope`'s chain, so it shares the summed chart's cache entry.
-    const nativeAddresses = useMemo(
-        () => chartSources.map(({ address }) => address),
-        [chartSources],
-    )
-    const { data: nativeHistoryData } = useAccountBalancesHistoryQuery(
-        nativeAddresses,
-        period,
-        scope,
-        isChartShown && basis === 'native',
-    )
     const { trendAbsolute, trendPercentage, hasNoTrend } = usePortfolioTrend(
         chartSources,
         period,
@@ -104,37 +84,17 @@ export const PortfolioView = ({ ...props }: PortfolioViewProps) => {
         isChartShown,
     )
 
-    // The chart reports fiat points only; the native headline reads the same
-    // point from this single-chain series, which shares the chart's timestamps.
-    const selectedNativeValue = useMemo(
-        () =>
-            selectedPoint
-                ? (nativeHistoryData.find(
-                      point =>
-                          point.datetime.getTime() ===
-                          selectedPoint.datetime.getTime(),
-                  )?.nativeValue ?? null)
-                : null,
-        [nativeHistoryData, selectedPoint],
-    )
-
-    const trendPeriodLabel = useMemo<Record<HistoryPeriod, string>>(
-        () => ({
-            'one-day': t('portfolio.last_24_hours'),
-            'one-week': t('portfolio.last_7_days'),
-            'one-month': t('portfolio.last_30_days'),
-            'one-year': t('portfolio.last_year'),
-        }),
-        [t],
-    )
-
-    const chartSelectionChanged = useCallback(
-        (selected: Nullable<PortfolioValueHistoryItem>) => {
-            setSelectedPoint(selected)
-            props.onDataSelected?.(selected)
-        },
-        [setSelectedPoint, props],
-    )
+    const { selectedNativeValue, trendPeriodLabel, chartSelectionChanged } =
+        usePortfolioChart({
+            chartSources,
+            period,
+            scope,
+            isChartShown,
+            basis,
+            selectedPoint,
+            setSelectedPoint,
+            onDataSelected: props.onDataSelected,
+        })
 
     const { isTrendColumnInLayout, trendColumnStyle } =
         usePortfolioTrendColumn(isChartShown)

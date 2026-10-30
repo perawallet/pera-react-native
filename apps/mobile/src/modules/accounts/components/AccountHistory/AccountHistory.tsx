@@ -10,10 +10,8 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
 import {
     PWFlatList,
-    PWLoadingIndicator,
     PWRefreshControl,
     PWView,
 } from '@components/core'
@@ -23,12 +21,9 @@ import { useStyles } from './styles'
 import { useAccountHistory } from './useAccountHistory'
 import {
     TransactionHistoryFeed,
-    TransactionHistoryRow,
     TransactionHistoryLoadState,
-    TransactionHistorySearchOlder,
     getTransactionRowKey,
     getTransactionRowType,
-    type TransactionListRow,
 } from '@modules/transactions'
 import { RowSeparator } from './RowSeparator'
 
@@ -65,49 +60,10 @@ export const AccountHistory = ({ scrollEnabled }: AccountHistoryProps) => {
         isExportingCsv,
         isCsvExportVisible,
         handleOpenFilter,
-        handleTransactionPress,
-        suspectedPoisoningById,
+        renderItem,
+        renderFooter,
+        handleFilterPress,
     } = useAccountHistory()
-
-    const renderItem = useCallback(
-        ({ item }: { item: TransactionListRow }) => (
-            <TransactionHistoryRow
-                row={item}
-                onTransactionPress={handleTransactionPress}
-                suspectedPoisoning={suspectedPoisoningById.get(item.key)}
-            />
-        ),
-        [handleTransactionPress, suspectedPoisoningById],
-    )
-
-    const renderFooter = useCallback(() => {
-        if (isFetchingNextPage) {
-            return (
-                <PWView style={styles.loadingFooter}>
-                    <PWLoadingIndicator size='sm' />
-                </PWView>
-            )
-        }
-        if (isSearchPaused) {
-            return (
-                <PWView style={styles.loadingFooter}>
-                    <TransactionHistorySearchOlder
-                        onPress={handleSearchOlder}
-                    />
-                </PWView>
-            )
-        }
-        return null
-    }, [
-        isFetchingNextPage,
-        isSearchPaused,
-        handleSearchOlder,
-        styles.loadingFooter,
-    ])
-
-    const handleFilterPress = useCallback(() => {
-        void handleOpenFilter()
-    }, [handleOpenFilter])
 
     const titleBar = (
         <AccountHistoryTitleBar
