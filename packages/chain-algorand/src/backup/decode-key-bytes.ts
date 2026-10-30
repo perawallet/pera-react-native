@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { decodeFromBase64 } from '@perawallet/wallet-core-shared'
+import { decodeFromBase64, type Nullable } from '@perawallet/wallet-core-shared'
 
 // Algorand Ed25519 secret-key sizes accepted from backup payloads:
 //   - 32: the raw seed (Pera Web exports this)
@@ -37,12 +37,12 @@ const MAX_KEY_STRING_LENGTH = 512
 export const decodePrivateKeyBytes = (
     raw: string,
     options?: { allowCommaSeparated?: boolean },
-): Uint8Array | null => {
+): Nullable<Uint8Array> => {
     if (raw.length > MAX_KEY_STRING_LENGTH) {
         return null
     }
 
-    let asBase64: Uint8Array | null = null
+    let asBase64: Nullable<Uint8Array> = null
     try {
         asBase64 = decodeFromBase64(raw)
     } catch {

@@ -21,6 +21,7 @@ type CardAmountInputProps = {
     /** Right-aligned header text, e.g. "Balance: 12.00". */
     balanceText: string
     /** Raw typed amount string, or null/undefined when empty. */
+    // lanekeep-ignore-next-line pera/amount-types reason: the keypad's raw text, which can be a partial entry like `0.`; the Decimal is derived from it
     amount: Maybe<string>
     /** Chip contents (icon/text); rendered inside the styled chip container. */
     chip: ReactNode

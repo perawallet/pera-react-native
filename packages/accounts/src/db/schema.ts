@@ -57,3 +57,20 @@ export const AccountChainStateSchema = sqliteTable(
         }),
     ],
 )
+
+// Tokens the user added on a chain without opt-in, so they show at a zero
+// balance. Algorand's opt-ins live on chain and never land here.
+export const AccountAddedTokensSchema = sqliteTable(
+    'account_added_tokens',
+    {
+        accountAddress: text('account_address').notNull(),
+        scope: text('scope').notNull().$type<ChainScopeKey>(),
+        assetId: text('asset_id').notNull(),
+        addedAt: integer('added_at').notNull(),
+    },
+    table => [
+        primaryKey({
+            columns: [table.accountAddress, table.scope, table.assetId],
+        }),
+    ],
+)

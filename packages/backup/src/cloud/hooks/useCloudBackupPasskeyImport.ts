@@ -17,6 +17,7 @@ import {
     encodeToBase64,
     logger,
     toError,
+    type Nullable,
 } from '@perawallet/wallet-core-shared'
 import {
     deriveEnginePasskeyEntry,
@@ -53,16 +54,19 @@ export type ResolvedSeed = {
  *  access to. `null` means the wallet is not on this device. */
 export type SeedEntropyResolver = (
     seedAddress: string,
-) => Promise<ResolvedSeed | null>
+) => Promise<Nullable<ResolvedSeed>>
 
 export type UseCloudBackupPasskeyImportResult = {
     importPasskeys: PasskeyImportFn
 }
 
-type SeedCache = Map<string, { seedKeyId: string; mainKey: Uint8Array } | null>
+type SeedCache = Map<
+    string,
+    Nullable<{ seedKeyId: string; mainKey: Uint8Array }>
+>
 
 /** Seed address to the seed's local key id, or `null` when it is not here. */
-type SeedIdCache = Map<string, string | null>
+type SeedIdCache = Map<string, Nullable<string>>
 
 /** `privateKey` is owned by whoever receives this and must be zeroed. */
 type ResolvedKey =
@@ -132,7 +136,7 @@ export const useCloudBackupPasskeyImport = (
         async (
             payload: PasskeyBackupPayload,
             seedIds: SeedIdCache,
-        ): Promise<PasskeySkipReason | null> => {
+        ): Promise<Nullable<PasskeySkipReason>> => {
             const publicKeySpkiDer = decodeFromBase64(payload.publicKeySpkiDer)
             if (
                 enginePasskeyEntryExists(payload.credentialId, publicKeySpkiDer)
@@ -185,7 +189,7 @@ export const useCloudBackupPasskeyImport = (
             try {
                 for (const { payload, secret } of passkeys) {
                     const { credentialId } = payload
-                    let privateKey: Uint8Array | null = null
+                    let privateKey: Nullable<Uint8Array> = null
                     try {
                         if (inEngine) {
                             const skip = await importIntoEngine(
@@ -230,7 +234,7 @@ export const useCloudBackupPasskeyImport = (
 
                         // The collecting device checked this key, so a mismatch is
                         // corruption; written, every signature would be rejected.
-                        let publicKeySpkiDer: string | null
+                        let publicKeySpkiDer: Nullable<string>
                         try {
                             publicKeySpkiDer = encodeToBase64(
                                 p256PrivateKeyToSpkiDer(privateKey),

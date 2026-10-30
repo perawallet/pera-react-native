@@ -26,7 +26,11 @@ import {
 import { Decimal } from 'decimal.js'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { Database } from '@perawallet/wallet-core-database'
-import { logger } from '@perawallet/wallet-core-shared'
+import {
+    logger,
+    type Optional,
+    type Maybe,
+} from '@perawallet/wallet-core-shared'
 import {
     getSubmissionAttemptsAtNonce,
     markSubmissionUnknown,
@@ -149,7 +153,7 @@ export type SubmitAndRecordEthereumTransactionsParams = {
 const maxFeeOf = ({
     gas,
     maxFeePerGas,
-}: ReturnType<typeof parseTransaction>): Decimal | undefined =>
+}: ReturnType<typeof parseTransaction>): Optional<Decimal> =>
     gas === undefined || maxFeePerGas === undefined
         ? undefined
         : new Decimal((gas * maxFeePerGas).toString())
@@ -157,12 +161,12 @@ const maxFeeOf = ({
 // The newest open attempt of the sender at this nonce under another hash; a
 // transport retry of the same bytes shares the hash, so it replaces nothing.
 const findReplacedAttempt = async (
-    db: Database | undefined,
+    db: Optional<Database>,
     scope: ChainScope,
     sender: string,
     nonce: number,
     hash: string,
-): Promise<SubmissionAttempt | undefined> => {
+): Promise<Optional<SubmissionAttempt>> => {
     const open = await getSubmissionAttemptsAtNonce({
         db,
         scope,
@@ -182,7 +186,7 @@ const underpricedReplacement = (hash: string) =>
     )
 
 const isUnderpricedReplacement = (
-    replaced: SubmissionAttempt | undefined,
+    replaced: Optional<SubmissionAttempt>,
     parsed: ReturnType<typeof parseTransaction>,
 ): boolean => {
     const original =
@@ -226,7 +230,7 @@ const bestEffort = async (label: string, write: () => Promise<unknown>) => {
     }
 }
 
-const isSameAddress = (a: string | null | undefined, b: string): boolean =>
+const isSameAddress = (a: Maybe<string>, b: string): boolean =>
     a != null && getAddress(a) === getAddress(b)
 
 // Two sends built before either was recorded pick the same nonce, and the
@@ -234,7 +238,7 @@ const isSameAddress = (a: string | null | undefined, b: string): boolean =>
 // A speed-up resends the original's call and a cancel sends nothing to the
 // sender; any other transaction at a held nonce is that collision.
 const isNonceCollision = (
-    replaced: SubmissionAttempt | undefined,
+    replaced: Optional<SubmissionAttempt>,
     parsed: ReturnType<typeof parseTransaction>,
     sender: string,
 ): boolean => {
@@ -306,7 +310,7 @@ export const submitAndRecordEthereumTransactions = async ({
             serializedTransaction,
         })
         const hash = keccak256(serializedTransaction)
-        let replaced: SubmissionAttempt | undefined
+        let replaced: Optional<SubmissionAttempt>
         if (nonce !== undefined) {
             await bestEffort('replacement lookup', async () => {
                 replaced = await findReplacedAttempt(
@@ -330,7 +334,7 @@ export const submitAndRecordEthereumTransactions = async ({
         if (isUnderpricedReplacement(replaced, parsed)) {
             throw underpricedReplacement(hash)
         }
-        let attemptId: string | undefined
+        let attemptId: Optional<string>
         await bestEffort('record', async () => {
             attemptId = await recordSubmissionAttempt({
                 db,

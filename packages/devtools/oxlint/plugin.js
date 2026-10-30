@@ -36,6 +36,7 @@ import { loggerStaticMessage } from './rules/logger-static-message.js'
 import { preferLookupMap } from './rules/prefer-lookup-map.js'
 import { preferToError } from './rules/prefer-to-error.js'
 import { noDeepRelativeImports } from './rules/no-deep-relative-imports.js'
+import { preferNullableAlias } from './rules/prefer-nullable-alias.js'
 import { webviewInjectionSerializer } from './rules/webview-injection-serializer.js'
 import { typedDomainErrors } from './rules/typed-domain-errors.js'
 import { queryPendingGated } from './rules/query-pending-gated.js'
@@ -72,6 +73,7 @@ export default {
         'prefer-lookup-map': preferLookupMap,
         'prefer-to-error': preferToError,
         'no-deep-relative-imports': noDeepRelativeImports,
+        'prefer-nullable-alias': preferNullableAlias,
         'webview-injection-serializer': webviewInjectionSerializer,
         'typed-domain-errors': typedDomainErrors,
         'query-pending-gated': queryPendingGated,

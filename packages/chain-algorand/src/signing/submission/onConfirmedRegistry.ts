@@ -11,8 +11,9 @@
  */
 
 import type { OnConfirmedHandler } from '@perawallet/wallet-core-signing'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
-let registered: OnConfirmedHandler | null = null
+let registered: Nullable<OnConfirmedHandler> = null
 
 /**
  * Register the global handler invoked after a submitted-and-confirmed
@@ -23,7 +24,7 @@ let registered: OnConfirmedHandler | null = null
  * Calling with `null` clears the handler (useful for tests).
  */
 export const setOnConfirmedHandler = (
-    handler: OnConfirmedHandler | null,
+    handler: Nullable<OnConfirmedHandler>,
 ): void => {
     registered = handler
 }
@@ -34,4 +35,5 @@ export const setOnConfirmedHandler = (
  * rather than as an error, so the signing pipeline still works in
  * environments (tests, headless tools) that have not opted into refresh.
  */
-export const getOnConfirmedHandler = (): OnConfirmedHandler | null => registered
+export const getOnConfirmedHandler = (): Nullable<OnConfirmedHandler> =>
+    registered

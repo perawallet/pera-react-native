@@ -18,7 +18,7 @@ import {
     dappRequestChainAdapters,
     type DappRequestChainAdapter,
 } from '@perawallet/wallet-core-connections/dappRequest'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 
 /** Shared by v1 and v2 (`pera/no-cross-protocol-imports` forbids them importing each other). */
 export type WalletConnectSupport = DappRequestChainAdapter['walletConnect']
@@ -43,7 +43,7 @@ export const walletConnectSupportFor = (
 
 /** Fails closed: no adapter, or a chain that serves no v1, accepts nothing. */
 export const isV1ChainIdAcceptable = (
-    chainId: number | undefined,
+    chainId: Optional<number>,
     scope: ChainScope,
 ): boolean => {
     const support = walletConnectSupportFor(scope)

@@ -20,6 +20,7 @@ import {
     ETHEREUM,
     EVM_TEST_CHAINS,
     POLYGON,
+    eip155IdOf,
     evmScopeOf,
 } from '../../__tests__/evm-chains'
 
@@ -289,6 +290,16 @@ describe('parsePaymentUri', () => {
 describe('payment URIs on another EVM chain', () => {
     const base = createEvmAddressCodec(BASE)
 
+    it.each(EVM_TEST_CHAINS.filter(chain => eip155IdOf(chain) !== 1))(
+        'names the $row.id mainnet id when no network is given',
+        chain => {
+            const uri =
+                createEvmAddressCodec(chain).toPaymentUri(HARDHAT_ADDRESS)
+
+            expect(uri).toBe(`ethereum:${HARDHAT_ADDRESS}@${eip155IdOf(chain)}`)
+        },
+    )
+
     it("emits the chain's own EIP-155 id", () => {
         expect(
             base.toPaymentUri(HARDHAT_ADDRESS, { networkId: 'mainnet' }),
@@ -314,10 +325,11 @@ describe('payment URIs on another EVM chain', () => {
         })
     })
 
-    it('reads a link without a chain id as its own', () => {
-        expect(base.parsePaymentUri(`ethereum:${HARDHAT_ADDRESS}`)).toEqual({
-            address: HARDHAT_ADDRESS,
-        })
+    it("leaves a link without a chain id to Ethereum's codec", () => {
+        const uri = `ethereum:${HARDHAT_ADDRESS}`
+
+        expect(base.parsePaymentUri(uri)).toBeUndefined()
+        expect(codec.parsePaymentUri(uri)).toEqual({ address: HARDHAT_ADDRESS })
     })
 
     it('rejects an EIP-155 id no chain owns', () => {

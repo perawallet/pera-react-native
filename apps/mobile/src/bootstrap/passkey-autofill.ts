@@ -22,7 +22,7 @@ import {
     getProvider,
     reconcileKeystore,
 } from '@perawallet/wallet-extension-provider'
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, type Optional } from '@perawallet/wallet-core-shared'
 import { queryClient } from '@providers/queryClient'
 
 const PASSKEY_INTENT_ACTIONS = {
@@ -30,7 +30,7 @@ const PASSKEY_INTENT_ACTIONS = {
     createPasskeyAction: 'com.algorand.perarn.passkeyautofill.CREATE_PASSKEY',
 }
 
-const getService = (): PasskeyAutofillService | undefined => {
+const getService = (): Optional<PasskeyAutofillService> => {
     const provider = getProvider() as unknown as {
         passkeyAutofill?: PasskeyAutofillService
     }

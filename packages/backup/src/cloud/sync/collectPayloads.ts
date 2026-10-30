@@ -10,7 +10,11 @@
  limitations under the License
  */
 
-import { logger } from '@perawallet/wallet-core-shared'
+import {
+    logger,
+    type Nullable,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
 import type {
     BackupId,
     BackupItemKey,
@@ -38,7 +42,7 @@ export type CollectPayloadsDeps = {
 export const decryptItem = (
     item: FetchedItem,
     deps: CollectPayloadsDeps,
-): string | null => {
+): Nullable<string> => {
     try {
         return deps.decrypt(item.payload, {
             encryptionKey: deps.encryptionKey,
@@ -63,7 +67,7 @@ const remoteUpdatedAt = (plaintext: string): number => {
 /** Last-write-wins: the local edit survives only when it is STRICTLY newer.
  *  A tie goes to the remote (spec §8) — hence `>`, not `>=`. */
 export const isLocalNewer = (
-    tracked: SyncItemState | undefined,
+    tracked: Optional<SyncItemState>,
     plaintext: string,
 ): boolean =>
     tracked?.isDirty === true &&
@@ -110,7 +114,7 @@ export const adoptRemote = (
 /** Records that the remote version was seen and caches what names it, without
  *  adopting its content. */
 export const seenOnly = (
-    tracked: SyncItemState | undefined,
+    tracked: Optional<SyncItemState>,
     item: FetchedItem,
     identifiers: Partial<SyncItemState>,
 ): SyncItemState => ({

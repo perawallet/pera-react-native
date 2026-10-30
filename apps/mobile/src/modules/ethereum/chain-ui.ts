@@ -11,15 +11,62 @@
  */
 
 import { i18nKey } from '@perawallet/wallet-core-chain-contract'
+import type { Optional } from '@perawallet/wallet-core-shared'
+import {
+    extractDomain,
+    resolveTotalSupply,
+    type AssetAboutDisplay,
+    type AssetDisplayParams,
+    type AssetSupplyDisplay,
+} from '@modules/assets'
 import type { ChainUi } from '@modules/chain-ui'
 import { EthereumTransactionDetailBody } from './components/EthereumTransactionDetailBody'
 import { EthereumTransactionPreviewRow } from './components/EthereumTransactionPreviewRow'
 import { EthereumTransactionReviewBody } from './components/EthereumTransactionReviewBody'
 import { EthereumSendFeeSection } from './components/EthereumSendFeeSection'
 
+export const resolveEthereumAssetAbout = ({
+    asset,
+    scope,
+    descriptor,
+    isNativeAsset,
+}: AssetDisplayParams): AssetAboutDisplay => {
+    const url = isNativeAsset
+        ? descriptor.explorer.homeUrl?.(scope.networkId)
+        : descriptor.explorer.assetUrl(scope.networkId, asset.assetId)
+    return {
+        idLabelKey: isNativeAsset
+            ? null
+            : i18nKey('asset_details.collectible.contract'),
+        urlLabelKey: i18nKey('asset_details.about.url'),
+        explorerLink: url ? { url, label: extractDomain(url) } : null,
+    }
+}
+
+export const resolveEthereumAssetSupply = (
+    params: AssetDisplayParams,
+): AssetSupplyDisplay => {
+    if (params.isNativeAsset) {
+        return {
+            labelKey: i18nKey('asset_details.markets.circulating_supply'),
+            infoBodyKey: i18nKey(
+                'asset_details.markets.circulating_supply_info_body',
+            ),
+            // A native coin has no contract, so no total supply; its circulating supply is market data.
+            amount: null,
+        }
+    }
+    return {
+        ...resolveTotalSupply(params),
+        infoBodyKey: i18nKey(
+            'asset_details.markets.token_total_supply_info_body',
+        ),
+    }
+}
+
 // metro.config.js swaps this for the stub unless the baked CHAINS lists
 // ethereum, which keeps viem out of an Algorand-only bundle.
-export const ethereumChainUi: ChainUi | undefined = {
+export const ethereumChainUi: Optional<ChainUi> = {
     familyLabel: i18nKey('chain_families.evm'),
     passphraseCompatibilityKey: i18nKey('view_passphrase.compatibility.evm'),
     transactionDetails: {
@@ -29,6 +76,10 @@ export const ethereumChainUi: ChainUi | undefined = {
     },
     sendConfirmation: {
         FeeSection: EthereumSendFeeSection,
+    },
+    assetDetails: {
+        resolveAbout: resolveEthereumAssetAbout,
+        resolveSupply: resolveEthereumAssetSupply,
     },
     addressSearchPlaceholder: i18nKey('address_entry.search_placeholder_evm'),
     wrongNetworkAddress: {

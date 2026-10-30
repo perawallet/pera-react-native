@@ -20,6 +20,7 @@ import {
     type SigningCallbacks,
     type SigningResult,
 } from '@perawallet/wallet-core-signing'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { algorandAddressOf } from '../../accounts/vocabulary'
 
 const requireAlgorandAddress = (account: WalletAccount): string => {
@@ -41,7 +42,7 @@ const requireAlgorandAddress = (account: WalletAccount): string => {
  */
 export const signArbitraryDataCase = async (
     data: ArbitraryDataSignableData,
-    originalIndices: number[] | undefined,
+    originalIndices: Optional<number[]>,
     account: WalletAccount,
     signArbitraryData: LocalArbitrarySigningFunction,
     callbacks?: SigningCallbacks,
@@ -79,7 +80,7 @@ export const signArbitraryDataCase = async (
  */
 export const signAuthDataCase = async (
     data: AuthDataSignableData,
-    originalIndices: number[] | undefined,
+    originalIndices: Optional<number[]>,
     account: WalletAccount,
     signAuthData: LocalAuthDataSigningFunction,
     callbacks?: SigningCallbacks,

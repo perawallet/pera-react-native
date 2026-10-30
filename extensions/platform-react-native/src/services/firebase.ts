@@ -64,7 +64,13 @@ import {
     type RemoteConfigDefaultsMap,
 } from '@perawallet/wallet-extension-platform'
 import { config, isDebug } from '@perawallet/wallet-core-config'
-import { logger, withTimeout, toError } from '@perawallet/wallet-core-shared'
+import {
+    logger,
+    withTimeout,
+    toError,
+    type Optional,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 
 const ANDROID_CHANNEL_ID = 'default'
 
@@ -93,7 +99,7 @@ const FCM_TOKEN_FETCH_TIMEOUT_MS = 5000
 const isRemotePush = ({ trigger }: NotificationRequest): boolean =>
     trigger !== null && 'type' in trigger && trigger.type === 'push'
 
-const asNonEmptyString = (value: unknown): string | undefined =>
+const asNonEmptyString = (value: unknown): Optional<string> =>
     typeof value === 'string' && value.length > 0 ? value : undefined
 
 /**
@@ -115,7 +121,7 @@ const asNonEmptyString = (value: unknown): string | undefined =>
  * match rather than no match, which routing cannot detect.
  */
 const extractNotificationPayload = (
-    data: Record<string, unknown> | undefined,
+    data: Optional<Record<string, unknown>>,
 ): NotificationOpenPayload => ({
     url: asNonEmptyString(data?.url),
     type:
@@ -133,28 +139,28 @@ export class RNFirebaseService
         AnalyticsService,
         PushNotificationService
 {
-    remoteConfig: RemoteConfig | null = null
-    private remoteConfigInitInFlight: Promise<void> | null = null
-    messaging: Messaging | null = null
-    analytics: Analytics | null = null
+    remoteConfig: Nullable<RemoteConfig> = null
+    private remoteConfigInitInFlight: Nullable<Promise<void>> = null
+    messaging: Nullable<Messaging> = null
+    analytics: Nullable<Analytics> = null
     private isAnalyticsCollectionEnabled = false
-    crashlytics: Crashlytics | null = null
+    crashlytics: Nullable<Crashlytics> = null
 
     // Single listener (the app registers one at the root). A cold-start tap
     // resolves during init, before the app mounts its listener, so the payload
     // is buffered and replayed on the first registration.
-    private notificationOpenListener: NotificationOpenListener | null = null
-    private pendingNotificationPayload: NotificationOpenPayload | null = null
+    private notificationOpenListener: Nullable<NotificationOpenListener> = null
+    private pendingNotificationPayload: Nullable<NotificationOpenPayload> = null
     // Same single-slot pattern, no replay: a foreground receive is only a
     // cache-freshness hint (see PushNotificationService).
-    private notificationReceivedListener: (() => void) | null = null
+    private notificationReceivedListener: Nullable<() => void> = null
 
     isSupported(): boolean {
         return true
     }
 
     private emitNotificationOpen(
-        data: Record<string, unknown> | undefined,
+        data: Optional<Record<string, unknown>>,
     ): void {
         const payload = extractNotificationPayload(data)
         // Nothing actionable — neither a deeplink URL nor a type to route by.
@@ -290,7 +296,7 @@ export class RNFirebaseService
      * hang indefinitely offline; failures degrade to `undefined` rather than
      * rejecting.
      */
-    private async fetchToken(): Promise<string | undefined> {
+    private async fetchToken(): Promise<Optional<string>> {
         try {
             return await withTimeout(
                 (async () => {
@@ -306,7 +312,7 @@ export class RNFirebaseService
         }
     }
 
-    async getPushToken(): Promise<string | undefined> {
+    async getPushToken(): Promise<Optional<string>> {
         try {
             const { granted } = await getPermissionsAsync()
             if (!granted) {
@@ -320,7 +326,7 @@ export class RNFirebaseService
     }
 
     addTokenRefreshListener(listener: PushTokenRefreshListener): () => void {
-        let detach: (() => void) | undefined
+        let detach: Optional<() => void>
         let cancelled = false
 
         // `getMessaging` is async and may not have run yet (a cold start that

@@ -16,6 +16,7 @@ import { KeyValueRow } from '@components/KeyValueRow'
 import type { PeraAsset } from '@perawallet/wallet-core-assets'
 import { useLanguage } from '@hooks/useLanguage'
 import type { AssetAboutDisplay } from '@modules/assets/types/asset-details-display'
+import { getAssetAboutVisibility } from './getAssetAboutVisibility'
 import { useAssetAbout } from './useAssetAbout'
 
 export type AssetAboutProps = {
@@ -34,6 +35,15 @@ export const AssetAbout = ({ assetDetails, about }: AssetAboutProps) => {
         copyToClipboard,
         openLink,
     } = useAssetAbout(assetDetails, about)
+    const { isVisible, hasIdRow, hasCreatorRow } = getAssetAboutVisibility(
+        assetDetails,
+        about,
+        { assetLink, explorerLink, projectUrl },
+    )
+
+    if (!isVisible) {
+        return null
+    }
 
     return (
         <PWView style={styles.container}>
@@ -46,7 +56,7 @@ export const AssetAbout = ({ assetDetails, about }: AssetAboutProps) => {
                 })}
             </PWText>
 
-            {!!assetDetails.assetId && !!about.idLabelKey && (
+            {hasIdRow && !!about.idLabelKey && (
                 <KeyValueRow
                     title={t(about.idLabelKey)}
                     verticalAlignment='center'
@@ -64,7 +74,7 @@ export const AssetAbout = ({ assetDetails, about }: AssetAboutProps) => {
                 </KeyValueRow>
             )}
 
-            {!!assetDetails.creator?.address && (
+            {hasCreatorRow && (
                 <KeyValueRow
                     title={t('asset_details.about.creator')}
                     verticalAlignment='center'

@@ -13,6 +13,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { AccountSyncResult } from '@perawallet/wallet-core-accounts'
 import {
+    isRateLimitError,
     resolveCheckpointRound,
     syncAccountsPhase,
     syncAssetsPhase,
@@ -49,20 +50,25 @@ vi.mock('@perawallet/wallet-core-transactions', () => ({
     hasCachedHistoryRows: mocks.hasCachedHistoryRows,
 }))
 
-vi.mock('@perawallet/wallet-core-shared', () => ({
-    logger: { warn: mocks.warn },
-    // Unbounded stand-in that records the limit it was given.
-    mapWithConcurrency: async <T, R>(
-        items: T[],
-        limit: number,
-        mapper: (item: T, index: number) => Promise<R>,
-    ) => {
-        mocks.concurrencyLimits.push(limit)
-        return Promise.allSettled(
-            items.map((item, index) => mapper(item, index)),
-        )
-    },
-}))
+vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
+    const actualShared =
+        await importOriginal<typeof import('@perawallet/wallet-core-shared')>()
+    return {
+        logger: { warn: mocks.warn },
+        getHttpStatus: actualShared.getHttpStatus,
+        // Unbounded stand-in that records the limit it was given.
+        mapWithConcurrency: async <T, R>(
+            items: T[],
+            limit: number,
+            mapper: (item: T, index: number) => Promise<R>,
+        ) => {
+            mocks.concurrencyLimits.push(limit)
+            return Promise.allSettled(
+                items.map((item, index) => mapper(item, index)),
+            )
+        },
+    }
+})
 
 const MAINNET = { chainId: 'algorand', networkId: 'mainnet' } as const
 const TESTNET = { chainId: 'algorand', networkId: 'testnet' } as const
@@ -159,7 +165,7 @@ describe('sync phases', () => {
 
         it('flags a 429 as rate limited without logging it', async () => {
             mocks.fetchAndPersistAccount.mockRejectedValue(
-                new Error('HTTP 429 Too Many Requests'),
+                Object.assign(new Error('Too Many Requests'), { status: 429 }),
             )
 
             const result = await syncAccountsPhase(['A'], MAINNET, 'account')
@@ -167,6 +173,20 @@ describe('sync phases', () => {
             expect(result.isRateLimited).toBe(true)
             expect(result.hasSuccess).toBe(false)
             expect(mocks.warn).not.toHaveBeenCalled()
+        })
+
+        it('does not treat a 429 that only appears in the message as rate limited', async () => {
+            mocks.fetchAndPersistAccount.mockRejectedValue(
+                new Error('HTTP 429 Too Many Requests'),
+            )
+
+            const result = await syncAccountsPhase(['A'], MAINNET, 'account')
+
+            expect(result.isRateLimited).toBe(false)
+            expect(mocks.warn).toHaveBeenCalledWith(
+                'Sync step failed',
+                expect.objectContaining({ phase: 'account', subject: 'A' }),
+            )
         })
     })
 
@@ -308,6 +328,43 @@ describe('sync phases', () => {
                 syncAssetsPhase(MAINNET, ['assets'], 'asset'),
             ).rejects.toThrow('db locked')
             expect(mocks.fetchAndPersistAssets).not.toHaveBeenCalled()
+        })
+    })
+
+    describe('isRateLimitError', () => {
+        it('reads a flat status', () => {
+            expect(isRateLimitError({ status: 429 })).toBe(true)
+        })
+
+        it('reads a response status', () => {
+            expect(isRateLimitError({ response: { status: 429 } })).toBe(true)
+        })
+
+        it('finds a 429 down the cause chain', () => {
+            const error = Object.assign(new Error('Contract read failed'), {
+                cause: Object.assign(new Error('HTTP request failed.'), {
+                    status: 429,
+                }),
+            })
+
+            expect(isRateLimitError(error)).toBe(true)
+        })
+
+        it('ignores a 429 that only appears in the message', () => {
+            expect(
+                isRateLimitError(new Error('HTTP 429 Too Many Requests')),
+            ).toBe(false)
+        })
+
+        it('ignores other statuses', () => {
+            expect(isRateLimitError({ status: 500 })).toBe(false)
+        })
+
+        it('terminates on a self-referencing cause', () => {
+            const error = new Error('loop') as Error & { cause?: unknown }
+            error.cause = error
+
+            expect(isRateLimitError(error)).toBe(false)
         })
     })
 

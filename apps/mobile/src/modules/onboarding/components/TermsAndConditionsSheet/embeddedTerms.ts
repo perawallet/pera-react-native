@@ -11,6 +11,7 @@
  */
 
 import { resolveWebviewLanguage } from '@modules/webview'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import en from './embedded-terms.json'
 import de from './embedded-terms.de.json'
 import es from './embedded-terms.es.json'
@@ -34,5 +35,5 @@ export const EMBEDDED_TERMS: Readonly<Record<string, EmbeddedTerms>> = {
     'pt-BR': ptBR,
 }
 
-export const getEmbeddedTerms = (appLocale?: string | null): EmbeddedTerms =>
+export const getEmbeddedTerms = (appLocale?: Nullable<string>): EmbeddedTerms =>
     EMBEDDED_TERMS[resolveWebviewLanguage(appLocale)] ?? en

@@ -22,6 +22,7 @@ import {
     type SeedScheme,
 } from '@perawallet/wallet-core-kms'
 import { getKeystoreStore } from '@perawallet/wallet-extension-provider'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { accountsChainAdapters } from '../chain-adapter'
 import { localKeyKindOf } from '../import-formats'
 import type { WalletAccount } from '../models'
@@ -36,7 +37,7 @@ export type SchemeChain = Pick<ChainDescriptor, 'id' | 'signing'> & {
 const loadedSeedScheme = (
     keys: KeystoreSnapshot,
     keyPairId: string,
-): SeedScheme | null => {
+): Nullable<SeedScheme> => {
     try {
         return seedSchemeOf(resolveSeedKeyFrom(keys, keyPairId))
     } catch {
@@ -53,7 +54,7 @@ export const credentialScheme = (
     account: WalletAccount,
     chain: SchemeChain,
     keys: KeystoreSnapshot = getKeystoreStore().state.keys,
-): SigningScheme | null => {
+): Nullable<SigningScheme> => {
     const primary = chain.signing.schemes[0] ?? null
     const { custody } = account
 

@@ -26,6 +26,7 @@ import {
     hasCachedHistoryRows,
 } from '@perawallet/wallet-core-transactions'
 import {
+    getHttpStatus,
     logger,
     mapWithConcurrency,
     type Nullable,
@@ -64,8 +65,22 @@ export type AssetPhaseResult = SyncPhaseResult<void> & {
     succeededKinds: AssetSyncKind[]
 }
 
-const isRateLimitError = (reason: unknown): boolean =>
-    reason instanceof Error && reason.message.includes('429')
+// Bounds the walk so a self-referencing `cause` terminates.
+const MAX_CAUSE_DEPTH = 8
+
+/**
+ * Reads the HTTP status, never the message. Follows `cause` because chain
+ * clients wrap the transport error a level or two down.
+ */
+export const isRateLimitError = (reason: unknown): boolean => {
+    let link: unknown = reason
+    for (let depth = 0; depth < MAX_CAUSE_DEPTH; depth++) {
+        if (getHttpStatus(link) === 429) return true
+        if (typeof link !== 'object' || link === null) return false
+        link = (link as { cause?: unknown }).cause
+    }
+    return false
+}
 
 const summarize = <T>(
     results: PromiseSettledResult<T>[],

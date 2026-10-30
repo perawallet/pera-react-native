@@ -22,7 +22,11 @@ import {
     type PreparedDappBatch,
 } from '@perawallet/wallet-core-connections'
 import { whenAppUnlocked } from '@perawallet/wallet-core-security'
-import { logger } from '@perawallet/wallet-core-shared'
+import {
+    logger,
+    type Optional,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import {
     DuplicateTransactionBatchError,
     getRunningTransactionBatches,
@@ -165,7 +169,7 @@ const historyEntryOf = (
 const savedSignedOf = (
     batch: TransactionBatch,
     txId: string,
-): SignedTransaction | undefined => {
+): Optional<SignedTransaction> => {
     if (batch.signedRaw === null) return undefined
     const raw = batch.signedRaw as Hex
     return keccak256(raw) === txId
@@ -257,7 +261,7 @@ const run = async (
     const client = createEvmClient(scope, ctx, chain)
     const calls = callsOf(batch)
     let current = batch
-    let unsent: Unsent | undefined
+    let unsent: Optional<Unsent>
     // Sends this run made: one the node never saw failed before it left the
     // device, and resending or rebuilding it would only fail the same way.
     const attempted = new Set<string>()
@@ -266,7 +270,7 @@ const run = async (
         txIds: string[],
         position: number,
         outcome: TransactionBatchOutcome,
-        signedRaw: string | null = null,
+        signedRaw: Nullable<string> = null,
     ): Promise<void> => {
         await updateTransactionBatch({
             id: batch.id,

@@ -70,7 +70,7 @@ export type UseCsvExportMutationResult = {
     isUnavailableOnNetwork: boolean
 }
 
-const toCsvExportError = (error: Error | null): CsvExportError | null => {
+const toCsvExportError = (error: Nullable<Error>): Nullable<CsvExportError> => {
     if (error instanceof CsvExportError) return error
     return error ? new CsvExportError(error.message) : null
 }

@@ -11,6 +11,7 @@
  */
 
 import { Platform } from 'react-native'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import type {
     NativeStoredCredential,
     PasskeyAutofillEventCallback,
@@ -31,11 +32,11 @@ import type {
 export interface PasskeyAutofillNativeAPI {
     setMasterKey(secret: Uint8Array): Promise<void>
     setMainKeyId(id: string): Promise<void>
-    getMainKeyId?(): Promise<string | null>
+    getMainKeyId?(): Promise<Nullable<string>>
     /** @deprecated use {@link PasskeyAutofillNativeAPI.setMainKeyId} */
     setHdRootKeyId(id: string): Promise<void>
     /** @deprecated use {@link PasskeyAutofillNativeAPI.getMainKeyId} */
-    getHdRootKeyId?(): Promise<string | null>
+    getHdRootKeyId?(): Promise<Nullable<string>>
     configureIntentActions(get: string, create: string): Promise<void>
     clearCredentials(): Promise<void>
     deleteCredential(credentialId: string): Promise<void>
@@ -74,9 +75,9 @@ export class PasskeyAutofillService {
         args: unknown[],
         fallback: T,
     ): Promise<T> {
-        const fn = this.native[method] as
-            | ((...a: unknown[]) => T | Promise<T>)
-            | undefined
+        const fn = this.native[method] as Optional<
+            (...a: unknown[]) => T | Promise<T>
+        >
         if (typeof fn !== 'function') {
             return Promise.resolve(fallback)
         }
@@ -98,8 +99,8 @@ export class PasskeyAutofillService {
         return this.invoke('setMainKeyId', [id], undefined)
     }
 
-    getMainKeyId(): Promise<string | null> {
-        return this.invoke<string | null>('getMainKeyId', [], null)
+    getMainKeyId(): Promise<Nullable<string>> {
+        return this.invoke<Nullable<string>>('getMainKeyId', [], null)
     }
 
     /**
@@ -119,8 +120,8 @@ export class PasskeyAutofillService {
      * so it is the one probe that can tell whether the native side still
      * holds a parent id at all.
      */
-    getHdRootKeyId(): Promise<string | null> {
-        return this.invoke<string | null>('getHdRootKeyId', [], null)
+    getHdRootKeyId(): Promise<Nullable<string>> {
+        return this.invoke<Nullable<string>>('getHdRootKeyId', [], null)
     }
 
     /**

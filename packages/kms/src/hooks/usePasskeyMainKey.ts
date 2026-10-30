@@ -16,6 +16,7 @@ import {
     PASSKEY_MAIN_KEY_SCHEME,
     passkeyMainKeyId,
 } from '@perawallet/wallet-extension-provider'
+import type { Optional, Nullable } from '@perawallet/wallet-core-shared'
 import { entropyChildIdOf } from '../utils'
 import { KeyManagementError } from '../errors'
 import { useKMSService } from './useKMSServices'
@@ -26,7 +27,7 @@ export { PASSKEY_MAIN_KEY_SCHEME, passkeyMainKeyId }
 
 export const isPasskeyMainKey = (key: Key): boolean =>
     key.type === 'hd-root-key' &&
-    (key.metadata as { scheme?: unknown } | undefined)?.scheme ===
+    (key.metadata as Optional<{ scheme?: unknown }>)?.scheme ===
         PASSKEY_MAIN_KEY_SCHEME
 
 /**
@@ -35,7 +36,7 @@ export const isPasskeyMainKey = (key: Key): boolean =>
  * (`selectParentKey`, `PasskeyCredentialStore.swift:99`), so a second one would
  * be ambiguous rather than additive.
  */
-export const findPasskeyMainKey = (): Key | null =>
+export const findPasskeyMainKey = (): Nullable<Key> =>
     getKeystoreStore().state.keys.find(isPasskeyMainKey) ?? null
 
 export type UsePasskeyMainKeyResult = {

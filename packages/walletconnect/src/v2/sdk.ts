@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import type { Nullable } from '@perawallet/wallet-core-shared'
+
 // Evaluating these packages costs seconds on a mid-range Android phone, and a
 // static import ran that before the first frame of every launch. Loading them
 // here defers it to the first WalletConnect v2 use.
@@ -33,7 +35,7 @@ const load = async () => {
 
 export type WalletConnectSdk = Awaited<ReturnType<typeof load>>
 
-let pending: Promise<WalletConnectSdk> | null = null
+let pending: Nullable<Promise<WalletConnectSdk>> = null
 
 export const loadWalletConnectSdk = (): Promise<WalletConnectSdk> => {
     pending ??= load().catch((error: unknown) => {

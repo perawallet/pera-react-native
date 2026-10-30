@@ -100,6 +100,8 @@
     "add_asset": {
         "title": "Adicionar um ativo",
         "search_placeholder": "Buscar por nome ou ID do ativo",
+        "search_placeholder_evm": "Buscar por nome, símbolo ou endereço do contrato",
+        "search_placeholder_all": "Buscar por nome, símbolo, ID do ativo ou endereço",
         "no_results": "Nenhum ativo encontrado",
         "partial_results": "Não foi possível pesquisar em algumas redes, então alguns resultados podem estar faltando.",
         "not_listed": {
@@ -126,7 +128,28 @@
         },
         "collectible_title": "Adicionar NFT",
         "collectible_note": "Você precisa fazer opt-in no ASA ID do NFT para poder transferi-lo para a sua wallet. Cole o ASA ID na barra de busca.",
-        "collectible_search_placeholder": "Buscar ID do ativo ou nome do NFT"
+        "collectible_search_placeholder": "Buscar ID do ativo ou nome do NFT",
+        "token": {
+            "added_title": "Token adicionado",
+            "added_body": "{{assetName}} adicionado em {{chain}}",
+            "add_failed_title": "Não foi possível adicionar o token",
+            "unverified_title": "Token não verificado",
+            "unverified_body": "A Pera não verificou {{assetName}}. Qualquer pessoa pode criar um token com qualquer nome ou logo, então confira se o endereço do contrato, {{address}}, é o que você espera antes de adicioná-lo.",
+            "unverified_confirm": "Adicionar mesmo assim",
+            "suspicious_title": "Token suspeito",
+            "suspicious_body": "A Pera marcou {{assetName}} ({{address}}) como suspeito. Ele pode imitar outro token ou fazer parte de um golpe. Adicione-o só se você confiar na origem dele.",
+            "remove_title": "Remover {{assetName}}?",
+            "remove_body": "Ele não aparecerá mais nesta conta em {{chain}}. Nada é enviado à blockchain, e você pode adicioná-lo de novo quando quiser.",
+            "remove_confirm": "Remover",
+            "removed_title": "Token removido",
+            "removed_body": "{{assetName}} removido de {{chain}}",
+            "remove_failed_title": "Não foi possível remover o token"
+        },
+        "info": {
+            "adding_title": "Adicionar ativos",
+            "adding_opt_in": "Na Algorand, adicionar um ativo é um opt-in: uma transação com uma pequena taxa que também bloqueia um saldo mínimo até você fazer opt-out.",
+            "adding_evm": "Em redes EVM como Ethereum, adicionar um token é gratuito e não exige transação. Só muda quais tokens a Pera mostra para esta conta."
+        }
     },
     "asa_verification_info": {
         "title": "Verificação de ASA",
@@ -278,8 +301,10 @@
             "description": "Descrição",
             "social_media": "Redes sociais",
             "chart_empty_body": "Um gráfico aparecerá aqui quando você tiver histórico de saldo",
-            "total_supply_info_title": "Fornecimento total",
-            "total_supply_info_body": "O fornecimento total de um ativo é definido no momento da criação e corresponde ao total de unidades criadas do ativo."
+            "total_supply_info_body": "O fornecimento total de um ativo é definido no momento da criação e corresponde ao total de unidades criadas do ativo.",
+            "circulating_supply": "Fornecimento circulante",
+            "circulating_supply_info_body": "O fornecimento circulante é o número de moedas atualmente em circulação. A moeda nativa de uma rede não tem um total fixo, então esse valor muda conforme moedas são emitidas ou queimadas.",
+            "token_total_supply_info_body": "O fornecimento total é o número de tokens que o contrato emitiu, menos os queimados. Ele muda quando o emissor cria ou queima tokens."
         },
         "action_buttons": {
             "swap": "Converter",
@@ -1097,7 +1122,8 @@
             "title": "Ocorreu um erro ao processar esta conta",
             "body": "Algo deu errado. Tente novamente e entre em contato com o suporte se o problema persistir.",
             "generic": "Ocorreu um erro ao processar esta conta.",
-            "no_hd_wallet": "Não foi possível encontrar a Universal Wallet desta conta."
+            "no_hd_wallet": "Não foi possível encontrar a Universal Wallet desta conta.",
+            "token_unreadable": "A Pera não conseguiu ler os dados deste token. Confira o endereço e tente de novo."
         },
         "blockchain": {
             "generic": "Algo deu errado ao acessar a blockchain."

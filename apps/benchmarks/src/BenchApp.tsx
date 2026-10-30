@@ -15,6 +15,7 @@ import { Text, View } from 'react-native'
 import * as SplashScreen from 'expo-splash-screen'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { PeraWalletProvider } from '@perawallet/wallet-extension-provider'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import {
     startFixtureNetwork,
     type FixtureNetwork,
@@ -38,7 +39,7 @@ const ScenarioContextBridge = ({
     contextRef,
 }: {
     network: FixtureNetwork
-    contextRef: RefObject<ScenarioContext | null>
+    contextRef: RefObject<Nullable<ScenarioContext>>
 }) => {
     contextRef.current = useScenarioContext(network)
     return null
@@ -47,7 +48,7 @@ const ScenarioContextBridge = ({
 const BenchRunner = ({
     contextRef,
 }: {
-    contextRef: RefObject<ScenarioContext | null>
+    contextRef: RefObject<Nullable<ScenarioContext>>
 }) => {
     const getContext = useCallback((): ScenarioContext => {
         if (!contextRef.current) {
@@ -74,7 +75,7 @@ const BenchRunner = ({
 const BenchContent = () => {
     const { isReady, error } = useBenchBootstrap()
     const [network] = useState(startFixtureNetwork)
-    const contextRef = useRef<ScenarioContext | null>(null)
+    const contextRef = useRef<Nullable<ScenarioContext>>(null)
 
     useEffect(() => {
         void SplashScreen.hideAsync()

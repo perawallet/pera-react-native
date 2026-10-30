@@ -11,7 +11,7 @@
  */
 
 import { onlineManager } from '@tanstack/react-query'
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import { PHISHING_LIST_REFRESH_AGE_MS, refreshPhishingLists } from './refresh'
 import { ensurePhishingListsSeeded } from './seed'
 import { PHISHING_LIST_SOURCES } from './sources'
@@ -34,7 +34,7 @@ const isAnySourceDue = (now: number): boolean => {
  */
 export const startPhishingListRefresh = (): (() => void) => {
     let isStopped = false
-    let running: Promise<void> | null = null
+    let running: Nullable<Promise<void>> = null
 
     const check = (): void => {
         if (isStopped || running) return

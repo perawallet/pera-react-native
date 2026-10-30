@@ -30,6 +30,7 @@ import {
     type SignRequest,
 } from '@perawallet/wallet-core-signing'
 import { i18nKey, type ChainId } from '@perawallet/wallet-core-chain-contract'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useToast } from '@hooks/useToast'
 import { getSignedResponseCount } from '../utils/signRequestStatus'
 
@@ -41,7 +42,7 @@ export type UseMultisigSignRequestDeclineParams =
       }
     | {
           mode: 'cancel'
-          signRequest: MultisigSignRequest | null
+          signRequest: Nullable<MultisigSignRequest>
           /** The backend request names no chain, so the sheet showing it passes the one it resolved. */
           chainId: ChainId
       }

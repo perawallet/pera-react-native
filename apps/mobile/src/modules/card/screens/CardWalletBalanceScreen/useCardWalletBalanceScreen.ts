@@ -18,7 +18,7 @@ import {
     useCardWalletBalanceQuery,
     useCardWalletHistoryQuery,
 } from '@perawallet/wallet-core-card'
-import { ZERO_DECIMAL } from '@perawallet/wallet-core-shared'
+import { ZERO_DECIMAL, type Nullable } from '@perawallet/wallet-core-shared'
 import { useRoute, type RouteProp } from '@react-navigation/native'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useCardScope } from '../../hooks/useCardScope'
@@ -38,7 +38,7 @@ type UseCardWalletBalanceScreenResult = {
     copy: CardWalletCopy
     hero: ImageSourcePropType
     /** Balance formatted for display. Null only while it loads. */
-    balanceDisplay: string | null
+    balanceDisplay: Nullable<string>
     /** Currency code, uppercased for display (e.g. "USDC"). */
     currencyDisplay: string
     isLoading: boolean

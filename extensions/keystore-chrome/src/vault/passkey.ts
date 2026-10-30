@@ -11,6 +11,7 @@
  */
 
 import { base64 } from '@scure/base'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import {
     PasskeyPrfUnsupportedError,
     PasskeyUnlockError,
@@ -101,9 +102,9 @@ const deriveKekFromPrf = async (
  * identical request shape — what keeps them from drifting into a salt mismatch.
  */
 const assertPrf = async (
-    credentialIdBytes: Uint8Array | null,
+    credentialIdBytes: Nullable<Uint8Array>,
     salt: Uint8Array,
-): Promise<ArrayBuffer | null> => {
+): Promise<Nullable<ArrayBuffer>> => {
     const allowCredentials: PublicKeyCredentialDescriptor[] =
         credentialIdBytes !== null
             ? [
@@ -128,8 +129,10 @@ const assertPrf = async (
         },
     })
     return (
-        ((assertion as PublicKeyCredential | null)?.getClientExtensionResults()
-            ?.prf?.results?.first as ArrayBuffer | undefined) ?? null
+        ((
+            assertion as Nullable<PublicKeyCredential>
+        )?.getClientExtensionResults()?.prf?.results
+            ?.first as Optional<ArrayBuffer>) ?? null
     )
 }
 
@@ -144,7 +147,7 @@ export const isPasskeyUnlockSupported = async (): Promise<boolean> => {
             const caps = await (
                 PublicKeyCredential as {
                     getClientCapabilities: () => Promise<
-                        Record<string, boolean | undefined>
+                        Record<string, Optional<boolean>>
                     >
                 }
             ).getClientCapabilities()
@@ -186,7 +189,7 @@ export const isPasskeyUnlockEnabled = async (): Promise<boolean> => {
 const wrapMasterKeyWithPasskey = async (
     masterKey: Uint8Array,
 ): Promise<void> => {
-    let prfOutput: ArrayBuffer | null = null
+    let prfOutput: Nullable<ArrayBuffer> = null
     try {
         // Random PRF eval salt persisted with the blob so assertions use the same input.
         const prfEvalSalt = crypto.getRandomValues(new Uint8Array(32))
@@ -227,7 +230,7 @@ const wrapMasterKeyWithPasskey = async (
             },
         })
 
-        const pkCred = credential as PublicKeyCredential | null
+        const pkCred = credential as Nullable<PublicKeyCredential>
         const prfEnabled =
             pkCred?.getClientExtensionResults()?.prf?.enabled ?? false
         if (!prfEnabled) {
@@ -358,12 +361,12 @@ const unwrapMasterKeyWithPasskey = async (): Promise<Uint8Array> => {
     // Decode stored base64 → raw bytes for the allowCredentials descriptor.
     // TextEncoder here would produce ASCII bytes of the string, matching no
     // real credential and causing NotAllowedError on every attempt.
-    const credentialIdBytes: Uint8Array | null =
+    const credentialIdBytes: Nullable<Uint8Array> =
         typeof credentialIdEncoded === 'string'
             ? base64.decode(credentialIdEncoded)
             : null
 
-    let prfOutput: ArrayBuffer | null = null
+    let prfOutput: Nullable<ArrayBuffer> = null
     try {
         prfOutput = await assertPrf(credentialIdBytes, prfEvalSaltBytes)
 

@@ -14,6 +14,7 @@ import { AppState } from 'react-native'
 import { File, Paths } from 'expo-file-system'
 
 import { navigationRef } from '@routes/navigationRef'
+import type { Optional } from '@perawallet/wallet-core-shared'
 
 // Only useE2eFixtureDeeplink imports this, so it leaves the bundle with that
 // module's stub: release builds carry no tracer.
@@ -67,7 +68,7 @@ const emit = (event: NavTraceEvent, data: Record<string, unknown>): void => {
 }
 
 export const flattenRoutes = (
-    state: StateNode | undefined,
+    state: Optional<StateNode>,
     parent = '',
 ): TracedRoute[] =>
     (state?.routes ?? []).flatMap(route => {
@@ -75,7 +76,7 @@ export const flattenRoutes = (
         return [{ key: route.key, path }, ...flattenRoutes(route.state, path)]
     })
 
-export const focusedPath = (state: StateNode | undefined): string => {
+export const focusedPath = (state: Optional<StateNode>): string => {
     const names: string[] = []
     let node = state
     while (node?.routes?.length) {
@@ -88,7 +89,7 @@ export const focusedPath = (state: StateNode | undefined): string => {
 
 /** Adjacent same-name routes in one stack: the same screen pushed twice. */
 export const doubleOpens = (
-    state: StateNode | undefined,
+    state: Optional<StateNode>,
     parent = '',
 ): string[] =>
     (state?.routes ?? []).flatMap((route, i, routes) => {
@@ -107,10 +108,10 @@ let mounted = new Map<string, string>()
 let focused = ''
 const reportedDoubleOpens = new Set<string>()
 let started = false
-let pendingSnapshot: string | undefined
+let pendingSnapshot: Optional<string>
 
 const onStateChange = (): void => {
-    const state = navigationRef.getRootState() as StateNode | undefined
+    const state = navigationRef.getRootState() as Optional<StateNode>
     const next = new Map(
         flattenRoutes(state).map(route => [route.key, route.path]),
     )

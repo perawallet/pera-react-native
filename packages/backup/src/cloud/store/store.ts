@@ -13,7 +13,7 @@
 import { create } from 'zustand'
 import { guardedPersist, registerStore } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
-import type { BaseStoreState } from '@perawallet/wallet-core-shared'
+import type { BaseStoreState, Nullable } from '@perawallet/wallet-core-shared'
 import type {
     CloudBackupActions,
     CloudBackupState,
@@ -23,9 +23,9 @@ import type {
 const STORE_NAME = 'cloud-backup-store'
 
 const initialState = {
-    backupId: null as string | null,
-    salt: null as string | null,
-    deviceId: null as string | null,
+    backupId: null as Nullable<string>,
+    salt: null as Nullable<string>,
+    deviceId: null as Nullable<string>,
 }
 
 type SetState = (partial: Partial<CloudBackupStore>) => void

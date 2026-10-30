@@ -19,6 +19,7 @@ import {
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { useWalletDeployment } from '@perawallet/wallet-core-chain-shared'
 import { isSentInDeviceRegistration } from '@perawallet/wallet-core-device'
+import type { Optional } from '@perawallet/wallet-core-shared'
 
 /**
  * The account's own chain when device registration sends its address there,
@@ -28,7 +29,7 @@ import { isSentInDeviceRegistration } from '@perawallet/wallet-core-device'
  */
 export const useNotificationsChainResolver = (): ((
     account: WalletAccount,
-) => ChainId | undefined) => {
+) => Optional<ChainId>) => {
     const registeredChainIds = useRegisteredChainIds()
     const deployment = useWalletDeployment()
     return useCallback(

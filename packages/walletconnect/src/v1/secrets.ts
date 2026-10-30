@@ -18,6 +18,7 @@ import {
     zeroBytes,
 } from '@perawallet/wallet-core-kms'
 import type { ConnectionPersistence } from '@perawallet/wallet-extension-connections'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 const PREFIX = 'wc1-session-key:'
 
@@ -31,7 +32,7 @@ export interface WalletConnectV1SessionKeyStore {
     /** Idempotent; resolves with the `secretRef` to persist on the record. */
     commit(clientId: string, key: string): Promise<string>
     has(clientId: string): boolean
-    read(clientId: string): Promise<string | null>
+    read(clientId: string): Promise<Nullable<string>>
     remove(clientId: string): Promise<void>
 }
 

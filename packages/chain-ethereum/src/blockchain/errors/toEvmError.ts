@@ -20,7 +20,7 @@ import {
     LimitExceededRpcError,
     NonceTooLowError,
 } from 'viem'
-import { toError } from '@perawallet/wallet-core-shared'
+import { toError, type Optional } from '@perawallet/wallet-core-shared'
 import { EvmError, type EvmErrorParams } from './EvmError'
 import { EvmErrorCode } from './evmErrorCodes'
 
@@ -68,7 +68,7 @@ const textOf = (error: unknown): string => {
     return error instanceof Error ? error.message : ''
 }
 
-const revertReasonOf = (chain: unknown[]): string | undefined => {
+const revertReasonOf = (chain: unknown[]): Optional<string> => {
     for (const link of chain) {
         if (link instanceof ContractFunctionRevertedError && link.reason) {
             return link.reason

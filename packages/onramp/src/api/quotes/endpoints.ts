@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { Decimal } from 'decimal.js'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { queryClient, type Nullable } from '@perawallet/wallet-core-shared'
 
@@ -23,7 +24,8 @@ import { transformRampQuote } from './transformers'
 export type CreateRampQuoteParams = {
     pair: string
     destinationAddress: string
-    sourceAmount: Nullable<number>
+    /** Display units. */
+    sourceAmount: Nullable<Decimal>
 }
 
 export const createRampQuote = async (
@@ -39,7 +41,8 @@ export const createRampQuote = async (
         data: {
             pair: params.pair,
             destination_address: params.destinationAddress,
-            source_amount: params.sourceAmount,
+            // The quote endpoint takes a JSON number, not the decimal string orders take.
+            source_amount: params.sourceAmount?.toNumber() ?? null,
         },
         signal,
     })

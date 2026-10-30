@@ -12,6 +12,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNetworkStatus } from '@modules/network'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 /**
  * How long the initial load may spin before the error surface takes over.
@@ -42,7 +43,7 @@ export const usePWWebViewLoadState = ({
     const { hasInternet } = useNetworkStatus()
     const [hasDocument, setHasDocument] = useState(false)
     const [isTimedOut, setIsTimedOut] = useState(false)
-    const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+    const timerRef = useRef<Nullable<ReturnType<typeof setTimeout>>>(null)
     const wasOfflineRef = useRef(false)
     const reloadedThisEpisodeRef = useRef(false)
 

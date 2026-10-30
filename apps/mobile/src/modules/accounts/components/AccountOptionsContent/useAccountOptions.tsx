@@ -43,7 +43,7 @@ import {
     useNotificationsChainResolver,
 } from '@perawallet/wallet-core-messages'
 import { getBackupSyncManager } from '@perawallet/wallet-core-backup'
-import { logger, toError } from '@perawallet/wallet-core-shared'
+import { logger, toError, type Optional } from '@perawallet/wallet-core-shared'
 import type { SheetOption } from '@components/SheetOptionRow'
 import { useLanguage } from '@hooks/useLanguage'
 import { useAccountName } from '@hooks/useAccountName'
@@ -103,15 +103,15 @@ export type UseAccountOptionsResult = {
     isCloudBackupAvailable: boolean
     isRekeyed: boolean
     canUndoRekey: boolean
-    authAccount: WalletAccount | undefined
-    authAddress: string | undefined
+    authAccount: Optional<WalletAccount>
+    authAddress: Optional<string>
     handleUndoRekey: () => void
     removeConfirmView: RemoveConfirmView
     handleConfirmBackupWarning: () => void
     handleConfirmRemove: () => void
     handleDeleteFromBackup: () => Promise<void>
     handleKeepInBackup: () => Promise<void>
-    pendingBackupChoice: BackupChoice | undefined
+    pendingBackupChoice: Optional<BackupChoice>
     handleCancelRemove: () => void
     handleToggleNotifications: () => void
 }

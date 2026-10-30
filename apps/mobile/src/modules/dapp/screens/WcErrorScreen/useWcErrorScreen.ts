@@ -12,10 +12,11 @@
 
 import { useCallback, useMemo } from 'react'
 import { useLanguage } from '@hooks/useLanguage'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useDappRequest } from '../../hooks/useDappRequest.web'
 
 type UseWcErrorScreenResult = {
-    error: Error | null
+    error: Nullable<Error>
     isLoading: boolean
     handleAcknowledge: () => void
 }

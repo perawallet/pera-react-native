@@ -12,7 +12,10 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
-import { baseUnitsToDisplayUnits } from '@perawallet/wallet-core-shared'
+import {
+    baseUnitsToDisplayUnits,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { getChainDescriptor } from '@perawallet/wallet-core-chain-shared'
 import {
@@ -26,7 +29,7 @@ import type { Decimal } from 'decimal.js'
 
 export type UseDelegationTransactionFeeQueryResult = {
     /** Fee the delegation transaction will actually pay, in display units of the chain's native asset. */
-    fee: Decimal | undefined
+    fee: Optional<Decimal>
     isPending: boolean
 }
 

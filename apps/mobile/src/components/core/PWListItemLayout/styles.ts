@@ -13,6 +13,7 @@
 import { makeStyles } from '@rneui/themed'
 
 import type { DimensionValue } from 'react-native'
+import type { Optional } from '@perawallet/wallet-core-shared'
 
 type StyleProps = {
     leftFlex: number
@@ -21,7 +22,7 @@ type StyleProps = {
     align: 'center' | 'top'
 }
 
-const toPercent = (ratio?: number): DimensionValue | undefined =>
+const toPercent = (ratio?: number): Optional<DimensionValue> =>
     ratio == null
         ? undefined
         : (`${Math.round(ratio * 100)}%` as DimensionValue)

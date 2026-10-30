@@ -15,10 +15,12 @@ import { Decimal } from 'decimal.js'
 import { findNativeAsset } from '@perawallet/wallet-core-assets'
 import { fetchAndPersistAccount, ensureAccountFetched } from '../account-syncer'
 import type { AccountStateSnapshot } from '../../chain-adapter'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import { getAccountChainState, useHoldingsRefreshStore } from '../../store'
 import {
     fakeAccountsChain,
     MAINNET_SCOPE,
+    registerFakeNativeAsset,
 } from '../../__tests__/fakeAccountsChain'
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
@@ -32,7 +34,16 @@ const mockRefreshAccountHoldings = vi.fn()
 const mockGetAccountChainStateRow = vi.fn()
 const mockInsertAssetHolding = vi.fn()
 
+const { mockGetAddedTokenIdsByAccount } = vi.hoisted(() => ({
+    mockGetAddedTokenIdsByAccount: vi.fn(
+        async ({ accountAddresses }: { accountAddresses: string[] }) =>
+            new Map(accountAddresses.map(address => [address, [] as string[]])),
+    ),
+}))
+
 vi.mock('../../db', () => ({
+    getAddedTokenIdsByAccount: (...args: unknown[]) =>
+        mockGetAddedTokenIdsByAccount(...(args as [never])),
     insertAssetHolding: (...args: unknown[]) => mockInsertAssetHolding(...args),
     upsertAccountChainState: (...args: unknown[]) =>
         mockUpsertAccountChainState(...args),
@@ -73,6 +84,7 @@ const fetchAccountState = () =>
 
 describe('fetchAndPersistAccount', () => {
     beforeEach(() => {
+        registerFakeNativeAsset()
         vi.clearAllMocks()
         mockUpsertAccountChainState.mockResolvedValue(undefined)
         mockRefreshAccountHoldings.mockResolvedValue(true)
@@ -132,7 +144,7 @@ describe('fetchAndPersistAccount', () => {
         expect(fetchAccountState()).toHaveBeenCalledWith(
             'ADDR1',
             MAINNET_SCOPE,
-            { priorChainState: undefined },
+            { priorChainState: undefined, addedTokenIds: [] },
         )
         expect(mockUpsertAccountChainState).toHaveBeenCalledWith({
             accountAddress: 'ADDR1',
@@ -156,6 +168,58 @@ describe('fetchAndPersistAccount', () => {
         })
     })
 
+    it("hands the chain the account's added tokens with the read", async () => {
+        mockGetAddedTokenIdsByAccount.mockResolvedValueOnce(
+            new Map([['ADDR1', ['0xTOKEN']]]),
+        )
+
+        await fetchAndPersistAccount('ADDR1', MAINNET_SCOPE)
+
+        expect(fetchAccountState()).toHaveBeenCalledWith(
+            'ADDR1',
+            MAINNET_SCOPE,
+            expect.objectContaining({ addedTokenIds: ['0xTOKEN'] }),
+        )
+    })
+
+    it('skips the added-token read on a chain that adds by opt-in', async () => {
+        getProvider().chains.reset()
+        registerFakeNativeAsset(6, { requiresAssetOptIn: true })
+
+        await fetchAndPersistAccount('ADDR1', MAINNET_SCOPE)
+
+        expect(mockGetAddedTokenIdsByAccount).not.toHaveBeenCalled()
+        expect(fetchAccountState()).toHaveBeenCalledWith(
+            'ADDR1',
+            MAINNET_SCOPE,
+            expect.objectContaining({ addedTokenIds: [] }),
+        )
+    })
+
+    it('reads the added tokens of a chain with no registered descriptor', async () => {
+        getProvider().chains.reset()
+
+        await fetchAndPersistAccount('ADDR1', MAINNET_SCOPE)
+
+        expect(mockGetAddedTokenIdsByAccount).toHaveBeenCalled()
+        expect(fetchAccountState()).toHaveBeenCalled()
+    })
+
+    it('still syncs, with no added tokens, when they cannot be read', async () => {
+        mockGetAddedTokenIdsByAccount.mockRejectedValueOnce(
+            new Error('disk I/O error'),
+        )
+
+        await fetchAndPersistAccount('ADDR1', MAINNET_SCOPE)
+
+        expect(fetchAccountState()).toHaveBeenCalledWith(
+            'ADDR1',
+            MAINNET_SCOPE,
+            expect.objectContaining({ addedTokenIds: [] }),
+        )
+        expect(mockRefreshAccountHoldings).toHaveBeenCalled()
+    })
+
     it("hands the chain the prior row's chain state", async () => {
         const priorChainState = {
             family: 'algorand' as const,
@@ -176,7 +240,7 @@ describe('fetchAndPersistAccount', () => {
         expect(fetchAccountState()).toHaveBeenCalledWith(
             'ADDR1',
             MAINNET_SCOPE,
-            { priorChainState },
+            { priorChainState, addedTokenIds: [] },
         )
     })
 
@@ -285,6 +349,7 @@ describe('fetchAndPersistAccount', () => {
 
 describe('ensureAccountFetched', () => {
     beforeEach(() => {
+        registerFakeNativeAsset()
         vi.clearAllMocks()
         mockInsertAssetHolding.mockResolvedValue(undefined)
         mockRefreshAccountHoldings.mockResolvedValue(true)
@@ -311,7 +376,7 @@ describe('ensureAccountFetched', () => {
         expect(fetchAccountState()).toHaveBeenCalledWith(
             'ADDR1',
             MAINNET_SCOPE,
-            { priorChainState: undefined },
+            { priorChainState: undefined, addedTokenIds: [] },
         )
     })
 

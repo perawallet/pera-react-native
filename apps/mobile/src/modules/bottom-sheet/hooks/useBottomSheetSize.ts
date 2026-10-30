@@ -11,12 +11,13 @@
  */
 
 import { useContext } from 'react'
+import type { Optional } from '@perawallet/wallet-core-shared'
 
 import { BottomSheetIdContext } from '../components/BottomSheetHost/BottomSheetIdContext'
 import { useBottomSheetStore } from '../store/bottomSheetStore'
 import type { BottomSheetSize } from '../types'
 
-export const useBottomSheetSize = (): BottomSheetSize | undefined => {
+export const useBottomSheetSize = (): Optional<BottomSheetSize> => {
     const id = useContext(BottomSheetIdContext)
     return useBottomSheetStore(s =>
         id ? s.requests.find(r => r.id === id)?.options?.size : undefined,

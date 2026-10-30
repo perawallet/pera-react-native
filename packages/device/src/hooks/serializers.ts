@@ -11,6 +11,7 @@
  */
 
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import type {
     DeviceAccountRegistration,
     DeviceRegistration,
@@ -46,7 +47,7 @@ const dedupeByChainAddress = (
  */
 export const toDeviceRegistrationRequest = (
     registration: DeviceRegistration,
-    chainOf: (chainId: ChainId) => string | null,
+    chainOf: (chainId: ChainId) => Nullable<string>,
 ): DeviceRegistrationRequest => ({
     ...(registration.id !== undefined ? { id: registration.id } : {}),
     push_token: registration.pushToken,

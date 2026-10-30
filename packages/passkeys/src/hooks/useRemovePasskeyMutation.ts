@@ -12,6 +12,7 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { getProvider } from '@perawallet/wallet-extension-provider'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { KeyStoreExtension } from '@algorandfoundation/keystore-core'
 import type { Passkey } from '../models/passkey'
 import { notifyPasskeyChanged } from '../native/passkeyChanges'
@@ -22,7 +23,7 @@ export type UseRemovePasskeyMutationResult = {
     removePasskey: (passkey: Passkey) => Promise<void>
     isPending: boolean
     isError: boolean
-    error: Error | null
+    error: Nullable<Error>
 }
 
 /**
@@ -61,6 +62,6 @@ export const useRemovePasskeyMutation = (): UseRemovePasskeyMutationResult => {
         removePasskey: mutation.mutateAsync,
         isPending: mutation.isPending,
         isError: mutation.isError,
-        error: mutation.error as Error | null,
+        error: mutation.error as Nullable<Error>,
     }
 }

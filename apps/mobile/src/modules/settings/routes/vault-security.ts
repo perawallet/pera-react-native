@@ -11,8 +11,9 @@
  */
 
 import type React from 'react'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 // Native: the vault security screen is web-only (chrome.storage/alarms).
 // Metro resolves vault-security.web.ts on web; registration is additionally
 // capability-gated (routeCapabilities.vaultSecuritySettings).
-export const VaultSecuritySettingsScreen: React.ComponentType | null = null
+export const VaultSecuritySettingsScreen: Nullable<React.ComponentType> = null

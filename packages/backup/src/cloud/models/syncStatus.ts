@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { BackupSyncResult } from './syncState'
 
 export type BackupSyncStatus =
@@ -22,7 +23,7 @@ export type BackupSyncStatus =
 type DeriveParams = {
     isConfigured: boolean
     isSyncing: boolean
-    lastSyncResult: BackupSyncResult | null
+    lastSyncResult: Nullable<BackupSyncResult>
 }
 
 export const deriveBackupSyncStatus = ({

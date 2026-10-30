@@ -14,7 +14,7 @@ import type {
     KeyRegType,
     AlgorandTransactionView,
 } from '@perawallet/wallet-core-chain-algorand/blockchain'
-import { encodeToBase64 } from '@perawallet/wallet-core-shared'
+import { encodeToBase64, type Optional } from '@perawallet/wallet-core-shared'
 
 /**
  * Online iff a participation key is actually being registered.
@@ -37,5 +37,5 @@ export const getKeyRegType = (tx: AlgorandTransactionView): KeyRegType => {
  * goal, and the ARC-78 URI itself.
  */
 export const formatParticipationKey = (
-    key: Uint8Array | undefined,
-): string | undefined => (key ? encodeToBase64(key) : undefined)
+    key: Optional<Uint8Array>,
+): Optional<string> => (key ? encodeToBase64(key) : undefined)

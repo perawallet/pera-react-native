@@ -21,6 +21,7 @@ import {
     derivedContactId,
     type ContactAddressEntry,
 } from '@perawallet/wallet-core-contacts'
+import type { Maybe, Nullable } from '@perawallet/wallet-core-shared'
 import { isContactItemKey, isContactRecordKey } from './itemKeys'
 import type { SyncItemState } from './syncState'
 import type { BackupItemKey } from './types'
@@ -90,7 +91,7 @@ export const contactRecordAddresses = (
  * wrote stays listed until a family holds an address again.
  */
 export const mergeContactRecord = (
-    remote: Record<string, unknown> | null | undefined,
+    remote: Maybe<Record<string, unknown>>,
     local: ContactRecordPayload,
 ): ContactRecordPayload => {
     if (!remote) return local
@@ -133,7 +134,7 @@ export const mergeContactRecord = (
 /** True for content cached from a record only a newer client can read; this
  *  build never writes over such a record. */
 export const isNewerContactRecord = (
-    record: Record<string, unknown> | null | undefined,
+    record: Maybe<Record<string, unknown>>,
 ): boolean => {
     const parsed = contactRecordPayloadSchema.safeParse(record)
     return parsed.success && !isContactRecordReadable(parsed.data)
@@ -145,7 +146,7 @@ export const isNewerContactRecord = (
 export const trackedContactId = (
     key: BackupItemKey,
     item: SyncItemState,
-): string | null => {
+): Nullable<string> => {
     if (isContactRecordKey(key))
         return typeof item.record?.id === 'string' ? item.record.id : null
     if (isContactItemKey(key) && item.address)

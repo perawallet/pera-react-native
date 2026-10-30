@@ -27,14 +27,17 @@ describe('chainUiFor', () => {
         expect(ui.assetDetails?.resolveAbout).toBeDefined()
     })
 
-    it("returns Ethereum's transaction slots for the evm family, with no asset details", () => {
+    it("returns Ethereum's transaction and asset detail slots for the evm family, with no chain sections", () => {
         const ui = chainUiFor('evm')
 
         expect(ui).toBe(ethereumChainUi)
         expect(ui.transactionDetails?.ReviewBody).toBeDefined()
         expect(ui.transactionDetails?.DetailBody).toBeDefined()
         expect(ui.transactionDetails?.PreviewRow).toBeDefined()
-        expect(ui.assetDetails).toBeUndefined()
+        expect(ui.assetDetails?.resolveAbout).toBeDefined()
+        expect(ui.assetDetails?.resolveSupply).toBeDefined()
+        expect(ui.assetDetails?.VerificationSection).toBeUndefined()
+        expect(ui.assetDetails?.IssuerControlsSection).toBeUndefined()
     })
 
     it('gives each bundled family its own passphrase explainer paragraph', () => {

@@ -20,6 +20,7 @@ import {
     getKeystoreStore,
     getProvider,
 } from '@perawallet/wallet-extension-provider'
+import type { Optional, Nullable } from '@perawallet/wallet-core-shared'
 import type {
     AccountCustody,
     AccountWithCustody,
@@ -46,18 +47,18 @@ export const hasCustody = <K extends AccountCustody['kind']>(
 export const chainAccountOf = (
     account: WalletAccount,
     chainId: ChainId,
-): ChainAccount | undefined => account.chains[chainId]
+): Optional<ChainAccount> => account.chains[chainId]
 
 /** Takes a scope so a chain whose encoding varies by network can answer per network. */
 export const addressOn = (
     account: WalletAccount,
     scope: ChainScope,
-): string | undefined => chainAccountOf(account, scope.chainId)?.address
+): Optional<string> => chainAccountOf(account, scope.chainId)?.address
 
 export const signingKeyOn = (
     account: WalletAccount,
     chainId: ChainId,
-): string | undefined => chainAccountOf(account, chainId)?.keyPairId
+): Optional<string> => chainAccountOf(account, chainId)?.keyPairId
 
 /** Whether any account in `accounts` signs with the KMS key `keyPairId`. */
 export const isKeyReferenced = (
@@ -70,7 +71,7 @@ export const isKeyReferenced = (
         ),
     )
 
-export const hdIndexOf = (account: WalletAccount): HdIndex | undefined => {
+export const hdIndexOf = (account: WalletAccount): Optional<HdIndex> => {
     const { custody } = account
     return custody.kind === 'local' && custody.seed === 'bip39'
         ? custody.hd
@@ -83,10 +84,10 @@ export const hdIndexOf = (account: WalletAccount): HdIndex | undefined => {
  */
 export const standaloneSecretOf = (
     account: WalletAccount,
-): StandaloneSecret | undefined => {
+): Optional<StandaloneSecret> => {
     const { custody } = account
     if (custody.kind !== 'local' || custody.seed !== null) return undefined
-    const chainId = Object.keys(account.chains)[0] as ChainId | undefined
+    const chainId = Object.keys(account.chains)[0] as Optional<ChainId>
     const { chains } = getProvider()
     return chainId !== undefined && chains.has(chainId)
         ? chains.get(chainId).descriptor.signing.standaloneSecret
@@ -95,7 +96,7 @@ export const standaloneSecretOf = (
 
 export const hardwareDeviceOf = (
     account: WalletAccount,
-): { device: HardwareRef; accountIndex: number } | undefined => {
+): Optional<{ device: HardwareRef; accountIndex: number }> => {
     const { custody } = account
     return custody.kind === 'hardware'
         ? { device: custody.device, accountIndex: custody.accountIndex }
@@ -105,7 +106,7 @@ export const hardwareDeviceOf = (
 /** The device record a hardware account was paired with, flattened as the store and Ledger flows keep it. */
 export const hardwareDetailsOf = (
     account: WalletAccount,
-): HardwareWalletDetails | undefined => {
+): Optional<HardwareWalletDetails> => {
     const held = hardwareDeviceOf(account)
     return held
         ? { ...held.device, accountIndex: held.accountIndex }
@@ -126,7 +127,7 @@ export const hasRecoverySeed = (account: WalletAccount): boolean => {
 export const seedOf = (
     account: WalletAccount,
     keys: KeystoreSnapshot = getKeystoreStore().state.keys,
-): string | undefined => {
+): Optional<string> => {
     const { custody } = account
     if (custody.kind !== 'local') return undefined
     const keyPairId = Object.values(account.chains).find(
@@ -147,7 +148,7 @@ export const seedOf = (
 export const authorityOf = (
     account: WalletAccount,
     scope: ChainScope,
-): string | null => {
+): Nullable<string> => {
     const address = addressOn(account, scope)
     const state =
         address === undefined ? undefined : getAccountChainState(scope, address)

@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { getScreenSections } from './screens.catalog'
 import { getSheetSections } from './sheets.catalog'
 import { getDialogSections } from './dialogs.catalog'
@@ -62,7 +63,7 @@ export const getCategories = (tools: ToolHandlers): GalleryCategory[] => [
 export const getCategory = (
     id: GalleryCategoryId,
     tools: ToolHandlers,
-): GalleryCategory | undefined => getCategories(tools).find(c => c.id === id)
+): Optional<GalleryCategory> => getCategories(tools).find(c => c.id === id)
 
 export { getPreviewEntry } from './registry'
 

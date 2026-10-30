@@ -17,6 +17,7 @@ import {
     useCardTransactionsQuery,
 } from '@perawallet/wallet-core-card'
 import { config } from '@perawallet/wallet-core-config'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { trackEvent, CardEvent } from '@analytics'
 import { useLanguage } from '@hooks/useLanguage'
 import { useSendEmail } from '@hooks/useSendEmail'
@@ -25,7 +26,7 @@ import type { PeraCardAccountStackParamList } from '../../routes/types'
 import { formatCardTransactionDateTime } from '../../utils/cardTransactions'
 
 type UseCardTransactionDetailScreenResult = {
-    transaction: CardTransaction | undefined
+    transaction: Optional<CardTransaction>
     /** True while any fetch that could still surface the row is in flight. */
     isLoading: boolean
     isError: boolean

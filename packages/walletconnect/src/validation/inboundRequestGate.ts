@@ -11,6 +11,7 @@
  */
 
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import {
     isV1ChainIdAcceptable,
     walletConnectSupportFor,
@@ -47,7 +48,7 @@ const NO_SIGNING_SUPPORT_REASON =
 type WcEnvelope = { id: number; params: unknown[] }
 
 // A payload without a numeric id cannot be responded to, so it is dropped.
-const asEnvelope = (payload: unknown): WcEnvelope | null => {
+const asEnvelope = (payload: unknown): Nullable<WcEnvelope> => {
     if (typeof payload !== 'object' || payload === null) return null
     const candidate = payload as { id?: unknown; params?: unknown }
     if (typeof candidate.id !== 'number') return null
@@ -58,7 +59,7 @@ const asEnvelope = (payload: unknown): WcEnvelope | null => {
 export const gateSignTxnRequest = (input: {
     payload: unknown
     scope: ChainScope
-    sessionChainId: number | undefined
+    sessionChainId: Optional<number>
     knownAddresses: readonly string[]
 }): GateResult => {
     const envelope = asEnvelope(input.payload)
@@ -94,7 +95,7 @@ type SignDataEnvelope = { id: number; params: unknown }
 
 // `algo_signData`'s `params` is a single ARC-60 wire object, not `algo_signTxn`'s
 // array; only the id is checked here and the chain adapter validates `params`.
-const asSignDataEnvelope = (payload: unknown): SignDataEnvelope | null => {
+const asSignDataEnvelope = (payload: unknown): Nullable<SignDataEnvelope> => {
     if (typeof payload !== 'object' || payload === null) return null
     const candidate = payload as { id?: unknown; params?: unknown }
     if (typeof candidate.id !== 'number') return null
@@ -104,7 +105,7 @@ const asSignDataEnvelope = (payload: unknown): SignDataEnvelope | null => {
 export const gateSignDataRequest = (input: {
     payload: unknown
     scope: ChainScope
-    sessionChainId: number | undefined
+    sessionChainId: Optional<number>
 }): GateResult => {
     const envelope = asSignDataEnvelope(input.payload)
     if (!envelope) return reject('malformed WC envelope')
