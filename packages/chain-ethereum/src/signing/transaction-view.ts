@@ -77,9 +77,9 @@ type EthereumTransactionViewBase = {
     /**
      * Only on a contract call whose calldata is a standard token function. It
      * is a fact about the bytes, so it is set whatever the chain's
-     * capabilities. The review shows an approval always and a transfer only
-     * while `contractDecoding` is on; the address-safety check reads it
-     * regardless.
+     * capabilities. The review shows an approval unless the wallet built the
+     * call, and a transfer only while `contractDecoding` is on; the
+     * address-safety check reads it regardless.
      */
     call?: EvmStandardCall
 }
