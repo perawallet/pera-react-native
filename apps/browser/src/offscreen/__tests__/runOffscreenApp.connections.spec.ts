@@ -91,7 +91,13 @@ const {
             imported: 0,
             skipped: 0,
         })),
-        canSignWith: vi.fn((_account: TestAccount) => true),
+        canSignWith: vi.fn(
+            (
+                _account: TestAccount,
+                _accounts?: TestAccount[],
+                _chainId?: string,
+            ) => true,
+        ),
         getCustomNetworkConfig: vi.fn(),
         dappTransport,
         createChromeDappTransport: vi.fn(
@@ -171,6 +177,21 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
         account: TestAccount,
         chainId: keyof TestAccount['chains'],
     ) => account.chains[chainId],
+    // Mirrors the real helper over this spec's own account fixtures.
+    signingAccountAddressesOn: (chainId: keyof TestAccount['chains']) => {
+        const { accounts } = accountsGetState() as { accounts: TestAccount[] }
+        return accounts.flatMap(account => {
+            const address = account.chains[chainId]?.address
+            return address && canSignWith(account, accounts, chainId)
+                ? [
+                      {
+                          address,
+                          name: (account as { name?: string }).name ?? address,
+                      },
+                  ]
+                : []
+        })
+    },
     useAccountsStore: {
         getState: accountsGetState,
         persist: { rehydrate: vi.fn() },

@@ -56,7 +56,10 @@ import {
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import {
+    addressCodecs,
+    type ChainId,
+} from '@perawallet/wallet-core-chain-contract'
 import { encodeTransactionRaw } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import {
     mockAlgodAccountInformation,
@@ -380,6 +383,90 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
             ])
             expect(namespaces.eip155.methods).toEqual(ETHEREUM_METHODS)
             expectFlowEvents(analytics, 'walletConnectApprove', 'ethereum')
+        })
+
+        it('Given an eip155 proposal, when the sheet opens, then it names the network, shows the account by its 0x address and lists the permissions in plain terms', async () => {
+            await mountProvider()
+            await propose({
+                requiredNamespaces: {
+                    eip155: {
+                        chains: [ETH_MAINNET],
+                        methods: ETHEREUM_METHODS,
+                        events: [],
+                    },
+                },
+            })
+
+            await selectRows(ETHEREUM_ACCOUNT)
+
+            expect(
+                screen.getByText('walletconnect.request.title_network'),
+            ).toBeTruthy()
+            expect(
+                screen.getByTestId('wc_requested_network_ethereum'),
+            ).toBeTruthy()
+            expect(
+                screen.queryByText('walletconnect.request.network_not_added'),
+            ).toBeNull()
+            expect(
+                screen.getByText(
+                    addressCodecs.get('ethereum').truncate(STORED_ETH_ADDRESS),
+                ),
+            ).toBeTruthy()
+            expect(screen.queryByText('Trading')).toBeNull()
+            for (const key of [
+                'view_accounts',
+                'approve_transactions',
+                'sign_messages',
+                'switch_networks',
+            ]) {
+                expect(
+                    screen.getByText(`walletconnect.permissions.${key}`),
+                ).toBeTruthy()
+            }
+        })
+
+        it('Given a wallet whose only account is an Algo25 account, when an eip155 proposal opens, then the network reads as not added with no way to add it', async () => {
+            useAccountsStore.getState().setAccounts([ALGORAND_ACCOUNT])
+            await mountProvider()
+            await propose(eip155Namespace('requiredNamespaces'))
+
+            await waitFor(() =>
+                expect(
+                    screen.getByTestId('wc_requested_network_ethereum'),
+                ).toBeTruthy(),
+            )
+            expect(
+                screen.getByText('walletconnect.request.network_not_added'),
+            ).toBeTruthy()
+            expect(screen.queryByTestId('wc_add_network_ethereum')).toBeNull()
+            expect(screen.queryByText('Trading')).toBeNull()
+        })
+
+        it('Given an HD account that has not added Ethereum, when an eip155 proposal opens, then the network reads as not added and offers adding it', async () => {
+            useAccountsStore.getState().setAccounts([
+                {
+                    ...ETHEREUM_ACCOUNT,
+                    id: 'eth-conn-hd-algo-only',
+                    chains: {
+                        algorand: {
+                            address: HD_TEST_ADDRESS,
+                            keyPairId: 'hd-algo-key',
+                        },
+                    },
+                },
+            ])
+            await mountProvider()
+            await propose(eip155Namespace('requiredNamespaces'))
+
+            await waitFor(() =>
+                expect(
+                    screen.getByTestId('wc_add_network_ethereum'),
+                ).toBeTruthy(),
+            )
+            expect(
+                screen.getByText('walletconnect.request.network_not_added'),
+            ).toBeTruthy()
         })
 
         it('Given an eip155-only proposal, when the user cancels, then the rejection is tracked on ethereum', async () => {

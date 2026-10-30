@@ -578,12 +578,15 @@
         "info": {
             "title": "Backup der Wiederherstellungsphrase für dein Konto erstellen",
             "body": "Ein Backup der Wiederherstellungsphrase ermöglicht es dir, dein Konto wiederherzustellen. Ohne die Wiederherstellungsphrase kannst du den Zugriff auf dein Algorand-Konto unwiderruflich verlieren, wenn du dein Gerät verlierst, das Konto entfernst oder die App löschst!",
+            "body_all_networks": "Deine Wiederherstellungsphrase ist die einzige Möglichkeit, dein Konto in allen Netzwerken wiederherzustellen: {{networks}}. Wenn du ohne Backup dein Gerät verlierst, das Konto entfernst oder die App löschst, verlierst du den Zugriff auf dein Guthaben unwiderruflich.",
             "cta": "Ich verstehe"
         },
         "write_down": {
             "title": "Bereite dich darauf vor, deine Wiederherstellungsphrase aufzuschreiben",
             "body": "Die einzige Möglichkeit, ein Algorand-Konto wiederherzustellen, ist diese Wiederherstellungsphrase.",
+            "body_all_networks": "Diese Wiederherstellungsphrase ist die einzige Möglichkeit, dein Konto und alle seine Adressen in allen Netzwerken wiederherzustellen.",
             "warning": "Teile diese Wiederherstellungsphrase mit niemandem, da sie vollen Zugriff auf dein Konto gewährt.",
+            "warning_all_networks": "Teile diese Wiederherstellungsphrase mit niemandem. Wer sie hat, kontrolliert dein Guthaben in allen Netzwerken.",
             "cta": "Ich bin bereit zu beginnen"
         },
         "mnemonic": {
@@ -3716,11 +3719,10 @@
         },
         "request": {
             "title": "{{name}} möchte sich mit deinem Konto verbinden",
-            "permissions_title_one": "{{count}} Berechtigung angefragt",
-            "permissions_title_other": "{{count}} Berechtigungen angefragt",
-            "permissions_request_accounts": "Deine Wallet-Adresse & Guthaben anzeigen",
-            "permissions_sign_transaction": "Transaktionssignierung anfragen",
-            "permissions_sign_data": "Signierung beliebiger Daten anfragen",
+            "title_network": "{{name}} möchte sich mit deinem Konto auf {{network}} verbinden",
+            "title_networks": "{{name}} möchte sich mit deinen Konten auf {{network}} und {{otherNetwork}} verbinden",
+            "network_not_added": "Nicht hinzugefügt",
+            "origin_verified": "Von WalletConnect verifiziert",
             "accounts_title": "KONTEN AUSWÄHLEN",
             "no_accounts": "Keines deiner Konten kann sich in diesem Netzwerk verbinden.",
             "success_sheet_title": "Du bist mit {{name}} verbunden",
@@ -3738,6 +3740,13 @@
             "networks_betanet": "Betanet",
             "error_network_mismatch": "Diese App wollte sich mit einem anderen Netzwerk verbinden, dein Wallet ist aber auf {{active}}. Wechsle das Netzwerk in den Einstellungen und versuche es erneut.",
             "error_delivery_failed": "Pera konnte die App nicht erreichen, um deine Antwort zu übermitteln — sie wartet möglicherweise noch. Versuche es erneut über die App."
+        },
+        "permissions": {
+            "heading": "Diese App kann",
+            "view_accounts": "Deine Adresse und Guthaben sehen",
+            "approve_transactions": "Dich bitten, Transaktionen zu genehmigen",
+            "sign_messages": "Dich bitten, Nachrichten zu signieren",
+            "switch_networks": "Darum bitten, das Netzwerk zu wechseln"
         },
         "connection": {
             "approve_delivery_failed": "Die dApp konnte nicht erreicht werden, um die Verbindung zu bestätigen. Überprüfe deine Internetverbindung und versuche es erneut."
@@ -3762,6 +3771,7 @@
             "delete_all_body": "Möchtest du wirklich alle Sitzungen löschen?  Dadurch werden alle deine aktiven Sitzungen entfernt und die Verbindung zu allen verbundenen Apps getrennt.",
             "version": "Diese Sitzung verwendet WalletConnect V{{version}}",
             "connected_accounts": "Verbunden mit",
+            "network_label": "{{chain}} {{network}}",
             "permissions": "Erweiterte Berechtigungen",
             "permissions_info_title": "Erweiterte Berechtigungen",
             "permissions_info_body": "WalletConnect ist ein Kommunikationsprotokoll für Web3, das es Wallets und dApps ermöglicht, sich sicher zu verbinden und zu interagieren. Mit jeder neuen Version führt WalletConnect neue Möglichkeiten ein, Transaktionsanfragen von Drittanbieter-Projekten zu handhaben, zu signieren und/oder anzuzeigen.",

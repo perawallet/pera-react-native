@@ -35,8 +35,8 @@ import {
     useSyncCursorStore,
 } from '@perawallet/wallet-core-background'
 import {
-    canSignWith,
     chainAccountOf,
+    signingAccountAddressesOn,
     useAccountsStore,
 } from '@perawallet/wallet-core-accounts'
 import { getCustomNetworkConfig } from '@perawallet/wallet-core-chain-algorand/blockchain'
@@ -58,7 +58,6 @@ import {
     createDappConnectionHandler,
     createEip1193ConnectionHandler,
     importLegacyDappPermissions,
-    type DappAccount,
     type SiteWarningLevel,
 } from '@perawallet/wallet-core-dapp'
 import {
@@ -77,17 +76,6 @@ import { createDatabaseRecovery } from './databaseRecovery'
 import { createWorkerExecutor } from './worker-executor'
 
 const OFFSCREEN_POLL_INTERVAL_MS = 30_000
-
-// Read on every answer, so a deleted or demoted account drops out at once.
-const signingDappAccountsOn = (chainId: ChainId): DappAccount[] => {
-    const { accounts } = useAccountsStore.getState()
-    return accounts.flatMap(account => {
-        const address = chainAccountOf(account, chainId)?.address
-        return address && canSignWith(account, accounts, chainId)
-            ? [{ address, name: account.name ?? address }]
-            : []
-    })
-}
 
 const addressesOn = (chainIds: readonly ChainId[]): string[] =>
     useAccountsStore.getState().accounts.flatMap(account =>
@@ -201,7 +189,7 @@ export const runOffscreenApp = async ({
             getNetworkId,
             getCustomNetworkGenesisHash: () =>
                 getCustomNetworkConfig()?.genesisHash,
-            getAccounts: () => signingDappAccountsOn(ALGORAND_CHAIN_ID),
+            getAccounts: () => signingAccountAddressesOn(ALGORAND_CHAIN_ID),
             siteWarningOf,
         }),
     )
@@ -212,7 +200,7 @@ export const runOffscreenApp = async ({
             isDappConnectEnabled: chainId =>
                 provider.chains.has(chainId) &&
                 provider.chains.capabilities(chainId).dappConnect,
-            getAccounts: signingDappAccountsOn,
+            getAccounts: signingAccountAddressesOn,
             siteWarningOf,
         }),
     )

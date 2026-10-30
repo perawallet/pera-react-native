@@ -13,7 +13,10 @@
 import { describe, expect, it, vi } from 'vitest'
 import { Decimal } from 'decimal.js'
 import type { AssetGroup, PeraAsset } from '@perawallet/wallet-core-assets'
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import type {
+    ChainId,
+    ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import {
     baseUnitsToDisplayUnits,
     type Nullable,
@@ -88,12 +91,16 @@ const holding = (
 
 const build = (
     holdings: TestHolding[],
-    { expanded = [] }: { expanded?: string[] } = {},
+    {
+        expanded = [],
+        unreadChainIds,
+    }: { expanded?: string[]; unreadChainIds?: ReadonlySet<ChainId> } = {},
 ) =>
     buildGroupedHoldingItems({
         holdings,
         expandedGroupIds: new Set(expanded),
         adapter,
+        unreadChainIds,
     })
 
 const describeItems = (items: GroupedHoldingItem<TestHolding>[]) =>
@@ -159,6 +166,28 @@ describe('buildGroupedHoldingItems', () => {
 
         expect(group.usdValue).toBeNull()
         expect(group.amount).not.toBeNull()
+    })
+
+    it('totals USD past an unpriced member that holds none', () => {
+        const emptyUnpriced = holding(ETH_MAINNET, '0xA0b8', '0', 18, null)
+
+        const group = groupAt(build([algoUsdc, emptyUnpriced]), 0)
+
+        expect(group.usdValue?.toString()).toBe('2.5')
+    })
+
+    it('leaves the USD total unknown while a member holds a zero no read vouches for, priced or not', () => {
+        const placeholder = holding(ETH_MAINNET, '0xA0b8', '0', 18)
+
+        const group = groupAt(
+            build([algoUsdc, placeholder], {
+                unreadChainIds: new Set(['ethereum']),
+            }),
+            0,
+        )
+
+        expect(group.usdValue).toBeNull()
+        expect(group.amount?.toString()).toBe('2.5')
     })
 
     it("leaves the sum unknown while a member's metadata hasn't synced", () => {

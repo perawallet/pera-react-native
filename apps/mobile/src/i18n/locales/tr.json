@@ -578,12 +578,15 @@
         "info": {
             "title": "Hesabın için kurtarma passphrase’i yedeklemesi oluştur",
             "body": "Kurtarma passphrase’i yedeklemesi oluşturmak, hesabını kurtarmanı sağlar. Kurtarma passphrase’i olmadan; cihazını kaybedersen, hesabı kaldırırsan veya uygulamayı silersen, Algorand hesabına erişimini kalıcı olarak kaybedebilirsin!",
+            "body_all_networks": "Kurtarma passphrase’in, hesabını tüm ağlarda kurtarmanın tek yoludur: {{networks}}. Yedeğin olmadan cihazını kaybedersen, hesabı kaldırırsan veya uygulamayı silersen fonlarına erişimini kalıcı olarak kaybedersin.",
             "cta": "Anladım"
         },
         "write_down": {
             "title": "Kurtarma passphrase’ini yazmaya hazırlan",
             "body": "Bir Algorand hesabını kurtarmanın tek yolu bu kurtarma passphrase’idir.",
+            "body_all_networks": "Bu kurtarma passphrase’i, hesabını ve tüm ağlardaki adreslerini kurtarmanın tek yoludur.",
             "warning": "Bu kurtarma passphrase’ini kimseyle paylaşma; hesabına tam erişim sağlar.",
+            "warning_all_networks": "Bu kurtarma passphrase’ini kimseyle paylaşma. Ona sahip olan herkes tüm ağlardaki fonlarını kontrol eder.",
             "cta": "Başlamaya hazırım"
         },
         "mnemonic": {
@@ -3724,11 +3727,10 @@
         },
         "request": {
             "title": "{{name}} hesabına bağlanmak istiyor",
-            "permissions_title_one": "{{count}} izin istendi",
-            "permissions_title_other": "{{count}} izin istendi",
-            "permissions_request_accounts": "Cüzdan adresini ve bakiyelerini görüntüleme",
-            "permissions_sign_transaction": "İşlem imzalama talep etme",
-            "permissions_sign_data": "Serbest veri imzalama talep etme",
+            "title_network": "{{name}} {{network}} hesabına bağlanmak istiyor",
+            "title_networks": "{{name}} {{network}} ve {{otherNetwork}} hesaplarına bağlanmak istiyor",
+            "network_not_added": "Eklenmedi",
+            "origin_verified": "WalletConnect tarafından doğrulandı",
             "accounts_title": "HESAPLARI SEÇ",
             "no_accounts": "Hesaplarından hiçbiri bu ağda bağlanamıyor.",
             "success_sheet_title": "{{name}} bağlantısı kuruldu",
@@ -3746,6 +3748,13 @@
             "quantum_fee_delivery_failed": "İstek tamamlanamadı. Bu uygulama, Quantum hesapları için gereken daha yüksek ağ ücretlerini desteklemiyor olabilir.",
             "origin_scam": "Bu uygulama güvenlik riski olarak işaretlendi. Güvenmiyorsan bağlanma.",
             "origin_unverified": "Pera bu uygulamanın web sitesini doğrulayamadı."
+        },
+        "permissions": {
+            "heading": "Bu uygulama şunları yapabilir",
+            "view_accounts": "Adresini ve bakiyelerini görüntüleme",
+            "approve_transactions": "İşlemleri onaylamanı isteme",
+            "sign_messages": "Mesajları imzalamanı isteme",
+            "switch_networks": "Ağ değiştirmeyi isteme"
         },
         "connection": {
             "approve_delivery_failed": "Bağlantıyı onaylamak için dApp’e ulaşılamadı. İnternet bağlantını kontrol et ve tekrar dene."
@@ -3771,6 +3780,7 @@
             "disconnect_failed_title": "Bağlantı kesilemedi",
             "version": "Bu oturum WalletConnect V{{version}} kullanıyor",
             "connected_accounts": "Bağlı hesaplar",
+            "network_label": "{{chain}} {{network}}",
             "permissions": "Gelişmiş izinler",
             "permissions_info_title": "Gelişmiş izinler",
             "permissions_info_body": "WalletConnect, cüzdanların ve dApp’lerin güvenli şekilde bağlanmasını ve etkileşim kurmasını sağlayan bir web3 iletişim protokolüdür. WalletConnect her yeni sürümde, üçüncü taraf projelerden gelen işlem isteklerini işlemek, imzalamak ve/veya görüntülemek için yeni yöntemler sunar."

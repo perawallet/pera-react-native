@@ -578,12 +578,15 @@
         "info": {
             "title": "Crea una copia de seguridad de la passphrase de recuperación de tu cuenta",
             "body": "Crear una copia de seguridad de la passphrase de recuperación te permitirá recuperar tu cuenta. Sin la passphrase de recuperación, si pierdes tu dispositivo, eliminas la cuenta o borras la app, ¡puedes perder el acceso a tu cuenta de Algorand de forma permanente!",
+            "body_all_networks": "Tu passphrase de recuperación es la única forma de recuperar tu cuenta en todas las redes: {{networks}}. Si pierdes tu dispositivo, eliminas la cuenta o borras la app sin una copia de seguridad, perderás el acceso a tus fondos de forma permanente.",
             "cta": "Lo entiendo"
         },
         "write_down": {
             "title": "Prepárate para anotar tu passphrase de recuperación",
             "body": "La única forma de recuperar una cuenta de Algorand es con esta passphrase de recuperación.",
+            "body_all_networks": "Esta passphrase de recuperación es la única forma de recuperar tu cuenta y todas sus direcciones en todas las redes.",
             "warning": "No compartas esta passphrase de recuperación con nadie, ya que otorga acceso total a tu cuenta.",
+            "warning_all_networks": "No compartas esta passphrase de recuperación con nadie. Cualquiera que la tenga controla tus fondos en todas las redes.",
             "cta": "Todo listo, empezar"
         },
         "mnemonic": {
@@ -3724,11 +3727,10 @@
         },
         "request": {
             "title": "{{name}} quiere conectarse a tu cuenta",
-            "permissions_title_one": "Se ha solicitado {{count}} permiso",
-            "permissions_title_other": "Se han solicitado {{count}} permisos",
-            "permissions_request_accounts": "Ver la dirección y los saldos de tu wallet",
-            "permissions_sign_transaction": "Solicitar la firma de transacciones",
-            "permissions_sign_data": "Solicitar la firma de datos arbitrarios",
+            "title_network": "{{name}} quiere conectarse a tu cuenta de {{network}}",
+            "title_networks": "{{name}} quiere conectarse a tus cuentas de {{network}} y {{otherNetwork}}",
+            "network_not_added": "No añadida",
+            "origin_verified": "Verificado por WalletConnect",
             "accounts_title": "SELECCIONAR CUENTAS",
             "no_accounts": "Ninguna de tus cuentas puede conectarse en esta red.",
             "success_sheet_title": "Te has conectado a {{name}}",
@@ -3746,6 +3748,13 @@
             "quantum_fee_delivery_failed": "No se ha podido completar la solicitud. Puede que esta app no admita las comisiones de red más altas que requieren las cuentas Quantum.",
             "origin_scam": "Esta app se ha marcado como un riesgo de seguridad. No te conectes a menos que confíes en ella.",
             "origin_unverified": "Pera no pudo verificar el sitio web de esta app."
+        },
+        "permissions": {
+            "heading": "Esta app podrá",
+            "view_accounts": "Ver tu dirección y tus saldos",
+            "approve_transactions": "Pedirte que apruebes transacciones",
+            "sign_messages": "Pedirte que firmes mensajes",
+            "switch_networks": "Pedir cambiar de red"
         },
         "connection": {
             "approve_delivery_failed": "No se ha podido contactar con la dApp para confirmar la conexión. Comprueba tu conexión a internet y vuelve a intentarlo."
@@ -3771,6 +3780,7 @@
             "disconnect_failed_title": "No se pudo desconectar",
             "version": "Esta sesión usa WalletConnect V{{version}}",
             "connected_accounts": "Conectado con",
+            "network_label": "{{chain}} {{network}}",
             "permissions": "Permisos avanzados",
             "permissions_info_title": "Permisos avanzados",
             "permissions_info_body": "WalletConnect es un protocolo de comunicación para web3 que permite a las wallets y a las dApps conectarse e interactuar de forma segura. Con cada nueva versión, WalletConnect introduce nuevas formas de gestionar, firmar o mostrar las solicitudes de transacción que llegan de proyectos de terceros."

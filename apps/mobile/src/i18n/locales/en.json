@@ -572,18 +572,21 @@
     },
     "backup": {
         "banner": {
-            "text": "You need to backup the recovery passphrase",
-            "cta": "Backup now"
+            "text": "You need to back up your recovery passphrase",
+            "cta": "Back Up Now"
         },
         "info": {
             "title": "Create a recovery passphrase backup for your account",
             "body": "Creating a recovery passphrase backup will allow you to recover your account. Without the recovery passphrase, if you lose your device, remove the account or delete the app, you can permanently lose access to your Algorand account!",
+            "body_all_networks": "Your recovery passphrase is the only way to recover your account on all networks: {{networks}}. If you lose your device, remove the account or delete the app without a backup, you'll permanently lose access to your funds.",
             "cta": "I Understand"
         },
         "write_down": {
             "title": "Prepare to write down your recovery passphrase",
             "body": "The only way to recover an Algorand account is with this recovery passphrase.",
+            "body_all_networks": "This recovery passphrase is the only way to recover your account and all its addresses on every network.",
             "warning": "Do not share this recovery passphrase with anyone, as it grants full access to your account.",
+            "warning_all_networks": "Never share this recovery passphrase. Anyone who has it controls your funds on every network.",
             "cta": "I'm Ready to Begin"
         },
         "mnemonic": {
@@ -3724,11 +3727,10 @@
         },
         "request": {
             "title": "{{name}} wants to connect to your account",
-            "permissions_title_one": "Requested {{count}} permission",
-            "permissions_title_other": "Requested {{count}} permissions",
-            "permissions_request_accounts": "View your wallet address & balances",
-            "permissions_sign_transaction": "Request transaction signing",
-            "permissions_sign_data": "Request arbitrary data signing",
+            "title_network": "{{name}} wants to connect to your {{network}} account",
+            "title_networks": "{{name}} wants to connect to your {{network}} and {{otherNetwork}} accounts",
+            "network_not_added": "Not added",
+            "origin_verified": "Verified by WalletConnect",
             "accounts_title": "SELECT ACCOUNTS",
             "no_accounts": "None of your accounts can connect on this network.",
             "success_sheet_title": "You are connected to {{name}}",
@@ -3746,6 +3748,13 @@
             "quantum_fee_delivery_failed": "The request could not be completed. This app may not support the higher network fees required by Quantum accounts.",
             "origin_scam": "This app has been flagged as a security risk. Don't connect unless you trust it.",
             "origin_unverified": "Pera couldn't verify this app's website."
+        },
+        "permissions": {
+            "heading": "This app will be able to",
+            "view_accounts": "See your address and balances",
+            "approve_transactions": "Ask you to approve transactions",
+            "sign_messages": "Ask you to sign messages",
+            "switch_networks": "Ask to switch networks"
         },
         "connection": {
             "approve_delivery_failed": "Couldn't reach the dApp to confirm the connection. Check your internet connection and try again."
@@ -3771,6 +3780,7 @@
             "disconnect_failed_title": "Couldn't disconnect",
             "version": "This session is using WalletConnect V{{version}}",
             "connected_accounts": "Connected with",
+            "network_label": "{{chain}} {{network}}",
             "permissions": "Advanced Permissions",
             "permissions_info_title": "Advanced Permissions",
             "permissions_info_body": "WalletConnect is a communications protocol for web3, enabling wallets and dApps to securely connect and interact. With each new version, WalletConnect introduces new ways to handle, sign and/or display transaction requests coming from third party projects."

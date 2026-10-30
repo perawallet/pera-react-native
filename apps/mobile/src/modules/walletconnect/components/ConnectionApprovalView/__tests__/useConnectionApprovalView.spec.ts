@@ -29,6 +29,7 @@ const {
     showError,
     pushWebView,
     firstUnreachableChainsNote,
+    enableChainOnAccounts,
 } = vi.hoisted(() => ({
     trackEvent: vi.fn(),
     confirmQuantumDappUsage: vi.fn(
@@ -39,6 +40,7 @@ const {
     showError: vi.fn(),
     pushWebView: vi.fn(),
     firstUnreachableChainsNote: vi.fn(),
+    enableChainOnAccounts: vi.fn(),
 }))
 
 vi.mock('@analytics', async importOriginal => ({
@@ -48,6 +50,13 @@ vi.mock('@analytics', async importOriginal => ({
 
 vi.mock('@hooks/useQuantumDappWarning', () => ({
     useQuantumDappWarning: () => ({ confirmQuantumDappUsage }),
+}))
+
+vi.mock('@hooks/useEnableChainAction', () => ({
+    useEnableChainAction: () => ({
+        enablingChainId: enabling.current,
+        enableChainOnAccounts,
+    }),
 }))
 
 vi.mock('@hooks/useToast', () => ({
@@ -81,6 +90,67 @@ const ACCOUNTS = [
     { id: 'acct-eth-only', chains: { ethereum: { address: '0xCCCC' } } },
 ]
 
+// The unit-test provider registers none of these chains; the title and chip
+// names need their descriptors, so `has`/`get` answer for them and delegate the rest.
+const NETWORKS = [
+    { id: 'mainnet', tier: 'mainnet', isDefaultForTier: true },
+    { id: 'testnet', tier: 'testnet', isDefaultForTier: true },
+]
+
+const CHAIN_DESCRIPTORS: Record<
+    string,
+    { family: string; displayName: string; networks: typeof NETWORKS }
+> = {
+    algorand: {
+        family: 'algorand',
+        displayName: 'Algorand',
+        networks: NETWORKS,
+    },
+    ethereum: { family: 'evm', displayName: 'Ethereum', networks: NETWORKS },
+    base: { family: 'evm', displayName: 'Base', networks: NETWORKS },
+}
+
+vi.mock('@perawallet/wallet-extension-provider', async importOriginal => {
+    const actual =
+        await importOriginal<
+            typeof import('@perawallet/wallet-extension-provider')
+        >()
+    return {
+        ...actual,
+        getProvider: () => {
+            const provider = actual.getProvider()
+            const chains = new Proxy(provider.chains, {
+                get: (target, key, receiver) => {
+                    if (key === 'has') {
+                        return (id: string) =>
+                            id in CHAIN_DESCRIPTORS || target.has(id as never)
+                    }
+                    if (key === 'get') {
+                        return (id: string) =>
+                            id in CHAIN_DESCRIPTORS
+                                ? { descriptor: CHAIN_DESCRIPTORS[id] }
+                                : target.get(id as never)
+                    }
+                    const value = Reflect.get(target, key, receiver)
+                    return typeof value === 'function'
+                        ? value.bind(target)
+                        : value
+                },
+            })
+            return { ...provider, chains }
+        },
+    }
+})
+
+const enabling = vi.hoisted(() => ({
+    current: undefined as string | undefined,
+}))
+const eligible = vi.hoisted(() => ({ current: [] as string[] }))
+const held = vi.hoisted(() => ({
+    watch: new Set<string>(),
+    hardware: new Set<string>(),
+}))
+
 // The real `signingAddressesOn` resolves signers through chain adapters this
 // spec has no reason to register; the hook's own job is the selection and the
 // fan-out across `requested.chains`.
@@ -91,6 +161,12 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
     useAllAccounts: () => ACCOUNTS,
     useSigningAccountsOn: () => ACCOUNTS,
     firstUnreachableChainsNote,
+    eligibleChains: () => eligible.current,
+    hasCustody: (account: { id: string }, kind: string) =>
+        (kind === 'watch' && held.watch.has(account.id)) ||
+        (kind === 'hardware' && held.hardware.has(account.id)),
+    chainAccountOf: (account: (typeof ACCOUNTS)[number], chainId: string) =>
+        (account.chains as Record<string, unknown>)[chainId],
     useAccountValueTotalsQuery: (...args: unknown[]) => {
         totals.query(...args)
         return { accountValueTotals: totals.current }
@@ -165,7 +241,7 @@ describe('useConnectionApprovalView', () => {
     // The ranking itself is the accounts package's; what this hook owns is
     // feeding it every chain's totals, so an Ethereum account ranks by its
     // own balance instead of as if empty.
-    describe('sortedAccounts', () => {
+    describe('accountRows', () => {
         beforeEach(() => {
             totals.query.mockClear()
             totals.sort.mockReset()
@@ -175,15 +251,20 @@ describe('useConnectionApprovalView', () => {
         })
 
         it('is the signing accounts in the order the shared sort gives them', () => {
+            const proposal = makeProposal({
+                requested: {
+                    networks: ['mainnet', 'mainnet'],
+                    chains: ['algorand', 'ethereum'],
+                    methods: [],
+                },
+            })
             const { result } = renderHook(() =>
-                useConnectionApprovalView(makeProposal() as never),
+                useConnectionApprovalView(proposal as never),
             )
 
-            expect(result.current.sortedAccounts.map(({ id }) => id)).toEqual([
-                'acct-eth-only',
-                'acct-both',
-                'acct-algo',
-            ])
+            expect(
+                result.current.accountRows.map(({ account }) => account.id),
+            ).toEqual(['acct-eth-only', 'acct-both', 'acct-algo'])
         })
 
         it('sorts by the value totals of every chain, keyed by chain and address', () => {
@@ -207,6 +288,239 @@ describe('useConnectionApprovalView', () => {
                 accountValueTotals,
                 'algorand',
             )
+        })
+    })
+
+    describe('what the sheet presents', () => {
+        afterEach(() => {
+            vi.mocked(useSiteSafetyQuery).mockReturnValue({
+                verdict: { kind: 'clear' },
+                isChecking: false,
+            })
+        })
+
+        beforeEach(() => {
+            totals.sort.mockReset()
+            totals.sort.mockImplementation((accounts: unknown[]) => ({
+                sortedAccounts: accounts,
+            }))
+            enableChainOnAccounts.mockReset()
+            eligible.current = []
+            held.watch = new Set()
+            held.hardware = new Set()
+            enabling.current = undefined
+        })
+
+        const proposalOn = (chains: string[], methods: string[] = []) =>
+            makeProposal({
+                requested: {
+                    networks: chains.map(() => 'mainnet'),
+                    chains,
+                    methods,
+                },
+            })
+
+        it('shows each account on the first requested chain it signs on', () => {
+            const { result } = renderHook(() =>
+                useConnectionApprovalView(
+                    proposalOn(['ethereum', 'algorand']) as never,
+                ),
+            )
+
+            expect(
+                result.current.accountRows.map(({ account, chainId }) => [
+                    account.id,
+                    chainId,
+                ]),
+            ).toEqual([
+                ['acct-algo', 'algorand'],
+                ['acct-both', 'ethereum'],
+                ['acct-eth-only', 'ethereum'],
+            ])
+        })
+
+        it('names the one requested chain in the title', () => {
+            const { result } = renderHook(() =>
+                useConnectionApprovalView(proposalOn(['ethereum']) as never),
+            )
+
+            expect(result.current.title).toBe(
+                'walletconnect.request.title_network',
+            )
+        })
+
+        it('names both families when the proposal spans two, and counts a family once', () => {
+            const { result } = renderHook(() =>
+                useConnectionApprovalView(
+                    proposalOn(['algorand', 'ethereum', 'base']) as never,
+                ),
+            )
+
+            expect(result.current.title).toBe(
+                'walletconnect.request.title_networks',
+            )
+        })
+
+        it('keeps the generic title when the proposal names no chain', () => {
+            const { result } = renderHook(() =>
+                useConnectionApprovalView(proposalOn([]) as never),
+            )
+
+            expect(result.current.title).toBe('walletconnect.request.title')
+        })
+
+        it('marks a requested chain no held account signs on as not added, and offers adding it to accounts that can reach it', () => {
+            eligible.current = ['base']
+            const { result } = renderHook(() =>
+                useConnectionApprovalView(
+                    proposalOn(['ethereum', 'base']) as never,
+                ),
+            )
+
+            expect(
+                result.current.requestedNetworks.map(
+                    ({ chainId, isAdded, canAdd }) => [
+                        chainId,
+                        isAdded,
+                        canAdd,
+                    ],
+                ),
+            ).toEqual([
+                ['ethereum', true, false],
+                ['base', false, true],
+            ])
+        })
+
+        it('marks only the chain being added as adding', () => {
+            eligible.current = ['base']
+            enabling.current = 'base'
+            const { result } = renderHook(() =>
+                useConnectionApprovalView(
+                    proposalOn(['ethereum', 'base']) as never,
+                ),
+            )
+
+            expect(
+                result.current.requestedNetworks.map(
+                    ({ chainId, isAdding }) => [chainId, isAdding],
+                ),
+            ).toEqual([
+                ['ethereum', false],
+                ['base', true],
+            ])
+        })
+
+        it('offers no add when no held account can reach the chain', () => {
+            const { result } = renderHook(() =>
+                useConnectionApprovalView(proposalOn(['base']) as never),
+            )
+
+            expect(result.current.requestedNetworks[0]).toMatchObject({
+                isAdded: false,
+                canAdd: false,
+            })
+            act(() => result.current.handleAddNetwork('base'))
+            expect(enableChainOnAccounts).not.toHaveBeenCalled()
+        })
+
+        it('adds the chain to every non-watch account that can reach it and lacks it', () => {
+            eligible.current = ['base']
+            held.watch = new Set(['acct-algo'])
+            const { result } = renderHook(() =>
+                useConnectionApprovalView(proposalOn(['base']) as never),
+            )
+
+            act(() => result.current.handleAddNetwork('base'))
+
+            expect(enableChainOnAccounts).toHaveBeenCalledWith(
+                ['acct-both', 'acct-eth-only'],
+                'base',
+            )
+        })
+
+        it('never offers adding a chain to a hardware account, which needs its device', () => {
+            eligible.current = ['base']
+            held.hardware = new Set(['acct-algo', 'acct-both', 'acct-eth-only'])
+            const { result } = renderHook(() =>
+                useConnectionApprovalView(proposalOn(['base']) as never),
+            )
+
+            expect(result.current.requestedNetworks[0].canAdd).toBe(false)
+            act(() => result.current.handleAddNetwork('base'))
+            expect(enableChainOnAccounts).not.toHaveBeenCalled()
+        })
+
+        it('lists the permissions the requested methods grant in plain terms', () => {
+            const { result } = renderHook(() =>
+                useConnectionApprovalView(
+                    proposalOn(
+                        ['ethereum'],
+                        ['eth_sendTransaction', 'personal_sign'],
+                    ) as never,
+                ),
+            )
+
+            expect(result.current.permissions).toEqual([
+                'view-accounts',
+                'approve-transactions',
+                'sign-messages',
+            ])
+        })
+
+        it('marks a chain as a test network only when every requested network on it is one', () => {
+            const testnetsOf = (networks: string[]) =>
+                renderHook(() =>
+                    useConnectionApprovalView(
+                        makeProposal({
+                            requested: {
+                                networks,
+                                chains: ['algorand'],
+                                methods: [],
+                            },
+                        }) as never,
+                    ),
+                ).result.current.requestedNetworks[0].isTestnet
+
+            expect(testnetsOf(['testnet'])).toBe(true)
+            expect(testnetsOf(['mainnet', 'testnet'])).toBe(false)
+            expect(testnetsOf(['mainnet'])).toBe(false)
+        })
+
+        it('does not report a verified origin once site safety flags the site', () => {
+            vi.mocked(useSiteSafetyQuery).mockReturnValue({
+                verdict: { kind: 'blocked', host: 'tinyman.org' },
+                isChecking: false,
+            } as never)
+            const { result } = renderHook(() =>
+                useConnectionApprovalView(
+                    makeProposal({
+                        peer: {
+                            name: 'Tinyman',
+                            verification: { status: 'valid' },
+                        },
+                    }) as never,
+                ),
+            )
+
+            expect(result.current.isOriginVerified).toBe(false)
+        })
+
+        it('reports the origin as verified only for a valid verdict', () => {
+            const verified = (status: string) =>
+                renderHook(() =>
+                    useConnectionApprovalView(
+                        makeProposal({
+                            peer: {
+                                name: 'Tinyman',
+                                verification: { status },
+                            },
+                        }) as never,
+                    ),
+                ).result.current.isOriginVerified
+
+            expect(verified('valid')).toBe(true)
+            expect(verified('unknown')).toBe(false)
+            expect(verified('scam')).toBe(false)
         })
     })
 

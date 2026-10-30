@@ -34,6 +34,11 @@ export const useStyles = makeStyles(theme => {
             alignItems: 'center',
             gap: theme.spacing.xs,
         },
+        networkItem: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: theme.spacing.xs,
+        },
         mainnetText,
         testnetText,
         otherNetworkText,

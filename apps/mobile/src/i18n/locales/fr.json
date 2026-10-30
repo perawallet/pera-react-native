@@ -578,12 +578,15 @@
         "info": {
             "title": "Créer une sauvegarde de la passphrase de récupération de votre compte",
             "body": "Créer une sauvegarde de la passphrase de récupération vous permettra de récupérer votre compte. Sans la passphrase de récupération, si vous perdez votre appareil, supprimez le compte ou désinstallez l’application, vous risquez de perdre définitivement l’accès à votre compte Algorand !",
+            "body_all_networks": "Votre passphrase de récupération est le seul moyen de récupérer votre compte sur tous les réseaux : {{networks}}. Si vous perdez votre appareil, supprimez le compte ou désinstallez l’application sans sauvegarde, vous perdrez définitivement l’accès à vos fonds.",
             "cta": "J’ai compris"
         },
         "write_down": {
             "title": "Préparez-vous à noter votre passphrase de récupération",
             "body": "La seule façon de récupérer un compte Algorand est d’utiliser cette passphrase de récupération.",
+            "body_all_networks": "Cette passphrase de récupération est le seul moyen de récupérer votre compte et toutes ses adresses sur tous les réseaux.",
             "warning": "Ne partagez cette passphrase de récupération avec personne : elle donne un accès total à votre compte.",
+            "warning_all_networks": "Ne partagez cette passphrase de récupération avec personne. Toute personne qui la possède contrôle vos fonds sur tous les réseaux.",
             "cta": "Tout est prêt, commencer"
         },
         "mnemonic": {
@@ -3724,11 +3727,10 @@
         },
         "request": {
             "title": "{{name}} souhaite se connecter à votre compte",
-            "permissions_title_one": "{{count}} autorisation demandée",
-            "permissions_title_other": "{{count}} autorisations demandées",
-            "permissions_request_accounts": "Voir l’adresse et les soldes de votre wallet",
-            "permissions_sign_transaction": "Demander la signature de transactions",
-            "permissions_sign_data": "Demander la signature de données arbitraires",
+            "title_network": "{{name}} souhaite se connecter à votre compte {{network}}",
+            "title_networks": "{{name}} souhaite se connecter à vos comptes {{network}} et {{otherNetwork}}",
+            "network_not_added": "Non ajouté",
+            "origin_verified": "Vérifié par WalletConnect",
             "accounts_title": "SÉLECTIONNER LES COMPTES",
             "no_accounts": "Aucun de vos comptes ne peut se connecter sur ce réseau.",
             "success_sheet_title": "Connexion établie avec {{name}}",
@@ -3746,6 +3748,13 @@
             "quantum_fee_delivery_failed": "La demande n’a pas pu être traitée. Cette application ne prend peut-être pas en charge les frais de réseau plus élevés requis par les comptes Quantum.",
             "origin_scam": "Cette application a été signalée comme un risque de sécurité. Ne vous connectez que si vous lui faites confiance.",
             "origin_unverified": "Pera n’a pas pu vérifier le site web de cette application."
+        },
+        "permissions": {
+            "heading": "Cette application pourra",
+            "view_accounts": "Voir votre adresse et vos soldes",
+            "approve_transactions": "Vous demander d’approuver des transactions",
+            "sign_messages": "Vous demander de signer des messages",
+            "switch_networks": "Demander à changer de réseau"
         },
         "connection": {
             "approve_delivery_failed": "Impossible de joindre la dApp pour confirmer la connexion. Vérifiez votre connexion Internet et réessayez."
@@ -3771,6 +3780,7 @@
             "disconnect_failed_title": "Déconnexion impossible",
             "version": "Cette session utilise WalletConnect V{{version}}",
             "connected_accounts": "Connecté avec",
+            "network_label": "{{chain}} {{network}}",
             "permissions": "Autorisations avancées",
             "permissions_info_title": "Autorisations avancées",
             "permissions_info_body": "WalletConnect est un protocole de communication pour le web3, qui permet aux wallets et aux dApps de se connecter et d’interagir en toute sécurité. À chaque nouvelle version, WalletConnect introduit de nouvelles façons de traiter, de signer et/ou d’afficher les demandes de transaction provenant de projets tiers."
