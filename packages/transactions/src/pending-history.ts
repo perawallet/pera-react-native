@@ -22,6 +22,7 @@ import {
     type SubmissionAttemptWithHistoryEntry,
     type SubmissionStatus,
 } from '@perawallet/wallet-core-signing'
+import { getChainCapabilities } from '@perawallet/wallet-core-chain-shared'
 import { historyChainAdapters } from './history-adapter'
 import type { TransactionHistoryStatus } from './models/types'
 import {
@@ -148,7 +149,9 @@ export const getTransactionHistoryWithPending = async (
     page?: PageRef,
 ): Promise<HistoryPageWithPending> => {
     const adapter = historyChainAdapters.get(scope.chainId)
-    const mined = await adapter.getTransactionHistory(address, scope, page)
+    const mined = await adapter.getTransactionHistory(address, scope, page, {
+        capabilities: getChainCapabilities(scope.chainId),
+    })
     if (page) return { ...mined, minedItems: mined.items }
     const pending = await getPendingTransactionRecords({
         address,
