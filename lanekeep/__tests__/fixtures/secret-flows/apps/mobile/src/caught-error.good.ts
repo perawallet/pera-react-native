@@ -26,3 +26,35 @@ export const snapshot = () => {
 export const onMessage = (e: WebViewMessageEvent) => {
     logger.debug('message', JSON.stringify(e.nativeEvent.data))
 }
+
+export const reported = () => {
+    try {
+        run()
+    } catch (error) {
+        Sentry.captureException(error)
+    }
+}
+
+export const recorded = () => {
+    try {
+        run()
+    } catch (error) {
+        crashlytics.recordError(error)
+    }
+}
+
+export const tracked = () => {
+    try {
+        run()
+    } catch (error) {
+        analytics.logEvent('failed', { error })
+    }
+}
+
+export const classified = () => {
+    try {
+        run()
+    } catch {
+        Sentry.captureMessage('request failed')
+    }
+}
