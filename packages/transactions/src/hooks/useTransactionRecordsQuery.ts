@@ -22,6 +22,7 @@ import type {
     PageRef,
     TransactionRecord,
 } from '@perawallet/wallet-core-chain-contract'
+import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 import { SECONDS_PER_DAY } from '@perawallet/wallet-core-config'
 import {
     isoDateToUnixSeconds,
@@ -162,10 +163,15 @@ export const useTransactionRecordsQuery = ({
                 (untilMs === undefined || record.timestamp < untilMs)))
 
     const queryClient = useQueryClient()
+    const contractDecoding = useChainCapability(
+        scope.chainId,
+        'contractDecoding',
+    )
     const queryKey = transactionQueryKeys.records(accountAddress, scope, {
         assetId,
         afterTime,
         beforeTime,
+        contractDecoding,
     })
 
     // A backend page can be empty and still have a next one, and a filtered

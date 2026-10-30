@@ -46,6 +46,7 @@ export { isEvmApprovalCall } from './signing/standard-calls'
 export {
     readEthereumNative,
     toEthereumNative,
+    type EthereumMinedView,
     type EthereumTransactionView,
 } from './signing/transaction-view'
 

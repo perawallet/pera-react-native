@@ -87,6 +87,7 @@ export const createPinRecord = async (pin: string): Promise<PinRecord> => {
         return {
             version: PIN_RECORD_VERSION,
             salt: bytesToHex(salt),
+            // lanekeep-ignore-next-line pera/no-secret-strings reason: PinRecord is persisted as JSON with the hash as hex
             hash: bytesToHex(hash),
             ...createEmptyDuressSlot(),
             failedAttempts: 0,
@@ -115,6 +116,7 @@ export const applyDuressPin = async (
         return {
             ...record,
             duressSalt: bytesToHex(salt),
+            // lanekeep-ignore-next-line pera/no-secret-strings reason: PinRecord is persisted as JSON with the hash as hex
             duressHash: bytesToHex(hash),
             duressEnabled: 1,
         }

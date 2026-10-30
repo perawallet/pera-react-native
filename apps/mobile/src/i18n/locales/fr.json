@@ -1052,7 +1052,9 @@
         },
         "wealth_chart": {
             "empty_body": "Un graphique apparaîtra ici dès que vous aurez un historique de solde",
-            "asset_empty_body": "Un graphique apparaîtra ici dès que vous aurez un historique de solde pour cet actif sur ce compte"
+            "asset_empty_body": "Un graphique apparaîtra ici dès que vous aurez un historique de solde pour cet actif sur ce compte",
+            "excludes_networks": "Ce graphique n'inclut pas encore les actifs {{networks}}",
+            "networks_list": "{{first}} et {{last}}"
         },
         "webview": {
             "failed_title": "Échec du chargement de la page",
@@ -2998,7 +3000,8 @@
             "amount": "Montant",
             "account": "Compte",
             "to": "Destinataire",
-            "network": "Réseau",
+            "send_on_network": "Envoyer {{asset}} sur {{network}}",
+            "view_full_address": "Affiche l’adresse complète",
             "fee": "Frais",
             "current_balance": "Solde actuel",
             "total": "Total",
@@ -3537,8 +3540,13 @@
             "interpreted_title": "{{title}}",
             "swap_subtitle": "{{amountIn}} {{assetIn}} contre {{amountOut}} {{assetOut}}",
             "nft_subtitle": "{{collection}} #{{tokenId}}",
+            "nft_batch_subtitle": "{{collection}} · {{count}} éléments",
             "inner_transaction_count": "{{innerCount}} transactions internes",
             "cancel_transaction": "Annulation"
+        },
+        "record_detail": {
+            "read_failed": "Impossible de lire depuis le réseau les détails de l’appel de cette transaction.",
+            "transaction_id": "ID de transaction"
         },
         "contract_call": {
             "warning": "Pera ne peut pas déterminer ce que fait cet appel de contrat.",
@@ -3576,7 +3584,7 @@
             "rekey_are_you_sure_title": "Voulez-vous continuer ?",
             "rekey_are_you_sure_description": "Cette signature inclut une transaction de rekey, qui donne le contrôle de vos comptes à une autre adresse. Assurez-vous de bien comprendre les conséquences avant de continuer.",
             "rekey_are_you_sure_continue": "Continuer",
-            "high_fee_warning": "Cette demande paie des frais de réseau anormalement élevés de {{fee}} ALGO. Assurez-vous de faire confiance à la source avant de signer.",
+            "high_fee_warning": "Cette demande paie des frais de réseau anormalement élevés de {{fee}}. Assurez-vous de faire confiance à la source avant de signer.",
             "asset_freeze_warning": "Cette transaction gèle ou dégèle des actifs pour l’adresse suivante : {{address}}.",
             "asset_freeze_group_warning": "Ce groupe de transactions gèle ou dégèle des actifs pour l’un des comptes de ce groupe. Veuillez l’examiner attentivement avant de signer.",
             "asset_freeze_warning_bold": "Cela peut empêcher le compte ciblé d’effectuer des transactions avec l’actif gelé. Veuillez l’examiner attentivement avant de signer.",

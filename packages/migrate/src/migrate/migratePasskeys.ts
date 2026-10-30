@@ -17,7 +17,9 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import {
     entropyChildIdOf,
-    entropyToMnemonic,
+    entropyToIndices,
+    handOffSecret,
+    indicesToUtf8Bytes,
     withSecret,
     zeroBytes,
 } from '@perawallet/wallet-core-kms'
@@ -131,16 +133,36 @@ type MigrationContext = {
     hasAccount: (address: string) => boolean
     /** Walk address → account → derived key → the HD seed that owns it. */
     resolveSeedKeyId: (address: string) => Optional<string>
-    /** Recover a seed's BIP39 mnemonic from its entropy `secret-key` child (found by metadata). */
-    resolveMnemonic: (seedKeyId: string) => Promise<Optional<string>>
-    /** Derived main key per seed; PBKDF2 (210k) runs once and is reused. */
-    getMainKey: (seedKeyId: string, mnemonic: string) => Promise<Uint8Array>
+    /**
+     * Derived main key per seed, from the BIP39 phrase rebuilt out of its entropy
+     * `secret-key` child (found by metadata); `undefined` when the seed has none.
+     * PBKDF2 (210k) runs once and is reused.
+     */
+    getMainKey: (seedKeyId: string) => Promise<Optional<Uint8Array>>
     /** Native passkey writer; the keystore master key is fetched once and reused. */
     writePasskey: NativePasskeyWriter
     /** Per-platform legacy derivation convention (origin shape + id basis). */
     convention: PlatformPasskeyConvention
     /** Zeroes the secret buffers held for the batch (per-seed main keys + master key). */
     dispose: () => Promise<void>
+}
+
+// The phrase exists only as zeroable bytes for the KDF, never as a string.
+const deriveMainKeyFromEntropy = async (
+    seedKeyId: string,
+): Promise<Optional<Uint8Array>> => {
+    const entropyId = entropyChildIdOf(seedKeyId, getKeystoreStore().state.keys)
+    if (!entropyId) return undefined
+    const mainKey = await withSecret(entropyId, async entropy => {
+        const indices = entropyToIndices(entropy)
+        const phrase = indicesToUtf8Bytes(indices)
+        try {
+            return handOffSecret(await deriveMainKey(phrase))
+        } finally {
+            zeroBytes(indices, phrase)
+        }
+    })
+    return mainKey ?? undefined
 }
 
 const createMigrationContext = (chainId: ChainId): MigrationContext => {
@@ -153,7 +175,7 @@ const createMigrationContext = (chainId: ChainId): MigrationContext => {
             return address === undefined ? [] : [[address, acc] as const]
         }),
     )
-    const mainKeyBySeed = new Map<string, Promise<Uint8Array>>()
+    const mainKeyBySeed = new Map<string, Promise<Optional<Uint8Array>>>()
     const writePasskey = createNativePasskeyWriter()
 
     return {
@@ -171,24 +193,17 @@ const createMigrationContext = (chainId: ChainId): MigrationContext => {
             )?.parentKeyId
             return typeof parentKeyId === 'string' ? parentKeyId : undefined
         },
-        resolveMnemonic: async seedKeyId => {
-            const entropyId = entropyChildIdOf(
-                seedKeyId,
-                getKeystoreStore().state.keys,
-            )
-            if (!entropyId) return undefined
-            return (
-                (await withSecret(entropyId, entropy =>
-                    entropyToMnemonic(entropy),
-                )) ?? undefined
-            )
-        },
-        getMainKey: (seedKeyId, mnemonic) => {
-            let pending = mainKeyBySeed.get(seedKeyId)
-            if (!pending) {
-                pending = deriveMainKey(mnemonic)
-                mainKeyBySeed.set(seedKeyId, pending)
-            }
+        getMainKey: seedKeyId => {
+            const cached = mainKeyBySeed.get(seedKeyId)
+            if (cached) return cached
+            const pending = deriveMainKeyFromEntropy(seedKeyId)
+            mainKeyBySeed.set(seedKeyId, pending)
+            // A failed keystore read would otherwise skip every passkey on this seed.
+            pending.catch(() => {
+                if (mainKeyBySeed.get(seedKeyId) === pending) {
+                    mainKeyBySeed.delete(seedKeyId)
+                }
+            })
             return pending
         },
         writePasskey,
@@ -291,8 +306,8 @@ const migrateSinglePasskey = async (
         return 'skipped'
     }
 
-    const mnemonic = await ctx.resolveMnemonic(seedKeyId)
-    if (!mnemonic) {
+    const derivedMainKey = await ctx.getMainKey(seedKeyId)
+    if (!derivedMainKey) {
         logger.warn('[Migration] passkey skipped: seed has no entropy', {
             credentialId: inputs.credentialId,
             address: passkey.address,
@@ -300,7 +315,6 @@ const migrateSinglePasskey = async (
         return 'skipped'
     }
 
-    const derivedMainKey = await ctx.getMainKey(seedKeyId, mnemonic)
     const derived = await deriveLegacyPasskeyCredentialFromMainKey({
         derivedMainKey,
         origin: inputs.origin,

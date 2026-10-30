@@ -76,9 +76,7 @@ export const useDeeplinkListener = () => {
 
                 if (initialUrl && !hasHandledInitialUrl) {
                     hasHandledInitialUrl = true
-                    logger.debug('Deeplink: Initial URL (cold start)', {
-                        initialUrl,
-                    })
+                    logger.debug('Deeplink: Initial URL (cold start)')
 
                     if (shouldDispatch(initialUrl)) {
                         // Small delay to ensure navigation is ready
@@ -95,7 +93,7 @@ export const useDeeplinkListener = () => {
         void handleInitialUrl()
 
         const subscription = Linking.addEventListener('url', event => {
-            logger.debug('Deeplink: URL event (warm start)', { url: event.url })
+            logger.debug('Deeplink: URL event (warm start)')
 
             if (shouldDispatch(event.url)) {
                 void handleDeepLink(event.url, false, 'deeplink')

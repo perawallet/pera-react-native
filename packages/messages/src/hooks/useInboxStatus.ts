@@ -22,6 +22,7 @@ import {
 import {
     fetchMessageStatus,
     fetchNotificationStatus,
+    type MessageStatusResponse,
     type NotificationStatusResponse,
 } from '../api/notifications'
 import {
@@ -55,7 +56,8 @@ export const useInboxStatus = (scope: ChainScope): UseInboxStatusResult => {
     // both the unread flags and the inbox count in a single call.
     const messageStatus = useQuery({
         queryKey: getMessageStatusQueryKey(deployment, deviceID ?? ''),
-        queryFn: () => fetchMessageStatus(deployment, deviceID ?? ''),
+        queryFn: (): Promise<MessageStatusResponse> =>
+            fetchMessageStatus(deployment, deviceID ?? ''),
         enabled: !!deviceID && !isUnavailableOnNetwork,
         // Overrides the globally-pinned false: the badge should catch up as
         // soon as the app foregrounds — pushes that arrived while
@@ -84,7 +86,8 @@ export const useInboxStatus = (scope: ChainScope): UseInboxStatusResult => {
     // backend problem degrades gracefully rather than hiding the badge.
     const { data: notificationStatusData } = useQuery({
         queryKey: getNotificationStatusQueryKey(deployment, deviceID ?? ''),
-        queryFn: () => fetchNotificationStatus(deployment, deviceID ?? ''),
+        queryFn: (): Promise<NotificationStatusResponse> =>
+            fetchNotificationStatus(deployment, deviceID ?? ''),
         enabled: !!deviceID && shouldUseFallback && !isUnavailableOnNetwork,
         refetchInterval: config.pollingEnabled
             ? config.notificationRefreshTime

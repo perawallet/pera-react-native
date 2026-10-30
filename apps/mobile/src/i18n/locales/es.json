@@ -1052,7 +1052,9 @@
         },
         "wealth_chart": {
             "empty_body": "Aquí verás un gráfico cuando tengas historial de saldo",
-            "asset_empty_body": "Aquí verás un gráfico cuando tengas historial de saldo de este activo en esta cuenta"
+            "asset_empty_body": "Aquí verás un gráfico cuando tengas historial de saldo de este activo en esta cuenta",
+            "excludes_networks": "Este gráfico aún no incluye los activos de {{networks}}",
+            "networks_list": "{{first}} y {{last}}"
         },
         "webview": {
             "failed_title": "No se pudo cargar la página",
@@ -2998,7 +3000,8 @@
             "amount": "Cantidad",
             "account": "Cuenta",
             "to": "A",
-            "network": "Red",
+            "send_on_network": "Enviar {{asset}} en {{network}}",
+            "view_full_address": "Muestra la dirección completa",
             "fee": "Comisión",
             "current_balance": "Saldo actual",
             "total": "Total",
@@ -3537,8 +3540,13 @@
             "interpreted_title": "{{title}}",
             "swap_subtitle": "{{amountIn}} {{assetIn}} por {{amountOut}} {{assetOut}}",
             "nft_subtitle": "{{collection}} #{{tokenId}}",
+            "nft_batch_subtitle": "{{collection}} · {{count}} elementos",
             "inner_transaction_count": "{{innerCount}} transacciones internas",
             "cancel_transaction": "Cancelar transacción"
+        },
+        "record_detail": {
+            "read_failed": "No se pudieron leer de la red los detalles de la llamada de esta transacción.",
+            "transaction_id": "ID de transacción"
         },
         "contract_call": {
             "warning": "Pera no puede saber qué hace esta llamada a contrato.",
@@ -3576,7 +3584,7 @@
             "rekey_are_you_sure_title": "¿Estás seguro?",
             "rekey_are_you_sure_description": "Esta firma incluye una transacción de rekey, que da el control de tus cuentas a otra dirección. Asegúrate de entender las consecuencias antes de continuar.",
             "rekey_are_you_sure_continue": "Continuar",
-            "high_fee_warning": "Esta solicitud paga una comisión de red inusualmente alta de {{fee}} ALGO. Asegúrate de confiar en la fuente antes de firmar.",
+            "high_fee_warning": "Esta solicitud paga una comisión de red inusualmente alta de {{fee}}. Asegúrate de confiar en la fuente antes de firmar.",
             "asset_freeze_warning": "Esta transacción congela o descongela activos de la siguiente dirección: {{address}}.",
             "asset_freeze_group_warning": "Este grupo de transacciones congela o descongela activos de una de las cuentas del grupo. Revísalo con atención antes de firmar.",
             "asset_freeze_warning_bold": "Esto puede impedir que la cuenta afectada opere con el activo congelado. Revísalo con atención antes de firmar.",

@@ -28,6 +28,7 @@ const initialState: OfflineFeedbackState = {
     emphasisNonce: 0,
 }
 
+// lanekeep-ignore-next-line pera/store-in-wipe-registry reason: change counter for device offline feedback; a reset reads as a new request and re-expands the banner
 export const useOfflineFeedbackStore = create<OfflineFeedbackStore>()(set => ({
     ...initialState,
     emphasizeOfflineStatus: () =>

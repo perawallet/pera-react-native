@@ -12,6 +12,7 @@
 
 import type {
     ChainFamily,
+    ChainId,
     I18nKey,
 } from '@perawallet/wallet-core-chain-contract'
 import type { WrongNetworkAddressCopy } from '@components/AddressSearchView'
@@ -45,4 +46,20 @@ export type ChainUi = {
     addressSearchPlaceholder?: I18nKey
 }
 
-export type ChainUiRegistry = Partial<Record<ChainFamily, ChainUi>>
+/** The slots whose every reader holds a chain id, so one chain may replace its family's. */
+export type ChainUiOverride = Pick<
+    ChainUi,
+    | 'assetDetails'
+    | 'collectibleDetails'
+    | 'sendConfirmation'
+    | 'customNode'
+    | 'accountOptions'
+>
+
+export type ChainUiRegistry = {
+    families: Partial<Record<ChainFamily, ChainUi>>
+    /** Keyed by family first, so a chain's slots only layer over its own family's. */
+    chains: Partial<
+        Record<ChainFamily, Partial<Record<ChainId, ChainUiOverride>>>
+    >
+}

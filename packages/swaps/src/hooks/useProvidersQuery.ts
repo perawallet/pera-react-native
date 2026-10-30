@@ -13,6 +13,7 @@
 import { useQuery } from '@tanstack/react-query'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { fetchProviders } from '../api'
+import type { SwapProviderItem } from '../models'
 import { swapQueryKeys } from './querykeys'
 
 export const useProvidersQuery = (
@@ -21,7 +22,7 @@ export const useProvidersQuery = (
 ) => {
     return useQuery({
         queryKey: swapQueryKeys.providers(scope),
-        queryFn: () => fetchProviders(scope),
+        queryFn: (): Promise<SwapProviderItem[]> => fetchProviders(scope),
         enabled,
     })
 }

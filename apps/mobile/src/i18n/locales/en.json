@@ -1052,7 +1052,9 @@
         },
         "wealth_chart": {
             "empty_body": "You will see a chart here once you have some balance history",
-            "asset_empty_body": "You will see a chart here once you have some balance history for this asset on this account"
+            "asset_empty_body": "You will see a chart here once you have some balance history for this asset on this account",
+            "excludes_networks": "This chart doesn't include {{networks}} assets yet",
+            "networks_list": "{{first}} and {{last}}"
         },
         "webview": {
             "failed_title": "Failed to load page",
@@ -2998,7 +3000,8 @@
             "amount": "Amount",
             "account": "Account",
             "to": "To",
-            "network": "Network",
+            "send_on_network": "Send {{asset}} on {{network}}",
+            "view_full_address": "Shows the full address",
             "fee": "Fee",
             "current_balance": "Current Balance",
             "total": "Total",
@@ -3537,8 +3540,13 @@
             "interpreted_title": "{{title}}",
             "swap_subtitle": "{{amountIn}} {{assetIn}} for {{amountOut}} {{assetOut}}",
             "nft_subtitle": "{{collection}} #{{tokenId}}",
+            "nft_batch_subtitle": "{{collection}} · {{count}} items",
             "inner_transaction_count": "{{innerCount}} inner txns",
             "cancel_transaction": "Cancel transaction"
+        },
+        "record_detail": {
+            "read_failed": "Couldn't read this transaction's call details from the network.",
+            "transaction_id": "Transaction ID"
         },
         "contract_call": {
             "warning": "Pera can't tell what this contract call does.",
@@ -3576,7 +3584,7 @@
             "rekey_are_you_sure_title": "Are you sure?",
             "rekey_are_you_sure_description": "This signature includes rekey transaction, giving control over your accounts to another address. Please make sure that you understand the implications before proceeding.",
             "rekey_are_you_sure_continue": "Continue",
-            "high_fee_warning": "This request pays an unusually high network fee of {{fee}} ALGO. Make sure you trust the source before signing.",
+            "high_fee_warning": "This request pays an unusually high network fee of {{fee}}. Make sure you trust the source before signing.",
             "asset_freeze_warning": "This transaction freezes or unfreezes assets for the following address: {{address}}.",
             "asset_freeze_group_warning": "This transaction group freezes or unfreezes assets for one of the accounts in this group. Please review carefully before signing.",
             "asset_freeze_warning_bold": "This may prevent the target account from transacting with the frozen asset. Please review carefully before signing.",

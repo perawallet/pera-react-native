@@ -64,6 +64,7 @@ export {
     historyChainAdapters,
     fetchTransactionHistory,
     fetchMoreTransactions,
+    fetchTransactionDetail,
     hasCachedHistoryRows,
     mapHistoryItemToTransactionNative,
     summarizeHistoryItem,
@@ -73,6 +74,7 @@ export {
     type AssetDisplayFacts,
     type AssetFactsResolver,
     type HistoryChainAdapter,
+    type HistoryReadOptions,
     type HistoryChainDataCodec,
     type TransactionHistoryChainFields,
     type FetchTransactionHistoryParams,
@@ -122,6 +124,7 @@ export {
     CreatorCannotOptOutError,
     AssetFrozenError,
     TransactionNotReplaceableError,
+    TransactionDetailNotFoundError,
     DelegationError,
     type DelegationErrorReason,
 } from './errors'

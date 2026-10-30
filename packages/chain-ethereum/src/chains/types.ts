@@ -13,6 +13,8 @@
 import type { Address } from 'viem'
 import type { PeraAsset } from '@perawallet/wallet-core-assets'
 import type {
+    ChainCapabilities,
+    ChainCapabilityRestrictions,
     ChainDescriptor,
     ChainFinality,
     EvmChainId,
@@ -47,6 +49,10 @@ export type EvmChainRow = {
     blockTimeMs: number
     finality: ChainFinality
     enabledByDefault: boolean
+    /** Layered over the EVM defaults for this chain alone. */
+    capabilities?: Partial<ChainCapabilities>
+    /** The developer modes a capability is off in, on this chain alone. */
+    restrictions?: ChainCapabilityRestrictions
 }
 
 export type EvmChain = {

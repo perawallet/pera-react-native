@@ -14,7 +14,7 @@ import { afterAll, afterEach, beforeAll, vi } from 'vitest'
 import { setupServer } from 'msw/node'
 import { historyContractTests } from '@perawallet/wallet-core-transactions/testing'
 import { peraEvmHandlers } from '../../accounts/msw-handlers'
-import { TEST_PERA_URL } from '../../__tests__/context'
+import { TEST_PERA_URL, testChainContext } from '../../__tests__/context'
 import {
     eip155IdOf,
     EVM_TEST_CHAINS,
@@ -78,22 +78,25 @@ for (const chain of EVM_TEST_CHAINS) {
         ],
     })
 
-    historyContractTests(() => createEvmHistoryAdapter(chain), {
-        scope: evmScopeOf(chain),
-        address: ADDRESS,
-        nativeAsset: chain.descriptor.nativeAsset.ref,
-        arrangeTwoPages: () => {
-            server.use(
-                ...peraEvmHandlers({
-                    baseUrl: TEST_PERA_URL,
-                    history: {
-                        [ADDRESS]: [[ethSend, erc20Receive], [approve]],
-                    },
-                }),
-            )
+    historyContractTests(
+        () => createEvmHistoryAdapter(chain, testChainContext()),
+        {
+            scope: evmScopeOf(chain),
+            address: ADDRESS,
+            nativeAsset: chain.descriptor.nativeAsset.ref,
+            arrangeTwoPages: () => {
+                server.use(
+                    ...peraEvmHandlers({
+                        baseUrl: TEST_PERA_URL,
+                        history: {
+                            [ADDRESS]: [[ethSend, erc20Receive], [approve]],
+                        },
+                    }),
+                )
+            },
+            arrangeEmpty: () => {
+                server.use(...peraEvmHandlers({ baseUrl: TEST_PERA_URL }))
+            },
         },
-        arrangeEmpty: () => {
-            server.use(...peraEvmHandlers({ baseUrl: TEST_PERA_URL }))
-        },
-    })
+    )
 }

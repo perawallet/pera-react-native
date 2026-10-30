@@ -41,8 +41,12 @@ vi.mock('@hooks/useAccountTypeLabel', () => ({
     useAccountTypeLabel: () => ({ label: mockAccountTypeLabel }),
 }))
 
+const mockPromptArgs = vi.fn()
 vi.mock('@perawallet/wallet-core-backup', () => ({
-    useShouldPromptMnemonicBackup: () => mockShouldPromptBackup,
+    useShouldPromptMnemonicBackup: (...args: unknown[]) => {
+        mockPromptArgs(...args)
+        return mockShouldPromptBackup
+    },
 }))
 
 const ADDRESS = 'A'.repeat(58)
@@ -66,6 +70,7 @@ describe('useAccountDisplay', () => {
         mockNfdNames = undefined
         mockAccountTypeLabel = undefined
         mockShouldPromptBackup = false
+        mockPromptArgs.mockReset()
     })
 
     it('shows the truncated address as secondary for a named account', () => {
@@ -107,6 +112,29 @@ describe('useAccountDisplay', () => {
         expect(result.current.secondaryText).toBe(
             addressCodecs.get('ethereum').truncate(ETH_ADDRESS),
         )
+    })
+
+    it("reports the chain it resolved: the given one, else the account's own", () => {
+        const account: WalletAccount = {
+            id: 'account-2',
+            custody: { kind: 'watch' },
+            chains: { ethereum: { address: ETH_ADDRESS } },
+        }
+        const base = {
+            compact: false,
+            showAccountType: false,
+            iconSize: 'xl',
+        } as const
+
+        const given = renderHook(() =>
+            useAccountDisplay({ ...base, account, chainId: 'ethereum' }),
+        )
+        const inferred = renderHook(() =>
+            useAccountDisplay({ ...base, account }),
+        )
+
+        expect(given.result.current.chainId).toBe('ethereum')
+        expect(inferred.result.current.chainId).toBe('ethereum')
     })
 
     it('names an unnamed Ethereum-only account by its truncated address', () => {
@@ -332,5 +360,42 @@ describe('useAccountDisplay', () => {
         expect(result.current.displayName).not.toBe('No Address Found')
         expect(result.current.displayName).not.toBe(ethAddress)
         expect(result.current.displayName.startsWith('0x')).toBe(true)
+    })
+
+    it("asks the backup prompt about the account's own chain, not the chain it is shown on", () => {
+        const both: WalletAccount = {
+            ...makeAccount('My Wallet'),
+            chains: {
+                algorand: { address: ADDRESS },
+                ethereum: { address: ETH_ADDRESS },
+            },
+        }
+        const evmOnly: WalletAccount = {
+            id: 'account-evm',
+            custody: { kind: 'watch' },
+            chains: { ethereum: { address: ETH_ADDRESS } },
+        }
+        const display = (account: WalletAccount) =>
+            renderHook(() =>
+                useAccountDisplay({
+                    account,
+                    compact: false,
+                    showAccountType: false,
+                    iconSize: 'xl',
+                    chainId: 'ethereum',
+                }),
+            )
+
+        display(both)
+        expect(mockPromptArgs).toHaveBeenLastCalledWith(
+            both,
+            expect.objectContaining({ chainId: 'algorand' }),
+        )
+
+        display(evmOnly)
+        expect(mockPromptArgs).toHaveBeenLastCalledWith(
+            evmOnly,
+            expect.objectContaining({ chainId: 'ethereum' }),
+        )
     })
 })

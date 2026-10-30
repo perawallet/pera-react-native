@@ -66,9 +66,10 @@ export const SubmissionAttemptsSchema = sqliteTable(
         historyEntryJson: text('history_entry_json'),
         /**
          * Base units of the native asset: the most the transaction can be
-         * charged (gas limit x max fee per gas on Ethereum). Its own column,
-         * not only the history entry's `fee`, so an attempt with no summary
-         * still holds its fee back from the spendable balance.
+         * charged (gas limit x max fee per gas on an EVM chain, plus what the
+         * chain charges on top of gas). Its own column, not only the history
+         * entry's `fee`, so an attempt with no summary still holds its fee back
+         * from the spendable balance.
          */
         maxFee: decimalColumn('max_fee'),
         /**

@@ -13,6 +13,7 @@
 import { create } from 'zustand'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import { registerStore } from '@perawallet/wallet-core-shared'
 
 type ReceiveFundsState = {
     selectedAccount?: WalletAccount
@@ -47,6 +48,12 @@ export const useReceiveFundsStore = create<ReceiveFundsStore>()(set => ({
     setOnFinished: fn => set({ onFinished: fn }),
     reset: () => set(initialState),
 }))
+
+registerStore({
+    name: 'receive-funds-store',
+    clearStorage: () => {},
+    resetState: () => useReceiveFundsStore.getState().reset(),
+})
 
 type UseReceiveFundsResult = {
     selectedAccount?: WalletAccount

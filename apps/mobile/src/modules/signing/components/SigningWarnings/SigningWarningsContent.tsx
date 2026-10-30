@@ -14,6 +14,7 @@ import { PWSheetLayout } from '@components/core'
 import { SheetHeader } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { useSigningPipeline } from '@perawallet/wallet-core-signing'
+import { useSignRequestScope } from '../../hooks/useSignRequestScope'
 import { WarningItem } from './WarningItem'
 
 export type SigningWarningsContentProps = {
@@ -24,7 +25,8 @@ export const SigningWarningsContent = ({
     isGroup = false,
 }: SigningWarningsContentProps) => {
     const { t } = useLanguage()
-    const { distinctWarnings, warnings } = useSigningPipeline()
+    const { distinctWarnings, warnings, currentRequest } = useSigningPipeline()
+    const scope = useSignRequestScope(currentRequest)
     const warningCount = warnings.length
 
     return (
@@ -47,6 +49,7 @@ export const SigningWarningsContent = ({
                     warning={warning}
                     showDivider={index > 0}
                     isGroup={isGroup}
+                    scope={scope}
                 />
             ))}
         </PWSheetLayout>

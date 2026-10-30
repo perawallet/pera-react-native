@@ -20,6 +20,7 @@ import {
     it,
     vi,
 } from 'vitest'
+import { http, HttpResponse } from 'msw'
 import { setupServer } from 'msw/node'
 import { Decimal } from 'decimal.js'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
@@ -35,6 +36,7 @@ import {
 } from '../balance-history'
 import { peraEvmHandlers } from '../msw-handlers'
 import { nativeWhitelistItem } from '../../assets/api/msw-handlers'
+import { CHART_PATH } from '../../assets/api/endpoints'
 import { ETHEREUM } from '../../__tests__/evm-chains'
 import { TEST_PERA_URL, testChainContext } from '../../__tests__/context'
 
@@ -374,6 +376,82 @@ describe('the adapter methods', () => {
             ['1001', '0.5005'],
             ['2002', '1.001'],
         ])
+    })
+
+    describe('when a price chart fails', () => {
+        const serveHistory = (failingId: string) => {
+            stored.holdings[ALICE] = [
+                { assetId: ETH_ID, amount: '1000000000000000000' },
+                { assetId: USDC, amount: '2000000' },
+            ]
+            server.use(
+                ...peraEvmHandlers({
+                    baseUrl: TEST_PERA_URL,
+                    balanceHistory: {
+                        results: [
+                            answered('2026-10-21T00:00:00Z', {
+                                [ALICE.toLowerCase()]: {
+                                    [ETH]: '1000000000000000000',
+                                    [USDC_CAIP19]: '2000000',
+                                },
+                            }),
+                        ],
+                    } as BalanceHistoryResponse,
+                    charts: {
+                        [ETH]: [chartPoint('2026-10-21T00:00:00Z', '2000')],
+                        [USDC_CAIP19]: [
+                            chartPoint('2026-10-21T00:00:00Z', '1'),
+                        ],
+                    },
+                }),
+            )
+            server.use(
+                http.get(`${TEST_PERA_URL}${CHART_PATH}`, ({ request }) =>
+                    new URL(request.url).searchParams
+                        .get('id')
+                        ?.toLowerCase() === failingId
+                        ? HttpResponse.json({}, { status: 500 })
+                        : undefined,
+                ),
+            )
+        }
+
+        it("values the portfolio without a token the prices service can't chart", async () => {
+            serveHistory(USDC_CAIP19)
+
+            const points = await ops().fetchPortfolioHistory!(
+                [ALICE],
+                'one-month',
+                SCOPE,
+            )
+
+            expect(points?.map(p => p.usdValue.toFixed())).toEqual([
+                '2000',
+                '2000',
+            ])
+        })
+
+        it("fails a token's own chart rather than reading it as no history", async () => {
+            serveHistory(USDC_CAIP19)
+
+            await expect(
+                ops().fetchHoldingBalanceHistory!(
+                    ALICE,
+                    USDC,
+                    'one-month',
+                    'USD',
+                    SCOPE,
+                ),
+            ).rejects.toThrow()
+        })
+
+        it('fails the portfolio when the native coin has no chart', async () => {
+            serveHistory(ETH)
+
+            await expect(
+                ops().fetchPortfolioHistory!([ALICE], 'one-month', SCOPE),
+            ).rejects.toThrow()
+        })
     })
 
     it('values a token held only in the past with no local row by its backend decimals', async () => {

@@ -10,7 +10,14 @@
  limitations under the License
  */
 
-import type { Address, Hex } from 'viem'
+import {
+    concat,
+    keccak256,
+    serializeTransaction,
+    toHex,
+    type Address,
+    type Hex,
+} from 'viem'
 import { describe, expect, it } from 'vitest'
 import { createEvmClient } from '@perawallet/wallet-core-chain-ethereum/blockchain/utils/createEvmClient'
 import {
@@ -80,6 +87,56 @@ describe('evm op-stack l1 fee (base)', () => {
                 expected.operatorFee.gasUsed.toString(),
             ]),
         ).toBe(expected.operatorFee.fee)
+    })
+
+    it("estimates a transaction above the Fjord minimum within 1% of the oracle's answer for the transaction it signs", async () => {
+        const env = await createEvmConformanceEnv('base')
+        const sender = await createRawKeyEvmAccount(env)
+        // eth_estimateGas refuses a sender that can't pay for the gas it estimates.
+        await fundEvmAccount(env, sender.address, 10n ** 18n)
+        const client = createEvmClient(env.scope, env.ctx, env.evmChain)
+        // Incompressible, so the oracle's compressed-size estimate stays well above its minimum.
+        const data = concat(
+            Array.from({ length: 8 }, (_, i) => keccak256(toHex(i))),
+        )
+        const fees = await readTransferFees(
+            client,
+            {
+                chainId: EVMNET.base.eip155ChainId,
+                from: sender.address,
+                to: RECIPIENT,
+                value: 0n,
+                data,
+            },
+            env.evmChain,
+            env.scope.networkId,
+        )
+
+        const oracle = await oracleOpStackFees({
+            chain: 'base',
+            raw: serializeTransaction({
+                type: 'eip1559',
+                chainId: EVMNET.base.eip155ChainId,
+                nonce: 0,
+                to: RECIPIENT,
+                value: 0n,
+                data,
+                gas: fees.gas,
+                ...fees.presets.normal,
+            }),
+            gasUsed: fees.gas,
+            block: BigInt(await anvilRpc<Hex>('base', 'eth_blockNumber')),
+        })
+
+        const priced = oracle.l1DataFee + oracle.operatorFee
+        expect(oracle.l1DataFee).toBeGreaterThan(
+            OP_STACK_ORACLE_READINGS.l1Fees[0]!.fee,
+        )
+        const difference =
+            fees.surcharge > priced
+                ? fees.surcharge - priced
+                : priced - fees.surcharge
+        expect(difference * 100n).toBeLessThanOrEqual(priced)
     })
 
     it('estimates the oracle surcharge and the node charges exactly it', async () => {

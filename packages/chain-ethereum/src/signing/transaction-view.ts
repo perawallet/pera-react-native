@@ -20,7 +20,7 @@ import type { EvmStandardCall } from './standard-call-types'
 
 /** An Ethereum transaction as review and detail screens read it. */
 export type EthereumTransactionView = EthereumTransactionViewBase &
-    (EthereumPricedView | EthereumPreviewView)
+    (EthereumPricedView | EthereumPreviewView | EthereumMinedView)
 
 /** The nonce, gas and fees the signature commits to. */
 export type EthereumPricedView = {
@@ -40,6 +40,13 @@ export type EthereumPricedView = {
  * gas and fees are set only once the one before it has landed.
  */
 export type EthereumPreviewView = { isPreview: true }
+
+/** A transaction already on chain, read for a detail screen: nothing was signed from it. */
+export type EthereumMinedView = {
+    isMined: true
+    /** Wei the transaction cost in gas, whoever paid it; absent when the history gave none. */
+    feePaid?: Decimal
+}
 
 type EthereumTransactionViewBase = {
     kind: 'transfer' | 'token-transfer' | 'nft-transfer' | 'contract-call'
@@ -172,6 +179,9 @@ const isView = (value: unknown): value is EthereumTransactionView =>
     isHexValue(value.data) &&
     isOptional(value.selector, isHexValue) &&
     (value.isPreview === true ||
+        (value.isMined === true &&
+            (value.feePaid === undefined ||
+                Decimal.isDecimal(value.feePaid))) ||
         ((value.isPreview === undefined || value.isPreview === false) &&
             typeof value.nonce === 'number' &&
             typeof value.gas === 'bigint' &&

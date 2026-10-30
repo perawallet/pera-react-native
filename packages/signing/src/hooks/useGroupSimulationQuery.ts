@@ -55,7 +55,7 @@ export const useGroupSimulationQuery = ({
         enabled: enabled && !!requestId && !!groupTxs?.length,
         staleTime: Infinity,
         retry: false,
-        queryFn: () =>
+        queryFn: (): Promise<TransactionNative[]> =>
             plannerAdapterForScope(scope).simulateGroup(groupTxs ?? [], scope),
     })
 

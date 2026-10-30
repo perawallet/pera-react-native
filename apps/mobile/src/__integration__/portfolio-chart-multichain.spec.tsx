@@ -304,7 +304,7 @@ describe('Flow: Portfolio chart across Algorand and Ethereum', () => {
         ).toEqual([])
     })
 
-    it("Given Ethereum's history fails, when the chart is shown, then it offers a retry instead of plotting Algorand alone", async () => {
+    it("Given Ethereum's history fails, when the chart is shown, then it plots Algorand, names Ethereum as left out, and shows no change", async () => {
         serveAlgorandHistory()
         serveEthereumHistory(503)
 
@@ -312,11 +312,14 @@ describe('Flow: Portfolio chart across Algorand and Ethereum', () => {
         fireEvent.click(await screen.findByText('portfolio.show_chart'))
 
         expect(
-            await screen.findByTestId('balance-chart-retry', undefined, {
-                timeout: SLOW_WAIT_TIMEOUT_MS,
-            }),
+            await screen.findByText(
+                'common.wealth_chart.excludes_networks',
+                undefined,
+                { timeout: SLOW_WAIT_TIMEOUT_MS },
+            ),
         ).toBeTruthy()
-        // No change is shown rather than a 0% the wallet never had.
+        expect(screen.queryByTestId('balance-chart-retry')).toBeNull()
+        // The change would cover Algorand alone beside a total that includes ETH.
         expect(screen.queryByText('portfolio.last_7_days')).toBeNull()
     })
 })

@@ -36,6 +36,7 @@ import noPrimitiveRetest from './lanekeep/rules/no-primitive-retest.js'
 import noReactNativeImportsInPackages from './lanekeep/rules/no-react-native-imports-in-packages.js'
 import noRetiredQuantumCustody from './lanekeep/rules/no-retired-quantum-custody.js'
 import noSecretInLogs from './lanekeep/rules/no-secret-in-logs.js'
+import noSecretStrings from './lanekeep/rules/no-secret-strings.js'
 import noSnapshotTests from './lanekeep/rules/no-snapshot-tests.js'
 import noSplitSentences from './lanekeep/rules/no-split-sentences.js'
 import noTypographyInStyles from './lanekeep/rules/no-typography-in-styles.js'
@@ -44,11 +45,13 @@ import noUnusedTranslationKeys from './lanekeep/rules/no-unused-translation-keys
 import noWcImportsInConnectionsModule from './lanekeep/rules/no-wc-imports-in-connections-module.js'
 import noWorkItemRefs from './lanekeep/rules/no-work-item-refs.js'
 import noWorkspaceRequireInTests from './lanekeep/rules/no-workspace-require-in-tests.js'
+import persistedQuerySerializable from './lanekeep/rules/persisted-query-serializable.js'
 import pqLibrarySeam from './lanekeep/rules/pq-library-seam.js'
 import secp256k1LibrarySeam from './lanekeep/rules/secp256k1-library-seam.js'
 import secretBufferZeroed from './lanekeep/rules/secret-buffer-zeroed.js'
 import specFileSuffix from './lanekeep/rules/spec-file-suffix.js'
 import specImportsOwnSrc from './lanekeep/rules/spec-imports-own-src.js'
+import storeInWipeRegistry from './lanekeep/rules/store-in-wipe-registry.js'
 import submissionSeam from './lanekeep/rules/submission-seam.js'
 import translationKeyExists from './lanekeep/rules/translation-key-exists.js'
 import vitestPoolConfig from './lanekeep/rules/vitest-pool-config.js'
@@ -86,7 +89,8 @@ export default defineConfig({
     // rule that goes quadratic (which would blow well past this ceiling, not
     // graze it). The global budget already covers a rule that's merely slow
     // across the whole run.
-    timeouts: { rule: 1000, global: 60000 },
+    // CI runners take about 2.5x local wall time, and the full tree already runs ~55s there.
+    timeouts: { rule: 1000, global: 120000 },
     // Every existing exception is a single line with a reason; a whole-file
     // directive would silence rules nobody reviewed it against.
     suppressions: { forbidFileScope: true },
@@ -137,8 +141,11 @@ export default defineConfig({
         amountTypes,
         noSecretInLogs,
         secretBufferZeroed,
+        noSecretStrings,
         conformanceWorkflowPaths,
         nativeExactPins,
         catalogVersions,
+        storeInWipeRegistry,
+        persistedQuerySerializable,
     ],
 })

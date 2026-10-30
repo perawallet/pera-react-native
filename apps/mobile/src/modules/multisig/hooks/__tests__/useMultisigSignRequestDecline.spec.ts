@@ -19,7 +19,10 @@ import type {
 } from '@perawallet/wallet-core-multisig'
 import type { SignRequest } from '@perawallet/wallet-core-signing'
 import type { Optional } from '@perawallet/wallet-core-shared'
-import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import type {
+    ChainId,
+    ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 
 const ETHEREUM_CHAIN_ID: ChainId = 'ethereum'
 
@@ -41,6 +44,7 @@ vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
         getState: () => ({ network: 'mainnet' }),
         subscribe: () => () => {},
     },
+    useSelectedScope: (chainId: ChainId) => ({ chainId, networkId: 'mainnet' }),
 }))
 
 vi.mock('@perawallet/wallet-core-device', () => ({
@@ -66,6 +70,8 @@ vi.mock('@perawallet/wallet-core-multisig', () => ({
 const rejectRequestMock = vi.fn()
 vi.mock('@perawallet/wallet-core-signing', () => ({
     chainIdOfSignRequest: (request: { chainId: string }) => request.chainId,
+    scopeOfSignRequest: (request: { txs: { scope: ChainScope }[] }) =>
+        request.txs[0]?.scope,
     useSigningRequest: () => ({
         rejectRequest: rejectRequestMock,
     }),
@@ -79,6 +85,12 @@ vi.mock('@hooks/useToast', () => ({
 const invalidateInboxMock = vi.fn()
 vi.mock('@perawallet/wallet-core-messages', () => ({
     useInboxInvalidator: () => ({ invalidate: invalidateInboxMock }),
+}))
+
+vi.mock('@modules/signing', async () => ({
+    useSignRequestScope: (
+        await import('@modules/signing/hooks/useSignRequestScope')
+    ).useSignRequestScope,
 }))
 
 import { useMultisigSignRequestDecline } from '../useMultisigSignRequestDecline'
@@ -130,6 +142,7 @@ const buildMultisigSignRequest = (
 const buildSignRequest = (
     signRequestId: Optional<string> = 'sr-1',
     chainId: ChainId = 'algorand',
+    networkId = 'mainnet',
 ): SignRequest =>
     ({
         id: 'local-req-1',
@@ -137,7 +150,7 @@ const buildSignRequest = (
         type: 'transactions',
         transport: 'network',
         signRequestId,
-        txs: [],
+        txs: [{ scope: { chainId, networkId }, payload: {} }],
     }) as unknown as SignRequest
 
 describe('useMultisigSignRequestDecline', () => {
@@ -537,6 +550,21 @@ describe('useMultisigSignRequestDecline', () => {
 
             expect(declineMutationParamsMock).toHaveBeenCalledWith({
                 scope: expect.objectContaining({ chainId: ETHEREUM_CHAIN_ID }),
+                signRequestId: 'sr-1',
+            })
+        })
+
+        it("declines on the request's own network when the selected network differs", () => {
+            renderHook(() =>
+                useMultisigSignRequestDecline({
+                    mode: 'decline',
+                    request: buildSignRequest('sr-1', 'algorand', 'testnet'),
+                    signerAddress: SIGNER,
+                }),
+            )
+
+            expect(declineMutationParamsMock).toHaveBeenCalledWith({
+                scope: { chainId: 'algorand', networkId: 'testnet' },
                 signRequestId: 'sr-1',
             })
         })

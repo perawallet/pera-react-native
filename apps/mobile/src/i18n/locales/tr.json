@@ -1052,7 +1052,9 @@
         },
         "wealth_chart": {
             "empty_body": "Bakiye geçmişin olduğunda burada bir grafik göreceksin",
-            "asset_empty_body": "Bu hesapta bu varlık için bakiye geçmişin olduğunda burada bir grafik göreceksin"
+            "asset_empty_body": "Bu hesapta bu varlık için bakiye geçmişin olduğunda burada bir grafik göreceksin",
+            "excludes_networks": "Bu grafik henüz {{networks}} varlıklarını içermiyor",
+            "networks_list": "{{first}} ve {{last}}"
         },
         "webview": {
             "failed_title": "Sayfa yüklenemedi",
@@ -2998,7 +3000,8 @@
             "amount": "Miktar",
             "account": "Hesap",
             "to": "Alıcı",
-            "network": "Ağ",
+            "send_on_network": "{{network}} ağında {{asset}} gönder",
+            "view_full_address": "Tam adresi gösterir",
             "fee": "Ücret",
             "current_balance": "Mevcut bakiye",
             "total": "Toplam",
@@ -3537,8 +3540,13 @@
             "interpreted_title": "{{title}}",
             "swap_subtitle": "{{amountIn}} {{assetIn}} karşılığında {{amountOut}} {{assetOut}}",
             "nft_subtitle": "{{collection}} #{{tokenId}}",
+            "nft_batch_subtitle": "{{collection}} · {{count}} öğe",
             "inner_transaction_count": "{{innerCount}} iç işlem",
             "cancel_transaction": "İşlem iptali"
+        },
+        "record_detail": {
+            "read_failed": "Bu işlemin çağrı ayrıntıları ağdan okunamadı.",
+            "transaction_id": "İşlem Kimliği"
         },
         "contract_call": {
             "warning": "Pera bu sözleşme çağrısının ne yaptığını anlayamıyor.",
@@ -3576,7 +3584,7 @@
             "rekey_are_you_sure_title": "Emin misin?",
             "rekey_are_you_sure_description": "Bu imza, hesaplarının kontrolünü başka bir adrese veren bir rekey işlemi içeriyor. Devam etmeden önce sonuçlarını anladığından emin ol.",
             "rekey_are_you_sure_continue": "Devam et",
-            "high_fee_warning": "Bu istek, alışılmadık şekilde yüksek bir ağ ücreti ödüyor: {{fee}} ALGO. İmzalamadan önce kaynağa güvendiğinden emin ol.",
+            "high_fee_warning": "Bu istek, alışılmadık şekilde yüksek bir ağ ücreti ödüyor: {{fee}}. İmzalamadan önce kaynağa güvendiğinden emin ol.",
             "asset_freeze_warning": "Bu işlem, şu adrese ait varlıkları dondurur veya dondurmayı kaldırır: {{address}}.",
             "asset_freeze_group_warning": "Bu işlem grubu, bu gruptaki hesaplardan biri için varlıkları dondurur veya dondurmayı kaldırır. İmzalamadan önce dikkatlice incele.",
             "asset_freeze_warning_bold": "Bu, hedef hesabın dondurulan varlıkla işlem yapmasını engelleyebilir. İmzalamadan önce dikkatlice incele.",

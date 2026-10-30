@@ -12,7 +12,7 @@
 
 import { create } from 'zustand'
 import type { AssetInboxRequest } from '@perawallet/wallet-core-transactions'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import { registerStore, type Nullable } from '@perawallet/wallet-core-shared'
 
 type ClaimAssetsState = {
     accountAddress: Nullable<string>
@@ -42,6 +42,12 @@ export const useClaimAssetsStore = create<ClaimAssetsStore>()(set => ({
     setOnFinished: fn => set({ onFinished: fn }),
     reset: () => set(initialState),
 }))
+
+registerStore({
+    name: 'claim-assets-store',
+    clearStorage: () => {},
+    resetState: () => useClaimAssetsStore.getState().reset(),
+})
 
 type UseClaimAssetsResult = {
     accountAddress: Nullable<string>

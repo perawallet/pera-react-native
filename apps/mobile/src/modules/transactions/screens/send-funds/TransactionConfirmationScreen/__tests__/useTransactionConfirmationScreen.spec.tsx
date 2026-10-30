@@ -16,6 +16,7 @@ import {
     expect,
     beforeEach,
     afterEach,
+    onTestFinished,
     vi,
     type Mock,
 } from 'vitest'
@@ -34,7 +35,7 @@ import {
     useAssetsQuery,
     useAssetPricesQuery,
 } from '@perawallet/wallet-core-assets'
-import { i18nKey } from '@perawallet/wallet-core-chain-contract'
+import { addressCodecs, i18nKey } from '@perawallet/wallet-core-chain-contract'
 import { useMinFeeForSender } from '@perawallet/wallet-core-signing'
 import {
     sendFlowChainAdapters,
@@ -163,6 +164,8 @@ vi.mock('@perawallet/wallet-core-currencies', () => ({
 vi.mock('@perawallet/wallet-core-chain-shared', () => ({
     useSelectedScope: vi.fn(),
     getChainDescriptor: vi.fn(() => ({ family: 'algorand' })),
+    chainDisplayNameOf: (chainId: string) =>
+        chainId === 'algorand' ? 'Algorand' : undefined,
 }))
 
 vi.mock('@modules/chain-ui', () => ({
@@ -221,14 +224,12 @@ vi.mock('../useSendTotal', () => ({
     useSendTotal: vi.fn(() => SEND_TOTAL),
 }))
 
-const mockChainName = vi.hoisted(() => ({
-    value: undefined as string | undefined,
-}))
-const mockUseChainNameWhenMultiChain = vi.hoisted(() => vi.fn())
-
-vi.mock('@hooks/useChainNameWhenMultiChain', () => ({
-    useChainNameWhenMultiChain: mockUseChainNameWhenMultiChain,
-}))
+vi.mock(
+    '@modules/transactions/components/send-funds/RecipientAddressContent',
+    () => ({
+        RecipientAddressContent: () => null,
+    }),
+)
 
 vi.mock('@modules/transactions/hooks', async () => {
     const { useSelectedScope } =
@@ -333,10 +334,6 @@ describe('useTransactionConfirmationScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         translation.echoParams = false
-        mockChainName.value = undefined
-        mockUseChainNameWhenMultiChain.mockImplementation(
-            () => mockChainName.value,
-        )
         recipientSafety.current = {
             ...recipientSafety.current,
             isConfirmBlocked: false,
@@ -921,7 +918,7 @@ describe('useTransactionConfirmationScreen', () => {
                 useTransactionConfirmationScreen(),
             )
 
-            expect(chainUiFor).toHaveBeenCalledWith('evm')
+            expect(chainUiFor).toHaveBeenCalledWith('evm', 'algorand')
             expect(result.current.FeeSection).toBe(FeeSection)
             expect(result.current.TrailingSection).toBe(TrailingSection)
             ;(getChainDescriptor as Mock).mockReturnValue({
@@ -1330,26 +1327,83 @@ describe('useTransactionConfirmationScreen', () => {
         })
     })
 
-    describe('network row', () => {
-        it("names the send's chain when the wallet says to", () => {
-            mockChainName.value = 'Algorand'
+    describe('title', () => {
+        const readyState = {
+            ...mockSendFundsState,
+            selectedAssetId: mockSelectedAssetId,
+            amount: new Decimal(10),
+            destination: 'DEST_ADDRESS',
+        }
+
+        it('names the asset and the network of the send', () => {
+            translation.echoParams = true
+            ;(useSendFunds as Mock).mockReturnValue(readyState)
+            ;(useAssetsQuery as Mock).mockReturnValue({
+                data: new Map([['123', mockAsset]]),
+            })
 
             const { result } = renderHook(() =>
                 useTransactionConfirmationScreen(),
             )
 
-            expect(mockUseChainNameWhenMultiChain).toHaveBeenCalledWith(
-                'algorand',
+            expect(result.current.title).toBe(
+                'send_funds.confirmation.send_on_network {"asset":"TEST","network":"Algorand"}',
             )
-            expect(result.current.networkName).toBe('Algorand')
         })
 
-        it('has no network to show otherwise', () => {
+        it("falls back to the asset's name when it has no unit name", () => {
+            translation.echoParams = true
+            ;(useSendFunds as Mock).mockReturnValue(readyState)
+            ;(useAssetsQuery as Mock).mockReturnValue({
+                data: new Map([['123', { ...mockAsset, unitName: undefined }]]),
+            })
+
             const { result } = renderHook(() =>
                 useTransactionConfirmationScreen(),
             )
 
-            expect(result.current.networkName).toBeUndefined()
+            expect(result.current.title).toContain('"asset":"Test Asset"')
+        })
+
+        it('is unset until the asset resolves', () => {
+            ;(useSendFunds as Mock).mockReturnValue(readyState)
+
+            const { result } = renderHook(() =>
+                useTransactionConfirmationScreen(),
+            )
+
+            expect(result.current.title).toBeUndefined()
+        })
+    })
+
+    describe('openRecipientAddress', () => {
+        it("opens a sheet with the recipient's full address in the chain's canonical form", () => {
+            const spy = vi.spyOn(addressCodecs, 'get').mockReturnValue({
+                normalize: (address: string) => address.toUpperCase(),
+            } as never)
+            onTestFinished(() => spy.mockRestore())
+            ;(useSendFunds as Mock).mockReturnValue({
+                ...mockSendFundsState,
+                destination: 'dest_address',
+            })
+
+            const { result } = renderHook(() =>
+                useTransactionConfirmationScreen(),
+            )
+            act(() => result.current.openRecipientAddress())
+
+            expect(mockRequestBottomSheet).toHaveBeenCalledTimes(1)
+            const { contents } = mockRequestBottomSheet.mock.calls[0][0]
+            expect(contents.props.address).toBe('DEST_ADDRESS')
+        })
+
+        it('does nothing without a destination', () => {
+            const { result } = renderHook(() =>
+                useTransactionConfirmationScreen(),
+            )
+            act(() => result.current.openRecipientAddress())
+
+            expect(mockRequestBottomSheet).not.toHaveBeenCalled()
         })
     })
 })

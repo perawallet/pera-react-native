@@ -73,7 +73,7 @@ export const useSignRequestDetailQuery = ({
         // signatures sheet — see `useMultisigSignRequestDecline`. This is
         // the read-path counterpart to the write-path preservation in
         // `useMultisigTransportAdapters`.
-        queryFn: async () => {
+        queryFn: async (): Promise<SignRequestDetailResponse> => {
             const fresh = await getSignRequestDetail(
                 scope,
                 deviceId,
