@@ -65,19 +65,20 @@ export const AssetDetailsContent = ({
         title: (
             <PWView style={styles.headerTitleContainer}>
                 <PWText
-                    variant='h4'
+                    variant='bodyLarge'
+                    weight={500}
                     truncate
                 >
                     {headerTitle}
                 </PWText>
-                <ChainLabel chainId={chainId} />
+                <ChainLabel
+                    chainId={chainId}
+                    size='title'
+                />
             </PWView>
         ),
         right: account ? (
-            <AccountHeaderMenu
-                testID='asset_details_screen_dropdown'
-                showChartToggle={false}
-            />
+            <AccountHeaderMenu testID='asset_details_screen_dropdown' />
         ) : null,
     })
 

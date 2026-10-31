@@ -24,19 +24,20 @@ export const useStyles = makeStyles(theme => ({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        marginBottom: theme.spacing.md,
+        marginBottom: theme.spacing.sm,
         width: '100%',
         minWidth: 0,
     },
     headerIcons: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: theme.spacing.sm,
+        gap: theme.spacing.md,
         flexShrink: 0,
     },
+    // ChartPeriodSelection adds its own xs on top, for the frame's 8px.
     chartContainer: {
-        gap: theme.spacing.md,
-        marginBottom: theme.spacing.lg,
+        gap: theme.spacing.xs,
+        marginBottom: theme.spacing.sm,
     },
     trendContainer: {
         flexDirection: 'row',

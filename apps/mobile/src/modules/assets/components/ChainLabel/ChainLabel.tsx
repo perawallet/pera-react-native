@@ -13,15 +13,30 @@
 import type { StyleProp, ViewStyle } from 'react-native'
 import { useTheme } from '@rneui/themed'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
-import { getIconPixelSize, PWText, PWView } from '@components/core'
+import {
+    getIconPixelSize,
+    PWText,
+    PWView,
+    type PWIconSize,
+} from '@components/core'
+import type { FontWeight, TypographyVariant } from '@theme/typography'
 import { ChainIcon } from '@modules/chain-ui/icon'
 import { useChainLabel } from './useChainLabel'
 import { useStyles } from './styles'
 
+type ChainLabelSize = {
+    /** A token, or pixels where the design falls between tokens. */
+    icon: PWIconSize | number
+    text: TypographyVariant
+    weight?: FontWeight
+}
+
 const SIZES = {
     sm: { icon: 'xs', text: 'body' },
     md: { icon: 'sm', text: 'bodyLarge' },
-} as const
+    // The nav-bar subtitle: 13/20 regular beside a 20px logo.
+    title: { icon: 20, text: 'footnoteMedium', weight: 400 },
+} satisfies Record<string, ChainLabelSize>
 
 export type ChainLabelProps = {
     chainId: ChainId
@@ -37,6 +52,7 @@ export const ChainLabel = ({
     const styles = useStyles()
     const { theme } = useTheme()
     const { label } = useChainLabel(chainId)
+    const { icon, text, weight }: ChainLabelSize = SIZES[size]
 
     return (
         <PWView
@@ -45,10 +61,15 @@ export const ChainLabel = ({
         >
             <ChainIcon
                 chainId={chainId}
-                size={getIconPixelSize(theme, SIZES[size].icon)}
+                size={
+                    typeof icon === 'number'
+                        ? icon
+                        : getIconPixelSize(theme, icon)
+                }
             />
             <PWText
-                variant={SIZES[size].text}
+                variant={text}
+                weight={weight}
                 style={styles.label}
                 numberOfLines={1}
             >
