@@ -10,14 +10,25 @@
  limitations under the License
  */
 
+import { act } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { Decimal } from 'decimal.js'
-import { useSettings } from '@perawallet/wallet-core-settings'
+import {
+    useAccountAssetBalanceQuery,
+    type AccountAssetBalanceHistoryItem,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
+import type { PeraAsset } from '@perawallet/wallet-core-assets'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { usePreferences, useSettings } from '@perawallet/wallet-core-settings'
+import { usePreferredAmount } from '@components/PreferredAmount'
+import { useCapability } from '@hooks/useCapability'
 import { useAssetHoldings } from '../useAssetHoldings'
 
-const { mockCopyToClipboard } = vi.hoisted(() => ({
+const { mockCopyToClipboard, preferences } = vi.hoisted(() => ({
     mockCopyToClipboard: vi.fn(),
+    preferences: new Map<string, unknown>(),
 }))
 
 vi.mock('@hooks/useClipboard', () => ({
@@ -26,22 +37,129 @@ vi.mock('@hooks/useClipboard', () => ({
 
 vi.mock('@perawallet/wallet-core-settings', () => ({
     useSettings: vi.fn(),
+    usePreferences: vi.fn(),
 }))
 
-const ETH = { unitName: 'ETH' }
+vi.mock('@perawallet/wallet-core-accounts', () => ({
+    useAccountAssetBalanceQuery: vi.fn(),
+}))
+
+vi.mock('@components/PreferredAmount', () => ({
+    usePreferredAmount: vi.fn(),
+}))
+
+vi.mock('@hooks/useCapability', () => ({
+    useCapability: vi.fn(),
+}))
+
+const ACCOUNT = { id: 'account-1' } as WalletAccount
+const SCOPE: ChainScope = { chainId: 'ethereum', networkId: 'mainnet' }
+const ETH = {
+    assetId: 'native',
+    unitName: 'ETH',
+} as PeraAsset
+
+const render = () =>
+    renderHook(() =>
+        useAssetHoldings({ account: ACCOUNT, asset: ETH, scope: SCOPE }),
+    )
+
+const holding = (amount: string | null) =>
+    vi.mocked(useAccountAssetBalanceQuery).mockReturnValue({
+        data: amount === null ? null : { amount: new Decimal(amount) },
+    } as ReturnType<typeof useAccountAssetBalanceQuery>)
+
+const price = (convertedValue: Decimal | null, isPending = false) =>
+    vi.mocked(usePreferredAmount).mockReturnValue({
+        displayCurrency: 'USD',
+        convertedValue,
+        isPending,
+    })
 
 describe('useAssetHoldings', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        preferences.clear()
         vi.mocked(useSettings).mockReturnValue({
             privacyMode: false,
         } as ReturnType<typeof useSettings>)
+        vi.mocked(usePreferences).mockReturnValue({
+            getPreference: (key: string) => preferences.get(key),
+            setPreference: (key: string, value: unknown) =>
+                preferences.set(key, value),
+        } as unknown as ReturnType<typeof usePreferences>)
+        vi.mocked(useCapability).mockReturnValue(true)
+        holding('1.5')
+        price(new Decimal('3000'))
+    })
+
+    it('leads with the fiat value of a priced holding and keeps the token amount', () => {
+        const { result } = render()
+
+        expect(result.current.isPriced).toBe(true)
+        expect(result.current.holdingAmount.toFixed()).toBe('1.5')
+        expect(result.current.tokenAmount.toFixed()).toBe('1.5')
+        expect(vi.mocked(usePreferredAmount)).toHaveBeenCalledWith(
+            result.current.holdingAmount,
+            'native',
+            undefined,
+            undefined,
+            SCOPE,
+        )
+    })
+
+    it('treats a price lookup still in flight as priced, so the layout does not jump', () => {
+        price(null, true)
+
+        expect(render().result.current.isPriced).toBe(true)
+    })
+
+    it('leads with the token amount once the price lookup settles with no rate', () => {
+        price(null)
+
+        expect(render().result.current.isPriced).toBe(false)
+    })
+
+    it('values an asset the account does not hold at zero', () => {
+        holding(null)
+
+        const { result } = render()
+
+        expect(result.current.holdingAmount.isZero()).toBe(true)
+        expect(result.current.isPriced).toBe(true)
+    })
+
+    it('updates the period the chart and the change line share', () => {
+        const { result } = render()
+
+        act(() => result.current.setPeriod('one-month'))
+
+        expect(result.current.period).toBe('one-month')
+    })
+
+    it('reports a chain without balance history', () => {
+        vi.mocked(useCapability).mockReturnValue(false)
+
+        expect(render().result.current.hasBalanceHistory).toBe(false)
+    })
+
+    it("shows the scrubbed point's token amount while scrubbing", () => {
+        const { result } = render()
+        const point: AccountAssetBalanceHistoryItem = {
+            datetime: new Date('2025-01-01T00:00:00Z'),
+            amount: new Decimal('0.75'),
+            preferredValue: new Decimal('1000'),
+        }
+
+        act(() => result.current.setSelectedPoint(point))
+
+        expect(result.current.tokenAmount.toFixed()).toBe('0.75')
+        expect(result.current.holdingAmount.toFixed()).toBe('1.5')
     })
 
     it('copies the full-precision amount and names it in the toast', () => {
-        const { result } = renderHook(() =>
-            useAssetHoldings(new Decimal('0.001344293173000001'), ETH),
-        )
+        holding('0.001344293173000001')
+        const { result } = render()
 
         result.current.handleCopyAmount()
 
@@ -56,9 +174,7 @@ describe('useAssetHoldings', () => {
         vi.mocked(useSettings).mockReturnValue({
             privacyMode: true,
         } as ReturnType<typeof useSettings>)
-        const { result } = renderHook(() =>
-            useAssetHoldings(new Decimal('1.5'), ETH),
-        )
+        const { result } = render()
 
         result.current.handleCopyAmount()
 
