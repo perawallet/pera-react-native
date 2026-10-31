@@ -309,6 +309,7 @@
         "action_buttons": {
             "swap": "Swap",
             "buy": "Satın al",
+            "buy_sell": "Al/Sat",
             "send": "Gönder",
             "receive": "Al"
         },

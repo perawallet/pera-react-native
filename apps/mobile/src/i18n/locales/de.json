@@ -309,6 +309,7 @@
         "action_buttons": {
             "swap": "Tauschen",
             "buy": "Kaufen",
+            "buy_sell": "Kaufen/Verkaufen",
             "send": "Senden",
             "receive": "Empfangen"
         },

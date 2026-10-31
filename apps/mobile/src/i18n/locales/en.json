@@ -309,6 +309,7 @@
         "action_buttons": {
             "swap": "Swap",
             "buy": "Buy",
+            "buy_sell": "Buy/Sell",
             "send": "Send",
             "receive": "Receive"
         },
