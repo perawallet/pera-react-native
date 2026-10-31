@@ -24,6 +24,7 @@ import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { usePreferences, useSettings } from '@perawallet/wallet-core-settings'
 import { usePreferredAmount } from '@components/PreferredAmount'
 import { useCapability } from '@hooks/useCapability'
+import { UserPreferences } from '@constants/user-preferences'
 import { useAssetHoldings } from '../useAssetHoldings'
 
 const { mockCopyToClipboard, preferences } = vi.hoisted(() => ({
@@ -137,10 +138,34 @@ describe('useAssetHoldings', () => {
         expect(result.current.period).toBe('one-month')
     })
 
-    it('reports a chain without balance history', () => {
+    it('reports a chain without balance history and shows it no chart', () => {
         vi.mocked(useCapability).mockReturnValue(false)
+        preferences.set(UserPreferences.chartVisible, true)
 
-        expect(render().result.current.hasBalanceHistory).toBe(false)
+        const { result } = render()
+
+        expect(result.current.hasBalanceHistory).toBe(false)
+        expect(result.current.isChartShown).toBe(false)
+    })
+
+    it("follows the chart's period while the chart is shown", () => {
+        preferences.set(UserPreferences.chartVisible, true)
+        const { result } = render()
+
+        act(() => result.current.setPeriod('one-month'))
+
+        expect(result.current.isChartShown).toBe(true)
+        expect(result.current.trendPeriod).toBe('one-month')
+    })
+
+    it('follows the 24 hour change when the chart preference is off', () => {
+        preferences.set(UserPreferences.chartVisible, false)
+        const { result } = render()
+
+        act(() => result.current.setPeriod('one-month'))
+
+        expect(result.current.isChartShown).toBe(false)
+        expect(result.current.trendPeriod).toBe('one-day')
     })
 
     it("shows the scrubbed point's token amount while scrubbing", () => {

@@ -158,7 +158,10 @@ describe('Flow: Asset details header leads with the fiat value', () => {
         useAccountsStore.getState().setAccounts([])
     })
 
-    it('Given an Algorand asset, when it opens, then the fiat value leads, the token amount follows, and the change follows the chart period', async () => {
+    it('Given an Algorand asset with the chart shown, when it opens, then the fiat value leads, the token amount follows, and the change follows the chart period', async () => {
+        useSettingsStore
+            .getState()
+            .setPreference(UserPreferences.chartVisible, true)
         selectAccount(ALGORAND_ACCOUNT)
 
         renderDetails({
@@ -180,7 +183,7 @@ describe('Flow: Asset details header leads with the fiat value', () => {
         await vi.waitFor(async () => expect(await trend()).toContain('150.00%'))
     })
 
-    it('Given the global chart preference is off, when an Algorand asset opens, then the period selector is on screen and selecting a period updates the change', async () => {
+    it("Given the global chart preference is off, when an Algorand asset opens, then the change line shows the last 24 hours' change", async () => {
         useSettingsStore
             .getState()
             .setPreference(UserPreferences.chartVisible, false)
@@ -190,11 +193,6 @@ describe('Flow: Asset details header leads with the fiat value', () => {
             assetId: USDC_TEST_ASSET.assetId,
             chainId: 'algorand',
         })
-
-        expect(await trend()).toContain('25.00%')
-        expect(screen.getAllByText('chart.one_week.label')[0]).toBeTruthy()
-
-        fireEvent.click(screen.getAllByText('chart.one_day.label')[0])
 
         await vi.waitFor(async () => expect(await trend()).toContain('4.17%'))
     })

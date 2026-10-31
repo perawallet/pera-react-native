@@ -20,9 +20,10 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import type { PeraAsset } from '@perawallet/wallet-core-assets'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import { useSettings } from '@perawallet/wallet-core-settings'
+import { usePreferences, useSettings } from '@perawallet/wallet-core-settings'
 import type { HistoryPeriod, Nullable } from '@perawallet/wallet-core-shared'
 import { usePreferredAmount } from '@components/PreferredAmount'
+import { UserPreferences } from '@constants/user-preferences'
 import { useCapability } from '@hooks/useCapability'
 import { useChartInteraction } from '@hooks/useChartInteraction'
 import { useClipboard } from '@hooks/useClipboard'
@@ -43,7 +44,11 @@ export type UseAssetHoldingsResult = {
     /** False once the price lookup has settled with no rate: the header leads with the token amount instead. */
     isPriced: boolean
     hasBalanceHistory: boolean
+    /** The chain has balance history and the global chart preference is on. */
+    isChartShown: boolean
     period: HistoryPeriod
+    /** The change line's period: the chart's while it's shown; with no chart there is none to follow, so the last 24 hours. */
+    trendPeriod: HistoryPeriod
     setPeriod: (period: HistoryPeriod) => void
     selectedPoint: Nullable<AccountAssetBalanceHistoryItem>
     setSelectedPoint: (point: Nullable<AccountAssetBalanceHistoryItem>) => void
@@ -66,6 +71,10 @@ export const useAssetHoldings = ({
     const hasBalanceHistory = useCapability({
         chain: { chainId: scope.chainId, capability: 'balanceHistory' },
     })
+    const { getPreference } = usePreferences()
+    const isChartShown =
+        hasBalanceHistory && !!getPreference(UserPreferences.chartVisible)
+    const trendPeriod = isChartShown ? period : 'one-day'
 
     const { data: assetHolding } = useAccountAssetBalanceQuery(
         account,
@@ -101,7 +110,9 @@ export const useAssetHoldings = ({
         tokenAmount,
         isPriced: isPending || convertedValue !== null,
         hasBalanceHistory,
+        isChartShown,
         period,
+        trendPeriod,
         setPeriod,
         selectedPoint,
         setSelectedPoint,

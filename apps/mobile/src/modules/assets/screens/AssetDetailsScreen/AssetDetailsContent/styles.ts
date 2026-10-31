@@ -20,7 +20,6 @@ export const useStyles = makeStyles(theme => ({
     headerTitleContainer: {
         alignItems: 'center',
         justifyContent: 'center',
-        gap: theme.spacing.xs,
         minWidth: 0,
         maxWidth: '100%',
     },
