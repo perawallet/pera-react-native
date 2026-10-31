@@ -13,10 +13,9 @@
 import type { StyleProp, ViewStyle } from 'react-native'
 import { useTheme } from '@rneui/themed'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
-import { chainDisplayNameOf } from '@perawallet/wallet-core-chain-shared'
 import { getIconPixelSize, PWText, PWView } from '@components/core'
 import { ChainIcon } from '@modules/chain-ui/icon'
-import { useLanguage } from '@hooks/useLanguage'
+import { useChainLabel } from './useChainLabel'
 import { useStyles } from './styles'
 
 const SIZES = {
@@ -37,7 +36,7 @@ export const ChainLabel = ({
 }: ChainLabelProps) => {
     const styles = useStyles()
     const { theme } = useTheme()
-    const { t } = useLanguage()
+    const { label } = useChainLabel(chainId)
 
     return (
         <PWView
@@ -53,9 +52,7 @@ export const ChainLabel = ({
                 style={styles.label}
                 numberOfLines={1}
             >
-                {t('account_details.assets.chain_network', {
-                    chain: chainDisplayNameOf(chainId) ?? chainId,
-                })}
+                {label}
             </PWText>
         </PWView>
     )
