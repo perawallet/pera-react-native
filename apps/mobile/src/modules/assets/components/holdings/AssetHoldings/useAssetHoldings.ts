@@ -10,40 +10,101 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
-import type { Decimal } from 'decimal.js'
-import type { MinimalAsset } from '@perawallet/wallet-core-assets'
+import { useCallback, useMemo } from 'react'
+import { Decimal } from 'decimal.js'
+import {
+    type AccountAssetBalanceHistoryItem,
+    type AssetWithAccountBalance,
+    useAccountAssetBalanceQuery,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
+import type { PeraAsset } from '@perawallet/wallet-core-assets'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useSettings } from '@perawallet/wallet-core-settings'
+import type { HistoryPeriod, Nullable } from '@perawallet/wallet-core-shared'
+import { usePreferredAmount } from '@components/PreferredAmount'
+import { useCapability } from '@hooks/useCapability'
+import { useChartInteraction } from '@hooks/useChartInteraction'
 import { useClipboard } from '@hooks/useClipboard'
 import { useLanguage } from '@hooks/useLanguage'
 
+export type UseAssetHoldingsParams = {
+    account: WalletAccount
+    asset: PeraAsset
+    scope: ChainScope
+}
+
 export type UseAssetHoldingsResult = {
+    assetHolding: Nullable<AssetWithAccountBalance>
+    /** Display units; 0 when the account doesn't hold the asset. */
+    holdingAmount: Decimal
+    /** Display units; the scrubbed point's amount while scrubbing, else the holding. */
+    tokenAmount: Decimal
+    /** False once the price lookup has settled with no rate: the header leads with the token amount instead. */
+    isPriced: boolean
+    hasBalanceHistory: boolean
+    period: HistoryPeriod
+    setPeriod: (period: HistoryPeriod) => void
+    selectedPoint: Nullable<AccountAssetBalanceHistoryItem>
+    setSelectedPoint: (point: Nullable<AccountAssetBalanceHistoryItem>) => void
     canCopyAmount: boolean
     copyAmountHint: string
     handleCopyAmount: () => void
 }
 
-/**
- * The balance shows a rounded figure (6 dp at most), so a long-press copies the
- * full-precision amount and names it in the toast. Privacy mode disables it:
- * the copy would reveal the hidden balance.
- */
-export const useAssetHoldings = (
-    amount: Decimal,
-    asset: Pick<MinimalAsset, 'unitName'>,
-): UseAssetHoldingsResult => {
+export const useAssetHoldings = ({
+    account,
+    asset,
+    scope,
+}: UseAssetHoldingsParams): UseAssetHoldingsResult => {
     const { copyToClipboard } = useClipboard()
     const { t } = useLanguage()
     const { privacyMode } = useSettings()
+    const { period, setPeriod, selectedPoint, setSelectedPoint } =
+        useChartInteraction<AccountAssetBalanceHistoryItem>()
 
+    const hasBalanceHistory = useCapability({
+        chain: { chainId: scope.chainId, capability: 'balanceHistory' },
+    })
+
+    const { data: assetHolding } = useAccountAssetBalanceQuery(
+        account,
+        asset.assetId,
+        scope,
+    )
+    const holdingAmount = useMemo(
+        () => assetHolding?.amount ?? new Decimal(0),
+        [assetHolding],
+    )
+    const tokenAmount = selectedPoint?.amount ?? holdingAmount
+
+    const { convertedValue, isPending } = usePreferredAmount(
+        holdingAmount,
+        asset.assetId,
+        undefined,
+        undefined,
+        scope,
+    )
+
+    // The balance shows a rounded figure (6 dp at most), so a long-press copies the
+    // full-precision amount. Privacy mode disables it: the copy would reveal the balance.
     const handleCopyAmount = useCallback(() => {
         if (privacyMode) return
-        const fullAmount = amount.toFixed()
+        const fullAmount = tokenAmount.toFixed()
         const label = `${fullAmount} ${asset.unitName ?? ''}`.trim()
         void copyToClipboard(fullAmount, { body: label })
-    }, [amount, asset.unitName, copyToClipboard, privacyMode])
+    }, [tokenAmount, asset.unitName, copyToClipboard, privacyMode])
 
     return {
+        assetHolding,
+        holdingAmount,
+        tokenAmount,
+        isPriced: isPending || convertedValue !== null,
+        hasBalanceHistory,
+        period,
+        setPeriod,
+        selectedPoint,
+        setSelectedPoint,
         canCopyAmount: !privacyMode,
         copyAmountHint: t('asset_details.copy_full_amount_hint'),
         handleCopyAmount,

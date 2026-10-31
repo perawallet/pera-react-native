@@ -15,8 +15,6 @@ import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { AssetWealthChart } from '../AssetWealthChart/AssetWealthChart'
 import { ChartPeriodSelection } from '@components/ChartPeriodSelection'
-import { useMemo } from 'react'
-import { useChartInteraction } from '@hooks/useChartInteraction'
 import { AssetActionButtons } from '../AssetActionButtons/AssetActionButtons'
 import { AssetTransactionList } from '../AssetTransactionList/AssetTransactionList'
 
@@ -27,30 +25,17 @@ import {
     AssetNotificationButton,
     AssetTitle,
 } from '@modules/assets/components'
-import { ChainLabel } from '../../ChainLabel'
 import { AssetAmount } from '@components/AssetAmount'
 import { PreferredAmount } from '@components/PreferredAmount'
-import { Decimal } from 'decimal.js'
-import {
-    type AccountAssetBalanceHistoryItem,
-    useAccountAssetBalanceQuery,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
-import {
-    type PeraAsset,
-    useSingleAssetDetailsQuery,
-} from '@perawallet/wallet-core-assets'
-import { usePreferences } from '@perawallet/wallet-core-settings'
-import { UserPreferences } from '@constants/user-preferences'
-import { ExpandablePanel } from '@components/ExpandablePanel'
-import { useCapability } from '@hooks/useCapability'
+import { WealthTrend } from '@components/WealthTrend'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import type { PeraAsset } from '@perawallet/wallet-core-assets'
 
 export type AssetHoldingsProps = {
     account: WalletAccount
     asset: PeraAsset
     scope: ChainScope
     isCollectible?: boolean
-    isNetworkLineVisible?: boolean
 }
 
 export const AssetHoldings = ({
@@ -58,44 +43,22 @@ export const AssetHoldings = ({
     asset,
     scope,
     isCollectible,
-    isNetworkLineVisible = false,
 }: AssetHoldingsProps) => {
     const styles = useStyles()
-    const { data: assetDetails } = useSingleAssetDetailsQuery(
-        asset.assetId,
-        scope,
-    )
-    const { period, setPeriod, selectedPoint, setSelectedPoint } =
-        useChartInteraction<AccountAssetBalanceHistoryItem>()
-
-    const { getPreference } = usePreferences()
-    const chartVisible = !!getPreference(UserPreferences.chartVisible)
-    const hasBalanceHistory = useCapability({
-        chain: { chainId: scope.chainId, capability: 'balanceHistory' },
-    })
-
-    const { data: assetHolding } = useAccountAssetBalanceQuery(
-        account,
-        asset.assetId,
-        scope,
-    )
-
-    const cryptoAmount = useMemo(() => {
-        const currentCrypto = selectedPoint
-            ? selectedPoint.amount
-            : (assetHolding?.amount ?? new Decimal(0))
-        return currentCrypto
-    }, [assetHolding, selectedPoint])
-    const { canCopyAmount, copyAmountHint, handleCopyAmount } =
-        useAssetHoldings(cryptoAmount, asset)
-
-    // A scrubbed point with no preferred value has no rate behind it; passing
-    // null through renders the placeholder rather than claiming the holding
-    // was worth 0 on that date.
-    const selectedPreferredValue = useMemo(
-        () => selectedPoint?.preferredValue ?? null,
-        [selectedPoint],
-    )
+    const {
+        assetHolding,
+        holdingAmount,
+        tokenAmount,
+        isPriced,
+        hasBalanceHistory,
+        period,
+        setPeriod,
+        selectedPoint,
+        setSelectedPoint,
+        canCopyAmount,
+        copyAmountHint,
+        handleCopyAmount,
+    } = useAssetHoldings({ account, asset, scope })
 
     return (
         <AssetTransactionList
@@ -104,7 +67,10 @@ export const AssetHoldings = ({
             scope={scope}
         >
             <PWView style={styles.contentContainer}>
-                <PWView style={styles.header}>
+                <PWView
+                    style={styles.header}
+                    testID='asset_holdings_header'
+                >
                     <PWView style={styles.assetRow}>
                         <AssetTitle
                             asset={asset}
@@ -115,83 +81,94 @@ export const AssetHoldings = ({
                                 assetId={asset.assetId}
                                 scope={scope}
                                 isNotificationsEnabled={
-                                    assetDetails?.peraMetadata
-                                        ?.isPriceAlertEnabled
+                                    asset.peraMetadata?.isPriceAlertEnabled
                                 }
                             />
                             <AssetFavoriteButton
                                 assetId={asset.assetId}
                                 scope={scope}
-                                isFavorite={
-                                    assetDetails?.peraMetadata?.isFavorited
-                                }
+                                isFavorite={asset.peraMetadata?.isFavorited}
                             />
                         </PWView>
                     </PWView>
-                    {isNetworkLineVisible && (
-                        <ChainLabel
-                            chainId={scope.chainId}
-                            size='md'
-                            style={styles.chainLabel}
-                        />
+
+                    {/* A scrubbed point with no preferred value has no rate behind it: null renders the placeholder, never 0. */}
+                    {isPriced &&
+                        (selectedPoint ? (
+                            <PreferredAmount
+                                testID='asset_holdings_fiat_value'
+                                variant='h1'
+                                value={selectedPoint.preferredValue}
+                                density='compact'
+                                shouldFitWidth
+                            />
+                        ) : (
+                            <PreferredAmount
+                                testID='asset_holdings_fiat_value'
+                                variant='h1'
+                                sourceAmount={holdingAmount}
+                                sourceAssetId={asset.assetId}
+                                scope={scope}
+                                density='compact'
+                                shouldFitWidth
+                            />
+                        ))}
+
+                    {selectedPoint && (
+                        <PWText
+                            variant='h4'
+                            style={styles.dateDisplay}
+                            numberOfLines={1}
+                        >
+                            {formatDatetime(selectedPoint.datetime)}
+                        </PWText>
+                    )}
+                    {isPriced && !selectedPoint && (
+                        <PWView style={styles.trendContainer}>
+                            <WealthTrend
+                                holding={{
+                                    account,
+                                    assetId: asset.assetId,
+                                    scope,
+                                }}
+                                period={period}
+                            />
+                        </PWView>
                     )}
 
                     <PWTouchableOpacity
-                        style={styles.primaryValueContainer}
+                        style={styles.tokenAmountContainer}
                         activeOpacity={1}
                         disabled={!canCopyAmount}
                         onLongPress={handleCopyAmount}
                         accessibilityHint={copyAmountHint}
                     >
                         <AssetAmount
+                            testID='asset_holdings_token_amount'
                             chainId={scope.chainId}
-                            variant='h1'
-                            value={cryptoAmount}
+                            variant={isPriced ? 'body' : 'h1'}
+                            style={isPriced ? styles.tokenAmount : undefined}
+                            value={tokenAmount}
                             asset={asset}
                             shouldFitWidth
                         />
                     </PWTouchableOpacity>
-
-                    <PWView style={styles.secondaryValueContainer}>
-                        {selectedPoint ? (
-                            <PreferredAmount
-                                value={selectedPreferredValue}
-                                density='compact'
-                            />
-                        ) : (
-                            <PreferredAmount
-                                sourceAmount={
-                                    assetHolding?.amount ?? new Decimal(0)
-                                }
-                                sourceAssetId={asset.assetId}
-                                scope={scope}
-                                density='compact'
-                            />
-                        )}
-                        {!!selectedPoint && (
-                            <PWText style={styles.dateDisplay}>
-                                {formatDatetime(selectedPoint.datetime)}
-                            </PWText>
-                        )}
-                    </PWView>
                 </PWView>
 
                 {hasBalanceHistory && (
-                    <ExpandablePanel isExpanded={chartVisible}>
-                        <PWView style={styles.chartContainer}>
-                            <AssetWealthChart
-                                account={account}
-                                asset={asset}
-                                scope={scope}
-                                period={period}
-                                onSelectionChanged={setSelectedPoint}
-                            />
-                            <ChartPeriodSelection
-                                value={period}
-                                onChange={setPeriod}
-                            />
-                        </PWView>
-                    </ExpandablePanel>
+                    <PWView style={styles.chartContainer}>
+                        <AssetWealthChart
+                            account={account}
+                            asset={asset}
+                            scope={scope}
+                            period={period}
+                            onSelectionChanged={setSelectedPoint}
+                        />
+                        <ChartPeriodSelection
+                            value={period}
+                            onChange={setPeriod}
+                        />
+                    </PWView>
                 )}
 
                 <AssetActionButtons

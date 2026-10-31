@@ -12,8 +12,6 @@
 
 import { useEffect, useMemo } from 'react'
 import {
-    chainAccountOf,
-    getAccountDisplayName,
     useAccountHoldingSources,
     useSelectedAccount,
     type WalletAccount,
@@ -34,14 +32,10 @@ import {
     useChainCapability,
     useSelectedScope,
 } from '@perawallet/wallet-core-chain-shared'
-import {
-    dedupeSecondaryLabel,
-    type Nullable,
-    type Optional,
-} from '@perawallet/wallet-core-shared'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import { trackEvent, AssetDetailsEvent, AnalyticsMetadataKey } from '@analytics'
-import { useResolvedAddress } from '@hooks/useResolvedAddress'
 import { chainUiFor } from '@modules/chain-ui'
+import { nativeAssetInfoOf } from '@modules/chain-ui/icon'
 import type {
     AssetAboutDisplay,
     AssetDetailsDisplay,
@@ -62,8 +56,8 @@ export type UseAssetDetailsScreenResult = {
     scope: ChainScope
     isLoading: boolean
     isError: boolean
-    headerPrimary: string
-    headerSecondary: Optional<string>
+    /** The symbol of what was opened (`ALGO`, `USDC`); empty until the asset loads. */
+    headerTitle: string
     assetDetailsDisplay: AssetDetailsDisplay
     about: Nullable<AssetAboutDisplay>
     supply: Nullable<AssetSupplyDisplay>
@@ -132,15 +126,6 @@ export const useAssetDetailsScreen = ({
     // Market data comes from the chain's pricing; without it the tab would only ever be empty.
     const isMarketsTabVisible = useChainCapability(chainId, 'pricing')
 
-    const address = account
-        ? chainAccountOf(account, chainId)?.address
-        : undefined
-    const { displayName: accountDisplayName } = useResolvedAddress(
-        address ?? '',
-        scope,
-        { enabled: !!address },
-    )
-
     // Screen-view tracking (screen_asset_detail) is centralized in the
     // navigator's screenListeners (see routes/listeners.ts). This effect only
     // fires the asset-specific "Show" event, which carries the asset id.
@@ -153,14 +138,10 @@ export const useAssetDetailsScreen = ({
         }
     }, [assetId, chainId, isCollectible])
 
-    // Dedupe compares rendered strings, so both sides must share the same
-    // ('short') truncation — a 'long'-format secondary would never match and
-    // the address would render twice again.
-    const headerPrimary = getAccountDisplayName(account, chainId)
-    const headerSecondary = dedupeSecondaryLabel(
-        headerPrimary,
-        accountDisplayName,
-    )
+    const headerTitle = asset
+        ? (nativeAssetInfoOf({ chainId, assetId })?.symbol ??
+          (asset.unitName || asset.name || ''))
+        : ''
 
     return {
         account,
@@ -168,8 +149,7 @@ export const useAssetDetailsScreen = ({
         scope,
         isLoading: !isError && (isPending || !asset || !account),
         isError,
-        headerPrimary,
-        headerSecondary,
+        headerTitle,
         assetDetailsDisplay,
         about,
         supply,
