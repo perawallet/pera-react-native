@@ -11,4 +11,4 @@
  */
 
 export { WealthTrend } from './WealthTrend'
-export type { WealthTrendProps } from './WealthTrend'
+export type { WealthTrendHolding, WealthTrendProps } from './WealthTrend'
