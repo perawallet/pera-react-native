@@ -140,6 +140,39 @@ describe('useAccountsAssetsBalanceHistoryQuery', () => {
             expect(result.current.isPending).toBe(true)
         })
 
+        it('makes no request and reports isPending false when disabled', () => {
+            const { result } = renderHook(
+                () =>
+                    useAccountsAssetsBalanceHistoryQuery(
+                        mockAccount,
+                        '123',
+                        'one-day',
+                        selectedScope(),
+                        false,
+                    ),
+                { wrapper: createWrapper() },
+            )
+
+            expect(result.current.isPending).toBe(false)
+            expect(holdingHistory()).not.toHaveBeenCalled()
+        })
+
+        it('makes no request without an account', () => {
+            const { result } = renderHook(
+                () =>
+                    useAccountsAssetsBalanceHistoryQuery(
+                        null,
+                        '123',
+                        'one-day',
+                        selectedScope(),
+                    ),
+                { wrapper: createWrapper() },
+            )
+
+            expect(result.current.isPending).toBe(false)
+            expect(holdingHistory()).not.toHaveBeenCalled()
+        })
+
         it('handles error state', async () => {
             holdingHistory().mockRejectedValue(new Error('API Error'))
 
