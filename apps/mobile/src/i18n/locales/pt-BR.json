@@ -309,6 +309,7 @@
         "action_buttons": {
             "swap": "Converter",
             "buy": "Comprar",
+            "buy_sell": "Comprar/Vender",
             "send": "Enviar",
             "receive": "Receber"
         },

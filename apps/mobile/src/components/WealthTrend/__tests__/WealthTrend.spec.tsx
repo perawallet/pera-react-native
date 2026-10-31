@@ -13,7 +13,12 @@
 import { render } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
 import { WealthTrend } from '../WealthTrend'
-import { usePortfolioHistoryQuery } from '@perawallet/wallet-core-accounts'
+import {
+    useAccountsAssetsBalanceHistoryQuery,
+    usePortfolioHistoryQuery,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
+import { useSettings } from '@perawallet/wallet-core-settings'
 import type {
     ChainId,
     ChainScope,
@@ -51,6 +56,11 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
             isPending: false,
             isPartial: false,
         })),
+        useAccountsAssetsBalanceHistoryQuery: vi.fn(() => ({
+            data: [],
+            isPending: false,
+            isUnavailableOnNetwork: false,
+        })),
     }
 })
 
@@ -59,6 +69,21 @@ const ALGORAND: ChainScope = {
     networkId: 'mainnet',
 }
 const SOURCES = [{ address: 'ALGO', scope: ALGORAND }]
+const HOLDING = {
+    account: { id: 'account-1' } as WalletAccount,
+    assetId: '31566704',
+    scope: ALGORAND,
+}
+
+const holdingHistory = (
+    overrides: Partial<ReturnType<typeof useAccountsAssetsBalanceHistoryQuery>>,
+) =>
+    vi.mocked(useAccountsAssetsBalanceHistoryQuery).mockReturnValue({
+        data: [],
+        isPending: false,
+        isUnavailableOnNetwork: false,
+        ...overrides,
+    } as ReturnType<typeof useAccountsAssetsBalanceHistoryQuery>)
 
 describe('WealthTrend', () => {
     it('renders empty when isPending is true', () => {
@@ -247,5 +272,94 @@ describe('WealthTrend', () => {
             ALGORAND,
             false,
         )
+    })
+    describe('for one holding', () => {
+        it('trends the holding history and leaves the portfolio query off', () => {
+            holdingHistory({
+                data: [
+                    { preferredValue: new Decimal(200) },
+                    { preferredValue: new Decimal(250) },
+                ] as never,
+            })
+
+            const { getByTestId } = render(
+                <WealthTrend
+                    holding={HOLDING}
+                    period='one-month'
+                />,
+            )
+
+            expect(getByTestId('wealth_trend').textContent).toContain('25.00%')
+            expect(
+                vi.mocked(useAccountsAssetsBalanceHistoryQuery),
+            ).toHaveBeenLastCalledWith(
+                HOLDING.account,
+                HOLDING.assetId,
+                'one-month',
+                ALGORAND,
+                true,
+            )
+            expect(
+                vi.mocked(usePortfolioHistoryQuery),
+            ).toHaveBeenLastCalledWith([], 'one-month', ALGORAND, false)
+        })
+
+        it('renders empty when every point is unpriced', () => {
+            holdingHistory({
+                data: [
+                    { preferredValue: null },
+                    { preferredValue: null },
+                ] as never,
+            })
+
+            const { container } = render(
+                <WealthTrend
+                    holding={HOLDING}
+                    period='one-week'
+                />,
+            )
+
+            expect(container.innerHTML).toBe('')
+        })
+
+        it('renders empty on a chain with no balance history', () => {
+            holdingHistory({
+                data: [
+                    { preferredValue: new Decimal(200) },
+                    { preferredValue: new Decimal(250) },
+                ] as never,
+                isUnavailableOnNetwork: true,
+            })
+
+            const { container } = render(
+                <WealthTrend
+                    holding={HOLDING}
+                    period='one-week'
+                />,
+            )
+
+            expect(container.innerHTML).toBe('')
+        })
+
+        it('renders empty in privacy mode', () => {
+            vi.mocked(useSettings).mockReturnValueOnce({
+                privacyMode: true,
+            } as ReturnType<typeof useSettings>)
+            holdingHistory({
+                data: [
+                    { preferredValue: new Decimal(200) },
+                    { preferredValue: new Decimal(250) },
+                ] as never,
+            })
+
+            const { container } = render(
+                <WealthTrend
+                    holding={HOLDING}
+                    period='one-week'
+                />,
+            )
+
+            expect(container.innerHTML).toBe('')
+        })
     })
 })

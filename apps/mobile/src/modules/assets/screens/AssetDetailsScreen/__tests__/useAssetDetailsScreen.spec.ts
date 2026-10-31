@@ -21,7 +21,6 @@ import {
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
 import { evmChainOf } from '@packages/chain-ethereum/src/chains/table'
-import { createEvmAddressCodec } from '@packages/chain-ethereum/src/accounts/address-codec'
 import { AnalyticsMetadataKey, AssetDetailsEvent } from '@analytics'
 import { algorandChainUi } from '@modules/algorand/chain-ui'
 import { ethereumChainUi } from '@modules/ethereum/chain-ui'
@@ -31,12 +30,10 @@ import { accountForType } from '@test-utils/accountCustody'
 import { useAssetDetailsScreen } from '../useAssetDetailsScreen'
 
 const ethereumDescriptor = evmChainOf('ethereum').descriptor
-const ethereumAddressCodec = createEvmAddressCodec(evmChainOf('ethereum'))
 
 const mocks = vi.hoisted(() => ({
     account: null as WalletAccount | null,
     trackEvent: vi.fn(),
-    useResolvedAddress: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
@@ -46,17 +43,12 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
     useSelectedAccount: () => mocks.account,
 }))
 
-vi.mock('@hooks/useResolvedAddress', () => ({
-    useResolvedAddress: mocks.useResolvedAddress,
-}))
-
 vi.mock('@analytics', async importOriginal => ({
     ...(await importOriginal<typeof import('@analytics')>()),
     trackEvent: mocks.trackEvent,
 }))
 
 const ETH_ADDRESS = '0x52908400098527886E0F7030069857D2E4169EE7'
-const TRUNCATED_ETH_ADDRESS = ethereumAddressCodec.truncate(ETH_ADDRESS)
 const ERC20_ID = '0xdAC17F958D2ee523a2206206994597C13D831ec7'
 const ASA_ID = '31566704'
 
@@ -95,10 +87,6 @@ describe('useAssetDetailsScreen', () => {
         registerEthereumChain()
         useRemoteConfigStore.getState().resetState()
         mocks.account = ethereumAccount()
-        mocks.useResolvedAddress.mockReturnValue({
-            displayName: TRUNCATED_ETH_ADDRESS,
-            isNfd: false,
-        })
     })
 
     it('renders an ERC-20 from its own chain with the descriptor explorer link and no chain sections', () => {
@@ -140,8 +128,7 @@ describe('useAssetDetailsScreen', () => {
             urlLabelKey: 'asset_details.about.url',
             explorerLink: { url, label: new URL(url as string).hostname },
         })
-        expect(result.current.headerPrimary).toBe(TRUNCATED_ETH_ADDRESS)
-        expect(result.current.headerSecondary).toBeUndefined()
+        expect(result.current.headerTitle).toBe('Fixture')
         expect(result.current.isLoading).toBe(false)
     })
 
@@ -327,25 +314,63 @@ describe('useAssetDetailsScreen', () => {
         expect(mocks.trackEvent).not.toHaveBeenCalled()
     })
 
-    it("shows a named account's secondary address truncated for the asset's chain", () => {
-        mocks.account = { ...ethereumAccount(), name: 'Savings' }
-        mockAsset({ data: assetFixture(ERC20_ID) })
-
-        const { result } = renderHook(() =>
+    it("titles an asset with its unit name, and a coin with its chain's symbol", () => {
+        mockAsset({
+            data: {
+                ...assetFixture(ERC20_ID),
+                unitName: 'USDT',
+                name: 'Tether',
+            },
+        })
+        const erc20 = renderHook(() =>
             useAssetDetailsScreen({
                 assetId: ERC20_ID,
                 chainId: 'ethereum',
                 isCollectible: false,
             }),
-        )
+        ).result.current
+        expect(erc20.headerTitle).toBe('USDT')
 
-        expect(result.current.headerPrimary).toBe('Savings')
-        expect(result.current.headerSecondary).toBe(TRUNCATED_ETH_ADDRESS)
-        expect(mocks.useResolvedAddress).toHaveBeenCalledWith(
-            ETH_ADDRESS,
-            expect.objectContaining({ chainId: 'ethereum' }),
-            { enabled: true },
-        )
+        mocks.account = accountForType('standalone')
+        mockAsset({
+            data: { ...assetFixture('0'), unitName: 'ALGO', name: 'Algorand' },
+        })
+        const algo = renderHook(() =>
+            useAssetDetailsScreen({
+                assetId: '0',
+                chainId: 'algorand',
+                isCollectible: false,
+            }),
+        ).result.current
+        expect(algo.headerTitle).toBe('ALGO')
+    })
+
+    it('titles an asset with no unit name by its name, and an unloaded one with nothing', () => {
+        mockAsset({
+            data: {
+                ...assetFixture(ERC20_ID),
+                unitName: undefined,
+                name: 'Tether',
+            },
+        })
+        const named = renderHook(() =>
+            useAssetDetailsScreen({
+                assetId: ERC20_ID,
+                chainId: 'ethereum',
+                isCollectible: false,
+            }),
+        ).result.current
+        expect(named.headerTitle).toBe('Tether')
+
+        mockAsset({ isError: true })
+        const unloaded = renderHook(() =>
+            useAssetDetailsScreen({
+                assetId: ERC20_ID,
+                chainId: 'ethereum',
+                isCollectible: false,
+            }),
+        ).result.current
+        expect(unloaded.headerTitle).toBe('')
     })
 
     it('still renders when the account has no address on the asset chain', () => {
@@ -360,13 +385,7 @@ describe('useAssetDetailsScreen', () => {
             }),
         )
 
-        expect(mocks.useResolvedAddress).toHaveBeenCalledWith(
-            '',
-            expect.objectContaining({ chainId: 'ethereum' }),
-            { enabled: false },
-        )
         expect(result.current.isLoading).toBe(false)
-        expect(result.current.headerPrimary).toBe('No Address Found')
     })
 
     describe('chain resolution', () => {

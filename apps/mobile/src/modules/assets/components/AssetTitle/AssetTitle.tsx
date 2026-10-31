@@ -18,7 +18,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 import { useAssetTitle } from './useAssetTitle'
 import { AssetIcon } from '@components/AssetIcon'
-import type { TypographyVariant } from '@theme/typography'
+import type { FontWeight, TypographyVariant } from '@theme/typography'
 
 export type AssetTitleProps = {
     asset: PeraAsset
@@ -26,6 +26,7 @@ export type AssetTitleProps = {
     chainId: ChainId
     showId?: boolean
     nameVariant?: TypographyVariant
+    nameWeight?: FontWeight
 }
 
 export const AssetTitle = ({
@@ -33,6 +34,7 @@ export const AssetTitle = ({
     chainId,
     showId = false,
     nameVariant = 'h4',
+    nameWeight,
 }: AssetTitleProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
@@ -55,6 +57,7 @@ export const AssetTitle = ({
                 <PWView style={styles.nameContainer}>
                     <PWText
                         variant={nameVariant}
+                        weight={nameWeight}
                         style={
                             isSuspicious ? styles.suspiciousName : styles.name
                         }

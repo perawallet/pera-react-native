@@ -12,6 +12,7 @@
 
 import { AssetMarkets } from '@modules/assets/components/market/AssetMarkets'
 import { AssetHoldings } from '@modules/assets/components/holdings/AssetHoldings'
+import { ChainLabel } from '@modules/assets/components/ChainLabel'
 import { EmptyView } from '@components/EmptyView'
 import { LoadingView } from '@components/LoadingView'
 import { useLanguage } from '@hooks/useLanguage'
@@ -48,8 +49,7 @@ export const AssetDetailsContent = ({
         scope,
         isLoading,
         isError,
-        headerPrimary,
-        headerSecondary,
+        headerTitle,
         assetDetailsDisplay,
         about,
         supply,
@@ -65,21 +65,16 @@ export const AssetDetailsContent = ({
         title: (
             <PWView style={styles.headerTitleContainer}>
                 <PWText
-                    variant='h4'
+                    variant='bodyLarge'
+                    weight={500}
                     truncate
                 >
-                    {headerPrimary}
+                    {headerTitle}
                 </PWText>
-                {!!headerSecondary && (
-                    <PWText
-                        variant='caption'
-                        style={styles.headerSubtitle}
-                        truncate
-                        ellipsizeMode='middle'
-                    >
-                        {headerSecondary}
-                    </PWText>
-                )}
+                <ChainLabel
+                    chainId={chainId}
+                    size='title'
+                />
             </PWView>
         ),
         right: account ? (
@@ -124,7 +119,6 @@ export const AssetDetailsContent = ({
                             asset={asset}
                             scope={scope}
                             isCollectible={isCollectible}
-                            isNetworkLineVisible={isNetworkLineVisible}
                         />
                     )}
                 </Tab.Screen>
