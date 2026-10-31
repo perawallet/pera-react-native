@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { queryClient } from '@perawallet/wallet-core-shared'
+import { isNotFoundError, queryClient } from '@perawallet/wallet-core-shared'
 import {
     parseTransactionHistoryResponse,
     type TransactionHistoryApiResponse,
@@ -34,6 +34,18 @@ type FetchTransactionHistoryParams = Omit<FetchHistoryParams, 'scope'> & {
 }
 type FetchMoreTransactionsParams = Omit<FetchMoreParams, 'scope'> & {
     network: AlgorandNetworkId
+}
+
+const UNSEEN_ACCOUNT_HISTORY: TransactionHistoryResult = {
+    transactions: [],
+    pagination: {
+        hasNextPage: false,
+        hasPreviousPage: false,
+        nextUrl: null,
+        previousUrl: null,
+        totalFetched: 0,
+    },
+    currentRound: 0,
 }
 
 /**
@@ -120,10 +132,19 @@ const fetchMorePeraTransactions = async (
  */
 export const fetchTransactionHistory = async (
     params: FetchTransactionHistoryParams,
-): Promise<TransactionHistoryResult> =>
-    hasPeraBackend(algorandScope(params.network))
-        ? fetchPeraTransactionHistory(params)
-        : fetchIndexerTransactionHistory(params)
+): Promise<TransactionHistoryResult> => {
+    if (!hasPeraBackend(algorandScope(params.network))) {
+        return fetchIndexerTransactionHistory(params)
+    }
+    try {
+        return await fetchPeraTransactionHistory(params)
+    } catch (error) {
+        // The Pera backend answers 404 for an address that was never on chain:
+        // that is an empty history, not a failure.
+        if (isNotFoundError(error)) return UNSEEN_ACCOUNT_HISTORY
+        throw error
+    }
+}
 
 /** Takes a nextUrl on Pera-backed networks, a next-token on indexer-backed ones. */
 export const fetchMoreTransactions = async (
