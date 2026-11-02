@@ -306,6 +306,8 @@ test('the receive address wraps instead of overflowing the sheet', async () => {
         .locator('[data-testid^="receive_account_row-"]')
         .first()
         .click()
+    // The e2e bundle ships Ethereum too, so Receive asks which chain first.
+    await popupPage.getByTestId('receive_chain_row_algorand').click()
 
     const addressBox = await popupPage.evaluate(() => {
         const all = Array.from(document.querySelectorAll('*'))

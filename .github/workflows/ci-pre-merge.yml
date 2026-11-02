@@ -475,7 +475,7 @@ jobs:
           echo "All test shards passed"
 
   extension-e2e:
-    name: Extension bundle & e2e (${{ matrix.shard }}/4)
+    name: ${{ matrix.shard == 'no-evm' && 'Extension bundle without EVM chains' || format('Extension bundle & e2e ({0}/4)', matrix.shard) }}
     runs-on: ubuntu-24.04
     needs: setup
     permissions:
@@ -484,10 +484,14 @@ jobs:
     # Each shard bundles for itself: a separate bundle job would add a job hop
     # and an artifact round trip that cost about what the bundle does. Shards
     # are split by measured spec cost in apps/browser/playwright.config.ts.
+    # The no-evm entry builds the extension without EVM chains and runs no
+    # Playwright.
     strategy:
       fail-fast: false
       matrix:
         shard: [1, 2, 3, 4]
+        include:
+          - shard: no-evm
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -568,7 +572,7 @@ jobs:
       # variable thing in the job, so it runs behind the bundle instead of
       # after it. `Install Playwright Chromium` waits for it.
       - name: Start Playwright system dependencies
-        if: steps.changes.outputs.affected == 'true'
+        if: steps.changes.outputs.affected == 'true' && matrix.shard != 'no-evm'
         # Every descriptor redirected: the runner waits for a step's output pipe
         # to close, so a background job still holding it would block the step.
         run: |
@@ -588,14 +592,16 @@ jobs:
           key: metro-web-${{ runner.os }}-${{ github.sha }}
           restore-keys: metro-web-${{ runner.os }}-
 
-      # bundle:e2e bakes the localhost fake EVM node as every EVM RPC URL, which
-      # Playwright cannot route for the offscreen document.
+      # bundle:e2e ships Ethereum and bakes the localhost fake EVM node as every
+      # EVM RPC URL, which Playwright cannot route for the offscreen document.
+      # The no-evm entry builds without EVM chains, and build.mjs asserts that
+      # bundle carries no viem and no EVM provider.
       - name: Bundle extension
         if: steps.changes.outputs.affected == 'true'
         env:
           # Expo keeps Metro's cache under os.tmpdir().
           TMPDIR: ${{ runner.temp }}
-        run: pnpm --filter browser bundle:e2e
+        run: pnpm --filter browser ${{ matrix.shard == 'no-evm' && 'bundle' || 'bundle:e2e' }}
 
       # Every shard builds the same bundle, so one saves it.
       - name: Save Metro cache
@@ -623,14 +629,14 @@ jobs:
       # exact version. `playwright install` is idempotent, so a stale/missing
       # cache just falls back to a full download instead of failing.
       - name: Cache Playwright browsers
-        if: steps.changes.outputs.affected == 'true'
+        if: steps.changes.outputs.affected == 'true' && matrix.shard != 'no-evm'
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.cache/ms-playwright
           key: playwright-browsers-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
 
       - name: Install Playwright Chromium
-        if: steps.changes.outputs.affected == 'true'
+        if: steps.changes.outputs.affected == 'true' && matrix.shard != 'no-evm'
         run: |
           set -euo pipefail
           while [ ! -f "$RUNNER_TEMP/playwright-deps.exit" ]; do sleep 1; done
@@ -643,13 +649,13 @@ jobs:
           pnpm --filter browser exec playwright install chromium
 
       - name: Run extension e2e
-        if: steps.changes.outputs.affected == 'true'
+        if: steps.changes.outputs.affected == 'true' && matrix.shard != 'no-evm'
         env:
           E2E_SHARD: ${{ matrix.shard }}/4
         run: pnpm --filter browser test:e2e --reporter=list
 
       - name: Upload fidelity screenshots
-        if: always() && steps.changes.outputs.affected == 'true'
+        if: always() && steps.changes.outputs.affected == 'true' && matrix.shard != 'no-evm'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: extension-fidelity-screenshots-${{ matrix.shard }}
@@ -657,7 +663,7 @@ jobs:
           retention-days: 14
 
       - name: Upload traces on failure
-        if: failure() && steps.changes.outputs.affected == 'true'
+        if: failure() && steps.changes.outputs.affected == 'true' && matrix.shard != 'no-evm'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: extension-e2e-traces-${{ matrix.shard }}

@@ -14,7 +14,13 @@
 import { join } from 'node:path'
 import { build } from 'esbuild'
 import { describe, expect, it } from 'vitest'
-import { VIEM_MARKER, assertNoViem, listsEvmChain } from '../bundle-content.mjs'
+import {
+    EVM_PROVIDER_MARKER,
+    VIEM_MARKER,
+    assertEvmProviderMatchesChains,
+    assertNoViem,
+    listsEvmChain,
+} from '../bundle-content.mjs'
 
 const CHAIN_ETHEREUM = join(__dirname, '../../../../packages/chain-ethereum')
 
@@ -52,6 +58,51 @@ describe('assertNoViem', () => {
 
         expect(() => assertNoViem(outputFiles[0].text, 'bundle')).toThrow(
             /contains viem/,
+        )
+    })
+})
+
+describe('assertEvmProviderMatchesChains', () => {
+    const withProvider = `addEventListener("${EVM_PROVIDER_MARKER}",a)`
+
+    it('passes a content script whose EVM provider matches the chain list', () => {
+        expect(() =>
+            assertEvmProviderMatchesChains(
+                withProvider,
+                true,
+                'content-inject-main.js',
+            ),
+        ).not.toThrow()
+        expect(() =>
+            assertEvmProviderMatchesChains(
+                'const a = 1',
+                false,
+                'content-inject-main.js',
+            ),
+        ).not.toThrow()
+    })
+
+    it('throws when a build without EVM chains still installs the provider', () => {
+        expect(() =>
+            assertEvmProviderMatchesChains(
+                withProvider,
+                false,
+                'content-inject-main.js',
+            ),
+        ).toThrow(
+            /^content-inject-main\.js installs the EVM provider but CHAINS lists no EVM chain/,
+        )
+    })
+
+    it('throws when a build with an EVM chain has no provider', () => {
+        expect(() =>
+            assertEvmProviderMatchesChains(
+                'const a = 1',
+                true,
+                'content-inject-main.js',
+            ),
+        ).toThrow(
+            /^content-inject-main\.js has no EVM provider but CHAINS lists an EVM chain/,
         )
     })
 })

@@ -27,6 +27,9 @@ export type FakeEvmNode = {
 
 export declare const evmTxHashOf: (raw: string) => string
 
+/** The encoded `aggregate3` result for `data`, or null where it reverts. */
+export declare const answerAggregate3: (data: string) => string | null
+
 export declare const createFakeEvmNode: () => FakeEvmNode
 
 export declare const E2E_EVM_RPC_PORT: number
