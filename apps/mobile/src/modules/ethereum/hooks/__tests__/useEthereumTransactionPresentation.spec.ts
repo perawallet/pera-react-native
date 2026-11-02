@@ -16,7 +16,11 @@ import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useFindAccountByAddress } from '@perawallet/wallet-core-accounts'
 import { useSingleAssetDetailsQuery } from '@perawallet/wallet-core-assets'
 import type { TransactionNative } from '@perawallet/wallet-core-chain-contract'
-import type { EvmStandardCall } from '@perawallet/wallet-core-chain-ethereum'
+import type {
+    EvmContractAction,
+    EvmContractLabel,
+    EvmStandardCall,
+} from '@perawallet/wallet-core-chain-ethereum'
 import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 import { registerEthereumChain } from '@test-utils/chain-fixtures'
 import {
@@ -497,6 +501,175 @@ describe('useEthereumTransactionPresentation', () => {
             expect(result.current?.feePaid?.asset?.assetId).toBe(
                 result.current?.value.asset?.assetId,
             )
+        })
+    })
+
+    describe('a call to a known contract', () => {
+        const ROUTER = '0x23617e59A5925b2A4Bf75d73ff6711cD0b29De85'
+        const ROUTER_LABEL: EvmContractLabel = {
+            kind: 'uniswap-universal-router',
+            name: 'Uniswap Universal Router',
+            projectDomain: 'uniswap.org',
+        }
+        const SWAP: EvmContractAction = {
+            kind: 'swap',
+            input: {
+                asset: { kind: 'native' },
+                amount: new Decimal(10n ** 18n),
+                bound: 'exact',
+            },
+            output: {
+                asset: { kind: 'token', contract: ETHEREUM_FIXTURE_TOKEN },
+                amount: new Decimal(1_500_000),
+                bound: 'at-least',
+            },
+        }
+
+        // The contract-call fixture is an unrecognised call; these give it a
+        // label and an action, as the reviewer does for a known target.
+        const knownNative = (
+            fields: Record<string, unknown>,
+        ): TransactionNative => ({
+            ...natives['contract-call'],
+            transaction: {
+                ...(natives['contract-call'].transaction as object),
+                to: ROUTER,
+                ...fields,
+            },
+        })
+
+        beforeEach(() => {
+            vi.mocked(useChainCapability).mockReturnValue(true)
+            mockAssetQuery({ data: USDC, isPending: false })
+        })
+
+        it('titles a swap as one, with the swap icon, and carries the label and both legs', () => {
+            const { result } = renderHook(() =>
+                useEthereumTransactionPresentation(
+                    knownNative({
+                        knownContract: ROUTER_LABEL,
+                        action: SWAP,
+                    }),
+                ),
+            )
+
+            expect(result.current?.titleKey).toBe('transactions.list_item.swap')
+            expect(result.current?.iconName).toBe('transactions/swap')
+            expect(result.current?.knownContract).toEqual(ROUTER_LABEL)
+            expect(result.current?.contractAction).toMatchObject({
+                kind: 'swap',
+                input: { bound: 'exact', value: new Decimal(1) },
+                output: {
+                    asset: USDC,
+                    bound: 'at-least',
+                    value: new Decimal(1.5),
+                },
+            })
+            expect(result.current?.isTransfer).toBe(false)
+        })
+
+        it.each([
+            ['wrap', { kind: 'wrap', amount: new Decimal(10n ** 18n) }, 'wrap'],
+            [
+                'unwrap',
+                { kind: 'unwrap', amount: new Decimal(10n ** 18n) },
+                'unwrap',
+            ],
+            [
+                'supply',
+                {
+                    kind: 'supply',
+                    asset: ETHEREUM_FIXTURE_TOKEN,
+                    amount: new Decimal(1_000_000),
+                    isEntireBalance: false,
+                },
+                'supply',
+            ],
+        ])('titles a %s from its action', (_name, action, key) => {
+            const { result } = renderHook(() =>
+                useEthereumTransactionPresentation(
+                    knownNative({ knownContract: ROUTER_LABEL, action }),
+                ),
+            )
+
+            expect(result.current?.titleKey).toBe(
+                `transactions.list_item.${key}`,
+            )
+            expect(result.current?.iconName).toBe(
+                'transactions/application-call',
+            )
+        })
+
+        it('keeps the contract call title for a label without an action', () => {
+            const { result } = renderHook(() =>
+                useEthereumTransactionPresentation(
+                    knownNative({ knownContract: ROUTER_LABEL }),
+                ),
+            )
+
+            expect(result.current?.titleKey).toBe(
+                'transactions.list_item.contract_call',
+            )
+            expect(result.current?.knownContract).toEqual(ROUTER_LABEL)
+            expect(result.current?.contractAction).toBeNull()
+        })
+
+        it('lets a standard call win over an action', () => {
+            const { result } = renderHook(() =>
+                useEthereumTransactionPresentation(
+                    knownNative({
+                        knownContract: ROUTER_LABEL,
+                        action: SWAP,
+                        call: {
+                            kind: 'approve',
+                            contract: ETHEREUM_FIXTURE_TOKEN,
+                            spender: ETHEREUM_FIXTURE_RECIPIENT,
+                            value: new Decimal(5),
+                        },
+                    }),
+                ),
+            )
+
+            expect(result.current?.titleKey).toBe(
+                'transactions.list_item.approval',
+            )
+            expect(result.current?.contractAction).toBeNull()
+            expect(result.current?.knownContract).toBeNull()
+        })
+
+        it('presents an unlisted contract call as before', () => {
+            const { result } = renderHook(() =>
+                useEthereumTransactionPresentation(natives['contract-call']),
+            )
+
+            expect(result.current?.titleKey).toBe(
+                'transactions.list_item.contract_call',
+            )
+            expect(result.current?.knownContract).toBeNull()
+            expect(result.current?.contractAction).toBeNull()
+        })
+
+        it('presents it as before while contractDecoding is off', () => {
+            vi.mocked(useChainCapability).mockReturnValue(false)
+
+            const { result } = renderHook(() =>
+                useEthereumTransactionPresentation(
+                    knownNative({
+                        knownContract: ROUTER_LABEL,
+                        action: SWAP,
+                    }),
+                ),
+            )
+
+            expect(result.current?.titleKey).toBe(
+                'transactions.list_item.contract_call',
+            )
+            expect(result.current?.iconName).toBe(
+                'transactions/application-call',
+            )
+            expect(result.current?.knownContract).toBeNull()
+            expect(result.current?.contractAction).toBeNull()
+            expect(result.current?.isContractActionLoading).toBe(false)
         })
     })
 })

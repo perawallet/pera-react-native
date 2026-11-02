@@ -1061,6 +1061,191 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                 })
             })
 
+            describe('a call to a known contract, with contractDecoding on', () => {
+                const USDC = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
+                // The Universal Router version the Uniswap app sent QA's swap to.
+                const ROUTER = '0x23617e59A5925b2A4Bf75d73ff6711cD0b29De85'
+                // execute(0x00, [V3_SWAP_EXACT_IN: 2.5 USDC for at least 2.4 DAI, paid to the signer], deadline)
+                const SWAP_DATA =
+                    '0x3593564c000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000f486570000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000100000000000000000000000000f39fd6e51aad88f6f4ce6ab8827279cfffb9226600000000000000000000000000000000000000000000000000000000002625a0000000000000000000000000000000000000000000000000214e8348c4f0000000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000002ba0b86991c6218b36c1d19d4a2e9eb0ce3606eb480000646b175474e89094c44da98b954eedeac495271d0f000000000000000000000000000000000000000000'
+                // execute(0x10, [0x], deadline): V4_SWAP, a command the decoder doesn't read
+                const UNKNOWN_COMMAND_DATA =
+                    '0x3593564c000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000f486570000000000000000000000000000000000000000000000000000000000000000011000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000'
+
+                const WETH = '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2'
+                const AAVE_POOL = '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2'
+                // deposit()
+                const DEPOSIT_DATA = '0xd0e30db0'
+                // supply(USDC, 3_000_000, signer, 0)
+                const SUPPLY_DATA =
+                    '0x617ba037000000000000000000000000a0b86991c6218b36c1d19d4a2e9eb0ce3606eb4800000000000000000000000000000000000000000000000000000000002dc6c0000000000000000000000000f39fd6e51aad88f6f4ce6ab8827279cfffb922660000000000000000000000000000000000000000000000000000000000000000'
+
+                beforeEach(() => {
+                    setCapabilityOverrides(
+                        { dappConnect: true, contractDecoding: true },
+                        'ethereum',
+                    )
+                })
+
+                const reviewKnownCall = async (
+                    to: string,
+                    data: string,
+                    value = '0x0',
+                ) => {
+                    await upsertAssets({
+                        items: [
+                            {
+                                ...nativeAssetFor('ethereum'),
+                                assetId: USDC,
+                                name: 'USD Coin',
+                                unitName: 'USDC',
+                                decimals: 6,
+                            },
+                        ],
+                        scope: { chainId: 'ethereum', networkId: 'mainnet' },
+                    })
+                    const walletKit = await settle()
+                    renderSignReview()
+                    sendTransaction(walletKit, {
+                        from: CHECKSUMMED_ETH_ADDRESS,
+                        to,
+                        value,
+                        data,
+                    })
+                    await queued()
+                    await waitFor(
+                        () => {
+                            expect(
+                                screen.getAllByTestId(
+                                    'signing_transaction_review',
+                                ),
+                            ).not.toHaveLength(0)
+                        },
+                        { timeout: 5000 },
+                    )
+                }
+
+                const reviewRouterCall = (data: string) =>
+                    reviewKnownCall(ROUTER, data)
+
+                it('Given a Universal Router swap, when it is reviewed, then it is titled Swap with the labelled router, what is paid and the least received, and no unknown-contract notice', async () => {
+                    await reviewRouterCall(SWAP_DATA)
+
+                    await waitFor(() => {
+                        expect(
+                            screen.getAllByTestId('ethereum_action_receive'),
+                        ).not.toHaveLength(0)
+                    })
+                    expect(
+                        screen.getAllByText('transactions.list_item.swap'),
+                    ).not.toHaveLength(0)
+                    expect(
+                        screen.getAllByTestId('ethereum_known_contract'),
+                    ).not.toHaveLength(0)
+                    expect(
+                        screen.getAllByText('Uniswap Universal Router'),
+                    ).not.toHaveLength(0)
+                    expect(
+                        screen.getAllByTestId(
+                            'ethereum_known_contract_verified',
+                        ),
+                    ).not.toHaveLength(0)
+                    expect(
+                        screen.getAllByTestId('ethereum_action_pay'),
+                    ).not.toHaveLength(0)
+                    // A token's record names it however the token likes, so
+                    // its address is shown whether or not the record is known.
+                    expect(
+                        screen.getAllByTestId('ethereum_action_pay_token'),
+                    ).not.toHaveLength(0)
+                    expect(
+                        screen.getAllByTestId('ethereum_action_receive_token'),
+                    ).not.toHaveLength(0)
+                    expect(
+                        screen.getAllByText(
+                            'ethereum.contract_action.receive_at_least',
+                        ),
+                    ).not.toHaveLength(0)
+                    expect(
+                        screen.queryByTestId('ethereum_contract_call_warning'),
+                    ).toBeNull()
+                })
+
+                it('Given a WETH deposit, when it is reviewed, then it is titled Wrap with the wrapped amount and the labelled token', async () => {
+                    await reviewKnownCall(
+                        WETH,
+                        DEPOSIT_DATA,
+                        '0x2386f26fc10000',
+                    )
+
+                    await waitFor(() => {
+                        expect(
+                            screen.getAllByTestId('ethereum_action_amount'),
+                        ).not.toHaveLength(0)
+                    })
+                    expect(
+                        screen.getAllByText('transactions.list_item.wrap'),
+                    ).not.toHaveLength(0)
+                    expect(
+                        screen.getAllByText('Wrapped Ether'),
+                    ).not.toHaveLength(0)
+                    expect(
+                        screen.queryByTestId('ethereum_contract_call_warning'),
+                    ).toBeNull()
+                })
+
+                it('Given an Aave supply, when it is reviewed, then it is titled Supply with the labelled pool, the asset and the amount', async () => {
+                    await reviewKnownCall(AAVE_POOL, SUPPLY_DATA)
+
+                    await waitFor(() => {
+                        expect(
+                            screen.getAllByTestId('ethereum_action_asset'),
+                        ).not.toHaveLength(0)
+                    })
+                    expect(
+                        screen.getAllByText('transactions.list_item.supply'),
+                    ).not.toHaveLength(0)
+                    expect(
+                        screen.getAllByText('Aave V3 Pool'),
+                    ).not.toHaveLength(0)
+                    expect(
+                        screen.getAllByTestId('ethereum_action_amount'),
+                    ).not.toHaveLength(0)
+                    await waitFor(() => {
+                        expect(screen.getAllByText('USDC')).not.toHaveLength(0)
+                    })
+                    expect(
+                        screen.queryByTestId('ethereum_contract_call_warning'),
+                    ).toBeNull()
+                })
+
+                it('Given a router call with a command it cannot read, when it is reviewed, then it is a labelled Contract Call with the unknown-contract notice, not a Swap', async () => {
+                    await reviewRouterCall(UNKNOWN_COMMAND_DATA)
+
+                    await waitFor(() => {
+                        expect(
+                            screen.getAllByTestId(
+                                'ethereum_contract_call_warning',
+                            ),
+                        ).not.toHaveLength(0)
+                    })
+                    expect(
+                        screen.getAllByText(
+                            'transactions.list_item.contract_call',
+                        ),
+                    ).not.toHaveLength(0)
+                    expect(
+                        screen.getAllByText('Uniswap Universal Router'),
+                    ).not.toHaveLength(0)
+                    expect(
+                        screen.queryByText('transactions.list_item.swap'),
+                    ).toBeNull()
+                    expect(
+                        screen.queryByTestId('ethereum_action_pay'),
+                    ).toBeNull()
+                })
+            })
+
             it.each([
                 ['a type 0x4 transaction', { type: '0x4' }, -32_602],
                 ['a contract creation', { to: undefined }, -32_602],

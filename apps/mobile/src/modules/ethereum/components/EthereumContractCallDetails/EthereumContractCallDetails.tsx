@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { SignRequestSource } from '@perawallet/wallet-core-signing'
 import { PWText, PWView } from '@components/core'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { AssetAmount } from '@components/AssetAmount'
@@ -19,6 +20,7 @@ import { ExpandableText } from '@components/ExpandableText'
 import { KeyValueRow } from '@components/KeyValueRow'
 import { useLanguage } from '@hooks/useLanguage'
 import type { EthereumTransactionPresentation } from '../../hooks/useEthereumTransactionPresentation'
+import { EthereumKnownContractRow } from '../EthereumKnownContractRow'
 import { useStyles } from './styles'
 
 // '0x', the 4-byte selector and the first 32-byte argument word, in hex.
@@ -26,22 +28,38 @@ const CALL_DATA_PREVIEW_LENGTH = 74
 
 type EthereumContractCallDetailsProps = {
     presentation: EthereumTransactionPresentation
+    source?: SignRequestSource
+    /** Origin the platform observed (never dApp-asserted). */
+    verifiedOrigin?: string
 }
 
 export const EthereumContractCallDetails = ({
     presentation,
+    source,
+    verifiedOrigin,
 }: EthereumContractCallDetailsProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const { view, value, standardCall } = presentation
+    const { view, value, standardCall, contractAction, knownContract } =
+        presentation
 
     return (
         <PWView style={styles.container}>
-            {!standardCall && (
+            {!standardCall && !contractAction && (
                 <ChainNotice
                     kind='warning'
                     titleKey='transactions.contract_call.warning'
                     testID='ethereum_contract_call_warning'
+                />
+            )}
+
+            {!!knownContract && !contractAction && !!view.to && (
+                <EthereumKnownContractRow
+                    knownContract={knownContract}
+                    address={view.to}
+                    scope={presentation.scope}
+                    source={source}
+                    verifiedOrigin={verifiedOrigin}
                 />
             )}
 
