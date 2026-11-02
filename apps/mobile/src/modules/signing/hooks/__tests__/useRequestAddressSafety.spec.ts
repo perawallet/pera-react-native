@@ -197,7 +197,9 @@ describe('useRequestAddressSafety', () => {
     })
 
     it('releases Confirm for a look-alike once the user acknowledges it', () => {
-        requestOn('ethereum', [[{ address: lookAlikeOf(CONTACT), role: 'target' }]])
+        requestOn('ethereum', [
+            [{ address: lookAlikeOf(CONTACT), role: 'target' }],
+        ])
         const { result } = renderHook(() => useRequestAddressSafety())
         expect(result.current.hasListedAddress).toBe(false)
         expect(result.current.isConfirmBlocked).toBe(true)

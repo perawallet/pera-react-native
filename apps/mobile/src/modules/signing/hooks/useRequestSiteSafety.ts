@@ -53,7 +53,8 @@ export const useSiteWarningAcknowledgementStore = create<
 registerStore({
     name: 'site-warning-acknowledgement-store',
     clearStorage: () => {},
-    resetState: () => useSiteWarningAcknowledgementStore.getState().resetState(),
+    resetState: () =>
+        useSiteWarningAcknowledgementStore.getState().resetState(),
 })
 
 const NO_SITE = { urls: [] }

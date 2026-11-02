@@ -11,9 +11,11 @@
  */
 
 // A dApp over WalletConnect v2 asks to sign something naming an address on the
-// device's scam-address list, or one imitating an address the user knows. The
-// lists are seeded from a fixture snapshot into the real database, and the
-// review is the real sign sheet with only `@reown/walletkit` stubbed.
+// device's scam-address list, or one imitating an address the user knows. A
+// listed address leaves Reject as the only action; a look-alike is released by
+// an acknowledgement. The lists are seeded from a fixture snapshot into the
+// real database, and the review is the real sign sheet with only
+// `@reown/walletkit` stubbed.
 
 import React, { useEffect, useRef } from 'react'
 import {
@@ -74,6 +76,7 @@ import {
     makeProposal,
     makeRequest,
     MAINNET_CHAIN_ID,
+    type RequestOverrides,
     TOPIC as V2_SESSION_TOPIC,
     V2_URI,
 } from '@packages/walletconnect/src/v2/__tests__/fakeWalletKit'
@@ -93,7 +96,11 @@ import {
     seedAlgo25Signer,
 } from '@test-utils/signing-review'
 import { walletKitStub, type FakeWalletKit } from '@test-utils/walletkit-stub'
-import { getAllPressables, isElementDisabled } from '@test-utils/rnw'
+import {
+    closestPressable,
+    getAllPressables,
+    isElementDisabled,
+} from '@test-utils/rnw'
 import { ConnectionsProvider } from '@modules/connections/shell'
 import { SigningOverlays } from '@modules/signing/shell'
 import { addressOf } from './__fixtures__/accounts'
@@ -128,8 +135,14 @@ const RPC_HOST = 'mainnet.rpc.test'
 const DRAINER = '0x70997970C51812dc3A010C7d01b50e0d17dc79C8'
 const USDC = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
 const UNLISTED_CONTRACT = '0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65'
+const padded = (address: string) =>
+    address.slice(2).toLowerCase().padStart(64, '0')
 // approve(DRAINER, 2^256-1)
-const APPROVE_DRAINER_DATA = `0x095ea7b3${DRAINER.slice(2).toLowerCase().padStart(64, '0')}${'f'.repeat(64)}`
+const APPROVE_DRAINER_DATA = `0x095ea7b3${padded(DRAINER)}${'f'.repeat(64)}`
+// approve(UNLISTED_CONTRACT, 2^256-1)
+const APPROVE_UNLISTED_DATA = `0x095ea7b3${padded(UNLISTED_CONTRACT)}${'f'.repeat(64)}`
+// setApprovalForAll(DRAINER, true)
+const SET_APPROVAL_FOR_ALL_DRAINER_DATA = `0xa22cb465${padded(DRAINER)}${'0'.repeat(63)}1`
 
 const CONTACT = '0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC'
 // Same `0x1234...abcd` short form as the contact, different middle.
@@ -185,6 +198,12 @@ const ACKNOWLEDGE = 'request_address_acknowledge'
 const WARNING = 'request_address_warning'
 const TRANSACTION_SLIDE = 'signing-confirm-slide'
 const MESSAGE_SLIDE = 'message-signing-confirm-slide'
+const TRANSACTION_BLOCKED = 'signing-cannot-sign'
+const MESSAGE_BLOCKED = 'message-signing-blocked'
+const TRANSACTION_REJECT = 'signing_reject_button'
+const MESSAGE_REJECT = 'message-signing-reject-button'
+const SITE_WARNING = 'request_site_warning'
+const SITE_ACKNOWLEDGE = 'request_site_acknowledge'
 
 const captured: { registry: Optional<ConnectionRegistryClient> } = {
     registry: undefined,
@@ -266,11 +285,12 @@ const send = (
     method: string,
     params: unknown[],
     chainId = ETH_MAINNET,
+    verified?: RequestOverrides['verified'],
 ) =>
     act(() => {
         walletKit.emit(
             'session_request',
-            makeRequest({ id: 7, method, params, chainId }),
+            makeRequest({ id: 7, method, params, chainId, verified }),
         )
     })
 
@@ -285,6 +305,28 @@ const expectHeldUntilAcknowledged = async (slideTestId: string) => {
     await waitFor(() =>
         expect(isElementDisabled(screen.getByTestId(slideTestId))).toBe(false),
     )
+}
+
+// A listed address offers no way to confirm: no slider, no acknowledgement,
+// only the notice and Reject.
+const expectBlocked = async (
+    noticeTestId: string,
+    slideTestId: string,
+    rejectTestId: string,
+    walletKit: FakeWalletKit,
+) => {
+    const notice = await findSlide(noticeTestId)
+    expect(notice.textContent).toContain('signing.address_safety.blocked_title')
+    expect(screen.queryByTestId(slideTestId)).toBeNull()
+    expect(screen.queryByTestId(ACKNOWLEDGE)).toBeNull()
+
+    fireEvent.click(screen.getByTestId(rejectTestId))
+    await waitFor(() =>
+        expect(walletKit.respondSessionRequest).toHaveBeenCalled(),
+    )
+    const [{ response }] = walletKit.respondSessionRequest.mock.calls[0]
+    expect('error' in response).toBe(true)
+    expect(kmsCore.sign).not.toHaveBeenCalled()
 }
 
 // Every request the app makes, so a test can show no request address left the
@@ -387,6 +429,7 @@ describe('Flow: a dApp request names a scam address or a look-alike of a known o
                             methods: [
                                 'eth_sendTransaction',
                                 'eth_signTypedData_v4',
+                                'wallet_sendCalls',
                             ],
                             events: [],
                         },
@@ -405,11 +448,11 @@ describe('Flow: a dApp request names a scam address or a look-alike of a known o
                 },
             ])
 
-        it('Given a listed drainer, when a dApp asks to approve it as a spender, then the review flags it with the suspicious badge and signing waits on acknowledgement', async () => {
+        it('Given a listed drainer, when a dApp asks to approve it as a spender, then the review flags it, keeps the unlimited warning and offers only Reject', async () => {
             const walletKit = await connectEthereum()
 
             approveDrainer(walletKit)
-            await findSlide(TRANSACTION_SLIDE)
+            await findSlide(TRANSACTION_BLOCKED)
 
             await waitFor(() => expect(screen.getByTestId(LISTED)).toBeTruthy())
             expect(screen.getByTestId(LISTED).textContent).toBe(DRAINER)
@@ -420,19 +463,112 @@ describe('Flow: a dApp request names a scam address or a look-alike of a known o
             expect(
                 screen.getByText('signing.address_safety.role.spender'),
             ).toBeTruthy()
-            await expectHeldUntilAcknowledged(TRANSACTION_SLIDE)
+            expect(
+                screen.getByTestId('message-signing-spend-approval-warning'),
+            ).toBeTruthy()
+            expect(
+                screen.getAllByText('signing.spend_approval.unlimited').length,
+            ).toBeGreaterThan(0)
+            await expectBlocked(
+                TRANSACTION_BLOCKED,
+                TRANSACTION_SLIDE,
+                TRANSACTION_REJECT,
+                walletKit,
+            )
             await expectNotSentForLookup([DRAINER])
         })
 
-        it('Given the device is offline, when a dApp asks to approve a listed drainer, then the review still flags it', async () => {
+        it('Given the device is offline, when a dApp asks to approve a listed drainer, then the review still blocks it', async () => {
             const walletKit = await connectEthereum()
             onlineManager.setOnline(false)
 
             approveDrainer(walletKit)
-            await findSlide(TRANSACTION_SLIDE)
+            await findSlide(TRANSACTION_BLOCKED)
 
             await waitFor(() => expect(screen.getByTestId(LISTED)).toBeTruthy())
-            await expectHeldUntilAcknowledged(TRANSACTION_SLIDE)
+            await expectBlocked(
+                TRANSACTION_BLOCKED,
+                TRANSACTION_SLIDE,
+                TRANSACTION_REJECT,
+                walletKit,
+            )
+        })
+
+        it('Given a listed drainer, when a dApp calls it directly, then the review names it as the contract and blocks it', async () => {
+            const walletKit = await connectEthereum()
+
+            send(walletKit, 'eth_sendTransaction', [
+                { from: SENDER, to: DRAINER, value: '0x0', data: '0xdeadbeef' },
+            ])
+            await findSlide(TRANSACTION_BLOCKED)
+
+            await waitFor(() => expect(screen.getByTestId(LISTED)).toBeTruthy())
+            expect(
+                screen.getByText('signing.address_safety.role.target'),
+            ).toBeTruthy()
+            await expectBlocked(
+                TRANSACTION_BLOCKED,
+                TRANSACTION_SLIDE,
+                TRANSACTION_REJECT,
+                walletKit,
+            )
+        })
+
+        it('Given a listed drainer, when a dApp asks for setApprovalForAll to it, then the review names it as the operator and blocks it', async () => {
+            const walletKit = await connectEthereum()
+
+            send(walletKit, 'eth_sendTransaction', [
+                {
+                    from: SENDER,
+                    to: UNLISTED_CONTRACT,
+                    value: '0x0',
+                    data: SET_APPROVAL_FOR_ALL_DRAINER_DATA,
+                },
+            ])
+            await findSlide(TRANSACTION_BLOCKED)
+
+            await waitFor(() => expect(screen.getByTestId(LISTED)).toBeTruthy())
+            expect(
+                screen.getByText('signing.address_safety.role.operator'),
+            ).toBeTruthy()
+            await expectBlocked(
+                TRANSACTION_BLOCKED,
+                TRANSACTION_SLIDE,
+                TRANSACTION_REJECT,
+                walletKit,
+            )
+        })
+
+        it('Given a batch whose second call approves a listed drainer, when a dApp sends it, then the review blocks the whole batch', async () => {
+            const walletKit = await connectEthereum()
+
+            send(walletKit, 'wallet_sendCalls', [
+                {
+                    version: '2.0.0',
+                    id: 'unlisted-then-drainer',
+                    chainId: '0x1',
+                    from: SENDER,
+                    atomicRequired: false,
+                    calls: [
+                        {
+                            to: UNLISTED_CONTRACT,
+                            value: '0x0',
+                            data: '0xdeadbeef',
+                        },
+                        { to: USDC, value: '0x0', data: APPROVE_DRAINER_DATA },
+                    ],
+                },
+            ])
+            await findSlide(TRANSACTION_BLOCKED)
+
+            await waitFor(() => expect(screen.getByTestId(LISTED)).toBeTruthy())
+            expect(screen.getByTestId(LISTED).textContent).toBe(DRAINER)
+            await expectBlocked(
+                TRANSACTION_BLOCKED,
+                TRANSACTION_SLIDE,
+                TRANSACTION_REJECT,
+                walletKit,
+            )
         })
 
         // The last is a permit the spend-approval parser can't read, so only
@@ -445,7 +581,7 @@ describe('Flow: a dApp request names a scam address or a look-alike of a known o
                 PERMIT2_SINGLE_NO_DEADLINE_TYPED_DATA,
             ],
         ])(
-            'Given a listed drainer, when a dApp asks for %s naming it as the spender, then the review flags it the same way',
+            'Given a listed drainer, when a dApp asks for %s naming it as the spender, then the review blocks it the same way',
             async (_label, typedData) => {
                 const walletKit = await connectEthereum()
 
@@ -453,7 +589,7 @@ describe('Flow: a dApp request names a scam address or a look-alike of a known o
                     SENDER,
                     JSON.stringify(typedData),
                 ])
-                await findSlide(MESSAGE_SLIDE)
+                await findSlide(MESSAGE_BLOCKED)
 
                 await waitFor(() =>
                     expect(screen.getByTestId(LISTED)).toBeTruthy(),
@@ -462,12 +598,17 @@ describe('Flow: a dApp request names a scam address or a look-alike of a known o
                     screen.getByTestId(LISTED).textContent?.toLowerCase(),
                 ).toBe(DRAINER.toLowerCase())
                 expect(screen.getByTestId(LISTED_BADGE)).toBeTruthy()
-                await expectHeldUntilAcknowledged(MESSAGE_SLIDE)
+                await expectBlocked(
+                    MESSAGE_BLOCKED,
+                    MESSAGE_SLIDE,
+                    MESSAGE_REJECT,
+                    walletKit,
+                )
                 await expectNotSentForLookup([DRAINER])
             },
         )
 
-        it('Given a listed drainer and a contact, when a dApp asks to approve the drainer on a contract imitating the contact, then the review explains both warnings', async () => {
+        it('Given a listed drainer and a contact, when a dApp asks to approve the drainer on a contract imitating the contact, then the review explains both warnings and blocks it', async () => {
             const walletKit = await connectEthereum()
 
             send(walletKit, 'eth_sendTransaction', [
@@ -478,7 +619,7 @@ describe('Flow: a dApp request names a scam address or a look-alike of a known o
                     data: APPROVE_DRAINER_DATA,
                 },
             ])
-            await findSlide(TRANSACTION_SLIDE)
+            await findSlide(TRANSACTION_BLOCKED)
 
             await waitFor(() => expect(screen.getByTestId(LISTED)).toBeTruthy())
             expect(
@@ -492,7 +633,62 @@ describe('Flow: a dApp request names a scam address or a look-alike of a known o
             expect(
                 screen.getByTestId('request_address_look_alike_body'),
             ).toBeTruthy()
-            await expectHeldUntilAcknowledged(TRANSACTION_SLIDE)
+            await expectBlocked(
+                TRANSACTION_BLOCKED,
+                TRANSACTION_SLIDE,
+                TRANSACTION_REJECT,
+                walletKit,
+            )
+        })
+
+        it('Given WalletConnect Verify flags the dApp, when it asks for an approval to an unlisted spender and the user continues past the blocked view, then the review names the site again and holds the slide until acknowledged', async () => {
+            const walletKit = await connectEthereum()
+
+            send(
+                walletKit,
+                'eth_sendTransaction',
+                [
+                    {
+                        from: SENDER,
+                        to: USDC,
+                        value: '0x0',
+                        data: APPROVE_UNLISTED_DATA,
+                    },
+                ],
+                ETH_MAINNET,
+                { isScam: true },
+            )
+            await waitFor(() => screen.getByTestId('site_blocked_view'), {
+                timeout: 15_000,
+            })
+            fireEvent.click(screen.getByTestId('site_blocked_continue_anyway'))
+            fireEvent.click(screen.getByTestId('site_blocked_acknowledge'))
+            const continueButton = () =>
+                closestPressable(screen.getByTestId('site_blocked_continue'))!
+            await waitFor(() =>
+                expect(isElementDisabled(continueButton())).toBe(false),
+            )
+            fireEvent.click(continueButton())
+
+            await waitFor(() => screen.getByTestId(SITE_WARNING), {
+                timeout: 15_000,
+            })
+            expect(screen.getByTestId('request_site_host').textContent).toBe(
+                'dapp.example',
+            )
+            expect(screen.queryByTestId(WARNING)).toBeNull()
+            await waitFor(() =>
+                expect(
+                    isElementDisabled(screen.getByTestId(TRANSACTION_SLIDE)),
+                ).toBe(true),
+            )
+
+            fireEvent.click(screen.getByTestId(SITE_ACKNOWLEDGE))
+            await waitFor(() =>
+                expect(
+                    isElementDisabled(screen.getByTestId(TRANSACTION_SLIDE)),
+                ).toBe(false),
+            )
         })
 
         it('Given a contact, when a dApp sends native ETH to an address imitating it, then the review compares both in full and signing waits on acknowledgement', async () => {
