@@ -47,6 +47,8 @@ export const buildTransfer = async (
         assetRef: AssetRef
         amount: bigint
         feePreset?: FeePreset
+        /** Wei: the most the sender confirmed paying, as the review passes it on. */
+        maxFee?: bigint
     },
 ): Promise<{ unsigned: UnsignedTransaction; fees: AppChosenFees }> => {
     const [unsigned] = await createEvmTransferAdapter(
@@ -60,7 +62,14 @@ export const buildTransfer = async (
             assetRef: input.assetRef,
             amount: new Decimal(input.amount.toString()),
         },
-        { scope: env.scope, feePreset: input.feePreset },
+        {
+            scope: env.scope,
+            feePreset: input.feePreset,
+            maxFee:
+                input.maxFee === undefined
+                    ? undefined
+                    : new Decimal(input.maxFee.toString()),
+        },
     )
     const { transaction } = unsigned.payload as EthereumTransactionPayload
     const fees = {

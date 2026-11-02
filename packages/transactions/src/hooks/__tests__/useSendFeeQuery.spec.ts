@@ -86,13 +86,16 @@ describe('useSendFeeQuery', () => {
         )
 
         expect(useMinFeeForSender).toHaveBeenCalledWith('SENDER', 'algorand')
-        expect(useTransferFeeEstimateQuery).toHaveBeenCalledWith(undefined)
+        expect(useTransferFeeEstimateQuery).toHaveBeenCalledWith(undefined, {
+            isLive: undefined,
+        })
         expect(result.current).toEqual({
             feeAmount: new Decimal(3000),
             maxFeeAmount: new Decimal(3000),
             presets: undefined,
             isPending: false,
             isError: false,
+            refresh: expect.any(Function),
         })
     })
 
@@ -108,16 +111,19 @@ describe('useSendFeeQuery', () => {
             }),
         )
 
-        expect(useTransferFeeEstimateQuery).toHaveBeenCalledWith({
-            intent: {
-                kind: 'transfer',
-                from: '0xSENDER',
-                to: '0xRECEIVER',
-                assetRef: { chainId: 'ethereum', assetId: 'native' },
-                amount: new Decimal(5),
+        expect(useTransferFeeEstimateQuery).toHaveBeenCalledWith(
+            {
+                intent: {
+                    kind: 'transfer',
+                    from: '0xSENDER',
+                    to: '0xRECEIVER',
+                    assetRef: { chainId: 'ethereum', assetId: 'native' },
+                    amount: new Decimal(5),
+                },
+                scope: ETHEREUM,
             },
-            scope: ETHEREUM,
-        })
+            { isLive: undefined },
+        )
     })
 
     it('prices against the sender before a receiver and amount are chosen', () => {
@@ -137,6 +143,24 @@ describe('useSendFeeQuery', () => {
                     amount: new Decimal(0),
                 }),
             }),
+            { isLive: undefined },
+        )
+    })
+
+    it('asks for a live estimate only when the caller does', () => {
+        renderHook(() =>
+            useSendFeeQuery({
+                scope: ETHEREUM,
+                senderAddress: '0xSENDER',
+                assetId: 'native',
+                feePreset: 'normal',
+                isLive: true,
+            }),
+        )
+
+        expect(useTransferFeeEstimateQuery).toHaveBeenCalledWith(
+            expect.anything(),
+            { isLive: true },
         )
     })
 
@@ -175,7 +199,9 @@ describe('useSendFeeQuery', () => {
             }),
         )
 
-        expect(useTransferFeeEstimateQuery).toHaveBeenCalledWith(undefined)
+        expect(useTransferFeeEstimateQuery).toHaveBeenCalledWith(undefined, {
+            isLive: undefined,
+        })
         expect(result.current.maxFeeAmount).toBeUndefined()
     })
 
