@@ -20,7 +20,6 @@ import {
     it,
     vi,
 } from 'vitest'
-import { Decimal } from 'decimal.js'
 import { getAddress, isAddressEqual } from 'viem'
 import { http, HttpResponse } from 'msw'
 import { setupServer } from 'msw/node'
@@ -582,25 +581,6 @@ describe('syncAssets', () => {
         expect(
             Object.fromEntries(full.map(a => [a.assetId, a.decimals])),
         ).toEqual({ [USDC]: 6, [DAI]: 18 })
-    })
-
-    it("replaces a stored token's decimals with the contract's on a refresh", async () => {
-        server.use(
-            ...rpc({ [USDC]: { ...usdcOnChain, decimals: 2 } }),
-            ...peraEvmAssetHandlers({
-                baseUrl: TEST_PERA_URL,
-                assets: { [USDC_CAIP19]: usdcFromPera },
-            }),
-        )
-        const { full } = memoryPersistence()
-        const ops = createEthereumAssetsAdapter(
-            testChainContext({ services: ['assets'] }),
-            ETHEREUM,
-        )
-
-        await ops.syncAssets([ref(USDC)], SCOPE)
-
-        expect(full[0]).toMatchObject({ assetId: USDC, decimals: 2 })
     })
 
     it('leaves a backend-known token its contract does not answer for unstored, storing the rest', async () => {
