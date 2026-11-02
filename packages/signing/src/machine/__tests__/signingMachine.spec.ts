@@ -39,6 +39,7 @@ import { analyzerActor } from '../actors/analyzerActor'
 import {
     GenesisHashMismatchError,
     ReviewRequiredError,
+    SigningError,
     SubmissionError,
 } from '../../pipeline/errors'
 import type { SigningMachineInput } from '../context'
@@ -1271,6 +1272,42 @@ describe('signingMachine', () => {
             )
             expect(state.context.failedDuringState).toBe('signing')
             expect(keyStore.sign).not.toHaveBeenCalled()
+        })
+
+        it('re-checks the group when signing is retried', async () => {
+            const request = neutralRequest()
+            keyStore.sign.mockRejectedValueOnce(
+                new SigningError('signer unavailable'),
+            )
+            const actor = createActor(machine, {
+                input: makeInput({
+                    keyStore,
+                    allAccounts: [
+                        algo25Account(SENDER, { keyPairId: 'key-1' }),
+                    ],
+                    request,
+                }),
+            })
+            actor.start()
+            await waitFor(actor, s => s.matches('awaiting_user'))
+            actor.send({ type: 'USER_APPROVED' })
+            await waitFor(actor, s => s.matches('failed'))
+            ;(
+                request.txs[0].payload as {
+                    transaction: { group?: Uint8Array }
+                }
+            ).transaction.group = new Uint8Array(32).fill(1)
+
+            actor.send({ type: 'RETRY' })
+
+            // The re-check and the route back to `failed` are synchronous,
+            // so a signer that ran would already be a second `sign` call.
+            const state = actor.getSnapshot()
+            expect(state.matches('failed')).toBe(true)
+            expect(state.context.error?.message).toContain(
+                'group ID does not match',
+            )
+            expect(keyStore.sign).toHaveBeenCalledTimes(1)
         })
 
         it('signs a multisig cosignature through the Algorand strategy, which the planner cannot assemble', async () => {

@@ -263,7 +263,8 @@ export const signingMachine = setup({
             failedDuringState: () => 'signing' as const,
         }),
         // Review-time steps run after the ingest check, so the group is
-        // checked once more before any signer sees it.
+        // checked once more whenever signing starts, on approval and on
+        // retry, before any signer sees it.
         revalidateGroups: assign(({ context }) => {
             const { request } = context
             const { scope } = context.deps
@@ -392,10 +393,7 @@ export const signingMachine = setup({
          */
         awaiting_user: {
             on: {
-                USER_APPROVED: {
-                    target: 'signing',
-                    actions: 'revalidateGroups',
-                },
+                USER_APPROVED: 'signing',
                 USER_REJECTED: 'rejected',
             },
         },
@@ -407,6 +405,10 @@ export const signingMachine = setup({
          * `dispatching`. When all are complete, transitions to `transporting`.
          */
         signing: {
+            // On entry, after the transition's own actions: a RETRY's
+            // `resetSigningState` has cleared the old error by the time the
+            // group is re-checked.
+            entry: 'revalidateGroups',
             initial: 'dispatching',
             states: {
                 dispatching: {
