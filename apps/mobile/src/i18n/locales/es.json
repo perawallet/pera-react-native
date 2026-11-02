@@ -977,6 +977,7 @@
         }
     },
     "common": {
+        "networks_list": "{{first}} y {{last}}",
         "offline_mode": "Modo sin conexión",
         "offline_mode_description": "Es posible que los saldos no estén actualizados y algunas acciones no estén disponibles hasta que vuelvas a conectarte.",
         "offline_refresh_body": "Estás sin conexión: esto se actualizará automáticamente cuando vuelvas a estar en línea.",
@@ -1055,8 +1056,7 @@
         "wealth_chart": {
             "empty_body": "Aquí verás un gráfico cuando tengas historial de saldo",
             "asset_empty_body": "Aquí verás un gráfico cuando tengas historial de saldo de este activo en esta cuenta",
-            "excludes_networks": "Este gráfico aún no incluye los activos de {{networks}}",
-            "networks_list": "{{first}} y {{last}}"
+            "excludes_networks": "Este gráfico aún no incluye los activos de {{networks}}"
         },
         "webview": {
             "failed_title": "No se pudo cargar la página",
@@ -2275,18 +2275,42 @@
         },
         "searching_accounts": {
             "title": "Buscando tus cuentas",
-            "no_new_addresses_title": "No se encontraron direcciones nuevas",
-            "no_new_addresses_body": "No encontramos ninguna dirección adicional asociada a esta wallet.",
             "rekey_scan_failed_title": "No se pudieron comprobar las cuentas con rekey",
             "rekey_scan_failed_body": "Tu cuenta se importó. No pudimos comprobar si otras cuentas tienen rekey hacia ella; puedes volver a analizarlo desde Ajustes.",
             "rekey_rescan_failed_body": "No pudimos comprobar si otras cuentas tienen rekey hacia esta wallet. Vuelve a buscar para intentarlo de nuevo.",
-            "rescan_found_title": "Búsqueda completada",
-            "rescan_found_body_one": "Se añadió o actualizó 1 cuenta.",
-            "rescan_found_body_other": "Se añadieron o actualizaron {{count}} cuentas.",
-            "rescan_partial_title": "Búsqueda incompleta",
-            "rescan_partial_body": "Algunas comprobaciones no pudieron terminar. Se añadieron las cuentas encontradas hasta ahora. Vuelve a buscar para encontrar el resto.",
             "rescan_failed_title": "No se pudieron buscar cuentas",
-            "rescan_failed_body": "Comprueba tu conexión e inténtalo de nuevo."
+            "rescan_failed_body": "Comprueba tu conexión e inténtalo de nuevo.",
+            "cancel": "Cancelar",
+            "network_checking": "Comprobando",
+            "network_failed": "No se pudo comprobar",
+            "checked_accounts_one": "{{count}} cuenta comprobada",
+            "checked_accounts_other": "{{count}} cuentas comprobadas",
+            "new_found_one": "{{count}} cuenta nueva encontrada",
+            "new_found_other": "{{count}} cuentas nuevas encontradas"
+        },
+        "scan_accounts_result": {
+            "found_title_one": "Se encontró {{count}} cuenta nueva",
+            "found_title_other": "Se encontraron {{count}} cuentas nuevas",
+            "found_body_one": "Se añadió a tu wallet.",
+            "found_body_other": "Se añadieron a tu wallet.",
+            "none_title": "No se encontraron cuentas nuevas",
+            "none_body": "No encontramos más cuentas asociadas a esta wallet.",
+            "failed_networks_body": "No se pudo comprobar: {{networks}}. Se añadieron las cuentas encontradas en otras redes.",
+            "failed_networks_none_body": "No se pudo comprobar: {{networks}}. No se encontró nada nuevo en las demás redes.",
+            "incomplete_body": "Algunas comprobaciones no pudieron terminar. Se añadieron las cuentas encontradas hasta ahora. Vuelve a buscar para encontrar el resto.",
+            "cancelled_title": "Búsqueda detenida",
+            "cancelled_body": "Se añadieron las cuentas encontradas antes de detener la búsqueda.",
+            "cancelled_none_body": "No se encontró nada nuevo antes de detener la búsqueda.",
+            "retry_networks": "Volver a comprobar: {{networks}}",
+            "scan_again": "Volver a buscar",
+            "done": "Listo",
+            "incomplete_title": "Búsqueda incompleta",
+            "updated_title_one": "Nuevas redes en {{count}} cuenta",
+            "updated_title_other": "Nuevas redes en {{count}} cuentas",
+            "updated_body_one": "Encontramos actividad en otras redes y las activamos para esta cuenta.",
+            "updated_body_other": "Encontramos actividad en otras redes y las activamos para estas cuentas.",
+            "updated_note_one": "También se activaron nuevas redes en {{count}} cuenta existente.",
+            "updated_note_other": "También se activaron nuevas redes en {{count}} cuentas existentes."
         },
         "create_account": {
             "processing": "Configurando tu wallet...",

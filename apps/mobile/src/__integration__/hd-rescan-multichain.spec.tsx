@@ -11,8 +11,14 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { act, cleanup, renderHook, waitFor } from '@testing-library/react'
-import { Notifier } from 'react-native-notifier'
+import {
+    act,
+    cleanup,
+    renderHook,
+    screen,
+    waitFor,
+} from '@testing-library/react'
+import { http, HttpResponse } from 'msw'
 
 import {
     chainAccountOf,
@@ -21,6 +27,7 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { evmRpcHandlers } from '@perawallet/wallet-core-chain-ethereum/test-handlers'
+import { peraEvmHistoryHandlers } from '@packages/chain-ethereum/src/history/api/msw-handlers'
 import { mockIndexerSearchForAccounts } from '@perawallet/wallet-core-chain-algorand/test-handlers'
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { mockAccountFastLookup } from '@perawallet/wallet-core-shared/test-handlers'
@@ -29,6 +36,7 @@ import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import { server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { SearchAccountsScreen } from '@modules/onboarding/screens/SearchAccountsScreen/SearchAccountsScreen'
+import { ScanAccountsResultScreen } from '@modules/onboarding/screens/ScanAccountsResultScreen/ScanAccountsResultScreen'
 
 import { ethereumAddressAt } from './__fixtures__/hd-addresses'
 import {
@@ -61,11 +69,13 @@ vi.mock('@perawallet/wallet-core-config', async importOriginal => {
 
 const ETHEREUM_RPC_URL = 'https://ethereum.rpc.test/'
 
-// `exitAccountFlow` resets to the tab bar once the scan ends.
+// Done on the result screen resets to the tab bar.
 const TabBarStub = () => null
 
-const titlesShown = () =>
-    vi.mocked(Notifier.showNotification).mock.calls.map(call => call[0].title)
+const resultSays = (text: RegExp) =>
+    waitFor(() => expect(screen.getByText(text)).toBeTruthy(), {
+        timeout: SLOW_WAIT_TIMEOUT_MS,
+    })
 
 const createPeraWalletWithAlgorandOnly = async (): Promise<WalletAccount> => {
     const { result: kms } = renderHook(() => useKMS())
@@ -85,14 +95,16 @@ const createPeraWalletWithAlgorandOnly = async (): Promise<WalletAccount> => {
 const scanFor = (account: WalletAccount) =>
     renderWithNavigation(SearchAccountsScreen, 'SearchAccounts', {
         initialParams: { account },
-        additionalScreens: [{ name: 'TabBar', component: TabBarStub }],
+        additionalScreens: [
+            { name: 'TabBar', component: TabBarStub },
+            { name: 'ScanAccountsResult', component: ScanAccountsResultScreen },
+        ],
     })
 
 describe('Flow: scan for new accounts on a wallet created in Pera', () => {
     beforeEach(() => {
         resetTestKeystore()
         useAccountsStore.getState().setAccounts([])
-        vi.mocked(Notifier.showNotification).mockClear()
     })
 
     it('Given a wallet created in Pera whose seed was used at Ethereum key index 3 elsewhere, when the user scans for new accounts, then an account at 0/3 holding Ethereum is added as discovery and the scan says so', async () => {
@@ -107,6 +119,7 @@ describe('Flow: scan for new accounts on a wallet created in Pera', () => {
                 response: { account_exists: false },
             }),
             mockIndexerSearchForAccounts(),
+            ...peraEvmHistoryHandlers(),
             ...evmRpcHandlers({
                 rpcUrl: ETHEREUM_RPC_URL,
                 responses: {
@@ -137,11 +150,7 @@ describe('Flow: scan for new accounts on a wallet created in Pera', () => {
             address: usedElsewhere,
             enabledBy: 'discovery',
         })
-        await waitFor(() =>
-            expect(titlesShown()).toContain(
-                'onboarding.searching_accounts.rescan_found_title',
-            ),
-        )
+        await resultSays(/scan_accounts_result\.found_title/)
     })
 
     it('Given that scan already ran, when the user scans again, then the accounts are unchanged, the scan says nothing new was found, and every derived key in secure storage belongs to an account', async () => {
@@ -156,6 +165,7 @@ describe('Flow: scan for new accounts on a wallet created in Pera', () => {
                 response: { account_exists: false },
             }),
             mockIndexerSearchForAccounts(),
+            ...peraEvmHistoryHandlers(),
             ...evmRpcHandlers({
                 rpcUrl: ETHEREUM_RPC_URL,
                 responses: {
@@ -169,26 +179,13 @@ describe('Flow: scan for new accounts on a wallet created in Pera', () => {
         )
         const account = await createPeraWalletWithAlgorandOnly()
         scanFor(account)
-        await waitFor(
-            () =>
-                expect(titlesShown()).toContain(
-                    'onboarding.searching_accounts.rescan_found_title',
-                ),
-            { timeout: SLOW_WAIT_TIMEOUT_MS },
-        )
+        await resultSays(/scan_accounts_result\.found_title/)
         const afterFirst = useAccountsStore.getState().accounts
         cleanup()
-        vi.mocked(Notifier.showNotification).mockClear()
 
         scanFor(afterFirst.find(held => held.id === account.id)!)
 
-        await waitFor(
-            () =>
-                expect(titlesShown()).toContain(
-                    'onboarding.searching_accounts.no_new_addresses_title',
-                ),
-            { timeout: SLOW_WAIT_TIMEOUT_MS },
-        )
+        await resultSays(/scan_accounts_result\.none_title/)
         expect(useAccountsStore.getState().accounts).toEqual(afterFirst)
         const referenced = new Set(
             afterFirst.flatMap(held =>
@@ -208,5 +205,31 @@ describe('Flow: scan for new accounts on a wallet created in Pera', () => {
         expect(getKeystoreStore().state.keys.map(key => key.id)).toEqual(
             expect.arrayContaining([...referenced]),
         )
+    })
+    it('Given Ethereum is unreachable, both its node and Pera history, when the user scans for new accounts, then the result names Ethereum as unchecked and offers to check it again', async () => {
+        // Ethereum's Pera services come from .env, which CI lacks: with only
+        // history down, a CI build checks Ethereum on the node alone and finds
+        // nothing, so the node is down too.
+        server.use(
+            mockAccountFastLookup({
+                address: HD_TEST_ADDRESS,
+                response: { account_exists: true },
+            }),
+            mockAccountFastLookup({
+                address: ':any',
+                response: { account_exists: false },
+            }),
+            mockIndexerSearchForAccounts(),
+            ...peraEvmHistoryHandlers({ history: 503 }),
+            http.post(ETHEREUM_RPC_URL, () => HttpResponse.error()),
+        )
+        const account = await createPeraWalletWithAlgorandOnly()
+
+        scanFor(account)
+
+        await resultSays(/scan_accounts_result\.failed_networks_none_body/)
+        expect(
+            screen.getByText(/scan_accounts_result\.retry_networks/),
+        ).toBeTruthy()
     })
 })

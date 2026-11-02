@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { renderHook, waitFor } from '@test-utils/render'
+import { act, renderHook, waitFor } from '@test-utils/render'
 import { vi } from 'vitest'
 import { useSearchAccountsScreen } from '../useSearchAccountsScreen'
 import type { SearchAccountsParams } from '../../../routes/types'
@@ -190,11 +190,87 @@ describe('useSearchAccountsScreen', () => {
         renderHook(() => useSearchAccountsScreen())
 
         await waitFor(() => {
-            expect(mockRescanHdWallet).toHaveBeenCalledExactlyOnceWith(account)
+            expect(mockRescanHdWallet).toHaveBeenCalledExactlyOnceWith(
+                account,
+                expect.objectContaining({ chainIds: undefined }),
+            )
         })
         expect(mockDiscoverDelegatedAccounts).not.toHaveBeenCalled()
         expect(mockReplace).not.toHaveBeenCalled()
         expect(mockErrorToast).not.toHaveBeenCalled()
+    })
+
+    it("passes a retry's chains on to the wallet rescan", async () => {
+        mockRouteParams.current = {
+            ...(mockRouteParams.current as object),
+            chainIds: ['base', 'bsc'],
+        } as SearchAccountsParams
+        const account = (mockRouteParams.current as { account: unknown })
+            .account
+
+        renderHook(() => useSearchAccountsScreen())
+
+        await waitFor(() => {
+            expect(mockRescanHdWallet).toHaveBeenCalledExactlyOnceWith(
+                account,
+                expect.objectContaining({ chainIds: ['base', 'bsc'] }),
+            )
+        })
+    })
+
+    const rescanOptions = () =>
+        mockRescanHdWallet.mock.calls[0]![1] as {
+            signal: AbortSignal
+            onProgress: (progress: unknown) => void
+            hasLeft: () => boolean
+        }
+
+    it('shows each network and the account being checked once a rescan reports', async () => {
+        const { result } = renderHook(() => useSearchAccountsScreen())
+        await waitFor(() => expect(mockRescanHdWallet).toHaveBeenCalled())
+        expect(result.current.canCancel).toBe(false)
+
+        act(() =>
+            rescanOptions().onProgress({
+                chainIds: ['algorand', 'base'],
+                failedChainIds: ['base'],
+                checkedAccountCount: 3,
+                foundCount: 1,
+            }),
+        )
+
+        expect(result.current.canCancel).toBe(true)
+        expect(result.current.networks).toEqual([
+            expect.objectContaining({
+                chainId: 'algorand',
+                status: 'checking',
+            }),
+            expect.objectContaining({ chainId: 'base', status: 'failed' }),
+        ])
+        expect(result.current.progressLabel).toBe(
+            'onboarding.searching_accounts.checked_accounts · onboarding.searching_accounts.new_found',
+        )
+    })
+
+    it('Cancel aborts the rescan and shows it stopping', async () => {
+        const { result } = renderHook(() => useSearchAccountsScreen())
+        await waitFor(() => expect(mockRescanHdWallet).toHaveBeenCalled())
+
+        act(() => result.current.handleCancel())
+
+        expect(rescanOptions().signal.aborted).toBe(true)
+        expect(result.current.isCancelling).toBe(true)
+        expect(rescanOptions().hasLeft()).toBe(false)
+    })
+
+    it('leaving mid-rescan aborts it and marks the screen as left', async () => {
+        renderHook(() => useSearchAccountsScreen())
+        await waitFor(() => expect(mockRescanHdWallet).toHaveBeenCalled())
+
+        mockBeforeRemoveListeners.current.at(-1)!()
+
+        expect(rescanOptions().signal.aborted).toBe(true)
+        expect(rescanOptions().hasLeft()).toBe(true)
     })
 
     it('in import mode, always navigates to ImportSelectAddresses with the discovered accounts', async () => {

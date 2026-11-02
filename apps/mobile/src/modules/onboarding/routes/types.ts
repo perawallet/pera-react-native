@@ -38,6 +38,8 @@ export type SearchAccountsParams =
     | {
           mode?: 'existing'
           account: WalletAccount
+          /** An HD rescan walks only these chains, e.g. the ones an earlier scan couldn't check. */
+          chainIds?: ChainId[]
       }
     | {
           mode: 'import'
@@ -84,6 +86,18 @@ export type ImportFlowParamList = {
     }
     ImportPrivateKey: { chainId: ChainId }
     SearchAccounts: SearchAccountsParams
+    ScanAccountsResult: {
+        /** The account the scan started from; a retry scans its wallet again. */
+        account: WalletAccount
+        /** Every account the scan created or turned a network on for. */
+        changedAccountIds: string[]
+        /** Of `changedAccountIds`, the ones the scan created. */
+        createdAccountIds: string[]
+        failedChainIds: ChainId[]
+        isCancelled: boolean
+        /** Something didn't finish, so a rerun may find more. */
+        isIncomplete: boolean
+    }
     // Each Ledger route runs on `chainId`; without one, the first chain with
     // Ledger on (see `useLedgerFlowChainId`).
     LedgerPair: Optional<{ chainId?: ChainId }>

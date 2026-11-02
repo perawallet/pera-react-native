@@ -13,14 +13,16 @@
 import { renderHook } from '@test-utils/render'
 import { vi } from 'vitest'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import { useHdWalletRescan } from '../useHdWalletRescan'
+import {
+    useHdWalletRescan,
+    type HdWalletRescanOptions,
+} from '../useHdWalletRescan'
 
 const mocks = vi.hoisted(() => ({
-    showToast: vi.fn(),
     errorToast: vi.fn(),
+    showToast: vi.fn(),
     goBack: vi.fn(),
     replace: vi.fn(),
-    exitAccountFlow: vi.fn(),
     setSelectedAccountId: vi.fn(),
     scanRekeyed: vi.fn(),
     discoverWalletAccounts: vi.fn(),
@@ -30,8 +32,8 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({
-        t: (key: string, options?: { count?: number }) =>
-            options?.count === undefined ? key : `${key}:${options.count}`,
+        t: (key: string, options?: Record<string, unknown>) =>
+            options ? `${key}:${JSON.stringify(options)}` : key,
     }),
 }))
 
@@ -44,9 +46,13 @@ vi.mock('@hooks/useAppNavigation', () => ({
 
 vi.mock('@hooks/useToast', () => ({
     useToast: () => ({
-        showToast: mocks.showToast,
         errorToast: mocks.errorToast,
+        showToast: mocks.showToast,
     }),
+}))
+
+vi.mock('@modules/chain-ui', () => ({
+    networkListOf: (chainIds: string[]) => chainIds.join(' & '),
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
@@ -76,7 +82,6 @@ vi.mock('../../../hooks', () => ({
                     ),
             ),
     }),
-    useExitAccountFlow: () => ({ exitAccountFlow: mocks.exitAccountFlow }),
 }))
 
 const SEED = 'seed-1'
@@ -96,9 +101,21 @@ const algorandAccount = hdAccount('hd-1', {
     algorand: { address: 'ALGO_ADDRESS', keyPairId: 'k1' },
 })
 
-const rescan = async (account: WalletAccount = algorandAccount) => {
+const walked = (overrides: object = {}) => ({
+    accounts: [],
+    createdAccountIds: [],
+    coverage: 'complete',
+    failedChainIds: [],
+    isCancelled: false,
+    ...overrides,
+})
+
+const rescan = async (
+    account: WalletAccount = algorandAccount,
+    options?: HdWalletRescanOptions,
+) => {
     const { result } = renderHook(() => useHdWalletRescan())
-    await result.current.rescanHdWallet(account)
+    await result.current.rescanHdWallet(account, options)
 }
 
 describe('useHdWalletRescan', () => {
@@ -106,18 +123,23 @@ describe('useHdWalletRescan', () => {
         vi.clearAllMocks()
         mocks.seedOf.mockReturnValue(SEED)
         mocks.held.current = [algorandAccount]
-        mocks.discoverWalletAccounts.mockResolvedValue({
-            accounts: [],
-            coverage: 'complete',
-        })
+        mocks.discoverWalletAccounts.mockResolvedValue(walked())
         mocks.scanRekeyed.mockResolvedValue([])
     })
 
-    it("walks the account's seed with no root key and no declined indexes", async () => {
-        await rescan()
+    it("walks the account's seed with the chains, signal and progress it was given", async () => {
+        const signal = new AbortController().signal
+        const onProgress = vi.fn()
+
+        await rescan(algorandAccount, {
+            chainIds: ['base'],
+            signal,
+            onProgress,
+        })
 
         expect(mocks.discoverWalletAccounts).toHaveBeenCalledExactlyOnceWith(
             SEED,
+            { chainIds: ['base'], signal, onProgress },
         )
     })
 
@@ -129,9 +151,6 @@ describe('useHdWalletRescan', () => {
         await rescan(ethereumOnly)
 
         expect(mocks.seedOf).toHaveBeenCalledWith(ethereumOnly)
-        expect(mocks.discoverWalletAccounts).toHaveBeenCalledExactlyOnceWith(
-            SEED,
-        )
         expect(mocks.errorToast).not.toHaveBeenCalled()
     })
 
@@ -155,56 +174,50 @@ describe('useHdWalletRescan', () => {
         )
     })
 
-    it('tells the user how many accounts changed and exits the flow', async () => {
-        mocks.discoverWalletAccounts.mockResolvedValue({
-            accounts: [algorandAccount, hdAccount('hd-2', {})],
-            coverage: 'complete',
-        })
+    it('opens the result with what the walk added, failed and left unfinished', async () => {
+        mocks.discoverWalletAccounts.mockResolvedValue(
+            walked({
+                accounts: [algorandAccount, hdAccount('hd-2', {})],
+                createdAccountIds: ['hd-2'],
+                coverage: 'partial',
+                failedChainIds: ['base', 'bsc'],
+            }),
+        )
 
         await rescan()
 
-        expect(mocks.showToast).toHaveBeenCalledExactlyOnceWith({
-            type: 'success',
-            title: 'onboarding.searching_accounts.rescan_found_title',
-            body: 'onboarding.searching_accounts.rescan_found_body:2',
-        })
-        expect(mocks.exitAccountFlow).toHaveBeenCalledOnce()
+        expect(mocks.replace).toHaveBeenCalledExactlyOnceWith(
+            'ScanAccountsResult',
+            {
+                account: algorandAccount,
+                changedAccountIds: ['hd-1', 'hd-2'],
+                createdAccountIds: ['hd-2'],
+                failedChainIds: ['base', 'bsc'],
+                isCancelled: false,
+                isIncomplete: true,
+            },
+        )
     })
 
-    it('tells the user when it found nothing new', async () => {
+    it('opens the result after a cancel without a rekey scan, even when nothing answered', async () => {
+        mocks.discoverWalletAccounts.mockResolvedValue(
+            walked({ coverage: 'unanswered', isCancelled: true }),
+        )
+
         await rescan()
 
-        expect(mocks.showToast).toHaveBeenCalledExactlyOnceWith({
-            type: 'info',
-            title: 'onboarding.searching_accounts.no_new_addresses_title',
-            body: 'onboarding.searching_accounts.no_new_addresses_body',
-        })
-        expect(mocks.exitAccountFlow).toHaveBeenCalledOnce()
+        expect(mocks.scanRekeyed).not.toHaveBeenCalled()
+        expect(mocks.errorToast).not.toHaveBeenCalled()
+        expect(mocks.replace).toHaveBeenCalledWith(
+            'ScanAccountsResult',
+            expect.objectContaining({ isCancelled: true }),
+        )
     })
 
-    it('does not claim nothing was found when the rekey scan was unavailable', async () => {
-        mocks.scanRekeyed.mockResolvedValue('rekey-scan-unavailable')
+    it('navigates nowhere once the user has left the screen', async () => {
+        await rescan(algorandAccount, { hasLeft: () => true })
 
-        await rescan()
-
-        expect(mocks.showToast).not.toHaveBeenCalled()
-        expect(mocks.exitAccountFlow).toHaveBeenCalledOnce()
-    })
-
-    it('warns that the scan was incomplete, keeping what was found', async () => {
-        mocks.discoverWalletAccounts.mockResolvedValue({
-            accounts: [algorandAccount],
-            coverage: 'partial',
-        })
-
-        await rescan()
-
-        expect(mocks.showToast).toHaveBeenCalledExactlyOnceWith({
-            type: 'warning',
-            title: 'onboarding.searching_accounts.rescan_partial_title',
-            body: 'onboarding.searching_accounts.rescan_partial_body',
-        })
-        expect(mocks.exitAccountFlow).toHaveBeenCalledOnce()
+        expect(mocks.replace).not.toHaveBeenCalled()
         expect(mocks.goBack).not.toHaveBeenCalled()
     })
 
@@ -219,13 +232,21 @@ describe('useHdWalletRescan', () => {
 
         await rescan()
 
-        expect(mocks.replace).not.toHaveBeenCalled()
-        expect(mocks.showToast).toHaveBeenCalledExactlyOnceWith(
-            expect.objectContaining({
-                title: 'onboarding.searching_accounts.no_new_addresses_title',
-            }),
+        expect(mocks.replace).toHaveBeenCalledExactlyOnceWith(
+            'ScanAccountsResult',
+            expect.anything(),
         )
-        expect(mocks.exitAccountFlow).toHaveBeenCalledOnce()
+    })
+
+    it('opens the result when the rekey scan was unavailable', async () => {
+        mocks.scanRekeyed.mockResolvedValue('rekey-scan-unavailable')
+
+        await rescan()
+
+        expect(mocks.replace).toHaveBeenCalledExactlyOnceWith(
+            'ScanAccountsResult',
+            expect.anything(),
+        )
     })
 
     it('opens the rekeyed picker after selecting the account when rekeyed accounts exist', async () => {
@@ -237,20 +258,57 @@ describe('useHdWalletRescan', () => {
         await rescan()
 
         expect(mocks.setSelectedAccountId).toHaveBeenCalledWith('hd-1')
-        expect(mocks.replace).toHaveBeenCalledWith('ImportRekeyedAddresses', {
-            accounts: rekeyed,
-        })
-        expect(mocks.exitAccountFlow).not.toHaveBeenCalled()
-        expect(mocks.showToast).not.toHaveBeenCalledWith(
-            expect.objectContaining({ type: 'info' }),
+        expect(mocks.replace).toHaveBeenCalledExactlyOnceWith(
+            'ImportRekeyedAddresses',
+            { accounts: rekeyed },
         )
     })
 
-    it('reports the failure and goes back when no chain answered', async () => {
-        mocks.discoverWalletAccounts.mockResolvedValue({
-            accounts: [],
-            coverage: 'unanswered',
+    it('names the unchecked networks before opening the rekeyed picker, which stands in for the result', async () => {
+        mocks.discoverWalletAccounts.mockResolvedValue(
+            walked({ coverage: 'partial', failedChainIds: ['base'] }),
+        )
+        mocks.scanRekeyed.mockResolvedValue([
+            hdAccount('rekeyed', { algorand: { address: 'NEW_REKEYED' } }),
+        ])
+
+        await rescan()
+
+        expect(mocks.showToast).toHaveBeenCalledExactlyOnceWith({
+            type: 'warning',
+            title: 'onboarding.scan_accounts_result.incomplete_title',
+            body: 'onboarding.scan_accounts_result.failed_networks_body:{"networks":"base"}',
         })
+        expect(mocks.replace).toHaveBeenCalledWith(
+            'ImportRekeyedAddresses',
+            expect.anything(),
+        )
+    })
+
+    it('opens the result naming the networks when none of them answered, so a retry of networks still down keeps them and their retry', async () => {
+        mocks.discoverWalletAccounts.mockResolvedValue(
+            walked({ coverage: 'unanswered', failedChainIds: ['base', 'bsc'] }),
+        )
+
+        await rescan(algorandAccount, { chainIds: ['base', 'bsc'] })
+
+        expect(mocks.errorToast).not.toHaveBeenCalled()
+        expect(mocks.goBack).not.toHaveBeenCalled()
+        expect(mocks.scanRekeyed).not.toHaveBeenCalled()
+        expect(mocks.replace).toHaveBeenCalledExactlyOnceWith(
+            'ScanAccountsResult',
+            expect.objectContaining({
+                failedChainIds: ['base', 'bsc'],
+                isCancelled: false,
+                isIncomplete: true,
+            }),
+        )
+    })
+
+    it('reports the failure and goes back when no chain answered and none is named', async () => {
+        mocks.discoverWalletAccounts.mockResolvedValue(
+            walked({ coverage: 'unanswered' }),
+        )
 
         await rescan()
 
@@ -260,7 +318,7 @@ describe('useHdWalletRescan', () => {
         )
         expect(mocks.goBack).toHaveBeenCalledOnce()
         expect(mocks.scanRekeyed).not.toHaveBeenCalled()
-        expect(mocks.exitAccountFlow).not.toHaveBeenCalled()
+        expect(mocks.replace).not.toHaveBeenCalled()
     })
 
     it('reports the failure and goes back when the account has no seed', async () => {
