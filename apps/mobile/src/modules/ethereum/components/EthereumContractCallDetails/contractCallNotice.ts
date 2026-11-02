@@ -11,7 +11,11 @@
  */
 
 import { i18nKey, type I18nKey } from '@perawallet/wallet-core-chain-contract'
-import { originOf, stripUrlScheme } from '@perawallet/wallet-core-shared'
+import {
+    originOf,
+    stripUrlScheme,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
 import type { SignRequestSource } from '@perawallet/wallet-core-signing'
 
 export type ContractCallNotice = {
@@ -19,7 +23,7 @@ export type ContractCallNotice = {
     params?: { domain: string }
 }
 
-const hostOf = (url?: string): string | undefined => {
+const hostOf = (url?: string): Optional<string> => {
     const origin = originOf(url)
     return origin ? stripUrlScheme(origin) : undefined
 }

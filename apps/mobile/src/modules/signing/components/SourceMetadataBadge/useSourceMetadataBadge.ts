@@ -16,6 +16,7 @@ import {
     isSameOrigin,
     originOf,
     stripUrlScheme,
+    type Optional,
 } from '@perawallet/wallet-core-shared'
 import {
     resolveDisplayableVerificationTier,
@@ -29,7 +30,7 @@ import { useSiteSafetyQuery } from '@perawallet/wallet-core-site-safety'
 import { useLanguage } from '@hooks/useLanguage'
 import { useSignRequestScope } from '../../hooks/useSignRequestScope'
 
-const siteKeyOf = (value?: string): string | undefined =>
+const siteKeyOf = (value?: string): Optional<string> =>
     stripUrlScheme(value)?.replace(/\/+$/, '').toLowerCase()
 
 export const useSourceMetadataBadge = (
