@@ -1205,6 +1205,10 @@
                 "title": "Insufficient {{symbol}}",
                 "body": "This account doesn't have enough {{symbol}} to cover the amount and the network fee. Add more {{symbol}} and try again."
             },
+            "fee_above_confirmed": {
+                "title": "Network fees went up",
+                "body": "The network fee is now above the max fee you confirmed. Review the send to see the new fee."
+            },
             "rate_limited": {
                 "title": "Network busy",
                 "body": "The network is receiving too many requests right now. Please wait a moment and try again."
@@ -1290,6 +1294,10 @@
             "not_replaceable": {
                 "title": "Transaction no longer pending",
                 "body": "This transaction has already confirmed or been replaced, so it can't be sped up or cancelled."
+            },
+            "nonce_gap_filled": {
+                "title": "No longer blocked",
+                "body": "The earlier transaction is now on the network, so this one can confirm without unblocking."
             },
             "asset_frozen": {
                 "title": "Asset frozen",
@@ -2982,6 +2990,7 @@
             "max": "MAX",
             "next": "Next",
             "amount_label": "Amount",
+            "fee_reserve_hint": "A small amount is kept to cover network fees. Any unused fee stays in your account.",
             "error_title": "Invalid Amount",
             "error_body": "Please enter an amount greater than {{min}}.",
             "exceeds_max_title": "Insufficient Balance",
@@ -3551,7 +3560,8 @@
             "pending": "Pending since {{since}}",
             "failed": "Failed",
             "replaced": "Replaced by another transaction",
-            "replacement_not_needed": "Not needed: the original transaction confirmed first"
+            "replacement_not_needed": "Not needed: the original transaction confirmed first",
+            "waiting_on_earlier": "Waiting on an earlier transaction"
         },
         "list_item": {
             "send": "Send",
@@ -3727,7 +3737,10 @@
             "body": "Speed up sends it again with a higher network fee. Cancel replaces it with an empty transfer to yourself, which also costs a network fee. If the original confirms first, nothing is replaced.",
             "speed_up": "Speed Up",
             "cancel": "Cancel Transaction",
-            "review_notice": "Replaces transaction {{txId}}"
+            "review_notice": "Replaces transaction {{txId}}",
+            "blocked_title": "Waiting on an earlier transaction",
+            "blocked_body": "An earlier transaction from this account never reached the network, so this one can't confirm until something takes its place. Unblock sends an empty transfer to yourself in its place, which costs a network fee.",
+            "unblock": "Unblock"
         },
         "suspected_poisoning": {
             "marker": "Suspected address poisoning",

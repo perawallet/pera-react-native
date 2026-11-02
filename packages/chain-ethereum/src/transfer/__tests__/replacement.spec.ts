@@ -14,6 +14,7 @@ import {
     afterAll,
     afterEach,
     beforeAll,
+    beforeEach,
     describe,
     expect,
     it,
@@ -31,17 +32,33 @@ import type {
     BuildContext,
     TransactionSummary,
 } from '@perawallet/wallet-core-chain-contract'
+import {
+    initializeDatabase,
+    resetDatabase,
+    type Database,
+} from '@perawallet/wallet-core-database'
+import { createTestDatabase } from '@perawallet/wallet-core-database/test-utils'
+import {
+    recordSubmissionAttempt,
+    resolveSubmissionAttempt,
+} from '@perawallet/wallet-core-signing'
 import { InvalidSendParamsError } from '@perawallet/wallet-core-transactions'
-import { evmRpcHandlers } from '../../blockchain/msw-handlers'
+import {
+    evmRpcHandlers,
+    evmTransactionReceipt,
+} from '../../blockchain/msw-handlers'
 import { TEST_RPC_URL, testChainContext } from '../../__tests__/context'
 import { BASE, ETHEREUM, evmScopeOf } from '../../__tests__/evm-chains'
 import {
     SENDER,
     TRANSFER,
     VIEM_TRANSFER_NONCE_0,
+    VIEM_TRANSFER_NONCE_2,
 } from '../../signing/__tests__/fixtures'
 import {
+    buildEvmGapFill,
     buildEvmReplacement,
+    findEvmNonceGap,
     bumpReplacementFee,
     CANCEL_GAS,
     meetsReplacementBump,
@@ -102,7 +119,8 @@ const useRpc = (market: RpcFeeHistory) =>
 
 describe('Ethereum transaction replacement', () => {
     afterEach(() => {
-        nonceReads.mockClear()
+        nonceReads.mockReset()
+        nonceReads.mockReturnValue('0x9')
     })
 
     describe('fees', () => {
@@ -286,5 +304,164 @@ describe('Ethereum transaction replacement', () => {
                 context,
             ),
         ).rejects.toBeInstanceOf(InvalidSendParamsError)
+    })
+
+    describe('a nonce gap below a pending send', () => {
+        let db: Database
+        let teardown: () => void
+
+        beforeEach(async () => {
+            ;({ db, teardown } = createTestDatabase())
+            await initializeDatabase({
+                getDatabase: async () => db,
+            } as unknown as Parameters<typeof initializeDatabase>[0])
+        })
+
+        afterEach(() => {
+            resetDatabase()
+            teardown()
+        })
+
+        const findGap = () =>
+            findEvmNonceGap(
+                ctx,
+                ETHEREUM,
+                { rawTransaction: VIEM_TRANSFER_NONCE_2 },
+                context,
+                db,
+            )
+
+        it('names the nonce the node stops short at', async () => {
+            useRpc(CHEAP_MARKET)
+            nonceReads.mockReturnValue('0x1')
+
+            await expect(findGap()).resolves.toBe(1)
+        })
+
+        it('finds none once the node holds every nonce below the send', async () => {
+            useRpc(CHEAP_MARKET)
+            nonceReads.mockReturnValue('0x2')
+
+            await expect(findGap()).resolves.toBeNull()
+        })
+
+        it('finds none while an open send of the wallet holds the nonce', async () => {
+            useRpc(CHEAP_MARKET)
+            nonceReads.mockReturnValue('0x1')
+            await recordSubmissionAttempt({
+                db,
+                scope: context.scope,
+                txIds: ['0xearlier'],
+                flow: 'pipeline',
+                sender: SENDER,
+                nonce: 1,
+            })
+
+            await expect(findGap()).resolves.toBeNull()
+        })
+
+        it.each(['confirmed', 'replaced'] as const)(
+            'finds none where the ledger saw the nonce mined (%s) though a lagging node does not',
+            async status => {
+                useRpc(CHEAP_MARKET)
+                nonceReads.mockReturnValue('0x1')
+                const id = await recordSubmissionAttempt({
+                    db,
+                    scope: context.scope,
+                    txIds: ['0xearlier'],
+                    flow: 'pipeline',
+                    sender: SENDER,
+                    nonce: 1,
+                })
+                await resolveSubmissionAttempt({ db, id, status })
+
+                await expect(findGap()).resolves.toBeNull()
+            },
+        )
+
+        it('still names a nonce whose only send there was dropped', async () => {
+            useRpc(CHEAP_MARKET)
+            nonceReads.mockReturnValue('0x1')
+            const id = await recordSubmissionAttempt({
+                db,
+                scope: context.scope,
+                txIds: ['0xdropped'],
+                flow: 'pipeline',
+                sender: SENDER,
+                nonce: 1,
+            })
+            await resolveSubmissionAttempt({ db, id, status: 'failed' })
+
+            await expect(findGap()).resolves.toBe(1)
+        })
+
+        it('finds none where the send at the nonce was mined but reverted', async () => {
+            const reverted = `0x${'ab'.repeat(32)}` as const
+            server.use(
+                ...evmRpcHandlers({
+                    rpcUrl: TEST_RPC_URL,
+                    responses: {
+                        eth_getTransactionCount: '0x1',
+                        eth_getTransactionReceipt: evmTransactionReceipt({
+                            transactionHash: reverted,
+                            status: '0x0',
+                        }),
+                    },
+                }),
+            )
+            const id = await recordSubmissionAttempt({
+                db,
+                scope: context.scope,
+                txIds: [reverted],
+                flow: 'pipeline',
+                sender: SENDER,
+                nonce: 1,
+            })
+            await resolveSubmissionAttempt({ db, id, status: 'failed' })
+
+            await expect(findGap()).resolves.toBeNull()
+        })
+
+        it('fills the gap with an empty transfer to the sender at the fast preset', async () => {
+            useRpc(BUSY_MARKET)
+
+            const [built] = await buildEvmGapFill(
+                ctx,
+                ETHEREUM,
+                { rawTransaction: VIEM_TRANSFER_NONCE_2, sequence: 1 },
+                context,
+            )
+
+            expect(built.payload).toEqual({
+                from: SENDER,
+                transaction: {
+                    type: 'eip1559',
+                    chainId: 1,
+                    nonce: 1,
+                    to: SENDER,
+                    value: 0n,
+                    gas: CANCEL_GAS,
+                    maxFeePerGas: parseGwei('33'),
+                    maxPriorityFeePerGas: parseGwei('3'),
+                },
+            })
+            expect(built.summary).toMatchObject({
+                title: { key: 'transactions.list_item.cancel_transaction' },
+                direction: 'self',
+            })
+        })
+
+        it('refuses a fill at or above the pending send’s own nonce', async () => {
+            useRpc(CHEAP_MARKET)
+
+            await expect(
+                buildEvmGapFill(
+                    ctx,
+                    ETHEREUM,
+                    { rawTransaction: VIEM_TRANSFER_NONCE_2, sequence: 2 },
+                    context,
+                ),
+            ).rejects.toBeInstanceOf(InvalidSendParamsError)
+        })
     })
 })

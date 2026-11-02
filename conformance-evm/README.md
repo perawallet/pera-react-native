@@ -139,6 +139,9 @@ These are app behaviours the suite pins against a real node, each a bug class a 
 - A resend of bytes the node already pools, which Anvil refuses as `transaction already imported`,
   counts as already known rather than a rejection, so the ledger row stays open
   (`suites/submission/broadcast.spec.ts`).
+- A MAX send on Ethereum and on Base lands and leaves exactly the reserve the chain did not charge; a base
+  fee that rises after the review is held to the confirmed max fee, or refused once it can't fit
+  (`suites/construction/maxSend.spec.ts`).
 - A gas limit below the intrinsic cost classifies as `OUT_OF_GAS`, and Anvil's raw custom-error
   bytes are never shown as a revert reason (`suites/errors/rejections.spec.ts`).
 

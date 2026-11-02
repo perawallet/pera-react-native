@@ -1205,6 +1205,10 @@
                 "title": "{{symbol}} insuffisant",
                 "body": "Ce compte ne dispose pas d’assez de {{symbol}} pour couvrir le montant et les frais de réseau. Ajoutez plus de {{symbol}}, puis réessayez."
             },
+            "fee_above_confirmed": {
+                "title": "Les frais de réseau ont augmenté",
+                "body": "Les frais de réseau dépassent désormais les frais maximum que vous avez confirmés. Vérifiez l’envoi pour voir les nouveaux frais."
+            },
             "rate_limited": {
                 "title": "Réseau saturé",
                 "body": "Le réseau reçoit trop de requêtes en ce moment. Veuillez patienter un instant, puis réessayer."
@@ -1290,6 +1294,10 @@
             "not_replaceable": {
                 "title": "Transaction plus en attente",
                 "body": "Cette transaction a déjà été confirmée ou remplacée et ne peut plus être accélérée ni annulée."
+            },
+            "nonce_gap_filled": {
+                "title": "Plus bloquée",
+                "body": "La transaction antérieure est maintenant sur le réseau, celle-ci peut donc être confirmée sans être débloquée."
             },
             "asset_frozen": {
                 "title": "Actif gelé",
@@ -2007,7 +2015,7 @@
             "invitation_title": "<0>Vous avez reçu une invitation</0> à rejoindre un compte partagé {{address}}",
             "view_invitation_details": "Voir les détails de l’invitation",
             "info": {
-                "title": "À propos de la boîte de réception",
+                "title": "À propos de la boîte",
                 "algorand_title": "Algorand",
                 "algorand_body": "Un compte Algorand doit effectuer un opt-in pour un actif avant de pouvoir le détenir. Les actifs qui vous sont envoyés avant votre opt-in attendent ici, dans la boîte de réception, jusqu’à ce que vous les réclamiez ou les refusiez. Les invitations à des comptes partagés et les demandes de signature arrivent également ici.",
                 "other_networks_title": "Autres réseaux",
@@ -2982,6 +2990,7 @@
             "max": "MAX",
             "next": "Suivant",
             "amount_label": "Montant",
+            "fee_reserve_hint": "Un petit montant est conservé pour couvrir les frais de réseau. Les frais non utilisés restent sur votre compte.",
             "error_title": "Montant invalide",
             "error_body": "Veuillez saisir un montant supérieur à {{min}}.",
             "exceeds_max_title": "Solde insuffisant",
@@ -3551,7 +3560,8 @@
             "pending": "En attente depuis {{since}}",
             "failed": "Échouée",
             "replaced": "Remplacée par une autre transaction",
-            "replacement_not_needed": "Inutile : la transaction d’origine a été confirmée avant"
+            "replacement_not_needed": "Inutile : la transaction d’origine a été confirmée avant",
+            "waiting_on_earlier": "En attente d’une transaction antérieure"
         },
         "list_item": {
             "send": "Envoi",
@@ -3727,7 +3737,10 @@
             "body": "Accélérer la renvoie avec des frais de réseau plus élevés. Annuler la remplace par un transfert vide vers vous-même, qui coûte aussi des frais de réseau. Si l’originale est confirmée avant, rien n’est remplacé.",
             "speed_up": "Accélérer",
             "cancel": "Annuler la transaction",
-            "review_notice": "Remplace la transaction {{txId}}"
+            "review_notice": "Remplace la transaction {{txId}}",
+            "blocked_title": "En attente d’une transaction antérieure",
+            "blocked_body": "Une transaction antérieure de ce compte n’a jamais atteint le réseau, donc celle-ci ne peut pas être confirmée tant que rien ne prend sa place. Débloquer envoie à sa place un transfert vide vers vous-même, qui coûte des frais de réseau.",
+            "unblock": "Débloquer"
         },
         "suspected_poisoning": {
             "marker": "Empoisonnement d’adresse suspecté",

@@ -1205,6 +1205,10 @@
                 "title": "Yetersiz {{symbol}}",
                 "body": "Bu hesapta tutarı ve ağ ücretini karşılamak için yeterli {{symbol}} yok. Daha fazla {{symbol}} ekle ve tekrar dene."
             },
+            "fee_above_confirmed": {
+                "title": "Ağ ücretleri yükseldi",
+                "body": "Ağ ücreti artık onayladığın maksimum ücretin üzerinde. Yeni ücreti görmek için gönderimi incele."
+            },
             "rate_limited": {
                 "title": "Ağ yoğun",
                 "body": "Ağ şu anda çok fazla istek alıyor. Biraz bekle ve tekrar dene."
@@ -1290,6 +1294,10 @@
             "not_replaceable": {
                 "title": "İşlem artık beklemede değil",
                 "body": "Bu işlem zaten onaylandı veya değiştirildi; artık hızlandırılamaz ya da iptal edilemez."
+            },
+            "nonce_gap_filled": {
+                "title": "Artık engellenmiyor",
+                "body": "Önceki işlem artık ağda; bu işlem engel kaldırılmadan onaylanabilir."
             },
             "asset_frozen": {
                 "title": "Varlık donduruldu",
@@ -2982,6 +2990,7 @@
             "max": "MAKS",
             "next": "İleri",
             "amount_label": "Tutar",
+            "fee_reserve_hint": "Ağ ücretlerini karşılamak için küçük bir tutar ayrılır. Kullanılmayan ücret hesabında kalır.",
             "error_title": "Geçersiz miktar",
             "error_body": "Lütfen {{min}} değerinden büyük bir miktar gir.",
             "exceeds_max_title": "Yetersiz bakiye",
@@ -3551,7 +3560,8 @@
             "pending": "Beklemede, başlangıç zamanı: {{since}}",
             "failed": "Başarısız",
             "replaced": "Başka bir işlemle değiştirildi",
-            "replacement_not_needed": "Gerek kalmadı: asıl işlem önce onaylandı"
+            "replacement_not_needed": "Gerek kalmadı: asıl işlem önce onaylandı",
+            "waiting_on_earlier": "Önceki bir işlem bekleniyor"
         },
         "list_item": {
             "send": "Gönder",
@@ -3727,7 +3737,10 @@
             "body": "Hızlandır, işlemi daha yüksek bir ağ ücretiyle yeniden gönderir. İptal et, işlemi kendine yapılan boş bir transferle değiştirir; bu da bir ağ ücreti gerektirir. Asıl işlem önce onaylanırsa hiçbir şey değiştirilmez.",
             "speed_up": "Hızlandır",
             "cancel": "İşlemi iptal et",
-            "review_notice": "{{txId}} işleminin yerini alır"
+            "review_notice": "{{txId}} işleminin yerini alır",
+            "blocked_title": "Önceki bir işlem bekleniyor",
+            "blocked_body": "Bu hesaptan yapılan önceki bir işlem ağa hiç ulaşmadı, bu yüzden onun yerini bir şey almadan bu işlem onaylanamaz. Engeli kaldır, onun yerine kendine boş bir transfer gönderir; bu da bir ağ ücreti gerektirir.",
+            "unblock": "Engeli kaldır"
         },
         "suspected_poisoning": {
             "marker": "Şüpheli adres zehirlenmesi",

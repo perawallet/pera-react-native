@@ -1205,6 +1205,10 @@
                 "title": "{{symbol}} insuficiente",
                 "body": "Esta conta não tem {{symbol}} suficiente para cobrir o valor e a taxa de rede. Adicione mais {{symbol}} e tente novamente."
             },
+            "fee_above_confirmed": {
+                "title": "As taxas de rede subiram",
+                "body": "A taxa de rede agora está acima da taxa máxima que você confirmou. Revise o envio para ver a nova taxa."
+            },
             "rate_limited": {
                 "title": "Rede congestionada",
                 "body": "A rede está recebendo muitas solicitações no momento. Aguarde um instante e tente novamente."
@@ -1290,6 +1294,10 @@
             "not_replaceable": {
                 "title": "Transação não está mais pendente",
                 "body": "Esta transação já foi confirmada ou substituída, então não pode ser acelerada nem cancelada."
+            },
+            "nonce_gap_filled": {
+                "title": "Não está mais bloqueada",
+                "body": "A transação anterior já está na rede, então esta pode ser confirmada sem desbloquear."
             },
             "asset_frozen": {
                 "title": "Ativo congelado",
@@ -2998,6 +3006,7 @@
             "max": "MÁX",
             "next": "Avançar",
             "amount_label": "Valor",
+            "fee_reserve_hint": "Um pequeno valor é mantido para cobrir as taxas da rede. A taxa não utilizada fica na sua conta.",
             "error_title": "Valor inválido",
             "error_body": "Digite um valor maior que {{min}}.",
             "exceeds_max_title": "Saldo insuficiente",
@@ -3568,7 +3577,8 @@
             "pending": "Pendente desde {{since}}",
             "failed": "Falhou",
             "replaced": "Substituída por outra transação",
-            "replacement_not_needed": "Não foi necessária: a transação original foi confirmada antes"
+            "replacement_not_needed": "Não foi necessária: a transação original foi confirmada antes",
+            "waiting_on_earlier": "Aguardando uma transação anterior"
         },
         "list_item": {
             "send": "Enviar",
@@ -3749,7 +3759,10 @@
             "body": "Acelerar envia de novo com uma taxa de rede mais alta. Cancelar substitui por uma transferência vazia para você mesmo, que também custa uma taxa de rede. Se a original for confirmada antes, nada é substituído.",
             "speed_up": "Acelerar",
             "cancel": "Cancelar transação",
-            "review_notice": "Substitui a transação {{txId}}"
+            "review_notice": "Substitui a transação {{txId}}",
+            "blocked_title": "Aguardando uma transação anterior",
+            "blocked_body": "Uma transação anterior desta conta nunca chegou à rede, então esta não pode ser confirmada até que algo ocupe o lugar dela. Desbloquear envia no lugar dela uma transferência vazia para você mesmo, que custa uma taxa de rede.",
+            "unblock": "Desbloquear"
         },
         "suspected_poisoning": {
             "marker": "Suspeita de envenenamento de endereço",

@@ -262,3 +262,28 @@ describe('useSendFunds fee preset', () => {
         expect(result.current.feePreset).toBe('normal')
     })
 })
+
+describe('useSendFunds max amount', () => {
+    beforeEach(() => {
+        useSendFundsStore.getState().reset()
+    })
+
+    it('keeps the max flag and the confirmed max fee until the send resets', () => {
+        const { result } = renderHook(() => useSendFunds())
+        expect(result.current.isMaxAmount).toBe(false)
+        expect(result.current.confirmedMaxFee).toBeUndefined()
+
+        act(() => {
+            result.current.setIsMaxAmount(true)
+            result.current.setConfirmedMaxFee(new Decimal(42))
+        })
+        expect(result.current.isMaxAmount).toBe(true)
+        expect(result.current.confirmedMaxFee).toEqual(new Decimal(42))
+
+        act(() => {
+            result.current.reset()
+        })
+        expect(result.current.isMaxAmount).toBe(false)
+        expect(result.current.confirmedMaxFee).toBeUndefined()
+    })
+})

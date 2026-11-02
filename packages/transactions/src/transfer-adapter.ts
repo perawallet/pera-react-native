@@ -24,7 +24,7 @@ import {
     type TransactionSummary,
     type UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
-import type { Optional } from '@perawallet/wallet-core-shared'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 
 /** Copy a chain hands the app to render as is; every `params` value is display-ready. */
 export type ChainNotice = {
@@ -104,6 +104,17 @@ export type TransactionReplacementRequest = {
     summary?: TransactionSummary
 }
 
+/** A pending transaction stuck behind a sequence number nothing holds. */
+export type TransactionGapRequest = {
+    /** The pending transaction as the submission ledger stores it, in its chain's own encoding. */
+    rawTransaction: string
+}
+
+export type TransactionGapFillRequest = TransactionGapRequest & {
+    /** The empty sequence number to fill, from `findBlockingGap`. */
+    sequence: number
+}
+
 export type AddressPoisoningRules = {
     /**
      * Leading plus trailing characters a different known address must share
@@ -147,6 +158,20 @@ export interface TransferChainAdapter {
      */
     buildReplacement?(
         request: TransactionReplacementRequest,
+        context: BuildContext,
+    ): Promise<UnsignedTransaction[]>
+    /**
+     * The lower sequence number the chain waits on before it can run the
+     * pending transaction, when neither the node nor an open send of the
+     * wallet holds it; null when nothing blocks it. Reads the network.
+     */
+    findBlockingGap?(
+        request: TransactionGapRequest,
+        context: BuildContext,
+    ): Promise<Nullable<number>>
+    /** A no-op transaction at the empty sequence number, so the ones queued behind it can run. */
+    buildGapFill?(
+        request: TransactionGapFillRequest,
         context: BuildContext,
     ): Promise<UnsignedTransaction[]>
     /**

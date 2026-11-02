@@ -28,6 +28,7 @@ import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import type { Database } from '@perawallet/wallet-core-database'
 import {
     logger,
+    toError,
     type Optional,
     type Maybe,
 } from '@perawallet/wallet-core-shared'
@@ -38,6 +39,7 @@ import {
     recordSubmissionAttempt,
     resolveSubmissionAttempt,
     SubmissionError,
+    TransportError,
     type SubmissionAttempt,
     type SubmissionFlow,
     type SubmissionHistoryEntry,
@@ -50,7 +52,7 @@ import {
 } from '../blockchain/errors'
 import type { EvmChain } from '../chains/types'
 import { ethereumCallSummary } from '../signing/review'
-import { readEvmSurcharge } from './fees'
+import { SURCHARGE_HEADROOM, readEvmSurcharge } from './fees'
 import { meetsReplacementBump, readReplaceableTransaction } from './replacement'
 
 // Nodes word a resend of a pooled transaction differently; Anvil says
@@ -150,7 +152,8 @@ export type SubmitAndRecordEthereumTransactionsParams = {
 }
 
 // Wei: gas limit x max fee per gas plus what the chain charges on top of gas,
-// the most the transaction can be charged.
+// the most the transaction can be charged. The surcharge carries the headroom the quote reserves:
+// the L1 fee is priced again at inclusion, so a pending send holds back what its own quote did.
 // The signing adapter signs EIP-1559 only, so there is no legacy gasPrice.
 const maxFeeOf = (
     { gas, maxFeePerGas }: ReturnType<typeof parseTransaction>,
@@ -158,7 +161,9 @@ const maxFeeOf = (
 ): Optional<Decimal> =>
     gas === undefined || maxFeePerGas === undefined
         ? undefined
-        : new Decimal((gas * maxFeePerGas + surcharge).toString())
+        : new Decimal(
+              (gas * maxFeePerGas + SURCHARGE_HEADROOM * surcharge).toString(),
+          )
 
 // The newest open attempt of the sender at this nonce under another hash; a
 // transport retry of the same bytes shares the hash, so it replaces nothing.
@@ -301,14 +306,24 @@ export const historyEntryOfSigned = async (
     }
 }
 
+/** Refused before broadcast: the ledger read may pass on a retry, and nothing reached the node. */
+export class SubmissionLedgerUnreadableError extends TransportError {
+    constructor(originalError?: Error) {
+        super('submission ledger read failed', originalError)
+        this.name = 'SubmissionLedgerUnreadableError'
+    }
+}
+
 /**
  * Writes each transaction's ledger row before sending it, so a send that gets
  * no answer still holds its nonce. A ledger write failure never blocks the
- * send. A speed-up or cancel at a nonce an open attempt already holds replaces
- * it: the row links the two, and one that doesn't outbid the original by the
- * node's minimum bump is refused without being sent. Any other send at a held
- * nonce is refused the same way. On an OP-stack chain the recorded max fee
- * includes the oracle's fee for the signed bytes, or gas alone when that read fails.
+ * send; a failed read of the nonce's open rows refuses it unsent with a
+ * retryable `SubmissionLedgerUnreadableError`. A speed-up or cancel at a nonce an open attempt
+ * already holds replaces it: the row links the two, and one that doesn't
+ * outbid the original by the node's minimum bump is refused without being
+ * sent. Any other send at a held nonce is refused the same way. On an
+ * OP-stack chain the recorded max fee includes the oracle's fee for the
+ * signed bytes, or gas alone when that read fails.
  */
 export const submitAndRecordEthereumTransactions = async ({
     client,
@@ -336,18 +351,20 @@ export const submitAndRecordEthereumTransactions = async ({
             chain,
             serializedTransaction,
         )
-        let replaced: Optional<SubmissionAttempt>
-        if (nonce !== undefined) {
-            await bestEffort('replacement lookup', async () => {
-                replaced = await findReplacedAttempt(
-                    db,
-                    scope,
-                    sender,
-                    nonce,
-                    hash,
-                )
-            })
-        }
+        // Not best-effort: an unread ledger skips the collision and bump
+        // guards, and two sends at one nonce would replace each other.
+        const replaced =
+            nonce === undefined
+                ? undefined
+                : await findReplacedAttempt(
+                      db,
+                      scope,
+                      sender,
+                      nonce,
+                      hash,
+                  ).catch((error: unknown) => {
+                      throw new SubmissionLedgerUnreadableError(toError(error))
+                  })
         if (isNonceCollision(replaced, parsed, sender)) {
             throw new SubmissionError(
                 [hash],

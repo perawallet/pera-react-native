@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { useCallback } from 'react'
 import { keepPreviousData, skipToken, useQuery } from '@tanstack/react-query'
 import type {
     ChainScope,
@@ -33,11 +34,19 @@ export type UseTransferFeeEstimateQueryResult = {
     /** Every preset is priced, so switching preset never refetches. */
     data: Optional<FeeEstimate>
     isPending: boolean
+    /** No estimate is held: a later poll that fails behind a held one is not an error. */
     isError: boolean
+    /** Re-reads now; a no-op while there is no input. */
+    refresh: () => void
 }
 
+/**
+ * `isLive` re-reads every 15 s while mounted, for a screen whose quote caps the send. Leave it off
+ * where a fee that moved under an amount already chosen would shrink what is allowed.
+ */
 export const useTransferFeeEstimateQuery = (
     input: Optional<TransferFeeEstimateInput>,
+    { isLive = false }: { isLive?: boolean } = {},
 ): UseTransferFeeEstimateQueryResult => {
     const query = useQuery({
         queryKey: input
@@ -56,14 +65,21 @@ export const useTransferFeeEstimateQuery = (
                       .getFeeEstimate(input.intent, { scope: input.scope })
             : skipToken,
         staleTime: FEE_ESTIMATE_STALE_TIME_MS,
+        refetchInterval: isLive ? FEE_ESTIMATE_STALE_TIME_MS : false,
         // A new amount re-keys the query; keep the last price meanwhile.
         placeholderData: keepPreviousData,
     })
+
+    const { refetch } = query
+    const refresh = useCallback(() => {
+        void refetch()
+    }, [refetch])
 
     return {
         data: query.data,
         // TanStack reports a skipped query as pending.
         isPending: !!input && query.isPending,
-        isError: query.isError,
+        isError: query.isLoadingError,
+        refresh,
     }
 }

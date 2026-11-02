@@ -274,6 +274,74 @@ describe('Ethereum transfer adapter', () => {
         expect(estimate.amount.equals(estimate.presets!.fast.amount)).toBe(true)
     })
 
+    describe('with a confirmed max fee', () => {
+        // gas 21_000 at a 5 gwei max fee and a 1 gwei tip on a 2 gwei next base fee.
+        const confirmed = (perGas: string, extraWei = 0n) => ({
+            ...context,
+            maxFee: new Decimal(
+                (21_000n * parseGwei(perGas) + extraWei).toString(),
+            ),
+        })
+        const maxFeePerGasOf = (built: { payload: unknown }) =>
+            (built.payload as EthereumTransactionPayload).transaction
+                .maxFeePerGas
+
+        it("leaves the prices alone when it covers the preset's worst case", async () => {
+            useRpc()
+
+            const [built] = await adapter.build(nativeIntent, confirmed('5'))
+
+            expect(maxFeePerGasOf(built)).toBe(parseGwei('5'))
+        })
+
+        it('lowers the max fee per gas to fit it, keeping the tip', async () => {
+            useRpc()
+
+            const [built] = await adapter.build(nativeIntent, confirmed('4'))
+
+            expect(built.payload).toMatchObject({
+                transaction: {
+                    maxFeePerGas: parseGwei('4'),
+                    maxPriorityFeePerGas: parseGwei('1'),
+                },
+            })
+        })
+
+        // A 2 gwei next base fee grown one block is 2.25 gwei; with the 1 gwei tip the floor is 3.25.
+        it('builds at exactly the floor of one block of base-fee growth over the tip', async () => {
+            useRpc()
+
+            const [built] = await adapter.build(nativeIntent, confirmed('3.25'))
+
+            expect(maxFeePerGasOf(built)).toBe(parseGwei('3.25'))
+        })
+
+        it('refuses a ceiling one wei under that floor', async () => {
+            useRpc()
+
+            const error = await adapter
+                .build(nativeIntent, confirmed('3.25', -21_000n))
+                .catch((e: unknown) => e)
+
+            expect(error).toMatchObject({
+                code: EvmErrorCode.FEE_ABOVE_CONFIRMED,
+            })
+        })
+
+        it('refuses to build when it cannot cover the next block base fee and the tip', async () => {
+            useRpc()
+
+            const error = await adapter
+                .build(nativeIntent, confirmed('2.5'))
+                .catch((e: unknown) => e)
+
+            expect(isEvmError(error)).toBe(true)
+            expect(error).toMatchObject({
+                code: EvmErrorCode.FEE_ABOVE_CONFIRMED,
+            })
+        })
+    })
+
     it('summarises a transfer to the same address in another case as a self transfer', async () => {
         useRpc()
 
@@ -614,6 +682,21 @@ describe('a transfer built for Base', () => {
         await base.build(intentOn('native'), { scope: evmScopeOf(BASE) })
 
         expect(reads).toEqual([])
+    })
+
+    it('keeps the L1 fee headroom out of the max fee per gas a confirmed max fee leaves', async () => {
+        const scope = evmScopeOf(BASE)
+        // Each oracle read answers 1000 wei, so the surcharge is 2000 wei and its headroom 4000.
+        const maxFee = new Decimal(
+            (21_000n * parseGwei('4') + 4000n).toString(),
+        )
+
+        const [built] = await base.build(intentOn('native'), { scope, maxFee })
+
+        expect(
+            (built.payload as EthereumTransactionPayload).transaction
+                .maxFeePerGas,
+        ).toBe(parseGwei('4'))
     })
 
     it("refuses an intent for another EVM chain's asset", async () => {

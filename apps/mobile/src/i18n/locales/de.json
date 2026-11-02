@@ -1197,6 +1197,10 @@
                 "title": "Nicht genügend {{symbol}}",
                 "body": "Dieses Konto verfügt nicht über genügend {{symbol}}, um den Betrag und die Netzwerkgebühr zu decken. Füge mehr {{symbol}} hinzu und versuche es erneut."
             },
+            "fee_above_confirmed": {
+                "title": "Netzwerkgebühren gestiegen",
+                "body": "Die Netzwerkgebühr liegt jetzt über der von dir bestätigten maximalen Gebühr. Prüfe die Transaktion, um die neue Gebühr zu sehen."
+            },
             "rate_limited": {
                 "title": "Netzwerk ausgelastet",
                 "body": "Das Netzwerk erhält gerade zu viele Anfragen. Bitte warte einen Moment und versuche es erneut."
@@ -1282,6 +1286,10 @@
             "not_replaceable": {
                 "title": "Transaktion nicht mehr ausstehend",
                 "body": "Diese Transaktion wurde bereits bestätigt oder ersetzt und kann nicht mehr beschleunigt oder storniert werden."
+            },
+            "nonce_gap_filled": {
+                "title": "Nicht mehr blockiert",
+                "body": "Die frühere Transaktion ist jetzt im Netzwerk, daher kann diese ohne Freigeben bestätigt werden."
             },
             "asset_frozen": {
                 "title": "Asset eingefroren",
@@ -2974,6 +2982,7 @@
             "max": "MAX",
             "next": "Weiter",
             "amount_label": "Betrag",
+            "fee_reserve_hint": "Ein kleiner Betrag wird für die Netzwerkgebühren zurückbehalten. Nicht verbrauchte Gebühren bleiben in deinem Konto.",
             "error_title": "Ungültiger Betrag",
             "error_body": "Bitte gib einen Betrag größer als {{min}} ein.",
             "exceeds_max_title": "Unzureichendes Guthaben",
@@ -3543,7 +3552,8 @@
             "pending": "Ausstehend seit {{since}}",
             "failed": "Fehlgeschlagen",
             "replaced": "Durch eine andere Transaktion ersetzt",
-            "replacement_not_needed": "Nicht nötig: Die ursprüngliche Transaktion wurde zuerst bestätigt"
+            "replacement_not_needed": "Nicht nötig: Die ursprüngliche Transaktion wurde zuerst bestätigt",
+            "waiting_on_earlier": "Wartet auf eine frühere Transaktion"
         },
         "list_item": {
             "send": "Senden",
@@ -3719,7 +3729,10 @@
             "body": "Beschleunigen sendet sie erneut mit einer höheren Netzwerkgebühr. Stornieren ersetzt sie durch eine leere Überweisung an dich selbst, die ebenfalls eine Netzwerkgebühr kostet. Wird die ursprüngliche Transaktion zuerst bestätigt, wird nichts ersetzt.",
             "speed_up": "Beschleunigen",
             "cancel": "Transaktion stornieren",
-            "review_notice": "Ersetzt Transaktion {{txId}}"
+            "review_notice": "Ersetzt Transaktion {{txId}}",
+            "blocked_title": "Wartet auf eine frühere Transaktion",
+            "blocked_body": "Eine frühere Transaktion von diesem Konto hat das Netzwerk nie erreicht, daher kann diese erst bestätigt werden, wenn etwas ihren Platz einnimmt. Freigeben sendet an ihrer Stelle eine leere Überweisung an dich selbst, die eine Netzwerkgebühr kostet.",
+            "unblock": "Freigeben"
         },
         "suspected_poisoning": {
             "marker": "Verdacht auf Address Poisoning",
