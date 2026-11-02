@@ -86,6 +86,27 @@ vi.mock('@components/AccountWithBalance', async () => {
     }
 })
 
+// The notice resolves its copy through t(), which echoes the key, so the params it was handed are exposed beside it.
+vi.mock('@components/ChainNotice', async importOriginal => {
+    const actual =
+        await importOriginal<typeof import('@components/ChainNotice')>()
+    const { PWText } =
+        await vi.importActual<typeof import('@components/core')>(
+            '@components/core',
+        )
+    return {
+        ...actual,
+        ChainNotice: (props: Parameters<typeof actual.ChainNotice>[0]) => (
+            <>
+                <actual.ChainNotice {...props} />
+                <PWText testID={`${props.testID}_params`}>
+                    {JSON.stringify(props.params ?? {})}
+                </PWText>
+            </>
+        ),
+    }
+})
+
 vi.mock('@perawallet/wallet-core-signing', async importOriginal => ({
     ...(await importOriginal<
         typeof import('@perawallet/wallet-core-signing')
@@ -192,6 +213,11 @@ describe('Ethereum transaction bodies', () => {
                 },
             }
 
+            vi.mocked(assets.useAssetPricesQuery).mockReturnValue({
+                data: new Map([['native', { usdPrice: new Decimal(2000) }]]),
+                isPending: false,
+            } as unknown as ReturnType<typeof assets.useAssetPricesQuery>)
+
             render(<TransactionReviewBody transaction={estimated} />)
 
             expect(textOf('ethereum_review_fee')).toContain(
@@ -199,8 +225,9 @@ describe('Ethereum transaction bodies', () => {
             )
             expect(textOf('fee_summary_estimate')).toContain('0.000063')
             expect(textOf('fee_summary_max')).toContain('0.00042')
-            expect(screen.getByTestId('fee_summary_estimate_fiat')).toBeTruthy()
-            expect(screen.getByTestId('fee_summary_max_fiat')).toBeTruthy()
+            // 0.000063 ETH and 0.00042 ETH at $2000.
+            expect(textOf('fee_summary_estimate_fiat')).toContain('0.126')
+            expect(textOf('fee_summary_max_fiat')).toContain('0.84')
         })
 
         it('shows a token transfer in the token, with its contract in the Asset row', () => {
@@ -260,6 +287,9 @@ describe('Ethereum transaction bodies', () => {
             expect(textOf('ethereum_contract_call_warning')).toBe(
                 'transactions.contract_call.unchecked_warning',
             )
+            expect(
+                JSON.parse(textOf('ethereum_contract_call_warning_params')),
+            ).toEqual({ domain: 'app.uniswap.org' })
             expect(textOf('ethereum_contract_call_to')).toContain(SHORT_TOKEN)
             expect(textOf('ethereum_contract_call_value')).toMatch(/ETH.*0/)
             expect(screen.queryByTestId('ethereum_review_amount')).toBeNull()
@@ -275,6 +305,9 @@ describe('Ethereum transaction bodies', () => {
             expect(textOf('ethereum_contract_call_warning')).toBe(
                 'transactions.contract_call.unchecked_warning_no_source',
             )
+            expect(
+                JSON.parse(textOf('ethereum_contract_call_warning_params')),
+            ).toEqual({})
         })
 
         it('keeps the selector and call data under a collapsed Advanced section', () => {

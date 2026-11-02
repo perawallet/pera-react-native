@@ -64,6 +64,27 @@ export const EthereumContractCallDetails = ({
         </KeyValueRow>
     )
 
+    const callDataRow = (
+        <KeyValueRow
+            title={t('transactions.contract_call.call_data')}
+            verticalAlignment='top'
+        >
+            <CopyableText
+                testID='ethereum_contract_call_data'
+                copyValue={view.data}
+            >
+                {isReview ? (
+                    <PWText>{view.data}</PWText>
+                ) : (
+                    <ExpandableText
+                        text={view.data}
+                        limit={CALL_DATA_PREVIEW_LENGTH}
+                    />
+                )}
+            </CopyableText>
+        </KeyValueRow>
+    )
+
     return (
         <PWView style={styles.container}>
             {!standardCall && (
@@ -110,36 +131,13 @@ export const EthereumContractCallDetails = ({
                         contentStyle={styles.advanced}
                     >
                         {selectorRow}
-                        <KeyValueRow
-                            title={t('transactions.contract_call.call_data')}
-                            verticalAlignment='top'
-                        >
-                            <CopyableText
-                                testID='ethereum_contract_call_data'
-                                copyValue={view.data}
-                            >
-                                <PWText>{view.data}</PWText>
-                            </CopyableText>
-                        </KeyValueRow>
+                        {callDataRow}
                     </TitledExpandablePanel>
                 </PWView>
             ) : (
                 <>
                     {selectorRow}
-                    <KeyValueRow
-                        title={t('transactions.contract_call.call_data')}
-                        verticalAlignment='top'
-                    >
-                        <CopyableText
-                            testID='ethereum_contract_call_data'
-                            copyValue={view.data}
-                        >
-                            <ExpandableText
-                                text={view.data}
-                                limit={CALL_DATA_PREVIEW_LENGTH}
-                            />
-                        </CopyableText>
-                    </KeyValueRow>
+                    {callDataRow}
                 </>
             )}
         </PWView>

@@ -62,7 +62,10 @@ export type EthereumTransactionPayload = {
      * reached, since its fee can't be quoted on the review.
      */
     maxFeePerGasCeiling?: bigint
-    /** Display-only: nothing that plans, signs or matches a preview reads it. */
+    /**
+     * Display-only: no signed or matched value comes from it. A malformed one
+     * still fails the shared payload read, as `hasHighFee` does.
+     */
     feeEstimate?: EthereumPayloadFeeEstimate
 }
 
