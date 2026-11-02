@@ -12,10 +12,28 @@
 
 import { PWView } from '@components/core'
 import React from 'react'
+import type { AccountAssetListItem } from '../useAccountAssetList'
 import { useStyles } from './styles'
 
-export const ItemSeparator = () => {
+export type ItemSeparatorProps = {
+    leadingItem?: AccountAssetListItem
+    trailingItem?: AccountAssetListItem
+}
+
+export const ItemSeparator = ({
+    leadingItem,
+    trailingItem,
+}: ItemSeparatorProps) => {
     const styles = useStyles()
+
+    // An expanded group's members hang directly under its header.
+    if (
+        leadingItem?.kind === 'group' &&
+        trailingItem?.kind === 'holding' &&
+        trailingItem.isGroupMember
+    ) {
+        return null
+    }
 
     return <PWView style={styles.separator} />
 }

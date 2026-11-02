@@ -26,4 +26,8 @@ export const useStyles = makeStyles(theme => ({
         color: theme.colors.textGray,
         alignSelf: 'flex-end',
     },
+    groupMember: {
+        // lanekeep-ignore-next-line pera/no-numeric-sizes reason: lines up with the group row's text column, past its xl icon (3xl) and the row gap (lg)
+        marginLeft: theme.spacing['3xl'] + theme.spacing.lg,
+    },
 }))
