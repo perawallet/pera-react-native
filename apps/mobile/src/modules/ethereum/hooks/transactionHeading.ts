@@ -70,3 +70,22 @@ export const iconNameOf = (
             : 'send',
     )
 }
+
+/** Who a standard call is with: a transfer's recipient, an approval's spender or operator. */
+export const counterpartyOf = (
+    standardCall: EthereumStandardCallPresentation,
+): string => {
+    switch (standardCall.kind) {
+        case 'token-transfer':
+        case 'nft-transfer': {
+            return standardCall.to
+        }
+        case 'token-approval':
+        case 'nft-approval': {
+            return standardCall.spender
+        }
+        case 'collection-approval': {
+            return standardCall.operator
+        }
+    }
+}

@@ -172,7 +172,7 @@ describe('sync tick network calls', () => {
     it('reads 10 Ethereum accounts in at most 4 RPC requests', async () => {
         const ctx: ChainContext = {
             getScope: () => ({ chainId: 'ethereum', networkId: 'mainnet' }),
-            getEndpoints: () => ({ mainnet: RPC_URL, sepolia: RPC_URL }),
+            getEndpoints: () => ({ mainnet: [RPC_URL], sepolia: [RPC_URL] }),
             getPeraBackend: () => ({ baseUrl: '', services: new Set() }),
             timeouts: { readMs: 1000, submitMs: 1000 },
             kms: {} as ChainContext['kms'],

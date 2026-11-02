@@ -44,6 +44,7 @@
     "audit": "pnpm audit --prod --audit-level=high",
     "lint:bundle": "bash tools/qa/check-prod-bundle.sh",
     "check:ssl-pins": "node tools/check-pinned-chains.mjs",
+    "check:evm-rpc": "node tools/check-evm-rpc-endpoints.mjs",
     "check:patch-pins": "node tools/check-patch-pins.mjs",
     "check:bitrise-yml": "bash tools/release/bitrise-yml.sh --check",
     "format:bitrise": "bash tools/release/bitrise-yml.sh",

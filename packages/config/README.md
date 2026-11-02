@@ -64,11 +64,13 @@ Algod and indexer URLs per network, Pera backend URLs, API keys, genesis hashes,
 dispenser URLs, support and external service links, card service configuration, timing and React
 Query cache settings, and the debug, profiling and polling flags.
 
-Each EVM network in `packages/chain-contract/src/models/evm-networks.json` carries a public
-JSON-RPC URL (no third-party API key) and the list of Pera services the backend serves for it, as
+Each EVM network in `packages/chain-contract/src/models/evm-networks.json` carries
+JSON-RPC URLs and the list of Pera services the backend serves for it, as
 `<CHAIN>_<NETWORK>_RPC_URL` and `<CHAIN>_<NETWORK>_PERA_SERVICES` (`BASE_SEPOLIA_RPC_URL` bakes
-`baseSepoliaRpcUrl`). The fields, env vars and generator lines all come from that table, so a new
-network needs no edit here. Its Pera traffic reuses the Pera backend URL of the Algorand network of
+`baseSepoliaRpcUrl`). `<CHAIN>_<NETWORK>_RPC_URL` is a comma list: the main node, then at most one public fallback, which the
+client falls over to. A paid main node's API key usually rides in its URL, so URLs are never printed
+beyond their origin. The fields, env vars and generator lines all come
+from that table, so a new network needs no edit here. Its Pera traffic reuses the Pera backend URL of the Algorand network of
 the same tier. An empty list leaves the scope with no Pera deployment, so every Pera request for it
 is refused. A build whose `CHAINS` lists an EVM chain fails in `tools/dev/generate-config.sh` unless
 every one of its networks' RPC URLs is set and baked, so a `CONFIG_ALLOWLIST` that keeps `chainIds`

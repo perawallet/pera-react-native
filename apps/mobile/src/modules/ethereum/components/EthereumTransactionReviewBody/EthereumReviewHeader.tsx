@@ -76,6 +76,7 @@ export const EthereumReviewHeader = ({
                         textProps={{ style: styles.addressText }}
                         iconProps={{ color: theme.colors.textMain }}
                         address={counterparty}
+                        scope={presentation.scope}
                     />
                 )}
             </PWView>

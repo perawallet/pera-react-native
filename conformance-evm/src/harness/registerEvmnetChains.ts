@@ -30,7 +30,9 @@ export const registerEvmnetChains = (chains: ChainRegistry): void =>
             chainId,
             enabled: true,
             module: evmChainModules[chainId],
-            endpoints: { [EVMNET[chainId].networkId]: EVMNET[chainId].rpcUrl },
+            endpoints: {
+                [EVMNET[chainId].networkId]: [EVMNET[chainId].rpcUrl],
+            },
         })),
         chains,
         entry =>

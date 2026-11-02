@@ -16,7 +16,7 @@ import type {
     EthereumTransactionView,
     EvmContractAction,
 } from '@perawallet/wallet-core-chain-ethereum'
-import { iconNameOf, titleKeyOf } from '../transactionHeading'
+import { counterpartyOf, iconNameOf, titleKeyOf } from '../transactionHeading'
 import type { EthereumContractActionPresentation } from '../useEthereumContractAction'
 import type { EthereumStandardCallPresentation } from '../useEthereumStandardCall'
 
@@ -149,5 +149,23 @@ describe('iconNameOf', () => {
         expect(iconNameOf(view(), null, null)).toBe(
             'transactions/application-call',
         )
+    })
+})
+
+describe('counterpartyOf', () => {
+    it('is the recipient of a transfer', () => {
+        expect(counterpartyOf(tokenTransfer)).toBe(ROUTER)
+    })
+
+    it('is the spender of an approval and the operator of a collection approval', () => {
+        expect(counterpartyOf(approval({}))).toBe(SIGNER)
+        expect(
+            counterpartyOf({
+                kind: 'collection-approval',
+                contract: TOKEN,
+                operator: ROUTER,
+                isApproved: true,
+            }),
+        ).toBe(ROUTER)
     })
 })

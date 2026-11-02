@@ -71,6 +71,7 @@ export const EthereumTransferAssetRows = ({
                         <AddressDisplay
                             address={tokenContract}
                             displayType='address-only'
+                            scope={presentation.scope}
                         />
                     </PWView>
                 </KeyValueRow>
@@ -107,6 +108,7 @@ export const EthereumTransferAssetRows = ({
                             <AddressDisplay
                                 address={nftContract}
                                 displayType='address-only'
+                                scope={presentation.scope}
                             />
                         </PWView>
                     </PWView>
@@ -130,6 +132,7 @@ export const EthereumTransferAssetRows = ({
                     <AddressDisplay
                         address={nftContract}
                         displayType='address-only'
+                        scope={presentation.scope}
                     />
                 </KeyValueRow>
                 {nftItems.map((item, index) => (

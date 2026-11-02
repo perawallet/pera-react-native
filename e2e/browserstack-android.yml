@@ -7,6 +7,9 @@ platforms:
     deviceName: Samsung Galaxy S24
 projectName: Pera Wallet
 buildName: e2e android
+# SDK setup fails with a bare KeyError: 'buildIdentifier' when this is unset. The value is the
+# SDK's documented default.
+buildIdentifier: '#${BUILD_NUMBER}'
 parallelsPerPlatform: 1
 browserstackLocal: false
 # The newest BrowserStack offers, and the major the suite runs on locally. Its default (1.22 on

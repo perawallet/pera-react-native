@@ -94,7 +94,7 @@ vi.mock('@perawallet/wallet-core-config', async importOriginal => {
             chainId in networks
                 ? Object.fromEntries(
                       networks[chainId as keyof typeof networks].networks.map(
-                          ({ id }) => [id, `https://${chainId}.rpc.test/`],
+                          ({ id }) => [id, [`https://${chainId}.rpc.test/`]],
                       ),
                   )
                 : actual.chainEndpointsFor(chainId),

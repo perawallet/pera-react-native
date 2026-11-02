@@ -258,6 +258,42 @@ describe('ethereumReviewerAdapter', () => {
             ).toBe(true)
         })
 
+        it("carries the payload's fee estimate as Decimal wei, and none when it has none", async () => {
+            const withEstimate = {
+                ...unsigned(TRANSFER),
+                payload: {
+                    from: SENDER,
+                    transaction: TRANSFER,
+                    feeEstimate: { preset: 'fast', amount: 63_000n },
+                },
+            }
+
+            const priced = await reviewOne(withEstimate)
+            const plain = await reviewOne(unsigned(TRANSFER))
+
+            expect(priced.view).toMatchObject({
+                feeEstimate: { preset: 'fast', amount: new Decimal(63_000) },
+            })
+            expect(plain.view).not.toHaveProperty('feeEstimate')
+        })
+
+        it('gives a batch preview no fee estimate', async () => {
+            const preview = {
+                ...unsigned(TRANSFER),
+                payload: {
+                    from: SENDER,
+                    transaction: TRANSFER,
+                    isPreview: true,
+                    feeEstimate: { preset: 'fast', amount: 63_000n },
+                },
+            }
+
+            const view = ethereumViewOf(preview, ETHEREUM)
+
+            expect(view).toMatchObject({ isPreview: true })
+            expect(view).not.toHaveProperty('feeEstimate')
+        })
+
         it('is a self-transfer when it goes back to the sender', async () => {
             const { summary } = await reviewOne(
                 unsigned({ ...TRANSFER, to: SENDER.toLowerCase() as Address }),

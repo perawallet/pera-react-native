@@ -23,6 +23,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import {
     type ChainScope,
+    type FeePreset,
     type I18nKey,
     type TransactionNative,
 } from '@perawallet/wallet-core-chain-contract'
@@ -41,7 +42,7 @@ import {
 } from '@perawallet/wallet-core-shared'
 import type { IconName } from '@components/core'
 import { useBaseUnitsAmount } from '@hooks/useBaseUnitsAmount'
-import { iconNameOf, titleKeyOf } from './transactionHeading'
+import { counterpartyOf, iconNameOf, titleKeyOf } from './transactionHeading'
 import {
     useEthereumContractAction,
     type EthereumContractActionPresentation,
@@ -53,6 +54,12 @@ import {
 } from './useEthereumStandardCall'
 
 export type { EthereumAmount } from './useEthereumStandardCall'
+
+/** Wei, both amounts: what the review's fee block shows. */
+export type EthereumReviewFee = {
+    maxAmount: Decimal
+    estimate?: { preset: FeePreset; amount: Decimal }
+}
 
 export type EthereumTransactionPresentation = {
     view: EthereumTransactionView
@@ -91,6 +98,8 @@ export type EthereumTransactionPresentation = {
      * batch call not yet reached, which is priced only once it is.
      */
     maxFee: Nullable<EthereumAmount>
+    /** Null on a batch call not yet reached and on a mined transaction. */
+    reviewFee: Nullable<EthereumReviewFee>
     /**
      * Set when a dApp's gas limit and fees authorise far more than the wallet's
      * own pricing would: `maxFee` formatted for the warning. Null otherwise.
@@ -111,24 +120,6 @@ const readView = (
         return readEthereumNative(transaction)
     } catch {
         return null
-    }
-}
-
-const counterpartyOf = (
-    standardCall: EthereumStandardCallPresentation,
-): string => {
-    switch (standardCall.kind) {
-        case 'token-transfer':
-        case 'nft-transfer': {
-            return standardCall.to
-        }
-        case 'token-approval':
-        case 'nft-approval': {
-            return standardCall.spender
-        }
-        case 'collection-approval': {
-            return standardCall.operator
-        }
     }
 }
 
@@ -262,6 +253,15 @@ export const useEthereumTransactionPresentation = (
                 standardCallFields(view, standardCall, isStandardCallLoading)),
             value: toEther(view.value),
             maxFee: 'fee' in view ? toEther(view.fee.maxFee) : null,
+            reviewFee:
+                'fee' in view
+                    ? {
+                          maxAmount: view.fee.maxFee,
+                          ...(view.feeEstimate && {
+                              estimate: view.feeEstimate,
+                          }),
+                      }
+                    : null,
             highFeeText:
                 'fee' in view && view.hasHighFee
                     ? formatAssetAmount(view.fee.maxFee, nativeAsset)

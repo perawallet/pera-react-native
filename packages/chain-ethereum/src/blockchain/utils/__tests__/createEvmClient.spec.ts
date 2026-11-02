@@ -26,7 +26,11 @@ import type {
     ChainContext,
     ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
-import { createEvmClient, UnconfiguredEvmRpcError } from '../createEvmClient'
+import {
+    createEvmClient,
+    splitCeilingMs,
+    UnconfiguredEvmRpcError,
+} from '../createEvmClient'
 import {
     EvmRpcErrorFixture,
     evmRpcHandlers,
@@ -42,10 +46,10 @@ const ADDRESS: Hex = '0x00000000000000000000000000000000000000aa'
 const RAW_TX: Hex = '0x02f86c0180843b9aca00'
 
 const contextWith = ({
-    endpoints = { mainnet: MAINNET_RPC, sepolia: SEPOLIA_RPC },
+    endpoints = { mainnet: [MAINNET_RPC], sepolia: [SEPOLIA_RPC] },
     timeouts = { readMs: 1_000, submitMs: 1_000 },
 }: {
-    endpoints?: Record<string, string>
+    endpoints?: Record<string, readonly string[]>
     timeouts?: ChainContext['timeouts']
 } = {}): ChainContext => ({
     getScope: () => MAINNET,
@@ -185,7 +189,17 @@ describe('createEvmClient', () => {
             expect(() =>
                 createEvmClient(
                     SEPOLIA,
-                    contextWith({ endpoints: { mainnet: MAINNET_RPC } }),
+                    contextWith({ endpoints: { mainnet: [MAINNET_RPC] } }),
+                    ETHEREUM,
+                ),
+            ).toThrow(UnconfiguredEvmRpcError)
+        })
+
+        it('refuses a network whose endpoint list is empty', () => {
+            expect(() =>
+                createEvmClient(
+                    MAINNET,
+                    contextWith({ endpoints: { mainnet: [] } }),
                     ETHEREUM,
                 ),
             ).toThrow(UnconfiguredEvmRpcError)
@@ -199,6 +213,163 @@ describe('createEvmClient', () => {
                     ETHEREUM,
                 ),
             ).toThrow(UnconfiguredEvmRpcError)
+        })
+    })
+
+    describe('an endpoint list', () => {
+        const FIRST_RPC = 'https://first.rpc.test/'
+        const SECOND_RPC = 'https://second.rpc.test/'
+        const withList = (timeouts = { readMs: 1_000, submitMs: 1_000 }) =>
+            contextWith({
+                endpoints: { mainnet: [FIRST_RPC, SECOND_RPC] },
+                timeouts,
+            })
+        // Falls through to the node handlers behind it, after counting the call.
+        const countCalls = (url: string) => {
+            const calls = vi.fn()
+            server.use(
+                http.post(url, () => {
+                    calls()
+                    return undefined
+                }),
+            )
+            return calls
+        }
+        const firstIsDown = () =>
+            server.use(http.post(FIRST_RPC, () => HttpResponse.error()))
+
+        it('reads from the first URL alone while it answers', async () => {
+            server.use(
+                ...evmRpcHandlers({
+                    rpcUrl: FIRST_RPC,
+                    responses: { eth_blockNumber: '0x10' },
+                }),
+                ...evmRpcHandlers({
+                    rpcUrl: SECOND_RPC,
+                    responses: { eth_blockNumber: '0x20' },
+                }),
+            )
+            const secondCalls = countCalls(SECOND_RPC)
+            const client = createEvmClient(MAINNET, withList(), ETHEREUM)
+
+            await expect(client.getBlockNumber()).resolves.toBe(16n)
+            expect(secondCalls).not.toHaveBeenCalled()
+        })
+
+        it('serves reads from the second URL while the first is unreachable', async () => {
+            firstIsDown()
+            server.use(
+                ...evmRpcHandlers({
+                    rpcUrl: SECOND_RPC,
+                    responses: {
+                        eth_blockNumber: '0x20',
+                        eth_getBalance: '0xde0b6b3a7640000',
+                        eth_getTransactionCount: '0x7',
+                    },
+                }),
+            )
+            const client = createEvmClient(MAINNET, withList(), ETHEREUM)
+
+            await expect(client.getBlockNumber()).resolves.toBe(32n)
+            await expect(client.getBalance({ address: ADDRESS })).resolves.toBe(
+                10n ** 18n,
+            )
+            await expect(
+                client.getTransactionCount({ address: ADDRESS }),
+            ).resolves.toBe(7)
+        })
+
+        it('broadcasts through the second URL while the first is unreachable', async () => {
+            firstIsDown()
+            server.use(...evmRpcHandlers({ rpcUrl: SECOND_RPC }))
+            const client = createEvmClient(MAINNET, withList(), ETHEREUM)
+
+            await expect(
+                client.sendRawTransaction({ serializedTransaction: RAW_TX }),
+            ).resolves.toBe(keccak256(RAW_TX))
+        })
+
+        it('fails over from a first URL that answers too slowly, inside the whole ceiling', async () => {
+            server.use(
+                http.post(FIRST_RPC, async () => {
+                    await delay(2_000)
+                }),
+                ...evmRpcHandlers({ rpcUrl: SECOND_RPC }),
+            )
+            const client = createEvmClient(
+                MAINNET,
+                withList({ readMs: 1_200, submitMs: 1_200 }),
+                ETHEREUM,
+            )
+            const startedAt = Date.now()
+
+            await expect(client.getBlockNumber()).resolves.toBeTypeOf('bigint')
+            expect(Date.now() - startedAt).toBeLessThan(1_200)
+        })
+
+        it('still reads from a slow first URL that answers inside the ceiling the fallback leaves it', async () => {
+            // An equal split would cut it off at 500ms.
+            server.use(
+                http.post(FIRST_RPC, async () => {
+                    await delay(600)
+                    return undefined
+                }),
+                ...evmRpcHandlers({
+                    rpcUrl: FIRST_RPC,
+                    responses: { eth_blockNumber: '0x10' },
+                }),
+                ...evmRpcHandlers({
+                    rpcUrl: SECOND_RPC,
+                    responses: { eth_blockNumber: '0x20' },
+                }),
+            )
+            const client = createEvmClient(
+                MAINNET,
+                withList({ readMs: 1_000, submitMs: 1_000 }),
+                ETHEREUM,
+            )
+
+            await expect(client.getBlockNumber()).resolves.toBe(16n)
+        })
+
+        it('does not take a contract revert to the next URL', async () => {
+            server.use(
+                ...evmRpcHandlers({
+                    rpcUrl: FIRST_RPC,
+                    responses: {
+                        eth_call: new EvmRpcErrorFixture(
+                            3,
+                            'execution reverted',
+                        ),
+                    },
+                }),
+                ...evmRpcHandlers({ rpcUrl: SECOND_RPC }),
+            )
+            const secondCalls = countCalls(SECOND_RPC)
+            const client = createEvmClient(MAINNET, withList(), ETHEREUM)
+
+            await expect(
+                client.call({ to: ADDRESS, data: '0x70a08231' }),
+            ).rejects.toThrow(/revert/i)
+            expect(secondCalls).not.toHaveBeenCalled()
+        })
+
+        it('tries each URL once, in order, before giving up', async () => {
+            const order: string[] = []
+            server.use(
+                http.post(FIRST_RPC, () => {
+                    order.push('first')
+                    return HttpResponse.error()
+                }),
+                http.post(SECOND_RPC, () => {
+                    order.push('second')
+                    return new HttpResponse(null, { status: 503 })
+                }),
+            )
+            const client = createEvmClient(MAINNET, withList(), ETHEREUM)
+
+            await expect(client.getBlockNumber()).rejects.toThrow()
+            expect(order).toEqual(['first', 'second'])
         })
     })
 
@@ -237,5 +408,28 @@ describe('createEvmClient', () => {
             await expect(client.getBlockNumber()).rejects.toThrow()
             expect(attempts).toHaveBeenCalledTimes(1)
         })
+    })
+})
+
+describe('splitCeilingMs', () => {
+    it('gives a lone URL the whole ceiling', () => {
+        expect(splitCeilingMs(15_000, 1)).toEqual([15_000])
+    })
+
+    it('leaves the first URL the ceiling less a capped reserve for the fallback', () => {
+        expect(splitCeilingMs(15_000, 2)).toEqual([12_000, 3_000])
+        expect(splitCeilingMs(30_000, 2)).toEqual([27_000, 3_000])
+    })
+
+    it('shrinks the reserve with a small ceiling and never reaches zero', () => {
+        expect(splitCeilingMs(1_000, 2)).toEqual([750, 250])
+        expect(splitCeilingMs(2, 2)).toEqual([1, 1])
+    })
+
+    it('never spends more than the ceiling in total', () => {
+        for (const ms of [1_000, 15_000, 30_000]) {
+            const total = splitCeilingMs(ms, 2).reduce((a, b) => a + b, 0)
+            expect(total).toBeLessThanOrEqual(ms)
+        }
     })
 })

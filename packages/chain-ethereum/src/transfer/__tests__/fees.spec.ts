@@ -48,6 +48,7 @@ import type { EvmChain } from '../../chains/types'
 import { VIEM_TRANSFER_NONCE_0 } from '../../signing/__tests__/fixtures'
 import type { EvmTransferCall } from '../builder'
 import {
+    evmFeePresetOf,
     maxFeePerGasWithin,
     readEvmFeePresets,
     readEvmGas,
@@ -185,6 +186,34 @@ describe('readTransferFees', () => {
 
     it('rejects an empty fee history', async () => {
         await expect(readWith({ baseFeePerGas: [] })).rejects.toThrow()
+    })
+})
+
+describe('evmFeePresetOf', () => {
+    const presets = {
+        slow: {
+            maxPriorityFeePerGas: parseGwei('0.5'),
+            maxFeePerGas: parseGwei('4.5'),
+        },
+        normal: {
+            maxPriorityFeePerGas: parseGwei('1'),
+            maxFeePerGas: parseGwei('5'),
+        },
+        fast: {
+            maxPriorityFeePerGas: parseGwei('2'),
+            maxFeePerGas: parseGwei('6'),
+        },
+    }
+
+    it.each([
+        ['at the normal tip', '1', 'normal'],
+        ['between normal and fast', '1.5', 'normal'],
+        ['at the fast tip', '2', 'fast'],
+        ['above the fast tip', '9', 'fast'],
+        ['at the slow tip', '0.5', 'slow'],
+        ['below every preset', '0.1', 'slow'],
+    ])('reads %s as %s', (_label, tip, expected) => {
+        expect(evmFeePresetOf(parseGwei(tip), presets)).toBe(expected)
     })
 })
 

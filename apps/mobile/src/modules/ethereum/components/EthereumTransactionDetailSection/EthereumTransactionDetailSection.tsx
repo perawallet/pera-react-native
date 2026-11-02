@@ -65,7 +65,10 @@ export const EthereumTransactionDetailSection = ({
                         presentation={presentation}
                     />
                 )}
-                <EthereumContractCallDetails presentation={presentation} />
+                <EthereumContractCallDetails
+                    presentation={presentation}
+                    variant='detail'
+                />
             </>
         )
     } else {

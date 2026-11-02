@@ -16,13 +16,13 @@ import type { EvmChain } from '../chains/types'
 import { checkEvmRpcChainId } from './utils/checkEvmRpcChainId'
 
 // Reads through ctx.getEndpoints(), which already carries a developer's
-// override, so the URL shown is the one requests use.
+// override, so the URL shown is the first one requests use.
 export const createEvmNodeEndpointAdapter = (
     ctx: ChainContext,
     chain: EvmChain,
 ): NodeEndpointAdapter => ({
     chainId: chain.row.id,
-    endpointUrl: networkId => ctx.getEndpoints()[networkId] || undefined,
+    endpointUrl: networkId => ctx.getEndpoints()[networkId]?.[0] || undefined,
     checkOverride: (networkId, url) =>
         checkEvmRpcChainId(url, networkId, ctx.timeouts, chain),
 })

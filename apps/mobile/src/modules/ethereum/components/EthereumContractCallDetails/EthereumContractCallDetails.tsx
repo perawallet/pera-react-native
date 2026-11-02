@@ -16,11 +16,13 @@ import { AddressDisplay } from '@components/AddressDisplay'
 import { AssetAmount } from '@components/AssetAmount'
 import { ChainNotice } from '@components/ChainNotice'
 import { CopyableText } from '@components/CopyableText'
+import { TitledExpandablePanel } from '@components/ExpandablePanel/TitledExpandablePanel'
 import { ExpandableText } from '@components/ExpandableText'
 import { KeyValueRow } from '@components/KeyValueRow'
 import { useLanguage } from '@hooks/useLanguage'
 import type { EthereumTransactionPresentation } from '../../hooks/useEthereumTransactionPresentation'
 import { EthereumKnownContractRow } from '../EthereumKnownContractRow'
+import { contractCallNoticeOf } from './contractCallNotice'
 import { useStyles } from './styles'
 
 // '0x', the 4-byte selector and the first 32-byte argument word, in hex.
@@ -28,27 +30,68 @@ const CALL_DATA_PREVIEW_LENGTH = 74
 
 type EthereumContractCallDetailsProps = {
     presentation: EthereumTransactionPresentation
+    /**
+     * `'review'` is the signing screen: the raw call sits collapsed under
+     * Advanced and the notice asks the user to trust the requesting dApp.
+     * `'detail'` reads a transaction already made, so the call stays inline.
+     */
+    variant: 'review' | 'detail'
+    /** Read only on `'review'`. */
     source?: SignRequestSource
-    /** Origin the platform observed (never dApp-asserted). */
+    /** Read only on `'review'`. */
     verifiedOrigin?: string
 }
 
 export const EthereumContractCallDetails = ({
     presentation,
+    variant,
     source,
     verifiedOrigin,
 }: EthereumContractCallDetailsProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const { view, value, standardCall, contractAction, knownContract } =
+    const { view, value, standardCall, contractAction, knownContract, scope } =
         presentation
+    const isReview = variant === 'review'
+    const notice = isReview
+        ? contractCallNoticeOf(source, verifiedOrigin)
+        : undefined
+
+    const selectorRow = !!view.selector && (
+        <KeyValueRow
+            testID='ethereum_contract_call_selector'
+            title={t('transactions.contract_call.function_selector')}
+        >
+            <PWText>{view.selector}</PWText>
+        </KeyValueRow>
+    )
+
+    const callDataRow = (
+        <KeyValueRow
+            title={t('transactions.contract_call.call_data')}
+            verticalAlignment='top'
+        >
+            <CopyableText
+                testID='ethereum_contract_call_data'
+                copyValue={view.data}
+            >
+                <ExpandableText
+                    text={view.data}
+                    limit={CALL_DATA_PREVIEW_LENGTH}
+                />
+            </CopyableText>
+        </KeyValueRow>
+    )
 
     return (
         <PWView style={styles.container}>
             {!standardCall && !contractAction && (
                 <ChainNotice
                     kind='warning'
-                    titleKey='transactions.contract_call.warning'
+                    titleKey={
+                        notice?.titleKey ?? 'transactions.contract_call.warning'
+                    }
+                    params={notice?.params}
                     testID='ethereum_contract_call_warning'
                 />
             )}
@@ -57,7 +100,7 @@ export const EthereumContractCallDetails = ({
                 <EthereumKnownContractRow
                     knownContract={knownContract}
                     address={view.to}
-                    scope={presentation.scope}
+                    scope={scope}
                     source={source}
                     verifiedOrigin={verifiedOrigin}
                 />
@@ -71,6 +114,7 @@ export const EthereumContractCallDetails = ({
                     <AddressDisplay
                         address={view.to}
                         displayType='address-only'
+                        scope={scope}
                     />
                 </KeyValueRow>
             )}
@@ -80,7 +124,7 @@ export const EthereumContractCallDetails = ({
                 title={t('transactions.common.amount')}
             >
                 <AssetAmount
-                    chainId={presentation.scope.chainId}
+                    chainId={scope.chainId}
                     asset={value.asset}
                     value={value.value}
                     showSymbol
@@ -88,29 +132,22 @@ export const EthereumContractCallDetails = ({
                 />
             </KeyValueRow>
 
-            {!!view.selector && (
-                <KeyValueRow
-                    testID='ethereum_contract_call_selector'
-                    title={t('transactions.contract_call.function_selector')}
-                >
-                    <PWText>{view.selector}</PWText>
-                </KeyValueRow>
+            {isReview ? (
+                <PWView testID='ethereum_contract_call_advanced'>
+                    <TitledExpandablePanel
+                        title={t('transactions.contract_call.advanced')}
+                        contentStyle={styles.advanced}
+                    >
+                        {selectorRow}
+                        {callDataRow}
+                    </TitledExpandablePanel>
+                </PWView>
+            ) : (
+                <>
+                    {selectorRow}
+                    {callDataRow}
+                </>
             )}
-
-            <KeyValueRow
-                title={t('transactions.contract_call.call_data')}
-                verticalAlignment='top'
-            >
-                <CopyableText
-                    testID='ethereum_contract_call_data'
-                    copyValue={view.data}
-                >
-                    <ExpandableText
-                        text={view.data}
-                        limit={CALL_DATA_PREVIEW_LENGTH}
-                    />
-                </CopyableText>
-            </KeyValueRow>
         </PWView>
     )
 }

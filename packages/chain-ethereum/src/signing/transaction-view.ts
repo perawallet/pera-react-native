@@ -13,7 +13,11 @@
 import { Decimal } from 'decimal.js'
 import { isAddress, isHex } from 'viem'
 import type { Address, Hex } from 'viem'
-import type { TransactionNative } from '@perawallet/wallet-core-chain-contract'
+import { FEE_PRESETS } from '@perawallet/wallet-core-chain-contract'
+import type {
+    FeePreset,
+    TransactionNative,
+} from '@perawallet/wallet-core-chain-contract'
 import type { EvmNftStandard } from '../blockchain/utils/caip19'
 import { isRecord } from './adapter'
 import type {
@@ -33,6 +37,12 @@ export type EthereumPricedView = {
     gas: bigint
     /** A dApp's request whose gas limit and fees authorise over twice the wallet's own pricing. */
     hasHighFee?: true
+    /**
+     * Wei. What the transaction is expected to cost at request time, at the
+     * tier its tip reaches; display-only, and absent when the request carried
+     * no estimate.
+     */
+    feeEstimate?: { preset: FeePreset; amount: Decimal }
     /** Wei. `maxFee` is `gas * maxFeePerGas`, the most the signature authorises. */
     fee: {
         maxFeePerGas: Decimal
@@ -240,6 +250,11 @@ const isFee = (value: unknown): boolean =>
     Decimal.isDecimal(value.maxPriorityFeePerGas) &&
     Decimal.isDecimal(value.maxFee)
 
+const isFeeEstimate = (value: unknown): boolean =>
+    isRecord(value) &&
+    FEE_PRESETS.some(preset => preset === value.preset) &&
+    Decimal.isDecimal(value.amount)
+
 const isView = (value: unknown): value is EthereumTransactionView =>
     isRecord(value) &&
     typeof value.kind === 'string' &&
@@ -257,6 +272,8 @@ const isView = (value: unknown): value is EthereumTransactionView =>
             typeof value.nonce === 'number' &&
             typeof value.gas === 'bigint' &&
             (value.hasHighFee === undefined || value.hasHighFee === true) &&
+            (value.feeEstimate === undefined ||
+                isFeeEstimate(value.feeEstimate)) &&
             isFee(value.fee))) &&
     (value.token === undefined || isToken(value.token)) &&
     (value.nft === undefined || isNft(value.nft)) &&
