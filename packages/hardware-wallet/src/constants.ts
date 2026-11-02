@@ -18,7 +18,7 @@ export const DEFAULT_MAX_ACCOUNT_SCAN_GAP = 2
 
 /**
  * With an on-chain probe, stop after this many consecutive empty indices.
- * Matches HD discovery's `ACCOUNT_GAP_LIMIT` (private, so NOT mechanically
+ * Matches HD discovery's `ACCOUNT_GAP_LIMIT` (in another package, so NOT mechanically
  * linked) so a Ledger migrator's accounts surface as deep as an HD import's.
  */
 export const DEFAULT_ONCHAIN_ACCOUNT_SCAN_GAP = 5

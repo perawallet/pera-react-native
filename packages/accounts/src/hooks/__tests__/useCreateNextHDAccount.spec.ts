@@ -51,12 +51,17 @@ vi.mock('../../credentials', async importOriginal => {
     }
 })
 
-const hd = (id: string, keyPairId: string, account: number): WalletAccount =>
+const hd = (
+    id: string,
+    keyPairId: string,
+    account: number,
+    keyIndex = 0,
+): WalletAccount =>
     buildTestAccount(
         {
             kind: 'local',
             seed: TEST_CUSTODY.hd.seed,
-            hd: { account, keyIndex: 0 },
+            hd: { account, keyIndex },
         },
         { algorand: { address: `${id}-ADDR`, keyPairId } },
         { id },
@@ -128,6 +133,28 @@ describe('useCreateNextHDAccount', () => {
         })
 
         expect(account).toBe(created)
+        expect(mockCreateAccount.createHdWalletAccount).toHaveBeenCalledWith({
+            walletId: 'wallet-1',
+            account: 2,
+            keyIndex: 0,
+        })
+    })
+
+    test('createNextHDAccount moves a keyIndex-axis wallet onto the account axis past its highest number', async () => {
+        parentMap.set('wallet-1-acc0-idx1-dt9', 'wallet-1')
+        mockUseAllAccounts.mockReturnValue([
+            HD_ACCOUNT,
+            hd('hd-2', 'wallet-1-acc0-idx1-dt9', 0, 1),
+        ])
+
+        const { result } = renderHook(() =>
+            useCreateNextHDAccount(MAINNET_SCOPE),
+        )
+
+        await act(async () => {
+            await result.current.createNextHDAccount()
+        })
+
         expect(mockCreateAccount.createHdWalletAccount).toHaveBeenCalledWith({
             walletId: 'wallet-1',
             account: 2,

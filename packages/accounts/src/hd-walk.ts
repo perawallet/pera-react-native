@@ -29,7 +29,7 @@ import type { AccountChains, ChainAccount, HdIndex } from './models'
 import { seedMintableScheme } from './credentials'
 import { accountsChainAdapters, type GetPublicKey } from './chain-adapter'
 
-const ACCOUNT_GAP_LIMIT = 5
+export const ACCOUNT_GAP_LIMIT = 5
 const KEY_INDEX_GAP_LIMIT = 5
 // The wallet walk's hard stops, well past the gaps, so a node that reports
 // every address active can't walk forever: every index it probes saves a key

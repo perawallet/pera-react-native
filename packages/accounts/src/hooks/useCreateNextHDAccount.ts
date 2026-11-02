@@ -17,6 +17,7 @@ import { useAllAccounts } from './useAllAccounts'
 import { useCreateAccount } from './useCreateAccount'
 import type { WalletAccount } from '../models'
 import { hdIndexOf, seedOf } from '../credentials'
+import { nextHdSlotForSeed, type HdWalletSlot } from '../hd-slot'
 
 type UseCreateNextHDAccountResult = {
     createNextHDAccount: () => Promise<Nullable<WalletAccount>>
@@ -24,18 +25,18 @@ type UseCreateNextHDAccountResult = {
     hasHDWallet: boolean
 }
 
-/** The first HD wallet's id and the account index after its highest, or null with no HD wallet. */
-const nextHdSlot = (
+/** The next slot on the first HD wallet, or null with no HD wallet. */
+const firstSeedSlot = (
     hdAccounts: readonly WalletAccount[],
-): Nullable<{ walletId: string; account: number }> => {
+): Nullable<HdWalletSlot> => {
     if (hdAccounts.length === 0) return null
     // The seed (the wallet identifier) is the parent of each account's key.
     const walletId = seedOf(hdAccounts[0])
     if (!walletId) return null
-    const indices = hdAccounts
-        .filter(a => seedOf(a) === walletId)
-        .flatMap(a => hdIndexOf(a)?.account ?? [])
-    return { walletId, account: Math.max(...indices) + 1 }
+    return nextHdSlotForSeed(
+        walletId,
+        hdAccounts.filter(a => seedOf(a) === walletId),
+    )
 }
 
 export const useCreateNextHDAccount = (
@@ -53,13 +54,13 @@ export const useCreateNextHDAccount = (
     const hasHDWallet = hdAccounts.length > 0
 
     const createNextHDAccount = useCallback(async () => {
-        const slot = nextHdSlot(hdAccounts)
-        return slot ? createHdWalletAccount({ ...slot, keyIndex: 0 }) : null
+        const slot = firstSeedSlot(hdAccounts)
+        return slot ? createHdWalletAccount(slot) : null
     }, [hdAccounts, createHdWalletAccount])
 
     const buildNextHDAccount = useCallback(async () => {
-        const slot = nextHdSlot(hdAccounts)
-        return slot ? buildHdWalletAccount({ ...slot, keyIndex: 0 }) : null
+        const slot = firstSeedSlot(hdAccounts)
+        return slot ? buildHdWalletAccount(slot) : null
     }, [hdAccounts, buildHdWalletAccount])
 
     return { createNextHDAccount, buildNextHDAccount, hasHDWallet }
