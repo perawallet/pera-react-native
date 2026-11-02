@@ -20,6 +20,7 @@ const testDir = path.join(import.meta.dirname, 'e2e')
 // --shard balances by test count, and these specs differ by 40x in cost.
 // Re-measure from a run's list-reporter output when one shard trails.
 const SPEC_SECONDS: Record<string, number> = {
+    'window-ethereum.spec.ts': 80,
     'quantum-import.spec.ts': 49,
     'wallet-smoke.spec.ts': 33,
     'delete-all-data.spec.ts': 32,

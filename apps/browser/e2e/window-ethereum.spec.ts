@@ -10,10 +10,10 @@
  limitations under the License
  */
 
-// Discovery of the EIP-1193 provider in a real browser: a build that serves an
-// EVM chain claims `window.ethereum` only when it is free and announces Pera
-// through EIP-6963 either way; a build that serves none offers EVM dApps nothing.
-// Then signing from a connected site, end to end, against a faked node.
+// Discovery of the EIP-1193 provider in a real browser: Pera claims
+// `window.ethereum` only when it is free and announces itself through EIP-6963
+// either way. Then signing from a connected site, end to end, against a faked
+// node. A build without EVM chains is checked by scripts/build.mjs instead.
 import {
     expect,
     test,
@@ -108,6 +108,13 @@ test.beforeAll(async () => {
                 'Rebuild with: pnpm --filter browser bundle:e2e',
         )
     }
+    if (!servesEvm) {
+        throw new Error(
+            'dist serves no EVM chain, so the window.ethereum specs cannot run. ' +
+                'Rebuild with: pnpm --filter browser bundle:e2e ' +
+                '(a CHAINS in the repo-root .env overrides the one it sets)',
+        )
+    }
 
     context = await chromium.launchPersistentContext('', {
         channel: 'chromium',
@@ -142,23 +149,7 @@ const announcementsOn = (page: import('@playwright/test').Page) =>
             }),
     )
 
-test('a build without EVM chains offers EVM dApps nothing and keeps window.pera', async () => {
-    test.skip(servesEvm, 'this dist serves an EVM chain')
-    const page = await context.newPage()
-    await page.goto(dappOrigin)
-    await expect
-        .poll(() => page.evaluate(() => typeof window.pera?.connect))
-        .toBe('function')
-
-    expect(await page.evaluate(() => 'ethereum' in (window as object))).toBe(
-        false,
-    )
-    expect(await announcementsOn(page)).toEqual([])
-    await page.close()
-})
-
 test('a page with no other wallet finds Pera at window.ethereum and in EIP-6963', async () => {
-    test.skip(!servesEvm, 'this dist serves no EVM chain')
     const page = await context.newPage()
     await page.goto(dappOrigin)
 
@@ -186,7 +177,6 @@ test('a page with no other wallet finds Pera at window.ethereum and in EIP-6963'
 })
 
 test('a wallet that injects after Pera takes window.ethereum, and Pera stays listed', async () => {
-    test.skip(!servesEvm, 'this dist serves no EVM chain')
     const page = await context.newPage()
     await page.goto(dappOrigin)
     await expect
@@ -208,7 +198,6 @@ test('a wallet that injects after Pera takes window.ethereum, and Pera stays lis
 })
 
 test('the provider answers EIP-1193 requests with no connection yet', async () => {
-    test.skip(!servesEvm, 'this dist serves no EVM chain')
     const page = await context.newPage()
     await page.goto(dappOrigin)
     await expect
@@ -345,7 +334,6 @@ test.describe('signing from a connected dApp', () => {
     }
 
     test.beforeAll(async () => {
-        test.skip(!servesEvm, 'this dist serves no EVM chain')
         node = createFakeEvmNode()
         nodeServer = await serveFakeEvmNode(node, { port: E2E_EVM_RPC_PORT })
 
