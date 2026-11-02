@@ -259,6 +259,8 @@ export interface TransactionRecord {
     status: 'pending' | 'confirmed' | 'failed' | 'replaced'
     /** Unix ms. */
     timestamp?: number
+    /** The block, or round, the transaction landed in, on a chain whose history reports one. */
+    blockNumber?: number
     /** In the native asset. */
     fee?: Decimal
     /**

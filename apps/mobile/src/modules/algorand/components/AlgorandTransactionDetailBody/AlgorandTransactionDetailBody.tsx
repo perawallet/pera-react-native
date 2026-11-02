@@ -12,11 +12,13 @@
 
 import { useCallback } from 'react'
 import {
+    getTransactionType,
     readAlgorandNative,
     toAlgorandNative,
     type AlgorandTransactionView,
 } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import type { DetailBodyProps } from '@modules/signing'
+import { AlgorandTransactionDetailLayout } from '../AlgorandTransactionDetailLayout'
 import { TransactionDisplay } from '../TransactionDisplay'
 
 export const AlgorandTransactionDetailBody = ({
@@ -31,10 +33,20 @@ export const AlgorandTransactionDetailBody = ({
         [onRelatedTransactionPress],
     )
 
-    return view ? (
-        <TransactionDisplay
+    if (!view) {
+        return null
+    }
+
+    // A type with no detail of its own names itself instead of showing empty cards.
+    const txType = getTransactionType(view)
+    if (txType === 'state-proof' || txType === 'unknown') {
+        return <TransactionDisplay transaction={view} />
+    }
+
+    return (
+        <AlgorandTransactionDetailLayout
             transaction={view}
             onInnerTransactionsPress={handleInnerTransactionsPress}
         />
-    ) : null
+    )
 }

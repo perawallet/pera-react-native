@@ -10,12 +10,9 @@
  limitations under the License
  */
 
-import {
-    useSelectedScope,
-    useWalletDeployment,
-} from '@perawallet/wallet-core-chain-shared'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useWalletDeployment } from '@perawallet/wallet-core-chain-shared'
 import { useNetworkLabel } from '@hooks/useNetworkLabel'
+import { useHomeChainScope } from '@hooks/useHomeChainScope'
 
 type UseTestnetIndicatorResult = {
     isVisible: boolean
@@ -26,7 +23,7 @@ type UseTestnetIndicatorResult = {
 // renders it, but the shell shows the same signal: a slim in-flow bar (plus
 // frame accents) rendered by TestnetIndicator.tsx when off MainNet.
 export const useTestnetIndicator = (): UseTestnetIndicatorResult => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const scope = useHomeChainScope()
     const isLive = useWalletDeployment() === 'live'
     const networkLabel = useNetworkLabel()
 

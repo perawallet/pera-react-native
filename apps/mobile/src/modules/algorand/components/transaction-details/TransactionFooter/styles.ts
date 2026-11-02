@@ -18,7 +18,6 @@ export const useStyles = makeStyles(theme => ({
         flexWrap: 'wrap',
         alignItems: 'center',
         justifyContent: 'flex-start',
-        marginTop: theme.spacing.md,
         gap: theme.spacing.xs,
         width: '100%',
         minWidth: 0,

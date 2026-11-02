@@ -24,6 +24,7 @@ import { http, HttpResponse } from 'msw'
 import { setupServer } from 'msw/node'
 import { hexToBytes, keccak256, type Hex, type RpcTransaction } from 'viem'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { logger } from '@perawallet/wallet-core-shared'
 import {
     recordSubmissionAttempt,
     resolveSubmissionAttempt,
@@ -36,6 +37,7 @@ import {
 } from '@perawallet/wallet-core-database'
 import { createTestDatabase } from '@perawallet/wallet-core-database/test-utils'
 import {
+    EvmRpcErrorFixture,
     evmRpcHandlers,
     evmTransactionReceipt,
     type EvmRpcFixtures,
@@ -46,7 +48,9 @@ import { SENDER, VIEM_TRANSFER_NONCE_0 } from '../../signing/__tests__/fixtures'
 import { allocateEthereumNonce } from '../nonce-pool'
 import {
     DROPPED_GRACE_MS,
+    PROBE_FAILURE_ESCALATION_STREAK,
     reconcileEthereumSubmissions,
+    type ProbeFailureStreaks,
     type SubmissionSettledHandlers,
 } from '../reconcile'
 import { ETHEREUM } from '../../__tests__/evm-chains'
@@ -66,6 +70,7 @@ const getClient = (scope: ChainScope) =>
     createEvmClient(scope, testChainContext(), ETHEREUM)
 
 const settleHandlers: SubmissionSettledHandlers = new Map()
+const probeFailures: ProbeFailureStreaks = new Map()
 
 // Keyed by block tag: `latest` is the mined count, `pending` the pool's.
 const node = (
@@ -99,6 +104,7 @@ describe('reconcileEthereumSubmissions', () => {
     afterEach(() => {
         vi.useRealTimers()
         settleHandlers.clear()
+        probeFailures.clear()
         teardown()
     })
 
@@ -115,12 +121,13 @@ describe('reconcileEthereumSubmissions', () => {
             ...overrides,
         })
 
-    const reconcile = () =>
+    const reconcile = (ledgerDb = db) =>
         reconcileEthereumSubmissions({
             chain: ETHEREUM,
             settleHandlers,
+            probeFailures,
             getClient,
-            db,
+            db: ledgerDb,
         })
     const statuses = async () =>
         (await db.select().from(SubmissionAttemptsSchema).all()).map(
@@ -248,6 +255,7 @@ describe('reconcileEthereumSubmissions', () => {
             reconcileEthereumSubmissions({
                 chain: ETHEREUM,
                 settleHandlers,
+                probeFailures,
                 getClient: unused,
                 db,
             }),
@@ -470,5 +478,146 @@ describe('reconcileEthereumSubmissions', () => {
 
             expect(await statusOf(original)).toBe('replaced')
         })
+    })
+
+    describe('a probe that keeps failing', () => {
+        const N = PROBE_FAILURE_ESCALATION_STREAK
+        const reporter = vi.fn()
+        const internalError = () =>
+            node({
+                eth_getTransactionReceipt: new EvmRpcErrorFixture(
+                    -32603,
+                    'internal error',
+                ),
+            })
+        const errorReports = () =>
+            reporter.mock.calls
+                .map(
+                    call =>
+                        call[0] as { severity: string; groupingKey?: string },
+                )
+                .filter(report => report.severity === 'error')
+        const passes = async (count: number, ledgerDb = db) => {
+            for (let pass = 0; pass < count; pass++) await reconcile(ledgerDb)
+        }
+
+        beforeEach(() => {
+            reporter.mockClear()
+            logger.setErrorReporter(reporter)
+            vi.spyOn(console, 'warn').mockImplementation(() => {})
+            vi.spyOn(console, 'error').mockImplementation(() => {})
+        })
+
+        afterEach(() => {
+            logger.setErrorReporter(undefined)
+            vi.restoreAllMocks()
+        })
+
+        it('reports once, at error severity, on the Nth consecutive failure', async () => {
+            await record()
+            internalError()
+
+            await passes(N - 1)
+            expect(errorReports()).toEqual([])
+
+            await passes(1)
+            expect(errorReports()).toHaveLength(1)
+            // An unclassified node failure declares no code, so its own
+            // site's stack does the grouping.
+            expect(errorReports()[0]?.groupingKey).toBeUndefined()
+
+            await passes(1)
+            expect(errorReports()).toHaveLength(1)
+        })
+
+        it('escalates a non-viem failure under the escalation site, not evm.unknown', async () => {
+            await record()
+            node({ latest: 1 })
+
+            // The ledger write is the reachable non-viem failure: a closed or
+            // corrupted DB throws a plain Error into this catch, where
+            // toEvmError would have mislabeled it `evm.unknown`.
+            const failingLedger = new Proxy(db, {
+                get(target, prop, receiver) {
+                    if (prop === 'update') {
+                        throw new Error('ledger write failed')
+                    }
+                    return Reflect.get(target, prop, receiver)
+                },
+            })
+
+            await passes(N, failingLedger)
+
+            expect(errorReports()).toEqual([
+                expect.objectContaining({
+                    severity: 'error',
+                    groupingKey: 'ethereum reconcile: probe kept failing',
+                }),
+            ])
+        })
+
+        it('starts the streak over after a clean pass', async () => {
+            await record()
+            internalError()
+            await passes(N - 1)
+            node()
+            await passes(1)
+            internalError()
+
+            await passes(N - 1)
+
+            expect(errorReports()).toEqual([])
+        })
+
+        it('drops the streak of a row that settles', async () => {
+            await record()
+            internalError()
+            await passes(2)
+            expect(probeFailures.size).toBe(1)
+            node({
+                eth_getTransactionReceipt: evmTransactionReceipt({
+                    transactionHash: HASH,
+                }),
+            })
+
+            await reconcile()
+
+            expect(probeFailures.size).toBe(0)
+        })
+
+        it('drops the streak of a row that left the open set', async () => {
+            await record()
+            internalError()
+            await passes(2)
+            const [id] = [...probeFailures.keys()]
+            await resolveSubmissionAttempt({
+                db,
+                id: id as string,
+                status: 'failed',
+            })
+
+            await reconcile()
+
+            expect(probeFailures.size).toBe(0)
+        })
+
+        it.each([429, 500])(
+            'does not report an RPC %i however long it lasts',
+            async status => {
+                await record()
+                server.use(
+                    http.post(
+                        TEST_RPC_URL,
+                        () => new HttpResponse(null, { status }),
+                    ),
+                )
+
+                await passes(N)
+
+                expect(probeFailures.size).toBe(1)
+                expect([...probeFailures.values()]).toEqual([N])
+                expect(errorReports()).toEqual([])
+            },
+        )
     })
 })

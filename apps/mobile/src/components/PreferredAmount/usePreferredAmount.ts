@@ -20,16 +20,13 @@ import {
     useIsNativeAssetId,
     useAssetPricesQuery,
 } from '@perawallet/wallet-core-assets'
-import {
-    LEGACY_CHAIN_ID,
-    type ChainScope,
-} from '@perawallet/wallet-core-chain-contract'
+import { type ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     isAlgoAssetName,
     type Maybe,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { useHomeChainScope } from '@hooks/useHomeChainScope'
 
 type UsePreferredAmountResult = {
     displayCurrency: string
@@ -44,7 +41,7 @@ export const usePreferredAmount = (
     preFetchedUsdPrice?: Decimal,
     scope?: ChainScope,
 ): UsePreferredAmountResult => {
-    const currencyScope = useSelectedScope(LEGACY_CHAIN_ID)
+    const currencyScope = useHomeChainScope()
     const assetScope = scope ?? currencyScope
     const { preferredCurrency, fallbackCurrency, usdToPreferred } =
         useCurrency(currencyScope)

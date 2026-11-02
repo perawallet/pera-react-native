@@ -121,6 +121,7 @@ export const useArc60SigningScreen = (): UseArc60SigningScreenResult => {
             if (request && isExternalCallbackSource(request.sourceType)) {
                 const decision = await confirmQuantumDappUsage(
                     resolveAllSignerAddresses(scope.chainId, request),
+                    scope.chainId,
                 )
                 if (decision === 'cancel') {
                     pipeline.fail()

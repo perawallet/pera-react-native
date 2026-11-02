@@ -222,6 +222,17 @@ describe('registerChainAdapters', () => {
         expect(mocks.provider.chains.has('ethereum')).toBe(false)
     })
 
+    it('keeps Algorand first so generic code resolves it as the home chain', () => {
+        mocks.config.chains = {
+            enabled: ['algorand', 'ethereum'],
+            capabilities: {},
+        }
+
+        registerChainAdapters()
+
+        expect(mocks.provider.chains.list()[0]?.id).toBe('algorand')
+    })
+
     it('registers the Ethereum descriptor and defaults when the build lists it', () => {
         mocks.config.chains = {
             enabled: ['algorand', 'ethereum'],

@@ -11,8 +11,6 @@
  */
 
 import { useMemo } from 'react'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
     addressOn,
     useAccountPresentation,
@@ -23,6 +21,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import type { Optional, Nullable } from '@perawallet/wallet-core-shared'
 import type { IconName, PWRoundIconVariant } from '@components/core'
+import { useHomeChainScope } from '@hooks/useHomeChainScope'
 
 export type AccountDisplayState =
     | 'base'
@@ -95,7 +94,7 @@ export const useAccountIcon = (
     options: UseAccountIconOptions = {},
 ): Nullable<AccountGlyph> => {
     const { ignoreRekey, displayState, authAccount } = options
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const scope = useHomeChainScope()
     const rekeyAccount = useDelegatedAccount(
         account ? addressOn(account, scope) : undefined,
         scope.chainId,

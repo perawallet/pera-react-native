@@ -24,8 +24,12 @@ type TransactionFooterProps = {
 export const TransactionFooter = ({ transaction }: TransactionFooterProps) => {
     const { t } = useLanguage()
     const styles = useStyles()
-    const { showInExplorer, assetUrl, showAssetUrl } =
+    const { assetUrl, showAssetUrl, hasActions } =
         useTransactionFooter(transaction)
+
+    if (!hasActions) {
+        return null
+    }
 
     return (
         <PWView style={styles.container}>
@@ -36,17 +40,6 @@ export const TransactionFooter = ({ transaction }: TransactionFooterProps) => {
                     title={t('transactions.common.view_asset_url')}
                     iconRight='arrow-up-right'
                     onPress={showAssetUrl}
-                    paddingStyle='dense'
-                    style={styles.actionButton}
-                />
-            )}
-            {!!transaction.id && !!showInExplorer && (
-                <PWButton
-                    testID='transaction_detail_explorer'
-                    variant='secondary'
-                    title={t('transactions.common.view_in_explorer')}
-                    iconRight='arrow-up-right'
-                    onPress={showInExplorer}
                     paddingStyle='dense'
                     style={styles.actionButton}
                 />

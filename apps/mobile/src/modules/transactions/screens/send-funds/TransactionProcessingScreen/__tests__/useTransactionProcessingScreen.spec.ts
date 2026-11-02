@@ -31,6 +31,7 @@ import {
     useSelectedAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useAssetsQuery } from '@perawallet/wallet-core-assets'
+import { AppError } from '@perawallet/wallet-core-shared'
 import { BackHandler } from 'react-native'
 import { AnalyticsMetadataKey, TransactionsEvent } from '@analytics'
 
@@ -307,6 +308,50 @@ describe('useTransactionProcessingScreen', () => {
         await waitFor(() => expect(mockGoBack).toHaveBeenCalled())
         expect(mockShowToast).toHaveBeenCalledWith(
             expect.objectContaining({ type: 'error' }),
+            expect.anything(),
+        )
+    })
+
+    it('records a failed send with its chain, declared code and retryability', async () => {
+        sendScope.chainId = 'ethereum'
+        mockExecute.mockRejectedValueOnce(
+            new AppError('refused', {
+                reportCode: 'test.refused',
+                retryable: true,
+            }),
+        )
+
+        renderHook(() => useTransactionProcessingScreen())
+
+        await waitFor(() => expect(mockGoBack).toHaveBeenCalled())
+        expect(mockTrackEvent).toHaveBeenCalledWith(TransactionsEvent.Failed, {
+            [AnalyticsMetadataKey.ChainId]: 'ethereum',
+            [AnalyticsMetadataKey.ErrorCode]: 'test.refused',
+            [AnalyticsMetadataKey.IsRetryable]: true,
+        })
+    })
+
+    it('records an error with no declared code as unclassified and not retryable', async () => {
+        mockExecute.mockRejectedValueOnce(new Error('boom'))
+
+        renderHook(() => useTransactionProcessingScreen())
+
+        await waitFor(() => expect(mockGoBack).toHaveBeenCalled())
+        expect(mockTrackEvent).toHaveBeenCalledWith(TransactionsEvent.Failed, {
+            [AnalyticsMetadataKey.ChainId]: 'algorand',
+            [AnalyticsMetadataKey.ErrorCode]: 'unclassified',
+            [AnalyticsMetadataKey.IsRetryable]: false,
+        })
+    })
+
+    it('does not record a cancelled signing as a failed send', async () => {
+        mockExecute.mockRejectedValueOnce(new UserRejectedSigningError())
+
+        renderHook(() => useTransactionProcessingScreen())
+
+        await waitFor(() => expect(mockGoBack).toHaveBeenCalled())
+        expect(mockTrackEvent).not.toHaveBeenCalledWith(
+            TransactionsEvent.Failed,
             expect.anything(),
         )
     })

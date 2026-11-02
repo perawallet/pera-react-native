@@ -57,8 +57,11 @@ import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { AccountHistory } from '@modules/accounts/components/AccountHistory/AccountHistory'
 import { TransactionDetailsScreen } from '@modules/signing/routes'
 import { useAccountHistory } from '@modules/accounts/components/AccountHistory/useAccountHistory'
+import { useWebViewStore } from '@modules/webview'
+import { useContactsStore } from '@perawallet/wallet-core-contacts'
 
-import { closestPressable } from '@test-utils/rnw'
+import * as Clipboard from 'expo-clipboard'
+import { closestPressable, longPress } from '@test-utils/rnw'
 import { ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS } from './__fixtures__/onboarding'
 import { addressOf } from './__fixtures__/accounts'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
@@ -137,6 +140,26 @@ const TX_STATE_PROOF: TransactionHistoryItem = {
     balanceImpacts: [],
 }
 
+const RECIPIENT_CONTACT_NAME = 'Landlord'
+
+const NOTE_BASE64 = 'UEVSQS00OTc0IG5vdGU='
+
+const TX_APP_CALL: TransactionHistoryItem = {
+    id: 'TXAPPCALL00000000000000000000000000000000000000000004',
+    txType: 'appl',
+    sender: ALGO25_TEST_ADDRESS,
+    receiver: null,
+    assetSender: null,
+    confirmedRound: 97,
+    roundTime: 1_699_700_000,
+    chainData: null,
+    interpretedMeaning: null,
+    fee: new Decimal(3000),
+    amount: null,
+    asset: null,
+    balanceImpacts: [],
+}
+
 describe('Flow: View transactions → tap into details', () => {
     beforeAll(async () => {
         await setupTestDatabase()
@@ -146,6 +169,7 @@ describe('Flow: View transactions → tap into details', () => {
     })
 
     beforeEach(async () => {
+        useContactsStore.getState().resetState()
         await resetTestDatabase()
         await seedAlgoAsset('mainnet')
 
@@ -245,7 +269,7 @@ describe('Flow: View transactions → tap into details', () => {
                         // indexer sends it base64; algosdk decodes it to
                         // bytes, so this also guards the note row against
                         // the byte-decoding hardening silently hiding it.
-                        note: 'UEVSQS00OTc0IG5vdGU=',
+                        note: NOTE_BASE64,
                         'payment-transaction': {
                             receiver: TX_PAYMENT.receiver,
                             amount: 1_000_000,
@@ -257,6 +281,12 @@ describe('Flow: View transactions → tap into details', () => {
             ),
         )
         server.use(http.get(`*/v2/transactions/${TX_PAYMENT.id}`, lookupSpy))
+
+        // A saved contact keeps its name on the recipient row.
+        useContactsStore.getState().addContact({
+            addresses: { algorand: TX_PAYMENT.receiver ?? '' },
+            name: RECIPIENT_CONTACT_NAME,
+        })
 
         renderWithNavigation(AccountHistory, 'AccountHistory', {
             additionalScreens: [
@@ -337,7 +367,7 @@ describe('Flow: View transactions → tap into details', () => {
         ).toBeTruthy()
         expect(
             within(screen.getByTestId('transaction_detail_to')).getByText(
-                truncateAlgorandAddress(TX_PAYMENT.receiver ?? ''),
+                RECIPIENT_CONTACT_NAME,
             ),
         ).toBeTruthy()
         expect(
@@ -348,7 +378,168 @@ describe('Flow: View transactions → tap into details', () => {
         expect(
             screen.getAllByText(truncateAlgorandAddress(TX_PAYMENT.id)).length,
         ).toBeGreaterThan(0)
-        expect(screen.getByTestId('transaction_detail_explorer')).toBeTruthy()
+
+        // The hero leads, then the cards in order, each fact on the row the
+        // frame gives it.
+        expect(
+            screen.getByTestId('transaction_detail_status').textContent,
+        ).toBe('transactions.common.completed')
+        expect(screen.getByTestId('transaction_detail_amount')).toBeTruthy()
+        const inOrder = [
+            'transaction_detail_network',
+            'transaction_detail_id',
+            'transaction_detail_date',
+            'transaction_detail_block',
+            'transaction_detail_from',
+            'transaction_detail_to',
+            'transaction_detail_fee',
+            'transaction_detail_note',
+            'transaction_detail_explorer',
+        ].map(testID => screen.getByTestId(testID))
+        inOrder.slice(1).forEach((card, index) => {
+            expect(
+                inOrder[index]!.compareDocumentPosition(card) &
+                    Node.DOCUMENT_POSITION_FOLLOWING,
+            ).toBeTruthy()
+        })
+        expect(
+            screen.getByTestId('transaction_detail_network').textContent,
+        ).toContain('Algorand')
+        expect(
+            screen.getByTestId('transaction_detail_block').textContent,
+        ).toContain('100')
+
+        // The sender is one of the user's accounts, so its name sits under it.
+        expect(
+            screen.getByTestId('transaction_detail_from_account').textContent,
+        ).toContain(ACCOUNT.name)
+        expect(screen.queryByTestId('transaction_detail_to_account')).toBeNull()
+
+        // A plain payment has no inner transactions or application details.
+        expect(screen.queryByText('transactions.app_call.details')).toBeNull()
+        expect(
+            screen.queryByText('transactions.app_call.inner_transactions'),
+        ).toBeNull()
+
+        // Copying takes the full value, never the truncated text.
+        vi.mocked(Clipboard.setStringAsync).mockClear()
+        const copyOf = async (testID: string, shown: string, full: string) => {
+            const pressable = closestPressable(
+                within(screen.getByTestId(testID)).getByText(shown),
+            )
+            if (!pressable) throw new Error(`${testID} is not copyable`)
+            await longPress(pressable)
+            await waitFor(() =>
+                expect(Clipboard.setStringAsync).toHaveBeenCalledWith(full),
+            )
+        }
+        await copyOf(
+            'transaction_detail_id',
+            truncateAlgorandAddress(TX_PAYMENT.id),
+            TX_PAYMENT.id,
+        )
+        await copyOf(
+            'transaction_detail_from',
+            truncateAlgorandAddress(TX_PAYMENT.sender),
+            TX_PAYMENT.sender,
+        )
+        await copyOf(
+            'transaction_detail_to',
+            RECIPIENT_CONTACT_NAME,
+            TX_PAYMENT.receiver ?? '',
+        )
+
+        // The note opens from its link.
+        fireEvent.click(
+            closestPressable(
+                screen.getByText('transactions.common.view_note'),
+            ) ?? screen.getByText('transactions.common.view_note'),
+        )
+        expect(
+            await screen.findByText(
+                Buffer.from(NOTE_BASE64, 'base64').toString(),
+            ),
+        ).toBeTruthy()
+
+        // The explorer link is Pera Explorer's page for this transaction.
+        useWebViewStore.getState().clearWebViews()
+        fireEvent.click(
+            closestPressable(
+                screen.getByTestId('transaction_detail_explorer'),
+            ) ?? screen.getByTestId('transaction_detail_explorer'),
+        )
+        const [explorerView] = useWebViewStore.getState().openWebViews
+        expect(explorerView?.url).toMatch(new RegExp(`/tx/${TX_PAYMENT.id}$`))
+    })
+
+    it('Given an application call with inner transactions, when the user taps its row, then the details screen shows them and its application details, with no note link', async () => {
+        await upsertTransactions({
+            items: [TX_APP_CALL],
+            accountAddress: addressOf(ACCOUNT),
+            scope: { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const,
+        })
+        server.use(
+            http.get(`*/v2/transactions/${TX_APP_CALL.id}`, () =>
+                HttpResponse.json(
+                    {
+                        'current-round': 100,
+                        transaction: {
+                            id: TX_APP_CALL.id,
+                            'tx-type': 'appl',
+                            sender: TX_APP_CALL.sender,
+                            'confirmed-round': TX_APP_CALL.confirmedRound,
+                            'round-time': TX_APP_CALL.roundTime,
+                            fee: 3000,
+                            'application-transaction': {
+                                'application-id': 1_002_541_853,
+                                'on-completion': 'noop',
+                                'application-args': ['AQID'],
+                            },
+                            'inner-txns': [1, 2].map(amount => ({
+                                'tx-type': 'pay',
+                                sender: TX_APP_CALL.sender,
+                                'payment-transaction': {
+                                    receiver: HD_TEST_ADDRESS,
+                                    amount: amount * 1000,
+                                },
+                            })),
+                        },
+                    },
+                    { status: 200 },
+                ),
+            ),
+        )
+
+        renderWithNavigation(AccountHistory, 'AccountHistory', {
+            additionalScreens: [
+                {
+                    name: 'TransactionDetails',
+                    component: TransactionDetailsScreen,
+                },
+            ],
+        })
+
+        const row = await screen.findByTestId(
+            `transaction_row_${TX_APP_CALL.id}`,
+            undefined,
+            { timeout: 5000 },
+        )
+        fireEvent.click(closestPressable(row) ?? row)
+
+        expect(
+            await screen.findByText(
+                'transactions.app_call.inner_transactions',
+                undefined,
+                { timeout: 5000 },
+            ),
+        ).toBeTruthy()
+        expect(screen.getByText('transactions.app_call.details')).toBeTruthy()
+        expect(
+            screen.getByTestId('transaction_detail_status').textContent,
+        ).toBe('transactions.common.completed')
+        expect(screen.queryByTestId('transaction_detail_to')).toBeNull()
+        expect(screen.queryByTestId('transaction_detail_note')).toBeNull()
+        expect(screen.queryByText('transactions.common.view_note')).toBeNull()
     })
 
     it('Given seeded transactions, each row shows its summary: title, counterparty, signed amount and unit', async () => {

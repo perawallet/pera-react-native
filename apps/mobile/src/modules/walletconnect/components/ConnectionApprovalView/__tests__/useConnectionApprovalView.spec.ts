@@ -626,11 +626,10 @@ describe('useConnectionApprovalView', () => {
             '0xBBBB',
             'AAAA',
         ])
-        expect(confirmQuantumDappUsage).toHaveBeenCalledWith([
-            'BBBB',
-            '0xBBBB',
-            'AAAA',
-        ])
+        expect(confirmQuantumDappUsage).toHaveBeenCalledWith(
+            ['BBBB', '0xBBBB', 'AAAA'],
+            'algorand',
+        )
     })
 
     it('gives an account no address on a chain the proposal did not request', async () => {
@@ -737,7 +736,10 @@ describe('useConnectionApprovalView', () => {
         act(() => result.current.handleAccountPress('acct-algo'))
         await act(() => result.current.handleConnect())
 
-        expect(confirmQuantumDappUsage).toHaveBeenCalledWith(['AAAA'])
+        expect(confirmQuantumDappUsage).toHaveBeenCalledWith(
+            ['AAAA'],
+            'algorand',
+        )
         expect(proposal.approve).toHaveBeenCalled()
     })
 

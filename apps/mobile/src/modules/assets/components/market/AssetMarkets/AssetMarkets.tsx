@@ -153,6 +153,8 @@ export const AssetMarkets = ({
                     <AssetTitle
                         asset={asset}
                         chainId={scope.chainId}
+                        nameVariant='h3'
+                        nameWeight={400}
                     />
                     <PWView style={styles.headerIcons}>
                         <AssetNotificationButton
@@ -268,6 +270,7 @@ export const AssetMarkets = ({
             <AssetAbout
                 assetDetails={assetDetails}
                 about={about}
+                assetScope={scope}
             />
 
             {!!VerificationSection && (

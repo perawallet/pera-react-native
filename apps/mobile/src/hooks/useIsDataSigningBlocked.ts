@@ -14,8 +14,8 @@ import {
     findAccountByAddressOn,
     useAllAccounts,
 } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import {
+    chainIdOfSignRequest,
     isAuthDataRequest,
     resolveAllSignerAddresses,
     signsMessageVerifiably,
@@ -41,14 +41,12 @@ export const useIsDataSigningBlocked = (
     // itself is refused by the chain's auth-data validation (control moved to
     // the auth), and naming the auth lands here.
     const kind = isAuthDataRequest(request) ? 'authData' : 'arbitraryData'
-    return resolveAllSignerAddresses(LEGACY_CHAIN_ID, request).some(address => {
-        const account = findAccountByAddressOn(
-            accounts,
-            LEGACY_CHAIN_ID,
-            address,
-        )
-        return (
-            !!account && !signsMessageVerifiably(LEGACY_CHAIN_ID, account, kind)
-        )
+    // The request names the chain it was built for, so its signers and the
+    // accounts behind them are read on that chain and not on a pinned one.
+    const chainId = chainIdOfSignRequest(request)
+
+    return resolveAllSignerAddresses(chainId, request).some(address => {
+        const account = findAccountByAddressOn(accounts, chainId, address)
+        return !!account && !signsMessageVerifiably(chainId, account, kind)
     })
 }

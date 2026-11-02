@@ -20,7 +20,6 @@ import { formatParticipationKey, getKeyRegType } from './utils'
 
 export type KeyRegistrationDisplayProps = {
     transaction: AlgorandTransactionView
-    isInnerTransaction?: boolean
 }
 
 export type UseKeyRegistrationDisplayResult = {
@@ -30,16 +29,12 @@ export type UseKeyRegistrationDisplayResult = {
         selection: Optional<string>
         stateProof: Optional<string>
     }
-    showWarnings: boolean
     keyReg: AlgorandTransactionView['keyregTransaction']
 }
 
 export const useKeyRegistrationDisplay = ({
     transaction,
-}: Pick<
-    KeyRegistrationDisplayProps,
-    'transaction'
->): UseKeyRegistrationDisplayResult => {
+}: KeyRegistrationDisplayProps): UseKeyRegistrationDisplayResult => {
     const keyRegType = useMemo(() => getKeyRegType(transaction), [transaction])
     const participationKeys = useMemo(
         () => ({
@@ -55,12 +50,10 @@ export const useKeyRegistrationDisplay = ({
         }),
         [transaction],
     )
-    const showWarnings = useMemo(() => !transaction.id, [transaction])
 
     return {
         keyRegType,
         participationKeys,
-        showWarnings,
         keyReg: transaction.keyregTransaction,
     }
 }

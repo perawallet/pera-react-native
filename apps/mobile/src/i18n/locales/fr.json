@@ -309,6 +309,7 @@
         "action_buttons": {
             "swap": "Swap",
             "buy": "Acheter",
+            "buy_sell": "Acheter/Vendre",
             "send": "Envoyer",
             "receive": "Recevoir"
         },
@@ -3497,7 +3498,6 @@
         "common": {
             "from": "De",
             "to": "À",
-            "sent_to": "Envoyé à",
             "close_amount": "Solde restant",
             "close_to": "Solde restant à",
             "fee": "Frais",
@@ -3511,7 +3511,9 @@
             "date": "Date",
             "note": "Note de la transaction",
             "view_raw_transaction": "Voir le JSON",
-            "view_in_explorer": "Voir dans Pera Explorer",
+            "network": "Réseau",
+            "block": "Bloc",
+            "view_in_explorer": "Voir dans {{explorer}}",
             "view_asset_url": "Voir l’URL de l’actif",
             "view_note": "Voir la note",
             "view_metadata": "Voir les métadonnées",
@@ -3654,7 +3656,6 @@
         "heartbeat": {
             "description": "Un heartbeat prouve qu’un compte est toujours en ligne et participe au consensus Algorand. Aucun fonds n’est déplacé.",
             "account": "Compte vérifié en ligne",
-            "submitted_by": "Soumis par",
             "key_dilution": "Dilution de clé",
             "vote_id": "ID de vote"
         },

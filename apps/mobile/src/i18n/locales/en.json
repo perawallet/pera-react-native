@@ -309,6 +309,7 @@
         "action_buttons": {
             "swap": "Swap",
             "buy": "Buy",
+            "buy_sell": "Buy/Sell",
             "send": "Send",
             "receive": "Receive"
         },
@@ -3497,7 +3498,6 @@
         "common": {
             "from": "From",
             "to": "To",
-            "sent_to": "Sent To",
             "close_amount": "Remainder Amount",
             "close_to": "Remainder Sent To",
             "fee": "Fee",
@@ -3511,7 +3511,9 @@
             "date": "Date",
             "note": "Transaction Note",
             "view_raw_transaction": "View JSON",
-            "view_in_explorer": "View in Pera Explorer",
+            "network": "Network",
+            "block": "Block",
+            "view_in_explorer": "View in {{explorer}}",
             "view_asset_url": "View Asset URL",
             "view_note": "View Note",
             "view_metadata": "View Metadata",
@@ -3654,7 +3656,6 @@
         "heartbeat": {
             "description": "A heartbeat proves an account is still online and participating in Algorand consensus. It moves no funds.",
             "account": "Account Proved Online",
-            "submitted_by": "Submitted By",
             "key_dilution": "Key Dilution",
             "vote_id": "Vote ID"
         },

@@ -35,12 +35,4 @@ describe('useKeyRegistrationDisplay', () => {
         expect(result.current.keyRegType).toBe('online')
         expect(result.current.participationKeys.vote).toBe('AQID')
     })
-
-    it('warns when the transaction carries no id', () => {
-        const { result } = renderHook(() =>
-            useKeyRegistrationDisplay({ transaction: transaction({ id: '' }) }),
-        )
-
-        expect(result.current.showWarnings).toBe(true)
-    })
 })

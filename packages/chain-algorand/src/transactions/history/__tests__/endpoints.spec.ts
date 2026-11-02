@@ -299,11 +299,48 @@ describe('fetchTransactionHistory', () => {
             limit: 25,
         })
     })
+
+    it('resolves an empty last page when the backend has never seen the address', async () => {
+        mockQueryClient.mockRejectedValueOnce({ response: { status: 404 } })
+
+        const result = await fetchTransactionHistory({
+            accountAddress: 'ABC123DEF456',
+            network: 'mainnet',
+        })
+
+        expect(result.transactions).toEqual([])
+        expect(result.pagination.hasNextPage).toBe(false)
+        expect(result.pagination.nextUrl).toBeNull()
+    })
+
+    it('still rejects on any other failure', async () => {
+        const error = { response: { status: 500 } }
+        mockQueryClient.mockRejectedValueOnce(error)
+
+        await expect(
+            fetchTransactionHistory({
+                accountAddress: 'ABC123DEF456',
+                network: 'mainnet',
+            }),
+        ).rejects.toBe(error)
+    })
 })
 
 describe('fetchMoreTransactions', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+    })
+
+    it('rejects on a 404 cursor rather than reading it as an empty page', async () => {
+        const error = { response: { status: 404 } }
+        mockQueryClient.mockRejectedValueOnce(error)
+
+        await expect(
+            fetchMoreTransactions({
+                url: 'https://api.perawallet.app/v1/accounts/ABC123/transactions/?cursor=abc',
+                network: 'mainnet',
+            }),
+        ).rejects.toBe(error)
     })
 
     it('should extract path and search params from pagination URL', async () => {
@@ -404,6 +441,18 @@ describe('routing by network', () => {
             '/v2/accounts/ABC123/transactions',
             expect.anything(),
         )
+    })
+
+    it('does not read a 404 from a fallback network indexer as an unseen address', async () => {
+        const error = { response: { status: 404 } }
+        mockFetchNodeJson.mockRejectedValueOnce(error)
+
+        await expect(
+            fetchTransactionHistory({
+                accountAddress: 'ABC123',
+                network: 'betanet',
+            }),
+        ).rejects.toBe(error)
     })
 
     it('does not change fetchMoreTransactions pera-backend behavior on mainnet', async () => {

@@ -42,15 +42,20 @@ import { signMessageGroups } from './actors/signers/signMessageGroups'
 import { transportActor } from './actors/transports/transportActor'
 import { hardwareSigningMachine } from './children/hardwareSigningMachine'
 import type { HardwareSigningOutput } from './children/hardwareSigningMachine.context'
-import { resolveInitialContext, makeFailedContext } from './actions'
+import {
+    resolveInitialContext,
+    makeFailedContext,
+    validateRequestGroup,
+} from './actions'
 import { isPlannerSigned } from './utils/isPlannerSigned'
 import { resolveHardwareDeviceName } from './utils/resolveHardwareDeviceName'
 import { SigningError } from '../pipeline/errors'
 import { broadcasterChainAdapters } from '../broadcaster'
-import { isTransactionRequest } from '../models'
+import { isTransactionRequest, isUnsignedTransactionRequest } from '../models'
 import {
     localKeySignerAdapterFor,
     plannerAdapterForScope,
+    plannerChainAdapters,
     type LocalKeySignerInput,
     type MultisigSignerInput,
 } from '../chain-adapter'
@@ -257,6 +262,29 @@ export const signingMachine = setup({
                 ),
             failedDuringState: () => 'signing' as const,
         }),
+        // Review-time steps run after the ingest check, so the group is
+        // checked once more whenever signing starts, on approval and on
+        // retry, before any signer sees it.
+        revalidateGroups: assign(({ context }) => {
+            const { request } = context
+            const { scope } = context.deps
+            if (
+                !isTransactionRequest(request) ||
+                !isUnsignedTransactionRequest(request) ||
+                !plannerChainAdapters.has(scope.chainId)
+            ) {
+                return {}
+            }
+            try {
+                validateRequestGroup(request, scope)
+                return {}
+            } catch (error) {
+                return {
+                    error: toError(error),
+                    failedDuringState: 'signing' as const,
+                }
+            }
+        }),
 
         // transporting
         storeTransportResult: assign({
@@ -377,10 +405,18 @@ export const signingMachine = setup({
          * `dispatching`. When all are complete, transitions to `transporting`.
          */
         signing: {
+            // On entry, after the transition's own actions: a RETRY's
+            // `resetSigningState` has cleared the old error by the time the
+            // group is re-checked.
+            entry: 'revalidateGroups',
             initial: 'dispatching',
             states: {
                 dispatching: {
                     always: [
+                        {
+                            guard: 'hasError',
+                            target: '#signingMachine.failed',
+                        },
                         {
                             guard: 'allGroupsSigned',
                             target: '#signingMachine.transporting',

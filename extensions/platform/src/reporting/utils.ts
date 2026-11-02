@@ -23,9 +23,10 @@ export type ErrorReportPayload = {
     severity: LogSeverity
     error: unknown
     /**
-     * Names the logical error site when `error`'s own stack can't distinguish
-     * it — see the logger's `reportError`, which synthesizes an `Error` whose
-     * stack points at the logger rather than the caller.
+     * The error's declared report code, else the constant log message when
+     * `error`'s own stack can't distinguish the site; see the logger's
+     * `reportError`, which synthesizes an `Error` whose stack points at the
+     * logger rather than the caller.
      */
     groupingKey?: string
 }

@@ -115,9 +115,9 @@ catalog:
   expo-sqlite: 58.0.13
   fake-indexeddb: 6.2.5
   falcon-1024: 0.2.0
-  # 3.33.1 fails the required Dead Code job on an unchanged .fallowrc.jsonc
-  # (unused exports and files that 3.30.0 doesn't report); raise this only with
-  # `pnpm fallow` green on the new release.
+  # 3.33.1 and 3.34.0 fail the required Dead Code job on an unchanged
+  # .fallowrc.jsonc (unused exports and files that 3.30.0 doesn't report); raise
+  # this only with `pnpm fallow` green on the new release.
   # pin: hold 3.30.0
   fallow: 3.30.0
   fast-glob: ^3.3.2
@@ -164,10 +164,10 @@ minimumReleaseAge: 10080
 
 auditConfig:
   ignoreGhsas:
-    # node-forge has no patched release (first_patched_version: null; npm's
-    # latest is 1.4.0). Its only consumers are @expo/cli and
-    # @expo/code-signing-certificates, dev/build tooling that never ships to a
-    # device. Drop this entry once a fix lands.
+    # node-forge has no patched release (first_patched_version: null; 1.4.1,
+    # which the override floors to, doesn't fix it). Its only consumers are
+    # @expo/cli and @expo/code-signing-certificates, dev/build tooling that never
+    # ships to a device. Drop this entry once a fix lands.
     - GHSA-86w9-cpqp-85rv # node-forge: lax RSA PKCS#1 v1.5 signature verification
     # braces has no patched release (first_patched_version: null; npm's latest
     # is 3.0.3). Its only consumer is micromatch under metro-file-map and
@@ -178,6 +178,14 @@ auditConfig:
     # @expo/cli's, which never ships to a device; the zod override floors every
     # 4.x copy. Drop this entry once @expo/cli moves to zod 4.
     - GHSA-mrhx-c7xc-m3w5 # zod: memory exhaustion validating oversized arrays
+    # glob and minimatch are fixed only in new majors (glob 14, minimatch 11),
+    # which change matching semantics, so neither can be forced under consumers
+    # pinned to older majors. The production-path copies are @expo/config-plugins'
+    # glob 13 / minimatch 10 (its latest still asks for glob ^13), prebuild
+    # tooling that globs our own paths without an AbortSignal and never ships
+    # to a device. Drop both once @expo/config-plugins moves to glob 14.
+    - GHSA-3g3m-2fjr-6pw4 # glob: AbortSignal cancellation bypass
+    - GHSA-g3hv-75wg-m249 # minimatch: denial of service via globparts amplification
 
 minimumReleaseAgeExclude:
   # @algorandfoundation/keystore is deliberately NOT listed: nothing in the
@@ -234,6 +242,10 @@ minimumReleaseAgeExclude:
   # 4.1.5, SLSA provenance, no install scripts. Pinned to the version so it
   # stops applying once 4.2.3 clears the gate on its own.
   - fast-uri@4.2.3
+  # The node-forge audit floor (see the override). Same three Digital Bazaar
+  # maintainers as 1.4.0, no install scripts, no dependencies. Pinned to the
+  # version so it stops applying once 1.4.1 clears the gate on its own.
+  - node-forge@1.4.1
 
 onlyBuiltDependencies:
   - '@firebase/util'
@@ -407,6 +419,8 @@ overrides:
   # confusion, path equivalence, scheme injection), patched in 4.2.3. Pinned to
   # the lowest patched version rather than latest.
   fast-uri@<4.2.3: 4.2.3
+  # GHSA-mrwp-f3q8-3g9p (custom credentials follow cross-realm redirects).
+  follow-redirects@>=1.16.0 <1.16.2: 1.16.2
   happy-dom@>=19.0.0 <20.0.2: '>=20.0.2'
   # The 4.x consumers already resolve to 5.x through this open range; the floor
   # names the patched 5.x so a stale lock entry cannot hold them below it.
@@ -414,6 +428,9 @@ overrides:
   # Keep the production-proven resolution: in the tree since #996 and shipped in
   # v7.0.0. Deliberately outside @gorhom/portal's declared `^3.3.1`.
   '@gorhom/portal>nanoid': 6.0.0
+  # Eleven advisories patched in 1.4.1 (TLS, PKCS#12, X.509, AES-GCM, PEM); the
+  # one it leaves open is in auditConfig.ignoreGhsas.
+  node-forge@<1.4.1: 1.4.1
   picomatch@3: 3.0.1
   picomatch@4: 4.0.4
   react: 19.3.0
@@ -425,6 +442,8 @@ overrides:
   react-native-nitro-modules: 0.36.5
   react-native-quick-base64: 3.0.0
   react-native-quick-crypto: 1.1.6
+  # Eight advisories patched in 8.12.2 (TLS validation, cache poisoning, DoS).
+  undici@>=8.0.0 <8.12.2: 8.12.2
   uuid@<14: 14.0.0
   ws@>=7.0.0 <7.5.11: 7.5.11
   ws@>=8.0.0 <8.20.1: '>=8.20.1'

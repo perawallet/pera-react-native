@@ -18,16 +18,17 @@ import {
     scopeOfSignRequest,
     type SignRequest,
 } from '@perawallet/wallet-core-signing'
-import { getProvider } from '@perawallet/wallet-extension-provider'
+import { useHomeChainScope } from '@hooks/useHomeChainScope'
 
 export const useSignRequestScope = (
     request: Optional<SignRequest>,
 ): ChainScope => {
-    // With no request nothing request-specific renders; the first chain only
+    // With no request nothing request-specific renders; the home chain only
     // lets callers invoke their hooks unconditionally.
+    const fallbackScope = useHomeChainScope()
     const chainId = request
         ? chainIdOfSignRequest(request)
-        : getProvider().chains.list()[0].id
+        : fallbackScope.chainId
     const selectedScope = useSelectedScope(chainId)
     return (request && scopeOfSignRequest(request)) ?? selectedScope
 }

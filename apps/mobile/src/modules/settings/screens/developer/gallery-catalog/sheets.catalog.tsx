@@ -45,7 +45,7 @@ import { AddAssetInfoContent } from '@modules/assets/components/AddAssetInfoCont
 import { OptInConfirmationContent } from '@modules/assets/components/OptInConfirmationContent'
 import { AssetInboxWarningContent } from '@modules/transactions/components/send-funds/AssetInboxWarningContent'
 import { SendFundsInfoContent } from '@modules/transactions/components/send-funds/SendFundsInfoContent'
-import { ViewTextDetailsContent } from '@modules/algorand/components/ViewTextDetailsContent'
+import { ViewTextDetailsContent } from '@components/ViewTextDetailsContent'
 import { SwapAssetSelectionContent } from '@modules/swap/components/SwapAssetSelectionContent'
 import { SwapConfigurationContent } from '@modules/swap/components/SwapConfigurationContent'
 import { SwapScopePreview } from './SwapScopePreview'
