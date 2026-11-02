@@ -73,7 +73,14 @@ export const EVM_CHAIN_ROWS: readonly EvmChainRow[] = [
             mainnet: 'https://bscscan.com',
             testnet: 'https://testnet.bscscan.com',
         },
-        fee: { kind: 'eip1559' },
+        // The base fee is zero, so the tip is the whole price, and validators drop a price below their minimum.
+        fee: {
+            kind: 'eip1559-min-tip',
+            minPriorityFeePerGas: {
+                mainnet: GWEI / 20n,
+                testnet: GWEI / 20n,
+            },
+        },
         blockTimeMs: 750,
         finality: { kind: 'confirmations', recommended: 15 },
         enabledByDefault: false,

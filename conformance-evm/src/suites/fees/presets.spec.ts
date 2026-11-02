@@ -130,7 +130,7 @@ const expectedTipsFromNode = async (
 /**
  * Proves the EIP-1559 fee presets come from the node's real fee history, that
  * a transaction priced at each preset is mined in the next block paying its
- * full tip, and that the unpadded `estimateGas` limit covers what native,
+ * full tip, and that the signed gas limit covers what native,
  * ERC-20 and ERC-721 transfers use. A mocked fee history can't show the app
  * reads the node's percentile columns the way the node orders them.
  */
@@ -326,7 +326,7 @@ describe('evm fee presets', () => {
             })
             const { raw, hash } = await signAndSend(env, sender, unsigned)
             // Node acceptance: expectEvmConformant requires a successful
-            // receipt, so the unpadded limit sufficed; out of gas would revert.
+            // receipt, so the signed limit sufficed; out of gas would revert.
             await expectEvmConformant({
                 env,
                 intent: {

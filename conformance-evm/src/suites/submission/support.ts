@@ -18,6 +18,7 @@ import {
     type FeeValuesEIP1559,
     type Hex,
     type PublicClient,
+    type TransactionSerializableEIP1559,
     type TransactionSerializedEIP1559,
 } from 'viem'
 import type { UnsignedTransaction } from '@perawallet/wallet-core-chain-contract'
@@ -109,16 +110,17 @@ export const expectGethPriceBump = (
     )
 }
 
-const withFees = (
+/** `unsigned` with `fields` overwritten in its transaction, for a test that needs numbers the app would not choose. */
+export const withTransactionFields = (
     unsigned: UnsignedTransaction,
-    fees: FeeValuesEIP1559,
+    fields: Partial<TransactionSerializableEIP1559>,
 ): UnsignedTransaction => {
     const payload = unsigned.payload as EthereumTransactionPayload
     return {
         ...unsigned,
         payload: {
             ...payload,
-            transaction: { ...payload.transaction, ...fees },
+            transaction: { ...payload.transaction, ...fields },
         },
     }
 }
@@ -140,7 +142,9 @@ export const signedTransfer = async (
         assetRef: env.evmChain.descriptor.nativeAsset.ref,
         amount: wei,
     })
-    const unsigned = fees ? withFees(built.unsigned, fees) : built.unsigned
+    const unsigned = fees
+        ? withTransactionFields(built.unsigned, fees)
+        : built.unsigned
     return {
         raw: await signTransactionWithApp(env, sender, unsigned),
         unsigned,
@@ -161,26 +165,30 @@ export const signedReplacement = async (
         { kind, rawTransaction: raw },
         { scope: env.scope },
     )
-    const unsigned = fees ? withFees(built, fees) : built
+    const unsigned = fees ? withTransactionFields(built, fees) : built
     return {
         raw: await signTransactionWithApp(env, sender, unsigned),
         unsigned,
     }
 }
 
-// Explicit, so estimation can't refuse the call before the node mines its revert.
+// Set after the build: the app estimates every dApp call, so it refuses to build one that reverts.
 export const REVERTING_CALL_GAS = 100_000n
 
-/** The app builds and signs a call to `Reverter.revertBare()`, as for a dApp's request. */
+/** A call to `Reverter.revertBare()` signed by the app: built as a plain send, then pointed at the contract so the node mines the revert. */
 export const signedRevertingCall = async (
     env: EvmConformanceEnv,
     sender: EvmConformanceAccount,
 ): Promise<Hex> => {
     const reverter = await deployContract(env.chain, 'Reverter')
-    const unsigned = await buildEthereumSendTransaction(env.ctx, env.evmChain, {
+    const built = await buildEthereumSendTransaction(env.ctx, env.evmChain, {
         from: sender.address,
-        to: reverter,
+        to: sender.address,
         value: 0n,
+        data: '0x',
+    })
+    const unsigned = withTransactionFields(built, {
+        to: reverter,
         data: await castCalldata('revertBare()'),
         gas: REVERTING_CALL_GAS,
     })

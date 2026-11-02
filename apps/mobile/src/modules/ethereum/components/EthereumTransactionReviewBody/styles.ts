@@ -47,6 +47,9 @@ export const useStyles = makeStyles(theme => ({
     secondaryAmount: {
         color: theme.colors.textGray,
     },
+    highFeeNotice: {
+        marginBottom: theme.spacing.md,
+    },
     participants: {
         gap: theme.spacing.xs,
     },
