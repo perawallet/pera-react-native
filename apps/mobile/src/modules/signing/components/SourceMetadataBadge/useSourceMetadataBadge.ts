@@ -29,6 +29,9 @@ import { useSiteSafetyQuery } from '@perawallet/wallet-core-site-safety'
 import { useLanguage } from '@hooks/useLanguage'
 import { useSignRequestScope } from '../../hooks/useSignRequestScope'
 
+const siteKeyOf = (value?: string): string | undefined =>
+    stripUrlScheme(value)?.replace(/\/+$/, '').toLowerCase()
+
 export const useSourceMetadataBadge = (
     metadata: SignRequestSource,
     verifiedOrigin?: string,
@@ -51,7 +54,7 @@ export const useSourceMetadataBadge = (
         ) ?? metadata.icons?.at(0)
 
     const displayIcon = preferredIcon ?? project?.logoPng
-    const displayName = metadata.name ?? project?.name
+    const claimedName = metadata.name ?? project?.name
 
     // Same inputs as the sign gate, so this reads its cached verdict.
     const attestedOrigin = metadata.verification?.verifiedOrigin
@@ -71,6 +74,12 @@ export const useSourceMetadataBadge = (
     )
 
     const url = useMemo(() => stripUrlScheme(metadata.url), [metadata.url])
+
+    // A dApp that names itself by its address would show the host twice.
+    const displayName =
+        claimedName && siteKeyOf(claimedName) === siteKeyOf(url)
+            ? undefined
+            : claimedName
 
     // The name and url above are what the dApp claims about itself.
     const requestOriginLabel =
