@@ -252,9 +252,9 @@ reply (a later node's refusal then reads as an unknown outcome, since the earlie
 taken it). The first URL keeps the chain's ceilings less a short reserve for the fallback, so a slow
 but healthy main node is not cut off. The app lays a developer's per-network endpoint override from
 the network store over that record, replacing the list, and only over networks the chain's config
-already carries. The production mainnet URLs must sit under a domain the app pins;
-`tools/check-evm-rpc-endpoints.mjs` enforces that and checks every built-in URL's chain id before a
-build is signed. Pinning does not yet cover requests made through `expo/fetch`, which the RPC
+already carries. A production mainnet main node must sit under a domain the app pins, and the
+public fallback is not pinned; `tools/check-evm-rpc-endpoints.mjs` enforces that and checks every
+built-in URL's chain id before a build is signed. Pinning does not yet cover requests made through `expo/fetch`, which the RPC
 transport uses, so the pin group is declared but does not yet protect them on a device.
 
 ## Account types share one signing path
