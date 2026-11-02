@@ -261,7 +261,7 @@ Open Rescan For Rekeyed Accounts
     Wait Until Settled    ${SCAN_REKEYED_OPTION}
     Tap    ${SCAN_REKEYED_OPTION}
 
-Open Node Settings
+Open Node Settings From Menu
     Tap    ${MENU_TAB}
     Wait Until Page Contains Element    ${MENU_SETTINGS_BUTTON}    timeout=15s
     Tap    ${MENU_SETTINGS_BUTTON}

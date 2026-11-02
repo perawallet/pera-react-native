@@ -34,6 +34,11 @@ on:
                 required: true
             BROWSERSTACK_ACCESS_KEY:
                 required: true
+            # One funded Sepolia wallet per platform: both run at once, and a shared sender would race for one nonce.
+            E2E_ETHEREUM_FUNDED_MNEMONIC_ANDROID:
+                required: false
+            E2E_ETHEREUM_FUNDED_MNEMONIC_IOS:
+                required: false
     # Dormant until the repository's E2E_ANDROID_APP/E2E_IOS_APP variables name E2E builds.
     schedule:
         - cron: '17 2 * * *'
@@ -167,6 +172,8 @@ jobs:
               env:
                   BROWSERSTACK_USERNAME: ${{ secrets.BROWSERSTACK_USERNAME }}
                   BROWSERSTACK_ACCESS_KEY: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
+                  E2E_ETHEREUM_FUNDED_MNEMONIC_ANDROID: ${{ secrets.E2E_ETHEREUM_FUNDED_MNEMONIC_ANDROID }}
+                  E2E_ETHEREUM_FUNDED_MNEMONIC_IOS: ${{ secrets.E2E_ETHEREUM_FUNDED_MNEMONIC_IOS }}
                   BROWSERSTACK_BUILD_NAME: e2e ${{ matrix.platform }} ${{ github.ref_name }}
                   E2E_RESULTS_DIR: ${{ github.workspace }}/e2e-results
                   E2E_DEVICE: ${{ steps.app.outputs.device }}
@@ -178,6 +185,10 @@ jobs:
                   PROFILE: ${{ inputs.profile || 'full' }}
                   E2E_SESSION_REUSE: ${{ inputs.reuse_sessions && '1' || '0' }}
               run: |
+                  # Not `a && b || c`: an empty Android secret would fall through to the iOS wallet.
+                  if [ "$PLATFORM" = android ]; then export E2E_ETHEREUM_FUNDED_MNEMONIC="$E2E_ETHEREUM_FUNDED_MNEMONIC_ANDROID"; fi
+                  if [ "$PLATFORM" = ios ]; then export E2E_ETHEREUM_FUNDED_MNEMONIC="$E2E_ETHEREUM_FUNDED_MNEMONIC_IOS"; fi
+                  unset E2E_ETHEREUM_FUNDED_MNEMONIC_ANDROID E2E_ETHEREUM_FUNDED_MNEMONIC_IOS
                   args=()
                   if [ "$PROFILE" = critical ]; then INCLUDE=p0; fi
                   if [ -n "$INCLUDE" ]; then args=(--include "$INCLUDE"); fi
