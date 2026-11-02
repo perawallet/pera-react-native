@@ -40,7 +40,19 @@ export const AppCallDetailsPanel = ({
     }
 
     return (
-        <TitledExpandablePanel title={t('transactions.app_call.details')}>
+        <TitledExpandablePanel
+            title={
+                <PWText
+                    variant='bodyLarge'
+                    weight={500}
+                    style={styles.panelTitle}
+                    truncate
+                >
+                    {t('transactions.app_call.details')}
+                </PWText>
+            }
+            headerStyle={styles.panelHeader}
+        >
             <PWView style={styles.expandablePanel}>
                 {appCall.applicationArgs &&
                     appCall.applicationArgs.length > 0 && (

@@ -15,7 +15,7 @@ import { makeStyles } from '@rneui/themed'
 export const useStyles = makeStyles(theme => ({
     container: {
         alignItems: 'stretch',
-        gap: theme.spacing.md,
+        gap: theme.spacing.lg,
         paddingBottom: theme.spacing.lg,
         width: '100%',
     },

@@ -48,6 +48,9 @@ export const TransactionDetailAddressRow = ({
                 scope={scope}
                 displayType='simple'
                 addressFormat='short'
+                textProps={{ variant: 'bodyLarge', style: styles.address }}
+                hugContent
+                style={styles.addressContainer}
             />
             {!!ownAccount && (
                 <PWView
@@ -59,7 +62,7 @@ export const TransactionDetailAddressRow = ({
                         size='sm'
                     />
                     <PWText
-                        variant='footnoteMedium'
+                        variant='bodyLarge'
                         style={styles.ownAccountName}
                         truncate
                     >

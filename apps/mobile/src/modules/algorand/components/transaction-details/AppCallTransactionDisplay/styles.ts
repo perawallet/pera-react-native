@@ -13,6 +13,14 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
+    // The card's row gap already spaces the panels.
+    panelHeader: {
+        marginTop: 0,
+    },
+    panelTitle: {
+        flex: 1,
+        minWidth: 0,
+    },
     expandablePanel: {
         marginTop: theme.spacing.md,
         marginLeft: theme.spacing.md,

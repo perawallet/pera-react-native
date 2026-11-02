@@ -14,11 +14,12 @@ import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
     container: {
-        backgroundColor: theme.colors.layerGrayLighter,
+        backgroundColor: theme.colors.layerGrayLightest,
+        borderWidth: theme.borders.sm,
+        borderColor: theme.colors.layerGray,
         borderRadius: theme.borderRadius.lg,
-        paddingHorizontal: theme.spacing.lg,
-        paddingVertical: theme.spacing.md,
-        gap: theme.spacing.lg,
+        padding: theme.spacing.lg,
+        gap: theme.spacing.xl,
         width: '100%',
     },
 }))

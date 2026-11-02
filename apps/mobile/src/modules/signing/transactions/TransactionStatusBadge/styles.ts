@@ -21,8 +21,8 @@ export const useStyles = makeStyles(
                 color: theme.colors.textGray,
             },
             completed: {
-                backgroundColor: theme.colors.trustedBannerBg,
-                color: theme.colors.trustedBannerContent,
+                backgroundColor: theme.colors.positiveLighter,
+                color: theme.colors.positive,
             },
             failed: {
                 backgroundColor: theme.colors.suspiciousBannerBg,
@@ -35,8 +35,8 @@ export const useStyles = makeStyles(
         return {
             container: {
                 backgroundColor,
-                paddingHorizontal: theme.spacing.sm,
-                paddingVertical: theme.spacing.xxs,
+                paddingHorizontal: theme.spacing.md,
+                paddingVertical: theme.spacing.xs,
                 borderRadius: theme.spacing.xl,
                 alignItems: 'center',
                 justifyContent: 'center',

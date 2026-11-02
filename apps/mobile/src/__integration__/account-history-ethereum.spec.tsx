@@ -682,9 +682,17 @@ describe('Flow: History on an Ethereum account', () => {
                 expect(
                     screen.getByTestId('transaction_detail_status').textContent,
                 ).toBe('transactions.common.completed')
+                // No ETH price is served, so the native amount leads once the lookup gives up.
                 expect(
-                    screen.getByTestId('transaction_detail_amount'),
+                    await screen.findByTestId(
+                        'transaction_detail_amount',
+                        undefined,
+                        { timeout: SLOW_WAIT_TIMEOUT_MS },
+                    ),
                 ).toBeTruthy()
+                expect(
+                    screen.queryByTestId('transaction_detail_fiat'),
+                ).toBeNull()
                 expect(
                     screen.getByTestId('transaction_detail_block').textContent,
                 ).toContain('19000000')

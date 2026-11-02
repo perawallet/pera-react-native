@@ -17,6 +17,7 @@ import { TransactionDetailCard } from '../../TransactionDetailCard'
 import type { TransactionDetailSummary } from '../../types'
 import { TransactionDetailAddressRow } from './TransactionDetailAddressRow'
 import { TransactionDetailNoteRow } from './TransactionDetailNoteRow'
+import { useStyles } from './styles'
 
 type TransactionDetailPartiesCardProps = {
     summary: TransactionDetailSummary
@@ -26,6 +27,7 @@ export const TransactionDetailPartiesCard = ({
     summary,
 }: TransactionDetailPartiesCardProps) => {
     const { t } = useLanguage()
+    const styles = useStyles()
     const { scope, from, to, fee, note } = summary
 
     if (!from && !to && !fee && !note) {
@@ -59,6 +61,8 @@ export const TransactionDetailPartiesCard = ({
                         chainId={scope.chainId}
                         asset={fee.asset}
                         value={fee.value}
+                        variant='bodyLarge'
+                        style={styles.value}
                         showSymbol
                         ignorePrivacyMode
                     />

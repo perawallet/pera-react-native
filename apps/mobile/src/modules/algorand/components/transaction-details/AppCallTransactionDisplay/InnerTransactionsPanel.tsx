@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { PWView } from '@components/core'
+import { PWText, PWView } from '@components/core'
 import type { AlgorandTransactionView } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
@@ -35,9 +35,19 @@ export const InnerTransactionsPanel = ({
 
     return (
         <TitledExpandablePanel
-            title={t('transactions.app_call.inner_transactions', {
-                count: innerTransactions.length,
-            })}
+            title={
+                <PWText
+                    variant='bodyLarge'
+                    weight={500}
+                    style={styles.panelTitle}
+                    truncate
+                >
+                    {t('transactions.app_call.inner_transactions', {
+                        count: innerTransactions.length,
+                    })}
+                </PWText>
+            }
+            headerStyle={styles.panelHeader}
         >
             <PWView style={styles.expandablePanel}>
                 {innerTransactions.map((tx, index) => (

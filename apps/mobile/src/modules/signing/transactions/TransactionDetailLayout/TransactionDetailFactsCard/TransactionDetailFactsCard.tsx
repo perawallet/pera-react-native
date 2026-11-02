@@ -10,14 +10,17 @@
  limitations under the License
  */
 
-import { PWText } from '@components/core'
+import { useTheme } from '@rneui/themed'
+import { formatDatetime } from '@perawallet/wallet-core-shared'
+import { chainDisplayNameOf } from '@perawallet/wallet-core-chain-shared'
+import { getIconPixelSize, PWText, PWView } from '@components/core'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { KeyValueRow } from '@components/KeyValueRow'
 import { useLanguage } from '@hooks/useLanguage'
-import { formatDatetime } from '@perawallet/wallet-core-shared'
-import { ChainChip } from '@modules/chain-ui/icon'
+import { ChainIcon } from '@modules/chain-ui/icon'
 import { TransactionDetailCard } from '../../TransactionDetailCard'
 import type { TransactionDetailSummary } from '../../types'
+import { useStyles } from './styles'
 
 type TransactionDetailFactsCardProps = {
     summary: TransactionDetailSummary
@@ -27,6 +30,8 @@ export const TransactionDetailFactsCard = ({
     summary,
 }: TransactionDetailFactsCardProps) => {
     const { t } = useLanguage()
+    const { theme } = useTheme()
+    const styles = useStyles()
     const { scope, transactionId, timestamp, block } = summary
 
     return (
@@ -35,7 +40,19 @@ export const TransactionDetailFactsCard = ({
                 testID='transaction_detail_network'
                 title={t('transactions.common.network')}
             >
-                <ChainChip chainId={scope.chainId} />
+                <PWView style={styles.network}>
+                    <ChainIcon
+                        chainId={scope.chainId}
+                        size={getIconPixelSize(theme, 'sm')}
+                    />
+                    <PWText
+                        variant='bodyLarge'
+                        style={styles.value}
+                        numberOfLines={1}
+                    >
+                        {chainDisplayNameOf(scope.chainId) ?? scope.chainId}
+                    </PWText>
+                </PWView>
             </KeyValueRow>
             {!!transactionId && (
                 <KeyValueRow
@@ -47,7 +64,12 @@ export const TransactionDetailFactsCard = ({
                         scope={scope}
                         displayType='address-only'
                         addressFormat='short'
-                        textProps={{ variant: 'body' }}
+                        textProps={{
+                            variant: 'bodyLarge',
+                            style: styles.value,
+                        }}
+                        hugContent
+                        style={styles.address}
                     />
                 </KeyValueRow>
             )}
@@ -56,7 +78,10 @@ export const TransactionDetailFactsCard = ({
                     testID='transaction_detail_date'
                     title={t('transactions.common.date')}
                 >
-                    <PWText>
+                    <PWText
+                        variant='bodyLarge'
+                        style={styles.value}
+                    >
                         {formatDatetime(
                             new Date(timestamp),
                             undefined,
@@ -70,7 +95,12 @@ export const TransactionDetailFactsCard = ({
                     testID='transaction_detail_block'
                     title={t(block.labelKey)}
                 >
-                    <PWText>{block.number}</PWText>
+                    <PWText
+                        variant='bodyLarge'
+                        style={styles.value}
+                    >
+                        {block.number}
+                    </PWText>
                 </KeyValueRow>
             )}
         </TransactionDetailCard>

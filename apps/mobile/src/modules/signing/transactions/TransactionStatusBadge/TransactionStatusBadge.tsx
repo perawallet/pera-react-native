@@ -31,6 +31,7 @@ export const TransactionStatusBadge = ({
             testID='transaction_detail_status'
         >
             <PWText
+                variant='footnoteMedium'
                 style={styles.text}
                 truncate
             >

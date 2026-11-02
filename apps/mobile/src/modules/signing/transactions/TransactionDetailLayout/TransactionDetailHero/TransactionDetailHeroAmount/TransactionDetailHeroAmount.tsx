@@ -36,7 +36,7 @@ export const TransactionDetailHeroAmount = ({
                 chainId={scope.chainId}
                 asset={amount.asset}
                 value={amount.value}
-                variant='h1'
+                variant='titleSmall'
                 style={styles.lead}
                 showSymbol
                 ignorePrivacyMode
@@ -45,13 +45,14 @@ export const TransactionDetailHeroAmount = ({
         )
     }
 
+    // The fiat figure leads, but the user still needs to see how much of the asset moved.
     return (
         <PWView style={styles.container}>
             <PreferredAmount
                 sourceAmount={amount.value}
                 sourceAssetId={amount.asset.assetId}
                 scope={scope}
-                variant='h1'
+                variant='titleSmall'
                 style={styles.lead}
                 showSymbol
                 ignorePrivacyMode
@@ -61,6 +62,7 @@ export const TransactionDetailHeroAmount = ({
                 chainId={scope.chainId}
                 asset={amount.asset}
                 value={amount.value}
+                variant='bodyLarge'
                 style={styles.secondary}
                 showSymbol
                 ignorePrivacyMode

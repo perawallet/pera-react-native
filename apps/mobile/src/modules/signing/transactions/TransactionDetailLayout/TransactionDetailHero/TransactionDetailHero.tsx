@@ -31,30 +31,34 @@ export const TransactionDetailHero = ({
     return (
         <PWView style={styles.container}>
             <TransactionIcon
-                size='xl'
+                size='md'
                 name={iconName}
+                style={styles.icon}
             />
-            <PWText
-                variant='bodyLarge'
-                style={styles.title}
-            >
-                {title}
-            </PWText>
-            {!!amount && (
-                <TransactionDetailHeroAmount
-                    amount={amount}
-                    scope={scope}
-                />
-            )}
-            {!amount && !!isAmountLoading && (
-                <AssetAmount
-                    chainId={scope.chainId}
-                    asset={undefined}
-                    value={undefined}
-                    isLoading
-                    variant='h1'
-                />
-            )}
+            <PWView style={styles.heading}>
+                <PWText
+                    variant='bodyLarge'
+                    weight={500}
+                    style={styles.title}
+                >
+                    {title}
+                </PWText>
+                {!!amount && (
+                    <TransactionDetailHeroAmount
+                        amount={amount}
+                        scope={scope}
+                    />
+                )}
+                {!amount && !!isAmountLoading && (
+                    <AssetAmount
+                        chainId={scope.chainId}
+                        asset={undefined}
+                        value={undefined}
+                        isLoading
+                        variant='titleSmall'
+                    />
+                )}
+            </PWView>
             <TransactionStatusBadge status={status} />
         </PWView>
     )

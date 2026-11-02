@@ -59,6 +59,7 @@ import { TransactionDetailsScreen } from '@modules/signing/routes'
 import { useAccountHistory } from '@modules/accounts/components/AccountHistory/useAccountHistory'
 import { useWebViewStore } from '@modules/webview'
 import { useContactsStore } from '@perawallet/wallet-core-contacts'
+import { upsertAssetPrices } from '@perawallet/wallet-core-assets'
 
 import * as Clipboard from 'expo-clipboard'
 import { closestPressable, longPress } from '@test-utils/rnw'
@@ -282,6 +283,12 @@ describe('Flow: View transactions → tap into details', () => {
         )
         server.use(http.get(`*/v2/transactions/${TX_PAYMENT.id}`, lookupSpy))
 
+        // A priced asset leads the hero with its fiat value.
+        await upsertAssetPrices({
+            prices: [{ assetId: '0', usdPrice: new Decimal('0.5') }],
+            scope: MAINNET_SCOPE,
+        })
+
         // A saved contact keeps its name on the recipient row.
         useContactsStore.getState().addContact({
             addresses: { algorand: TX_PAYMENT.receiver ?? '' },
@@ -384,7 +391,17 @@ describe('Flow: View transactions → tap into details', () => {
         expect(
             screen.getByTestId('transaction_detail_status').textContent,
         ).toBe('transactions.common.completed')
-        expect(screen.getByTestId('transaction_detail_amount')).toBeTruthy()
+        // Fiat leads and the native amount stays under it, so the user can still
+        // see how much of the asset moved.
+        const fiat = await screen.findByTestId('transaction_detail_fiat')
+        const native = screen.getByTestId('transaction_detail_amount')
+        expect(fiat.textContent).toContain('0.5')
+        // ALGO draws as a glyph, so the unit is not in the text.
+        expect(native.textContent).toMatch(/^1(\.0+)?$/)
+        expect(
+            fiat.compareDocumentPosition(native) &
+                Node.DOCUMENT_POSITION_FOLLOWING,
+        ).toBeTruthy()
         const inOrder = [
             'transaction_detail_network',
             'transaction_detail_id',

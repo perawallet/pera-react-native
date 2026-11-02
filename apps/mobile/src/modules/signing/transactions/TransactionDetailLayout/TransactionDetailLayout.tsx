@@ -59,6 +59,7 @@ export const TransactionDetailLayout = ({
                         >
                             <PWText
                                 variant='bodyLarge'
+                                weight={500}
                                 style={styles.explorerLabel}
                             >
                                 {explorerLabel}

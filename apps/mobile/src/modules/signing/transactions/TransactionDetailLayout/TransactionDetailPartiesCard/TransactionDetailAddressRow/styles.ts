@@ -13,10 +13,18 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
+    address: {
+        color: theme.colors.textGray,
+        textAlign: 'right',
+    },
+    // Keeps the copy icon beside the address instead of at the far edge.
+    addressContainer: {
+        gap: theme.spacing.sm,
+    },
     ownAccount: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: theme.spacing.xs,
+        gap: theme.spacing.sm,
         marginTop: theme.spacing.xs,
     },
     ownAccountName: {
