@@ -126,7 +126,7 @@ describe('Flow: Messages — inbox & notifications lists', () => {
         })
     })
 
-    it('Given the inbox endpoint returns no requests, when InboxScreen mounts, then the empty state renders', async () => {
+    it('Given the inbox endpoint returns no requests, when InboxScreen mounts, then the empty state renders with its full, untruncated body', async () => {
         server.use(mockInbox({ deviceID: DEVICE_ID, response: EMPTY_INBOX }))
 
         renderWithNavigation(InboxScreen, 'Inbox')
@@ -140,7 +140,10 @@ describe('Flow: Messages — inbox & notifications lists', () => {
                 ).length,
             ).toBeGreaterThan(0)
         })
-        expect(screen.getByText('messages.inbox.empty_body')).toBeTruthy()
+        // react-native-web renders numberOfLines as a CSS line clamp.
+        expect(
+            screen.getByText('messages.inbox.empty_body').style.webkitLineClamp,
+        ).toBe('')
     })
 
     it('Given the notifications endpoint returns two notifications, when NotificationsScreen mounts, then both messages render', async () => {

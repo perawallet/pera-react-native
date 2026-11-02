@@ -76,6 +76,7 @@ export const InboxScreen = () => {
                             icon='inbox'
                             title={t('messages.inbox.empty_title')}
                             body={t('messages.inbox.empty_body')}
+                            shouldTruncateBody={false}
                             testID='inbox_empty_state'
                         />
                     </OfflineTolerantView>
