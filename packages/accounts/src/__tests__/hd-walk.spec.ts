@@ -589,7 +589,7 @@ describe('discoverWalletActivity', () => {
         ).toEqual([{ account: 0, keyIndex: 0 }])
     })
 
-    it('stops probing a chain after its probe rejects, and keeps walking the others', async () => {
+    it('stops probing a chain after its Pera lookups fail twice in a row, and keeps walking the others', async () => {
         const families = registerChainFamilies([ALGORAND, ETHEREUM])
         activeOn(families, ALGORAND, [
             familyHdAddress('algorand', 0, 0),
@@ -597,7 +597,7 @@ describe('discoverWalletActivity', () => {
         ])
         const ethereumProbe = families.checkActivity
             .get(ETHEREUM)!
-            .mockRejectedValue(new Error('history down'))
+            .mockRejectedValue(new PeraNetworkError('server', { status: 503 }))
 
         const probed = await discoverWalletActivity({
             walletId: 'seed',
@@ -606,12 +606,66 @@ describe('discoverWalletActivity', () => {
             keyIndexGapLimit: 1,
         })
 
-        expect(ethereumProbe).toHaveBeenCalledTimes(1)
+        expect(ethereumProbe).toHaveBeenCalledTimes(2)
         expect(activeIndexes(probed)).toEqual([
             [{ account: 0, keyIndex: 0 }, [ALGORAND]],
             [{ account: 1, keyIndex: 0 }, [ALGORAND]],
         ])
     })
+
+    it('asks a batch once more when a Pera lookup times out, and keeps a chain that then answers', async () => {
+        const families = registerChainFamilies([ETHEREUM])
+        activeOn(families, ETHEREUM, [familyHdAddress('evm', 0, 0)])
+        families.checkActivity
+            .get(ETHEREUM)!
+            .mockRejectedValueOnce(new PeraNetworkError('timeout'))
+        const onProbeSettled = vi.fn()
+
+        const probed = await discoverWalletActivity({
+            walletId: 'seed',
+            chainIds: [ETHEREUM],
+            accountGapLimit: 1,
+            keyIndexGapLimit: 1,
+            onProbeSettled,
+        })
+
+        expect(onProbeSettled).not.toHaveBeenCalledWith(ETHEREUM, 'failed')
+        expect(activeIndexes(probed)).toEqual([
+            [{ account: 0, keyIndex: 0 }, [ETHEREUM]],
+        ])
+    })
+
+    it.each([
+        [
+            'a refusal',
+            new PeraNetworkError('client', {
+                status: 422,
+                backendCode: 'chain_not_enabled',
+            }),
+        ],
+        ['a 4xx', new PeraNetworkError('client', { status: 403 })],
+        [
+            'a node error, which its client already retried',
+            new Error('rpc down'),
+        ],
+    ])(
+        'asks a batch only once when its probe fails with %s',
+        async (_, error) => {
+            const families = registerChainFamilies([ETHEREUM])
+            const probe = families.checkActivity
+                .get(ETHEREUM)!
+                .mockRejectedValue(error)
+
+            await discoverWalletActivity({
+                walletId: 'seed',
+                chainIds: [ETHEREUM],
+                accountGapLimit: 1,
+                keyIndexGapLimit: 1,
+            })
+
+            expect(probe).toHaveBeenCalledOnce()
+        },
+    )
 
     it('still reports the keys a batch derived when its probe throws', async () => {
         const families = registerChainFamilies([ALGORAND, ETHEREUM])

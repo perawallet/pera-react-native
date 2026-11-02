@@ -1318,6 +1318,9 @@ export const useAccountsStore: UseBoundStore<
                         } finally {
                             zeroBytes(options.rootKey)
                         }
+                        // Only a cancel that cut the walk short stops the
+                        // scan; one landing during the adds below finished it.
+                        const isCancelled = options.signal?.aborted === true
                         const declined = new Set(
                             (options.declinedIndexes ?? []).map(hdPathKey),
                         )
@@ -1403,7 +1406,6 @@ export const useAccountsStore: UseBoundStore<
                                 ),
                             )
                         }
-                        const isCancelled = options.signal?.aborted === true
                         // A chain the walk never reached because it threw is
                         // unchecked, so it counts as failed; one a cancel
                         // stopped first is just unfinished.

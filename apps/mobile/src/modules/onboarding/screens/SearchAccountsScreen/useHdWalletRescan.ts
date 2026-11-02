@@ -85,12 +85,15 @@ export const useHdWalletRescan = (): UseHdWalletRescanResult => {
                     onProgress,
                 })
                 if (hasLeft?.()) return
-                // Nothing answered, so "found nothing" would be a guess.
-                if (coverage === 'unanswered' && !isCancelled) {
+                const isUnanswered = coverage === 'unanswered' && !isCancelled
+                // Nothing answered and no network to name, so "found nothing"
+                // would be a guess. With networks named, the result screen
+                // keeps them and their retry, e.g. a retry of ones still down.
+                if (isUnanswered && failedChainIds.length === 0) {
                     throw new Error('Wallet discovery got no answer')
                 }
 
-                if (!isCancelled) {
+                if (!isCancelled && !isUnanswered) {
                     const heldAccounts = getAllAccounts()
                     const addresses = rekeyScanAddressesOf(
                         heldAccounts.filter(held => seedOf(held) === walletId),

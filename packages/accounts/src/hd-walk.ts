@@ -25,6 +25,7 @@ import {
 import { kmsCore } from '@perawallet/wallet-core-kms'
 import {
     isChainRefusedError,
+    isPeraNetworkError,
     logger,
     type Optional,
 } from '@perawallet/wallet-core-shared'
@@ -210,8 +211,9 @@ type DiscoverWalletActivityParams = {
     accountGapLimit?: number
     keyIndexGapLimit?: number
     /**
-     * Called once per chain for each probed batch. A chain whose batch
-     * `failed` or was `refused` is not probed again for the rest of the walk.
+     * Called once per chain for each probed batch. A batch whose probe
+     * rejects is asked once more; a chain whose batch then `failed`, or was
+     * `refused`, is not probed again for the rest of the walk.
      */
     onProbeSettled?: (chainId: ChainId, outcome: HdProbeOutcome) => void
     /** Called with each batch's indexes once every chain's probe of it resolves. */
@@ -247,8 +249,9 @@ export async function discoverWalletActivity({
     signal,
 }: DiscoverWalletActivityParams): Promise<ProbedHdIndex[]> {
     const { chains: registry } = getProvider()
-    // A chain whose probe rejected is down for this walk: probing it again
-    // would only queue more failing lookups ahead of the chains that answer.
+    // A chain whose probe rejected twice in a row is down for this walk:
+    // probing it again would only queue more failing lookups ahead of the
+    // chains that answer.
     const failedChains = new Set<ChainId>()
     // Filled as each key is derived, so a batch that fails later still reports
     // the keys it saved and the caller can drop them.
@@ -352,11 +355,20 @@ export async function discoverWalletActivity({
             onProbeSettled?.(chainId, 'failed')
             return entries.map(() => undefined)
         }
+        const check = async () =>
+            accountsChainAdapters.get(chainId).checkActivity(addresses, scope)
         let activity: Map<string, boolean>
         try {
-            activity = await accountsChainAdapters
-                .get(chainId)
-                .checkActivity(addresses, scope)
+            // Pera lookups get one try each, so one slow or dropped answer
+            // mustn't cost a healthy chain the rest of the walk: the batch is
+            // asked once more before the cutoff. Node clients retry their own
+            // reads, and a 4xx (a refusal included) would only fail again.
+            activity = await check().catch((error: unknown) => {
+                const isTransient =
+                    isPeraNetworkError(error) && error.metadata.retryable
+                if (!isTransient || signal?.aborted) throw error
+                return check()
+            })
         } catch (error) {
             const isRefused = isChainRefusedError(error)
             if (!failedChains.has(chainId)) {

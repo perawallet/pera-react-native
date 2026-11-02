@@ -2301,7 +2301,7 @@
             "updated_title_other": "Neue Netzwerke bei {{count}} Konten gefunden",
             "updated_body_one": "Wir haben Aktivität auf weiteren Netzwerken gefunden und sie für dieses Konto aktiviert.",
             "updated_body_other": "Wir haben Aktivität auf weiteren Netzwerken gefunden und sie für diese Konten aktiviert.",
-            "updated_note_one": "Bei {{count}} bestehenden Konto wurden außerdem neue Netzwerke aktiviert.",
+            "updated_note_one": "Bei {{count}} bestehendem Konto wurden außerdem neue Netzwerke aktiviert.",
             "updated_note_other": "Bei {{count}} bestehenden Konten wurden außerdem neue Netzwerke aktiviert."
         },
         "create_account": {

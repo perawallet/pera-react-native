@@ -703,6 +703,34 @@ describe('discoverWalletAccounts', () => {
                 ),
             ).toBe(true)
         })
+
+        test('reports a cancel that lands after the walk finished, while it adds what it found, as not cancelled', async () => {
+            const controller = new AbortController()
+            activeAt(ALGORAND, [
+                { account: 0, keyIndex: 0 },
+                { account: 2, keyIndex: 0 },
+            ])
+            activeAt(ETHEREUM, [])
+            state().setAccounts([pathHolder({ account: 0, keyIndex: 0 })])
+            const { addChainAccount } = state()
+            const add = vi.fn((...args: Parameters<typeof addChainAccount>) => {
+                controller.abort()
+                return addChainAccount(...args)
+            })
+            useAccountsStore.setState({ addChainAccount: add })
+
+            const result = await state().discoverWalletAccounts(SEED, {
+                signal: controller.signal,
+            })
+            useAccountsStore.setState({ addChainAccount })
+
+            expect(add).toHaveBeenCalled()
+            expect(result).toMatchObject({
+                coverage: 'complete',
+                failedChainIds: [],
+                isCancelled: false,
+            })
+        })
     })
 
     test('leaves every key it derived referenced by an account or removed, across two runs', async () => {

@@ -285,7 +285,27 @@ describe('useHdWalletRescan', () => {
         )
     })
 
-    it('reports the failure and goes back when no chain answered', async () => {
+    it('opens the result naming the networks when none of them answered, so a retry of networks still down keeps them and their retry', async () => {
+        mocks.discoverWalletAccounts.mockResolvedValue(
+            walked({ coverage: 'unanswered', failedChainIds: ['base', 'bsc'] }),
+        )
+
+        await rescan(algorandAccount, { chainIds: ['base', 'bsc'] })
+
+        expect(mocks.errorToast).not.toHaveBeenCalled()
+        expect(mocks.goBack).not.toHaveBeenCalled()
+        expect(mocks.scanRekeyed).not.toHaveBeenCalled()
+        expect(mocks.replace).toHaveBeenCalledExactlyOnceWith(
+            'ScanAccountsResult',
+            expect.objectContaining({
+                failedChainIds: ['base', 'bsc'],
+                isCancelled: false,
+                isIncomplete: true,
+            }),
+        )
+    })
+
+    it('reports the failure and goes back when no chain answered and none is named', async () => {
         mocks.discoverWalletAccounts.mockResolvedValue(
             walked({ coverage: 'unanswered' }),
         )
