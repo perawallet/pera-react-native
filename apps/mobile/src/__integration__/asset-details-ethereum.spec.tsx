@@ -117,13 +117,13 @@ describe('Flow: Asset details on its own network', () => {
         useAccountsStore.getState().setAccounts([])
     })
 
-    it('Given an account on Algorand and Ethereum, when an Ethereum token opens, then both tabs name the Ethereum network', async () => {
+    it('Given an account on Algorand and Ethereum, when an Ethereum token opens, then the Markets tab names the Ethereum network', async () => {
         selectAccount(TWO_CHAIN_ACCOUNT)
 
         renderDetails({ assetId: ETH_USDC, chainId: 'ethereum' })
 
         const lines = await screen.findAllByTestId('chain_label_ethereum')
-        expect(lines).toHaveLength(2)
+        expect(lines).toHaveLength(1)
         expect(lines[0].textContent).toContain(
             'account_details.assets.chain_network',
         )
@@ -245,7 +245,7 @@ describe('Flow: Asset details on its own network', () => {
 
         expect(
             await screen.findAllByTestId('chain_label_ethereum'),
-        ).toHaveLength(2)
+        ).toHaveLength(1)
         expect(screen.getAllByText('chart.one_week.label')).toHaveLength(2)
         expect(
             screen.queryByText('common.network_unavailable.title'),
@@ -258,7 +258,7 @@ describe('Flow: Asset details on its own network', () => {
 
         expect(
             await screen.findAllByTestId('chain_label_ethereum'),
-        ).toHaveLength(2)
+        ).toHaveLength(1)
         expect(
             screen.queryAllByTestId('asset_notification_button'),
         ).toHaveLength(0)

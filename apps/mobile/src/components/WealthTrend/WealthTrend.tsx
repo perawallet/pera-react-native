@@ -21,32 +21,65 @@ import { Decimal } from 'decimal.js'
 import { useSettings } from '@perawallet/wallet-core-settings'
 import {
     type AccountHoldingSource,
+    useAccountsAssetsBalanceHistoryQuery,
     usePortfolioHistoryQuery,
+    type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { PreferredAmount } from '@components/PreferredAmount'
 import { TrendIndicator } from '@components/TrendIndicator'
 
+/** One asset held by one account on one chain. */
+export type WealthTrendHolding = {
+    account: WalletAccount
+    assetId: string
+    scope: ChainScope
+}
+
 export type WealthTrendProps = {
-    /** Trended as one summed series. */
-    sources: AccountHoldingSource[]
-    currencyScope: ChainScope
     period: HistoryPeriod
     /** Gate the (slow) history fetch on chart visibility. */
     enabled?: boolean
-}
+} & (
+    | {
+          /** Trended as one summed series. */
+          sources: AccountHoldingSource[]
+          currencyScope: ChainScope
+          holding?: never
+      }
+    | {
+          holding: WealthTrendHolding
+          sources?: never
+          currencyScope?: never
+      }
+)
 
-export const WealthTrend = ({
-    sources,
-    currencyScope,
-    period,
-    enabled = true,
-}: WealthTrendProps) => {
+const NO_SOURCES: AccountHoldingSource[] = []
+
+export const WealthTrend = (props: WealthTrendProps) => {
+    const { period, enabled = true, holding } = props
     const styles = useStyles()
     const { privacyMode } = useSettings()
 
-    const { data, isPending, isUnavailableOnNetwork, isPartial } =
-        usePortfolioHistoryQuery(sources, period, currencyScope, enabled)
+    // Both queries are called every render; the mode that isn't in use is gated off.
+    const portfolioHistory = usePortfolioHistoryQuery(
+        holding ? NO_SOURCES : props.sources,
+        period,
+        holding ? holding.scope : props.currencyScope,
+        enabled && !holding,
+    )
+    const holdingHistory = useAccountsAssetsBalanceHistoryQuery(
+        holding?.account ?? null,
+        holding?.assetId ?? '',
+        period,
+        holding ? holding.scope : props.currencyScope,
+        enabled && !!holding,
+    )
+
+    const { data, isPending, isUnavailableOnNetwork } = holding
+        ? holdingHistory
+        : portfolioHistory
+    const isPartial = !holding && portfolioHistory.isPartial
 
     // Trend follows the fiat value, like the chart — the ALGO-denominated
     // value is flat for an all-ALGO account no matter what the price does.
@@ -77,7 +110,10 @@ export const WealthTrend = ({
         isPartial ? (
         <></>
     ) : (
-        <PWView style={styles.container}>
+        <PWView
+            testID='wealth_trend'
+            style={styles.container}
+        >
             <PreferredAmount
                 value={absolute}
                 density='compact'

@@ -212,8 +212,8 @@ export const AssetActionButtons = ({
             )}
             {canBuy && (
                 <RoundButton
-                    title={t('asset_details.action_buttons.buy')}
-                    icon='dollar'
+                    title={t('asset_details.action_buttons.buy_sell')}
+                    icon='buy-sell'
                     variant='secondary'
                     onPress={() => goToRootPage('Fund')}
                     style={styles.buttonFour}
