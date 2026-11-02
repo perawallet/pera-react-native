@@ -12,8 +12,21 @@
 
 import type { IWalletKit, WalletKitTypes } from '@reown/walletkit'
 import { PERA_CLIENT_META } from '../shared/constants'
+import { PERAWALLET_WC_SCHEME } from '../shared/deeplink'
 import { loadWalletConnectSdk } from './sdk'
 import type { WalletConnectV2Storage } from './storage'
+
+// v1's client meta has no redirect; only v2 dApps read it, to deep-link later
+// requests back into the wallet. The universal link is the path the OS routes
+// to the app, not the bare host, and keeps its trailing slash: the app-link
+// filter and `parseUniversalLink` both match `/qr/perawallet-wc/`.
+const PERA_WALLETKIT_META = {
+    ...PERA_CLIENT_META,
+    redirect: {
+        native: `${PERAWALLET_WC_SCHEME}://`,
+        universal: 'https://perawallet.app/qr/perawallet-wc/',
+    },
+}
 
 export type WalletKitEvent = WalletKitTypes.Event
 
@@ -167,5 +180,5 @@ export const createWalletKitClient: WalletKitFactory = async ({
     process.env.DISABLE_GLOBAL_CORE = 'true'
     const { Core, WalletKit } = await loadWalletConnectSdk()
     const core = new Core({ projectId, storage })
-    return await WalletKit.init({ core, metadata: PERA_CLIENT_META })
+    return await WalletKit.init({ core, metadata: PERA_WALLETKIT_META })
 }

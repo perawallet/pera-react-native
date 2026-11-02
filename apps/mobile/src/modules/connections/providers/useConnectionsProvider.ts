@@ -16,6 +16,7 @@ import {
     LEGACY_CHAIN_ID,
     type ChainId,
 } from '@perawallet/wallet-core-chain-contract'
+import { signingAccountAddressesOn } from '@perawallet/wallet-core-accounts'
 import { config } from '@perawallet/wallet-core-config'
 import {
     createConnectionRegistry,
@@ -27,13 +28,16 @@ import {
 import { createWalletConnectV1Handler } from '@perawallet/wallet-core-walletconnect'
 // lanekeep-ignore-next-line pera/no-wc-imports-in-connections-module reason: the composition root is the one place the app names a handler
 import { createWalletConnectV2Handler } from '@perawallet/wallet-core-walletconnect/v2'
+import { createEip1193ConnectionHandler } from '@perawallet/wallet-core-dapp'
 import { whenAppUnlocked } from '@perawallet/wallet-core-security'
+import { assessSiteSafety } from '@perawallet/wallet-core-site-safety'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import {
     clearActiveWalletConnectV1Delivery,
     setActiveWalletConnectV1Delivery,
 } from '@modules/walletconnect'
+import { webViewDappTransport } from '@modules/webview'
 import { useShowDappTransaction } from '../hooks'
 import { useConnectionsBoot } from './useConnectionsBoot'
 import { useConnectionErrorToasts } from './useConnectionErrorToasts'
@@ -42,11 +46,16 @@ import { useProposalQueue } from './useProposalQueue'
 
 const getNetworkId = (chainId: ChainId) => getSelectedScope(chainId).networkId
 
+const isDappConnectEnabled = (chainId: ChainId): boolean => {
+    const { chains } = getProvider()
+    return chains.has(chainId) && chains.capabilities(chainId).dappConnect
+}
+
 /**
  * The handler factories run synchronously during render, before
  * `useConnectionsBoot`, so one that threw would take the whole provider — and
- * every other handler — down with it. Both build their transports inside
- * `initialize()` instead.
+ * every other handler — down with it. The WalletConnect handlers build their
+ * transports inside `initialize()` instead.
  */
 export const useConnectionsProvider = (): ConnectionRegistry => {
     const registryRef = useRef<Nullable<ConnectionRegistry>>(null)
@@ -56,7 +65,7 @@ export const useConnectionsProvider = (): ConnectionRegistry => {
         const registry = createConnectionRegistry({
             store: getProvider().connections.store,
         })
-        // Injected, on both handlers: a store default would drag the
+        // Injected, on the WalletConnect handlers: a store default would drag the
         // blockchain package into every importer's graph, `apps/browser`
         // included.
         const v1Handler = createWalletConnectV1Handler({
@@ -68,13 +77,7 @@ export const useConnectionsProvider = (): ConnectionRegistry => {
         registry.register(
             createWalletConnectV2Handler({
                 getNetworkId,
-                isDappConnectEnabled: chainId => {
-                    const { chains } = getProvider()
-                    return (
-                        chains.has(chainId) &&
-                        chains.capabilities(chainId).dappConnect
-                    )
-                },
+                isDappConnectEnabled,
                 // Empty when no Reown project is provisioned for the build;
                 // the handler then logs and refuses v2 pairings rather than
                 // failing the boot.
@@ -83,6 +86,16 @@ export const useConnectionsProvider = (): ConnectionRegistry => {
                 // Loading the v2 SDK holds the JS thread for seconds; at boot
                 // that delayed the PIN pad and the biometric prompt.
                 startWhen: whenAppUnlocked,
+            }),
+        )
+        registry.register(
+            createEip1193ConnectionHandler({
+                transport: webViewDappTransport,
+                getNetworkId,
+                isDappConnectEnabled,
+                getAccounts: signingAccountAddressesOn,
+                siteWarningOf: async origin =>
+                    (await assessSiteSafety({ urls: [origin] })).kind,
             }),
         )
         registryRef.current = registry

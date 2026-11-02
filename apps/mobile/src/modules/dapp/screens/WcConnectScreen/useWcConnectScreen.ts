@@ -49,6 +49,10 @@ import { useApprovalArming } from '@hooks/useApprovalArming.web'
 import { useApprovalConfirmedStore } from '@hooks/useApprovalConfirmedStore.web'
 import { useLanguage } from '@hooks/useLanguage'
 import { toPeerDisplayText, toPeerHostLabel } from '@utils/peerDisplay'
+import {
+    toConnectionPermissions,
+    type ConnectionPermission,
+} from '@modules/walletconnect'
 import { useDappRequest } from '../../hooks/useDappRequest.web'
 
 export type ChainNetworkLabel = {
@@ -61,8 +65,8 @@ type UseWcConnectScreenResult = {
     peer: Nullable<ConnectionPeer>
     /** The dApp-asserted name, cleaned and clamped for display. */
     peerName: string
-    /** The methods the peer asked for; never defaulted to a full set. */
-    permissions: string[]
+    /** What the methods the peer asked for grant, in plain terms; never defaulted to a full set. */
+    permissions: ConnectionPermission[]
     /** Browser-verified origin of the requesting tab, the ONE trustworthy origin here; absent for paste/QR. */
     requesterOrigin?: string
     /** `requesterOrigin` as its host, for display. */
@@ -239,7 +243,9 @@ export const useWcConnectScreen = (): UseWcConnectScreenResult => {
     return {
         peer: proposal?.peer ?? null,
         peerName: toPeerDisplayText(proposal?.peer.name),
-        permissions: proposal?.requested.methods ?? [],
+        permissions: proposal
+            ? toConnectionPermissions(proposal.requested.methods)
+            : [],
         requesterOrigin: proposal?.requesterOrigin,
         requesterOriginLabel: toPeerHostLabel(proposal?.requesterOrigin),
         isRequesterOriginDistinct,

@@ -135,6 +135,10 @@ unsupported.
 - `window.peraMobileInterface`: `handleRequest(request)` plus per-method
   wrappers for the inventory above (and the two legacy aliases); `version: '2'`
 
+- `window.ethereum` (only when no other wallet holds it) and an EIP-6963
+  announcement, on `https:` pages when an EVM chain accepts dApp connections. They
+  are not part of the JSON-RPC bridge above; see [In-app browser](DAPP_BRIDGE.md#in-app-browser).
+
 ## Wallet → page messages
 
 - JSON-RPC results/errors: `window.postMessage(<object>)` with the request `id`

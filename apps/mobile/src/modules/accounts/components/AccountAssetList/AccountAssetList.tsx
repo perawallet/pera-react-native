@@ -115,6 +115,9 @@ export const AccountAssetList = ({
         [renderItemProps, convertFiat, toggleGroupExpanded, styles.rowItem],
     )
 
+    // The chips scroll inside the wrapper's inset, not out to the screen edge:
+    // the wrapper owns that inset (see styles.container), so bleeding them means
+    // moving it, and the pinned overlay and the scroll divider move with it.
     const chainFilter =
         chainFilterOptions.length > 0 ? (
             <FilterSelection

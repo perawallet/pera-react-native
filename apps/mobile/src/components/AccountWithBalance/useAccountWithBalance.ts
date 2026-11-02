@@ -25,7 +25,6 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import {
     isTestTierScope,
-    LEGACY_CHAIN_ID,
     type ChainId,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
@@ -40,6 +39,7 @@ import {
     useChainAvailability,
     type ChainAvailability,
 } from '@hooks/useChainAvailability'
+import { useHomeChainScope } from '@hooks/useHomeChainScope'
 
 export type CrossChainTotal =
     /** In the preferred currency. `undefined` until loaded, `null` when any counted chain's value is unknown; both render a placeholder, not 0. */
@@ -104,11 +104,11 @@ export const useAccountWithBalance = (
     account: WalletAccount,
     chainOverride?: ChainId,
 ): UseAccountWithBalanceResult => {
-    const accountChainId = useAccountChainId(account, LEGACY_CHAIN_ID)
+    const homeScope = useHomeChainScope()
+    const accountChainId = useAccountChainId(account, homeScope.chainId)
     const scope = useSelectedScope(chainOverride ?? accountChainId)
     const { chainId } = scope
-    const homeScope = useSelectedScope(LEGACY_CHAIN_ID)
-    const basis = useAccountValueBasis(LEGACY_CHAIN_ID)
+    const basis = useAccountValueBasis(homeScope.chainId)
     const { usdToPreferred } = useCurrency(homeScope)
     const availability = useChainAvailability(chainId)
     const isChainAgnostic = chainOverride === undefined && basis === 'fiat'

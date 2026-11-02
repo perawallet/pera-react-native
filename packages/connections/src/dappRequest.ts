@@ -48,6 +48,7 @@ export const DAPP_REQUEST_FAILURES = [
     'unauthorized-account',
     'unsupported-method',
     'unselected-chain',
+    'unrecognized-chain',
     'invalid-params',
     'limit-exceeded',
 ] as const
@@ -228,12 +229,20 @@ export type WalletConnectRequestRoute =
       }
     | { kind: 'unsupported' }
     /**
-     * Any of the chain's networks; the handler refuses all but the selected
-     * one, since no dApp moves the wallet's selection.
+     * May name a chain of the same namespace the request arrived on; the
+     * handler resolves it, and refuses an unknown one or any but the selected
+     * network, since no dApp moves the wallet's selection.
      */
-    | { kind: 'switch-network'; networkId: NetworkId }
-    /** Answered with `error` verbatim and never shown to the user. */
-    | { kind: 'refused'; error: { code: number; message: string } }
+    | { kind: 'switch-network'; caip2ChainId: string }
+    /**
+     * Answered with `error` verbatim. `failure` is present when the user
+     * should also hear that the wallet does not serve the method.
+     */
+    | {
+          kind: 'refused'
+          error: { code: number; message: string }
+          failure?: Extract<DappRequestFailure, 'unsupported-method'>
+      }
 
 export interface WalletConnectV2ChainSupport {
     /** Every method the chain lists, in the order an approved namespace declares them. A listed method may still route `refused` per request. */

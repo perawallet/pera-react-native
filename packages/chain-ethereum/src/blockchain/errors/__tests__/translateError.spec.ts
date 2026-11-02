@@ -29,6 +29,7 @@ import {
     BlockchainError,
     ErrorCategory,
     ErrorSeverity,
+    isExpectedError,
 } from '@perawallet/wallet-core-shared'
 import { EvmError, toEvmError } from '..'
 
@@ -263,6 +264,23 @@ describe('toEvmError', () => {
         expect(result.shouldReport()).toBe(false)
     })
 
+    it('treats a user-caused refusal as expected so it stays out of crash reporting', () => {
+        const result = toEvmError(wrapped(new InsufficientFundsError()), 'ETH')
+
+        expect(result.metadata.expected).toBe(true)
+        expect(result.shouldReport()).toBe(false)
+    })
+
+    it('leaves an unclassified failure without a declared report code, so its stack does the grouping', () => {
+        const result = toEvmError(
+            new Error('some node said something new'),
+            'ETH',
+        )
+
+        expect(result.code).toBe('unknown')
+        expect(result.metadata.reportCode).toBeUndefined()
+    })
+
     it('falls back to the reasonless revert when no reason is supplied', () => {
         const error = new EvmError('reverted_with_reason', { reason: '' })
 
@@ -274,5 +292,50 @@ describe('toEvmError', () => {
         const error = new EvmError('nonce_too_low')
 
         expect(toEvmError(error, 'ETH')).toBe(error)
+    })
+
+    describe('report codes', () => {
+        it('declares evm.<code> through a wrapped viem error', () => {
+            const error = toEvmError(
+                wrapped(new InsufficientFundsError()),
+                'ETH',
+            )
+
+            expect(error.metadata.reportCode).toBe('evm.insufficient_funds')
+        })
+
+        it('declares the resolved code, not the requested one', () => {
+            const error = new EvmError('reverted_with_reason', { reason: '' })
+
+            expect(error.metadata.reportCode).toBe('evm.reverted')
+        })
+
+        it('treats a timeout as an expected unknown failure', () => {
+            const timeout = Object.assign(new Error('timed out'), {
+                name: 'TimeoutError',
+            })
+
+            const error = toEvmError(timeout, 'ETH')
+
+            expect(error.code).toBe('unknown')
+            expect(isExpectedError(error)).toBe(true)
+        })
+
+        it('treats an RPC 5xx as an expected unknown failure', () => {
+            const error = toEvmError(
+                new HttpRequestError({ status: 503, url: URL }),
+                'ETH',
+            )
+
+            expect(error.code).toBe('unknown')
+            expect(isExpectedError(error)).toBe(true)
+        })
+
+        it.each([
+            ['an RPC 4xx', new HttpRequestError({ status: 400, url: URL })],
+            ['an unclassified failure', new Error('boom')],
+        ])('keeps %s reportable', (_name, cause) => {
+            expect(isExpectedError(toEvmError(cause, 'ETH'))).toBe(false)
+        })
     })
 })

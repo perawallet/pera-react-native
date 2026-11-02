@@ -72,6 +72,8 @@ const EIP_1193_CODE: Record<DappRequestFailure, number> = {
     'unauthorized-account': 4100,
     'unsupported-method': 4200,
     'unselected-chain': 4901,
+    // EIP-3326's answer to a chain the wallet does not have.
+    'unrecognized-chain': 4902,
     'invalid-params': -32_602,
     'limit-exceeded': -32_005,
 }
@@ -82,6 +84,7 @@ const MESSAGE_SIGNING_OFF: WalletConnectRequestRoute = {
         code: EIP_1193_CODE['unsupported-method'],
         message: 'This wallet does not sign messages on this chain',
     },
+    failure: 'unsupported-method',
 }
 
 const routeMessage = (
@@ -92,9 +95,6 @@ const routeMessage = (
     if (!isMessageSigningEnabled(chain)) return MESSAGE_SIGNING_OFF
     return { kind: 'operation', type, params }
 }
-
-/** EIP-3326's answer to a chain the wallet does not have; it has no `DappRequestFailure`. */
-const EIP3326_UNRECOGNIZED_CHAIN = 4902
 
 const caip2ChainIdFor =
     (chain: EvmChain) =>
@@ -124,10 +124,9 @@ const requestedChainId = (params: unknown): Nullable<bigint> => {
         : null
 }
 
-const routeSwitch = (
-    chain: EvmChain,
-    params: unknown,
-): WalletConnectRequestRoute => {
+// The chain is not judged here: the target may belong to another EVM chain, so
+// the handler resolves it across every chain of the namespace.
+const routeSwitch = (params: unknown): WalletConnectRequestRoute => {
     const requested = requestedChainId(params)
     if (requested === null) {
         return {
@@ -138,19 +137,10 @@ const routeSwitch = (
             },
         }
     }
-    const networkId = networkForCaip2ChainId(chain)(
-        `${ETHEREUM_CAIP2_NAMESPACE}:${requested}`,
-    )
-    if (networkId === null) {
-        return {
-            kind: 'refused',
-            error: {
-                code: EIP3326_UNRECOGNIZED_CHAIN,
-                message: 'This wallet does not have that chain',
-            },
-        }
+    return {
+        kind: 'switch-network',
+        caip2ChainId: `${ETHEREUM_CAIP2_NAMESPACE}:${requested}`,
     }
-    return { kind: 'switch-network', networkId }
 }
 
 const SIGNING_METHODS = [
@@ -173,6 +163,11 @@ const REFUSED_METHODS: readonly string[] = [
     ETHEREUM_WC_V2_METHOD.getPermissions,
 ]
 
+// dApps probe it unprompted, so refusing it must not alert the user.
+const SILENTLY_REFUSED_METHODS: readonly string[] = [
+    ETHEREUM_WC_V2_METHOD.getPermissions,
+]
+
 const METHODS = [
     ...SIGNING_METHODS,
     ETHEREUM_WC_V2_METHOD.accounts,
@@ -184,9 +179,13 @@ const METHODS = [
     ...REFUSED_METHODS,
 ] as const
 
-const refuseAsUnsupported = (message: string): WalletConnectRequestRoute => ({
+const refuseAsUnsupported = (
+    message: string,
+    { isSilent = false }: { isSilent?: boolean } = {},
+): WalletConnectRequestRoute => ({
     kind: 'refused',
     error: { code: EIP_1193_CODE['unsupported-method'], message },
+    ...(isSilent ? {} : { failure: 'unsupported-method' as const }),
 })
 
 // The route is where the version is known: the validator only sees
@@ -276,7 +275,7 @@ const createV2 = (
                 return routeUnversionedTypedData(params)
             }
             case ETHEREUM_WC_V2_METHOD.switchChain: {
-                return routeSwitch(chain, params)
+                return routeSwitch(params)
             }
             case ETHEREUM_WC_V2_METHOD.sendCalls: {
                 return routeSendCalls(params)
@@ -323,7 +322,9 @@ const createV2 = (
             }
             default: {
                 return REFUSED_METHODS.includes(method)
-                    ? refuseAsUnsupported(`Pera does not serve ${method}`)
+                    ? refuseAsUnsupported(`Pera does not serve ${method}`, {
+                          isSilent: SILENTLY_REFUSED_METHODS.includes(method),
+                      })
                     : { kind: 'unsupported' }
             }
         }

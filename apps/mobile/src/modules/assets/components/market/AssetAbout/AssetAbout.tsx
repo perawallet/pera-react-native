@@ -14,6 +14,7 @@ import { useStyles } from './styles'
 import { PWButton, PWText, PWView } from '@components/core'
 import { KeyValueRow } from '@components/KeyValueRow'
 import type { PeraAsset } from '@perawallet/wallet-core-assets'
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useLanguage } from '@hooks/useLanguage'
 import type { AssetAboutDisplay } from '@modules/assets/types/asset-details-display'
 import { getAssetAboutVisibility } from './getAssetAboutVisibility'
@@ -22,9 +23,14 @@ import { useAssetAbout } from './useAssetAbout'
 export type AssetAboutProps = {
     assetDetails: PeraAsset
     about: AssetAboutDisplay
+    assetScope: ChainScope
 }
 
-export const AssetAbout = ({ assetDetails, about }: AssetAboutProps) => {
+export const AssetAbout = ({
+    assetDetails,
+    about,
+    assetScope,
+}: AssetAboutProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
     const {
@@ -34,7 +40,7 @@ export const AssetAbout = ({ assetDetails, about }: AssetAboutProps) => {
         projectUrl,
         copyToClipboard,
         openLink,
-    } = useAssetAbout(assetDetails, about)
+    } = useAssetAbout(assetDetails, about, assetScope)
     const { isVisible, hasIdRow, hasCreatorRow } = getAssetAboutVisibility(
         assetDetails,
         about,

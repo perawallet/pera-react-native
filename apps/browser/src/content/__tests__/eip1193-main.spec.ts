@@ -21,7 +21,7 @@ import {
     PERA_EIP6963_ICON,
     PERA_EIP6963_NAME,
     PERA_EIP6963_RDNS,
-} from '../eip6963'
+} from '@perawallet/wallet-core-browser-runtime'
 
 type Announced = {
     info: { uuid: string; name: string; icon: string; rdns: string }

@@ -36,8 +36,12 @@ const network = (
     isDefaultForTier: boolean,
 ) => ({ id, tier, displayName, isDefaultForTier })
 
-const DESCRIPTORS: Record<string, { networks: unknown[] }> = {
+const DESCRIPTORS: Record<
+    string,
+    { displayName: string; networks: unknown[] }
+> = {
     algorand: {
+        displayName: 'Algorand',
         networks: [
             network('mainnet', 'mainnet', 'MainNet', true),
             network('testnet', 'testnet', 'TestNet', true),
@@ -45,6 +49,7 @@ const DESCRIPTORS: Record<string, { networks: unknown[] }> = {
         ],
     },
     ethereum: {
+        displayName: 'Ethereum',
         networks: [
             network('mainnet', 'mainnet', 'Mainnet', true),
             network('sepolia', 'testnet', 'Sepolia', true),
@@ -350,6 +355,33 @@ describe('useSettingsWalletConnectDetailsScreen — connected accounts', () => {
         ])
     })
 
+    it('shows an account on the chain it was found on, and names each network with its chain', () => {
+        mocks.accounts = [both]
+        const { result } = renderHook(() =>
+            useSettingsWalletConnectDetailsScreen({
+                ...connectionRow(),
+                accounts: [ETH],
+                networks: [
+                    { chainId: 'ethereum', networkId: 'mainnet' },
+                    { chainId: 'ethereum', networkId: 'sepolia' },
+                ],
+            }),
+        )
+
+        const [row] = result.current.connectedAccounts
+        expect(row.chainId).toBe('ethereum')
+        expect(
+            row.networks.map(({ chainId, chainName, label }) => [
+                chainId,
+                chainName,
+                label,
+            ]),
+        ).toEqual([
+            ['ethereum', 'Ethereum', 'Mainnet'],
+            ['ethereum', 'Ethereum', 'Sepolia'],
+        ])
+    })
+
     it('lists no row for an address the wallet no longer holds', () => {
         expect(
             rowsFor(
@@ -360,6 +392,35 @@ describe('useSettingsWalletConnectDetailsScreen — connected accounts', () => {
                 [algorandOnly],
             ),
         ).toEqual([])
+    })
+})
+
+describe('useSettingsWalletConnectDetailsScreen — permissions', () => {
+    const permissionsFor = (permissions: string[]) =>
+        renderHook(() =>
+            useSettingsWalletConnectDetailsScreen({
+                ...connectionRow(),
+                permissions,
+            }),
+        ).result.current.permissions
+
+    it('maps an EVM session’s methods to plain permissions', () => {
+        expect(
+            permissionsFor([
+                'eth_sendTransaction',
+                'personal_sign',
+                'wallet_switchEthereumChain',
+            ]),
+        ).toEqual([
+            'view-accounts',
+            'approve-transactions',
+            'sign-messages',
+            'switch-networks',
+        ])
+    })
+
+    it('still lists viewing accounts for a record that stored no permissions', () => {
+        expect(permissionsFor([])).toEqual(['view-accounts'])
     })
 })
 

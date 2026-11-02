@@ -31,6 +31,7 @@ import type { RenderItem, SearchableListProps } from '../SearchableList'
 // testID for the real (focusable) overlay input; the sticky bar is a
 // non-interactive display mirror.
 const SEARCH_INPUT_TEST_ID = 'searchable-list-search-input'
+const SEARCH_DIVIDER_TEST_ID = 'searchable-list-search-divider'
 
 const renderHeaderNode = (
     component: Maybe<React.ComponentType | React.ReactElement>,
@@ -88,10 +89,13 @@ const SearchableListFullInner = <T,>(
         augmentedKeyExtractor,
         toUserIndex,
         searchFooterHeight,
+        searchStickyHeight,
+        isSearchDividerVisible,
         overlayRef,
         currentValue,
         showOverlay,
         handleHeaderLayout,
+        handleSearchStickyLayout,
         handleListLayout,
         handleContentSizeChange,
         handleScroll,
@@ -175,7 +179,10 @@ const SearchableListFullInner = <T,>(
                 // the overlay, but non-interactive. Keyboard dismiss is off so
                 // it doesn't fight handleEnterSearch focusing the overlay.
                 return (
-                    <PWView style={styles.searchSticky}>
+                    <PWView
+                        style={styles.searchSticky}
+                        onLayout={handleSearchStickyLayout}
+                    >
                         {/* Bounds the clear hit area to the input, so it never
                             covers the accessory below. */}
                         <PWView>
@@ -231,6 +238,7 @@ const SearchableListFullInner = <T,>(
             toUserIndex,
             ListHeaderComponent,
             handleHeaderLayout,
+            handleSearchStickyLayout,
             styles.searchSticky,
             styles.searchAccessory,
             searchAccessory,
@@ -302,6 +310,16 @@ const SearchableListFullInner = <T,>(
     return (
         <PWView style={styles.root}>
             {list}
+            {isSearchDividerVisible ? (
+                <PWView
+                    testID={SEARCH_DIVIDER_TEST_ID}
+                    pointerEvents='none'
+                    style={[
+                        styles.searchStickyDivider,
+                        { top: searchStickyHeight },
+                    ]}
+                />
+            ) : null}
             <PWView
                 style={[
                     styles.searchOverlay,

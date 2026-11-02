@@ -16,7 +16,14 @@ import type { PreferredAmountDensity } from './types'
 // The preferred currency is ALGO or the user's fiat, and only ALGO has an asset id.
 export const isFiatCurrency = (assetId: Nullable<string>) => assetId === null
 
-export const precisionFor = (
-    density: PreferredAmountDensity,
-): 'compact' | 'preferredFull' =>
-    density === 'compact' ? 'compact' : 'preferredFull'
+const PRECISION_BY_DENSITY: Record<
+    PreferredAmountDensity,
+    'compact' | 'preferredFull' | 'unitPrice'
+> = {
+    compact: 'compact',
+    detailed: 'preferredFull',
+    unitPrice: 'unitPrice',
+}
+
+export const precisionFor = (density: PreferredAmountDensity) =>
+    PRECISION_BY_DENSITY[density]

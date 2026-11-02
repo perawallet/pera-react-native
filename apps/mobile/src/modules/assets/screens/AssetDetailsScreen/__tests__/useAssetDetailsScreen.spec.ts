@@ -341,10 +341,11 @@ describe('useAssetDetailsScreen', () => {
 
         expect(result.current.headerPrimary).toBe('Savings')
         expect(result.current.headerSecondary).toBe(TRUNCATED_ETH_ADDRESS)
-        expect(mocks.useResolvedAddress).toHaveBeenCalledWith(ETH_ADDRESS, {
-            enabled: true,
-            chainId: 'ethereum',
-        })
+        expect(mocks.useResolvedAddress).toHaveBeenCalledWith(
+            ETH_ADDRESS,
+            expect.objectContaining({ chainId: 'ethereum' }),
+            { enabled: true },
+        )
     })
 
     it('still renders when the account has no address on the asset chain', () => {
@@ -359,10 +360,11 @@ describe('useAssetDetailsScreen', () => {
             }),
         )
 
-        expect(mocks.useResolvedAddress).toHaveBeenCalledWith('', {
-            enabled: false,
-            chainId: 'ethereum',
-        })
+        expect(mocks.useResolvedAddress).toHaveBeenCalledWith(
+            '',
+            expect.objectContaining({ chainId: 'ethereum' }),
+            { enabled: false },
+        )
         expect(result.current.isLoading).toBe(false)
         expect(result.current.headerPrimary).toBe('No Address Found')
     })

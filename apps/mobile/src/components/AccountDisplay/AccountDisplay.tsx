@@ -64,6 +64,8 @@ export type AccountDisplayProps = {
     showChainBadge?: boolean
     /** Rendered after the secondary label, on the line under the name; never on the name's line. */
     badges?: ReactNode
+    /** Takes the avatar's corner; the backup warning is not shown with it. */
+    avatarBadge?: ReactNode
 } & PWViewProps
 
 export const AccountDisplay = ({
@@ -80,6 +82,7 @@ export const AccountDisplay = ({
     chainId,
     showChainBadge = false,
     badges,
+    avatarBadge,
     ...rest
 }: AccountDisplayProps) => {
     const { theme } = useTheme()
@@ -157,9 +160,17 @@ export const AccountDisplay = ({
                     {showChainBadge && (
                         <ChainAvatarBadge chainId={resolvedChainId} />
                     )}
-                    {showBackupBadge && (
+                    {!!avatarBadge && (
                         <PWView
-                            style={styles.backupBadge}
+                            style={styles.avatarBadge}
+                            testID='account_avatar_badge'
+                        >
+                            {avatarBadge}
+                        </PWView>
+                    )}
+                    {!avatarBadge && showBackupBadge && (
+                        <PWView
+                            style={styles.avatarBadge}
                             testID='account_backup_badge'
                         >
                             <PWIcon

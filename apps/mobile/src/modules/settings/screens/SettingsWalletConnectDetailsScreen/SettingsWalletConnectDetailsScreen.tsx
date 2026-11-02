@@ -12,7 +12,6 @@
 
 import { Dialog, useTheme } from '@rneui/themed'
 import { formatDatetime } from '@perawallet/wallet-core-shared'
-import type { AlgorandPermission } from '@perawallet/wallet-core-walletconnect'
 
 import {
     PWBadge,
@@ -54,6 +53,7 @@ export const SettingsWalletConnectDetailsScreen = ({
     const {
         preferredIcon,
         connectedAccounts,
+        permissions,
         isLoading,
         deleteModalState,
         handleDelete,
@@ -122,19 +122,22 @@ export const SettingsWalletConnectDetailsScreen = ({
                         <PWText>
                             {t('walletconnect.settings.connected_accounts')}
                         </PWText>
-                        {connectedAccounts.map(({ account, networks }) => (
-                            <PWView
-                                style={styles.accountRow}
-                                key={account.id}
-                            >
-                                <AccountDisplay
-                                    account={account}
-                                    showChevron={false}
-                                    style={styles.accountDisplay}
-                                />
-                                <ConnectedNetworks networks={networks} />
-                            </PWView>
-                        ))}
+                        {connectedAccounts.map(
+                            ({ account, chainId, networks }) => (
+                                <PWView
+                                    style={styles.accountRow}
+                                    key={account.id}
+                                >
+                                    <AccountDisplay
+                                        account={account}
+                                        chainId={chainId}
+                                        showChevron={false}
+                                        style={styles.accountDisplay}
+                                    />
+                                    <ConnectedNetworks networks={networks} />
+                                </PWView>
+                            ),
+                        )}
                     </PWView>
                 )}
                 <TitledExpandablePanel
@@ -159,10 +162,10 @@ export const SettingsWalletConnectDetailsScreen = ({
                     }
                 >
                     <PWView style={styles.permissionsContainer}>
-                        {connection.permissions.map(permission => (
+                        {permissions.map(permission => (
                             <PermissionItem
                                 key={permission}
-                                permission={permission as AlgorandPermission}
+                                permission={permission}
                             />
                         ))}
                     </PWView>

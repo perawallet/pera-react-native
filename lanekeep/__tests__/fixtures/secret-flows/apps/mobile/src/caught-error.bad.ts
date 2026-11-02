@@ -38,3 +38,43 @@ export const caughtMember = () => {
         logger.error('failed', { details: JSON.stringify(e.response) })
     }
 }
+
+export const reported = () => {
+    try {
+        run()
+    } catch (error) {
+        Sentry.captureException(JSON.stringify(error))
+    }
+}
+
+export const recorded = () => {
+    try {
+        run()
+    } catch (error) {
+        crashlytics.recordError(JSON.stringify(error))
+    }
+}
+
+export const tracked = () => {
+    try {
+        run()
+    } catch (error) {
+        analytics.logEvent('failed', { details: JSON.stringify(error) })
+    }
+}
+
+export const reportedNonFatal = () => {
+    try {
+        run()
+    } catch (error) {
+        crashReporting.recordNonFatalError(JSON.stringify(error))
+    }
+}
+
+export const recordedModular = () => {
+    try {
+        run()
+    } catch (error) {
+        crashlytics.recordError(crashlytics, JSON.stringify(error))
+    }
+}

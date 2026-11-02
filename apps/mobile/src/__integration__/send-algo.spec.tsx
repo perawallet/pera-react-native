@@ -501,6 +501,7 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
         await waitFor(() => {
             expect(screen.getByTestId('send_confirm_button')).toBeTruthy()
         })
+        expectFlowEvents(analytics, 'sendFailed', 'algorand')
     })
 
     it('Given valid send params, when the submission fails with a network error, then the processing screen surfaces an error toast and returns to confirmation without reaching success', async () => {

@@ -103,7 +103,10 @@ describe('useArbitraryDataSigningScreen', () => {
             result.current.handleApprove()
         })
 
-        expect(mockConfirmQuantumDappUsage).toHaveBeenCalledWith(['ADDR'])
+        expect(mockConfirmQuantumDappUsage).toHaveBeenCalledWith(
+            ['ADDR'],
+            'algorand',
+        )
         expect(mockPipeline.next).toHaveBeenCalledTimes(1)
     })
 

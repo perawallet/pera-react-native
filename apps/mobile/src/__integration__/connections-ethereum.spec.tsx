@@ -27,6 +27,7 @@ import {
     type Mock,
 } from 'vitest'
 import { act, fireEvent, screen, waitFor } from '@testing-library/react'
+import { Notifier } from 'react-native-notifier'
 import { Address, Transaction, TransactionType } from 'algosdk'
 import { http, HttpResponse } from 'msw'
 import { render } from '@test-utils/render'
@@ -55,7 +56,10 @@ import {
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import {
+    addressCodecs,
+    type ChainId,
+} from '@perawallet/wallet-core-chain-contract'
 import { encodeTransactionRaw } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import {
     mockAlgodAccountInformation,
@@ -118,11 +122,16 @@ vi.mock('@perawallet/wallet-core-config', async importOriginal => {
         chainEndpointsFor: (chainId: ChainId) =>
             chainId === 'ethereum'
                 ? { mainnet: 'https://mainnet.rpc.test/' }
-                : actual.chainEndpointsFor(chainId),
+                : chainId === 'base'
+                  ? { mainnet: 'https://base.rpc.test/' }
+                  : actual.chainEndpointsFor(chainId),
         config: {
             ...actual.config,
             reownProjectId: 'integration-project-id',
-            chains: { enabled: ['algorand', 'ethereum'], capabilities: {} },
+            chains: {
+                enabled: ['algorand', 'ethereum', 'base'],
+                capabilities: {},
+            },
         },
     }
 })
@@ -132,6 +141,7 @@ vi.mock('@perawallet/wallet-core-config', async importOriginal => {
 const CHECKSUMMED_ETH_ADDRESS = SENDER
 const STORED_ETH_ADDRESS = SENDER.toLowerCase()
 const ETH_MAINNET = 'eip155:1'
+const BASE_MAINNET = 'eip155:8453'
 
 const ALGORAND_ACCOUNT: WalletAccount = {
     id: 'eth-conn-algo',
@@ -152,6 +162,7 @@ const ETHEREUM_ACCOUNT: WalletAccount = {
     },
     chains: {
         ethereum: { address: STORED_ETH_ADDRESS, keyPairId: 'eth-key' },
+        base: { address: STORED_ETH_ADDRESS, keyPairId: 'eth-key' },
     },
     name: 'Ether',
 }
@@ -185,6 +196,11 @@ const RegistryProbe = () => {
     captured.registry = useConnectionRegistry()
     return null
 }
+
+const toastBodies = (): string[] =>
+    vi
+        .mocked(Notifier.showNotification)
+        .mock.calls.map(([notification]) => String(notification.description))
 
 const pendingSignRequests = () => useSigningStore.getState().pendingSignRequests
 
@@ -314,6 +330,7 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
         await getProvider().connections.store.clear()
         resetConnectionPairingStateForTesting()
         vi.clearAllMocks()
+        vi.mocked(Notifier.showNotification).mockClear()
     })
 
     afterEach(async () => {
@@ -327,6 +344,7 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
     describe('with Ethereum dappConnect on', () => {
         beforeEach(() => {
             setCapabilityOverrides({ dappConnect: true }, 'ethereum')
+            setCapabilityOverrides({ dappConnect: true }, 'base')
         })
 
         it('Given an eip155-only proposal, when the sheet opens, then only the Ethereum account is listed and Connect approves its checksummed address', async () => {
@@ -365,6 +383,90 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
             ])
             expect(namespaces.eip155.methods).toEqual(ETHEREUM_METHODS)
             expectFlowEvents(analytics, 'walletConnectApprove', 'ethereum')
+        })
+
+        it('Given an eip155 proposal, when the sheet opens, then it names the network, shows the account by its 0x address and lists the permissions in plain terms', async () => {
+            await mountProvider()
+            await propose({
+                requiredNamespaces: {
+                    eip155: {
+                        chains: [ETH_MAINNET],
+                        methods: ETHEREUM_METHODS,
+                        events: [],
+                    },
+                },
+            })
+
+            await selectRows(ETHEREUM_ACCOUNT)
+
+            expect(
+                screen.getByText('walletconnect.request.title_network'),
+            ).toBeTruthy()
+            expect(
+                screen.getByTestId('wc_requested_network_ethereum'),
+            ).toBeTruthy()
+            expect(
+                screen.queryByText('walletconnect.request.network_not_added'),
+            ).toBeNull()
+            expect(
+                screen.getByText(
+                    addressCodecs.get('ethereum').truncate(STORED_ETH_ADDRESS),
+                ),
+            ).toBeTruthy()
+            expect(screen.queryByText('Trading')).toBeNull()
+            for (const key of [
+                'view_accounts',
+                'approve_transactions',
+                'sign_messages',
+                'switch_networks',
+            ]) {
+                expect(
+                    screen.getByText(`walletconnect.permissions.${key}`),
+                ).toBeTruthy()
+            }
+        })
+
+        it('Given a wallet whose only account is an Algo25 account, when an eip155 proposal opens, then the network reads as not added with no way to add it', async () => {
+            useAccountsStore.getState().setAccounts([ALGORAND_ACCOUNT])
+            await mountProvider()
+            await propose(eip155Namespace('requiredNamespaces'))
+
+            await waitFor(() =>
+                expect(
+                    screen.getByTestId('wc_requested_network_ethereum'),
+                ).toBeTruthy(),
+            )
+            expect(
+                screen.getByText('walletconnect.request.network_not_added'),
+            ).toBeTruthy()
+            expect(screen.queryByTestId('wc_add_network_ethereum')).toBeNull()
+            expect(screen.queryByText('Trading')).toBeNull()
+        })
+
+        it('Given an HD account that has not added Ethereum, when an eip155 proposal opens, then the network reads as not added and offers adding it', async () => {
+            useAccountsStore.getState().setAccounts([
+                {
+                    ...ETHEREUM_ACCOUNT,
+                    id: 'eth-conn-hd-algo-only',
+                    chains: {
+                        algorand: {
+                            address: HD_TEST_ADDRESS,
+                            keyPairId: 'hd-algo-key',
+                        },
+                    },
+                },
+            ])
+            await mountProvider()
+            await propose(eip155Namespace('requiredNamespaces'))
+
+            await waitFor(() =>
+                expect(
+                    screen.getByTestId('wc_add_network_ethereum'),
+                ).toBeTruthy(),
+            )
+            expect(
+                screen.getByText('walletconnect.request.network_not_added'),
+            ).toBeTruthy()
         })
 
         it('Given an eip155-only proposal, when the user cancels, then the rejection is tracked on ethereum', async () => {
@@ -471,6 +573,95 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
             }
             expect(answers.get(7)).toMatchObject({ result: '0x1' })
             expect(pendingSignRequests()).toHaveLength(0)
+            // The user hears about the refused methods, not the unprompted
+            // wallet_getPermissions probe.
+            await waitFor(() => {
+                expect(
+                    toastBodies().filter(
+                        body =>
+                            body ===
+                            'errors.walletconnect.unsupported_method_body',
+                    ),
+                ).toHaveLength(5)
+            })
+        })
+
+        describe('a proposal naming several EVM chains', () => {
+            const SWITCH_CONFIRM = 'walletconnect.switch_network.confirm'
+
+            it('Given Ethereum, Base and a chain Pera lacks, when the user connects, then one eip155 namespace carries both served mainnets', async () => {
+                await mountProvider()
+                const walletKit = await propose({
+                    requiredNamespaces: {},
+                    optionalNamespaces: {
+                        eip155: {
+                            chains: [ETH_MAINNET, BASE_MAINNET, 'eip155:130'],
+                            methods: ['eth_sendTransaction'],
+                            events: [],
+                        },
+                    },
+                })
+                await selectRows(ETHEREUM_ACCOUNT)
+                await connect(walletKit)
+
+                const { eip155 } = approvedNamespaces(walletKit)
+                expect(eip155.chains).toEqual([ETH_MAINNET, BASE_MAINNET])
+                expect(eip155.accounts).toEqual([
+                    `${ETH_MAINNET}:${CHECKSUMMED_ETH_ADDRESS}`,
+                    `${BASE_MAINNET}:${CHECKSUMMED_ETH_ADDRESS}`,
+                ])
+            })
+
+            it('Given a session that holds only Base, when the dApp asks from Base to switch to Ethereum, then the user is asked and allowing it adds the network', async () => {
+                await mountProvider()
+                const walletKit = await propose({
+                    requiredNamespaces: {
+                        eip155: {
+                            chains: [BASE_MAINNET],
+                            methods: [
+                                'eth_sendTransaction',
+                                'wallet_switchEthereumChain',
+                            ],
+                            events: [],
+                        },
+                    },
+                })
+                await selectRows(ETHEREUM_ACCOUNT)
+                await connect(walletKit)
+
+                act(() => {
+                    walletKit.emit(
+                        'session_request',
+                        makeRequest({
+                            id: 41,
+                            method: 'wallet_switchEthereumChain',
+                            params: [{ chainId: '0x1' }],
+                            chainId: BASE_MAINNET,
+                        }),
+                    )
+                })
+                await waitFor(() => {
+                    expect(findButton(SWITCH_CONFIRM)).toBeTruthy()
+                })
+                expect(walletKit.updateSession).not.toHaveBeenCalled()
+
+                fireEvent.click(findButton(SWITCH_CONFIRM)!)
+
+                await waitFor(() => {
+                    expect(
+                        walletKit.respondSessionRequest,
+                    ).toHaveBeenCalledWith({
+                        topic: V2_SESSION_TOPIC,
+                        response: { id: 41, jsonrpc: '2.0', result: null },
+                    })
+                })
+                const { namespaces } = (walletKit.updateSession as Mock).mock
+                    .calls[0][0]
+                expect(namespaces.eip155.chains).toEqual([
+                    BASE_MAINNET,
+                    ETH_MAINNET,
+                ])
+            })
         })
 
         describe('eth_sendTransaction', () => {
@@ -491,6 +682,7 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
             const sendTransaction = (
                 walletKit: FakeWalletKit,
                 transaction: Record<string, unknown>,
+                chainId = ETH_MAINNET,
             ) =>
                 act(() => {
                     walletKit.emit(
@@ -499,7 +691,7 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                             id: 7,
                             method: 'eth_sendTransaction',
                             params: [transaction],
-                            chainId: ETH_MAINNET,
+                            chainId,
                         }),
                     )
                 })
@@ -626,6 +818,82 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                 await waitFor(() => {
                     expect(answerOf(walletKit)).toMatchObject({
                         error: { code: 4001 },
+                    })
+                })
+            })
+
+            describe('on a second EVM chain', () => {
+                const settleOnBase = async () => {
+                    server.use(...evmRpcHandlers())
+                    await mountProvider()
+                    const walletKit = await propose({
+                        requiredNamespaces: {
+                            eip155: {
+                                chains: [BASE_MAINNET],
+                                methods: ['eth_sendTransaction'],
+                                events: [],
+                            },
+                        },
+                    })
+                    await selectRows(ETHEREUM_ACCOUNT)
+                    await connect(walletKit)
+                    return walletKit
+                }
+
+                it('Given a session on Base, when a request arrives on Base and is approved, then it is reviewed as a Base transaction and the dApp receives the hash', async () => {
+                    const walletKit = await settleOnBase()
+                    renderSignReview()
+
+                    sendTransaction(
+                        walletKit,
+                        {
+                            from: CHECKSUMMED_ETH_ADDRESS,
+                            to: RECIPIENT,
+                            value: '0x1',
+                            gasPrice: '0x3b9aca00',
+                        },
+                        BASE_MAINNET,
+                    )
+                    const request = await queued()
+                    await waitFor(
+                        () => {
+                            expect(
+                                screen.getAllByTestId(
+                                    'signing_transaction_review',
+                                ),
+                            ).not.toHaveLength(0)
+                        },
+                        { timeout: 5000 },
+                    )
+                    await act(async () => {
+                        await request.approve([], { txIds: [HASH] })
+                    })
+
+                    await waitFor(() => {
+                        expect(answerOf(walletKit)).toMatchObject({
+                            id: 7,
+                            result: HASH,
+                        })
+                    })
+                })
+
+                it('Given a queued Base request, when the user rejects it, then the dApp receives 4001', async () => {
+                    const walletKit = await settleOnBase()
+                    sendTransaction(
+                        walletKit,
+                        { from: CHECKSUMMED_ETH_ADDRESS, to: RECIPIENT },
+                        BASE_MAINNET,
+                    )
+                    const request = await queued()
+
+                    await act(async () => {
+                        await request.reject()
+                    })
+
+                    await waitFor(() => {
+                        expect(answerOf(walletKit)).toMatchObject({
+                            error: { code: 4001 },
+                        })
                     })
                 })
             })
@@ -1334,6 +1602,11 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                     expect(getSelectedScope('ethereum').networkId).toBe(
                         'mainnet',
                     )
+                    await waitFor(() => {
+                        expect(toastBodies()).toContain(
+                            'errors.walletconnect.unsupported_network_body',
+                        )
+                    })
                 })
 
                 it('Given a switch to the selected network the session holds, when it arrives, then it is answered null without a prompt', async () => {
@@ -1443,6 +1716,7 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
     describe('with Ethereum dappConnect switched off', () => {
         beforeEach(() => {
             setCapabilityOverrides({ dappConnect: false }, 'ethereum')
+            setCapabilityOverrides({ dappConnect: false }, 'base')
         })
 
         it('Given a proposal requiring eip155, when it arrives, then it is rejected and no sheet opens', async () => {

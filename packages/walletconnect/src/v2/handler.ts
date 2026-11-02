@@ -32,6 +32,7 @@ import {
     type ConnectionHandler,
     type ConnectionProposal,
     type WalletNotice,
+    type WalletOperationType,
 } from '@perawallet/wallet-core-connections'
 import {
     dappRequestChainAdapters,
@@ -52,6 +53,9 @@ import {
     WalletConnectInvalidSessionError,
     WalletConnectPermissionError,
     WalletConnectRequestExpiredError,
+    WalletConnectUnsupportedChainsError,
+    WalletConnectUnsupportedMethodError,
+    WalletConnectUnsupportedNetworkError,
 } from '../shared/errors'
 import { toPeer } from '../shared/peer'
 import {
@@ -165,10 +169,12 @@ const screenRequiredNamespaces = (
     ) {
         return 'UNSUPPORTED_NAMESPACE_KEY'
     }
+    // Any chain of the namespace may serve an id: chains sharing a namespace
+    // each know only their own.
     if (
         !chains.every(({ support }) =>
             requestedChains(support, namespaces).every(
-                chainId => support.networkForCaip2ChainId(chainId) !== null,
+                chainId => chainServing(chains, chainId) !== null,
             ),
         )
     ) {
@@ -270,10 +276,16 @@ const v2ChainFor = (chainId: ChainId): Nullable<WalletConnectV2Chain> => {
     return support.v2 ? { chainId, support, v2: support.v2 } : null
 }
 
-const v2ChainForCaip2 = (caip2: string): Nullable<WalletConnectV2Chain> =>
-    v2Chains().find(
+const chainServing = (
+    chains: readonly WalletConnectV2Chain[],
+    caip2: string,
+): Nullable<WalletConnectV2Chain> =>
+    chains.find(
         ({ support }) => support.networkForCaip2ChainId(caip2) !== null,
     ) ?? null
+
+const v2ChainForCaip2 = (caip2: string): Nullable<WalletConnectV2Chain> =>
+    chainServing(v2Chains(), caip2)
 
 // No codec means no addresses: an address nobody can validate must not be
 // offered to, or signed for, a chain.
@@ -291,36 +303,42 @@ const addressesOnChain = (
 }
 
 /**
- * One namespace per given chain that the proposal asks for and that has an
- * approved address on it, so a chain the dApp never named adds nothing to the
- * session and each namespace lists only its own chain's accounts.
+ * One namespace per CAIP-2 namespace that the proposal asks for and that has
+ * an approved address on it, so a chain the dApp never named adds nothing to
+ * the session. Chains sharing a namespace merge into one entry: a session
+ * holds a single namespace per key, and the last chain's entry would
+ * otherwise replace the others'.
  */
 const supportedNamespacesFor = (
     chains: readonly WalletConnectV2Chain[],
     proposal: WalletKitSessionProposal['params'],
     addresses: readonly string[],
-): Record<string, SupportedNamespace> =>
-    Object.fromEntries(
-        chains.flatMap(({ chainId, support, v2 }) => {
-            const caip2Ids = requestedNetworks(support, proposal).flatMap(
-                network => {
-                    const caip2 = support.caip2ChainIdFor(network)
-                    return caip2 === null ? [] : [caip2]
-                },
-            )
-            const own = addressesOnChain(chainId, addresses)
-            if (caip2Ids.length === 0 || own.length === 0) return []
-            const namespace: SupportedNamespace = {
-                chains: caip2Ids,
-                methods: [...v2.methods],
-                events: [...PERA_V2_EVENTS],
-                accounts: caip2Ids.flatMap(caip2 =>
+): Record<string, SupportedNamespace> => {
+    const namespaces = new Map<string, SupportedNamespace>()
+    for (const { chainId, support, v2 } of chains) {
+        const caip2Ids = requestedNetworks(support, proposal).flatMap(
+            network => {
+                const caip2 = support.caip2ChainIdFor(network)
+                return caip2 === null ? [] : [caip2]
+            },
+        )
+        const own = addressesOnChain(chainId, addresses)
+        if (caip2Ids.length === 0 || own.length === 0) continue
+        const existing = namespaces.get(support.namespace)
+        namespaces.set(support.namespace, {
+            chains: dedupe([...(existing?.chains ?? []), ...caip2Ids]),
+            methods: dedupe([...(existing?.methods ?? []), ...v2.methods]),
+            events: [...PERA_V2_EVENTS],
+            accounts: dedupe([
+                ...(existing?.accounts ?? []),
+                ...caip2Ids.flatMap(caip2 =>
                     own.map(address => toCaip10Account(caip2, address)),
                 ),
-            }
-            return [[support.namespace, namespace] as const]
-        }),
-    )
+            ]),
+        })
+    }
+    return Object.fromEntries(namespaces)
+}
 
 const pairTopic = async (
     walletKit: WalletKitClient,
@@ -546,21 +564,31 @@ export const createWalletConnectV2Handler = (
         const { support, v2 } = chain
 
         const route = v2.handleRequest(method, rawParams)
-        // Never shown to the user, and answered before the session lookup: it
-        // says only what the dApp asked for was wrong.
+        // Answered before the session lookup. Silent unless the route carries
+        // a `failure`: otherwise it says only what the dApp asked for was wrong.
         if (route.kind === 'refused') {
             answerWithError(topic, id, route.error)
+            if (route.failure === 'unsupported-method') {
+                reportNamingDapp(
+                    topic,
+                    dappName =>
+                        new WalletConnectUnsupportedMethodError(
+                            dappName,
+                            method,
+                        ),
+                )
+            }
             return
         }
         if (route.kind === 'unsupported') {
-            refuseRequest(
+            refuseRequest(topic, id, 'UNSUPPORTED_METHODS', null, {
+                support,
+                failure: 'unsupported-method',
+            })
+            reportNamingDapp(
                 topic,
-                id,
-                'UNSUPPORTED_METHODS',
-                new WalletConnectPermissionError(
-                    `WalletConnect v2 does not serve ${method}`,
-                ),
-                { support, failure: 'unsupported-method' },
+                dappName =>
+                    new WalletConnectUnsupportedMethodError(dappName, method),
             )
             return
         }
@@ -578,19 +606,20 @@ export const createWalletConnectV2Handler = (
             return
         }
 
+        // A switch is judged by its target, which may belong to another chain
+        // of the namespace: the dApp asks from whichever session chain it
+        // believes it is on, and no dApp moves the wallet's selection.
+        if (route.kind === 'switch-network') {
+            handleSwitch(event, record, chain, route.caip2ChainId)
+            return
+        }
+
         // A session may be approved for several networks at once; only the
         // selected one's may sign, or a mainnet dApp could have a testnet
-        // group signed while the wallet shows mainnet. A switch is judged by
-        // its target instead: the dApp asks from whichever session chain it
-        // believes it is on, and no dApp moves the wallet's selection.
+        // group signed while the wallet shows mainnet.
         const networkId = getNetworkId(chain.chainId)
         const activeChainId = support.caip2ChainIdFor(networkId)
-        const isOffSelectedNetwork =
-            route.kind === 'switch-network'
-                ? route.networkId !== networkId
-                : activeChainId === null ||
-                  event.params.chainId !== activeChainId
-        if (isOffSelectedNetwork) {
+        if (activeChainId === null || event.params.chainId !== activeChainId) {
             refuseRequest(
                 topic,
                 id,
@@ -620,16 +649,92 @@ export const createWalletConnectV2Handler = (
         // in approval order for the life of the session.
         recordActivity(topic)
 
-        // A chain the session already holds was consented to at approval, so
-        // only a switch that would add one asks the user.
-        if (
-            route.kind === 'switch-network' &&
-            activeChainId !== null &&
-            sessionChainsOf(topic, support).includes(activeChainId)
-        ) {
-            answerSwitch(topic, id, support)
+        raiseRequest(event, record, chain, {
+            type: route.type,
+            params: route.params,
+        })
+    }
+
+    /**
+     * Resolves a switch target across every chain of the request's namespace.
+     * A chain the session lacks must also be connectable, the rule a new
+     * session is held to; one it already holds was consented to at approval.
+     */
+    const handleSwitch = (
+        event: WalletKitSessionRequest,
+        record: WalletConnectV2Connection,
+        requestChain: WalletConnectV2Chain,
+        caip2ChainId: string,
+    ): void => {
+        const { id, topic } = event
+        const isHeld = sessionChainsOf(topic, requestChain.support).includes(
+            caip2ChainId,
+        )
+        const target = chainServing(
+            (isHeld ? v2Chains() : connectableChains()).filter(
+                ({ support }) =>
+                    support.namespace === requestChain.support.namespace,
+            ),
+            caip2ChainId,
+        )
+        const networkId =
+            target?.support.networkForCaip2ChainId(caip2ChainId) ?? null
+        if (!target || networkId === null) {
+            refuseRequest(
+                topic,
+                id,
+                'UNSUPPORTED_CHAINS',
+                new WalletConnectUnsupportedNetworkError(
+                    record.name,
+                    caip2ChainId.slice(caip2ChainId.indexOf(':') + 1),
+                ),
+                {
+                    support: requestChain.support,
+                    failure: 'unrecognized-chain',
+                },
+            )
             return
         }
+        if (networkId !== getNetworkId(target.chainId)) {
+            refuseRequest(
+                topic,
+                id,
+                'UNSUPPORTED_CHAINS',
+                new WalletConnectInvalidNetworkError(),
+                { support: target.support, failure: 'unselected-chain' },
+            )
+            return
+        }
+
+        recordActivity(topic)
+
+        if (isHeld) {
+            answerSwitch(topic, id, target.support)
+            return
+        }
+        raiseRequest(
+            event,
+            record,
+            target,
+            { type: 'switch-network', params: { networkId } },
+            () => applySwitch(record, target, networkId),
+        )
+    }
+
+    /**
+     * Hands a request to the signing pipeline. `onSwitchApproved` runs after
+     * the user approves a switch and before the dApp is answered, so a failure declines
+     * the dApp rather than answering success.
+     */
+    const raiseRequest = (
+        event: WalletKitSessionRequest,
+        record: WalletConnectV2Connection,
+        chain: WalletConnectV2Chain,
+        rawOperation: { type: WalletOperationType; params: unknown },
+        onSwitchApproved?: () => Promise<void>,
+    ): void => {
+        const { id, topic } = event
+        const { support } = chain
 
         const respond = async (
             response: WalletKitJsonRpcResponse,
@@ -648,7 +753,10 @@ export const createWalletConnectV2Handler = (
             connectionId: topic,
             correlationId: String(id),
             sourceType: 'walletconnect',
-            authorizedAccounts,
+            authorizedAccounts: addressesOnChain(
+                chain.chainId,
+                record.accounts,
+            ),
             // The approval-time snapshot, not the live session metadata a
             // dApp can update; it is the anti-spoofing `sourceMetadata`. The
             // origin verdict is this request's own, never a stored one.
@@ -657,20 +765,9 @@ export const createWalletConnectV2Handler = (
                 verification: toPeerVerification(event.verifyContext),
             },
             verifiedOrigin: record.origin?.requesterOrigin,
-            rawOperation:
-                route.kind === 'switch-network'
-                    ? {
-                          type: 'switch-network',
-                          params: { networkId: route.networkId },
-                      }
-                    : { type: route.type, params: route.params },
+            rawOperation,
             respond: async result => {
-                if (
-                    result.type === 'switch-network' &&
-                    route.kind === 'switch-network'
-                ) {
-                    await applySwitch(record, chain, route.networkId)
-                }
+                if (result.type === 'switch-network') await onSwitchApproved?.()
                 await respond({
                     id,
                     jsonrpc: '2.0',
@@ -691,6 +788,24 @@ export const createWalletConnectV2Handler = (
                     },
                 })
             },
+        })
+    }
+
+    // The record is the only trusted source of the dApp's name; a request
+    // with no record has nobody to tell the user about.
+    const reportNamingDapp = (
+        topic: string,
+        build: (dappName: string) => Error,
+    ): void => {
+        void (async () => {
+            const stored = await store().get(topic)
+            if (!stored || !isWalletConnectV2Connection(stored)) return
+            reportError(build(stored.name), connectionScope(topic))
+        })().catch((error: unknown) => {
+            logger.warn('[WC v2] reporting a refused request failed', {
+                connectionId: topic,
+                error,
+            })
         })
     }
 
@@ -901,7 +1016,7 @@ export const createWalletConnectV2Handler = (
         topic: string,
         id: number,
         key: 'UNSUPPORTED_METHODS' | 'UNSUPPORTED_CHAINS' | 'USER_DISCONNECTED',
-        error: Error,
+        error: Nullable<Error>,
         wire?: { support: WalletConnectSupport; failure: DappRequestFailure },
     ): void => {
         if (client && sdk) {
@@ -918,7 +1033,7 @@ export const createWalletConnectV2Handler = (
                     })
                 })
         }
-        reportError(error, connectionScope(topic))
+        if (error) reportError(error, connectionScope(topic))
     }
 
     /**
@@ -1171,7 +1286,7 @@ export const createWalletConnectV2Handler = (
             releasePairing(pairingId)
             reportError(
                 refusal === 'UNSUPPORTED_CHAINS'
-                    ? new WalletConnectInvalidNetworkError()
+                    ? new WalletConnectUnsupportedChainsError()
                     : new WalletConnectPermissionError(
                           'This dApp requires a WalletConnect capability Pera does not support.',
                       ),
@@ -1198,7 +1313,7 @@ export const createWalletConnectV2Handler = (
             )
             releasePairing(pairingId)
             reportError(
-                new WalletConnectInvalidNetworkError(),
+                new WalletConnectUnsupportedChainsError(),
                 pairingScope(pairingId),
             )
             return
@@ -1526,16 +1641,22 @@ export const createWalletConnectV2Handler = (
         const active = chain.support.caip2ChainIdFor(
             getNetworkId(chain.chainId),
         )
+        // Only a chain id this chain owns: chains sharing the namespace each
+        // notify, and one that owns none of the session's would repeat the
+        // event another chain already sent.
+        const owned = (namespace.chains ?? []).filter(
+            caip2 => chain.support.networkForCaip2ChainId(caip2) !== null,
+        )
+        const emitOn =
+            active !== null && owned.includes(active) ? active : owned[0]
+        if (emitOn === undefined) return
         await walletKit.emitSessionEvent({
             topic: id,
             event: {
                 name: 'accountsChanged',
                 data: held.filter(address => walletHolds.includes(address)),
             },
-            chainId:
-                active !== null && namespace.chains?.includes(active)
-                    ? active
-                    : (namespace.chains?.[0] ?? ''),
+            chainId: emitOn,
         })
     }
 

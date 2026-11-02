@@ -21,6 +21,9 @@ import {
     WalletConnectPermissionError,
     WalletConnectSessionRequestExpiredError,
     WalletConnectSignRequestError,
+    WalletConnectUnsupportedChainsError,
+    WalletConnectUnsupportedMethodError,
+    WalletConnectUnsupportedNetworkError,
 } from '../errors'
 
 describe('WalletConnectPermissionError', () => {
@@ -100,5 +103,37 @@ describe('WalletConnect error classification', () => {
         expect(isExpectedError(new WalletConnectInvalidSessionError())).toBe(
             false,
         )
+    })
+})
+
+describe('declined-request errors', () => {
+    it('carries what the copy interpolates, and is expected', () => {
+        const method = new WalletConnectUnsupportedMethodError(
+            'Uniswap',
+            'eth_sign',
+        )
+        const network = new WalletConnectUnsupportedNetworkError(
+            'Uniswap',
+            '130',
+        )
+
+        expect(method.metadata).toMatchObject({
+            messageKey: 'errors.walletconnect.unsupported_method_body',
+            params: { dappName: 'Uniswap', method: 'eth_sign' },
+        })
+        expect(network.metadata).toMatchObject({
+            messageKey: 'errors.walletconnect.unsupported_network_body',
+            params: { dappName: 'Uniswap', chainId: '130' },
+        })
+        expect(
+            new WalletConnectUnsupportedChainsError().metadata,
+        ).toMatchObject({
+            messageKey: 'errors.walletconnect.unsupported_chains_body',
+        })
+        expect(isExpectedError(new WalletConnectUnsupportedChainsError())).toBe(
+            true,
+        )
+        expect(isExpectedError(method)).toBe(true)
+        expect(isExpectedError(network)).toBe(true)
     })
 })

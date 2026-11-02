@@ -66,10 +66,10 @@ export const useStyles = makeStyles(
                 // to make the rounded corners actually show.
                 overflow: 'hidden',
             },
-            // Backup-required badge pinned to the icon's bottom-right corner.
+            // Badge (a chain icon, or the backup-required warning) pinned to the icon's bottom-right corner.
             // The disc's background shows through the glyph's inset stroke as
             // the ring that separates it from the account icon underneath.
-            backupBadge: {
+            avatarBadge: {
                 position: 'absolute',
                 bottom: -theme.spacing.xxs,
                 right: -theme.spacing.xxs,

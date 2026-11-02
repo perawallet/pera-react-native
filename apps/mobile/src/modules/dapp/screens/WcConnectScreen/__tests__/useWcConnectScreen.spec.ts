@@ -170,7 +170,10 @@ describe('useWcConnectScreen', () => {
         const { result } = render()
 
         expect(result.current.peer).toEqual(PEER)
-        expect(result.current.permissions).toEqual(['algo_signTxn'])
+        expect(result.current.permissions).toEqual([
+            'view-accounts',
+            'approve-transactions',
+        ])
     })
 
     it('offers the accounts that can sign on the proposal’s chain', () => {

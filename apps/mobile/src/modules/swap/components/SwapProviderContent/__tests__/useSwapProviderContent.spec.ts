@@ -186,11 +186,11 @@ describe('useSwapProviderContent', () => {
         expect(result.current.rows[0]).toMatchObject({
             displayName: '-',
             amountDisplay: '-',
-            fiatDisplay: undefined,
+            fiatValue: null,
         })
     })
 
-    it('formats the amount and its fiat value in the preferred currency', () => {
+    it('formats the amount and converts its fiat value to the preferred currency', () => {
         const quote = makeQuote({
             provider: 'mid',
             amountOut: new Decimal('200'),
@@ -199,10 +199,8 @@ describe('useSwapProviderContent', () => {
 
         const { result } = renderContent([BEST, quote])
 
-        expect(result.current.rows[0]).toMatchObject({
-            amountDisplay: '200 USDC',
-            fiatDisplay: 'USD25',
-        })
+        expect(result.current.rows[0].amountDisplay).toBe('200 USDC')
+        expect(result.current.rows[0].fiatValue?.toString()).toBe('25')
     })
 
     it('omits the fiat value while the exchange rate is unresolved', () => {
@@ -218,6 +216,6 @@ describe('useSwapProviderContent', () => {
 
         const { result } = renderContent([BEST, quote])
 
-        expect(result.current.rows[0].fiatDisplay).toBeUndefined()
+        expect(result.current.rows[0].fiatValue).toBeNull()
     })
 })

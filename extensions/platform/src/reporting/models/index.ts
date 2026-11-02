@@ -15,7 +15,8 @@ export interface CrashReportingService {
     /**
      * `groupingKey` names the logical error site, for reporters that fingerprint
      * on something other than the error's own stack. Optional: a caller with a
-     * genuine stack should omit it and let the stack do the grouping.
+     * genuine stack should omit it and let the stack do the grouping, unless
+     * the error declares a report code.
      */
     recordNonFatalError(error: unknown, groupingKey?: string): void
     /**

@@ -24,7 +24,6 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import {
     addressCodecs,
-    LEGACY_CHAIN_ID,
     type ChainId,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
@@ -34,14 +33,12 @@ import {
     type Contact,
 } from '@perawallet/wallet-core-contacts'
 import { useNfdForAddressQuery } from '@perawallet/wallet-core-nfd'
-import {
-    getChainDescriptor,
-    useSelectedScope,
-} from '@perawallet/wallet-core-chain-shared'
+import { getChainDescriptor } from '@perawallet/wallet-core-chain-shared'
 import { useAddressReuseGuard } from '@components/AddressReuseGuard'
 import { useClipboard } from '@hooks/useClipboard'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import type { IconName } from '@components/core'
+import { useHomeChainScope } from '@hooks/useHomeChainScope'
 
 export type AddressFormat = 'short' | 'long' | 'full'
 export type AddressDisplayType = 'full' | 'simple' | 'address-only'
@@ -142,8 +139,8 @@ export const useAddressDisplay = ({
     scope: addressScope,
     unnamedAddressFormat,
 }: UseAddressDisplayProps): UseAddressDisplayResult => {
-    const legacyScope = useSelectedScope(LEGACY_CHAIN_ID)
-    const scope = addressScope ?? legacyScope
+    const homeScope = useHomeChainScope()
+    const scope = addressScope ?? homeScope
     const { copyToClipboard } = useClipboard()
     const { confirmReuse } = useAddressReuseGuard()
     const isDarkMode = useIsDarkMode()

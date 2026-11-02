@@ -380,3 +380,146 @@ describe('useSearchableList content-size pin correction', () => {
         expect(scrollToOffset).not.toHaveBeenCalled()
     })
 })
+
+describe('useSearchableList search divider', () => {
+    const HEADER_HEIGHT = 320
+    const STICKY_HEIGHT = 120
+
+    type Hook = ReturnType<typeof useSearchableList<{ id: string }>>
+
+    const setup = (data: { id: string }[] = [{ id: '1' }, { id: '2' }]) => {
+        const forwardedRef = {
+            current: null,
+        } as React.ForwardedRef<PWFlatListRef>
+        return renderHook(() =>
+            useSearchableList({
+                forwardedRef,
+                data,
+                keyExtractor: item => item.id,
+                snapThreshold: 0.25,
+            }),
+        )
+    }
+
+    const layoutHeader = (result: { current: Hook }, height: number) =>
+        act(() =>
+            result.current.handleHeaderLayout({
+                nativeEvent: { layout: { height } },
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            } as any),
+        )
+
+    const layoutSearchSticky = (result: { current: Hook }, height: number) =>
+        act(() =>
+            result.current.handleSearchStickyLayout({
+                nativeEvent: { layout: { height } },
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            } as any),
+        )
+
+    const scrollTo = (result: { current: Hook }, y: number) =>
+        act(() =>
+            result.current.handleScroll({
+                nativeEvent: {
+                    contentOffset: { y },
+                    contentSize: { height: 12_000 },
+                    layoutMeasurement: { height: 600 },
+                },
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            } as any),
+        )
+
+    const setupMeasured = (data?: { id: string }[]) => {
+        const hook = setup(data)
+        layoutHeader(hook.result, HEADER_HEIGHT)
+        layoutSearchSticky(hook.result, STICKY_HEIGHT)
+        return hook
+    }
+
+    it('is hidden before any scroll', () => {
+        const { result } = setupMeasured()
+
+        expect(result.current.isSearchDividerVisible).toBe(false)
+    })
+
+    it('shows once rows scroll under the pinned bar and hides back at the pin or top', () => {
+        const { result } = setupMeasured()
+
+        scrollTo(result, HEADER_HEIGHT + 40)
+        expect(result.current.isSearchDividerVisible).toBe(true)
+
+        scrollTo(result, HEADER_HEIGHT)
+        expect(result.current.isSearchDividerVisible).toBe(false)
+
+        scrollTo(result, HEADER_HEIGHT + 40)
+        scrollTo(result, 0)
+        expect(result.current.isSearchDividerVisible).toBe(false)
+    })
+
+    it('stays hidden when the pin settles a fraction past the header height', () => {
+        const { result } = setupMeasured()
+
+        scrollTo(result, HEADER_HEIGHT + 0.5)
+
+        expect(result.current.isSearchDividerVisible).toBe(false)
+    })
+
+    it('stays hidden on top overscroll', () => {
+        const { result } = setupMeasured()
+
+        scrollTo(result, -30)
+
+        expect(result.current.isSearchDividerVisible).toBe(false)
+    })
+
+    it('stays hidden until the header has been measured', () => {
+        const { result } = setup()
+        layoutSearchSticky(result, STICKY_HEIGHT)
+
+        scrollTo(result, HEADER_HEIGHT + 40)
+
+        expect(result.current.isSearchDividerVisible).toBe(false)
+    })
+
+    it('shows for a list with no header, whose bar pins from the top', () => {
+        const { result } = setup()
+        layoutHeader(result, 0)
+        layoutSearchSticky(result, STICKY_HEIGHT)
+
+        scrollTo(result, 40)
+
+        expect(result.current.isSearchDividerVisible).toBe(true)
+    })
+
+    it('follows the pin point when the header resizes under a standing offset', () => {
+        const { result } = setupMeasured()
+        scrollTo(result, HEADER_HEIGHT + 40)
+        expect(result.current.isSearchDividerVisible).toBe(true)
+
+        layoutHeader(result, 700)
+        expect(result.current.isSearchDividerVisible).toBe(false)
+
+        layoutHeader(result, 100)
+        expect(result.current.isSearchDividerVisible).toBe(true)
+    })
+
+    it('stays hidden until the sticky bar has been measured, then reports its height', () => {
+        const { result } = setup()
+        layoutHeader(result, HEADER_HEIGHT)
+
+        scrollTo(result, HEADER_HEIGHT + 40)
+        expect(result.current.isSearchDividerVisible).toBe(false)
+
+        layoutSearchSticky(result, STICKY_HEIGHT)
+        expect(result.current.searchStickyHeight).toBe(STICKY_HEIGHT)
+        expect(result.current.isSearchDividerVisible).toBe(true)
+    })
+
+    it('stays hidden over an empty list, where nothing pins', () => {
+        const { result } = setupMeasured([])
+
+        scrollTo(result, HEADER_HEIGHT + 40)
+
+        expect(result.current.isSearchDividerVisible).toBe(false)
+    })
+})

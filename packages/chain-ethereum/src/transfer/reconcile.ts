@@ -11,11 +11,13 @@
  */
 
 import {
+    BaseError,
     TransactionReceiptNotFoundError,
     type Address,
     type Hex,
     type PublicClient,
 } from 'viem'
+import { toEvmError } from '../blockchain/errors'
 import {
     parseScopeKey,
     toScopeKey,
@@ -52,6 +54,15 @@ export type SubmissionSettledHandlers = Map<
     SubmissionFlow,
     SubmissionSettledHandler
 >
+
+/** One per broadcaster: consecutive failed probes per open row id, carried across passes. */
+export type ProbeFailureStreaks = Map<string, number>
+
+/**
+ * A row whose probe fails this many passes in a row is logged once as an
+ * error; shorter streaks stay warnings, so a passing RPC blip never reports.
+ */
+export const PROBE_FAILURE_ESCALATION_STREAK = 20
 
 type Verdict = 'confirmed' | 'failed' | 'replaced'
 
@@ -191,6 +202,7 @@ const notifySettled = async (
 export type ReconcileEthereumSubmissionsParams = {
     chain: EvmChain
     settleHandlers: SubmissionSettledHandlers
+    probeFailures: ProbeFailureStreaks
     getClient: (scope: ChainScope) => PublicClient
     db?: Database
     limit?: number
@@ -203,6 +215,7 @@ export type ReconcileEthereumSubmissionsParams = {
 export const reconcileEthereumSubmissions = async ({
     chain,
     settleHandlers,
+    probeFailures,
     getClient,
     db,
     limit = DEFAULT_PASS_LIMIT,
@@ -218,6 +231,11 @@ export const reconcileEthereumSubmissions = async ({
     } catch (error) {
         logger.warn('ethereum reconcile: open-row read failed', { error })
         return summary
+    }
+
+    const openIds = new Set(open.map(attempt => attempt.id))
+    for (const id of probeFailures.keys()) {
+        if (!openIds.has(id)) probeFailures.delete(id)
     }
 
     const clients = new Map<ChainScopeKey, PublicClient>()
@@ -247,7 +265,10 @@ export const reconcileEthereumSubmissions = async ({
                 }
                 summary.probed++
                 let verdict = await probe(attempt, context)
-                if (verdict === null) return
+                if (verdict === null) {
+                    probeFailures.delete(attempt.id)
+                    return
+                }
                 if (verdict === 'replaced') {
                     verdict = await loserVerdict(attempt, context)
                 }
@@ -258,10 +279,37 @@ export const reconcileEthereumSubmissions = async ({
                     status: verdict,
                 })
                 summary[verdict === 'confirmed' ? 'confirmed' : 'failed']++
+                probeFailures.delete(attempt.id)
             } catch (error) {
+                const failedProbes = (probeFailures.get(attempt.id) ?? 0) + 1
+                probeFailures.set(attempt.id, failedProbes)
+                if (failedProbes === PROBE_FAILURE_ESCALATION_STREAK) {
+                    // Only a viem error goes through toEvmError, so the
+                    // classifier keeps a rate-limited or answerless RPC a
+                    // breadcrumb however long the streak is; an unclassified
+                    // node failure groups by its site's stack.
+                    if (error instanceof BaseError) {
+                        logger.error(
+                            toEvmError(error, chain.row.nativeAsset.symbol),
+                            { error, id: attempt.id, failedProbes },
+                        )
+                    } else {
+                        // Escalates the raw error: this catch also holds app
+                        // settle handlers and the DB write, which toEvmError
+                        // would mislabel `evm.unknown`. The logger adopts the
+                        // original stack and any declared report code.
+                        logger.error('ethereum reconcile: probe kept failing', {
+                            error,
+                            id: attempt.id,
+                            failedProbes,
+                        })
+                    }
+                    return
+                }
                 logger.warn('ethereum reconcile: probe failed, row left open', {
                     error,
                     id: attempt.id,
+                    failedProbes,
                 })
             }
         }),

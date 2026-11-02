@@ -11,23 +11,34 @@
  */
 
 import { useCallback } from 'react'
+import { useTheme } from '@rneui/themed'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import { PWCheckbox, PWTouchableOpacity } from '@components/core'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import {
+    getIconPixelSize,
+    PWCheckbox,
+    PWTouchableOpacity,
+} from '@components/core'
 import { AccountDisplay } from '@components/AccountDisplay'
 import { useStyles } from '@components/ConnectionApproval/styles'
+import { ChainIcon } from '@modules/chain-ui/icon'
 
 export type ConnectionApprovalAccountRowProps = {
     account: WalletAccount
+    /** The chain whose address and badge the row shows. */
+    chainId: ChainId
     isSelected: boolean
     onPress: (accountId: string) => void
 }
 
 export const ConnectionApprovalAccountRow = ({
     account,
+    chainId,
     isSelected,
     onPress,
 }: ConnectionApprovalAccountRowProps) => {
     const styles = useStyles()
+    const { theme } = useTheme()
     const handlePress = useCallback(
         () => onPress(account.id),
         [onPress, account.id],
@@ -41,6 +52,13 @@ export const ConnectionApprovalAccountRow = ({
         >
             <AccountDisplay
                 account={account}
+                chainId={chainId}
+                avatarBadge={
+                    <ChainIcon
+                        chainId={chainId}
+                        size={getIconPixelSize(theme, 'xs')}
+                    />
+                }
                 showChevron={false}
             />
             <PWCheckbox

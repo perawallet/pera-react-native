@@ -1323,7 +1323,10 @@
             "connection_timeout_body": "Couldn't reach WalletConnect to deliver your signed transaction. Check your connection and try again.",
             "bridge_connection_body": "Couldn't connect to WalletConnect. Check your internet connection and try again.",
             "session_request_expired_body": "This connection request has expired. Start a new connection from the dApp and try again.",
-            "request_expired_body": "This signing request expired before it was answered. Ask the app to send it again."
+            "request_expired_body": "This signing request expired before it was answered. Ask the app to send it again.",
+            "unsupported_method_body": "{{dappName}} asked for {{method}}, which Pera doesn't support, so the request was declined.",
+            "unsupported_network_body": "{{dappName}} asked to use the network with chain ID {{chainId}}, which Pera doesn't support, so the request was declined.",
+            "unsupported_chains_body": "This app asked to use a network Pera doesn't support, so the connection was declined."
         },
         "signing": {
             "title": "An error occurred processing the signing request",
@@ -3724,11 +3727,10 @@
         },
         "request": {
             "title": "{{name}} wants to connect to your account",
-            "permissions_title_one": "Requested {{count}} permission",
-            "permissions_title_other": "Requested {{count}} permissions",
-            "permissions_request_accounts": "View your wallet address & balances",
-            "permissions_sign_transaction": "Request transaction signing",
-            "permissions_sign_data": "Request arbitrary data signing",
+            "title_network": "{{name}} wants to connect to your {{network}} account",
+            "title_networks": "{{name}} wants to connect to your {{network}} and {{otherNetwork}} accounts",
+            "network_not_added": "Not added",
+            "origin_verified": "Verified by WalletConnect",
             "accounts_title": "SELECT ACCOUNTS",
             "no_accounts": "None of your accounts can connect on this network.",
             "success_sheet_title": "You are connected to {{name}}",
@@ -3746,6 +3748,13 @@
             "quantum_fee_delivery_failed": "The request could not be completed. This app may not support the higher network fees required by Quantum accounts.",
             "origin_scam": "This app has been flagged as a security risk. Don't connect unless you trust it.",
             "origin_unverified": "Pera couldn't verify this app's website."
+        },
+        "permissions": {
+            "heading": "This app will be able to",
+            "view_accounts": "See your address and balances",
+            "approve_transactions": "Ask you to approve transactions",
+            "sign_messages": "Ask you to sign messages",
+            "switch_networks": "Ask to switch networks"
         },
         "connection": {
             "approve_delivery_failed": "Couldn't reach the dApp to confirm the connection. Check your internet connection and try again."
@@ -3771,6 +3780,7 @@
             "disconnect_failed_title": "Couldn't disconnect",
             "version": "This session is using WalletConnect V{{version}}",
             "connected_accounts": "Connected with",
+            "network_label": "{{chain}} {{network}}",
             "permissions": "Advanced Permissions",
             "permissions_info_title": "Advanced Permissions",
             "permissions_info_body": "WalletConnect is a communications protocol for web3, enabling wallets and dApps to securely connect and interact. With each new version, WalletConnect introduces new ways to handle, sign and/or display transaction requests coming from third party projects."

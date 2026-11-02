@@ -15,6 +15,7 @@ import { createEvmClient } from '@perawallet/wallet-core-chain-ethereum/blockcha
 import {
     DROPPED_GRACE_MS,
     reconcileEthereumSubmissions,
+    type ProbeFailureStreaks,
     type SubmissionSettledHandlers,
 } from '@perawallet/wallet-core-chain-ethereum/transfer/reconcile'
 import type { SubmissionSettledHandler } from '@perawallet/wallet-core-signing'
@@ -47,10 +48,12 @@ const setUp = async () => {
     await fundEvmAccount(env, sender.address, 10n ** 18n)
     const settled = vi.fn<SubmissionSettledHandler>()
     const handlers: SubmissionSettledHandlers = new Map([['pipeline', settled]])
+    const probeFailures: ProbeFailureStreaks = new Map()
     const reconcile = (limit?: number) =>
         reconcileEthereumSubmissions({
             chain: env.evmChain,
             settleHandlers: handlers,
+            probeFailures,
             getClient: scope => createEvmClient(scope, env.ctx, env.evmChain),
             db: env.db,
             limit,

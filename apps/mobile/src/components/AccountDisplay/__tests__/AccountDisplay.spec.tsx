@@ -133,6 +133,24 @@ describe('AccountDisplay', () => {
         expect(screen.queryByTestId(SECONDARY_ROW)).toBeNull()
     })
 
+    it('shows the avatar badge in place of the backup warning', () => {
+        mockDisplayResult.showBackupBadge = true
+
+        render(
+            <AccountDisplay
+                account={ACCOUNT}
+                avatarBadge={<PWText>CHAIN</PWText>}
+            />,
+        )
+
+        expect(
+            within(screen.getByTestId('account_avatar_badge')).getByText(
+                'CHAIN',
+            ),
+        ).toBeTruthy()
+        expect(screen.queryByTestId('account_backup_badge')).toBeNull()
+    })
+
     it('ignores badges on the Pera Card presentation', () => {
         render(
             <AccountDisplay

@@ -22,22 +22,23 @@ import {
     PWText,
     PWView,
 } from '@components/core'
-import type { AlgorandPermission } from '@perawallet/wallet-core-walletconnect'
 import type { ConnectionPeer } from '@perawallet/wallet-extension-connections'
 import { useLanguage } from '@hooks/useLanguage'
 import type { VerificationTier } from '@perawallet/wallet-core-projects'
-import { TitledExpandablePanel } from '@components/ExpandablePanel/TitledExpandablePanel'
 import { ProjectVerificationIcon } from '@modules/projects'
-import { getPreferredDappIcon, PermissionItem } from '@modules/walletconnect'
+import {
+    ConnectionPermissionsPanel,
+    getPreferredDappIcon,
+    type ConnectionPermission,
+} from '@modules/walletconnect'
 import { useStyles } from '@components/ConnectionApproval/styles'
-import { useStyles as useRequesterStyles } from './styles'
 import type { ChainNetworkLabel } from './useWcConnectScreen'
 
 export type WcConnectHeaderProps = {
     peer: ConnectionPeer
     /** `peer.name` cleaned and clamped for display. */
     peerName: string
-    permissions: string[]
+    permissions: ConnectionPermission[]
     chainNetwork?: ChainNetworkLabel
     verificationTier?: VerificationTier
     /** Host of the browser-verified requesting tab, for display; `peer.url` is forgeable. */
@@ -62,7 +63,6 @@ export const WcConnectHeader = ({
     onPressUrl,
 }: WcConnectHeaderProps): React.JSX.Element => {
     const styles = useStyles()
-    const requesterStyles = useRequesterStyles()
     const { t } = useLanguage()
 
     const preferredIcon = getPreferredDappIcon(peer.icons)
@@ -161,14 +161,14 @@ export const WcConnectHeader = ({
                                 </PWText>
                             ))}
                         {!!requesterOriginLabel && (
-                            <PWView style={requesterStyles.verifiedBadge}>
+                            <PWView style={styles.originVerified}>
                                 <PWIcon
                                     name='assets/verified'
                                     size='sm'
                                 />
                                 <PWText
                                     variant='caption'
-                                    style={requesterStyles.verifiedBadgeText}
+                                    style={styles.originVerifiedText}
                                     numberOfLines={1}
                                     accessibilityLabel={t(
                                         'dapp.approval.requester_verified_a11y_origin',
@@ -189,28 +189,7 @@ export const WcConnectHeader = ({
                 )}
             </PWView>
 
-            <TitledExpandablePanel
-                containerStyle={styles.permissionsContainer}
-                title={
-                    <PWText
-                        variant='h4'
-                        style={styles.panelTitle}
-                    >
-                        {t('walletconnect.request.permissions_title', {
-                            count: permissions.length,
-                        })}
-                    </PWText>
-                }
-            >
-                <PWView style={styles.permissionsContent}>
-                    {permissions.map((permission, index) => (
-                        <PermissionItem
-                            key={index}
-                            permission={permission as AlgorandPermission}
-                        />
-                    ))}
-                </PWView>
-            </TitledExpandablePanel>
+            <ConnectionPermissionsPanel permissions={permissions} />
 
             <PWView style={styles.accountSelectionContainer}>
                 <PWText

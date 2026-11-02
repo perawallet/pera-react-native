@@ -11,41 +11,28 @@
  */
 
 import { PWIcon, PWText, PWView } from '@components/core'
-import { useStyles } from './styles'
-import { AlgorandPermission } from '@perawallet/wallet-core-walletconnect'
 import { useLanguage } from '@hooks/useLanguage'
+import {
+    CONNECTION_PERMISSION_COPY,
+    type ConnectionPermission,
+} from '../../utils/connectionPermissions'
+import { useStyles } from './styles'
 
 export type PermissionItemProps = {
-    permission: AlgorandPermission
+    permission: ConnectionPermission
 }
 
 export const PermissionItem = ({ permission }: PermissionItemProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
 
-    const getPermissionTitle = (permission: AlgorandPermission) => {
-        switch (permission) {
-            case AlgorandPermission.TX_PERMISSION: {
-                return t('walletconnect.request.permissions_sign_transaction')
-            }
-            case AlgorandPermission.DATA_PERMISSION: {
-                return t('walletconnect.request.permissions_sign_data')
-            }
-            case AlgorandPermission.ACCOUNT_PERMISSION: {
-                return t('walletconnect.request.permissions_request_accounts')
-            }
-            default: {
-                return permission
-            }
-        }
-    }
     return (
         <PWView style={styles.permissionItemContainer}>
             <PWIcon
                 name='check'
                 variant='positive'
             />
-            <PWText>{getPermissionTitle(permission)}</PWText>
+            <PWText>{t(CONNECTION_PERMISSION_COPY[permission])}</PWText>
         </PWView>
     )
 }

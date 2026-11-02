@@ -142,6 +142,9 @@ const unsupportedMethod = (request: JsonRpcRequest): JsonRpcResponse =>
 const isOnChain = (connection: Eip1193Connection, chainId: ChainId): boolean =>
     connection.metadata.chainId === chainId
 
+const isChainSwitchRequest = (method: string): boolean =>
+    method === EIP1193_METHOD.switchChain || method === EIP1193_METHOD.addChain
+
 // EIP-3326 carries the target as `[{ chainId: '0x…' }]`.
 const requestedChainOf = (params: unknown): Nullable<Eip155HexChainId> => {
     const first: unknown = Array.isArray(params) ? params[0] : undefined
@@ -788,7 +791,7 @@ export const createEip1193ConnectionHandler = (
                 )
                 return
             }
-            if (request.method === EIP1193_METHOD.switchChain) {
+            if (isChainSwitchRequest(request.method)) {
                 await raiseSwitchRequest(head, connection)
                 return
             }
@@ -995,15 +998,26 @@ export const createEip1193ConnectionHandler = (
             case EIP1193_METHOD.switchChain: {
                 return handleSwitchChain(ctx, request, respond)
             }
+            // Adding a chain Pera already serves is a switch to it; any other
+            // chain is refused, because Pera supports only the chains it ships.
             case EIP1193_METHOD.addChain: {
-                return deliver(
-                    respond,
-                    jsonRpcError(
-                        request.id,
-                        EIP1193_ERROR_CODE.unsupportedMethod,
-                        'Pera supports only the chains it ships',
-                    ),
-                )
+                const requested = requestedChainOf(request.params)
+                if (
+                    requested &&
+                    !servedChains().some(
+                        ({ hexChainId }) => hexChainId === requested,
+                    )
+                ) {
+                    return deliver(
+                        respond,
+                        jsonRpcError(
+                            request.id,
+                            EIP1193_ERROR_CODE.unsupportedMethod,
+                            'Pera supports only the chains it ships',
+                        ),
+                    )
+                }
+                return handleSwitchChain(ctx, request, respond)
             }
             case EIP1193_METHOD.revokePermissions: {
                 await disconnect(eip1193ConnectionIdOf(ctx.origin))
