@@ -1302,14 +1302,10 @@ export const useAccountsStore: UseBoundStore<
                                 },
                                 signal: options.signal,
                                 rootKey: options.rootKey,
-                                heldAccountIndex: Math.max(
-                                    -1,
-                                    ...get().accounts.flatMap(account =>
-                                        seedOf(account) === walletId
-                                            ? (hdIndexOf(account)?.account ??
-                                              [])
-                                            : [],
-                                    ),
+                                heldIndexes: get().accounts.flatMap(account =>
+                                    seedOf(account) === walletId
+                                        ? (hdIndexOf(account) ?? [])
+                                        : [],
                                 ),
                             })
                         } catch (error) {

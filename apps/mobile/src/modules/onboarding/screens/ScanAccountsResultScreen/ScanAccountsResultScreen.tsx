@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { PWResultView, PWView } from '@components/core'
+import { PWResultView, PWScrollView, PWView } from '@components/core'
 import { AccountDisplay } from '@components/AccountDisplay'
 import { useStyles } from './styles'
 import { useScanAccountsResultScreen } from './useScanAccountsResultScreen'
@@ -37,7 +37,10 @@ export const ScanAccountsResultScreen = () => {
                 testID='scan_accounts_result'
             >
                 {changedAccounts.length > 0 && (
-                    <PWView style={styles.accounts}>
+                    <PWScrollView
+                        style={styles.accounts}
+                        contentContainerStyle={styles.accountsContent}
+                    >
                         {changedAccounts.map(account => (
                             <AccountDisplay
                                 key={account.id}
@@ -46,7 +49,7 @@ export const ScanAccountsResultScreen = () => {
                                 style={styles.account}
                             />
                         ))}
-                    </PWView>
+                    </PWScrollView>
                 )}
             </PWResultView>
         </PWView>

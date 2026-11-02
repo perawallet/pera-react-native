@@ -319,10 +319,12 @@ describe('createEvmActivityCheck', () => {
                 }),
             )
 
-            const error = await checkWith(['history'])(
-                [QUIET, OTHER],
-                SCOPE,
-            ).catch((rejected: unknown) => rejected)
+            // The query client remembers a refused scope for the rest of the
+            // run, so this one refuses a scope no other test uses.
+            const error = await checkWith(['history'])([QUIET, OTHER], {
+                chainId: 'ethereum',
+                networkId: 'sepolia',
+            }).catch((rejected: unknown) => rejected)
 
             expect(isChainRefusedError(error)).toBe(true)
         })

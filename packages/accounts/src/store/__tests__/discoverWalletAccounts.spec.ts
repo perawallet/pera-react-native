@@ -606,6 +606,38 @@ describe('discoverWalletAccounts', () => {
             })
         })
 
+        test('reaches the accounts the wallet holds when it walks only some chains, so a retry finds activity past an empty stretch', async () => {
+            activeAt(ALGORAND, [{ account: 6, keyIndex: 0 }])
+            activeAt(ETHEREUM, [{ account: 6, keyIndex: 0 }])
+            getKeystoreStore().state.keys = [
+                ...getKeystoreStore().state.keys,
+                {
+                    id: familyHdKeyId(SEED, 'algorand', 6, 0),
+                    type: 'ed25519',
+                    metadata: { parentKeyId: SEED },
+                },
+            ] as never
+            state().setAccounts([
+                pathHolder({ account: 0, keyIndex: 0 }),
+                pathHolder({ account: 6, keyIndex: 0 }),
+            ])
+
+            const result = await state().discoverWalletAccounts(SEED, {
+                chainIds: [ETHEREUM],
+            })
+
+            expect(result).toMatchObject({
+                coverage: 'complete',
+                failedChainIds: [],
+            })
+            expect(result.accounts.map(account => account.id)).toEqual([
+                'holder-6-0',
+            ])
+            expect(state().accounts[1].chains[ETHEREUM]?.enabledBy).toBe(
+                'discovery',
+            )
+        })
+
         test('is partial when an add fails for a reason other than a duplicate', async () => {
             activeAt(ALGORAND, [{ account: 0, keyIndex: 0 }])
             activeAt(ETHEREUM, [{ account: 0, keyIndex: 0 }])

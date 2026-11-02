@@ -64,6 +64,21 @@ describe('walkHdTree', () => {
         ])
     })
 
+    it('keeps both gaps open through the indexes the wallet holds, so a walk of some chains still reaches them', async () => {
+        const found = await walkHdTree({
+            probe: probeActiveAt(['7/0', '0/7']),
+            heldIndexes: [
+                { account: 6, keyIndex: 0 },
+                { account: 0, keyIndex: 6 },
+            ],
+        })
+
+        expect(found).toEqual([
+            { account: 0, keyIndex: 7 },
+            { account: 7, keyIndex: 0 },
+        ])
+    })
+
     it('resets the account gap on activity, so an account after empty ones is found', async () => {
         const found = await walkHdTree({
             probe: probeActiveAt(['0/0', '4/0', '8/1']),
@@ -256,7 +271,7 @@ describe('discoverWalletActivity', () => {
         ])
     })
 
-    const walkEveryAddressActive = async (heldAccountIndex?: number) => {
+    const walkEveryAddressActive = async (heldIndexes?: HdIndex[]) => {
         const families = registerChainFamilies([ALGORAND])
         families.checkActivity
             .get(ALGORAND)!
@@ -268,7 +283,7 @@ describe('discoverWalletActivity', () => {
         const probed = await discoverWalletActivity({
             walletId: 'seed',
             chainIds: [ALGORAND],
-            heldAccountIndex,
+            heldIndexes,
         })
         warn.mockRestore()
         return {
@@ -289,7 +304,9 @@ describe('discoverWalletActivity', () => {
     })
 
     it('reaches past the highest account index the wallet already holds', async () => {
-        await expect(walkEveryAddressActive(59)).resolves.toEqual({
+        await expect(
+            walkEveryAddressActive([{ account: 59, keyIndex: 0 }]),
+        ).resolves.toEqual({
             highestAccount: 64,
             highestKeyIndex: 19,
         })

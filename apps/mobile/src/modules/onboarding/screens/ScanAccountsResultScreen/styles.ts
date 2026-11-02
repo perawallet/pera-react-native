@@ -17,10 +17,17 @@ export const useStyles = makeStyles(theme => ({
         flex: 1,
         backgroundColor: theme.colors.background,
     },
+    // Shrinks to the room between the text and the buttons, then scrolls:
+    // a scan can turn a network on for every account in the wallet.
     accounts: {
         alignSelf: 'stretch',
+        flexGrow: 0,
+        flexShrink: 1,
         marginTop: theme.spacing.xl,
+    },
+    accountsContent: {
         gap: theme.spacing.sm,
+        paddingBottom: 0,
     },
     account: {
         borderWidth: theme.borders.sm,

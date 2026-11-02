@@ -57,11 +57,18 @@ type WalkHdTreeParams = {
     signal?: AbortSignal
     /** Called with each account index's active keys once the gaps confirm them. */
     onFound?: (indices: readonly HdIndex[]) => void
+    /**
+     * Indexes the wallet already holds. They keep both gaps open as an active
+     * index would, so a walk narrowed to some chains still reaches them.
+     */
+    heldIndexes?: readonly HdIndex[]
 }
 
 type ScanLimits = {
     keyIndexGapLimit: number
     keyIndexLimit: number
+    /** The highest key index held on each account index. */
+    heldKeyIndexes: ReadonlyMap<number, number>
     onLimit: () => void
     signal?: AbortSignal
 }
@@ -74,9 +81,16 @@ const byPath = (a: HdIndex, b: HdIndex): number =>
 
 async function scanAccountIndex(
     account: number,
-    { keyIndexGapLimit, keyIndexLimit, onLimit, signal }: ScanLimits,
+    {
+        keyIndexGapLimit,
+        keyIndexLimit,
+        heldKeyIndexes,
+        onLimit,
+        signal,
+    }: ScanLimits,
     probe: HdBatchProbe,
 ): Promise<HdIndex[]> {
+    const heldKeyIndex = heldKeyIndexes.get(account) ?? -1
     const active: HdIndex[] = []
     let keyGap = 0
     let keyIndex = 0
@@ -98,6 +112,8 @@ async function scanAccountIndex(
         for (const [i, index] of batch.entries()) {
             if (results[i]) {
                 active.push(index)
+                keyGap = 0
+            } else if (index.keyIndex <= heldKeyIndex) {
                 keyGap = 0
             } else {
                 keyGap++
@@ -127,14 +143,27 @@ export async function walkHdTree({
     keyIndexLimit = Infinity,
     signal,
     onFound,
+    heldIndexes = [],
 }: WalkHdTreeParams): Promise<HdIndex[]> {
     const found: HdIndex[] = []
     let accountGap = 0
     let accountIndex = 0
     let hasHitLimit = false
+    const heldAccountIndex = Math.max(
+        -1,
+        ...heldIndexes.map(({ account }) => account),
+    )
+    const heldKeyIndexes = new Map<number, number>()
+    for (const { account, keyIndex } of heldIndexes) {
+        heldKeyIndexes.set(
+            account,
+            Math.max(heldKeyIndexes.get(account) ?? -1, keyIndex),
+        )
+    }
     const limits: ScanLimits = {
         keyIndexGapLimit,
         keyIndexLimit,
+        heldKeyIndexes,
         onLimit: () => {
             hasHitLimit = true
         },
@@ -153,10 +182,12 @@ export async function walkHdTree({
             ),
         )
 
-        for (const result of results) {
+        for (const [i, result] of results.entries()) {
             if (result.status === 'fulfilled' && result.value.length > 0) {
                 found.push(...result.value)
                 onFound?.(result.value)
+                accountGap = 0
+            } else if (accountIndex + i <= heldAccountIndex) {
                 accountGap = 0
             } else {
                 accountGap++
@@ -201,8 +232,8 @@ type DiscoverWalletActivityParams = {
     onUnusedKeys?: (keyPairIds: string[]) => Promise<void>
     /** Called each time a chain's activity probe resolves, so a caller can tell "nothing active" from "nothing answered". */
     onProbeAnswered?: () => void
-    /** The highest account index the wallet already holds; the walk always reaches past it. */
-    heldAccountIndex?: number
+    /** The indexes the wallet already holds; the walk always reaches past them. */
+    heldIndexes?: readonly HdIndex[]
     /**
      * The seed's in-memory XHD root key. A chain that derives public keys from
      * it is probed without saving a key per index; the caller keeps ownership.
@@ -239,7 +270,7 @@ export async function discoverWalletActivity({
     chainIds,
     onUnusedKeys,
     onProbeAnswered,
-    heldAccountIndex = -1,
+    heldIndexes = [],
     rootKey,
     accountGapLimit = ACCOUNT_GAP_LIMIT,
     keyIndexGapLimit,
@@ -459,6 +490,10 @@ export async function discoverWalletActivity({
         return results
     }
 
+    const heldAccountIndex = Math.max(
+        -1,
+        ...heldIndexes.map(({ account }) => account),
+    )
     const walked = new Set(
         (
             await walkHdTree({
@@ -469,6 +504,7 @@ export async function discoverWalletActivity({
                     WALLET_ACCOUNT_INDEX_LIMIT,
                     heldAccountIndex + 1 + accountGapLimit,
                 ),
+                heldIndexes,
                 keyIndexLimit: WALLET_KEY_INDEX_LIMIT,
                 signal,
                 onFound: indices => onFound?.(indices.map(probedAt)),
