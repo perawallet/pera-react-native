@@ -26,14 +26,20 @@ export const ItemSeparator = ({
 }: ItemSeparatorProps) => {
     const styles = useStyles()
 
+    const isBeforeMember =
+        trailingItem?.kind === 'holding' && trailingItem.isGroupMember
+
     // An expanded group's members hang directly under its header.
-    if (
-        leadingItem?.kind === 'group' &&
-        trailingItem?.kind === 'holding' &&
-        trailingItem.isGroupMember
-    ) {
+    if (leadingItem?.kind === 'group' && isBeforeMember) {
         return null
     }
 
-    return <PWView style={styles.separator} />
+    return (
+        <PWView
+            style={[
+                styles.separator,
+                isBeforeMember && styles.memberSeparator,
+            ]}
+        />
+    )
 }

@@ -19,4 +19,8 @@ export const useStyles = makeStyles(theme => ({
         // lanekeep-ignore-next-line pera/no-numeric-sizes reason: starts at the text column, past the xl asset icon (3xl) and the row gap (lg)
         marginLeft: theme.spacing['3xl'] + theme.spacing.lg,
     },
+    // Starts where the inset member rows do.
+    memberSeparator: {
+        marginLeft: theme.spacing.xl,
+    },
 }))
