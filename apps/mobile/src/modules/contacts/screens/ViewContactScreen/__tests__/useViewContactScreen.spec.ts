@@ -233,28 +233,19 @@ describe('useViewContactScreen', () => {
             })
         })
 
-        it('leaves a switched-off chain out, opening the remaining one directly', async () => {
+        it('keeps a switched-off chain among the explorers, as it only turns off its Pera backend', async () => {
             setChainEnabled(BASE_CHAIN_ID, false)
             const { result } = renderHook(() => useViewContactScreen())
 
             await act(() => result.current.openExplorer('evm', '0xA11CE'))
 
-            expect(mocks.requestBottomSheet).not.toHaveBeenCalled()
-            expect(mocks.pushWebView).toHaveBeenCalledWith({
-                url: accountUrl(ETHEREUM_CHAIN_ID, '0xA11CE'),
-            })
-        })
-
-        it('hides the explorer when every chain of the family is switched off', () => {
-            setChainEnabled(ETHEREUM_CHAIN_ID, false)
-            setChainEnabled(BASE_CHAIN_ID, false)
-            const { result } = renderHook(() => useViewContactScreen())
-
-            expect(result.current.addressRows).toContainEqual({
-                family: 'evm',
-                address: '0xA11CE',
-                hasExplorer: false,
-            })
+            expect(mocks.requestBottomSheet).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    contents: expect.objectContaining({
+                        props: { chainIds: [ETHEREUM_CHAIN_ID, BASE_CHAIN_ID] },
+                    }),
+                }),
+            )
         })
 
         it('opens nothing when the network sheet is dismissed', async () => {

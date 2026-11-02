@@ -55,8 +55,6 @@ export const useAccountTabNavigator = (
 ): UseAccountTabNavigatorResult => {
     const { t } = useLanguage()
     const chainId = useAccountChainId(account, LEGACY_CHAIN_ID)
-    // A switched-off chain has every capability off, so this also drops both
-    // tabs, and their queries, while its kill switch is on.
     const hasNfts = useNftHoldingSources(account).length > 0
     const hasHistory = useChainCapability(chainId, 'history')
     const offset = useSharedValue(0)

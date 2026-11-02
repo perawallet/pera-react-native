@@ -45,10 +45,7 @@ export const useSyncCandidateAccounts = (
         const chainIds = chains
             .list()
             .map(({ id }) => id)
-            .filter(
-                id =>
-                    accountsChainAdapters.has(id) && !chains.isSwitchedOff(id),
-            )
+            .filter(id => accountsChainAdapters.has(id))
         return accounts
             .flatMap(account =>
                 chainIds.flatMap(chainId => {

@@ -31,12 +31,15 @@ describe('useChainAvailability', () => {
         })
     })
 
-    it("is unavailable while the chain's kill switch is on", () => {
+    it("stays available while the chain's kill switch is on, as it only turns off the Pera backend", () => {
         const { result } = renderHook(() => useChainAvailability('algorand'))
 
         act(() => setChainEnabled('algorand', false))
 
-        expect(result.current).toEqual({ isAvailable: false })
+        expect(result.current).toEqual({
+            isAvailable: true,
+            nativeAsset: findNativeAsset('algorand'),
+        })
     })
 
     it('is unavailable when this build has no native asset for the chain', () => {

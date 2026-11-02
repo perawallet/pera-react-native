@@ -220,8 +220,9 @@ export const useWebViewNavigationGuard = ({
             }
 
             // A chain claimed the link but refuses it (an EIP-681 approve, a
-            // switched-off chain). Nothing runs, so any origin gets the
-            // dispatcher's refusal message rather than a tap that does nothing.
+            // Pera link naming a chain this build lacks). Nothing runs, so any
+            // origin gets the dispatcher's refusal message rather than a tap
+            // that does nothing.
             if (
                 isUnsupportedChainLink(url) ||
                 unsupportedActionChainOf(url) !== undefined

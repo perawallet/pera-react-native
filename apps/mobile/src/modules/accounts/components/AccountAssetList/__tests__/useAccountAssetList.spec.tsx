@@ -314,7 +314,7 @@ describe('useAccountAssetList', () => {
         expect(result.current.renderItemProps.canManageAssets).toBe(false)
     })
 
-    it("lists no holdings and no management while the account's chain is switched off", () => {
+    it("keeps its holdings and management while the account's chain kill switch is on, as it only turns off the Pera backend", () => {
         const { result } = renderHook(() =>
             useAccountAssetList({ account: mockAccount, t: mockT }),
         )
@@ -322,9 +322,9 @@ describe('useAccountAssetList', () => {
 
         act(() => setChainEnabled('algorand', false))
 
-        expect(result.current.isChainSwitchedOff).toBe(true)
-        expect(result.current.items).toEqual([])
-        expect(result.current.canManageAssets).toBe(false)
+        expect(result.current.hasNoHoldingSource).toBe(false)
+        expect(result.current.items).toHaveLength(1)
+        expect(result.current.canManageAssets).toBe(true)
     })
 
     it("reads an Ethereum account's holdings on Ethereum", () => {
@@ -509,13 +509,17 @@ describe('useAccountAssetList', () => {
             ])
         })
 
-        it('lists nothing, not skeletons, when every chain is switched off', () => {
+        it('lists nothing, not skeletons, when the account has no chain this build registers', () => {
+            const unregistered: WalletAccount = {
+                id: 'unregistered',
+                custody: { kind: 'watch' },
+                chains: { base: { address: ETH_ADDRESS } },
+            }
             const { result } = renderHook(() =>
-                useAccountAssetList({ account: mockAccount, t: mockT }),
+                useAccountAssetList({ account: unregistered, t: mockT }),
             )
 
-            act(() => setChainEnabled('algorand', false))
-
+            expect(result.current.hasNoHoldingSource).toBe(true)
             expect(result.current.items).toEqual([])
         })
     })
