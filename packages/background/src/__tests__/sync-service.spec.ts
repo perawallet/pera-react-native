@@ -107,10 +107,8 @@ const algorandAdapter: FixtureAdapter = {
 let mockAdapters: Record<string, FixtureAdapter> = {}
 // Chains with an assets adapter; read separately from the accounts adapters.
 const mockAssetsChains = new Set<string>()
-let mockSwitchedOff = new Set<string>()
-const mockIsSwitchedOff = vi.fn((chainId: string) =>
-    mockSwitchedOff.has(chainId),
-)
+// What the kill switch reads; the service never consults it.
+const mockIsSwitchedOff = vi.fn((_chainId: string) => false)
 let mockChainList: { id: string }[] = []
 const mockBroadcasters = new Set<string>()
 let mockConcurrencyLimits: { items: unknown[]; limit: number }[] = []
@@ -285,7 +283,7 @@ describe('SyncService', () => {
         vi.clearAllMocks()
         vi.useFakeTimers()
         mockNetwork = 'mainnet'
-        mockSwitchedOff = new Set()
+        mockIsSwitchedOff.mockImplementation(() => false)
         mockSyncedAt = {}
         mockAdapters = { algorand: algorandAdapter }
         mockChainList = [{ id: 'algorand' }]
@@ -615,31 +613,18 @@ describe('SyncService', () => {
         service.stop()
     })
 
-    it('does no network work for a switched-off chain, and force-syncs once it is back on', async () => {
+    it('syncs and reconciles a chain whose Pera backend is switched off, as its RPC reads still run', async () => {
         const { fetchAndPersistAccount } =
             await import('@perawallet/wallet-core-accounts')
-        mockSendShouldRefreshRequest.mockResolvedValue({
-            refresh: false,
-            round: null,
-        })
-        mockSwitchedOff.add('algorand')
+        mockIsSwitchedOff.mockImplementation(() => true)
 
         service.start()
         await vi.advanceTimersByTimeAsync(POLL_INTERVAL)
-
-        expect(mockIsSwitchedOff).toHaveBeenCalledWith('algorand')
-        expect(mockSendShouldRefreshRequest).not.toHaveBeenCalled()
-        expect(mockReconcileOpenSubmissions).not.toHaveBeenCalled()
-        expect(fetchAndPersistAccount).not.toHaveBeenCalled()
-
-        mockSwitchedOff.delete('algorand')
-        await vi.advanceTimersByTimeAsync(POLL_INTERVAL)
-
-        // The first tick that runs is still the unconditional force-sync.
-        expect(mockSendShouldRefreshRequest).not.toHaveBeenCalled()
-        expect(fetchAndPersistAccount).toHaveBeenCalled()
-
         service.stop()
+
+        expect(mockReconcileOpenSubmissions).toHaveBeenCalled()
+        expect(fetchAndPersistAccount).toHaveBeenCalled()
+        expect(mockIsSwitchedOff).not.toHaveBeenCalled()
     })
 
     it('calls shouldRefresh for the active network on subsequent ticks', async () => {
@@ -2749,7 +2734,7 @@ describe('SyncService', () => {
                 }
             })
 
-            it('forgets a backed-off scope once it leaves the synced set, so switching it back on syncs at once and backs off from base', async () => {
+            it('forgets a backed-off scope once it leaves the synced set, so its return syncs at once and backs off from base', async () => {
                 addEthereumAccount('eth', { ethereum: { address: '0xabc' } })
                 await failEthereumReads()
 
@@ -2758,9 +2743,10 @@ describe('SyncService', () => {
                 // Ethereum's interval is now 12 s, next due at 18 s.
                 expect(await accountReadsOn(ETHEREUM)).toHaveLength(2)
 
-                mockSwitchedOff.add('ethereum')
+                const { ethereum } = mockAdapters
+                delete mockAdapters.ethereum
                 await vi.advanceTimersByTimeAsync(POLL_INTERVAL)
-                mockSwitchedOff.delete('ethereum')
+                mockAdapters.ethereum = ethereum
                 await vi.advanceTimersByTimeAsync(POLL_INTERVAL)
                 expect(await accountReadsOn(ETHEREUM)).toHaveLength(3)
 
@@ -2835,21 +2821,18 @@ describe('SyncService', () => {
             }
         })
 
-        it('skips a switched-off chain while Algorand syncs, and force-syncs it once back on', async () => {
+        it('syncs a chain whose Pera backend is switched off alongside Algorand', async () => {
             addEthereumAccount('eth', { ethereum: { address: '0xabc' } })
-            mockSwitchedOff.add('ethereum')
+            mockIsSwitchedOff.mockImplementation(
+                chainId => chainId === 'ethereum',
+            )
 
             service.start()
             await vi.advanceTimersByTimeAsync(50)
-            expect(await accountReadsOn(ETHEREUM)).toEqual([])
-            expect(await accountReadsOn(MAINNET)).toEqual(['ADDR1', 'ADDR2'])
-
-            mockSwitchedOff.delete('ethereum')
-            await vi.advanceTimersByTimeAsync(POLL_INTERVAL)
             service.stop()
 
             expect(await accountReadsOn(ETHEREUM)).toEqual(['0xabc'])
-            expect(ethereumSignal).not.toHaveBeenCalled()
+            expect(await accountReadsOn(MAINNET)).toEqual(['ADDR1', 'ADDR2'])
         })
 
         it('skips an account entry on a chain this build does not register', async () => {
