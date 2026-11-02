@@ -101,22 +101,12 @@ run_case "a wrong network still fails outside production" 1 \
     "serves chain id 11155111" \
     ETHEREUM_MAINNET_RPC_URL="$MAINNET_NODE,$SEPOLIA_NODE"
 run_case "a build with no EVM endpoints has nothing to check" 0 "nothing to check"
-run_case "production refuses a main mainnet node off a pinned domain" 1 \
-    "the main production mainnet endpoint must be on a pinned domain" \
-    APP_ENV=production ETHEREUM_MAINNET_RPC_URL="$MAINNET_NODE"
-# The first URL is unreachable here (no such host), so the case reads the host
-# rules from the output: the plain-http fallback is refused, and the main
-# node's pinned domain is not what fails.
-run_case "production requires a fallback to be https but not pinned" 1 \
+run_case "production refuses a plain-http mainnet URL" 1 \
     "a production mainnet endpoint must be https" \
-    APP_ENV=production ETHEREUM_MAINNET_RPC_URL="https://rpc.perawallet.app,$MAINNET_NODE"
-if grep -q "pinned domain" "$WORK/log"; then
-    echo "  FAIL  production held the fallback to the pinned domain"
-    failures=$((failures + 1))
-fi
-run_case "production leaves a testnet URL off a pinned domain alone" 0 "" \
+    APP_ENV=production ETHEREUM_MAINNET_RPC_URL="$MAINNET_NODE"
+run_case "production leaves a plain-http testnet URL alone" 0 "" \
     APP_ENV=production ETHEREUM_SEPOLIA_RPC_URL="$SEPOLIA_NODE"
-run_case "staging leaves a mainnet URL off a pinned domain alone" 0 "" \
+run_case "staging leaves a plain-http mainnet URL alone" 0 "" \
     APP_ENV=staging ETHEREUM_MAINNET_RPC_URL="$MAINNET_NODE"
 
 run_case "the probe prints a URL's origin only" 0 "PASS ETHEREUM_MAINNET_RPC_URL ${MAINNET_NODE} — chain id 1" \

@@ -17,9 +17,8 @@ import type {
 import { chainEndpointsFor } from '@perawallet/wallet-core-config'
 import type { EvmChain } from '../chains/types'
 
-// tools/check-evm-rpc-endpoints.mjs holds the same list: a production build
-// must serve its main mainnet node from a host this pins. The public fallback
-// sits outside it, so it is never pinned.
+// Only hosts under these domains are pinned; any other build-time RPC URL,
+// such as a public fallback, runs unpinned.
 export const EVM_RPC_PIN_DOMAINS = ['perawallet.app'] as const
 
 /** One kill switch per chain: the registry keys groups by flag, so a shared flag would keep only the last chain's hosts. */

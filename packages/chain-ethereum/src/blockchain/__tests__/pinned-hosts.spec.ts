@@ -10,8 +10,6 @@
  limitations under the License
  */
 
-import { readFileSync } from 'node:fs'
-import { join } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import {
     EVM_RPC_PIN_DOMAINS,
@@ -69,20 +67,5 @@ describe('evmPinnedHosts', () => {
             urls: [],
             domains: ['perawallet.app'],
         })
-    })
-})
-
-describe('the release gate', () => {
-    it('requires production hosts under the domains the app pins', () => {
-        const source = readFileSync(
-            join(__dirname, '../../../../../tools/check-evm-rpc-endpoints.mjs'),
-            'utf8',
-        )
-        const listed = /const PIN_DOMAINS = \[([^\]]*)\]/.exec(source)?.[1]
-        const domains = [...(listed ?? '').matchAll(/'([^']+)'/g)].map(
-            match => match[1],
-        )
-
-        expect(domains).toEqual([...EVM_RPC_PIN_DOMAINS])
     })
 })

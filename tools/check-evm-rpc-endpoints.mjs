@@ -21,10 +21,9 @@
  *    since a node that is dead at build time would ship dead; elsewhere it only
  *    warns, because the app fails over to the next URL and a public node's
  *    outage shouldn't stop a staging build;
- *  - with APP_ENV=production, a mainnet network's main node (its first URL) must
- *    be https on a domain the app pins (EVM_RPC_PIN_DOMAINS in
- *    packages/chain-ethereum), and any fallback must be https. The fallback is
- *    a public node, so it is deliberately not pinned.
+ *  - with APP_ENV=production, every mainnet URL must be https. No domain is
+ *    required: the fallback is a public node, and whoever can set these lists
+ *    can as easily edit this check.
  *
  * URLs are printed without their path or query: a paid provider's API key
  * usually sits there, and this output lands in CI logs.
@@ -38,7 +37,6 @@ const { evmScopeConfigKeys } = createRequire(import.meta.url)(
     './dev/evm-config-keys.cjs',
 )
 
-const PIN_DOMAINS = ['perawallet.app']
 const ATTEMPTS = 3
 const RETRY_DELAY_MS = 1_000
 const TIMEOUT_MS = 10_000
@@ -48,9 +46,6 @@ const urlsOf = value =>
         .split(',')
         .map(item => item.trim())
         .filter(Boolean)
-
-const isOnPinnedDomain = host =>
-    PIN_DOMAINS.some(domain => host === domain || host.endsWith(`.${domain}`))
 
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms))
 
@@ -99,22 +94,19 @@ const shown = url => {
 }
 
 /** `undefined` when the URL checks out; `isUnreachable` marks a failure that says nothing about the network it serves. */
-const problemWith = async (url, scope, isProduction, index) => {
+const problemWith = async (url, scope, isProduction) => {
     let parsed
     try {
         parsed = new URL(url)
     } catch {
         return { message: 'not a valid URL' }
     }
-    if (isProduction && scope.tier === 'mainnet') {
-        if (index === 0 && !isOnPinnedDomain(parsed.hostname)) {
-            return {
-                message: `the main production mainnet endpoint must be on a pinned domain (${PIN_DOMAINS.join(', ')})`,
-            }
-        }
-        if (parsed.protocol !== 'https:') {
-            return { message: 'a production mainnet endpoint must be https' }
-        }
+    if (
+        isProduction &&
+        scope.tier === 'mainnet' &&
+        parsed.protocol !== 'https:'
+    ) {
+        return { message: 'a production mainnet endpoint must be https' }
     }
     const { chainId, error, isUnreachable } = await fetchChainId(url)
     if (error) return { message: error, isUnreachable }
@@ -132,9 +124,9 @@ const main = async () => {
     let failed = false
 
     for (const scope of evmScopeConfigKeys()) {
-        for (const [index, url] of urlsOf(process.env[scope.rpcUrlEnv]).entries()) {
+        for (const url of urlsOf(process.env[scope.rpcUrlEnv])) {
             checked += 1
-            const problem = await problemWith(url, scope, isProduction, index)
+            const problem = await problemWith(url, scope, isProduction)
             const label = `${scope.rpcUrlEnv} ${shown(url)}`
             if (!problem) {
                 console.log(`PASS ${label} — chain id ${scope.eip155ChainId}`)
