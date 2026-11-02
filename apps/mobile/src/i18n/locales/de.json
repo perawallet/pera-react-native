@@ -3517,7 +3517,8 @@
             "pending": "Ausstehend seit {{since}}",
             "failed": "Fehlgeschlagen",
             "replaced": "Durch eine andere Transaktion ersetzt",
-            "replacement_not_needed": "Nicht nötig: Die ursprüngliche Transaktion wurde zuerst bestätigt"
+            "replacement_not_needed": "Nicht nötig: Die ursprüngliche Transaktion wurde zuerst bestätigt",
+            "waiting_on_earlier": "Wartet auf eine frühere Transaktion"
         },
         "list_item": {
             "send": "Senden",
@@ -3694,7 +3695,10 @@
             "body": "Beschleunigen sendet sie erneut mit einer höheren Netzwerkgebühr. Stornieren ersetzt sie durch eine leere Überweisung an dich selbst, die ebenfalls eine Netzwerkgebühr kostet. Wird die ursprüngliche Transaktion zuerst bestätigt, wird nichts ersetzt.",
             "speed_up": "Beschleunigen",
             "cancel": "Transaktion stornieren",
-            "review_notice": "Ersetzt Transaktion {{txId}}"
+            "review_notice": "Ersetzt Transaktion {{txId}}",
+            "blocked_title": "Wartet auf eine frühere Transaktion",
+            "blocked_body": "Eine frühere Transaktion von diesem Konto hat das Netzwerk nie erreicht, daher kann diese erst bestätigt werden, wenn etwas ihren Platz einnimmt. Freigeben sendet an ihrer Stelle eine leere Überweisung an dich selbst, die eine Netzwerkgebühr kostet.",
+            "unblock": "Freigeben"
         },
         "suspected_poisoning": {
             "marker": "Verdacht auf Address Poisoning",

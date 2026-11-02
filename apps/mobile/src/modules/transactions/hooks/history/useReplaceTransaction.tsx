@@ -13,6 +13,8 @@
 import { useCallback } from 'react'
 import type { TransactionRecord } from '@perawallet/wallet-core-chain-contract'
 import {
+    useBlockingGapQuery,
+    useFillNonceGapMutation,
     useReplaceableTransactionQuery,
     useReplaceTransactionMutation,
 } from '@perawallet/wallet-core-transactions'
@@ -26,7 +28,9 @@ import {
 export type UseReplaceTransactionResult = {
     /** The record is a pending transaction this wallet can speed up or cancel. */
     canReplace: boolean
-    /** Asks speed up or cancel, then queues the replacement for review. */
+    /** The record waits on an earlier transaction that never reached the network. */
+    isBlocked: boolean
+    /** Asks speed up, cancel or (when blocked) unblock, then queues the pick for review. */
     handleReplace: () => Promise<void>
 }
 
@@ -37,24 +41,25 @@ export const useReplaceTransaction = (
     const { request: requestBottomSheet } = useBottomSheet()
     const { isReplaceable } = useReplaceableTransactionQuery(record)
     const { replace } = useReplaceTransactionMutation()
+    const { isBlocked } = useBlockingGapQuery(record)
+    const { fill } = useFillNonceGapMutation()
 
     const handleReplace = useCallback(async () => {
         if (!record) return
         const result = await requestBottomSheet<ReplaceTransactionResult>({
-            contents: <ReplaceTransactionContent />,
+            contents: <ReplaceTransactionContent isBlocked={isBlocked} />,
             options: { size: 'auto', enablePanDownToClose: true },
         })
         if (!result) return
+        const { scope, id: txId } = record
         try {
-            await replace({
-                scope: record.scope,
-                txId: record.id,
-                kind: result.kind,
-            })
+            await (result.kind === 'unblock'
+                ? fill({ scope, txId })
+                : replace({ scope, txId, kind: result.kind }))
         } catch (error) {
             showError(error)
         }
-    }, [record, replace, requestBottomSheet, showError])
+    }, [fill, isBlocked, record, replace, requestBottomSheet, showError])
 
-    return { canReplace: isReplaceable, handleReplace }
+    return { canReplace: isReplaceable, isBlocked, handleReplace }
 }

@@ -70,6 +70,16 @@ export const createEvmBroadcasterAdapter = (
         error: unknown,
         flow: SubmissionFlow,
     ): void => {
+        // Refused before the node saw it for a wallet-side reason, so not an
+        // EVM failure to group under evm.unknown.
+        if (error instanceof TransportError) {
+            logger.warn('Ethereum submission refused before broadcast', {
+                error,
+                chainId: chain.row.id,
+                flow,
+            })
+            return
+        }
         logger.error(
             toEvmError(
                 error instanceof SubmissionError ? error.nodeError : error,
@@ -133,7 +143,12 @@ export const createEvmBroadcasterAdapter = (
                     reportSubmitFailure(error, 'pipeline')
                     // Keeps the classification: wrapping would make a node
                     // refusal look retryable.
-                    if (error instanceof SubmissionError) throw error
+                    if (
+                        error instanceof SubmissionError ||
+                        error instanceof TransportError
+                    ) {
+                        throw error
+                    }
                     const cause = toError(error)
                     throw new TransportError(cause.message, cause)
                 }

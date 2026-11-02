@@ -44,7 +44,11 @@ import {
 } from '../../blockchain/msw-handlers'
 import { createEvmClient } from '../../blockchain/utils/createEvmClient'
 import { TEST_RPC_URL, testChainContext } from '../../__tests__/context'
-import { SENDER, VIEM_TRANSFER_NONCE_0 } from '../../signing/__tests__/fixtures'
+import {
+    SENDER,
+    VIEM_TRANSFER_NONCE_0,
+    VIEM_TRANSFER_NONCE_2,
+} from '../../signing/__tests__/fixtures'
 import { allocateEthereumNonce } from '../nonce-pool'
 import {
     DROPPED_GRACE_MS,
@@ -54,6 +58,7 @@ import {
     type SubmissionSettledHandlers,
 } from '../reconcile'
 import { ETHEREUM } from '../../__tests__/evm-chains'
+import { findEvmNonceGap } from '../replacement'
 import { submitAndRecordEthereumTransactions } from '../submission'
 
 const SCOPE: ChainScope = { chainId: 'ethereum', networkId: 'mainnet' }
@@ -261,6 +266,36 @@ describe('reconcileEthereumSubmissions', () => {
             }),
         ).resolves.toEqual({ probed: 0, confirmed: 0, failed: 0 })
         expect(unused).not.toHaveBeenCalled()
+    })
+
+    it('fails a dropped send under a later open one, which then names the dropped nonce as its gap', async () => {
+        await record({ txIds: [HASH], nonce: 1 })
+        const stuck = keccak256(VIEM_TRANSFER_NONCE_2)
+        await record({ txIds: [stuck], nonce: 2 })
+        node({
+            latest: 1,
+            eth_getTransactionByHash: params =>
+                params[0] === stuck ? HELD_BY_NODE : null,
+        })
+        pastGraceWindow()
+
+        await expect(reconcile()).resolves.toMatchObject({ failed: 1 })
+        expect(await statuses()).toEqual(['failed', 'submitted'])
+        server.use(
+            ...evmRpcHandlers({
+                rpcUrl: TEST_RPC_URL,
+                responses: { eth_getTransactionCount: '0x1' },
+            }),
+        )
+        await expect(
+            findEvmNonceGap(
+                testChainContext(),
+                ETHEREUM,
+                { rawTransaction: VIEM_TRANSFER_NONCE_2 },
+                { scope: SCOPE },
+                db,
+            ),
+        ).resolves.toBe(1)
     })
 
     it('lets the next send fill the nonce of a dropped one, and settles that send', async () => {

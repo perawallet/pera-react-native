@@ -51,6 +51,8 @@ export {
     type RecipientWarningInput,
     type TransactionReplacementKind,
     type TransactionReplacementRequest,
+    type TransactionGapRequest,
+    type TransactionGapFillRequest,
     type AddressPoisoningRules,
 } from './transfer-adapter'
 export {

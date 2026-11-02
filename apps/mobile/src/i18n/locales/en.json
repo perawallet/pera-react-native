@@ -3525,7 +3525,8 @@
             "pending": "Pending since {{since}}",
             "failed": "Failed",
             "replaced": "Replaced by another transaction",
-            "replacement_not_needed": "Not needed: the original transaction confirmed first"
+            "replacement_not_needed": "Not needed: the original transaction confirmed first",
+            "waiting_on_earlier": "Waiting on an earlier transaction"
         },
         "list_item": {
             "send": "Send",
@@ -3702,7 +3703,10 @@
             "body": "Speed up sends it again with a higher network fee. Cancel replaces it with an empty transfer to yourself, which also costs a network fee. If the original confirms first, nothing is replaced.",
             "speed_up": "Speed Up",
             "cancel": "Cancel Transaction",
-            "review_notice": "Replaces transaction {{txId}}"
+            "review_notice": "Replaces transaction {{txId}}",
+            "blocked_title": "Waiting on an earlier transaction",
+            "blocked_body": "An earlier transaction from this account never reached the network, so this one can't confirm until something takes its place. Unblock sends an empty transfer to yourself in its place, which costs a network fee.",
+            "unblock": "Unblock"
         },
         "suspected_poisoning": {
             "marker": "Suspected address poisoning",

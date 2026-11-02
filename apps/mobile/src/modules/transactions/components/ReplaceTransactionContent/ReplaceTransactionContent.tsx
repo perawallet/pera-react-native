@@ -16,9 +16,18 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
 import { useStyles } from './styles'
 
-export type ReplaceTransactionResult = { kind: TransactionReplacementKind }
+export type ReplaceTransactionResult = {
+    kind: TransactionReplacementKind | 'unblock'
+}
 
-export const ReplaceTransactionContent = () => {
+export type ReplaceTransactionContentProps = {
+    /** The transaction waits on an earlier one that never reached the network. */
+    isBlocked?: boolean
+}
+
+export const ReplaceTransactionContent = ({
+    isBlocked = false,
+}: ReplaceTransactionContentProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
     const { resolve } = useBottomSheetResult<ReplaceTransactionResult>()
@@ -29,15 +38,31 @@ export const ReplaceTransactionContent = () => {
                 variant='h3'
                 style={styles.title}
             >
-                {t('transactions.replacement.title')}
+                {t(
+                    isBlocked
+                        ? 'transactions.replacement.blocked_title'
+                        : 'transactions.replacement.title',
+                )}
             </PWText>
             <PWText style={styles.body}>
-                {t('transactions.replacement.body')}
+                {t(
+                    isBlocked
+                        ? 'transactions.replacement.blocked_body'
+                        : 'transactions.replacement.body',
+                )}
             </PWText>
             <PWView style={styles.actions}>
+                {isBlocked && (
+                    <PWButton
+                        testID='replace_transaction_unblock'
+                        variant='primary'
+                        title={t('transactions.replacement.unblock')}
+                        onPress={() => resolve({ kind: 'unblock' })}
+                    />
+                )}
                 <PWButton
                     testID='replace_transaction_speed_up'
-                    variant='primary'
+                    variant={isBlocked ? 'secondary' : 'primary'}
                     title={t('transactions.replacement.speed_up')}
                     onPress={() => resolve({ kind: 'speed-up' })}
                 />
