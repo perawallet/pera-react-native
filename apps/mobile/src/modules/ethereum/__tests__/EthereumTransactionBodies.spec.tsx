@@ -171,6 +171,11 @@ describe('Ethereum transaction bodies', () => {
 
     beforeEach(() => {
         mockNavigate.mockClear()
+        // clearAllMocks keeps return values, so a priced case would leak into the next.
+        vi.mocked(assets.useAssetPricesQuery).mockReturnValue({
+            data: new Map(),
+            isPending: false,
+        } as unknown as ReturnType<typeof assets.useAssetPricesQuery>)
         // The global mocks give an ALGO-sized native asset and a number from toWholeUnits.
         vi.spyOn(assets, 'nativeAssetFor').mockReturnValue(
             ETH as unknown as ReturnType<typeof assets.nativeAssetFor>,
