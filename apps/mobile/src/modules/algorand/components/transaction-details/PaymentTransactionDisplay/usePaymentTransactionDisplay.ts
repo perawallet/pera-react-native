@@ -10,31 +10,27 @@
  limitations under the License
  */
 
+import { useMemo } from 'react'
+import type { Decimal } from 'decimal.js'
 import type { AlgorandTransactionView } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import { useNativeAsset } from '@perawallet/wallet-core-assets'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
     baseUnitsToDisplayUnits,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { useMemo } from 'react'
-import type { Decimal } from 'decimal.js'
-import { useStyles } from './styles'
 
 export const usePaymentTransactionDisplay = (
     transaction: AlgorandTransactionView,
-    referenceAddress?: string,
 ) => {
     const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const payment = transaction.paymentTransaction
-
-    const styles = useStyles()
     const { decimals: nativeDecimals } = useNativeAsset(scope)
 
-    const receiverAddress = payment?.receiver
-    const senderAddress = transaction.sender
     const closeToAddress = payment?.closeRemainderTo
+    // The hero shows the paid leg only, so a close-out's swept remainder
+    // renders in its own row and the two never double-count.
     const closeAmountValue = useMemo(
         (): Nullable<Decimal> =>
             payment?.closeAmount === undefined
@@ -42,51 +38,6 @@ export const usePaymentTransactionDisplay = (
                 : baseUnitsToDisplayUnits(payment.closeAmount, nativeDecimals),
         [payment?.closeAmount, nativeDecimals],
     )
-    // The paid leg only — a close-out's swept remainder renders in its own
-    // Remainder Amount row (closeAmountValue), so the two never double-count.
-    const amount = useMemo(() => {
-        const paid = baseUnitsToDisplayUnits(
-            payment?.amount ?? 0n,
-            nativeDecimals,
-        )
-        if (senderAddress === referenceAddress) {
-            return paid.negated()
-        }
-        return paid
-    }, [senderAddress, payment, referenceAddress, nativeDecimals])
 
-    const amountStyle = useMemo(() => {
-        if (senderAddress === referenceAddress) {
-            return styles.amountNegative
-        } else if (
-            receiverAddress === referenceAddress ||
-            closeToAddress === referenceAddress
-        ) {
-            return styles.amountPositive
-        }
-        return undefined
-    }, [
-        styles.amountNegative,
-        receiverAddress,
-        senderAddress,
-        closeToAddress,
-        styles.amountPositive,
-        referenceAddress,
-    ])
-
-    const showWarnings = useMemo(() => {
-        return !transaction?.confirmedRound
-    }, [transaction])
-
-    return {
-        payment,
-        amount,
-        amountStyle,
-        showWarnings,
-        receiverAddress,
-        senderAddress,
-        closeToAddress,
-        closeAmountValue,
-        transaction,
-    }
+    return { payment, closeToAddress, closeAmountValue }
 }

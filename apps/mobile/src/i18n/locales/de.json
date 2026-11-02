@@ -3490,7 +3490,6 @@
         "common": {
             "from": "Von",
             "to": "An",
-            "sent_to": "Gesendet an",
             "close_amount": "Restguthaben",
             "close_to": "Restguthaben an",
             "fee": "Gebühr",
@@ -3504,7 +3503,9 @@
             "date": "Datum",
             "note": "Transaktionsnotiz",
             "view_raw_transaction": "JSON anzeigen",
-            "view_in_explorer": "Im Pera Explorer anzeigen",
+            "network": "Netzwerk",
+            "block": "Block",
+            "view_in_explorer": "In {{explorer}} ansehen",
             "view_asset_url": "Asset-URL anzeigen",
             "view_note": "Notiz anzeigen",
             "view_metadata": "Metadaten anzeigen",
@@ -3647,7 +3648,6 @@
         "heartbeat": {
             "description": "Ein Heartbeat beweist, dass ein Konto weiterhin online ist und am Algorand-Konsens teilnimmt. Dabei werden keine Guthaben bewegt.",
             "account": "Konto mit Online-Nachweis",
-            "submitted_by": "Eingereicht von",
             "key_dilution": "Schlüsselverdünnung",
             "vote_id": "Vote-ID"
         },

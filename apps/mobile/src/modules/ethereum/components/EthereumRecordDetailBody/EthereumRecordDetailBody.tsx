@@ -11,13 +11,11 @@
  */
 
 import { ChainNotice } from '@components/ChainNotice'
-import { PWLoadingIndicator, PWView } from '@components/core'
+import { PWLoadingIndicator } from '@components/core'
 import type { RecordDetailBodyProps } from '@modules/signing'
 import { useEthereumRecordDetail } from '../../hooks/useEthereumRecordDetail'
-import { EthereumTransactionDetailBody } from '../EthereumTransactionDetailBody'
-import { EthereumRecordFacts } from './EthereumRecordFacts'
+import { EthereumRecordReadBody } from './EthereumRecordReadBody'
 import { EthereumRecordSummary } from './EthereumRecordSummary'
-import { useStyles } from './styles'
 
 /**
  * Always what the history gave. Once the node's copy is read it is shown in
@@ -25,7 +23,6 @@ import { useStyles } from './styles'
  * signing; the balance changes stay below it either way.
  */
 export const EthereumRecordDetailBody = ({ record }: RecordDetailBodyProps) => {
-    const styles = useStyles()
     const { transaction, isLoading, isReadFailed } =
         useEthereumRecordDetail(record)
     const isUndecodedCall =
@@ -34,34 +31,39 @@ export const EthereumRecordDetailBody = ({ record }: RecordDetailBodyProps) => {
         !isLoading &&
         !isReadFailed
 
+    if (transaction) {
+        return (
+            <EthereumRecordReadBody
+                record={record}
+                transaction={transaction}
+            />
+        )
+    }
+
     return (
-        <PWView style={styles.container}>
-            {transaction ? (
-                <EthereumTransactionDetailBody
-                    transaction={transaction}
-                    scope={record.scope}
-                />
-            ) : (
-                <EthereumRecordSummary record={record} />
-            )}
-            {isLoading && (
-                <PWLoadingIndicator testID='ethereum_record_loading' />
-            )}
-            {isReadFailed && (
-                <ChainNotice
-                    kind='warning'
-                    titleKey='transactions.record_detail.read_failed'
-                    testID='ethereum_record_read_failed'
-                />
-            )}
-            {isUndecodedCall && (
-                <ChainNotice
-                    kind='warning'
-                    titleKey='transactions.contract_call.warning'
-                    testID='ethereum_record_undecoded_warning'
-                />
-            )}
-            <EthereumRecordFacts record={record} />
-        </PWView>
+        <EthereumRecordSummary
+            record={record}
+            warnings={
+                <>
+                    {isLoading && (
+                        <PWLoadingIndicator testID='ethereum_record_loading' />
+                    )}
+                    {isReadFailed && (
+                        <ChainNotice
+                            kind='warning'
+                            titleKey='transactions.record_detail.read_failed'
+                            testID='ethereum_record_read_failed'
+                        />
+                    )}
+                    {isUndecodedCall && (
+                        <ChainNotice
+                            kind='warning'
+                            titleKey='transactions.contract_call.warning'
+                            testID='ethereum_record_undecoded_warning'
+                        />
+                    )}
+                </>
+            }
+        />
     )
 }

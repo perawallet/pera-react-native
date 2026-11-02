@@ -49,12 +49,19 @@ vi.mock('@perawallet/wallet-core-nfd', () => ({
 }))
 
 const mockNetworkConfig = { explorerUrl: 'https://explorer.test' }
-vi.mock('@perawallet/wallet-core-config', async importOriginal => ({
-    ...(await importOriginal<
-        typeof import('@perawallet/wallet-core-config')
-    >()),
-    getAlgorandChainConfig: () => mockNetworkConfig,
-}))
+vi.mock('@perawallet/wallet-core-config', async importOriginal => {
+    const actual =
+        await importOriginal<typeof import('@perawallet/wallet-core-config')>()
+    return {
+        ...actual,
+        getChainConfig: (
+            scope: Parameters<typeof actual.getChainConfig>[0],
+        ) => ({
+            ...actual.getChainConfig(scope),
+            explorerUrl: mockNetworkConfig.explorerUrl,
+        }),
+    }
+})
 
 const renderDetail = (
     transaction: TransactionNative,
@@ -79,7 +86,7 @@ const DETAIL_KINDS: [AlgorandDisplayFixtureKind, DetailExpectation][] = [
             title: 'transactions.type.pay',
             participants: [
                 ['transactions.common.from', FIXTURE_SENDER],
-                ['transactions.common.sent_to', FIXTURE_RECEIVER],
+                ['transactions.common.to', FIXTURE_RECEIVER],
             ],
         },
     ],
@@ -89,7 +96,7 @@ const DETAIL_KINDS: [AlgorandDisplayFixtureKind, DetailExpectation][] = [
             title: 'transactions.type.axfer',
             participants: [
                 ['transactions.common.from', FIXTURE_SENDER],
-                ['transactions.common.sent_to', FIXTURE_RECEIVER],
+                ['transactions.common.to', FIXTURE_RECEIVER],
             ],
         },
     ],
@@ -125,7 +132,7 @@ const DETAIL_KINDS: [AlgorandDisplayFixtureKind, DetailExpectation][] = [
             title: 'transactions.type.hb',
             participants: [
                 ['transactions.heartbeat.account', FIXTURE_RECEIVER],
-                ['transactions.heartbeat.submitted_by', FIXTURE_SENDER],
+                ['transactions.common.from', FIXTURE_SENDER],
             ],
         },
     ],
@@ -232,7 +239,12 @@ describe('TransactionDetailBody', () => {
     })
 
     it('shows a pending status and no identifier or explorer link for an unsigned transaction', () => {
-        renderDetail(buildAlgorandDisplayFixture('payment', { id: '' }))
+        renderDetail(
+            buildAlgorandDisplayFixture('payment', {
+                id: '',
+                confirmedRound: undefined,
+            }),
+        )
 
         expect(screen.getByText('transactions.common.pending')).toBeTruthy()
         expect(screen.queryByText(FIXTURE_TRANSACTION_ID)).toBeNull()

@@ -3498,7 +3498,6 @@
         "common": {
             "from": "De",
             "to": "A",
-            "sent_to": "Enviado a",
             "close_amount": "Saldo restante",
             "close_to": "Saldo restante a",
             "fee": "Comisión",
@@ -3512,7 +3511,9 @@
             "date": "Fecha",
             "note": "Nota de la transacción",
             "view_raw_transaction": "Ver JSON",
-            "view_in_explorer": "Ver en Pera Explorer",
+            "network": "Red",
+            "block": "Bloque",
+            "view_in_explorer": "Ver en {{explorer}}",
             "view_asset_url": "Ver URL del activo",
             "view_note": "Ver nota",
             "view_metadata": "Ver metadatos",
@@ -3655,7 +3656,6 @@
         "heartbeat": {
             "description": "Un heartbeat demuestra que una cuenta sigue en línea y participando en el consenso de Algorand. No mueve fondos.",
             "account": "Cuenta verificada en línea",
-            "submitted_by": "Enviado por",
             "key_dilution": "Dilución de clave",
             "vote_id": "ID de voto"
         },
