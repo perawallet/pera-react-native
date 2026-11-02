@@ -13,7 +13,9 @@
 import { makeStyles } from '@rneui/themed'
 import type { KeyValueRowProps } from './KeyValueRow'
 
-export const useStyles = makeStyles((theme, props: KeyValueRowProps) => ({
+type StyleProps = KeyValueRowProps & { isDetail: boolean }
+
+export const useStyles = makeStyles((theme, props: StyleProps) => ({
     container: {
         flexDirection: 'row',
         alignItems: props.verticalAlignment === 'top' ? 'flex-start' : 'center',
@@ -23,18 +25,19 @@ export const useStyles = makeStyles((theme, props: KeyValueRowProps) => ({
         overflow: 'hidden',
         gap: theme.spacing.md,
     },
+    // A detail label keeps its natural width, so "Transaction Note" isn't cut at 38%.
     labelContainer: {
-        flexBasis: '38%',
-        maxWidth: '38%',
+        flexBasis: props.isDetail ? 'auto' : '38%',
+        maxWidth: props.isDetail ? '50%' : '38%',
         minWidth: 0,
         flexShrink: 1,
         overflow: 'hidden',
     },
     label: {
-        color: theme.colors.textGray,
+        color: props.isDetail ? theme.colors.textMain : theme.colors.textGray,
     },
     childContainer: {
-        alignItems: 'stretch',
+        alignItems: props.isDetail ? 'flex-end' : 'stretch',
         alignSelf: 'stretch',
         flex: 1,
         minWidth: 0,

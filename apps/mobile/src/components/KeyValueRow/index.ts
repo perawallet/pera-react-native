@@ -12,3 +12,5 @@
 
 export { KeyValueRow } from './KeyValueRow'
 export type { KeyValueRowProps } from './KeyValueRow'
+export { KeyValueRowAppearanceContext } from './appearanceContext'
+export type { KeyValueRowAppearance } from './appearanceContext'

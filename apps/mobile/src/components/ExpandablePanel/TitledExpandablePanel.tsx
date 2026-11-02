@@ -22,6 +22,7 @@ export type TitledExpandablePanelProps = {
     title: React.ReactNode | string
     iconPressed?: () => void
     containerStyle?: StyleProp<ViewStyle>
+    headerStyle?: StyleProp<ViewStyle>
     contentStyle?: StyleProp<ViewStyle>
     startExpanded?: boolean
 } & PropsWithChildren
@@ -29,6 +30,7 @@ export type TitledExpandablePanelProps = {
 export const TitledExpandablePanel = ({
     title,
     containerStyle,
+    headerStyle,
     contentStyle,
     startExpanded = false,
     children,
@@ -62,7 +64,7 @@ export const TitledExpandablePanel = ({
         <PWView style={containerStyle}>
             <PWTouchableOpacity
                 onPress={onPress}
-                style={styles.header}
+                style={[styles.header, headerStyle]}
             >
                 {typeof title === 'string' ? (
                     <PWView style={styles.titleContainer}>

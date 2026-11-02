@@ -10,12 +10,14 @@
  limitations under the License
  */
 
+import { useContext } from 'react'
 import {
     PWText,
     type PWTextProps,
     PWView,
     type PWViewProps,
 } from '@components/core'
+import { KeyValueRowAppearanceContext } from './appearanceContext'
 import { useStyles } from './styles'
 
 export type KeyValueRowProps = {
@@ -26,7 +28,9 @@ export type KeyValueRowProps = {
 
 export const KeyValueRow = (props: KeyValueRowProps) => {
     const { title, titleProps, children, ...rest } = props
-    const styles = useStyles(props)
+    const appearance = useContext(KeyValueRowAppearanceContext)
+    const isDetail = appearance === 'detail'
+    const styles = useStyles({ ...props, isDetail })
     return (
         <PWView
             {...rest}
@@ -34,7 +38,8 @@ export const KeyValueRow = (props: KeyValueRowProps) => {
         >
             <PWView style={styles.labelContainer}>
                 <PWText
-                    variant='bodyCompact'
+                    variant={isDetail ? 'bodyLarge' : 'bodyCompact'}
+                    weight={isDetail ? 500 : undefined}
                     style={styles.label}
                     truncate
                     {...titleProps}
