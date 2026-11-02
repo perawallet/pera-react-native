@@ -10,13 +10,15 @@
  limitations under the License
  */
 
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { PWText, PWView } from '@components/core'
 import { KeyValueRow } from '@components/KeyValueRow'
 import type { AlgorandTransactionView } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
+import { TransactionDetailAddress } from '@modules/signing'
 import { TitledExpandablePanel } from '@components/ExpandablePanel/TitledExpandablePanel'
-import { AddressDisplay } from '@components/AddressDisplay'
 import { CopyableText } from '@components/CopyableText'
 import { hasAdvancedAppCallDetails } from './utils'
 
@@ -29,6 +31,7 @@ export const AppCallDetailsPanel = ({
 }: AppCallDetailsPanelProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
 
     const appCall = transaction.applicationTransaction
     if (!appCall) {
@@ -62,10 +65,10 @@ export const AppCallDetailsPanel = ({
                         title={t('transactions.app_call.accounts')}
                     >
                         {appCall.accounts.map(account => (
-                            <AddressDisplay
-                                style={styles.detailText}
+                            <TransactionDetailAddress
                                 key={'account-' + account.toString()}
                                 address={account.toString()}
+                                scope={scope}
                             />
                         ))}
                     </KeyValueRow>

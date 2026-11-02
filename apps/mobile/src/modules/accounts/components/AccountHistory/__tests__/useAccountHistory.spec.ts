@@ -1161,6 +1161,11 @@ describe('useAccountHistory', () => {
 
             expect(mockNavigate).toHaveBeenCalledWith('GroupTransactionList', {
                 groupId: 'SWAP_GROUP_ABC',
+                historyTransaction: expect.objectContaining({
+                    chainData: expect.objectContaining({
+                        groupId: 'SWAP_GROUP_ABC',
+                    }),
+                }),
             })
         })
 

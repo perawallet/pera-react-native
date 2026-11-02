@@ -44,6 +44,11 @@ export type EthereumTransactionPayload = {
      */
     isPreview?: true
     /**
+     * Set on a dApp's transaction whose gas limit and fees authorise, or would
+     * cost, more than twice what the wallet's own pricing would.
+     */
+    hasHighFee?: true
+    /**
      * On a preview, in wei: the most per gas the call may be signed at once
      * reached, since its fee can't be quoted on the review.
      */
@@ -88,10 +93,14 @@ export const readEvmReviewTransaction = (
     if (ceiling !== undefined && typeof ceiling !== 'bigint') {
         throw new Error('The EVM transaction payload is malformed')
     }
+    if (payload.hasHighFee !== undefined && payload.hasHighFee !== true) {
+        throw new Error('The EVM transaction payload is malformed')
+    }
     return {
         from: getAddress(payload.from),
         transaction,
         ...(payload.isPreview === true && { isPreview: true }),
+        ...(payload.hasHighFee === true && { hasHighFee: true }),
         ...(ceiling !== undefined && { maxFeePerGasCeiling: ceiling }),
     }
 }

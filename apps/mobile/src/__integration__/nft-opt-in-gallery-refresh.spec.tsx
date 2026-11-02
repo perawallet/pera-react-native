@@ -62,6 +62,7 @@ import { useKMS, type Algo25KeyResult } from '@perawallet/wallet-core-kms'
 import { useAssetOptInMutation } from '@perawallet/wallet-core-transactions'
 import {
     mockAlgodAccountInformation,
+    mockAssetItems,
     mockAlgodSendRawTransaction,
     mockAlgodStatus,
     mockAlgodTransactionParams,
@@ -240,11 +241,9 @@ describe('Flow: NFT gallery reflects a fresh opt-in across sort modes', () => {
             mockAlgodStatus({ response: { 'last-round': 100 } }),
             mockAlgodSendRawTransaction(),
             // The mutation re-fetches the opted-in asset's metadata from the
-            // Pera REST surface; it's already seeded locally, so a no-op
-            // response keeps the persist step quiet.
-            http.get('*/v1/assets/', () =>
-                HttpResponse.json({ results: [], next: null }, { status: 200 }),
-            ),
+            // Pera REST surface; it's already seeded locally, so an answer
+            // with no item keeps the persist step quiet.
+            mockAssetItems(),
             // Lagging indexer: it does not know the fresh opt-in yet, so the
             // recentlyAdded order must float the roundless asset to the top.
             http.get(

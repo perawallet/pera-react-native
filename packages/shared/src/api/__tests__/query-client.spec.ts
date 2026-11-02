@@ -1229,6 +1229,73 @@ describe('queryClient', () => {
         })
     })
 
+    // The memo lives for the module's lifetime, so each case loads a fresh one.
+    describe('a chain the backend refuses', () => {
+        const scope = {
+            chainId: 'algorand',
+            networkId: 'mainnet',
+        } as ChainScope
+        const request = {
+            backend: 'pera' as const,
+            scope,
+            url: '/api/v4/assets/',
+            method: 'POST' as const,
+        }
+        const chainRefusal = () =>
+            Object.assign(new MockHTTPError(422), {
+                data: { code: 'chain_not_enabled', error: 'not enabled' },
+            })
+
+        beforeEach(() => vi.resetModules())
+        afterEach(() => vi.resetModules())
+
+        it('is asked once, then refused locally with the same error until relaunch', async () => {
+            const { queryClient } = await import('../query-client')
+            const { isChainRefusedError } = await import('../../errors/network')
+            mockKy.mockRejectedValueOnce(chainRefusal())
+
+            const first = await queryClient(request).catch(
+                (thrown: unknown) => thrown,
+            )
+            const callsAfterFirst = mockKy.mock.calls.length
+            const second = await queryClient(request).catch(
+                (thrown: unknown) => thrown,
+            )
+
+            expect(isChainRefusedError(first)).toBe(true)
+            expect(second).toBe(first)
+            expect(mockKy.mock.calls.length).toBe(callsAfterFirst)
+        })
+
+        it('still asks again after any other failure', async () => {
+            const { queryClient } = await import('../query-client')
+            mockKy.mockRejectedValueOnce(new MockHTTPError(500))
+            await queryClient(request).catch(() => undefined)
+            mockJson.mockResolvedValue({ ok: true })
+
+            const response = await queryClient(request)
+
+            expect(response.data).toEqual({ ok: true })
+        })
+
+        it('logs the refusal at warn level, not error', async () => {
+            await import('../query-client')
+            const [beforeError] = capturedHooks.beforeError
+
+            await beforeError({
+                request: { url: 'https://mainnet.pera.algo/api/v4/assets/' },
+                options: { context: { startTime: Date.now() } },
+                error: chainRefusal(),
+            })
+
+            expect(mockLogger.warn).toHaveBeenCalledWith(
+                'Request refused chain',
+                expect.objectContaining({ status: 422 }),
+            )
+            expect(mockLogger.error).not.toHaveBeenCalled()
+        })
+    })
+
     describe('beforeError hook (logError)', () => {
         const runBeforeError = async (error: Error) => {
             await import('../query-client')

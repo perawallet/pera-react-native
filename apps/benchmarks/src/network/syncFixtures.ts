@@ -50,6 +50,25 @@ const assetWire = (asset: PeraAsset) => {
     }
 }
 
+const assetItemWire = (asset: PeraAsset, caip19: string) => {
+    const { asset_id: _, ...wire } = assetWire(asset)
+    return {
+        ...wire,
+        asset_id: caip19,
+        name: wire.name ?? null,
+        unit_name: wire.unit_name ?? null,
+        type: wire.type ?? null,
+        logo: null,
+        is_verified: false,
+        explorer_url: null,
+        collectible: wire.collectible ?? null,
+        labels: [],
+        is_favorited: false,
+        is_price_alert_enabled: false,
+        cross_chain_asset_group: null,
+    }
+}
+
 const idsFromBody = (body: string): string[] => {
     const match = /"asset_ids":(\[[^\]]*\])/.exec(body)
     return match
@@ -88,6 +107,17 @@ const peraBackendHandlers = (
         http.post('*/v2/assets/', async ({ request }) =>
             HttpResponse.json(assetsFor(idsFromBody(await request.text()))),
         ),
+        // Algorand ids only; an EVM request falls through to its own handler.
+        http.post('*/api/v4/assets/', async ({ request }) => {
+            const { ids } = (await request.clone().json()) as { ids: string[] }
+            if (!ids.every(id => id.startsWith('algorand:'))) return undefined
+            return HttpResponse.json({
+                results: ids.flatMap(id => {
+                    const asset = byId.get(id.slice(id.lastIndexOf(':') + 1))
+                    return asset ? [assetItemWire(asset, id)] : []
+                }),
+            })
+        }),
         http.get('*/v1/public/assets/:assetId/', ({ params }) =>
             HttpResponse.json({
                 asset_id: String(params.assetId),

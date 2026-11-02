@@ -35,7 +35,7 @@
     "@perawallet/wallet-extension-platform": "workspace:*",
     "@sentry/browser": "^11.7.0",
     "drizzle-orm": "catalog:",
-    "firebase": "^12.17.1"
+    "firebase": "^13.1.0"
   },
   "devDependencies": {
     "@perawallet/wallet-core-devtools": "workspace:*",

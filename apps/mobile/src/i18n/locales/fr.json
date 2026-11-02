@@ -285,7 +285,6 @@
         "markets": {
             "something_went_wrong_title": "Une erreur est survenue",
             "something_went_wrong_body": "Nous n’avons pas pu charger les détails de cet actif. Vérifiez votre connexion et réessayez.",
-            "discover_more": "Voir plus de détails sur Discover",
             "title": "Marchés",
             "stats": "Statistiques",
             "price": "Prix",
@@ -472,7 +471,6 @@
         "remove_rekey_error_message": "Vous ne pouvez pas supprimer ce compte avant d’avoir supprimé ses {{count}} compte(s) rekeyé(s)",
         "view_private_key": "Voir la clé privée",
         "networks_title": "Réseaux",
-        "networks_title_named": "{{name}} sur chaque réseau",
         "add_network": "Ajouter",
         "add_network_error": "Impossible d’ajouter ce réseau",
         "add_network_success": "Réseau {{network}} ajouté",
@@ -1099,7 +1097,9 @@
         },
         "add_contact": {
             "duplicate_address_warning": "Un contact existe déjà pour cette adresse.",
-            "add": "Ajouter"
+            "add": "Ajouter",
+            "added_title": "Contact ajouté",
+            "added_body": "{{name}} a été ajouté à vos contacts."
         },
         "view_contact": {
             "no_contact_title": "Aucun contact trouvé",
@@ -3530,6 +3530,7 @@
     },
     "transactions": {
         "common": {
+            "typed_title": "Transaction {{type}}",
             "from": "De",
             "to": "À",
             "close_amount": "Solde restant",
@@ -3581,7 +3582,6 @@
             "default": "Transaction",
             "more_impacts": "Afficher {{count}} de plus",
             "interpreted_title": "{{title}}",
-            "swap_subtitle": "{{amountIn}} {{assetIn}} contre {{amountOut}} {{assetOut}}",
             "nft_subtitle": "{{collection}} #{{tokenId}}",
             "nft_batch_subtitle": "{{collection}} · {{count}} éléments",
             "inner_transaction_count": "{{innerCount}} transactions internes",

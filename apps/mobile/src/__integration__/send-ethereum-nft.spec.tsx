@@ -125,11 +125,11 @@ const ETHEREUM_SENDER: WalletAccount = {
 // the build changed and the signature must be regenerated.
 const SENDER_SIGNATURES: Record<string, string> = {
     // Bored Ape #1234 to RECEIVER.
-    '85487ed74070e3916feb7f7994d442301fb814c58cb91a931130f9e62f3c53d5':
-        'ac02abd699d9db4ad01df23e6876ca4be98c7955812c52bc9a9a5c251455719e75285226625e1355f0bc9fed1e6ee130ac1e11b30b3801862bd2b20334af75b801',
+    '3d51071f6871d4275c245a4c18cc34d22bcb8951a6c42ac832b000b776789e30':
+        'd3f459364b9bf6c316b68c6153d9126256b67e3dd4dd670636f6bceb7068d70532515bd3dcfac7a3909bb1e70b1c527d2d35bfbdef2712f9fc74bc12a5bb5c2300',
     // 2 of Item #10 to RECEIVER.
-    ae5eb72e291f323fae8d9d90474a40b0c8ce19cbb1e57673808b21e040a20346:
-        '5315bee1dd46fc7fdfea28da09900036e3739a135dbd03eb38d053494c96a15f1adc4f5ee6db7237f73d660b81382fb6d937f7462f398e34755451dba14d86a101',
+    '4e399db47997a1b79f8ca87b35c1047492c82cd49e7143fa3dff85a750d7de5c':
+        'eb34e239fec6c7725280e8bfb34c2d4c8544d24fde58632debdb7757f3e7d1da5e3754a5e2c2be3316b88e2c8451c7a07df5876860de1c8e57f560dc9ab5dfc201',
 }
 const signWithSenderKey = async (_keyPairId: string, digest: Uint8Array) => {
     const hex = Buffer.from(digest).toString('hex')

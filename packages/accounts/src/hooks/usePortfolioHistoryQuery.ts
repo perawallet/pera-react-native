@@ -19,6 +19,7 @@ import type {
 import { useChainCapabilityCheck } from '@perawallet/wallet-core-chain-shared'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import {
+    isChainRefusedError,
     isIntegrityRequiredError,
     type HistoryPeriod,
     type Nullable,
@@ -147,8 +148,15 @@ export const usePortfolioHistoryQuery = (
             // Callers gate this on what they render: it hits a slow network
             // endpoint.
             enabled: enabled && !isCapabilityOff,
+            // A chain the backend hasn't switched on has no priced value in
+            // the total either, so it adds nothing rather than failing.
             queryFn: (): Promise<Nullable<PortfolioHistoryPoint[]>> =>
-                fetchPortfolioHistory(addresses, period, scope),
+                fetchPortfolioHistory(addresses, period, scope).catch(
+                    (error: unknown) => {
+                        if (isChainRefusedError(error)) return []
+                        throw error
+                    },
+                ),
         })),
         combine,
     })

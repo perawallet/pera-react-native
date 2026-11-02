@@ -16,6 +16,7 @@ import { AssetIcon } from '@components/AssetIcon'
 import { AssetAmount } from '@components/AssetAmount'
 import { KeyValueRow } from '@components/KeyValueRow'
 import { useLanguage } from '@hooks/useLanguage'
+import { TransactionDetailAddress } from '@modules/signing'
 import type { EthereumTransactionPresentation } from '../../hooks/useEthereumTransactionPresentation'
 import { useStyles } from './styles'
 
@@ -48,9 +49,9 @@ export const EthereumTransferAssetRows = ({
             testID={`${testIDPrefix}_sender`}
             title={t('transactions.common.from')}
         >
-            <AddressDisplay
+            <TransactionDetailAddress
                 address={sender}
-                displayType='address-only'
+                scope={presentation.scope}
             />
         </KeyValueRow>
     ) : null

@@ -399,15 +399,18 @@ export const ALGORAND_HISTORY_SUMMARY_GOLDENS: readonly HistorySummaryGolden[] =
                 title: key('swap'),
                 direction: 'in',
                 icon: 'swap',
-                subtitle: {
-                    key: i18nKey('transactions.list_item.swap_subtitle'),
-                    params: {
-                        amountIn: '2.00',
-                        assetIn: 'ALGO',
-                        amountOut: '1.50',
-                        assetOut: 'USDC',
+                balanceChanges: [
+                    {
+                        assetRef: USDC,
+                        value: new Decimal(1_500_000),
+                        display: USDC_DISPLAY,
                     },
-                },
+                    {
+                        assetRef: ALGO,
+                        value: new Decimal(-2_000_000),
+                        display: ALGO_DISPLAY,
+                    },
+                ],
                 amount: {
                     assetRef: USDC,
                     value: new Decimal(1_500_000),

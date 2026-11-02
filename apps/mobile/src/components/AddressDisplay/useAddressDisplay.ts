@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useMemo } from 'react'
+import { useContext, useMemo } from 'react'
 import {
     LONG_ADDRESS_LENGTH,
     type Optional,
@@ -37,11 +37,16 @@ import { getChainDescriptor } from '@perawallet/wallet-core-chain-shared'
 import { useAddressReuseGuard } from '@components/AddressReuseGuard'
 import { useClipboard } from '@hooks/useClipboard'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
-import type { IconName } from '@components/core'
+import type { IconName, PWIconSize } from '@components/core'
+import { KeyValueAlignmentContext } from '@components/KeyValueRow'
 import { useHomeChainScope } from '@hooks/useHomeChainScope'
 
 export type AddressFormat = 'short' | 'long' | 'full'
-export type AddressDisplayType = 'full' | 'simple' | 'address-only'
+/**
+ * `simple` skips the wallet's own accounts; `inline` also skips contacts and
+ * reads as one line, an NFD standing in for the address.
+ */
+export type AddressDisplayType = 'full' | 'simple' | 'inline' | 'address-only'
 
 type UseAddressDisplayProps = {
     address: string
@@ -68,7 +73,7 @@ type UseAddressDisplayResult = {
     /** The address as the only label, in `unnamedAddressFormat`. */
     unnamedAddress: string
     fallbackIconName: IconName
-    copyAddress: () => void
+    copyIcon: { size: PWIconSize; onPress: () => void }
     unifiedLabels: ResolvedLabels
 }
 
@@ -162,11 +167,11 @@ export const useAddressDisplay = ({
         ? getChainDescriptor(addressScope.chainId).family
         : undefined
     const contact = useMemo(() => {
-        if (isAddressOnly) {
+        if (isAddressOnly || displayType === 'inline') {
             return null
         }
         return findContactByAddress(contacts, address, contactFamily) ?? null
-    }, [isAddressOnly, address, contacts, contactFamily])
+    }, [isAddressOnly, displayType, address, contacts, contactFamily])
 
     const { data: nfdNames } = useNfdForAddressQuery(scope, address, {
         enabled: !isAddressOnly && !account && !contact,
@@ -191,6 +196,8 @@ export const useAddressDisplay = ({
 
     const fallbackIconName: IconName = `accounts/${isDarkMode ? 'dark' : 'light'}/algo25-account`
 
+    // A detail card's rows stay compact, so its copy icon is a size down.
+    const isEndAligned = useContext(KeyValueAlignmentContext) === 'end'
     const copyAddress = () => {
         void (async () => {
             if (await confirmReuse(address)) await copyToClipboard(address)
@@ -209,15 +216,18 @@ export const useAddressDisplay = ({
         [account, contact, nfdName, truncatedAddress, showSecondaryAddress],
     )
 
+    // Inline, an NFD reads as the address itself: one line, no avatar.
+    const isNfdInline = displayType === 'inline' && !!nfdName
+
     return {
         chainId: scope.chainId,
         account,
         contact,
-        nfdName,
+        nfdName: isNfdInline ? undefined : nfdName,
         truncatedAddress,
-        unnamedAddress,
+        unnamedAddress: isNfdInline ? nfdName : unnamedAddress,
         fallbackIconName,
-        copyAddress,
+        copyIcon: { size: isEndAligned ? 'sm' : 'md', onPress: copyAddress },
         unifiedLabels,
     }
 }

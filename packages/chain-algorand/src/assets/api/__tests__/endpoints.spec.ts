@@ -30,6 +30,7 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
 
 import {
     fetchAssets,
+    fetchAssetItems,
     fetchCrossChainAssetGroups,
     fetchAssetDetails,
     fetchPublicAssetDetails,
@@ -37,6 +38,10 @@ import {
 } from '../endpoints'
 import { searchAssets } from '../search-endpoints'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import {
+    logger,
+    PeraServiceUnavailableError,
+} from '@perawallet/wallet-core-shared'
 
 const validAsset = {
     asset_id: 123,
@@ -130,6 +135,157 @@ describe('assets endpoints', () => {
             )
 
             expect(groups).toEqual(new Map([['7', null]]))
+        })
+    })
+
+    describe('fetchAssetItems', () => {
+        const MAINNET = 'algorand:wGHE2Pwdvd7S12BL5FaOP20EGYesN73k'
+        const v4Item = (assetId: string) => ({
+            asset_id: `${MAINNET}/asa:${assetId}`,
+            type: 'standard_asset',
+            name: 'Test',
+            unit_name: 'TST',
+            fraction_decimals: 6,
+            logo: null,
+            usd_value: null,
+            is_verified: true,
+            verification_tier: 'verified',
+            explorer_url: null,
+            total: '1000000',
+            is_deleted: false,
+            creator: {
+                id: '9007199254740993',
+                address: 'CREATOR',
+                is_verified_asset_creator: false,
+            },
+            collectible: null,
+            category: null,
+            labels: [],
+            is_favorited: true,
+            is_price_alert_enabled: false,
+            cross_chain_asset_group: null,
+        })
+        const requestBody = () => queryClientMock.mock.lastCall?.[0].data
+
+        test("posts each id as the network's CAIP-19 in order, with integrity headers", async () => {
+            queryClientMock.mockResolvedValue({ data: { results: [] } })
+
+            await fetchAssetItems(['31566704', '7'], 'mainnet')
+
+            expect(queryClientMock).toHaveBeenCalledTimes(1)
+            expect(queryClientMock).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    backend: 'pera',
+                    method: 'POST',
+                    url: '/api/v4/assets/',
+                    headers: expect.any(Object),
+                }),
+            )
+            expect(requestBody()).toEqual({
+                ids: [`${MAINNET}/asa:31566704`, `${MAINNET}/asa:7`],
+            })
+        })
+
+        test('sends the device id as the exact decimal string', async () => {
+            queryClientMock.mockResolvedValue({ data: { results: [] } })
+
+            await fetchAssetItems(['7'], 'mainnet', '4567123498765432101')
+
+            const body = JSON.parse(JSON.stringify(requestBody()))
+            expect(typeof body.device_id).toBe('string')
+            expect(body.device_id).toBe('4567123498765432101')
+        })
+
+        test('sends ALGO as asa:0', async () => {
+            queryClientMock.mockResolvedValue({ data: { results: [] } })
+
+            await fetchAssetItems(['0'], 'mainnet')
+
+            expect(requestBody()).toEqual({ ids: [`${MAINNET}/asa:0`] })
+        })
+
+        test('answers each item by ASA id, dropping an unreadable row and one it did not ask for', async () => {
+            queryClientMock.mockResolvedValue({
+                data: {
+                    results: [
+                        v4Item('31566704'),
+                        { ...v4Item('7'), total: 12 },
+                        v4Item('99'),
+                    ],
+                },
+            })
+
+            const items = await fetchAssetItems(['31566704', '7'], 'mainnet')
+
+            expect([...items.keys()]).toEqual(['31566704'])
+            expect(items.get('31566704')).toMatchObject({
+                total: '1000000',
+                creator: { address: 'CREATOR' },
+                is_favorited: true,
+            })
+        })
+
+        test('warns once per batch, naming the first unreadable row', async () => {
+            const warn = vi.spyOn(logger, 'warn').mockImplementation(() => {})
+            queryClientMock.mockResolvedValue({
+                data: {
+                    results: [
+                        { ...v4Item('7'), total: 12 },
+                        { ...v4Item('8'), labels: undefined },
+                        v4Item('99'),
+                    ],
+                },
+            })
+
+            await fetchAssetItems(['7', '8'], 'mainnet')
+
+            expect(warn).toHaveBeenCalledTimes(1)
+            expect(warn).toHaveBeenCalledWith(
+                'Unreadable v4 asset items dropped',
+                expect.objectContaining({
+                    network: 'mainnet',
+                    dropped: 2,
+                    of: 3,
+                    first: expect.objectContaining({
+                        assetId: `${MAINNET}/asa:7`,
+                    }),
+                }),
+            )
+            warn.mockRestore()
+        })
+
+        test('stays quiet when every row is readable', async () => {
+            const warn = vi.spyOn(logger, 'warn').mockImplementation(() => {})
+            queryClientMock.mockResolvedValue({
+                data: { results: [v4Item('7')] },
+            })
+
+            await fetchAssetItems(['7'], 'mainnet')
+
+            expect(warn).not.toHaveBeenCalled()
+            warn.mockRestore()
+        })
+
+        test('makes no request for no ids', async () => {
+            const items = await fetchAssetItems([], 'mainnet')
+
+            expect(items.size).toBe(0)
+            expect(queryClientMock).not.toHaveBeenCalled()
+        })
+
+        test('refuses a network with no CAIP-2 id before any request', async () => {
+            await expect(
+                fetchAssetItems(['7'], 'custom'),
+            ).rejects.toBeInstanceOf(PeraServiceUnavailableError)
+            expect(queryClientMock).not.toHaveBeenCalled()
+        })
+
+        test('rejects when the backend does not know the device', async () => {
+            queryClientMock.mockRejectedValue(new Error('device_not_found'))
+
+            await expect(
+                fetchAssetItems(['7'], 'mainnet', '1'),
+            ).rejects.toThrow('device_not_found')
         })
     })
 

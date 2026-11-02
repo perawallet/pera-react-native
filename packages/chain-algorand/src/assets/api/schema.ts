@@ -159,6 +159,45 @@ export const crossChainAssetGroupsResponseSchema = z.object({
     ),
 })
 
+// The multichain v4 item, read in full. `creator.id` is a decimal string here,
+// but sync needs only the address, so the default strip drops it.
+export const assetItemResponseSchema = z.object({
+    /** CAIP-19: `algorand:{genesis}/asa:{id}`. */
+    asset_id: z.string(),
+    type: z.string().nullable(),
+    name: z.string().nullable(),
+    unit_name: z.string().nullable(),
+    fraction_decimals: z.number().int().min(0).nullable(),
+    logo: z.string().nullable(),
+    is_verified: z.boolean(),
+    verification_tier: z.string(),
+    explorer_url: z.string().nullable(),
+    /** Base units. Null for an ASA the backend has no row for. */
+    total: z.string().regex(/^\d+$/).nullable(),
+    is_deleted: z.boolean(),
+    creator: z.object({ address: z.string() }).nullable(),
+    collectible: collectibleResponseSchema.nullable(),
+    category: z.number().nullable(),
+    labels: z.array(z.any()).nullable(),
+    is_favorited: z.boolean(),
+    is_price_alert_enabled: z.boolean(),
+    cross_chain_asset_group: z
+        .object({
+            id: z.string(),
+            name: z.string(),
+            symbol: z.string(),
+        })
+        .nullable()
+        .optional(),
+})
+
+// Rows are checked one by one, so one row of a shape this client predates
+// drops only that asset rather than the whole batch.
+export const assetItemsResponseSchema = z.object({
+    results: z.array(z.object({ asset_id: z.string() }).passthrough()),
+})
+
+export type AssetItemResponse = z.infer<typeof assetItemResponseSchema>
 export type PublicAssetResponse = z.infer<typeof publicAssetResponseSchema>
 export type AssetResponse = z.infer<typeof assetResponseSchema>
 export type AssetsResponse = z.infer<typeof assetsResponseSchema>

@@ -26,6 +26,14 @@ import {
 import { useAlgorandTransactionDetailLayout } from '../useAlgorandTransactionDetailLayout'
 
 // The global mock stubs the blockchain barrel; the hook classifies with the real utils.
+// The suffix has its own spec; here the hero's title is the row label it wraps.
+vi.mock('@modules/signing/hooks/useTransactionHeroTitle', () => ({
+    useTransactionHeroTitle:
+        () =>
+        ({ key }: { key: string }) =>
+            key,
+}))
+
 vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', async () => ({
     ...(await vi.importActual<
         typeof import('@packages/chain-algorand/src/blockchain/utils/transactions')
@@ -42,6 +50,12 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
         decimals: 6,
     }),
     useSingleAssetDetailsQuery: vi.fn(),
+}))
+
+let mockViewer: string | undefined
+vi.mock('@perawallet/wallet-core-accounts', () => ({
+    useSelectedAccount: () => (mockViewer ? { address: mockViewer } : null),
+    chainAccountOf: (account: { address: string }) => account,
 }))
 
 vi.mock('@hooks/useLanguage', () => ({
@@ -67,6 +81,7 @@ const summaryOf = (transaction: AlgorandTransactionView) =>
 
 describe('useAlgorandTransactionDetailLayout', () => {
     beforeEach(() => {
+        mockViewer = undefined
         vi.mocked(useSingleAssetDetailsQuery).mockReturnValue({
             data: USDC,
             isPending: false,
@@ -82,7 +97,6 @@ describe('useAlgorandTransactionDetailLayout', () => {
         )
 
         expect(summary).toMatchObject({
-            title: 'transactions.type.pay',
             status: 'completed',
             transactionId: FIXTURE_TRANSACTION_ID,
             timestamp: 1_700_000_000_000,
@@ -93,6 +107,29 @@ describe('useAlgorandTransactionDetailLayout', () => {
         expect(summary.scope.chainId).toBe('algorand')
         expect(summary.fee?.value.toString()).toBe('0.001')
         expect(summary.fee?.asset.unitName).toBe('ALGO')
+    })
+
+    it('Given a payment viewed by its sender, then it is titled Send, as history names it', () => {
+        mockViewer = FIXTURE_SENDER
+
+        expect(summaryOf(viewOf('payment')).title).toBe(
+            'transactions.list_item.send',
+        )
+    })
+
+    it('Given a payment viewed by anyone else, then it is titled Receive', () => {
+        mockViewer = FIXTURE_RECEIVER
+
+        expect(summaryOf(viewOf('payment')).title).toBe(
+            'transactions.list_item.receive',
+        )
+    })
+
+    it('Given an asset opt-in, then it is titled Opt-in', () => {
+        const optIn = buildAlgorandAssetTransferFixture('opt-in')
+            .transaction as AlgorandTransactionView
+
+        expect(summaryOf(optIn).title).toBe('transactions.list_item.opt_in')
     })
 
     it("Given a payment, then its paid leg in algos is the hero's amount", () => {

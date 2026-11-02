@@ -76,7 +76,7 @@ describe('prepareEthereumCallBatch', () => {
         expect(prepared.batchId).toBe('batch-1')
         expect(ethereumViewOf(prepared.first, ETHEREUM)).toMatchObject({
             to: APPROVE.to,
-            gas: 0xfde8n,
+            gas: 78_000n,
             nonce: 0,
         })
         expect(prepared.following).toHaveLength(1)

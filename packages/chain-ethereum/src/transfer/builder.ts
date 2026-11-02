@@ -199,10 +199,10 @@ const capToConfirmedMaxFee = async ({
         to: call.to,
         value: call.value,
         data: call.data,
-        gas: fees.gas,
+        gas: fees.gasLimit,
         ...preset,
     })
-    const ceiling = maxFeePerGasWithin(maxFee, fees.gas, surcharge)
+    const ceiling = maxFeePerGasWithin(maxFee, fees.gasLimit, surcharge)
     if (
         ceiling <
         minMaxFeePerGas(fees.baseFeePerGas, preset.maxPriorityFeePerGas)
@@ -267,7 +267,7 @@ const buildEvmTransfer = async (
             to: call.to,
             value: call.value,
             data: call.data,
-            gas: fees.gas,
+            gas: fees.gasLimit,
             maxFeePerGas: prices.maxFeePerGas,
             maxPriorityFeePerGas: prices.maxPriorityFeePerGas,
         },

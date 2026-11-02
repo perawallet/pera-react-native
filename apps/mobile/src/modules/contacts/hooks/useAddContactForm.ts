@@ -26,6 +26,9 @@ import {
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
 import { trackEvent, ContactsEvent } from '@analytics'
+import { bottomSheetNotifier } from '@components/core'
+import { useLanguage } from '@hooks/useLanguage'
+import { useToast } from '@hooks/useToast'
 import { contactFamilyOf } from '../utils/contactFamily'
 import { useContactForm, type UseContactFormResult } from './useContactForm'
 
@@ -37,6 +40,8 @@ export type UseAddContactFormResult = UseContactFormResult & {
 }
 
 export const useAddContactForm = (): UseAddContactFormResult => {
+    const { t } = useLanguage()
+    const { successToast } = useToast()
     const { addContact, setSelectedContact } = useContacts()
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
     // Forwarded by ADD_CONTACT deeplinks and the AccountActions sheet so the
@@ -55,13 +60,21 @@ export const useAddContactForm = (): UseAddContactFormResult => {
         (data: ContactFormValues) => {
             if (!form.isValid) return
 
-            addContact(contactFromFormValues(data))
+            const contact = contactFromFormValues(data)
+            addContact(contact)
             trackEvent(ContactsEvent.Add)
+            // From the Send flow this runs inside a sheet, which covers the
+            // root notifier; the sheet's own one is null when no sheet is up.
+            successToast(
+                t('contacts.add_contact.added_title'),
+                t('contacts.add_contact.added_body', { name: contact.name }),
+                { notifier: bottomSheetNotifier.current ?? undefined },
+            )
 
             setSelectedContact(null)
             navigation.goBack()
         },
-        [form, addContact, setSelectedContact, navigation],
+        [form, addContact, setSelectedContact, navigation, successToast, t],
     )
 
     return useMemo(() => ({ ...form, save }), [form, save])

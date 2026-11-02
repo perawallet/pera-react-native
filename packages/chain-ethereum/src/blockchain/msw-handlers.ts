@@ -37,6 +37,9 @@ export type EvmRpcResults = {
     eth_getTransactionCount: Hex
     eth_estimateGas: Hex
     eth_feeHistory: RpcFeeHistory
+    /** Only the fields a spec reads; viem formats whatever the block carries. */
+    eth_getBlockByNumber: { gasLimit: Hex }
+    eth_maxPriorityFeePerGas: Hex
     eth_call: Hex
     eth_sendRawTransaction: Hex
     /** `null` is how a node reports a transaction it hasn't mined yet. */
@@ -87,6 +90,9 @@ export const DEFAULT_EVM_RPC_RESPONSES: {
         gasUsedRatio: [0.5],
         reward: [[GWEI, GWEI, GWEI]],
     },
+    // 30M gas, a typical block gas limit.
+    eth_getBlockByNumber: { gasLimit: '0x1c9c380' },
+    eth_maxPriorityFeePerGas: GWEI,
     eth_call: '0x',
     // The hash a node returns is the keccak of the signed payload.
     eth_sendRawTransaction: params => keccak256(params[0] as Hex),

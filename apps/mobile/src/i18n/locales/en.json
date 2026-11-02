@@ -285,7 +285,6 @@
         "markets": {
             "something_went_wrong_title": "Something went wrong",
             "something_went_wrong_body": "We were unable to load this asset's details. Please check your connection and try again.",
-            "discover_more": "See more details on Discover",
             "title": "Markets",
             "stats": "Statistics",
             "price": "Price",
@@ -472,7 +471,6 @@
         "remove_rekey_error_message": "You can't remove this account before removing its {{count}} rekeyed account(s)",
         "view_private_key": "View private key",
         "networks_title": "Networks",
-        "networks_title_named": "{{name}} on each network",
         "add_network": "Add",
         "add_network_error": "Couldn't add this network",
         "add_network_success": "{{network}} added",
@@ -1099,7 +1097,9 @@
         },
         "add_contact": {
             "duplicate_address_warning": "Contact for this address already exists.",
-            "add": "Add"
+            "add": "Add",
+            "added_title": "Contact added",
+            "added_body": "{{name}} was added to your contacts."
         },
         "view_contact": {
             "no_contact_title": "No contact found",
@@ -2587,7 +2587,7 @@
         "partial_total": "Excludes holdings without a price",
         "info": {
             "title": "How we calculate portfolio value",
-            "body": "The Total Portfolio Value is calculated by adding up the value of all asset values and Algo available in your accounts, excluding Watch Accounts.\n\nAsset values are calculated based on daily values fetched from several ecosystem partners.  Since some asset values are not available, the Total Portfolio Value should be considered an estimation."
+            "body": "The Total Portfolio Value is calculated by adding up the value of every asset held in your accounts across all networks, excluding Watch Accounts.\n\nAsset values are calculated based on prices fetched from several ecosystem partners. Since some asset values are not available, the Total Portfolio Value should be considered an estimation."
         }
     },
     "prompts": {
@@ -3530,6 +3530,7 @@
     },
     "transactions": {
         "common": {
+            "typed_title": "{{type}} Transaction",
             "from": "From",
             "to": "To",
             "close_amount": "Remainder Amount",
@@ -3581,7 +3582,6 @@
             "default": "Transaction",
             "more_impacts": "Show {{count}} more",
             "interpreted_title": "{{title}}",
-            "swap_subtitle": "{{amountIn}} {{assetIn}} for {{amountOut}} {{assetOut}}",
             "nft_subtitle": "{{collection}} #{{tokenId}}",
             "nft_batch_subtitle": "{{collection}} · {{count}} items",
             "inner_transaction_count": "{{innerCount}} inner txns",

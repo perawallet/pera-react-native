@@ -26,6 +26,7 @@ import {
     parseGwei,
     parseTransaction,
     toHex,
+    type Address,
     type Hex,
     type RpcFeeHistory,
 } from 'viem'
@@ -35,6 +36,7 @@ import { createEvmClient } from '../../blockchain/utils/createEvmClient'
 import { TEST_RPC_URL, testChainContext } from '../../__tests__/context'
 import {
     BASE,
+    BSC,
     ETHEREUM,
     EVM_TEST_CHAINS,
     POLYGON,
@@ -47,9 +49,12 @@ import { VIEM_TRANSFER_NONCE_0 } from '../../signing/__tests__/fixtures'
 import type { EvmTransferCall } from '../builder'
 import {
     maxFeePerGasWithin,
+    readEvmFeePresets,
+    readEvmGas,
     readEvmSurcharge,
     readTransferFees,
     toEvmFeeEstimate,
+    withRequestedEvmFees,
 } from '../fees'
 import {
     OP_STACK_ORACLE_ADDRESS,
@@ -169,12 +174,12 @@ describe('readTransferFees', () => {
         ['every block empty', { gasUsedRatio: [0], reward: [gwei(0, 0, 0)] }],
         ['no reward', { reward: undefined }],
         ['a row with only one entry', { reward: [gwei(1)] }],
-    ])('treats %s as a zero tip', async (_, history) => {
+    ])("takes the node's suggested tip when %s", async (_, history) => {
         const fees = await readWith({ baseFeePerGas: gwei(2), ...history })
 
         for (const preset of Object.values(fees.presets)) {
-            expect(preset.maxPriorityFeePerGas).toBe(0n)
-            expect(preset.maxFeePerGas).toBe(parseGwei('4'))
+            expect(preset.maxPriorityFeePerGas).toBe(parseGwei('1'))
+            expect(preset.maxFeePerGas).toBe(parseGwei('5'))
         }
     })
 
@@ -206,6 +211,7 @@ describe('maxFeePerGasWithin', () => {
 describe('toEvmFeeEstimate', () => {
     const fees = {
         gas: 21_000n,
+        gasLimit: 25_200n,
         baseFeePerGas: parseGwei('10'),
         presets: {
             slow: {
@@ -224,7 +230,7 @@ describe('toEvmFeeEstimate', () => {
         surcharge: 0n,
     }
 
-    it('prices each preset as gas x (base fee + tip), capped at gas x maxFeePerGas, in wei', () => {
+    it('prices each preset as gas x (base fee + tip), capped at gasLimit x maxFeePerGas, in wei', () => {
         const estimate = toEvmFeeEstimate(fees, 'normal', ETHEREUM)
 
         expect(estimate.assetRef).toEqual({
@@ -235,7 +241,7 @@ describe('toEvmFeeEstimate', () => {
             (21_000n * parseGwei('15')).toString(),
         )
         expect(estimate.presets?.fast.maxAmount.toFixed()).toBe(
-            (21_000n * parseGwei('28')).toString(),
+            (25_200n * parseGwei('28')).toString(),
         )
     })
 
@@ -508,6 +514,305 @@ describe('per-chain fee strategies', () => {
             )
         },
     )
+})
+
+const EMPTY_REWARDS = { gasUsedRatio: [0], reward: [gwei(0, 0, 0)] }
+
+const readPresetsOn = (
+    chain: EvmChain,
+    history: Partial<RpcFeeHistory>,
+    suggestedTip: Hex = toHex(parseGwei('1')),
+) => {
+    let tipReads = 0
+    server.use(
+        ...evmRpcHandlers({
+            rpcUrl: TEST_RPC_URL,
+            responses: {
+                eth_feeHistory: {
+                    oldestBlock: '0x1',
+                    baseFeePerGas: gwei(2),
+                    gasUsedRatio: [0.5],
+                    ...history,
+                },
+                eth_maxPriorityFeePerGas: () => {
+                    tipReads += 1
+                    return suggestedTip
+                },
+            },
+        }),
+    )
+    const scope = evmScopeOf(chain)
+    return {
+        presets: readEvmFeePresets(
+            createEvmClient(scope, testChainContext({ chain }), chain),
+            chain,
+            scope.networkId,
+        ),
+        tipReads: () => tipReads,
+    }
+}
+
+describe('readEvmFeePresets on a quiet network', () => {
+    it.each([ETHEREUM, BASE, BSC])(
+        'tips a non-zero amount on $row.id when the fee history has no rewards',
+        async chain => {
+            const read = readPresetsOn(chain, EMPTY_REWARDS)
+
+            const { presets } = await read.presets
+
+            for (const preset of Object.values(presets)) {
+                expect(preset.maxPriorityFeePerGas).toBeGreaterThan(0n)
+            }
+        },
+    )
+
+    it('keeps slow <= normal <= fast when the floor lifts only some presets', async () => {
+        const read = readPresetsOn(
+            ETHEREUM,
+            { gasUsedRatio: [0.5], reward: [gwei(0, 3, 5)] },
+            toHex(parseGwei('2')),
+        )
+
+        const { presets } = await read.presets
+
+        expect(
+            [presets.slow, presets.normal, presets.fast].map(
+                p => p.maxPriorityFeePerGas,
+            ),
+        ).toEqual([parseGwei('2'), parseGwei('3'), parseGwei('5')])
+    })
+
+    it('never leaves the max fee at zero on a chain with a zero base fee', async () => {
+        const read = readPresetsOn(BSC, {
+            ...EMPTY_REWARDS,
+            baseFeePerGas: ['0x0', '0x0'],
+        })
+
+        const { presets } = await read.presets
+
+        for (const preset of Object.values(presets)) {
+            expect(preset.maxFeePerGas).toBe(parseGwei('0.05'))
+            expect(preset.maxPriorityFeePerGas).toBe(parseGwei('0.05'))
+        }
+    })
+
+    it('reads no suggestion when the history carries a tip for every preset', async () => {
+        const read = readPresetsOn(ETHEREUM, { reward: [gwei(1, 2, 3)] })
+
+        await read.presets
+
+        expect(read.tipReads()).toBe(0)
+    })
+
+    it.each([
+        [POLYGON, '25'],
+        [BSC, '0.05'],
+    ])(
+        'reads no suggestion on $row.id, which has a minimum tip, and applies that minimum',
+        async (chain, minimumGwei) => {
+            const read = readPresetsOn(chain, EMPTY_REWARDS)
+
+            const { presets } = await read.presets
+
+            expect(read.tipReads()).toBe(0)
+            expect(presets.slow.maxPriorityFeePerGas).toBe(
+                parseGwei(minimumGwei),
+            )
+        },
+    )
+
+    it('still tips a wei where the node suggests no tip', async () => {
+        const read = readPresetsOn(ETHEREUM, EMPTY_REWARDS, '0x0')
+
+        const { presets } = await read.presets
+
+        for (const preset of Object.values(presets)) {
+            expect(preset.maxPriorityFeePerGas).toBe(1n)
+        }
+    })
+})
+
+describe('readEvmGas', () => {
+    const address = (n: number) =>
+        `0x${n.toString(16).padStart(40, '0')}` as Address
+    const gasCall = { from: address(1), to: address(2), value: 0n }
+    const clientOn = (responses: Parameters<typeof evmRpcHandlers>[0]) => {
+        server.use(...evmRpcHandlers({ rpcUrl: TEST_RPC_URL, ...responses }))
+        return createEvmClient(
+            { chainId: 'ethereum', networkId: 'mainnet' },
+            testChainContext(),
+            ETHEREUM,
+        )
+    }
+
+    it('pads a call with calldata by a fifth', async () => {
+        const client = clientOn({ responses: { eth_estimateGas: '0xfde8' } })
+
+        const gas = await readEvmGas(client, { ...gasCall, data: '0xa9059cbb' })
+
+        expect(gas).toEqual({ gas: 65_000n, gasLimit: 78_000n })
+    })
+
+    it('leaves a plain send at its estimate and reads no block', async () => {
+        let blockReads = 0
+        const client = clientOn({
+            responses: {
+                eth_getBlockByNumber: () => {
+                    blockReads += 1
+                    return { gasLimit: '0x1c9c380' }
+                },
+            },
+        })
+
+        const gas = await readEvmGas(client, gasCall)
+
+        expect(gas).toEqual({ gas: 21_000n, gasLimit: 21_000n })
+        expect(blockReads).toBe(0)
+    })
+
+    it('pads a plain send whose estimate shows the recipient ran code', async () => {
+        let blockReads = 0
+        const client = clientOn({
+            responses: {
+                eth_estimateGas: '0xc350',
+                eth_getBlockByNumber: () => {
+                    blockReads += 1
+                    return { gasLimit: '0x1c9c380' }
+                },
+            },
+        })
+
+        const gas = await readEvmGas(client, gasCall)
+
+        expect(gas).toEqual({ gas: 50_000n, gasLimit: 60_000n })
+        expect(blockReads).toBe(1)
+    })
+
+    it('treats empty calldata as a plain send', async () => {
+        const client = clientOn({})
+
+        const gas = await readEvmGas(client, { ...gasCall, data: '0x' })
+
+        expect(gas.gasLimit).toBe(gas.gas)
+    })
+
+    it('caps the padded limit at the block gas limit', async () => {
+        const client = clientOn({
+            responses: {
+                eth_estimateGas: '0xfde8',
+                eth_getBlockByNumber: { gasLimit: '0x11170' },
+            },
+        })
+
+        const gas = await readEvmGas(client, { ...gasCall, data: '0xa9059cbb' })
+
+        expect(gas).toEqual({ gas: 65_000n, gasLimit: 70_000n })
+    })
+})
+
+describe('withRequestedEvmFees', () => {
+    const preset = {
+        maxPriorityFeePerGas: parseGwei('2'),
+        maxFeePerGas: parseGwei('12'),
+    }
+    const base = parseGwei('5')
+
+    it('takes a dApp fee above the preset', () => {
+        expect(
+            withRequestedEvmFees(base, preset, {
+                maxFeePerGas: parseGwei('50'),
+                maxPriorityFeePerGas: parseGwei('9'),
+            }),
+        ).toEqual({
+            maxFeePerGas: parseGwei('50'),
+            maxPriorityFeePerGas: parseGwei('9'),
+        })
+    })
+
+    it('keeps the preset where the dApp asked for less', () => {
+        expect(
+            withRequestedEvmFees(base, preset, {
+                maxFeePerGas: parseGwei('1'),
+                maxPriorityFeePerGas: parseGwei('1'),
+            }),
+        ).toEqual(preset)
+        expect(withRequestedEvmFees(base, preset, {})).toEqual(preset)
+    })
+
+    it('lifts the max fee to cover the base-fee headroom when the dApp raised only the tip', () => {
+        expect(
+            withRequestedEvmFees(base, preset, {
+                maxPriorityFeePerGas: parseGwei('9'),
+            }),
+        ).toEqual({
+            maxFeePerGas: parseGwei('19'),
+            maxPriorityFeePerGas: parseGwei('9'),
+        })
+    })
+
+    it('keeps a max fee the dApp named, adding no headroom to it', () => {
+        expect(
+            withRequestedEvmFees(base, preset, {
+                maxFeePerGas: parseGwei('30'),
+                maxPriorityFeePerGas: parseGwei('20'),
+            }),
+        ).toEqual({
+            maxFeePerGas: parseGwei('30'),
+            maxPriorityFeePerGas: parseGwei('20'),
+        })
+    })
+
+    it("counts a dApp's tip only as far as its max fee leaves room above the base fee", () => {
+        expect(
+            withRequestedEvmFees(base, preset, {
+                maxFeePerGas: parseGwei('30'),
+                maxPriorityFeePerGas: parseGwei('30'),
+            }),
+        ).toEqual({
+            maxFeePerGas: parseGwei('30'),
+            maxPriorityFeePerGas: parseGwei('25'),
+        })
+    })
+
+    it('pays a legacy gasPrice near the market price exactly that, not the preset max fee mixed with its tip', () => {
+        // Base 5, preset { max 12, tip 2 }: a legacy 8 gwei is a tip of 3 over the base fee.
+        const signed = withRequestedEvmFees(base, preset, {
+            maxFeePerGas: parseGwei('8'),
+            maxPriorityFeePerGas: parseGwei('8'),
+        })
+
+        expect(signed).toEqual({
+            maxFeePerGas: parseGwei('12'),
+            maxPriorityFeePerGas: parseGwei('3'),
+        })
+        const paid = (fees: typeof signed) =>
+            fees.maxFeePerGas < base + fees.maxPriorityFeePerGas
+                ? fees.maxFeePerGas
+                : base + fees.maxPriorityFeePerGas
+        expect(paid(signed)).toBe(parseGwei('8'))
+    })
+
+    it('floors a dApp max fee below the base fee at no tip', () => {
+        expect(
+            withRequestedEvmFees(base, preset, {
+                maxFeePerGas: parseGwei('1'),
+                maxPriorityFeePerGas: parseGwei('1'),
+            }),
+        ).toEqual(preset)
+    })
+
+    it('never signs a max fee below the tip', () => {
+        const { maxFeePerGas, maxPriorityFeePerGas } = withRequestedEvmFees(
+            base,
+            preset,
+            {
+                maxFeePerGas: parseGwei('1'),
+                maxPriorityFeePerGas: parseGwei('30'),
+            },
+        )
+
+        expect(maxFeePerGas).toBeGreaterThanOrEqual(maxPriorityFeePerGas)
+    })
 })
 
 describe('readEvmSurcharge', () => {

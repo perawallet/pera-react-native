@@ -24,29 +24,21 @@ export const useStyles = makeStyles(theme => {
             overflow: 'hidden',
         },
         columns: {
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            alignItems: 'stretch',
             width: '100%',
             minWidth: 0,
-            gap: theme.spacing.md,
         },
         leftColumn: {
-            flex: 1,
-            minWidth: 0,
-            gap: theme.spacing.md,
-        },
-        dateTimeColumn: {
-            alignItems: 'flex-end',
-            flexShrink: 0,
+            alignItems: 'center',
             minWidth: 0,
         },
         valueTitleBar: {
             flexDirection: 'row',
             alignItems: 'center',
+            justifyContent: 'center',
             gap: theme.spacing.xs,
             minWidth: 0,
             width: '100%',
+            marginBottom: theme.spacing.xs,
         },
         titleTextContainer: {
             flexShrink: 1,
@@ -57,10 +49,6 @@ export const useStyles = makeStyles(theme => {
         },
         valueTitle: {
             color: theme.colors.textGray,
-        },
-        dateDisplay: {
-            color: theme.colors.textGray,
-            textAlign: 'right',
         },
         divider: {
             height: theme.borders.sm,
@@ -83,6 +71,7 @@ export const useStyles = makeStyles(theme => {
         },
         partialNotice: {
             color: theme.colors.textGray,
+            textAlign: 'center',
         },
         chartContainer: {
             gap: theme.spacing.md,

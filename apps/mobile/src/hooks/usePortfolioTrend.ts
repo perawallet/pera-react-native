@@ -20,6 +20,7 @@ import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import {
     percentChange,
     type HistoryPeriod,
+    type Maybe,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 
@@ -45,12 +46,18 @@ type TrendHistory = {
     data: { preferredValue: Nullable<Decimal> }[]
     isPending: boolean
     isPaused: boolean
+    isError: boolean
 }
 
-/** `isIncomplete` withholds a change the history can't fully back. */
+/**
+ * `isIncomplete` withholds a change the history can't fully back.
+ * `selectedValue` is a scrubbed point's value: the change then runs from the
+ * chart's start to it, and `null` (an unpriced point) has none.
+ */
 export const useHistoryTrend = (
-    { data, isPending, isPaused }: TrendHistory,
+    { data, isPending, isPaused, isError }: TrendHistory,
     isIncomplete: boolean,
+    selectedValue?: Maybe<Decimal>,
 ): UsePortfolioTrendResult => {
     const isSettling = isPending && !isPaused
 
@@ -67,9 +74,9 @@ export const useHistoryTrend = (
 
     const [trendAbsolute, trendPercentage] = useMemo(() => {
         const first = pricedValues.at(0) ?? new Decimal(0)
-        const last = pricedValues.at(-1) ?? new Decimal(0)
+        const last = selectedValue ?? pricedValues.at(-1) ?? new Decimal(0)
         return [last.minus(first), percentChange(first, last)]
-    }, [pricedValues])
+    }, [pricedValues, selectedValue])
 
     const trendDirection = directionOf(trendAbsolute)
 
@@ -77,10 +84,16 @@ export const useHistoryTrend = (
         trendAbsolute,
         trendPercentage,
         trendDirection,
-        // A failed or empty chain leaves no history, and the 0 it would
-        // default to reads as a change the wallet never had. A chain the
-        // chart left out would leave the change short of the total beside it.
-        hasNoTrend: (!isSettling && pricedValues.length === 0) || isIncomplete,
+        // Failed, paused or unpriced points leave nothing to measure, and the
+        // 0 they'd default to reads as a change the wallet never had; a loaded
+        // history with no points is a real flat 0. A chain the chart left out
+        // would leave the change short of the total beside it.
+        hasNoTrend:
+            (!isSettling &&
+                pricedValues.length === 0 &&
+                (data.length > 0 || isError || isPaused)) ||
+            selectedValue === null ||
+            isIncomplete,
         isPending: isSettling,
     }
 }
@@ -90,6 +103,7 @@ export const usePortfolioTrend = (
     period: HistoryPeriod,
     currencyScope: ChainScope,
     enabled: boolean,
+    selectedValue?: Maybe<Decimal>,
 ): UsePortfolioTrendResult => {
     const history = usePortfolioHistoryQuery(
         sources,
@@ -97,5 +111,9 @@ export const usePortfolioTrend = (
         currencyScope,
         enabled,
     )
-    return useHistoryTrend(history, history.isPartial)
+    return useHistoryTrend(
+        history,
+        history.isPartial || history.isUnavailableOnNetwork,
+        selectedValue,
+    )
 }

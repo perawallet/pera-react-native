@@ -13,13 +13,20 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-    ownAccount: {
+    // Full column width with its lines packed right: a column measured to fit
+    // its content gives a truncating name no width.
+    container: {
+        alignSelf: 'stretch',
+        minWidth: 0,
+    },
+    owner: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: theme.spacing.xs,
+        justifyContent: 'flex-end',
+        gap: theme.spacing.sm,
         marginTop: theme.spacing.xs,
     },
-    ownAccountName: {
+    ownerName: {
         flexShrink: 1,
         color: theme.colors.textGray,
     },

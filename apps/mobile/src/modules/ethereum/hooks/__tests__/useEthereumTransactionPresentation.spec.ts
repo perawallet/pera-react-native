@@ -82,6 +82,26 @@ describe('useEthereumTransactionPresentation', () => {
         expect(result.current?.isAmountLoading).toBe(false)
     })
 
+    it('formats the maximum fee as a warning only on a request flagged as paying far more than the wallet would', () => {
+        const flagged = {
+            ...natives.transfer,
+            transaction: {
+                ...(natives.transfer.transaction as object),
+                hasHighFee: true,
+            },
+        } as TransactionNative
+
+        const { result: unflagged } = renderHook(() =>
+            useEthereumTransactionPresentation(natives.transfer),
+        )
+        const { result } = renderHook(() =>
+            useEthereumTransactionPresentation(flagged),
+        )
+
+        expect(unflagged.current?.highFeeText).toBeNull()
+        expect(result.current?.highFeeText).toContain('ETH')
+    })
+
     it("shows a token transfer's recipient, not the contract, and the amount in the token's units", () => {
         mockAssetQuery({ data: USDC, isPending: false })
 

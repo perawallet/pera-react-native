@@ -18,7 +18,6 @@ import {
     PWTouchableOpacity,
     PWView,
 } from '@components/core'
-import { formatDatetime } from '@perawallet/wallet-core-shared'
 import { WealthChart } from '@components/WealthChart'
 import { ButtonPanel } from '../ButtonPanel'
 import { useStyles } from './styles'
@@ -128,23 +127,15 @@ export const AccountOverviewHeader = ({
                                 )}
                         </PWView>
                         <PWView style={styles.secondaryValueBar}>
-                            {hasFiatTotal && !selectedPoint && (
+                            {hasFiatTotal && (
                                 <WealthTrend
                                     sources={chartSources}
                                     currencyScope={currencyScope}
                                     period={trendPeriod}
+                                    selectedValue={
+                                        selectedPoint?.preferredValue
+                                    }
                                 />
-                            )}
-                            {selectedPoint && (
-                                <PWView style={styles.dateTimeColumn}>
-                                    <PWText
-                                        variant='h4'
-                                        style={styles.dateDisplay}
-                                        numberOfLines={1}
-                                    >
-                                        {formatDatetime(selectedPoint.datetime)}
-                                    </PWText>
-                                </PWView>
                             )}
                         </PWView>
                     </PWTouchableOpacity>
@@ -157,6 +148,7 @@ export const AccountOverviewHeader = ({
                                 period={period}
                                 onSelectionChanged={handleChartSelectionChange}
                                 enabled={isChartShown}
+                                shouldShowExcludedNetworks={false}
                             />
                             <ChartPeriodSelection
                                 value={period}

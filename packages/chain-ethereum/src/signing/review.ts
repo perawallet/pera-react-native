@@ -185,6 +185,7 @@ type Pricing = {
     maxFeePerGas: bigint
     /** Wei. */
     maxPriorityFeePerGas: bigint
+    hasHighFee?: true
 }
 
 type Call = {
@@ -208,10 +209,8 @@ const readCall = (
     chain: EvmChain,
     context?: ReviewContext,
 ): Call => {
-    const { from, transaction, isPreview } = readEvmReviewTransaction(
-        unsigned,
-        chain,
-    )
+    const { from, transaction, isPreview, hasHighFee } =
+        readEvmReviewTransaction(unsigned, chain)
     if (context && toScopeKey(unsigned.scope) !== toScopeKey(context.scope)) {
         throw new Error(
             `The transaction is for ${toScopeKey(unsigned.scope)}, not ${toScopeKey(context.scope)}`,
@@ -257,6 +256,7 @@ const readCall = (
                 gas: gas as bigint,
                 maxFeePerGas: maxFeePerGas as bigint,
                 maxPriorityFeePerGas,
+                ...(hasHighFee && { hasHighFee }),
             },
         }),
     }
@@ -272,6 +272,7 @@ const pricingOf = (
         return {
             nonce: call.pricing.nonce,
             gas: call.pricing.gas,
+            ...(call.pricing.hasHighFee && { hasHighFee: true as const }),
             fee: {
                 maxFeePerGas: toDecimal(call.pricing.maxFeePerGas),
                 maxPriorityFeePerGas: toDecimal(

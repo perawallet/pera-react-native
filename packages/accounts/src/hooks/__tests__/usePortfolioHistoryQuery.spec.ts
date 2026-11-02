@@ -20,7 +20,10 @@ import type {
     ChainId,
     ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
-import { IntegrityRequiredError } from '@perawallet/wallet-core-shared'
+import {
+    IntegrityRequiredError,
+    PeraNetworkError,
+} from '@perawallet/wallet-core-shared'
 import { fetchPortfolioHistory } from '../../chain-adapter'
 import { usePortfolioHistoryQuery } from '../usePortfolioHistoryQuery'
 
@@ -226,6 +229,34 @@ describe('usePortfolioHistoryQuery', () => {
         expect(result.current.isPartial).toBe(true)
         expect(result.current.isError).toBe(false)
         expect(result.current.isPending).toBe(false)
+        expect(result.current.data).toEqual([
+            { datetime: new Date(1), preferredValue: new Decimal(20) },
+        ])
+    })
+
+    it('counts a chain the backend has not switched on as holding nothing, not as left out', async () => {
+        history.mockImplementation(async (_addresses, _period, scope) => {
+            if (scope.chainId === ETHEREUM.chainId) {
+                throw new PeraNetworkError('client', {
+                    status: 422,
+                    backendCode: 'chain_not_enabled',
+                })
+            }
+            return [point(1, '10')]
+        })
+        const sources = [
+            { address: 'ALGO', scope: ALGORAND },
+            { address: '0xeth', scope: ETHEREUM },
+        ]
+
+        const { result } = renderHook(
+            () => usePortfolioHistoryQuery(sources, 'one-day', ALGORAND),
+            { wrapper },
+        )
+
+        await waitFor(() => expect(result.current.isPending).toBe(false))
+        expect(result.current.isPartial).toBe(false)
+        expect(result.current.isError).toBe(false)
         expect(result.current.data).toEqual([
             { datetime: new Date(1), preferredValue: new Decimal(20) },
         ])

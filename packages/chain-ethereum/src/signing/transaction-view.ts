@@ -27,6 +27,8 @@ export type EthereumPricedView = {
     isPreview?: false
     nonce: number
     gas: bigint
+    /** A dApp's request whose gas limit and fees authorise over twice the wallet's own pricing. */
+    hasHighFee?: true
     /** Wei. `maxFee` is `gas * maxFeePerGas`, the most the signature authorises. */
     fee: {
         maxFeePerGas: Decimal
@@ -187,6 +189,7 @@ const isView = (value: unknown): value is EthereumTransactionView =>
         ((value.isPreview === undefined || value.isPreview === false) &&
             typeof value.nonce === 'number' &&
             typeof value.gas === 'bigint' &&
+            (value.hasHighFee === undefined || value.hasHighFee === true) &&
             isFee(value.fee))) &&
     (value.token === undefined || isToken(value.token)) &&
     (value.nft === undefined || isNft(value.nft)) &&

@@ -62,6 +62,7 @@ import { useBottomSheet } from '@modules/bottom-sheet'
 import { Decimal } from 'decimal.js'
 import {
     mockAlgodAccountInformation,
+    mockAssetItems,
     mockAlgodSendRawTransaction,
     mockAlgodStatus,
     mockAlgodTransactionParams,
@@ -227,11 +228,9 @@ describe('Flow: Opt into an asset', () => {
             mockAlgodSendRawTransaction(),
             // After the opt-in submits, the mutation calls
             // `fetchAndPersistAssets` against the Pera REST surface.
-            // Return an empty result — we already seeded the asset
-            // locally, so the mutation's persist step is a no-op.
-            http.get('*/v1/assets/', () =>
-                HttpResponse.json({ results: [], next: null }, { status: 200 }),
-            ),
+            // No item for the asset — we already seeded it locally, so
+            // the mutation's persist step is a no-op.
+            mockAssetItems(),
         )
     })
 

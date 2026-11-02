@@ -11,7 +11,7 @@
  */
 
 import { Decimal } from 'decimal.js'
-import type { Optional } from '@perawallet/wallet-core-shared'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import { isAlgorandNativeAssetId } from '../../descriptor'
 import { isUniqueAlgorandCollectible } from '../collectible'
 import type {
@@ -23,6 +23,7 @@ import type {
     CollectibleStandard,
 } from '@perawallet/wallet-core-assets'
 import type {
+    AssetItemResponse,
     AssetResponse,
     CollectibleResponse,
     IndexerAssetResponse,
@@ -110,6 +111,54 @@ export const transformAssetResponse = (data: AssetResponse): PeraAsset => {
         totalSupply,
         creator: data.creator,
         url: data.url ?? undefined,
+    }
+}
+
+/**
+ * Null for an ASA the backend has no row for, so it is retried rather than
+ * stored half-read. Without a device id v4 answers `false` for the device's
+ * favorite and alert, so those stay undefined and the stored values are kept.
+ */
+export const transformAssetItemResponse = (
+    assetId: string,
+    item: AssetItemResponse,
+    options: { isDeviceScoped: boolean },
+): Nullable<PeraAsset> => {
+    if (item.total === null || item.fraction_decimals === null) return null
+    const totalSupply = new Decimal(item.total)
+    return {
+        assetId,
+        name: item.name ?? undefined,
+        peraMetadata: {
+            isDeleted: item.is_deleted,
+            verificationTier:
+                item.verification_tier as PeraAssetVerificationTier,
+            category: item.category ?? undefined,
+            isVerified: item.is_verified,
+            explorerUrl: item.explorer_url ?? undefined,
+            collectible: item.collectible
+                ? transformCollectibleResponse(item.collectible)
+                : undefined,
+            isUnique:
+                item.type === 'collectible'
+                    ? isUniqueAlgorandCollectible({
+                          totalSupply,
+                          decimals: item.fraction_decimals,
+                      })
+                    : undefined,
+            type: item.type as PeraAssetType,
+            labels: item.labels ?? undefined,
+            logo: item.logo,
+            isFavorited: options.isDeviceScoped ? item.is_favorited : undefined,
+            isPriceAlertEnabled: options.isDeviceScoped
+                ? item.is_price_alert_enabled
+                : undefined,
+            crossChainAssetGroup: item.cross_chain_asset_group,
+        },
+        unitName: item.unit_name ?? undefined,
+        decimals: item.fraction_decimals,
+        totalSupply,
+        creator: { address: item.creator?.address ?? '' },
     }
 }
 

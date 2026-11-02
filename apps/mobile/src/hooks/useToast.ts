@@ -105,8 +105,8 @@ export const useToast = () => {
     )
 
     const successToast = useCallback(
-        (title: string, body: string) => {
-            showToast({ title, body, type: 'success' })
+        (title: string, body: string, options?: ToastOptions) => {
+            showToast({ title, body, type: 'success' }, options)
         },
         [showToast],
     )

@@ -24,7 +24,7 @@ import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { View } from 'react-native'
 
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
-import { mockCrossChainAssetGroups } from '@perawallet/wallet-core-chain-algorand/test-handlers'
+import { mockAssetItems } from '@perawallet/wallet-core-chain-algorand/test-handlers'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
@@ -72,7 +72,7 @@ describe('Flow: One asset held on two chains, picked per network', () => {
         useRemoteConfigStore.getState().resetState()
         useSendFundsStore.getState().reset()
         server.use(
-            mockCrossChainAssetGroups({
+            mockAssetItems({
                 groups: { [USDC_TEST_ASSET.assetId]: USDC_GROUP },
             }),
         )

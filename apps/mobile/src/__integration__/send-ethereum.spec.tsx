@@ -141,6 +141,9 @@ const selectSender = (account: WalletAccount) => {
 // 1 gwei base fee and tip) make each build deterministic; a digest missing
 // here means the build changed and the signature must be regenerated.
 const SENDER_SIGNATURES: Record<string, string> = {
+    // 12.5 USDC to RECEIVER.
+    '9fb86b86dc2f2049311d8e7f546c5ec37a26292006ba046332e4e5f34af71644':
+        'f3c568bd1aff4046a6c9b73aeed1af980ba26029d498707a9ad018f73ccf793949d3dba1d1a62cdc88ff598ef04c2a94ce063db4de0fa750eeb1dd18aa6b31f801',
     // 0.5 ETH to RECEIVER.
     '4c7de634dc88b13890e379a0156d0c4f1e4dd515384bf403285c40e2e3191177':
         '923c0f4c3ec362322e052c7d1f1d6ea2a364621802f4428c6508a4fe71a655ef332789ab7ace0f5c627bcda10589e4e437c568bfb39cd09f4dc40da8789c05ac01',
@@ -150,9 +153,6 @@ const SENDER_SIGNATURES: Record<string, string> = {
     // ... and 10 ETH less 21000 x 4 gwei (normal).
     '90fac667aad1a634739d01e2823d7da0caa379757a3afa6331859377cb65ef42':
         '791adf986b26f0aeabb69961bec577d4fed0ad0534722123c4881c9ee84cb8f21a86a6dbacc3ceacfbb595cc9f71662cb3af58fd38c082a42b613cee122e3ca100',
-    // 12.5 USDC to RECEIVER.
-    c5569438e751d113261af83d1392f433cd97e6fec935fb66fba51a9acbf9986b:
-        'd777a894919655824d4240e1fb1c2d37302c2f9c1126bc071233c420319e8f815bb84e8b33cd492f52e793fda8414e491df508d3d72023e14d6cab50777aa75800',
 }
 
 const signWithSenderKey = async (_keyPairId: string, digest: Uint8Array) => {

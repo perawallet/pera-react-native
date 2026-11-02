@@ -285,7 +285,6 @@
         "markets": {
             "something_went_wrong_title": "Bir şeyler ters gitti",
             "something_went_wrong_body": "Bu varlığın detaylarını yükleyemedik. Lütfen bağlantını kontrol edip tekrar dene.",
-            "discover_more": "Discover’da daha fazla detay gör",
             "title": "Piyasalar",
             "stats": "İstatistikler",
             "price": "Fiyat",
@@ -472,7 +471,6 @@
         "remove_rekey_error_message": "Bu hesabı, ona rekey yapılmış {{count}} hesabı kaldırmadan kaldıramazsın",
         "view_private_key": "Özel anahtarı görüntüle",
         "networks_title": "Ağlar",
-        "networks_title_named": "Her ağda {{name}}",
         "add_network": "Ekle",
         "add_network_error": "Bu ağ eklenemedi",
         "add_network_success": "{{network}} ağı eklendi",
@@ -1099,7 +1097,9 @@
         },
         "add_contact": {
             "duplicate_address_warning": "Bu adres için bir kişi zaten var.",
-            "add": "Ekle"
+            "add": "Ekle",
+            "added_title": "Kişi eklendi",
+            "added_body": "{{name}} kişilerine eklendi"
         },
         "view_contact": {
             "no_contact_title": "Kişi bulunamadı",
@@ -3530,6 +3530,7 @@
     },
     "transactions": {
         "common": {
+            "typed_title": "{{type}} işlemi",
             "from": "Gönderen",
             "to": "Alıcı",
             "close_amount": "Kalan bakiye",
@@ -3581,7 +3582,6 @@
             "default": "İşlem",
             "more_impacts": "{{count}} tane daha göster",
             "interpreted_title": "{{title}}",
-            "swap_subtitle": "{{amountIn}} {{assetIn}} karşılığında {{amountOut}} {{assetOut}}",
             "nft_subtitle": "{{collection}} #{{tokenId}}",
             "nft_batch_subtitle": "{{collection}} · {{count}} öğe",
             "inner_transaction_count": "{{innerCount}} iç işlem",

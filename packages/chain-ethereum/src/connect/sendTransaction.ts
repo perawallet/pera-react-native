@@ -25,20 +25,33 @@ import type { EvmChain } from '../chains/types'
 import { createEvmClient } from '../blockchain/utils/createEvmClient'
 import { ethereumCallSummary } from '../signing/review'
 import type { EthereumTransactionPayload } from '../signing/adapter'
-import { readEvmFeePresets } from '../transfer/fees'
+import {
+    readEvmFeePresets,
+    readEvmGas,
+    withRequestedEvmFees,
+} from '../transfer/fees'
 import { allocateEthereumNonce } from '../transfer/nonce-pool'
 
-/** What a dApp's `eth_sendTransaction` asks for once validated; the wallet picks the nonce and the fees. */
+/** What a dApp's `eth_sendTransaction` asks for once validated; the wallet picks the nonce, and never signs less gas or fee than its own pricing. */
 export type EthereumSendTransactionRequest = {
     from: Address
     to: Address
     /** Wei. */
     value: bigint
     data: Hex
-    /** Gas units; estimated when absent. */
+    /** Gas units; the wallet signs the larger of it and its own padded estimate. */
     gas?: bigint
+    /** Wei per gas. A legacy `gasPrice` arrives as both fee fields. */
+    maxFeePerGas?: bigint
+    /** Wei per gas. */
+    maxPriorityFeePerGas?: bigint
     accessList?: AccessList
 }
+
+// A dApp's request is flagged for review when what its gas and fees authorise,
+// or would cost at the current base fee, is more than this many times what the
+// wallet's own pricing would.
+const DAPP_HIGH_FEE_MULTIPLIER = 2n
 
 export type EthereumSendTransactionSession = {
     authorizedAccounts: readonly string[]
@@ -104,8 +117,8 @@ const isHeldBy = (
     authorizedAccounts.some(account => areEvmAddressesEqual(account, from))
 
 /**
- * Applies the field rules to a dApp's `eth_sendTransaction` object. Fee fields
- * and `nonce` are ignored: the wallet always picks both.
+ * Applies the field rules to a dApp's `eth_sendTransaction` object. The
+ * `nonce` is ignored: the wallet always picks it.
  */
 export const validateEthereumSendTransaction = (
     params: unknown,
@@ -180,6 +193,20 @@ export const validateEthereumSendTransaction = (
     ) {
         return invalid('gasPrice cannot be combined with EIP-1559 fee fields')
     }
+    const fees = [
+        params.gasPrice,
+        params.maxFeePerGas,
+        params.maxPriorityFeePerGas,
+    ]
+        .filter(field => field !== undefined)
+        .map(readQuantity)
+    if (fees.some(fee => fee === undefined || fee > maxUint256)) {
+        return invalid('The fee fields are not valid quantities')
+    }
+    const gasPrice = readQuantity(params.gasPrice)
+    const maxFeePerGas = gasPrice ?? readQuantity(params.maxFeePerGas)
+    const maxPriorityFeePerGas =
+        gasPrice ?? readQuantity(params.maxPriorityFeePerGas)
     if (params.accessList !== undefined && !isAccessList(params.accessList)) {
         return invalid('The accessList is malformed')
     }
@@ -192,6 +219,8 @@ export const validateEthereumSendTransaction = (
             value,
             data,
             ...(gas !== undefined && { gas }),
+            ...(maxFeePerGas !== undefined && { maxFeePerGas }),
+            ...(maxPriorityFeePerGas !== undefined && { maxPriorityFeePerGas }),
             ...(params.accessList !== undefined && {
                 accessList: params.accessList,
             }),
@@ -201,7 +230,9 @@ export const validateEthereumSendTransaction = (
 
 /**
  * Builds the transaction the wallet will sign on the context's network: its
- * own nonce and normal-preset fees, and the dApp's gas when it gave one.
+ * own nonce, and the larger of the dApp's gas and fees and the wallet's own
+ * estimate and normal preset. A call the node says would revert is refused
+ * here, before anything reaches review.
  */
 export const buildEthereumSendTransaction = async (
     ctx: ChainContext,
@@ -211,21 +242,36 @@ export const buildEthereumSendTransaction = async (
     const scope = ctx.getScope()
     const client = createEvmClient(scope, ctx, chain)
     const { from, to, value, data, accessList } = request
-    const [nonce, gas, fees] = await Promise.all([
+    const [nonce, estimate, fees] = await Promise.all([
         allocateEthereumNonce({ client, scope, sender: from }),
-        request.gas ??
-            client.estimateGas({
-                account: from,
-                to,
-                value,
-                data,
-                ...(accessList && { accessList }),
-            }),
+        readEvmGas(client, { from, to, value, data, accessList }),
         readEvmFeePresets(client, chain, scope.networkId),
     ]).catch((error: unknown) => {
         throw toEvmError(error, chain.row.nativeAsset.symbol)
     })
-    const { maxFeePerGas, maxPriorityFeePerGas } = fees.presets.normal
+    const gas =
+        request.gas !== undefined && request.gas > estimate.gasLimit
+            ? request.gas
+            : estimate.gasLimit
+    const { maxFeePerGas, maxPriorityFeePerGas } = withRequestedEvmFees(
+        fees.baseFeePerGas,
+        fees.presets.normal,
+        request,
+    )
+    // The cap and the price actually paid are both checked: a max fee just
+    // under the threshold can still charge several times the normal price.
+    const normal = fees.presets.normal
+    const paidPerGas = (price: bigint, tip: bigint) =>
+        price < fees.baseFeePerGas + tip ? price : fees.baseFeePerGas + tip
+    const hasHighFee =
+        gas * maxFeePerGas >
+            DAPP_HIGH_FEE_MULTIPLIER *
+                estimate.gasLimit *
+                normal.maxFeePerGas ||
+        gas * paidPerGas(maxFeePerGas, maxPriorityFeePerGas) >
+            DAPP_HIGH_FEE_MULTIPLIER *
+                estimate.gasLimit *
+                paidPerGas(normal.maxFeePerGas, normal.maxPriorityFeePerGas)
     const payload: EthereumTransactionPayload = {
         from,
         transaction: {
@@ -240,6 +286,7 @@ export const buildEthereumSendTransaction = async (
             maxPriorityFeePerGas,
             ...(accessList && { accessList }),
         },
+        ...(hasHighFee && { hasHighFee: true as const }),
     }
     return {
         scope,

@@ -12,3 +12,7 @@
 
 export { KeyValueRow } from './KeyValueRow'
 export type { KeyValueRowProps } from './KeyValueRow'
+export {
+    KeyValueAlignmentContext,
+    type KeyValueAlignment,
+} from './KeyValueAlignmentContext'

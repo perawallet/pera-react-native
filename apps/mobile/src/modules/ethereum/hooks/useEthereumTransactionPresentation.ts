@@ -12,14 +12,20 @@
 
 import { useMemo } from 'react'
 import type { Decimal } from 'decimal.js'
-import { useNativeAsset, type PeraAsset } from '@perawallet/wallet-core-assets'
+import {
+    formatAssetAmount,
+    useNativeAsset,
+    type PeraAsset,
+} from '@perawallet/wallet-core-assets'
 import {
     useFindAccountByAddress,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import type {
-    ChainScope,
-    TransactionNative,
+import {
+    i18nKey,
+    type ChainScope,
+    type I18nKey,
+    type TransactionNative,
 } from '@perawallet/wallet-core-chain-contract'
 import {
     ETHEREUM_CHAIN_ID,
@@ -47,11 +53,7 @@ export type { EthereumAmount } from './useEthereumStandardCall'
 export type EthereumTransactionPresentation = {
     view: EthereumTransactionView
     scope: ChainScope
-    titleKey:
-        | 'transactions.list_item.send'
-        | 'transactions.list_item.contract_call'
-        | 'transactions.list_item.approval'
-        | 'transactions.list_item.revoke_approval'
+    titleKey: I18nKey
     iconName: IconName
     /** A contract call read as a standard token call; null for any other call. */
     standardCall: Nullable<EthereumStandardCallPresentation>
@@ -80,6 +82,11 @@ export type EthereumTransactionPresentation = {
      * batch call not yet reached, which is priced only once it is.
      */
     maxFee: Nullable<EthereumAmount>
+    /**
+     * Set when a dApp's gas limit and fees authorise far more than the wallet's
+     * own pricing would: `maxFee` formatted for the warning. Null otherwise.
+     */
+    highFeeText: Nullable<string>
     /** `view.feePaid` in ether, on a transaction already on chain whose history gave a fee; whoever paid it. */
     feePaid: Nullable<EthereumAmount>
     signingAccount: Nullable<WalletAccount>
@@ -136,12 +143,12 @@ const titleKeyOf = (
 ): EthereumTransactionPresentation['titleKey'] => {
     if (standardCall && isApproval(standardCall)) {
         return isRevocation(standardCall)
-            ? 'transactions.list_item.revoke_approval'
-            : 'transactions.list_item.approval'
+            ? i18nKey('transactions.list_item.revoke_approval')
+            : i18nKey('transactions.list_item.approval')
     }
     return view.kind === 'contract-call' && !standardCall
-        ? 'transactions.list_item.contract_call'
-        : 'transactions.list_item.send'
+        ? i18nKey('transactions.list_item.contract_call')
+        : i18nKey('transactions.list_item.send')
 }
 
 const iconNameOf = (
@@ -278,6 +285,10 @@ export const useEthereumTransactionPresentation = (
                 standardCallFields(view, standardCall, isStandardCallLoading)),
             value: toEther(view.value),
             maxFee: 'fee' in view ? toEther(view.fee.maxFee) : null,
+            highFeeText:
+                'fee' in view && view.hasHighFee
+                    ? formatAssetAmount(view.fee.maxFee, nativeAsset)
+                    : null,
             feePaid:
                 'isMined' in view && view.feePaid
                     ? toEther(view.feePaid)

@@ -96,6 +96,34 @@ describe('usePortfolioTrend', () => {
         expect(result.current.hasNoTrend).toBe(false)
     })
 
+    it('measures from the chart start to a scrubbed point rather than the latest', () => {
+        mockHistory({ data: [point('100'), point('150'), point('120')] })
+
+        const { result } = renderHook(() =>
+            usePortfolioTrend(
+                SOURCES,
+                'one-day',
+                SCOPE,
+                true,
+                new Decimal(150),
+            ),
+        )
+
+        expect(result.current.trendAbsolute).toEqual(new Decimal(50))
+        expect(result.current.trendPercentage).toEqual(new Decimal(50))
+        expect(result.current.hasNoTrend).toBe(false)
+    })
+
+    it('has no trend at a scrubbed point with no price', () => {
+        mockHistory({ data: [point('100'), point('120')] })
+
+        const { result } = renderHook(() =>
+            usePortfolioTrend(SOURCES, 'one-day', SCOPE, true, null),
+        )
+
+        expect(result.current.hasNoTrend).toBe(true)
+    })
+
     it('reads a move under a cent as flat, since the line renders at 2 dp', () => {
         mockHistory({ data: [point('100'), point('100.003')] })
 
@@ -108,8 +136,24 @@ describe('usePortfolioTrend', () => {
         expect(renderTrend().result.current.hasNoTrend).toBe(true)
     })
 
-    it('has no trend once settled with no history at all', () => {
+    it('reads a loaded history with no points as a flat zero', () => {
         mockHistory({ data: [] })
+
+        const { result } = renderTrend()
+
+        expect(result.current.hasNoTrend).toBe(false)
+        expect(result.current.trendDirection).toBe('flat')
+        expect(result.current.trendAbsolute).toEqual(new Decimal(0))
+    })
+
+    it('has no trend when the history read failed', () => {
+        mockHistory({ data: [], isError: true })
+
+        expect(renderTrend().result.current.hasNoTrend).toBe(true)
+    })
+
+    it('has no trend when the network has no history to read', () => {
+        mockHistory({ data: [], isUnavailableOnNetwork: true })
 
         expect(renderTrend().result.current.hasNoTrend).toBe(true)
     })

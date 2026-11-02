@@ -16,8 +16,10 @@ import type {
     TransactionNative,
 } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
-import { useLanguage } from '@hooks/useLanguage'
-import type { TransactionDetailSummary } from '@modules/signing'
+import {
+    useTransactionHeroTitle,
+    type TransactionDetailSummary,
+} from '@modules/signing'
 import {
     useEthereumTransactionPresentation,
     type EthereumTransactionPresentation,
@@ -32,7 +34,7 @@ export const useEthereumTransactionDetailBody = (
     transaction: TransactionNative,
     scope?: ChainScope,
 ): UseEthereumTransactionDetailBodyResult => {
-    const { t } = useLanguage()
+    const heroTitle = useTransactionHeroTitle()
     const presentation = useEthereumTransactionPresentation(transaction, scope)
 
     return useMemo(() => {
@@ -44,7 +46,7 @@ export const useEthereumTransactionDetailBody = (
             summary: {
                 scope: presentation.scope,
                 iconName: presentation.iconName,
-                title: t(presentation.titleKey),
+                title: heroTitle({ key: presentation.titleKey }),
                 status: 'isMined' in view ? 'completed' : 'pending',
                 amount: amount?.asset
                     ? { asset: amount.asset, value: amount.value }
@@ -60,5 +62,5 @@ export const useEthereumTransactionDetailBody = (
                     : undefined,
             },
         }
-    }, [presentation, t])
+    }, [presentation, heroTitle])
 }
