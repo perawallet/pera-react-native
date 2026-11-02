@@ -1237,11 +1237,16 @@ export const useAccountsStore: UseBoundStore<
                             : eligible
                         const outcomes = new Map<ChainId, Set<HdProbeOutcome>>()
                         const failedSoFar = new Set<ChainId>()
+                        // Switched off on the backend: not a network the user
+                        // can scan, so it leaves the progress rows.
+                        const refused = new Set<ChainId>()
                         const found = new Set<string>()
                         let checkedAccountCount = 0
                         const reportProgress = () =>
                             options.onProgress?.({
-                                chainIds,
+                                chainIds: chainIds.filter(
+                                    chainId => !refused.has(chainId),
+                                ),
                                 failedChainIds: chainIds.filter(chainId =>
                                     failedSoFar.has(chainId),
                                 ),
@@ -1264,6 +1269,9 @@ export const useAccountsStore: UseBoundStore<
                                     outcomes.set(chainId, settled)
                                     if (outcome === 'failed') {
                                         failedSoFar.add(chainId)
+                                        reportProgress()
+                                    } else if (outcome === 'refused') {
+                                        refused.add(chainId)
                                         reportProgress()
                                     }
                                 },

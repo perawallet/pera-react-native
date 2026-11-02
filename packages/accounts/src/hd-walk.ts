@@ -23,7 +23,11 @@ import {
     useNetworkStore,
 } from '@perawallet/wallet-core-chain-shared'
 import { kmsCore } from '@perawallet/wallet-core-kms'
-import { logger, type Optional } from '@perawallet/wallet-core-shared'
+import {
+    isChainRefusedError,
+    logger,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import type { AccountChains, ChainAccount, HdIndex } from './models'
 import { seedMintableScheme } from './credentials'
@@ -183,9 +187,10 @@ export type ProbedHdIndex = {
  * How far a chain answered one probed batch. `answered`: every index derived
  * and the chain answered for every address. `partial`: it answered some, but
  * an index failed to derive or the answer left an address out. `failed`: the
- * probe rejected, or no index derived.
+ * probe rejected, or no index derived. `refused`: the backend has the chain
+ * switched off, so checking it again can't help.
  */
-export type HdProbeOutcome = 'answered' | 'partial' | 'failed'
+export type HdProbeOutcome = 'answered' | 'partial' | 'failed' | 'refused'
 
 type DiscoverWalletActivityParams = {
     /** The seed's KMS id. */
@@ -206,7 +211,7 @@ type DiscoverWalletActivityParams = {
     keyIndexGapLimit?: number
     /**
      * Called once per chain for each probed batch. A chain whose batch
-     * `failed` is not probed again for the rest of the walk.
+     * `failed` or was `refused` is not probed again for the rest of the walk.
      */
     onProbeSettled?: (chainId: ChainId, outcome: HdProbeOutcome) => void
     /** Called with each batch's indexes once every chain's probe of it resolves. */
@@ -353,14 +358,22 @@ export async function discoverWalletActivity({
                 .get(chainId)
                 .checkActivity(addresses, scope)
         } catch (error) {
+            const isRefused = isChainRefusedError(error)
             if (!failedChains.has(chainId)) {
                 failedChains.add(chainId)
-                logger.warn('Wallet discovery probe failed', {
-                    chainId,
-                    error,
-                })
+                if (isRefused) {
+                    logger.info(
+                        'Wallet discovery chain not enabled on the backend',
+                        { chainId },
+                    )
+                } else {
+                    logger.warn('Wallet discovery probe failed', {
+                        chainId,
+                        error,
+                    })
+                }
             }
-            onProbeSettled?.(chainId, 'failed')
+            onProbeSettled?.(chainId, isRefused ? 'refused' : 'failed')
             return entries.map(() => undefined)
         }
         onProbeAnswered?.()

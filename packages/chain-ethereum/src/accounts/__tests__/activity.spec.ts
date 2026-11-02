@@ -23,6 +23,7 @@ import { http, HttpResponse } from 'msw'
 import { setupServer } from 'msw/node'
 import { getAddress, type Hex } from 'viem'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { isChainRefusedError } from '@perawallet/wallet-core-shared'
 import { cachedWhitelist } from '../../assets/api/whitelist-cache'
 import {
     evmNftItem,
@@ -292,6 +293,38 @@ describe('createEvmActivityCheck', () => {
             const active = await checkWith(['history'])([QUIET, OTHER], SCOPE)
 
             expect(active).toEqual(new Map([[OTHER, true]]))
+        })
+
+        it('rejects with the refusal when the backend has the chain switched off, even if another address answered', async () => {
+            server.use(
+                http.get(
+                    `${TEST_PERA_URL}/api/v3/evm/:chainId/accounts/${QUIET}/transactions/`,
+                    () =>
+                        HttpResponse.json(
+                            {
+                                code: 'chain_not_enabled',
+                                error: 'Chain 1 is not enabled.',
+                            },
+                            { status: 422 },
+                        ),
+                ),
+                ...rpc(),
+                ...peraEvmHandlers({
+                    baseUrl: TEST_PERA_URL,
+                    history: {
+                        [OTHER]: [
+                            [evmHistoryItem({ token_transfers: [TOKEN_LEG] })],
+                        ],
+                    },
+                }),
+            )
+
+            const error = await checkWith(['history'])(
+                [QUIET, OTHER],
+                SCOPE,
+            ).catch((rejected: unknown) => rejected)
+
+            expect(isChainRefusedError(error)).toBe(true)
         })
     })
 

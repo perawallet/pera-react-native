@@ -11,7 +11,7 @@
  */
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, PeraNetworkError } from '@perawallet/wallet-core-shared'
 import {
     discoverWalletActivity,
     walkHdTree,
@@ -485,6 +485,28 @@ describe('discoverWalletActivity', () => {
             await walkOne(onProbeSettled)
 
             expect(onProbeSettled.mock.calls).toEqual([[ETHEREUM, 'failed']])
+        })
+
+        it('reports refused, logged as info rather than a warning, when the backend has the chain switched off', async () => {
+            const families = registerChainFamilies([ETHEREUM])
+            families.checkActivity.get(ETHEREUM)!.mockRejectedValue(
+                new PeraNetworkError('client', {
+                    status: 422,
+                    backendCode: 'chain_not_enabled',
+                }),
+            )
+            const warn = vi.spyOn(logger, 'warn').mockImplementation(() => {})
+            const info = vi.spyOn(logger, 'info').mockImplementation(() => {})
+            const onProbeSettled = vi.fn()
+
+            await walkOne(onProbeSettled)
+
+            expect(onProbeSettled.mock.calls).toEqual([[ETHEREUM, 'refused']])
+            expect(info).toHaveBeenCalledWith(
+                'Wallet discovery chain not enabled on the backend',
+                { chainId: ETHEREUM },
+            )
+            expect(warn).not.toHaveBeenCalled()
         })
 
         it('reports failed when no index derives', async () => {

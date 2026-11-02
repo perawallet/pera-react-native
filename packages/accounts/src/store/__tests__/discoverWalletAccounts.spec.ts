@@ -12,6 +12,7 @@
 
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import { PeraNetworkError } from '@perawallet/wallet-core-shared'
 import {
     getKeystoreStore,
     getProvider,
@@ -577,6 +578,31 @@ describe('discoverWalletAccounts', () => {
                 coverage: 'complete',
                 failedChainIds: [],
                 isCancelled: false,
+            })
+        })
+
+        test('leaves a chain the backend has switched off out of the failed networks and the progress rows', async () => {
+            activeAt(ALGORAND, [{ account: 0, keyIndex: 0 }])
+            families.checkActivity.get(ETHEREUM)!.mockRejectedValue(
+                new PeraNetworkError('client', {
+                    status: 422,
+                    backendCode: 'chain_not_enabled',
+                }),
+            )
+            state().setAccounts([pathHolder({ account: 0, keyIndex: 0 })])
+            const onProgress = vi.fn()
+
+            const result = await state().discoverWalletAccounts(SEED, {
+                onProgress,
+            })
+
+            expect(result).toMatchObject({
+                coverage: 'complete',
+                failedChainIds: [],
+            })
+            expect(onProgress.mock.calls.at(-1)![0]).toMatchObject({
+                chainIds: [ALGORAND],
+                failedChainIds: [],
             })
         })
 
