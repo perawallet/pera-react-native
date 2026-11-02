@@ -2909,6 +2909,11 @@
         }
     },
     "send_funds": {
+        "discard": {
+            "title": "Discard this transaction?",
+            "body": "The amount and recipient you entered will be lost.",
+            "confirm": "Discard"
+        },
         "recipient_safety": {
             "checking": "Checking the recipient…",
             "look_alike_title": "This address looks like one you know",

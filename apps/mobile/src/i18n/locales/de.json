@@ -2901,6 +2901,11 @@
         }
     },
     "send_funds": {
+        "discard": {
+            "title": "Diese Transaktion verwerfen?",
+            "body": "Der eingegebene Betrag und der Empfänger gehen verloren.",
+            "confirm": "Verwerfen"
+        },
         "recipient_safety": {
             "checking": "Empfänger wird geprüft…",
             "look_alike_title": "Diese Adresse ähnelt einer, die du kennst",

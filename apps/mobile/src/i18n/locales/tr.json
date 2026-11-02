@@ -2909,6 +2909,11 @@
         }
     },
     "send_funds": {
+        "discard": {
+            "title": "Bu işlem silinsin mi?",
+            "body": "Girdiğin tutar ve alıcı kaybolacak.",
+            "confirm": "Sil"
+        },
         "recipient_safety": {
             "checking": "Alıcı kontrol ediliyor…",
             "look_alike_title": "Bu adres tanıdığın bir adrese benziyor",

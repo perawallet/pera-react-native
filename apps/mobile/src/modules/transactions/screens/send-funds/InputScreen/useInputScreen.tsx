@@ -68,6 +68,7 @@ export const useInputScreen = () => {
         setAmount,
         setPendingAmountBaseUnits,
         setIsCloseAccount,
+        setHasUnsavedInput,
         setShouldContinueToConfirm,
     } = useSendFunds()
     const {
@@ -95,6 +96,17 @@ export const useInputScreen = () => {
         resolveDestination,
         navigation,
     ])
+    // Going back to the asset list drops the amount: left in the store, the
+    // next asset's amount screen would open with it, and the close prompt
+    // would still count it.
+    useEffect(
+        () =>
+            navigation.addListener('beforeRemove', () => {
+                setAmount(undefined)
+                setIsCloseAccount(false)
+            }),
+        [navigation, setAmount, setIsCloseAccount],
+    )
     const { request: requestBottomSheet } = useBottomSheet()
     const styles = useStyles()
 
@@ -108,6 +120,14 @@ export const useInputScreen = () => {
         amount ? amount.toFixed() : undefined,
     )
     const valueRef = useRef<Maybe<string>>(value)
+
+    // Typed digits only reach the store on Next; the close prompt needs them
+    // before then.
+    const hasTypedAmount = !!value
+    useEffect(() => {
+        setHasUnsavedInput(hasTypedAmount)
+        return () => setHasUnsavedInput(false)
+    }, [hasTypedAmount, setHasUnsavedInput])
     // Set when the field shows a rounded stand-in for an amount the app filled
     // (MAX, close-out, prefill): Next sends this, not the shown digits. Any edit
     // clears it.
