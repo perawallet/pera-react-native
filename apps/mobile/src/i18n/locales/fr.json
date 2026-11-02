@@ -1295,6 +1295,10 @@
                 "title": "Transaction plus en attente",
                 "body": "Cette transaction a déjà été confirmée ou remplacée et ne peut plus être accélérée ni annulée."
             },
+            "nonce_gap_filled": {
+                "title": "Plus bloquée",
+                "body": "La transaction antérieure est maintenant sur le réseau, celle-ci peut donc être confirmée sans être débloquée."
+            },
             "asset_frozen": {
                 "title": "Actif gelé",
                 "body": "L’actif {{assetId}} est gelé, ce transfert ne peut donc pas aboutir. Le gestionnaire de gel de l’actif doit d’abord le dégeler."
@@ -3532,7 +3536,8 @@
             "pending": "En attente depuis {{since}}",
             "failed": "Échouée",
             "replaced": "Remplacée par une autre transaction",
-            "replacement_not_needed": "Inutile : la transaction d’origine a été confirmée avant"
+            "replacement_not_needed": "Inutile : la transaction d’origine a été confirmée avant",
+            "waiting_on_earlier": "En attente d’une transaction antérieure"
         },
         "list_item": {
             "send": "Envoi",
@@ -3708,7 +3713,10 @@
             "body": "Accélérer la renvoie avec des frais de réseau plus élevés. Annuler la remplace par un transfert vide vers vous-même, qui coûte aussi des frais de réseau. Si l’originale est confirmée avant, rien n’est remplacé.",
             "speed_up": "Accélérer",
             "cancel": "Annuler la transaction",
-            "review_notice": "Remplace la transaction {{txId}}"
+            "review_notice": "Remplace la transaction {{txId}}",
+            "blocked_title": "En attente d’une transaction antérieure",
+            "blocked_body": "Une transaction antérieure de ce compte n’a jamais atteint le réseau, donc celle-ci ne peut pas être confirmée tant que rien ne prend sa place. Débloquer envoie à sa place un transfert vide vers vous-même, qui coûte des frais de réseau.",
+            "unblock": "Débloquer"
         },
         "suspected_poisoning": {
             "marker": "Empoisonnement d’adresse suspecté",

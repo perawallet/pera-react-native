@@ -70,7 +70,10 @@ import {
 } from '../../signing/__tests__/fixtures'
 import { ethereumCallSummary } from '../../signing/review'
 import { createEvmBroadcasterAdapter } from '../broadcaster'
-import { submitEthereumTransactions } from '../submission'
+import {
+    SubmissionLedgerUnreadableError,
+    submitEthereumTransactions,
+} from '../submission'
 import { BASE, ETHEREUM, evmScopeOf } from '../../__tests__/evm-chains'
 import { opStackOracleResponder, unsignedEncodingOf } from './op-stack-oracle'
 
@@ -554,13 +557,62 @@ describe('Ethereum broadcaster adapter', () => {
 
         it('still sends when the ledger write fails', async () => {
             useRpc()
-            resetDatabase()
+            vi.spyOn(db, 'insert').mockImplementation(() => {
+                throw new Error('disk full')
+            })
 
             await expect(
                 adapter
                     .createSubmitTransport(SCOPE)
                     .send(signedTransactions, SOURCE),
             ).resolves.toEqual({ type: 'submitted', txIds: [HASH] })
+        })
+
+        it('refuses as retryable, without sending, when the ledger read fails', async () => {
+            useRpc()
+            const methods: string[] = []
+            const listener = async ({ request }: { request: Request }) => {
+                const body = (await request.clone().json()) as {
+                    method: string
+                }
+                methods.push(body.method)
+            }
+            server.events.on('request:start', listener)
+            resetDatabase()
+
+            try {
+                const sent = adapter
+                    .createSubmitTransport(SCOPE)
+                    .send(signedTransactions, SOURCE)
+
+                await expect(sent).rejects.toBeInstanceOf(
+                    SubmissionLedgerUnreadableError,
+                )
+                await expect(sent).rejects.not.toBeInstanceOf(SubmissionError)
+                expect(methods).not.toContain('eth_sendRawTransaction')
+                expect(reports()).toEqual([])
+            } finally {
+                server.events.removeListener('request:start', listener)
+            }
+        })
+
+        it('refuses submitAndAutoRefresh as retryable, without sending, when the ledger read fails', async () => {
+            const sends = vi.fn((): Hex => HASH)
+            useRpc({ eth_sendRawTransaction: sends })
+            resetDatabase()
+
+            const refused = adapter.submitAndAutoRefresh(SCOPE, [
+                { scope: SCOPE, id: HASH, bytes: BYTES },
+            ])
+
+            await expect(refused).rejects.toBeInstanceOf(
+                SubmissionLedgerUnreadableError,
+            )
+            await expect(refused).rejects.toMatchObject({
+                metadata: { retryable: true },
+            })
+            expect(sends).not.toHaveBeenCalled()
+            expect(reports()).toEqual([])
         })
 
         it('throws TransportError and writes no row for anything but signed transactions', async () => {

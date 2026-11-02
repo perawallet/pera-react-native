@@ -69,6 +69,7 @@ vi.mock('@hooks/useClipboard', () => ({
 
 const mockReplace = vi.hoisted(() => ({
     canReplace: false,
+    isBlocked: false,
     handleReplace: vi.fn(async () => undefined),
 }))
 vi.mock('../../../hooks/history/useReplaceTransaction', () => ({

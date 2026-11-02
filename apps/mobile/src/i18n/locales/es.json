@@ -1295,6 +1295,10 @@
                 "title": "La transacción ya no está pendiente",
                 "body": "Esta transacción ya se confirmó o fue reemplazada, así que no se puede acelerar ni cancelar."
             },
+            "nonce_gap_filled": {
+                "title": "Ya no está bloqueada",
+                "body": "La transacción anterior ya está en la red, así que esta puede confirmarse sin desbloquearla."
+            },
             "asset_frozen": {
                 "title": "Activo congelado",
                 "body": "El activo {{assetId}} está congelado, por lo que esta transferencia no se puede completar. El gestor de congelación del activo debe descongelarlo primero."
@@ -3532,7 +3536,8 @@
             "pending": "Pendiente desde {{since}}",
             "failed": "Fallida",
             "replaced": "Reemplazada por otra transacción",
-            "replacement_not_needed": "No fue necesaria: la transacción original se confirmó antes"
+            "replacement_not_needed": "No fue necesaria: la transacción original se confirmó antes",
+            "waiting_on_earlier": "Esperando una transacción anterior"
         },
         "list_item": {
             "send": "Enviar",
@@ -3708,7 +3713,10 @@
             "body": "Acelerar la vuelve a enviar con una comisión de red más alta. Cancelar la reemplaza con una transferencia vacía a ti mismo, que también cuesta una comisión de red. Si la original se confirma antes, no se reemplaza nada.",
             "speed_up": "Acelerar",
             "cancel": "Cancelar transacción",
-            "review_notice": "Reemplaza la transacción {{txId}}"
+            "review_notice": "Reemplaza la transacción {{txId}}",
+            "blocked_title": "Esperando una transacción anterior",
+            "blocked_body": "Una transacción anterior de esta cuenta nunca llegó a la red, así que esta no puede confirmarse hasta que algo ocupe su lugar. Desbloquear envía en su lugar una transferencia vacía a ti mismo, que cuesta una comisión de red.",
+            "unblock": "Desbloquear"
         },
         "suspected_poisoning": {
             "marker": "Posible envenenamiento de direcciones",

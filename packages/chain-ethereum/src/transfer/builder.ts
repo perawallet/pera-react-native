@@ -54,7 +54,11 @@ import {
 } from './fees'
 import { allocateEthereumNonce } from './nonce-pool'
 import { encodeEvmNftTransfer, readEvmNftTransferAsset } from './nft-transfer'
-import { buildEvmReplacement } from './replacement'
+import {
+    buildEvmGapFill,
+    buildEvmReplacement,
+    findEvmNonceGap,
+} from './replacement'
 import { createEvmSpendableBalance } from './spendable-balance'
 import { nftSendSubtitle, sendSummary } from './summary'
 
@@ -308,4 +312,8 @@ export const createEvmTransferAdapter = (
     spendableBalance: createEvmSpendableBalance(chain),
     buildReplacement: (request, context) =>
         buildEvmReplacement(ctx, chain, request, context),
+    findBlockingGap: (request, context) =>
+        findEvmNonceGap(ctx, chain, request, context),
+    buildGapFill: (request, context) =>
+        buildEvmGapFill(ctx, chain, request, context),
 })

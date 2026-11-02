@@ -10,13 +10,7 @@
  limitations under the License
  */
 
-import {
-    BaseError,
-    TransactionReceiptNotFoundError,
-    type Address,
-    type Hex,
-    type PublicClient,
-} from 'viem'
+import { BaseError, type Address, type Hex, type PublicClient } from 'viem'
 import { toEvmError } from '../blockchain/errors'
 import {
     parseScopeKey,
@@ -41,6 +35,7 @@ import {
     type SubmissionSettledHandler,
 } from '@perawallet/wallet-core-signing'
 import type { EvmChain } from '../chains/types'
+import { readReceipt } from './receipt'
 import { isTransactionKnownToNode } from './submission'
 
 // A just-broadcast transaction can be briefly unknown to a load-balanced RPC.
@@ -65,15 +60,6 @@ export type ProbeFailureStreaks = Map<string, number>
 export const PROBE_FAILURE_ESCALATION_STREAK = 20
 
 type Verdict = 'confirmed' | 'failed' | 'replaced'
-
-const readReceipt = async (client: PublicClient, hash: Hex) => {
-    try {
-        return await client.getTransactionReceipt({ hash })
-    } catch (error) {
-        if (error instanceof TransactionReceiptNotFoundError) return null
-        throw error
-    }
-}
 
 /** What one probe reads through; `receiptOf` reads each hash once per pass. */
 type ProbeContext = {

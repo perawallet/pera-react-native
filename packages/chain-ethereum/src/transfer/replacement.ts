@@ -14,7 +14,9 @@ import {
     getAddress,
     parseTransaction,
     recoverTransactionAddress,
+    type Address,
     type FeeValuesEIP1559,
+    type Hex,
     type TransactionSerializableEIP1559,
     type TransactionSerialized,
 } from 'viem'
@@ -23,11 +25,18 @@ import type {
     ChainContext,
     UnsignedTransaction,
 } from '@perawallet/wallet-core-chain-contract'
+import type { Database } from '@perawallet/wallet-core-database'
 import {
     InvalidSendParamsError,
+    type TransactionGapFillRequest,
+    type TransactionGapRequest,
     type TransactionReplacementRequest,
 } from '@perawallet/wallet-core-transactions'
 import type { Nullable } from '@perawallet/wallet-core-shared'
+import {
+    getSubmissionAttemptsAtNonce,
+    OPEN_SUBMISSION_STATUSES,
+} from '@perawallet/wallet-core-signing'
 import { toEvmError } from '../blockchain/errors'
 import { eip155ChainIdOf } from '../blockchain/utils/caip19'
 import { createEvmClient } from '../blockchain/utils/createEvmClient'
@@ -35,6 +44,7 @@ import type { EvmChain } from '../chains/types'
 import type { EthereumTransactionPayload } from '../signing/adapter'
 import { ethereumCallSummary } from '../signing/review'
 import { readEvmFeePresets, type EvmPricedTransaction } from './fees'
+import { readReceipt } from './receipt'
 import { cancelSummary } from './summary'
 
 /** Gas units of a plain transfer, all a cancel needs. */
@@ -99,6 +109,134 @@ export const readReplaceableTransaction = (
     return parsed as EvmPricedTransaction
 }
 
+const cancelAt = (
+    from: Address,
+    priced: Omit<TransactionSerializableEIP1559, 'to' | 'value' | 'gas'>,
+): TransactionSerializableEIP1559 => ({
+    ...priced,
+    to: from,
+    value: 0n,
+    gas: CANCEL_GAS,
+})
+
+const readOwnedTransaction = async (
+    rawTransaction: string,
+    chain: EvmChain,
+    context: BuildContext,
+): Promise<{ original: EvmPricedTransaction; from: Address }> => {
+    const original = readReplaceableTransaction(rawTransaction)
+    if (
+        !original ||
+        original.chainId !== eip155ChainIdOf(context.scope, chain)
+    ) {
+        throw new InvalidSendParamsError()
+    }
+    const from = await recoverTransactionAddress({
+        serializedTransaction: rawTransaction as TransactionSerialized,
+    })
+    return { original, from }
+}
+
+const readFastFees = async (
+    ctx: ChainContext,
+    chain: EvmChain,
+    context: BuildContext,
+): Promise<FeeValuesEIP1559> => {
+    const client = createEvmClient(context.scope, ctx, chain)
+    const { presets } = await readEvmFeePresets(
+        client,
+        chain,
+        context.scope.networkId,
+    ).catch((error: unknown) => {
+        throw toEvmError(error, chain.row.nativeAsset.symbol)
+    })
+    return presets.fast
+}
+
+/**
+ * The first nonce below the pending transaction's that the node holds
+ * nothing at and no send of the wallet holds open or saw mined. The node's pending count
+ * runs over contiguous nonces only, so one short of ours names the gap.
+ */
+export const findEvmNonceGap = async (
+    ctx: ChainContext,
+    chain: EvmChain,
+    request: TransactionGapRequest,
+    context: BuildContext,
+    db?: Database,
+): Promise<Nullable<number>> => {
+    const { original, from } = await readOwnedTransaction(
+        request.rawTransaction,
+        chain,
+        context,
+    )
+    const client = createEvmClient(context.scope, ctx, chain)
+    const pending = await client
+        .getTransactionCount({ address: from, blockTag: 'pending' })
+        .catch((error: unknown) => {
+            throw toEvmError(error, chain.row.nativeAsset.symbol)
+        })
+    if (pending >= original.nonce) return null
+    // A load-balanced node can lag the ledger: an open send there is still
+    // inside the reconciler's grace, and a confirmed or replaced one mined.
+    const attempts = await getSubmissionAttemptsAtNonce({
+        db,
+        scope: context.scope,
+        sender: from,
+        nonce: pending,
+        statuses: [
+            ...OPEN_SUBMISSION_STATUSES,
+            'confirmed',
+            'replaced',
+            'failed',
+        ],
+    })
+    // `failed` covers dropped and reverted alike; only a reverted one has a receipt.
+    const failed = attempts.filter(({ status }) => status === 'failed')
+    if (failed.length < attempts.length) return null
+    const receipts = await Promise.all(
+        failed
+            .flatMap(({ txIds }) => txIds)
+            .map(txId => readReceipt(client, txId as Hex)),
+    ).catch((error: unknown) => {
+        throw toEvmError(error, chain.row.nativeAsset.symbol)
+    })
+    return receipts.some(Boolean) ? null : pending
+}
+
+/** A cancel at the empty nonce, priced at the fast preset since nothing there needs outbidding. */
+export const buildEvmGapFill = async (
+    ctx: ChainContext,
+    chain: EvmChain,
+    request: TransactionGapFillRequest,
+    context: BuildContext,
+): Promise<UnsignedTransaction[]> => {
+    const { original, from } = await readOwnedTransaction(
+        request.rawTransaction,
+        chain,
+        context,
+    )
+    if (request.sequence >= original.nonce) throw new InvalidSendParamsError()
+    const fast = await readFastFees(ctx, chain, context)
+    const payload: EthereumTransactionPayload = {
+        from,
+        transaction: cancelAt(from, {
+            type: 'eip1559',
+            chainId: original.chainId,
+            nonce: request.sequence,
+            ...fast,
+        }),
+    }
+    return [
+        {
+            scope: context.scope,
+            payload,
+            summary: cancelSummary(from, chain.descriptor.nativeAsset.ref),
+            chainData: { family: 'evm' },
+        },
+    ]
+}
+
 /**
  * A speed-up resends the same call; a cancel sends nothing to the sender
  * itself. Both keep the pending transaction's nonce, so neither touches the
@@ -110,33 +248,21 @@ export const buildEvmReplacement = async (
     request: TransactionReplacementRequest,
     context: BuildContext,
 ): Promise<UnsignedTransaction[]> => {
-    const original = readReplaceableTransaction(request.rawTransaction)
-    if (
-        !original ||
-        original.chainId !== eip155ChainIdOf(context.scope, chain)
-    ) {
-        throw new InvalidSendParamsError()
-    }
-    const from = await recoverTransactionAddress({
-        serializedTransaction: request.rawTransaction as TransactionSerialized,
-    })
-    const client = createEvmClient(context.scope, ctx, chain)
-    const { presets } = await readEvmFeePresets(
-        client,
+    const { original, from } = await readOwnedTransaction(
+        request.rawTransaction,
         chain,
-        context.scope.networkId,
-    ).catch((error: unknown) => {
-        throw toEvmError(error, chain.row.nativeAsset.symbol)
-    })
+        context,
+    )
+    const fast = await readFastFees(ctx, chain, context)
     const priced = {
         type: 'eip1559',
         chainId: original.chainId,
         nonce: original.nonce,
-        ...replacementFees(original, presets.fast),
+        ...replacementFees(original, fast),
     } as const
     const isCancel = request.kind === 'cancel'
     const transaction: TransactionSerializableEIP1559 = isCancel
-        ? { ...priced, to: from, value: 0n, gas: CANCEL_GAS }
+        ? cancelAt(from, priced)
         : {
               ...priced,
               to: original.to ? getAddress(original.to) : original.to,
