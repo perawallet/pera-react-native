@@ -33,6 +33,8 @@ const SCRIPT = join(__dirname, '../../../../tools/dev/generate-config.sh')
 type ScopeConfigKeys = {
     chainId: string
     networkId: string
+    tier: string
+    eip155ChainId: number
     rpcUrlEnv: string
     rpcUrlKey: string
     peraServicesEnv: string
@@ -189,6 +191,8 @@ describe('tools/dev/generate-config.sh', () => {
                 return {
                     chainId,
                     networkId: network.id,
+                    tier: network.tier,
+                    eip155ChainId: network.eip155ChainId,
                     rpcUrlEnv: keys.rpcUrlEnv,
                     rpcUrlKey: keys.rpcUrl,
                     peraServicesEnv: keys.peraServicesEnv,

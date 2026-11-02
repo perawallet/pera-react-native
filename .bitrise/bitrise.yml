@@ -83,6 +83,13 @@ workflows:
         inputs:
         - content: |
             #!/usr/bin/env bash
+            # A wrong-network or untrusted EVM RPC URL fails here, not after a signed build.
+            APP_ENV="${ENVIRONMENT:-development}" node tools/check-evm-rpc-endpoints.mjs
+        title: Check EVM RPC endpoints
+    - script@1:
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
             set -ex
 
             # Skip if CHANGELOG was already set by a prior stage
@@ -475,6 +482,13 @@ workflows:
             #!/usr/bin/env bash
             ./tools/dev/validate-env.sh
         title: Validate environment
+    - script@1:
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            # A wrong-network or untrusted EVM RPC URL fails here, not after a signed build.
+            APP_ENV="${ENVIRONMENT:-development}" node tools/check-evm-rpc-endpoints.mjs
+        title: Check EVM RPC endpoints
     - script@1:
         inputs:
         - content: |
@@ -977,6 +991,13 @@ workflows:
             #!/usr/bin/env bash
             ./tools/dev/validate-env.sh
         title: Validate environment
+    - script@1:
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            # A wrong-network or untrusted EVM RPC URL fails here, not after a signed build.
+            APP_ENV="${ENVIRONMENT:-development}" node tools/check-evm-rpc-endpoints.mjs
+        title: Check EVM RPC endpoints
     - restore-cache@3:
         inputs:
         - key: node-modules-{{ checksum "pnpm-lock.yaml" }}
