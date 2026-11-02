@@ -23,12 +23,14 @@ import type { PasskeyAutofillExtension } from './types'
  * wallet-provider Extension that registers the passkey autofill service on
  * the provider. Must be composed AFTER `WithKeyStore`.
  */
-export const WithPasskeyAutofill: Extension<PasskeyAutofillExtension> = (
-    provider: KeyStoreExtension & Record<string, unknown>,
-) => {
+export const WithPasskeyAutofill: Extension<
+    PasskeyAutofillExtension
+> = provider => {
+    const host = provider as unknown as KeyStoreExtension &
+        Record<string, unknown>
     const native =
         ReactNativePasskeyAutofill as unknown as PasskeyAutofillNativeAPI
     const service = new PasskeyAutofillService(native)
-    provider.passkeyAutofill = service
+    host.passkeyAutofill = service
     return { passkeyAutofill: service }
 }

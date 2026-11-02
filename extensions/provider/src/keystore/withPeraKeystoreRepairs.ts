@@ -39,17 +39,19 @@ type RepairsOptions = {
  * a service.
  */
 export const WithPeraKeystoreRepairs: Extension<object> = (
-    provider: {
+    provider,
+    rawOptions,
+) => {
+    const host = provider as unknown as {
         migrations?: MigrationsApi
         deviceInfo?: { getDevicePlatform: () => 'ios' | 'android' | 'web' }
-    },
-    options: RepairsOptions = {},
-) => {
+    }
+    const options = (rawOptions ?? {}) as RepairsOptions
     // Same resolution as `WithKeyStore`, so the two can never end up pointed at
     // different MMKV instances.
     const storage = options.keystore?.storage ?? defaultStorage
 
-    provider.migrations?.register({
+    host.migrations?.register({
         module: REPAIRS_MODULE_ID,
         // Resolved lazily, only when a revision is pending, and
         // `react-native-quick-crypto` is imported here rather than at module
@@ -65,7 +67,7 @@ export const WithPeraKeystoreRepairs: Extension<object> = (
                 // would leave it non-empty and block a fresh install from
                 // minting its master key.
                 declined: createDeclinedRegister(peraMigrationNoteStore()),
-                platform: provider.deviceInfo?.getDevicePlatform(),
+                platform: host.deviceInfo?.getDevicePlatform(),
             }
         },
         migrations: repairsMigrations,

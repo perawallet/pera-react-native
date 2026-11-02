@@ -20,16 +20,15 @@ export interface ConnectionsExtension {
 }
 
 // Must be composed after the platform extension: it reads `provider.keyValueStorage`.
-export const WithConnections: Extension<ConnectionsExtension> = (
-    provider: Record<string, unknown>,
-) => {
-    const storage = provider.keyValueStorage as Optional<ConnectionPersistence>
+export const WithConnections: Extension<ConnectionsExtension> = provider => {
+    const host = provider as unknown as Record<string, unknown>
+    const storage = host.keyValueStorage as Optional<ConnectionPersistence>
     if (!storage) {
         throw new Error(
             'WithConnections requires provider.keyValueStorage — compose it after the platform extension',
         )
     }
     const connections = { store: createConnectionStore({ storage }) }
-    provider.connections = connections
+    host.connections = connections
     return { connections }
 }

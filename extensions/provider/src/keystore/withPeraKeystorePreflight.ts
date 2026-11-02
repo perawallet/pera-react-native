@@ -42,14 +42,16 @@ type PreflightOptions = {
  * a service.
  */
 export const WithPeraKeystorePreflight: Extension<object> = (
-    provider: { migrations?: MigrationsApi },
-    options: PreflightOptions = {},
+    provider,
+    rawOptions,
 ) => {
+    const host = provider as unknown as { migrations?: MigrationsApi }
+    const options = (rawOptions ?? {}) as PreflightOptions
     // Same resolution as `WithKeyStore`, so the two can never end up pointed at
     // different MMKV instances.
     const storage = options.keystore?.storage ?? defaultStorage
 
-    provider.migrations?.register({
+    host.migrations?.register({
         module: PREFLIGHT_MODULE_ID,
         // Resolved lazily, only when a revision is pending. `react-native-quick
         // -crypto` is imported here rather than at module scope so composing the

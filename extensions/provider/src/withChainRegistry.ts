@@ -22,10 +22,11 @@ export interface ChainRegistryExtension {
 
 // Starts empty: each composition root registers the chains it ships, so the
 // provider imports no chain package.
-export const WithChainRegistry: Extension<ChainRegistryExtension> = (
-    provider: Record<string, unknown>,
-) => {
+export const WithChainRegistry: Extension<
+    ChainRegistryExtension
+> = provider => {
+    const host = provider as unknown as Record<string, unknown>
     const chains = createChainRegistry()
-    provider.chains = chains
+    host.chains = chains
     return { chains }
 }

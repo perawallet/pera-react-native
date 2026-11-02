@@ -22,10 +22,11 @@ export interface HardwareWalletExtension {
 
 // Starts empty: the app's composition root registers the concrete transports
 // after the provider is built, so this package imports no BLE/USB driver.
-export const WithHardwareWalletExtension: Extension<HardwareWalletExtension> = (
-    provider: Record<string, unknown>,
-) => {
+export const WithHardwareWalletExtension: Extension<
+    HardwareWalletExtension
+> = provider => {
+    const host = provider as unknown as Record<string, unknown>
     const hardwareWalletRegistry = createHardwareWalletRegistry()
-    provider.hardwareWalletRegistry = hardwareWalletRegistry
+    host.hardwareWalletRegistry = hardwareWalletRegistry
     return { hardwareWalletRegistry }
 }
