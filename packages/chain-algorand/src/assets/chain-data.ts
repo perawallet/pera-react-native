@@ -17,5 +17,9 @@ export const algorandAssetChainData: AssetChainDataCodec = {
         family: 'algorand',
         creatorAddress: asset.creator.address,
     }),
-    decode: data => ({ creator: { address: data.creatorAddress } }),
+    decode: data => ({
+        creator: {
+            address: data.family === 'algorand' ? data.creatorAddress : '',
+        },
+    }),
 }

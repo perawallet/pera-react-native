@@ -16,6 +16,10 @@ import type {
     AccountChainState,
     AssetOptInIntent,
     AssetRef,
+    ChainAccountNative,
+    ChainAssetData,
+    ChainHoldingNative,
+    ChainSubmissionData,
     ChainTransactionData,
     FeePreset,
     TransactionIntent,
@@ -48,6 +52,40 @@ describe('family unions', () => {
         expectTypeOf<
             ChainTransactionData['family']
         >().toEqualTypeOf<ChainFamily>()
+    })
+
+    it('gives every per-family chain_data union an EVM member', () => {
+        expectTypeOf<
+            ChainAccountNative['family']
+        >().toEqualTypeOf<ChainFamily>()
+        expectTypeOf<
+            Extract<ChainAccountNative, { family: 'evm' }>
+        >().toEqualTypeOf<{ family: 'evm' }>()
+        expectTypeOf<
+            ChainHoldingNative['family']
+        >().toEqualTypeOf<ChainFamily>()
+        expectTypeOf<
+            Extract<ChainHoldingNative, { family: 'evm' }>
+        >().toEqualTypeOf<{ family: 'evm' }>()
+        expectTypeOf<ChainAssetData['family']>().toEqualTypeOf<ChainFamily>()
+        expectTypeOf<
+            Extract<ChainAssetData, { family: 'evm' }>
+        >().toEqualTypeOf<{ family: 'evm' }>()
+        expectTypeOf<
+            ChainSubmissionData['family']
+        >().toEqualTypeOf<ChainFamily>()
+        expectTypeOf<
+            Extract<ChainSubmissionData, { family: 'evm' }>
+        >().toEqualTypeOf<{ family: 'evm' }>()
+    })
+
+    it('narrows ChainSubmissionData on family', () => {
+        const narrow = (data: ChainSubmissionData) => {
+            if (data.family === 'algorand') {
+                expectTypeOf(data.lastValid).toEqualTypeOf<number>()
+            }
+        }
+        expectTypeOf(narrow).toBeFunction()
     })
 
     it('narrows AccountChainState on family', () => {

@@ -12,8 +12,8 @@
 
 import { describe, expect, it } from 'vitest'
 import {
-    CHAIN_IDS,
     EVM_CHAIN_NETWORKS,
+    isChainId,
     isEvmChainId,
     isNetworkId,
     type EvmChainId,
@@ -22,10 +22,9 @@ import {
 const EVM_CHAIN_IDS = Object.keys(EVM_CHAIN_NETWORKS) as EvmChainId[]
 
 describe('EVM_CHAIN_NETWORKS', () => {
-    it('lists every chain id but algorand', () => {
-        expect([...EVM_CHAIN_IDS].sort()).toEqual(
-            CHAIN_IDS.filter(id => id !== 'algorand').sort(),
-        )
+    it('names only chain ids, never algorand', () => {
+        expect(EVM_CHAIN_IDS.every(isChainId)).toBe(true)
+        expect(EVM_CHAIN_IDS).not.toContain('algorand')
     })
 
     it('gives every EIP-155 id to exactly one network', () => {

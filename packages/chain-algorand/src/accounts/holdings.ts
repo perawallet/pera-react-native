@@ -19,5 +19,8 @@ import type { ChainHoldingNative } from '@perawallet/wallet-core-chain-contract'
 export const describeAlgorandHolding = (
     native: ChainHoldingNative,
 ): HoldingDescription => ({
-    restriction: native.isFrozen ? HoldingRestrictions.transferBlocked : null,
+    restriction:
+        native.family === 'algorand' && native.isFrozen
+            ? HoldingRestrictions.transferBlocked
+            : null,
 })

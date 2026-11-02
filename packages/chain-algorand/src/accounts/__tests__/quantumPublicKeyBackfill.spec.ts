@@ -65,6 +65,10 @@ describe('storedQuantumPublicKey', () => {
         ).toEqual(PUBLIC_KEY)
     })
 
+    it('returns no key from an entry whose native data is EVM', () => {
+        expect(storedQuantumPublicKey(quantum({ family: 'evm' }))).toBeNull()
+    })
+
     it('ignores a stored key that derives some other address', () => {
         expect(
             storedQuantumPublicKey(quantum(storedNative(OTHER_KEY))),
