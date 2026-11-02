@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { PWButton, PWScreen, PWText, PWView } from '@components/core'
+import { PWScreen, PWText, PWView } from '@components/core'
 import { ConfirmAction, CONFIRM_ACTION_LAYOUT } from '@components/ConfirmAction'
 import { OfflineTolerantView } from '@components/OfflineTolerantView'
 import { useLanguage } from '@hooks/useLanguage'
@@ -41,7 +41,6 @@ export const AssetInboxSendSummaryScreen = () => {
         asset,
         HeaderImageComponent,
         handleSend,
-        handleClose,
         handleReadMore,
         isProcessing,
     } = useAssetInboxSendSummaryScreen()
@@ -92,23 +91,10 @@ export const AssetInboxSendSummaryScreen = () => {
                         }
                         testID='asset_inbox_send_confirm_slide'
                     />
-                    <PWButton
-                        title={t('common.go_back.label')}
-                        variant='linkNeutral'
-                        onPress={handleClose}
-                        testID='asset_inbox_go_back_button'
-                    />
                 </PWView>
             }
         >
             <PWView style={styles.content}>
-                <PWText
-                    variant='h3'
-                    style={styles.title}
-                >
-                    {t('send_funds.asset_inbox_summary.title')}
-                </PWText>
-
                 <PWView style={styles.header}>
                     <HeaderImageComponent style={styles.inboxIcon} />
 

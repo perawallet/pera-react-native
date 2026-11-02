@@ -20,6 +20,7 @@ const mocks = vi.hoisted(() => ({
     navigate: vi.fn(),
     setSelectedAsset: vi.fn(),
     setAmount: vi.fn(),
+    setIsCloseAccount: vi.fn(),
     onFinished: vi.fn(),
     setCanSelectAccount: vi.fn(),
     setSelectedAccount: vi.fn(),
@@ -61,6 +62,7 @@ vi.mock('@modules/transactions/hooks', () => ({
     useSendFunds: () => ({
         setSelectedAsset: mocks.setSelectedAsset,
         setAmount: mocks.setAmount,
+        setIsCloseAccount: mocks.setIsCloseAccount,
         onFinished: mocks.onFinished,
     }),
     useReceiveFunds: () => ({
@@ -104,8 +106,16 @@ describe('useAssetSelectionScreen', () => {
             chainId: 'ethereum',
             assetId: '0xTOKEN',
         })
-        expect(mocks.setAmount).not.toHaveBeenCalled()
         expect(mocks.navigate).toHaveBeenCalledWith('InputAmount')
+    })
+
+    it("starts a fungible pick's amount blank, whatever a collectible or an earlier asset left behind", () => {
+        const { result } = renderHook(() => useAssetSelectionScreen())
+
+        act(() => result.current.handleAssetSelected(holding))
+
+        expect(mocks.setAmount).toHaveBeenCalledWith(undefined)
+        expect(mocks.setIsCloseAccount).toHaveBeenCalledWith(false)
     })
 
     it('takes a unique collectible straight to the recipient with an amount of 1', () => {

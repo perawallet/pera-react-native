@@ -40,7 +40,8 @@ export type SendFundsContentProps = {
 export const SendFundsContent = ({ asset }: SendFundsContentProps) => {
     const { t } = useLanguage()
     const isDarkMode = useIsDarkMode()
-    const { selectedAccount, isReady } = useSendFundsContent(asset)
+    const { selectedAccount, isReady, navigationRef } =
+        useSendFundsContent(asset)
 
     const renderContent = () => {
         if (!selectedAccount) {
@@ -60,6 +61,7 @@ export const SendFundsContent = ({ asset }: SendFundsContentProps) => {
                         scene container and shows through the transparent
                         header as a grey band. */}
                     <NavigationContainer
+                        ref={navigationRef}
                         theme={getNavigationTheme(
                             isDarkMode ? 'dark' : 'light',
                         )}

@@ -104,7 +104,8 @@ export const useAccountActions = ({
                 {},
                 {
                     size: 'modal',
-                    enablePanDownToClose: true,
+                    enablePanDownToClose: false,
+                    enableCloseOnBackdropPress: false,
                     autoCreateContainer: false,
                 },
             )

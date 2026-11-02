@@ -44,9 +44,13 @@ import {
 
 const mockNavigate = vi.fn()
 
+const mockAddListener = vi.fn()
+const mockSetHasUnsavedInput = vi.fn()
+
 vi.mock('@react-navigation/native', () => ({
     useNavigation: () => ({
         navigate: mockNavigate,
+        addListener: mockAddListener,
     }),
 }))
 
@@ -190,6 +194,7 @@ const mockSendFundsState = {
     setDestination: vi.fn(),
     setSendMode: vi.fn(),
     setIsCloseAccount: mockSetIsCloseAccount,
+    setHasUnsavedInput: mockSetHasUnsavedInput,
     reset: vi.fn(),
 }
 
@@ -313,6 +318,32 @@ describe('useInputScreen', () => {
             notice: 'releasable',
         })
         mockRequestBottomSheet.mockResolvedValue(undefined)
+    })
+
+    it('tells the close prompt about digits typed before Next, and withdraws them on unmount', () => {
+        const { result, unmount } = renderHook(() => useInputScreen())
+        expect(mockSetHasUnsavedInput).toHaveBeenLastCalledWith(false)
+
+        act(() => result.current.setCryptoValue('12.5'))
+
+        expect(mockSetHasUnsavedInput).toHaveBeenLastCalledWith(true)
+
+        unmount()
+
+        expect(mockSetHasUnsavedInput).toHaveBeenLastCalledWith(false)
+    })
+
+    it('drops the amount when the screen is popped, so the next asset starts blank', () => {
+        renderHook(() => useInputScreen())
+        const [event, onBeforeRemove] = mockAddListener.mock.calls[0]
+        mockSetAmount.mockClear()
+        mockSetIsCloseAccount.mockClear()
+
+        act(() => onBeforeRemove())
+
+        expect(event).toBe('beforeRemove')
+        expect(mockSetAmount).toHaveBeenCalledWith(undefined)
+        expect(mockSetIsCloseAccount).toHaveBeenCalledWith(false)
     })
 
     it("shows the chain's MAX and balance in display units", () => {

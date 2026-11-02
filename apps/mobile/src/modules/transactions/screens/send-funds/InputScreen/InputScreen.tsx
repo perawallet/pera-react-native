@@ -42,10 +42,10 @@ export const InputScreen = () => {
         canAddNote,
     } = useInputScreen()
     const scope = useSendScope()
-    const { canSelectAsset, note, onFinished } = useSendFunds()
+    const { note } = useSendFunds()
     const { t } = useLanguage()
 
-    const { openNote, headerLeft, headerRight, headerTitle, amountRef } =
+    const { openNote, headerRight, headerTitle, amountRef } =
         useInputScreenActions({
             asset,
             accountAssetBalance,
@@ -55,12 +55,9 @@ export const InputScreen = () => {
             handleKey,
             handlePaste,
             handleNext,
-            canSelectAsset,
-            onFinished,
         })
 
     useNavigationHeader({
-        left: headerLeft,
         right: headerRight,
         title: headerTitle,
     })

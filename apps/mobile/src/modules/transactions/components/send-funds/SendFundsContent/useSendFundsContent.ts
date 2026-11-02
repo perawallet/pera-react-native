@@ -18,6 +18,10 @@ import {
     useState,
 } from 'react'
 import { Decimal } from 'decimal.js'
+import {
+    useNavigationContainerRef,
+    type NavigationContainerRefWithCurrent,
+} from '@react-navigation/native'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import {
     isUniqueCollectible,
@@ -31,11 +35,14 @@ import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
 import { useSendFunds, useSendScope } from '@modules/transactions/hooks'
+import type { SendFundsStackParamList } from '@modules/transactions/routes/send-funds/types'
+import { useSendFlowHardwareBack } from './useSendFlowHardwareBack'
 
 type UseSendFundsContentResult = {
     selectedAccount: ReturnType<typeof useSelectedAccount>
     isReady: boolean
     handleFinished: () => void
+    navigationRef: NavigationContainerRefWithCurrent<SendFundsStackParamList>
 }
 
 export const useSendFundsContent = (
@@ -54,9 +61,19 @@ export const useSendFundsContent = (
         setCanSelectAsset,
         setAmount,
         setOnFinished,
+        snapshotPrefilledDestination,
         reset,
     } = useSendFunds()
     const { dismiss } = useBottomSheetResult<void>()
+
+    // Openers fill the recipient before the sheet mounts; remember it so the
+    // close prompt and going back can tell it from one the user picked.
+    useLayoutEffect(() => {
+        snapshotPrefilledDestination()
+    }, [snapshotPrefilledDestination])
+
+    const navigationRef = useNavigationContainerRef<SendFundsStackParamList>()
+    useSendFlowHardwareBack(navigationRef)
 
     const { data: assets, isFetched } = useAssetsQuery(
         scope,
@@ -151,5 +168,6 @@ export const useSendFundsContent = (
         selectedAccount,
         isReady,
         handleFinished,
+        navigationRef,
     }
 }

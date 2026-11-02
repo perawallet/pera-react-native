@@ -18,13 +18,11 @@ import {
 } from '../useInputScreenActions'
 
 const mocks = vi.hoisted(() => ({
-    navigate: vi.fn(),
     requestBottomSheet: vi.fn(),
     getPreference: vi.fn(),
 }))
 
 vi.mock('@react-navigation/native', () => ({
-    useNavigation: () => ({ navigate: mocks.navigate }),
     useIsFocused: () => true,
 }))
 
@@ -67,28 +65,6 @@ describe('useInputScreenActions', () => {
 
     afterEach(() => {
         vi.useRealTimers()
-    })
-
-    it('goes back to the asset picker when the send can pick an asset', () => {
-        const { result } = renderHook(() =>
-            useInputScreenActions({ ...props, canSelectAsset: true }),
-        )
-
-        act(() => result.current.handleBack())
-
-        expect(mocks.navigate).toHaveBeenCalledWith('AssetSelection')
-    })
-
-    it('finishes the send when no asset can be picked', () => {
-        const onFinished = vi.fn()
-        const { result } = renderHook(() =>
-            useInputScreenActions({ ...props, onFinished }),
-        )
-
-        act(() => result.current.handleBack())
-
-        expect(mocks.navigate).not.toHaveBeenCalled()
-        expect(onFinished).toHaveBeenCalled()
     })
 
     it('opens the info sheet once when the prompt was not agreed to', () => {

@@ -2925,6 +2925,11 @@
         }
     },
     "send_funds": {
+        "discard": {
+            "title": "Descartar esta transação?",
+            "body": "O valor e o destinatário que você informou serão perdidos.",
+            "confirm": "Descartar"
+        },
         "recipient_safety": {
             "checking": "Verificando o destinatário…",
             "look_alike_title": "Este endereço parece um que você conhece",

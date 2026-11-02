@@ -19,8 +19,7 @@ import {
     type RefObject,
 } from 'react'
 import { type View } from 'react-native'
-import { useIsFocused, useNavigation } from '@react-navigation/native'
-import type { StackNavigationProp } from '@react-navigation/stack'
+import { useIsFocused } from '@react-navigation/native'
 import { PWIcon, PWText, PWView } from '@components/core'
 import { AccountDisplay } from '@components/AccountDisplay'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
@@ -33,7 +32,7 @@ import { UserPreferences } from '@constants/user-preferences'
 import { SHORT_PROMPT_DISPLAY_DELAY } from '@constants/ui'
 import { AddNoteContent } from '@modules/transactions/components/send-funds/AddNoteContent'
 import { SendFundsInfoContent } from '@modules/transactions/components/send-funds/SendFundsInfoContent'
-import type { SendFundsStackParamList } from '@modules/transactions/routes/send-funds/types'
+import { SendFlowCloseButton } from '@modules/transactions/components/send-funds/SendFlowCloseButton'
 import { useAmountKeyboardInput } from './useAmountKeyboardInput'
 import type { useInputScreen } from './useInputScreen'
 import { useStyles } from './styles'
@@ -48,16 +47,11 @@ export type UseInputScreenActionsProps = Pick<
     | 'handleKey'
     | 'handlePaste'
     | 'handleNext'
-> & {
-    canSelectAsset?: boolean
-    onFinished?: () => void
-}
+>
 
 export type UseInputScreenActionsResult = {
     openNote: () => void
     openInfo: () => void
-    handleBack: () => void
-    headerLeft: ReactElement
     headerRight: ReactElement
     headerTitle: ReactElement
     amountRef: RefObject<Nullable<View>>
@@ -72,12 +66,8 @@ export const useInputScreenActions = ({
     handleKey,
     handlePaste,
     handleNext,
-    canSelectAsset,
-    onFinished,
 }: UseInputScreenActionsProps): UseInputScreenActionsResult => {
     const styles = useStyles()
-    const navigation =
-        useNavigation<StackNavigationProp<SendFundsStackParamList>>()
     const selectedAccount = useSelectedAccount()
     const scope = useSendScope()
     const { t } = useLanguage()
@@ -118,35 +108,21 @@ export const useInputScreenActions = ({
         return () => clearTimeout(timer)
     }, [hasAgreed, openInfo])
 
-    const handleBack = useCallback(() => {
-        if (canSelectAsset) {
-            navigation.navigate('AssetSelection')
-        } else {
-            onFinished?.()
-        }
-    }, [canSelectAsset, navigation, onFinished])
-
     // Memoize the header nodes so their identities stay stable across renders.
     // useNavigationHeader lists them as effect deps and calls setOptions; passing
     // fresh JSX every render re-fires the effect → setOptions → re-render loop
     // ("Maximum update depth exceeded" on the async-loading ASA path).
-    const headerLeft = useMemo(
-        () => (
-            <PWIcon
-                name={canSelectAsset ? 'chevron-left' : 'cross'}
-                onPress={handleBack}
-            />
-        ),
-        [canSelectAsset, handleBack],
-    )
     const headerRight = useMemo(
         () => (
-            <PWIcon
-                name='info'
-                onPress={openInfo}
-            />
+            <PWView style={styles.headerActions}>
+                <PWIcon
+                    name='info'
+                    onPress={openInfo}
+                />
+                <SendFlowCloseButton />
+            </PWView>
         ),
-        [openInfo],
+        [openInfo, styles],
     )
     const headerTitle = useMemo(
         () => (
@@ -188,8 +164,6 @@ export const useInputScreenActions = ({
     return {
         openNote,
         openInfo,
-        handleBack,
-        headerLeft,
         headerRight,
         headerTitle,
         amountRef,

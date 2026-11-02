@@ -55,7 +55,10 @@ type NavigationApi = {
     setParams: (params: Record<string, unknown>) => void
     isReady: () => boolean
     isFocused: () => boolean
-    addListener: (event: string, listener: () => void) => () => void
+    addListener: (
+        event: string,
+        listener: (event: unknown) => void,
+    ) => () => void
     dispatch: (action: unknown) => void
     reset: (state: unknown) => void
     setOptions: (options: unknown) => void
@@ -63,18 +66,38 @@ type NavigationApi = {
     getState: () => { routes: RouteState[]; index: number }
 }
 
+type ScreenOptions = Record<string, unknown>
+
+type ScreenOptionsInput =
+    | ScreenOptions
+    | ((args: {
+          route: RouteState
+          navigation: NavigationApi
+      }) => ScreenOptions)
+
 type ScreenConfig = {
     name: string
     component: React.ComponentType<Record<string, unknown>>
     initialParams?: Record<string, unknown>
+    options?: ScreenOptionsInput
 }
 
 // Contexts
+
+type BeforeRemoveListener = (event: {
+    data: { action: { type: string } }
+    preventDefault: () => void
+}) => void
 
 type StackController = {
     stack: RouteState[]
     setStack: React.Dispatch<React.SetStateAction<RouteState[]>>
     routeListeners: Set<(route: RouteState) => void>
+    // Header options a screen sets for itself through `setOptions`.
+    setRouteOptions: (key: string, options: ScreenOptions) => void
+    // `beforeRemove` listeners by route key. Only the top screen is mounted
+    // here, so the top route's key is the owner of anything registered.
+    beforeRemoveListeners: Map<string, Set<BeforeRemoveListener>>
 }
 
 const StackContext = createContext<StackController | null>(null)
@@ -175,7 +198,26 @@ const buildNavigationApi = (controller: StackController): NavigationApi => {
         )
     }
 
+    const topKey = (): string | undefined =>
+        controller.stack[controller.stack.length - 1]?.key
+
     const goBack = () => {
+        const removed = controller.stack[controller.stack.length - 1]
+        if (controller.stack.length > 1 && removed) {
+            // Like production, a listener can veto the removal.
+            let isPrevented = false
+            for (const listener of controller.beforeRemoveListeners.get(
+                removed.key,
+            ) ?? []) {
+                listener({
+                    data: { action: { type: 'GO_BACK' } },
+                    preventDefault: () => {
+                        isPrevented = true
+                    },
+                })
+            }
+            if (isPrevented) return
+        }
         controller.setStack(prev =>
             prev.length > 1 ? prev.slice(0, -1) : prev,
         )
@@ -239,10 +281,23 @@ const buildNavigationApi = (controller: StackController): NavigationApi => {
         isReady: () => true,
         // The harness only renders the top route, so running code is focused.
         isFocused: () => true,
-        addListener: () => () => {},
+        addListener: (event, listener) => {
+            const key = topKey()
+            if (event !== 'beforeRemove' || !key) return () => {}
+            const listeners =
+                controller.beforeRemoveListeners.get(key) ?? new Set()
+            listeners.add(listener as BeforeRemoveListener)
+            controller.beforeRemoveListeners.set(key, listeners)
+            return () => {
+                listeners.delete(listener as BeforeRemoveListener)
+            }
+        },
         dispatch: () => {},
         reset,
-        setOptions: () => {},
+        setOptions: options => {
+            const key = topKey()
+            if (key) controller.setRouteOptions(key, options as ScreenOptions)
+        },
         getParent: () => undefined,
         getState: () => ({
             routes: controller.stack,
@@ -309,6 +364,9 @@ export const createNavigationContainerRef = () => ({
     current: null,
 })
 
+export const useNavigationContainerRef = () =>
+    React.useRef(createNavigationContainerRef()).current
+
 // Bottom-sheet hosts wrap their portal children with
 // `<NavigationContainerRefContext.Provider value={navigationRef}>` (see
 // apps/mobile/src/modules/bottom-sheet/components/BottomSheetHost/BottomSheetHost.tsx)
@@ -357,8 +415,8 @@ export const DarkTheme = { ...DefaultTheme, dark: true }
 type NavigatorProps = {
     initialRouteName?: string
     children: React.ReactNode
+    screenOptions?: ScreenOptionsInput
     // Any other production options — accepted but ignored.
-    screenOptions?: unknown
     screenListeners?: unknown
     id?: string
 }
@@ -384,6 +442,7 @@ const collectScreens = (children: React.ReactNode): ScreenConfig[] => {
                 initialParams: props.initialParams as Optional<
                     Record<string, unknown>
                 >,
+                options: props.options as Optional<ScreenOptionsInput>,
             })
         }
         // Recurse into Group / Fragment children
@@ -394,10 +453,31 @@ const collectScreens = (children: React.ReactNode): ScreenConfig[] => {
     return screens
 }
 
+// Memoised so a `setOptions` call re-renders the header, not the screen:
+// production keeps screens out of that update, and a screen that builds its
+// header nodes inline would otherwise loop through setOptions.
+const ScreenHost = React.memo(
+    ({
+        Component,
+        route,
+        navigation,
+    }: {
+        Component: React.ComponentType<Record<string, unknown>>
+        route: RouteState
+        navigation: NavigationApi
+    }) => (
+        <Component
+            route={route}
+            navigation={navigation}
+        />
+    ),
+)
+
 export const createNativeStackNavigator = () => {
     const Navigator: React.FC<NavigatorProps> = ({
         initialRouteName,
         children,
+        screenOptions,
     }) => {
         const screens = useMemo(() => collectScreens(children), [children])
         if (screens.length === 0) {
@@ -419,13 +499,34 @@ export const createNativeStackNavigator = () => {
             },
         ])
 
+        const [optionsByKey, setOptionsByKey] = useState<
+            Record<string, ScreenOptions>
+        >({})
+        const beforeRemoveListeners = React.useRef(
+            new Map<string, Set<BeforeRemoveListener>>(),
+        ).current
+
+        // Options never enter the controller's deps: the navigation object a
+        // screen holds must keep its identity, or a screen that sets its
+        // options from an effect would loop.
         const controller: StackController = useMemo(
             () => ({
                 stack,
                 setStack,
                 routeListeners: new Set(),
+                setRouteOptions: (key, options) =>
+                    setOptionsByKey(prev => ({
+                        ...prev,
+                        [key]: { ...prev[key], ...options },
+                    })),
+                beforeRemoveListeners,
             }),
-            [stack],
+            [stack, beforeRemoveListeners],
+        )
+
+        const navigationApi = useMemo(
+            () => buildNavigationApi(controller),
+            [controller],
         )
 
         // Keep the portal fallback pointing at the live controller; clear it
@@ -456,11 +557,51 @@ export const createNativeStackNavigator = () => {
         // route directly from props — typed as
         // `NativeStackScreenProps<...>` — and crash without them. Pass
         // them through so both styles mount cleanly.
-        const navigationApi = buildNavigationApi(controller)
+        // Production draws the route's `header` above the screen; mirror that
+        // so flows that put back and close controls there can be driven.
+        const baseOptions =
+            typeof screenOptions === 'function'
+                ? screenOptions({
+                      route: currentRoute,
+                      navigation: navigationApi,
+                  })
+                : screenOptions
+        const screenLevelOptions =
+            typeof screenForCurrent?.options === 'function'
+                ? screenForCurrent.options({
+                      route: currentRoute,
+                      navigation: navigationApi,
+                  })
+                : screenForCurrent?.options
+        const options: ScreenOptions = {
+            ...baseOptions,
+            ...screenLevelOptions,
+            ...optionsByKey[currentRoute.key],
+        }
+        const renderHeader = options.header as Optional<
+            (props: {
+                navigation: NavigationApi
+                route: RouteState
+                options: ScreenOptions
+            }) => React.ReactNode
+        >
+        const header =
+            options.headerShown !== false && typeof renderHeader === 'function'
+                ? renderHeader({
+                      navigation: navigationApi,
+                      route: currentRoute,
+                      options,
+                  })
+                : null
+
         return (
             <StackContext.Provider value={controller}>
                 <RouteContext.Provider value={currentRoute}>
-                    <ScreenComponent
+                    <React.Fragment key={currentRoute.key}>
+                        {header}
+                    </React.Fragment>
+                    <ScreenHost
+                        Component={ScreenComponent}
                         route={currentRoute}
                         navigation={navigationApi}
                     />

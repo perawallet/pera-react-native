@@ -23,9 +23,7 @@ import {
     type NativeStackHeaderProps,
 } from '@react-navigation/native-stack'
 
-import { PWIcon } from '@components/core'
 import { NavigationHeader } from '@components/NavigationHeader'
-import { useSendFunds } from '@modules/transactions/hooks'
 import { AddContactScreen } from '@modules/contacts/routes'
 import { AssetSelectionScreen } from '../../screens/send-funds/AssetSelectionScreen/AssetSelectionScreen'
 import { SendChainSelectionScreen } from '../../screens/send-funds/SendChainSelectionScreen'
@@ -39,20 +37,20 @@ import { TransactionProcessingScreen } from '../../screens/send-funds/Transactio
 import { TransactionSuccessScreen } from '../../screens/send-funds/TransactionSuccessScreen'
 import { useStyles } from './styles'
 import type { SendFundsStackParamList } from './types'
+import { sendFlowHeaderOptions } from './sendFlowHeaderOptions'
 import { useSendFundsRoutes } from './useSendFundsRoutes'
 
 const Stack = createNativeStackNavigator<SendFundsStackParamList>()
 
 export const SendFundsRoutes = () => {
-    const { onFinished } = useSendFunds()
     const { initialRouteName } = useSendFundsRoutes()
     const styles = useStyles()
 
     return (
         <Stack.Navigator
             initialRouteName={initialRouteName}
-            screenOptions={{
-                headerShown: true,
+            screenOptions={({ route }) => ({
+                ...sendFlowHeaderOptions(route.name, initialRouteName),
                 header: (props: NativeStackHeaderProps) => (
                     <NavigationHeader
                         {...props}
@@ -61,19 +59,13 @@ export const SendFundsRoutes = () => {
                     />
                 ),
                 contentStyle: [styles.screenContent, styles.tabItem],
-            }}
+            })}
         >
             <Stack.Screen
                 name='ChainSelection'
                 component={SendChainSelectionScreen}
                 options={{
                     title: 'chain_selection.title',
-                    headerLeft: () => (
-                        <PWIcon
-                            name='cross'
-                            onPress={onFinished}
-                        />
-                    ),
                 }}
             />
 
@@ -82,17 +74,6 @@ export const SendFundsRoutes = () => {
                 component={AssetSelectionScreen}
                 options={{
                     title: 'send_funds.asset_selection.title',
-                    // Reached from Choose Network, the default back arrow returns there.
-                    ...(initialRouteName === 'AssetSelection'
-                        ? {
-                              headerLeft: () => (
-                                  <PWIcon
-                                      name='cross'
-                                      onPress={onFinished}
-                                  />
-                              ),
-                          }
-                        : {}),
                 }}
             />
 
@@ -135,7 +116,7 @@ export const SendFundsRoutes = () => {
                 name='AssetInboxSendSummary'
                 component={AssetInboxSendSummaryScreen}
                 options={{
-                    headerShown: false,
+                    title: 'send_funds.asset_inbox_summary.title',
                 }}
             />
 
