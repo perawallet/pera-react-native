@@ -1054,12 +1054,12 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
             // missing here means the build changed and its signature must be
             // regenerated.
             const SENDER_SIGNATURES: Record<string, string> = {
-                // APPROVE at nonce 0.
-                '35d4743dcd74cb81a8555ef7ea473b2ea2bff01f751dcc04670a71a336e5e90f':
-                    'f9c1869252f1cf3b7105548ce092225878351468f96adf3d2a8b60cd1a6ffc96290c1a8c4969a3bdc36d64fc73f0daa0181345e80f6060d6ee454d9bf583185c01',
                 // SWAP at nonce 1.
-                '3927b6f27af213c34d8616b9712f1bc2659609ef63787859d89b1a57416bd901':
-                    '6d8ec16f5cdc77ef3dd518eba38226c07972bdf0d68fcce47433ae2b7cfe84672a6c4268f37cb60d47f49b3e1771aa29570050917796e61b6bac54d9d0339ca201',
+                '145988f3f10f6fac76917939006b17d3460372b96d47350ba72e69f4dd2dcc68':
+                    'a7240ade3fd0663e4a0dc33976a0a99576f7c64e686ecfd2f2da62e193188409468137b6c8a7ec9887de6c02770043de07f754c7b5ad17de62364e12e36366e901',
+                // APPROVE at nonce 0.
+                a37173bd12f3eb7ec722ba91dacb4933093091ec5d3a19aaf97f622528ac4ae9:
+                    'c7e7c9d3cfd73161421bf7c282fe2e2d3e371ec94a390f57fa0a3bd52201d8e74feba4497b3442e8d4c2418b1e3c3e0c36699697f3b81e40a06ab6c1df602d9100',
             }
 
             const signWithSenderKey = async (

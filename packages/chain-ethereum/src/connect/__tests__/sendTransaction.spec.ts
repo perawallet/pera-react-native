@@ -42,7 +42,7 @@ import {
     readEvmTransaction,
     type EthereumTransactionPayload,
 } from '../../signing/adapter'
-import { createEthereumReviewer } from '../../signing/review'
+import { createEthereumReviewer, ethereumViewOf } from '../../signing/review'
 import { ETHEREUM, POLYGON } from '../../__tests__/evm-chains'
 import { TEST_RPC_URL, testChainContext } from '../../__tests__/context'
 import {
@@ -213,22 +213,53 @@ describe('validateEthereumSendTransaction', () => {
         },
     )
 
-    it('accepts gasPrice alone and ignores every fee field', () => {
+    it('keeps the EIP-1559 fee fields the dApp gave', () => {
         const result = validate({
             ...ok,
-            type: '0x0',
-            gasPrice: '0x3b9aca00',
+            maxFeePerGas: '0x77359400',
+            maxPriorityFeePerGas: '0x3b9aca00',
         })
 
-        expect(result).toMatchObject({ ok: true })
+        expect(result).toMatchObject({
+            ok: true,
+            request: {
+                maxFeePerGas: 2_000_000_000n,
+                maxPriorityFeePerGas: 1_000_000_000n,
+            },
+        })
+    })
+
+    it('reads a legacy gasPrice as both fee fields', () => {
+        const result = validate({ ...ok, type: '0x0', gasPrice: '0x3b9aca00' })
+
+        expect(result).toMatchObject({
+            ok: true,
+            request: {
+                maxFeePerGas: 1_000_000_000n,
+                maxPriorityFeePerGas: 1_000_000_000n,
+            },
+        })
         expect(result.ok && result.request).not.toHaveProperty('gasPrice')
-        expect(
-            validate({
-                ...ok,
-                maxFeePerGas: '0x1',
-                maxPriorityFeePerGas: '0x1',
-            }),
-        ).toMatchObject({ ok: true })
+    })
+
+    it('carries no fee field when the dApp gave none', () => {
+        const result = validate(ok)
+
+        expect(result.ok && result.request).not.toHaveProperty('maxFeePerGas')
+        expect(result.ok && result.request).not.toHaveProperty(
+            'maxPriorityFeePerGas',
+        )
+    })
+
+    it.each([
+        ['maxFeePerGas', 5],
+        ['maxPriorityFeePerGas', 'ten'],
+        ['gasPrice', `0x1${'0'.repeat(64)}`],
+    ])('refuses a %s that is not a valid quantity', (field, value) => {
+        expect(validate({ ...ok, [field]: value })).toMatchObject({
+            ok: false,
+            failure: 'invalid-params',
+        })
     })
 
     it.each(['maxFeePerGas', 'maxPriorityFeePerGas'])(
@@ -388,18 +419,30 @@ describe('buildEthereumSendTransaction', () => {
         expect(payloadOf(built).nonce).toBe(4)
     })
 
-    it('uses a gas the dApp gave without estimating', async () => {
-        const estimates = vi.fn(() => '0x5208' as const)
+    it('signs the padded estimate when the dApp gave less gas', async () => {
+        const estimates = vi.fn(() => '0xfde8' as const)
         useRpc({ eth_estimateGas: estimates })
 
         const built = await buildEthereumSendTransaction(
             ctx,
             ETHEREUM,
-            request({ gas: 300_000n }),
+            request({ data: '0xa9059cbb', gas: 30_000n }),
+        )
+
+        expect(estimates).toHaveBeenCalled()
+        expect(payloadOf(built).gas).toBe(78_000n)
+    })
+
+    it('signs the dApp gas when it exceeds the padded estimate', async () => {
+        useRpc({ eth_estimateGas: '0xfde8' })
+
+        const built = await buildEthereumSendTransaction(
+            ctx,
+            ETHEREUM,
+            request({ data: '0xa9059cbb', gas: 300_000n }),
         )
 
         expect(payloadOf(built).gas).toBe(300_000n)
-        expect(estimates).not.toHaveBeenCalled()
     })
 
     it('estimates the gas when the dApp gave none', async () => {
@@ -411,10 +454,70 @@ describe('buildEthereumSendTransaction', () => {
             request(),
         )
 
-        expect(payloadOf(built).gas).toBe(65_000n)
+        expect(payloadOf(built).gas).toBe(78_000n)
     })
 
-    it('prices a request that sent only gasPrice from the fee presets', async () => {
+    it('pads a call with calldata, and a send to a recipient that ran code, but not a send to an account with no code', async () => {
+        useRpc({ eth_estimateGas: '0xfde8' })
+        const call = await buildEthereumSendTransaction(
+            ctx,
+            ETHEREUM,
+            request({ value: 0n, data: '0xa9059cbb' }),
+        )
+        const toContract = await buildEthereumSendTransaction(
+            ctx,
+            ETHEREUM,
+            request(),
+        )
+        useRpc()
+        const toAccount = await buildEthereumSendTransaction(
+            ctx,
+            ETHEREUM,
+            request(),
+        )
+
+        expect(payloadOf(call).gas).toBe(78_000n)
+        expect(payloadOf(toContract).gas).toBe(78_000n)
+        expect(payloadOf(toAccount).gas).toBe(21_000n)
+    })
+
+    it("signs the dApp's fees when they exceed the normal preset", async () => {
+        useRpc()
+
+        const built = await buildEthereumSendTransaction(
+            ctx,
+            ETHEREUM,
+            request({
+                maxFeePerGas: parseGwei('8'),
+                maxPriorityFeePerGas: parseGwei('3'),
+            }),
+        )
+
+        expect(payloadOf(built)).toMatchObject({
+            maxFeePerGas: parseGwei('8'),
+            maxPriorityFeePerGas: parseGwei('3'),
+        })
+    })
+
+    it("signs the wallet's own fees where the dApp asked for less", async () => {
+        useRpc()
+
+        const built = await buildEthereumSendTransaction(
+            ctx,
+            ETHEREUM,
+            request({
+                maxFeePerGas: parseGwei('1'),
+                maxPriorityFeePerGas: parseGwei('0.1'),
+            }),
+        )
+
+        expect(payloadOf(built)).toMatchObject({
+            maxFeePerGas: parseGwei('5'),
+            maxPriorityFeePerGas: parseGwei('1'),
+        })
+    })
+
+    it('prices a legacy gasPrice request at the higher of that price and the presets', async () => {
         useRpc()
         const params = validate({
             ...ok,
@@ -431,9 +534,97 @@ describe('buildEthereumSendTransaction', () => {
 
         expect(payloadOf(built)).toMatchObject({
             type: 'eip1559',
+            // Exactly the price the dApp named: its tip is what that leaves above the 2 gwei base fee.
+            maxFeePerGas: 0xff_ffff_ffffn,
+            maxPriorityFeePerGas: 0xff_ffff_ffffn - parseGwei('2'),
+        })
+    })
+
+    it('charges a legacy gasPrice near the market price that price, and no more', async () => {
+        useRpc()
+        const params = validate({ ...ok, type: '0x0', gasPrice: '0xb2d05e00' })
+        if (!params.ok) throw new Error('expected the request to validate')
+
+        const built = await buildEthereumSendTransaction(
+            ctx,
+            ETHEREUM,
+            params.request,
+        )
+
+        // 3 gwei against a 2 gwei base fee: a 1 gwei tip, under the 5 gwei cap.
+        expect(payloadOf(built)).toMatchObject({
             maxFeePerGas: parseGwei('5'),
             maxPriorityFeePerGas: parseGwei('1'),
         })
+    })
+
+    it('flags a dApp gas limit far above the estimate for review', async () => {
+        useRpc()
+
+        const built = await buildEthereumSendTransaction(
+            ctx,
+            ETHEREUM,
+            request({ gas: 10_000_000n }),
+        )
+        const view = ethereumViewOf(built, ETHEREUM)
+
+        expect(built.payload).toMatchObject({ hasHighFee: true })
+        expect(view).toMatchObject({ hasHighFee: true })
+    })
+
+    it('flags a legacy gasPrice just under twice the preset max fee, which would still cost several times the normal price', async () => {
+        useRpc()
+        const params = validate({
+            ...ok,
+            type: '0x0',
+            gasPrice: toHex(parseGwei('9.5')),
+        })
+        if (!params.ok) throw new Error('expected the request to validate')
+
+        const built = await buildEthereumSendTransaction(
+            ctx,
+            ETHEREUM,
+            params.request,
+        )
+
+        // 9.5 gwei against a 3 gwei normal price: under twice the 5 gwei cap, over three times the cost.
+        expect(payloadOf(built).maxFeePerGas).toBe(parseGwei('9.5'))
+        expect(built.payload).toMatchObject({ hasHighFee: true })
+    })
+
+    it('flags dApp fees far above the preset for review', async () => {
+        useRpc()
+
+        const built = await buildEthereumSendTransaction(
+            ctx,
+            ETHEREUM,
+            request({ maxFeePerGas: parseGwei('500') }),
+        )
+
+        expect(built.payload).toMatchObject({ hasHighFee: true })
+    })
+
+    it("flags nothing on a request at the wallet's own pricing, or one modestly above it", async () => {
+        useRpc({ eth_estimateGas: '0xfde8' })
+
+        const own = await buildEthereumSendTransaction(
+            ctx,
+            ETHEREUM,
+            request({ data: '0xa9059cbb' }),
+        )
+        const modest = await buildEthereumSendTransaction(
+            ctx,
+            ETHEREUM,
+            request({
+                data: '0xa9059cbb',
+                gas: 80_000n,
+                maxFeePerGas: parseGwei('8'),
+            }),
+        )
+
+        expect(own.payload).not.toHaveProperty('hasHighFee')
+        expect(modest.payload).not.toHaveProperty('hasHighFee')
+        expect(ethereumViewOf(own, ETHEREUM)).not.toHaveProperty('hasHighFee')
     })
 
     it('carries the accessList into the serialised transaction', async () => {
@@ -497,6 +688,26 @@ describe('buildEthereumSendTransaction', () => {
         expect(warnings).toEqual([
             expect.objectContaining({ type: 'unknown-contract' }),
         ])
+    })
+
+    it("refuses a call the node says would revert, even when the dApp gave its own gas, with the revert's reason", async () => {
+        useRpc({
+            eth_estimateGas: new EvmRpcErrorFixture(
+                3,
+                'execution reverted: ERC20: transfer amount exceeds balance',
+            ),
+        })
+
+        const error = await buildEthereumSendTransaction(
+            ctx,
+            ETHEREUM,
+            request({ data: '0xa9059cbb', gas: 500_000n }),
+        ).catch((e: unknown) => e)
+
+        expect(error).toMatchObject({
+            code: EvmErrorCode.REVERTED_WITH_REASON,
+            params: { reason: 'ERC20: transfer amount exceeds balance' },
+        })
     })
 
     it('rejects with an EvmError when the node reverts the estimate', async () => {

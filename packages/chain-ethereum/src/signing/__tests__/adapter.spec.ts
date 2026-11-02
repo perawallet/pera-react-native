@@ -206,6 +206,10 @@ describe('ethereumPlannerAdapter', () => {
             'a legacy transaction',
             { from: SENDER, transaction: { ...TRANSFER, type: 'legacy' } },
         ],
+        [
+            'a high-fee flag that is not true',
+            { from: SENDER, transaction: TRANSFER, hasHighFee: 'yes' },
+        ],
     ])('refuses %s', (_label, payload) => {
         const input = unsigned(TRANSFER, { payload })
 
