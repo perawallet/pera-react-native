@@ -28,5 +28,7 @@ export const useStyles = makeStyles(theme => ({
     },
     groupMember: {
         marginLeft: theme.spacing.xl,
+        marginVertical: theme.spacing.md,
+        alignItems: 'flex-start',
     },
 }))
