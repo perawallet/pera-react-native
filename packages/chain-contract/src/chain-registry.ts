@@ -36,8 +36,9 @@ export type ChainCapabilityOverrides = Pick<
     'remote' | 'developer' | 'chainMode'
 > & {
     /**
-     * The per-chain kill switch; only `false` switches a chain off. `unknown`
-     * because it comes from remote config, like the other layers.
+     * The per-chain kill switch for the chain's Pera backend; only `false`
+     * switches it off. RPC and indexer paths stay up. `unknown` because it
+     * comes from remote config, like the other layers.
      */
     chainEnabled?: Partial<Record<ChainId, unknown>>
 }
@@ -62,8 +63,8 @@ export interface ChainRegistry {
     /** Read on every `capabilities` call, so a changed remote value or chain mode applies without re-registering. */
     setCapabilityOverrides(read: () => ChainCapabilityOverrides): void
     /**
-     * True only while the kill switch is explicitly off, registered or not, so
-     * sync can stop a chain the registry doesn't list yet.
+     * True only while the chain's Pera backend kill switch is explicitly off,
+     * registered or not.
      */
     isSwitchedOff(chainId: ChainId): boolean
     /**
@@ -98,10 +99,6 @@ export interface ChainSetupConfig {
 }
 
 const NO_OVERRIDES = (): ChainCapabilityOverrides => ({})
-
-const ALL_OFF = Object.fromEntries(
-    CHAIN_CAPABILITIES.map(capability => [capability, false]),
-) as ChainCapabilities
 
 /** Starts empty: each composition root registers its chains through `registerChainSetup`. */
 export const createChainRegistry = (): ChainRegistry => {
@@ -143,10 +140,9 @@ export const createChainRegistry = (): ChainRegistry => {
         list: () => [...chains.values()].map(entry => entry.chain.descriptor),
         capabilities: chainId => {
             const { build, restrictions } = entryFor(chainId)
-            const { chainEnabled, ...overrides } = readOverrides()
-            if (chainEnabled?.[chainId] === false) {
-                return ALL_OFF
-            }
+            // The kill switch is not a capability: it only turns off the Pera backend.
+            const { chainEnabled: _chainEnabled, ...overrides } =
+                readOverrides()
             // Every registered chain has a build entry; the layer only needs this one.
             const layers = {
                 ...overrides,

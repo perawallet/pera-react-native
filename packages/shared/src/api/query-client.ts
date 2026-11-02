@@ -29,6 +29,7 @@ import {
     config,
     getPeraDeploymentConfig,
     hasPeraService,
+    isPeraBackendSwitchedOff,
     peraDeploymentOf,
 } from '@perawallet/wallet-core-config'
 import type {
@@ -518,13 +519,17 @@ const clientFor = (
     const { scope } = requestConfig
 
     // A scope reaches the deployment holding its chain's data, and must list
-    // any service it names.
+    // any service it names. A chain whose remote kill switch is on reaches none.
     const { service } = requestConfig
+    const isSwitchedOff = isPeraBackendSwitchedOff(scope.chainId)
     const client =
-        service === undefined || hasPeraService(scope, service)
+        !isSwitchedOff &&
+        (service === undefined || hasPeraService(scope, service))
             ? servedPeraClient(peraDeploymentOf(scope))
             : undefined
-    if (!client) throw new PeraServiceUnavailableError(scope, service)
+    if (!client) {
+        throw new PeraServiceUnavailableError(scope, service, { isSwitchedOff })
+    }
     return client
 }
 

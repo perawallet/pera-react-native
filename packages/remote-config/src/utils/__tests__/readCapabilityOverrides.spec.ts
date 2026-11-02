@@ -197,14 +197,10 @@ describe('readCapabilityOverrides', () => {
             expect(registry.capabilities('algorand').staking).toBe(false)
         })
 
-        test('the remote kill switch turns every capability off and back on, leaving the chain registered', () => {
+        test('the remote kill switch turns off the Pera backend alone, leaving capabilities and the chain registered', () => {
             useRemote({ [KEY]: '{"enabled":false}' })
 
-            expect(
-                Object.values(registry.capabilities('algorand')).every(
-                    value => value === false,
-                ),
-            ).toBe(true)
+            expect(registry.capabilities('algorand')).toEqual(build)
             expect(registry.isSwitchedOff('algorand')).toBe(true)
             expect(registry.has('algorand')).toBe(true)
 

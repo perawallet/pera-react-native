@@ -224,6 +224,13 @@ result. Swallowing it is indistinguishable from a genuine empty result in the UI
 dead probe once reported "no addresses found" during account discovery. Pera-proprietary reads have
 no fallback and should surface as unavailable.
 
+A chain's remote kill switch (`chain_<id>_overrides` with `enabled: false`) turns off only its Pera
+backend, the same way: `servicesOf` lists nothing for it and the query client refuses its Pera
+requests. Balances, sync, pending-row reconciliation, send, receive and dApp sessions keep running on
+RPC, and holdings the backend can no longer list stay at their last value, except tokens an account
+already holds, which are read over RPC. `peraServicesFor` and the query client read the switch, and
+so does onramp, which the backend brokers; feature code never hides a chain because of it.
+
 ## How a chain reaches its backends
 
 Every chain calls the Pera backend through `queryClient({ backend: 'pera', scope })`, never a client

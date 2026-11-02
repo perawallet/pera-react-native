@@ -33,6 +33,7 @@ import {
     peraDeploymentOf,
     peraServicesFor,
     registerCustomNetworkSource,
+    setPeraBackendSwitch,
     type CustomNetworkEndpoints,
     type PeraService,
 } from '../network-config'
@@ -341,6 +342,40 @@ describe('peraServicesFor', () => {
         ;(peraServicesFor(scope) as Set<PeraService>).delete('prices')
 
         expect(hasPeraService(scope, 'prices')).toBe(true)
+    })
+})
+
+describe('the Pera backend switch', () => {
+    afterEach(() => setPeraBackendSwitch(() => false))
+
+    test('lists no services for a switched-off chain only', () => {
+        const algorand = algorandScope('mainnet')
+        setPeraBackendSwitch(chainId => chainId === 'ethereum')
+
+        expect(hasPeraBackend(algorand)).toBe(true)
+
+        setPeraBackendSwitch(chainId => chainId === algorand.chainId)
+
+        expect(hasPeraBackend(algorand)).toBe(false)
+        expect(hasPeraService(algorand, 'prices')).toBe(false)
+        expect(peraServicesFor(algorand).size).toBe(0)
+    })
+
+    test('leaves the scope on its deployment, so device ids and deployment requests are unaffected', () => {
+        const scope = algorandScope('mainnet')
+        const deployment = peraDeploymentOf(scope)
+        setPeraBackendSwitch(() => true)
+
+        expect(peraDeploymentOf(scope)).toBe(deployment)
+        expect(getPeraServicesConfig(scope).backendUrl).not.toBe('')
+    })
+
+    test('lists the services again once the chain is switched back on', () => {
+        const scope = algorandScope('mainnet')
+        setPeraBackendSwitch(() => true)
+        setPeraBackendSwitch(() => false)
+
+        expect(hasPeraBackend(scope)).toBe(true)
     })
 })
 

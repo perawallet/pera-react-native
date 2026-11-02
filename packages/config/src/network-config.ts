@@ -353,6 +353,22 @@ export const registerCustomNetworkSource = (
     }
 }
 
+let peraBackendSwitch: ((chainId: ChainId) => boolean) | undefined
+
+/**
+ * The per-chain remote kill switch lives in the chain registry, which `config`
+ * cannot import. It turns off only the chain's Pera services; RPC and indexer
+ * paths never read it.
+ */
+export const setPeraBackendSwitch = (
+    isSwitchedOff: (chainId: ChainId) => boolean,
+): void => {
+    peraBackendSwitch = isSwitchedOff
+}
+
+export const isPeraBackendSwitchedOff = (chainId: ChainId): boolean =>
+    peraBackendSwitch?.(chainId) ?? false
+
 export const configuredScopes = (): readonly ChainScope[] =>
     SCOPE_CONFIGS.map(row => row.scope)
 
@@ -404,7 +420,9 @@ export const deploymentOf = (scope: ChainScope | null): WalletMode | null =>
 const NO_PERA_SERVICES: ReadonlySet<PeraService> = new Set()
 
 const servicesOf = (scope: ChainScope): ReadonlySet<PeraService> =>
-    findScopeConfig(scope)?.services ?? NO_PERA_SERVICES
+    isPeraBackendSwitchedOff(scope.chainId)
+        ? NO_PERA_SERVICES
+        : (findScopeConfig(scope)?.services ?? NO_PERA_SERVICES)
 
 export const peraServicesFor = (scope: ChainScope): ReadonlySet<PeraService> =>
     new Set(servicesOf(scope))

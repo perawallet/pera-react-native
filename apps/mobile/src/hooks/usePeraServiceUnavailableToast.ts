@@ -21,6 +21,9 @@ import { setOnPeraBackendUnavailable } from '@providers/queryClient'
  * request made on BetaNet or a custom node) for a given target: a scope, or a
  * deployment for the chain-agnostic endpoints.
  *
+ * Silent for a chain's remote kill switch: it is a backend pause, which the
+ * affected surfaces already show, and the wording here is about the network.
+ *
  * Deduped per target because an ungated Pera query — the preferred-currency
  * price query behind every fiat value — fires the error once per mount, which
  * would otherwise toast on every screen change.
@@ -44,7 +47,10 @@ export const usePeraServiceUnavailableToast = (): void => {
 
     useEffect(() => {
         return setOnPeraBackendUnavailable(error => {
-            const { targetKey } = error
+            const { targetKey, isSwitchedOff } = error
+            if (isSwitchedOff) {
+                return
+            }
             if (notifiedTargetsRef.current.has(targetKey)) {
                 return
             }

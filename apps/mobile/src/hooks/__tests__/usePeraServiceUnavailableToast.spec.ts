@@ -98,6 +98,35 @@ describe('usePeraServiceUnavailableToast', () => {
         )
     })
 
+    it('stays silent for a refusal by the chain kill switch, whose scope is on a network with a backend', () => {
+        let capturedHandler:
+            | ((error: PeraServiceUnavailableError) => void)
+            | undefined
+        mockSetOnPeraBackendUnavailable.mockImplementation(
+            (handler: (error: PeraServiceUnavailableError) => void) => {
+                capturedHandler = handler
+                return vi.fn()
+            },
+        )
+        renderHook(() => usePeraServiceUnavailableToast())
+        const scope = { chainId: 'algorand', networkId: 'mainnet' } as const
+
+        capturedHandler?.(
+            new PeraServiceUnavailableError(scope, undefined, {
+                isSwitchedOff: true,
+            }),
+        )
+        expect(mockShowError).not.toHaveBeenCalled()
+
+        // The switch refusing a scope doesn't use up that scope's notice.
+        const betanet = new PeraServiceUnavailableError(scope)
+        capturedHandler?.(betanet)
+        expect(mockShowError).toHaveBeenCalledWith(
+            betanet,
+            'common.network_unavailable.title',
+        )
+    })
+
     it('unsubscribes the handler on unmount', () => {
         const unsubscribe = vi.fn()
         mockSetOnPeraBackendUnavailable.mockImplementation(() => unsubscribe)

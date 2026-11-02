@@ -35,6 +35,7 @@ import {
     config,
     getPeraServicesConfig,
     peraServicesFor,
+    setPeraBackendSwitch,
 } from '@perawallet/wallet-core-config'
 import { kmsCore } from '@perawallet/wallet-core-kms'
 import { rehydrateSigningStore } from '@perawallet/wallet-core-signing'
@@ -60,10 +61,16 @@ const chainContextFor = (entry: ChainSetupEntry): ChainContext => ({
             entry.endpoints,
             useNetworkStore.getState().endpointOverridesByChain[entry.chainId],
         ),
-    getPeraBackend: scope => ({
-        baseUrl: getPeraServicesConfig(scope).backendUrl,
-        services: peraServicesFor(scope),
-    }),
+    getPeraBackend: scope => {
+        const services = peraServicesFor(scope)
+        return {
+            baseUrl:
+                services.size === 0
+                    ? ''
+                    : getPeraServicesConfig(scope).backendUrl,
+            services,
+        }
+    },
     timeouts: config.chainRequestTimeouts[entry.chainId],
     kms: kmsCore,
 })
@@ -103,6 +110,7 @@ export const declareChainPlatformInputs = (setup: ChainSetup): void => {
 export const registerChainAdapters = (): void => {
     const { chains } = getProvider()
     chains.setCapabilityOverrides(readCapabilityLayers)
+    setPeraBackendSwitch(chainId => chains.isSwitchedOff(chainId))
     const setup = buildChainSetup(
         config.chains,
         {
