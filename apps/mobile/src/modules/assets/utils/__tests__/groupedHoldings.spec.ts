@@ -107,7 +107,7 @@ const describeItems = (items: GroupedHoldingItem<TestHolding>[]) =>
     items.map(item =>
         item.kind === 'group'
             ? `group:${item.group.id}`
-            : `${item.isGroupMember ? 'member' : 'row'}:${item.holding.assetId}`,
+            : `row:${item.holding.assetId}`,
     )
 
 const groupAt = (items: GroupedHoldingItem<TestHolding>[], index: number) => {
@@ -199,16 +199,15 @@ describe('buildGroupedHoldingItems', () => {
         expect(group.members[1]?.asset).toBeNull()
     })
 
-    it('follows an expanded group with its members', () => {
+    it('marks an expanded group but keeps its members inside it', () => {
         const items = build([algoUsdc, algo, ethUsdc], { expanded: ['usdc'] })
 
-        expect(describeItems(items)).toEqual([
-            'group:usdc',
-            'member:31566704',
-            'member:0xA0b8',
-            'row:0',
-        ])
+        expect(describeItems(items)).toEqual(['group:usdc', 'row:0'])
         expect(groupAt(items, 0).isExpanded).toBe(true)
+        expect(groupAt(items, 0).members.map(m => m.holding)).toEqual([
+            algoUsdc,
+            ethUsdc,
+        ])
     })
 
     it('keeps two same-symbol assets in no group as separate rows', () => {
@@ -242,8 +241,8 @@ describe('buildGroupedHoldingItems', () => {
         ]
 
         expect(build(ungrouped)).toEqual([
-            { kind: 'holding', holding: ungrouped[0], isGroupMember: false },
-            { kind: 'holding', holding: ungrouped[1], isGroupMember: false },
+            { kind: 'holding', holding: ungrouped[0] },
+            { kind: 'holding', holding: ungrouped[1] },
         ])
     })
 })

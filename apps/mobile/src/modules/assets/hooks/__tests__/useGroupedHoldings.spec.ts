@@ -79,7 +79,6 @@ describe('useGroupedHoldings', () => {
             holdings.map(holding => ({
                 kind: 'holding',
                 holding,
-                isGroupMember: false,
             })),
         )
     })

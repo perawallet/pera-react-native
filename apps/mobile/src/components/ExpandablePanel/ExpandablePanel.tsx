@@ -11,19 +11,11 @@
  */
 
 import { PWView } from '@components/core'
-import React, { type PropsWithChildren, useEffect, useState } from 'react'
-import type { StyleProp, ViewStyle, LayoutChangeEvent } from 'react-native'
-import Animated, {
-    useSharedValue,
-    withTiming,
-    useAnimatedStyle,
-    runOnJS,
-} from 'react-native-reanimated'
+import React, { type PropsWithChildren } from 'react'
+import type { StyleProp, ViewStyle } from 'react-native'
+import Animated from 'react-native-reanimated'
 import { useStyles } from './styles'
-import {
-    EXPANDABLE_PANEL_ANIMATION_DURATION,
-    EXPANDABLE_PANEL_ANIMATION_EASING,
-} from '@constants/ui'
+import { useExpandablePanel } from './useExpandablePanel'
 
 export type ExpandablePanelProps = {
     isExpanded: boolean
@@ -37,53 +29,11 @@ export const ExpandablePanel = ({
     onStateChangeEnd,
     containerStyle,
 }: ExpandablePanelProps) => {
-    const [height, setHeight] = useState(0)
-    // Initialise the shared values so the very first render (before the
-    // expanded-target effect fires) shows the correct state — important when
-    // the panel is mounted already expanded and we need it visible
-    // synchronously rather than animating in from collapsed.
-    const animatedHeight = useSharedValue(isExpanded ? height : 0)
-    const animatedOpacity = useSharedValue(isExpanded ? 1 : 0)
     const styles = useStyles()
-
-    const onLayout = (event: LayoutChangeEvent) => {
-        const onLayoutHeight = event.nativeEvent.layout.height
-        if (onLayoutHeight > 0 && height !== onLayoutHeight) {
-            setHeight(onLayoutHeight)
-        }
-    }
-
-    // Drive the animation from a side effect so the worklet inside
-    // useAnimatedStyle is a pure projection of shared values — never
-    // mutating them during render. Mutating inside useAnimatedStyle was
-    // re-firing withTiming on every parent render (e.g. when a bottom
-    // sheet portal mounted), occasionally leaving the panel at height=0.
-    useEffect(() => {
-        const targetHeight = isExpanded ? height : 0
-        const targetOpacity = isExpanded ? 1 : 0
-        animatedHeight.value = withTiming(
-            targetHeight,
-            {
-                duration: EXPANDABLE_PANEL_ANIMATION_DURATION,
-                easing: EXPANDABLE_PANEL_ANIMATION_EASING,
-            },
-            finished => {
-                'worklet'
-                if (finished && onStateChangeEnd) {
-                    runOnJS(onStateChangeEnd)(isExpanded)
-                }
-            },
-        )
-        animatedOpacity.value = withTiming(targetOpacity, {
-            duration: EXPANDABLE_PANEL_ANIMATION_DURATION,
-            easing: EXPANDABLE_PANEL_ANIMATION_EASING,
-        })
-    }, [isExpanded, height, animatedHeight, animatedOpacity, onStateChangeEnd])
-
-    const collapsableStyle = useAnimatedStyle(() => ({
-        height: animatedHeight.value,
-        opacity: animatedOpacity.value,
-    }))
+    const { collapsableStyle, onLayout } = useExpandablePanel({
+        isExpanded,
+        onStateChangeEnd,
+    })
 
     return (
         <Animated.View

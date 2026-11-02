@@ -730,18 +730,17 @@ describe('useAccountAssetList', () => {
 
             act(() => result.current.toggleGroupExpanded('usdc'))
 
-            const memberScopes = result.current.items.flatMap(item =>
-                item.kind === 'holding' && item.isGroupMember
-                    ? [item.holding.scope.chainId]
-                    : [],
-            )
-            expect(result.current.items[0]?.kind).toBe('group')
-            expect(memberScopes).toEqual(['algorand', 'ethereum'])
+            const [group] = result.current.items
+            if (group?.kind !== 'group') throw new Error('expected the group')
+            expect(group.isExpanded).toBe(true)
+            expect(
+                group.members.map(({ holding }) => holding.scope.chainId),
+            ).toEqual(['algorand', 'ethereum'])
 
             act(() => result.current.toggleGroupExpanded('usdc'))
 
-            expect(result.current.items.map(item => item.kind)).toEqual([
-                'group',
+            expect(result.current.items).toEqual([
+                expect.objectContaining({ kind: 'group', isExpanded: false }),
             ])
             expect(mockNavigate).not.toHaveBeenCalled()
         })
@@ -756,13 +755,14 @@ describe('useAccountAssetList', () => {
                 useAccountAssetList({ account: twoChainAccount, t: mockT }),
             )
             act(() => result.current.toggleGroupExpanded('usdc'))
-            const ethereumMember = result.current.items.find(
-                item =>
-                    item.kind === 'holding' &&
-                    item.isGroupMember &&
-                    item.holding.scope.chainId === 'ethereum',
-            )
-            if (ethereumMember?.kind !== 'holding') {
+            const [group] = result.current.items
+            const ethereumMember =
+                group?.kind === 'group'
+                    ? group.members.find(
+                          ({ holding }) => holding.scope.chainId === 'ethereum',
+                      )
+                    : undefined
+            if (!ethereumMember) {
                 throw new Error('expected the Ethereum member row')
             }
 
