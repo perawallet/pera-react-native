@@ -3072,7 +3072,7 @@
         },
         "processing": {
             "title": "İşlem gönderiliyor",
-            "subtitle": "İşlemin Algorand ağı tarafından işleniyor.",
+            "subtitle": "İşlemin {{network}} ağı tarafından işleniyor.",
             "title_hardware": "Ledger cihazına bağlanılıyor",
             "subtitle_hardware": "{{deviceName}} cihazına ulaşılıyor. Cihazın kilidinin açık ve menzilde olduğundan, {{appName}} uygulamasının da açık olduğundan emin ol.",
             "subtitle_hardware_noDevice": "Ledger cihazına ulaşılıyor. Cihazın kilidinin açık ve menzilde olduğundan, {{appName}} uygulamasının da açık olduğundan emin ol.",
@@ -3081,7 +3081,7 @@
         "success": {
             "title": "İşlem gerçekleşti",
             "asset_transferred_title": "Varlık transfer edildi",
-            "subtitle": "İşlemin Algorand ağı tarafından başarıyla alındı",
+            "subtitle": "İşlemin {{network}} ağı tarafından başarıyla alındı",
             "pending_title": "İşlem gönderildi",
             "pending_subtitle": "İşlemin {{network}} ağına gönderildi ve onay bekliyor.",
             "view_in_explorer": "İşlem detayını Pera Explorer’da gör",

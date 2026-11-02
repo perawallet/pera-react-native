@@ -61,7 +61,7 @@ export const TransactionProcessingScreen = () => {
         }
         return {
             key: i18nKey('send_funds.processing.subtitle'),
-            params: undefined,
+            params: { network: networkName },
         }
     }
     const subtitle = subtitleOf()
