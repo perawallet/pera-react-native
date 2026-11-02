@@ -22,3 +22,5 @@ appiumLogs: true
 # import cases wait longer than that between commands, and a session pulled mid-test reads
 # as a product failure.
 idleTimeout: 300
+# The funded-wallet recovery phrase is typed into the app; without this it sits in the session's text logs.
+maskCommands: setValues

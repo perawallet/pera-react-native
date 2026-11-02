@@ -17,3 +17,5 @@ deviceLogs: true
 # diagnosed after the fact.
 appiumLogs: true
 idleTimeout: 300
+# The funded-wallet recovery phrase is typed into the app; without this it sits in the session's text logs.
+maskCommands: setValues

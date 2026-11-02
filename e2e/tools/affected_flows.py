@@ -105,13 +105,13 @@ EVERYTHING = (
 # apps/mobile/src/modules/<name>/ -> suites. A module absent here reaches suites only through
 # the testIDs it declares.
 MODULES = {
-    "accounts": ["accounts", "persistence", "multisig", "rekey", "quantum", "assets", "transactions"],
+    "accounts": ["accounts", "persistence", "multisig", "rekey", "quantum", "assets", "transactions", "ethereum"],
     "age-gate": ["discover", "onramp", "stake", "swap"],
     "assets": ["assets", "deeplinks", "send_receive"],
     "backup": ["backup"],
     "banners": ["accounts", "backup"],
     "card": ["card"],
-    "chain-ui": ["accounts", "assets", "send_receive"],
+    "chain-ui": ["accounts", "assets", "send_receive", "ethereum"],
     "cloud-backup": ["cloud_backup"],
     "connections": ["settings", "walletconnect"],
     "contacts": ["contacts", "deeplinks"],
@@ -128,11 +128,11 @@ MODULES = {
     "rekey": ["rekey", "multisig"],
     "search": ["assets", "deeplinks"],
     "settings": ["settings", "persistence", "cloud_backup", "discover", "stake", "onboarding"],
-    "signing": ["send_receive", "swap", "assets", "walletconnect", "multisig", "rekey"],
+    "signing": ["send_receive", "swap", "assets", "walletconnect", "multisig", "rekey", "ethereum"],
     "staking": ["stake"],
     "swap": ["swap"],
     "token": ["assets"],
-    "transactions": ["transactions", "send_receive"],
+    "transactions": ["transactions", "send_receive", "ethereum"],
     "view-passphrase": ["accounts", "device", "quantum"],
     "walletconnect": ["walletconnect", "settings"],
     "webview": ["discover", "stake", "settings", "swap"],
@@ -167,10 +167,10 @@ PACKAGES = {
     "projects": ["stake"],
     "search": ["assets", "deeplinks"],
     "settings": ["settings", "persistence"],
-    "signing": ["send_receive", "swap", "assets", "walletconnect", "multisig", "rekey"],
+    "signing": ["send_receive", "swap", "assets", "walletconnect", "multisig", "rekey", "ethereum"],
     "staking": ["stake"],
     "swaps": ["swap"],
-    "transactions": ["transactions", "send_receive"],
+    "transactions": ["transactions", "send_receive", "ethereum"],
     "walletconnect": ["walletconnect", "settings"],
 }
 
