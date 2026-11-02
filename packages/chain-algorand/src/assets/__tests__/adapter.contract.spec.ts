@@ -10,8 +10,18 @@
  limitations under the License
  */
 
-import { vi } from 'vitest'
+import {
+    afterAll,
+    afterEach,
+    beforeAll,
+    describe,
+    expect,
+    test,
+    vi,
+} from 'vitest'
 import { Decimal } from 'decimal.js'
+import { http, HttpResponse } from 'msw'
+import { setupServer } from 'msw/node'
 import {
     assetMetadataContractTests,
     assetPriceContractTests,
@@ -20,6 +30,7 @@ import { ALGORAND_CHAIN_ID } from '../../chain-id'
 import { mockAssetPrices } from '../../pricing/msw-handlers'
 import {
     mockAssetDetails,
+    mockAssetItems,
     mockAssets,
     mockIndexerAssetDetails,
     mockPublicAssetDetails,
@@ -27,12 +38,23 @@ import {
 import { mockAssetSearch } from '../api/search-msw-handlers'
 import { algorandAssetsAdapter } from '../adapter'
 import { ALGORAND_NATIVE_ASSET } from '../native-asset'
+import { fetchAndPersistAssets } from '../sync/asset-syncer'
 
-const persisted = vi.hoisted(() => ({ ids: new Set<string>() }))
+const persisted = vi.hoisted(() => ({
+    ids: new Set<string>(),
+    items: [] as unknown[],
+    deviceId: null as string | null,
+    isV4Enabled: true,
+}))
+
+vi.mock('../sync/v4-asset-sync-gate', () => ({
+    isV4AssetSyncEnabled: () => persisted.isV4Enabled,
+}))
 
 vi.mock('@perawallet/wallet-core-assets', async importOriginal => {
     const record = async ({ items }: { items: { assetId: string }[] }) => {
         items.forEach(item => persisted.ids.add(item.assetId))
+        persisted.items.push(...items)
     }
     return {
         ...(await importOriginal<object>()),
@@ -49,7 +71,7 @@ vi.mock('@perawallet/wallet-core-assets', async importOriginal => {
 
 vi.mock('@perawallet/wallet-core-device', async importOriginal => ({
     ...(await importOriginal<object>()),
-    deviceIdForDeployment: () => null,
+    deviceIdForDeployment: () => persisted.deviceId,
 }))
 
 const TOKEN = { assetId: '31566704', unitName: 'USDC', decimals: 6 }
@@ -145,6 +167,21 @@ runMetadata(
         }),
         indexerHandler,
         ...mockAssets({ response: { results: [usdcDetails] } }),
+        mockAssetItems({
+            items: {
+                [TOKEN.assetId]: {
+                    ...usdcDetails,
+                    type: 'standard_asset',
+                    logo: null,
+                    is_verified: true,
+                    explorer_url: null,
+                    collectible: null,
+                    labels: [],
+                    is_favorited: false,
+                    is_price_alert_enabled: false,
+                },
+            },
+        }),
         mockAssetSearch({ response: { results: [usdcSearchHit] } }),
     ],
     { query: 'usdc', hitAssetIds: [TOKEN.assetId] },
@@ -153,6 +190,111 @@ runMetadata(
 // No Pera deployment: the Pera lanes fail before any request, so the chain's
 // own indexer is the only source and there is no catalogue search.
 runMetadata('betanet', 'indexer only', [indexerHandler])
+
+// The same backend asset, served by Django plus the group-only v4 read on a
+// production build and by the full v4 item on staging, must store the same row.
+describe('Algorand asset sync: Django and v4 store the same row', () => {
+    const NFT_ID = '1234567'
+    const GROUP = { id: 'nft-group', name: 'Cool', symbol: 'COOL' }
+    const collection = {
+        name: 'Cool Collection',
+        description: 'A collection',
+    }
+    const shared = {
+        name: 'Cool NFT',
+        logo: 'https://example.test/logo.png',
+        unit_name: 'COOL',
+        fraction_decimals: 0,
+        total: '1',
+        is_verified: true,
+        is_deleted: false,
+        verification_tier: 'verified',
+        explorer_url: 'https://explorer.test/asset/1234567',
+        creator: { address: 'CREATOR' },
+        type: 'collectible',
+        category: 3,
+        labels: [{ name: 'featured' }],
+        is_favorited: true,
+        is_price_alert_enabled: true,
+    }
+    const collectible = {
+        title: 'Cool NFT #1',
+        standard: 'arc3' as const,
+        primary_image: 'https://example.test/nft.png',
+        media_type: 'image' as const,
+        explorer_url: 'https://explorer.test/asset/1234567',
+    }
+
+    const server = setupServer()
+    const scope = { chainId: ALGORAND_CHAIN_ID, networkId: 'mainnet' } as const
+
+    const syncOnce = async (isV4Enabled: boolean) => {
+        persisted.items = []
+        persisted.isV4Enabled = isV4Enabled
+        await fetchAndPersistAssets([NFT_ID], scope)
+        return persisted.items
+    }
+
+    beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
+    afterEach(() => {
+        server.resetHandlers()
+        persisted.deviceId = null
+        persisted.isV4Enabled = true
+    })
+    afterAll(() => server.close())
+
+    test('for a device-scoped sync', async () => {
+        persisted.deviceId = '4567123498765432101'
+        server.use(
+            ...mockAssets({
+                response: {
+                    results: [
+                        {
+                            ...shared,
+                            asset_id: Number(NFT_ID),
+                            usd_value: null,
+                            collectible: {
+                                ...collectible,
+                                collection: { ...collection, id: 42 },
+                            },
+                        },
+                    ],
+                },
+            }),
+            http.post('*/api/v4/assets/', () =>
+                HttpResponse.json({
+                    results: [
+                        {
+                            asset_id: `algorand:wGHE2Pwdvd7S12BL5FaOP20EGYesN73k/asa:${NFT_ID}`,
+                            cross_chain_asset_group: GROUP,
+                        },
+                    ],
+                }),
+            ),
+        )
+        const fromDjango = await syncOnce(false)
+
+        server.resetHandlers()
+        server.use(
+            mockAssetItems({
+                items: {
+                    [NFT_ID]: {
+                        ...shared,
+                        collectible: {
+                            ...collectible,
+                            collection: { ...collection, id: '42' },
+                        },
+                    },
+                },
+                groups: { [NFT_ID]: GROUP },
+            }),
+        )
+        const fromV4 = await syncOnce(true)
+
+        expect(fromDjango).toHaveLength(1)
+        expect(fromV4).toEqual(fromDjango)
+    })
+})
 
 assetPriceContractTests(
     () => algorandAssetsAdapter,

@@ -43,6 +43,10 @@ import {
     seedAlgorandAccountState,
 } from '@test-utils/database-setup'
 import {
+    mockAssetItems,
+    type MockAssetItem,
+} from '@perawallet/wallet-core-chain-algorand/test-handlers'
+import {
     insertAssetHolding,
     useAccountsStore,
     useEnsureAccountEnriched,
@@ -82,32 +86,29 @@ const UNCLASSIFIED_ASSET: PeraAsset = {
 }
 
 // Same asset once the crawler finishes — this is what the refetch must pick up.
-const CLASSIFIED_RESPONSE = {
-    results: [
-        {
-            asset_id: Number(NFT_TEST_ASSET_ID),
-            name: NFT_TEST_ASSET.name,
-            unit_name: NFT_TEST_ASSET.unitName,
-            fraction_decimals: 0,
-            total: '1',
-            creator: { address: NFT_TEST_ASSET.creator.address },
-            url: NFT_TEST_ASSET.url,
-            is_deleted: false,
-            verification_tier: 'verified',
-            // Required by assetResponseSchema (nullable, not optional) — omit
-            // it and the response fails validation and the refetch is a no-op.
-            category: null,
-            type: 'collectible',
-            collectible: {
-                title: 'Test Collectible #1',
-                standard: 'arc3',
-                media_type: 'image',
-                primary_image: 'https://example.test/nft-image.png',
-                explorer_url: 'https://explorer.test/1',
-            },
-        },
-    ],
-    next: null,
+const CLASSIFIED_ITEM: MockAssetItem = {
+    name: NFT_TEST_ASSET.name ?? null,
+    unit_name: NFT_TEST_ASSET.unitName ?? null,
+    fraction_decimals: 0,
+    total: '1',
+    logo: null,
+    creator: { address: NFT_TEST_ASSET.creator.address },
+    is_deleted: false,
+    is_verified: true,
+    verification_tier: 'verified',
+    explorer_url: null,
+    category: null,
+    labels: [],
+    is_favorited: false,
+    is_price_alert_enabled: false,
+    type: 'collectible',
+    collectible: {
+        title: 'Test Collectible #1',
+        standard: 'arc3',
+        media_type: 'image',
+        primary_image: 'https://example.test/nft-image.png',
+        explorer_url: 'https://explorer.test/1',
+    },
 }
 
 // Gallery mounted alongside the account-view enrichment, as on the real
@@ -191,13 +192,8 @@ describe('Flow: an NFT the backend classifies late still reaches the gallery', (
 
         server.use(
             // The crawler has since finished, so the backend now says
-            // collectible. Both the device-scoped and unscoped surfaces.
-            http.post('*/v2/assets/', () =>
-                HttpResponse.json(CLASSIFIED_RESPONSE, { status: 200 }),
-            ),
-            http.get('*/v1/assets/', () =>
-                HttpResponse.json(CLASSIFIED_RESPONSE, { status: 200 }),
-            ),
+            // collectible.
+            mockAssetItems({ items: { [NFT_TEST_ASSET_ID]: CLASSIFIED_ITEM } }),
             http.get(
                 `${getAlgorandChainConfig({ chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const).indexerUrl}/v2/accounts/:address/assets`,
                 () =>

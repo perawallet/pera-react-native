@@ -11,9 +11,11 @@
  */
 
 import {
+    fetchAssetItems,
     fetchAssets,
     fetchCrossChainAssetGroups,
     fetchIndexerAssetDetails,
+    transformAssetItemResponse,
     transformAssetResponse,
     transformIndexerAssetResponse,
 } from '../api'
@@ -43,6 +45,7 @@ import { isAlgorandNativeAssetId } from '../../descriptor'
 import { hasAlgorandNftShape } from '../collectible'
 import { algorandNetworkOf, algorandScope } from '../../network-id'
 import { deploymentOf, hasPeraBackend } from '@perawallet/wallet-core-config'
+import { isV4AssetSyncEnabled } from './v4-asset-sync-gate'
 
 const ASSET_FETCH_CONCURRENCY = 5
 
@@ -83,6 +86,32 @@ const persistFromPeraBackend = async (
     })
     await upsertAssets({ items: assets, scope })
 }
+
+/**
+ * The same write as persistFromPeraBackend, from the v4 item alone: one
+ * request carries the group alongside every field the Django read did.
+ */
+const persistFromPeraAssetItems = async (
+    batch: string[],
+    scope: ChainScope,
+    deviceId: Nullable<string>,
+): Promise<void> => {
+    const items = await fetchAssetItems(
+        batch,
+        algorandNetworkOf(scope),
+        deviceId,
+    )
+    const assets = [...items].flatMap(
+        ([assetId, item]) =>
+            transformAssetItemResponse(assetId, item, {
+                isDeviceScoped: Boolean(deviceId),
+            }) ?? [],
+    )
+    await upsertAssets({ items: assets, scope })
+}
+
+const peraBackendPersister = (): typeof persistFromPeraBackend =>
+    isV4AssetSyncEnabled() ? persistFromPeraAssetItems : persistFromPeraBackend
 
 /**
  * Writes the `assets_node` table on a network with no Pera deployment: read
@@ -194,8 +223,9 @@ export async function fetchAndPersistAssets(
             hasCollectibleShape: hasAlgorandNftShape,
         },
         recheckArc19: { ttlMs: ARC19_COLLECTIBLE_RECHECK_TTL_MS },
-        // The group read is integrity-guarded; until it can succeed, a recheck
-        // would refetch every unread token on each sync for nothing.
+        // The group read is integrity-guarded (on the v4 path, the whole read
+        // is); until it can succeed, a recheck would refetch every unread
+        // token on each sync for nothing.
         recheckUnreadGroup: canCallIntegrityGuardedRoute(),
     })
     if (toFetch.length === 0) return
@@ -218,7 +248,7 @@ export async function fetchAndPersistAssets(
     // persistChainIntrinsics simply ignores the deviceId argument — a Pera
     // device id means nothing to a chain indexer.
     const persistBatch = hasPeraBackend(algorandScope(network))
-        ? persistFromPeraBackend
+        ? peraBackendPersister()
         : persistChainIntrinsics
 
     for (let i = 0; i < batches.length; i += ASSET_FETCH_CONCURRENCY) {
