@@ -30,6 +30,7 @@ export type TypographyVariant =
     | 'h2'
     | 'h3'
     | 'h4'
+    | 'titleSmall'
     | 'body'
     | 'bodyLarge'
     | 'bodyCompact'
@@ -69,6 +70,14 @@ export const getTypography = (
             fontFamily: getFontFamily(600),
             fontSize: moderateScale(15),
             lineHeight: moderateScale(24),
+            color: theme.colors.textMain,
+        },
+        // Figma's Title Small: the hero figure on detail screens.
+        titleSmall: {
+            fontFamily: getFontFamily(500),
+            fontSize: moderateScale(28),
+            lineHeight: moderateScale(36),
+            letterSpacing: moderateScale(-0.28),
             color: theme.colors.textMain,
         },
         body: {
@@ -147,6 +156,7 @@ const variantFontWeights: Record<TypographyVariant, FontWeight> = {
     h2: 500,
     h3: 500,
     h4: 600,
+    titleSmall: 500,
     body: 400,
     bodyLarge: 400,
     bodyCompact: 400,

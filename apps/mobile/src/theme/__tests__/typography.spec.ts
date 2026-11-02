@@ -28,6 +28,7 @@ const ALL_VARIANTS: TypographyVariant[] = [
     'h2',
     'h3',
     'h4',
+    'titleSmall',
     'body',
     'bodyLarge',
     'bodyCompact',
