@@ -638,6 +638,39 @@ describe('discoverWalletAccounts', () => {
             )
         })
 
+        test('is complete, not unanswered, when every chain it walks is switched off on the backend', async () => {
+            families.checkActivity.get(ETHEREUM)!.mockRejectedValue(
+                new PeraNetworkError('client', {
+                    status: 422,
+                    backendCode: 'chain_not_enabled',
+                }),
+            )
+            state().setAccounts([pathHolder({ account: 0, keyIndex: 0 })])
+
+            const result = await state().discoverWalletAccounts(SEED, {
+                chainIds: [ETHEREUM],
+            })
+
+            expect(result).toMatchObject({
+                coverage: 'complete',
+                failedChainIds: [],
+            })
+        })
+
+        test('is complete, not unanswered, when a retry names only chains no longer offered', async () => {
+            state().setAccounts([pathHolder({ account: 0, keyIndex: 0 })])
+
+            const result = await state().discoverWalletAccounts(SEED, {
+                chainIds: ['base' as ChainId],
+            })
+
+            expect(result).toMatchObject({
+                coverage: 'complete',
+                failedChainIds: [],
+            })
+            expect(families.checkActivity.get(ALGORAND)).not.toHaveBeenCalled()
+        })
+
         test('is partial when an add fails for a reason other than a duplicate', async () => {
             activeAt(ALGORAND, [{ account: 0, keyIndex: 0 }])
             activeAt(ETHEREUM, [{ account: 0, keyIndex: 0 }])
@@ -683,6 +716,26 @@ describe('discoverWalletAccounts', () => {
                 failedChainIds: [ETHEREUM],
                 checkedAccountCount: 10,
                 foundCount: 1,
+            })
+        })
+
+        test('shows a chain whose answer left an address out as failed while it runs, as the result will', async () => {
+            activeAt(ALGORAND, [{ account: 0, keyIndex: 0 }])
+            families.checkActivity
+                .get(ETHEREUM)!
+                .mockImplementation(
+                    async (probed: string[]) => new Map([[probed[0]!, false]]),
+                )
+            state().setAccounts([pathHolder({ account: 0, keyIndex: 0 })])
+            const onProgress = vi.fn()
+
+            const result = await state().discoverWalletAccounts(SEED, {
+                onProgress,
+            })
+
+            expect(result.failedChainIds).toEqual([ETHEREUM])
+            expect(onProgress.mock.calls.at(-1)![0]).toMatchObject({
+                failedChainIds: [ETHEREUM],
             })
         })
 

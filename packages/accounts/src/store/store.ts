@@ -551,11 +551,14 @@ const coverageOf = (
     outcomes: ReadonlyMap<ChainId, Set<HdProbeOutcome>>,
     failedChainIds: readonly ChainId[],
     isWalkIncomplete: boolean,
+    hasCheckableChain: boolean,
 ): WalletDiscoveryCoverage => {
     const hasAnswer = [...outcomes.values()].some(
         settled => settled.has('answered') || settled.has('partial'),
     )
-    if (!hasAnswer) return 'unanswered'
+    // With no chain left to ask (every one refused, or a retry of chains no
+    // longer offered), no answer is not a failure to get one.
+    if (!hasAnswer && hasCheckableChain) return 'unanswered'
     if (isWalkIncomplete || failedChainIds.length > 0) return 'partial'
     return 'complete'
 }
@@ -1267,7 +1270,12 @@ export const useAccountsStore: UseBoundStore<
                                         outcomes.get(chainId) ?? new Set()
                                     settled.add(outcome)
                                     outcomes.set(chainId, settled)
-                                    if (outcome === 'failed') {
+                                    // Partial counts too: the result names
+                                    // the chain as unchecked either way.
+                                    if (
+                                        outcome === 'failed' ||
+                                        outcome === 'partial'
+                                    ) {
                                         failedSoFar.add(chainId)
                                         reportProgress()
                                     } else if (outcome === 'refused') {
@@ -1420,6 +1428,7 @@ export const useAccountsStore: UseBoundStore<
                                 outcomes,
                                 failedChainIds,
                                 isWalkIncomplete,
+                                chainIds.some(chainId => !refused.has(chainId)),
                             ),
                             createdAccountIds: [...createdIds],
                             failedChainIds,
