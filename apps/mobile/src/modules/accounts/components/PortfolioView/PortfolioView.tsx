@@ -39,7 +39,7 @@ import { type PortfolioValueHistoryItem } from '@perawallet/wallet-core-accounts
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { UserPreferences } from '@constants/user-preferences'
 import { InfoButton } from '@components/InfoButton'
-import { usePortfolioTrend } from './usePortfolioTrend'
+import { usePortfolioTrend } from '@hooks/usePortfolioTrend'
 import { usePortfolioTrendColumn } from './usePortfolioTrendColumn'
 import { usePortfolioView } from './usePortfolioView'
 import { usePortfolioChart } from './usePortfolioChart'
