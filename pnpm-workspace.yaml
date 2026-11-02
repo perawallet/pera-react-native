@@ -27,13 +27,13 @@ catalog:
   "@algorandfoundation/xhd-wallet-api": ^2.0.0-canary.1
   "@lottiefiles/dotlottie-react": 0.20.0
   "@babel/runtime": ^7.29.2
-  "@expensify/react-native-wallet": 0.1.41
+  "@expensify/react-native-wallet": 0.2.1
   "@expo/app-integrity": 58.0.2
   "@joe-p/react-native-falcon": 0.1.0
   "@ledgerhq/errors": ^6.35.0
   # Exact: each release pins its own axios and @ledgerhq/* dependencies exactly,
   # so a range would drift the Ledger transport copies out from under it.
-  "@ledgerhq/hw-app-eth": 7.11.0
+  "@ledgerhq/hw-app-eth": 7.11.1
   "@ledgerhq/hw-transport-web-ble": ^6.35.0
   "@ledgerhq/hw-transport-webhid": ^6.36.0
   "@ledgerhq/react-native-hid": 6.39.5
@@ -47,15 +47,15 @@ catalog:
   # Exact: every module peers on the identical app version; move all five
   # together.
   # pin: lockstep firebase
-  "@react-native-firebase/analytics": 27.0.0
+  "@react-native-firebase/analytics": 27.1.0
   # pin: lockstep firebase
-  "@react-native-firebase/app": 27.0.0
+  "@react-native-firebase/app": 27.1.0
   # pin: lockstep firebase
-  "@react-native-firebase/crashlytics": 27.0.0
+  "@react-native-firebase/crashlytics": 27.1.0
   # pin: lockstep firebase
-  "@react-native-firebase/messaging": 27.0.0
+  "@react-native-firebase/messaging": 27.1.0
   # pin: lockstep firebase
-  "@react-native-firebase/remote-config": 27.0.0
+  "@react-native-firebase/remote-config": 27.1.0
   # Pinned exactly, not ranged: WalletKit and @walletconnect/core share an
   # internal protocol contract, so a floating minor on one side can pair with
   # a core it was never built against. Bump the two together.
@@ -75,22 +75,22 @@ catalog:
   "@types/node": ^20.19.39
   "@types/react": ~19.3.0
   "@types/w3c-web-hid": ^1.0.7
-  "@types/web-bluetooth": ^0.0.21
+  "@types/web-bluetooth": ^0.0.22
   "@vitejs/plugin-react": 6.1.2
   "@vitest/coverage-v8": ^5.0.3
   # Kept in step with "@reown/walletkit" above; see the note there.
   # pin: follows @reown/walletkit
   # pin: lockstep walletconnect
-  "@walletconnect/core": 2.25.0
+  "@walletconnect/core": 2.26.0
   # Same release train as core: it installs the `global.NetInfo` and
   # `global.Platform` shims core's utils read, so bump the two together.
   # pin: lockstep walletconnect
-  "@walletconnect/react-native-compat": 2.25.0
+  "@walletconnect/react-native-compat": 2.26.0
   # The exact version "@walletconnect/core" depends on: `buildApprovedNamespaces`
   # encodes the namespace rules the relay and the dApp both enforce, so a copy
   # out of step with core's would build sessions core then rejects.
   # pin: follows @walletconnect/core
-  "@walletconnect/utils": 2.25.0
+  "@walletconnect/utils": 2.26.0
   # 3.7.0 is a floor, not a preference: the `pqsig` field and the
   # scheme-agnostic PQ signer surface Pera's quantum accounts sign with landed
   # in that release (algorand/js-algorand-sdk PR #1102). 3.6.x still resolves
@@ -111,15 +111,15 @@ catalog:
   expo-device: 58.0.5
   expo-local-authentication: 58.0.2
   expo-localization: 58.0.5
-  expo-notifications: 58.1.6
-  expo-sqlite: 58.0.13
-  fake-indexeddb: 6.2.5
+  expo-notifications: 58.1.7
+  expo-sqlite: 58.0.15
+  fake-indexeddb: 6.2.6
   falcon-1024: 0.2.0
   # 3.33.1 and 3.34.0 fail the required Dead Code job on an unchanged
   # .fallowrc.jsonc (unused exports and files that 3.30.0 doesn't report); raise
   # this only with `pnpm fallow` green on the new release.
   # pin: hold 3.30.0
-  fallow: 3.30.0
+  fallow: 3.36.0
   fast-glob: ^3.3.2
   jsdom: ^30.0.1
   ky: ^2.0.2
@@ -131,8 +131,8 @@ catalog:
   react-dom: 19.3.0
   react-native: 0.88.0
   react-native-mmkv: 4.3.2
-  react-native-quick-base64: 3.0.0
-  react-native-quick-crypto: 1.1.6
+  react-native-quick-base64: 3.0.1
+  react-native-quick-crypto: 1.1.8
   react-native-ssl-public-key-pinning: 1.2.6
   tsx: ^4.22.3
   tweetnacl: ^1.0.3
@@ -142,7 +142,7 @@ catalog:
   # Metro, Hermes and the extension bundles were verified against this exact
   # version; re-run those checks before a bump.
   # pin: hold 2.57.7
-  viem: 2.57.7
+  viem: 2.57.11
   vite: ~8.3.4
   vitest: ^5.0.3
   xstate: ^5.28.0
@@ -440,8 +440,8 @@ overrides:
   # copy whose JS would drive the 3.5.1 native code apps/mobile autolinks.
   react-native-ble-plx: 3.5.1
   react-native-nitro-modules: 0.36.5
-  react-native-quick-base64: 3.0.0
-  react-native-quick-crypto: 1.1.6
+  react-native-quick-base64: 3.0.1
+  react-native-quick-crypto: 1.1.8
   # Eight advisories patched in 8.12.2 (TLS validation, cache poisoning, DoS).
   undici@>=8.0.0 <8.12.2: 8.12.2
   uuid@<14: 14.0.0
