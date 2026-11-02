@@ -400,6 +400,7 @@ describe('buildEthereumSendTransaction', () => {
                 maxFeePerGas: parseGwei('5'),
                 maxPriorityFeePerGas: parseGwei('1'),
             },
+            feeEstimate: { preset: 'normal', amount: 21_000n * parseGwei('3') },
         })
     })
 
@@ -555,6 +556,41 @@ describe('buildEthereumSendTransaction', () => {
         expect(payloadOf(built)).toMatchObject({
             maxFeePerGas: parseGwei('5'),
             maxPriorityFeePerGas: parseGwei('1'),
+        })
+    })
+
+    it("estimates the cost at the node's unpadded gas, not the signed gas limit", async () => {
+        useRpc({ eth_estimateGas: '0xfde8' })
+
+        const built = await buildEthereumSendTransaction(
+            ctx,
+            ETHEREUM,
+            request({ data: '0xa9059cbb' }),
+        )
+
+        expect(payloadOf(built).gas).toBe(78_000n)
+        expect(built.payload).toMatchObject({
+            feeEstimate: { amount: 65_000n * parseGwei('3') },
+        })
+    })
+
+    it('reads Fast when the dApp tips above the fast preset', async () => {
+        useRpc()
+
+        const built = await buildEthereumSendTransaction(
+            ctx,
+            ETHEREUM,
+            request({
+                maxFeePerGas: parseGwei('20'),
+                maxPriorityFeePerGas: parseGwei('3'),
+            }),
+        )
+
+        expect(built.payload).toMatchObject({
+            feeEstimate: {
+                preset: 'fast',
+                amount: 21_000n * parseGwei('5'),
+            },
         })
     })
 

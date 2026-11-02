@@ -19,7 +19,9 @@ import {
     serializeTransaction,
 } from 'viem'
 import type { Address, TransactionSerializableEIP1559 } from 'viem'
+import { FEE_PRESETS } from '@perawallet/wallet-core-chain-contract'
 import type {
+    FeePreset,
     Signature,
     SignedTransaction,
     SigningRequest,
@@ -31,6 +33,13 @@ import { eip155ChainIdOf } from '../blockchain/utils/caip19'
 import type { EvmChain } from '../chains/types'
 import { transactionDigest } from './digests'
 import { toViemSignature } from './sign'
+
+/**
+ * What the transaction is expected to cost at request time. `amount` is wei:
+ * the node's unpadded gas estimate at the next block's base fee, capped by the
+ * signed max fee.
+ */
+export type EthereumPayloadFeeEstimate = { preset: FeePreset; amount: bigint }
 
 /** The `UnsignedTransaction.payload` on any EVM chain's scope. */
 export type EthereumTransactionPayload = {
@@ -53,10 +62,17 @@ export type EthereumTransactionPayload = {
      * reached, since its fee can't be quoted on the review.
      */
     maxFeePerGasCeiling?: bigint
+    /** Display-only: nothing that plans, signs or matches a preview reads it. */
+    feeEstimate?: EthereumPayloadFeeEstimate
 }
 
 export const isRecord = (value: unknown): value is Record<string, unknown> =>
     typeof value === 'object' && value !== null
+
+const isFeeEstimate = (value: unknown): value is EthereumPayloadFeeEstimate =>
+    isRecord(value) &&
+    FEE_PRESETS.some(preset => preset === value.preset) &&
+    typeof value.amount === 'bigint'
 
 /**
  * Reads a payload for review, previews included. Anything that signs reads it
@@ -96,12 +112,22 @@ export const readEvmReviewTransaction = (
     if (payload.hasHighFee !== undefined && payload.hasHighFee !== true) {
         throw new Error('The EVM transaction payload is malformed')
     }
+    const feeEstimate = payload.feeEstimate
+    if (feeEstimate !== undefined && !isFeeEstimate(feeEstimate)) {
+        throw new Error('The EVM transaction payload is malformed')
+    }
     return {
         from: getAddress(payload.from),
         transaction,
         ...(payload.isPreview === true && { isPreview: true }),
         ...(payload.hasHighFee === true && { hasHighFee: true }),
         ...(ceiling !== undefined && { maxFeePerGasCeiling: ceiling }),
+        ...(feeEstimate !== undefined && {
+            feeEstimate: {
+                preset: feeEstimate.preset,
+                amount: feeEstimate.amount,
+            },
+        }),
     }
 }
 
