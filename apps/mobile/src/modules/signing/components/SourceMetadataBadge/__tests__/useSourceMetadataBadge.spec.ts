@@ -101,12 +101,13 @@ describe('useSourceMetadataBadge — name that repeats the site', () => {
         ['the url with its scheme', 'https://app.uniswap.org'],
         ['the host with a trailing slash', 'app.uniswap.org/'],
         ['the host in another case', 'App.Uniswap.org'],
-    ])('drops a name that is %s, leaving the url once', (_label, name) => {
+    ])('hides a name that is %s, leaving the url once', (_label, name) => {
         const { result } = renderHook(() =>
             useSourceMetadataBadge({ name, url: 'https://app.uniswap.org' }),
         )
 
-        expect(result.current.displayName).toBeUndefined()
+        expect(result.current.isNameShown).toBe(false)
+        expect(result.current.displayName).toBe(name)
         expect(result.current.url).toBe('app.uniswap.org')
     })
 
@@ -119,6 +120,7 @@ describe('useSourceMetadataBadge — name that repeats the site', () => {
         )
 
         expect(result.current.displayName).toBe('Uniswap')
+        expect(result.current.isNameShown).toBe(true)
     })
 })
 

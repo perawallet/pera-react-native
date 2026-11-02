@@ -30,6 +30,7 @@ export const SourceMetadataBadge = ({
     const {
         displayIcon,
         displayName,
+        isNameShown,
         url,
         verificationTier,
         requestOriginLabel,
@@ -52,7 +53,7 @@ export const SourceMetadataBadge = ({
                         />
                     </PWView>
                 )}
-                {!!displayName && (
+                {isNameShown && (
                     <PWText
                         variant='caption'
                         style={styles.name}
@@ -60,7 +61,7 @@ export const SourceMetadataBadge = ({
                         {displayName}
                     </PWText>
                 )}
-                {!!displayName && !!metadata.url && (
+                {isNameShown && !!metadata.url && (
                     <PWText
                         variant='caption'
                         style={styles.separator}

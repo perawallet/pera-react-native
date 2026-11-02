@@ -54,6 +54,21 @@ const stubProjectQuery = (project: PeraProject) =>
         data: project,
     } as unknown as UseProjectByUrlQueryResult)
 
+describe('useSourceMetadataView — a dApp named by its host', () => {
+    it('keeps the name, which is the view heading', () => {
+        stubProjectQuery(verifiedTinyman)
+
+        const { result } = renderHook(() =>
+            useSourceMetadataView({
+                name: 'app.uniswap.org',
+                url: 'https://app.uniswap.org',
+            }),
+        )
+
+        expect(result.current.displayName).toBe('app.uniswap.org')
+    })
+})
+
 describe('useSourceMetadataView — verified-badge gating', () => {
     it('suppresses the verified badge without a verifiedOrigin (WalletConnect)', () => {
         stubProjectQuery(verifiedTinyman)

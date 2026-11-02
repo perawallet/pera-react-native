@@ -55,7 +55,7 @@ export const useSourceMetadataBadge = (
         ) ?? metadata.icons?.at(0)
 
     const displayIcon = preferredIcon ?? project?.logoPng
-    const claimedName = metadata.name ?? project?.name
+    const displayName = metadata.name ?? project?.name
 
     // Same inputs as the sign gate, so this reads its cached verdict.
     const attestedOrigin = metadata.verification?.verifiedOrigin
@@ -76,11 +76,9 @@ export const useSourceMetadataBadge = (
 
     const url = useMemo(() => stripUrlScheme(metadata.url), [metadata.url])
 
-    // A dApp that names itself by its address would show the host twice.
-    const displayName =
-        claimedName && siteKeyOf(claimedName) === siteKeyOf(url)
-            ? undefined
-            : claimedName
+    // A name that is the host would repeat it in the badge; the view keeps it as its heading.
+    const isNameShown =
+        !!displayName && siteKeyOf(displayName) !== siteKeyOf(url)
 
     // The name and url above are what the dApp claims about itself.
     const requestOriginLabel =
@@ -95,6 +93,7 @@ export const useSourceMetadataBadge = (
     return {
         displayIcon,
         displayName,
+        isNameShown,
         url,
         verificationTier,
         requestOriginLabel,
