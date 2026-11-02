@@ -29,17 +29,16 @@ const hostOf = (url?: string): Optional<string> => {
 }
 
 /**
- * Names who asked, preferring what the platform observed over what the
- * transport verified, and both over the dApp's own claim.
+ * Names who asked only when the platform observed it or the transport
+ * attested it, the observed origin first. The dApp's own claimed url never
+ * reaches this copy.
  */
 export const contractCallNoticeOf = (
     source?: SignRequestSource,
     verifiedOrigin?: string,
 ): ContractCallNotice => {
     const domain =
-        hostOf(verifiedOrigin) ??
-        hostOf(source?.verification?.verifiedOrigin) ??
-        hostOf(source?.url)
+        hostOf(verifiedOrigin) ?? hostOf(source?.verification?.verifiedOrigin)
 
     return domain
         ? {

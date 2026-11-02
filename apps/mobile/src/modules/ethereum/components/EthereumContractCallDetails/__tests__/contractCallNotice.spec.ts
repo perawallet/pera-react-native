@@ -47,10 +47,11 @@ describe('contractCallNoticeOf', () => {
         expect(notice.params).toEqual({ domain: 'verify.example' })
     })
 
-    it('falls back to the claimed url, keeping a port and dropping scheme and path', () => {
-        const notice = contractCallNoticeOf({
-            url: 'https://app.uniswap.org:8443/swap?x=1',
-        })
+    it('keeps a port and drops the scheme and path of the observed origin', () => {
+        const notice = contractCallNoticeOf(
+            undefined,
+            'https://app.uniswap.org:8443/swap?x=1',
+        )
 
         expect(notice).toEqual({
             titleKey: NAMED,
@@ -58,11 +59,25 @@ describe('contractCallNoticeOf', () => {
         })
     })
 
-    it.each([
-        ['no source', undefined],
-        ['a source without a url', { name: 'Uniswap' }],
-        ['a url that does not parse', { url: 'not a url' }],
-    ])('asks the user to trust the sending app given %s', (_label, source) => {
-        expect(contractCallNoticeOf(source)).toEqual({ titleKey: UNNAMED })
+    it('never names the url the dApp claims for itself', () => {
+        const notice = contractCallNoticeOf({
+            url: 'https://app.uniswap.org',
+            verification: { status: 'unknown' },
+        })
+
+        expect(notice).toEqual({ titleKey: UNNAMED })
     })
+
+    it.each([
+        ['no source', undefined, undefined],
+        ['a source without a url', { name: 'Uniswap' }, undefined],
+        ['an observed origin that does not parse', undefined, 'not a url'],
+    ])(
+        'asks the user to trust the sending app given %s',
+        (_label, source, verifiedOrigin) => {
+            expect(contractCallNoticeOf(source, verifiedOrigin)).toEqual({
+                titleKey: UNNAMED,
+            })
+        },
+    )
 })

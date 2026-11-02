@@ -282,7 +282,8 @@ describe('Ethereum transaction bodies', () => {
             render(
                 <TransactionReviewBody
                     transaction={natives['contract-call']}
-                    source={{ url: 'https://app.uniswap.org/swap' }}
+                    source={{ url: 'https://claimed.example' }}
+                    verifiedOrigin='https://app.uniswap.org/swap'
                 />,
             )
 
@@ -300,10 +301,11 @@ describe('Ethereum transaction bodies', () => {
             expect(screen.queryByTestId('ethereum_review_amount')).toBeNull()
         })
 
-        it('asks the user to trust the sending app when the request has no source', () => {
+        it('asks the user to trust the sending app when only the dApp has claimed a site', () => {
             render(
                 <TransactionReviewBody
                     transaction={natives['contract-call']}
+                    source={{ url: 'https://app.uniswap.org' }}
                 />,
             )
 
