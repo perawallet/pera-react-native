@@ -66,7 +66,8 @@ export const SURCHARGE_HEADROOM = 2n
 
 /**
  * The lowest max fee per gas a send is signed with: the next block's base fee grown by one more full
- * block (EIP-1559 raises it by at most 1/8 per block) plus the tip. Below it the transaction can
+ * block plus the tip. Ethereum's 1/8 per-block step stands in for every chain; an OP-stack chain with
+ * a smaller step is refused a little earlier than it needs to be, never later. Below it the transaction can
  * stall behind a single busy block, and a MAX send has nothing left to replace it with.
  */
 export const minMaxFeePerGas = (

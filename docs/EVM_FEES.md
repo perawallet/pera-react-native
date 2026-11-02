@@ -28,7 +28,7 @@ re-sizes it to the speed chosen there, so switching speed never leaves a shortfa
 
 The review then passes the max fee it showed to the build (`BuildContext.maxFee`). The build keeps
 `gas x maxFeePerGas` plus the surcharge headroom inside it, lowering `maxFeePerGas` if the fee rose
-since. If the ceiling can't keep one more block of base-fee growth (1/8) over the next block's base fee plus
+since. If the ceiling can't keep one more block of base-fee growth (1/8, Ethereum's step, used as a conservative bound on every chain) over the next block's base fee plus
 the tip, it refuses with `fee_above_confirmed` rather than sign a transaction that may sit unmined; the review re-quotes within
 its 15 s refetch interval. Every EVM send is capped this way, not only MAX.
 
