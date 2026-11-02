@@ -18,7 +18,7 @@ import {
     useAccountBalancesQuery,
     type HdSeedGroup,
     type AccountBalances,
-    hdIndexOf,
+    nextHdSlotForSeed,
 } from '@perawallet/wallet-core-accounts'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useErrorToast } from '@hooks/useErrorToast'
@@ -74,20 +74,9 @@ export const useSelectHDWalletScreen = (): UseSelectHDWalletScreenResult => {
         async (group: HdSeedGroup) => {
             setIsSelectingWallet(true)
             try {
-                // Group is keyed by the bip39 seed id; siblings are the
-                // accounts already grouped under it. Compute the next free
-                // keyIndex on account 0 from the group itself rather than
-                // re-filtering allAccounts (no need — the group already did).
-                const keyIndexes = group.accounts.flatMap(
-                    a => hdIndexOf(a)?.keyIndex ?? [],
+                const newAccount = await buildHdWalletAccount(
+                    nextHdSlotForSeed(group.seedKeyId, group.accounts),
                 )
-                const nextKeyIndex =
-                    keyIndexes.length > 0 ? Math.max(...keyIndexes) + 1 : 0
-                const newAccount = await buildHdWalletAccount({
-                    walletId: group.seedKeyId,
-                    account: 0,
-                    keyIndex: nextKeyIndex,
-                })
                 navigation.replace('NameAccount', {
                     account: newAccount,
                     returnTo,

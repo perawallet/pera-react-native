@@ -121,6 +121,33 @@ const mockHdSeedGroups: HdSeedGroup[] = [
     },
 ]
 
+// A wallet group whose accounts sit at the given HD positions.
+const seedGroup = (
+    seedKeyId: string,
+    positions: readonly [account: number, keyIndex: number][],
+): HdSeedGroup => {
+    const accounts = positions.map(([account, keyIndex]) => ({
+        id: `${seedKeyId}-${account}-${keyIndex}`,
+        chains: {
+            algorand: {
+                address: `${seedKeyId}-ADDR-${account}-${keyIndex}`,
+                keyPairId: `${seedKeyId}-acc${account}-idx${keyIndex}-dt9`,
+            },
+        },
+        custody: {
+            kind: 'local' as const,
+            seed: 'bip39' as const,
+            hd: { account, keyIndex },
+        },
+    }))
+    return {
+        seedKeyId,
+        accounts,
+        firstAccount: accounts[0],
+        accountCount: accounts.length,
+    }
+}
+
 vi.mock('@perawallet/wallet-core-accounts', async () => {
     const actual = await vi.importActual<object>(
         '@perawallet/wallet-core-accounts',
@@ -234,6 +261,51 @@ describe('useSelectHDWalletScreen', () => {
         expect(mockReplace).toHaveBeenCalledWith('NameAccount', {
             account: newAccount,
             returnTo,
+        })
+    })
+
+    it('builds the next account index of the chosen wallet, on keyIndex 0', async () => {
+        const chosen = seedGroup('wallet-2', [[0, 0]])
+        groupsState.groups = [
+            seedGroup('wallet-1', [
+                [0, 0],
+                [3, 0],
+            ]),
+            chosen,
+        ]
+        mockBuildHdWalletAccount.mockResolvedValue(chosen.firstAccount)
+
+        const { result } = renderHook(() => useSelectHDWalletScreen())
+
+        await act(async () => {
+            result.current.handleSelectWallet(chosen)
+        })
+
+        expect(mockBuildHdWalletAccount).toHaveBeenCalledWith({
+            walletId: 'wallet-2',
+            account: 1,
+            keyIndex: 0,
+        })
+    })
+
+    it('moves a keyIndex-axis wallet onto the account axis past its highest number', async () => {
+        const chosen = seedGroup('wallet-1', [
+            [0, 0],
+            [0, 1],
+        ])
+        groupsState.groups = [chosen, mockHdSeedGroups[1]]
+        mockBuildHdWalletAccount.mockResolvedValue(chosen.firstAccount)
+
+        const { result } = renderHook(() => useSelectHDWalletScreen())
+
+        await act(async () => {
+            result.current.handleSelectWallet(chosen)
+        })
+
+        expect(mockBuildHdWalletAccount).toHaveBeenCalledWith({
+            walletId: 'wallet-1',
+            account: 2,
+            keyIndex: 0,
         })
     })
 
@@ -418,8 +490,8 @@ describe('useSelectHDWalletScreen', () => {
             await waitFor(() =>
                 expect(mockBuildHdWalletAccount).toHaveBeenCalledWith({
                     walletId: 'wallet-1',
-                    account: 0,
-                    keyIndex: 1,
+                    account: 1,
+                    keyIndex: 0,
                 }),
             )
             expect(mockReplace).toHaveBeenCalledWith(
