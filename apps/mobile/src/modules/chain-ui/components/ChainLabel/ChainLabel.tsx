@@ -20,7 +20,7 @@ import {
     type PWIconSize,
 } from '@components/core'
 import type { FontWeight, TypographyVariant } from '@theme/typography'
-import { ChainIcon } from '@modules/chain-ui/icon'
+import { ChainIcon } from '../ChainIcon'
 import { useChainLabel } from './useChainLabel'
 import { useStyles } from './styles'
 
