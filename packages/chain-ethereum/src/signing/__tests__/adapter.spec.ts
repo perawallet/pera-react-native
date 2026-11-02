@@ -93,7 +93,7 @@ describe('ethereumPlannerAdapter', () => {
                     requestIndex: 0,
                     signer: SENDER,
                     scheme: 'secp256k1',
-                    payload: transactionDigest(transaction).digest,
+                    payload: transactionDigest(transaction),
                     devicePayload: hexToBytes(
                         serializeTransaction({
                             ...transaction,
