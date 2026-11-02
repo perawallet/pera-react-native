@@ -182,11 +182,44 @@ export type HolderBalances = {
 // Bounds the gas one eth_call spends, well under the caps nodes put on it.
 const CALLS_PER_AGGREGATE = 300
 
+type Aggregate3Call = { target: Address; allowFailure: boolean; callData: Hex }
+type Aggregate3Result = { success: boolean; returnData: Hex }
+
+// Not client.multicall: with allowFailure it turns a failed call as a whole
+// into per-call failures, which a caller can't tell from per-call reverts.
+// The chunks go out together, so a batching transport sends one request.
+const aggregate3 = async (
+    client: PublicClient,
+    calls: Aggregate3Call[],
+    blockNumber?: bigint,
+): Promise<Aggregate3Result[]> => {
+    const chunks = await Promise.all(
+        partition(calls, CALLS_PER_AGGREGATE).map(chunk =>
+            client.readContract({
+                address: MULTICALL3_ADDRESS,
+                abi: multicall3Abi,
+                functionName: 'aggregate3',
+                args: [chunk],
+                blockNumber,
+            }),
+        ),
+    )
+    const results = chunks.flatMap(chunk => [...chunk])
+    // Callers pair results to calls by index, so a short answer must reject
+    // rather than shift every later pairing.
+    if (results.length !== calls.length) {
+        throw new Error(
+            `Multicall3 answered ${results.length} of ${calls.length} calls`,
+        )
+    }
+    return results
+}
+
 type BalanceCall = {
     holder: Address
     /** Null for the holder's ETH balance. */
     token: Nullable<Address>
-    call: { target: Address; allowFailure: boolean; callData: Hex }
+    call: Aggregate3Call
 }
 
 const balanceCalls = (holder: Address, tokens: Address[]): BalanceCall[] => {
@@ -221,8 +254,7 @@ const balanceCalls = (holder: Address, tokens: Address[]): BalanceCall[] => {
 
 /**
  * Every holder's ETH balance and `balanceOf` for every token, through Multicall3
- * `aggregate3` at `blockNumber`, keyed by checksummed holder. The aggregates go
- * out together, so a batching transport sends them as one request. A token
+ * `aggregate3` at `blockNumber`, keyed by checksummed holder. A token
  * whose call reverts or answers with no or truncated data is left out; a
  * failed aggregate rejects the whole read.
  */
@@ -234,52 +266,76 @@ export const readBalances = async (
 ): Promise<Map<string, HolderBalances>> => {
     const tokens = tokenIds.map(id => getAddress(id))
     const owners = [...new Set(holders.map(holder => getAddress(holder)))]
-    // Not client.multicall: with allowFailure it turns a failed call as a
-    // whole into per-call failures, which would wipe every holding.
-    const chunks = await Promise.all(
-        partition(
-            owners.flatMap(owner => balanceCalls(owner, tokens)),
-            CALLS_PER_AGGREGATE,
-        ).map(async calls => ({
-            calls,
-            results: await client.readContract({
-                address: MULTICALL3_ADDRESS,
-                abi: multicall3Abi,
-                functionName: 'aggregate3',
-                args: [calls.map(({ call }) => call)],
-                blockNumber,
-            }),
-        })),
+    const calls = owners.flatMap(owner => balanceCalls(owner, tokens))
+    const results = await aggregate3(
+        client,
+        calls.map(({ call }) => call),
+        blockNumber,
     )
     const balances = new Map<string, HolderBalances>(
         owners.map(owner => [owner, { wei: 0n, tokens: new Map() }]),
     )
-    for (const { calls, results } of chunks) {
-        results.forEach(({ success, returnData }, index) => {
-            const { holder, token } = calls[index]!
-            const entry = balances.get(holder)!
-            if (token === null) {
-                entry.wei = decodeFunctionResult({
-                    abi: multicall3Abi,
-                    functionName: 'getEthBalance',
+    results.forEach(({ success, returnData }, index) => {
+        const { holder, token } = calls[index]!
+        const entry = balances.get(holder)!
+        if (token === null) {
+            entry.wei = decodeFunctionResult({
+                abi: multicall3Abi,
+                functionName: 'getEthBalance',
+                data: returnData,
+            })
+            return
+        }
+        if (!success) return
+        try {
+            entry.tokens.set(
+                token,
+                decodeFunctionResult({
+                    abi: erc20Abi,
+                    functionName: 'balanceOf',
                     data: returnData,
-                })
-                return
-            }
-            if (!success) return
-            try {
-                entry.tokens.set(
-                    token,
-                    decodeFunctionResult({
-                        abi: erc20Abi,
-                        functionName: 'balanceOf',
-                        data: returnData,
-                    }),
-                )
-            } catch {
-                // A target with no code "succeeds" with empty return data.
-            }
-        })
-    }
+                }),
+            )
+        } catch {
+            // A target with no code "succeeds" with empty return data.
+        }
+    })
     return balances
+}
+
+/**
+ * Each token's own `decimals()`, keyed by checksummed contract, through
+ * Multicall3 `aggregate3` at the latest block. A token whose call reverts or
+ * answers with no or truncated data is left out, so absent means unverified. A failed aggregate rejects the whole read.
+ */
+export const readErc20Decimals = async (
+    client: PublicClient,
+    tokenIds: string[],
+): Promise<Map<string, number>> => {
+    const tokens = [...new Set(tokenIds.map(id => getAddress(id)))]
+    const callData = encodeFunctionData({
+        abi: erc20Abi,
+        functionName: 'decimals',
+    })
+    const results = await aggregate3(
+        client,
+        tokens.map(target => ({ target, allowFailure: true, callData })),
+    )
+    const decimals = new Map<string, number>()
+    results.forEach(({ success, returnData }, index) => {
+        if (!success) return
+        try {
+            decimals.set(
+                tokens[index]!,
+                decodeFunctionResult({
+                    abi: erc20Abi,
+                    functionName: 'decimals',
+                    data: returnData,
+                }),
+            )
+        } catch {
+            // A target with no code "succeeds" with empty return data.
+        }
+    })
+    return decimals
 }

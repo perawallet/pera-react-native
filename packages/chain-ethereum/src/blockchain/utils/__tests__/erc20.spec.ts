@@ -15,6 +15,10 @@ import { http, HttpResponse } from 'msw'
 import { setupServer } from 'msw/node'
 import {
     encodeAbiParameters,
+    encodeFunctionResult,
+    getAddress,
+    isAddressEqual,
+    multicall3Abi,
     stringToHex,
     toFunctionSelector,
     type Hex,
@@ -25,7 +29,13 @@ import {
     isTransientNetworkError,
 } from '@perawallet/wallet-core-shared'
 import { TEST_RPC_URL, testChainContext } from '../../../__tests__/context'
-import { readErc20, readErc20TotalSupply } from '../erc20'
+import {
+    MULTICALL3_ADDRESS,
+    readErc20,
+    readErc20Decimals,
+    readErc20TotalSupply,
+} from '../erc20'
+import { createEvmClient } from '../createEvmClient'
 import {
     erc20CallResponder,
     EvmRpcErrorFixture,
@@ -298,5 +308,142 @@ describe('readErc20TotalSupply', () => {
 
         expect(error).toBeInstanceOf(Error)
         expect(isTransientNetworkError(error)).toBe(false)
+    })
+})
+
+describe('readErc20Decimals', () => {
+    const DAI = '0x6B175474E89094C44Da98b954EedeAC495271d0F'
+    const client = () => createEvmClient(SCOPE, testChainContext(), ETHEREUM)
+
+    it("reads each token's decimals in one aggregate3 call, keyed by checksummed contract", async () => {
+        const targets: string[] = []
+        server.use(
+            http.post(TEST_RPC_URL, async ({ request }) => {
+                const body: unknown = await request.clone().json()
+                const items = (Array.isArray(body) ? body : [body]) as {
+                    method: string
+                    params: { to: string }[]
+                }[]
+                for (const item of items) {
+                    if (item.method === 'eth_call') {
+                        targets.push(item.params[0]!.to)
+                    }
+                }
+                return undefined
+            }),
+        )
+
+        const decimals = await readErc20Decimals(client(), [USDC.toLowerCase()])
+
+        expect(decimals).toEqual(new Map([[USDC, 6]]))
+        expect(targets).toHaveLength(1)
+        expect(isAddressEqual(targets[0] as Hex, MULTICALL3_ADDRESS)).toBe(true)
+    })
+
+    it('leaves out a token that reverts or has no code', async () => {
+        server.use(
+            ...evmRpcHandlers({
+                rpcUrl: TEST_RPC_URL,
+                responses: {
+                    eth_call: erc20CallResponder({
+                        [USDC]: {
+                            name: 'USD Coin',
+                            symbol: 'USDC',
+                            decimals: 6,
+                            totalSupply: 1n,
+                        },
+                        [DAI]: {
+                            name: 'Dai',
+                            symbol: 'DAI',
+                            decimals: 18,
+                            totalSupply: 1n,
+                            noCode: true,
+                        },
+                    }),
+                },
+            }),
+        )
+
+        const decimals = await readErc20Decimals(client(), [
+            USDC,
+            DAI,
+            '0x0000000000000000000000000000000000000001',
+        ])
+
+        expect(decimals).toEqual(new Map([[USDC, 6]]))
+    })
+
+    it('rejects when the aggregate fails', async () => {
+        server.use(
+            ...evmRpcHandlers({
+                rpcUrl: TEST_RPC_URL,
+                responses: {
+                    eth_call: new EvmRpcErrorFixture(
+                        -32_000,
+                        'header not found',
+                    ),
+                },
+            }),
+        )
+
+        await expect(readErc20Decimals(client(), [USDC])).rejects.toThrow()
+    })
+
+    it('pairs each token with its own answer across aggregate chunks', async () => {
+        const tokens = Array.from(
+            { length: 301 },
+            (_, index) => `0x${(index + 1).toString(16).padStart(40, '0')}`,
+        ).map(id => getAddress(id))
+        const fixtures = Object.fromEntries(
+            tokens.map((token, index) => [
+                token,
+                {
+                    name: 'T',
+                    symbol: 'T',
+                    decimals: index % 19,
+                    totalSupply: 1n,
+                },
+            ]),
+        )
+        server.use(
+            ...evmRpcHandlers({
+                rpcUrl: TEST_RPC_URL,
+                responses: { eth_call: erc20CallResponder(fixtures) },
+            }),
+        )
+
+        const decimals = await readErc20Decimals(client(), tokens)
+
+        expect(decimals.size).toBe(301)
+        tokens.forEach((token, index) =>
+            expect(decimals.get(token)).toBe(index % 19),
+        )
+    })
+
+    it('rejects when the aggregate answers fewer results than calls', async () => {
+        server.use(
+            http.post(TEST_RPC_URL, async ({ request }) => {
+                const body: unknown = await request.clone().json()
+                const items = (Array.isArray(body) ? body : [body]) as {
+                    id: number
+                }[]
+                const replies = items.map(({ id }) => ({
+                    jsonrpc: '2.0',
+                    id,
+                    result: encodeFunctionResult({
+                        abi: multicall3Abi,
+                        functionName: 'aggregate3',
+                        result: [{ success: true, returnData: '0x' }],
+                    }),
+                }))
+                return HttpResponse.json(
+                    Array.isArray(body) ? replies : replies[0],
+                )
+            }),
+        )
+
+        await expect(readErc20Decimals(client(), [USDC, DAI])).rejects.toThrow(
+            'Multicall3 answered 1 of 2 calls',
+        )
     })
 })
