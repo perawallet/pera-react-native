@@ -17,7 +17,6 @@ import {
     keccak256,
     parseTransaction,
     recoverTransactionAddress,
-    RpcRequestError,
     TransactionNotFoundError,
     type Hex,
     type PublicClient,
@@ -50,6 +49,7 @@ import {
     evmErrorCodeOf,
     toEvmError,
 } from '../blockchain/errors'
+import { hasNodeVerdict } from '../blockchain/utils/nodeVerdict'
 import type { EvmChain } from '../chains/types'
 import { ethereumCallSummary } from '../signing/review'
 import { SURCHARGE_HEADROOM, readEvmSurcharge } from './fees'
@@ -95,13 +95,6 @@ const isAccepted = async (
         (await isTransactionKnownToNode(client, hash))
     )
 }
-
-// Only a JSON-RPC reply is a verdict; a transport failure, timeout or rate
-// limit says nothing about whether the node took the transaction.
-const hasNodeVerdict = (error: unknown): boolean =>
-    error instanceof BaseError &&
-    error.walk(link => link instanceof RpcRequestError) !== null &&
-    evmErrorCodeOf(error) !== EvmErrorCode.RATE_LIMITED
 
 /**
  * The only path to `eth_sendRawTransaction`. Sends in order and resolves with

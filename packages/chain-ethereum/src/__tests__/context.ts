@@ -31,7 +31,7 @@ export const testChainContext = ({
         chainId: chain?.row.id ?? 'ethereum',
         networkId: 'mainnet',
     }),
-    getEndpoints: () => ({ mainnet: TEST_RPC_URL }),
+    getEndpoints: () => ({ mainnet: [TEST_RPC_URL] }),
     getPeraBackend: () => ({
         baseUrl: services.length > 0 ? TEST_PERA_URL : '',
         services: new Set(services),

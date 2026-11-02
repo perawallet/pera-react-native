@@ -259,8 +259,7 @@ export const mergePersistedEndpointOverrides = (
                     ([networkId, url]) =>
                         typeof url === 'string' &&
                         url !== '' &&
-                        typeof configured[networkId] === 'string' &&
-                        configured[networkId] !== '',
+                        (configured[networkId]?.length ?? 0) > 0,
                 )
                 return kept.length === 0
                     ? []

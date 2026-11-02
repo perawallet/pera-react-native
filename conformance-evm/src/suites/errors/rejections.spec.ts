@@ -295,7 +295,7 @@ describe('evm node rejections classified by toEvmError', () => {
             const url = `http://127.0.0.1:${(server.address() as AddressInfo).port}`
             const ctx = {
                 ...createEvmnetChainContext(env.chain, env.kms),
-                getEndpoints: () => ({ [env.scope.networkId]: url }),
+                getEndpoints: () => ({ [env.scope.networkId]: [url] }),
             }
             const client = createEvmClient(env.scope, ctx, env.evmChain)
 

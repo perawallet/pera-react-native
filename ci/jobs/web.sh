@@ -9,6 +9,8 @@ use_pinned_node
 install_pinned_pnpm
 
 ./tools/dev/validate-env.sh
+# Before the install: a wrong-network or untrusted RPC URL fails in seconds, not after a signed build.
+APP_ENV="$ENVIRONMENT" node tools/check-evm-rpc-endpoints.mjs
 pnpm install --frozen-lockfile --prefer-offline
 
 # tools/dev/generate-config.sh bakes these into releaseTag/appBuildNumber, as Bitrise

@@ -18,8 +18,11 @@ import type {
 import type { ChainDescriptor } from './descriptor'
 import type { ChainScope } from './identity'
 
-/** Base URLs keyed by the chain's own endpoint names. Each chain parses its own record, and it may be empty. */
-export type ChainEndpoints = Readonly<Record<string, string>>
+/**
+ * Ordered base URLs keyed by the chain's own endpoint names, preferred first.
+ * Each chain parses its own record, and it may be empty.
+ */
+export type ChainEndpoints = Readonly<Record<string, readonly string[]>>
 
 /**
  * The wallet's ceilings for a node request, in milliseconds. A chain client

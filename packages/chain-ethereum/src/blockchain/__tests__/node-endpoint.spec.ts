@@ -23,7 +23,7 @@ vi.mock('../utils/checkEvmRpcChainId', () => ({
 const TIMEOUTS = { readMs: 1_000, submitMs: 2_000 }
 
 const contextWith = (
-    endpoints: () => Record<string, string>,
+    endpoints: () => Record<string, readonly string[]>,
 ): ChainContext => ({
     getScope: () => ({ chainId: 'ethereum', networkId: 'mainnet' }),
     getEndpoints: endpoints,
@@ -34,8 +34,8 @@ const contextWith = (
 
 describe('createEvmNodeEndpointAdapter', () => {
     it('reads the endpoint live, so a changed record shows on the next call', () => {
-        let endpoints: Record<string, string> = {
-            sepolia: 'https://sepolia.rpc.test/',
+        let endpoints: Record<string, readonly string[]> = {
+            sepolia: ['https://sepolia.rpc.test/'],
         }
         const adapter = createEvmNodeEndpointAdapter(
             contextWith(() => endpoints),
@@ -43,9 +43,23 @@ describe('createEvmNodeEndpointAdapter', () => {
         )
         expect(adapter.endpointUrl('sepolia')).toBe('https://sepolia.rpc.test/')
 
-        endpoints = { sepolia: 'https://my-node.rpc.test/' }
+        endpoints = { sepolia: ['https://my-node.rpc.test/'] }
 
         expect(adapter.endpointUrl('sepolia')).toBe('https://my-node.rpc.test/')
+    })
+
+    it('reports the first URL of a network with several', () => {
+        const adapter = createEvmNodeEndpointAdapter(
+            contextWith(() => ({
+                mainnet: [
+                    'https://first.rpc.test/',
+                    'https://second.rpc.test/',
+                ],
+            })),
+            ETHEREUM,
+        )
+
+        expect(adapter.endpointUrl('mainnet')).toBe('https://first.rpc.test/')
     })
 
     it('reports nothing for a network without an endpoint', () => {
