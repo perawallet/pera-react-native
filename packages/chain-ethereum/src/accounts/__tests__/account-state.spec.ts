@@ -210,6 +210,128 @@ describe('createEthereumAccountStateOps', () => {
         })
     })
 
+    describe('fetchChangeSignal when the token list comes back', () => {
+        const setup = () => {
+            let services: readonly string[] = []
+            const ctx: ChainContext = {
+                ...contextWith(),
+                getPeraBackend: () => ({
+                    baseUrl: PERA_URL,
+                    services: new Set(services),
+                }),
+            }
+            server.use(
+                ...evmRpcHandlers({
+                    rpcUrl: RPC_URL,
+                    responses: { eth_blockNumber: '0x64' },
+                }),
+                ...peraEvmHandlers({
+                    baseUrl: PERA_URL,
+                    blockFollowing: { refresh: false },
+                }),
+            )
+            return {
+                ops: createEthereumAccountStateOps(ctx, ETHEREUM),
+                backOn: () => {
+                    services = ['blockFollowing', 'assets']
+                },
+            }
+        }
+
+        it('reports a change after even a single read made without the list, until a pass with it has caught up', async () => {
+            const { ops, backOn } = setup()
+            await ops.fetchAccountState(ADDRESS, SCOPE, {
+                priorChainState: undefined,
+            })
+            backOn()
+
+            await expect(
+                ops.fetchChangeSignal([ADDRESS], SCOPE, 100),
+            ).resolves.toEqual({ changed: true, cursor: 100 })
+
+            await ops.fetchAccountState(ADDRESS, SCOPE, {
+                priorChainState: undefined,
+            })
+
+            await expect(
+                ops.fetchChangeSignal([ADDRESS], SCOPE, 100),
+            ).resolves.toEqual({ changed: false, cursor: 100 })
+        })
+
+        it('keeps reporting a change while the first pass with the list fails', async () => {
+            const { ops, backOn } = setup()
+            await ops.fetchAccountState(ADDRESS, SCOPE, {
+                priorChainState: undefined,
+            })
+            backOn()
+            server.use(
+                ...peraEvmHandlers({
+                    baseUrl: PERA_URL,
+                    whitelist: 502,
+                }),
+            )
+            await expect(
+                ops.fetchAccountState(ADDRESS, SCOPE, {
+                    priorChainState: undefined,
+                }),
+            ).rejects.toBeDefined()
+
+            await expect(
+                ops.fetchChangeSignal([ADDRESS], SCOPE, 100),
+            ).resolves.toEqual({ changed: true, cursor: 100 })
+        })
+
+        it('keeps reporting a change for an account whose read failed in a later batch, though an earlier batch of the scope succeeded', async () => {
+            const OTHER: Hex = '0x00000000000000000000000000000000000000bb'
+            const { ops, backOn } = setup()
+            await ops.fetchAccountState(ADDRESS, SCOPE, {
+                priorChainState: undefined,
+            })
+            await ops.fetchAccountState(OTHER, SCOPE, {
+                priorChainState: undefined,
+            })
+            backOn()
+            server.use(
+                ...evmRpcHandlers({
+                    rpcUrl: RPC_URL,
+                    responses: {
+                        eth_blockNumber: '0x64',
+                        eth_getTransactionCount: params =>
+                            (params[0] as string).toLowerCase() === OTHER
+                                ? new EvmRpcErrorFixture(-32_000, 'node down')
+                                : '0x1',
+                    },
+                }),
+                ...peraEvmHandlers({ baseUrl: PERA_URL }),
+            )
+
+            await ops.fetchAccountState(ADDRESS, SCOPE, {
+                priorChainState: undefined,
+            })
+            await expect(
+                ops.fetchAccountState(OTHER, SCOPE, {
+                    priorChainState: undefined,
+                }),
+            ).rejects.toBeDefined()
+
+            await expect(
+                ops.fetchChangeSignal([ADDRESS, OTHER], SCOPE, 100),
+            ).resolves.toEqual({ changed: true, cursor: 100 })
+            await expect(
+                ops.fetchChangeSignal([ADDRESS], SCOPE, 100),
+            ).resolves.toEqual({ changed: false, cursor: 100 })
+        })
+
+        it('answers from the backend for a scope that never read without the list', async () => {
+            const { ops, backOn } = setup()
+            backOn()
+
+            await expect(
+                ops.fetchChangeSignal([ADDRESS], SCOPE, 100),
+            ).resolves.toEqual({ changed: false, cursor: 100 })
+        })
+    })
+
     describe('fetchChangeSignal over Pera block following', () => {
         const signalWith = (
             cursor: number | null,

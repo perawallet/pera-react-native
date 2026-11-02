@@ -22,7 +22,11 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 import { getChainDescriptor } from '@perawallet/wallet-core-chain-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
-import { logger, type Nullable } from '@perawallet/wallet-core-shared'
+import {
+    isPeraServiceUnavailableError,
+    logger,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import {
     getAddedTokenIdsByAccount,
     upsertAccountChainState,
@@ -257,23 +261,32 @@ async function doFetchAndPersistAccount(
         .getState()
         .setAccountChainState(scope, address, chainState)
 
+    // `retain` only sees stored rows the read left out.
+    let hasRetainedRow = false
     const holdingsChanged = await refreshAccountHoldings({
         accountAddress: address,
         holdings,
         scope,
         retain:
             unrefreshedHoldings &&
-            (assetId => unrefreshedHoldings.includes(assetId)),
+            (assetId => {
+                const isRetained = unrefreshedHoldings.includes(assetId)
+                hasRetainedRow ||= isRetained
+                return isRetained
+            }),
     })
+    // A scope the backend doesn't serve leaves nothing stale until a row is
+    // kept; a read that failed is incomplete whatever was stored.
+    const isReadIncomplete =
+        unrefreshedHoldings !== undefined &&
+        (hasRetainedRow ||
+            !isPeraServiceUnavailableError(unrefreshedHoldings.error))
     useHoldingsRefreshStore
         .getState()
-        .setHoldingsRefreshFailed(
-            scope,
-            address,
-            unrefreshedHoldings !== undefined,
-        )
-    if (unrefreshedHoldings) {
-        logger.warn('Account holdings partly unrefreshed', {
+        .setHoldingsRefreshFailed(scope, address, isReadIncomplete)
+    if (unrefreshedHoldings && isReadIncomplete) {
+        // A backend that is off repeats this every tick; only a failed read is news.
+        const context = {
             address,
             scope,
             error:
@@ -283,7 +296,12 @@ async function doFetchAndPersistAccount(
                           stack: unrefreshedHoldings.error.stack,
                       }
                     : unrefreshedHoldings.error,
-        })
+        }
+        if (isPeraServiceUnavailableError(unrefreshedHoldings.error)) {
+            logger.debug('Account holdings partly unrefreshed', context)
+        } else {
+            logger.warn('Account holdings partly unrefreshed', context)
+        }
     }
 
     return {
