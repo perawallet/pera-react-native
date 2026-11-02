@@ -214,7 +214,7 @@ describe('mergeHistoryFeeds', () => {
         expect(merged.isLoadFailed).toBe(false)
     })
 
-    it('fails the load only when nothing shows, and calls it unavailable only when every failure is', () => {
+    it('fails the load only when every network fails, and calls it unavailable only when every failure is', () => {
         const unavailable = new PeraServiceUnavailableError(ETHEREUM)
         const failure = (isLoadUnavailable: boolean) => ({
             isError: true,
@@ -236,6 +236,38 @@ describe('mergeHistoryFeeds', () => {
         expect(allUnavailable.isLoadUnavailable).toBe(true)
         expect(allUnavailable.error).toBe(unavailable)
         expect(mixed.isLoadUnavailable).toBe(false)
+    })
+
+    it('names a failed network beside one that loaded empty, without failing the load', () => {
+        const merged = mergeHistoryFeeds([
+            feed(ALGORAND, []),
+            feed(ETHEREUM, [], { isError: true, isLoadFailed: true }),
+        ])
+
+        expect(merged.isLoadFailed).toBe(false)
+        expect(merged.failedChainIds).toEqual(['ethereum'])
+        expect(merged.transactionCount).toBe(0)
+        expect(merged.hasNextPage).toBe(false)
+        expect(merged.isFetched).toBe(true)
+    })
+
+    it('does not fail the load while another network has not reported yet', () => {
+        const merged = mergeHistoryFeeds([
+            feed(ALGORAND, [], { isError: true, isLoadFailed: true }),
+            undefined,
+        ])
+
+        expect(merged.isLoadFailed).toBe(false)
+    })
+
+    it('shows the paused state, not the failure, for a paused network beside a failed one', () => {
+        const merged = mergeHistoryFeeds([
+            feed(ALGORAND, [], { isError: true, isLoadFailed: true }),
+            feed(ETHEREUM, [], { hasNextPage: true, isSearchPaused: true }),
+        ])
+
+        expect(merged.isLoadFailed).toBe(false)
+        expect(merged.isSearchPaused).toBe(true)
     })
 
     it("keys each transaction's network and poisoning mark by id", () => {

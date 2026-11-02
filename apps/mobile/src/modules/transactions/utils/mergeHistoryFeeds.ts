@@ -51,6 +51,7 @@ export type MergedHistory = {
     isFetchingNextPage: boolean
     isError: boolean
     error: Nullable<Error>
+    /** Every network failed with nothing loaded; one failing beside others that loaded, even empty, shows in `failedChainIds` instead. */
     isLoadFailed: boolean
     isLoadUnavailable: boolean
     isLoadIntegrityBlocked: boolean
@@ -129,10 +130,7 @@ export const mergeHistoryFeeds = (
     )
     const failed = failedFeeds.map(index => feeds[index]!)
     const loadFailed = failed.filter(feed => feed.isLoadFailed)
-    const isLoadFailed =
-        visible.length === 0 &&
-        blockingFeeds.length === 0 &&
-        loadFailed.length > 0
+    const isLoadFailed = feeds.length > 0 && loadFailed.length === feeds.length
 
     const scopeByTransactionId = new Map<string, ChainScope>()
     const suspectedPoisoningById = new Map<string, SuspectedPoisoning>()
