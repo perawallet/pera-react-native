@@ -203,7 +203,8 @@ describe('Ethereum transfer adapter', () => {
         expect(String(estimatedTo).toLowerCase()).toBe(USDC.toLowerCase())
         expect(transaction.to).toBe(USDC)
         expect(transaction.value).toBe(0n)
-        expect(transaction.gas).toBe(65_000n)
+        // The estimate, padded by a fifth: the call runs contract code.
+        expect(transaction.gas).toBe(78_000n)
         expect(
             decodeFunctionData({
                 abi: erc20Abi,
@@ -256,6 +257,80 @@ describe('Ethereum transfer adapter', () => {
                 new Decimal(21_000n * parseGwei('6')),
             ),
         ).toBe(true)
+    })
+
+    it('keeps the expected fee on the unpadded estimate and the maximum on the padded limit', async () => {
+        useRpc({ eth_estimateGas: '0xfde8' })
+
+        const estimate = await adapter.getFeeEstimate(tokenIntent, context)
+        const [built] = await adapter.build(tokenIntent, context)
+
+        const { transaction } = built.payload as EthereumTransactionPayload
+        expect(transaction.gas).toBe(78_000n)
+        expect(
+            estimate.presets!.normal.amount.equals(
+                new Decimal(65_000n * parseGwei('3')),
+            ),
+        ).toBe(true)
+        expect(
+            estimate.presets!.normal.maxAmount.equals(
+                new Decimal(transaction.gas! * parseGwei('5')),
+            ),
+        ).toBe(true)
+    })
+
+    it('leaves a plain native send at its estimate and reads no block', async () => {
+        let blockReads = 0
+        useRpc({
+            eth_getBlockByNumber: () => {
+                blockReads += 1
+                return { gasLimit: '0x1c9c380' }
+            },
+        })
+
+        const [built] = await adapter.build(nativeIntent, context)
+        const estimate = await adapter.getFeeEstimate(nativeIntent, context)
+
+        const { transaction } = built.payload as EthereumTransactionPayload
+        expect(transaction.gas).toBe(21_000n)
+        expect(
+            estimate.presets!.normal.maxAmount.equals(
+                new Decimal(21_000n * parseGwei('5')),
+            ),
+        ).toBe(true)
+        expect(blockReads).toBe(0)
+    })
+
+    it('pads a native send whose estimate shows the recipient ran code', async () => {
+        useRpc({ eth_estimateGas: '0xc350' })
+
+        const [built] = await adapter.build(nativeIntent, context)
+        const estimate = await adapter.getFeeEstimate(nativeIntent, context)
+
+        const { transaction } = built.payload as EthereumTransactionPayload
+        expect(transaction.gas).toBe(60_000n)
+        expect(
+            estimate.presets!.normal.amount.equals(
+                new Decimal(50_000n * parseGwei('3')),
+            ),
+        ).toBe(true)
+        expect(
+            estimate.presets!.normal.maxAmount.equals(
+                new Decimal(60_000n * parseGwei('5')),
+            ),
+        ).toBe(true)
+    })
+
+    it('caps the padded limit at the block gas limit', async () => {
+        useRpc({
+            eth_estimateGas: '0xfde8',
+            eth_getBlockByNumber: { gasLimit: '0x11170' },
+        })
+
+        const [built] = await adapter.build(tokenIntent, context)
+
+        const { transaction } = built.payload as EthereumTransactionPayload
+        expect(transaction.gas).toBe(70_000n)
     })
 
     it('builds at the preset the context picks', async () => {
@@ -446,7 +521,7 @@ describe('an NFT transfer', () => {
         const { transaction } = built.payload as EthereumTransactionPayload
         expect(transaction.to).toBe(NFT_CONTRACT)
         expect(transaction.value).toBe(0n)
-        expect(transaction.gas).toBe(100_000n)
+        expect(transaction.gas).toBe(120_000n)
         expect(estimated.data).toBe(transaction.data)
         expect(
             decodeFunctionData({

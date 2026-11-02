@@ -19,6 +19,7 @@ import type { EvmChain } from '../chains/types'
 
 export const ETHEREUM: EvmChain = evmChainOf('ethereum')
 export const BASE: EvmChain = evmChainOf('base')
+export const BSC: EvmChain = evmChainOf('bsc')
 export const POLYGON: EvmChain = evmChainOf('polygon')
 
 /** Every row of the table, for specs that run per chain. */
