@@ -79,7 +79,7 @@ vi.mock('@perawallet/wallet-core-config', async importOriginal => {
             chainId: Parameters<typeof actual.chainEndpointsFor>[0],
         ) =>
             chainId === 'base'
-                ? { mainnet: BASE_RPC_URL, sepolia: BASE_RPC_URL }
+                ? { mainnet: [BASE_RPC_URL], sepolia: [BASE_RPC_URL] }
                 : actual.chainEndpointsFor(chainId),
     }
 })

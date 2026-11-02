@@ -287,6 +287,19 @@ describe('tools/dev/generate-config.sh', () => {
             expect(output).toContain('ethereumSepoliaPeraServices: "assets"')
         })
 
+        test('bakes a comma list of RPC URLs verbatim, in order', () => {
+            const output = run({
+                CHAINS: 'algorand,ethereum',
+                ...ETHEREUM_ENDPOINTS,
+                ETHEREUM_MAINNET_RPC_URL:
+                    'https://a.rpc.example,https://b.rpc.example',
+            })
+
+            expect(output).toContain(
+                'ethereumMainnetRpcUrl: "https://a.rpc.example,https://b.rpc.example"',
+            )
+        })
+
         test.each(['ETHEREUM_MAINNET_RPC_URL', 'ETHEREUM_SEPOLIA_RPC_URL'])(
             'fails a build that ships ethereum with %s unset',
             variable => {

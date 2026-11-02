@@ -47,7 +47,7 @@ const ADDRESS: Hex = '0x00000000000000000000000000000000000000aa'
 
 const contextWith = (services: readonly string[] = []): ChainContext => ({
     getScope: () => SCOPE,
-    getEndpoints: () => ({ mainnet: RPC_URL }),
+    getEndpoints: () => ({ mainnet: [RPC_URL] }),
     getPeraBackend: () => ({ baseUrl: PERA_URL, services: new Set(services) }),
     timeouts: { readMs: 1_000, submitMs: 1_000 },
     kms: {} as ChainContext['kms'],

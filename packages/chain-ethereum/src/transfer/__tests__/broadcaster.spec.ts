@@ -20,7 +20,7 @@ import {
     it,
     vi,
 } from 'vitest'
-import { http, HttpResponse } from 'msw'
+import { delay, http, HttpResponse } from 'msw'
 import { Decimal } from 'decimal.js'
 import { setupServer } from 'msw/node'
 import {
@@ -834,6 +834,177 @@ describe('Ethereum broadcaster adapter', () => {
             expect(reports().map(report => report.severity)).not.toContain(
                 'error',
             )
+        })
+    })
+
+    describe('with a second RPC URL', () => {
+        const FIRST_RPC = 'https://first.rpc.test/'
+
+        it('reads a resend its second node already holds as accepted, after the first timed out', async () => {
+            const context = {
+                ...testChainContext(),
+                getEndpoints: () => ({ mainnet: [FIRST_RPC, TEST_RPC_URL] }),
+                timeouts: { readMs: 1_000, submitMs: 800 },
+            }
+            server.use(
+                http.post(FIRST_RPC, async () => {
+                    await delay(1_500)
+                }),
+                ...evmRpcHandlers({
+                    rpcUrl: TEST_RPC_URL,
+                    responses: {
+                        eth_sendRawTransaction: new EvmRpcErrorFixture(
+                            -32003,
+                            'already known',
+                        ),
+                    },
+                }),
+            )
+
+            await expect(
+                createEvmBroadcasterAdapter(context, ETHEREUM).submit(SCOPE, [
+                    BYTES,
+                ]),
+            ).resolves.toEqual([HASH])
+        })
+
+        it("does not read the second node's refusal as not on chain after the first timed out", async () => {
+            const context = {
+                ...testChainContext(),
+                getEndpoints: () => ({ mainnet: [FIRST_RPC, TEST_RPC_URL] }),
+                timeouts: { readMs: 1_000, submitMs: 800 },
+            }
+            server.use(
+                http.post(FIRST_RPC, async () => {
+                    await delay(1_500)
+                }),
+                ...evmRpcHandlers({
+                    rpcUrl: TEST_RPC_URL,
+                    responses: {
+                        eth_sendRawTransaction: new EvmRpcErrorFixture(
+                            -32000,
+                            'transaction underpriced',
+                        ),
+                    },
+                }),
+            )
+
+            await expect(
+                createEvmBroadcasterAdapter(context, ETHEREUM).submit(SCOPE, [
+                    BYTES,
+                ]),
+            ).rejects.toMatchObject({ classification: 'unknown-outcome' })
+        })
+
+        it('moves on from a node whose backend is down and reads a later "already known" as accepted', async () => {
+            const context = {
+                ...testChainContext(),
+                getEndpoints: () => ({ mainnet: [FIRST_RPC, TEST_RPC_URL] }),
+            }
+            server.use(
+                ...evmRpcHandlers({
+                    rpcUrl: FIRST_RPC,
+                    responses: {
+                        eth_sendRawTransaction: new EvmRpcErrorFixture(
+                            -32603,
+                            'internal error',
+                        ),
+                    },
+                }),
+                ...evmRpcHandlers({
+                    rpcUrl: TEST_RPC_URL,
+                    responses: {
+                        eth_sendRawTransaction: new EvmRpcErrorFixture(
+                            -32003,
+                            'already known',
+                        ),
+                    },
+                }),
+            )
+
+            await expect(
+                createEvmBroadcasterAdapter(context, ETHEREUM).submit(SCOPE, [
+                    BYTES,
+                ]),
+            ).resolves.toEqual([HASH])
+        })
+
+        it("reads a later node's refusal as an unknown outcome after the first answered internal error", async () => {
+            const context = {
+                ...testChainContext(),
+                getEndpoints: () => ({ mainnet: [FIRST_RPC, TEST_RPC_URL] }),
+            }
+            server.use(
+                ...evmRpcHandlers({
+                    rpcUrl: FIRST_RPC,
+                    responses: {
+                        eth_sendRawTransaction: new EvmRpcErrorFixture(
+                            -32603,
+                            'internal error',
+                        ),
+                    },
+                }),
+                ...evmRpcHandlers({
+                    rpcUrl: TEST_RPC_URL,
+                    responses: {
+                        eth_sendRawTransaction: new EvmRpcErrorFixture(
+                            -32000,
+                            'transaction underpriced',
+                        ),
+                    },
+                }),
+            )
+
+            await expect(
+                createEvmBroadcasterAdapter(context, ETHEREUM).submit(SCOPE, [
+                    BYTES,
+                ]),
+            ).rejects.toMatchObject({ classification: 'unknown-outcome' })
+        })
+
+        it('reads an internal error from the only node as an unknown outcome', async () => {
+            useRpc({
+                eth_sendRawTransaction: new EvmRpcErrorFixture(
+                    -32603,
+                    'internal error',
+                ),
+                eth_getTransactionByHash: null,
+            })
+
+            await expect(
+                submitEthereumTransactions(client(), [BYTES], ETHEREUM),
+            ).rejects.toMatchObject({ classification: 'unknown-outcome' })
+        })
+
+        it("keeps the first node's refusal as rejected-by-node and never asks the second", async () => {
+            const context = {
+                ...testChainContext(),
+                getEndpoints: () => ({ mainnet: [FIRST_RPC, TEST_RPC_URL] }),
+            }
+            const secondCalls = vi.fn()
+            server.use(
+                http.post(TEST_RPC_URL, () => {
+                    secondCalls()
+                    return undefined
+                }),
+                ...evmRpcHandlers({
+                    rpcUrl: FIRST_RPC,
+                    responses: {
+                        eth_sendRawTransaction: new EvmRpcErrorFixture(
+                            -32000,
+                            'transaction underpriced',
+                        ),
+                    },
+                }),
+                ...evmRpcHandlers({ rpcUrl: TEST_RPC_URL }),
+            )
+
+            await expect(
+                createEvmBroadcasterAdapter(context, ETHEREUM).submit(SCOPE, [
+                    BYTES,
+                ]),
+            ).rejects.toMatchObject({ classification: 'rejected-by-node' })
+            expect(secondCalls).not.toHaveBeenCalled()
         })
     })
 

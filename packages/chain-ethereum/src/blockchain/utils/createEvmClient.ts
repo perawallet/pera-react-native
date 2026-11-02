@@ -13,18 +13,21 @@
 import {
     createPublicClient,
     defineChain,
+    fallback,
     type Chain,
     type PublicClient,
     type Transport,
 } from 'viem'
 import type {
     ChainContext,
+    ChainRequestTimeouts,
     ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import { AppError, ErrorCategory } from '@perawallet/wallet-core-shared'
 import type { EvmChain } from '../../chains/types'
 import { eip155ChainIdOfNetwork } from './caip19'
 import { evmHttpTransport } from './evmHttpTransport'
+import { isNodeReply, markAfterUnconfirmedAttempt } from './nodeVerdict'
 
 export class UnconfiguredEvmRpcError extends AppError {
     readonly scope: ChainScope
@@ -48,7 +51,7 @@ const READ_BATCH_SIZE = 100
 // else the read ceiling, and viem's own retries are off.
 const timeoutBoundedTransport = (
     url: string,
-    { readMs, submitMs }: ChainContext['timeouts'],
+    { readMs, submitMs }: ChainRequestTimeouts,
 ): Transport => {
     // Reads issued in the same tick go out as one JSON-RPC batch, so a sync
     // pass costs a few requests however many accounts it reads.
@@ -71,9 +74,85 @@ const timeoutBoundedTransport = (
     }
 }
 
+// A broadcast stops at the first node reply and moves on only after a failure
+// that says nothing about whether the node took it; the error that ends the
+// loop is marked when an earlier URL left that open, so the caller doesn't
+// read a later node's refusal as "not on chain".
+const broadcastInOrder = async (
+    transports: readonly ReturnType<Transport>[],
+    args: Parameters<ReturnType<Transport>['request']>[0],
+    options: Parameters<ReturnType<Transport>['request']>[1],
+): Promise<unknown> => {
+    const last = transports.length - 1
+    let isOutcomeOpen = false
+    let index = 0
+    for (;;) {
+        try {
+            return await transports[index]!.request(args, options)
+        } catch (error) {
+            if (index === last || isNodeReply(error)) {
+                if (isOutcomeOpen) markAfterUnconfirmedAttempt(error)
+                throw error
+            }
+            isOutcomeOpen = true
+            index += 1
+        }
+    }
+}
+
+// Longest a later URL is given, in ms. A failover only has to answer, and a dead
+// first node fails fast, so the rest of the ceiling stays with the first.
+const FAILOVER_RESERVE_MS = 3000
+
+/**
+ * The signing pipeline's backstop assumes one submit ceiling, so the URLs of a
+ * network share it: each later URL gets a reserve (a quarter of the ceiling, at
+ * most FAILOVER_RESERVE_MS) and the first keeps the rest. An equal split would
+ * halve a healthy but slow first node's budget as soon as a fallback exists.
+ */
+export const splitCeilingMs = (ms: number, urlCount: number): number[] => {
+    const reserve = Math.max(
+        1,
+        Math.min(FAILOVER_RESERVE_MS, Math.floor(ms / 4)),
+    )
+    const first = Math.max(1, ms - reserve * (urlCount - 1))
+    return [first, ...Array.from({ length: urlCount - 1 }, () => reserve)]
+}
+
+// fallback() defaults to three retries of its own, which would multiply the
+// ceiling again.
+const endpointListTransport = (
+    rpcUrls: readonly string[],
+    { readMs, submitMs }: ChainRequestTimeouts,
+): Transport => {
+    const reads = splitCeilingMs(readMs, rpcUrls.length)
+    const submits = splitCeilingMs(submitMs, rpcUrls.length)
+    const perUrl = rpcUrls.map((url, index) =>
+        timeoutBoundedTransport(url, {
+            readMs: reads[index]!,
+            submitMs: submits[index]!,
+        }),
+    )
+    const readFallback = fallback(perUrl, { retryCount: 0 })
+    return params => {
+        const readTransport = readFallback(params)
+        const urlTransports = perUrl.map(transport => transport(params))
+        return {
+            ...readTransport,
+            request: ((args, options) =>
+                SUBMIT_METHODS.has(args.method)
+                    ? broadcastInOrder(urlTransports, args, options)
+                    : readTransport.request(
+                          args,
+                          options,
+                      )) as typeof readTransport.request,
+        }
+    }
+}
+
 const viemChainFor = (
     scope: ChainScope,
-    rpcUrl: string,
+    rpcUrls: readonly string[],
     chain: EvmChain,
 ): Chain => {
     const { descriptor } = chain
@@ -91,25 +170,26 @@ const viemChainFor = (
         id: eip155ChainId,
         name: `${descriptor.displayName} ${network.displayName}`,
         nativeCurrency: { symbol, name, decimals },
-        rpcUrls: { default: { http: [rpcUrl] } },
+        rpcUrls: { default: { http: [...rpcUrls] } },
     })
 }
 
 /**
- * `ctx.getEndpoints()` maps each network id to its public JSON-RPC URL; reads
- * go straight to that node, not through the Pera backend.
+ * `ctx.getEndpoints()` maps each network id to its public JSON-RPC URLs,
+ * preferred first; reads go straight to those nodes, not through the Pera
+ * backend. A request that fails on one node is tried on the next, in order.
  */
 export const createEvmClient = (
     scope: ChainScope,
     ctx: ChainContext,
     chain: EvmChain,
 ): PublicClient => {
-    const rpcUrl = ctx.getEndpoints()[scope.networkId]
-    if (!rpcUrl) {
+    const rpcUrls = ctx.getEndpoints()[scope.networkId]
+    if (!rpcUrls || rpcUrls.length === 0) {
         throw new UnconfiguredEvmRpcError(scope)
     }
     return createPublicClient({
-        chain: viemChainFor(scope, rpcUrl, chain),
-        transport: timeoutBoundedTransport(rpcUrl, ctx.timeouts),
+        chain: viemChainFor(scope, rpcUrls, chain),
+        transport: endpointListTransport(rpcUrls, ctx.timeouts),
     })
 }

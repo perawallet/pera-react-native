@@ -612,7 +612,7 @@ describe('evm dapp wallet_sendCalls against a node', () => {
         const proxy = await withSeverableRpc(env.chain)
         const lostCtx: ChainContext = {
             ...env.ctx,
-            getEndpoints: () => ({ [env.scope.networkId]: proxy.url }),
+            getEndpoints: () => ({ [env.scope.networkId]: [proxy.url] }),
         }
 
         try {
