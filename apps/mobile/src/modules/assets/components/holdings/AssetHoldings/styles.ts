@@ -44,9 +44,6 @@ export const useStyles = makeStyles(theme => ({
         alignItems: 'center',
         minWidth: 0,
     },
-    dateDisplay: {
-        color: theme.colors.textGray,
-    },
     tokenAmountContainer: {
         flexDirection: 'row',
         alignItems: 'center',

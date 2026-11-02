@@ -150,7 +150,10 @@ describe('Flow: the account options sheet lists the account on each network', ()
             screen.getByTestId('account_network_algorand_expand'),
         ).toBeTruthy()
         expect(screen.queryByTestId('account_network_ethereum_copy')).toBeNull()
+        // A network the account isn't on yet waits behind See all.
+        expect(screen.queryByTestId('account_network_ethereum_add')).toBeNull()
 
+        fireEvent.click(screen.getByTestId('account_networks_see_all'))
         fireEvent.click(screen.getByTestId('account_network_ethereum_add'))
 
         await waitFor(
@@ -186,6 +189,7 @@ describe('Flow: the account options sheet lists the account on each network', ()
             />,
         )
 
+        fireEvent.click(await screen.findByTestId('account_networks_see_all'))
         fireEvent.click(
             await screen.findByTestId('account_network_ethereum_add'),
         )
@@ -289,14 +293,14 @@ describe('Flow: the account options sheet lists the account on each network', ()
         ).toBeTruthy()
     })
 
-    it('Given a multichain build, when the sheet opens, then the network rows are headed by the account name', async () => {
+    it('Given a multichain build, when the sheet opens, then the network rows are headed Networks', async () => {
         const account = await seedHdAccount()
 
         render(<AccountOptionsHost account={account} />)
 
         expect(
             (await screen.findByTestId('account_networks_title')).textContent,
-        ).toBe('account_options.networks_title_named')
+        ).toBe('account_options.networks_title')
     })
 
     it('Given an unnamed Universal Wallet account, when the sheet opens, then it is titled by its account number', async () => {

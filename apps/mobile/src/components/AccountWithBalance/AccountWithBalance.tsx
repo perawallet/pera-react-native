@@ -46,6 +46,7 @@ export const AccountWithBalance = ({
         crossChainTotal,
         singleNetworkChainId,
         jointParticipantCount,
+        shouldShowSecondaryLabel,
     } = useAccountWithBalance(account, chainId)
     // A chain-agnostic row stands for every chain the account is on, so no one
     // chain's badge applies. No row carries a TestNet badge: developer mode puts
@@ -136,6 +137,7 @@ export const AccountWithBalance = ({
                 showChevron={false}
                 showAccountType
                 alwaysShowAccountType={!!crossChainTotal}
+                shouldShowSecondaryLabel={shouldShowSecondaryLabel}
                 badges={badges}
                 secondaryContent={
                     singleNetworkChainId ? (

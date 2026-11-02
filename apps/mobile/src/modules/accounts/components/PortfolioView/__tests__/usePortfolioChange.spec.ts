@@ -56,6 +56,7 @@ type Params = {
     chartPeriod: HistoryPeriod
     isChartShown: boolean
     isEnabled: boolean
+    selectedValue?: Decimal
 }
 
 const renderChange = (params: Params) =>
@@ -184,6 +185,18 @@ describe('usePortfolioChange', () => {
         })
 
         expect(result.current.hasChange).toBe(false)
+    })
+
+    it('runs the change to a scrubbed point, keeping the line on screen', () => {
+        const { result } = renderChange({
+            chartPeriod: 'one-week',
+            isChartShown: true,
+            isEnabled: true,
+            selectedValue: new Decimal(110),
+        })
+
+        expect(result.current.hasChange).toBe(true)
+        expect(result.current.changeAbsolute).toEqual(new Decimal(10))
     })
 
     it('has no change while the history is loading', () => {

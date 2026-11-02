@@ -46,7 +46,6 @@ export const AccountOptionsContent = ({
     const { dismiss } = useBottomSheetResult<void>()
     const {
         sheetTitle,
-        networksTitle,
         topActions,
         sharedAccountOptions,
         networks,
@@ -166,7 +165,7 @@ export const AccountOptionsContent = ({
                 style={styles.networksTitle}
                 testID='account_networks_title'
             >
-                {networksTitle}
+                {t('account_options.networks_title')}
             </PWText>
             <AccountNetworkList
                 networks={networks}

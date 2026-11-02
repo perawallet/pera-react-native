@@ -13,7 +13,7 @@
 import { useMemo } from 'react'
 import { LineChart } from 'react-native-gifted-charts'
 import { useTheme } from '@rneui/themed'
-import { PWButton, PWView } from '@components/core'
+import { PWButton, PWText, PWView } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { IntegrityBlockedView } from '@components/OfflineTolerantView'
 import { LoadingView } from '@components/LoadingView'
@@ -21,10 +21,17 @@ import { useChartPointerFocus } from '@hooks/useChartPointerFocus'
 import { useLanguage } from '@hooks/useLanguage'
 import { CHART_ANIMATION_DURATION, CHART_HEIGHT } from '@constants/ui'
 import { getChartYAxisRange } from '@utils/chart'
-import type { Optional, Nullable } from '@perawallet/wallet-core-shared'
+import {
+    formatDatetime,
+    type Optional,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import { useBalanceLineChart } from './useBalanceLineChart'
+import { useStyles } from './styles'
 
 import type { StyleProp, ViewStyle } from 'react-native'
+
+const CHART_POINTER_LABEL_WIDTH = 140
 
 // Shared area line chart for the wealth/asset-balance/asset-price charts, which
 // render an identical chart and only differ in how they fetch their series and
@@ -35,6 +42,8 @@ type BalanceLineChartProps<T> = {
     series: Optional<T[]>
     /** Extracts the plotted value from a series item. */
     getValue: (item: T) => number
+    /** The item's time, shown at the pointer while it hovers. */
+    getDatetime: (item: T) => Date
     /** Reports the pointer-focused series item, or null when focus leaves. */
     onSelectionChanged: (item: Nullable<T>) => void
     isPending: boolean
@@ -58,6 +67,7 @@ type BalanceLineChartProps<T> = {
 export const BalanceLineChart = <T,>({
     series,
     getValue,
+    getDatetime,
     onSelectionChanged,
     isPending,
     emptyBody,
@@ -71,6 +81,7 @@ export const BalanceLineChart = <T,>({
 }: BalanceLineChartProps<T>) => {
     const { theme } = useTheme()
     const { t } = useLanguage()
+    const styles = useStyles()
     const dataPoints = useMemo(
         () => series?.map(item => ({ value: getValue(item) })) ?? [],
         [series, getValue],
@@ -131,6 +142,24 @@ export const BalanceLineChart = <T,>({
                             pointerStripHeight: CHART_HEIGHT,
                             pointerColor: theme.colors.positive,
                             strokeDashArray: [6, 2],
+                            pointerLabelWidth: CHART_POINTER_LABEL_WIDTH,
+                            autoAdjustPointerLabelPosition: true,
+                            pointerLabelComponent: (
+                                _items: unknown,
+                                _secondary: unknown,
+                                index: number,
+                            ) => {
+                                const item = series?.[index]
+                                return item ? (
+                                    <PWText
+                                        variant='caption'
+                                        style={styles.pointerLabel}
+                                        numberOfLines={1}
+                                    >
+                                        {formatDatetime(getDatetime(item))}
+                                    </PWText>
+                                ) : null
+                            },
                         }}
                         getPointerProps={getPointerProps}
                         disableScroll

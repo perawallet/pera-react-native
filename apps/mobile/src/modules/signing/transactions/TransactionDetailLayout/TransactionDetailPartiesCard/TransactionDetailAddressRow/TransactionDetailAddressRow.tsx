@@ -11,12 +11,8 @@
  */
 
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import { PWText, PWView } from '@components/core'
-import { AccountIcon } from '@components/AccountIcon'
-import { AddressDisplay } from '@components/AddressDisplay'
 import { KeyValueRow } from '@components/KeyValueRow'
-import { useStyles } from './styles'
-import { useTransactionDetailAddressRow } from './useTransactionDetailAddressRow'
+import { TransactionDetailAddress } from '@modules/signing/transactions/TransactionDetailAddress'
 
 type TransactionDetailAddressRowProps = {
     title: string
@@ -30,43 +26,16 @@ export const TransactionDetailAddressRow = ({
     address,
     scope,
     testID,
-}: TransactionDetailAddressRowProps) => {
-    const styles = useStyles()
-    const { ownAccount, ownAccountName } = useTransactionDetailAddressRow(
-        address,
-        scope,
-    )
-
-    return (
-        <KeyValueRow
+}: TransactionDetailAddressRowProps) => (
+    <KeyValueRow
+        testID={testID}
+        title={title}
+        verticalAlignment='top'
+    >
+        <TransactionDetailAddress
+            address={address}
+            scope={scope}
             testID={testID}
-            title={title}
-            verticalAlignment='top'
-        >
-            <AddressDisplay
-                address={address}
-                scope={scope}
-                displayType='simple'
-                addressFormat='short'
-            />
-            {!!ownAccount && (
-                <PWView
-                    style={styles.ownAccount}
-                    testID={testID && `${testID}_account`}
-                >
-                    <AccountIcon
-                        account={ownAccount}
-                        size='sm'
-                    />
-                    <PWText
-                        variant='footnoteMedium'
-                        style={styles.ownAccountName}
-                        truncate
-                    >
-                        {ownAccountName}
-                    </PWText>
-                </PWView>
-            )}
-        </KeyValueRow>
-    )
-}
+        />
+    </KeyValueRow>
+)

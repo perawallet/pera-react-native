@@ -270,7 +270,10 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
                 rowScope.chainId,
             )
             if (groupId) {
-                navigation.navigate('GroupTransactionList', { groupId })
+                navigation.navigate('GroupTransactionList', {
+                    groupId,
+                    historyTransaction: transaction,
+                })
             } else {
                 navigation.navigate('TransactionDetails', {
                     scope: rowScope,

@@ -12,6 +12,7 @@
 
 import type { ReactNode } from 'react'
 import { PWView } from '@components/core'
+import { KeyValueAlignmentContext } from '@components/KeyValueRow'
 import { useStyles } from './styles'
 
 export type TransactionDetailCardProps = {
@@ -30,7 +31,9 @@ export const TransactionDetailCard = ({
             style={styles.container}
             testID={testID}
         >
-            {children}
+            <KeyValueAlignmentContext.Provider value='end'>
+                {children}
+            </KeyValueAlignmentContext.Provider>
         </PWView>
     )
 }

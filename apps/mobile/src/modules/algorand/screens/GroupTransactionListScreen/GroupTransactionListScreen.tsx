@@ -16,7 +16,7 @@ import { LoadingView } from '@components/LoadingView'
 import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
 import { TransactionPreview } from '../../components/transaction-details/TransactionPreview'
-import { GroupDetailHeader } from '@modules/signing'
+import { GroupDetailHeader, TransactionDetailHero } from '@modules/signing'
 import { useGroupTransactionListScreen } from './useGroupTransactionListScreen'
 import type { GroupTransactionRow } from '../../utils/groupTransactionRows'
 import { useStyles } from './styles'
@@ -25,6 +25,7 @@ export const GroupTransactionListScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
     const {
+        hero,
         transactions,
         isLoading,
         isError,
@@ -78,7 +79,12 @@ export const GroupTransactionListScreen = () => {
                 keyExtractor={keyExtractor}
                 ItemSeparatorComponent={ItemSeparator}
                 ListHeaderComponent={
-                    <GroupDetailHeader transactionCount={transactions.length} />
+                    <>
+                        {!!hero && <TransactionDetailHero summary={hero} />}
+                        <GroupDetailHeader
+                            transactionCount={transactions.length}
+                        />
+                    </>
                 }
             />
         </PWScreen>

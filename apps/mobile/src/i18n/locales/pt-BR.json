@@ -285,7 +285,6 @@
         "markets": {
             "something_went_wrong_title": "Algo deu errado",
             "something_went_wrong_body": "Não foi possível carregar os detalhes deste ativo. Verifique sua conexão e tente novamente.",
-            "discover_more": "Ver mais detalhes no Explorar",
             "title": "Mercados",
             "stats": "Estatísticas",
             "price": "Preço",
@@ -472,7 +471,6 @@
         "remove_rekey_error_message": "Você não pode remover esta conta antes de remover as {{count}} contas com rekey vinculadas a ela",
         "view_private_key": "Ver chave privada",
         "networks_title": "Redes",
-        "networks_title_named": "{{name}} em cada rede",
         "add_network": "Adicionar",
         "add_network_error": "Não foi possível adicionar esta rede",
         "add_network_success": "Rede {{network}} adicionada",
@@ -3514,6 +3512,7 @@
     },
     "transactions": {
         "common": {
+            "typed_title": "Transação de {{type}}",
             "from": "De",
             "to": "Para",
             "close_amount": "Saldo restante",
@@ -3564,7 +3563,6 @@
             "default": "Transação",
             "more_impacts": "Mostrar mais {{count}}",
             "interpreted_title": "{{title}}",
-            "swap_subtitle": "{{amountIn}} {{assetIn}} por {{amountOut}} {{assetOut}}",
             "nft_subtitle": "{{collection}} #{{tokenId}}",
             "nft_batch_subtitle": "{{collection}} · {{count}} itens",
             "inner_transaction_count": "{{innerCount}} transações internas",

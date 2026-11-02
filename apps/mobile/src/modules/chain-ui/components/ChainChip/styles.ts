@@ -16,14 +16,16 @@ export const useStyles = makeStyles(theme => ({
     container: {
         flexDirection: 'row',
         alignItems: 'center',
-        alignSelf: 'flex-start',
         gap: theme.spacing.xs,
+        maxWidth: '100%',
+        minWidth: 0,
+    },
+    pill: {
+        alignSelf: 'flex-start',
         paddingHorizontal: theme.spacing.sm,
         paddingVertical: theme.spacing.xxs,
         borderRadius: theme.borderRadius.full,
         backgroundColor: theme.colors.layerGrayLighter,
-        maxWidth: '100%',
-        minWidth: 0,
     },
     label: {
         color: theme.colors.textGray,

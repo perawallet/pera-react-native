@@ -18,7 +18,8 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import { useTransactionDetailAddressRow } from '../useTransactionDetailAddressRow'
+import type { Contact } from '@perawallet/wallet-core-contacts'
+import { useTransactionDetailAddress } from '../useTransactionDetailAddress'
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
     ...(await importOriginal<
@@ -28,14 +29,30 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
     getAccountDisplayName: vi.fn(),
 }))
 
+vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-chain-shared')
+    >()),
+    getChainDescriptor: () => ({ family: 'evm' }),
+}))
+
+const mockContacts: { contacts: Contact[] } = { contacts: [] }
+vi.mock('@perawallet/wallet-core-contacts', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-contacts')
+    >()),
+    useContacts: () => mockContacts,
+}))
+
 const SCOPE: ChainScope = { chainId: 'ethereum', networkId: 'mainnet' }
 const ADDRESS = '0x00000000000000000000000000000000000000aa'
 const ACCOUNT = { id: 'a1', name: 'Savings' } as WalletAccount
 
-describe('useTransactionDetailAddressRow', () => {
+describe('useTransactionDetailAddress', () => {
     beforeEach(() => {
         vi.mocked(useFindAccountByAddress).mockReset()
         vi.mocked(getAccountDisplayName).mockReset()
+        mockContacts.contacts = []
     })
 
     it("Given the user's own address, then it names that account", () => {
@@ -43,7 +60,7 @@ describe('useTransactionDetailAddressRow', () => {
         vi.mocked(getAccountDisplayName).mockReturnValue('Savings')
 
         const { result } = renderHook(() =>
-            useTransactionDetailAddressRow(ADDRESS, SCOPE),
+            useTransactionDetailAddress(ADDRESS, SCOPE),
         )
 
         expect(useFindAccountByAddress).toHaveBeenCalledWith(ADDRESS, SCOPE)
@@ -51,6 +68,7 @@ describe('useTransactionDetailAddressRow', () => {
         expect(result.current).toEqual({
             ownAccount: ACCOUNT,
             ownAccountName: 'Savings',
+            contact: undefined,
         })
     })
 
@@ -58,13 +76,29 @@ describe('useTransactionDetailAddressRow', () => {
         vi.mocked(useFindAccountByAddress).mockReturnValue(null)
 
         const { result } = renderHook(() =>
-            useTransactionDetailAddressRow(ADDRESS, SCOPE),
+            useTransactionDetailAddress(ADDRESS, SCOPE),
         )
 
         expect(result.current).toEqual({
             ownAccount: null,
             ownAccountName: undefined,
+            contact: undefined,
         })
         expect(getAccountDisplayName).not.toHaveBeenCalled()
+    })
+
+    it('Given a contact holds the address, then it names that contact', () => {
+        vi.mocked(useFindAccountByAddress).mockReturnValue(null)
+        const contact = {
+            name: 'Alice',
+            addresses: { evm: ADDRESS },
+        } as unknown as Contact
+        mockContacts.contacts = [contact]
+
+        const { result } = renderHook(() =>
+            useTransactionDetailAddress(ADDRESS, SCOPE),
+        )
+
+        expect(result.current.contact).toBe(contact)
     })
 })

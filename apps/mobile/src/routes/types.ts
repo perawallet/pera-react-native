@@ -74,6 +74,8 @@ export type RootStackParamList = {
     BannersCarouselModal: Optional<{ bannerId?: string }>
     GroupTransactionList: {
         groupId: string
+        /** The history row the group was opened from; heads the list with its hero. */
+        historyTransaction?: TransactionHistoryItem
     }
     TransactionDetails: {
         scope: ChainScope

@@ -10,14 +10,18 @@
  limitations under the License
  */
 
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { useMemo } from 'react'
 import { PWText } from '@components/core'
 import { KeyValueRow } from '@components/KeyValueRow'
-import { AddressDisplay } from '@components/AddressDisplay'
 import { encodeToBase64 } from '@perawallet/wallet-core-shared'
 import type { AlgorandTransactionView } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import { useLanguage } from '@hooks/useLanguage'
-import { TransactionDetailCard } from '@modules/signing'
+import {
+    TransactionDetailAddress,
+    TransactionDetailCard,
+} from '@modules/signing'
 import { useStyles } from './styles'
 
 export type HeartbeatDisplayProps = {
@@ -33,6 +37,7 @@ export type HeartbeatDisplayProps = {
 export const HeartbeatDisplay = ({ transaction }: HeartbeatDisplayProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
 
     const heartbeat = transaction.heartbeatTransaction
     const voteId = useMemo(
@@ -54,7 +59,10 @@ export const HeartbeatDisplay = ({ transaction }: HeartbeatDisplayProps) => {
 
             {!!heartbeat?.hbAddress && (
                 <KeyValueRow title={t('transactions.heartbeat.account')}>
-                    <AddressDisplay address={heartbeat.hbAddress} />
+                    <TransactionDetailAddress
+                        address={heartbeat.hbAddress}
+                        scope={scope}
+                    />
                 </KeyValueRow>
             )}
 

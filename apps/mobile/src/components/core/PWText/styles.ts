@@ -40,5 +40,8 @@ export const useStyles = makeStyles(
             flexShrink: 1,
             minWidth: 0,
         },
+        secondary: {
+            color: theme.colors.textGray,
+        },
     }),
 )

@@ -15,6 +15,7 @@ import { useStyles } from './styles'
 import {
     formatPercentage,
     type HistoryPeriod,
+    type Maybe,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 import type { Decimal } from 'decimal.js'
@@ -41,6 +42,8 @@ export type WealthTrendHolding = {
 
 export type WealthTrendProps = {
     period: HistoryPeriod
+    /** A scrubbed chart point's value: the trend then runs from the chart's start to it. */
+    selectedValue?: Maybe<Decimal>
 } & (
     | {
           /** Trended as one summed series. */
@@ -73,7 +76,7 @@ const percentageTextOf = (
 }
 
 export const WealthTrend = (props: WealthTrendProps) => {
-    const { period, holding } = props
+    const { period, holding, selectedValue } = props
     const styles = useStyles()
     const { privacyMode } = useSettings()
 
@@ -101,7 +104,9 @@ export const WealthTrend = (props: WealthTrendProps) => {
         holding ? holdingHistory : portfolioHistory,
         holding
             ? holdingHistory.isUnavailableOnNetwork
-            : portfolioHistory.isPartial,
+            : portfolioHistory.isPartial ||
+                  portfolioHistory.isUnavailableOnNetwork,
+        selectedValue,
     )
 
     if (privacyMode) return null

@@ -26,6 +26,14 @@ const SCOPE = { chainId: 'ethereum', networkId: 'mainnet' } as const
 const ETHER = { assetId: 'native', unitName: 'ETH', decimals: 18 }
 const NATIVE: TransactionNative = { family: 'evm', transaction: {} }
 
+// The suffix has its own spec; here the hero's title is the row label it wraps.
+vi.mock('@modules/signing/hooks/useTransactionHeroTitle', () => ({
+    useTransactionHeroTitle:
+        () =>
+        ({ key }: { key: string }) =>
+            key,
+}))
+
 vi.mock('../../../hooks/useEthereumTransactionPresentation', () => ({
     useEthereumTransactionPresentation: vi.fn(),
 }))

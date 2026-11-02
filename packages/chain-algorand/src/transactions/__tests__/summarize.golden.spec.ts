@@ -27,7 +27,7 @@ describe('summarizeAlgorandHistoryItem', () => {
         },
     )
 
-    it('keeps the swap subtitle but drops the amount when the output side has no asset id', () => {
+    it('drops the amount and received leg when the output side has no asset id', () => {
         const swap = ALGORAND_HISTORY_SUMMARY_GOLDENS.find(
             golden => golden.name === 'swap',
         )!
@@ -47,9 +47,9 @@ describe('summarizeAlgorandHistoryItem', () => {
         )
 
         expect(summary.amount).toBeUndefined()
-        expect(summary.subtitle?.key).toBe(
-            'transactions.list_item.swap_subtitle',
-        )
+        expect(
+            summary.balanceChanges?.map(change => change.assetRef.assetId),
+        ).toEqual(['0'])
     })
 
     it('prefers the ALGO facts over a placeholder the backend substituted', () => {
@@ -73,9 +73,9 @@ describe('summarizeAlgorandHistoryItem', () => {
             swap.account,
         )
 
-        expect(summary.subtitle?.params).toMatchObject({
-            amountIn: '0.003',
-            assetIn: 'ALGO',
+        expect(summary.balanceChanges?.[1]?.display).toEqual({
+            symbol: 'ALGO',
+            decimals: 6,
         })
     })
 

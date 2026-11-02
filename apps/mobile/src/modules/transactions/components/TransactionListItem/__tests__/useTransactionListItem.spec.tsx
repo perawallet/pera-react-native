@@ -181,17 +181,14 @@ describe('useTransactionListItem', () => {
     })
 
     describe('swaps', () => {
-        it('shows its own subtitle and skips the counterparty lookup', () => {
+        it('has no subtitle and stacks both legs, received first', () => {
             const row = renderRow(golden('swap'))
 
-            expect(useCounterpartyName).toHaveBeenCalledWith('', 'algorand')
-            expect(row.subtitle).toMatch(
-                /^transactions\.list_item\.swap_subtitle /,
-            )
-            expect(row.amounts[0]).toMatchObject({
-                currency: 'USDC',
-                prefix: '+',
-            })
+            expect(row.subtitle).toBeNull()
+            expect(row.amounts.map(a => [a.currency, a.prefix])).toEqual([
+                ['USDC', '+'],
+                ['ALGO', '-'],
+            ])
         })
     })
 

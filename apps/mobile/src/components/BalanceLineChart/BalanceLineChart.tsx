@@ -29,6 +29,7 @@ import { getChartYAxisRange } from '@utils/chart'
 import type { Optional, Nullable } from '@perawallet/wallet-core-shared'
 import { useBalanceLineChart } from './useBalanceLineChart'
 import { ChartPressIndicator } from './ChartPressIndicator'
+import { ChartDateLabel } from './ChartDateLabel'
 import { useChartPressSelection } from './useChartPressSelection'
 import { useStableChartData } from './useStableChartData'
 import { useStyles } from './styles'
@@ -60,6 +61,8 @@ type BalanceLineChartProps<T> = {
     series: Optional<T[]>
     /** Extracts the plotted value from a series item. */
     getValue: (item: T) => number
+    /** The item's time, pinned above the marker while scrubbing. */
+    getDatetime: (item: T) => Date
     /** Reports the scrub-focused series item, or null when the touch ends. */
     onSelectionChanged: (item: Nullable<T>) => void
     isPending: boolean
@@ -83,6 +86,7 @@ type BalanceLineChartProps<T> = {
 export const BalanceLineChart = <T,>({
     series,
     getValue,
+    getDatetime,
     onSelectionChanged,
     isPending,
     emptyBody,
@@ -138,6 +142,11 @@ export const BalanceLineChart = <T,>({
             case 'chart': {
                 return (
                     <PWView style={styles.canvas}>
+                        <ChartDateLabel
+                            pressState={pressState}
+                            series={series}
+                            getDatetime={getDatetime}
+                        />
                         <CartesianChart
                             data={dataPoints}
                             xKey='index'

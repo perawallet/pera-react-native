@@ -14,7 +14,11 @@ import { useEffect, useRef } from 'react'
 import type { Decimal } from 'decimal.js'
 import type { AccountHoldingSource } from '@perawallet/wallet-core-accounts'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import type { HistoryPeriod, Nullable } from '@perawallet/wallet-core-shared'
+import type {
+    HistoryPeriod,
+    Maybe,
+    Nullable,
+} from '@perawallet/wallet-core-shared'
 import { usePortfolioTrend } from '@hooks/usePortfolioTrend'
 
 export type UsePortfolioChangeParams = {
@@ -24,6 +28,8 @@ export type UsePortfolioChangeParams = {
     isChartShown: boolean
     /** False when the card has no fiat total or history to measure, or its drawer is closed. */
     isEnabled: boolean
+    /** The scrubbed point's value, in the preferred currency; unset while nothing is scrubbed. */
+    selectedValue?: Maybe<Decimal>
 }
 
 export type UsePortfolioChangeResult = {
@@ -42,11 +48,18 @@ export const usePortfolioChange = ({
     chartPeriod,
     isChartShown,
     isEnabled,
+    selectedValue,
 }: UsePortfolioChangeParams): UsePortfolioChangeResult => {
     const changePeriod: HistoryPeriod = isChartShown ? chartPeriod : 'one-day'
 
     const { trendAbsolute, trendPercentage, hasNoTrend, isPending } =
-        usePortfolioTrend(chartSources, changePeriod, scope, isEnabled)
+        usePortfolioTrend(
+            chartSources,
+            changePeriod,
+            scope,
+            isEnabled,
+            selectedValue,
+        )
 
     // A new period has no cached history until it loads, and dropping the line
     // for that gap resizes the card in the middle of the chart's expand.

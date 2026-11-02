@@ -60,6 +60,7 @@ const renderChart = (
         <BalanceLineChart<SeriesItem>
             series={[]}
             getValue={item => item.balance}
+            getDatetime={() => new Date(0)}
             onSelectionChanged={vi.fn()}
             isPending={false}
             emptyBody={EMPTY_BODY}

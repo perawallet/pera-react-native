@@ -35,7 +35,10 @@ export const TransactionDetailFactsCard = ({
                 testID='transaction_detail_network'
                 title={t('transactions.common.network')}
             >
-                <ChainChip chainId={scope.chainId} />
+                <ChainChip
+                    chainId={scope.chainId}
+                    isBare
+                />
             </KeyValueRow>
             {!!transactionId && (
                 <KeyValueRow

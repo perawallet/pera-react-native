@@ -10,13 +10,17 @@
  limitations under the License
  */
 
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { PWText } from '@components/core'
 import { KeyValueRow } from '@components/KeyValueRow'
-import { AddressDisplay } from '@components/AddressDisplay'
 import { CopyableText } from '@components/CopyableText'
 import type { AlgorandTransactionView } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import { useLanguage } from '@hooks/useLanguage'
-import { TransactionDetailCard } from '@modules/signing'
+import {
+    TransactionDetailAddress,
+    TransactionDetailCard,
+} from '@modules/signing'
 import { useStyles } from './styles'
 
 export type AssetFreezeDisplayProps = {
@@ -28,6 +32,7 @@ export const AssetFreezeDisplay = ({
 }: AssetFreezeDisplayProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
 
     const assetFreeze = transaction.assetFreezeTransaction
     if (!assetFreeze) {
@@ -46,7 +51,10 @@ export const AssetFreezeDisplay = ({
             </KeyValueRow>
 
             <KeyValueRow title={t('transactions.asset_freeze.target')}>
-                <AddressDisplay address={assetFreeze.address} />
+                <TransactionDetailAddress
+                    address={assetFreeze.address}
+                    scope={scope}
+                />
             </KeyValueRow>
 
             <KeyValueRow title={t('transactions.asset_freeze.status')}>

@@ -285,7 +285,6 @@
         "markets": {
             "something_went_wrong_title": "Etwas ist schiefgelaufen",
             "something_went_wrong_body": "Die Details dieses Assets konnten nicht geladen werden. Bitte überprüfe deine Verbindung und versuche es erneut.",
-            "discover_more": "Weitere Details unter Entdecken ansehen",
             "title": "Märkte",
             "stats": "Statistiken",
             "price": "Preis",
@@ -472,7 +471,6 @@
         "remove_rekey_error_message": "Du kannst dieses Konto erst entfernen, nachdem du seine {{count}} rekeyed Konto(s) entfernt hast",
         "view_private_key": "Privaten Schlüssel anzeigen",
         "networks_title": "Netzwerke",
-        "networks_title_named": "{{name}} in jedem Netzwerk",
         "add_network": "Hinzufügen",
         "add_network_error": "Dieses Netzwerk konnte nicht hinzugefügt werden",
         "add_network_success": "{{network}} hinzugefügt",
@@ -3489,6 +3487,7 @@
     },
     "transactions": {
         "common": {
+            "typed_title": "{{type}}-Transaktion",
             "from": "Von",
             "to": "An",
             "close_amount": "Restguthaben",
@@ -3539,7 +3538,6 @@
             "default": "Transaktion",
             "more_impacts": "{{count}} weitere anzeigen",
             "interpreted_title": "{{title}}",
-            "swap_subtitle": "{{amountIn}} {{assetIn}} gegen {{amountOut}} {{assetOut}}",
             "nft_subtitle": "{{collection}} #{{tokenId}}",
             "nft_batch_subtitle": "{{collection}} · {{count}} Elemente",
             "inner_transaction_count": "{{innerCount}} innere Transaktionen",

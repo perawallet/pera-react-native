@@ -14,11 +14,13 @@ import type { AlgorandTransactionView } from '@perawallet/wallet-core-chain-algo
 import { useNativeAsset } from '@perawallet/wallet-core-assets'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { AddressDisplay } from '@components/AddressDisplay'
 import { AssetAmount } from '@components/AssetAmount'
 import { KeyValueRow } from '@components/KeyValueRow'
 import { useLanguage } from '@hooks/useLanguage'
-import { TransactionDetailCard } from '@modules/signing'
+import {
+    TransactionDetailAddress,
+    TransactionDetailCard,
+} from '@modules/signing'
 import { usePaymentTransactionDisplay } from './usePaymentTransactionDisplay'
 
 export type PaymentTransactionDisplayProps = {
@@ -45,7 +47,10 @@ export const PaymentTransactionDisplay = ({
                 testID='transaction_detail_close_to'
                 title={t('transactions.common.close_to')}
             >
-                <AddressDisplay address={closeToAddress} />
+                <TransactionDetailAddress
+                    address={closeToAddress}
+                    scope={scope}
+                />
             </KeyValueRow>
 
             {!!closeAmountValue && (

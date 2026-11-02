@@ -293,6 +293,26 @@ describe('useAccountWithBalance', () => {
             mockBasis.current = 'fiat'
         })
 
+        it("names only a watch account's type or network under a whole-account row", () => {
+            const signing: WalletAccount = {
+                ...BOTH_CHAINS,
+                custody: { kind: 'local', seed: 'bip39' },
+            } as WalletAccount
+
+            const watchRow = renderHook(() =>
+                useAccountWithBalance(BOTH_CHAINS),
+            ).result.current
+            const signingRow = renderHook(() => useAccountWithBalance(signing))
+                .result.current
+            const chainRow = renderHook(() =>
+                useAccountWithBalance(signing, 'ethereum'),
+            ).result.current
+
+            expect(watchRow.shouldShowSecondaryLabel).toBe(true)
+            expect(signingRow.shouldShowSecondaryLabel).toBe(false)
+            expect(chainRow.shouldShowSecondaryLabel).toBe(true)
+        })
+
         it('is unset on a row scoped to one chain', () => {
             const { result } = renderHook(() =>
                 useAccountWithBalance(BOTH_CHAINS, 'ethereum'),

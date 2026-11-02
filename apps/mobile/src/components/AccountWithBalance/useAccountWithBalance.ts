@@ -76,6 +76,8 @@ export type UseAccountWithBalanceResult = {
     singleNetworkChainId: Optional<ChainId>
     /** The member count of a joint account, which the avatar badge shows. */
     jointParticipantCount: Optional<number>
+    /** A whole-account row names only a watch account's type or network under it; the name and value say the rest. */
+    shouldShowSecondaryLabel: boolean
 }
 
 /**
@@ -163,5 +165,6 @@ export const useAccountWithBalance = (
         crossChainTotal,
         singleNetworkChainId,
         jointParticipantCount,
+        shouldShowSecondaryLabel: !isChainAgnostic || isWatchAccount(account),
     }
 }

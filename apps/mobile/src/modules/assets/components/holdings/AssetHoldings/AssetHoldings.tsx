@@ -10,9 +10,8 @@
  limitations under the License
  */
 
-import { formatDatetime } from '@perawallet/wallet-core-shared'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import { PWText, PWTouchableOpacity, PWView } from '@components/core'
+import { PWTouchableOpacity, PWView } from '@components/core'
 import { AssetWealthChart } from '../AssetWealthChart/AssetWealthChart'
 import { ChartPeriodSelection } from '@components/ChartPeriodSelection'
 import { AssetActionButtons } from '../AssetActionButtons/AssetActionButtons'
@@ -119,28 +118,6 @@ export const AssetHoldings = ({
                             />
                         ))}
 
-                    {selectedPoint && (
-                        <PWText
-                            variant='h4'
-                            style={styles.dateDisplay}
-                            numberOfLines={1}
-                        >
-                            {formatDatetime(selectedPoint.datetime)}
-                        </PWText>
-                    )}
-                    {isPriced && !selectedPoint && (
-                        <PWView style={styles.trendContainer}>
-                            <WealthTrend
-                                holding={{
-                                    account,
-                                    assetId: asset.assetId,
-                                    scope,
-                                }}
-                                period={trendPeriod}
-                            />
-                        </PWView>
-                    )}
-
                     <PWTouchableOpacity
                         style={styles.tokenAmountContainer}
                         activeOpacity={1}
@@ -151,13 +128,27 @@ export const AssetHoldings = ({
                         <AssetAmount
                             testID='asset_holdings_token_amount'
                             chainId={scope.chainId}
-                            variant={isPriced ? 'body' : 'h1'}
+                            variant={isPriced ? 'bodyLarge' : 'h1'}
                             style={isPriced ? styles.tokenAmount : undefined}
                             value={tokenAmount}
                             asset={asset}
                             shouldFitWidth
                         />
                     </PWTouchableOpacity>
+
+                    {isPriced && (
+                        <PWView style={styles.trendContainer}>
+                            <WealthTrend
+                                holding={{
+                                    account,
+                                    assetId: asset.assetId,
+                                    scope,
+                                }}
+                                period={trendPeriod}
+                                selectedValue={selectedPoint?.preferredValue}
+                            />
+                        </PWView>
+                    )}
                 </PWView>
 
                 {hasBalanceHistory && (

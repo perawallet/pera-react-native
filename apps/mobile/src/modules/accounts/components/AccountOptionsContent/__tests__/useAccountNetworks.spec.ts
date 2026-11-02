@@ -14,10 +14,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, renderHook, waitFor } from '@testing-library/react'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import {
-    COLLAPSED_NETWORK_COUNT,
-    useAccountNetworks,
-} from '../useAccountNetworks'
+import { useAccountNetworks } from '../useAccountNetworks'
 
 type Option = { chainId: string; isEnabled: boolean; address?: string }
 
@@ -196,7 +193,7 @@ describe('useAccountNetworks', () => {
 
         const { result } = render()
 
-        expect(result.current.visibleRows[1]).toMatchObject({
+        expect(result.current.hiddenRows[0]).toMatchObject({
             chainId: 'ethereum',
             isEnabled: false,
             address: undefined,
@@ -330,36 +327,62 @@ describe('useAccountNetworks', () => {
         await waitFor(() =>
             expect(result.current.addingChainId).toBeUndefined(),
         )
-        expect(result.current.visibleRows[1].isEnabled).toBe(false)
+        expect(result.current.hiddenRows[0].isEnabled).toBe(false)
         expect(mocks.showToast).not.toHaveBeenCalled()
     })
 
-    it(`shows ${COLLAPSED_NETWORK_COUNT} rows until all networks are asked for`, () => {
-        mocks.options = ['a', 'b', 'c', 'd', 'e'].map(chainId => ({
-            chainId,
-            isEnabled: false,
-        }))
+    it('shows every enabled network and keeps the ones to add behind See all', () => {
+        mocks.options = [
+            { chainId: 'a', isEnabled: false },
+            { chainId: 'b', isEnabled: true, address: 'b1' },
+            { chainId: 'c', isEnabled: false },
+            { chainId: 'd', isEnabled: true, address: 'd1' },
+        ]
         const { result } = render()
 
         expect(result.current.visibleRows.map(row => row.chainId)).toEqual([
-            'a',
             'b',
-            'c',
+            'd',
         ])
         expect(result.current.hiddenRows.map(row => row.chainId)).toEqual([
-            'd',
-            'e',
+            'a',
+            'c',
         ])
 
         act(() => {
             result.current.handleShowAllNetworks()
         })
 
-        expect(result.current.visibleRows).toHaveLength(5)
+        expect(result.current.visibleRows.map(row => row.chainId)).toEqual([
+            'b',
+            'd',
+            'a',
+            'c',
+        ])
         expect(result.current.hiddenRows).toEqual([])
     })
 
+    it('hides nothing when every network is enabled', () => {
+        mocks.options = [
+            ALGORAND,
+            { chainId: 'ethereum', isEnabled: true, address: 'evm' },
+        ]
+
+        expect(render().result.current.hiddenRows).toEqual([])
+    })
+
+    it('opens the only network an account reaches', () => {
+        expect(render().result.current.expandedChainId).toBe('algorand')
+    })
+
+    it('opens no network when the account reaches several', () => {
+        mocks.options = [ALGORAND, ETHEREUM]
+
+        expect(render().result.current.expandedChainId).toBeUndefined()
+    })
+
     it('toggles one expanded chain at a time', () => {
+        mocks.options = [ALGORAND, ETHEREUM]
         const { result } = render()
 
         act(() => {

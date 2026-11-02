@@ -10,13 +10,17 @@
  limitations under the License
  */
 
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { PWButton, PWText } from '@components/core'
 import { KeyValueRow } from '@components/KeyValueRow'
-import { AddressDisplay } from '@components/AddressDisplay'
 import { CopyableText } from '@components/CopyableText'
 import type { AlgorandTransactionView } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import { useLanguage } from '@hooks/useLanguage'
-import { TransactionDetailCard } from '@modules/signing'
+import {
+    TransactionDetailAddress,
+    TransactionDetailCard,
+} from '@modules/signing'
 import { useAssetConfigDisplay } from './useAssetConfigDisplay'
 import { ViewTextDetailsContent } from '@components/ViewTextDetailsContent'
 import { useBottomSheet } from '@modules/bottom-sheet'
@@ -30,6 +34,7 @@ export const AssetConfigDisplay = ({
     transaction,
 }: AssetConfigDisplayProps) => {
     const { t } = useLanguage()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
 
     const { assetConfig, configType, assetId, supply, metadataHash } =
         useAssetConfigDisplay(transaction)
@@ -130,25 +135,37 @@ export const AssetConfigDisplay = ({
 
             {assetConfig.params?.manager && (
                 <KeyValueRow title={t('transactions.asset_config.manager')}>
-                    <AddressDisplay address={assetConfig.params.manager} />
+                    <TransactionDetailAddress
+                        address={assetConfig.params.manager}
+                        scope={scope}
+                    />
                 </KeyValueRow>
             )}
 
             {assetConfig.params?.reserve && (
                 <KeyValueRow title={t('transactions.asset_config.reserve')}>
-                    <AddressDisplay address={assetConfig.params.reserve} />
+                    <TransactionDetailAddress
+                        address={assetConfig.params.reserve}
+                        scope={scope}
+                    />
                 </KeyValueRow>
             )}
 
             {assetConfig.params?.freeze && (
                 <KeyValueRow title={t('transactions.asset_config.freeze_addr')}>
-                    <AddressDisplay address={assetConfig.params.freeze} />
+                    <TransactionDetailAddress
+                        address={assetConfig.params.freeze}
+                        scope={scope}
+                    />
                 </KeyValueRow>
             )}
 
             {assetConfig.params?.clawback && (
                 <KeyValueRow title={t('transactions.asset_config.clawback')}>
-                    <AddressDisplay address={assetConfig.params.clawback} />
+                    <TransactionDetailAddress
+                        address={assetConfig.params.clawback}
+                        scope={scope}
+                    />
                 </KeyValueRow>
             )}
 

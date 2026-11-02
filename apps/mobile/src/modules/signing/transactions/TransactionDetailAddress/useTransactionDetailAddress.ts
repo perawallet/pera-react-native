@@ -16,23 +16,40 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import { getChainDescriptor } from '@perawallet/wallet-core-chain-shared'
+import {
+    findContactByAddress,
+    useContacts,
+    type Contact,
+} from '@perawallet/wallet-core-contacts'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 
-export type UseTransactionDetailAddressRowResult = {
+export type UseTransactionDetailAddressResult = {
     ownAccount: Nullable<WalletAccount>
     ownAccountName: Optional<string>
+    /** Unset for one of the wallet's own accounts, which names it instead. */
+    contact: Optional<Contact>
 }
 
-export const useTransactionDetailAddressRow = (
+export const useTransactionDetailAddress = (
     address: string,
     scope: ChainScope,
-): UseTransactionDetailAddressRowResult => {
+): UseTransactionDetailAddressResult => {
     const ownAccount = useFindAccountByAddress(address, scope)
+    const { contacts } = useContacts()
+    const contact = ownAccount
+        ? undefined
+        : findContactByAddress(
+              contacts,
+              address,
+              getChainDescriptor(scope.chainId).family,
+          )
 
     return {
         ownAccount,
         ownAccountName: ownAccount
             ? getAccountDisplayName(ownAccount, scope.chainId)
             : undefined,
+        contact,
     }
 }

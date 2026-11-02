@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { render } from '@test-utils/render'
+import { render, screen } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { WealthTrend } from '../WealthTrend'
 import {
@@ -196,12 +196,14 @@ describe('WealthTrend', () => {
         expect(container.innerHTML).toBe('')
     })
 
-    it('shows nothing when there is no history to measure', () => {
+    it('shows a flat zero when the loaded history has no points', () => {
         mockHistory([])
 
-        const { container } = renderTrend()
+        renderTrend()
 
-        expect(container.innerHTML).toBe('')
+        expect(screen.getByTestId('wealth_trend').textContent).toContain(
+            '(0.00%)',
+        )
     })
 
     it('shows nothing on a network with no Pera backend', () => {
