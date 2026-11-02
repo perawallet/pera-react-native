@@ -10,13 +10,10 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
-import type { AssetInboxRequest } from '@perawallet/wallet-core-transactions'
-import { PWDivider, PWFlatList, PWScreen, PWText } from '@components/core'
+import { PWFlatList, PWScreen, PWText } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { OfflineTolerantView } from '@components/OfflineTolerantView'
 import { useLanguage } from '@hooks/useLanguage'
-import { AssetTransferRequestItem } from '@modules/transactions/components/claim-assets/AssetTransferRequestItem'
 import { useStyles } from './styles'
 import { useAssetTransferRequestsScreen } from './useAssetTransferRequestsScreen'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
@@ -26,12 +23,13 @@ export const AssetTransferRequestsScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
     const {
-        scope,
         assetRequests,
         isPending,
         isUnavailableOnNetwork,
         isIntegrityBlocked,
-        handleItemPress,
+        renderItem,
+        renderSeparator,
+        keyExtractor,
     } = useAssetTransferRequestsScreen()
 
     useNavigationHeader({
@@ -45,28 +43,6 @@ export const AssetTransferRequestsScreen = () => {
             </InfoButton>
         ),
     })
-
-    const renderItem = useCallback(
-        ({ item, index }: { item: AssetInboxRequest; index: number }) => (
-            <AssetTransferRequestItem
-                item={item}
-                scope={scope}
-                onPress={() => handleItemPress(index)}
-            />
-        ),
-        [handleItemPress, scope],
-    )
-
-    const renderSeparator = useCallback(
-        () => <PWDivider style={styles.separator} />,
-        [styles.separator],
-    )
-
-    const keyExtractor = useCallback(
-        (item: AssetInboxRequest, index: number) =>
-            String(item.id ?? '' + index),
-        [],
-    )
 
     return (
         <PWScreen

@@ -10,25 +10,13 @@
  limitations under the License
  */
 
-import React, { useCallback, useState } from 'react'
+import React from 'react'
 import { useWindowDimensions } from 'react-native'
-import { useTheme } from '@rneui/themed'
-import {
-    PWIcon,
-    type PWIconSize,
-    PWImage,
-    PWText,
-    PWTouchableIcon,
-    PWTouchableOpacity,
-    PWView,
-} from '@components/core'
-import { VideoPlayer } from '@components/VideoPlayer'
-import { AudioPlayer } from '@components/AudioPlayer'
-import { useLanguage } from '@hooks/useLanguage'
-import type { Optional } from '@perawallet/wallet-core-shared'
+import { type PWIconSize, PWView } from '@components/core'
 import { useStyles } from './styles'
-import { resolveMediaImageUri, type MediaItem } from './resolveMediaImageUri'
+import { type MediaItem } from './resolveMediaImageUri'
 import PagerView from 'react-native-pager-view'
+import { useMediaCarousel } from './useMediaCarousel'
 
 export type MediaCarouselProps = {
     media: MediaItem[]
@@ -36,14 +24,6 @@ export type MediaCarouselProps = {
     placeholderIconSize?: PWIconSize
     onModelPress?: () => void
     onFullScreenPress?: (index: number) => void
-}
-
-const carouselPagesOf = (
-    visualMedia: MediaItem[],
-    modelItem: Optional<MediaItem>,
-): MediaItem[] => {
-    if (visualMedia.length > 0) return visualMedia
-    return modelItem ? [modelItem] : []
 }
 
 export const MediaCarousel = ({
@@ -54,132 +34,21 @@ export const MediaCarousel = ({
     onFullScreenPress,
 }: MediaCarouselProps) => {
     const dimensions = useWindowDimensions()
-    const { theme } = useTheme()
     const styles = useStyles(dimensions)
-    const { t } = useLanguage()
-    const [activeIndex, setActiveIndex] = useState(0)
-    // Keyed by uri rather than a boolean so a CDN failure on one page doesn't
-    // blank out the other pages of the carousel.
-    const [failedUris, setFailedUris] = useState<ReadonlySet<string>>(
-        () => new Set(),
-    )
 
-    const handleImageError = useCallback((uri: string) => {
-        setFailedUris(prev => new Set(prev).add(uri))
-    }, [])
-
-    // VideoPlayer defaults to the full window without explicit width/height.
-    // lanekeep-ignore-next-line pera/no-numeric-sizes reason: window width minus xl padding on each side
-    const mediaSize = dimensions.width - 2 * theme.spacing.xl
-
-    // A model isn't its own page: its 3D badge rides on the visual media, and
-    // its poster only becomes the page when there's no visual media at all.
-    const visualMedia = media.filter(
-        m => m.type === 'image' || m.type === 'video' || m.type === 'audio',
-    )
-    const modelItem = media.find(m => m.type === 'model')
-    // No model file means nothing to open as 3D.
-    const hasModel = modelItem?.downloadUrl !== undefined
-    const pages = carouselPagesOf(visualMedia, modelItem)
-    const hasMultiple = pages.length > 1
-
-    const renderMediaItem = useCallback(
-        ({ item, index }: { item?: MediaItem; index: number }) => {
-            const downloadUri = item?.downloadUrl
-            const isModelItem = item?.type === 'model'
-            const imageUri = resolveMediaImageUri(item, fallbackImageUrl)
-            const renderMedia = () => {
-                if (item?.type === 'video' && downloadUri) {
-                    return (
-                        <VideoPlayer
-                            uri={downloadUri}
-                            width={mediaSize}
-                            height={mediaSize}
-                            style={styles.videoPlayer}
-                            autoPlay={index === activeIndex}
-                        />
-                    )
-                }
-                if (item?.type === 'audio' && downloadUri) {
-                    return (
-                        <AudioPlayer
-                            uri={downloadUri}
-                            posterUri={item?.previewUrl ?? fallbackImageUrl}
-                            width={mediaSize}
-                            height={mediaSize}
-                            style={styles.videoPlayer}
-                        />
-                    )
-                }
-                if (imageUri && !failedUris.has(imageUri)) {
-                    return (
-                        <PWImage
-                            source={{ uri: imageUri }}
-                            style={styles.image}
-                            resizeMode='contain'
-                            onError={() => handleImageError(imageUri)}
-                        />
-                    )
-                }
-                return (
-                    <PWView style={styles.placeholder}>
-                        <PWIcon
-                            name='image-off'
-                            variant='secondary'
-                            size={placeholderIconSize ?? 'md'}
-                        />
-                    </PWView>
-                )
-            }
-            return (
-                <PWView
-                    style={styles.carouselItem}
-                    key={`media-${index}`}
-                >
-                    {renderMedia()}
-                    {hasModel && index >= 0 && (
-                        <PWTouchableOpacity
-                            style={styles.modelBadge}
-                            onPress={onModelPress}
-                            disabled={!onModelPress}
-                            testID='model-3d-badge'
-                        >
-                            <PWIcon
-                                name='cube-3d'
-                                variant='white'
-                                size='sm'
-                            />
-                            <PWText style={styles.modelBadgeText}>
-                                {t('asset_details.collectible.model_3d_mode')}
-                            </PWText>
-                        </PWTouchableOpacity>
-                    )}
-                    {onFullScreenPress && index >= 0 && !isModelItem && (
-                        <PWTouchableIcon
-                            containerStyle={styles.fullScreenButton}
-                            onPress={() => onFullScreenPress(index)}
-                            name='full-view'
-                            size='lg'
-                            variant='white'
-                        />
-                    )}
-                </PWView>
-            )
-        },
-        [
-            styles,
-            placeholderIconSize,
-            hasModel,
-            onModelPress,
-            onFullScreenPress,
-            fallbackImageUrl,
-            activeIndex,
-            mediaSize,
-            t,
-            failedUris,
-            handleImageError,
-        ],
-    )
+    const {
+        pages,
+        hasMultiple,
+        activeIndex,
+        handlePageSelected,
+        renderMediaItem,
+    } = useMediaCarousel({
+        media,
+        fallbackImageUrl,
+        placeholderIconSize,
+        onModelPress,
+        onFullScreenPress,
+    })
 
     if (!pages.length) {
         return renderMediaItem({ index: -1 })
@@ -193,7 +62,7 @@ export const MediaCarousel = ({
         <PWView>
             <PagerView
                 style={styles.pagerView}
-                onPageSelected={e => setActiveIndex(e.nativeEvent.position)}
+                onPageSelected={e => handlePageSelected(e.nativeEvent.position)}
             >
                 {pages.map((item, index) => (
                     <PWView

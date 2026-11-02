@@ -10,31 +10,23 @@
  limitations under the License
  */
 
-import { PWDivider, PWText, PWView } from '@components/core'
+import { PWText } from '@components/core'
 import { KeyValueRow } from '@components/KeyValueRow'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { CopyableText } from '@components/CopyableText'
 import type { AlgorandTransactionView } from '@perawallet/wallet-core-chain-algorand/blockchain'
-import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
-import { useTheme } from '@rneui/themed'
-import { TransactionHeader } from '../TransactionHeader/TransactionHeader'
-import { TransactionFeeRow } from '../TransactionFeeRow/TransactionFeeRow'
-import { TransactionNoteRow } from '../TransactionNoteRow/TransactionNoteRow'
-import { TransactionWarnings } from '../../TransactionWarnings/TransactionWarnings'
-import { TransactionFooter } from '../TransactionFooter/TransactionFooter'
+import { TransactionDetailCard } from '@modules/signing'
+import { useStyles } from './styles'
 
 export type AssetFreezeDisplayProps = {
     transaction: AlgorandTransactionView
-    isInnerTransaction?: boolean
 }
 
 export const AssetFreezeDisplay = ({
     transaction,
-    isInnerTransaction = false,
 }: AssetFreezeDisplayProps) => {
     const styles = useStyles()
-    const { theme } = useTheme()
     const { t } = useLanguage()
 
     const assetFreeze = transaction.assetFreezeTransaction
@@ -43,62 +35,31 @@ export const AssetFreezeDisplay = ({
     }
 
     const isFreezing = assetFreeze.newFreezeStatus
-    const targetAddress = assetFreeze.address
     const assetId = assetFreeze.assetId.toString()
-    const showWarnings = !transaction?.id
 
     return (
-        <PWView style={styles.container}>
-            <TransactionHeader
-                transaction={transaction}
-                isInnerTransaction={isInnerTransaction}
-            />
+        <TransactionDetailCard>
+            <KeyValueRow title={t('transactions.common.asset_id')}>
+                <CopyableText copyValue={assetId}>
+                    <PWText>{assetId}</PWText>
+                </CopyableText>
+            </KeyValueRow>
 
-            {showWarnings && <TransactionWarnings transaction={transaction} />}
+            <KeyValueRow title={t('transactions.asset_freeze.target')}>
+                <AddressDisplay address={assetFreeze.address} />
+            </KeyValueRow>
 
-            <PWDivider
-                style={styles.divider}
-                color={theme.colors.layerGray}
-            />
-
-            <PWView style={styles.detailContainer}>
-                <KeyValueRow title={t('transactions.common.asset_id')}>
-                    <CopyableText copyValue={assetId}>
-                        <PWText>{assetId}</PWText>
-                    </CopyableText>
-                </KeyValueRow>
-
-                <KeyValueRow title={t('transactions.asset_freeze.target')}>
-                    <PWView style={styles.detailRow}>
-                        <AddressDisplay address={targetAddress} />
-                    </PWView>
-                </KeyValueRow>
-
-                <KeyValueRow title={t('transactions.asset_freeze.status')}>
-                    <PWText
-                        style={
-                            isFreezing
-                                ? styles.frozenStatus
-                                : styles.unfrozenStatus
-                        }
-                    >
-                        {isFreezing
-                            ? t('transactions.asset_freeze.frozen')
-                            : t('transactions.asset_freeze.unfrozen')}
-                    </PWText>
-                </KeyValueRow>
-
-                <TransactionFeeRow transaction={transaction} />
-
-                <TransactionNoteRow transaction={transaction} />
-            </PWView>
-
-            <PWDivider
-                style={styles.divider}
-                color={theme.colors.layerGray}
-            />
-
-            <TransactionFooter transaction={transaction} />
-        </PWView>
+            <KeyValueRow title={t('transactions.asset_freeze.status')}>
+                <PWText
+                    style={
+                        isFreezing ? styles.frozenStatus : styles.unfrozenStatus
+                    }
+                >
+                    {isFreezing
+                        ? t('transactions.asset_freeze.frozen')
+                        : t('transactions.asset_freeze.unfrozen')}
+                </PWText>
+            </KeyValueRow>
+        </TransactionDetailCard>
     )
 }

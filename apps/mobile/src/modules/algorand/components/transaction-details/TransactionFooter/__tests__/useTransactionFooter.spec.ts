@@ -15,12 +15,6 @@ import { renderHook } from '@testing-library/react'
 
 const mockPushWebView = vi.fn()
 
-// Mutable so the `custom` case (explorerUrl: '' by design) is reachable
-// per-test without re-mocking the module.
-const { mockNetworkConfig } = vi.hoisted(() => ({
-    mockNetworkConfig: { explorerUrl: 'https://explorer.test' },
-}))
-
 vi.mock(
     '@perawallet/wallet-core-chain-algorand/blockchain',
     async importOriginal => ({
@@ -29,13 +23,6 @@ vi.mock(
         >()),
     }),
 )
-
-vi.mock('@perawallet/wallet-core-config', async importOriginal => ({
-    ...(await importOriginal<
-        typeof import('@perawallet/wallet-core-config')
-    >()),
-    getAlgorandChainConfig: () => mockNetworkConfig,
-}))
 
 vi.mock('@modules/webview/hooks/useWebViewStore', () => ({
     useWebView: () => ({ pushWebView: mockPushWebView }),
@@ -48,42 +35,42 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import { useTransactionFooter } from '../useTransactionFooter'
 
-const makeTransaction = (): PeraDisplayableTransaction =>
-    ({ id: 'TX_ID_123' }) as PeraDisplayableTransaction
-
 describe('useTransactionFooter', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        Object.assign(mockNetworkConfig, {
-            explorerUrl: 'https://explorer.test',
-        })
     })
 
-    it('opens the explorer transaction page in the in-app webview', () => {
-        const { result } = renderHook(() =>
-            useTransactionFooter(makeTransaction()),
-        )
+    it.each([
+        [
+            'an unsigned transaction with its raw form',
+            { rawTransaction: {} },
+            true,
+        ],
+        [
+            'a confirmed transaction with no asset url',
+            { id: 'TX_ID_123', rawTransaction: {} },
+            false,
+        ],
+        [
+            'a confirmed transaction with an asset url',
+            {
+                id: 'TX_ID_123',
+                assetConfigTransaction: {
+                    params: { url: 'https://example.com/nft' },
+                },
+            },
+            true,
+        ],
+    ])(
+        'has actions for %s only when there is something to show',
+        (_label, fields, expected) => {
+            const { result } = renderHook(() =>
+                useTransactionFooter(fields as PeraDisplayableTransaction),
+            )
 
-        result.current.showInExplorer?.()
-
-        expect(mockPushWebView).toHaveBeenCalledWith(
-            expect.objectContaining({
-                url: 'https://explorer.test/tx/TX_ID_123',
-            }),
-        )
-    })
-
-    it('offers no explorer action on a network with no explorer', () => {
-        // `custom` has explorerUrl: '' by design, so interpolating it yields
-        // the schemeless relative path '/tx/TX_ID_123'.
-        Object.assign(mockNetworkConfig, { explorerUrl: '' })
-
-        const { result } = renderHook(() =>
-            useTransactionFooter(makeTransaction()),
-        )
-
-        expect(result.current.showInExplorer).toBeUndefined()
-    })
+            expect(result.current.hasActions).toBe(expected)
+        },
+    )
 
     it('prefixes a scheme-less asset url so the webview can load it', () => {
         const { result } = renderHook(() =>

@@ -28,13 +28,11 @@ import {
 
 export type TransactionDisplayProps = {
     transaction: AlgorandTransactionView
-    isInnerTransaction?: boolean
     onInnerTransactionsPress?: (tx: AlgorandTransactionView) => void
 }
 
 export const TransactionDisplay = ({
     transaction,
-    isInnerTransaction = false,
     onInnerTransactionsPress,
 }: TransactionDisplayProps) => {
     const { t } = useLanguage()
@@ -42,67 +40,36 @@ export const TransactionDisplay = ({
 
     switch (txType) {
         case 'payment': {
-            return (
-                <PaymentTransactionDisplay
-                    transaction={transaction}
-                    isInnerTransaction={isInnerTransaction}
-                />
-            )
+            return <PaymentTransactionDisplay transaction={transaction} />
         }
 
         case 'asset-transfer': {
-            return (
-                <AssetTransferDisplay
-                    transaction={transaction}
-                    isInnerTransaction={isInnerTransaction}
-                />
-            )
+            return <AssetTransferDisplay transaction={transaction} />
         }
 
         case 'asset-config': {
-            return (
-                <AssetConfigDisplay
-                    transaction={transaction}
-                    isInnerTransaction={isInnerTransaction}
-                />
-            )
+            return <AssetConfigDisplay transaction={transaction} />
         }
 
         case 'asset-freeze': {
-            return (
-                <AssetFreezeDisplay
-                    transaction={transaction}
-                    isInnerTransaction={isInnerTransaction}
-                />
-            )
+            return <AssetFreezeDisplay transaction={transaction} />
         }
 
         case 'key-registration': {
-            return (
-                <KeyRegistrationDisplay
-                    transaction={transaction}
-                    isInnerTransaction={isInnerTransaction}
-                />
-            )
+            return <KeyRegistrationDisplay transaction={transaction} />
         }
 
         case 'app-call': {
             return (
                 <AppCallTransactionDisplay
                     transaction={transaction}
-                    isInnerTransaction={isInnerTransaction}
                     onInnerTransactionsPress={onInnerTransactionsPress}
                 />
             )
         }
 
         case 'heartbeat': {
-            return (
-                <HeartbeatDisplay
-                    transaction={transaction}
-                    isInnerTransaction={isInnerTransaction}
-                />
-            )
+            return <HeartbeatDisplay transaction={transaction} />
         }
 
         case 'state-proof': {

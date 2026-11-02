@@ -10,24 +10,19 @@
  limitations under the License
  */
 
-import { PWDivider, PWText, PWView } from '@components/core'
+import { PWText, PWView } from '@components/core'
 import { KeyValueRow } from '@components/KeyValueRow'
 import type { AlgorandTransactionView } from '@perawallet/wallet-core-chain-algorand/blockchain'
-import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
-import { useTheme } from '@rneui/themed'
-import { TransactionHeader } from '../TransactionHeader/TransactionHeader'
-import { TransactionFeeRow } from '../TransactionFeeRow/TransactionFeeRow'
-import { TransactionNoteRow } from '../TransactionNoteRow/TransactionNoteRow'
-import { TransactionWarnings } from '../../TransactionWarnings/TransactionWarnings'
-import { TransactionFooter } from '../TransactionFooter/TransactionFooter'
+import { TransactionDetailCard } from '@modules/signing'
+import { ApplicationDisplay } from '@modules/projects'
 import { InnerTransactionsPanel } from './InnerTransactionsPanel'
 import { AppCallDetailsPanel } from './AppCallDetailsPanel'
-import { ApplicationDisplay } from '@modules/projects'
+import { hasAdvancedAppCallDetails } from './utils'
+import { useStyles } from './styles'
 
 export type AppCallTransactionDisplayProps = {
     transaction: AlgorandTransactionView
-    isInnerTransaction?: boolean
     onInnerTransactionsPress?: (tx: AlgorandTransactionView) => void
 }
 
@@ -37,11 +32,9 @@ const isAppCreation = (tx: AlgorandTransactionView): boolean => {
 
 export const AppCallTransactionDisplay = ({
     transaction,
-    isInnerTransaction = false,
     onInnerTransactionsPress,
 }: AppCallTransactionDisplayProps) => {
     const styles = useStyles()
-    const { theme } = useTheme()
     const { t } = useLanguage()
 
     const appCall = transaction.applicationTransaction
@@ -50,93 +43,72 @@ export const AppCallTransactionDisplay = ({
     }
 
     const appId = appCall.applicationId.toString()
-    const showWarnings = !transaction?.id
+    const hasApplicationRows =
+        !isAppCreation(transaction) || !!appCall.onCompletion
 
     const innerTransactions = transaction.innerTxns ?? []
     const offlineInnerTransactionCount =
         innerTransactions.length === 0
             ? (transaction.innerTransactionCount ?? 0)
             : 0
+    const hasExtras =
+        innerTransactions.length > 0 ||
+        offlineInnerTransactionCount > 0 ||
+        hasAdvancedAppCallDetails(transaction)
 
     return (
-        <PWView style={styles.container}>
-            <TransactionHeader
-                transaction={transaction}
-                isInnerTransaction={isInnerTransaction}
-            />
+        <>
+            {hasApplicationRows && (
+                <TransactionDetailCard>
+                    {!isAppCreation(transaction) && (
+                        <KeyValueRow
+                            verticalAlignment='top'
+                            title={t('transactions.app_call.app_id')}
+                        >
+                            <PWView style={styles.detailRow}>
+                                <ApplicationDisplay
+                                    applicationId={appId}
+                                    valueOnlyOnFallback
+                                />
+                            </PWView>
+                        </KeyValueRow>
+                    )}
 
-            {showWarnings && <TransactionWarnings transaction={transaction} />}
+                    {!!appCall.onCompletion && (
+                        <KeyValueRow
+                            title={t('transactions.app_call.on_completion')}
+                        >
+                            <PWText truncate>{appCall.onCompletion}</PWText>
+                        </KeyValueRow>
+                    )}
+                </TransactionDetailCard>
+            )}
 
-            <PWDivider
-                style={styles.divider}
-                color={theme.colors.layerGray}
-            />
-
-            <PWView style={styles.detailContainer}>
-                {!isAppCreation(transaction) && (
-                    <KeyValueRow
-                        verticalAlignment='top'
-                        title={t('transactions.app_call.app_id')}
-                    >
-                        <PWView style={styles.detailRow}>
-                            <ApplicationDisplay
-                                applicationId={appId}
-                                valueOnlyOnFallback
-                            />
-                        </PWView>
-                    </KeyValueRow>
-                )}
-
-                {!!appCall.onCompletion && (
-                    <KeyValueRow
-                        title={t('transactions.app_call.on_completion')}
-                    >
-                        <PWText truncate>{appCall.onCompletion}</PWText>
-                    </KeyValueRow>
-                )}
-
-                <TransactionFeeRow transaction={transaction} />
-
-                <TransactionNoteRow transaction={transaction} />
-
-                <PWDivider
-                    style={styles.divider}
-                    color={theme.colors.layerGray}
-                />
-
-                {offlineInnerTransactionCount > 0 ? (
-                    <KeyValueRow
-                        title={t('transactions.app_call.inner_transactions', {
-                            count: offlineInnerTransactionCount,
-                        })}
-                    >
-                        <PWText truncate>
-                            {t(
-                                'transactions.app_call.inner_transactions_unavailable',
+            {hasExtras && (
+                <TransactionDetailCard>
+                    {offlineInnerTransactionCount > 0 ? (
+                        <KeyValueRow
+                            title={t(
+                                'transactions.app_call.inner_transactions',
+                                { count: offlineInnerTransactionCount },
                             )}
-                        </PWText>
-                    </KeyValueRow>
-                ) : (
-                    <InnerTransactionsPanel
-                        innerTransactions={innerTransactions}
-                        onInnerTransactionPress={onInnerTransactionsPress}
-                    />
-                )}
+                        >
+                            <PWText truncate>
+                                {t(
+                                    'transactions.app_call.inner_transactions_unavailable',
+                                )}
+                            </PWText>
+                        </KeyValueRow>
+                    ) : (
+                        <InnerTransactionsPanel
+                            innerTransactions={innerTransactions}
+                            onInnerTransactionPress={onInnerTransactionsPress}
+                        />
+                    )}
 
-                <PWDivider
-                    style={styles.divider}
-                    color={theme.colors.layerGray}
-                />
-
-                <AppCallDetailsPanel transaction={transaction} />
-            </PWView>
-
-            <PWDivider
-                style={styles.divider}
-                color={theme.colors.layerGray}
-            />
-
-            <TransactionFooter transaction={transaction} />
-        </PWView>
+                    <AppCallDetailsPanel transaction={transaction} />
+                </TransactionDetailCard>
+            )}
+        </>
     )
 }

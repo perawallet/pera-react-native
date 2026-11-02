@@ -309,6 +309,7 @@
         "action_buttons": {
             "swap": "Swap",
             "buy": "Satın al",
+            "buy_sell": "Al/Sat",
             "send": "Gönder",
             "receive": "Al"
         },
@@ -3497,7 +3498,6 @@
         "common": {
             "from": "Gönderen",
             "to": "Alıcı",
-            "sent_to": "Alıcı",
             "close_amount": "Kalan bakiye",
             "close_to": "Kalan bakiyenin alıcısı",
             "fee": "Ücret",
@@ -3511,7 +3511,9 @@
             "date": "Tarih",
             "note": "İşlem notu",
             "view_raw_transaction": "JSON’u görüntüle",
-            "view_in_explorer": "Pera Explorer’da görüntüle",
+            "network": "Ağ",
+            "block": "Blok",
+            "view_in_explorer": "{{explorer}} üzerinde görüntüle",
             "view_asset_url": "Varlık URL’sini görüntüle",
             "view_note": "Notu görüntüle",
             "view_metadata": "Metadata’yı görüntüle",
@@ -3654,7 +3656,6 @@
         "heartbeat": {
             "description": "Heartbeat, bir hesabın hâlâ çevrimiçi olduğunu ve Algorand konsensüsüne katıldığını kanıtlar. Hiçbir fon transfer edilmez.",
             "account": "Çevrimiçi olduğu kanıtlanan hesap",
-            "submitted_by": "Gönderen",
             "key_dilution": "Key dilution",
             "vote_id": "Vote ID"
         },

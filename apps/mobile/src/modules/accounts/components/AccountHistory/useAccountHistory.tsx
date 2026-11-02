@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useMemo, useCallback, useState } from 'react'
+import { useMemo, useCallback, useState, type ReactElement } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
@@ -45,15 +45,19 @@ import {
 } from '../TransactionsFilterContent'
 import type { AppStackParamList } from '@routes/types'
 import { getFilterTimes } from './utils'
-import type {
-    HistoryFeedProps,
-    TransactionListRow,
+import {
+    TransactionHistoryRow,
+    TransactionHistorySearchOlder,
+    type HistoryFeedProps,
+    type TransactionListRow,
 } from '@modules/transactions'
 import { useAccountHistoryRows } from './useAccountHistoryRows'
 import {
     PeraServiceUnavailableError,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
+import { PWLoadingIndicator, PWView } from '@components/core'
+import { useStyles } from './styles'
 
 /**
  * Return type for useAccountHistory hook.
@@ -89,6 +93,12 @@ export type UseAccountHistoryResult = {
     handleLoadMore: () => void
     /** Function to refresh the list */
     handleRefresh: () => void
+    /** Renders one transaction row for the list. */
+    renderItem: (params: { item: TransactionListRow }) => ReactElement
+    /** Renders the list footer: the spinner, the search-older action, or nothing. */
+    renderFooter: () => Nullable<ReactElement>
+    /** Opens the filter sheet. */
+    handleFilterPress: () => void
     /** Whether a refresh is in flight */
     isRefreshing: boolean
     /** Whether data is empty */
@@ -209,6 +219,7 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
     }, [requestBottomSheet, activeFilter, customRange, scope.chainId])
 
     const { t } = useLanguage()
+    const styles = useStyles()
     const { showError } = useErrorToast()
 
     const {
@@ -316,6 +327,46 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
                   network: chainDisplayNameOf(networkChainId) ?? networkChainId,
               })
 
+    const renderItem = useCallback(
+        ({ item }: { item: TransactionListRow }) => (
+            <TransactionHistoryRow
+                row={item}
+                onTransactionPress={handleTransactionPress}
+                suspectedPoisoning={suspectedPoisoningById.get(item.key)}
+            />
+        ),
+        [handleTransactionPress, suspectedPoisoningById],
+    )
+
+    const renderFooter = useCallback(() => {
+        if (isFetchingNextPage) {
+            return (
+                <PWView style={styles.loadingFooter}>
+                    <PWLoadingIndicator size='sm' />
+                </PWView>
+            )
+        }
+        if (isSearchPaused) {
+            return (
+                <PWView style={styles.loadingFooter}>
+                    <TransactionHistorySearchOlder
+                        onPress={handleSearchOlder}
+                    />
+                </PWView>
+            )
+        }
+        return null
+    }, [
+        isFetchingNextPage,
+        isSearchPaused,
+        handleSearchOlder,
+        styles.loadingFooter,
+    ])
+
+    const handleFilterPress = useCallback(() => {
+        void handleOpenFilter()
+    }, [handleOpenFilter])
+
     return {
         rows,
         isLoading,
@@ -335,6 +386,9 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
         handleLoadMore,
         handleRefresh,
         isRefreshing,
+        renderItem,
+        renderFooter,
+        handleFilterPress,
         isEmpty,
         networkChainId,
         chainFilterOptions,

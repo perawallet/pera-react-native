@@ -12,7 +12,6 @@
 
 import { describe, it, expect } from 'vitest'
 import { renderHook } from '@testing-library/react'
-import { Decimal } from 'decimal.js'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import { usePaymentTransactionDisplay } from '../usePaymentTransactionDisplay'
 
@@ -28,28 +27,9 @@ describe('usePaymentTransactionDisplay', () => {
         },
     } as unknown as PeraDisplayableTransaction
 
-    it('converts the payment amount to algos as a Decimal', () => {
-        const { result } = renderHook(() =>
-            usePaymentTransactionDisplay(baseTx, 'RECEIVER'),
-        )
-
-        expect(Decimal.isDecimal(result.current.amount)).toBe(true)
-        expect(result.current.amount.toString()).toBe('2.5')
-    })
-
-    it('negates the amount as a Decimal when the sender is the reference address', () => {
-        const { result } = renderHook(() =>
-            usePaymentTransactionDisplay(baseTx, 'SENDER'),
-        )
-
-        expect(Decimal.isDecimal(result.current.amount)).toBe(true)
-        expect(result.current.amount.toString()).toBe('-2.5')
-    })
-
-    it('keeps the Amount as the paid leg only for a close-out', () => {
-        // Explorer semantics: the swept remainder gets its own row
-        // (closeAmountValue) — the Amount row shows only what was paid to
-        // the receiver, so the two rows never double-count.
+    it('keeps the swept remainder out of the paid leg for a close-out', () => {
+        // The swept remainder gets its own row (closeAmountValue), so it never
+        // double-counts with the amount the hero shows.
         const closeOutTx = {
             ...baseTx,
             paymentTransaction: {
@@ -61,17 +41,16 @@ describe('usePaymentTransactionDisplay', () => {
         } as unknown as PeraDisplayableTransaction
 
         const { result } = renderHook(() =>
-            usePaymentTransactionDisplay(closeOutTx, 'SENDER'),
+            usePaymentTransactionDisplay(closeOutTx),
         )
 
-        expect(result.current.amount.toString()).toBe('-1')
         expect(result.current.closeToAddress).toBe('CLOSE_TARGET')
         expect(result.current.closeAmountValue?.toString()).toBe('50854.132929')
     })
 
     it('exposes no close-to address for a plain payment', () => {
         const { result } = renderHook(() =>
-            usePaymentTransactionDisplay(baseTx, 'RECEIVER'),
+            usePaymentTransactionDisplay(baseTx),
         )
 
         expect(result.current.closeToAddress).toBeUndefined()
@@ -90,30 +69,9 @@ describe('usePaymentTransactionDisplay', () => {
         } as unknown as PeraDisplayableTransaction
 
         const { result } = renderHook(() =>
-            usePaymentTransactionDisplay(closeOutTx, 'SENDER'),
+            usePaymentTransactionDisplay(closeOutTx),
         )
 
         expect(result.current.closeAmountValue?.toString()).toBe('50854.132929')
-    })
-
-    it('shows warnings when the transaction has no confirmed round', () => {
-        const unconfirmedTx = {
-            ...baseTx,
-            confirmedRound: undefined,
-        } as unknown as PeraDisplayableTransaction
-
-        const { result } = renderHook(() =>
-            usePaymentTransactionDisplay(unconfirmedTx, 'RECEIVER'),
-        )
-
-        expect(result.current.showWarnings).toBe(true)
-    })
-
-    it('hides warnings when the transaction has a confirmed round', () => {
-        const { result } = renderHook(() =>
-            usePaymentTransactionDisplay(baseTx, 'RECEIVER'),
-        )
-
-        expect(result.current.showWarnings).toBe(false)
     })
 })

@@ -139,7 +139,7 @@ export const useAccountHistoryRows = ({
             (isMerged && scopeByTransactionId.get(transactionId)) || scope,
         [isMerged, scopeByTransactionId, scope],
     )
-    // A failure with nothing to show is the full load-failed state instead.
+    // Every network failing is the full load-failed state instead.
     const failedNetworkNames = useMemo(
         () =>
             isMerged && !merged.isLoadFailed

@@ -15,7 +15,10 @@ import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen } from '@test-utils/render'
 import { useFindAccountByAddress } from '@perawallet/wallet-core-accounts'
 import { useSingleAssetDetailsQuery } from '@perawallet/wallet-core-assets'
-import type { TransactionNative } from '@perawallet/wallet-core-chain-contract'
+import {
+    addressCodecs,
+    type TransactionNative,
+} from '@perawallet/wallet-core-chain-contract'
 import type { SignRequestSource } from '@perawallet/wallet-core-signing'
 import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
@@ -101,6 +104,10 @@ const SIGNER_NAME = 'Fixture Signer'
 const SHORT_RECIPIENT = truncateAlgorandAddress(ETHEREUM_FIXTURE_RECIPIENT)
 const SHORT_TOKEN = truncateAlgorandAddress(ETHEREUM_FIXTURE_TOKEN)
 const COLLAPSED_CALL_DATA = `${ETHEREUM_FIXTURE_CONTRACT_CALL_DATA.slice(0, 74)}...`
+
+// The shared address rows name the transaction's own chain, so its codec truncates them.
+const shortOnEthereum = (address: string) =>
+    addressCodecs.get('ethereum').truncate(address)
 
 const natives = {} as Record<EthereumDisplayFixtureKind, TransactionNative>
 
@@ -303,11 +310,13 @@ describe('Ethereum transaction bodies', () => {
         it('lists a transfer by sender, recipient, amount and max fee', () => {
             render(<TransactionDetailBody transaction={natives.transfer} />)
 
-            expect(textOf('ethereum_detail_from')).toContain(
-                truncateAlgorandAddress(ETHEREUM_FIXTURE_SENDER),
+            expect(textOf('transaction_detail_from')).toContain(
+                shortOnEthereum(ETHEREUM_FIXTURE_SENDER),
             )
-            expect(textOf('ethereum_detail_to')).toContain(SHORT_RECIPIENT)
-            expect(textOf('ethereum_detail_amount')).toMatch(/ETH.*1/)
+            expect(textOf('transaction_detail_to')).toContain(
+                shortOnEthereum(ETHEREUM_FIXTURE_RECIPIENT),
+            )
+            expect(textOf('transaction_detail_amount')).toMatch(/ETH.*1/)
             expect(textOf('ethereum_max_fee')).toContain('0.00042')
             expect(screen.queryByTestId('ethereum_detail_asset')).toBeNull()
         })
@@ -320,7 +329,7 @@ describe('Ethereum transaction bodies', () => {
             )
 
             expect(textOf('ethereum_detail_asset')).toContain('USDC')
-            expect(textOf('ethereum_detail_amount')).toMatch(/USDC.*5/)
+            expect(textOf('transaction_detail_amount')).toMatch(/USDC.*5/)
         })
 
         it('shows an unrecognised call as its warning, selector, collapsed calldata, target and zero value', () => {
@@ -380,14 +389,14 @@ describe('Ethereum transaction bodies', () => {
                 />,
             )
 
-            expect(textOf('ethereum_fee_paid')).toContain('0.000021')
+            expect(textOf('transaction_detail_fee')).toContain('0.000021')
             expect(screen.queryByTestId('ethereum_max_fee')).toBeNull()
         })
 
         it('shows no fee row, and no promise of one, when the history gave none', () => {
             render(<TransactionDetailBody transaction={mined()} />)
 
-            expect(screen.queryByTestId('ethereum_fee_paid')).toBeNull()
+            expect(screen.queryByTestId('transaction_detail_fee')).toBeNull()
             expect(screen.queryByTestId('ethereum_max_fee')).toBeNull()
         })
     })
@@ -491,9 +500,11 @@ describe('Ethereum transaction bodies', () => {
             expect(textOf('ethereum_detail_sender')).toContain(
                 truncateAlgorandAddress(HOLDER),
             )
-            expect(textOf('ethereum_detail_to')).toContain(SHORT_RECIPIENT)
+            expect(textOf('transaction_detail_to')).toContain(
+                shortOnEthereum(ETHEREUM_FIXTURE_RECIPIENT),
+            )
             expect(textOf('ethereum_detail_asset')).toContain('USDC')
-            expect(textOf('ethereum_detail_amount')).toMatch(/USDC.*5/)
+            expect(textOf('transaction_detail_amount')).toMatch(/USDC.*5/)
             expect(
                 screen.queryByTestId('ethereum_contract_call_warning'),
             ).toBeNull()

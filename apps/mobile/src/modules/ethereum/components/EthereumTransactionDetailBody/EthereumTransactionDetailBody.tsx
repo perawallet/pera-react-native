@@ -10,20 +10,10 @@
  limitations under the License
  */
 
-import { useTheme } from '@rneui/themed'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import { PWDivider, PWText, PWView } from '@components/core'
-import { AddressDisplay } from '@components/AddressDisplay'
-import { AssetAmount } from '@components/AssetAmount'
-import { KeyValueRow } from '@components/KeyValueRow'
-import { TransactionIcon } from '@components/TransactionIcon'
-import { useLanguage } from '@hooks/useLanguage'
-import type { DetailBodyProps } from '@modules/signing'
-import { EthereumApprovalDetails } from '../EthereumApprovalDetails'
-import { EthereumContractCallDetails } from '../EthereumContractCallDetails'
-import { EthereumTransferAssetRows } from '../EthereumTransferAssetRows'
-import { useEthereumTransactionPresentation } from '../../hooks/useEthereumTransactionPresentation'
-import { useStyles } from './styles'
+import { TransactionDetailLayout, type DetailBodyProps } from '@modules/signing'
+import { EthereumTransactionDetailSection } from '../EthereumTransactionDetailSection'
+import { useEthereumTransactionDetailBody } from './useEthereumTransactionDetailBody'
 
 export type EthereumTransactionDetailBodyProps = DetailBodyProps & {
     /** The chain the transaction is on; unset, the selected Ethereum scope. */
@@ -34,147 +24,21 @@ export const EthereumTransactionDetailBody = ({
     transaction,
     scope,
 }: EthereumTransactionDetailBodyProps) => {
-    const styles = useStyles()
-    const { theme } = useTheme()
-    const { t } = useLanguage()
-    const presentation = useEthereumTransactionPresentation(transaction, scope)
+    const { presentation, summary } = useEthereumTransactionDetailBody(
+        transaction,
+        scope,
+    )
 
-    if (!presentation) {
+    if (!presentation || !summary) {
         return null
     }
 
-    const {
-        view,
-        titleKey,
-        iconName,
-        counterparty,
-        amount,
-        isAmountLoading,
-        maxFee,
-        feePaid,
-        standardCall,
-        isTransfer,
-    } = presentation
-
-    let callDetails
-    if (standardCall && !isTransfer) {
-        // The approval first, then the raw call it was read from.
-        callDetails = (
-            <>
-                <EthereumApprovalDetails presentation={presentation} />
-                <EthereumContractCallDetails presentation={presentation} />
-            </>
-        )
-    } else if (!isTransfer) {
-        callDetails = (
-            <EthereumContractCallDetails presentation={presentation} />
-        )
-    } else {
-        callDetails = (
-            <>
-                {!!counterparty && (
-                    <KeyValueRow
-                        testID='ethereum_detail_to'
-                        title={t('transactions.common.to')}
-                    >
-                        <AddressDisplay
-                            address={counterparty}
-                            displayType='address-only'
-                        />
-                    </KeyValueRow>
-                )}
-                <EthereumTransferAssetRows
-                    presentation={presentation}
-                    testIDPrefix='ethereum_detail'
-                />
-                {(!!amount || isAmountLoading) && (
-                    <KeyValueRow
-                        testID='ethereum_detail_amount'
-                        title={t('transactions.common.amount')}
-                    >
-                        <AssetAmount
-                            chainId={presentation.scope.chainId}
-                            asset={amount?.asset}
-                            value={amount?.value}
-                            isLoading={isAmountLoading}
-                            showSymbol
-                            ignorePrivacyMode
-                        />
-                    </KeyValueRow>
-                )}
-            </>
-        )
-    }
-
     return (
-        <PWView style={styles.container}>
-            <PWView style={styles.header}>
-                <TransactionIcon
-                    size='md'
-                    name={iconName}
-                />
-                <PWText
-                    style={styles.title}
-                    truncate
-                >
-                    {t(titleKey)}
-                </PWText>
-            </PWView>
-
-            <PWDivider
-                style={styles.divider}
-                color={theme.colors.layerGray}
-            />
-
-            <PWView style={styles.detailContainer}>
-                <KeyValueRow
-                    testID='ethereum_detail_from'
-                    title={t('transactions.common.from')}
-                >
-                    <AddressDisplay
-                        address={view.from}
-                        displayType='address-only'
-                    />
-                </KeyValueRow>
-
-                {callDetails}
-
-                {'isMined' in view ? (
-                    !!feePaid && (
-                        <KeyValueRow
-                            testID='ethereum_fee_paid'
-                            title={t('transactions.common.fee')}
-                        >
-                            <AssetAmount
-                                chainId={presentation.scope.chainId}
-                                asset={feePaid.asset}
-                                value={feePaid.value}
-                                showSymbol
-                                ignorePrivacyMode
-                            />
-                        </KeyValueRow>
-                    )
-                ) : (
-                    <KeyValueRow
-                        testID='ethereum_max_fee'
-                        title={t('send_funds.fee.max_fee')}
-                    >
-                        {maxFee ? (
-                            <AssetAmount
-                                chainId={presentation.scope.chainId}
-                                asset={maxFee.asset}
-                                value={maxFee.value}
-                                showSymbol
-                                ignorePrivacyMode
-                            />
-                        ) : (
-                            <PWText>
-                                {t('ethereum.batch.fee_when_reached')}
-                            </PWText>
-                        )}
-                    </KeyValueRow>
-                )}
-            </PWView>
-        </PWView>
+        <TransactionDetailLayout
+            summary={summary}
+            chainSection={
+                <EthereumTransactionDetailSection presentation={presentation} />
+            }
+        />
     )
 }

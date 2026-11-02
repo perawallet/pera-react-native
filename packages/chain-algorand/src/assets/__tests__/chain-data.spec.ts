@@ -32,4 +32,10 @@ describe('algorand asset chain data', () => {
             creator: { address: 'CREATOR' },
         })
     })
+
+    it('gives an empty creator for EVM asset data', () => {
+        expect(algorandAssetChainData.decode({ family: 'evm' })).toEqual({
+            creator: { address: '' },
+        })
+    })
 })

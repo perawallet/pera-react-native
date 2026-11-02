@@ -10,142 +10,79 @@
  limitations under the License
  */
 
-import { PWDivider, PWText, PWView } from '@components/core'
+import { PWText } from '@components/core'
 import { KeyValueRow } from '@components/KeyValueRow'
-import type { AlgorandTransactionView } from '@perawallet/wallet-core-chain-algorand/blockchain'
-import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
-import { useTheme } from '@rneui/themed'
-import { TransactionHeader } from '../TransactionHeader/TransactionHeader'
-import { TransactionFeeRow } from '../TransactionFeeRow/TransactionFeeRow'
-import { TransactionNoteRow } from '../TransactionNoteRow/TransactionNoteRow'
-import { TransactionWarnings } from '../../TransactionWarnings/TransactionWarnings'
-import { TransactionFooter } from '../TransactionFooter/TransactionFooter'
-import { AddressDisplay } from '@components/AddressDisplay'
-import { useMemo } from 'react'
-import { formatParticipationKey, getKeyRegType } from './utils'
+import { TransactionDetailCard } from '@modules/signing'
+import {
+    useKeyRegistrationDisplay,
+    type KeyRegistrationDisplayProps,
+} from './useKeyRegistrationDisplay'
 
-export type KeyRegistrationDisplayProps = {
-    transaction: AlgorandTransactionView
-    isInnerTransaction?: boolean
-}
+export type { KeyRegistrationDisplayProps }
 
 export const KeyRegistrationDisplay = ({
     transaction,
-    isInnerTransaction = false,
 }: KeyRegistrationDisplayProps) => {
-    const styles = useStyles()
-    const { theme } = useTheme()
     const { t } = useLanguage()
 
-    const keyRegType = useMemo(() => getKeyRegType(transaction), [transaction])
-    const participationKeys = useMemo(
-        () => ({
-            vote: formatParticipationKey(
-                transaction.keyregTransaction?.voteParticipationKey,
-            ),
-            selection: formatParticipationKey(
-                transaction.keyregTransaction?.selectionParticipationKey,
-            ),
-            stateProof: formatParticipationKey(
-                transaction.keyregTransaction?.stateProofKey,
-            ),
-        }),
-        [transaction],
+    const { keyRegType, participationKeys, keyReg } = useKeyRegistrationDisplay(
+        { transaction },
     )
-    const showWarnings = useMemo(() => !transaction.id, [transaction])
-    const keyReg = transaction.keyregTransaction
 
     return (
-        <PWView style={styles.container}>
-            <TransactionHeader
-                transaction={transaction}
-                isInnerTransaction={isInnerTransaction}
-            />
+        <TransactionDetailCard>
+            <KeyValueRow title={t('transactions.key_reg.status')}>
+                <PWText>{t(`transactions.key_reg.${keyRegType}`)}</PWText>
+            </KeyValueRow>
 
-            {showWarnings && <TransactionWarnings transaction={transaction} />}
-
-            <PWDivider
-                style={styles.divider}
-                color={theme.colors.layerGray}
-            />
-
-            <PWView style={styles.detailContainer}>
-                <KeyValueRow title={t('transactions.key_reg.status')}>
-                    <PWText>{t(`transactions.key_reg.${keyRegType}`)}</PWText>
-                </KeyValueRow>
-
-                <KeyValueRow title={t('transactions.common.from')}>
-                    <AddressDisplay address={transaction.sender} />
-                </KeyValueRow>
-
-                {keyRegType === 'online' && keyReg && (
-                    <>
-                        {keyReg.voteFirstValid !== undefined &&
-                            keyReg.voteLastValid !== undefined && (
-                                <KeyValueRow
-                                    title={t(
-                                        'transactions.key_reg.valid_rounds',
-                                    )}
-                                >
-                                    <PWText>
-                                        {keyReg.voteFirstValid.toString()} -{' '}
-                                        {keyReg.voteLastValid.toString()}
-                                    </PWText>
-                                </KeyValueRow>
-                            )}
-
-                        {keyReg.voteKeyDilution !== undefined && (
+            {keyRegType === 'online' && keyReg && (
+                <>
+                    {keyReg.voteFirstValid !== undefined &&
+                        keyReg.voteLastValid !== undefined && (
                             <KeyValueRow
-                                title={t('transactions.key_reg.key_dilution')}
+                                title={t('transactions.key_reg.valid_rounds')}
                             >
                                 <PWText>
-                                    {keyReg.voteKeyDilution.toString()}
+                                    {keyReg.voteFirstValid.toString()} -{' '}
+                                    {keyReg.voteLastValid.toString()}
                                 </PWText>
                             </KeyValueRow>
                         )}
 
-                        {participationKeys.vote !== undefined && (
-                            <KeyValueRow
-                                title={t(
-                                    'transactions.key_reg.participation_key',
-                                )}
-                            >
-                                <PWText>{participationKeys.vote}</PWText>
-                            </KeyValueRow>
-                        )}
+                    {keyReg.voteKeyDilution !== undefined && (
+                        <KeyValueRow
+                            title={t('transactions.key_reg.key_dilution')}
+                        >
+                            <PWText>{keyReg.voteKeyDilution.toString()}</PWText>
+                        </KeyValueRow>
+                    )}
 
-                        {participationKeys.selection !== undefined && (
-                            <KeyValueRow
-                                title={t('transactions.key_reg.selection_key')}
-                            >
-                                <PWText>{participationKeys.selection}</PWText>
-                            </KeyValueRow>
-                        )}
+                    {participationKeys.vote !== undefined && (
+                        <KeyValueRow
+                            title={t('transactions.key_reg.participation_key')}
+                        >
+                            <PWText>{participationKeys.vote}</PWText>
+                        </KeyValueRow>
+                    )}
 
-                        {participationKeys.stateProof !== undefined && (
-                            <KeyValueRow
-                                title={t(
-                                    'transactions.key_reg.state_proof_key',
-                                )}
-                            >
-                                <PWText>{participationKeys.stateProof}</PWText>
-                            </KeyValueRow>
-                        )}
-                    </>
-                )}
+                    {participationKeys.selection !== undefined && (
+                        <KeyValueRow
+                            title={t('transactions.key_reg.selection_key')}
+                        >
+                            <PWText>{participationKeys.selection}</PWText>
+                        </KeyValueRow>
+                    )}
 
-                <TransactionFeeRow transaction={transaction} />
-
-                <TransactionNoteRow transaction={transaction} />
-            </PWView>
-
-            <PWDivider
-                style={styles.divider}
-                color={theme.colors.layerGray}
-            />
-
-            <TransactionFooter transaction={transaction} />
-        </PWView>
+                    {participationKeys.stateProof !== undefined && (
+                        <KeyValueRow
+                            title={t('transactions.key_reg.state_proof_key')}
+                        >
+                            <PWText>{participationKeys.stateProof}</PWText>
+                        </KeyValueRow>
+                    )}
+                </>
+            )}
+        </TransactionDetailCard>
     )
 }

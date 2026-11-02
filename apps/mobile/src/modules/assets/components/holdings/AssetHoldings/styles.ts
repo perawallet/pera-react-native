@@ -24,41 +24,35 @@ export const useStyles = makeStyles(theme => ({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        marginBottom: theme.spacing.md,
+        marginBottom: theme.spacing.sm,
         width: '100%',
         minWidth: 0,
-    },
-    chainLabel: {
-        marginBottom: theme.spacing.sm,
     },
     headerIcons: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: theme.spacing.sm,
+        gap: theme.spacing.md,
         flexShrink: 0,
     },
+    // ChartPeriodSelection adds its own xs on top, for the frame's 8px.
     chartContainer: {
-        gap: theme.spacing.md,
-        marginBottom: theme.spacing.lg,
+        gap: theme.spacing.xs,
+        marginBottom: theme.spacing.sm,
     },
-    secondaryValueContainer: {
+    trendContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: theme.spacing.md,
         minWidth: 0,
     },
-    // Mirrors the account overview's dateDisplay: flexGrow claims the rest of
-    // the row so the scrub date sits hard right, off the value beside it.
     dateDisplay: {
         color: theme.colors.textGray,
-        textAlign: 'right',
-        flexGrow: 1,
     },
-    primaryValueContainer: {
+    tokenAmountContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'space-between',
         minWidth: 0,
+    },
+    tokenAmount: {
+        color: theme.colors.textGray,
     },
 }))

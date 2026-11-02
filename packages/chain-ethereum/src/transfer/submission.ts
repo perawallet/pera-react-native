@@ -374,6 +374,7 @@ export const submitAndRecordEthereumTransactions = async ({
                 historyEntry: entry && { ...entry, ...(fee && { fee }) },
                 rawTransaction: serializedTransaction,
                 replacesAttemptId: replaced?.id,
+                chainData: { family: 'evm' },
             })
         })
         try {

@@ -45,7 +45,7 @@ export const useStyles = makeStyles(theme => {
         headerIcons: {
             flexDirection: 'row',
             alignItems: 'center',
-            gap: theme.spacing.sm,
+            gap: theme.spacing.md,
         },
 
         chartContainer: {

@@ -41,6 +41,13 @@ vi.mock('@modules/transactions/hooks', () => ({
     }),
 }))
 
+vi.mock(
+    '@modules/transactions/components/claim-assets/AssetTransferRequestItem',
+    () => ({
+        AssetTransferRequestItem: () => null,
+    }),
+)
+
 vi.mock('@hooks/useAppNavigation', () => ({
     useAppNavigation: () => ({ push: mockPush }),
 }))

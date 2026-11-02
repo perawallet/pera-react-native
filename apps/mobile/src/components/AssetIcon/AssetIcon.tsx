@@ -10,25 +10,12 @@
  limitations under the License
  */
 
-import {
-    buildPrismUrl,
-    getInitials,
-    type Nullable,
-} from '@perawallet/wallet-core-shared'
+import { type Nullable } from '@perawallet/wallet-core-shared'
 import type { DisplayableAsset } from '@perawallet/wallet-core-assets'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
-import { nativeAssetIconOf } from '@modules/chain-ui/icon'
-import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { SvgProps } from 'react-native-svg'
-import {
-    getIconPixelSize,
-    type PWIconSize,
-    PWImage,
-    PWText,
-    PWView,
-} from '@components/core'
-import { useStyles } from './styles'
-import { useTheme } from '@rneui/themed'
+import { type PWIconSize, PWView } from '@components/core'
+import { useAssetIcon } from './useAssetIcon'
 
 export type AssetIconProps = {
     asset: DisplayableAsset
@@ -53,90 +40,14 @@ export const AssetIcon = (props: AssetIconProps) => {
         shape = 'circle',
         ...rest
     } = props
-    const { theme } = useTheme()
-    const [loadFailed, setLoadFailed] = useState(false)
-
-    const iconSize = getIconPixelSize(theme, size ?? 'md')
-
-    const styles = useStyles({ resolvedSize: iconSize, shape })
-
-    useEffect(() => {
-        setLoadFailed(false)
-    }, [asset.assetId])
-
-    const handleImageError = useCallback(() => {
-        setLoadFailed(true)
-    }, [])
-
-    const resolvedLogoUrl = useMemo(() => {
-        if (logoUrl) return logoUrl
-        const peraLogo =
-            asset.peraMetadata?.logo ??
-            asset.peraMetadata?.collectible?.primaryImage
-        return peraLogo ? buildPrismUrl(peraLogo, iconSize) : null
-    }, [
-        logoUrl,
-        asset.peraMetadata?.logo,
-        asset.peraMetadata?.collectible?.primaryImage,
-        iconSize,
-    ])
-
-    const hasLogo = Boolean(resolvedLogoUrl) && !loadFailed
-
-    const initials = useMemo(() => {
-        return getInitials(asset?.unitName ?? asset?.name ?? '')
-    }, [asset?.unitName, asset?.name])
-
-    const icon = useMemo(() => {
-        if (!asset) return <></>
-        const NativeIcon =
-            chainId === null
-                ? undefined
-                : nativeAssetIconOf({ chainId, assetId: asset.assetId })
-        if (NativeIcon)
-            return (
-                <NativeIcon
-                    {...rest}
-                    style={styles.icon}
-                    width={iconSize}
-                    height={iconSize}
-                />
-            )
-
-        if (hasLogo) {
-            return (
-                <PWImage
-                    resizeMode='contain'
-                    source={{ uri: resolvedLogoUrl! }}
-                    style={styles.imageIcon}
-                    onError={handleImageError}
-                />
-            )
-        }
-        return (
-            <PWView style={styles.defaultAsset}>
-                <PWText
-                    variant='body'
-                    style={styles.initialsText}
-                >
-                    {initials}
-                </PWText>
-            </PWView>
-        )
-    }, [
-        chainId,
+    const { icon, containerStyle } = useAssetIcon({
         asset,
-        rest,
-        iconSize,
-        styles.icon,
-        styles.defaultAsset,
-        styles.imageIcon,
-        styles.initialsText,
-        hasLogo,
-        resolvedLogoUrl,
-        handleImageError,
-        initials,
-    ])
+        chainId,
+        size,
+        logoUrl,
+        shape,
+        svgProps: rest,
+    })
 
     // Hidden from the accessibility tree for the same reason PWIcon is: this
     // renders per row in asset and transaction lists, and TalkBack's node walk
@@ -153,7 +64,7 @@ export const AssetIcon = (props: AssetIconProps) => {
 
     return (
         <PWView
-            style={[style, styles.container]}
+            style={[style, containerStyle]}
             {...decorativeAccessibilityProps}
         >
             {icon}

@@ -122,21 +122,4 @@ describe('useAssetConfigDisplay', () => {
 
         expect(result.current.metadataHash).toBe('test-metadata-hash')
     })
-
-    it('sets showWarnings to true when transaction has no id', () => {
-        const tx = {
-            ...baseTx,
-            id: undefined,
-        } as unknown as PeraDisplayableTransaction
-
-        const { result } = renderHook(() => useAssetConfigDisplay(tx))
-
-        expect(result.current.showWarnings).toBe(true)
-    })
-
-    it('sets showWarnings to false when transaction has id', () => {
-        const { result } = renderHook(() => useAssetConfigDisplay(baseTx))
-
-        expect(result.current.showWarnings).toBe(false)
-    })
 })

@@ -18,6 +18,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { TitledExpandablePanel } from '@components/ExpandablePanel/TitledExpandablePanel'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { CopyableText } from '@components/CopyableText'
+import { hasAdvancedAppCallDetails } from './utils'
 
 export type AppCallDetailsPanelProps = {
     transaction: AlgorandTransactionView
@@ -34,14 +35,7 @@ export const AppCallDetailsPanel = ({
         return null
     }
 
-    const hasAdvancedDetails =
-        !!appCall.applicationArgs?.length ||
-        !!appCall.accounts?.length ||
-        !!appCall.foreignApps?.length ||
-        !!appCall.foreignAssets?.length ||
-        !!appCall.boxReferences?.length
-
-    if (!hasAdvancedDetails) {
+    if (!hasAdvancedAppCallDetails(transaction)) {
         return null
     }
 

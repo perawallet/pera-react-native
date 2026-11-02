@@ -27,7 +27,6 @@ export const useAssetConfigDisplay = (transaction: AlgorandTransactionView) => {
 
     const configType = getAssetConfigType(transaction)
     const assetId = assetConfig?.assetId
-    const showWarnings = !transaction?.id
 
     const supply = useMemo(() => {
         const { amount, unit } = assetConfig?.params?.total
@@ -53,7 +52,6 @@ export const useAssetConfigDisplay = (transaction: AlgorandTransactionView) => {
         assetConfig,
         configType,
         assetId,
-        showWarnings,
         supply,
         metadataHash,
     }

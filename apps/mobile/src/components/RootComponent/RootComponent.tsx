@@ -10,16 +10,11 @@
  limitations under the License
  */
 
-import { useCallback, useEffect, useRef } from 'react'
-import { AppState } from 'react-native'
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet'
 import { OverlayErrorFallback } from './OverlayErrorFallback'
 import { OfflineBanner } from '@components/OfflineBanner'
 import ErrorBoundary from 'react-native-error-boundary'
-import {
-    useAllAccounts,
-    useSyncNewAccounts,
-} from '@perawallet/wallet-core-accounts'
+import { useSyncNewAccounts } from '@perawallet/wallet-core-accounts'
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import { useNeedsMigration } from '@perawallet/wallet-core-migrate'
 import { DeviceRegistrar } from '@components/DeviceRegistrar'
@@ -33,14 +28,9 @@ import {
     MultisigOverlays,
 } from '@modules/multisig/shell'
 import { SwapOverlays } from '@modules/swap/shell'
-import {
-    getAppStatePlatform,
-    getPollingTransitionAction,
-} from '@utils/app-state'
-import { getSyncService } from '@perawallet/wallet-core-background'
 import { useBackupSyncLifecycle } from '@modules/cloud-backup'
-import { config } from '@perawallet/wallet-core-config'
 import { RootContentContainer } from './RootContentContainer'
+import { useRootComponent } from './useRootComponent'
 
 export type RootComponentProps = {
     fcmToken: Nullable<string>
@@ -54,16 +44,8 @@ const handleOverlayError = (error: string | Error) => {
 }
 
 export const RootComponent = ({ fcmToken }: RootComponentProps) => {
-    const accounts = useAllAccounts()
-
-    const appState = useRef(AppState.currentState)
-    const appStatePlatform = useRef(getAppStatePlatform()).current
-
-    // The Zustand `accounts` array gets a new reference on every store write
-    // (incl. sync ticks); depending on it directly re-arms the sync service in a
-    // tight loop, so effects key on a stable scalar instead.
-    const hasAccounts = (accounts?.length ?? 0) > 0
-
+    // Single migration-gate subscription: it feeds this component's own
+    // gates and useRootComponent's sync effect below.
     const { isChecking, needsMigration } = useNeedsMigration()
     const migrationInProgress = isChecking || needsMigration
     useSyncMultisigAccountsOnNetworkSwitch()
@@ -72,65 +54,14 @@ export const RootComponent = ({ fcmToken }: RootComponentProps) => {
     // migration because syncing before the migrated device id lands caches favorites as false.
     useSyncNewAccounts({ isEnabled: !migrationInProgress })
 
-    const runSyncAction = useCallback((action: 'start' | 'stop') => {
-        try {
-            const syncService = getSyncService()
-            if (action === 'start') {
-                syncService.start()
-            } else {
-                syncService.stop()
-            }
-        } catch (error) {
-            logger.error('Sync action failed in RootComponent', {
-                source: 'RootComponent',
-                action,
-                error,
-            })
-        }
-    }, [])
-
     useNetworkSwitchInvalidation()
     useImageMemoryRelease()
 
     useBackupSyncLifecycle()
 
-    useEffect(() => {
-        // Hold the background poll until migration finishes: its initial
-        // full pass would otherwise fetch assets before the migrated device
-        // id is written and cache favorites as false.
-        if (!hasAccounts || migrationInProgress) {
-            runSyncAction('stop')
-            return
-        }
-        if (!config.pollingEnabled) return
-
-        runSyncAction('start')
-
-        const subscription = AppState.addEventListener(
-            'change',
-            nextAppState => {
-                const previousState = appState.current
-                const action = getPollingTransitionAction(
-                    previousState,
-                    nextAppState,
-                    appStatePlatform,
-                )
-
-                if (action === 'start') {
-                    runSyncAction('start')
-                } else if (action === 'stop') {
-                    runSyncAction('stop')
-                }
-
-                appState.current = nextAppState
-            },
-        )
-
-        return () => {
-            runSyncAction('stop')
-            subscription.remove()
-        }
-    }, [appStatePlatform, hasAccounts, migrationInProgress, runSyncAction])
+    // Called where the sync start/stop effect used to sit, after the other
+    // lifecycle hooks, so this refactor doesn't change the startup order.
+    useRootComponent({ migrationInProgress })
 
     return (
         <>
