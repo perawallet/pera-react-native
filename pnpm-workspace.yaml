@@ -23,7 +23,7 @@ catalog:
   "@algorandfoundation/provider-migrations": 1.0.0-canary.1
   "@algorandfoundation/react-native-keystore": 1.0.0-canary.21
   "@algorandfoundation/react-native-passkey-autofill": 1.0.0-canary.29
-  "@algorandfoundation/wallet-provider": 1.0.0-canary.6
+  "@algorandfoundation/wallet-provider": 1.0.0
   "@algorandfoundation/xhd-wallet-api": ^2.0.0-canary.1
   "@lottiefiles/dotlottie-react": 0.20.0
   "@babel/runtime": ^7.29.2
@@ -368,7 +368,7 @@ overrides:
   # While this override stands the catalog entry above is inert — pnpm resolves
   # 'catalog:' through the override, so bumping line 16 alone changes nothing.
   # Move both together, or not at all.
-  '@algorandfoundation/wallet-provider': 1.0.0-canary.6
+  '@algorandfoundation/wallet-provider': 1.0.0
   '@expo/dom-webview': 58.0.2
   # Force the SDK-bundled versions across the tree. Both reach us only
   # transitively with floating ranges that drift past the installed SDK:
