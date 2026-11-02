@@ -11,5 +11,7 @@
  */
 
 export { FeeRow } from './FeeRow'
+export { FeeSummary } from './FeeSummary'
+export type { FeeSummaryProps } from './FeeSummary'
 export { FEE_ROW_TEST_ID } from './types'
 export type { FeeRowProps } from './types'
