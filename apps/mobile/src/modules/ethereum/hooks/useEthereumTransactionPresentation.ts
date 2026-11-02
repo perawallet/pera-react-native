@@ -12,7 +12,11 @@
 
 import { useMemo } from 'react'
 import type { Decimal } from 'decimal.js'
-import { useNativeAsset, type PeraAsset } from '@perawallet/wallet-core-assets'
+import {
+    formatAssetAmount,
+    useNativeAsset,
+    type PeraAsset,
+} from '@perawallet/wallet-core-assets'
 import {
     useFindAccountByAddress,
     type WalletAccount,
@@ -20,6 +24,7 @@ import {
 import {
     i18nKey,
     type ChainScope,
+    type FeePreset,
     type I18nKey,
     type TransactionNative,
 } from '@perawallet/wallet-core-chain-contract'
@@ -45,6 +50,12 @@ import {
 } from './useEthereumStandardCall'
 
 export type { EthereumAmount } from './useEthereumStandardCall'
+
+/** Wei, both amounts: what the review's fee block shows. */
+export type EthereumReviewFee = {
+    maxAmount: Decimal
+    estimate?: { preset: FeePreset; amount: Decimal }
+}
 
 export type EthereumTransactionPresentation = {
     view: EthereumTransactionView
@@ -78,6 +89,13 @@ export type EthereumTransactionPresentation = {
      * batch call not yet reached, which is priced only once it is.
      */
     maxFee: Nullable<EthereumAmount>
+    /** Null on a batch call not yet reached and on a mined transaction. */
+    reviewFee: Nullable<EthereumReviewFee>
+    /**
+     * Set when a dApp's gas limit and fees authorise far more than the wallet's
+     * own pricing would: `maxFee` formatted for the warning. Null otherwise.
+     */
+    highFeeText: Nullable<string>
     /** `view.feePaid` in ether, on a transaction already on chain whose history gave a fee; whoever paid it. */
     feePaid: Nullable<EthereumAmount>
     signingAccount: Nullable<WalletAccount>
@@ -276,6 +294,19 @@ export const useEthereumTransactionPresentation = (
                 standardCallFields(view, standardCall, isStandardCallLoading)),
             value: toEther(view.value),
             maxFee: 'fee' in view ? toEther(view.fee.maxFee) : null,
+            reviewFee:
+                'fee' in view
+                    ? {
+                          maxAmount: view.fee.maxFee,
+                          ...(view.feeEstimate && {
+                              estimate: view.feeEstimate,
+                          }),
+                      }
+                    : null,
+            highFeeText:
+                'fee' in view && view.hasHighFee
+                    ? formatAssetAmount(view.fee.maxFee, nativeAsset)
+                    : null,
             feePaid:
                 'isMined' in view && view.feePaid
                     ? toEther(view.feePaid)

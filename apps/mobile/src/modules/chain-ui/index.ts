@@ -22,4 +22,5 @@ export {
     type UseChainFamilyResult,
 } from './hooks/useChainFamily'
 export { chainUiFor } from './registry'
+export { networkListOf } from './networkList'
 export type { ChainUi, ChainUiOverride } from './types'

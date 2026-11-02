@@ -40,7 +40,13 @@ open the popup.
     pnpm --filter browser exec playwright install chromium
     pnpm --filter browser test:e2e
 
-`bundle:e2e` bakes a localhost fake node (`e2e/fixtures/fake-evm-node.mjs`) as
-every EVM RPC URL, because Playwright cannot route the offscreen document's
-requests. `window-ethereum.spec.ts` fails on a plain `bundle`. Staging and
-production builds refuse the override.
+`bundle:e2e` ships Algorand and Ethereum and bakes a localhost fake node
+(`e2e/fixtures/fake-evm-node.mjs`) as every EVM RPC URL, because Playwright
+cannot route the offscreen document's requests. Staging and production builds
+refuse the override. `window-ethereum.spec.ts` fails on a dist without an EVM
+chain: a plain `bundle`, or a `CHAINS` in the repo-root `.env`, which
+`generate-config.sh` lets override the one `bundle:e2e` sets.
+
+A build without EVM chains is checked by `scripts/build.mjs` instead: it
+carries no viem and no `window.ethereum` provider in `content-inject-main.js`.
+CI builds one as the `no-evm` entry of the extension e2e job.

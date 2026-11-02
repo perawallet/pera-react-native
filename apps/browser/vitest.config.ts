@@ -17,9 +17,9 @@ import path from 'path'
 // The extension owns the web-only platform shims (web-shims/) and their specs.
 // Those specs render through react-native-web exactly as the shipped web bundle
 // does, so `react-native` aliases to react-native-web here too. Scope the run
-// to web-shims/ and src/content/ so vitest never tries to execute the Playwright
-// e2e/ specs (they share the .spec suffix but are driven by @playwright/test,
-// not vitest).
+// so vitest never tries to execute the Playwright e2e/ specs (they share the
+// .spec suffix but are driven by @playwright/test, not vitest); only the e2e
+// fixtures' own specs under e2e/fixtures/__tests__/ are vitest's.
 export default defineConfig({
     plugins: [react()],
     resolve: {
@@ -60,6 +60,7 @@ export default defineConfig({
             'src/content/**/*.spec.{ts,tsx}',
             'src/background/**/*.spec.{ts,tsx}',
             'scripts/**/*.spec.ts',
+            'e2e/fixtures/__tests__/*.spec.ts',
         ],
     },
 })

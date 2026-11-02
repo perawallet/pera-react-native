@@ -37,6 +37,12 @@ const ENABLED: ReadonlySet<ChainCapability> = new Set<ChainCapability>([
     'cloudBackup',
 ])
 
+// Off by default but safe for remote config to switch on: no Algorand-only code,
+// and no Pera endpoint outside config's EVM_PERA_SERVICES. Anything else stays off.
+const SWITCHABLE: readonly ChainCapability[] = ['contractDecoding', 'discover']
+
+const SUPPORTED: readonly ChainCapability[] = [...ENABLED, ...SWITCHABLE]
+
 // Off unless listed, so a capability added later starts off. Every EVM chain
 // starts from this set because they register the same adapters; a row's
 // `capabilities` layers over it.
@@ -48,3 +54,15 @@ export const evmCapabilityDefaultsOf = (row: EvmChainRow): ChainCapabilities =>
     row.capabilities
         ? { ...evmCapabilityDefaults, ...row.capabilities }
         : evmCapabilityDefaults
+
+// A capability a row switches on is supported on that chain alone, so the
+// parity spec asks for its adapter there and on no other EVM chain.
+export const evmSupportedCapabilitiesOf = (
+    row: EvmChainRow,
+): readonly ChainCapability[] => {
+    const rowOnly = CHAIN_CAPABILITIES.filter(
+        capability =>
+            row.capabilities?.[capability] && !SUPPORTED.includes(capability),
+    )
+    return rowOnly.length > 0 ? [...SUPPORTED, ...rowOnly] : SUPPORTED
+}

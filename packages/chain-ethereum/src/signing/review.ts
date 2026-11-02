@@ -50,6 +50,7 @@ import {
 } from '../transfer/nft-transfer'
 import { nftSendSubtitle, sendSummary } from '../transfer/summary'
 import { readEvmReviewTransaction, readEvmTransaction } from './adapter'
+import type { EthereumPayloadFeeEstimate } from './adapter'
 import type { EvmStandardCall } from './standard-call-types'
 import {
     approvalWarningOf,
@@ -185,6 +186,8 @@ type Pricing = {
     maxFeePerGas: bigint
     /** Wei. */
     maxPriorityFeePerGas: bigint
+    hasHighFee?: true
+    feeEstimate?: EthereumPayloadFeeEstimate
 }
 
 type Call = {
@@ -208,10 +211,8 @@ const readCall = (
     chain: EvmChain,
     context?: ReviewContext,
 ): Call => {
-    const { from, transaction, isPreview } = readEvmReviewTransaction(
-        unsigned,
-        chain,
-    )
+    const { from, transaction, isPreview, hasHighFee, feeEstimate } =
+        readEvmReviewTransaction(unsigned, chain)
     if (context && toScopeKey(unsigned.scope) !== toScopeKey(context.scope)) {
         throw new Error(
             `The transaction is for ${toScopeKey(unsigned.scope)}, not ${toScopeKey(context.scope)}`,
@@ -257,6 +258,8 @@ const readCall = (
                 gas: gas as bigint,
                 maxFeePerGas: maxFeePerGas as bigint,
                 maxPriorityFeePerGas,
+                ...(hasHighFee && { hasHighFee }),
+                ...(feeEstimate && { feeEstimate }),
             },
         }),
     }
@@ -265,13 +268,20 @@ const readCall = (
 const pricingOf = (
     call: Call,
 ):
-    | Pick<EthereumPricedView, 'nonce' | 'gas' | 'fee'>
+    | Pick<EthereumPricedView, 'nonce' | 'gas' | 'fee' | 'feeEstimate'>
     | EthereumPreviewView
     | EthereumMinedView => {
     if (call.pricing) {
         return {
             nonce: call.pricing.nonce,
             gas: call.pricing.gas,
+            ...(call.pricing.hasHighFee && { hasHighFee: true as const }),
+            ...(call.pricing.feeEstimate && {
+                feeEstimate: {
+                    preset: call.pricing.feeEstimate.preset,
+                    amount: toDecimal(call.pricing.feeEstimate.amount),
+                },
+            }),
             fee: {
                 maxFeePerGas: toDecimal(call.pricing.maxFeePerGas),
                 maxPriorityFeePerGas: toDecimal(

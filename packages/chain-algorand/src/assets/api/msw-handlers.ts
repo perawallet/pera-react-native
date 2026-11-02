@@ -14,6 +14,7 @@ import { http, HttpResponse, type HttpHandler } from 'msw'
 import type { z } from 'zod'
 import { validateMockResponse } from '@perawallet/wallet-core-shared/test-utils'
 import {
+    assetItemResponseSchema,
     assetResponseSchema,
     assetsResponseSchema,
     indexerAssetResponseSchema,
@@ -100,32 +101,77 @@ export const mockIndexerAssetDetails = ({
     )
 }
 
-export type MockCrossChainAssetGroupsParams = {
+export type MockAssetItem = Omit<
+    z.input<typeof assetItemResponseSchema>,
+    'asset_id' | 'cross_chain_asset_group'
+>
+
+export type MockAssetItemsParams = {
+    /** Each served ASA's item, by ASA id. */
+    items?: Record<string, MockAssetItem>
     /** Each grouped ASA's group, by ASA id; any other id answers null. */
     groups?: Record<string, { id: string; name: string; symbol: string }>
     status?: number
 }
 
+// What v4 answers for an ASA it has no row for; sync skips it.
+const unknownAssetItem = (): MockAssetItem => ({
+    type: null,
+    name: null,
+    unit_name: null,
+    fraction_decimals: null,
+    logo: null,
+    is_verified: false,
+    verification_tier: 'unverified',
+    explorer_url: null,
+    total: null,
+    is_deleted: false,
+    creator: null,
+    collectible: null,
+    category: null,
+    labels: [],
+    is_favorited: false,
+    is_price_alert_enabled: false,
+})
+
 /**
- * The v4 asset item, read only for its group. Answers a request naming
- * Algorand ids alone and falls through otherwise, so an EVM handler on the
- * same path still sees its own.
+ * The v4 asset item. Answers a request naming Algorand ids alone and falls
+ * through otherwise, so an EVM handler on the same path still sees its own.
+ * An id with no item answers as an ASA the backend has no row for.
  */
-export const mockCrossChainAssetGroups = ({
+export const mockAssetItems = ({
+    items = {},
     groups = {},
     status = 200,
-}: MockCrossChainAssetGroupsParams = {}): HttpHandler =>
-    http.post('*/api/v4/assets/', async ({ request }) => {
+}: MockAssetItemsParams = {}): HttpHandler => {
+    for (const item of Object.values(items)) {
+        validateMockResponse(
+            assetItemResponseSchema,
+            { ...item, asset_id: 'algorand:mock/asa:0' },
+            'mockAssetItems',
+        )
+    }
+    return http.post('*/api/v4/assets/', async ({ request }) => {
         const { ids } = (await request.clone().json()) as { ids: string[] }
         if (!ids.every(id => id.startsWith('algorand:'))) return undefined
-        return HttpResponse.json(
-            {
-                results: ids.map(id => ({
+        if (status !== 200) {
+            return HttpResponse.json(
+                {
+                    error: 'No device matches the given query.',
+                    code: 'device_not_found',
+                },
+                { status },
+            )
+        }
+        return HttpResponse.json({
+            results: ids.map(id => {
+                const assetId = id.slice(id.lastIndexOf(':') + 1)
+                return {
+                    ...(items[assetId] ?? unknownAssetItem()),
                     asset_id: id,
-                    cross_chain_asset_group:
-                        groups[id.slice(id.lastIndexOf(':') + 1)] ?? null,
-                })),
-            },
-            { status },
-        )
+                    cross_chain_asset_group: groups[assetId] ?? null,
+                }
+            }),
+        })
     })
+}

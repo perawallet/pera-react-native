@@ -14,7 +14,8 @@ import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 import { PWButton, PWText, PWView } from '@components/core'
 import { AccountWithBalance } from '@components/AccountWithBalance'
-import { AssetAmount } from '@components/AssetAmount'
+import { ChainNotice } from '@components/ChainNotice'
+import { FeeSummary } from '@components/FeeRow'
 import { useLanguage } from '@hooks/useLanguage'
 import { TransactionReviewLayout, type ReviewBodyProps } from '@modules/signing'
 import type { SigningStackParamList } from '@modules/signing/routes'
@@ -41,8 +42,14 @@ export const EthereumTransactionReviewBody = ({
         return null
     }
 
-    const { maxFee, signingAccount, scope, standardCall, isTransfer } =
-        presentation
+    const {
+        reviewFee,
+        highFeeText,
+        signingAccount,
+        scope,
+        standardCall,
+        isTransfer,
+    } = presentation
     const handleViewDetails = () => {
         navigation.navigate('TransactionDetails', { scope, transaction })
     }
@@ -51,7 +58,14 @@ export const EthereumTransactionReviewBody = ({
     if (standardCall && !isTransfer) {
         details = <EthereumApprovalDetails presentation={presentation} />
     } else if (!isTransfer) {
-        details = <EthereumContractCallDetails presentation={presentation} />
+        details = (
+            <EthereumContractCallDetails
+                presentation={presentation}
+                variant='review'
+                source={source}
+                verifiedOrigin={verifiedOrigin}
+            />
+        )
     } else {
         details = (
             <EthereumTransferAssetRows
@@ -90,27 +104,35 @@ export const EthereumTransactionReviewBody = ({
             details={details}
             fee={
                 <PWView>
-                    <PWView
-                        testID='ethereum_max_fee'
-                        style={styles.feeRow}
-                    >
-                        <PWText style={styles.label}>
-                            {t('send_funds.fee.max_fee')}
-                        </PWText>
-                        {maxFee ? (
-                            <AssetAmount
-                                chainId={scope.chainId}
-                                asset={maxFee.asset}
-                                value={maxFee.value}
-                                showSymbol
-                                ignorePrivacyMode
-                            />
-                        ) : (
+                    {highFeeText && (
+                        <ChainNotice
+                            kind='warning'
+                            titleKey='transactions.warning.high_fee_warning'
+                            params={{ fee: highFeeText }}
+                            style={styles.highFeeNotice}
+                            testID='ethereum_high_fee_warning'
+                        />
+                    )}
+                    {reviewFee ? (
+                        <FeeSummary
+                            testID='ethereum_review_fee'
+                            scope={scope}
+                            maxAmount={reviewFee.maxAmount}
+                            estimate={reviewFee.estimate}
+                        />
+                    ) : (
+                        <PWView
+                            testID='ethereum_review_fee'
+                            style={styles.feeRow}
+                        >
+                            <PWText style={styles.label}>
+                                {t('send_funds.fee.max_fee')}
+                            </PWText>
                             <PWText>
                                 {t('ethereum.batch.fee_when_reached')}
                             </PWText>
-                        )}
-                    </PWView>
+                        </PWView>
+                    )}
                     <PWButton
                         testID='ethereum_view_details'
                         variant='linkPositive'

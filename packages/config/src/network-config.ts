@@ -36,8 +36,8 @@ export type AlgorandChainConfig = {
 }
 
 export type EvmChainConfig = {
-    /** Public JSON-RPC endpoint; reads go direct, with no API key. */
-    rpcUrl: string
+    /** JSON-RPC endpoints, main node first; reads go direct to the node, not through the Pera backend. */
+    rpcUrls: readonly string[]
 }
 
 // Indexed by `C extends ChainId`, so a chain id without an entry stops
@@ -256,7 +256,7 @@ const DEPLOYMENT_OF_TIER: Record<NetworkTier, WalletMode> = {
 const evmScopeConfig = (
     chainId: EvmChainId,
     networkId: NetworkId,
-    rpcUrl: string,
+    rpcUrls: readonly string[],
     deployment: WalletMode,
     services: readonly PeraService[],
 ): ScopeConfigOf<EvmChainId> => ({
@@ -264,7 +264,7 @@ const evmScopeConfig = (
     // An empty list drops the deployment too: the query client refuses every
     // Pera request for such a scope, including requests that name no service.
     deployment: services.length > 0 ? deployment : undefined,
-    chain: rpcUrl === '' ? undefined : { rpcUrl },
+    chain: rpcUrls.length === 0 ? undefined : { rpcUrls },
     peraServices: {
         ...EMPTY_PERA_SERVICES,
         backendUrl:
@@ -298,9 +298,9 @@ const EVM_SCOPE_CONFIGS: readonly ScopeConfigOf<EvmChainId>[] =
 const evmEndpoints = (): Record<EvmChainId, ChainEndpoints> => {
     const endpoints = Object.fromEntries(
         EVM_CHAIN_IDS.map(chainId => [chainId, {}]),
-    ) as Record<EvmChainId, Record<NetworkId, string>>
+    ) as Record<EvmChainId, Record<NetworkId, readonly string[]>>
     for (const { scope, chain } of EVM_SCOPE_CONFIGS) {
-        if (chain) endpoints[scope.chainId][scope.networkId] = chain.rpcUrl
+        if (chain) endpoints[scope.chainId][scope.networkId] = chain.rpcUrls
     }
     return endpoints
 }

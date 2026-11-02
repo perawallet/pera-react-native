@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { PWText, PWView } from '@components/core'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { KeyValueRow } from '@components/KeyValueRow'
@@ -22,6 +23,7 @@ type GrantRowsProps = {
     assetText?: string
     contract: string
     isRevocation: boolean
+    scope: ChainScope
 }
 
 export const GrantRows = ({
@@ -30,6 +32,7 @@ export const GrantRows = ({
     assetText,
     contract,
     isRevocation,
+    scope,
 }: GrantRowsProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
@@ -43,6 +46,7 @@ export const GrantRows = ({
                 <AddressDisplay
                     address={spender}
                     displayType='address-only'
+                    scope={scope}
                 />
             </KeyValueRow>
             <KeyValueRow
@@ -54,6 +58,7 @@ export const GrantRows = ({
                     <AddressDisplay
                         address={contract}
                         displayType='address-only'
+                        scope={scope}
                     />
                 </PWView>
             </KeyValueRow>

@@ -91,8 +91,11 @@ const mocks = vi.hoisted(() => ({
             ethereum: { readMs: 15_000, submitMs: 20_000 },
         },
     },
-    chainEndpointsFor: vi.fn((chainId: string): Record<string, string> =>
-        chainId === 'ethereum' ? { mainnet: 'https://mainnet.rpc.test' } : {},
+    chainEndpointsFor: vi.fn(
+        (chainId: string): Record<string, readonly string[]> =>
+            chainId === 'ethereum'
+                ? { mainnet: ['https://mainnet.rpc.test'] }
+                : {},
     ),
     getPeraServicesConfig: vi.fn(),
     peraServicesFor: vi.fn(),
@@ -146,10 +149,13 @@ vi.mock('@perawallet/wallet-core-signing', async importOriginal => ({
 vi.mock('@perawallet/wallet-core-chain-algorand', async () => {
     const descriptorEntry =
         await import('@perawallet/wallet-core-chain-algorand/descriptor')
+    const { CHAIN_CAPABILITIES } =
+        await import('@perawallet/wallet-core-chain-contract')
     return {
         chainModule: {
             descriptor: descriptorEntry.algorandDescriptor,
             capabilityDefaults: descriptorEntry.algorandCapabilityDefaults,
+            supportedCapabilities: CHAIN_CAPABILITIES,
             capabilityRestrictions:
                 descriptorEntry.algorandCapabilityRestrictions,
             register: mocks.registerModule,
@@ -491,7 +497,7 @@ describe('registerChainAdapters', () => {
             const ethereum = contextGivenToEthereum().getEndpoints()
 
             expect(algorand).toEqual({})
-            expect(ethereum).toEqual({ mainnet: 'https://mainnet.rpc.test' })
+            expect(ethereum).toEqual({ mainnet: ['https://mainnet.rpc.test'] })
             expect(mocks.chainEndpointsFor).toHaveBeenCalledWith('ethereum')
         })
 
@@ -510,14 +516,14 @@ describe('registerChainAdapters', () => {
             withOverrides({ ethereum: { mainnet: 'https://my-node.test' } })
 
             expect(ethereum.getEndpoints()).toEqual({
-                mainnet: 'https://my-node.test',
+                mainnet: ['https://my-node.test'],
             })
             expect(algorand.getEndpoints()).toEqual({})
 
             withOverrides({ ethereum: {} })
 
             expect(ethereum.getEndpoints()).toEqual({
-                mainnet: 'https://mainnet.rpc.test',
+                mainnet: ['https://mainnet.rpc.test'],
             })
         })
 

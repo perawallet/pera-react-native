@@ -91,7 +91,7 @@ export const SigningRoutes = () => {
             <Stack.Screen
                 name='SingleTransaction'
                 component={SingleTransactionScreen}
-                options={{ title: 'signing.transactions.title' }}
+                options={{ title: 'signing.transactions.title_one' }}
             />
             <Stack.Screen
                 name='TransactionList'

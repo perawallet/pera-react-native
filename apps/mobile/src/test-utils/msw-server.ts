@@ -18,7 +18,7 @@ import {
     mockAlgodPendingTransaction,
     mockAlgodSimulate,
     mockAlgodStatusAfterBlock,
-    mockCrossChainAssetGroups,
+    mockAssetItems,
 } from '@perawallet/wallet-core-chain-algorand/test-handlers'
 import { mockGetCurrency } from '@perawallet/wallet-core-currencies/test-handlers'
 import { mockNfdBulkRead } from '@perawallet/wallet-core-nfd/test-handlers'
@@ -68,9 +68,9 @@ export const server = setupServer(
     // decline a group already on chain. Unhandled, that is a real node
     // round-trip holding each review sheet back by up to the check's timeout.
     mockAlgodSimulate(),
-    // Every Algorand asset sync reads its batch's cross-chain groups; none
-    // here, so lists stay ungrouped unless a test supplies some.
-    mockCrossChainAssetGroups(),
+    // Every Algorand asset sync reads its batch from the v4 asset item; none
+    // here, so no asset gains metadata or a group unless a test supplies it.
+    mockAssetItems(),
     // Home's change line reads the 24h wealth history whenever the Overview
     // renders; no history here, so no line unless a test supplies some.
     mockAccountsBalanceHistory({ response: { results: [] } }),

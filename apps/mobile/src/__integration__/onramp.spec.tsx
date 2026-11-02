@@ -89,6 +89,7 @@ import {
 } from '@perawallet/wallet-core-onramp/test-handlers'
 import {
     mockAlgodAccountInformation,
+    mockAssetItems,
     mockAlgodStatus,
     mockAlgodTransactionParams,
 } from '@perawallet/wallet-core-chain-algorand/test-handlers'
@@ -524,9 +525,7 @@ const installDelegatedOptInHandlers = ({
         mockAlgodStatus({ response: { 'last-round': 100 } }),
         http.post('*/v2/transactions', sendSpy),
         // Asset metadata lookups (opt-in sheet + post-submit refresh).
-        http.get('*/v1/assets/', () =>
-            HttpResponse.json({ results: [], next: null }, { status: 200 }),
-        ),
+        mockAssetItems(),
         mockRampPairs({
             response: [
                 buildPair({

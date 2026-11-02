@@ -24,18 +24,22 @@ const evmChainConfigKeys = () =>
 
 const evmScopeConfigKeys = () =>
     EVM_CHAIN_IDS.flatMap(chainId =>
-        EVM_NETWORKS[chainId].networks.map(({ id: networkId }) => {
-            const key = `${chainId}${pascalCase(networkId)}`
-            const env = `${envName(chainId)}_${envName(networkId)}`
-            return {
-                chainId,
-                networkId,
-                rpcUrlEnv: `${env}_RPC_URL`,
-                rpcUrlKey: `${key}RpcUrl`,
-                peraServicesEnv: `${env}_PERA_SERVICES`,
-                peraServicesKey: `${key}PeraServices`,
-            }
-        }),
+        EVM_NETWORKS[chainId].networks.map(
+            ({ id: networkId, tier, eip155ChainId }) => {
+                const key = `${chainId}${pascalCase(networkId)}`
+                const env = `${envName(chainId)}_${envName(networkId)}`
+                return {
+                    chainId,
+                    networkId,
+                    tier,
+                    eip155ChainId,
+                    rpcUrlEnv: `${env}_RPC_URL`,
+                    rpcUrlKey: `${key}RpcUrl`,
+                    peraServicesEnv: `${env}_PERA_SERVICES`,
+                    peraServicesKey: `${key}PeraServices`,
+                }
+            },
+        ),
     )
 
 module.exports = { EVM_CHAIN_IDS, evmChainConfigKeys, evmScopeConfigKeys }

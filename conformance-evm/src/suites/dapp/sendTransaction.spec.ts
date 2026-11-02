@@ -10,9 +10,8 @@
  limitations under the License
  */
 
-import { hexToBytes, type Address, type Hex } from 'viem'
+import type { Address, Hex } from 'viem'
 import { describe, expect, it } from 'vitest'
-import { createEvmBroadcasterAdapter } from '@perawallet/wallet-core-chain-ethereum/transfer/broadcaster'
 import {
     buildEthereumSendTransaction,
     validateEthereumSendTransaction,
@@ -81,13 +80,13 @@ const sanityChecked = (raw: Hex) => {
 }
 
 /**
- * Proves the gas a dApp's `eth_sendTransaction` is signed with: the dApp's own
- * figure, kept verbatim even when it is too low, or the node's estimate when
- * the dApp gave none. A mock estimator would agree with any number; only a
- * node's estimate and a mined receipt say whether the call fits.
+ * Proves the gas a dApp's `eth_sendTransaction` is signed with: the larger of
+ * the dApp's figure and the node's estimate padded by a fifth. A mock
+ * estimator would agree with any number; only a node's estimate and a mined
+ * receipt say whether the call fits.
  */
 describe('evm dapp eth_sendTransaction against a node', () => {
-    it("keeps the dApp's gas and lands its approve, setting the allowance", async () => {
+    it("keeps a dApp's gas above the padded estimate and lands its approve, setting the allowance", async () => {
         const { env, owner, token, approveData } = await setUp()
         const gas = 77_777n
 
@@ -120,7 +119,7 @@ describe('evm dapp eth_sendTransaction against a node', () => {
         ).toBe(ALLOWANCE)
     })
 
-    it("uses the node's estimate when the dApp gives no gas", async () => {
+    it("signs the node's estimate padded by a fifth when the dApp gives no gas", async () => {
         const { env, owner, token, approveData } = await setUp()
         // Oracle parity: cast asks the node at the same state the app builds on.
         const estimate = await castEstimate({
@@ -136,7 +135,8 @@ describe('evm dapp eth_sendTransaction against a node', () => {
             dappRequest(owner.address, token, approveData),
         )
         const { transaction } = unsigned.payload as EthereumTransactionPayload
-        expect(transaction.gas).toBe(estimate)
+        const padded = (estimate * 6n) / 5n
+        expect(transaction.gas).toBe(padded)
 
         const raw = await signTransactionWithApp(env, owner, unsigned)
         const { hash } = await broadcastAndConfirm(env, raw)
@@ -148,7 +148,7 @@ describe('evm dapp eth_sendTransaction against a node', () => {
                 nonce: 0,
                 to: token,
                 data: approveData,
-                gas: estimate,
+                gas: padded,
                 // The wallet's own pricing, sanity-bounded.
                 ...sanityChecked(raw),
             },
@@ -160,29 +160,35 @@ describe('evm dapp eth_sendTransaction against a node', () => {
         ).toBe(ALLOWANCE)
     })
 
-    it("signs a dApp's too-low gas verbatim: the node mines it out of gas and the allowance stays unset", async () => {
+    it("raises a dApp's too-low gas to the padded estimate, so the approve lands and sets the allowance", async () => {
         const { env, owner, token, approveData } = await setUp()
-        // Above the intrinsic cost, so the node accepts it; below the first
-        // allowance write's storage cost, so execution runs out.
+        // Above the intrinsic cost, so a node would accept it; below the first
+        // allowance write's storage cost, so signed as given it runs out.
         const gas = 30_000n
+        const estimate = await castEstimate({
+            chain: env.chain,
+            from: owner.address,
+            to: token,
+            data: approveData,
+        })
 
         const unsigned = await buildEthereumSendTransaction(
             env.ctx,
             env.evmChain,
             dappRequest(owner.address, token, approveData, gas),
         )
-        const raw = await signTransactionWithApp(env, owner, unsigned)
-        const [hash] = (await createEvmBroadcasterAdapter(
-            env.ctx,
-            env.evmChain,
-        ).submit(env.scope, [hexToBytes(raw)])) as Hex[]
+        const { transaction } = unsigned.payload as EthereumTransactionPayload
+        expect(transaction.gas).toBe((estimate * 6n) / 5n)
 
-        // Node acceptance: mined, charged, and failed on its receipt.
+        const raw = await signTransactionWithApp(env, owner, unsigned)
+        const { hash } = await broadcastAndConfirm(env, raw)
+
+        // Node acceptance: mined and succeeded, within the limit the app raised it to.
         const receipt = await minedReceipt(env.chain, hash)
-        expect(receipt.status).toBe('0x0')
-        expect(BigInt(receipt.gasUsed)).toBe(gas)
+        expect(receipt.status).toBe('0x1')
+        expect(BigInt(receipt.gasUsed)).toBeLessThanOrEqual(transaction.gas!)
         expect(
             await castAllowanceOf(env.chain, token, owner.address, SPENDER),
-        ).toBe(0n)
+        ).toBe(ALLOWANCE)
     })
 })

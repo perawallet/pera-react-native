@@ -98,6 +98,12 @@ regexes = [
 ]
 
 [[allowlists]]
+description = "EVM addresses (0x + 40 hex) are public account and contract identifiers; a TOKEN-named constant holding one trips generic-api-key. The word boundaries keep 64-hex private keys out of this allowlist"
+regexes = [
+    '''\b0x[0-9a-fA-F]{40}\b''',
+]
+
+[[allowlists]]
 description = "Migration simulator fixtures are synthetic Ed25519 test keys (most prefixes decode to 'migration-simulator-...'); they exist solely to drive the dev-only Migration Simulator and never appear in production paths"
 paths = [
     '''^apps/mobile/migration-(android|ios)/.*fixtures/.*''',

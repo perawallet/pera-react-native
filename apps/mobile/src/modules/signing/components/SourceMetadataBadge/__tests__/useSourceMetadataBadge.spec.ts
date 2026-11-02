@@ -91,6 +91,39 @@ describe('useSourceMetadataBadge — verified-badge gating', () => {
     })
 })
 
+describe('useSourceMetadataBadge — name that repeats the site', () => {
+    beforeEach(() => {
+        stubProjectQuery(verifiedTinyman)
+    })
+
+    it.each([
+        ['the host', 'app.uniswap.org'],
+        ['the url with its scheme', 'https://app.uniswap.org'],
+        ['the host with a trailing slash', 'app.uniswap.org/'],
+        ['the host in another case', 'App.Uniswap.org'],
+    ])('hides a name that is %s, leaving the url once', (_label, name) => {
+        const { result } = renderHook(() =>
+            useSourceMetadataBadge({ name, url: 'https://app.uniswap.org' }),
+        )
+
+        expect(result.current.isNameShown).toBe(false)
+        expect(result.current.displayName).toBe(name)
+        expect(result.current.url).toBe('app.uniswap.org')
+    })
+
+    it('keeps a name that differs from the site', () => {
+        const { result } = renderHook(() =>
+            useSourceMetadataBadge({
+                name: 'Uniswap',
+                url: 'https://app.uniswap.org',
+            }),
+        )
+
+        expect(result.current.displayName).toBe('Uniswap')
+        expect(result.current.isNameShown).toBe(true)
+    })
+})
+
 describe('useSourceMetadataBadge — request chain', () => {
     afterEach(() => {
         vi.mocked(useSigningRequest).mockReturnValue({

@@ -10,7 +10,15 @@
  limitations under the License
  */
 
-import { describe, expect, it, vi } from 'vitest'
+import {
+    afterEach,
+    beforeEach,
+    describe,
+    expect,
+    it,
+    vi,
+    type MockInstance,
+} from 'vitest'
 import { accountsChainAdapters } from '@perawallet/wallet-core-accounts'
 import { assetsChainAdapters } from '@perawallet/wallet-core-assets'
 import { backupChainAdapters } from '@perawallet/wallet-core-backup'
@@ -21,12 +29,15 @@ import {
     createChainRegistry,
     transactionPlanners,
     type ChainDescriptor,
+    type ChainId,
 } from '@perawallet/wallet-core-chain-contract'
 import { customNodeAdapters } from '@perawallet/wallet-core-chain-shared'
 import { dappRequestChainAdapters } from '@perawallet/wallet-core-connections'
 import { multisigChainAdapters } from '@perawallet/wallet-core-multisig'
 import { nameServiceChainAdapters } from '@perawallet/wallet-core-nfd'
 import { rampChainAdapters } from '@perawallet/wallet-core-onramp'
+import { chainOverridesKey } from '@perawallet/wallet-core-remote-config'
+import { logger } from '@perawallet/wallet-core-shared'
 import {
     broadcasterChainAdapters,
     localKeySignerChainAdapters,
@@ -37,6 +48,7 @@ import {
 import { swapChainAdapters } from '@perawallet/wallet-core-swaps'
 import {
     historyChainAdapters,
+    sendFlowChainAdapters,
     transferChainAdapters,
 } from '@perawallet/wallet-core-transactions'
 import { ledgerAppDriverRegistry } from '@perawallet/wallet-extension-hardware-wallet'
@@ -67,6 +79,7 @@ vi.mock('@perawallet/wallet-core-config', async importOriginal => {
 
 const registries: CapabilityAdapterRegistries = {
     transfer: transferChainAdapters,
+    'send flow': sendFlowChainAdapters,
     planner: plannerChainAdapters,
     transactionPlanner: transactionPlanners,
     reviewer: reviewerChainAdapters,
@@ -107,6 +120,8 @@ describe('composition-root capability parity', () => {
                 networks: [],
             } as unknown as ChainDescriptor,
             { ...allCapabilities(false), send: true },
+            undefined,
+            ['send'],
         )
 
         expect(
@@ -124,6 +139,8 @@ describe('composition-root capability parity', () => {
                 networks: [],
             } as unknown as ChainDescriptor,
             { ...allCapabilities(false), nft: true },
+            undefined,
+            ['nft'],
         )
 
         expect(
@@ -132,5 +149,94 @@ describe('composition-root capability parity', () => {
             'chain "fixturehex" enables "nft" but the "accounts" registry has no adapter for it',
             'chain "fixturehex" enables "nft" but the "assets" registry has no adapter for it',
         ])
+    })
+
+    it('fails when a chain enables assetInbox without a send-flow adapter', () => {
+        const fixture = createChainRegistry()
+        fixture.register(
+            {
+                id: FIXTURE_CHAIN_ID,
+                networks: [],
+            } as unknown as ChainDescriptor,
+            { ...allCapabilities(false), assetInbox: true },
+            undefined,
+            ['assetInbox'],
+        )
+
+        expect(
+            capabilityAdapterContractViolations(fixture, registries),
+        ).toEqual([
+            'chain "fixturehex" enables "assetInbox" but the "send flow" registry has no adapter for it',
+        ])
+    })
+})
+
+describe('remote capability overrides on a shipped chain', () => {
+    const UNSUPPORTED_WARNING =
+        'Ignoring overrides for capabilities the chain does not support'
+    let warn: MockInstance<typeof logger.warn>
+    let restoreRemoteConfig: () => void
+
+    beforeEach(() => {
+        warn = vi.spyOn(logger, 'warn').mockImplementation(() => {})
+        const getStringValue = vi.mocked(
+            getProvider().remoteConfig.getStringValue,
+        )
+        const previous = getStringValue.getMockImplementation()
+        restoreRemoteConfig = () =>
+            getStringValue.mockImplementation(
+                previous ??
+                    ((_key: string, fallback?: string) => fallback ?? ''),
+            )
+    })
+
+    afterEach(() => {
+        warn.mockRestore()
+        restoreRemoteConfig()
+    })
+
+    const useRemoteOverrides = (chainId: ChainId, json: string): void => {
+        vi.mocked(getProvider().remoteConfig.getStringValue).mockImplementation(
+            (key: string, fallback?: string) =>
+                key === chainOverridesKey(chainId) ? json : (fallback ?? ''),
+        )
+    }
+
+    it('keeps assetInbox, rekey and staking off on Ethereum when remote config switches them on, warning once', () => {
+        useRemoteOverrides(
+            'ethereum',
+            '{"capabilities":{"assetInbox":true,"rekey":true,"staking":true}}',
+        )
+
+        getProvider().chains.capabilities('ethereum')
+        const capabilities = getProvider().chains.capabilities('ethereum')
+
+        expect(capabilities.assetInbox).toBe(false)
+        expect(capabilities.rekey).toBe(false)
+        expect(capabilities.staking).toBe(false)
+        expect(
+            warn.mock.calls.filter(
+                ([message]) => message === UNSUPPORTED_WARNING,
+            ),
+        ).toEqual([
+            [
+                UNSUPPORTED_WARNING,
+                {
+                    remoteConfigKey: 'chain_ethereum_overrides',
+                    capabilities: ['rekey', 'staking', 'assetInbox'],
+                },
+            ],
+        ])
+    })
+
+    it('lets remote config switch on an Ethereum capability it ships off but supports', () => {
+        useRemoteOverrides(
+            'ethereum',
+            '{"capabilities":{"contractDecoding":true}}',
+        )
+
+        expect(
+            getProvider().chains.capabilities('ethereum').contractDecoding,
+        ).toBe(true)
     })
 })

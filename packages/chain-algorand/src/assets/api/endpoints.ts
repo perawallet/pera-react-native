@@ -12,15 +12,23 @@
 
 import { buildIntegrityHeaders } from '@perawallet/wallet-core-app-integrity'
 import type { AssetGroup } from '@perawallet/wallet-core-assets'
-import { queryClient, type Nullable } from '@perawallet/wallet-core-shared'
+import {
+    logger,
+    PeraServiceUnavailableError,
+    queryClient,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import { algorandDescriptor } from '../../descriptor'
 import { fetchNodeJson } from '../../blockchain/utils/nodeHttp'
 import {
+    assetItemResponseSchema,
+    assetItemsResponseSchema,
     assetResponseSchema,
     assetsResponseSchema,
     crossChainAssetGroupsResponseSchema,
     indexerAssetResponseSchema,
     publicAssetResponseSchema,
+    type AssetItemResponse,
     type AssetResponse,
     type AssetsResponse,
     type PublicAssetResponse,
@@ -66,6 +74,19 @@ export const fetchAssets = async (
     return assetsResponseSchema.parse(response.data)
 }
 
+// Keyed by CAIP-19, valued by ASA id; null when the network has no CAIP-2 id.
+const algorandAssetCaip19Ids = (
+    assetIDs: string[],
+    network: AlgorandNetworkId,
+): Nullable<Map<string, string>> => {
+    const caip2 = algorandDescriptor.networks.find(
+        each => each.id === network,
+    )?.caip2
+    return caip2
+        ? new Map(assetIDs.map(id => [`${caip2}/asa:${id}`, id]))
+        : null
+}
+
 /**
  * Each answered id's cross-chain group, keyed by ASA id; at most 500 ids. An id
  * the answer leaves out is absent, so only that token stays unread. ALGO is
@@ -75,12 +96,9 @@ export const fetchCrossChainAssetGroups = async (
     assetIDs: string[],
     network: AlgorandNetworkId,
 ): Promise<Map<string, Nullable<AssetGroup>>> => {
-    const caip2 = algorandDescriptor.networks.find(
-        each => each.id === network,
-    )?.caip2
-    if (!caip2) throw new Error(`${network} has no CAIP-2 id`)
+    const assetIdOf = algorandAssetCaip19Ids(assetIDs, network)
+    if (!assetIdOf) throw new Error(`${network} has no CAIP-2 id`)
 
-    const assetIdOf = new Map(assetIDs.map(id => [`${caip2}/asa:${id}`, id]))
     const { data } = await queryClient<unknown>({
         backend: 'pera',
         scope: algorandScope(network),
@@ -98,6 +116,59 @@ export const fetchCrossChainAssetGroups = async (
                 : [[assetId, item.cross_chain_asset_group] as const]
         }),
     )
+}
+
+/**
+ * Each answered id's full v4 item, keyed by ASA id; at most 500 ids. ALGO is
+ * `asa:0`. A row this client can't read, or one it didn't ask for, is absent.
+ * Rejects on a failed request, including 404 for an unknown device.
+ */
+export const fetchAssetItems = async (
+    assetIDs: string[],
+    network: AlgorandNetworkId,
+    deviceId?: Nullable<string>,
+): Promise<Map<string, AssetItemResponse>> => {
+    if (assetIDs.length === 0) return new Map()
+    const assetIdOf = algorandAssetCaip19Ids(assetIDs, network)
+    if (!assetIdOf)
+        throw new PeraServiceUnavailableError(algorandScope(network))
+
+    const ids = [...assetIdOf.keys()]
+    const { data } = await queryClient<unknown>({
+        backend: 'pera',
+        scope: algorandScope(network),
+        method: 'POST',
+        url: '/api/v4/assets/',
+        headers: buildIntegrityHeaders(),
+        // A string: device ids are 63-bit, and the endpoint refuses a JSON
+        // number because a JS number rounds them above 2^53.
+        data: deviceId ? { ids, device_id: deviceId } : { ids },
+    })
+    const { results } = assetItemsResponseSchema.parse(data)
+    const items = new Map<string, AssetItemResponse>()
+    const unreadable: { assetId: string; issues: unknown[] }[] = []
+    for (const row of results) {
+        const assetId = assetIdOf.get(row.asset_id)
+        if (assetId === undefined) continue
+        const parsed = assetItemResponseSchema.safeParse(row)
+        if (parsed.success) items.set(assetId, parsed.data)
+        else
+            unreadable.push({
+                assetId: row.asset_id,
+                issues: parsed.error.issues.slice(0, 3),
+            })
+    }
+    // A dropped row stays missing and is asked for again on every sync, so a
+    // contract drift would otherwise show up only as blank asset rows.
+    if (unreadable.length > 0) {
+        logger.warn('Unreadable v4 asset items dropped', {
+            network,
+            dropped: unreadable.length,
+            of: results.length,
+            first: unreadable[0],
+        })
+    }
+    return items
 }
 
 export const fetchAssetDetails = async (

@@ -26,7 +26,7 @@ export type EndpointOverrides = Readonly<Partial<Record<NetworkId, string>>>
 /** Where a chain's node requests go, and whether a developer may repoint them. */
 export interface NodeEndpointAdapter {
     readonly chainId: ChainId
-    /** The URL the network's requests use now, override included; `undefined` when none is configured. */
+    /** The first URL the network's requests use now, override included; `undefined` when none is configured. */
     endpointUrl(networkId: NetworkId): Optional<string>
     /** Present only on chains that accept an override. Never rejects: a failed request resolves `'unreachable'`. */
     checkOverride?(
@@ -39,16 +39,17 @@ export const nodeEndpointAdapters =
     createChainAdapterRegistry<NodeEndpointAdapter>('node endpoint')
 
 // Only keys the chain already configures are replaced, so an override can
-// repoint a network but never add one.
+// repoint a network but never add one. A developer's URL replaces the whole
+// list, fallback included.
 export const withEndpointOverrides = (
     configured: ChainEndpoints,
     overrides: Optional<EndpointOverrides>,
 ): ChainEndpoints => {
     if (!overrides) return configured
     return Object.fromEntries(
-        Object.entries(configured).map(([networkId, url]) => [
-            networkId,
-            overrides[networkId as NetworkId] ?? url,
-        ]),
+        Object.entries(configured).map(([networkId, urls]) => {
+            const override = overrides[networkId as NetworkId]
+            return [networkId, override === undefined ? urls : [override]]
+        }),
     )
 }

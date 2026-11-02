@@ -977,6 +977,7 @@
         }
     },
     "common": {
+        "networks_list": "{{first}} e {{last}}",
         "offline_mode": "Modo offline",
         "offline_mode_description": "Os saldos podem estar desatualizados e algumas ações ficam indisponíveis até você se reconectar.",
         "offline_refresh_body": "Você está offline — isso será atualizado automaticamente quando você voltar a ficar online.",
@@ -1055,8 +1056,7 @@
         "wealth_chart": {
             "empty_body": "Você verá um gráfico aqui quando tiver histórico de saldo",
             "asset_empty_body": "Você verá um gráfico aqui quando tiver histórico de saldo deste ativo nesta conta",
-            "excludes_networks": "Este gráfico ainda não inclui os ativos de {{networks}}",
-            "networks_list": "{{first}} e {{last}}"
+            "excludes_networks": "Este gráfico ainda não inclui os ativos de {{networks}}"
         },
         "webview": {
             "failed_title": "Falha ao carregar a página",
@@ -1097,7 +1097,9 @@
         },
         "add_contact": {
             "duplicate_address_warning": "Já existe um contato para este endereço.",
-            "add": "Adicionar"
+            "add": "Adicionar",
+            "added_title": "Contato adicionado",
+            "added_body": "{{name}} foi adicionado aos seus contatos."
         },
         "view_contact": {
             "no_contact_title": "Nenhum contato encontrado",
@@ -2277,18 +2279,42 @@
         },
         "searching_accounts": {
             "title": "Buscando suas contas",
-            "no_new_addresses_title": "Nenhum novo endereço encontrado",
-            "no_new_addresses_body": "Não encontramos nenhum endereço adicional associado a esta wallet.",
             "rekey_scan_failed_title": "Não foi possível verificar contas com rekey",
             "rekey_scan_failed_body": "Sua conta foi importada. Não foi possível verificar se outras contas têm rekey para ela — você pode escanear novamente em Configurações.",
             "rekey_rescan_failed_body": "Não foi possível verificar se outras contas têm rekey para esta wallet. Busque novamente para tentar outra vez.",
-            "rescan_found_title": "Busca concluída",
-            "rescan_found_body_one": "1 conta foi adicionada ou atualizada.",
-            "rescan_found_body_other": "{{count}} contas foram adicionadas ou atualizadas.",
-            "rescan_partial_title": "Busca incompleta",
-            "rescan_partial_body": "Algumas verificações não puderam ser concluídas. As contas encontradas até agora foram adicionadas. Busque novamente para encontrar o restante.",
             "rescan_failed_title": "Não foi possível buscar contas",
-            "rescan_failed_body": "Verifique sua conexão e tente novamente."
+            "rescan_failed_body": "Verifique sua conexão e tente novamente.",
+            "cancel": "Cancelar",
+            "network_checking": "Verificando",
+            "network_failed": "Não verificada",
+            "checked_accounts_one": "{{count}} conta verificada",
+            "checked_accounts_other": "{{count}} contas verificadas",
+            "new_found_one": "{{count}} conta nova encontrada",
+            "new_found_other": "{{count}} contas novas encontradas"
+        },
+        "scan_accounts_result": {
+            "found_title_one": "{{count}} conta nova encontrada",
+            "found_title_other": "{{count}} contas novas encontradas",
+            "found_body_one": "Ela foi adicionada à sua wallet.",
+            "found_body_other": "Elas foram adicionadas à sua wallet.",
+            "none_title": "Nenhuma conta nova encontrada",
+            "none_body": "Não encontramos outras contas associadas a esta wallet.",
+            "failed_networks_body": "Não foi possível verificar: {{networks}}. As contas encontradas em outras redes foram adicionadas.",
+            "failed_networks_none_body": "Não foi possível verificar: {{networks}}. Nada de novo foi encontrado nas outras redes.",
+            "incomplete_body": "Algumas verificações não puderam ser concluídas. As contas encontradas até agora foram adicionadas. Busque novamente para encontrar o restante.",
+            "cancelled_title": "Busca interrompida",
+            "cancelled_body": "As contas encontradas antes da interrupção foram adicionadas.",
+            "cancelled_none_body": "Nada de novo foi encontrado antes da interrupção.",
+            "retry_networks": "Verificar novamente: {{networks}}",
+            "scan_again": "Buscar novamente",
+            "done": "Concluir",
+            "incomplete_title": "Busca incompleta",
+            "updated_title_one": "Novas redes em {{count}} conta",
+            "updated_title_other": "Novas redes em {{count}} contas",
+            "updated_body_one": "Encontramos atividade em outras redes e as ativamos para esta conta.",
+            "updated_body_other": "Encontramos atividade em outras redes e as ativamos para estas contas.",
+            "updated_note_one": "Novas redes também foram ativadas em {{count}} conta existente.",
+            "updated_note_other": "Novas redes também foram ativadas em {{count}} contas existentes."
         },
         "create_account": {
             "processing": "Configurando sua wallet...",
@@ -3585,7 +3611,10 @@
         "contract_call": {
             "warning": "Não foi possível identificar o que esta chamada de contrato faz.",
             "function_selector": "Seletor de função",
-            "call_data": "Dados da chamada"
+            "call_data": "Dados da chamada",
+            "advanced": "Avançado",
+            "unchecked_warning": "O Pera não conseguiu verificar o que esta transação faz. Continue só se você confiar em {{domain}}.",
+            "unchecked_warning_no_source": "O Pera não conseguiu verificar o que esta transação faz. Continue só se você confiar no app que a enviou."
         },
         "type": {
             "pay": "Transação de pagamento",

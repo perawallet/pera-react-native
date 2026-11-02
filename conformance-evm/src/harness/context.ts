@@ -102,7 +102,7 @@ export const createEvmnetChainContext = (
     kms: ChainKeyStore,
 ): ChainContext => ({
     getScope: () => evmnetScope(chain),
-    getEndpoints: () => ({ [EVMNET[chain].networkId]: EVMNET[chain].rpcUrl }),
+    getEndpoints: () => ({ [EVMNET[chain].networkId]: [EVMNET[chain].rpcUrl] }),
     getPeraBackend: () => ({ baseUrl: '', services: new Set() }),
     timeouts: TIMEOUTS,
     kms,

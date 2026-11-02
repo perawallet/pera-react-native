@@ -75,7 +75,7 @@ vi.mock('@perawallet/wallet-core-config', async importOriginal => {
                 ? Object.fromEntries(
                       networks.ethereum.networks.map(({ id }) => [
                           id,
-                          'https://ethereum.rpc.test/',
+                          ['https://ethereum.rpc.test/'],
                       ]),
                   )
                 : actual.chainEndpointsFor(chainId),

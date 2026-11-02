@@ -25,6 +25,7 @@
     "@perawallet/wallet-core-assets": "workspace:*",
     "@perawallet/wallet-core-chain-contract": "workspace:*",
     "@perawallet/wallet-core-chain-shared": "workspace:*",
+    "@perawallet/wallet-core-config": "workspace:*",
     "@perawallet/wallet-core-connections": "workspace:*",
     "@perawallet/wallet-core-database": "workspace:*",
     "@perawallet/wallet-core-deeplinks": "workspace:*",
@@ -42,7 +43,6 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@perawallet/wallet-core-config": "workspace:*",
     "@perawallet/wallet-core-devtools": "workspace:*",
     "@types/node": "catalog:",
     "msw": "catalog:",

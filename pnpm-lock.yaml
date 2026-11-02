@@ -2727,6 +2727,9 @@ importers:
       '@perawallet/wallet-core-chain-shared':
         specifier: workspace:*
         version: link:../chain-shared
+      '@perawallet/wallet-core-config':
+        specifier: workspace:*
+        version: link:../config
       '@perawallet/wallet-core-connections':
         specifier: workspace:*
         version: link:../connections
@@ -2773,9 +2776,6 @@ importers:
         specifier: 'catalog:'
         version: 4.6.7
     devDependencies:
-      '@perawallet/wallet-core-config':
-        specifier: workspace:*
-        version: link:../config
       '@perawallet/wallet-core-devtools':
         specifier: workspace:*
         version: link:../devtools

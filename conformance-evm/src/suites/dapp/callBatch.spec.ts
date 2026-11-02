@@ -69,11 +69,7 @@ import {
 import { anvilRpc, EVMNET, txpoolCounts } from '../../harness/evmnet'
 import { withSeverableRpc } from '../../harness/rpcProxy'
 import { signedTransactionWithApp } from '../../harness/sign'
-import {
-    feesOf,
-    REVERTING_CALL_GAS,
-    transactionOf,
-} from '../submission/support'
+import { feesOf, transactionOf } from '../submission/support'
 
 const SPENDER: Address = '0x90F79bf6EB2c4f870365E785982E1f101E93b906'
 const RECIPIENT: Address = '0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC'
@@ -514,62 +510,6 @@ describe('evm dapp wallet_sendCalls against a node', () => {
             ).toBe(ALLOWANCE)
             expect(await castBalanceOf(env.chain, token, RECIPIENT)).toBe(0n)
         })
-
-        it('with explicit gas is mined and reverts: the batch stops there and the third call is never sent', async () => {
-            const setup = await setUp()
-            const { env, owner, token } = setup
-            const calls = await revertingBatch(setup)
-            // Not reachable through validation, which drops a call's gas; the
-            // executor still carries one, and this is the only way its
-            // reverted-receipt branch meets a real revert.
-            const request: EthereumCallBatchRequest = {
-                from: owner.address,
-                calls: calls.map((call, index) => ({
-                    from: owner.address,
-                    to: call.to,
-                    value: 0n,
-                    data: call.data,
-                    ...(index === 1 && { gas: REVERTING_CALL_GAS }),
-                })),
-            }
-
-            const { prepared, raws, positions } = await startBatch(
-                setup,
-                request,
-            )
-            const batch = await settledBatch(
-                env,
-                prepared.batchId,
-                owner.address,
-            )
-
-            expect(batch).toMatchObject({ outcome: 'reverted', position: 1 })
-            expect(batch.txIds).toHaveLength(2)
-            expect(positions).toEqual([[1]])
-            expect(transactionOf(raws[1]).gas).toBe(REVERTING_CALL_GAS)
-            const reverted = await nodeTransactionOf(env, batch.txIds[1])
-            expect(BigInt(reverted.nonce)).toBe(1n)
-            expect(reverted.input).toBe(calls[1].data)
-
-            const status = await readEthereumCallsStatus(
-                env.ctx,
-                env.evmChain,
-                batch,
-            )
-            expect(status.status).toBe(600)
-            expect(
-                status.receipts.map(receipt => receipt.transactionHash),
-            ).toEqual(batch.txIds)
-            expect(status.receipts.map(receipt => receipt.status)).toEqual([
-                '0x1',
-                '0x0',
-            ])
-            await expectNothingSentPast(env, owner.address, 2)
-            expect(
-                await castAllowanceOf(env.chain, token, owner.address, SPENDER),
-            ).toBe(ALLOWANCE)
-            expect(await castBalanceOf(env.chain, token, RECIPIENT)).toBe(0n)
-        })
     })
 
     it('refuses a later call whose re-priced fee exceeds the reviewed ceiling, sending nothing after it', async () => {
@@ -672,7 +612,7 @@ describe('evm dapp wallet_sendCalls against a node', () => {
         const proxy = await withSeverableRpc(env.chain)
         const lostCtx: ChainContext = {
             ...env.ctx,
-            getEndpoints: () => ({ [env.scope.networkId]: proxy.url }),
+            getEndpoints: () => ({ [env.scope.networkId]: [proxy.url] }),
         }
 
         try {

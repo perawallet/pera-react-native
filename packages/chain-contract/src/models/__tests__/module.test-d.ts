@@ -13,6 +13,7 @@
 import { assertType, describe, expectTypeOf, it } from 'vitest'
 import type {
     ChainCapabilities,
+    ChainCapability,
     ChainContext,
     ChainDescriptor,
     ChainModule,
@@ -20,6 +21,7 @@ import type {
 
 declare const descriptor: ChainDescriptor
 declare const capabilityDefaults: ChainCapabilities
+declare const supportedCapabilities: readonly ChainCapability[]
 
 const register = (_ctx: ChainContext): void => undefined
 
@@ -28,6 +30,7 @@ describe('ChainModule', () => {
         assertType<ChainModule>({
             descriptor,
             capabilityDefaults,
+            supportedCapabilities,
             register,
         })
     })
@@ -36,12 +39,14 @@ describe('ChainModule', () => {
         assertType<ChainModule>({
             descriptor,
             capabilityDefaults,
+            supportedCapabilities,
             capabilityRestrictions: { onramp: ['developer-override'] },
             register,
         })
         assertType<ChainModule>({
             descriptor,
             capabilityDefaults,
+            supportedCapabilities,
             // @ts-expect-error live can't be restricted
             capabilityRestrictions: { onramp: ['live'] },
             register,
@@ -50,17 +55,34 @@ describe('ChainModule', () => {
 
     it('rejects a module without capabilityDefaults', () => {
         // @ts-expect-error capabilityDefaults is required
-        assertType<ChainModule>({ descriptor, register })
+        assertType<ChainModule>({
+            descriptor,
+            supportedCapabilities,
+            register,
+        })
     })
 
     it('rejects a module without register', () => {
         // @ts-expect-error register is required
-        assertType<ChainModule>({ descriptor, capabilityDefaults })
+        assertType<ChainModule>({
+            descriptor,
+            capabilityDefaults,
+            supportedCapabilities,
+        })
+    })
+
+    it('rejects a module without supportedCapabilities', () => {
+        // @ts-expect-error supportedCapabilities is required
+        assertType<ChainModule>({ descriptor, capabilityDefaults, register })
     })
 
     it('rejects a module without descriptor', () => {
         // @ts-expect-error descriptor is required
-        assertType<ChainModule>({ capabilityDefaults, register })
+        assertType<ChainModule>({
+            capabilityDefaults,
+            supportedCapabilities,
+            register,
+        })
     })
 
     it('passes a ChainContext to register', () => {

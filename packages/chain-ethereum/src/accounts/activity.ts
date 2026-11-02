@@ -18,6 +18,8 @@ import type {
 import type { AccountsChainAdapter } from '@perawallet/wallet-core-accounts'
 import {
     createConcurrencyLimit,
+    isChainRefusedError,
+    logger,
     type ConcurrencyLimit,
     type Optional,
 } from '@perawallet/wallet-core-shared'
@@ -100,7 +102,8 @@ const readTokenHoldings = async (
  *
  * A read that fails never reads as `true` or `false`: its address is left out
  * of the map unless another source already found it used. The batch rejects
- * only when no address got an answer.
+ * when no address got an answer, or with the backend's refusal when it has
+ * the chain switched off.
  */
 export const createEvmActivityCheck =
     (
@@ -190,6 +193,11 @@ export const createEvmActivityCheck =
             }
         }
 
+        // The backend switched this chain off: no rerun can answer for it,
+        // so the walk is told the chain is refused rather than unanswered.
+        const refusal = errors.find(isChainRefusedError)
+        if (refusal) throw refusal
+
         const active = new Map<string, boolean>()
         addresses.forEach((address, index) => {
             const given = answers[index]!
@@ -198,6 +206,13 @@ export const createEvmActivityCheck =
         })
         if (addresses.length > 0 && active.size === 0) {
             throw errors[0] ?? new Error('No address could be checked')
+        }
+        if (active.size < addresses.length) {
+            logger.warn('EVM activity check left addresses unanswered', {
+                chainId: scope.chainId,
+                unanswered: addresses.length - active.size,
+                error: errors[0],
+            })
         }
         return active
     }

@@ -22,7 +22,7 @@ import {
 } from '../models/capabilities'
 import type { ChainId } from '../models/identity'
 
-type Rule = 'default' | 'adapter'
+type Rule = 'default' | 'support' | 'adapter'
 
 type Violation = { rule: Rule; message: string }
 
@@ -50,7 +50,15 @@ const collectViolations = (
                 continue
             }
 
-            if (!capabilities[capability]) {
+            const isEnabled = capabilities[capability]
+            const isSupported = chains.supports(chainId, capability)
+            if (isEnabled && !isSupported) {
+                violations.push({
+                    rule: 'support',
+                    message: `chain "${chainId}" enables "${capability}" but does not list it as supported`,
+                })
+            }
+            if (!isEnabled && !isSupported) {
                 continue
             }
 
@@ -63,7 +71,7 @@ const collectViolations = (
                 if (!registries[registryName].has(chainId)) {
                     violations.push({
                         rule: 'adapter',
-                        message: `chain "${chainId}" enables "${capability}" but the "${registryName}" registry has no adapter for it`,
+                        message: `chain "${chainId}" ${isEnabled ? 'enables' : 'supports'} "${capability}" but the "${registryName}" registry has no adapter for it`,
                     })
                 }
             }
@@ -100,7 +108,11 @@ export const capabilityAdapterContractTests = (
             expect(messagesFor(chains, registries, 'default')).toEqual([])
         })
 
-        it('registers a feature adapter for every capability a chain enables', () => {
+        it('lists every capability a chain enables as supported', () => {
+            expect(messagesFor(chains, registries, 'support')).toEqual([])
+        })
+
+        it('registers a feature adapter for every capability a chain supports', () => {
             expect(messagesFor(chains, registries, 'adapter')).toEqual([])
         })
     })

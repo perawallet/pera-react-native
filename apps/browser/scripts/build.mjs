@@ -25,7 +25,11 @@ import { createRequire } from 'node:module'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { build } from 'esbuild'
-import { assertNoViem, listsEvmChain } from './bundle-content.mjs'
+import {
+    assertEvmProviderMatchesChains,
+    assertNoViem,
+    listsEvmChain,
+} from './bundle-content.mjs'
 import { assertExtensionPagesCsp, buildExtensionPagesCsp } from './csp.mjs'
 import {
     findMissingAssetReferences,
@@ -369,6 +373,11 @@ for (const [entry, outfile] of [
         },
     })
 }
+assertEvmProviderMatchesChains(
+    readFileSync(path.join(dist, 'content-inject-main.js'), 'utf8'),
+    servesEvm,
+    'content-inject-main.js',
+)
 
 // 3. Surface HTMLs: one exported bundle, per-surface flag injected via an
 //    EXTERNAL script — MV3 CSP (script-src 'self') forbids inline scripts.

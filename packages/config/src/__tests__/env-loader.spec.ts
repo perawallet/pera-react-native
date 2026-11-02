@@ -26,7 +26,7 @@ const unconfiguredEvmScopes = Object.fromEntries(
         EVM_CHAIN_NETWORKS[chainId].networks.flatMap(network => {
             const keys = evmConfigKeys(chainId, network.id)
             return [
-                [keys.rpcUrl, ''],
+                [keys.rpcUrl, []],
                 [keys.peraServices, []],
             ]
         }),

@@ -41,6 +41,7 @@ const fakeRegistry = (registered: boolean) => ({
 
 const registries = (registered: boolean): CapabilityAdapterRegistries => ({
     transfer: fakeRegistry(registered),
+    'send flow': fakeRegistry(registered),
     planner: fakeRegistry(registered),
     transactionPlanner: fakeRegistry(registered),
     reviewer: fakeRegistry(registered),
@@ -89,10 +90,12 @@ describe('capabilityAdapterContractViolations', () => {
 
     it('names every registry an enabled capability is missing', () => {
         const chains = createChainRegistry()
-        chains.register(descriptor('algorand'), {
-            ...allFalse(),
-            send: true,
-        })
+        chains.register(
+            descriptor('algorand'),
+            { ...allFalse(), send: true },
+            undefined,
+            ['send'],
+        )
 
         expect(
             capabilityAdapterContractViolations(chains, registries(false)),
@@ -118,9 +121,43 @@ describe('capabilityAdapterContractViolations', () => {
         ])
     })
 
-    it('does not require an adapter for a capability that is off', () => {
+    it('requires the adapters of a capability that is off but supported', () => {
         const chains = createChainRegistry()
-        chains.register(descriptor('algorand'), { ...allTrue(), swap: false })
+        chains.register(descriptor('algorand'), allFalse(), undefined, [
+            'assetInbox',
+        ])
+
+        expect(
+            capabilityAdapterContractViolations(chains, registries(false)),
+        ).toEqual([
+            'chain "algorand" supports "assetInbox" but the "send flow" registry has no adapter for it',
+        ])
+    })
+
+    it('names a capability a chain enables without supporting it', () => {
+        const chains = createChainRegistry()
+        chains.register(
+            descriptor('algorand'),
+            { ...allFalse(), staking: true },
+            undefined,
+            [],
+        )
+
+        expect(
+            capabilityAdapterContractViolations(chains, registries(true)),
+        ).toEqual([
+            'chain "algorand" enables "staking" but does not list it as supported',
+        ])
+    })
+
+    it('does not require an adapter for a capability that is off and unsupported', () => {
+        const chains = createChainRegistry()
+        chains.register(
+            descriptor('algorand'),
+            { ...allTrue(), swap: false },
+            undefined,
+            CHAIN_CAPABILITIES.filter(capability => capability !== 'swap'),
+        )
 
         const violations = capabilityAdapterContractViolations(
             chains,

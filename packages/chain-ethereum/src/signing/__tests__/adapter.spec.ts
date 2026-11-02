@@ -21,7 +21,7 @@ import {
 import { SIGNING_ACCESS_DOMAIN } from '@perawallet/wallet-core-kms/constants'
 import { UnknownEvmNetworkError } from '../../blockchain/utils/caip19'
 import { transactionDigest } from '../digests'
-import { createEvmPlannerAdapter } from '../adapter'
+import { createEvmPlannerAdapter, readEvmReviewTransaction } from '../adapter'
 import { BASE, ETHEREUM } from '../../__tests__/evm-chains'
 
 const ethereumPlannerAdapter = createEvmPlannerAdapter(ETHEREUM)
@@ -206,6 +206,10 @@ describe('ethereumPlannerAdapter', () => {
             'a legacy transaction',
             { from: SENDER, transaction: { ...TRANSFER, type: 'legacy' } },
         ],
+        [
+            'a high-fee flag that is not true',
+            { from: SENDER, transaction: TRANSFER, hasHighFee: 'yes' },
+        ],
     ])('refuses %s', (_label, payload) => {
         const input = unsigned(TRANSFER, { payload })
 
@@ -278,5 +282,44 @@ describe('the Base planner', () => {
         expect(() => base.plan(unsigned(TRANSFER))).toThrow(
             'Not a transaction for Base: ethereum/evm',
         )
+    })
+})
+
+describe('readEvmReviewTransaction fee estimate', () => {
+    const withEstimate = (feeEstimate: unknown) =>
+        unsigned(TRANSFER, {
+            payload: { from: SENDER, transaction: TRANSFER, feeEstimate },
+        })
+
+    it('passes a valid estimate through', () => {
+        const read = readEvmReviewTransaction(
+            withEstimate({ preset: 'fast', amount: 63_000n }),
+            ETHEREUM,
+        )
+
+        expect(read.feeEstimate).toEqual({ preset: 'fast', amount: 63_000n })
+    })
+
+    it('reads a payload without one as before', () => {
+        const read = readEvmReviewTransaction(unsigned(TRANSFER), ETHEREUM)
+
+        expect(read).not.toHaveProperty('feeEstimate')
+    })
+
+    it.each([
+        ['an unknown preset', { preset: 'turbo', amount: 1n }],
+        ['a non-bigint amount', { preset: 'normal', amount: 1 }],
+        ['no amount', { preset: 'normal' }],
+        ['a non-object', 'cheap'],
+    ])('refuses %s', (_label, feeEstimate) => {
+        expect(() =>
+            readEvmReviewTransaction(withEstimate(feeEstimate), ETHEREUM),
+        ).toThrow('The EVM transaction payload is malformed')
+    })
+
+    it('signs the same bytes with or without the estimate', () => {
+        const priced = withEstimate({ preset: 'fast', amount: 63_000n })
+
+        expect(plan(priced)).toEqual(plan(unsigned(TRANSFER)))
     })
 })

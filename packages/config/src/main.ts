@@ -54,7 +54,12 @@ const evmPeraServicesSchema = z.preprocess(
     z.array(z.enum(EVM_PERA_SERVICES)),
 )
 
-const optionalUrlSchema = z.url().or(z.literal(''))
+// The build bakes the list as one comma string: the main node, then at most one
+// public fallback. Empty means the build ships no endpoint for the network.
+const evmRpcUrlsSchema = z.preprocess(
+    value => (typeof value === 'string' ? csv(value) : value),
+    z.array(z.url()).max(2),
+)
 
 export type EvmRpcUrlConfigKey = `${EvmChainId}${string}RpcUrl`
 export type EvmPeraServicesConfigKey = `${EvmChainId}${string}PeraServices`
@@ -99,15 +104,16 @@ const EVM_SCOPE_CONFIG_KEYS: readonly EvmConfigKeys[] = EVM_CHAIN_IDS.flatMap(
         ),
 )
 
-// Public JSON-RPC endpoints, no third-party API key. Empty in builds that
+// JSON-RPC endpoints: the main node, which may carry its provider's API key in
+// its URL, then a public fallback. Empty in builds that
 // don't ship the chain; generate-config.sh refuses a build whose CHAINS lists
 // a chain without every one of its networks' URLs.
 const evmConfigShape = Object.fromEntries(
     EVM_SCOPE_CONFIG_KEYS.flatMap(keys => [
-        [keys.rpcUrl, optionalUrlSchema],
+        [keys.rpcUrl, evmRpcUrlsSchema],
         [keys.peraServices, evmPeraServicesSchema],
     ]),
-) as Record<EvmRpcUrlConfigKey, typeof optionalUrlSchema> &
+) as Record<EvmRpcUrlConfigKey, typeof evmRpcUrlsSchema> &
     Record<EvmPeraServicesConfigKey, typeof evmPeraServicesSchema>
 
 const chainSetupSchema = z.object({
@@ -362,22 +368,19 @@ export const configSchema = z
 // zod drops the generated EVM fields from its inferred type: their keys are
 // template patterns, which only a mapped type keeps.
 type EvmScopeConfigFields = {
-    [Field in EvmRpcUrlConfigKey]: string
+    [Field in EvmRpcUrlConfigKey]: string[]
 } & {
     [Field in EvmPeraServicesConfigKey]: (typeof EVM_PERA_SERVICES)[number][]
 }
 
 export type Config = z.infer<typeof configSchema> & EvmScopeConfigFields
 
-type PeraServicesListField = EvmPeraServicesConfigKey
+type ListField = EvmPeraServicesConfigKey | EvmRpcUrlConfigKey
 
 // generate-config.sh bakes the list fields as flat strings the schema splits.
 type ConfigOverrides = Partial<
-    Omit<
-        Config,
-        'discoverBaseUrl' | 'integrityCheckOrigin' | PeraServicesListField
-    > & {
-        [Field in PeraServicesListField]: Config[Field] | string
+    Omit<Config, 'discoverBaseUrl' | 'integrityCheckOrigin' | ListField> & {
+        [Field in ListField]: Config[Field] | string
     }
 >
 
@@ -450,10 +453,10 @@ const productionConfig: Omit<
     reownProjectId: '',
     ...(Object.fromEntries(
         EVM_SCOPE_CONFIG_KEYS.flatMap(keys => [
-            [keys.rpcUrl, ''],
+            [keys.rpcUrl, []],
             [keys.peraServices, []],
         ]),
-    ) as Record<EvmRpcUrlConfigKey, string> &
+    ) as Record<EvmRpcUrlConfigKey, string[]> &
         Record<EvmPeraServicesConfigKey, (typeof EVM_PERA_SERVICES)[number][]>),
 
     mainnetExplorerUrl: 'https://explorer.perawallet.app',

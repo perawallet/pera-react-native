@@ -69,7 +69,12 @@ describe('evm dapp sendTransaction validation', () => {
 
             expect(result).toEqual({
                 ok: true,
-                request: { from: held, to: RECIPIENT, value: 1n, data: '0x' },
+                request: {
+                    from: held,
+                    to: RECIPIENT,
+                    value: 1n,
+                    data: '0x',
+                },
             })
         })
 
@@ -214,7 +219,7 @@ describe('evm dapp sendTransaction validation', () => {
             }
         })
 
-        it('ignores the nonce and fees a dApp supplies', () => {
+        it('ignores the nonce a dApp supplies and keeps the fees it asks to pay', () => {
             const result = validateEthereumSendTransaction(
                 {
                     ...valid,
@@ -227,7 +232,14 @@ describe('evm dapp sendTransaction validation', () => {
 
             expect(result).toEqual({
                 ok: true,
-                request: { from: held, to: RECIPIENT, value: 1n, data: '0x' },
+                request: {
+                    from: held,
+                    to: RECIPIENT,
+                    value: 1n,
+                    data: '0x',
+                    maxFeePerGas: BigInt('0xffffffffffff'),
+                    maxPriorityFeePerGas: BigInt('0xffffffffffff'),
+                },
             })
         })
     })
@@ -263,7 +275,8 @@ describe('evm dapp sendTransaction validation', () => {
                 data,
                 gas: `0x${gas.toString(16)}`,
                 chainId: hex(EVMNET.ethereum.eip155ChainId),
-                // A dApp's own price and nonce must not reach the signature.
+                // A dApp's nonce must not reach the signature, and its price
+                // may only raise the wallet's own.
                 nonce: '0x7',
                 maxFeePerGas: '0x1',
             },

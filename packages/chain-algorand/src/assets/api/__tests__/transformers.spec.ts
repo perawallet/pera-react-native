@@ -15,11 +15,14 @@ import { Decimal } from 'decimal.js'
 import {
     transformCollectibleResponse,
     transformAssetResponse,
+    transformAssetItemResponse,
     transformIndexerAssetResponse,
     resolveMediaType,
 } from '../transformers'
+import { assetItemResponseSchema } from '../schema'
 import type {
     CollectibleResponse,
+    AssetItemResponse,
     AssetResponse,
     IndexerAssetResponse,
 } from '../schema'
@@ -478,5 +481,178 @@ describe('transformIndexerAssetResponse', () => {
         })
 
         expect(result.assetId).toBe(bigId)
+    })
+})
+
+describe('transformAssetItemResponse', () => {
+    const USDC_GROUP = { id: 'usdc', name: 'USD Coin', symbol: 'USDC' }
+
+    // Parsed through the real schema, so the wire's string ids are what the
+    // transform sees.
+    const itemOf = (
+        overrides: Record<string, unknown> = {},
+    ): AssetItemResponse =>
+        assetItemResponseSchema.parse({
+            asset_id: 'algorand:wGHE2Pwdvd7S12BL5FaOP20EGYesN73k/asa:12345',
+            type: 'collectible',
+            name: 'Cool NFT',
+            unit_name: 'COOL',
+            fraction_decimals: 0,
+            logo: 'https://example.com/logo.png',
+            usd_value: '1.000000000000000000000000',
+            is_verified: true,
+            verification_tier: 'verified',
+            explorer_url: 'https://explorer.perawallet.app/asset/12345',
+            total: '1',
+            is_deleted: false,
+            creator: {
+                id: '9007199254740993',
+                address: 'CREATOR_ADDRESS',
+                is_verified_asset_creator: false,
+            },
+            collectible: {
+                title: 'Cool NFT #1',
+                standard: 'arc3',
+                primary_image: 'https://example.com/nft.png',
+                media_type: 'image',
+                explorer_url: 'https://explorer.perawallet.app/asset/12345',
+                collection: {
+                    id: '9007199254740993',
+                    name: 'Cool Collection',
+                    description: 'A collection',
+                },
+            },
+            category: 3,
+            labels: [{ name: 'featured' }],
+            is_favorited: true,
+            is_price_alert_enabled: false,
+            cross_chain_asset_group: USDC_GROUP,
+            ...overrides,
+        })
+
+    test('maps every stored field from the v4 item', () => {
+        const asset = transformAssetItemResponse('12345', itemOf(), {
+            isDeviceScoped: true,
+        })
+
+        expect(asset).toEqual({
+            assetId: '12345',
+            name: 'Cool NFT',
+            unitName: 'COOL',
+            decimals: 0,
+            totalSupply: new Decimal('1'),
+            creator: { address: 'CREATOR_ADDRESS' },
+            peraMetadata: {
+                isDeleted: false,
+                verificationTier: 'verified',
+                category: 3,
+                isVerified: true,
+                explorerUrl: 'https://explorer.perawallet.app/asset/12345',
+                collectible: {
+                    title: 'Cool NFT #1',
+                    standard: 'arc3',
+                    primaryImage: 'https://example.com/nft.png',
+                    mediaType: 'image',
+                    explorerUrl: 'https://explorer.perawallet.app/asset/12345',
+                    collection: {
+                        id: '9007199254740993',
+                        name: 'Cool Collection',
+                        description: 'A collection',
+                    },
+                    description: undefined,
+                    traits: [],
+                    media: [],
+                },
+                isUnique: true,
+                type: 'collectible',
+                labels: [{ name: 'featured' }],
+                logo: 'https://example.com/logo.png',
+                isFavorited: true,
+                isPriceAlertEnabled: false,
+                crossChainAssetGroup: USDC_GROUP,
+            },
+        })
+    })
+
+    test('leaves the device fields unset when no device id was sent', () => {
+        const asset = transformAssetItemResponse(
+            '12345',
+            itemOf({ is_favorited: false, is_price_alert_enabled: false }),
+            { isDeviceScoped: false },
+        )
+
+        expect(asset?.peraMetadata?.isFavorited).toBeUndefined()
+        expect(asset?.peraMetadata?.isPriceAlertEnabled).toBeUndefined()
+    })
+
+    test('passes the device fields through for a device-scoped read', () => {
+        const asset = transformAssetItemResponse(
+            '12345',
+            itemOf({ is_favorited: false, is_price_alert_enabled: true }),
+            { isDeviceScoped: true },
+        )
+
+        expect(asset?.peraMetadata?.isFavorited).toBe(false)
+        expect(asset?.peraMetadata?.isPriceAlertEnabled).toBe(true)
+    })
+
+    test.each([
+        ['total', { total: null }],
+        ['fraction_decimals', { fraction_decimals: null }],
+    ])(
+        'is null for an ASA the backend has no row for (%s null)',
+        (_, overrides) => {
+            expect(
+                transformAssetItemResponse('12345', itemOf(overrides), {
+                    isDeviceScoped: true,
+                }),
+            ).toBeNull()
+        },
+    )
+
+    test('reads a missing creator as an empty address', () => {
+        const asset = transformAssetItemResponse(
+            '12345',
+            itemOf({ creator: null }),
+            { isDeviceScoped: true },
+        )
+
+        expect(asset?.creator).toEqual({ address: '' })
+    })
+
+    test('marks a deleted ASA as deleted', () => {
+        const asset = transformAssetItemResponse(
+            '12345',
+            itemOf({ is_deleted: true }),
+            { isDeviceScoped: true },
+        )
+
+        expect(asset?.peraMetadata?.isDeleted).toBe(true)
+    })
+
+    test('stores null for an asset in no group and leaves the group unset when the key is absent', () => {
+        const ungrouped = transformAssetItemResponse(
+            '12345',
+            itemOf({ cross_chain_asset_group: null }),
+            { isDeviceScoped: true },
+        )
+        const unread = transformAssetItemResponse(
+            '12345',
+            itemOf({ cross_chain_asset_group: undefined }),
+            { isDeviceScoped: true },
+        )
+
+        expect(ungrouped?.peraMetadata?.crossChainAssetGroup).toBeNull()
+        expect(unread?.peraMetadata?.crossChainAssetGroup).toBeUndefined()
+    })
+
+    test('keeps a total above 2^53 exact', () => {
+        const asset = transformAssetItemResponse(
+            '12345',
+            itemOf({ type: 'standard_asset', total: '18446744073709551615' }),
+            { isDeviceScoped: true },
+        )
+
+        expect(asset?.totalSupply.toFixed()).toBe('18446744073709551615')
     })
 })

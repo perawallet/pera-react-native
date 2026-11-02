@@ -173,6 +173,13 @@ restriction can only switch a capability off, and Feature Flags still overrides 
 A `routeCapabilityRestrictions` entry reads the mode of a `chain:` requirement's chain; any other
 requirement is restricted only while every registered chain's mode is.
 
+A chain module's `supportedCapabilities` lists every capability it can serve, on by default or not.
+A remote config or Feature Flags override that switches on one outside it is dropped with a warning;
+a `false` always applies. A build that does (module defaults or `CHAIN_<ID>_CAPABILITIES`) fails at
+boot in `registerChainSetup`. The parity spec (`apps/mobile/src/__integration__/capability-parity.spec.ts`)
+requires the registries `CAPABILITY_ADAPTERS` names for every supported capability, enabled or not, so
+no override reaches a flow without its chain's adapter.
+
 An entry point renders when three independent things hold: the platform gate (`routeCapabilities`),
 the app flag if the feature has one (a remote `enable_*` boolean behind its `useIsXEnabled` hook), and
 the chain capability. A flag hook ANDs its capability in so callers check one hook, but a capability
@@ -243,9 +250,20 @@ is empty, and its node URLs come from `getAlgorandChainConfig` on every request 
 node applies. Algorand keeps the context in
 `packages/chain-algorand/src/chain-context.ts` and builds every algod and indexer client, for algosdk
 and for raw JSON reads alike, through `createNodeHttpClient` (`blockchain/utils/nodeHttp.ts`).
-Ethereum's JSON-RPC is a viem client built from `ctx.getEndpoints()`.
-The app lays a developer's per-network endpoint override from the network store over that record,
-and only over networks the chain's config already carries.
+Ethereum's JSON-RPC is a viem client built from `ctx.getEndpoints()`, which lists each network's
+URLs at build time: the main node, then at most one public fallback. There is deliberately no
+runtime source for these URLs, since anyone who could write remote config could point wallets at a
+node that misreports balances and nonces or censors broadcasts. `createEvmClient` tries the URLs in
+order: reads through `fallback()`, a broadcast moving on only after a failure that is not a node
+reply (a later node's refusal then reads as an unknown outcome, since the earlier one may have
+taken it). The first URL keeps the chain's ceilings less a short reserve for the fallback, so a slow
+but healthy main node is not cut off. The app lays a developer's per-network endpoint override from
+the network store over that record, replacing the list, and only over networks the chain's config
+already carries. `tools/check-evm-rpc-endpoints.mjs` checks every built-in URL's chain id before a
+build is signed and requires production mainnet URLs to be https, on any domain. Only hosts under
+`perawallet.app` are pinned, and pinning does not yet cover requests made through `expo/fetch`,
+which the RPC transport uses, so the pin group is declared but does not yet protect them on a
+device.
 
 ## Account types share one signing path
 

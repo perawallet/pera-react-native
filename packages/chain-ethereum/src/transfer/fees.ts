@@ -13,7 +13,11 @@
 import {
     parseAbi,
     serializeTransaction,
+    size,
+    type AccessList,
+    type Address,
     type FeeValuesEIP1559,
+    type Hex,
     type PublicClient,
     type TransactionSerializableEIP1559,
 } from 'viem'
@@ -29,11 +33,14 @@ import type { EvmTransferCall } from './builder'
 
 /**
  * Gas is in gas units; every fee is in wei per gas, and `baseFeePerGas` is the
- * next block's. `surcharge` is in wei: what the chain charges on top of gas,
- * priced on the fast preset's transaction and used for every preset.
+ * next block's. `gas` is the node's estimate and prices the expected fee;
+ * `gasLimit` is what gets signed and prices the maximum. `surcharge` is in wei:
+ * what the chain charges on top of gas, priced on the fast preset's
+ * transaction and used for every preset.
  */
 export type EvmTransferFees = {
     gas: bigint
+    gasLimit: bigint
     baseFeePerGas: bigint
     presets: Record<FeePreset, FeeValuesEIP1559>
     surcharge: bigint
@@ -75,11 +82,24 @@ export const minMaxFeePerGas = (
     maxPriorityFeePerGas: bigint,
 ): bigint => (baseFeePerGas * 9n + 7n) / 8n + maxPriorityFeePerGas
 
+// State can change between the estimate and inclusion, so a call that runs
+// contract code needs room to spend a little more than it was estimated at.
+const GAS_LIMIT_PADDING_NUMERATOR = 6n
+const GAS_LIMIT_PADDING_DENOMINATOR = 5n
+
+// What a send with no calldata costs when nothing runs at the recipient.
+const INTRINSIC_TRANSFER_GAS = 21_000n
+
+// A zero tip is never accepted, so this is the least the fallback may floor at.
+const MIN_FALLBACK_PRIORITY_FEE = 1n
+
 const compareBigInt = (a: bigint, b: bigint): number => {
     if (a < b) return -1
     if (a > b) return 1
     return 0
 }
+
+const larger = (a: bigint, b: bigint): bigint => (a < b ? b : a)
 
 const upperMedian = (values: bigint[]): bigint =>
     values.length === 0
@@ -93,13 +113,14 @@ const minPriorityFeeOf = (chain: EvmChain, networkId: NetworkId): bigint =>
 
 /**
  * Reads EIP-1559 fees at each preset's fee-history percentile. A tip below the
- * chain's minimum is raised to it: the node would drop the transaction.
+ * chain's minimum, or zero where the chain has none, is raised: the node would
+ * drop the transaction.
  */
 export const readEvmFeePresets = async (
     client: PublicClient,
     chain: EvmChain,
     networkId: NetworkId,
-): Promise<Omit<EvmTransferFees, 'gas' | 'surcharge'>> => {
+): Promise<Pick<EvmTransferFees, 'baseFeePerGas' | 'presets'>> => {
     const minPriorityFeePerGas = minPriorityFeeOf(chain, networkId)
     const history = await client.getFeeHistory({
         blockCount: FEE_HISTORY_BLOCK_COUNT,
@@ -118,12 +139,26 @@ export const readEvmFeePresets = async (
         (row, i) =>
             history.gasUsedRatio[i] > 0 && row.length >= FEE_PRESETS.length,
     )
+    const percentileTips = FEE_PRESETS.map((_, column) =>
+        upperMedian(rewards.map(row => row[column])),
+    )
+    // A quiet network's history says nothing about the tip, and a node refuses
+    // a transaction that tips zero, so the node's own suggestion floors every
+    // preset: one shared floor keeps slow <= normal <= fast. A node that
+    // suggests nothing still gets a tip.
+    const priorityFeeFloor =
+        minPriorityFeePerGas === 0n && percentileTips.some(tip => tip === 0n)
+            ? larger(
+                  await client.estimateMaxPriorityFeePerGas(),
+                  MIN_FALLBACK_PRIORITY_FEE,
+              )
+            : minPriorityFeePerGas
     const presets = Object.fromEntries(
         FEE_PRESETS.map((preset, column) => {
-            const percentileTip = upperMedian(rewards.map(row => row[column]))
+            const percentileTip = percentileTips[column]
             const maxPriorityFeePerGas =
-                percentileTip < minPriorityFeePerGas
-                    ? minPriorityFeePerGas
+                percentileTip < priorityFeeFloor
+                    ? priorityFeeFloor
                     : percentileTip
             return [
                 preset,
@@ -194,6 +229,101 @@ export const readEvmSurcharge = async (
     return l1DataFee + operatorFee
 }
 
+/** The call as the node estimates it. `value` is in wei. */
+export type EvmGasCall = {
+    from: Address
+    to: Address
+    value: bigint
+    data?: Hex
+    accessList?: AccessList
+}
+
+export type EvmGas = Pick<EvmTransferFees, 'gas' | 'gasLimit'>
+
+/**
+ * Estimates the call's gas. A call that runs contract code has its limit
+ * padded by a fifth, capped at the block gas limit. That is any call with
+ * calldata, and a plain send whose estimate is above the intrinsic cost,
+ * which shows the recipient ran code (a smart account's receive hook); a send
+ * to an account with no code costs what it was estimated at. Rejects with the
+ * node's error, a revert included.
+ */
+export const readEvmGas = async (
+    client: PublicClient,
+    call: EvmGasCall,
+): Promise<EvmGas> => {
+    const hasCalldata = call.data !== undefined && size(call.data) > 0
+    const latestBlock = () => client.getBlock({ blockTag: 'latest' })
+    const [gas, calldataBlock] = await Promise.all([
+        client.estimateGas({
+            account: call.from,
+            to: call.to,
+            value: call.value,
+            data: call.data,
+            ...(call.accessList && { accessList: call.accessList }),
+        }),
+        hasCalldata ? latestBlock() : undefined,
+    ])
+    if (!hasCalldata && gas <= INTRINSIC_TRANSFER_GAS) {
+        return { gas, gasLimit: gas }
+    }
+    const block = calldataBlock ?? (await latestBlock())
+    const padded =
+        (gas * GAS_LIMIT_PADDING_NUMERATOR) / GAS_LIMIT_PADDING_DENOMINATOR
+    const gasLimit =
+        block.gasLimit !== undefined && padded > block.gasLimit
+            ? block.gasLimit
+            : padded
+    return { gas, gasLimit }
+}
+
+/**
+ * The prices a dApp asked for, floored at the wallet's own. The dApp's tip
+ * counts only as far as its max fee leaves room above the base fee, since
+ * that is all it would pay: a legacy `gasPrice` names a total price, so mixing
+ * its tip with the preset's larger max fee would charge more than either
+ * asked. A dApp that sent only a tip gets the base-fee headroom instead.
+ */
+export const withRequestedEvmFees = (
+    baseFeePerGas: bigint,
+    preset: FeeValuesEIP1559,
+    requested: Partial<FeeValuesEIP1559>,
+): FeeValuesEIP1559 => {
+    const requestedTip = requested.maxPriorityFeePerGas ?? 0n
+    const requestedTipRoom =
+        requested.maxFeePerGas === undefined
+            ? requestedTip
+            : larger(requested.maxFeePerGas - baseFeePerGas, 0n)
+    const maxPriorityFeePerGas = larger(
+        preset.maxPriorityFeePerGas,
+        requestedTip < requestedTipRoom ? requestedTip : requestedTipRoom,
+    )
+    const maxFeeFloor =
+        requested.maxFeePerGas === undefined
+            ? BASE_FEE_HEADROOM * baseFeePerGas + maxPriorityFeePerGas
+            : maxPriorityFeePerGas
+    const maxFeePerGas = larger(
+        larger(preset.maxFeePerGas, requested.maxFeePerGas ?? 0n),
+        maxFeeFloor,
+    )
+    return { maxFeePerGas, maxPriorityFeePerGas }
+}
+
+/**
+ * The fastest preset whose tip `maxPriorityFeePerGas` reaches; `slow` when it
+ * is below every preset. Wei per gas.
+ */
+export const evmFeePresetOf = (
+    maxPriorityFeePerGas: bigint,
+    presets: Record<FeePreset, FeeValuesEIP1559>,
+): FeePreset => {
+    if (maxPriorityFeePerGas >= presets.fast.maxPriorityFeePerGas) return 'fast'
+    if (maxPriorityFeePerGas >= presets.normal.maxPriorityFeePerGas) {
+        return 'normal'
+    }
+    return 'slow'
+}
+
 /** Estimates the call's gas and reads EIP-1559 fees at each preset's fee-history percentile. */
 export const readTransferGasAndPresets = async (
     client: PublicClient,
@@ -202,15 +332,10 @@ export const readTransferGasAndPresets = async (
     networkId: NetworkId,
 ): Promise<Omit<EvmTransferFees, 'surcharge'>> => {
     const [gas, fees] = await Promise.all([
-        client.estimateGas({
-            account: call.from,
-            to: call.to,
-            value: call.value,
-            data: call.data,
-        }),
+        readEvmGas(client, call),
         readEvmFeePresets(client, chain, networkId),
     ])
-    return { gas, ...fees }
+    return { ...gas, ...fees }
 }
 
 /** Estimates the call's gas and surcharge, and reads EIP-1559 fees at each preset's fee-history percentile. */
@@ -268,7 +393,7 @@ export const maxFeePerGasWithin = (
 }
 
 /**
- * Prices each preset at gas x (base fee + tip), and its worst case at gas x maxFeePerGas plus the
+ * Prices each preset at gas x (base fee + tip), and its worst case at gasLimit x maxFeePerGas plus the
  * surcharge with its headroom, in wei.
  */
 export const toEvmFeeEstimate = (
@@ -291,7 +416,7 @@ export const toEvmFeeEstimate = (
                     ),
                     maxAmount: new Decimal(
                         (
-                            fees.gas * maxFeePerGas +
+                            fees.gasLimit * maxFeePerGas +
                             SURCHARGE_HEADROOM * fees.surcharge
                         ).toString(),
                     ),

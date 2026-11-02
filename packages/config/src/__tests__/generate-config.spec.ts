@@ -33,6 +33,8 @@ const SCRIPT = join(__dirname, '../../../../tools/dev/generate-config.sh')
 type ScopeConfigKeys = {
     chainId: string
     networkId: string
+    tier: string
+    eip155ChainId: number
     rpcUrlEnv: string
     rpcUrlKey: string
     peraServicesEnv: string
@@ -189,6 +191,8 @@ describe('tools/dev/generate-config.sh', () => {
                 return {
                     chainId,
                     networkId: network.id,
+                    tier: network.tier,
+                    eip155ChainId: network.eip155ChainId,
                     rpcUrlEnv: keys.rpcUrlEnv,
                     rpcUrlKey: keys.rpcUrl,
                     peraServicesEnv: keys.peraServicesEnv,
@@ -285,6 +289,19 @@ describe('tools/dev/generate-config.sh', () => {
                 'ethereumMainnetPeraServices: "prices,history"',
             )
             expect(output).toContain('ethereumSepoliaPeraServices: "assets"')
+        })
+
+        test('bakes a comma list of RPC URLs verbatim, in order', () => {
+            const output = run({
+                CHAINS: 'algorand,ethereum',
+                ...ETHEREUM_ENDPOINTS,
+                ETHEREUM_MAINNET_RPC_URL:
+                    'https://a.rpc.example,https://b.rpc.example',
+            })
+
+            expect(output).toContain(
+                'ethereumMainnetRpcUrl: "https://a.rpc.example,https://b.rpc.example"',
+            )
         })
 
         test.each(['ETHEREUM_MAINNET_RPC_URL', 'ETHEREUM_SEPOLIA_RPC_URL'])(

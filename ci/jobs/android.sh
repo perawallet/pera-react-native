@@ -48,6 +48,8 @@ collect_artifacts() {
 }
 
 ./tools/dev/validate-env.sh
+# Before the install: a wrong-network or untrusted RPC URL fails in seconds, not after a signed build.
+APP_ENV="$ENVIRONMENT" node tools/check-evm-rpc-endpoints.mjs
 pnpm install --frozen-lockfile --prefer-offline
 APP_ENV="$ENVIRONMENT" pnpm run generate:config
 

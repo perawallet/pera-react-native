@@ -139,6 +139,15 @@ describe('the Ethereum transaction view', () => {
         expect(readEthereumNative(native)).toEqual(VIEW)
     })
 
+    it('round-trips a fee estimate through its native form', () => {
+        const view: EthereumTransactionView = {
+            ...VIEW,
+            feeEstimate: { preset: 'fast', amount: new Decimal(63_000) },
+        }
+
+        expect(readEthereumNative(toEthereumNative(view))).toEqual(view)
+    })
+
     it('round-trips an NFT transfer through its native form', () => {
         expect(readEthereumNative(toEthereumNative(NFT_VIEW))).toEqual(NFT_VIEW)
     })
@@ -173,6 +182,17 @@ describe('the Ethereum transaction view', () => {
         ['a gas limit that is not a bigint', { ...VIEW, gas: 65_000 }],
         ['an unknown kind', { ...VIEW, kind: 'swap' }],
         ['a value that is not a Decimal', { ...VIEW, value: '0' }],
+        [
+            'a fee estimate with an unknown preset',
+            {
+                ...VIEW,
+                feeEstimate: { preset: 'turbo', amount: new Decimal(1) },
+            },
+        ],
+        [
+            'a fee estimate whose amount is not a Decimal',
+            { ...VIEW, feeEstimate: { preset: 'fast', amount: 1n } },
+        ],
         ['a recipient that is not an address', { ...VIEW, to: 'bob' }],
         ['a malformed token', { ...VIEW, token: { contract: TOKEN } }],
         [

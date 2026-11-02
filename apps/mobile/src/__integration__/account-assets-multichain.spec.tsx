@@ -33,7 +33,7 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { evmRpcHandlers } from '@perawallet/wallet-core-chain-ethereum/test-handlers'
-import { mockCrossChainAssetGroups } from '@perawallet/wallet-core-chain-algorand/test-handlers'
+import { mockAssetItems } from '@perawallet/wallet-core-chain-algorand/test-handlers'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { http, HttpResponse } from 'msw'
 import { server } from '@test-utils/msw-server'
@@ -79,7 +79,7 @@ vi.mock('@perawallet/wallet-core-config', async importOriginal => {
             chainId: Parameters<typeof actual.chainEndpointsFor>[0],
         ) =>
             chainId === 'base'
-                ? { mainnet: BASE_RPC_URL, sepolia: BASE_RPC_URL }
+                ? { mainnet: [BASE_RPC_URL], sepolia: [BASE_RPC_URL] }
                 : actual.chainEndpointsFor(chainId),
     }
 })
@@ -178,7 +178,7 @@ describe("Flow: One account's assets across chains", () => {
         useRemoteConfigStore.getState().resetState()
         resetListView()
         server.use(
-            mockCrossChainAssetGroups({
+            mockAssetItems({
                 groups: { [USDC_TEST_ASSET.assetId]: USDC_GROUP },
             }),
         )

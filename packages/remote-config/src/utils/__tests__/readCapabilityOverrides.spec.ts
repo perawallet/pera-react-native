@@ -16,6 +16,7 @@ import {
     CHAIN_IDS,
     createChainRegistry,
     type ChainCapabilities,
+    type ChainCapability,
     type ChainDescriptor,
 } from '@perawallet/wallet-core-chain-contract'
 import { logger } from '@perawallet/wallet-core-shared'
@@ -32,6 +33,13 @@ vi.mock('../areConfigOverridesIgnored', () => ({
 }))
 
 const KEY = 'chain_algorand_overrides'
+const ETHEREUM_KEY = 'chain_ethereum_overrides'
+const UNSUPPORTED_WARNING =
+    'Ignoring overrides for capabilities the chain does not support'
+
+const registry = createChainRegistry()
+
+const supportsAll = (): boolean => true
 
 let remoteValues: Record<string, string> = {}
 
@@ -42,6 +50,7 @@ const useRemote = (values: Record<string, string>): void => {
             getStringValue: (key: string, fallback = '') =>
                 remoteValues[key] ?? fallback,
         },
+        chains: registry,
     } as unknown as ReturnType<typeof getProvider>)
 }
 
@@ -51,7 +60,9 @@ const setDeveloper = (value: string | null): void => {
 
 describe('parseChainOverrides', () => {
     test('reads an empty string as no overrides', () => {
-        expect(parseChainOverrides('', KEY)).toEqual({ capabilities: {} })
+        expect(parseChainOverrides('', KEY, supportsAll)).toEqual({
+            capabilities: {},
+        })
     })
 
     test('keeps the kill switch and the boolean capabilities', () => {
@@ -59,6 +70,7 @@ describe('parseChainOverrides', () => {
             parseChainOverrides(
                 '{"enabled":false,"capabilities":{"staking":false,"swap":true}}',
                 KEY,
+                supportsAll,
             ),
         ).toEqual({
             enabled: false,
@@ -71,13 +83,18 @@ describe('parseChainOverrides', () => {
             parseChainOverrides(
                 '{"enabled":false,"capabilities":{"teleport":true,"staking":"no"}}',
                 KEY,
+                supportsAll,
             ),
         ).toEqual({ enabled: false, capabilities: {} })
     })
 
     test('ignores the retired arc0027 capability', () => {
         expect(
-            parseChainOverrides('{"capabilities":{"arc0027":false}}', KEY),
+            parseChainOverrides(
+                '{"capabilities":{"arc0027":false}}',
+                KEY,
+                supportsAll,
+            ),
         ).toEqual({ capabilities: {} })
     })
 
@@ -90,12 +107,16 @@ describe('parseChainOverrides', () => {
 
         const remoteConfigKey = `${KEY}_${json}`
 
-        expect(parseChainOverrides(json, remoteConfigKey)).toEqual({
-            capabilities: {},
-        })
-        expect(parseChainOverrides(json, remoteConfigKey)).toEqual({
-            capabilities: {},
-        })
+        expect(parseChainOverrides(json, remoteConfigKey, supportsAll)).toEqual(
+            {
+                capabilities: {},
+            },
+        )
+        expect(parseChainOverrides(json, remoteConfigKey, supportsAll)).toEqual(
+            {
+                capabilities: {},
+            },
+        )
 
         expect(warn).toHaveBeenCalledTimes(1)
         expect(warn).toHaveBeenCalledWith(
@@ -104,10 +125,46 @@ describe('parseChainOverrides', () => {
         )
         warn.mockRestore()
     })
+
+    test.each(['assetInbox', 'rekey', 'staking'] as const)(
+        'refuses switching on %s where the chain does not support it, and warns once',
+        capability => {
+            const warn = vi.spyOn(logger, 'warn').mockImplementation(() => {})
+            const remoteConfigKey = `${ETHEREUM_KEY}_${capability}`
+            const json = `{"capabilities":{"${capability}":true,"send":true}}`
+            const supports = (candidate: ChainCapability): boolean =>
+                candidate !== capability
+
+            expect(
+                parseChainOverrides(json, remoteConfigKey, supports),
+            ).toEqual({ capabilities: { send: true } })
+            expect(
+                parseChainOverrides(json, remoteConfigKey, supports),
+            ).toEqual({ capabilities: { send: true } })
+
+            expect(warn).toHaveBeenCalledTimes(1)
+            expect(warn).toHaveBeenCalledWith(UNSUPPORTED_WARNING, {
+                remoteConfigKey,
+                capabilities: [capability],
+            })
+            warn.mockRestore()
+        },
+    )
+
+    test('keeps a false for a capability the chain does not support', () => {
+        expect(
+            parseChainOverrides(
+                '{"capabilities":{"assetInbox":false}}',
+                KEY,
+                () => false,
+            ),
+        ).toEqual({ capabilities: { assetInbox: false } })
+    })
 })
 
 describe('readCapabilityOverrides', () => {
     beforeEach(() => {
+        registry.reset()
         useRemoteConfigStore.getState().resetState()
         vi.mocked(areConfigOverridesIgnored).mockReturnValue(false)
         useRemote({})
@@ -175,10 +232,11 @@ describe('readCapabilityOverrides', () => {
         const build = Object.fromEntries(
             CHAIN_CAPABILITIES.map(capability => [capability, true]),
         ) as ChainCapabilities
-        const registry = createChainRegistry()
+        const allOff = Object.fromEntries(
+            CHAIN_CAPABILITIES.map(capability => [capability, false]),
+        ) as ChainCapabilities
 
         beforeEach(() => {
-            registry.reset()
             registry.register(
                 { id: 'algorand', networks: [] } as unknown as ChainDescriptor,
                 build,
@@ -212,6 +270,88 @@ describe('readCapabilityOverrides', () => {
 
             expect(registry.capabilities('algorand')).toEqual(build)
             expect(registry.isSwitchedOff('algorand')).toBe(false)
+        })
+
+        describe('on a chain that supports only send', () => {
+            const ALGORAND_ONLY =
+                '{"capabilities":{"assetInbox":true,"rekey":true,"staking":true}}'
+
+            beforeEach(() => {
+                registry.register(
+                    {
+                        id: 'ethereum',
+                        networks: [],
+                    } as unknown as ChainDescriptor,
+                    { ...allOff, send: true },
+                    undefined,
+                    ['send'],
+                )
+            })
+
+            test('a remote true for assetInbox, rekey or staking leaves them off and warns once', () => {
+                const warn = vi
+                    .spyOn(logger, 'warn')
+                    .mockImplementation(() => {})
+                useRemote({ [ETHEREUM_KEY]: ALGORAND_ONLY })
+
+                const first = registry.capabilities('ethereum')
+                const second = registry.capabilities('ethereum')
+
+                for (const capabilities of [first, second]) {
+                    expect(capabilities.assetInbox).toBe(false)
+                    expect(capabilities.rekey).toBe(false)
+                    expect(capabilities.staking).toBe(false)
+                }
+                expect(warn).toHaveBeenCalledTimes(1)
+                expect(warn).toHaveBeenCalledWith(UNSUPPORTED_WARNING, {
+                    remoteConfigKey: ETHEREUM_KEY,
+                    capabilities: ['rekey', 'staking', 'assetInbox'],
+                })
+                warn.mockRestore()
+            })
+
+            test('a developer true is refused the same way', () => {
+                const warn = vi
+                    .spyOn(logger, 'warn')
+                    .mockImplementation(() => {})
+                useRemoteConfigStore
+                    .getState()
+                    .setConfigOverride(
+                        ETHEREUM_KEY,
+                        '{"capabilities":{"staking":true}}',
+                    )
+
+                expect(readCapabilityOverrides().developer?.ethereum).toEqual(
+                    {},
+                )
+                expect(registry.capabilities('ethereum').staking).toBe(false)
+                expect(warn).toHaveBeenCalledTimes(1)
+                warn.mockRestore()
+            })
+
+            test('a remote false still switches a supported capability off', () => {
+                useRemote({ [ETHEREUM_KEY]: '{"capabilities":{"send":false}}' })
+
+                expect(registry.capabilities('ethereum').send).toBe(false)
+            })
+        })
+
+        test('lets a chain registered without a list switch anything on', () => {
+            registry.reset()
+            registry.register(
+                { id: 'algorand', networks: [] } as unknown as ChainDescriptor,
+                allOff,
+            )
+            registry.setCapabilityOverrides(readCapabilityOverrides)
+            useRemote({
+                [KEY]: '{"capabilities":{"assetInbox":true,"rekey":true,"staking":true}}',
+            })
+
+            const capabilities = registry.capabilities('algorand')
+
+            expect(capabilities.assetInbox).toBe(true)
+            expect(capabilities.rekey).toBe(true)
+            expect(capabilities.staking).toBe(true)
         })
     })
 })
