@@ -6,10 +6,15 @@ export interface PnpmLock {
     /** Catalog entry to the version `catalogs.default` resolved it to. */
     catalog: Map<string, string>
     /**
-     * `name@version` (peer suffix stripped) to one dependency map per snapshot
-     * of it: a release resolved under several peer sets has several.
+     * `name@version` (peer suffix stripped) to one map per snapshot of it, of
+     * its `dependencies` and `optionalDependencies`: a release resolved under
+     * several peer sets has several.
      */
     snapshots: Map<string, Map<string, string>[]>
+    /** `name@version` (peer suffix stripped) to the 1-based line of its first `snapshots` entry. */
+    snapshotLines: Map<string, number>
+    /** Importer path (`.` for the root) to the version of each direct dependency, across every dependency group. */
+    importers: Map<string, Map<string, string>>
 }
 
 const indentOf = (line: string): number => line.length - line.trimStart().length
@@ -55,18 +60,25 @@ const parseLine = (
 }
 
 /**
- * Reads the two lockfile v9 sections the catalog pins are checked against:
- * `catalogs.default` and the `dependencies` of each `snapshots` entry.
+ * Reads the lockfile v9 sections the lanekeep rules check: `catalogs.default`,
+ * the direct dependencies of each importer, and the dependencies of each
+ * `snapshots` entry.
  */
 export const parsePnpmLock = (raw: string): PnpmLock => {
     const catalog = new Map<string, string>()
     const snapshots = new Map<string, Map<string, string>[]>()
+    const snapshotLines = new Map<string, number>()
     let section = ''
     let inDefaultCatalog = false
     let catalogName = ''
     let snapshot: Map<string, string> | undefined
     let inDependencies = false
-    for (const text of raw.split('\n')) {
+    const importers = new Map<string, Map<string, string>>()
+    let importer: Map<string, string> | undefined
+    let importerDep = ''
+    const lines = raw.split('\n')
+    for (let i = 0; i < lines.length; i++) {
+        const text = lines[i] ?? ''
         const trimmed = text.trim()
         if (trimmed === '' || trimmed.startsWith('#')) continue
         const indent = indentOf(text)
@@ -75,6 +87,7 @@ export const parsePnpmLock = (raw: string): PnpmLock => {
             inDefaultCatalog = false
             snapshot = undefined
             inDependencies = false
+            importer = undefined
             continue
         }
         const line = parseLine(trimmed)
@@ -91,6 +104,15 @@ export const parsePnpmLock = (raw: string): PnpmLock => {
             ) {
                 catalog.set(catalogName, stripPeers(unquote(line.value)))
             }
+        } else if (section === 'importers') {
+            if (indent === 2) {
+                importer = new Map()
+                importers.set(line.key, importer)
+            } else if (indent === 6) {
+                importerDep = line.key
+            } else if (indent === 8 && line.key === 'version' && importer) {
+                importer.set(importerDep, stripPeers(unquote(line.value)))
+            }
         } else if (section === 'snapshots') {
             if (indent === 2) {
                 const key = stripPeers(line.key)
@@ -102,16 +124,19 @@ export const parsePnpmLock = (raw: string): PnpmLock => {
                     const list = snapshots.get(key) ?? []
                     list.push(snapshot)
                     snapshots.set(key, list)
+                    if (!snapshotLines.has(key)) snapshotLines.set(key, i + 1)
                 }
                 inDependencies = false
             } else if (indent === 4) {
-                inDependencies = line.key === 'dependencies'
+                inDependencies =
+                    line.key === 'dependencies' ||
+                    line.key === 'optionalDependencies'
             } else if (indent === 6 && inDependencies && snapshot) {
                 snapshot.set(line.key, stripPeers(unquote(line.value)))
             }
         }
     }
-    return { catalog, snapshots }
+    return { catalog, snapshots, snapshotLines, importers }
 }
 
 const SEMVER =

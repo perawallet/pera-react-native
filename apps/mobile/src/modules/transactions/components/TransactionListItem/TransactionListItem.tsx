@@ -17,7 +17,7 @@ import { ChainNotice } from '@components/ChainNotice'
 import { CurrencyAmount } from '@components/CurrencyAmount'
 import { TransactionIcon } from '@components/TransactionIcon'
 import { useLanguage } from '@hooks/useLanguage'
-import { ChainLabel } from '@modules/assets'
+import { ChainLabel } from '@modules/chain-ui/icon'
 import { useStyles } from './styles'
 import {
     useTransactionListItem,

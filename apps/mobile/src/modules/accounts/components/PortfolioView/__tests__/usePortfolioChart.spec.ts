@@ -10,42 +10,17 @@
  limitations under the License
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { act, renderHook } from '@testing-library/react'
 import type { PortfolioValueHistoryItem } from '@perawallet/wallet-core-accounts'
 import { usePortfolioChart } from '../usePortfolioChart'
 
-const mocks = vi.hoisted(() => ({ historyQuery: vi.fn() }))
-
-vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
-    ...(await importOriginal<
-        typeof import('@perawallet/wallet-core-accounts')
-    >()),
-    useAccountBalancesHistoryQuery: mocks.historyQuery,
-}))
-
-const scope = { chainId: 'algorand', networkId: 'mainnet' } as never
-
 describe('usePortfolioChart', () => {
-    beforeEach(() => {
-        vi.clearAllMocks()
-        mocks.historyQuery.mockReturnValue({ data: [] })
-    })
-
     it('reports the scrubbed point through the selection handler', () => {
         const setSelectedPoint = vi.fn()
         const onDataSelected = vi.fn()
         const { result } = renderHook(() =>
-            usePortfolioChart({
-                chartSources: [],
-                period: 'one-day',
-                scope,
-                isChartShown: true,
-                basis: 'fiat',
-                selectedPoint: null,
-                setSelectedPoint,
-                onDataSelected,
-            }),
+            usePortfolioChart({ setSelectedPoint, onDataSelected }),
         )
 
         const point = {
