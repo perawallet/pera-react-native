@@ -37,6 +37,22 @@ const ENABLED: ReadonlySet<ChainCapability> = new Set<ChainCapability>([
     'cloudBackup',
 ])
 
+// Off by default, but nothing in their flows is Algorand-only, so remote config
+// may switch them on. Every other capability stays off whatever it says.
+const SWITCHABLE: readonly ChainCapability[] = [
+    'contractDecoding',
+    'discover',
+    'notifications',
+    'assetFavorites',
+    'priceAlerts',
+    'csvExport',
+]
+
+export const evmSupportedCapabilities: readonly ChainCapability[] = [
+    ...ENABLED,
+    ...SWITCHABLE,
+]
+
 // Off unless listed, so a capability added later starts off. Every EVM chain
 // starts from this set because they register the same adapters; a row's
 // `capabilities` layers over it.

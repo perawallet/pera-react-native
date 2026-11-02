@@ -47,11 +47,15 @@ export interface RegisteredChain {
 }
 
 export interface ChainRegistry {
-    /** `build` is the module's defaults with the composition root's overrides applied. */
+    /**
+     * `build` is the module's defaults with the composition root's overrides
+     * applied. `supported` defaults to every capability.
+     */
     register(
         descriptor: ChainDescriptor,
         build: ChainCapabilities,
         restrictions?: ChainCapabilityRestrictions,
+        supported?: readonly ChainCapability[],
     ): void
     /** @throws ChainAdapterNotRegisteredError */
     get(chainId: ChainId): RegisteredChain
@@ -72,6 +76,12 @@ export interface ChainRegistry {
      * @throws ChainAdapterNotRegisteredError
      */
     isRestricted(chainId: ChainId, capability: ChainCapability): boolean
+    /**
+     * False when an override must not switch `capability` on for the chain:
+     * its module doesn't list it as supported.
+     * @throws ChainAdapterNotRegisteredError
+     */
+    supports(chainId: ChainId, capability: ChainCapability): boolean
     byCaip2(
         caip2: string,
     ): { chainId: ChainId; network: ChainNetwork } | undefined
@@ -111,6 +121,7 @@ export const createChainRegistry = (): ChainRegistry => {
             chain: RegisteredChain
             build: ChainCapabilities
             restrictions?: ChainCapabilityRestrictions
+            supported: ReadonlySet<ChainCapability>
         }
     >()
     let readOverrides = NO_OVERRIDES
@@ -124,7 +135,12 @@ export const createChainRegistry = (): ChainRegistry => {
     }
 
     return {
-        register: (descriptor, build, restrictions) => {
+        register: (
+            descriptor,
+            build,
+            restrictions,
+            supported = CHAIN_CAPABILITIES,
+        ) => {
             const existing = chains.get(descriptor.id)
             if (existing?.chain.descriptor === descriptor) {
                 return
@@ -136,6 +152,7 @@ export const createChainRegistry = (): ChainRegistry => {
                 chain: { descriptor },
                 build,
                 restrictions,
+                supported: new Set(supported),
             })
         },
         get: chainId => entryFor(chainId).chain,
@@ -171,6 +188,8 @@ export const createChainRegistry = (): ChainRegistry => {
                 capability,
                 readOverrides().chainMode?.[chainId] ?? 'live',
             ),
+        supports: (chainId, capability) =>
+            entryFor(chainId).supported.has(capability),
         byCaip2: caip2 => {
             for (const {
                 chain: { descriptor },
@@ -211,6 +230,7 @@ export const registerChainSetup = (
                 ...entry.capabilities,
             },
             entry.module.capabilityRestrictions,
+            entry.module.supportedCapabilities,
         )
         entry.module.register(contextFor(entry))
     }

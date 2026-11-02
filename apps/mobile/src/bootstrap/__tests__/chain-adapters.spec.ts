@@ -146,10 +146,13 @@ vi.mock('@perawallet/wallet-core-signing', async importOriginal => ({
 vi.mock('@perawallet/wallet-core-chain-algorand', async () => {
     const descriptorEntry =
         await import('@perawallet/wallet-core-chain-algorand/descriptor')
+    const { CHAIN_CAPABILITIES } =
+        await import('@perawallet/wallet-core-chain-contract')
     return {
         chainModule: {
             descriptor: descriptorEntry.algorandDescriptor,
             capabilityDefaults: descriptorEntry.algorandCapabilityDefaults,
+            supportedCapabilities: CHAIN_CAPABILITIES,
             capabilityRestrictions:
                 descriptorEntry.algorandCapabilityRestrictions,
             register: mocks.registerModule,

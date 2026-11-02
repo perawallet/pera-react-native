@@ -173,6 +173,12 @@ restriction can only switch a capability off, and Feature Flags still overrides 
 A `routeCapabilityRestrictions` entry reads the mode of a `chain:` requirement's chain; any other
 requirement is restricted only while every registered chain's mode is.
 
+A chain module's `supportedCapabilities` lists every capability it can serve, on by default or not.
+A remote config or Feature Flags override that switches on one outside it is dropped with a warning;
+a `false` always applies. The parity spec (`apps/mobile/src/__integration__/capability-parity.spec.ts`)
+requires the registries `CAPABILITY_ADAPTERS` names for every supported capability, enabled or not, so
+no override reaches a flow without its chain's adapter.
+
 An entry point renders when three independent things hold: the platform gate (`routeCapabilities`),
 the app flag if the feature has one (a remote `enable_*` boolean behind its `useIsXEnabled` hook), and
 the chain capability. A flag hook ANDs its capability in so callers check one hook, but a capability

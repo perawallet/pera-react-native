@@ -115,6 +115,7 @@ const context: ChainContext = {
 const moduleWith = (overrides: Partial<ChainModule> = {}): ChainModule => ({
     descriptor,
     capabilityDefaults: build,
+    supportedCapabilities: CHAIN_CAPABILITIES,
     register: vi.fn(),
     ...overrides,
 })
@@ -314,6 +315,27 @@ describe('createChainRegistry', () => {
         expect(() => registry.capabilities('algorand')).toThrow(
             ChainAdapterNotRegisteredError,
         )
+        expect(() => registry.supports('algorand', 'swap')).toThrow(
+            ChainAdapterNotRegisteredError,
+        )
+    })
+
+    it('supports every capability when registered without a list', () => {
+        registry.register(descriptor, build)
+
+        expect(
+            CHAIN_CAPABILITIES.every(capability =>
+                registry.supports('algorand', capability),
+            ),
+        ).toBe(true)
+    })
+
+    it('supports only the listed capabilities, on or off in the build', () => {
+        registry.register(descriptor, build, undefined, ['swap', 'staking'])
+
+        expect(registry.supports('algorand', 'swap')).toBe(true)
+        expect(registry.supports('algorand', 'staking')).toBe(true)
+        expect(registry.supports('algorand', 'assetInbox')).toBe(false)
     })
 
     it('forgets every registration on reset', () => {
@@ -378,6 +400,15 @@ describe('registerChainSetup', () => {
         expect(contextFor).toHaveBeenCalledWith(entry)
         expect(module.register).toHaveBeenCalledTimes(1)
         expect(module.register).toHaveBeenCalledWith(context)
+    })
+
+    it('forwards the module supported capabilities to the registry', () => {
+        const module = moduleWith({ supportedCapabilities: ['send'] })
+
+        registerChainSetup([entryWith({ module })], chains, () => context)
+
+        expect(chains.supports('algorand', 'send')).toBe(true)
+        expect(chains.supports('algorand', 'swap')).toBe(false)
     })
 
     it('forwards the module capability restrictions to the registry', () => {

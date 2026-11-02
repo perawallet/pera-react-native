@@ -86,6 +86,21 @@ describe.each(EVM_TEST_CHAINS)('the $row.id module', chain => {
         expect(enabled.sort()).toEqual([...ENABLED].sort())
     })
 
+    it('supports no Algorand-only capability, so remote config cannot switch one on', () => {
+        for (const capability of [
+            'assetInbox',
+            'rekey',
+            'staking',
+            'manageAssets',
+            'multisig',
+            'quantumAccounts',
+            'liquidAuth',
+            'feeDelegation',
+        ] as const) {
+            expect(module.supportedCapabilities).not.toContain(capability)
+        }
+    })
+
     it('registers its descriptor, adapters and defaults through the setup', () => {
         const chains = createChainRegistry()
 
@@ -97,6 +112,8 @@ describe.each(EVM_TEST_CHAINS)('the $row.id module', chain => {
 
         expect(chains.get(id).descriptor).toBe(chain.descriptor)
         expect(chains.capabilities(id)).toEqual(module.capabilityDefaults)
+        expect(chains.supports(id, 'contractDecoding')).toBe(true)
+        expect(chains.supports(id, 'assetInbox')).toBe(false)
         expect(addressCodecs.get(id).chainId).toBe(id)
         expect(keyDerivations.get(id).chainId).toBe(id)
         expect(accountsChainAdapters.get(id).chainId).toBe(id)

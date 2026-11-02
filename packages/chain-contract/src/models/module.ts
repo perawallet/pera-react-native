@@ -13,6 +13,7 @@
 import type { ChainKeyStore } from '../contracts/key-derivation'
 import type {
     ChainCapabilities,
+    ChainCapability,
     ChainCapabilityRestrictions,
 } from './capabilities'
 import type { ChainDescriptor } from './descriptor'
@@ -76,6 +77,12 @@ export interface ChainPinnedHosts {
 export interface ChainModule {
     descriptor: ChainDescriptor
     capabilityDefaults: ChainCapabilities
+    /**
+     * Every capability the chain can serve, on by default or not. Remote config
+     * and the Feature Flags screen can't switch on one outside it, since its
+     * flow would reach code with nothing for this chain.
+     */
+    supportedCapabilities: readonly ChainCapability[]
     /** The developer modes each capability is off in, e.g. because the chain's backend only serves mainnet. */
     capabilityRestrictions?: ChainCapabilityRestrictions
     /** Adds every adapter the chain implements to its feature registry; `registerChainSetup` registers the descriptor. */
