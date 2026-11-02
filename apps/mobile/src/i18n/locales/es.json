@@ -3497,7 +3497,6 @@
         "common": {
             "from": "De",
             "to": "A",
-            "sent_to": "Enviado a",
             "close_amount": "Saldo restante",
             "close_to": "Saldo restante a",
             "fee": "Comisión",
@@ -3656,7 +3655,6 @@
         "heartbeat": {
             "description": "Un heartbeat demuestra que una cuenta sigue en línea y participando en el consenso de Algorand. No mueve fondos.",
             "account": "Cuenta verificada en línea",
-            "submitted_by": "Enviado por",
             "key_dilution": "Dilución de clave",
             "vote_id": "ID de voto"
         },

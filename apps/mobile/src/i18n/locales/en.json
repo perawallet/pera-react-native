@@ -3497,7 +3497,6 @@
         "common": {
             "from": "From",
             "to": "To",
-            "sent_to": "Sent To",
             "close_amount": "Remainder Amount",
             "close_to": "Remainder Sent To",
             "fee": "Fee",
@@ -3656,7 +3655,6 @@
         "heartbeat": {
             "description": "A heartbeat proves an account is still online and participating in Algorand consensus. It moves no funds.",
             "account": "Account Proved Online",
-            "submitted_by": "Submitted By",
             "key_dilution": "Key Dilution",
             "vote_id": "Vote ID"
         },

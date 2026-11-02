@@ -13,21 +13,7 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-    container: {
-        alignItems: 'stretch',
-        gap: theme.spacing.lg,
-        paddingVertical: theme.spacing.lg,
-        width: '100%',
-    },
-    detailContainer: {
-        gap: theme.spacing.lg,
-        width: '100%',
-    },
     description: {
         color: theme.colors.textGray,
-    },
-    divider: {
-        marginTop: theme.spacing.xs,
-        width: '100%',
     },
 }))

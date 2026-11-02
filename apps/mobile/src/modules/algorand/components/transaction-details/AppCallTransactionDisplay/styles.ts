@@ -13,20 +13,6 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-    container: {
-        alignItems: 'stretch',
-        gap: theme.spacing.lg,
-        paddingVertical: theme.spacing.lg,
-        width: '100%',
-    },
-    detailContainer: {
-        gap: theme.spacing.lg,
-        width: '100%',
-    },
-    divider: {
-        marginTop: theme.spacing.xs,
-        width: '100%',
-    },
     expandablePanel: {
         marginTop: theme.spacing.md,
         marginLeft: theme.spacing.md,

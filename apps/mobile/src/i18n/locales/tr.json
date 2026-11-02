@@ -3497,7 +3497,6 @@
         "common": {
             "from": "Gönderen",
             "to": "Alıcı",
-            "sent_to": "Alıcı",
             "close_amount": "Kalan bakiye",
             "close_to": "Kalan bakiyenin alıcısı",
             "fee": "Ücret",
@@ -3656,7 +3655,6 @@
         "heartbeat": {
             "description": "Heartbeat, bir hesabın hâlâ çevrimiçi olduğunu ve Algorand konsensüsüne katıldığını kanıtlar. Hiçbir fon transfer edilmez.",
             "account": "Çevrimiçi olduğu kanıtlanan hesap",
-            "submitted_by": "Gönderen",
             "key_dilution": "Key dilution",
             "vote_id": "Vote ID"
         },

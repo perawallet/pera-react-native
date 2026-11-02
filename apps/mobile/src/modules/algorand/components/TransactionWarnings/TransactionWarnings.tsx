@@ -11,13 +11,12 @@
  */
 
 import { useCallback } from 'react'
-import { PWDivider, PWView } from '@components/core'
+import { PWView } from '@components/core'
 import { PanelButton } from '@components/PanelButton'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 import type { AlgorandTransactionView } from '@perawallet/wallet-core-chain-algorand/blockchain'
-import { useTheme } from '@rneui/themed'
 import { useTransactionWarnings } from './useTransactionWarnings'
 import { TransactionWarningsContent } from './TransactionWarningsContent'
 
@@ -30,7 +29,6 @@ export const TransactionWarnings = ({
 }: TransactionWarningsProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const { theme } = useTheme()
     const { request: requestBottomSheet } = useBottomSheet()
 
     const { warningCount } = useTransactionWarnings(transaction)
@@ -51,25 +49,19 @@ export const TransactionWarnings = ({
     }
 
     return (
-        <>
-            <PWDivider
-                style={styles.divider}
-                color={theme.colors.layerGray}
+        <PWView style={styles.warningContainer}>
+            <PanelButton
+                onPress={handleOpen}
+                title={t('transactions.warning.title')}
+                titleWeight='h4'
+                description={t('transactions.warning.title_cta', {
+                    count: warningCount,
+                })}
+                leftIcon='info'
+                rightIcon='chevron-right'
+                variant='error'
+                style={styles.panelButton}
             />
-            <PWView style={styles.warningContainer}>
-                <PanelButton
-                    onPress={handleOpen}
-                    title={t('transactions.warning.title')}
-                    titleWeight='h4'
-                    description={t('transactions.warning.title_cta', {
-                        count: warningCount,
-                    })}
-                    leftIcon='info'
-                    rightIcon='chevron-right'
-                    variant='error'
-                    style={styles.panelButton}
-                />
-            </PWView>
-        </>
+        </PWView>
     )
 }

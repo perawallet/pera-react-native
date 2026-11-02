@@ -3514,7 +3514,6 @@
         "common": {
             "from": "De",
             "to": "Para",
-            "sent_to": "Enviado para",
             "close_amount": "Saldo restante",
             "close_to": "Saldo restante para",
             "fee": "Taxa",
@@ -3675,7 +3674,6 @@
         "heartbeat": {
             "description": "Um heartbeat comprova que uma conta continua online e participando do consenso da Algorand. Não movimenta fundos.",
             "account": "Conta comprovada online",
-            "submitted_by": "Enviado por",
             "key_dilution": "Diluição de chave",
             "vote_id": "ID de voto"
         },

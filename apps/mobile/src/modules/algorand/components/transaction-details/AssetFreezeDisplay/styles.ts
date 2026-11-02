@@ -11,10 +11,8 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-import { getTransactionDetailStyles } from '../transactionDetailStyles'
 
 export const useStyles = makeStyles(theme => ({
-    ...getTransactionDetailStyles(theme),
     frozenStatus: {
         color: theme.colors.alertNegative,
     },
