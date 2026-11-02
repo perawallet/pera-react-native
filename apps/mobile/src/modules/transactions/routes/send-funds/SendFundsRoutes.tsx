@@ -110,7 +110,7 @@ export const SendFundsRoutes = () => {
                 name='AssetInboxSendSummary'
                 component={AssetInboxSendSummaryScreen}
                 options={{
-                    headerShown: false,
+                    title: 'send_funds.asset_inbox_summary.title',
                 }}
             />
 

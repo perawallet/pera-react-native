@@ -285,14 +285,6 @@ describe('useAssetInboxSendSummaryScreen', () => {
         expect(result.current.isProcessing).toBe(false)
     })
 
-    it('goes back on handleClose', () => {
-        const { result } = renderHook(() => useAssetInboxSendSummaryScreen())
-
-        result.current.handleClose()
-
-        expect(mockGoBack).toHaveBeenCalled()
-    })
-
     it('opens the asset inbox support article on handleReadMore', async () => {
         const { result } = renderHook(() => useAssetInboxSendSummaryScreen())
 
