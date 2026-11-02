@@ -303,10 +303,20 @@ export const readBalances = async (
     return balances
 }
 
+// viem decodes a uint8 word without range-checking it, so a hostile contract
+// could otherwise store a scale no amount conversion should ever use.
+const isUint8 = (value: unknown): value is number =>
+    Number.isInteger(value) &&
+    (value as number) >= 0 &&
+    (value as number) <= 255
+
 /**
  * Each token's own `decimals()`, keyed by checksummed contract, through
- * Multicall3 `aggregate3` at the latest block. A token whose call reverts or
- * answers with no or truncated data is left out, so absent means unverified. A failed aggregate rejects the whole read.
+ * Multicall3 `aggregate3` at the latest block. A token whose call reverts,
+ * answers with no, truncated or out-of-range data is left out, so absent means
+ * unverified. When the aggregate itself fails, as one contract that burns the
+ * call's gas makes it, each token is read on its own so that contract can't
+ * hide the rest; the node being unreachable still rejects.
  */
 export const readErc20Decimals = async (
     client: PublicClient,
@@ -317,25 +327,46 @@ export const readErc20Decimals = async (
         abi: erc20Abi,
         functionName: 'decimals',
     })
-    const results = await aggregate3(
-        client,
-        tokens.map(target => ({ target, allowFailure: true, callData })),
-    )
     const decimals = new Map<string, number>()
-    results.forEach(({ success, returnData }, index) => {
-        if (!success) return
-        try {
-            decimals.set(
-                tokens[index]!,
-                decodeFunctionResult({
+    const keep = (token: string, value: unknown): void => {
+        if (isUint8(value)) decimals.set(token, value)
+    }
+    try {
+        const results = await aggregate3(
+            client,
+            tokens.map(target => ({ target, allowFailure: true, callData })),
+        )
+        results.forEach(({ success, returnData }, index) => {
+            if (!success) return
+            try {
+                keep(
+                    tokens[index]!,
+                    decodeFunctionResult({
+                        abi: erc20Abi,
+                        functionName: 'decimals',
+                        data: returnData,
+                    }),
+                )
+            } catch {
+                // A target with no code "succeeds" with empty return data.
+            }
+        })
+    } catch (error) {
+        const reads = await Promise.allSettled(
+            tokens.map(address =>
+                client.readContract({
+                    address,
                     abi: erc20Abi,
                     functionName: 'decimals',
-                    data: returnData,
                 }),
-            )
-        } catch {
-            // A target with no code "succeeds" with empty return data.
+            ),
+        )
+        if (tokens.length > 0 && reads.every(r => r.status === 'rejected')) {
+            throw error
         }
-    })
+        reads.forEach((read, index) => {
+            if (read.status === 'fulfilled') keep(tokens[index]!, read.value)
+        })
+    }
     return decimals
 }

@@ -420,30 +420,77 @@ describe('readErc20Decimals', () => {
         )
     })
 
-    it('rejects when the aggregate answers fewer results than calls', async () => {
+    // Answers each JSON-RPC eth_call by its target: `reply` returns a hex result
+    // or null for an execution revert.
+    const serveCalls = (reply: (to: Hex) => Hex | null) =>
         server.use(
             http.post(TEST_RPC_URL, async ({ request }) => {
                 const body: unknown = await request.clone().json()
                 const items = (Array.isArray(body) ? body : [body]) as {
                     id: number
+                    params: { to: Hex }[]
                 }[]
-                const replies = items.map(({ id }) => ({
-                    jsonrpc: '2.0',
-                    id,
-                    result: encodeFunctionResult({
-                        abi: multicall3Abi,
-                        functionName: 'aggregate3',
-                        result: [{ success: true, returnData: '0x' }],
-                    }),
-                }))
+                const replies = items.map(({ id, params }) => {
+                    const result = reply(params[0]!.to)
+                    return result === null
+                        ? {
+                              jsonrpc: '2.0',
+                              id,
+                              error: { code: 3, message: 'execution reverted' },
+                          }
+                        : { jsonrpc: '2.0', id, result }
+                })
                 return HttpResponse.json(
                     Array.isArray(body) ? replies : replies[0],
                 )
             }),
         )
+    const isMulticall = (to: Hex) => isAddressEqual(to, MULTICALL3_ADDRESS)
+    const word = (value: bigint) =>
+        encodeAbiParameters([{ type: 'uint256' }], [value])
+
+    it('rejects when the aggregate answers fewer results than calls', async () => {
+        serveCalls(to =>
+            isMulticall(to)
+                ? encodeFunctionResult({
+                      abi: multicall3Abi,
+                      functionName: 'aggregate3',
+                      result: [{ success: true, returnData: '0x' }],
+                  })
+                : null,
+        )
 
         await expect(readErc20Decimals(client(), [USDC, DAI])).rejects.toThrow(
             'Multicall3 answered 1 of 2 calls',
         )
+    })
+
+    it('reads the other tokens on their own when one contract fails the whole aggregate', async () => {
+        serveCalls(to =>
+            isMulticall(to) || isAddressEqual(to, DAI) ? null : word(6n),
+        )
+
+        const decimals = await readErc20Decimals(client(), [USDC, DAI])
+
+        expect(decimals).toEqual(new Map([[USDC, 6]]))
+    })
+
+    it('leaves out a token whose decimals are not a uint8', async () => {
+        serveCalls(to =>
+            isMulticall(to)
+                ? encodeFunctionResult({
+                      abi: multicall3Abi,
+                      functionName: 'aggregate3',
+                      result: [
+                          { success: true, returnData: word(6n) },
+                          { success: true, returnData: word(256n) },
+                      ],
+                  })
+                : null,
+        )
+
+        const decimals = await readErc20Decimals(client(), [USDC, DAI])
+
+        expect(decimals).toEqual(new Map([[USDC, 6]]))
     })
 })
