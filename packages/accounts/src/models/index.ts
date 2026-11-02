@@ -64,7 +64,24 @@ export type WalletDiscoveryCoverage = 'complete' | 'partial' | 'unanswered'
 export type WalletDiscoveryResult = {
     /** The accounts the walk created or enabled a chain on, as stored after it ends. */
     accounts: WalletAccount[]
+    /** Of `accounts`, the ones the walk created; the rest gained a chain. */
+    createdAccountIds: string[]
     coverage: WalletDiscoveryCoverage
+    /** The chains that failed or left a batch partly unanswered; a rerun on them alone may find more. */
+    failedChainIds: ChainId[]
+    /** The walk was aborted; what it found before that was still added. */
+    isCancelled: boolean
+}
+
+export type WalletDiscoveryProgress = {
+    /** Every chain the walk covers, in walk order. */
+    chainIds: ChainId[]
+    /** The chains that have failed so far; never probed again in this walk. */
+    failedChainIds: ChainId[]
+    /** How many account indexes the walk has probed so far. */
+    checkedAccountCount: number
+    /** Active indexes no account in the wallet holds yet, i.e. new accounts. */
+    foundCount: number
 }
 
 export type AccountsState = BaseStoreState & {
@@ -179,6 +196,10 @@ export type AccountsState = BaseStoreState & {
         options?: {
             declinedIndexes?: readonly HdIndex[]
             rootKey?: Uint8Array
+            /** Walks only these chains; every HD discovery chain by default. */
+            chainIds?: readonly ChainId[]
+            signal?: AbortSignal
+            onProgress?: (progress: WalletDiscoveryProgress) => void
         },
     ) => Promise<WalletDiscoveryResult>
     /**

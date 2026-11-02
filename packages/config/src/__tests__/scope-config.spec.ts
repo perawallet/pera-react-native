@@ -425,28 +425,28 @@ describe('ethereum scopes', () => {
 
     test('getChainConfig returns the configured RPC URL per network', async () => {
         const { getChainConfig: fresh } = await withEthereumConfig({
-            ethereumMainnetRpcUrl: 'https://mainnet.rpc.example',
-            ethereumSepoliaRpcUrl: 'https://sepolia.rpc.example',
+            ethereumMainnetRpcUrl: ['https://mainnet.rpc.example'],
+            ethereumSepoliaRpcUrl: ['https://sepolia.rpc.example'],
         })
 
         expect(
             fresh({ chainId: 'ethereum', networkId: 'sepolia' }),
-        ).toStrictEqual({ rpcUrl: 'https://sepolia.rpc.example' })
+        ).toStrictEqual({ rpcUrls: ['https://sepolia.rpc.example'] })
         expect(
             fresh({ chainId: 'ethereum', networkId: 'mainnet' }),
-        ).toStrictEqual({ rpcUrl: 'https://mainnet.rpc.example' })
+        ).toStrictEqual({ rpcUrls: ['https://mainnet.rpc.example'] })
     })
 
     test('a registered custom-node source never reaches an Ethereum scope', async () => {
         const { getChainConfig: fresh, registerCustomNetworkSource: register } =
             await withEthereumConfig({
-                ethereumSepoliaRpcUrl: 'https://sepolia.rpc.example',
+                ethereumSepoliaRpcUrl: ['https://sepolia.rpc.example'],
             })
         const unregister = register(() => SAVED_NODE)
 
         try {
             expect(fresh(ETHEREUM_SEPOLIA)).toStrictEqual({
-                rpcUrl: 'https://sepolia.rpc.example',
+                rpcUrls: ['https://sepolia.rpc.example'],
             })
         } finally {
             unregister()
@@ -456,8 +456,8 @@ describe('ethereum scopes', () => {
     test('a network without an RPC URL is unconfigured', async () => {
         const { getChainConfig: fresh, UnconfiguredScopeError: FreshError } =
             await withEthereumConfig({
-                ethereumMainnetRpcUrl: 'https://mainnet.rpc.example',
-                ethereumSepoliaRpcUrl: '',
+                ethereumMainnetRpcUrl: ['https://mainnet.rpc.example'],
+                ethereumSepoliaRpcUrl: [],
             })
 
         expect(() => fresh(ETHEREUM_SEPOLIA)).toThrow(FreshError)
@@ -466,7 +466,7 @@ describe('ethereum scopes', () => {
     test('getAlgorandChainConfig refuses an Ethereum scope', async () => {
         const { getAlgorandChainConfig, UnconfiguredScopeError: FreshError } =
             await withEthereumConfig({
-                ethereumMainnetRpcUrl: 'https://mainnet.rpc.example',
+                ethereumMainnetRpcUrl: ['https://mainnet.rpc.example'],
             })
 
         expect(() => getAlgorandChainConfig(ETHEREUM_MAINNET)).toThrow(
@@ -554,12 +554,12 @@ describe('a scope generated from the EVM table', () => {
     test('reads its RPC URL and services from its own fields', async () => {
         const { getChainConfig: fresh, peraServicesFor: freshFor } =
             await withEthereumConfig({
-                baseSepoliaRpcUrl: 'https://base-sepolia.rpc.example',
+                baseSepoliaRpcUrl: ['https://base-sepolia.rpc.example'],
                 baseSepoliaPeraServices: ['assets'],
             })
 
         expect(fresh(BASE_SEPOLIA)).toStrictEqual({
-            rpcUrl: 'https://base-sepolia.rpc.example',
+            rpcUrls: ['https://base-sepolia.rpc.example'],
         })
         expect(freshFor(BASE_SEPOLIA)).toStrictEqual(new Set(['assets']))
     })
@@ -574,7 +574,7 @@ describe('a scope generated from the EVM table', () => {
 
     test('without an RPC URL is unconfigured', async () => {
         const { getChainConfig: fresh, UnconfiguredScopeError: FreshError } =
-            await withEthereumConfig({ baseMainnetRpcUrl: '' })
+            await withEthereumConfig({ baseMainnetRpcUrl: [] })
 
         expect(() => fresh(BASE_MAINNET)).toThrow(FreshError)
     })
@@ -600,31 +600,48 @@ describe('chainEndpointsFor', () => {
 
     test('keys Ethereum RPC URLs by network id', async () => {
         const { chainEndpointsFor } = await withEthereumConfig({
-            ethereumMainnetRpcUrl: 'https://mainnet.rpc.example',
-            ethereumSepoliaRpcUrl: 'https://sepolia.rpc.example',
+            ethereumMainnetRpcUrl: ['https://mainnet.rpc.example'],
+            ethereumSepoliaRpcUrl: ['https://sepolia.rpc.example'],
         })
 
         expect(chainEndpointsFor('ethereum')).toStrictEqual({
-            mainnet: 'https://mainnet.rpc.example',
-            sepolia: 'https://sepolia.rpc.example',
+            mainnet: ['https://mainnet.rpc.example'],
+            sepolia: ['https://sepolia.rpc.example'],
+        })
+    })
+
+    test("keeps a network's RPC URLs in the order the build lists them", async () => {
+        const { chainEndpointsFor } = await withEthereumConfig({
+            ethereumMainnetRpcUrl: [
+                'https://first.rpc.example',
+                'https://second.rpc.example',
+            ],
+            ethereumSepoliaRpcUrl: [],
+        })
+
+        expect(chainEndpointsFor('ethereum')).toStrictEqual({
+            mainnet: [
+                'https://first.rpc.example',
+                'https://second.rpc.example',
+            ],
         })
     })
 
     test('leaves out a network without an RPC URL', async () => {
         const { chainEndpointsFor } = await withEthereumConfig({
-            ethereumMainnetRpcUrl: 'https://mainnet.rpc.example',
-            ethereumSepoliaRpcUrl: '',
+            ethereumMainnetRpcUrl: ['https://mainnet.rpc.example'],
+            ethereumSepoliaRpcUrl: [],
         })
 
         expect(chainEndpointsFor('ethereum')).toStrictEqual({
-            mainnet: 'https://mainnet.rpc.example',
+            mainnet: ['https://mainnet.rpc.example'],
         })
     })
 
     test('is empty for a build with no RPC URLs', async () => {
         const { chainEndpointsFor } = await withEthereumConfig({
-            ethereumMainnetRpcUrl: '',
-            ethereumSepoliaRpcUrl: '',
+            ethereumMainnetRpcUrl: [],
+            ethereumSepoliaRpcUrl: [],
         })
 
         expect(chainEndpointsFor('ethereum')).toStrictEqual({})

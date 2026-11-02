@@ -21,6 +21,7 @@ import {
     type HistoryPeriod,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
+import { DISCOVERY_LOOKUP_BOUNDS } from '../../accounts/discovery-bounds'
 import { eip155ChainIdOf, toCaip19 } from '../../blockchain/utils/caip19'
 import type { EvmChain } from '../../chains/types'
 import {
@@ -181,6 +182,7 @@ export const fetchHasNftHoldings = async (
             address.toLowerCase(),
         ),
         headers: buildIntegrityHeaders(),
+        ...DISCOVERY_LOOKUP_BOUNDS,
     })
     const { results, next } = nftHoldingsPageSchema.parse(data)
     return results.length > 0 || next !== null

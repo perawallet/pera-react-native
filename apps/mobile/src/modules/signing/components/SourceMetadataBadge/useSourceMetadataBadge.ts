@@ -16,6 +16,7 @@ import {
     isSameOrigin,
     originOf,
     stripUrlScheme,
+    type Optional,
 } from '@perawallet/wallet-core-shared'
 import {
     resolveDisplayableVerificationTier,
@@ -28,6 +29,9 @@ import {
 import { useSiteSafetyQuery } from '@perawallet/wallet-core-site-safety'
 import { useLanguage } from '@hooks/useLanguage'
 import { useSignRequestScope } from '../../hooks/useSignRequestScope'
+
+const siteKeyOf = (value?: string): Optional<string> =>
+    stripUrlScheme(value)?.replace(/\/+$/, '').toLowerCase()
 
 export const useSourceMetadataBadge = (
     metadata: SignRequestSource,
@@ -72,6 +76,10 @@ export const useSourceMetadataBadge = (
 
     const url = useMemo(() => stripUrlScheme(metadata.url), [metadata.url])
 
+    // A name that is the host would repeat it in the badge; the view keeps it as its heading.
+    const isNameShown =
+        !!displayName && siteKeyOf(displayName) !== siteKeyOf(url)
+
     // The name and url above are what the dApp claims about itself.
     const requestOriginLabel =
         verifiedOrigin && !isSameOrigin(verifiedOrigin, metadata.url)
@@ -85,6 +93,7 @@ export const useSourceMetadataBadge = (
     return {
         displayIcon,
         displayName,
+        isNameShown,
         url,
         verificationTier,
         requestOriginLabel,

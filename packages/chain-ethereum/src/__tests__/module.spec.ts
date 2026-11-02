@@ -101,6 +101,13 @@ describe.each(EVM_TEST_CHAINS)('the $row.id module', chain => {
         }
     })
 
+    it('declares its own pinning kill switch, off until remote config turns it on', () => {
+        expect(module.remoteConfigDefaults).toEqual({
+            [`enable_ssl_pinning_${id}_rpc`]: false,
+        })
+        expect(module.pinnedHosts?.().flag).toBe(`enable_ssl_pinning_${id}_rpc`)
+    })
+
     it('registers its descriptor, adapters and defaults through the setup', () => {
         const chains = createChainRegistry()
 

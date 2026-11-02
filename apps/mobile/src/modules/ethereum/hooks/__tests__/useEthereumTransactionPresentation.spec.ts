@@ -82,6 +82,37 @@ describe('useEthereumTransactionPresentation', () => {
         expect(result.current?.isAmountLoading).toBe(false)
     })
 
+    it("carries the max fee in wei and the view's fee estimate for the review", () => {
+        const estimate = { preset: 'fast', amount: new Decimal('63000') }
+        const estimated = {
+            ...natives.transfer,
+            transaction: {
+                ...(natives.transfer.transaction as object),
+                feeEstimate: estimate,
+            },
+        } as TransactionNative
+
+        const { result } = renderHook(() =>
+            useEthereumTransactionPresentation(estimated),
+        )
+
+        expect(result.current?.reviewFee).toEqual({
+            maxAmount: new Decimal('420000000000000'),
+            estimate,
+        })
+    })
+
+    it('has no estimate in the review fee when the view carries none', () => {
+        const { result } = renderHook(() =>
+            useEthereumTransactionPresentation(natives.transfer),
+        )
+
+        expect(result.current?.reviewFee).toEqual({
+            maxAmount: new Decimal('420000000000000'),
+        })
+        expect(result.current?.reviewFee).not.toHaveProperty('estimate')
+    })
+
     it('formats the maximum fee as a warning only on a request flagged as paying far more than the wallet would', () => {
         const flagged = {
             ...natives.transfer,
@@ -227,6 +258,7 @@ describe('useEthereumTransactionPresentation', () => {
         )
 
         expect(result.current?.maxFee).toBeNull()
+        expect(result.current?.reviewFee).toBeNull()
         expect(result.current?.counterparty).toBe(ETHEREUM_FIXTURE_TOKEN)
     })
 
@@ -464,6 +496,7 @@ describe('useEthereumTransactionPresentation', () => {
             )
 
             expect(result.current?.maxFee).toBeNull()
+            expect(result.current?.reviewFee).toBeNull()
             expect(result.current?.feePaid?.value).toEqual(
                 new Decimal('0.000021'),
             )

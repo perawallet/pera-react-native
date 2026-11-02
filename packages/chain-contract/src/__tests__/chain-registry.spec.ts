@@ -518,7 +518,7 @@ describe('buildChainSetup', () => {
 
     it("fills every entry's endpoints from endpointsFor, a disabled chain's included", () => {
         const endpointsFor = vi.fn((chainId: ChainId) => ({
-            [chainId]: `https://${chainId}.test`,
+            [chainId]: [`https://${chainId}.test`],
         }))
 
         const setup = buildChainSetup(
@@ -528,8 +528,8 @@ describe('buildChainSetup', () => {
         )
 
         expect(setup.map(entry => entry.endpoints)).toEqual([
-            { algorand: 'https://algorand.test' },
-            { ethereum: 'https://ethereum.test' },
+            { algorand: ['https://algorand.test'] },
+            { ethereum: ['https://ethereum.test'] },
         ])
         expect(endpointsFor).toHaveBeenCalledTimes(2)
     })

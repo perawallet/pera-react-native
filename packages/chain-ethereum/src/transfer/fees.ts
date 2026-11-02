@@ -309,6 +309,21 @@ export const withRequestedEvmFees = (
     return { maxFeePerGas, maxPriorityFeePerGas }
 }
 
+/**
+ * The fastest preset whose tip `maxPriorityFeePerGas` reaches; `slow` when it
+ * is below every preset. Wei per gas.
+ */
+export const evmFeePresetOf = (
+    maxPriorityFeePerGas: bigint,
+    presets: Record<FeePreset, FeeValuesEIP1559>,
+): FeePreset => {
+    if (maxPriorityFeePerGas >= presets.fast.maxPriorityFeePerGas) return 'fast'
+    if (maxPriorityFeePerGas >= presets.normal.maxPriorityFeePerGas) {
+        return 'normal'
+    }
+    return 'slow'
+}
+
 /** Estimates the call's gas and reads EIP-1559 fees at each preset's fee-history percentile. */
 export const readTransferGasAndPresets = async (
     client: PublicClient,

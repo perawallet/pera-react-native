@@ -732,7 +732,7 @@ describe('a transfer built for Base', () => {
         const adapterOn = createEvmTransferAdapter(
             {
                 ...testChainContext({ chain: BASE }),
-                getEndpoints: () => ({ [scope.networkId]: TEST_RPC_URL }),
+                getEndpoints: () => ({ [scope.networkId]: [TEST_RPC_URL] }),
             },
             BASE,
         )

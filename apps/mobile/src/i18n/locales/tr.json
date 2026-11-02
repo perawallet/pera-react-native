@@ -977,6 +977,7 @@
         }
     },
     "common": {
+        "networks_list": "{{first}} ve {{last}}",
         "offline_mode": "Çevrimdışı mod",
         "offline_mode_description": "Bakiyeler güncel olmayabilir ve yeniden bağlanana kadar bazı özellikler kullanılamaz.",
         "offline_refresh_body": "Çevrimdışısın — yeniden çevrimiçi olduğunda otomatik olarak yenilenecek.",
@@ -1055,8 +1056,7 @@
         "wealth_chart": {
             "empty_body": "Bakiye geçmişin olduğunda burada bir grafik göreceksin",
             "asset_empty_body": "Bu hesapta bu varlık için bakiye geçmişin olduğunda burada bir grafik göreceksin",
-            "excludes_networks": "Bu grafik henüz {{networks}} varlıklarını içermiyor",
-            "networks_list": "{{first}} ve {{last}}"
+            "excludes_networks": "Bu grafik henüz {{networks}} varlıklarını içermiyor"
         },
         "webview": {
             "failed_title": "Sayfa yüklenemedi",
@@ -2275,18 +2275,42 @@
         },
         "searching_accounts": {
             "title": "Hesapların aranıyor",
-            "no_new_addresses_title": "Yeni adres bulunamadı",
-            "no_new_addresses_body": "Bu cüzdanla ilişkili başka bir adres bulamadık.",
             "rekey_scan_failed_title": "Rekey yapılmış hesaplar kontrol edilemedi",
             "rekey_scan_failed_body": "Hesabın içe aktarıldı. Başka hesapların bu hesaba rekey yapılıp yapılmadığını kontrol edemedik — Ayarlar'dan yeniden tarayabilirsin.",
             "rekey_rescan_failed_body": "Başka hesapların bu cüzdana rekey yapılıp yapılmadığını kontrol edemedik. Tekrar denemek için yeniden tara.",
-            "rescan_found_title": "Tarama tamamlandı",
-            "rescan_found_body_one": "1 hesap eklendi veya güncellendi.",
-            "rescan_found_body_other": "{{count}} hesap eklendi veya güncellendi.",
-            "rescan_partial_title": "Tarama eksik kaldı",
-            "rescan_partial_body": "Bazı kontroller tamamlanamadı. Şimdiye kadar bulunan hesaplar eklendi. Kalanları bulmak için yeniden tara.",
             "rescan_failed_title": "Hesaplar taranamadı",
-            "rescan_failed_body": "Bağlantını kontrol edip tekrar dene."
+            "rescan_failed_body": "Bağlantını kontrol edip tekrar dene.",
+            "cancel": "İptal",
+            "network_checking": "Kontrol ediliyor",
+            "network_failed": "Kontrol edilemedi",
+            "checked_accounts_one": "{{count}} hesap kontrol edildi",
+            "checked_accounts_other": "{{count}} hesap kontrol edildi",
+            "new_found_one": "{{count}} yeni hesap bulundu",
+            "new_found_other": "{{count}} yeni hesap bulundu"
+        },
+        "scan_accounts_result": {
+            "found_title_one": "{{count}} yeni hesap bulundu",
+            "found_title_other": "{{count}} yeni hesap bulundu",
+            "found_body_one": "Cüzdanına eklendi.",
+            "found_body_other": "Cüzdanına eklendiler.",
+            "none_title": "Yeni hesap bulunamadı",
+            "none_body": "Bu cüzdanla ilişkili başka bir hesap bulamadık.",
+            "failed_networks_body": "Şu ağlar kontrol edilemedi: {{networks}}. Diğer ağlarda bulunan hesaplar eklendi.",
+            "failed_networks_none_body": "Şu ağlar kontrol edilemedi: {{networks}}. Diğer ağlarda yeni bir şey bulunamadı.",
+            "incomplete_body": "Bazı kontroller tamamlanamadı. Şimdiye kadar bulunan hesaplar eklendi. Kalanları bulmak için yeniden tara.",
+            "cancelled_title": "Tarama durduruldu",
+            "cancelled_body": "Durdurmadan önce bulunan hesaplar eklendi.",
+            "cancelled_none_body": "Durdurmadan önce yeni bir şey bulunamadı.",
+            "retry_networks": "Yeniden kontrol et: {{networks}}",
+            "scan_again": "Yeniden tara",
+            "done": "Tamam",
+            "incomplete_title": "Tarama tamamlanmadı",
+            "updated_title_one": "{{count}} hesapta yeni ağlar bulundu",
+            "updated_title_other": "{{count}} hesapta yeni ağlar bulundu",
+            "updated_body_one": "Diğer ağlarda hareket bulduk ve bu hesap için açtık.",
+            "updated_body_other": "Diğer ağlarda hareket bulduk ve bu hesaplar için açtık.",
+            "updated_note_one": "Mevcut {{count}} hesapta da yeni ağlar açıldı.",
+            "updated_note_other": "Mevcut {{count}} hesapta da yeni ağlar açıldı."
         },
         "create_account": {
             "processing": "Cüzdanın hazırlanıyor...",
@@ -3570,7 +3594,10 @@
         "contract_call": {
             "warning": "Pera bu sözleşme çağrısının ne yaptığını anlayamıyor.",
             "function_selector": "Fonksiyon seçici",
-            "call_data": "Çağrı verisi"
+            "call_data": "Çağrı verisi",
+            "advanced": "Gelişmiş",
+            "unchecked_warning": "Pera bu işlemin ne yaptığını kontrol edemedi. Yalnızca {{domain}} sitesine güveniyorsan devam et.",
+            "unchecked_warning_no_source": "Pera bu işlemin ne yaptığını kontrol edemedi. Yalnızca işlemi gönderen uygulamaya güveniyorsan devam et."
         },
         "type": {
             "pay": "Ödeme işlemi",

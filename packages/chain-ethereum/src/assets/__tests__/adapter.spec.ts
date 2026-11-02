@@ -20,7 +20,7 @@ import {
     it,
     vi,
 } from 'vitest'
-import { getAddress } from 'viem'
+import { getAddress, isAddressEqual } from 'viem'
 import { http, HttpResponse } from 'msw'
 import { setupServer } from 'msw/node'
 import type {
@@ -56,9 +56,11 @@ import {
 } from '../api/msw-handlers'
 import {
     erc20CallResponder,
+    EvmRpcErrorFixture,
     evmRpcHandlers,
     type Erc20Fixture,
 } from '../../blockchain/msw-handlers'
+import { MULTICALL3_ADDRESS } from '../../blockchain/utils/erc20'
 import {
     TEST_PERA_URL,
     TEST_RPC_URL,
@@ -148,6 +150,37 @@ const memoryPersistence = (stale: (ids: string[]) => string[] = ids => ids) => {
         node: repository.node,
         full: repository.full,
     }
+}
+
+const daiFromPera: AssetItemResponse = {
+    ...unknownAssetItem(DAI_CAIP19),
+    type: 'erc20',
+    name: 'Dai',
+    unit_name: 'DAI',
+    fraction_decimals: 6,
+    verification_tier: 'verified',
+}
+
+// Register after the RPC fixtures so it sees each request first; it lets
+// every request through to them.
+const recordEthCalls = (): string[][] => {
+    const requests: string[][] = []
+    server.use(
+        http.post(TEST_RPC_URL, async ({ request }) => {
+            const body: unknown = await request.clone().json()
+            const items = (Array.isArray(body) ? body : [body]) as {
+                method: string
+                params: { to?: string }[]
+            }[]
+            requests.push(
+                items
+                    .filter(item => item.method === 'eth_call')
+                    .map(item => String(item.params[0]?.to)),
+            )
+            return undefined
+        }),
+    )
+    return requests
 }
 
 const ref = (assetId: string): AssetRef => ({ chainId: 'ethereum', assetId })
@@ -350,6 +383,7 @@ describe('syncAssets', () => {
     it('fetches only stale tokens from the backend and persists both halves', async () => {
         const requested: unknown[] = []
         server.use(
+            ...rpc({ [USDC]: usdcOnChain }),
             http.post(`${TEST_PERA_URL}${ASSETS_PATH}`, async ({ request }) => {
                 requested.push(await request.json())
                 return HttpResponse.json({ results: [usdcFromPera] })
@@ -469,9 +503,136 @@ describe('syncAssets', () => {
         expect(requests).toEqual([])
     })
 
+    it("stores a backend-known token with its contract's decimals, keeping the rest of the backend record", async () => {
+        server.use(
+            ...rpc({ [USDC]: usdcOnChain }),
+            ...peraEvmAssetHandlers({
+                baseUrl: TEST_PERA_URL,
+                assets: { [USDC_CAIP19]: usdcFromPera },
+            }),
+        )
+        const { node, full } = memoryPersistence()
+        const ops = createEthereumAssetsAdapter(
+            testChainContext({ services: ['assets'] }),
+            ETHEREUM,
+        )
+
+        await ops.syncAssets([ref(USDC)], SCOPE)
+
+        expect(full).toHaveLength(1)
+        expect(full[0]).toMatchObject({
+            assetId: USDC,
+            decimals: 6,
+            name: 'Pera USD Coin',
+            unitName: 'pUSDC',
+            peraMetadata: {
+                logo: 'https://pera.test/usdc.png',
+                verificationTier: 'verified',
+            },
+        })
+        expect(node).toEqual([])
+    })
+
+    it("stores a contract's 0 decimals over the backend's", async () => {
+        server.use(
+            ...rpc({ [USDC]: { ...usdcOnChain, decimals: 0 } }),
+            ...peraEvmAssetHandlers({
+                baseUrl: TEST_PERA_URL,
+                assets: { [USDC_CAIP19]: usdcFromPera },
+            }),
+        )
+        const { full } = memoryPersistence()
+        const ops = createEthereumAssetsAdapter(
+            testChainContext({ services: ['assets'] }),
+            ETHEREUM,
+        )
+
+        await ops.syncAssets([ref(USDC)], SCOPE)
+
+        expect(full[0]?.decimals).toBe(0)
+    })
+
+    it("checks every backend-known token's decimals with one Multicall3 read", async () => {
+        server.use(
+            ...rpc({ [USDC]: usdcOnChain, [DAI]: daiOnChain }),
+            ...peraEvmAssetHandlers({
+                baseUrl: TEST_PERA_URL,
+                assets: {
+                    [USDC_CAIP19]: usdcFromPera,
+                    [DAI_CAIP19]: daiFromPera,
+                },
+            }),
+        )
+        const ethCalls = recordEthCalls()
+        const { full } = memoryPersistence()
+        const ops = createEthereumAssetsAdapter(
+            testChainContext({ services: ['assets'] }),
+            ETHEREUM,
+        )
+
+        await ops.syncAssets([USDC, DAI].map(ref), SCOPE)
+
+        const reads = ethCalls.filter(calls => calls.length > 0)
+        expect(reads).toHaveLength(1)
+        expect(reads[0]).toHaveLength(1)
+        expect(
+            isAddressEqual(reads[0]![0] as `0x${string}`, MULTICALL3_ADDRESS),
+        ).toBe(true)
+        expect(
+            Object.fromEntries(full.map(a => [a.assetId, a.decimals])),
+        ).toEqual({ [USDC]: 6, [DAI]: 18 })
+    })
+
+    it('leaves a backend-known token its contract does not answer for unstored, storing the rest', async () => {
+        server.use(
+            ...rpc({ [USDC]: usdcOnChain }),
+            ...peraEvmAssetHandlers({
+                baseUrl: TEST_PERA_URL,
+                assets: {
+                    [USDC_CAIP19]: usdcFromPera,
+                    [DAI_CAIP19]: daiFromPera,
+                },
+            }),
+        )
+        const { full } = memoryPersistence()
+        const ops = createEthereumAssetsAdapter(
+            testChainContext({ services: ['assets'] }),
+            ETHEREUM,
+        )
+
+        await ops.syncAssets([USDC, DAI].map(ref), SCOPE)
+
+        expect(full.map(a => a.assetId)).toEqual([USDC])
+    })
+
+    it('stores no backend-known token when the node fails, and still resolves', async () => {
+        server.use(
+            ...evmRpcHandlers({
+                rpcUrl: TEST_RPC_URL,
+                responses: {
+                    eth_call: new EvmRpcErrorFixture(-32_000, 'node down'),
+                },
+            }),
+            ...peraEvmAssetHandlers({
+                baseUrl: TEST_PERA_URL,
+                assets: { [USDC_CAIP19]: usdcFromPera },
+            }),
+        )
+        const { persistence } = memoryPersistence()
+        const ops = createEthereumAssetsAdapter(
+            testChainContext({ services: ['assets'] }),
+            ETHEREUM,
+        )
+
+        await expect(
+            ops.syncAssets([ref(USDC)], SCOPE),
+        ).resolves.toBeUndefined()
+        expect(persistence.upsertAssets).not.toHaveBeenCalled()
+    })
+
     it('reads on-chain the tokens the backend did not return', async () => {
         server.use(
-            ...rpc({ [DAI]: usdcOnChain }),
+            ...rpc({ [USDC]: usdcOnChain, [DAI]: usdcOnChain }),
             ...peraEvmAssetHandlers({
                 baseUrl: TEST_PERA_URL,
                 assets: { [USDC_CAIP19]: usdcFromPera },
@@ -491,7 +652,7 @@ describe('syncAssets', () => {
 
     it('reads on-chain the tokens the backend answers without metadata', async () => {
         server.use(
-            ...rpc({ [DAI]: usdcOnChain }),
+            ...rpc({ [USDC]: usdcOnChain, [DAI]: usdcOnChain }),
             ...peraEvmAssetHandlers({
                 baseUrl: TEST_PERA_URL,
                 assets: {
@@ -514,7 +675,7 @@ describe('syncAssets', () => {
 
     it('stores nothing for a token whose backend row it cannot read', async () => {
         server.use(
-            ...rpc({ [DAI]: usdcOnChain }),
+            ...rpc({ [USDC]: usdcOnChain, [DAI]: usdcOnChain }),
             ...peraEvmAssetHandlers({
                 baseUrl: TEST_PERA_URL,
                 assets: {
@@ -604,6 +765,18 @@ describe('syncAssets', () => {
         )
         const batchSizes: number[] = []
         server.use(
+            ...rpc(
+                Object.fromEntries(
+                    ids.map((id, index) => [
+                        getAddress(id),
+                        // The last token sits in the second aggregate; its own
+                        // decimals show the results pair back to the right call.
+                        index === ids.length - 1
+                            ? { ...usdcOnChain, decimals: 2 }
+                            : usdcOnChain,
+                    ]),
+                ),
+            ),
             http.post(`${TEST_PERA_URL}${ASSETS_PATH}`, async ({ request }) => {
                 const body = (await request.json()) as { ids: string[] }
                 batchSizes.push(body.ids.length)
@@ -618,6 +791,7 @@ describe('syncAssets', () => {
                 })
             }),
         )
+        const ethCalls = recordEthCalls()
         const { full } = memoryPersistence()
         const ops = createEthereumAssetsAdapter(
             testChainContext({ services: ['assets'] }),
@@ -628,6 +802,18 @@ describe('syncAssets', () => {
 
         expect(batchSizes).toEqual([500, 1])
         expect(full).toHaveLength(501)
+        expect(full[0]?.decimals).toBe(6)
+        expect(full[500]?.decimals).toBe(2)
+        // 501 reads are two aggregates in one request.
+        expect(ethCalls.filter(calls => calls.length > 0)).toHaveLength(1)
+        expect(ethCalls.flat()).toHaveLength(2)
+        expect(
+            ethCalls
+                .flat()
+                .every(to =>
+                    isAddressEqual(to as `0x${string}`, MULTICALL3_ADDRESS),
+                ),
+        ).toBe(true)
     })
 
     it('makes no request when nothing is stale', async () => {

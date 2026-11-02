@@ -111,7 +111,7 @@ vi.mock('@perawallet/wallet-core-config', async importOriginal => {
         ...actual,
         chainEndpointsFor: (chainId: ChainId) =>
             chainId === 'ethereum'
-                ? { mainnet: 'https://mainnet.rpc.test/' }
+                ? { mainnet: ['https://mainnet.rpc.test/'] }
                 : actual.chainEndpointsFor(chainId),
         config: {
             ...actual.config,

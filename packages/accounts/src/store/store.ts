@@ -548,13 +548,18 @@ const holdsAddressOn = (
     })
 
 const coverageOf = (
-    outcomes: Record<HdProbeOutcome, number>,
+    outcomes: ReadonlyMap<ChainId, Set<HdProbeOutcome>>,
+    failedChainIds: readonly ChainId[],
     isWalkIncomplete: boolean,
+    hasCheckableChain: boolean,
 ): WalletDiscoveryCoverage => {
-    if (outcomes.answered + outcomes.partial === 0) return 'unanswered'
-    if (isWalkIncomplete || outcomes.partial + outcomes.failed > 0) {
-        return 'partial'
-    }
+    const hasAnswer = [...outcomes.values()].some(
+        settled => settled.has('answered') || settled.has('partial'),
+    )
+    // With no chain left to ask (every one refused, or a retry of chains no
+    // longer offered), no answer is not a failure to get one.
+    if (!hasAnswer && hasCheckableChain) return 'unanswered'
+    if (isWalkIncomplete || failedChainIds.length > 0) return 'partial'
     return 'complete'
 }
 
@@ -1225,31 +1230,90 @@ export const useAccountsStore: UseBoundStore<
                 queuedFor(`wallet:${walletId}`, () =>
                     trackWalk(async () => {
                         let probed: ProbedHdIndex[] = []
-                        const outcomes: Record<HdProbeOutcome, number> = {
-                            answered: 0,
-                            partial: 0,
-                            failed: 0,
-                        }
+                        const eligible = hdDiscoveryChains()
+                        // A retry names chains from an earlier walk; one
+                        // switched off since is no longer walked.
+                        const chainIds = options.chainIds
+                            ? eligible.filter(chainId =>
+                                  options.chainIds?.includes(chainId),
+                              )
+                            : eligible
+                        const outcomes = new Map<ChainId, Set<HdProbeOutcome>>()
+                        const failedSoFar = new Set<ChainId>()
+                        // Switched off on the backend: not a network the user
+                        // can scan, so it leaves the progress rows.
+                        const refused = new Set<ChainId>()
+                        const found = new Set<string>()
+                        let checkedAccountCount = 0
+                        const reportProgress = () =>
+                            options.onProgress?.({
+                                chainIds: chainIds.filter(
+                                    chainId => !refused.has(chainId),
+                                ),
+                                failedChainIds: chainIds.filter(chainId =>
+                                    failedSoFar.has(chainId),
+                                ),
+                                checkedAccountCount,
+                                foundCount: found.size,
+                            })
+                        reportProgress()
                         let isWalkIncomplete = false
                         // Only the probes read the root key; the adds derive
                         // through the keystore, so it is zeroed before them.
                         try {
                             probed = await discoverWalletActivity({
                                 walletId,
-                                chainIds: hdDiscoveryChains(),
+                                chainIds,
                                 onUnusedKeys: removeUnclaimedKeys,
-                                onProbeSettled: outcome => {
-                                    outcomes[outcome]++
+                                onProbeSettled: (chainId, outcome) => {
+                                    const settled =
+                                        outcomes.get(chainId) ?? new Set()
+                                    settled.add(outcome)
+                                    outcomes.set(chainId, settled)
+                                    // Partial counts too: the result names
+                                    // the chain as unchecked either way.
+                                    if (
+                                        outcome === 'failed' ||
+                                        outcome === 'partial'
+                                    ) {
+                                        failedSoFar.add(chainId)
+                                        reportProgress()
+                                    } else if (outcome === 'refused') {
+                                        refused.add(chainId)
+                                        reportProgress()
+                                    }
                                 },
+                                onBatchProbed: batch => {
+                                    checkedAccountCount = Math.max(
+                                        checkedAccountCount,
+                                        ...batch.map(
+                                            ({ account }) => account + 1,
+                                        ),
+                                    )
+                                    reportProgress()
+                                },
+                                onFound: entries => {
+                                    const held = get().accounts
+                                    for (const { index, derived } of entries) {
+                                        if (
+                                            !hdHolderAt(
+                                                held,
+                                                walletId,
+                                                index,
+                                                derived,
+                                            )
+                                        ) {
+                                            found.add(hdPathKey(index))
+                                        }
+                                    }
+                                    reportProgress()
+                                },
+                                signal: options.signal,
                                 rootKey: options.rootKey,
-                                heldAccountIndex: Math.max(
-                                    -1,
-                                    ...get().accounts.flatMap(account =>
-                                        seedOf(account) === walletId
-                                            ? (hdIndexOf(account)?.account ??
-                                              [])
-                                            : [],
-                                    ),
+                                heldIndexes: get().accounts.flatMap(account =>
+                                    seedOf(account) === walletId
+                                        ? (hdIndexOf(account) ?? [])
+                                        : [],
                                 ),
                             })
                         } catch (error) {
@@ -1258,10 +1322,14 @@ export const useAccountsStore: UseBoundStore<
                         } finally {
                             zeroBytes(options.rootKey)
                         }
+                        // Only a cancel that cut the walk short stops the
+                        // scan; one landing during the adds below finished it.
+                        const isCancelled = options.signal?.aborted === true
                         const declined = new Set(
                             (options.declinedIndexes ?? []).map(hdPathKey),
                         )
                         const changedIds = new Set<string>()
+                        const createdIds = new Set<string>()
                         const walkClaims = {}
                         for (const { index, derived, active } of probed) {
                             const additions = declined.has(hdPathKey(index))
@@ -1302,6 +1370,7 @@ export const useAccountsStore: UseBoundStore<
                                               walkClaims,
                                           )
                                     changedIds.add(account.id)
+                                    if (!holder) createdIds.add(account.id)
                                 } catch (error) {
                                     if (
                                         !(
@@ -1341,11 +1410,29 @@ export const useAccountsStore: UseBoundStore<
                                 ),
                             )
                         }
+                        // A chain the walk never reached because it threw is
+                        // unchecked, so it counts as failed; one a cancel
+                        // stopped first is just unfinished.
+                        const failedChainIds = chainIds.filter(chainId => {
+                            const settled = outcomes.get(chainId)
+                            if (!settled) return !isCancelled
+                            return (
+                                settled.has('failed') || settled.has('partial')
+                            )
+                        })
                         return {
                             accounts: get().accounts.filter(account =>
                                 changedIds.has(account.id),
                             ),
-                            coverage: coverageOf(outcomes, isWalkIncomplete),
+                            coverage: coverageOf(
+                                outcomes,
+                                failedChainIds,
+                                isWalkIncomplete,
+                                chainIds.some(chainId => !refused.has(chainId)),
+                            ),
+                            createdAccountIds: [...createdIds],
+                            failedChainIds,
+                            isCancelled,
                         }
                     }),
                 ),

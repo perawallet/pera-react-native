@@ -12,6 +12,7 @@
 
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
+import { PeraNetworkError } from '@perawallet/wallet-core-shared'
 import {
     getKeystoreStore,
     getProvider,
@@ -181,7 +182,10 @@ describe('discoverWalletAccounts', () => {
 
         await expect(state().discoverWalletAccounts(SEED)).resolves.toEqual({
             accounts: [],
+            createdAccountIds: [],
             coverage: 'complete',
+            failedChainIds: [],
+            isCancelled: false,
         })
 
         expect(state().accounts[0].chains[ETHEREUM]).toBeUndefined()
@@ -200,7 +204,10 @@ describe('discoverWalletAccounts', () => {
 
         await expect(state().discoverWalletAccounts(SEED)).resolves.toEqual({
             accounts: [],
+            createdAccountIds: [],
             coverage: 'complete',
+            failedChainIds: [],
+            isCancelled: false,
         })
 
         expect(
@@ -338,7 +345,10 @@ describe('discoverWalletAccounts', () => {
 
         await expect(state().discoverWalletAccounts(SEED)).resolves.toEqual({
             accounts: [],
+            createdAccountIds: [],
             coverage: 'unanswered',
+            failedChainIds: [ALGORAND, ETHEREUM],
+            isCancelled: false,
         })
         expect(state().accounts).toEqual([holder])
     })
@@ -355,7 +365,10 @@ describe('discoverWalletAccounts', () => {
 
         await expect(state().discoverWalletAccounts(SEED)).resolves.toEqual({
             accounts: [],
+            createdAccountIds: [],
             coverage: 'complete',
+            failedChainIds: [],
+            isCancelled: false,
         })
         expect(state().accounts).toEqual(afterFirst)
     })
@@ -491,7 +504,10 @@ describe('discoverWalletAccounts', () => {
 
         await expect(state().discoverWalletAccounts(SEED)).resolves.toEqual({
             accounts: [],
+            createdAccountIds: [],
             coverage: 'partial',
+            failedChainIds: [ETHEREUM],
+            isCancelled: false,
         })
 
         expect(removed()).toEqual(
@@ -526,6 +542,7 @@ describe('discoverWalletAccounts', () => {
             const first = await state().discoverWalletAccounts(SEED)
 
             expect(first.coverage).toBe('partial')
+            expect(first.failedChainIds).toEqual([ETHEREUM])
             const created = state().accounts.find(
                 account => hdIndexOf(account)?.account === 2,
             )
@@ -545,6 +562,115 @@ describe('discoverWalletAccounts', () => {
             )
         })
 
+        test('walks only the requested chains, and names only those that failed', async () => {
+            activeAt(ALGORAND, [{ account: 0, keyIndex: 0 }])
+            families.checkActivity
+                .get(ETHEREUM)!
+                .mockRejectedValue(new Error('rpc down'))
+            state().setAccounts([pathHolder({ account: 0, keyIndex: 0 })])
+
+            const result = await state().discoverWalletAccounts(SEED, {
+                chainIds: [ALGORAND],
+            })
+
+            expect(families.checkActivity.get(ETHEREUM)).not.toHaveBeenCalled()
+            expect(result).toMatchObject({
+                coverage: 'complete',
+                failedChainIds: [],
+                isCancelled: false,
+            })
+        })
+
+        test('leaves a chain the backend has switched off out of the failed networks and the progress rows', async () => {
+            activeAt(ALGORAND, [{ account: 0, keyIndex: 0 }])
+            families.checkActivity.get(ETHEREUM)!.mockRejectedValue(
+                new PeraNetworkError('client', {
+                    status: 422,
+                    backendCode: 'chain_not_enabled',
+                }),
+            )
+            state().setAccounts([pathHolder({ account: 0, keyIndex: 0 })])
+            const onProgress = vi.fn()
+
+            const result = await state().discoverWalletAccounts(SEED, {
+                onProgress,
+            })
+
+            expect(result).toMatchObject({
+                coverage: 'complete',
+                failedChainIds: [],
+            })
+            expect(onProgress.mock.calls.at(-1)![0]).toMatchObject({
+                chainIds: [ALGORAND],
+                failedChainIds: [],
+            })
+        })
+
+        test('reaches the accounts the wallet holds when it walks only some chains, so a retry finds activity past an empty stretch', async () => {
+            activeAt(ALGORAND, [{ account: 6, keyIndex: 0 }])
+            activeAt(ETHEREUM, [{ account: 6, keyIndex: 0 }])
+            getKeystoreStore().state.keys = [
+                ...getKeystoreStore().state.keys,
+                {
+                    id: familyHdKeyId(SEED, 'algorand', 6, 0),
+                    type: 'ed25519',
+                    metadata: { parentKeyId: SEED },
+                },
+            ] as never
+            state().setAccounts([
+                pathHolder({ account: 0, keyIndex: 0 }),
+                pathHolder({ account: 6, keyIndex: 0 }),
+            ])
+
+            const result = await state().discoverWalletAccounts(SEED, {
+                chainIds: [ETHEREUM],
+            })
+
+            expect(result).toMatchObject({
+                coverage: 'complete',
+                failedChainIds: [],
+            })
+            expect(result.accounts.map(account => account.id)).toEqual([
+                'holder-6-0',
+            ])
+            expect(state().accounts[1].chains[ETHEREUM]?.enabledBy).toBe(
+                'discovery',
+            )
+        })
+
+        test('is complete, not unanswered, when every chain it walks is switched off on the backend', async () => {
+            families.checkActivity.get(ETHEREUM)!.mockRejectedValue(
+                new PeraNetworkError('client', {
+                    status: 422,
+                    backendCode: 'chain_not_enabled',
+                }),
+            )
+            state().setAccounts([pathHolder({ account: 0, keyIndex: 0 })])
+
+            const result = await state().discoverWalletAccounts(SEED, {
+                chainIds: [ETHEREUM],
+            })
+
+            expect(result).toMatchObject({
+                coverage: 'complete',
+                failedChainIds: [],
+            })
+        })
+
+        test('is complete, not unanswered, when a retry names only chains no longer offered', async () => {
+            state().setAccounts([pathHolder({ account: 0, keyIndex: 0 })])
+
+            const result = await state().discoverWalletAccounts(SEED, {
+                chainIds: ['base' as ChainId],
+            })
+
+            expect(result).toMatchObject({
+                coverage: 'complete',
+                failedChainIds: [],
+            })
+            expect(families.checkActivity.get(ALGORAND)).not.toHaveBeenCalled()
+        })
+
         test('is partial when an add fails for a reason other than a duplicate', async () => {
             activeAt(ALGORAND, [{ account: 0, keyIndex: 0 }])
             activeAt(ETHEREUM, [{ account: 0, keyIndex: 0 }])
@@ -556,7 +682,139 @@ describe('discoverWalletAccounts', () => {
             const result = await state().discoverWalletAccounts(SEED)
             enableChain.mockRestore()
 
-            expect(result).toEqual({ accounts: [], coverage: 'partial' })
+            expect(result).toEqual({
+                accounts: [],
+                createdAccountIds: [],
+                coverage: 'partial',
+                failedChainIds: [],
+                isCancelled: false,
+            })
+        })
+    })
+
+    describe('progress and cancel', () => {
+        test('reports every chain, the failed ones as they fail, the accounts checked, and only indexes no account holds as found', async () => {
+            activeAt(ALGORAND, [
+                { account: 0, keyIndex: 0 },
+                { account: 2, keyIndex: 0 },
+            ])
+            families.checkActivity
+                .get(ETHEREUM)!
+                .mockRejectedValue(new Error('rpc down'))
+            state().setAccounts([pathHolder({ account: 0, keyIndex: 0 })])
+            const onProgress = vi.fn()
+
+            await state().discoverWalletAccounts(SEED, { onProgress })
+
+            expect(onProgress.mock.calls[0]![0]).toEqual({
+                chainIds: [ALGORAND, ETHEREUM],
+                failedChainIds: [],
+                checkedAccountCount: 0,
+                foundCount: 0,
+            })
+            expect(onProgress.mock.calls.at(-1)![0]).toMatchObject({
+                failedChainIds: [ETHEREUM],
+                checkedAccountCount: 10,
+                foundCount: 1,
+            })
+        })
+
+        test('shows a chain whose answer left an address out as failed while it runs, as the result will', async () => {
+            activeAt(ALGORAND, [{ account: 0, keyIndex: 0 }])
+            families.checkActivity
+                .get(ETHEREUM)!
+                .mockImplementation(
+                    async (probed: string[]) => new Map([[probed[0]!, false]]),
+                )
+            state().setAccounts([pathHolder({ account: 0, keyIndex: 0 })])
+            const onProgress = vi.fn()
+
+            const result = await state().discoverWalletAccounts(SEED, {
+                onProgress,
+            })
+
+            expect(result.failedChainIds).toEqual([ETHEREUM])
+            expect(onProgress.mock.calls.at(-1)![0]).toMatchObject({
+                failedChainIds: [ETHEREUM],
+            })
+        })
+
+        test('counts a chain turned on for a held account as changed, not created', async () => {
+            activeAt(ALGORAND, [
+                { account: 0, keyIndex: 0 },
+                { account: 2, keyIndex: 0 },
+            ])
+            activeAt(ETHEREUM, [{ account: 0, keyIndex: 0 }])
+            state().setAccounts([pathHolder({ account: 0, keyIndex: 0 })])
+
+            const result = await state().discoverWalletAccounts(SEED)
+
+            const created = state().accounts.find(
+                account => hdIndexOf(account)?.account === 2,
+            )
+            expect(result.accounts.map(account => account.id)).toEqual(
+                expect.arrayContaining(['holder-0-0', created!.id]),
+            )
+            expect(result.createdAccountIds).toEqual([created!.id])
+        })
+
+        test('keeps what it found before a cancel, and names no chain the cancel cut short as failed', async () => {
+            const controller = new AbortController()
+            families.checkActivity
+                .get(ALGORAND)!
+                .mockImplementation(async (probed: string[]) => {
+                    controller.abort()
+                    return new Map(
+                        probed.map(address => [
+                            address,
+                            address === familyHdAddress('algorand', 1, 0),
+                        ]),
+                    )
+                })
+            activeAt(ETHEREUM, [])
+            state().setAccounts([pathHolder({ account: 0, keyIndex: 0 })])
+
+            const result = await state().discoverWalletAccounts(SEED, {
+                signal: controller.signal,
+            })
+
+            expect(result).toMatchObject({
+                isCancelled: true,
+                failedChainIds: [],
+            })
+            expect(
+                state().accounts.some(
+                    account => hdIndexOf(account)?.account === 1,
+                ),
+            ).toBe(true)
+        })
+
+        test('reports a cancel that lands after the walk finished, while it adds what it found, as not cancelled', async () => {
+            const controller = new AbortController()
+            activeAt(ALGORAND, [
+                { account: 0, keyIndex: 0 },
+                { account: 2, keyIndex: 0 },
+            ])
+            activeAt(ETHEREUM, [])
+            state().setAccounts([pathHolder({ account: 0, keyIndex: 0 })])
+            const { addChainAccount } = state()
+            const add = vi.fn((...args: Parameters<typeof addChainAccount>) => {
+                controller.abort()
+                return addChainAccount(...args)
+            })
+            useAccountsStore.setState({ addChainAccount: add })
+
+            const result = await state().discoverWalletAccounts(SEED, {
+                signal: controller.signal,
+            })
+            useAccountsStore.setState({ addChainAccount })
+
+            expect(add).toHaveBeenCalled()
+            expect(result).toMatchObject({
+                coverage: 'complete',
+                failedChainIds: [],
+                isCancelled: false,
+            })
         })
     })
 
@@ -571,7 +829,13 @@ describe('discoverWalletAccounts', () => {
         await state().discoverWalletAccounts(SEED)
         const second = await state().discoverWalletAccounts(SEED)
 
-        expect(second).toEqual({ accounts: [], coverage: 'complete' })
+        expect(second).toEqual({
+            accounts: [],
+            createdAccountIds: [],
+            coverage: 'complete',
+            failedChainIds: [],
+            isCancelled: false,
+        })
         const derived = (
             await Promise.all(
                 [ALGORAND, ETHEREUM].flatMap(chainId =>

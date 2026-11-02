@@ -35,3 +35,27 @@ export const assertNoViem = (code, surface) => {
             '(apps/mobile/metro-build-gates.js)',
     )
 }
+
+// Only the EVM provider build of content-inject-main.js carries the EIP-6963
+// event name; a string literal, so it survives minification.
+export const EVM_PROVIDER_MARKER = 'eip6963:announceProvider'
+
+/**
+ * Throws when a content script's EVM provider disagrees with the build's chain
+ * list, i.e. `__PERA_SERVES_EVM__` was not baked from CHAINS.
+ *
+ * @param {string} code
+ * @param {boolean} servesEvm
+ * @param {string} surface
+ */
+export const assertEvmProviderMatchesChains = (code, servesEvm, surface) => {
+    const hasProvider = code.includes(EVM_PROVIDER_MARKER)
+    if (hasProvider === servesEvm) return
+    throw new Error(
+        hasProvider
+            ? `${surface} installs the EVM provider but CHAINS lists no EVM chain: ` +
+                  '__PERA_SERVES_EVM__ was not baked false'
+            : `${surface} has no EVM provider but CHAINS lists an EVM chain: ` +
+                  '__PERA_SERVES_EVM__ was not baked true',
+    )
+}

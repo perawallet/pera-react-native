@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Animated } from 'react-native'
 import { useLanguage } from '@hooks/useLanguage'
 import { useAppNavigation } from '@hooks/useAppNavigation'
@@ -27,10 +27,17 @@ import {
     signingKeyOn,
     useHDImportSession,
     useSelectedAccountId,
+    type WalletDiscoveryProgress,
 } from '@perawallet/wallet-core-accounts'
-import { logger } from '@perawallet/wallet-core-shared'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { logger, type Optional } from '@perawallet/wallet-core-shared'
+import {
+    LEGACY_CHAIN_ID,
+    type ChainId,
+} from '@perawallet/wallet-core-chain-contract'
+import {
+    chainDisplayNameOf,
+    useSelectedScope,
+} from '@perawallet/wallet-core-chain-shared'
 import type { OnboardingStackParamList } from '../../routes/types'
 import {
     useDelegationScanNoticeResult,
@@ -38,9 +45,23 @@ import {
 } from '../../hooks'
 import { useHdWalletRescan } from './useHdWalletRescan'
 
+export type ScanNetworkStatus = 'checking' | 'failed'
+
+export type ScanNetwork = {
+    chainId: ChainId
+    name: string
+    status: ScanNetworkStatus
+}
+
 export type UseSearchAccountsScreenResult = {
     t: (key: string) => string
     dotOpacities: Animated.Value[]
+    /** Undefined until a wallet rescan reports, and for every other search. */
+    progressLabel: Optional<string>
+    networks: ScanNetwork[]
+    canCancel: boolean
+    isCancelling: boolean
+    handleCancel: () => void
 }
 
 const DOT_COUNT = 4
@@ -100,16 +121,31 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
     const isImportMode = 'mode' in params && params.mode === 'import'
     const isSearchingImportRef = useRef(false)
     const hasLeftRef = useRef(false)
+    const [rescanAbort] = useState(() => new AbortController())
+    const [progress, setProgress] = useState<WalletDiscoveryProgress>()
+    const [isCancelling, setIsCancelling] = useState(false)
 
-    // The select screen's own listener isn't mounted yet.
-    useEffect(() => {
-        if (!isImportMode) return
-        return reactNavigation.addListener('beforeRemove', () => {
-            if (!isSearchingImportRef.current) return
-            hasLeftRef.current = true
-            cancelImport()
-        })
-    }, [isImportMode, reactNavigation, cancelImport])
+    // The select screen's own listener isn't mounted yet. Leaving a rescan
+    // stops its walk, as Cancel does, and keeps what it found.
+    useEffect(
+        () =>
+            reactNavigation.addListener('beforeRemove', () => {
+                if (isImportMode) {
+                    if (!isSearchingImportRef.current) return
+                    hasLeftRef.current = true
+                    cancelImport()
+                    return
+                }
+                hasLeftRef.current = true
+                rescanAbort.abort()
+            }),
+        [isImportMode, reactNavigation, cancelImport, rescanAbort],
+    )
+
+    const handleCancel = useCallback(() => {
+        setIsCancelling(true)
+        rescanAbort.abort()
+    }, [rescanAbort])
 
     const searchAccounts = useCallback(async () => {
         if (hasSearched.current) return
@@ -138,12 +174,17 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
 
             // Existing mode: `params` is the variant the import branch above
             // ruled out.
-            const { account } = params as Extract<
+            const { account, chainIds } = params as Extract<
                 typeof params,
                 { account: unknown }
             >
             if (hdIndexOf(account) !== undefined) {
-                await rescanHdWallet(account)
+                await rescanHdWallet(account, {
+                    chainIds,
+                    signal: rescanAbort.signal,
+                    onProgress: setProgress,
+                    hasLeft: () => hasLeftRef.current,
+                })
                 return
             }
 
@@ -204,14 +245,44 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
         errorToast,
         setSelectedAccountId,
         scope.chainId,
+        rescanAbort,
     ])
 
     useEffect(() => {
         void searchAccounts()
     }, [searchAccounts])
 
+    const networks = useMemo<ScanNetwork[]>(
+        () =>
+            (progress?.chainIds ?? []).map(chainId => ({
+                chainId,
+                name: chainDisplayNameOf(chainId) ?? chainId,
+                status: progress?.failedChainIds.includes(chainId)
+                    ? 'failed'
+                    : 'checking',
+            })),
+        [progress],
+    )
+
+    const progressLabel = useMemo(() => {
+        if (!progress?.checkedAccountCount) return undefined
+        const checked = t('onboarding.searching_accounts.checked_accounts', {
+            count: progress.checkedAccountCount,
+        })
+        return progress.foundCount > 0
+            ? `${checked} · ${t('onboarding.searching_accounts.new_found', {
+                  count: progress.foundCount,
+              })}`
+            : checked
+    }, [progress, t])
+
     return {
         t,
         dotOpacities,
+        progressLabel,
+        networks,
+        canCancel: progress !== undefined,
+        isCancelling,
+        handleCancel,
     }
 }

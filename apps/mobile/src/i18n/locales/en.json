@@ -977,6 +977,7 @@
         }
     },
     "common": {
+        "networks_list": "{{first}} and {{last}}",
         "offline_mode": "Offline Mode",
         "offline_mode_description": "Balances may be out of date and some actions are unavailable until you reconnect.",
         "offline_refresh_body": "You're offline — this will refresh automatically once you're back online.",
@@ -1055,8 +1056,7 @@
         "wealth_chart": {
             "empty_body": "You will see a chart here once you have some balance history",
             "asset_empty_body": "You will see a chart here once you have some balance history for this asset on this account",
-            "excludes_networks": "This chart doesn't include {{networks}} assets yet",
-            "networks_list": "{{first}} and {{last}}"
+            "excludes_networks": "This chart doesn't include {{networks}} assets yet"
         },
         "webview": {
             "failed_title": "Failed to load page",
@@ -2275,18 +2275,42 @@
         },
         "searching_accounts": {
             "title": "Searching your accounts",
-            "no_new_addresses_title": "No new addresses found",
-            "no_new_addresses_body": "We didn't find any additional addresses associated with this wallet.",
             "rekey_scan_failed_title": "Couldn't check for rekeyed accounts",
             "rekey_scan_failed_body": "Your account was imported. We couldn't check whether other accounts are rekeyed to it — you can scan again from Settings.",
             "rekey_rescan_failed_body": "We couldn't check whether other accounts are rekeyed to this wallet. Scan again to try once more.",
-            "rescan_found_title": "Scan complete",
-            "rescan_found_body_one": "1 account was added or updated.",
-            "rescan_found_body_other": "{{count}} accounts were added or updated.",
-            "rescan_partial_title": "Scan incomplete",
-            "rescan_partial_body": "Some checks couldn't finish. Accounts found so far were added. Scan again to find the rest.",
             "rescan_failed_title": "Couldn't scan for accounts",
-            "rescan_failed_body": "Check your connection and try again."
+            "rescan_failed_body": "Check your connection and try again.",
+            "cancel": "Cancel",
+            "network_checking": "Checking",
+            "network_failed": "Couldn't check",
+            "checked_accounts_one": "Checked {{count}} account",
+            "checked_accounts_other": "Checked {{count}} accounts",
+            "new_found_one": "{{count}} new account found",
+            "new_found_other": "{{count}} new accounts found"
+        },
+        "scan_accounts_result": {
+            "found_title_one": "Found {{count}} new account",
+            "found_title_other": "Found {{count}} new accounts",
+            "found_body_one": "It's been added to your wallet.",
+            "found_body_other": "They've been added to your wallet.",
+            "none_title": "No new accounts found",
+            "none_body": "We didn't find any additional accounts associated with this wallet.",
+            "failed_networks_body": "We couldn't check {{networks}}. Accounts found on other networks were added.",
+            "failed_networks_none_body": "We couldn't check {{networks}}. Nothing new was found on the other networks.",
+            "incomplete_body": "Some checks couldn't finish. Accounts found so far were added. Scan again to find the rest.",
+            "cancelled_title": "Scan stopped",
+            "cancelled_body": "Accounts found before you stopped the scan were added.",
+            "cancelled_none_body": "Nothing new was found before you stopped the scan.",
+            "retry_networks": "Check {{networks}} again",
+            "scan_again": "Scan again",
+            "done": "Done",
+            "incomplete_title": "Scan incomplete",
+            "updated_title_one": "Found new networks on {{count}} account",
+            "updated_title_other": "Found new networks on {{count}} accounts",
+            "updated_body_one": "We found activity on other networks and turned them on for this account.",
+            "updated_body_other": "We found activity on other networks and turned them on for these accounts.",
+            "updated_note_one": "{{count}} existing account also got new networks.",
+            "updated_note_other": "{{count}} existing accounts also got new networks."
         },
         "create_account": {
             "processing": "Setting up your wallet...",
@@ -3570,7 +3594,10 @@
         "contract_call": {
             "warning": "Pera can't tell what this contract call does.",
             "function_selector": "Function Selector",
-            "call_data": "Call Data"
+            "call_data": "Call Data",
+            "advanced": "Advanced",
+            "unchecked_warning": "Pera couldn't check what this transaction does. Only continue if you trust {{domain}}.",
+            "unchecked_warning_no_source": "Pera couldn't check what this transaction does. Only continue if you trust the app that sent it."
         },
         "type": {
             "pay": "Payment Transaction",

@@ -39,6 +39,53 @@ const PRIORITY_FEE = 1n * GWEI
 const toHex = value => `0x${BigInt(value).toString(16)}`
 const hash32 = byte => `0x${byte.repeat(32)}`
 
+// 1 ETH, so a 1-wei send is always affordable.
+const BALANCE_WEI = 10n ** 18n
+
+const MULTICALL3_ADDRESS = '0xca11bde05977b3631167028862be2a173976ca11'
+const selectorOf = signature =>
+    bytesToHex(keccak_256(new TextEncoder().encode(signature)).slice(0, 4))
+const AGGREGATE3 = selectorOf('aggregate3((address,bool,bytes)[])')
+const GET_ETH_BALANCE = selectorOf('getEthBalance(address)')
+
+const word = value => BigInt(value).toString(16).padStart(64, '0')
+
+// The wallet reads balances through Multicall3 aggregate3, hand-decoded here
+// for want of an ABI library in this app. getEthBalance answers BALANCE_WEI
+// for any address; every other call fails, which the wallet reads as "no
+// token". A failing call that does not allow failure reverts the whole
+// aggregate, as on a real node: null.
+export const answerAggregate3 = data => {
+    const hex = data.slice(2 + 8)
+    const wordAt = byteOffset =>
+        BigInt(`0x${hex.slice(byteOffset * 2, byteOffset * 2 + 64)}`)
+    const array = Number(wordAt(0))
+    const count = Number(wordAt(array))
+    const heads = array + 32
+    const results = []
+    for (let index = 0; index < count; index++) {
+        const call = heads + Number(wordAt(heads + index * 32))
+        const target = `0x${word(wordAt(call)).slice(24)}`
+        const allowFailure = wordAt(call + 32) !== 0n
+        const callData = call + Number(wordAt(call + 64))
+        const selector = hex.slice((callData + 32) * 2, (callData + 36) * 2)
+        if (target === MULTICALL3_ADDRESS && selector === GET_ETH_BALANCE) {
+            results.push(word(1) + word(64) + word(32) + word(BALANCE_WEI))
+        } else if (allowFailure) {
+            results.push(word(0) + word(64) + word(0))
+        } else {
+            return null
+        }
+    }
+    let offset = count * 32
+    const offsets = results.map(result => {
+        const at = offset
+        offset += result.length / 2
+        return word(at)
+    })
+    return `0x${word(32)}${word(count)}${offsets.join('')}${results.join('')}`
+}
+
 const block = () => ({
     number: toHex(BLOCK_NUMBER),
     hash: hash32('11'),
@@ -94,16 +141,29 @@ export const createFakeEvmNode = () => {
         },
         // Not mined: the wallet's own reconcile keeps asking after a send.
         eth_getTransactionReceipt: () => null,
-        // 1 ETH, so a 1-wei send is always affordable.
-        eth_getBalance: () => toHex(10n ** 18n),
+        eth_getBalance: () => toHex(BALANCE_WEI),
         eth_sendRawTransaction: ([raw]) => {
             rawTransactions.push(raw)
             return evmTxHashOf(raw)
         },
     }
 
+    const isAggregate3 = ([call]) =>
+        call?.to?.toLowerCase() === MULTICALL3_ADDRESS &&
+        call?.data?.startsWith(`0x${AGGREGATE3}`)
+
     const answer = ({ id, method, params }) => {
         methods.push(method)
+        if (method === 'eth_call' && isAggregate3(params ?? [])) {
+            const result = answerAggregate3(params[0].data)
+            return result === null
+                ? {
+                      jsonrpc: '2.0',
+                      id,
+                      error: { code: 3, message: 'execution reverted' },
+                  }
+                : { jsonrpc: '2.0', id, result }
+        }
         const result = results[method]
         if (!result) {
             unansweredMethods.push(method)

@@ -183,8 +183,8 @@ describe('config/main', () => {
         test('defaults to no RPC URLs and no Pera services', () => {
             const defaults = getConfig({})
 
-            expect(defaults.ethereumMainnetRpcUrl).toBe('')
-            expect(defaults.ethereumSepoliaRpcUrl).toBe('')
+            expect(defaults.ethereumMainnetRpcUrl).toEqual([])
+            expect(defaults.ethereumSepoliaRpcUrl).toEqual([])
             expect(defaults.ethereumMainnetPeraServices).toEqual([])
             expect(defaults.ethereumSepoliaPeraServices).toEqual([])
         })
@@ -194,12 +194,63 @@ describe('config/main', () => {
                 getConfig({
                     ethereumSepoliaRpcUrl: 'https://sepolia.rpc.example',
                 }).ethereumSepoliaRpcUrl,
-            ).toBe('https://sepolia.rpc.example')
+            ).toEqual(['https://sepolia.rpc.example'])
+        })
+
+        test('splits a flat RPC URL list, keeping its order', () => {
+            expect(
+                getConfig({
+                    ethereumMainnetRpcUrl:
+                        'https://a.rpc.example, https://b.rpc.example',
+                }).ethereumMainnetRpcUrl,
+            ).toEqual(['https://a.rpc.example', 'https://b.rpc.example'])
+        })
+
+        test('drops the empty entries of a list with a trailing comma', () => {
+            expect(
+                getConfig({
+                    ethereumMainnetRpcUrl: 'https://a.rpc.example,, ',
+                }).ethereumMainnetRpcUrl,
+            ).toEqual(['https://a.rpc.example'])
+        })
+
+        test('reads an empty RPC URL list as no endpoints', () => {
+            expect(
+                getConfig({ ethereumMainnetRpcUrl: '' }).ethereumMainnetRpcUrl,
+            ).toEqual([])
+        })
+
+        test('accepts an RPC URL list that is already split', () => {
+            expect(
+                getConfig({
+                    ethereumMainnetRpcUrl: [
+                        'https://a.rpc.example',
+                        'https://b.rpc.example',
+                    ],
+                }).ethereumMainnetRpcUrl,
+            ).toEqual(['https://a.rpc.example', 'https://b.rpc.example'])
         })
 
         test('rejects an RPC value that is not a URL', () => {
             expect(() =>
                 getConfig({ ethereumMainnetRpcUrl: 'not a url' }),
+            ).toThrow()
+        })
+
+        test('rejects more than a main URL and one fallback', () => {
+            expect(() =>
+                getConfig({
+                    ethereumMainnetRpcUrl:
+                        'https://a.rpc.example,https://b.rpc.example,https://c.rpc.example',
+                }),
+            ).toThrow()
+        })
+
+        test('rejects a list with one entry that is not a URL', () => {
+            expect(() =>
+                getConfig({
+                    ethereumMainnetRpcUrl: 'https://a.rpc.example,not a url',
+                }),
             ).toThrow()
         })
 

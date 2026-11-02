@@ -14,6 +14,7 @@ import type {
     ChainModule,
     EvmChainId,
 } from '@perawallet/wallet-core-chain-contract'
+import { evmPinnedHosts, evmSslPinningFlag } from './blockchain/pinned-hosts'
 import {
     evmCapabilityDefaultsOf,
     evmSupportedCapabilities,
@@ -28,6 +29,8 @@ export const createEvmChainModule = (chain: EvmChain): ChainModule => ({
     supportedCapabilities: evmSupportedCapabilities,
     capabilityRestrictions: chain.row.restrictions,
     register: createEvmChainRegistration(chain),
+    remoteConfigDefaults: { [evmSslPinningFlag(chain.row.id)]: false },
+    pinnedHosts: () => evmPinnedHosts(chain),
 })
 
 export const evmChainModules: Readonly<Record<EvmChainId, ChainModule>> =

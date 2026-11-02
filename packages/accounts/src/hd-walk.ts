@@ -23,7 +23,12 @@ import {
     useNetworkStore,
 } from '@perawallet/wallet-core-chain-shared'
 import { kmsCore } from '@perawallet/wallet-core-kms'
-import { logger, type Optional } from '@perawallet/wallet-core-shared'
+import {
+    isChainRefusedError,
+    isPeraNetworkError,
+    logger,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import type { AccountChains, ChainAccount, HdIndex } from './models'
 import { seedMintableScheme } from './credentials'
@@ -48,12 +53,24 @@ type WalkHdTreeParams = {
     accountIndexLimit?: number
     /** Key indexes past this many, per account index, are never probed. Unbounded by default. */
     keyIndexLimit?: number
+    /** Once aborted, no further batch starts; the walk resolves to what it found. */
+    signal?: AbortSignal
+    /** Called with each account index's active keys once the gaps confirm them. */
+    onFound?: (indices: readonly HdIndex[]) => void
+    /**
+     * Indexes the wallet already holds. They keep both gaps open as an active
+     * index would, so a walk narrowed to some chains still reaches them.
+     */
+    heldIndexes?: readonly HdIndex[]
 }
 
 type ScanLimits = {
     keyIndexGapLimit: number
     keyIndexLimit: number
+    /** The highest key index held on each account index. */
+    heldKeyIndexes: ReadonlyMap<number, number>
     onLimit: () => void
+    signal?: AbortSignal
 }
 
 export const hdPathKey = ({ account, keyIndex }: HdIndex): string =>
@@ -64,14 +81,21 @@ const byPath = (a: HdIndex, b: HdIndex): number =>
 
 async function scanAccountIndex(
     account: number,
-    { keyIndexGapLimit, keyIndexLimit, onLimit }: ScanLimits,
+    {
+        keyIndexGapLimit,
+        keyIndexLimit,
+        heldKeyIndexes,
+        onLimit,
+        signal,
+    }: ScanLimits,
     probe: HdBatchProbe,
 ): Promise<HdIndex[]> {
+    const heldKeyIndex = heldKeyIndexes.get(account) ?? -1
     const active: HdIndex[] = []
     let keyGap = 0
     let keyIndex = 0
 
-    while (keyGap < keyIndexGapLimit) {
+    while (keyGap < keyIndexGapLimit && !signal?.aborted) {
         if (keyIndex >= keyIndexLimit) {
             onLimit()
             break
@@ -88,6 +112,8 @@ async function scanAccountIndex(
         for (const [i, index] of batch.entries()) {
             if (results[i]) {
                 active.push(index)
+                keyGap = 0
+            } else if (index.keyIndex <= heldKeyIndex) {
                 keyGap = 0
             } else {
                 keyGap++
@@ -115,20 +141,36 @@ export async function walkHdTree({
     keyIndexGapLimit = KEY_INDEX_GAP_LIMIT,
     accountIndexLimit = Infinity,
     keyIndexLimit = Infinity,
+    signal,
+    onFound,
+    heldIndexes = [],
 }: WalkHdTreeParams): Promise<HdIndex[]> {
     const found: HdIndex[] = []
     let accountGap = 0
     let accountIndex = 0
     let hasHitLimit = false
+    const heldAccountIndex = Math.max(
+        -1,
+        ...heldIndexes.map(({ account }) => account),
+    )
+    const heldKeyIndexes = new Map<number, number>()
+    for (const { account, keyIndex } of heldIndexes) {
+        heldKeyIndexes.set(
+            account,
+            Math.max(heldKeyIndexes.get(account) ?? -1, keyIndex),
+        )
+    }
     const limits: ScanLimits = {
         keyIndexGapLimit,
         keyIndexLimit,
+        heldKeyIndexes,
         onLimit: () => {
             hasHitLimit = true
         },
+        signal,
     }
 
-    while (accountGap < accountGapLimit) {
+    while (accountGap < accountGapLimit && !signal?.aborted) {
         if (accountIndex >= accountIndexLimit) {
             hasHitLimit = true
             break
@@ -140,9 +182,12 @@ export async function walkHdTree({
             ),
         )
 
-        for (const result of results) {
+        for (const [i, result] of results.entries()) {
             if (result.status === 'fulfilled' && result.value.length > 0) {
                 found.push(...result.value)
+                onFound?.(result.value)
+                accountGap = 0
+            } else if (accountIndex + i <= heldAccountIndex) {
                 accountGap = 0
             } else {
                 accountGap++
@@ -174,9 +219,10 @@ export type ProbedHdIndex = {
  * How far a chain answered one probed batch. `answered`: every index derived
  * and the chain answered for every address. `partial`: it answered some, but
  * an index failed to derive or the answer left an address out. `failed`: the
- * probe rejected, or no index derived.
+ * probe rejected, or no index derived. `refused`: the backend has the chain
+ * switched off, so checking it again can't help.
  */
-export type HdProbeOutcome = 'answered' | 'partial' | 'failed'
+export type HdProbeOutcome = 'answered' | 'partial' | 'failed' | 'refused'
 
 type DiscoverWalletActivityParams = {
     /** The seed's KMS id. */
@@ -186,8 +232,8 @@ type DiscoverWalletActivityParams = {
     onUnusedKeys?: (keyPairIds: string[]) => Promise<void>
     /** Called each time a chain's activity probe resolves, so a caller can tell "nothing active" from "nothing answered". */
     onProbeAnswered?: () => void
-    /** The highest account index the wallet already holds; the walk always reaches past it. */
-    heldAccountIndex?: number
+    /** The indexes the wallet already holds; the walk always reaches past them. */
+    heldIndexes?: readonly HdIndex[]
     /**
      * The seed's in-memory XHD root key. A chain that derives public keys from
      * it is probed without saving a key per index; the caller keeps ownership.
@@ -195,8 +241,21 @@ type DiscoverWalletActivityParams = {
     rootKey?: Uint8Array
     accountGapLimit?: number
     keyIndexGapLimit?: number
-    /** Called once per chain for each probed batch. */
-    onProbeSettled?: (outcome: HdProbeOutcome) => void
+    /**
+     * Called once per chain for each probed batch. A batch whose probe
+     * rejects is asked once more; a chain whose batch then `failed`, or was
+     * `refused`, is not probed again for the rest of the walk.
+     */
+    onProbeSettled?: (chainId: ChainId, outcome: HdProbeOutcome) => void
+    /** Called with each batch's indexes once every chain's probe of it resolves. */
+    onBatchProbed?: (batch: readonly HdIndex[]) => void
+    /**
+     * Called with the active indexes the walk keeps, once the gaps confirm
+     * them; an index active past a gap is probed but never reported.
+     */
+    onFound?: (found: readonly ProbedHdIndex[]) => void
+    /** Once aborted, no further batch is derived or probed; the walk resolves to what it found. */
+    signal?: AbortSignal
 }
 
 /**
@@ -211,13 +270,20 @@ export async function discoverWalletActivity({
     chainIds,
     onUnusedKeys,
     onProbeAnswered,
-    heldAccountIndex = -1,
+    heldIndexes = [],
     rootKey,
     accountGapLimit = ACCOUNT_GAP_LIMIT,
     keyIndexGapLimit,
     onProbeSettled,
+    onBatchProbed,
+    onFound,
+    signal,
 }: DiscoverWalletActivityParams): Promise<ProbedHdIndex[]> {
     const { chains: registry } = getProvider()
+    // A chain whose probe rejected twice in a row is down for this walk:
+    // probing it again would only queue more failing lookups ahead of the
+    // chains that answer.
+    const failedChains = new Set<ChainId>()
     // Filled as each key is derived, so a batch that fails later still reports
     // the keys it saved and the caller can drop them.
     const probed = new Map<string, ProbedHdIndex>()
@@ -312,38 +378,70 @@ export async function discoverWalletActivity({
         scope: ChainScope,
         entries: Optional<ChainAccount>[],
     ): Promise<Optional<ChainAccount>[]> => {
+        const { chainId } = scope
         const addresses = entries.flatMap(entry =>
             entry ? [entry.address] : [],
         )
         if (addresses.length === 0) {
-            onProbeSettled?.('failed')
+            onProbeSettled?.(chainId, 'failed')
             return entries.map(() => undefined)
         }
+        const check = async () =>
+            accountsChainAdapters.get(chainId).checkActivity(addresses, scope)
         let activity: Map<string, boolean>
         try {
-            activity = await accountsChainAdapters
-                .get(scope.chainId)
-                .checkActivity(addresses, scope)
-        } catch {
-            onProbeSettled?.('failed')
+            // Pera lookups get one try each, so one slow or dropped answer
+            // mustn't cost a healthy chain the rest of the walk: the batch is
+            // asked once more before the cutoff. Node clients retry their own
+            // reads, and a 4xx (a refusal included) would only fail again.
+            activity = await check().catch((error: unknown) => {
+                const isTransient =
+                    isPeraNetworkError(error) && error.metadata.retryable
+                if (!isTransient || signal?.aborted) throw error
+                return check()
+            })
+        } catch (error) {
+            const isRefused = isChainRefusedError(error)
+            if (!failedChains.has(chainId)) {
+                failedChains.add(chainId)
+                if (isRefused) {
+                    logger.info(
+                        'Wallet discovery chain not enabled on the backend',
+                        { chainId },
+                    )
+                } else {
+                    logger.warn('Wallet discovery probe failed', {
+                        chainId,
+                        error,
+                    })
+                }
+            }
+            onProbeSettled?.(chainId, isRefused ? 'refused' : 'failed')
             return entries.map(() => undefined)
         }
         onProbeAnswered?.()
         const isComplete =
             addresses.length === entries.length &&
             addresses.every(address => activity.has(address))
-        onProbeSettled?.(isComplete ? 'answered' : 'partial')
+        onProbeSettled?.(chainId, isComplete ? 'answered' : 'partial')
         return entries.map(entry =>
             entry && activity.get(entry.address) === true ? entry : undefined,
         )
     }
 
     const probe: HdBatchProbe = async indices => {
-        const derivedPerChain: {
+        // Batches already queued behind an abort would each still derive and
+        // probe on every chain.
+        if (signal?.aborted) return indices.map(() => false)
+        const derivedPerChain: Optional<{
             scope: ChainScope
             entries: Optional<ChainAccount>[]
-        }[] = []
+        }>[] = []
         for (const chainId of chainIds) {
+            if (failedChains.has(chainId)) {
+                derivedPerChain.push(undefined)
+                continue
+            }
             const scope = {
                 chainId,
                 networkId: selectChainNetworkId(
@@ -357,8 +455,10 @@ export async function discoverWalletActivity({
             })
         }
         const activePerChain = await Promise.all(
-            derivedPerChain.map(({ scope, entries }) =>
-                probeChain(scope, entries),
+            derivedPerChain.map(derived =>
+                derived
+                    ? probeChain(derived.scope, derived.entries)
+                    : indices.map(() => undefined),
             ),
         )
         const unused = new Set<string>()
@@ -386,9 +486,14 @@ export async function discoverWalletActivity({
         if (onUnusedKeys && unused.size > 0) {
             await onUnusedKeys([...unused]).catch(() => undefined)
         }
+        onBatchProbed?.(indices)
         return results
     }
 
+    const heldAccountIndex = Math.max(
+        -1,
+        ...heldIndexes.map(({ account }) => account),
+    )
     const walked = new Set(
         (
             await walkHdTree({
@@ -399,7 +504,10 @@ export async function discoverWalletActivity({
                     WALLET_ACCOUNT_INDEX_LIMIT,
                     heldAccountIndex + 1 + accountGapLimit,
                 ),
+                heldIndexes,
                 keyIndexLimit: WALLET_KEY_INDEX_LIMIT,
+                signal,
+                onFound: indices => onFound?.(indices.map(probedAt)),
             })
         ).map(hdPathKey),
     )

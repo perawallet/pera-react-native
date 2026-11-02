@@ -14,19 +14,19 @@ import { describe, expect, it } from 'vitest'
 import { withEndpointOverrides } from '../node-endpoint'
 
 const CONFIGURED = {
-    mainnet: 'https://mainnet.example',
-    sepolia: 'https://sepolia.example',
+    mainnet: ['https://mainnet.example', 'https://mainnet-backup.example'],
+    sepolia: ['https://sepolia.example'],
 }
 
 describe('withEndpointOverrides', () => {
-    it('lays an override over the configured URL for its network only', () => {
+    it("replaces a network's whole list with the override, for that network only", () => {
         expect(
             withEndpointOverrides(CONFIGURED, {
-                sepolia: 'https://my-node.example',
+                mainnet: 'https://my-node.example',
             }),
         ).toEqual({
-            mainnet: 'https://mainnet.example',
-            sepolia: 'https://my-node.example',
+            mainnet: ['https://my-node.example'],
+            sepolia: CONFIGURED.sepolia,
         })
     })
 

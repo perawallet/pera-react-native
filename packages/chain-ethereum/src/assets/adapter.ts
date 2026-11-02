@@ -43,7 +43,12 @@ import {
     type EvmNftStandard,
 } from '../blockchain/utils/caip19'
 import type { EvmChain } from '../chains/types'
-import { readErc20, readErc20TotalSupply } from '../blockchain/utils/erc20'
+import {
+    readErc20,
+    readErc20Decimals,
+    readErc20TotalSupply,
+} from '../blockchain/utils/erc20'
+import { createEvmClient } from '../blockchain/utils/createEvmClient'
 import {
     ASSETS_MAX_IDS,
     ASSETS_SERVICE,
@@ -205,6 +210,33 @@ const syncNativeAsset = async (
     })
 }
 
+const persistWithChainDecimals = async (
+    ctx: ChainContext,
+    chain: EvmChain,
+    assets: PeraAsset[],
+    scope: ChainScope,
+): Promise<void> => {
+    if (assets.length === 0) return
+    let decimals: Map<string, number>
+    try {
+        decimals = await readErc20Decimals(
+            createEvmClient(scope, ctx, chain),
+            assets.map(asset => asset.assetId),
+        )
+    } catch (error) {
+        logger.warn(
+            'Token decimals unreadable; leaving them for the next pass',
+            { scope, error },
+        )
+        return
+    }
+    const items = assets.flatMap(asset => {
+        const value = decimals.get(asset.assetId)
+        return value === undefined ? [] : [{ ...asset, decimals: value }]
+    })
+    if (items.length > 0) await upsertAssets({ items, scope })
+}
+
 const syncTokens = async (
     ctx: ChainContext,
     chain: EvmChain,
@@ -227,9 +259,12 @@ const syncTokens = async (
 
     const unknown: string[] = []
     const quarantined: string[] = []
+    // Stored in one decimals read after every batch, so a failed batch fails the
+    // pass whole and its ids retry next time.
+    const known: PeraAsset[] = []
     for (const batch of partition(stale, ASSETS_MAX_IDS)) {
         const items = await fetchAssetItems(scope, chain, batch)
-        const known = items.flatMap((item, index) => {
+        const batchKnown = items.flatMap((item, index) => {
             // Left unstored so the next pass retries it: a chain read would
             // store it without its tier, hiding a suspicious token's warning.
             if (!item) return []
@@ -242,8 +277,9 @@ const syncTokens = async (
             else unknown.push(assetId)
             return []
         })
-        if (known.length > 0) await upsertAssets({ items: known, scope })
+        known.push(...batchKnown)
     }
+    await persistWithChainDecimals(ctx, chain, known, scope)
     if (unknown.length > 0) await persistOnChain(ctx, chain, unknown, scope)
     if (quarantined.length > 0) {
         await persistQuarantined(ctx, chain, quarantined, scope)
