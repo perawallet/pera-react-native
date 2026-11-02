@@ -86,6 +86,25 @@ describe.each(EVM_TEST_CHAINS)('the $row.id module', chain => {
         expect(enabled.sort()).toEqual([...ENABLED].sort())
     })
 
+    it('supports nothing that reaches Algorand-only code or a Pera endpoint EVM lacks, so remote config cannot switch it on', () => {
+        for (const capability of [
+            'assetInbox',
+            'rekey',
+            'staking',
+            'manageAssets',
+            'multisig',
+            'quantumAccounts',
+            'liquidAuth',
+            'feeDelegation',
+            'notifications',
+            'assetFavorites',
+            'priceAlerts',
+            'csvExport',
+        ] as const) {
+            expect(module.supportedCapabilities).not.toContain(capability)
+        }
+    })
+
     it('declares its own pinning kill switch, off until remote config turns it on', () => {
         expect(module.remoteConfigDefaults).toEqual({
             [`enable_ssl_pinning_${id}_rpc`]: false,
@@ -104,6 +123,8 @@ describe.each(EVM_TEST_CHAINS)('the $row.id module', chain => {
 
         expect(chains.get(id).descriptor).toBe(chain.descriptor)
         expect(chains.capabilities(id)).toEqual(module.capabilityDefaults)
+        expect(chains.supports(id, 'contractDecoding')).toBe(true)
+        expect(chains.supports(id, 'assetInbox')).toBe(false)
         expect(addressCodecs.get(id).chainId).toBe(id)
         expect(keyDerivations.get(id).chainId).toBe(id)
         expect(accountsChainAdapters.get(id).chainId).toBe(id)
@@ -184,9 +205,23 @@ describe('a row override', () => {
         expect(chains.capabilities('ethereum').pricing).toBe(true)
     })
 
+    it('supports a capability its row switches on, for its own chain only', () => {
+        const withSwap = createEvmChainModule(
+            createEvmChain({ ...BASE.row, capabilities: { swap: true } }),
+        )
+
+        expect(withSwap.supportedCapabilities).toContain('swap')
+        expect(evmChainModules.ethereum.supportedCapabilities).not.toContain(
+            'swap',
+        )
+    })
+
     it('keeps the shared defaults for a row without overrides', () => {
         expect(evmChainModules.base.capabilityDefaults).toBe(
             evmCapabilityDefaults,
+        )
+        expect(evmChainModules.base.supportedCapabilities).toBe(
+            evmChainModules.ethereum.supportedCapabilities,
         )
         expect(evmChainModules.base.capabilityRestrictions).toBeUndefined()
     })

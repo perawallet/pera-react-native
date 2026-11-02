@@ -40,46 +40,67 @@ export const chainOverridesKey = (chainId: ChainId): string =>
     `chain_${chainId}_overrides`
 
 // Read on every capabilities() call, so warn once per bad value, not per read.
-const lastWarned = new Map<string, string>()
+// Keyed by value too, since the remote and developer layers share a key.
+const warned = new Set<string>()
 
-const warnOnce = (key: string, json: string, error: unknown): void => {
-    if (lastWarned.get(key) === json) return
-    lastWarned.set(key, json)
-    logger.warn('Ignoring malformed chain overrides', {
-        remoteConfigKey: key,
-        error,
-    })
+const warnOnce = (
+    key: string,
+    json: string,
+    message: string,
+    details: Record<string, unknown>,
+): void => {
+    const slot = `${key}\n${json}`
+    if (warned.has(slot)) return
+    warned.add(slot)
+    logger.warn(message, { remoteConfigKey: key, ...details })
 }
 
 /**
  * Never throws: a bad blob means no overrides. Unknown capability names are
  * dropped rather than failing the blob, so an older build still honours the
- * `enabled: false` kill switch next to a capability it doesn't know.
+ * `enabled: false` kill switch next to a capability it doesn't know. So is a
+ * `true` for a capability `supports` refuses; a `false` always applies.
  */
 export const parseChainOverrides = (
     json: string,
     key: string,
+    supports: (capability: ChainCapability) => boolean,
 ): ChainOverrides => {
     if (json === '') return NO_OVERRIDES
     let parsed: z.infer<typeof chainOverridesSchema>
     try {
         parsed = chainOverridesSchema.parse(JSON.parse(json))
     } catch (error) {
-        warnOnce(key, json, error)
+        warnOnce(key, json, 'Ignoring malformed chain overrides', { error })
         return NO_OVERRIDES
     }
-    const capabilities = Object.fromEntries(
-        CHAIN_CAPABILITIES.flatMap(capability => {
-            const value = parsed.capabilities?.[capability]
-            return typeof value === 'boolean' ? [[capability, value]] : []
-        }),
-    )
+    const capabilities: ChainOverrides['capabilities'] = {}
+    const unsupported: ChainCapability[] = []
+    for (const capability of CHAIN_CAPABILITIES) {
+        const value = parsed.capabilities?.[capability]
+        if (typeof value !== 'boolean') continue
+        if (value && !supports(capability)) {
+            unsupported.push(capability)
+            continue
+        }
+        capabilities[capability] = value
+    }
+    if (unsupported.length > 0) {
+        warnOnce(
+            key,
+            json,
+            'Ignoring overrides for capabilities the chain does not support',
+            {
+                capabilities: unsupported,
+            },
+        )
+    }
     return { enabled: parsed.enabled, capabilities }
 }
 
 /** Remote and developer layers for the chain registry, readable outside React. */
 export const readCapabilityOverrides = (): ChainCapabilityOverrides => {
-    const { remoteConfig } = getProvider()
+    const { remoteConfig, chains } = getProvider()
     const saved = areConfigOverridesIgnored()
         ? {}
         : useRemoteConfigStore.getState().configOverrides
@@ -89,14 +110,18 @@ export const readCapabilityOverrides = (): ChainCapabilityOverrides => {
 
     for (const chainId of CHAIN_IDS) {
         const key = chainOverridesKey(chainId)
+        // An unregistered chain is never resolved, so there is nothing to guard.
+        const supports = (capability: ChainCapability): boolean =>
+            !chains.has(chainId) || chains.supports(chainId, capability)
         const fromRemote = parseChainOverrides(
             remoteConfig.getStringValue(key, ''),
             key,
+            supports,
         )
         const savedValue = saved[key]
         const fromDeveloper =
             typeof savedValue === 'string'
-                ? parseChainOverrides(savedValue, key)
+                ? parseChainOverrides(savedValue, key, supports)
                 : NO_OVERRIDES
 
         remote[chainId] = fromRemote.capabilities

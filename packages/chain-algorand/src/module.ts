@@ -10,7 +10,10 @@
  limitations under the License
  */
 
-import type { ChainModule } from '@perawallet/wallet-core-chain-contract'
+import {
+    CHAIN_CAPABILITIES,
+    type ChainModule,
+} from '@perawallet/wallet-core-chain-contract'
 import {
     algorandCapabilityDefaults,
     algorandCapabilityRestrictions,
@@ -24,6 +27,7 @@ import { registerChain } from './register'
 export const chainModule: ChainModule = {
     descriptor: algorandDescriptor,
     capabilityDefaults: algorandCapabilityDefaults,
+    supportedCapabilities: CHAIN_CAPABILITIES,
     capabilityRestrictions: algorandCapabilityRestrictions,
     // The adapters are module-level instances the registries dedupe, so the
     // context goes to a holder instead of into rebuilt adapters.
