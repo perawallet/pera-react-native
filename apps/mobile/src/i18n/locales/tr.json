@@ -1101,7 +1101,7 @@
             "duplicate_address_warning": "Bu adres için bir kişi zaten var.",
             "add": "Ekle",
             "added_title": "Kişi eklendi",
-            "added_body": "Kişilerinize eklendi: {{name}}"
+            "added_body": "{{name}} kişilerine eklendi"
         },
         "view_contact": {
             "no_contact_title": "Kişi bulunamadı",
