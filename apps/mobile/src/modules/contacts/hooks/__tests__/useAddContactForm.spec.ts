@@ -24,7 +24,10 @@ vi.mock('@hooks/useToast', () => ({
     useToast: () => ({ successToast: successToastMock }),
 }))
 
-vi.mock('@components/core', () => ({
+vi.mock('@components/core', async () => ({
+    ...(await vi.importActual<typeof import('@components/core')>(
+        '@components/core',
+    )),
     bottomSheetNotifier: sheetNotifier,
 }))
 
