@@ -449,10 +449,9 @@ jobs:
           # gets the whole runner.
           VITEST_MAX_WORKERS: ${{ matrix.shard.vitestWorkers }}
           TURBO_CONCURRENCY: ${{ matrix.shard.turboConcurrency }}
-        # Coverage is deliberately absent: nothing consumed the report on the PR
-        # path (no thresholds, no upload), so instrumenting the whole monorepo
-        # only slowed the gate down. Run `pnpm test:coverage` locally or from a
-        # scheduled workflow when a report is actually wanted.
+        # Coverage is absent here because instrumenting the whole monorepo
+        # slows the gate. ci-coverage.yml enforces the thresholds nightly for
+        # the chain packages; run `pnpm test:coverage` locally for the rest.
         run: ${{ matrix.shard.command }}
 
   # Single stable check for the sharded matrix above, so branch protection can
