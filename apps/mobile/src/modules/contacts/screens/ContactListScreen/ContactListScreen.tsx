@@ -10,9 +10,6 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
-import type { Contact } from '@perawallet/wallet-core-contacts'
-
 import {
     PWButton,
     PWFlatList,
@@ -22,27 +19,15 @@ import {
 } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { SearchInput } from '@components/SearchInput'
-import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
-import { ContactRow } from './ContactRow'
 import { useContactListScreen } from './useContactListScreen'
 import { useStyles } from './styles'
 
 export const ContactListScreen = () => {
-    const navigation = useAppNavigation()
     const { t } = useLanguage()
 
     const styles = useStyles()
-
-    const onNavigateAddContact = useCallback(
-        () => navigation.navigate('AddContact'),
-        [navigation],
-    )
-    const onNavigateViewContact = useCallback(
-        () => navigation.navigate('ViewContact'),
-        [navigation],
-    )
 
     const {
         allContactsCount,
@@ -51,9 +36,9 @@ export const ContactListScreen = () => {
         onSearchChange,
         isEmpty,
         goToAddContact,
-        showQR,
-        selectContact,
-    } = useContactListScreen({ onNavigateAddContact, onNavigateViewContact })
+        renderItem,
+        keyExtractor,
+    } = useContactListScreen()
 
     useNavigationHeader({
         enabled: true,
@@ -65,19 +50,6 @@ export const ContactListScreen = () => {
             />
         ) : null,
     })
-
-    const renderItem = useCallback(
-        ({ item }: { item: Contact }) => (
-            <ContactRow
-                contact={item}
-                onShowQR={showQR}
-                onSelect={selectContact}
-            />
-        ),
-        [selectContact, showQR],
-    )
-
-    const keyExtractor = useCallback((c: Contact) => c.id, [])
 
     if (isEmpty) {
         return (

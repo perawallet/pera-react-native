@@ -18,12 +18,32 @@ import { useMenuScreen } from '../useMenuScreen'
 
 vi.mock('@analytics', () => ({
     trackEvent: vi.fn(),
-    MenuEvent: { QrScan: 'QrScan' },
+    MenuEvent: { QrScan: 'QrScan', Receive: 'Receive', PasteLink: 'PasteLink' },
+    FundEvent: { BidaliSelected: 'BidaliSelected' },
+}))
+
+const mocks = vi.hoisted(() => ({ requestBottomSheet: vi.fn() }))
+
+vi.mock('@modules/bottom-sheet', () => ({
+    useBottomSheet: () => ({ request: mocks.requestBottomSheet }),
+}))
+
+vi.mock('@modules/transactions/routes', () => ({
+    ReceiveFundsContent: () => null,
+}))
+
+vi.mock('@modules/gift-card/routes', () => ({
+    BidaliContent: () => null,
+}))
+
+vi.mock('@modules/menu/components/PasteLinkContent', () => ({
+    PasteLinkContent: () => null,
 }))
 
 describe('useMenuScreen', () => {
     beforeEach(() => {
         useRemoteConfigStore.getState().resetState()
+        vi.clearAllMocks()
     })
 
     it('offers staking only while the staking capability is on', () => {
@@ -64,5 +84,17 @@ describe('useMenuScreen', () => {
         })
 
         expect(result.current.isScannerVisible).toBe(false)
+    })
+
+    it('asks the bottom sheet for the receive funds content', () => {
+        const { result } = renderHook(() => useMenuScreen())
+
+        act(() => {
+            result.current.openReceiveFunds()
+        })
+
+        expect(mocks.requestBottomSheet).toHaveBeenCalledWith(
+            expect.objectContaining({ contents: expect.anything() }),
+        )
     })
 })

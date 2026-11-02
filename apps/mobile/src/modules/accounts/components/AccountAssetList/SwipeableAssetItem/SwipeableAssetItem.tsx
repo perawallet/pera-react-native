@@ -10,14 +10,11 @@
  limitations under the License
  */
 
-import React, { useCallback, useRef } from 'react'
-import type { GestureResponderEvent } from 'react-native'
+import React from 'react'
 import {
-    PWIcon,
     PWSwipeable,
     PWSWIPEABLE_IGNORE_DIRECTION,
     usePWPagerGesture,
-    type PWSwipeableRef,
     PWView,
 } from '@components/core'
 import type { AccountHoldingsLiteRow } from '@perawallet/wallet-core-accounts'
@@ -25,6 +22,7 @@ import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { AssetListItemView } from '../AssetListItemView'
 import type { AssetFiatConverter } from '@modules/assets'
 import { useStyles } from './styles'
+import { useSwipeableAssetItem } from './useSwipeableAssetItem'
 
 export type SwipeableAssetItemProps = {
     item: AccountHoldingsLiteRow
@@ -51,32 +49,10 @@ const SwipeableAssetItemInner = ({
     onOptOut,
 }: SwipeableAssetItemProps) => {
     const styles = useStyles()
-    const swipeableRef = useRef<PWSwipeableRef>(null)
     const pagerGesture = usePWPagerGesture()
 
-    const handleSwipeOpen = useCallback(() => {
-        swipeableRef.current?.close()
-        onOptOut(item)
-    }, [item, onOptOut])
-
-    const handlePress = useCallback(
-        (event: GestureResponderEvent) => {
-            event.stopPropagation()
-            onPress(item)
-        },
-        [item, onPress],
-    )
-
-    const renderRightActions = useCallback(() => {
-        return (
-            <PWView style={styles.swipeAction}>
-                <PWIcon
-                    name='trash'
-                    variant='white'
-                />
-            </PWView>
-        )
-    }, [styles.swipeAction])
+    const { swipeableRef, handleSwipeOpen, handlePress, renderRightActions } =
+        useSwipeableAssetItem({ item, onPress, onOptOut })
 
     if (!isSwipeEnabled) {
         return (

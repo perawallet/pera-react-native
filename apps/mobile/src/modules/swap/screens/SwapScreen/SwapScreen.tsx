@@ -10,51 +10,22 @@
  limitations under the License
  */
 
-import { useCallback, useEffect, useRef } from 'react'
 import { useLanguage } from '@hooks/useLanguage'
-import { config } from '@perawallet/wallet-core-config'
 import { PWIcon, PWText, PWToolbar, PWView } from '@components/core'
 import {
     AccountSelection,
     AccountDrawerPager,
     useAccountDrawerPickerKind,
 } from '@modules/accounts'
-import { useWebView } from '@modules/webview'
-import { useSwapIntroduction } from '@modules/swap/hooks'
-import { SwapForm, SwapIntroductionContent } from '@modules/swap/components'
-import { useBottomSheet } from '@modules/bottom-sheet'
+import { SwapForm } from '@modules/swap/components'
 import { useStyles } from './styles'
 import { useSwapScreen } from './useSwapScreen'
 
 export const SwapScreen = () => {
     const { t } = useLanguage()
     const styles = useStyles()
-    const { pushWebView } = useWebView()
-    const { isIntroductionSeen, markIntroductionSeen } = useSwapIntroduction()
-    const { request: requestBottomSheet } = useBottomSheet()
-    const { scope, initialPayAmount, accountPicker } = useSwapScreen()
-
-    const hasShownIntroRef = useRef(false)
-    useEffect(() => {
-        if (isIntroductionSeen || hasShownIntroRef.current) return
-        hasShownIntroRef.current = true
-        void requestBottomSheet<'start'>({
-            contents: <SwapIntroductionContent />,
-            options: {
-                size: 'auto',
-                enablePanDownToClose: true,
-                autoCreateContainer: false,
-            },
-        }).then(result => {
-            if (result === 'start') {
-                markIntroductionSeen()
-            }
-        })
-    }, [isIntroductionSeen, requestBottomSheet, markIntroductionSeen])
-
-    const handleInfoPress = useCallback(() => {
-        pushWebView({ url: config.swapSupportUrl })
-    }, [pushWebView])
+    const { scope, initialPayAmount, accountPicker, handleInfoPress } =
+        useSwapScreen()
 
     // The drawer resolves the same 'swap' picker as the bottom-sheet fallback.
     useAccountDrawerPickerKind('swap')

@@ -444,3 +444,30 @@ describe('pera/component-props-type', () => {
         ])
     })
 })
+
+describe('pera/component-logic-in-hook', () => {
+    it('blocks in mobile module and component .tsx files, core aside, tests aside', () => {
+        const mobile = readOxlintConfig('apps/mobile/.oxlintrc.json')
+        const root = readOxlintConfig('.oxlintrc.json')
+        const overrides = overridesWith(mobile, 'pera/component-logic-in-hook')
+
+        expect(overrides).toHaveLength(1)
+        expect(overrides[0].files).toEqual([
+            'src/modules/**/*.tsx',
+            'src/components/**/*.tsx',
+        ])
+        expect(overrides[0].rules['pera/component-logic-in-hook']).toBe('error')
+        expect(overrides[0].excludeFiles).toEqual([
+            'src/components/core/**',
+            'src/**/__tests__/**',
+            'src/**/__mocks__/**',
+            'src/**/test-utils/**',
+            'src/**/__integration__/**',
+            'src/**/*.spec.{ts,tsx}',
+            'src/**/*.test.{ts,tsx}',
+        ])
+        expect(
+            overridesWith(root, 'pera/component-logic-in-hook'),
+        ).toHaveLength(0)
+    })
+})

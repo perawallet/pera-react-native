@@ -10,39 +10,25 @@
  limitations under the License
  */
 
-import { useMemo } from 'react'
 import { PWText } from '@components/core'
 import { KeyValueRow } from '@components/KeyValueRow'
-import type { AlgorandTransactionView } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import { useLanguage } from '@hooks/useLanguage'
 import { TransactionDetailCard } from '@modules/signing'
-import { formatParticipationKey, getKeyRegType } from './utils'
+import {
+    useKeyRegistrationDisplay,
+    type KeyRegistrationDisplayProps,
+} from './useKeyRegistrationDisplay'
 
-export type KeyRegistrationDisplayProps = {
-    transaction: AlgorandTransactionView
-}
+export type { KeyRegistrationDisplayProps }
 
 export const KeyRegistrationDisplay = ({
     transaction,
 }: KeyRegistrationDisplayProps) => {
     const { t } = useLanguage()
 
-    const keyRegType = useMemo(() => getKeyRegType(transaction), [transaction])
-    const participationKeys = useMemo(
-        () => ({
-            vote: formatParticipationKey(
-                transaction.keyregTransaction?.voteParticipationKey,
-            ),
-            selection: formatParticipationKey(
-                transaction.keyregTransaction?.selectionParticipationKey,
-            ),
-            stateProof: formatParticipationKey(
-                transaction.keyregTransaction?.stateProofKey,
-            ),
-        }),
-        [transaction],
+    const { keyRegType, participationKeys, keyReg } = useKeyRegistrationDisplay(
+        { transaction },
     )
-    const keyReg = transaction.keyregTransaction
 
     return (
         <TransactionDetailCard>

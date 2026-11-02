@@ -10,36 +10,29 @@
  limitations under the License
  */
 
-import { useCallback, useEffect, useRef } from 'react'
-import { chainAccountOf } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { primaryContactAddress } from '@perawallet/wallet-core-contacts'
 import {
-    PWFlatList,
-    PWIcon,
-    PWScreen,
-    PWText,
-    PWTouchableOpacity,
-    PWView,
-    type PWFlatListRef,
-} from '@components/core'
+    chainAccountOf,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { PWFlatList, PWIcon, PWScreen, PWView } from '@components/core'
 import { SearchInput } from '@components/SearchInput'
 import { EmptyView } from '@components/EmptyView'
 import { LoadingView } from '@components/LoadingView'
-import { AccountDisplay } from '@components/AccountDisplay'
-import { AddressDisplay } from '@components/AddressDisplay'
-import { AssetTitle } from '@modules/assets'
 import { useLanguage } from '@hooks/useLanguage'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
 import { useStyles } from './styles'
-import { useSearchScreen, type SearchRow } from './useSearchScreen'
+import { useSearchScreenList } from './useSearchScreenList'
+import { useSearchScreen } from './useSearchScreen'
 
 const SKELETON_ROW_COUNT = 5
+
+const accountAddressOf = (account: WalletAccount) =>
+    chainAccountOf(account, LEGACY_CHAIN_ID)?.address
 
 export const SearchScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const listRef = useRef<PWFlatListRef>(null)
     const {
         value,
         setValue,
@@ -66,105 +59,18 @@ export const SearchScreen = () => {
         ),
     })
 
-    useEffect(() => {
-        listRef.current?.scrollToOffset({ offset: 0, animated: false })
-    }, [value, scopes])
-
     const listKey = `${scopes.join(',')}:${value}`
 
-    const renderItem = useCallback(
-        ({ item }: { item: SearchRow }) => {
-            switch (item.type) {
-                case 'section_header': {
-                    return (
-                        <PWView style={styles.sectionHeader}>
-                            <PWText variant='h4'>
-                                {t(`search.sections.${item.kind}`)}
-                            </PWText>
-                        </PWView>
-                    )
-                }
-                case 'account': {
-                    return (
-                        <PWTouchableOpacity
-                            onPress={() => onAccountPress(item.account)}
-                            testID={`search_result_account_${chainAccountOf(item.account, LEGACY_CHAIN_ID)?.address}`}
-                        >
-                            <AccountDisplay
-                                account={item.account}
-                                showChevron={false}
-                                style={styles.rowContainer}
-                            />
-                        </PWTouchableOpacity>
-                    )
-                }
-                case 'contact': {
-                    return (
-                        <PWTouchableOpacity
-                            onPress={() => onContactPress(item.contact)}
-                            testID={`search_result_contact_${primaryContactAddress(item.contact)}`}
-                        >
-                            <AddressDisplay
-                                address={primaryContactAddress(item.contact)}
-                                showCopy={false}
-                                style={styles.rowContainer}
-                            />
-                        </PWTouchableOpacity>
-                    )
-                }
-                case 'asset': {
-                    return (
-                        <PWTouchableOpacity
-                            onPress={() => void onAssetPress(item.asset)}
-                            style={styles.assetRow}
-                            testID={`search_result_asset_${item.asset.assetId}`}
-                        >
-                            <AssetTitle
-                                asset={item.asset}
-                                chainId={chainId}
-                                showId
-                                nameVariant='body'
-                            />
-                        </PWTouchableOpacity>
-                    )
-                }
-                case 'show_more': {
-                    return (
-                        <PWTouchableOpacity
-                            onPress={() => onExpandSection(item.kind)}
-                            style={styles.showMore}
-                            testID={`search_show_more_${item.kind}`}
-                        >
-                            <PWText
-                                variant='caption'
-                                style={styles.showMoreText}
-                            >
-                                {t('search.show_more', {
-                                    count: item.hiddenCount,
-                                })}
-                            </PWText>
-                            <PWIcon
-                                name='chevron-right'
-                                variant='link'
-                                size='sm'
-                            />
-                        </PWTouchableOpacity>
-                    )
-                }
-            }
-        },
-        [
-            onAccountPress,
-            onContactPress,
-            onAssetPress,
-            onExpandSection,
-            chainId,
-            styles,
-            t,
-        ],
-    )
-
-    const keyExtractor = useCallback((row: SearchRow) => row.key, [])
+    const { listRef, renderItem, keyExtractor } = useSearchScreenList({
+        onAccountPress,
+        onContactPress,
+        onAssetPress,
+        onExpandSection,
+        chainId,
+        getAccountAddress: accountAddressOf,
+        value,
+        scopes,
+    })
 
     const hasQuery = value.length > 0
     const showSkeleton = hasQuery && isLoading && !hasResults

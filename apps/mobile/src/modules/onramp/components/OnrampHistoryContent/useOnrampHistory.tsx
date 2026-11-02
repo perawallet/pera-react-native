@@ -10,7 +10,15 @@
  limitations under the License
  */
 
-import { useEffect, useRef, useState } from 'react'
+import {
+    useCallback,
+    useEffect,
+    useRef,
+    useState,
+    type ReactElement,
+} from 'react'
+import { PWView } from '@components/core'
+import { useBottomSheet } from '@modules/bottom-sheet'
 import { deploymentOf } from '@perawallet/wallet-core-config'
 import { useDeploymentDeviceID } from '@perawallet/wallet-core-device'
 import {
@@ -20,6 +28,9 @@ import {
 } from '@perawallet/wallet-core-onramp'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useOnrampAccount } from '@modules/onramp/hooks/useOnrampAccount'
+import { OnrampHistoryListItem } from './OnrampHistoryListItem'
+import { OnrampOrderDetailsContent } from '../OnrampOrderDetailsContent'
+import { useStyles } from './styles'
 
 export type UseOnrampHistoryResult = {
     items: RampHistoryItem[]
@@ -31,12 +42,18 @@ export type UseOnrampHistoryResult = {
     hasNextPage: boolean
     fetchNextPage: () => void
     refetch: () => void
+    handleEndReached: () => void
+    handleItemPress: (item: RampHistoryItem) => void
+    renderItem: (params: { item: RampHistoryItem }) => ReactElement
+    ItemSeparator: () => ReactElement
 }
 
 export const useOnrampHistory = (isActive = true): UseOnrampHistoryResult => {
     const [statusFilter, setStatusFilter] =
         useState<Nullable<OnrampStatus>>(null)
 
+    const styles = useStyles()
+    const { request: requestBottomSheet } = useBottomSheet()
     const { scope, address } = useOnrampAccount()
     const deviceId = useDeploymentDeviceID(deploymentOf(scope)) ?? ''
     const accountAddress = address ?? ''
@@ -65,6 +82,43 @@ export const useOnrampHistory = (isActive = true): UseOnrampHistoryResult => {
         wasActive.current = isActive
     }, [isActive, refetch])
 
+    const handleEndReached = useCallback(() => {
+        if (hasNextPage && !isFetchingNextPage) {
+            fetchNextPage()
+        }
+    }, [hasNextPage, isFetchingNextPage, fetchNextPage])
+
+    const handleItemPress = useCallback(
+        (item: RampHistoryItem) => {
+            void requestBottomSheet({
+                contents: <OnrampOrderDetailsContent item={item} />,
+                options: {
+                    size: 'modal',
+                    enablePanDownToClose: true,
+                    // OnrampOrderDetailsContent uses PWSheetLayout, which
+                    // brings its own scroll container + safe-area padding.
+                    autoCreateContainer: false,
+                },
+            })
+        },
+        [requestBottomSheet],
+    )
+
+    const renderItem = useCallback(
+        ({ item }: { item: RampHistoryItem }) => (
+            <OnrampHistoryListItem
+                item={item}
+                onPress={handleItemPress}
+            />
+        ),
+        [handleItemPress],
+    )
+
+    const ItemSeparator = useCallback(
+        () => <PWView style={styles.itemSeparator} />,
+        [styles.itemSeparator],
+    )
+
     return {
         items,
         statusFilter,
@@ -75,5 +129,9 @@ export const useOnrampHistory = (isActive = true): UseOnrampHistoryResult => {
         hasNextPage,
         fetchNextPage,
         refetch,
+        handleEndReached,
+        handleItemPress,
+        renderItem,
+        ItemSeparator,
     }
 }

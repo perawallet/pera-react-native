@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useEffect, useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { type RouteProp, useRoute } from '@react-navigation/native'
 import { Decimal } from 'decimal.js'
 import {
@@ -30,6 +30,11 @@ import {
 } from '@modules/accounts'
 import type { SwapScreenParams } from '@modules/swap/routes/types'
 import { useSeedSwapRouteAssets } from './useSeedSwapRouteAssets'
+import { useWebView } from '@modules/webview'
+import { useSwapIntroduction } from '@modules/swap/hooks'
+import { useBottomSheet } from '@modules/bottom-sheet'
+import { SwapIntroductionContent } from '@modules/swap/components'
+import { config } from '@perawallet/wallet-core-config'
 import type { SwapFormInitialPayAmount } from '@modules/swap/components/SwapForm/useSwapForm'
 import { resolveSwapRouteAssets } from './resolveSwapRouteAssets'
 
@@ -38,6 +43,7 @@ export type UseSwapScreenResult = {
     scope: Nullable<ChainScope>
     initialPayAmount: Optional<SwapFormInitialPayAmount>
     accountPicker: AccountDrawerPickerProps
+    handleInfoPress: () => void
 }
 
 export const useSwapScreen = (): UseSwapScreenResult => {
@@ -85,5 +91,31 @@ export const useSwapScreen = (): UseSwapScreenResult => {
         [payAmount, assetInId],
     )
 
-    return { scope, initialPayAmount, accountPicker }
+    const { pushWebView } = useWebView()
+    const { isIntroductionSeen, markIntroductionSeen } = useSwapIntroduction()
+    const { request: requestBottomSheet } = useBottomSheet()
+
+    const hasShownIntroRef = useRef(false)
+    useEffect(() => {
+        if (isIntroductionSeen || hasShownIntroRef.current) return
+        hasShownIntroRef.current = true
+        void requestBottomSheet<'start'>({
+            contents: <SwapIntroductionContent />,
+            options: {
+                size: 'auto',
+                enablePanDownToClose: true,
+                autoCreateContainer: false,
+            },
+        }).then(result => {
+            if (result === 'start') {
+                markIntroductionSeen()
+            }
+        })
+    }, [isIntroductionSeen, requestBottomSheet, markIntroductionSeen])
+
+    const handleInfoPress = useCallback(() => {
+        pushWebView({ url: config.swapSupportUrl })
+    }, [pushWebView])
+
+    return { scope, initialPayAmount, accountPicker, handleInfoPress }
 }
