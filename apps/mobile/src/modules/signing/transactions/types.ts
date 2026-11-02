@@ -11,12 +11,16 @@
  */
 
 import type { ComponentType } from 'react'
+import type { Decimal } from 'decimal.js'
+import type { MinimalAsset } from '@perawallet/wallet-core-assets'
 import type {
     ChainScope,
+    I18nKey,
     TransactionNative,
     TransactionRecord,
 } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
+import type { IconName } from '@components/core'
 import type { SignRequestSource } from '@perawallet/wallet-core-signing'
 import type { TransactionHistoryItem } from '@perawallet/wallet-core-transactions'
 
@@ -36,6 +40,40 @@ export type DetailBodyProps = {
 export type RecordDetailBodyProps = {
     /** A history record, which a chain without cached history rows has no `TransactionNative` for. */
     record: TransactionRecord
+}
+
+export type TransactionDetailStatus = 'completed' | 'pending' | 'failed'
+
+export type TransactionDetailAmount = {
+    asset: MinimalAsset
+    /** Display units of `asset`, unsigned. */
+    value: Decimal
+}
+
+/** What every chain tells the shared detail layout; none of it names a chain. */
+export type TransactionDetailSummary = {
+    scope: ChainScope
+    iconName: IconName
+    /** Already translated by the chain. */
+    title: string
+    status: TransactionDetailStatus
+    /** Unset when the transaction moves no single amount, or while the asset it moves is still being read. */
+    amount?: TransactionDetailAmount
+    /** The asset the amount is in is still being read, so the hero holds its place. */
+    isAmountLoading?: boolean
+    /** Unset before signing, or when no explorer can open the id. */
+    transactionId?: string
+    /** Unix ms. */
+    timestamp?: number
+    /** The block, or the round on a chain that counts rounds, the transaction landed in. */
+    block?: { labelKey: I18nKey; number: string }
+    from?: string
+    /** Unset without a single recipient, such as an application or contract call. */
+    to?: string
+    /** In the native asset. Unset when the chain's history or signing flow gave none. */
+    fee?: TransactionDetailAmount
+    /** Decoded text. */
+    note?: string
 }
 
 export type PreviewRowProps = {

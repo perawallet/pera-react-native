@@ -23,6 +23,10 @@ export {
     type SpendApprovalWarningProps,
 } from './components/SpendApprovalWarning'
 export { TransactionReviewLayout } from './transactions/TransactionReviewLayout'
+export { TransactionDetailLayout } from './transactions/TransactionDetailLayout'
+export type { TransactionDetailLayoutProps } from './transactions/TransactionDetailLayout'
+export { TransactionDetailCard } from './transactions/TransactionDetailCard'
+export { TransactionStatusBadge } from './transactions/TransactionStatusBadge'
 export type {
     DetailBodyProps,
     RecordDetailBodyProps,
@@ -30,6 +34,9 @@ export type {
     RelatedTransactionsProps,
     ReviewBodyProps,
     TotalFeeProps,
+    TransactionDetailAmount,
+    TransactionDetailStatus,
+    TransactionDetailSummary,
     TransactionDisplay,
     UseTransactionDetailParams,
     UseTransactionDetailResult,
