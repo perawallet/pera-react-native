@@ -303,6 +303,9 @@ patchedDependencies:
   '@algorandfoundation/react-native-passkey-autofill@1.0.0-canary.29':
     hash: c2c95c3534ffef165f1885347e43cd0b577b19ea4cfc41f8b940b61395adb336
     path: patches/@algorandfoundation__react-native-passkey-autofill@1.0.0-canary.29.patch
+  '@react-native-firebase/crashlytics@27.0.0':
+    hash: cd7e7789f13515bad2f44c54f500e6349cfbb823cee67abec6537eb4e6043206
+    path: patches/@react-native-firebase__crashlytics@27.0.0.patch
   falcon-1024@0.2.0:
     hash: 98e2e0205624da31c2026ce165fccdfaae381fbdfb28f85cad17fedf8943ca4a
     path: patches/falcon-1024@0.2.0.patch
@@ -819,7 +822,7 @@ importers:
         version: 27.0.0(expo@58.0.17)(react-native@0.88.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0)
       '@react-native-firebase/crashlytics':
         specifier: 'catalog:'
-        version: 27.0.0(@react-native-firebase/app@27.0.0(expo@58.0.17)(react-native@0.88.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0))(expo@58.0.17)
+        version: 27.0.0(patch_hash=cd7e7789f13515bad2f44c54f500e6349cfbb823cee67abec6537eb4e6043206)(@react-native-firebase/app@27.0.0(expo@58.0.17)(react-native@0.88.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0))(expo@58.0.17)
       '@react-native-firebase/messaging':
         specifier: 'catalog:'
         version: 27.0.0(@react-native-firebase/app@27.0.0(expo@58.0.17)(react-native@0.88.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0))(expo@58.0.17)
@@ -1767,7 +1770,7 @@ importers:
         version: 27.0.0(@react-native-firebase/app@27.0.0(expo@58.0.17)(react-native@0.88.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0))(expo@58.0.17)
       '@react-native-firebase/crashlytics':
         specifier: 'catalog:'
-        version: 27.0.0(@react-native-firebase/app@27.0.0(expo@58.0.17)(react-native@0.88.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0))(expo@58.0.17)
+        version: 27.0.0(patch_hash=cd7e7789f13515bad2f44c54f500e6349cfbb823cee67abec6537eb4e6043206)(@react-native-firebase/app@27.0.0(expo@58.0.17)(react-native@0.88.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0))(expo@58.0.17)
       '@react-native-firebase/messaging':
         specifier: 'catalog:'
         version: 27.0.0(@react-native-firebase/app@27.0.0(expo@58.0.17)(react-native@0.88.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0))(expo@58.0.17)
@@ -14538,7 +14541,7 @@ snapshots:
     transitivePeerDependencies:
       - '@react-native-async-storage/async-storage'
 
-  '@react-native-firebase/crashlytics@27.0.0(@react-native-firebase/app@27.0.0(expo@58.0.17)(react-native@0.88.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0))(expo@58.0.17)':
+  '@react-native-firebase/crashlytics@27.0.0(patch_hash=cd7e7789f13515bad2f44c54f500e6349cfbb823cee67abec6537eb4e6043206)(@react-native-firebase/app@27.0.0(expo@58.0.17)(react-native@0.88.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0))(expo@58.0.17)':
     dependencies:
       '@react-native-firebase/app': 27.0.0(expo@58.0.17)(react-native@0.88.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0)
       stacktrace-js: 2.0.2
@@ -15320,7 +15323,7 @@ snapshots:
       obug: 2.2.1
       std-env: 4.3.0
       tinyrainbow: 3.2.0
-      vitest: 5.0.3(@types/node@26.1.2)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@2.4.0))(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
+      vitest: 5.0.3(@types/node@20.19.43)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@2.4.0))(msw@2.15.0(@types/node@20.19.43)(typescript@7.0.2))(vite@8.3.4(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
 
   '@vitest/istanbul-lib-coverage@1.0.2': {}
 
