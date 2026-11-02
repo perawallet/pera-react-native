@@ -73,11 +73,11 @@
     "app": {
         "initialization_failed": {
             "title": "Falha ao iniciar o app",
-            "body": "Ocorreu um erro ao inicializar o app. Tente reiniciá-lo. Se o problema persistir, entre em contato com o suporte.\n\nSeus fundos estão seguros na blockchain da Algorand.",
+            "body": "Ocorreu um erro ao inicializar o app. Tente reiniciá-lo. Se o problema persistir, entre em contato com o suporte.\n\nSeus fundos estão seguros na blockchain.",
             "retry": "Tentar novamente",
             "keystore": {
                 "title": "Erro nos dados da wallet",
-                "body": "A Pera não conseguiu ler parte dos dados da wallet armazenados neste dispositivo e por isso não pode iniciar com segurança. Entre em contato com o suporte antes de reinstalar o app: a reinstalação pode remover contas que existem apenas neste dispositivo.\n\nSeus fundos estão seguros na blockchain da Algorand."
+                "body": "A Pera não conseguiu ler parte dos dados da wallet armazenados neste dispositivo e por isso não pode iniciar com segurança. Entre em contato com o suporte antes de reinstalar o app: a reinstalação pode remover contas que existem apenas neste dispositivo.\n\nSeus fundos estão seguros na blockchain."
             }
         }
     },
@@ -208,7 +208,7 @@
     "address_actions": {
         "title": "Endereço de conta escaneado",
         "send_transaction": "Enviar transação",
-        "send_transaction_subtitle": "Envie ALGO ou ativos para este endereço",
+        "send_transaction_subtitle": "Envie ativos para este endereço",
         "watch_address": "Observar um endereço",
         "watch_address_subtitle": "Adicionar como conta de observação",
         "add_contact": "Adicionar novo contato",
@@ -425,7 +425,7 @@
         },
         "no_balance": {
             "welcome": "Boas-vindas à Pera!",
-            "get_started": "Para começar, deposite ALGO",
+            "get_started": "Para começar, deposite cripto",
             "buy": "Comprar cripto",
             "receive": "Receber",
             "more": "Mais"
@@ -2430,7 +2430,7 @@
             "recover_passphrase_title": "Recuperar com passphrase",
             "recover_passphrase_description": "Recupere uma wallet usando a passphrase",
             "recover_qr_title": "Recuperar com código QR",
-            "recover_qr_description": "Recupere uma wallet Algorand usando um código QR",
+            "recover_qr_description": "Recupere uma wallet usando um código QR",
             "private_key_title": "Importar uma chave privada",
             "private_key_description": "Adicione uma conta a partir da chave privada",
             "pair_ledger_title": "Parear com Ledger",

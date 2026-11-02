@@ -73,11 +73,11 @@
     "app": {
         "initialization_failed": {
             "title": "Échec du lancement de l’app",
-            "body": "Une erreur s’est produite lors de l’initialisation de l’app. Essayez de la redémarrer. Si le problème persiste, contactez l’assistance.\n\nVos fonds sont en sécurité sur la blockchain Algorand.",
+            "body": "Une erreur s’est produite lors de l’initialisation de l’app. Essayez de la redémarrer. Si le problème persiste, contactez l’assistance.\n\nVos fonds sont en sécurité sur la blockchain.",
             "retry": "Réessayer",
             "keystore": {
                 "title": "Erreur de données du wallet",
-                "body": "Pera n’a pas pu lire une partie des données du wallet stockées sur cet appareil et ne peut donc pas démarrer en toute sécurité. Contactez l’assistance avant de réinstaller l’app : une réinstallation peut supprimer les comptes qui n’existent que sur cet appareil.\n\nVos fonds sont en sécurité sur la blockchain Algorand."
+                "body": "Pera n’a pas pu lire une partie des données du wallet stockées sur cet appareil et ne peut donc pas démarrer en toute sécurité. Contactez l’assistance avant de réinstaller l’app : une réinstallation peut supprimer les comptes qui n’existent que sur cet appareil.\n\nVos fonds sont en sécurité sur la blockchain."
             }
         }
     },
@@ -208,7 +208,7 @@
     "address_actions": {
         "title": "Adresse de compte scannée",
         "send_transaction": "Envoyer une transaction",
-        "send_transaction_subtitle": "Envoyer des ALGO ou des actifs à cette adresse",
+        "send_transaction_subtitle": "Envoyer des actifs à cette adresse",
         "watch_address": "Suivre une adresse",
         "watch_address_subtitle": "Ajouter comme compte de suivi",
         "add_contact": "Ajouter un contact",
@@ -425,7 +425,7 @@
         },
         "no_balance": {
             "welcome": "Bienvenue sur Pera !",
-            "get_started": "Pour commencer, déposez de l’ALGO",
+            "get_started": "Pour commencer, déposez des cryptos",
             "buy": "Acheter des cryptos",
             "receive": "Recevoir",
             "more": "Plus"
@@ -2426,7 +2426,7 @@
             "recover_passphrase_title": "Récupérer avec une passphrase",
             "recover_passphrase_description": "Récupérez un wallet à l’aide de sa passphrase",
             "recover_qr_title": "Récupérer avec un QR code",
-            "recover_qr_description": "Récupérez un wallet Algorand à l’aide d’un QR code",
+            "recover_qr_description": "Récupérez un wallet à l’aide d’un QR code",
             "private_key_title": "Importer une clé privée",
             "private_key_description": "Ajoutez un compte à partir de sa clé privée",
             "pair_ledger_title": "Associer un Ledger",

@@ -73,11 +73,11 @@
     "app": {
         "initialization_failed": {
             "title": "App Launch Failed",
-            "body": "There was an error initializing the app.  Please try restarting the app. If the issue persists, contact support.\n\nYour funds are safe on the Algorand blockchain.",
+            "body": "There was an error initializing the app.  Please try restarting the app. If the issue persists, contact support.\n\nYour funds are safe on the blockchain.",
             "retry": "Try again",
             "keystore": {
                 "title": "Wallet Data Error",
-                "body": "Pera couldn't read some of the wallet data stored on this device, so it can't start safely. Please contact support before reinstalling the app: reinstalling can remove accounts that exist only on this device.\n\nYour funds are safe on the Algorand blockchain."
+                "body": "Pera couldn't read some of the wallet data stored on this device, so it can't start safely. Please contact support before reinstalling the app: reinstalling can remove accounts that exist only on this device.\n\nYour funds are safe on the blockchain."
             }
         }
     },
@@ -208,7 +208,7 @@
     "address_actions": {
         "title": "Scanned Account Address",
         "send_transaction": "Send Transaction",
-        "send_transaction_subtitle": "Send ALGO or assets to this address",
+        "send_transaction_subtitle": "Send assets to this address",
         "watch_address": "Watch an Address",
         "watch_address_subtitle": "Add as a watch-only account",
         "add_contact": "Add New Contact",
@@ -425,7 +425,7 @@
         },
         "no_balance": {
             "welcome": "Welcome to Pera!",
-            "get_started": "To get started, deposit ALGO",
+            "get_started": "To get started, deposit crypto",
             "buy": "Buy Crypto",
             "receive": "Receive",
             "more": "More"
@@ -2426,7 +2426,7 @@
             "recover_passphrase_title": "Recover from Passphrase",
             "recover_passphrase_description": "Recover a wallet using passphrase",
             "recover_qr_title": "Recover from QR Code",
-            "recover_qr_description": "Recover an Algorand wallet using a QR code",
+            "recover_qr_description": "Recover a wallet using a QR code",
             "private_key_title": "Import a Private Key",
             "private_key_description": "Add an account from its private key",
             "pair_ledger_title": "Pair with Ledger",
