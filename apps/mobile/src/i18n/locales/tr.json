@@ -3544,6 +3544,12 @@
             "send": "Gönder",
             "receive": "Al",
             "swap": "Swap",
+            "wrap": "Wrap",
+            "unwrap": "Unwrap",
+            "supply": "Yatır",
+            "withdraw": "Çek",
+            "borrow": "Borçlan",
+            "repay": "Geri öde",
             "opt_in": "Opt-in",
             "opt_out": "Opt-out",
             "asset_config": "Varlık yapılandırması",
@@ -4732,6 +4738,18 @@
     "ethereum": {
         "batch": {
             "fee_when_reached": "Ücret, bu çağrının sırası geldiğinde tahmin edilir"
+        },
+        "contract_action": {
+            "pay": "Ödersin",
+            "pay_at_most": "En fazla ödersin",
+            "receive": "Alırsın",
+            "receive_at_least": "En az alırsın",
+            "entire_balance": "Tüm bakiye"
+        },
+        "known_contract": {
+            "title": "Sözleşme",
+            "verified": "Doğrulanmış sözleşme",
+            "matches_site": "{{domain}} ile eşleşiyor"
         }
     }
 }

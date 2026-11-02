@@ -3544,6 +3544,12 @@
             "send": "Send",
             "receive": "Receive",
             "swap": "Swap",
+            "wrap": "Wrap",
+            "unwrap": "Unwrap",
+            "supply": "Supply",
+            "withdraw": "Withdraw",
+            "borrow": "Borrow",
+            "repay": "Repay",
             "opt_in": "Opt-in",
             "opt_out": "Opt-out",
             "asset_config": "Asset Configuration",
@@ -4732,6 +4738,18 @@
     "ethereum": {
         "batch": {
             "fee_when_reached": "Fee estimated when this call is reached"
+        },
+        "contract_action": {
+            "pay": "You pay",
+            "pay_at_most": "You pay at most",
+            "receive": "You receive",
+            "receive_at_least": "You receive at least",
+            "entire_balance": "Entire balance"
+        },
+        "known_contract": {
+            "title": "Contract",
+            "verified": "Verified contract",
+            "matches_site": "Matches {{domain}}"
         }
     }
 }
