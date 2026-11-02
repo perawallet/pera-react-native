@@ -38,11 +38,15 @@ export type WealthChartProps = {
     onSelectionChanged: (item: Nullable<PortfolioValueHistoryItem>) => void
     /** Gate the (slow) history fetch on chart visibility. */
     enabled?: boolean
+    /** Names the networks the chart leaves out, under the chart. */
+    shouldShowExcludedNetworks?: boolean
 }
 
 const getPreferredValue = (item: PortfolioValueHistoryItem): number =>
     // Non-null by construction: `plottablePoints` drops unpriced points below.
     (item.preferredValue as Decimal).toNumber()
+
+const getDatetime = (item: PortfolioValueHistoryItem): Date => item.datetime
 
 // Memoised because the account header re-renders on every scrub sample it
 // receives. Without this each sample re-rendered CartesianChart — re-deriving
@@ -53,6 +57,7 @@ export const WealthChart = memo(function WealthChart({
     currencyScope,
     period,
     enabled = true,
+    shouldShowExcludedNetworks = true,
 }: WealthChartProps) {
     const themeStyle = useStyles()
     const { t } = useLanguage()
@@ -94,6 +99,7 @@ export const WealthChart = memo(function WealthChart({
             <BalanceLineChart
                 series={plottablePoints}
                 getValue={getPreferredValue}
+                getDatetime={getDatetime}
                 onSelectionChanged={onSelectionChanged}
                 isPending={isPending}
                 isError={isError}
@@ -104,7 +110,7 @@ export const WealthChart = memo(function WealthChart({
                 emptyBody={t('common.wealth_chart.empty_body')}
                 style={themeStyle.container}
             />
-            {excludedNetworks !== '' && (
+            {shouldShowExcludedNetworks && excludedNetworks !== '' && (
                 <PWText
                     variant='caption'
                     style={themeStyle.excludedNote}

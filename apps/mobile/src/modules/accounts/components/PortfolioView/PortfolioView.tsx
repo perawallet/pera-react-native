@@ -24,7 +24,7 @@ import { useLanguage } from '@hooks/useLanguage'
 
 import { PreferredAmount } from '@components/PreferredAmount'
 import { WealthChart } from '@components/WealthChart'
-import { formatDatetime, type Nullable } from '@perawallet/wallet-core-shared'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { trackEvent, HomeEvent } from '@analytics'
 import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated'
 import {
@@ -79,6 +79,7 @@ export const PortfolioView = ({ ...props }: PortfolioViewProps) => {
         chartPeriod: period,
         isChartShown,
         isEnabled: hasFiatTotal && hasBalanceHistory && isDrawerOpen,
+        selectedValue: selectedPoint?.preferredValue,
     })
 
     const { chartSelectionChanged } = usePortfolioChart({
@@ -161,7 +162,7 @@ export const PortfolioView = ({ ...props }: PortfolioViewProps) => {
                             value={t('common.network_label.testnet')}
                         />
                     )}
-                    {hasChange && !selectedPoint && (
+                    {hasChange && (
                         <ValueChangeLine
                             testID='portfolio_change_line'
                             absolute={changeAbsolute}
@@ -170,18 +171,6 @@ export const PortfolioView = ({ ...props }: PortfolioViewProps) => {
                         />
                     )}
                 </PWView>
-
-                {selectedPoint && (
-                    <PWView style={styles.dateTimeColumn}>
-                        <PWText
-                            variant='h4'
-                            style={styles.dateDisplay}
-                            numberOfLines={1}
-                        >
-                            {formatDatetime(selectedPoint.datetime)}
-                        </PWText>
-                    </PWView>
-                )}
             </PWView>
 
             {hasBalanceHistory && (

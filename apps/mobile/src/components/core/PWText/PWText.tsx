@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { useContext } from 'react'
 import { Text as RNEText } from '@rneui/themed'
 import { useStyles } from './styles'
 import {
@@ -27,6 +28,7 @@ import {
 import { scaleLineHeight } from '@theme/scaling'
 import { getTestProps } from '@utils/test-id-helper'
 import { useOverflowProbe } from './useOverflowProbe'
+import { PWTextToneContext } from './PWTextToneContext'
 
 export type PWTextProps = {
     children?: React.ReactNode
@@ -60,9 +62,15 @@ export const PWText = ({
     ...props
 }: PWTextProps) => {
     const styles = useStyles({ variant, weight })
+    const tone = useContext(PWTextToneContext)
     const { fontScale = 1 } = useWindowDimensions()
 
-    const baseStyle = [styles.text, truncate && styles.truncate, style]
+    const baseStyle = [
+        styles.text,
+        tone === 'secondary' && styles.secondary,
+        truncate && styles.truncate,
+        style,
+    ]
     const { lineHeight, fontSize } = StyleSheet.flatten<TextStyle>(baseStyle)
     const scaledLineHeight = scaleLineHeight(
         lineHeight,

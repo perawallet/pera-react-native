@@ -12,4 +12,5 @@
 
 export { PWText } from './PWText'
 export type { PWTextProps } from './PWText'
+export { PWTextToneContext, type PWTextTone } from './PWTextToneContext'
 export { drainOverflow } from './overflowRegistry'

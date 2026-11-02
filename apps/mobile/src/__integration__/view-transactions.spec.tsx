@@ -366,10 +366,8 @@ describe('Flow: View transactions → tap into details', () => {
             ),
         ).toBeTruthy()
         expect(
-            within(screen.getByTestId('transaction_detail_to')).getByText(
-                RECIPIENT_CONTACT_NAME,
-            ),
-        ).toBeTruthy()
+            screen.getByTestId('transaction_detail_to_contact').textContent,
+        ).toContain(RECIPIENT_CONTACT_NAME)
         expect(
             within(screen.getByTestId('transaction_detail_fee')).getByText(
                 /0\.001/,
@@ -443,9 +441,10 @@ describe('Flow: View transactions → tap into details', () => {
             truncateAlgorandAddress(TX_PAYMENT.sender),
             TX_PAYMENT.sender,
         )
+        // A contact's name sits under its address; the address line copies.
         await copyOf(
             'transaction_detail_to',
-            RECIPIENT_CONTACT_NAME,
+            truncateAlgorandAddress(TX_PAYMENT.receiver ?? ''),
             TX_PAYMENT.receiver ?? '',
         )
 

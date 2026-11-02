@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { formatDatetime, type Nullable } from '@perawallet/wallet-core-shared'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import {
     type AssetPriceHistoryItem,
     type PeraAsset,
@@ -34,28 +34,19 @@ import { PreferredAmount } from '@components/PreferredAmount'
 import { AssetPriceChart } from '../AssetPriceChart/AssetPriceChart'
 import { useChartInteraction } from '@hooks/useChartInteraction'
 import { Decimal } from 'decimal.js'
-import {
-    PWIcon,
-    PWScrollView,
-    PWText,
-    PWTouchableOpacity,
-    PWView,
-} from '@components/core'
+import { PWScrollView, PWView } from '@components/core'
 import { AssetMarketStats } from '../AssetMarketStats/AssetMarketStats'
 import { AssetAbout } from '../AssetAbout/AssetAbout'
 import { useLanguage } from '@hooks/useLanguage'
 import { AssetDescription } from '../AssetDescription/AssetDescription'
 import { AssetSocialMedia } from '../AssetSocialMedia/AssetSocialMedia'
 import { PriceTrend } from '../PriceTrend/PriceTrend'
-import { type ParamListBase, useNavigation } from '@react-navigation/native'
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { EmptyView } from '@components/EmptyView'
 import { ChartPeriodSelection } from '@components/ChartPeriodSelection'
 import { UserPreferences } from '@constants/user-preferences'
 import { LoadingView } from '@components/LoadingView'
 import { ExpandablePanel } from '@components/ExpandablePanel'
 import { useCapability } from '@hooks/useCapability'
-import { toDiscoverTokenDetailPath } from '@modules/discover'
 import type {
     AssetAboutDisplay,
     AssetDetailsDisplay,
@@ -86,13 +77,8 @@ export const AssetMarkets = ({
     const { period, setPeriod, selectedPoint, setSelectedPoint } =
         useChartInteraction<AssetPriceHistoryItem>()
 
-    const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
     const { getPreference } = usePreferences()
     const { t } = useLanguage()
-    const canOpenDiscover = useCapability({
-        platform: 'discoverTab',
-        chain: { chainId: scope.chainId, capability: 'discover' },
-    })
 
     const chartVisible = !!getPreference(UserPreferences.chartVisible)
     const hasPriceHistory = useCapability({
@@ -104,14 +90,6 @@ export const AssetMarkets = ({
         isError,
         isPending,
     } = useSingleAssetDetailsQuery(asset.assetId, scope)
-
-    const openDiscover = () => {
-        // Pushed over asset details (not the Discover tab, which swaps in
-        // place and strands the user with no back affordance)
-        navigation.navigate('DiscoverDetail', {
-            path: toDiscoverTokenDetailPath(asset.assetId, scope.chainId),
-        })
-    }
 
     const handleDataPointSelection = (
         item: Nullable<AssetPriceHistoryItem>,
@@ -206,11 +184,6 @@ export const AssetMarkets = ({
                                 showAbsolute
                                 selectedDataPoint={selectedPoint}
                             />
-                            {!!selectedPoint && (
-                                <PWText style={styles.dateDisplay}>
-                                    {formatDatetime(selectedPoint.datetime)}
-                                </PWText>
-                            )}
                         </PWView>
                     </PWView>
                 </PWView>
@@ -231,34 +204,6 @@ export const AssetMarkets = ({
                         />
                     </PWView>
                 </ExpandablePanel>
-            )}
-
-            {canOpenDiscover && (
-                <PWTouchableOpacity
-                    style={styles.discoverButton}
-                    onPress={openDiscover}
-                >
-                    <PWText
-                        style={styles.discoverText}
-                        truncate
-                    >
-                        {t('asset_details.markets.discover_more')}
-                    </PWText>
-                    <PWView style={styles.discoverLink}>
-                        <PWText
-                            style={styles.discoverLinkText}
-                            variant='h4'
-                            truncate
-                        >
-                            {t('asset_details.markets.title')}
-                        </PWText>
-                        <PWIcon
-                            name='chevron-right'
-                            size='md'
-                            variant='secondary'
-                        />
-                    </PWView>
-                </PWTouchableOpacity>
             )}
 
             <AssetMarketStats

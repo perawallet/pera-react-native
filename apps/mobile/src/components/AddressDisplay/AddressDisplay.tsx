@@ -96,7 +96,7 @@ export const AddressDisplay = ({
         truncatedAddress,
         unnamedAddress,
         fallbackIconName,
-        copyAddress,
+        copyIcon,
         unifiedLabels,
     } = useAddressDisplay({
         address,
@@ -289,10 +289,9 @@ export const AddressDisplay = ({
             <PWView style={styles.copyIconContainer}>
                 <PWIcon
                     name='copy'
-                    size='md'
                     variant='secondary'
                     {...iconProps}
-                    onPress={copyAddress}
+                    {...copyIcon}
                 />
             </PWView>
         </CopyableText>

@@ -36,6 +36,8 @@ export type AssetPriceChartProps = {
 const getUsdPriceValue = (item: AssetPriceHistoryItem): number =>
     item.usdPrice.toNumber()
 
+const getDatetime = (item: AssetPriceHistoryItem): Date => item.datetime
+
 // Memoised like WealthChart: the history query rebuilds its results in an
 // inline `select`, so an unmemoised re-render hands the chart a new data
 // array and victory resets an in-progress scrub.
@@ -62,6 +64,7 @@ export const AssetPriceChart = memo(function AssetPriceChart({
         <BalanceLineChart
             series={data}
             getValue={getUsdPriceValue}
+            getDatetime={getDatetime}
             onSelectionChanged={onSelectionChanged}
             isPending={isPending}
             isError={isError}

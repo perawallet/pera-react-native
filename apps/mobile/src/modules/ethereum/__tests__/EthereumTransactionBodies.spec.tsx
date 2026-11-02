@@ -37,6 +37,14 @@ import { TransactionPreviewRow } from '@modules/signing/transactions/Transaction
 import { TransactionReviewBody } from '@modules/signing/transactions/TransactionReviewBody'
 
 const mockNavigate = vi.hoisted(() => vi.fn())
+// The suffix has its own spec; here the hero's title is the row label it wraps.
+vi.mock('@modules/signing/hooks/useTransactionHeroTitle', () => ({
+    useTransactionHeroTitle:
+        () =>
+        ({ key }: { key: string }) =>
+            key,
+}))
+
 vi.mock('@react-navigation/native', async importOriginal => ({
     ...(await importOriginal<typeof import('@react-navigation/native')>()),
     useNavigation: () => ({ navigate: mockNavigate }),
@@ -498,7 +506,7 @@ describe('Ethereum transaction bodies', () => {
             )
 
             expect(textOf('ethereum_detail_sender')).toContain(
-                truncateAlgorandAddress(HOLDER),
+                shortOnEthereum(HOLDER),
             )
             expect(textOf('transaction_detail_to')).toContain(
                 shortOnEthereum(ETHEREUM_FIXTURE_RECIPIENT),

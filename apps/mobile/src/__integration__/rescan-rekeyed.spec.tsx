@@ -190,9 +190,7 @@ describe('Flow: Rescan rekeyed accounts (indexer discovery + import)', () => {
 
         renderFromAccountOptions()
 
-        fireEvent.click(
-            await screen.findByTestId('account_network_algorand_expand'),
-        )
+        // An account on Algorand alone opens with that network expanded.
         // i18n falls back to key strings under the integration setup.
         const scanLabel = await screen.findByText(
             'account_options.scan_rekeyed',

@@ -31,6 +31,14 @@ const ETHER = { assetId: 'native', unitName: 'ETH', decimals: 18 }
 const NATIVE_REF = { chainId: 'ethereum', assetId: 'native' } as const
 const USDC_REF = { chainId: 'ethereum', assetId: '0xusdc' } as const
 
+// The suffix has its own spec; here the hero's title is the row label it wraps.
+vi.mock('@modules/signing/hooks/useTransactionHeroTitle', () => ({
+    useTransactionHeroTitle:
+        () =>
+        ({ key }: { key: string }) =>
+            key,
+}))
+
 vi.mock('@perawallet/wallet-core-assets', () => ({
     useNativeAsset: () => ETHER,
     useAssetsQuery: vi.fn(),

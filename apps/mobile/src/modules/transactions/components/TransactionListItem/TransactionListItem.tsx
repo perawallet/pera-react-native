@@ -59,7 +59,12 @@ const TransactionListItemView = ({
         <PWListItemLayout
             testID={`transaction_row_${id}`}
             style={styles.container}
-            align='top'
+            // A title alone (a swap) sits centred against its stacked amounts.
+            align={
+                subtitle || networkChainId || notice || isSuspectedPoisoning
+                    ? 'top'
+                    : 'center'
+            }
             onPress={handlePress}
             onLongPress={handleLongPress}
             left={

@@ -19,11 +19,7 @@ import {
     type I18nKey,
     i18nKey,
 } from '@perawallet/wallet-core-chain-contract'
-import {
-    baseUnitsToDisplayUnits,
-    formatNumber,
-    toBigInt,
-} from '@perawallet/wallet-core-shared'
+import { toBigInt } from '@perawallet/wallet-core-shared'
 import {
     getDebitedAddress,
     isOutgoingFor,
@@ -57,31 +53,9 @@ const SWAP = i18nKey('transactions.list_item.swap')
 const HEARTBEAT = i18nKey('transactions.list_item.heartbeat')
 const STATE_PROOF = i18nKey('transactions.list_item.state_proof')
 const INTERPRETED_TITLE = i18nKey('transactions.list_item.interpreted_title')
-const SWAP_SUBTITLE = i18nKey('transactions.list_item.swap_subtitle')
 const INNER_TRANSACTION_COUNT = i18nKey(
     'transactions.list_item.inner_transaction_count',
 )
-
-/** Trailing zeros below this are trimmed, so whole amounts stay short. */
-const MIN_FRACTION_DIGITS = 2
-
-// Decimals come straight from a backend that substitutes placeholder facts
-// when its enrichment fails; `pow(10, NaN)` throws and a negative inflates.
-const safeDecimals = (decimals: number): number =>
-    isNaN(decimals) ? 0 : Math.max(0, Math.min(19, decimals))
-
-// A swap leg can be worth a fraction of a cent, which a flat 2-digit format
-// renders as a bare `0.00`; show up to the asset's own precision, trimmed to 2.
-const formatAmount = (baseUnits: Decimal, decimals: number): string => {
-    const precision = safeDecimals(decimals)
-    const { sign, integer, fraction } = formatNumber(
-        baseUnitsToDisplayUnits(baseUnits, precision),
-        precision,
-        undefined,
-        MIN_FRACTION_DIGITS,
-    )
-    return `${sign}${integer}${fraction}`
-}
 
 /**
  * Net amount the account moved in a pay/axfer row. `amount` pays the
@@ -135,12 +109,34 @@ const swapSummary = (swap: AlgorandSwapGroupDetail): TransactionSummary => {
         title: text(SWAP),
         icon: 'swap',
         direction: 'in',
-        subtitle: text(SWAP_SUBTITLE, {
-            amountIn: formatAmount(swap.amountIn, assetIn.decimals),
-            assetIn: assetIn.unitName,
-            amountOut: formatAmount(swap.amountOut, assetOut.decimals),
-            assetOut: assetOut.unitName,
-        }),
+        // Both legs stand in for a subtitle, as an app call lists its impacts;
+        // a leg with no asset id is left out.
+        balanceChanges: [
+            ...(swap.assetOutId === null
+                ? []
+                : [
+                      {
+                          assetRef: assetRefOf(swap.assetOutId),
+                          value: swap.amountOut,
+                          display: {
+                              symbol: assetOut.unitName,
+                              decimals: assetOut.decimals,
+                          },
+                      },
+                  ]),
+            ...(swap.assetInId === null
+                ? []
+                : [
+                      {
+                          assetRef: assetRefOf(swap.assetInId),
+                          value: swap.amountIn.neg(),
+                          display: {
+                              symbol: assetIn.unitName,
+                              decimals: assetIn.decimals,
+                          },
+                      },
+                  ]),
+        ],
         ...(swap.assetOutId === null
             ? {}
             : {

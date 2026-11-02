@@ -11,12 +11,15 @@
  */
 
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { PWButton, PWText } from '@components/core'
 import { KeyValueRow } from '@components/KeyValueRow'
-import { AddressDisplay } from '@components/AddressDisplay'
 import type { AlgorandTransactionView } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import { useLanguage } from '@hooks/useLanguage'
-import { TransactionDetailCard } from '@modules/signing'
+import {
+    TransactionDetailAddress,
+    TransactionDetailCard,
+} from '@modules/signing'
 import { AssetAmount } from '@components/AssetAmount'
 import { LoadingView } from '@components/LoadingView'
 import { AssetTitle } from '@modules/assets'
@@ -33,6 +36,7 @@ export const AssetTransferDisplay = ({
     transaction,
 }: AssetTransferDisplayProps) => {
     const { t } = useLanguage()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
 
     const {
         asset,
@@ -102,7 +106,10 @@ export const AssetTransferDisplay = ({
                     testID='transaction_detail_close_to'
                     title={t('transactions.common.close_to')}
                 >
-                    <AddressDisplay address={closeToAddress} />
+                    <TransactionDetailAddress
+                        address={closeToAddress}
+                        scope={scope}
+                    />
                 </KeyValueRow>
             )}
 
@@ -126,7 +133,10 @@ export const AssetTransferDisplay = ({
                 <KeyValueRow
                     title={t('transactions.asset_transfer.clawback_from')}
                 >
-                    <AddressDisplay address={assetTransfer.sender} />
+                    <TransactionDetailAddress
+                        address={assetTransfer.sender}
+                        scope={scope}
+                    />
                 </KeyValueRow>
             )}
 

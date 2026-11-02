@@ -28,10 +28,11 @@ import {
 } from '@perawallet/wallet-core-shared'
 import { transactionIconName } from '@components/TransactionIcon'
 import { useLanguage } from '@hooks/useLanguage'
-import type {
-    TransactionDetailAmount,
-    TransactionDetailStatus,
-    TransactionDetailSummary,
+import {
+    useTransactionHeroTitle,
+    type TransactionDetailAmount,
+    type TransactionDetailStatus,
+    type TransactionDetailSummary,
 } from '@modules/signing'
 import { isEvmTransactionHash } from '../utils/isEvmTransactionHash'
 import { recordAmountsOf } from '../utils/recordAmountsOf'
@@ -72,6 +73,7 @@ export const useEthereumRecordLayout = (
     presentation?: Nullable<EthereumTransactionPresentation>,
 ): UseEthereumRecordLayoutResult => {
     const { t } = useLanguage()
+    const heroTitle = useTransactionHeroTitle()
     const { scope, summary: recordSummary } = record
     const nativeAsset = useNativeAsset(scope)
     const account = useSelectedAccount()
@@ -126,9 +128,11 @@ export const useEthereumRecordLayout = (
                 iconName:
                     presentation?.iconName ??
                     transactionIconName(recordSummary.icon),
-                title: presentation
-                    ? t(presentation.titleKey)
-                    : t(recordSummary.title.key, recordSummary.title.params),
+                title: heroTitle(
+                    presentation
+                        ? { key: presentation.titleKey }
+                        : recordSummary.title,
+                ),
                 status: STATUS[record.status],
                 amount,
                 isAmountLoading,
@@ -174,6 +178,7 @@ export const useEthereumRecordLayout = (
         storedAssets,
         isAssetsPending,
         presentation,
+        heroTitle,
         t,
     ])
 }

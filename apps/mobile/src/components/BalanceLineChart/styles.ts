@@ -13,7 +13,7 @@
 import { makeStyles } from '@rneui/themed'
 import { CHART_HEIGHT } from '@constants/ui'
 
-export const useStyles = makeStyles(() => ({
+export const useStyles = makeStyles(theme => ({
     // Callers size the outer container (CHART_HEIGHT); the Skia canvas fills it.
     canvas: {
         flex: 1,
@@ -26,5 +26,9 @@ export const useStyles = makeStyles(() => ({
     message: {
         height: undefined,
         minHeight: CHART_HEIGHT,
+    },
+    pointerLabel: {
+        color: theme.colors.textGray,
+        textAlign: 'center',
     },
 }))

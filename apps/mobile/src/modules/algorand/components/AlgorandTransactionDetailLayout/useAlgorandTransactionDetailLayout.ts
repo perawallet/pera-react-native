@@ -12,8 +12,14 @@
 
 import { useMemo } from 'react'
 import {
+    chainAccountOf,
+    useSelectedAccount,
+} from '@perawallet/wallet-core-accounts'
+import {
+    classifyDisplayableTransaction,
     getAssetTransferType,
     getTransactionType,
+    type AlgorandTransactionKind,
     type AlgorandTransactionView,
 } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import {
@@ -23,6 +29,7 @@ import {
 import {
     i18nKey,
     LEGACY_CHAIN_ID,
+    type I18nKey,
 } from '@perawallet/wallet-core-chain-contract'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
@@ -30,21 +37,71 @@ import {
     decodeBytesToText,
     type Optional,
 } from '@perawallet/wallet-core-shared'
-import { useLanguage } from '@hooks/useLanguage'
 import { algorandTransactionIconName } from '@modules/algorand/icons'
-import type {
-    TransactionDetailAmount,
-    TransactionDetailSummary,
+import {
+    useTransactionHeroTitle,
+    type TransactionDetailAmount,
+    type TransactionDetailSummary,
 } from '@modules/signing'
 
 // Decimals an unresolved asset is read with, as the transfer rows always did.
 const DEFAULT_ASSET_DECIMALS = 6
 
+// Named as the history list names the row, so the hero matches what was tapped.
+const TITLE_KEY_BY_KIND: Record<
+    Exclude<
+        AlgorandTransactionKind,
+        'payment' | 'asset-transfer' | 'asset-clawback'
+    >,
+    I18nKey
+> = {
+    'asset-opt-in': i18nKey('transactions.list_item.opt_in'),
+    'asset-opt-out': i18nKey('transactions.list_item.opt_out'),
+    'asset-config': i18nKey('transactions.list_item.asset_config'),
+    'asset-freeze': i18nKey('transactions.list_item.asset_freeze'),
+    'key-registration': i18nKey('transactions.list_item.key_registration'),
+    'app-call': i18nKey('transactions.list_item.app_call'),
+    'state-proof': i18nKey('transactions.list_item.state_proof'),
+    heartbeat: i18nKey('transactions.list_item.heartbeat'),
+    unknown: i18nKey('transactions.list_item.default'),
+}
+
+// As history reads direction: a clawback debits its asset sender, and a
+// self-transfer counts as received.
+const titleKeyOf = (
+    transaction: AlgorandTransactionView,
+    viewer: string,
+): I18nKey => {
+    const kind = classifyDisplayableTransaction(transaction)
+    if (
+        kind !== 'payment' &&
+        kind !== 'asset-transfer' &&
+        kind !== 'asset-clawback'
+    ) {
+        return TITLE_KEY_BY_KIND[kind]
+    }
+    const receiver =
+        transaction.paymentTransaction?.receiver ??
+        transaction.assetTransferTransaction?.receiver
+    const debited =
+        transaction.assetTransferTransaction?.sender ?? transaction.sender
+    const isOut =
+        debited === viewer ||
+        (transaction.sender === viewer && receiver !== viewer)
+    return isOut
+        ? i18nKey('transactions.list_item.send')
+        : i18nKey('transactions.list_item.receive')
+}
+
 export const useAlgorandTransactionDetailLayout = (
     transaction: AlgorandTransactionView,
 ): TransactionDetailSummary => {
-    const { t } = useLanguage()
+    const heroTitle = useTransactionHeroTitle()
     const scope = useSelectedScope(LEGACY_CHAIN_ID)
+    const account = useSelectedAccount()
+    const viewer = account
+        ? (chainAccountOf(account, scope.chainId)?.address ?? '')
+        : ''
     const nativeAsset = useNativeAsset(scope)
     const assetTransfer = transaction.assetTransferTransaction
     const { data: transferAsset, isPending: isTransferAssetPending } =
@@ -91,7 +148,7 @@ export const useAlgorandTransactionDetailLayout = (
         return {
             scope,
             iconName: algorandTransactionIconName(txType),
-            title: t(`transactions.type.${transaction.txType}`),
+            title: heroTitle({ key: titleKeyOf(transaction, viewer) }),
             // An inner transaction has a round but no id of its own.
             status:
                 transaction.id || transaction.confirmedRound
@@ -127,6 +184,7 @@ export const useAlgorandTransactionDetailLayout = (
         isTransferAssetPending,
         nativeAsset,
         scope,
-        t,
+        viewer,
+        heroTitle,
     ])
 }

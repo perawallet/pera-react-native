@@ -65,7 +65,6 @@ import {
     SharedAccountDetailsContent,
     type SharedAccountDetails,
 } from '../SharedAccountDetailsContent'
-import { useIsMultichain } from '../../hooks/useIsMultichain'
 import {
     trackEvent,
     AccountDetailsEvent,
@@ -94,8 +93,6 @@ type BackupChoice = 'delete' | 'keep'
 
 export type UseAccountOptionsResult = {
     sheetTitle: string
-    /** Names the account when more than one chain is active. */
-    networksTitle: string
     /** Rename, notifications where the account's chain can notify it, remove, then the account's secret if it has one. */
     topActions: SheetOption[]
     sharedAccountOptions: SheetOption[]
@@ -140,11 +137,7 @@ export const useAccountOptions = ({
     const notificationsChainOf = useNotificationsChainResolver()
     const canToggleNotifications = notificationsChainOf(account) !== undefined
     const { getAccountName } = useAccountName()
-    const isMultichain = useIsMultichain()
     const sheetTitle = getAccountName(account, accountChainId)
-    const networksTitle = isMultichain
-        ? t('account_options.networks_title_named', { name: sheetTitle })
-        : t('account_options.networks_title')
     const address = addressOn(account, scope) ?? ''
     const isBackedUp = useIsAccountBackedUp(address)
 
@@ -559,7 +552,6 @@ export const useAccountOptions = ({
 
     return {
         sheetTitle,
-        networksTitle,
         topActions,
         sharedAccountOptions,
         networks,

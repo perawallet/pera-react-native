@@ -26,6 +26,14 @@ import {
 import { TransactionDetailBody } from '../TransactionDetailBody'
 
 // The global mock stubs the blockchain barrel; the bodies classify with the real utils.
+// The suffix has its own spec; here the hero's title is the row label it wraps.
+vi.mock('@modules/signing/hooks/useTransactionHeroTitle', () => ({
+    useTransactionHeroTitle:
+        () =>
+        ({ key }: { key: string }) =>
+            key,
+}))
+
 vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', async () => ({
     ...(await vi.importActual<
         typeof import('@packages/chain-algorand/src/blockchain/utils/warnings')
@@ -83,7 +91,7 @@ const DETAIL_KINDS: [AlgorandDisplayFixtureKind, DetailExpectation][] = [
     [
         'payment',
         {
-            title: 'transactions.type.pay',
+            title: 'transactions.list_item.receive',
             participants: [
                 ['transactions.common.from', FIXTURE_SENDER],
                 ['transactions.common.to', FIXTURE_RECEIVER],
@@ -93,7 +101,7 @@ const DETAIL_KINDS: [AlgorandDisplayFixtureKind, DetailExpectation][] = [
     [
         'asset-transfer',
         {
-            title: 'transactions.type.axfer',
+            title: 'transactions.list_item.receive',
             participants: [
                 ['transactions.common.from', FIXTURE_SENDER],
                 ['transactions.common.to', FIXTURE_RECEIVER],
@@ -103,7 +111,7 @@ const DETAIL_KINDS: [AlgorandDisplayFixtureKind, DetailExpectation][] = [
     [
         'asset-config',
         {
-            title: 'transactions.type.acfg',
+            title: 'transactions.list_item.asset_config',
             participants: [
                 ['transactions.asset_config.manager', FIXTURE_SENDER],
             ],
@@ -112,7 +120,7 @@ const DETAIL_KINDS: [AlgorandDisplayFixtureKind, DetailExpectation][] = [
     [
         'asset-freeze',
         {
-            title: 'transactions.type.afrz',
+            title: 'transactions.list_item.asset_freeze',
             participants: [
                 ['transactions.asset_freeze.target', FIXTURE_RECEIVER],
             ],
@@ -121,15 +129,18 @@ const DETAIL_KINDS: [AlgorandDisplayFixtureKind, DetailExpectation][] = [
     [
         'key-registration',
         {
-            title: 'transactions.type.keyreg',
+            title: 'transactions.list_item.key_registration',
             participants: [['transactions.common.from', FIXTURE_SENDER]],
         },
     ],
-    ['app-call', { title: 'transactions.type.appl', participants: [] }],
+    [
+        'app-call',
+        { title: 'transactions.list_item.app_call', participants: [] },
+    ],
     [
         'heartbeat',
         {
-            title: 'transactions.type.hb',
+            title: 'transactions.list_item.heartbeat',
             participants: [
                 ['transactions.heartbeat.account', FIXTURE_RECEIVER],
                 ['transactions.common.from', FIXTURE_SENDER],
@@ -149,7 +160,7 @@ describe('TransactionDetailBody', () => {
             renderDetail(buildAlgorandDisplayFixture(kind))
         })
 
-        it('renders the header with the type title and completed status', () => {
+        it('renders the header titled as history names it, with completed status', () => {
             expect(screen.getByText(expected.title)).toBeTruthy()
             expect(
                 screen.getByText('transactions.common.completed'),
@@ -184,18 +195,24 @@ describe('TransactionDetailBody', () => {
     })
 
     it.each([
-        ['opt-out', 'transactions.common.close_to', FIXTURE_RECEIVER],
+        [
+            'opt-out',
+            'transactions.list_item.opt_out',
+            'transactions.common.close_to',
+            FIXTURE_RECEIVER,
+        ],
         [
             'clawback',
+            'transactions.list_item.receive',
             'transactions.asset_transfer.clawback_from',
             FIXTURE_RECEIVER,
         ],
     ] as const)(
         'renders the asset %s row alongside the fee',
-        (variant, label, address) => {
+        (variant, title, label, address) => {
             renderDetail(buildAlgorandAssetTransferFixture(variant))
 
-            expect(screen.getByText('transactions.type.axfer')).toBeTruthy()
+            expect(screen.getByText(title)).toBeTruthy()
             expect(screen.getByText(label)).toBeTruthy()
             expect(screen.getAllByText(address).length).toBeGreaterThan(0)
             expect(screen.getByTestId('transaction_detail_fee')).toBeTruthy()
