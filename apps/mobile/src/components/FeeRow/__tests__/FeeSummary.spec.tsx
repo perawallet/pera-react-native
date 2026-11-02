@@ -81,11 +81,9 @@ describe('FeeSummary', () => {
             /0\.003 TKN$/,
         )
         expect(screen.getByTestId('fee_summary_max_fiat')).toBeTruthy()
-        expect(
-            screen.getByText(
-                'send_funds.fee.max_fee_for_preset {"preset":"send_funds.fee.normal"}',
-            ),
-        ).toBeTruthy()
+        // The max is the signed limit, which may sit well above the tier's own, so the tier labels only the estimate.
+        expect(screen.getByText('send_funds.fee.max_fee')).toBeTruthy()
+        expect(screen.getAllByText(/send_funds\.fee\.normal/)).toHaveLength(1)
     })
 
     it('shows only the max fee when the request carried no estimate', () => {

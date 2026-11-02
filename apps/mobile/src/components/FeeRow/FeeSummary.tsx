@@ -75,11 +75,7 @@ export const FeeSummary = ({
                         variant='caption'
                         style={styles.secondaryText}
                     >
-                        {estimate
-                            ? t('send_funds.fee.max_fee_for_preset', {
-                                  preset: t(FEE_PRESET_LABELS[estimate.preset]),
-                              })
-                            : t('send_funds.fee.max_fee')}
+                        {t('send_funds.fee.max_fee')}
                     </PWText>
                     <InfoButton
                         testID='fee_summary_max_info'
