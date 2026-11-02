@@ -19,6 +19,7 @@ import { SignedDataWarning } from '@modules/signing/components/SignedDataWarning
 import { SourceMetadataView } from '@modules/signing/components/SourceMetadataView'
 import { SpendApprovalWarning } from '@modules/signing/components/SpendApprovalWarning'
 import { RequestAddressWarning } from '@modules/signing/components/RequestAddressWarning'
+import { RequestSiteWarning } from '@modules/signing/components/RequestSiteWarning'
 import { MessageTreeView } from './MessageTreeView'
 import { useStyles } from './styles'
 import { useMessageSigningScreen } from './useMessageSigningScreen'
@@ -34,6 +35,7 @@ export const MessageSigningScreen = () => {
         verifiedOrigin,
         isPending,
         reviewedAddresses,
+        hasListedAddress,
         isConfirmBlocked,
         handleApprove,
         handleReject,
@@ -45,13 +47,27 @@ export const MessageSigningScreen = () => {
         <PWScreen
             footer={
                 <PWView style={[styles.buttonContainer, CONFIRM_ACTION_LAYOUT]}>
-                    <ConfirmAction
-                        title={t('common.slide_to_confirm.label')}
-                        onConfirm={handleApprove}
-                        isLoading={isPending}
-                        isDisabled={isConfirmBlocked}
-                        testID='message-signing-confirm-slide'
-                    />
+                    {hasListedAddress ? (
+                        <PWView
+                            style={styles.blockedNotice}
+                            testID='message-signing-blocked'
+                        >
+                            <PWText variant='h4'>
+                                {t('signing.address_safety.blocked_title')}
+                            </PWText>
+                            <PWText style={styles.blockedBody}>
+                                {t('signing.address_safety.blocked_body')}
+                            </PWText>
+                        </PWView>
+                    ) : (
+                        <ConfirmAction
+                            title={t('common.slide_to_confirm.label')}
+                            onConfirm={handleApprove}
+                            isLoading={isPending}
+                            isDisabled={isConfirmBlocked}
+                            testID='message-signing-confirm-slide'
+                        />
+                    )}
                     <PWButton
                         title={t('common.cancel.label')}
                         variant='linkNeutral'
@@ -92,6 +108,7 @@ export const MessageSigningScreen = () => {
                             scope={scope}
                         />
                     )}
+                    <RequestSiteWarning />
                     <RequestAddressWarning addresses={reviewedAddresses} />
                     {summary.kind === 'typed-data' &&
                         (!summary.spendApproval || !scope) && (

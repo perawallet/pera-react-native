@@ -47,6 +47,8 @@ export type UseRequestAddressSafetyResult = {
     /** The network the request was built for; undefined when it names none. */
     scope: Optional<ChainScope>
     isChecking: boolean
+    /** A scam-listed address cannot be acknowledged away; the request can only be rejected. */
+    hasListedAddress: boolean
     isAcknowledged: boolean
     toggleAcknowledged: () => void
     isConfirmBlocked: boolean
@@ -174,6 +176,9 @@ export const useRequestAddressSafety = ({
         )
     }, [chainId, isChecking, reviewed, knownAddresses, isListed])
 
+    const hasListedAddress = flaggedAddresses.some(
+        ({ assessment }) => assessment.kind === 'listed',
+    )
     const isAcknowledged =
         !!currentRequest && acknowledgedRequestId === currentRequest.id
     const toggleAcknowledged = useCallback(() => {
@@ -185,9 +190,12 @@ export const useRequestAddressSafety = ({
         flaggedAddresses,
         scope,
         isChecking,
+        hasListedAddress,
         isAcknowledged,
         toggleAcknowledged,
         isConfirmBlocked:
-            isChecking || (flaggedAddresses.length > 0 && !isAcknowledged),
+            isChecking ||
+            hasListedAddress ||
+            (flaggedAddresses.length > 0 && !isAcknowledged),
     }
 }

@@ -185,14 +185,56 @@ describe('useRequestAddressSafety', () => {
         })
     })
 
-    it('releases Confirm once the user acknowledges the warning', () => {
+    it('keeps Confirm held for a listed address even once acknowledged', () => {
         requestOn('ethereum', [[{ address: LISTED, role: 'spender' }]])
         const { result } = renderHook(() => useRequestAddressSafety())
 
         act(() => result.current.toggleAcknowledged())
 
+        expect(result.current.hasListedAddress).toBe(true)
         expect(result.current.isAcknowledged).toBe(true)
+        expect(result.current.isConfirmBlocked).toBe(true)
+    })
+
+    it('releases Confirm for a look-alike once the user acknowledges it', () => {
+        requestOn('ethereum', [[{ address: lookAlikeOf(CONTACT), role: 'target' }]])
+        const { result } = renderHook(() => useRequestAddressSafety())
+        expect(result.current.hasListedAddress).toBe(false)
+        expect(result.current.isConfirmBlocked).toBe(true)
+
+        act(() => result.current.toggleAcknowledged())
+
         expect(result.current.isConfirmBlocked).toBe(false)
+    })
+
+    it('stays blocked when a listed address comes with a look-alike', () => {
+        requestOn('ethereum', [
+            [
+                { address: lookAlikeOf(CONTACT), role: 'target' },
+                { address: LISTED, role: 'spender' },
+            ],
+        ])
+        const { result } = renderHook(() => useRequestAddressSafety())
+
+        act(() => result.current.toggleAcknowledged())
+
+        expect(result.current.flaggedAddresses).toHaveLength(2)
+        expect(result.current.hasListedAddress).toBe(true)
+        expect(result.current.isConfirmBlocked).toBe(true)
+    })
+
+    it('blocks a listed spender passed as the addresses of a permit', () => {
+        requestOn('ethereum', [])
+        const { result } = renderHook(() =>
+            useRequestAddressSafety({
+                addresses: [{ address: LISTED, role: 'spender' }],
+            }),
+        )
+
+        act(() => result.current.toggleAcknowledged())
+
+        expect(result.current.hasListedAddress).toBe(true)
+        expect(result.current.isConfirmBlocked).toBe(true)
     })
 
     it('flags nothing and holds nothing for a contract on no list that resembles nothing', () => {
@@ -279,11 +321,13 @@ describe('useRequestAddressSafety', () => {
     })
 
     it('starts the next request unacknowledged', () => {
-        requestOn('ethereum', [[{ address: LISTED, role: 'spender' }]])
+        const lookAlike = [{ address: lookAlikeOf(CONTACT), role: 'target' }]
+        requestOn('ethereum', [lookAlike as ReviewedAddress[]])
         const { result, rerender } = renderHook(() => useRequestAddressSafety())
         act(() => result.current.toggleAcknowledged())
+        expect(result.current.isConfirmBlocked).toBe(false)
 
-        requestOn('ethereum', [[{ address: LISTED, role: 'spender' }]], {
+        requestOn('ethereum', [lookAlike as ReviewedAddress[]], {
             id: 'request-2',
         })
         rerender()

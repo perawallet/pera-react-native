@@ -47,4 +47,13 @@ export const useStyles = makeStyles(theme => ({
     buttonContainer: {
         gap: theme.spacing.md,
     },
+    blockedNotice: {
+        gap: theme.spacing.xxs,
+        padding: theme.spacing.md,
+        borderRadius: theme.borderRadius.lg,
+        backgroundColor: theme.colors.negativeLighter,
+    },
+    blockedBody: {
+        color: theme.colors.textGray,
+    },
 }))

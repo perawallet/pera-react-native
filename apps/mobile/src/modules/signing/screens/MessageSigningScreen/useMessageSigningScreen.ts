@@ -27,6 +27,7 @@ import {
 } from '@perawallet/wallet-core-signing'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import { useRequestAddressSafety } from '../../hooks/useRequestAddressSafety'
+import { useRequestSiteSafety } from '../../hooks/useRequestSiteSafety'
 
 type UseMessageSigningScreenResult = {
     summary: Nullable<MessageSummary>
@@ -37,7 +38,9 @@ type UseMessageSigningScreenResult = {
     isPending: boolean
     /** Every address the signed message names, recognised as a permit or not. */
     reviewedAddresses: ReviewedAddress[]
-    /** A flagged address in the request still waits on the user's acknowledgement. */
+    /** A scam-listed address: the request can only be rejected. */
+    hasListedAddress: boolean
+    /** A flagged address or site still waits on the user's acknowledgement. */
     isConfirmBlocked: boolean
     handleApprove: () => void
     handleReject: () => void
@@ -65,9 +68,10 @@ export const useMessageSigningScreen = (): UseMessageSigningScreenResult => {
         () => (message ? reviewedMessageAddressesOf(message) : []),
         [message],
     )
-    const { isConfirmBlocked } = useRequestAddressSafety({
-        addresses: reviewedAddresses,
-    })
+    const { hasListedAddress, isConfirmBlocked: isAddressConfirmBlocked } =
+        useRequestAddressSafety({ addresses: reviewedAddresses })
+    const { isConfirmBlocked: isSiteConfirmBlocked } = useRequestSiteSafety()
+    const isConfirmBlocked = isAddressConfirmBlocked || isSiteConfirmBlocked
 
     const handleApprove = useCallback(() => {
         if (isConfirmBlocked) return
@@ -86,6 +90,7 @@ export const useMessageSigningScreen = (): UseMessageSigningScreenResult => {
         verifiedOrigin: currentRequest?.verifiedOrigin,
         isPending: pipeline.isLoading || !!signingStarted,
         reviewedAddresses,
+        hasListedAddress,
         isConfirmBlocked,
         handleApprove,
         handleReject,

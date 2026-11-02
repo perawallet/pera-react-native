@@ -3468,7 +3468,9 @@
         },
         "address_safety": {
             "listed_title": "Dirección de estafa conocida",
-            "listed_body": "Esta solicitud incluye una dirección de una lista pública de direcciones usadas para robar fondos. Si firmas, podría quedarse con tus activos.",
+            "listed_body": "Esta solicitud incluye una dirección de una lista pública de direcciones usadas para robar fondos. Pera no la firmará.",
+            "blocked_title": "Pera no firmará esta solicitud",
+            "blocked_body": "Incluye una dirección de estafa conocida. Recházala para proteger tus fondos.",
             "look_alike_title": "Esta solicitud incluye una dirección que imita una que conoces",
             "look_alike_body": "Empieza y termina como una dirección que conoces, pero los caracteres del medio son distintos. Los estafadores crean direcciones parecidas para engañarte. Compara las direcciones completas a continuación.",
             "acknowledge": "Entiendo el riesgo y quiero firmar de todos modos",

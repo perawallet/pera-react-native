@@ -18,3 +18,4 @@ export {
     useSiteSafetyGate,
     type UseSiteSafetyGateResult,
 } from './hooks/useSiteSafetyGate'
+export { hasSiteToCheck } from './utils/hasSiteToCheck'

@@ -3468,7 +3468,9 @@
         },
         "address_safety": {
             "listed_title": "Known scam address",
-            "listed_body": "This request names an address on a public list of addresses used to steal funds. Signing could hand it your assets.",
+            "listed_body": "This request names an address on a public list of addresses used to steal funds. Pera won't sign it.",
+            "blocked_title": "Pera won't sign this request",
+            "blocked_body": "It names a known scam address. Reject it to keep your funds safe.",
             "look_alike_title": "This request names an address that imitates one you know",
             "look_alike_body": "It starts and ends like an address you know, but the characters in between are different. Scammers create look-alike addresses to trick you. Compare the full addresses below.",
             "acknowledge": "I understand the risk and want to sign anyway",

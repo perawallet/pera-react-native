@@ -34,14 +34,16 @@ export const RequestAddressWarning = ({
 }: RequestAddressWarningProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const { flaggedAddresses, scope, isAcknowledged, toggleAcknowledged } =
-        useRequestAddressSafety({ addresses })
+    const {
+        flaggedAddresses,
+        scope,
+        hasListedAddress,
+        isAcknowledged,
+        toggleAcknowledged,
+    } = useRequestAddressSafety({ addresses })
 
     if (!scope || flaggedAddresses.length === 0) return null
 
-    const hasListed = flaggedAddresses.some(
-        ({ assessment }) => assessment.kind === 'listed',
-    )
     const hasLookAlike = flaggedAddresses.some(
         ({ assessment }) => assessment.kind === 'look-alike',
     )
@@ -62,13 +64,13 @@ export const RequestAddressWarning = ({
                     style={styles.title}
                 >
                     {t(
-                        hasListed
+                        hasListedAddress
                             ? 'signing.address_safety.listed_title'
                             : 'signing.address_safety.look_alike_title',
                     )}
                 </PWText>
             </PWView>
-            {hasListed && (
+            {hasListedAddress && (
                 <PWText
                     style={styles.body}
                     testID='request_address_listed_body'
@@ -101,19 +103,21 @@ export const RequestAddressWarning = ({
                     />
                 ),
             )}
-            <PWTouchableOpacity
-                style={styles.acknowledge}
-                onPress={toggleAcknowledged}
-                testID='request_address_acknowledge'
-            >
-                <PWCheckbox
-                    checked={isAcknowledged}
+            {!hasListedAddress && (
+                <PWTouchableOpacity
+                    style={styles.acknowledge}
                     onPress={toggleAcknowledged}
-                />
-                <PWText style={styles.acknowledgeLabel}>
-                    {t('signing.address_safety.acknowledge')}
-                </PWText>
-            </PWTouchableOpacity>
+                    testID='request_address_acknowledge'
+                >
+                    <PWCheckbox
+                        checked={isAcknowledged}
+                        onPress={toggleAcknowledged}
+                    />
+                    <PWText style={styles.acknowledgeLabel}>
+                        {t('signing.address_safety.acknowledge')}
+                    </PWText>
+                </PWTouchableOpacity>
+            )}
         </PWView>
     )
 }
