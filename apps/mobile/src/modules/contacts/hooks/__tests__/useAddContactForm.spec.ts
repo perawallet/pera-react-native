@@ -17,6 +17,16 @@ import { useAddContactForm } from '../useAddContactForm'
 const addContactMock = vi.fn()
 const setSelectedContactMock = vi.fn()
 const goBackMock = vi.fn()
+const successToastMock = vi.fn()
+const sheetNotifier = vi.hoisted(() => ({ current: null as unknown }))
+
+vi.mock('@hooks/useToast', () => ({
+    useToast: () => ({ successToast: successToastMock }),
+}))
+
+vi.mock('@components/core', () => ({
+    bottomSheetNotifier: sheetNotifier,
+}))
 
 vi.mock('@perawallet/wallet-core-contacts', async () => {
     const actual = await vi.importActual<
@@ -130,6 +140,40 @@ describe('useAddContactForm', () => {
         expect(addContactMock).not.toHaveBeenCalled()
         expect(goBackMock).not.toHaveBeenCalled()
         expect(setErrorMock).not.toHaveBeenCalled()
+        expect(successToastMock).not.toHaveBeenCalled()
+    })
+
+    it('confirms the save with a toast on the root notifier when no sheet is up', () => {
+        formState.isValid = true
+        sheetNotifier.current = null
+        const { result } = renderHook(() => useAddContactForm())
+
+        act(() => {
+            result.current.save({ name: 'Bob', addresses: { algorand: 'B' } })
+        })
+
+        expect(successToastMock).toHaveBeenCalledWith(
+            'contacts.add_contact.added_title',
+            'contacts.add_contact.added_body',
+            { notifier: undefined },
+        )
+    })
+
+    it('shows the toast over the sheet when saved from inside one', () => {
+        formState.isValid = true
+        const notifier = { showNotification: vi.fn() }
+        sheetNotifier.current = notifier
+        const { result } = renderHook(() => useAddContactForm())
+
+        act(() => {
+            result.current.save({ name: 'Bob', addresses: { algorand: 'B' } })
+        })
+
+        expect(successToastMock).toHaveBeenCalledWith(
+            expect.any(String),
+            expect.any(String),
+            { notifier },
+        )
     })
 
     it('saves every family the form holds and navigates back', () => {

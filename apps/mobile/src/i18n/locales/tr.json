@@ -1099,7 +1099,9 @@
         },
         "add_contact": {
             "duplicate_address_warning": "Bu adres için bir kişi zaten var.",
-            "add": "Ekle"
+            "add": "Ekle",
+            "added_title": "Kişi eklendi",
+            "added_body": "Kişilerinize eklendi: {{name}}"
         },
         "view_contact": {
             "no_contact_title": "Kişi bulunamadı",
