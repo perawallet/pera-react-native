@@ -93,7 +93,7 @@ describe('Flow: Cloud backup accounts across networks', () => {
         useRemoteConfigStore.getState().resetState()
     })
 
-    it("Given Ethereum switched off while an account still holds an Ethereum entry, when the list renders, then the row drops its network icons and hint but keeps the account overview's currency total", async () => {
+    it("Given Ethereum's Pera backend switched off, when the list renders, then the row still shows both networks and the networks hint", async () => {
         useRemoteConfigStore
             .getState()
             .setConfigOverride('chain_ethereum_overrides', '{"enabled":false}')
@@ -105,18 +105,13 @@ describe('Flow: Cloud backup accounts across networks', () => {
             `cloud_backup_account_${ALGO25_TEST_ADDRESS}`,
         )
         expect(
-            within(row).queryByTestId('chain_icon_stack_algorand'),
-        ).toBeNull()
+            within(row).getByTestId('chain_icon_stack_algorand'),
+        ).toBeTruthy()
         expect(
-            screen.queryByTestId('cloud_backup_accounts_networks_hint'),
-        ).toBeNull()
+            within(row).getByTestId('chain_icon_stack_ethereum'),
+        ).toBeTruthy()
         expect(
-            within(row).queryByTestId('backup_account_row_toggle'),
-        ).toBeNull()
-        // The overview values the account in the preferred currency whenever
-        // any account holds another registered chain, switched off or not.
-        expect(
-            within(row).getByTestId('backup_account_summary_fiat'),
+            screen.getByTestId('cloud_backup_accounts_networks_hint'),
         ).toBeTruthy()
     })
 

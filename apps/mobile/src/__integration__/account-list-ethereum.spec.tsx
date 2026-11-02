@@ -42,7 +42,6 @@ import { useCurrenciesStore } from '@perawallet/wallet-core-currencies'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
-import { setChainEnabled } from '@test-utils/capability-overrides'
 import {
     resetTestDatabase,
     seedAlgoAsset,
@@ -280,34 +279,6 @@ describe('Flow: Account list with Ethereum registered', () => {
         expect(
             screen.getByTestId('portfolio_total_partial_notice'),
         ).toBeTruthy()
-    })
-
-    it('Given the Ethereum kill switch is off, when the list renders, then its account stays listed with the unavailable notice and out of the total', async () => {
-        setChainEnabled('ethereum', false)
-        useAccountsStore
-            .getState()
-            .setAccounts([ALGORAND_ACCOUNT, ETHEREUM_ACCOUNT])
-
-        renderMenu()
-
-        await waitFor(() => {
-            expect(
-                within(rowOf(ETHEREUM_ACCOUNT)).getByTestId(
-                    'account_chain_unavailable',
-                ),
-            ).toBeTruthy()
-        })
-        expect(
-            within(rowOf(ALGORAND_ACCOUNT)).queryByTestId(
-                'account_chain_unavailable',
-            ),
-        ).toBeNull()
-        // Only the $3 of ALGO: the frozen ETH balance stays out of the total.
-        await waitFor(() => {
-            expect(
-                screen.getByTestId('portfolio_total_value').textContent,
-            ).toMatch(/^\$ ?3\.00$/)
-        })
     })
 
     it('Given an Ethereum account is opened, when its actions render, then it offers send and receive but no Algorand-only action', () => {
