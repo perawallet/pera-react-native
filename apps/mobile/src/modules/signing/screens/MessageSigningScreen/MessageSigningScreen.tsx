@@ -15,6 +15,7 @@ import { AccountDisplay } from '@components/AccountDisplay'
 import { ConfirmAction, CONFIRM_ACTION_LAYOUT } from '@components/ConfirmAction'
 import { InfoCallout } from '@components/InfoCallout'
 import { useLanguage } from '@hooks/useLanguage'
+import { CannotSignNotice } from '@modules/signing/components/CannotSignNotice'
 import { SignedDataWarning } from '@modules/signing/components/SignedDataWarning'
 import { SourceMetadataView } from '@modules/signing/components/SourceMetadataView'
 import { SpendApprovalWarning } from '@modules/signing/components/SpendApprovalWarning'
@@ -48,17 +49,11 @@ export const MessageSigningScreen = () => {
             footer={
                 <PWView style={[styles.buttonContainer, CONFIRM_ACTION_LAYOUT]}>
                     {hasListedAddress ? (
-                        <PWView
-                            style={styles.blockedNotice}
+                        <CannotSignNotice
+                            title={t('signing.address_safety.blocked_title')}
+                            body={t('signing.address_safety.blocked_body')}
                             testID='message-signing-blocked'
-                        >
-                            <PWText variant='h4'>
-                                {t('signing.address_safety.blocked_title')}
-                            </PWText>
-                            <PWText style={styles.blockedBody}>
-                                {t('signing.address_safety.blocked_body')}
-                            </PWText>
-                        </PWView>
+                        />
                     ) : (
                         <ConfirmAction
                             title={t('common.slide_to_confirm.label')}

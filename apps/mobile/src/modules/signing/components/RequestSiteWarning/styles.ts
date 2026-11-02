@@ -13,34 +13,7 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-    warning: {
-        gap: theme.spacing.md,
-        marginVertical: theme.spacing.lg,
-        backgroundColor: theme.colors.suspiciousBannerBg,
-        padding: theme.spacing.lg,
-        borderRadius: theme.spacing.sm,
-    },
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.md,
-    },
-    title: {
-        flexShrink: 1,
-        color: theme.colors.suspiciousBannerContent,
-    },
     host: {
         color: theme.colors.textMain,
-    },
-    body: {
-        color: theme.colors.suspiciousBannerContent,
-    },
-    acknowledge: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.sm,
-    },
-    acknowledgeLabel: {
-        flexShrink: 1,
     },
 }))

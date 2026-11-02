@@ -3485,7 +3485,7 @@
         },
         "address_safety": {
             "listed_title": "Endereço de golpe conhecido",
-            "listed_body": "Esta solicitação inclui um endereço de uma lista pública de endereços usados para roubar fundos. A Pera não vai assiná-la.",
+            "listed_body": "Esta solicitação inclui um endereço de uma lista pública de endereços usados para roubar fundos.",
             "blocked_title": "A Pera não vai assinar esta solicitação",
             "blocked_body": "Ela inclui um endereço de golpe conhecido. Rejeite-a para proteger seus fundos.",
             "look_alike_title": "Esta solicitação inclui um endereço que imita um que você conhece",

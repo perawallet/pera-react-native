@@ -11,16 +11,13 @@
  */
 
 import type { ReviewedAddress } from '@perawallet/wallet-core-signing'
-import {
-    PWCheckbox,
-    PWRoundIcon,
-    PWText,
-    PWTouchableOpacity,
-    PWView,
-} from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useRequestAddressSafety } from '../../hooks/useRequestAddressSafety'
-import { useStyles } from './styles'
+import {
+    WarningAcknowledgeRow,
+    WarningBanner,
+    WarningBannerBody,
+} from '../WarningBanner'
 import { ListedAddress } from './ListedAddress'
 import { LookAlikeAddress } from './LookAlikeAddress'
 
@@ -32,7 +29,6 @@ export type RequestAddressWarningProps = {
 export const RequestAddressWarning = ({
     addresses,
 }: RequestAddressWarningProps) => {
-    const styles = useStyles()
     const { t } = useLanguage()
     const {
         flaggedAddresses,
@@ -49,43 +45,24 @@ export const RequestAddressWarning = ({
     )
 
     return (
-        <PWView
-            style={styles.warning}
+        <WarningBanner
+            title={t(
+                hasListedAddress
+                    ? 'signing.address_safety.listed_title'
+                    : 'signing.address_safety.look_alike_title',
+            )}
             testID='request_address_warning'
         >
-            <PWView style={styles.header}>
-                <PWRoundIcon
-                    icon='info'
-                    size='md'
-                    variant='error'
-                />
-                <PWText
-                    variant='bodySemibold'
-                    style={styles.title}
-                >
-                    {t(
-                        hasListedAddress
-                            ? 'signing.address_safety.listed_title'
-                            : 'signing.address_safety.look_alike_title',
-                    )}
-                </PWText>
-            </PWView>
             {hasListedAddress && (
-                <PWText
-                    style={styles.body}
-                    testID='request_address_listed_body'
-                >
+                <WarningBannerBody testID='request_address_listed_body'>
                     {t('signing.address_safety.listed_body')}
-                </PWText>
+                </WarningBannerBody>
             )}
             {/* A request can name both, and the look-alike rows need their own explanation. */}
             {hasLookAlike && (
-                <PWText
-                    style={styles.body}
-                    testID='request_address_look_alike_body'
-                >
+                <WarningBannerBody testID='request_address_look_alike_body'>
                     {t('signing.address_safety.look_alike_body')}
-                </PWText>
+                </WarningBannerBody>
             )}
             {flaggedAddresses.map((flagged, index) =>
                 flagged.assessment.kind === 'listed' ? (
@@ -104,20 +81,13 @@ export const RequestAddressWarning = ({
                 ),
             )}
             {!hasListedAddress && (
-                <PWTouchableOpacity
-                    style={styles.acknowledge}
-                    onPress={toggleAcknowledged}
+                <WarningAcknowledgeRow
+                    label={t('signing.address_safety.acknowledge')}
+                    isChecked={isAcknowledged}
+                    onToggle={toggleAcknowledged}
                     testID='request_address_acknowledge'
-                >
-                    <PWCheckbox
-                        checked={isAcknowledged}
-                        onPress={toggleAcknowledged}
-                    />
-                    <PWText style={styles.acknowledgeLabel}>
-                        {t('signing.address_safety.acknowledge')}
-                    </PWText>
-                </PWTouchableOpacity>
+                />
             )}
-        </PWView>
+        </WarningBanner>
     )
 }

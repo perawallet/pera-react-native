@@ -3460,7 +3460,7 @@
         },
         "address_safety": {
             "listed_title": "Bekannte Betrugsadresse",
-            "listed_body": "Diese Anfrage nennt eine Adresse aus einer öffentlichen Liste von Adressen, mit denen Guthaben gestohlen wird. Pera signiert sie nicht.",
+            "listed_body": "Diese Anfrage nennt eine Adresse aus einer öffentlichen Liste von Adressen, mit denen Guthaben gestohlen wird.",
             "blocked_title": "Pera signiert diese Anfrage nicht",
             "blocked_body": "Sie nennt eine bekannte Betrugsadresse. Lehne sie ab, um dein Guthaben zu schützen.",
             "look_alike_title": "Diese Anfrage nennt eine Adresse, die eine dir bekannte nachahmt",

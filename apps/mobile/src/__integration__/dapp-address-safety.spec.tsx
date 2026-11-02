@@ -329,6 +329,35 @@ const expectBlocked = async (
     expect(kmsCore.sign).not.toHaveBeenCalled()
 }
 
+// The sign gate blocks a flagged site first; the review then names it again.
+const continuePastBlockedView = async () => {
+    await waitFor(() => screen.getByTestId('site_blocked_view'), {
+        timeout: 15_000,
+    })
+    fireEvent.click(screen.getByTestId('site_blocked_continue_anyway'))
+    fireEvent.click(screen.getByTestId('site_blocked_acknowledge'))
+    const continueButton = () =>
+        closestPressable(screen.getByTestId('site_blocked_continue'))!
+    await waitFor(() => expect(isElementDisabled(continueButton())).toBe(false))
+    fireEvent.click(continueButton())
+}
+
+const expectSiteHeldUntilAcknowledged = async (slideTestId: string) => {
+    await waitFor(() => screen.getByTestId(SITE_WARNING), { timeout: 15_000 })
+    expect(screen.getByTestId('request_site_host').textContent).toBe(
+        'dapp.example',
+    )
+    expect(screen.queryByTestId(WARNING)).toBeNull()
+    await waitFor(() =>
+        expect(isElementDisabled(screen.getByTestId(slideTestId))).toBe(true),
+    )
+
+    fireEvent.click(screen.getByTestId(SITE_ACKNOWLEDGE))
+    await waitFor(() =>
+        expect(isElementDisabled(screen.getByTestId(slideTestId))).toBe(false),
+    )
+}
+
 // Every request the app makes, so a test can show no request address left the
 // device for a lookup.
 type SentRequest = { url: string; body: Promise<string> }
@@ -658,37 +687,33 @@ describe('Flow: a dApp request names a scam address or a look-alike of a known o
                 ETH_MAINNET,
                 { isScam: true },
             )
-            await waitFor(() => screen.getByTestId('site_blocked_view'), {
-                timeout: 15_000,
-            })
-            fireEvent.click(screen.getByTestId('site_blocked_continue_anyway'))
-            fireEvent.click(screen.getByTestId('site_blocked_acknowledge'))
-            const continueButton = () =>
-                closestPressable(screen.getByTestId('site_blocked_continue'))!
-            await waitFor(() =>
-                expect(isElementDisabled(continueButton())).toBe(false),
-            )
-            fireEvent.click(continueButton())
+            await continuePastBlockedView()
 
-            await waitFor(() => screen.getByTestId(SITE_WARNING), {
-                timeout: 15_000,
-            })
-            expect(screen.getByTestId('request_site_host').textContent).toBe(
-                'dapp.example',
-            )
-            expect(screen.queryByTestId(WARNING)).toBeNull()
-            await waitFor(() =>
-                expect(
-                    isElementDisabled(screen.getByTestId(TRANSACTION_SLIDE)),
-                ).toBe(true),
-            )
+            await expectSiteHeldUntilAcknowledged(TRANSACTION_SLIDE)
+        })
 
-            fireEvent.click(screen.getByTestId(SITE_ACKNOWLEDGE))
-            await waitFor(() =>
-                expect(
-                    isElementDisabled(screen.getByTestId(TRANSACTION_SLIDE)),
-                ).toBe(false),
+        it('Given WalletConnect Verify flags the dApp, when it asks to sign a permit to an unlisted spender and the user continues past the blocked view, then the review names the site again and holds the slide until acknowledged', async () => {
+            const walletKit = await connectEthereum()
+
+            send(
+                walletKit,
+                'eth_signTypedData_v4',
+                [
+                    SENDER,
+                    JSON.stringify({
+                        ...DAI_PERMIT_TYPED_DATA,
+                        message: {
+                            ...DAI_PERMIT_TYPED_DATA.message,
+                            spender: UNLISTED_CONTRACT,
+                        },
+                    }),
+                ],
+                ETH_MAINNET,
+                { isScam: true },
             )
+            await continuePastBlockedView()
+
+            await expectSiteHeldUntilAcknowledged(MESSAGE_SLIDE)
         })
 
         it('Given a contact, when a dApp sends native ETH to an address imitating it, then the review compares both in full and signing waits on acknowledgement', async () => {

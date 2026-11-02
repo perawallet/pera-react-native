@@ -12,10 +12,10 @@
 
 import type { SignRequest } from '@perawallet/wallet-core-signing'
 import {
+    signRequestSiteSafetyParams,
     useSiteSafetyGate,
     type UseSiteSafetyGateResult,
 } from '@modules/site-safety'
-import { signRequestSiteSafetyParams } from '../../utils/signRequestSiteSafetyParams'
 
 /** Checked on every request, so a site listed after it connected is caught at its next one. */
 export const useSignRequestSiteSafety = (

@@ -19,3 +19,4 @@ export {
     type UseSiteSafetyGateResult,
 } from './hooks/useSiteSafetyGate'
 export { hasSiteToCheck } from './utils/hasSiteToCheck'
+export { signRequestSiteSafetyParams } from './utils/signRequestSiteSafetyParams'

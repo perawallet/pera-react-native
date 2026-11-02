@@ -3468,7 +3468,7 @@
         },
         "address_safety": {
             "listed_title": "Bilinen dolandırıcılık adresi",
-            "listed_body": "Bu istek, fon çalmak için kullanılan adreslerin yer aldığı herkese açık bir listedeki bir adresi içeriyor. Pera bunu imzalamaz.",
+            "listed_body": "Bu istek, fon çalmak için kullanılan adreslerin yer aldığı herkese açık bir listedeki bir adresi içeriyor.",
             "blocked_title": "Pera bu isteği imzalamaz",
             "blocked_body": "Bilinen bir dolandırıcılık adresini içeriyor. Fonlarını korumak için reddet.",
             "look_alike_title": "Bu istek, tanıdığın bir adresi taklit eden bir adres içeriyor",

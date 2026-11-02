@@ -11,15 +11,17 @@
  */
 
 import { useCallback } from 'react'
-import { create } from 'zustand'
-import { registerStore, type Optional } from '@perawallet/wallet-core-shared'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import { useSigningRequest } from '@perawallet/wallet-core-signing'
 import {
     useSiteSafetyQuery,
     type SiteSafetyVerdict,
 } from '@perawallet/wallet-core-site-safety'
-import { hasSiteToCheck } from '@modules/site-safety'
-import { signRequestSiteSafetyParams } from '../utils/signRequestSiteSafetyParams'
+import {
+    hasSiteToCheck,
+    signRequestSiteSafetyParams,
+} from '@modules/site-safety'
+import { createAcknowledgementStore } from './createAcknowledgementStore'
 
 export type BlockedSite = Extract<SiteSafetyVerdict, { kind: 'blocked' }>
 
@@ -32,30 +34,9 @@ export type UseRequestSiteSafetyResult = {
     isConfirmBlocked: boolean
 }
 
-type SiteWarningAcknowledgementState = {
-    /** Keyed by request so the next request starts unacknowledged. */
-    acknowledgedRequestId: Optional<string>
-}
-
-type SiteWarningAcknowledgementActions = {
-    setAcknowledgedRequestId: (id: Optional<string>) => void
-    resetState: () => void
-}
-
-export const useSiteWarningAcknowledgementStore = create<
-    SiteWarningAcknowledgementState & SiteWarningAcknowledgementActions
->()(set => ({
-    acknowledgedRequestId: undefined,
-    setAcknowledgedRequestId: id => set({ acknowledgedRequestId: id }),
-    resetState: () => set({ acknowledgedRequestId: undefined }),
-}))
-
-registerStore({
-    name: 'site-warning-acknowledgement-store',
-    clearStorage: () => {},
-    resetState: () =>
-        useSiteWarningAcknowledgementStore.getState().resetState(),
-})
+export const useSiteWarningAcknowledgementStore = createAcknowledgementStore(
+    'site-warning-acknowledgement-store',
+)
 
 const NO_SITE = { urls: [] }
 

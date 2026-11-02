@@ -3468,7 +3468,7 @@
         },
         "address_safety": {
             "listed_title": "Adresse frauduleuse connue",
-            "listed_body": "Cette demande mentionne une adresse figurant sur une liste publique d’adresses utilisées pour voler des fonds. Pera ne la signera pas.",
+            "listed_body": "Cette demande mentionne une adresse figurant sur une liste publique d’adresses utilisées pour voler des fonds.",
             "blocked_title": "Pera ne signera pas cette demande",
             "blocked_body": "Elle mentionne une adresse frauduleuse connue. Rejetez-la pour protéger vos fonds.",
             "look_alike_title": "Cette demande mentionne une adresse qui imite une adresse que vous connaissez",

@@ -10,10 +10,11 @@
  limitations under the License
  */
 
-import { PWButton, PWText, PWView } from '@components/core'
+import { PWButton, PWView } from '@components/core'
 import { ConfirmAction, CONFIRM_ACTION_LAYOUT } from '@components/ConfirmAction'
 import { useLanguage } from '@hooks/useLanguage'
 import { MultisigDeclineButton } from '@modules/multisig'
+import { CannotSignNotice } from '../CannotSignNotice'
 import { useStyles } from './styles'
 import { useSigningActionButtons } from './useSigningActionButtons'
 
@@ -35,15 +36,11 @@ export const SigningActionButtons = () => {
     return (
         <PWView style={[styles.container, CONFIRM_ACTION_LAYOUT]}>
             {cannotSignNotice ? (
-                <PWView
-                    style={styles.cannotSignNotice}
+                <CannotSignNotice
+                    title={cannotSignNotice.title}
+                    body={cannotSignNotice.body}
                     testID='signing-cannot-sign'
-                >
-                    <PWText variant='h4'>{cannotSignNotice.title}</PWText>
-                    <PWText style={styles.cannotSignBody}>
-                        {cannotSignNotice.body}
-                    </PWText>
-                </PWView>
+                />
             ) : (
                 <ConfirmAction
                     key={slideResetKey}

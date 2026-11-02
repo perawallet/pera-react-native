@@ -10,15 +10,14 @@
  limitations under the License
  */
 
-import {
-    PWCheckbox,
-    PWRoundIcon,
-    PWText,
-    PWTouchableOpacity,
-    PWView,
-} from '@components/core'
+import { PWText } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useRequestSiteSafety } from '../../hooks/useRequestSiteSafety'
+import {
+    WarningAcknowledgeRow,
+    WarningBanner,
+    WarningBannerBody,
+} from '../WarningBanner'
 import { useStyles } from './styles'
 
 export const RequestSiteWarning = () => {
@@ -30,23 +29,10 @@ export const RequestSiteWarning = () => {
     if (!blockedSite) return null
 
     return (
-        <PWView
-            style={styles.warning}
+        <WarningBanner
+            title={t('site_safety.blocked.title')}
             testID='request_site_warning'
         >
-            <PWView style={styles.header}>
-                <PWRoundIcon
-                    icon='info'
-                    size='md'
-                    variant='error'
-                />
-                <PWText
-                    variant='bodySemibold'
-                    style={styles.title}
-                >
-                    {t('site_safety.blocked.title')}
-                </PWText>
-            </PWView>
             {!!blockedSite.host && (
                 <PWText
                     variant='bodySemibold'
@@ -56,24 +42,17 @@ export const RequestSiteWarning = () => {
                     {blockedSite.host}
                 </PWText>
             )}
-            <PWText style={styles.body}>
+            <WarningBannerBody>
                 {blockedSite.reason === 'walletconnect-verify'
                     ? t('site_safety.blocked.body_verify')
                     : t('site_safety.blocked.body')}
-            </PWText>
-            <PWTouchableOpacity
-                style={styles.acknowledge}
-                onPress={toggleAcknowledged}
+            </WarningBannerBody>
+            <WarningAcknowledgeRow
+                label={t('site_safety.blocked.acknowledge')}
+                isChecked={isAcknowledged}
+                onToggle={toggleAcknowledged}
                 testID='request_site_acknowledge'
-            >
-                <PWCheckbox
-                    checked={isAcknowledged}
-                    onPress={toggleAcknowledged}
-                />
-                <PWText style={styles.acknowledgeLabel}>
-                    {t('site_safety.blocked.acknowledge')}
-                </PWText>
-            </PWTouchableOpacity>
-        </PWView>
+            />
+        </WarningBanner>
     )
 }

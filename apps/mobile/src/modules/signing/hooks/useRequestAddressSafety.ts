@@ -11,13 +11,12 @@
  */
 
 import { useCallback, useMemo } from 'react'
-import { create } from 'zustand'
 import {
     addressCodecs,
     type ChainId,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
-import { registerStore, type Optional } from '@perawallet/wallet-core-shared'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import {
     chainIdOfSignRequest,
     isExternalCallbackSource,
@@ -35,6 +34,7 @@ import {
     type RequestAddressAssessment,
 } from '@perawallet/wallet-core-transactions'
 import { useKnownAddresses } from '@modules/transactions'
+import { createAcknowledgementStore } from './createAcknowledgementStore'
 
 export type FlaggedRequestAddress = {
     address: string
@@ -54,30 +54,9 @@ export type UseRequestAddressSafetyResult = {
     isConfirmBlocked: boolean
 }
 
-type AddressWarningAcknowledgementState = {
-    /** Keyed by request so the next request starts unacknowledged. */
-    acknowledgedRequestId: Optional<string>
-}
-
-type AddressWarningAcknowledgementActions = {
-    setAcknowledgedRequestId: (id: Optional<string>) => void
-    resetState: () => void
-}
-
-export const useAddressWarningAcknowledgementStore = create<
-    AddressWarningAcknowledgementState & AddressWarningAcknowledgementActions
->()(set => ({
-    acknowledgedRequestId: undefined,
-    setAcknowledgedRequestId: id => set({ acknowledgedRequestId: id }),
-    resetState: () => set({ acknowledgedRequestId: undefined }),
-}))
-
-registerStore({
-    name: 'address-warning-acknowledgement-store',
-    clearStorage: () => {},
-    resetState: () =>
-        useAddressWarningAcknowledgementStore.getState().resetState(),
-})
+export const useAddressWarningAcknowledgementStore = createAcknowledgementStore(
+    'address-warning-acknowledgement-store',
+)
 
 const NO_ADDRESSES: ReviewedAddress[] = []
 
