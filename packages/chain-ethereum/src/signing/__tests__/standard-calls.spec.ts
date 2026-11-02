@@ -28,6 +28,7 @@ import type { EvmStandardCall } from '../standard-call-types'
 import {
     approvalWarningOf,
     decodeEvmStandardCall,
+    isEvmApprovalCall,
     standardCallSummary,
 } from '../standard-calls'
 import { SENDER } from './fixtures'
@@ -442,5 +443,101 @@ describe('approvalWarningOf', () => {
                 value: new Decimal(1),
             }),
         ).toBeUndefined()
+    })
+})
+
+describe('isEvmApprovalCall', () => {
+    const value = new Decimal(1)
+    const approvals: [string, EvmStandardCall][] = [
+        [
+            'approve',
+            { kind: 'approve', contract: TOKEN, spender: SPENDER, value },
+        ],
+        [
+            'a zero-value approve',
+            {
+                kind: 'approve',
+                contract: TOKEN,
+                spender: SPENDER,
+                value: new Decimal(0),
+            },
+        ],
+        [
+            'increase-allowance',
+            {
+                kind: 'increase-allowance',
+                contract: TOKEN,
+                spender: SPENDER,
+                value,
+            },
+        ],
+        [
+            'setApprovalForAll(true)',
+            {
+                kind: 'set-approval-for-all',
+                contract: NFT,
+                operator: SPENDER,
+                isApproved: true,
+            },
+        ],
+        [
+            'setApprovalForAll(false)',
+            {
+                kind: 'set-approval-for-all',
+                contract: NFT,
+                operator: SPENDER,
+                isApproved: false,
+            },
+        ],
+    ]
+    const transfers: [string, EvmStandardCall][] = [
+        [
+            'transfer',
+            {
+                kind: 'transfer',
+                contract: TOKEN,
+                from: SENDER,
+                to: SPENDER,
+                value,
+            },
+        ],
+        [
+            'transfer-from',
+            {
+                kind: 'transfer-from',
+                contract: TOKEN,
+                from: HOLDER,
+                to: SPENDER,
+                value,
+            },
+        ],
+        [
+            'erc721-safe-transfer',
+            {
+                kind: 'erc721-safe-transfer',
+                contract: NFT,
+                from: HOLDER,
+                to: SPENDER,
+                tokenId: '1',
+            },
+        ],
+        [
+            'erc1155-transfer',
+            {
+                kind: 'erc1155-transfer',
+                contract: NFT,
+                from: HOLDER,
+                to: SPENDER,
+                items: [{ tokenId: '1', amount: new Decimal(1) }],
+            },
+        ],
+    ]
+
+    it.each(approvals)('is true for %s', (_, standardCall) => {
+        expect(isEvmApprovalCall(standardCall)).toBe(true)
+    })
+
+    it.each(transfers)('is false for %s', (_, standardCall) => {
+        expect(isEvmApprovalCall(standardCall)).toBe(false)
     })
 })

@@ -18,11 +18,7 @@ import {
     type PWTouchableOpacityProps,
     PWView,
 } from '@components/core'
-import {
-    useIsNativeAssetId,
-    isCollectible,
-    useAssetsQuery,
-} from '@perawallet/wallet-core-assets'
+import { useIsNativeAssetId } from '@perawallet/wallet-core-assets'
 import type { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import {
@@ -30,10 +26,11 @@ import {
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import { useStyles } from './styles'
-import { useMemo, type ReactNode } from 'react'
+import { type ReactNode } from 'react'
 import { CollectibleListItem } from '../CollectibleListItem'
 import { AssetItemView } from './AssetItemView'
 import { AssetRowSkeleton } from '../AssetRowSkeleton'
+import { useAccountAssetItemView } from './useAccountAssetItemView'
 
 export type AccountAssetItemViewProps = {
     accountBalance: AssetWithAccountBalance
@@ -69,36 +66,11 @@ export const AccountAssetItemView = ({
     const styles = useStyles()
     const isNativeAssetId = useIsNativeAssetId(scope)
 
-    // Use pre-fetched asset data when available to avoid N+1 queries.
-    // Falls back to individual fetch for callers that don't populate
-    // accountBalance.asset. The main asset list passes skipFetch so all
-    // rows share a single empty-array query and don't create a separate
-    // RQ observer per row, which would saturate the JS thread on large
-    // watch accounts.
-    const assetIds = useMemo(
-        () =>
-            skipFetch || accountBalance.asset ? [] : [accountBalance.assetId],
-        [skipFetch, accountBalance.asset, accountBalance.assetId],
-    )
-    const { data: fetchedAssets } = useAssetsQuery(scope, assetIds)
-
-    const asset = useMemo(() => {
-        return (
-            fetchedAssets?.get(accountBalance.assetId) ?? accountBalance.asset
-        )
-    }, [accountBalance.asset, fetchedAssets, accountBalance.assetId])
-
-    const item = useMemo(() => {
-        if (asset && isCollectible(asset)) {
-            return {
-                assetId: accountBalance.assetId,
-                asset,
-                collectible: asset.peraMetadata?.collectible,
-                amount: accountBalance.amount,
-            }
-        }
-        return null
-    }, [asset, accountBalance])
+    const { asset, item } = useAccountAssetItemView({
+        accountBalance,
+        skipFetch,
+        scope,
+    })
 
     if (item) {
         // Forward the list's row style (shared horizontal padding) so a

@@ -13,10 +13,23 @@
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-chain-algorand/blockchain'
 import { renderHook } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { Decimal } from 'decimal.js'
+import type { TransactionHistoryItem } from '@perawallet/wallet-core-transactions'
 import { useGroupTransactionListScreen } from '../useGroupTransactionListScreen'
 
 const mockNavigate = vi.fn()
-const mockRouteParams = { groupId: 'GROUP_ABC' }
+const mockRouteParams: {
+    groupId: string
+    historyTransaction?: TransactionHistoryItem
+} = { groupId: 'GROUP_ABC' }
+
+// The suffix has its own spec; here the hero's title is the row label it wraps.
+vi.mock('@modules/signing', () => ({
+    useTransactionHeroTitle:
+        () =>
+        ({ key }: { key: string }) =>
+            key,
+}))
 
 vi.mock('@react-navigation/native', () => ({
     useNavigation: () => ({
@@ -40,10 +53,30 @@ vi.mock('@perawallet/wallet-core-chain-algorand/blockchain', async () => ({
         mockUseGroupTransactionsQuery(...args),
 }))
 
+const mockSummarize = vi.fn()
+vi.mock('@perawallet/wallet-core-transactions', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-transactions')
+    >()),
+    summarizeHistoryItem: (...args: unknown[]) => mockSummarize(...args),
+}))
+
+const USDC = { assetId: '31566704', unitName: 'USDC', decimals: 6 }
+vi.mock('@perawallet/wallet-core-assets', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-assets')
+    >()),
+    useAssetsQuery: () => ({
+        data: new Map([[USDC.assetId, USDC]]),
+        isPending: false,
+    }),
+}))
+
 describe('useGroupTransactionListScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockRouteParams.groupId = 'GROUP_ABC'
+        mockRouteParams.historyTransaction = undefined
         mockUseGroupTransactionsQuery.mockReturnValue({
             groupTransactions: [mockTx1, mockTx2].map(transaction => ({
                 family: 'algorand',
@@ -53,6 +86,39 @@ describe('useGroupTransactionListScreen', () => {
             isError: false,
             error: null,
         })
+    })
+
+    it('has no hero when opened without a history row', () => {
+        const { result } = renderHook(() => useGroupTransactionListScreen())
+
+        expect(result.current.hero).toBeUndefined()
+    })
+
+    it("heads a swap's group with the row's hero: its title, icon, status and received amount", () => {
+        mockRouteParams.historyTransaction = {
+            id: 'SWAP',
+            status: 'confirmed',
+        } as TransactionHistoryItem
+        mockSummarize.mockReturnValue({
+            kind: 'swap',
+            title: { key: 'transactions.list_item.swap' },
+            icon: 'swap',
+            direction: 'in',
+            amount: {
+                assetRef: { chainId: 'algorand', assetId: USDC.assetId },
+                value: new Decimal(2_500_000),
+            },
+        })
+
+        const { result } = renderHook(() => useGroupTransactionListScreen())
+
+        expect(result.current.hero).toMatchObject({
+            title: 'transactions.list_item.swap',
+            status: 'completed',
+            isAmountLoading: false,
+        })
+        expect(result.current.hero?.amount?.asset).toBe(USDC)
+        expect(result.current.hero?.amount?.value.toString()).toBe('2.5')
     })
 
     it('returns transactions from useGroupTransactionsQuery', () => {

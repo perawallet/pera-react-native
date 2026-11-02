@@ -41,8 +41,19 @@ export const NETWORK_TIERS = ['mainnet', 'testnet'] as const
 
 export type NetworkTier = (typeof NETWORK_TIERS)[number]
 
-/** The chains chain-ethereum serves, one per EIP-155 chain. */
-export type EvmChainId = Exclude<ChainId, 'algorand'>
+// A key that isn't a ChainId fails to compile here.
+const evmChainIdsOf = <T extends Partial<Record<ChainId, unknown>>>(
+    table: T & Record<Exclude<keyof T, ChainId>, never>,
+): readonly Extract<keyof T, ChainId>[] =>
+    Object.keys(table) as unknown as readonly Extract<keyof T, ChainId>[]
+
+// Not annotated: the inferred literal union is what the emitted .d.ts keeps,
+// where a `keyof typeof evmNetworks` would leave an import of a JSON that
+// declaration emit never copies into dist.
+const EVM_CHAIN_IDS = evmChainIdsOf(evmNetworks)
+
+/** The chains chain-ethereum serves: the keys of evm-networks.json. */
+export type EvmChainId = (typeof EVM_CHAIN_IDS)[number]
 
 export type EvmNetworkIdentity = {
     readonly id: string
@@ -86,8 +97,8 @@ export type ChainMode = WalletMode | 'developer-override'
 export type DeveloperChainMode = Exclude<ChainMode, 'live'>
 
 /**
- * The network as its own chain identifies it. A chain package adds its own
- * member, discriminated by `kind`.
+ * The network as its own chain identifies it; one member per `ChainFamily`,
+ * discriminated by `kind`.
  */
 export type NativeNetworkRef =
     | {
@@ -144,7 +155,7 @@ export const isChainId = (value: unknown): value is ChainId =>
     (CHAIN_IDS as readonly string[]).includes(value)
 
 export const isEvmChainId = (value: unknown): value is EvmChainId =>
-    isChainId(value) && Object.keys(EVM_CHAIN_NETWORKS).includes(value)
+    isChainId(value) && (EVM_CHAIN_IDS as readonly string[]).includes(value)
 
 export const isChainFamily = (value: unknown): value is ChainFamily =>
     typeof value === 'string' &&

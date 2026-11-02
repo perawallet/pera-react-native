@@ -321,9 +321,7 @@ describe('rekey quantum account', () => {
             { additionalScreens: QUANTUM_REKEY_SCREENS },
         )
 
-        fireEvent.click(
-            await screen.findByTestId('account_network_algorand_expand'),
-        )
+        // An account on Algorand alone opens with that network expanded.
         fireEvent.click(
             await screen.findByTestId('account_option_rekey-account'),
         )

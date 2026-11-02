@@ -15,6 +15,8 @@ import { Decimal } from 'decimal.js'
 import {
     accountValueKey,
     accountValueOf,
+    isWatchAccount,
+    multisigParametersOf,
     useAccountChainId,
     useAccountHoldingSources,
     useAccountValueBasis,
@@ -25,7 +27,6 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import {
     isTestTierScope,
-    LEGACY_CHAIN_ID,
     type ChainId,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
@@ -40,6 +41,7 @@ import {
     useChainAvailability,
     type ChainAvailability,
 } from '@hooks/useChainAvailability'
+import { useHomeChainScope } from '@hooks/useHomeChainScope'
 
 export type CrossChainTotal =
     /** In the preferred currency. `undefined` until loaded, `null` when any counted chain's value is unknown; both render a placeholder, not 0. */
@@ -62,10 +64,20 @@ export type UseAccountWithBalanceResult = {
     /** Once the wallet holds accounts on another chain, so rows tell chains apart. */
     isMultiChain: boolean
     /**
-     * Set when no chain was asked for and the wallet spans chains: the row then
-     * stands for the whole account, so it shows this in place of one chain's balance.
+     * Set when no chain was asked for: the row then stands for the whole
+     * account, so it shows this in place of one chain's balance.
      */
     crossChainTotal: Optional<CrossChainTotal>
+    /**
+     * The one network a watch account sits on, on a row that stands for the
+     * whole account. Unset for an account that spans networks or that the
+     * wallet can sign for, whose type already says what it is.
+     */
+    singleNetworkChainId: Optional<ChainId>
+    /** The member count of a joint account, which the avatar badge shows. */
+    jointParticipantCount: Optional<number>
+    /** A whole-account row names only a watch account's type or network under it; the name and value say the rest. */
+    shouldShowSecondaryLabel: boolean
 }
 
 /**
@@ -104,14 +116,14 @@ export const useAccountWithBalance = (
     account: WalletAccount,
     chainOverride?: ChainId,
 ): UseAccountWithBalanceResult => {
-    const accountChainId = useAccountChainId(account, LEGACY_CHAIN_ID)
+    const homeScope = useHomeChainScope()
+    const accountChainId = useAccountChainId(account, homeScope.chainId)
     const scope = useSelectedScope(chainOverride ?? accountChainId)
     const { chainId } = scope
-    const homeScope = useSelectedScope(LEGACY_CHAIN_ID)
-    const basis = useAccountValueBasis(LEGACY_CHAIN_ID)
+    const basis = useAccountValueBasis(homeScope.chainId)
     const { usdToPreferred } = useCurrency(homeScope)
     const availability = useChainAvailability(chainId)
-    const isChainAgnostic = chainOverride === undefined && basis === 'fiat'
+    const isChainAgnostic = chainOverride === undefined
     // Leaves out switched-off chains, so their last-synced values can't count.
     const sources = useAccountHoldingSources(account)
     const { accountValueTotals } = useAccountValueTotalsQuery(
@@ -132,6 +144,14 @@ export const useAccountWithBalance = (
         [isChainAgnostic, sources, accountValueTotals, usdToPreferred],
     )
 
+    const singleNetworkChainId =
+        isChainAgnostic && isWatchAccount(account) && sources.length === 1
+            ? sources[0]?.scope.chainId
+            : undefined
+    const jointParticipantCount = isChainAgnostic
+        ? multisigParametersOf(account, accountChainId)?.addresses.length
+        : undefined
+
     return {
         scope,
         chainName,
@@ -143,5 +163,8 @@ export const useAccountWithBalance = (
                 : undefined,
         isMultiChain: basis === 'fiat',
         crossChainTotal,
+        singleNetworkChainId,
+        jointParticipantCount,
+        shouldShowSecondaryLabel: !isChainAgnostic || isWatchAccount(account),
     }
 }

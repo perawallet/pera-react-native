@@ -179,6 +179,24 @@ describe('getEvmTransactionHistory', () => {
         expect(items[1]?.fee).toBeUndefined()
     })
 
+    it('carries the block number onto the record, and keeps a row whose block number is unreadable', async () => {
+        serve([
+            [
+                evmHistoryItem({ hash: hash(1), block_number: 19_000_000 }),
+                {
+                    ...evmHistoryItem({ hash: hash(2) }),
+                    block_number: 'later' as unknown as number,
+                },
+            ],
+        ])
+
+        const { items } = await getEvmTransactionHistory(ETHEREUM, ME, MAINNET)
+
+        expect(items).toHaveLength(2)
+        expect(items[0]?.blockNumber).toBe(19_000_000)
+        expect(items[1]?.blockNumber).toBeUndefined()
+    })
+
     it('lowercases the hash so it matches the id the submission ledger records', async () => {
         serve([[evmHistoryItem({ hash: `0x${'AB'.repeat(32)}` })]])
 

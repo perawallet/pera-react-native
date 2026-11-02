@@ -180,16 +180,34 @@ describe('useAccountOverviewHeader', () => {
 
     it("shows balances while the account's own chain is available", () => {
         const { result } = renderHook(
-            () => useAccountOverviewHeader(mockAccount),
+            () => useAccountOverviewHeader(mockAccount, false),
             { wrapper },
         )
 
         expect(result.current.availability.isAvailable).toBe(true)
     })
 
+    it('follows the 24 hour change when the chart is hidden', () => {
+        const { result } = renderHook(
+            () => useAccountOverviewHeader(mockAccount, false),
+            { wrapper },
+        )
+
+        expect(result.current.trendPeriod).toBe('one-day')
+    })
+
+    it("follows the chart's period while the chart is shown", () => {
+        const { result } = renderHook(
+            () => useAccountOverviewHeader(mockAccount, true),
+            { wrapper },
+        )
+
+        expect(result.current.trendPeriod).toBe('one-week')
+    })
+
     it("charts the account's own chain when it is on no other", () => {
         const { result } = renderHook(
-            () => useAccountOverviewHeader(mockAccount),
+            () => useAccountOverviewHeader(mockAccount, false),
             { wrapper },
         )
 
@@ -214,7 +232,7 @@ describe('useAccountOverviewHeader', () => {
         } as WalletAccount
 
         const { result } = renderHook(
-            () => useAccountOverviewHeader(ethAccount),
+            () => useAccountOverviewHeader(ethAccount, false),
             { wrapper },
         )
 
@@ -235,7 +253,7 @@ describe('useAccountOverviewHeader', () => {
         } as WalletAccount
 
         const { result } = renderHook(
-            () => useAccountOverviewHeader(ethAccount),
+            () => useAccountOverviewHeader(ethAccount, false),
             { wrapper },
         )
 
@@ -250,7 +268,7 @@ describe('useAccountOverviewHeader', () => {
         vi.mocked(findNativeAsset).mockReturnValue(undefined)
 
         const { result } = renderHook(
-            () => useAccountOverviewHeader(mockAccount),
+            () => useAccountOverviewHeader(mockAccount, false),
             { wrapper },
         )
 
@@ -262,7 +280,7 @@ describe('useAccountOverviewHeader', () => {
         act(() => setChainEnabled('algorand', false))
 
         const { result } = renderHook(
-            () => useAccountOverviewHeader(mockAccount),
+            () => useAccountOverviewHeader(mockAccount, false),
             { wrapper },
         )
 
@@ -272,7 +290,7 @@ describe('useAccountOverviewHeader', () => {
 
     it('returns canSign true when canSignWith returns true', () => {
         const { result } = renderHook(
-            () => useAccountOverviewHeader(mockAccount),
+            () => useAccountOverviewHeader(mockAccount, false),
             { wrapper },
         )
 
@@ -285,7 +303,7 @@ describe('useAccountOverviewHeader', () => {
         vi.mocked(useCanSignWith).mockReturnValue(false)
 
         const { result } = renderHook(
-            () => useAccountOverviewHeader(mockAccount),
+            () => useAccountOverviewHeader(mockAccount, false),
             { wrapper },
         )
 
@@ -297,7 +315,7 @@ describe('useAccountOverviewHeader', () => {
             await import('@perawallet/wallet-core-accounts')
 
         const { result } = renderHook(
-            () => useAccountOverviewHeader(mockAccount),
+            () => useAccountOverviewHeader(mockAccount, false),
             { wrapper },
         )
 
@@ -315,7 +333,7 @@ describe('useAccountOverviewHeader', () => {
         act(() => useNetworkStore.getState().setMode('developer'))
 
         const { result } = renderHook(
-            () => useAccountOverviewHeader(twoChainAccount),
+            () => useAccountOverviewHeader(twoChainAccount, false),
             { wrapper },
         )
 
@@ -335,7 +353,7 @@ describe('useAccountOverviewHeader', () => {
         act(() => setChainEnabled('ethereum', false))
 
         const { result } = renderHook(
-            () => useAccountOverviewHeader(twoChainAccount),
+            () => useAccountOverviewHeader(twoChainAccount, false),
             { wrapper },
         )
 
@@ -353,7 +371,7 @@ describe('useAccountOverviewHeader', () => {
         )
 
         const { result } = renderHook(
-            () => useAccountOverviewHeader(twoChainAccount),
+            () => useAccountOverviewHeader(twoChainAccount, false),
             { wrapper },
         )
 
@@ -395,9 +413,12 @@ describe('useAccountOverviewHeader', () => {
         }
 
         const totalOf = () =>
-            renderHook(() => useAccountOverviewHeader(threeChainAccount), {
-                wrapper,
-            }).result.current.portfolioPreferredValue?.toString()
+            renderHook(
+                () => useAccountOverviewHeader(threeChainAccount, false),
+                {
+                    wrapper,
+                },
+            ).result.current.portfolioPreferredValue?.toString()
 
         beforeEach(() => {
             registerEthereumChain()
@@ -428,7 +449,7 @@ describe('useAccountOverviewHeader', () => {
         )
 
         const { result } = renderHook(
-            () => useAccountOverviewHeader(twoChainAccount),
+            () => useAccountOverviewHeader(twoChainAccount, false),
             { wrapper },
         )
 
@@ -455,7 +476,7 @@ describe('useAccountOverviewHeader', () => {
         )
 
         const { result } = renderHook(
-            () => useAccountOverviewHeader(twoChainAccount),
+            () => useAccountOverviewHeader(twoChainAccount, false),
             { wrapper },
         )
 
@@ -466,7 +487,7 @@ describe('useAccountOverviewHeader', () => {
         registerEthereumChain()
 
         const { result } = renderHook(
-            () => useAccountOverviewHeader(twoChainAccount),
+            () => useAccountOverviewHeader(twoChainAccount, false),
             { wrapper },
         )
 
@@ -485,7 +506,7 @@ describe('useAccountOverviewHeader', () => {
 
     it('determines hasBalance correctly when balance is greater than zero', () => {
         const { result } = renderHook(
-            () => useAccountOverviewHeader(mockAccount),
+            () => useAccountOverviewHeader(mockAccount, false),
             { wrapper },
         )
 
@@ -510,7 +531,7 @@ describe('useAccountOverviewHeader', () => {
         ] as unknown as ReturnType<typeof useAllAccounts>)
 
         const { result } = renderHook(
-            () => useAccountOverviewHeader(mockAccount),
+            () => useAccountOverviewHeader(mockAccount, false),
             { wrapper },
         )
 
@@ -536,7 +557,7 @@ describe('useAccountOverviewHeader', () => {
         ] as unknown as ReturnType<typeof useAllAccounts>)
 
         const { result } = renderHook(
-            () => useAccountOverviewHeader(mockAccount),
+            () => useAccountOverviewHeader(mockAccount, false),
             { wrapper },
         )
 
@@ -553,7 +574,7 @@ describe('useAccountOverviewHeader', () => {
         } as any)
 
         const { result } = renderHook(
-            () => useAccountOverviewHeader(mockAccount),
+            () => useAccountOverviewHeader(mockAccount, false),
             { wrapper },
         )
 
@@ -579,7 +600,7 @@ describe('useAccountOverviewHeader', () => {
         })
 
         const { result } = renderHook(
-            () => useAccountOverviewHeader(mockAccount),
+            () => useAccountOverviewHeader(mockAccount, false),
             { wrapper },
         )
 

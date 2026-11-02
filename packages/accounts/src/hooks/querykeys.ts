@@ -10,7 +10,10 @@
  limitations under the License
  */
 
-import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
+import type {
+    ChainId,
+    ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import type { HistoryPeriod } from '@perawallet/wallet-core-shared'
 import type { AccountAddress } from '../models'
 import type { AccountHoldingSource } from '../db'
@@ -44,11 +47,13 @@ export const getAccountSummaryQueryKey = (
 
 // Network-agnostic by design (see `getAccountFundedNetworks`), but keyed on the
 // active scope so the entry refetches once a newly selected network syncs.
-// The `{ address }` payload keeps it inside the sync tick's scoped invalidation.
+// The `{ address }` payload keeps it inside the sync tick's scoped invalidation;
+// `chainId` keeps EVM chains, which share one address, apart.
 export const getAccountFundedNetworksQueryKey = (
     address: string,
+    chainId: ChainId,
     scope: ChainScope,
-) => [MODULE_PREFIX, 'funded-networks', { address, scope }]
+) => [MODULE_PREFIX, 'funded-networks', { address, chainId, scope }]
 
 // One `{ address, scope }` element per source, so the address- and
 // scope-scoped invalidations reach the key through any of its sources.

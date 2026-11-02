@@ -141,21 +141,12 @@ vi.mock('@hooks/useToast', () => ({
     }),
 }))
 
-// Echoes the heading's name so the spec can see it is the sheet title.
 vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({
-        t: (key: string, params?: Record<string, unknown>) =>
-            key === 'account_options.networks_title_named'
-                ? `${key} ${String(params?.name)}`
-                : key,
+        t: (key: string) => key,
         currentLanguage: 'en',
         changeLanguage: () => undefined,
     }),
-}))
-
-let mockIsMultichain = false
-vi.mock('../../../hooks/useIsMultichain', () => ({
-    useIsMultichain: () => mockIsMultichain,
 }))
 
 vi.mock('@hooks/useAppNavigation', () => ({
@@ -335,9 +326,7 @@ describe('useAccountOptions', () => {
     })
 
     describe('titles', () => {
-        beforeEach(() => {
-            mockIsMultichain = false
-        })
+        beforeEach(() => {})
 
         const hdAccount = (name?: string): WalletAccount => ({
             id: 'acc-hd',
@@ -369,20 +358,6 @@ describe('useAccountOptions', () => {
 
         it('titles a named account by its name', () => {
             expect(titlesOf(hdAccount('Savings')).sheetTitle).toBe('Savings')
-        })
-
-        it('heads the networks with the account name when several chains are on', () => {
-            mockIsMultichain = true
-
-            expect(titlesOf(hdAccount('Savings')).networksTitle).toBe(
-                'account_options.networks_title_named Savings',
-            )
-        })
-
-        it('keeps the plain networks heading on a single chain', () => {
-            expect(titlesOf(hdAccount('Savings')).networksTitle).toBe(
-                'account_options.networks_title',
-            )
         })
     })
 
@@ -807,7 +782,7 @@ describe('useAccountOptions', () => {
             mockEnableChain.mockReturnValue(new Promise(() => {}))
             const { result } = render(hdAccount)
 
-            expect(result.current.networks.visibleRows[1]).toMatchObject({
+            expect(result.current.networks.hiddenRows[0]).toMatchObject({
                 chainId: ETHEREUM_CHAIN_ID,
                 isEnabled: false,
             })

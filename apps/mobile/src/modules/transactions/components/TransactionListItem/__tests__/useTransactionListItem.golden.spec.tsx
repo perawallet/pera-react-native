@@ -69,6 +69,7 @@ vi.mock('@hooks/useClipboard', () => ({
 
 const mockReplace = vi.hoisted(() => ({
     canReplace: false,
+    isBlocked: false,
     handleReplace: vi.fn(async () => undefined),
 }))
 vi.mock('../../../hooks/history/useReplaceTransaction', () => ({
@@ -135,10 +136,16 @@ const wrapper = createQueryClientWrapper()
 // Read from the stored row, independently of the summary's display hint.
 const factsOf = ({ item }: HistorySummaryGolden, assetId: string) => {
     const { swapGroupDetail } = algorandHistoryDataOf(item)
-    if (swapGroupDetail) {
+    if (swapGroupDetail?.assetOutId === assetId) {
         return {
             decimals: swapGroupDetail.assetOutDecimals,
             unitName: swapGroupDetail.assetOutUnitName,
+        }
+    }
+    if (swapGroupDetail?.assetInId === assetId) {
+        return {
+            decimals: swapGroupDetail.assetInDecimals,
+            unitName: swapGroupDetail.assetInUnitName,
         }
     }
     if (assetId === '0') return { decimals: 6, unitName: 'ALGO' }

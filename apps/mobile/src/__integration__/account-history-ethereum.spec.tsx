@@ -38,6 +38,15 @@ import type { EvmHistoryItemResponse } from '@perawallet/wallet-core-chain-ether
 import { server } from '@test-utils/msw-server'
 import { SLOW_WAIT_TIMEOUT_MS } from './__fixtures__/timeouts'
 
+// The test i18n drops params, which would hide the row label the hero wraps;
+// the suffix has its own spec.
+vi.mock('@modules/signing/hooks/useTransactionHeroTitle', () => ({
+    useTransactionHeroTitle:
+        () =>
+        ({ key }: { key: string }) =>
+            key,
+}))
+
 vi.mock('@perawallet/wallet-core-config', async importOriginal => {
     const withBackend = await (
         await import('@packages/chain-ethereum/src/__tests__/pera-backend')
@@ -86,6 +95,7 @@ const { useRemoteConfigStore } =
 const { setCapabilityOverrides } =
     await import('@test-utils/capability-overrides')
 const { TransactionDetailsScreen } = await import('@modules/signing/routes')
+const { useWebViewStore } = await import('@modules/webview')
 const { closestPressable } = await import('@test-utils/rnw')
 const { peraEvmHistoryHandlers } =
     await import('@packages/chain-ethereum/src/history/api/msw-handlers')
@@ -536,14 +546,12 @@ describe('Flow: History on an Ethereum account', () => {
 
                 await openRow(RECEIVE_HASH)
 
-                const counterparty = await screen.findByTestId(
-                    'ethereum_record_counterparty',
+                const sender = await screen.findByTestId(
+                    'transaction_detail_from',
                     undefined,
                     { timeout: SLOW_WAIT_TIMEOUT_MS },
                 )
-                expect(counterparty.textContent).toContain(
-                    'transactions.common.from',
-                )
+                expect(sender.textContent).toContain('transactions.common.from')
                 expect(
                     screen.getAllByText('transactions.list_item.receive')
                         .length,
@@ -644,6 +652,87 @@ describe('Flow: History on an Ethereum account', () => {
                         'message-signing-spend-approval-warning',
                     ),
                 ).toBeNull()
+                expect(nodeReads).toEqual([])
+            })
+
+            it('Given a sent transfer, when its row is opened, then it reads as the shared hero and cards on Ethereum, with its fee in ETH and its own explorer', async () => {
+                const SENT_HASH = hashOf(21)
+                nodeReads.length = 0
+                server.use(
+                    ...peraEvmHistoryHandlers({
+                        history: {
+                            [ETH_ADDRESS]: [
+                                [
+                                    evmHistoryItem({
+                                        hash: SENT_HASH,
+                                        block_number: 19_000_000,
+                                        block_time: '2026-01-08T00:00:00Z',
+                                        from: ETH_ADDRESS,
+                                        to: COUNTERPARTY,
+                                        value: '1000000000000000000',
+                                        fee: '21000000000000',
+                                    }),
+                                ],
+                            ],
+                        },
+                    }),
+                )
+                useWebViewStore.getState().clearWebViews()
+                renderHistory()
+
+                await openRow(SENT_HASH)
+
+                const network = await screen.findByTestId(
+                    'transaction_detail_network',
+                    undefined,
+                    { timeout: SLOW_WAIT_TIMEOUT_MS },
+                )
+                expect(network.textContent).toContain('Ethereum')
+                expect(
+                    screen.getByTestId('transaction_detail_status').textContent,
+                ).toBe('transactions.common.completed')
+                expect(
+                    screen.getByTestId('transaction_detail_amount'),
+                ).toBeTruthy()
+                expect(
+                    screen.getByTestId('transaction_detail_block').textContent,
+                ).toContain('19000000')
+                expect(
+                    screen.getByTestId('transaction_detail_fee').textContent,
+                ).toMatch(/0\.000021.*ETH|ETH.*0\.000021/)
+                expect(
+                    screen.getByTestId('transaction_detail_from_account')
+                        .textContent,
+                ).toContain(ETH_ACCOUNT.name)
+                expect(
+                    screen.queryByTestId('transaction_detail_to_account'),
+                ).toBeNull()
+
+                const cards = [
+                    'transaction_detail_network',
+                    'transaction_detail_id',
+                    'transaction_detail_date',
+                    'transaction_detail_block',
+                    'transaction_detail_from',
+                    'transaction_detail_to',
+                    'transaction_detail_fee',
+                    'transaction_detail_explorer',
+                ].map(testID => screen.getByTestId(testID))
+                cards.slice(1).forEach((card, index) => {
+                    expect(
+                        cards[index]!.compareDocumentPosition(card) &
+                            Node.DOCUMENT_POSITION_FOLLOWING,
+                    ).toBeTruthy()
+                })
+
+                fireEvent.click(
+                    closestPressable(
+                        screen.getByTestId('transaction_detail_explorer'),
+                    ) ?? screen.getByTestId('transaction_detail_explorer'),
+                )
+                expect(
+                    useWebViewStore.getState().openWebViews.map(v => v.url),
+                ).toEqual([`https://etherscan.io/tx/${SENT_HASH}`])
                 expect(nodeReads).toEqual([])
             })
         })

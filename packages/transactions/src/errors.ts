@@ -82,6 +82,22 @@ export class TransactionNotReplaceableError extends TransactionError {
     }
 }
 
+const NONCE_GAP_FILLED_KEYS: ErrorMessageKeys = {
+    titleKey: i18nKey('errors.transaction.nonce_gap_filled.title'),
+    bodyKey: i18nKey('errors.transaction.nonce_gap_filled.body'),
+}
+
+/** The send is still pending, but nothing below it is missing any more. */
+export class NonceGapFilledError extends TransactionError {
+    constructor() {
+        super('The earlier transaction is no longer missing', undefined, {
+            titleKey: NONCE_GAP_FILLED_KEYS.titleKey,
+            messageKey: NONCE_GAP_FILLED_KEYS.bodyKey,
+        })
+        this.name = 'NonceGapFilledError'
+    }
+}
+
 const ALREADY_OPTED_IN_KEYS: ErrorMessageKeys = {
     titleKey: i18nKey('errors.transaction.already_opted_in.title'),
     bodyKey: i18nKey('errors.transaction.already_opted_in.body'),

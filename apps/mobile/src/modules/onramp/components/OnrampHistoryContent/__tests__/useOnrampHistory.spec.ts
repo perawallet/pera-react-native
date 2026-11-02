@@ -34,6 +34,12 @@ vi.mock('@modules/onramp/hooks/useOnrampAccount', () => ({
     useOnrampAccount: vi.fn(),
 }))
 
+const mockRequestBottomSheet = vi.hoisted(() => vi.fn())
+
+vi.mock('@modules/bottom-sheet', () => ({
+    useBottomSheet: () => ({ request: mockRequestBottomSheet }),
+}))
+
 const SCOPE = { chainId: 'algorand', networkId: 'mainnet' } as const
 
 const onrampAccountAt = (
@@ -178,5 +184,15 @@ describe('useOnrampHistory', () => {
 
         result.current.refetch()
         expect(mockRefetch).toHaveBeenCalledTimes(1)
+    })
+
+    it('opens the order details sheet when a row is pressed', () => {
+        const { result } = renderHook(() => useOnrampHistory())
+
+        act(() => result.current.handleItemPress(makeItem('order-1')))
+
+        expect(mockRequestBottomSheet).toHaveBeenCalledWith(
+            expect.objectContaining({ contents: expect.anything() }),
+        )
     })
 })

@@ -15,6 +15,7 @@ import type { AssetGroup, PeraAsset } from '@perawallet/wallet-core-assets'
 import {
     networkTierOf,
     toScopeKey,
+    type ChainId,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import type { Nullable } from '@perawallet/wallet-core-shared'
@@ -40,6 +41,8 @@ export type GroupedHoldingMember<T> = {
     /** Display units; null while the asset's metadata hasn't synced. */
     displayAmount: Nullable<Decimal>
     usdPrice: Nullable<Decimal>
+    /** A zero no read vouches for: it may be a placeholder, not a balance. */
+    isUnreadZero: boolean
 }
 
 export type GroupedHoldingItem<T> =
@@ -66,6 +69,8 @@ export type BuildGroupedHoldingItemsParams<T extends GroupableHolding> = {
     adapter: GroupableHoldingAdapter<T>
     /** A holding this rejects stays a plain row whatever group it belongs to. */
     isGroupable?: (scope: ChainScope) => boolean
+    /** Chains whose holdings no read vouches for yet. */
+    unreadChainIds?: ReadonlySet<ChainId>
 }
 
 // A test network's holdings never fold into a group with mainnet ones.
@@ -76,6 +81,8 @@ export const isMainnetScope = ({ chainId, networkId }: ChainScope): boolean => {
         networkTierOf(chains.get(chainId).descriptor, networkId) === 'mainnet'
     )
 }
+
+const NO_CHAIN_IDS: ReadonlySet<ChainId> = new Set()
 
 const holdingKey = (scope: ChainScope, assetId: string): string =>
     `${toScopeKey(scope)}|${assetId}`
@@ -106,13 +113,18 @@ const collectGroupMembers = <T extends GroupableHolding>(
 const toMember = <T extends GroupableHolding>(
     holding: T,
     adapter: GroupableHoldingAdapter<T>,
+    unreadChainIds: ReadonlySet<ChainId>,
 ): GroupedHoldingMember<T> => {
     const asset = adapter.assetOf(holding)
+    const displayAmount = asset ? adapter.displayAmountOf(holding, asset) : null
     return {
         holding,
         asset,
-        displayAmount: asset ? adapter.displayAmountOf(holding, asset) : null,
+        displayAmount,
         usdPrice: adapter.usdPriceOf(holding),
+        isUnreadZero:
+            displayAmount?.isZero() === true &&
+            unreadChainIds.has(holding.scope.chainId),
     }
 }
 
@@ -129,13 +141,16 @@ const sumDisplayAmount = <T>(
 
 // Summed per member rather than amount × one price: the same asset can trade
 // at a different USD price on each network. One unknown member leaves the total
-// unknown, since a partial sum would understate the holding.
+// unknown, since a partial sum would understate the holding, as does a zero no
+// read vouches for; a member holding none adds nothing, priced or not.
 const sumUsdValue = <T>(
     members: GroupedHoldingMember<T>[],
 ): Nullable<Decimal> => {
     let total = new Decimal(0)
-    for (const { displayAmount, usdPrice } of members) {
-        if (displayAmount === null || usdPrice === null) return null
+    for (const { displayAmount, usdPrice, isUnreadZero } of members) {
+        if (displayAmount === null || isUnreadZero) return null
+        if (displayAmount.isZero()) continue
+        if (usdPrice === null) return null
         total = total.plus(displayAmount.mul(usdPrice))
     }
     return total
@@ -151,6 +166,7 @@ export const buildGroupedHoldingItems = <T extends GroupableHolding>({
     expandedGroupIds,
     adapter,
     isGroupable = isMainnetScope,
+    unreadChainIds = NO_CHAIN_IDS,
 }: BuildGroupedHoldingItemsParams<T>): GroupedHoldingItem<T>[] => {
     const { holdingGroups, membersOf } = collectGroupMembers(
         holdings,
@@ -170,7 +186,9 @@ export const buildGroupedHoldingItems = <T extends GroupableHolding>({
         if (placed.has(group.id)) return
         placed.add(group.id)
 
-        const members = present.map(member => toMember(member, adapter))
+        const members = present.map(member =>
+            toMember(member, adapter, unreadChainIds),
+        )
         const isExpanded = expandedGroupIds.has(group.id)
         items.push({
             kind: 'group',

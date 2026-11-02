@@ -25,10 +25,6 @@ vi.mock('@perawallet/wallet-core-chain-contract', () => ({
     LEGACY_CHAIN_ID: 'algorand',
 }))
 
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useSelectedScope: () => ({ chainId: 'algorand', networkId: 'mainnet' }),
-}))
-
 vi.mock('@perawallet/wallet-core-nfd', () => ({
     useNfdForAddressQuery: mockUseNfdForAddress,
 }))
@@ -45,6 +41,7 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
 }))
 
 const VALID_ADDRESS = 'A'.repeat(58)
+const SCOPE = { chainId: 'algorand', networkId: 'mainnet' } as const
 
 describe('useResolvedAddress', () => {
     beforeEach(() => {
@@ -57,7 +54,9 @@ describe('useResolvedAddress', () => {
             isPending: false,
         })
 
-        const { result } = renderHook(() => useResolvedAddress(VALID_ADDRESS))
+        const { result } = renderHook(() =>
+            useResolvedAddress(VALID_ADDRESS, SCOPE),
+        )
 
         expect(result.current.displayName).toBe('alice.algo')
         expect(result.current.isNfd).toBe(true)
@@ -70,7 +69,9 @@ describe('useResolvedAddress', () => {
             isPending: false,
         })
 
-        const { result } = renderHook(() => useResolvedAddress(VALID_ADDRESS))
+        const { result } = renderHook(() =>
+            useResolvedAddress(VALID_ADDRESS, SCOPE),
+        )
 
         expect(result.current.displayName).toContain('...')
         expect(result.current.isNfd).toBe(false)
@@ -83,7 +84,7 @@ describe('useResolvedAddress', () => {
         })
 
         const { result } = renderHook(() =>
-            useResolvedAddress(VALID_ADDRESS, { format: 'long' }),
+            useResolvedAddress(VALID_ADDRESS, SCOPE, { format: 'long' }),
         )
 
         // Long format truncates at 20 chars (10...10)
@@ -99,7 +100,10 @@ describe('useResolvedAddress', () => {
         mockCodecs.get.mockReturnValue({ truncate: () => '0xf39F...2266' })
 
         const { result } = renderHook(() =>
-            useResolvedAddress(VALID_ADDRESS, { chainId: 'eip155:1' as never }),
+            useResolvedAddress(VALID_ADDRESS, {
+                chainId: 'eip155:1',
+                networkId: 'mainnet',
+            } as never),
         )
 
         expect(result.current.displayName).toBe('0xf39F...2266')
@@ -112,7 +116,7 @@ describe('useResolvedAddress', () => {
         })
 
         const { result } = renderHook(() =>
-            useResolvedAddress(VALID_ADDRESS, { format: 'full' }),
+            useResolvedAddress(VALID_ADDRESS, SCOPE, { format: 'full' }),
         )
 
         expect(result.current.displayName).toBe(VALID_ADDRESS)
@@ -124,7 +128,9 @@ describe('useResolvedAddress', () => {
             isPending: false,
         })
 
-        renderHook(() => useResolvedAddress(VALID_ADDRESS, { enabled: false }))
+        renderHook(() =>
+            useResolvedAddress(VALID_ADDRESS, SCOPE, { enabled: false }),
+        )
 
         expect(mockUseNfdForAddress).toHaveBeenCalledWith(
             { chainId: 'algorand', networkId: 'mainnet' },

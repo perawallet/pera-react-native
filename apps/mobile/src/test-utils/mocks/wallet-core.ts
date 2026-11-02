@@ -609,6 +609,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
         ),
         hasSigningKeys: vi.fn(hasSigningKeys),
         canSignWith: vi.fn((account: any) => hasSigningKeys(account)),
+        signingAccountAddressesOn: vi.fn(() => []),
         canSignDirectly: vi.fn(
             (account: any) =>
                 hasSigningKeys(account) || kindOf(account) === 'hardware',

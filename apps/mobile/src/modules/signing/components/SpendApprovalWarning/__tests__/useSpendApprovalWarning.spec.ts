@@ -64,6 +64,25 @@ describe('useSpendApprovalWarning', () => {
         )
     })
 
+    it('warns that the spender can move the NFT when every allowance is a single NFT', () => {
+        const nft: SpendAllowance = {
+            assetRef: { chainId: 'ethereum', assetId: '0xpositions/7' },
+            amount: new Decimal(1),
+            nft: { collection: '0xpositions', tokenId: '7' },
+        }
+
+        const { result } = renderHook(() =>
+            useSpendApprovalWarning(approval({ allowances: [nft] })),
+        )
+
+        expect(result.current.rows).toEqual([
+            expect.objectContaining({
+                type: 'spend',
+                message: 'signing.spend_approval.nft_spend_warning',
+            }),
+        ])
+    })
+
     it('adds the unlimited row when any one allowance is unlimited', () => {
         expect(
             rowTypes(

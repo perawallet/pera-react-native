@@ -22,6 +22,7 @@ import ky, {
 } from 'ky'
 import {
     WALLET_MODES,
+    type ChainScope,
     type WalletMode,
 } from '@perawallet/wallet-core-chain-contract'
 import {
@@ -37,7 +38,9 @@ import type {
 } from '../models/queries'
 import { logger, parsePrecisionSafeJson } from '../utils'
 import {
+    CHAIN_REFUSAL_CODES,
     PeraNetworkError,
+    isChainRefusedError,
     isNetworkTransportError,
     isPeraNetworkError,
 } from '../errors/network'
@@ -107,6 +110,15 @@ export const isTransientNetworkError = (error: unknown): boolean => {
 // swallowed here.
 const isAbortError = (error: Error): boolean => error.name === 'AbortError'
 
+const isChainRefusalBody = (error: HTTPError): boolean => {
+    const code = (error.data as { code?: unknown } | undefined)?.code
+    return (
+        error.response?.status === 422 &&
+        typeof code === 'string' &&
+        CHAIN_REFUSAL_CODES.includes(code)
+    )
+}
+
 const logError = ({ request, options, error }: BeforeErrorState): Error => {
     const context = options.context as DiagnosticContext
     const durationMs =
@@ -162,6 +174,18 @@ const logError = ({ request, options, error }: BeforeErrorState): Error => {
             status: 429,
             durationMs,
             retryAfter: error.response.headers.get('Retry-After') ?? undefined,
+        })
+        return error
+    }
+
+    // A chain the backend hasn't switched on yet is an expected state, and the
+    // query client stops asking about that scope once it has seen one.
+    if (isHTTPError(error) && isChainRefusalBody(error)) {
+        logger.warn('Request refused chain', {
+            url: request?.url,
+            status: error.response?.status,
+            durationMs,
+            responseBody: error.data,
         })
         return error
     }
@@ -222,6 +246,10 @@ const createFetchClient = () => {
         // PeraNetworkError('unknown'), the outcome this typed error exists to
         // avoid.
         const client = clientFor(requestConfig)
+        const refusal = requestConfig.scope
+            ? refusedChains.get(refusalKeyOf(requestConfig.scope))
+            : undefined
+        if (refusal) throw refusal
 
         if (shouldWaitForIntegrityToken(requestConfig)) {
             await waitForIntegrityToken()
@@ -310,10 +338,22 @@ const createFetchClient = () => {
                 notifyIntegrityRefused(integrityRefusal)
                 throw integrityRefusal
             }
-            throw await PeraNetworkError.fromKyErrorWithBody(error)
+            const normalized = await PeraNetworkError.fromKyErrorWithBody(error)
+            if (requestConfig.scope && isChainRefusedError(normalized)) {
+                refusedChains.set(refusalKeyOf(requestConfig.scope), normalized)
+            }
+            throw normalized
         }
     }
 }
+
+// Until relaunch: the backend switches a chain on without an app release, and
+// asking again on every sync only repeats the 422.
+const refusedChains = new Map<string, PeraNetworkError>()
+
+// Not toScopeKey: that validates the chain id, and a request path must not throw on one.
+const refusalKeyOf = ({ chainId, networkId }: ChainScope): string =>
+    `${chainId}/${networkId}`
 
 // One per deployment, not per scope: every chain of a tier shares its host.
 const peraClients = new Map<WalletMode, KyInstance>()

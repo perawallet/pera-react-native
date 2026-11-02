@@ -42,12 +42,20 @@ type SendFundsState = {
     pendingAmountBaseUnits?: string
     note?: string
     destination?: string
+    /**
+     * The `destination` the entry point filled in before the flow opened
+     * (account actions, a contact, an address deep link), so it can be told
+     * apart from a recipient the user picked.
+     */
+    prefilledDestination?: string
     /** Cleared whenever the destination changes, so it never carries over. */
     isRecipientAcknowledged: boolean
     onFinished?: () => void
     sendMode: SendMode
     assetInboxQuote?: AssetInboxQuote
     isCloseAccount: boolean
+    /** Digits typed on the amount screen that `amount` doesn't hold yet. */
+    hasUnsavedInput: boolean
     /**
      * Set when a browser tab reopens a send the extension popup couldn't sign.
      * The amount screen presses Next once for the user, so the flow lands back
@@ -55,6 +63,10 @@ type SendFundsState = {
      */
     shouldContinueToConfirm: boolean
     feePreset: FeePreset
+    /** The amount is the most the balance allows, so the review re-sizes it to the chosen fee speed. */
+    isMaxAmount: boolean
+    /** Base units of the native asset: the max fee shown on the review, which the build must stay within. */
+    confirmedMaxFee?: Decimal
 }
 
 type SendFundsActions = {
@@ -65,13 +77,17 @@ type SendFundsActions = {
     setPendingAmountBaseUnits: (raw?: string) => void
     setNote: (note?: string) => void
     setDestination: (address?: string) => void
+    snapshotPrefilledDestination: () => void
     setIsRecipientAcknowledged: (isAcknowledged: boolean) => void
     setOnFinished: (fn: () => void) => void
     setSendMode: (mode: SendMode) => void
     setAssetInboxQuote: (quote?: AssetInboxQuote) => void
     setIsCloseAccount: (isClose: boolean) => void
+    setHasUnsavedInput: (hasInput: boolean) => void
     setShouldContinueToConfirm: (shouldContinue: boolean) => void
     setFeePreset: (preset: FeePreset) => void
+    setIsMaxAmount: (isMax: boolean) => void
+    setConfirmedMaxFee: (fee?: Decimal) => void
     reset: () => void
     resetState: () => void
 }
@@ -86,13 +102,17 @@ const initialState: SendFundsState = {
     pendingAmountBaseUnits: undefined,
     note: undefined,
     destination: undefined,
+    prefilledDestination: undefined,
     isRecipientAcknowledged: false,
     onFinished: undefined,
     sendMode: 'normal',
     assetInboxQuote: undefined,
     isCloseAccount: false,
+    hasUnsavedInput: false,
     shouldContinueToConfirm: false,
     feePreset: 'normal',
+    isMaxAmount: false,
+    confirmedMaxFee: undefined,
 }
 
 export const useSendFundsStore = create<SendFundsStore>()(set => ({
@@ -105,15 +125,20 @@ export const useSendFundsStore = create<SendFundsStore>()(set => ({
     setNote: note => set({ note }),
     setDestination: address =>
         set({ destination: address, isRecipientAcknowledged: false }),
+    snapshotPrefilledDestination: () =>
+        set(state => ({ prefilledDestination: state.destination })),
     setIsRecipientAcknowledged: isAcknowledged =>
         set({ isRecipientAcknowledged: isAcknowledged }),
     setOnFinished: fn => set({ onFinished: fn }),
     setSendMode: mode => set({ sendMode: mode }),
     setAssetInboxQuote: quote => set({ assetInboxQuote: quote }),
     setIsCloseAccount: isClose => set({ isCloseAccount: isClose }),
+    setHasUnsavedInput: hasInput => set({ hasUnsavedInput: hasInput }),
     setShouldContinueToConfirm: shouldContinue =>
         set({ shouldContinueToConfirm: shouldContinue }),
     setFeePreset: preset => set({ feePreset: preset }),
+    setIsMaxAmount: isMax => set({ isMaxAmount: isMax }),
+    setConfirmedMaxFee: fee => set({ confirmedMaxFee: fee }),
     reset: () => set(initialState),
     resetState: () => set(initialState),
     clearStorage: () => {},
@@ -136,13 +161,17 @@ type UseSendFundsResult = {
     pendingAmountBaseUnits?: string
     note?: string
     destination?: string
+    prefilledDestination?: string
     isRecipientAcknowledged: boolean
     onFinished?: () => void
     sendMode: SendMode
     assetInboxQuote?: AssetInboxQuote
     isCloseAccount: boolean
+    hasUnsavedInput: boolean
     shouldContinueToConfirm: boolean
     feePreset: FeePreset
+    isMaxAmount: boolean
+    confirmedMaxFee?: Decimal
     setSelectedAsset: (asset?: AssetRef) => void
     setChainId: (chainId?: ChainId) => void
     setCanSelectAsset: (canSelect: boolean) => void
@@ -150,13 +179,17 @@ type UseSendFundsResult = {
     setPendingAmountBaseUnits: (raw?: string) => void
     setNote: (note?: string) => void
     setDestination: (address?: string) => void
+    snapshotPrefilledDestination: () => void
     setIsRecipientAcknowledged: (isAcknowledged: boolean) => void
     setOnFinished: (fn: () => void) => void
     setSendMode: (mode: SendMode) => void
     setAssetInboxQuote: (quote?: AssetInboxQuote) => void
     setIsCloseAccount: (isClose: boolean) => void
+    setHasUnsavedInput: (hasInput: boolean) => void
     setShouldContinueToConfirm: (shouldContinue: boolean) => void
     setFeePreset: (preset: FeePreset) => void
+    setIsMaxAmount: (isMax: boolean) => void
+    setConfirmedMaxFee: (fee?: Decimal) => void
     reset: () => void
 }
 
@@ -170,6 +203,12 @@ export const useSendFunds = (): UseSendFundsResult => {
     )
     const note = useSendFundsStore(state => state.note)
     const destination = useSendFundsStore(state => state.destination)
+    const prefilledDestination = useSendFundsStore(
+        state => state.prefilledDestination,
+    )
+    const snapshotPrefilledDestination = useSendFundsStore(
+        state => state.snapshotPrefilledDestination,
+    )
     const isRecipientAcknowledged = useSendFundsStore(
         state => state.isRecipientAcknowledged,
     )
@@ -199,6 +238,10 @@ export const useSendFunds = (): UseSendFundsResult => {
     const setIsCloseAccount = useSendFundsStore(
         state => state.setIsCloseAccount,
     )
+    const hasUnsavedInput = useSendFundsStore(state => state.hasUnsavedInput)
+    const setHasUnsavedInput = useSendFundsStore(
+        state => state.setHasUnsavedInput,
+    )
     const shouldContinueToConfirm = useSendFundsStore(
         state => state.shouldContinueToConfirm,
     )
@@ -207,6 +250,12 @@ export const useSendFunds = (): UseSendFundsResult => {
     )
     const feePreset = useSendFundsStore(state => state.feePreset)
     const setFeePreset = useSendFundsStore(state => state.setFeePreset)
+    const isMaxAmount = useSendFundsStore(state => state.isMaxAmount)
+    const setIsMaxAmount = useSendFundsStore(state => state.setIsMaxAmount)
+    const confirmedMaxFee = useSendFundsStore(state => state.confirmedMaxFee)
+    const setConfirmedMaxFee = useSendFundsStore(
+        state => state.setConfirmedMaxFee,
+    )
     const reset = useSendFundsStore(state => state.reset)
 
     return {
@@ -218,13 +267,17 @@ export const useSendFunds = (): UseSendFundsResult => {
         pendingAmountBaseUnits,
         note,
         destination,
+        prefilledDestination,
         isRecipientAcknowledged,
         onFinished,
         sendMode,
         assetInboxQuote,
         isCloseAccount,
+        hasUnsavedInput,
         shouldContinueToConfirm,
         feePreset,
+        isMaxAmount,
+        confirmedMaxFee,
         setSelectedAsset,
         setChainId,
         setCanSelectAsset,
@@ -232,13 +285,17 @@ export const useSendFunds = (): UseSendFundsResult => {
         setPendingAmountBaseUnits,
         setNote,
         setDestination,
+        snapshotPrefilledDestination,
         setIsRecipientAcknowledged,
         setOnFinished,
         setSendMode,
         setAssetInboxQuote,
         setIsCloseAccount,
+        setHasUnsavedInput,
         setShouldContinueToConfirm,
         setFeePreset,
+        setIsMaxAmount,
+        setConfirmedMaxFee,
         reset,
     }
 }

@@ -17,14 +17,14 @@ import { useBackupInfoScreen } from './useBackupInfoScreen'
 
 export const BackupInfoScreen = () => {
     const { t } = useLanguage()
-    const { onContinue } = useBackupInfoScreen()
+    const { body, onContinue } = useBackupInfoScreen()
 
     return (
         <PWInfoView
             testID='backup_info_screen'
             illustration={ShieldCheckImage}
             title={t('backup.info.title')}
-            body={t('backup.info.body')}
+            body={body}
             primaryAction={{
                 label: t('backup.info.cta'),
                 onPress: onContinue,

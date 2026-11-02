@@ -12,12 +12,9 @@
 
 import {
     LEGACY_CHAIN_ID,
-    i18nKey,
-    type I18nKey,
-    type NetworkId,
+    type ChainId,
 } from '@perawallet/wallet-core-chain-contract'
 import {
-    PWBadge,
     PWButton,
     PWIcon,
     PWImage,
@@ -26,7 +23,6 @@ import {
     PWView,
 } from '@components/core'
 import { useStyles } from '@components/ConnectionApproval/styles'
-import { useStyles as usePermissionItemStyles } from '../PermissionItem/styles'
 import type { ConnectionPeer } from '@perawallet/wallet-extension-connections'
 import { useLanguage } from '@hooks/useLanguage'
 import {
@@ -34,30 +30,26 @@ import {
     useProjectByUrlQuery,
 } from '@perawallet/wallet-core-projects'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
-import { TitledExpandablePanel } from '@components/ExpandablePanel/TitledExpandablePanel'
 import { ProjectVerificationIcon } from '@modules/projects'
+import type { ConnectionPermission } from '../../utils/connectionPermissions'
 import { getPreferredDappIcon } from '../../utils/dapp-icon'
+import { ConnectionPermissionsPanel } from '../ConnectionPermissionsPanel'
+import { RequestedNetworkChip } from './RequestedNetworkChip'
 import {
     toOriginWarningMessage,
     type ConnectionOriginWarning,
+    type RequestedNetwork,
 } from './useConnectionApprovalView'
 
 export type ConnectionApprovalViewHeaderProps = {
     peer: ConnectionPeer
-    /** `peer.name` cleaned and clamped for display. */
-    peerName: string
-    /**
-     * Handler-resolved list (v1's 4160 wildcard already expanded), not a wire
-     * chain id. Only ids with a translated label get a badge: two chains can
-     * both report `mainnet`, `sepolia` has no label, and `custom` names a
-     * runtime-configurable node slot.
-     */
-    networks: NetworkId[]
-    /**
-     * Wire method strings (e.g. `algo_signTxn`); unrecognised ones fall back to
-     * the raw string since another handler's methods need not match v1's.
-     */
-    methods: string[]
+    /** The headline, already naming the networks the dApp asked for. */
+    title: string
+    requestedNetworks: RequestedNetwork[]
+    onAddNetwork: (chainId: ChainId) => void
+    permissions: ConnectionPermission[]
+    /** WalletConnect Verify attested the origin and site safety found nothing against it. */
+    isOriginVerified: boolean
     peerUrlLabel?: string
     canOpenPeerUrl: boolean
     onPressUrl: () => void
@@ -68,21 +60,13 @@ export type ConnectionApprovalViewHeaderProps = {
     hasSiteWarning?: boolean
 }
 
-const LABELED_NETWORKS: readonly NetworkId[] = ['mainnet', 'testnet', 'betanet']
-
-const permissionTitleKey: Record<string, I18nKey> = {
-    algo_signTxn: i18nKey('walletconnect.request.permissions_sign_transaction'),
-    algo_signData: i18nKey('walletconnect.request.permissions_sign_data'),
-    algo_getAccounts: i18nKey(
-        'walletconnect.request.permissions_request_accounts',
-    ),
-}
-
 export const ConnectionApprovalViewHeader = ({
     peer,
-    peerName,
-    networks,
-    methods,
+    title,
+    requestedNetworks,
+    onAddNetwork,
+    permissions,
+    isOriginVerified,
     peerUrlLabel,
     canOpenPeerUrl,
     onPressUrl,
@@ -92,7 +76,6 @@ export const ConnectionApprovalViewHeader = ({
 }: ConnectionApprovalViewHeaderProps) => {
     const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const styles = useStyles()
-    const permissionItemStyles = usePermissionItemStyles()
     const { t } = useLanguage()
 
     // The registry is keyed by the peer-asserted URL, which is spoofable, so it
@@ -125,21 +108,13 @@ export const ConnectionApprovalViewHeader = ({
     return (
         <PWView style={styles.headerContainer}>
             <PWView style={styles.networksContainer}>
-                {/* `networks` is already the resolved set a v1 wildcard is valid on,
-                    so betanet is a real granted network here, not a badge to special-case away. */}
-                {[...new Set(networks)]
-                    .filter(network => LABELED_NETWORKS.includes(network))
-                    .map(network => (
-                        <PWBadge
-                            key={network}
-                            value={t(
-                                `walletconnect.request.networks_${network}`,
-                            )}
-                            variant={
-                                network === 'testnet' ? 'testnet' : 'primary'
-                            }
-                        />
-                    ))}
+                {requestedNetworks.map(network => (
+                    <RequestedNetworkChip
+                        key={network.chainId}
+                        network={network}
+                        onAdd={onAddNetwork}
+                    />
+                ))}
             </PWView>
             {preferredIcon ? (
                 <PWImage
@@ -162,9 +137,7 @@ export const ConnectionApprovalViewHeader = ({
                         style={styles.title}
                         numberOfLines={3}
                     >
-                        {t('walletconnect.request.title', {
-                            name: peerName,
-                        })}
+                        {title}
                     </PWText>
                     {!!verificationTier && (
                         <ProjectVerificationIcon
@@ -213,6 +186,23 @@ export const ConnectionApprovalViewHeader = ({
                                     {peerUrlLabel}
                                 </PWText>
                             ))}
+                        {isOriginVerified && (
+                            <PWView
+                                style={styles.originVerified}
+                                testID='wc_origin_verified'
+                            >
+                                <PWIcon
+                                    name='assets/verified'
+                                    size='sm'
+                                />
+                                <PWText
+                                    variant='caption'
+                                    style={styles.originVerifiedText}
+                                >
+                                    {t('walletconnect.request.origin_verified')}
+                                </PWText>
+                            </PWView>
+                        )}
                         {originWarning === 'unverified' && (
                             <PWText
                                 variant='caption'
@@ -226,38 +216,7 @@ export const ConnectionApprovalViewHeader = ({
                 )}
             </PWView>
 
-            <TitledExpandablePanel
-                containerStyle={styles.permissionsContainer}
-                title={
-                    <PWText
-                        variant='h4'
-                        style={styles.panelTitle}
-                    >
-                        {t('walletconnect.request.permissions_title', {
-                            count: methods.length,
-                        })}
-                    </PWText>
-                }
-            >
-                <PWView style={styles.permissionsContent}>
-                    {methods.map((method, index) => (
-                        <PWView
-                            key={index}
-                            style={permissionItemStyles.permissionItemContainer}
-                        >
-                            <PWIcon
-                                name='check'
-                                variant='positive'
-                            />
-                            <PWText>
-                                {permissionTitleKey[method]
-                                    ? t(permissionTitleKey[method])
-                                    : method}
-                            </PWText>
-                        </PWView>
-                    ))}
-                </PWView>
-            </TitledExpandablePanel>
+            <ConnectionPermissionsPanel permissions={permissions} />
 
             <PWView style={styles.accountSelectionContainer}>
                 <PWText

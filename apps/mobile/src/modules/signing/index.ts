@@ -14,6 +14,7 @@ export { ExternalTransactionInfoContent } from './components/ExternalTransaction
 export { GroupDetailHeader } from './screens/GroupDetailScreen/GroupDetailHeader'
 export { SourceMetadataBadge } from './components/SourceMetadataBadge'
 export { useSignRequestScope } from './hooks/useSignRequestScope'
+export { useTransactionHeroTitle } from './hooks/useTransactionHeroTitle'
 export {
     CollectionApprovalWarning,
     type CollectionApprovalWarningProps,
@@ -23,6 +24,12 @@ export {
     type SpendApprovalWarningProps,
 } from './components/SpendApprovalWarning'
 export { TransactionReviewLayout } from './transactions/TransactionReviewLayout'
+export { TransactionDetailLayout } from './transactions/TransactionDetailLayout'
+export type { TransactionDetailLayoutProps } from './transactions/TransactionDetailLayout'
+export { TransactionDetailCard } from './transactions/TransactionDetailCard'
+export { TransactionDetailAddress } from './transactions/TransactionDetailAddress'
+export { TransactionDetailHero } from './transactions/TransactionDetailLayout/TransactionDetailHero'
+export { TransactionStatusBadge } from './transactions/TransactionStatusBadge'
 export type {
     DetailBodyProps,
     RecordDetailBodyProps,
@@ -30,6 +37,9 @@ export type {
     RelatedTransactionsProps,
     ReviewBodyProps,
     TotalFeeProps,
+    TransactionDetailAmount,
+    TransactionDetailStatus,
+    TransactionDetailSummary,
     TransactionDisplay,
     UseTransactionDetailParams,
     UseTransactionDetailResult,

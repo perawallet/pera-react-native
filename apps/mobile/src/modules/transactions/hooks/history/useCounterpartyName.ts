@@ -11,7 +11,10 @@
  */
 
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
-import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
+import {
+    useChainCapability,
+    useSelectedScope,
+} from '@perawallet/wallet-core-chain-shared'
 import { useResolvedAddress } from '@hooks/useResolvedAddress'
 
 /**
@@ -24,9 +27,10 @@ export const useCounterpartyName = (
     chainId: ChainId,
 ): string => {
     const hasNameService = useChainCapability(chainId, 'nameService')
-    const { displayName } = useResolvedAddress(address, {
-        enabled: !!address && hasNameService,
-        chainId,
-    })
+    const { displayName } = useResolvedAddress(
+        address,
+        useSelectedScope(chainId),
+        { enabled: !!address && hasNameService },
+    )
     return displayName
 }

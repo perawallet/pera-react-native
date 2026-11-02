@@ -26,6 +26,7 @@ import type {
 
 export type AnalyticsFlow =
     | 'send'
+    | 'sendFailed'
     | 'receive'
     | 'addWatchAccount'
     | 'walletConnectApprove'
@@ -51,6 +52,16 @@ export const ALGORAND_FLOW_EVENTS: Record<
                 [Key.Amount]: 1,
                 [Key.TransactionId]: expect.any(String),
                 [Key.AccountType]: expect.any(String),
+                ...ALGORAND,
+            },
+        },
+    ],
+    sendFailed: [
+        {
+            name: TransactionsEvent.Failed,
+            payload: {
+                [Key.ErrorCode]: 'unclassified',
+                [Key.IsRetryable]: expect.any(Boolean),
                 ...ALGORAND,
             },
         },

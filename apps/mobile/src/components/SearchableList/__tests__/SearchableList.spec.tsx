@@ -10,10 +10,90 @@
  limitations under the License
  */
 
-import { describe, expect, it, vi } from 'vitest'
-import { fireEvent, render, screen } from '@test-utils/render'
+import { describe, expect, it, vi, type Mock } from 'vitest'
+import { View } from 'react-native'
+import { act, fireEvent, render, screen } from '@test-utils/render'
 import { PWText } from '@components/core'
 import { SearchableList } from '../SearchableList'
+
+// The shared FlashList mock drops onScroll; this one keeps what it renders and
+// hands the scroll handler to the test.
+type MockListProps = {
+    data?: unknown[]
+    renderItem: (info: { item: unknown; index: number }) => React.ReactNode
+    keyExtractor?: (item: unknown, index: number) => string
+    onScroll?: (event: unknown) => void
+    ListHeaderComponent?: unknown
+    ListFooterComponent?: unknown
+    ListEmptyComponent?: unknown
+}
+
+const flashList = vi.hoisted(() => ({
+    onScroll: undefined as ((event: unknown) => void) | undefined,
+}))
+vi.mock('@shopify/flash-list', async () => {
+    const React = await import('react')
+    const toNode = (component: unknown) =>
+        React.isValidElement(component)
+            ? component
+            : typeof component === 'function'
+              ? React.createElement(component as React.ComponentType)
+              : null
+    return {
+        FlashList: ({
+            data,
+            renderItem,
+            keyExtractor,
+            onScroll,
+            ListHeaderComponent,
+            ListFooterComponent,
+            ListEmptyComponent,
+        }: MockListProps) => {
+            flashList.onScroll = onScroll
+            return React.createElement(
+                'div',
+                null,
+                toNode(ListHeaderComponent),
+                data && data.length > 0
+                    ? data.map((item, index) =>
+                          React.createElement(
+                              React.Fragment,
+                              { key: keyExtractor?.(item, index) ?? index },
+                              renderItem({ item, index }),
+                          ),
+                      )
+                    : toNode(ListEmptyComponent),
+                toNode(ListFooterComponent),
+            )
+        },
+    }
+})
+
+type LayoutProps = {
+    onLayout?: (event: unknown) => void
+    children?: unknown
+}
+
+// Unit tests stub View as a plain div that never attaches onLayout, so the
+// handlers are read back from the props View was rendered with.
+const layoutProps = (): LayoutProps[] =>
+    (View as unknown as Mock).mock.calls
+        .map(([props]) => props as LayoutProps)
+        .filter(props => props.onLayout != null)
+
+const fireLayout = (props: LayoutProps | undefined, height: number) =>
+    act(() => props?.onLayout?.({ nativeEvent: { layout: { height } } }))
+
+const scrollTo = (y: number) =>
+    act(() =>
+        flashList.onScroll?.({
+            nativeEvent: {
+                contentOffset: { y },
+                contentSize: { height: 12_000 },
+                layoutMeasurement: { height: 600 },
+            },
+        }),
+    )
 
 type Item = {
     id: string
@@ -64,6 +144,40 @@ describe('SearchableList', () => {
 
         expect(screen.getByText('Chips')).toBeTruthy()
         expect(screen.getByText('Nothing here')).toBeTruthy()
+    })
+
+    it('draws a divider under the pinned search bar only while rows scroll beneath it', () => {
+        const header = <PWText>Header</PWText>
+        render(
+            <SearchableList
+                data={items}
+                keyExtractor={item => item.id}
+                renderItem={({ item }) => item.label}
+                ListHeaderComponent={header}
+                searchAccessory={<PWText>Chips</PWText>}
+            />,
+        )
+        fireLayout(
+            layoutProps().findLast(p => p.children === header),
+            320,
+        )
+        fireLayout(
+            layoutProps().findLast(p => p.children !== header),
+            120,
+        )
+        expect(
+            screen.queryByTestId('searchable-list-search-divider'),
+        ).toBeNull()
+
+        scrollTo(360)
+        expect(
+            screen.getByTestId('searchable-list-search-divider'),
+        ).toBeTruthy()
+
+        scrollTo(0)
+        expect(
+            screen.queryByTestId('searchable-list-search-divider'),
+        ).toBeNull()
     })
 
     it('renders a custom search input', () => {

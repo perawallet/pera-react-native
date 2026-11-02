@@ -43,12 +43,16 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
         >()
     return {
         ...original,
-        accountFundedNetworksQueryOptions: (address: string | undefined) => ({
-            queryKey: ['funded', address ?? ''],
-            enabled: !!address,
-            queryFn: async () => fundedByAddress[address as string] ?? [],
+        accountFundedNetworksQueryOptions: ({
+            address,
+        }: {
+            address: string
+        }) => ({
+            queryKey: ['funded', address],
+            queryFn: async () => fundedByAddress[address] ?? [],
         }),
         useDelegationAuthorities: () => authorities,
+        useOtherRegisteredChainIds: () => [],
     }
 })
 

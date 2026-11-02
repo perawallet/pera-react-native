@@ -10,13 +10,13 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
 import { useTheme } from '@rneui/themed'
 
 import { PWInput, PWText, PWView, type PWInputRef } from '@components/core'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
 import { useStyles } from './styles'
+import { usePassphraseWordInput } from './usePassphraseWordInput'
 
 type PassphraseWordInputProps = {
     /** Zero-based position in the phrase; rendered as `index + 1`. */
@@ -45,18 +45,13 @@ export const PassphraseWordInput = ({
     const { theme } = useTheme()
     const styles = useStyles()
 
-    const handleChangeText = useCallback(
-        (text: string) => onChangeWord(text, index),
-        [onChangeWord, index],
-    )
-    const handleFocus = useCallback(
-        () => onFocusWord(index),
-        [onFocusWord, index],
-    )
-    const handleSubmitEditing = useCallback(
-        () => onSubmitWord(index),
-        [onSubmitWord, index],
-    )
+    const { handleChangeText, handleFocus, handleSubmitEditing } =
+        usePassphraseWordInput({
+            index,
+            onChangeWord,
+            onFocusWord,
+            onSubmitWord,
+        })
 
     return (
         <PWView style={styles.inputContainerRow}>

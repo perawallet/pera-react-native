@@ -47,6 +47,18 @@ export const withoutTests = (own: Gates): Gates => ({
 })
 
 /**
+ * The shared app code: the hooks and the components every chain's UI reuses.
+ * A chain pinned here is wrong for every chain but this one, so a shared
+ * refresh hook stops serving the chain its caller did not ask for. The two
+ * rules that own the legacy chain split on exactly these paths, so a file is
+ * reported by one rule and never by both.
+ */
+export const SHARED_APP_CODE_PATHS: readonly string[] = [
+    '**/apps/mobile/src/hooks/**',
+    '**/apps/mobile/src/components/**',
+]
+
+/**
  * Test support that isn't named as a test: integration fixtures, mocks, test
  * utilities and MSW handlers. Rules about shipped runtime behaviour skip it.
  */

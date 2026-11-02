@@ -25,6 +25,7 @@ import {
     vi,
 } from 'vitest'
 import { Decimal } from 'decimal.js'
+import { http, HttpResponse } from 'msw'
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { TransactionHistoryItem } from '@perawallet/wallet-core-transactions'
@@ -53,6 +54,8 @@ const { setTestTheme } = await import('@test-utils/test-theme')
 const { getTheme } = await import('@theme/theme')
 setTestTheme(getTheme('light'))
 const { useAccountsStore } = await import('@perawallet/wallet-core-accounts')
+const { mockTransactionHistory } =
+    await import('@perawallet/wallet-core-chain-algorand/test-handlers')
 const { upsertTransactions } =
     await import('@perawallet/wallet-core-transactions')
 const { evmHistoryItem } =
@@ -124,6 +127,13 @@ const ALGO_OLDER_TX = algoPayment(
     'ALGOTX0000000000000000000000000000000000000000000000002',
     1_767_139_200, // 2025-12-31T00:00:00Z
 )
+
+const serveUnfundedAlgorandAddress = () =>
+    server.use(
+        http.get('*/v1/accounts/:address/transactions/', () =>
+            HttpResponse.json({ detail: 'Not found.' }, { status: 404 }),
+        ),
+    )
 
 const serveEthereumHistory = () =>
     server.use(
@@ -248,5 +258,88 @@ describe('Flow: History on an account with Algorand and Ethereum', () => {
             'ethereum',
         )
         expect(screen.queryByTestId('chain_label_ethereum')).toBeNull()
+    })
+
+    describe('when the Algorand address was never funded', () => {
+        beforeEach(async () => {
+            await resetTestDatabase()
+            serveUnfundedAlgorandAddress()
+        })
+
+        it("Given Algorand's history answers 404, when History opens on All, then Ethereum's rows show with no notice", async () => {
+            renderWithNavigation(AccountHistory, 'AccountHistory')
+
+            await waitFor(
+                () =>
+                    expect(rowIds()).toEqual([
+                        `transaction_row_${hashOf(3)}`,
+                        `transaction_row_${hashOf(1)}`,
+                    ]),
+                { timeout: SLOW_WAIT_TIMEOUT_MS },
+            )
+            expect(screen.queryByTestId('history_network_failed')).toBeNull()
+        })
+
+        it("Given Algorand's history answers 404, when the Algorand chip is tapped, then it shows Algorand's empty state", async () => {
+            renderWithNavigation(AccountHistory, 'AccountHistory')
+            await waitFor(() => expect(rowIds()).toHaveLength(2), {
+                timeout: SLOW_WAIT_TIMEOUT_MS,
+            })
+
+            fireEvent.click(
+                screen.getByTestId('history_network_filter_algorand'),
+            )
+
+            expect(
+                await screen.findByText(
+                    'asset_details.transaction_list.empty_on_network_body',
+                    undefined,
+                    { timeout: SLOW_WAIT_TIMEOUT_MS },
+                ),
+            ).toBeTruthy()
+            expect(screen.queryByTestId('history_network_failed')).toBeNull()
+        })
+
+        it('Given no network has any activity, when History opens on All, then it shows the empty state with no notice', async () => {
+            server.use(...peraEvmHistoryHandlers({ history: {} }))
+
+            renderWithNavigation(AccountHistory, 'AccountHistory')
+
+            expect(
+                await screen.findByText(
+                    'asset_details.transaction_list.empty_body',
+                    undefined,
+                    { timeout: SLOW_WAIT_TIMEOUT_MS },
+                ),
+            ).toBeTruthy()
+            expect(screen.queryByTestId('history_network_failed')).toBeNull()
+        })
+    })
+
+    it("Given Algorand has no history and Ethereum's fails, when History opens on All, then the empty state shows under a notice naming Ethereum", async () => {
+        await resetTestDatabase()
+        server.use(
+            mockTransactionHistory({
+                accountAddress: ALGO_ADDRESS,
+                response: { results: [], current_round: 100 },
+            }),
+            ...peraEvmHistoryHandlers({ history: 503 }),
+        )
+
+        renderWithNavigation(AccountHistory, 'AccountHistory')
+
+        const notice = await screen.findByTestId(
+            'history_network_failed',
+            undefined,
+            { timeout: SLOW_WAIT_TIMEOUT_MS },
+        )
+        expect(
+            within(notice).getByText(
+                'asset_details.transaction_list.network_failed',
+            ),
+        ).toBeTruthy()
+        expect(
+            screen.getByText('asset_details.transaction_list.empty_body'),
+        ).toBeTruthy()
     })
 })

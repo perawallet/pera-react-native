@@ -29,20 +29,20 @@ export const InboxInfoContent = () => {
 
     return (
         <PWSheetLayout
-            horizontalPadding='none'
-            header={<SheetHeader title='' />}
+            header={<SheetHeader title={t('messages.inbox.info.title')} />}
+            footer={
+                <PWButton
+                    title={t('messages.inbox.info.learn_more')}
+                    variant='secondary'
+                    onPress={handleLearnMore}
+                    testID='inbox_info_learn_more'
+                />
+            }
         >
             <PWView
                 style={styles.content}
                 testID='inbox_info_content'
             >
-                <PWText
-                    variant='h2'
-                    style={styles.title}
-                >
-                    {t('messages.inbox.info.title')}
-                </PWText>
-
                 <PWView style={styles.section}>
                     <PWText variant='h4'>
                         {t('messages.inbox.info.algorand_title')}
@@ -63,13 +63,6 @@ export const InboxInfoContent = () => {
                         {t('messages.inbox.info.find_tokens_body')}
                     </PWText>
                 </PWView>
-
-                <PWButton
-                    title={t('messages.inbox.info.learn_more')}
-                    variant='secondary'
-                    onPress={handleLearnMore}
-                    testID='inbox_info_learn_more'
-                />
             </PWView>
         </PWSheetLayout>
     )

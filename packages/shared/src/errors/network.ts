@@ -209,7 +209,7 @@ export class PeraNetworkError extends AppError {
 export const isPeraNetworkError = (error: unknown): error is PeraNetworkError =>
     error instanceof PeraNetworkError
 
-const CHAIN_REFUSAL_CODES: readonly string[] = [
+export const CHAIN_REFUSAL_CODES: readonly string[] = [
     'unknown_chain',
     'chain_not_enabled',
 ]

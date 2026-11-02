@@ -10,45 +10,34 @@
  limitations under the License
  */
 
-import { PWButton, PWDivider, PWText, PWView } from '@components/core'
+import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import { PWButton, PWText } from '@components/core'
 import { KeyValueRow } from '@components/KeyValueRow'
-import { AddressDisplay } from '@components/AddressDisplay'
 import { CopyableText } from '@components/CopyableText'
 import type { AlgorandTransactionView } from '@perawallet/wallet-core-chain-algorand/blockchain'
-import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
-import { useTheme } from '@rneui/themed'
-import { TransactionHeader } from '../TransactionHeader/TransactionHeader'
-import { TransactionFeeRow } from '../TransactionFeeRow/TransactionFeeRow'
-import { TransactionNoteRow } from '../TransactionNoteRow/TransactionNoteRow'
-import { TransactionWarnings } from '../../TransactionWarnings/TransactionWarnings'
-import { TransactionFooter } from '../TransactionFooter/TransactionFooter'
+import {
+    TransactionDetailAddress,
+    TransactionDetailCard,
+} from '@modules/signing'
 import { useAssetConfigDisplay } from './useAssetConfigDisplay'
-import { ViewTextDetailsContent } from '../../ViewTextDetailsContent'
+import { ViewTextDetailsContent } from '@components/ViewTextDetailsContent'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useCallback } from 'react'
 
 export type AssetConfigDisplayProps = {
     transaction: AlgorandTransactionView
-    isInnerTransaction?: boolean
 }
 
 export const AssetConfigDisplay = ({
     transaction,
-    isInnerTransaction = false,
 }: AssetConfigDisplayProps) => {
-    const styles = useStyles()
-    const { theme } = useTheme()
     const { t } = useLanguage()
+    const scope = useSelectedScope(LEGACY_CHAIN_ID)
 
-    const {
-        assetConfig,
-        configType,
-        assetId,
-        showWarnings,
-        supply,
-        metadataHash,
-    } = useAssetConfigDisplay(transaction)
+    const { assetConfig, configType, assetId, supply, metadataHash } =
+        useAssetConfigDisplay(transaction)
 
     const { request: requestBottomSheet } = useBottomSheet()
     const openMetadataHashDetails = useCallback(() => {
@@ -73,160 +62,125 @@ export const AssetConfigDisplay = ({
     }
 
     return (
-        <PWView style={styles.container}>
-            <TransactionHeader
-                transaction={transaction}
-                isInnerTransaction={isInnerTransaction}
-            />
+        <TransactionDetailCard>
+            {configType !== 'create' && assetId !== undefined && (
+                <KeyValueRow title={t('transactions.common.asset_id')}>
+                    <CopyableText copyValue={assetId.toString()}>
+                        <PWText>{assetId.toString()}</PWText>
+                    </CopyableText>
+                </KeyValueRow>
+            )}
 
-            {showWarnings && <TransactionWarnings transaction={transaction} />}
+            {configType === 'create' && (
+                <>
+                    {assetConfig.params?.name && (
+                        <KeyValueRow
+                            title={t('transactions.asset_config.name')}
+                        >
+                            <PWText numberOfLines={1}>
+                                {assetConfig.params.name}
+                            </PWText>
+                        </KeyValueRow>
+                    )}
 
-            <PWDivider
-                style={styles.divider}
-                color={theme.colors.layerGray}
-            />
+                    {assetConfig.params?.unitName && (
+                        <KeyValueRow
+                            title={t('transactions.asset_config.unit')}
+                        >
+                            <PWText numberOfLines={1}>
+                                {assetConfig.params.unitName}
+                            </PWText>
+                        </KeyValueRow>
+                    )}
 
-            <PWView style={styles.detailContainer}>
-                {configType !== 'create' && assetId !== undefined && (
-                    <KeyValueRow title={t('transactions.common.asset_id')}>
-                        <CopyableText copyValue={assetId.toString()}>
-                            <PWText>{assetId.toString()}</PWText>
-                        </CopyableText>
-                    </KeyValueRow>
-                )}
+                    {assetConfig.params?.url && (
+                        <KeyValueRow title={t('transactions.asset_config.url')}>
+                            <PWText numberOfLines={1}>
+                                {assetConfig.params.url}
+                            </PWText>
+                        </KeyValueRow>
+                    )}
 
-                {configType === 'create' && (
-                    <>
-                        {assetConfig.params?.name && (
-                            <KeyValueRow
-                                title={t('transactions.asset_config.name')}
-                            >
-                                <PWText numberOfLines={1}>
-                                    {assetConfig.params.name}
-                                </PWText>
-                            </KeyValueRow>
-                        )}
+                    {!!supply && (
+                        <KeyValueRow
+                            title={t('transactions.asset_config.total')}
+                        >
+                            <PWText>{supply}</PWText>
+                        </KeyValueRow>
+                    )}
 
-                        {assetConfig.params?.unitName && (
-                            <KeyValueRow
-                                title={t('transactions.asset_config.unit')}
-                            >
-                                <PWText numberOfLines={1}>
-                                    {assetConfig.params.unitName}
-                                </PWText>
-                            </KeyValueRow>
-                        )}
+                    {assetConfig.params?.decimals !== undefined && (
+                        <KeyValueRow
+                            title={t('transactions.asset_config.decimals')}
+                        >
+                            <PWText>{assetConfig.params.decimals}</PWText>
+                        </KeyValueRow>
+                    )}
 
-                        {assetConfig.params?.url && (
-                            <KeyValueRow
-                                title={t('transactions.asset_config.url')}
-                            >
-                                <PWText numberOfLines={1}>
-                                    {assetConfig.params.url}
-                                </PWText>
-                            </KeyValueRow>
-                        )}
+                    {assetConfig.params?.defaultFrozen !== undefined && (
+                        <KeyValueRow
+                            title={t(
+                                'transactions.asset_config.default_frozen',
+                            )}
+                        >
+                            <PWText>
+                                {assetConfig.params.defaultFrozen
+                                    ? t('common.yes')
+                                    : t('common.no')}
+                            </PWText>
+                        </KeyValueRow>
+                    )}
+                </>
+            )}
 
-                        {!!supply && (
-                            <KeyValueRow
-                                title={t('transactions.asset_config.total')}
-                            >
-                                <PWText>{supply}</PWText>
-                            </KeyValueRow>
-                        )}
+            {assetConfig.params?.manager && (
+                <KeyValueRow title={t('transactions.asset_config.manager')}>
+                    <TransactionDetailAddress
+                        address={assetConfig.params.manager}
+                        scope={scope}
+                    />
+                </KeyValueRow>
+            )}
 
-                        {assetConfig.params?.decimals !== undefined && (
-                            <KeyValueRow
-                                title={t('transactions.asset_config.decimals')}
-                            >
-                                <PWText>{assetConfig.params.decimals}</PWText>
-                            </KeyValueRow>
-                        )}
+            {assetConfig.params?.reserve && (
+                <KeyValueRow title={t('transactions.asset_config.reserve')}>
+                    <TransactionDetailAddress
+                        address={assetConfig.params.reserve}
+                        scope={scope}
+                    />
+                </KeyValueRow>
+            )}
 
-                        {assetConfig.params?.defaultFrozen !== undefined && (
-                            <KeyValueRow
-                                title={t(
-                                    'transactions.asset_config.default_frozen',
-                                )}
-                            >
-                                <PWText>
-                                    {assetConfig.params.defaultFrozen
-                                        ? t('common.yes')
-                                        : t('common.no')}
-                                </PWText>
-                            </KeyValueRow>
-                        )}
-                    </>
-                )}
+            {assetConfig.params?.freeze && (
+                <KeyValueRow title={t('transactions.asset_config.freeze_addr')}>
+                    <TransactionDetailAddress
+                        address={assetConfig.params.freeze}
+                        scope={scope}
+                    />
+                </KeyValueRow>
+            )}
 
-                {assetConfig.params?.manager && (
-                    <KeyValueRow title={t('transactions.asset_config.manager')}>
-                        <PWView style={styles.detailRow}>
-                            <AddressDisplay
-                                address={assetConfig.params.manager}
-                            />
-                        </PWView>
-                    </KeyValueRow>
-                )}
+            {assetConfig.params?.clawback && (
+                <KeyValueRow title={t('transactions.asset_config.clawback')}>
+                    <TransactionDetailAddress
+                        address={assetConfig.params.clawback}
+                        scope={scope}
+                    />
+                </KeyValueRow>
+            )}
 
-                {assetConfig.params?.reserve && (
-                    <KeyValueRow title={t('transactions.asset_config.reserve')}>
-                        <PWView style={styles.detailRow}>
-                            <AddressDisplay
-                                address={assetConfig.params.reserve}
-                            />
-                        </PWView>
-                    </KeyValueRow>
-                )}
-
-                {assetConfig.params?.freeze && (
-                    <KeyValueRow
-                        title={t('transactions.asset_config.freeze_addr')}
-                    >
-                        <PWView style={styles.detailRow}>
-                            <AddressDisplay
-                                address={assetConfig.params.freeze}
-                            />
-                        </PWView>
-                    </KeyValueRow>
-                )}
-
-                {assetConfig.params?.clawback && (
-                    <KeyValueRow
-                        title={t('transactions.asset_config.clawback')}
-                    >
-                        <PWView style={styles.detailRow}>
-                            <AddressDisplay
-                                address={assetConfig.params.clawback}
-                            />
-                        </PWView>
-                    </KeyValueRow>
-                )}
-
-                {metadataHash && (
-                    <KeyValueRow
-                        title={t('transactions.asset_config.metadata_hash')}
-                    >
-                        <PWButton
-                            variant='linkPositive'
-                            paddingStyle='none'
-                            title={t('transactions.common.view_metadata')}
-                            onPress={openMetadataHashDetails}
-                        />
-                    </KeyValueRow>
-                )}
-
-                <TransactionFeeRow transaction={transaction} />
-
-                <TransactionNoteRow transaction={transaction} />
-            </PWView>
-
-            <PWDivider
-                style={styles.divider}
-                color={theme.colors.layerGray}
-            />
-
-            <TransactionFooter transaction={transaction} />
-        </PWView>
+            {metadataHash && (
+                <KeyValueRow
+                    title={t('transactions.asset_config.metadata_hash')}
+                >
+                    <PWButton
+                        variant='linkPositive'
+                        paddingStyle='none'
+                        title={t('transactions.common.view_metadata')}
+                        onPress={openMetadataHashDetails}
+                    />
+                </KeyValueRow>
+            )}
+        </TransactionDetailCard>
     )
 }

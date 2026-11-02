@@ -10,106 +10,35 @@
  limitations under the License
  */
 
-import { useTheme } from '@rneui/themed'
+import type { ReactNode } from 'react'
 import type { TransactionRecord } from '@perawallet/wallet-core-chain-contract'
-import { useNativeAsset } from '@perawallet/wallet-core-assets'
-import { baseUnitsToDisplayUnits } from '@perawallet/wallet-core-shared'
-import { PWDivider, PWText, PWView } from '@components/core'
-import { AddressDisplay } from '@components/AddressDisplay'
-import { AssetAmount } from '@components/AssetAmount'
-import { KeyValueRow } from '@components/KeyValueRow'
-import {
-    TransactionIcon,
-    transactionIconName,
-} from '@components/TransactionIcon'
-import { useLanguage } from '@hooks/useLanguage'
-import { useStyles } from './styles'
+import { TransactionDetailLayout } from '@modules/signing'
+import { useEthereumRecordLayout } from '@modules/ethereum/hooks/useEthereumRecordLayout'
+import { EthereumRecordAmountCard } from '../EthereumRecordAmountCard'
 
 type EthereumRecordSummaryProps = {
     record: TransactionRecord
+    warnings?: ReactNode
 }
 
 /** The record as the backend summarised it: no calldata, so no spender or amount of an approval. */
 export const EthereumRecordSummary = ({
     record,
+    warnings,
 }: EthereumRecordSummaryProps) => {
-    const styles = useStyles()
-    const { theme } = useTheme()
-    const { t } = useLanguage()
-    const { summary, fee, scope, initiator } = record
-    const nativeAsset = useNativeAsset(scope)
-    // The counterparty is the sender of a payment received, and of a call
-    // another party made.
-    const isFromCounterparty =
-        summary.direction === 'in' ||
-        (!!initiator &&
-            summary.counterparty?.toLowerCase() === initiator.toLowerCase())
+    const { summary, amountRows, assetLabel } = useEthereumRecordLayout(record)
 
     return (
-        <PWView style={styles.container}>
-            <PWView style={styles.header}>
-                <TransactionIcon
-                    size='md'
-                    name={transactionIconName(summary.icon)}
+        <TransactionDetailLayout
+            summary={summary}
+            warnings={warnings}
+            chainSection={
+                <EthereumRecordAmountCard
+                    changes={amountRows}
+                    scope={record.scope}
+                    assetLabel={assetLabel}
                 />
-                <PWView style={styles.titles}>
-                    <PWText
-                        style={styles.title}
-                        truncate
-                    >
-                        {t(summary.title.key, summary.title.params)}
-                    </PWText>
-                    {!!summary.subtitle && (
-                        <PWText
-                            style={styles.subtitle}
-                            variant='caption'
-                            truncate
-                        >
-                            {t(summary.subtitle.key, summary.subtitle.params)}
-                        </PWText>
-                    )}
-                </PWView>
-            </PWView>
-
-            <PWDivider
-                style={styles.divider}
-                color={theme.colors.layerGray}
-            />
-
-            <PWView style={styles.detailContainer}>
-                {!!summary.counterparty && (
-                    <KeyValueRow
-                        testID='ethereum_record_counterparty'
-                        title={
-                            isFromCounterparty
-                                ? t('transactions.common.from')
-                                : t('transactions.common.to')
-                        }
-                    >
-                        <AddressDisplay
-                            address={summary.counterparty}
-                            displayType='address-only'
-                        />
-                    </KeyValueRow>
-                )}
-                {!!fee && !isFromCounterparty && (
-                    <KeyValueRow
-                        testID='ethereum_record_fee'
-                        title={t('transactions.common.fee')}
-                    >
-                        <AssetAmount
-                            chainId={scope.chainId}
-                            asset={nativeAsset}
-                            value={baseUnitsToDisplayUnits(
-                                fee,
-                                nativeAsset.decimals,
-                            )}
-                            showSymbol
-                            ignorePrivacyMode
-                        />
-                    </KeyValueRow>
-                )}
-            </PWView>
-        </PWView>
+            }
+        />
     )
 }

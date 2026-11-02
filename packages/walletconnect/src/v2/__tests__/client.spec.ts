@@ -79,7 +79,13 @@ describe('createWalletKitClient', () => {
 
         expect(mocks.init).toHaveBeenCalledWith({
             core: expect.any(Object),
-            metadata: PERA_CLIENT_META,
+            metadata: {
+                ...PERA_CLIENT_META,
+                redirect: {
+                    native: 'perawallet-wc://',
+                    universal: 'https://perawallet.app/qr/perawallet-wc/',
+                },
+            },
         })
         expect(client).toEqual({ fake: 'walletkit' })
     })

@@ -85,9 +85,13 @@ export const flattenSimulatedInnerTransactions = (
  * group". Without stripping it, the simulation throws for every grouped
  * request and the inner transactions are never surfaced.
  *
- * Cloned via the canonical encode/decode round-trip so the real signing
- * payload is never mutated; the composer re-groups in the same order, so the
- * simulated inner transactions are equivalent.
+ * Every transaction is cloned, grouped or not: the composer writes the group
+ * id it computes onto the objects it was handed, and an ungrouped request
+ * transaction passed by reference would then be signed with a group id of a
+ * group that never exists on chain. Cloned via the canonical encode/decode
+ * round-trip so the real signing payload is never mutated; the composer
+ * re-groups in the same order, so the simulated inner transactions are
+ * equivalent.
  */
 export const ungroupForSimulation = (tx: PeraTransaction): PeraTransaction => {
     const clone = decodeTransaction(encodeTransactionRaw(tx))
@@ -107,9 +111,7 @@ export const simulateInnerTransactions = async (
         algorandNetworkOf(scope),
     ).newGroup()
     for (const tx of groupTxs) {
-        composer.addTransaction(
-            asAlgosdkTransaction(tx.group ? ungroupForSimulation(tx) : tx),
-        )
+        composer.addTransaction(asAlgosdkTransaction(ungroupForSimulation(tx)))
     }
     const { simulateResponse } = await composer.simulate({
         skipSignatures: true,

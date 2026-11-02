@@ -11,12 +11,19 @@
  */
 
 import { makeStyles } from '@rneui/themed'
+import type { KeyValueAlignment } from './KeyValueAlignmentContext'
 import type { KeyValueRowProps } from './KeyValueRow'
 
-export const useStyles = makeStyles((theme, props: KeyValueRowProps) => ({
+type StyleProps = KeyValueRowProps & { alignment: KeyValueAlignment }
+
+export const useStyles = makeStyles((theme, props: StyleProps) => ({
     container: {
         flexDirection: 'row',
-        alignItems: props.verticalAlignment === 'top' ? 'flex-start' : 'center',
+        // A detail card's label sits level with a wrapped value's first line.
+        alignItems:
+            props.verticalAlignment === 'top' || props.alignment === 'end'
+                ? 'flex-start'
+                : 'center',
         flexWrap: 'nowrap',
         width: '100%',
         minWidth: 0,
@@ -29,12 +36,18 @@ export const useStyles = makeStyles((theme, props: KeyValueRowProps) => ({
         minWidth: 0,
         flexShrink: 1,
         overflow: 'hidden',
+        // The label's 16px line, centred on a value's 24px first line, so a
+        // top-aligned row doesn't sit the label 4px above its value.
+        ...(props.alignment === 'end' && {
+            minHeight: theme.spacing.xl,
+            justifyContent: 'center',
+        }),
     },
     label: {
         color: theme.colors.textGray,
     },
     childContainer: {
-        alignItems: 'stretch',
+        alignItems: props.alignment === 'end' ? 'flex-end' : 'stretch',
         alignSelf: 'stretch',
         flex: 1,
         minWidth: 0,

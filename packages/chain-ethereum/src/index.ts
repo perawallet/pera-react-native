@@ -42,6 +42,7 @@ export type { EvmChain, EvmChainRow, EvmFeeStrategy } from './chains/types'
 export { createEvmChainModule, ethereumModule, evmChainModules } from './module'
 export { spendApprovalOfCall } from './signing/allowance'
 export type { EvmNftItem, EvmStandardCall } from './signing/standard-call-types'
+export { isEvmApprovalCall } from './signing/standard-calls'
 export {
     readEthereumNative,
     toEthereumNative,

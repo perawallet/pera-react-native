@@ -111,6 +111,23 @@ describe('v2.methods', () => {
     })
 
     it.each([
+        'eth_sign',
+        'eth_signTypedData_v3',
+        'eth_signTransaction',
+        'eth_sendRawTransaction',
+    ])('has the user hear that %s is refused', method => {
+        expect(v2.handleRequest(method, [ADDRESS, '0x00'])).toMatchObject({
+            failure: 'unsupported-method',
+        })
+    })
+
+    it('refuses wallet_getPermissions without telling the user, since dApps probe it unprompted', () => {
+        expect(
+            v2.handleRequest('wallet_getPermissions', []),
+        ).not.toHaveProperty('failure')
+    })
+
+    it.each([
         'wallet_addEthereumChain',
         'eth_signTypedData_v1',
         'wallet_watchAsset',
@@ -178,7 +195,11 @@ describe('v2.handleRequest', () => {
 
         expect(
             v2.handleRequest(ETHEREUM_WC_V2_METHOD.signTypedData, v1),
-        ).toMatchObject({ kind: 'refused', error: { code: 4200 } })
+        ).toMatchObject({
+            kind: 'refused',
+            error: { code: 4200 },
+            failure: 'unsupported-method',
+        })
     })
 
     it('answers eth_accounts and eth_requestAccounts with the addresses', () => {
@@ -210,6 +231,7 @@ describe('message signing gate', () => {
             code: 4200,
             message: 'This wallet does not sign messages on this chain',
         },
+        failure: 'unsupported-method',
     }
     const MESSAGE_METHODS = [
         ETHEREUM_WC_V2_METHOD.personalSign,
@@ -297,18 +319,17 @@ describe('wallet_switchEthereumChain', () => {
         v2.handleRequest(ETHEREUM_WC_V2_METHOD.switchChain, [{ chainId }])
 
     // Mode-blind: whether the target is the selected network is the handler's call.
+    // Whether the chain exists is the handler's call: the target may belong
+    // to another EVM chain.
     it.each([
-        ['0x1', 'mainnet'],
-        ['0xaa36a7', 'sepolia'],
-        ['0xAA36A7', 'sepolia'],
-    ])('routes %s to %s', (chainId, networkId) => {
-        expect(switchTo(chainId)).toEqual({ kind: 'switch-network', networkId })
-    })
-
-    it('refuses a chain the wallet does not declare as unrecognized, 4902', () => {
-        expect(switchTo('0x89')).toMatchObject({
-            kind: 'refused',
-            error: { code: 4902 },
+        ['0x1', 'eip155:1'],
+        ['0xaa36a7', 'eip155:11155111'],
+        ['0xAA36A7', 'eip155:11155111'],
+        ['0x89', 'eip155:137'],
+    ])('routes %s to %s', (chainId, caip2ChainId) => {
+        expect(switchTo(chainId)).toEqual({
+            kind: 'switch-network',
+            caip2ChainId,
         })
     })
 
@@ -513,6 +534,7 @@ describe('toWireErrorCode', () => {
         ['unauthorized-account', 4100],
         ['unsupported-method', 4200],
         ['unselected-chain', 4901],
+        ['unrecognized-chain', 4902],
         ['invalid-params', -32_602],
         ['limit-exceeded', -32_005],
     ] as const)('maps %s to %i', (failure, code) => {

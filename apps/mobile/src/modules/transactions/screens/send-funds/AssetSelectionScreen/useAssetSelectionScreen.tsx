@@ -42,7 +42,8 @@ export type UseAssetSelectionScreenResult = {
 export const useAssetSelectionScreen = (): UseAssetSelectionScreenResult => {
     const { chainId } = useSendScope()
     const account = useSelectedAccount()
-    const { setSelectedAsset, setAmount, onFinished } = useSendFunds()
+    const { setSelectedAsset, setAmount, setIsCloseAccount, onFinished } =
+        useSendFunds()
     const {
         setCanSelectAccount,
         setSelectedAccount,
@@ -68,9 +69,12 @@ export const useAssetSelectionScreen = (): UseAssetSelectionScreenResult => {
                 navigation.navigate('SelectDestination')
                 return
             }
+            // A collectible picked before going back leaves its 1 behind.
+            setAmount(undefined)
+            setIsCloseAccount(false)
             navigation.navigate('InputAmount')
         },
-        [navigation, setSelectedAsset, setAmount],
+        [navigation, setSelectedAsset, setAmount, setIsCloseAccount],
     )
 
     const handleReceive = useCallback(() => {

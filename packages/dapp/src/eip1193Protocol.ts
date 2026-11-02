@@ -50,6 +50,7 @@ export const EIP1193_SIGNING_METHODS: readonly string[] = [
 export const EIP1193_QUEUED_METHODS: readonly string[] = [
     ...EIP1193_SIGNING_METHODS,
     EIP1193_METHOD.switchChain,
+    EIP1193_METHOD.addChain,
 ]
 
 export const EIP1193_EVENT = {

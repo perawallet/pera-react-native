@@ -85,6 +85,7 @@ export const useArbitraryDataSigningScreen =
                 if (request && isExternalCallbackSource(request.sourceType)) {
                     const decision = await confirmQuantumDappUsage(
                         resolveAllSignerAddresses(LEGACY_CHAIN_ID, request),
+                        LEGACY_CHAIN_ID,
                     )
                     if (decision === 'cancel') {
                         pipeline.fail()

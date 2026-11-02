@@ -53,7 +53,11 @@ const creatorCodec: AssetChainDataCodec = {
         family: 'algorand',
         creatorAddress: asset.creator.address,
     }),
-    decode: data => ({ creator: { address: data.creatorAddress } }),
+    decode: data => ({
+        creator: {
+            address: data.family === 'algorand' ? data.creatorAddress : '',
+        },
+    }),
 }
 
 describe('asset metadata repository', () => {

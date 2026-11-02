@@ -10,25 +10,23 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
-import DraggableFlatList, {
-    type RenderItemParams,
-    ScaleDecorator,
-} from 'react-native-draggable-flatlist'
+import DraggableFlatList from 'react-native-draggable-flatlist'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import {
     chainAccountOf,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { PWIcon, PWTouchableOpacity, PWView } from '@components/core'
-import { AccountDisplay } from '@components/AccountDisplay'
 import { useStyles } from './styles'
+import { useDraggableAccountList } from './useDraggableAccountList'
 
 type DraggableAccountListProps = {
     accounts: WalletAccount[]
     onReorder: (orderedIds: string[]) => void
 }
+
+const accountAddressOf = (account: WalletAccount) =>
+    chainAccountOf(account, LEGACY_CHAIN_ID)?.address
 
 export const DraggableAccountList = ({
     accounts,
@@ -37,42 +35,11 @@ export const DraggableAccountList = ({
     const insets = useSafeAreaInsets()
     const styles = useStyles({ bottomInset: insets.bottom })
 
-    const renderItem = useCallback(
-        ({ item, drag, isActive }: RenderItemParams<WalletAccount>) => (
-            <ScaleDecorator activeScale={0.97}>
-                <PWView
-                    style={styles.draggableRow}
-                    testID={`draggable_account_${chainAccountOf(item, LEGACY_CHAIN_ID)?.address}`}
-                >
-                    <PWView style={styles.accountDisplayContainer}>
-                        <AccountDisplay
-                            account={item}
-                            showChevron={false}
-                        />
-                    </PWView>
-                    <PWTouchableOpacity
-                        onPressIn={drag}
-                        disabled={isActive}
-                        style={styles.dragHandle}
-                    >
-                        <PWIcon
-                            name='horizontal-line-stack'
-                            variant='secondary'
-                        />
-                    </PWTouchableOpacity>
-                </PWView>
-            </ScaleDecorator>
-        ),
-        [styles],
-    )
-
-    const keyExtractor = useCallback((item: WalletAccount) => item.id, [])
-
-    const handleDragEnd = useCallback(
-        ({ data }: { data: WalletAccount[] }) => {
-            onReorder(data.map(a => a.id))
+    const { renderItem, keyExtractor, handleDragEnd } = useDraggableAccountList(
+        {
+            onReorder,
+            getAccountAddress: accountAddressOf,
         },
-        [onReorder],
     )
 
     return (

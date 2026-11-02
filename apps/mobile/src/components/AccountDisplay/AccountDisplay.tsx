@@ -64,6 +64,12 @@ export type AccountDisplayProps = {
     showChainBadge?: boolean
     /** Rendered after the secondary label, on the line under the name; never on the name's line. */
     badges?: ReactNode
+    /** Replaces the secondary label on the line under the name, e.g. with the network the account is on. */
+    secondaryContent?: ReactNode
+    /** False drops the address, NFD or type under the name; `badges` and `secondaryContent` still show. */
+    shouldShowSecondaryLabel?: boolean
+    /** Takes the avatar's corner; the backup warning is not shown with it. */
+    avatarBadge?: ReactNode
 } & PWViewProps
 
 export const AccountDisplay = ({
@@ -80,6 +86,9 @@ export const AccountDisplay = ({
     chainId,
     showChainBadge = false,
     badges,
+    secondaryContent,
+    shouldShowSecondaryLabel = true,
+    avatarBadge,
     ...rest
 }: AccountDisplayProps) => {
     const { theme } = useTheme()
@@ -89,7 +98,7 @@ export const AccountDisplay = ({
         chainId: resolvedChainId,
         displayName,
         secondaryText,
-        renderSecondary,
+        renderSecondary: hasSecondaryLabel,
         showTypeAsSecondary,
         showBackupBadge,
     } = useAccountDisplay({
@@ -100,6 +109,7 @@ export const AccountDisplay = ({
         iconSize,
         chainId,
     })
+    const renderSecondary = shouldShowSecondaryLabel && hasSecondaryLabel
 
     if (card) {
         return (
@@ -157,9 +167,17 @@ export const AccountDisplay = ({
                     {showChainBadge && (
                         <ChainAvatarBadge chainId={resolvedChainId} />
                     )}
-                    {showBackupBadge && (
+                    {!!avatarBadge && (
                         <PWView
-                            style={styles.backupBadge}
+                            style={styles.avatarBadge}
+                            testID='account_avatar_badge'
+                        >
+                            {avatarBadge}
+                        </PWView>
+                    )}
+                    {!avatarBadge && showBackupBadge && (
+                        <PWView
+                            style={styles.avatarBadge}
                             testID='account_backup_badge'
                         >
                             <PWIcon
@@ -183,12 +201,13 @@ export const AccountDisplay = ({
                         {displayName}
                     </PWText>
                 )}
-                {(renderSecondary || !!badges) && (
+                {(renderSecondary || !!badges || !!secondaryContent) && (
                     <PWView
                         style={styles.secondaryRow}
                         testID='account_display_secondary_row'
                     >
-                        {renderSecondary && (
+                        {secondaryContent}
+                        {!secondaryContent && renderSecondary && (
                             <PWText
                                 style={[
                                     styles.addressText,

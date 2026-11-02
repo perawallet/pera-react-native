@@ -24,7 +24,7 @@ const mocks = vi.hoisted(() => ({
     },
 }))
 
-vi.mock('../../../hooks', () => ({
+vi.mock('@modules/backup', () => ({
     usePassphraseReach: () => mocks.reach,
 }))
 

@@ -24,43 +24,21 @@ export const useStyles = makeStyles(theme => {
             overflow: 'hidden',
         },
         columns: {
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            alignItems: 'stretch',
             width: '100%',
             minWidth: 0,
-            gap: theme.spacing.md,
         },
         leftColumn: {
-            flex: 1,
+            alignItems: 'center',
             minWidth: 0,
-            gap: theme.spacing.md,
-        },
-        rightColumn: {
-            alignItems: 'flex-end',
-            gap: theme.spacing.md,
-            flexShrink: 0,
-            maxWidth: '45%',
-        },
-        rightColumnOverlay: {
-            position: 'absolute',
-            top: 0,
-            right: 0,
-        },
-        dateTimeColumn: {
-            alignItems: 'flex-end',
-            flexShrink: 0,
-            minWidth: 0,
-        },
-        trendTitle: {
-            color: theme.colors.textGray,
         },
         valueTitleBar: {
             flexDirection: 'row',
             alignItems: 'center',
+            justifyContent: 'center',
             gap: theme.spacing.xs,
             minWidth: 0,
             width: '100%',
+            marginBottom: theme.spacing.xs,
         },
         titleTextContainer: {
             flexShrink: 1,
@@ -71,10 +49,6 @@ export const useStyles = makeStyles(theme => {
         },
         valueTitle: {
             color: theme.colors.textGray,
-        },
-        dateDisplay: {
-            color: theme.colors.textGray,
-            textAlign: 'right',
         },
         divider: {
             height: theme.borders.sm,
@@ -97,6 +71,7 @@ export const useStyles = makeStyles(theme => {
         },
         partialNotice: {
             color: theme.colors.textGray,
+            textAlign: 'center',
         },
         chartContainer: {
             gap: theme.spacing.md,

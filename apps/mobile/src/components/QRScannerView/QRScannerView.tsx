@@ -17,7 +17,6 @@ import { useTheme } from '@rneui/themed'
 import { Suspense, createRef, lazy, useCallback, useState } from 'react'
 import { type NotifierRoot, NotifierWrapper } from 'react-native-notifier'
 import { useLanguage } from '@hooks/useLanguage'
-import { useLockOverlayState } from '@hooks/useIsLockOverlayVisible'
 import { usePreventScreenCapture } from '@hooks/usePreventScreenCapture'
 import { useTrackOpenScanner } from '@hooks/useScannerRequest'
 import { BaseErrorBoundary } from '@components/BaseErrorBoundary'
@@ -30,6 +29,7 @@ import {
     PWView,
 } from '@components/core'
 import { useQRScannerView } from './useQRScannerView'
+import { useQRScannerLockCheck } from './useQRScannerLockCheck'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import type { Nullable } from '@perawallet/wallet-core-shared'
@@ -86,25 +86,9 @@ export const QRScannerView = (props: QRScannerViewProps) => {
     // `onClose` instead would be worse: it belongs to the parent screens and
     // several of them navigate, which must not happen under a locked app.
     // Leaving `props.isVisible` untouched brings the scanner back after the PIN.
-    //
-    // During the brief check after a return from the background, a scanner that
-    // was already open stays presented but covered with the camera paused:
-    // dismissing and re-presenting the Modal for it read as the scanner closing
-    // and reopening. One requested during the check waits, so a cold start
-    // doesn't flash a cover before the PIN screen.
-    const lockOverlayState = useLockOverlayState()
-    const [wasOpenBeforeLockCheck, setWasOpenBeforeLockCheck] = useState(false)
-    if (
-        lockOverlayState === 'none' &&
-        wasOpenBeforeLockCheck !== props.isVisible
-    ) {
-        setWasOpenBeforeLockCheck(props.isVisible)
-    }
-    const isCoveredForLockCheck =
-        lockOverlayState === 'checking' && wasOpenBeforeLockCheck
-    const isScannerRequested =
-        props.isVisible &&
-        (lockOverlayState === 'none' || isCoveredForLockCheck)
+    const { isScannerRequested, isCoveredForLockCheck } = useQRScannerLockCheck(
+        props.isVisible,
+    )
     // Counted while requested, even when suspended behind the PIN: it's still open.
     useTrackOpenScanner(props.isVisible)
 

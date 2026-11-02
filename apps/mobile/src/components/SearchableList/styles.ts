@@ -26,10 +26,20 @@ export const useStyles = makeStyles(theme => ({
         alignItems: 'center',
     },
     // Opaque backing for the sticky search; without it rows scroll through the
-    // transparent space around the pill (visible on iOS top overscroll).
+    // transparent space around the pill (visible on iOS top overscroll). The
+    // gap below is padding, not margin: a margin is outside the background, so
+    // pinned rows would show through it.
     searchSticky: {
         backgroundColor: theme.colors.background,
-        marginBottom: theme.spacing.lg,
+        paddingBottom: theme.spacing.lg,
+    },
+    // Edge under the pinned search bar; its top is the measured bar height.
+    searchStickyDivider: {
+        position: 'absolute',
+        left: 0,
+        right: 0,
+        height: theme.borders.sm,
+        backgroundColor: theme.colors.layerGrayLighter,
     },
     searchAccessory: {
         paddingTop: theme.spacing.md,

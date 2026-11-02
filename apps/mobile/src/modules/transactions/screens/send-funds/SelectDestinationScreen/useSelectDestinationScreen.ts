@@ -18,13 +18,12 @@ import { useChainNameWhenMultiChain } from '@hooks/useChainNameWhenMultiChain'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { useCallback, useEffect, useState, useRef } from 'react'
-import { useNavigationState, useRoute } from '@react-navigation/native'
+import { useNavigation } from '@react-navigation/native'
 import { useSendDestinationRouter } from '../useSendDestinationRouter'
 
 export const useSelectDestinationScreen = () => {
-    const { destination, onFinished } = useSendFunds()
-    const route = useRoute()
-    const rootRouteKey = useNavigationState(state => state.routes[0]?.key)
+    const { destination, prefilledDestination, setDestination } = useSendFunds()
+    const navigation = useNavigation()
     const selectedAccount = useSelectedAccount()
     const {
         selectedAsset,
@@ -66,14 +65,16 @@ export const useSelectDestinationScreen = () => {
         resolveDestination,
     ])
 
-    // The send sheet blocks swipe/backdrop dismissal, so the flow's root screen
-    // must offer its own way out (a pure-NFT send starts here). Root-ness comes
-    // from this route's position, not `canGoBack()`: that answers for the whole
-    // stack, and picking a receiver re-renders this screen while the next one
-    // is already on top, so it read true, dropped the close, and popping back
-    // (which re-renders nothing) stranded the sheet.
-    const canClose = route.key === rootRouteKey
-    const handleClose = useCallback(() => onFinished?.(), [onFinished])
+    // Going back to the amount screen drops the receiver the user picked: left
+    // in the store, the next Next would route past this picker straight to the
+    // review. A receiver the entry point supplied stays.
+    useEffect(
+        () =>
+            navigation.addListener('beforeRemove', () => {
+                setDestination(prefilledDestination)
+            }),
+        [navigation, prefilledDestination, setDestination],
+    )
 
     // A name's address comes from Pera's backend. It only becomes the
     // destination once the chain itself vouches for it; nothing here
@@ -150,7 +151,5 @@ export const useSelectDestinationScreen = () => {
         handleSelected,
         isCheckingExternalOptIn: isResolvingDestination || isVerifyingNfd,
         isAutoAdvancing,
-        canClose,
-        onClose: handleClose,
     }
 }

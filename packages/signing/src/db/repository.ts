@@ -108,7 +108,7 @@ export type RecordSubmissionAttemptParams = {
     flow: SubmissionFlow
     intentKey?: IntentKey
     sender?: string
-    /** What the chain's reconciler bounds the attempt by. */
+    /** Set when the chain's reconciler can always settle the attempt; see `ChainSubmissionData`. */
     chainData?: ChainSubmissionData
     /** The account sequence number the transaction consumes. */
     nonce?: number

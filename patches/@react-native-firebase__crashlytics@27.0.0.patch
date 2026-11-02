@@ -1,0 +1,17 @@
+diff --git a/ios_config.sh b/ios_config.sh
+index 80a28af85d3768a19b18c05ee9cfc4550be2595f..8383593c77d3353c8248c759d02baad3bbfa687d 100755
+--- a/ios_config.sh
++++ b/ios_config.sh
+@@ -16,6 +16,12 @@
+ #
+ set -e
+ 
++# upload-symbols can hang a local Debug build for minutes, and Debug builds never ship.
++if [[ "${CONFIGURATION}" == "Debug" ]]; then
++  echo "info: Skipping Crashlytics dSYM upload for Debug builds"
++  exit 0
++fi
++
+ if [[ ${PODS_ROOT} && -f "${PODS_ROOT}/FirebaseCrashlytics/run" ]]; then
+   echo "info: Exec FirebaseCrashlytics Run from Pods"
+   if ! "${PODS_ROOT}/FirebaseCrashlytics/run"; then

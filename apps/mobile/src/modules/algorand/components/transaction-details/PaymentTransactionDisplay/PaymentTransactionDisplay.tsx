@@ -10,139 +10,63 @@
  limitations under the License
  */
 
-import { PWDivider, PWView } from '@components/core'
-import { AssetAmount } from '@components/AssetAmount'
 import type { AlgorandTransactionView } from '@perawallet/wallet-core-chain-algorand/blockchain'
-import { useStyles } from './styles'
-import { useLanguage } from '@hooks/useLanguage'
-import { AddressDisplay } from '@components/AddressDisplay'
-import { KeyValueRow } from '@components/KeyValueRow'
-import { TransactionHeader } from '../TransactionHeader/TransactionHeader'
-import { useTheme } from '@rneui/themed'
-import { TransactionFeeRow } from '../TransactionFeeRow/TransactionFeeRow'
-import { TransactionNoteRow } from '../TransactionNoteRow/TransactionNoteRow'
-import { TransactionWarnings } from '../../TransactionWarnings/TransactionWarnings'
-import { TransactionFooter } from '../TransactionFooter/TransactionFooter'
 import { useNativeAsset } from '@perawallet/wallet-core-assets'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { AssetAmount } from '@components/AssetAmount'
+import { KeyValueRow } from '@components/KeyValueRow'
+import { useLanguage } from '@hooks/useLanguage'
+import {
+    TransactionDetailAddress,
+    TransactionDetailCard,
+} from '@modules/signing'
 import { usePaymentTransactionDisplay } from './usePaymentTransactionDisplay'
 
 export type PaymentTransactionDisplayProps = {
-    referenceAddress?: string
     transaction: AlgorandTransactionView
-    isInnerTransaction?: boolean
 }
 
+/** A payment's sender, receiver, amount and fee are shared; only a close-out has more to say. */
 export const PaymentTransactionDisplay = ({
-    referenceAddress,
     transaction,
-    isInnerTransaction = false,
 }: PaymentTransactionDisplayProps) => {
     const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const nativeAsset = useNativeAsset(scope)
-    const styles = useStyles()
-    const { theme } = useTheme()
     const { t } = useLanguage()
-    const {
-        amount,
-        amountStyle,
-        showWarnings,
-        receiverAddress,
-        senderAddress,
-        closeToAddress,
-        closeAmountValue,
-        payment,
-    } = usePaymentTransactionDisplay(transaction, referenceAddress)
+    const { closeToAddress, closeAmountValue } =
+        usePaymentTransactionDisplay(transaction)
 
-    if (!payment) {
+    if (!closeToAddress) {
         return null
     }
 
     return (
-        <PWView style={styles.container}>
-            <TransactionHeader
-                transaction={transaction}
-                isInnerTransaction={isInnerTransaction}
-            />
+        <TransactionDetailCard>
+            <KeyValueRow
+                testID='transaction_detail_close_to'
+                title={t('transactions.common.close_to')}
+            >
+                <TransactionDetailAddress
+                    address={closeToAddress}
+                    scope={scope}
+                />
+            </KeyValueRow>
 
-            {showWarnings && <TransactionWarnings transaction={transaction} />}
-
-            <PWDivider
-                style={styles.divider}
-                color={theme.colors.layerGray}
-            />
-
-            <PWView style={styles.detailContainer}>
+            {!!closeAmountValue && (
                 <KeyValueRow
-                    testID='transaction_detail_from'
-                    title={t('transactions.common.from')}
-                >
-                    <PWView style={styles.detailRow}>
-                        <AddressDisplay address={senderAddress} />
-                    </PWView>
-                </KeyValueRow>
-
-                <KeyValueRow
-                    testID='transaction_detail_to'
-                    title={t('transactions.common.sent_to')}
-                >
-                    <PWView style={styles.detailRow}>
-                        <AddressDisplay address={receiverAddress ?? ''} />
-                    </PWView>
-                </KeyValueRow>
-
-                <KeyValueRow
-                    testID='transaction_detail_amount'
-                    title={t('transactions.common.amount')}
+                    testID='transaction_detail_close_amount'
+                    title={t('transactions.common.close_amount')}
                 >
                     <AssetAmount
                         chainId={scope.chainId}
                         asset={nativeAsset}
-                        value={amount}
+                        value={closeAmountValue}
                         showSymbol
-                        style={amountStyle}
                         ignorePrivacyMode
                     />
                 </KeyValueRow>
-
-                {closeToAddress && (
-                    <KeyValueRow
-                        testID='transaction_detail_close_to'
-                        title={t('transactions.common.close_to')}
-                    >
-                        <PWView style={styles.detailRow}>
-                            <AddressDisplay address={closeToAddress} />
-                        </PWView>
-                    </KeyValueRow>
-                )}
-
-                {closeToAddress && closeAmountValue && (
-                    <KeyValueRow
-                        testID='transaction_detail_close_amount'
-                        title={t('transactions.common.close_amount')}
-                    >
-                        <AssetAmount
-                            chainId={scope.chainId}
-                            asset={nativeAsset}
-                            value={closeAmountValue}
-                            showSymbol
-                            ignorePrivacyMode
-                        />
-                    </KeyValueRow>
-                )}
-
-                <TransactionFeeRow transaction={transaction} />
-
-                <TransactionNoteRow transaction={transaction} />
-            </PWView>
-
-            <PWDivider
-                style={styles.divider}
-                color={theme.colors.layerGray}
-            />
-
-            <TransactionFooter transaction={transaction} />
-        </PWView>
+            )}
+        </TransactionDetailCard>
     )
 }

@@ -16,10 +16,6 @@ export const useStyles = makeStyles(theme => ({
     content: {
         paddingTop: theme.spacing.lg,
     },
-    title: {
-        textAlign: 'center',
-        marginBottom: theme.spacing.md,
-    },
     header: {
         alignItems: 'center',
         paddingVertical: theme.spacing['3xl'],

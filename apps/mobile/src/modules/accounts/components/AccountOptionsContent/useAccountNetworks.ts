@@ -40,8 +40,6 @@ import {
     AnalyticsMetadataKey,
 } from '@analytics'
 
-export const COLLAPSED_NETWORK_COUNT = 3
-
 export type AccountNetworkRow = {
     chainId: ChainId
     family: ChainFamily
@@ -94,7 +92,6 @@ export const useAccountNetworks = ({
     const account = accounts.find(a => a.id === snapshot.id) ?? snapshot
 
     const [isShowingAll, setIsShowingAll] = useState(false)
-    const [expandedChainId, setExpandedChainId] = useState<Optional<ChainId>>()
 
     // Every family the custody reaches, unlike receive's picker: this sheet is where the user adds a new family on purpose.
     const options = useMemo(
@@ -151,11 +148,18 @@ export const useAccountNetworks = ({
         [rows],
     )
 
-    const isCollapsed = !isShowingAll && rows.length > COLLAPSED_NETWORK_COUNT
-    const visibleRows = isCollapsed
-        ? rows.slice(0, COLLAPSED_NETWORK_COUNT)
-        : rows
-    const hiddenRows = isCollapsed ? rows.slice(COLLAPSED_NETWORK_COUNT) : []
+    // Opened on the one network an account reaches, whose actions are then
+    // the only thing the list is for.
+    const [expandedChainId, setExpandedChainId] = useState<Optional<ChainId>>(
+        () => (rows.length === 1 ? rows[0]?.chainId : undefined),
+    )
+
+    const enabledRows = rows.filter(row => row.isEnabled)
+    const addableRows = rows.filter(row => !row.isEnabled)
+    const visibleRows = isShowingAll
+        ? [...enabledRows, ...addableRows]
+        : enabledRows
+    const hiddenRows = isShowingAll ? [] : addableRows
 
     const handleShowAllNetworks = useCallback(() => setIsShowingAll(true), [])
 

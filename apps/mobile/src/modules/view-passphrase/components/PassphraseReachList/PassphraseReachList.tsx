@@ -13,7 +13,7 @@
 import { PWText, PWView } from '@components/core'
 import { ChainBadge } from '@components/ChainBadge'
 import { useLanguage } from '@hooks/useLanguage'
-import type { PassphraseLinkedAddress } from '../../hooks'
+import type { PassphraseLinkedAddress } from '@modules/backup'
 import { useStyles } from './styles'
 
 export type PassphraseReachListProps = {

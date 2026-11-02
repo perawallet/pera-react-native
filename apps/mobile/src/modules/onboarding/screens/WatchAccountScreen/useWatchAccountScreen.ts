@@ -24,12 +24,14 @@ import {
     type ChainId,
     type I18nKey,
 } from '@perawallet/wallet-core-chain-contract'
+import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import { trackEvent, OnboardingEvent, AnalyticsMetadataKey } from '@analytics'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useIsMounted } from '@hooks/useIsMounted'
 import { useLanguage } from '@hooks/useLanguage'
 import { useNfdResolve } from '@hooks/useNfdResolve'
+import { useCapableChainId } from '@hooks/useCapableChainIds'
 import { useWatchableChainIds } from '@modules/onboarding/hooks'
 import { watchAccountCopyFor } from '@modules/onboarding/utils/watchAccountCopyFor'
 import type { AddAccountStackParamList } from '@modules/onboarding/routes/types'
@@ -66,8 +68,10 @@ export const useWatchAccountScreen = (): UseWatchAccountScreenResult => {
     const isWatchingRef = useRef(false)
     const [address, setAddress] = useState(route.params?.prefillAddress ?? '')
 
+    const nameChainId = useCapableChainId('nameService')
+    const nameChainScope = useSelectedScope(nameChainId)
     const { resolvedAddress, isNfdResolved, isNfdResolving, nfdName } =
-        useNfdResolve(address)
+        useNfdResolve(address, nameChainScope)
 
     const watchableChainIds = useWatchableChainIds()
     // The default chain decides when several chains accept the same address.

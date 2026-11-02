@@ -27,6 +27,7 @@ import {
 } from '@perawallet/wallet-core-assets'
 import { useSendFundsStore } from '@modules/transactions/hooks'
 import { useSendFundsContent } from '../useSendFundsContent'
+import { useSendFlowHardwareBack } from '../useSendFlowHardwareBack'
 
 const mockDismiss = vi.fn()
 
@@ -45,6 +46,15 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
 
 vi.mock('@modules/bottom-sheet', () => ({
     useBottomSheetResult: vi.fn(() => ({ dismiss: mockDismiss })),
+}))
+
+const NAVIGATION_REF = vi.hoisted(() => ({ current: 'navigation-ref' }))
+vi.mock('@react-navigation/native', () => ({
+    useNavigationContainerRef: () => NAVIGATION_REF,
+}))
+
+vi.mock('../useSendFlowHardwareBack', () => ({
+    useSendFlowHardwareBack: vi.fn(),
 }))
 
 const ASA_ID = '123'
@@ -288,5 +298,30 @@ describe('useSendFundsContent — unique collectible prefill latch', () => {
         expect(mockDismiss).toHaveBeenCalledTimes(1)
         expect(amountWrites).toBe(3)
         expect(useSendFundsStore.getState().amount?.toString()).toBe('1')
+    })
+
+    it('hands the navigator ref to the Android back handler', () => {
+        const { result } = renderHook(() => useSendFundsContent(ASA))
+
+        expect(result.current.navigationRef).toBe(NAVIGATION_REF)
+        expect(useSendFlowHardwareBack).toHaveBeenCalledWith(NAVIGATION_REF)
+    })
+
+    it('remembers the recipient the entry point filled in before the sheet opened', () => {
+        useSendFundsStore.getState().setDestination(OLD_RECIPIENT)
+
+        renderHook(() => useSendFundsContent(ASA))
+
+        expect(useSendFundsStore.getState().prefilledDestination).toBe(
+            OLD_RECIPIENT,
+        )
+    })
+
+    it('has no prefilled recipient when the sheet opens without one', () => {
+        renderHook(() => useSendFundsContent(ASA))
+
+        expect(
+            useSendFundsStore.getState().prefilledDestination,
+        ).toBeUndefined()
     })
 })

@@ -11,9 +11,11 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import { stringToHex } from 'viem'
+import { maxUint256, stringToHex } from 'viem'
 import {
+    DAI_PERMIT_TYPED_DATA,
     EIP2612_PERMIT_TYPED_DATA,
+    ERC721_PERMIT_TYPED_DATA,
     MAIL_TYPED_DATA,
     PERMIT2_SINGLE_TYPED_DATA,
     SENDER,
@@ -216,6 +218,25 @@ describe('validateEthereumMessagePayload: typed-data chain', () => {
     it.each([
         ['an EIP-2612 permit', EIP2612_PERMIT_TYPED_DATA],
         ['a Permit2 permit', PERMIT2_SINGLE_TYPED_DATA],
+        ['a DAI-style permit', DAI_PERMIT_TYPED_DATA],
+        [
+            'a DAI-style permit that revokes',
+            {
+                ...DAI_PERMIT_TYPED_DATA,
+                message: { ...DAI_PERMIT_TYPED_DATA.message, allowed: false },
+            },
+        ],
+        ['an ERC-721 permit', ERC721_PERMIT_TYPED_DATA],
+        [
+            'an ERC-721 permit with a token id past uint256',
+            {
+                ...ERC721_PERMIT_TYPED_DATA,
+                message: {
+                    ...ERC721_PERMIT_TYPED_DATA.message,
+                    tokenId: (maxUint256 + 1n).toString(),
+                },
+            },
+        ],
     ])('refuses %s with no domain chainId', (_name, permit) => {
         const { chainId: _chainId, ...domain } = permit.domain
 
@@ -227,10 +248,12 @@ describe('validateEthereumMessagePayload: typed-data chain', () => {
         expect(result).toMatchObject({ ok: false, failure: 'invalid-params' })
     })
 
-    it('accepts a permit bound to the connected chain', () => {
-        expect(
-            validate('sign-typed-data', [SENDER, EIP2612_PERMIT_TYPED_DATA]).ok,
-        ).toBe(true)
+    it.each([
+        ['an EIP-2612 permit', EIP2612_PERMIT_TYPED_DATA],
+        ['a DAI-style permit', DAI_PERMIT_TYPED_DATA],
+        ['an ERC-721 permit', ERC721_PERMIT_TYPED_DATA],
+    ])('accepts %s bound to the connected chain', (_name, permit) => {
+        expect(validate('sign-typed-data', [SENDER, permit]).ok).toBe(true)
     })
 
     it('refuses typed data with a chainId when the network has no EIP-155 id', () => {

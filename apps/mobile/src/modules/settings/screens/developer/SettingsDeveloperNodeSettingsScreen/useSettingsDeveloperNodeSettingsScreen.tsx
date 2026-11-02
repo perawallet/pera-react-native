@@ -24,6 +24,7 @@ import {
     selectEndpointOverride,
     useAnyEnabledChainHasCapability,
     useNetworkStore,
+    useWalletDeployment,
 } from '@perawallet/wallet-core-chain-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import type { Optional } from '@perawallet/wallet-core-shared'
@@ -77,7 +78,7 @@ export const useSettingsDeveloperNodeSettingsScreen =
     (): UseSettingsDeveloperNodeSettingsScreenResult => {
         const { t } = useLanguage()
         const { request } = useBottomSheet()
-        const mode = useNetworkStore(state => state.mode)
+        const mode = useWalletDeployment()
         const selectedNetworkByChain = useNetworkStore(
             state => state.selectedNetworkByChain,
         )

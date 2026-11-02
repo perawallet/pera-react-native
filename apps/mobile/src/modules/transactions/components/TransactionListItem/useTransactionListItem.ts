@@ -17,6 +17,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { useAssetsQuery } from '@perawallet/wallet-core-assets'
 import {
+    i18nKey,
     LEGACY_CHAIN_ID,
     type LocalizedText,
     type TransactionRecord,
@@ -43,6 +44,10 @@ import {
     toAmountDisplay,
     type AmountDisplay,
 } from './amounts'
+
+const WAITING_ON_EARLIER = {
+    key: i18nKey('transactions.notice.waiting_on_earlier'),
+}
 
 export type UseTransactionListItemParams = (
     | {
@@ -111,7 +116,15 @@ export const useTransactionListItem = (
         return summary.counterparty ? counterpartyName : null
     }, [render, summary, counterpartyName])
 
-    const notice = useMemo(() => chainNoticeOf(summary.notice), [summary])
+    const { canReplace, isBlocked, handleReplace } =
+        useReplaceTransaction(record)
+    const notice = useMemo(
+        () =>
+            isBlocked
+                ? chainNoticeOf({ kind: 'warning', title: WAITING_ON_EARLIER })
+                : chainNoticeOf(summary.notice),
+        [isBlocked, summary],
+    )
 
     const allAmounts = useMemo(() => summaryAmountsOf(summary), [summary])
     const visibleAmounts = useMemo(
@@ -145,7 +158,6 @@ export const useTransactionListItem = (
         }
     }, [openSuspectedPoisoningSheet, suspectedPoisoning, scope])
 
-    const { canReplace, handleReplace } = useReplaceTransaction(record)
     const handleRecordPress = useCallback(() => {
         void handleReplace()
     }, [handleReplace])

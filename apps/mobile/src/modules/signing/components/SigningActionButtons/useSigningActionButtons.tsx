@@ -209,6 +209,7 @@ export const useSigningActionButtons = (): UseSigningActionButtonsResult => {
                         chainIdOfSignRequest(currentRequest),
                         currentRequest,
                     ),
+                    chainIdOfSignRequest(currentRequest),
                 )
                 if (decision === 'cancel') {
                     if (walletConnectTxPayload) {

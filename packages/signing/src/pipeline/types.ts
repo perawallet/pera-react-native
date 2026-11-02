@@ -114,7 +114,7 @@ export type SourceType =
     | 'multisig-cosign'
     | 'card'
     | 'gift-card'
-    | 'injected' // browser-extension window.pera provider
+    | 'injected' // injected page provider (browser extension, in-app browser)
     | 'replacement' // the wallet re-pricing one of its own pending transactions
 
 /**

@@ -47,49 +47,65 @@ export const isPostQuantumScheme = (scheme: SigningScheme): boolean =>
 
 /**
  * Account data only its own chain reads, persisted on the account's chain
- * entry. A chain package adds its member, discriminated by `family`.
+ * entry; one member per `ChainFamily`, discriminated by `family`.
  */
-export type ChainAccountNative = {
-    family: 'algorand'
-    /** Present on a multisig account; Algorand derives the address from it. */
-    multisig?: { version: number; threshold: number; addresses: string[] }
-    /**
-     * Present on a post-quantum account; `publicKey` is base64. Kept on the
-     * record because a realm that can't open the keystore (the extension's
-     * offscreen document) still has to describe the account's signature.
-     */
-    pq?: { scheme: Extract<SigningScheme, 'falcon-1024'>; publicKey: string }
-}
+export type ChainAccountNative =
+    | {
+          family: 'algorand'
+          /** Present on a multisig account; Algorand derives the address from it. */
+          multisig?: {
+              version: number
+              threshold: number
+              addresses: string[]
+          }
+          /**
+           * Present on a post-quantum account; `publicKey` is base64. Kept on the
+           * record because a realm that can't open the keystore (the extension's
+           * offscreen document) still has to describe the account's signature.
+           */
+          pq?: {
+              scheme: Extract<SigningScheme, 'falcon-1024'>
+              publicKey: string
+          }
+      }
+    | { family: 'evm' }
 
 /**
- * Holding data only its own chain reads, persisted on the holding row. A chain
- * package adds its member, discriminated by `family`.
+ * Holding data only its own chain reads, persisted on the holding row; one
+ * member per `ChainFamily`, discriminated by `family`.
  */
-export type ChainHoldingNative = {
-    family: 'algorand'
-    isFrozen: boolean
-}
+export type ChainHoldingNative =
+    | {
+          family: 'algorand'
+          isFrozen: boolean
+      }
+    | { family: 'evm' }
 
 /**
- * Asset data only its own chain reads, persisted on the asset's node row. A
- * chain package adds its member, discriminated by `family`.
+ * Asset data only its own chain reads, persisted on the asset's node row; one
+ * member per `ChainFamily`, discriminated by `family`.
  */
-export type ChainAssetData = {
-    family: 'algorand'
-    creatorAddress: string
-}
+export type ChainAssetData =
+    | {
+          family: 'algorand'
+          creatorAddress: string
+      }
+    | { family: 'evm' }
 
 /**
- * Attempt data only its own chain reads, persisted on the submission attempt.
- * A chain package adds its member, discriminated by `family`. Record it only
- * when the chain's reconciler can settle the attempt by it: an attempt carrying
- * it never ages out of the ledger's guards.
+ * Attempt data only its own chain reads, persisted on the submission attempt;
+ * one member per `ChainFamily`, discriminated by `family`. Record it only when
+ * the chain's reconciler can always settle the attempt: an attempt carrying it
+ * never ages out of the ledger's guards. EVM's member is empty because its
+ * reconciler settles by nonce and receipt.
  */
-export type ChainSubmissionData = {
-    family: 'algorand'
-    /** A last-valid round of the group; the group can't land after any member's. */
-    lastValid: number
-}
+export type ChainSubmissionData =
+    | {
+          family: 'algorand'
+          /** A last-valid round of the group; the group can't land after any member's. */
+          lastValid: number
+      }
+    | { family: 'evm' }
 
 export type AccountChainState =
     | {
@@ -259,6 +275,8 @@ export interface TransactionRecord {
     status: 'pending' | 'confirmed' | 'failed' | 'replaced'
     /** Unix ms. */
     timestamp?: number
+    /** The block, or round, the transaction landed in, on a chain whose history reports one. */
+    blockNumber?: number
     /** In the native asset. */
     fee?: Decimal
     /**
@@ -304,6 +322,11 @@ export interface BuildContext {
     chainState?: AccountChainState
     /** The speed to price at; unset means `'normal'`. A chain without presets ignores it. */
     feePreset?: FeePreset
+    /**
+     * In base units of the native asset: the most the sender confirmed the send may be charged. A
+     * chain that prices at build keeps its worst case within it and refuses to build when it can't.
+     */
+    maxFee?: Decimal
 }
 
 /** Slowest first, which is the display order. */
@@ -404,6 +427,8 @@ export interface SpendAllowance {
     assetRef: AssetRef
     /** Base units of assetRef; absent when unlimited. */
     amount?: Decimal
+    /** Set when the allowance is one non-fungible token; `collection` is its contract in the chain's address format, `tokenId` a decimal string. */
+    nft?: { collection: string; tokenId: string }
 }
 
 export interface SpendApproval {

@@ -286,7 +286,7 @@ describe('CurrencyAmount fiat floor', () => {
         expect(vi.mocked(formatCurrency).mock.calls[0][1]).toBe(3)
     })
 
-    it('leaves a sub-cent unit price at its detail precision', () => {
+    it('floors a sub-cent fiat detail amount', () => {
         const { container } = render(
             <CurrencyAmount
                 value={new Decimal('0.000012')}
@@ -295,6 +295,20 @@ describe('CurrencyAmount fiat floor', () => {
                 chainId={null}
                 isFiat
                 precision='preferredFull'
+            />,
+        )
+        expect(container.textContent).toContain('< ')
+    })
+
+    it('leaves a sub-cent unit price at its own precision', () => {
+        const { container } = render(
+            <CurrencyAmount
+                value={new Decimal('0.000012')}
+                currency='USD'
+                assetId={null}
+                chainId={null}
+                isFiat
+                precision='unitPrice'
             />,
         )
         expect(container.textContent).not.toContain('< ')

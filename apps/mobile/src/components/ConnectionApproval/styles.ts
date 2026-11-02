@@ -91,7 +91,17 @@ export const useStyles = makeStyles(
             networksContainer: {
                 alignItems: 'center',
                 flexDirection: 'row',
+                flexWrap: 'wrap',
+                justifyContent: 'center',
                 gap: theme.spacing.sm,
+            },
+            originVerified: {
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: theme.spacing.xs,
+            },
+            originVerifiedText: {
+                color: theme.colors.verifiedBannerContent,
             },
             permissionsContainer: {
                 backgroundColor: theme.colors.layerGrayLighter,

@@ -21,6 +21,7 @@ export const EvmErrorCode = {
     REPLACEMENT_UNDERPRICED: 'replacement_underpriced',
     REPLACED_TRANSACTION_CONFIRMED: 'replaced_transaction_confirmed',
     INSUFFICIENT_FUNDS: 'insufficient_funds',
+    FEE_ABOVE_CONFIRMED: 'fee_above_confirmed',
     RATE_LIMITED: 'rate_limited',
     UNKNOWN: 'unknown',
 } as const
@@ -49,12 +50,14 @@ export const TRAITS: Record<EvmErrorCode, EvmErrorTraits> = {
         messageKey: i18nKey('errors.evm.reverted_with_reason.body'),
         severity: ErrorSeverity.HIGH,
         retryable: false,
+        expected: true,
     },
     out_of_gas: {
         titleKey: i18nKey('errors.evm.out_of_gas.title'),
         messageKey: i18nKey('errors.evm.out_of_gas.body'),
         severity: ErrorSeverity.MEDIUM,
         retryable: false,
+        expected: true,
     },
     nonce_too_low: {
         titleKey: i18nKey('errors.evm.nonce_too_low.title'),
@@ -67,12 +70,15 @@ export const TRAITS: Record<EvmErrorCode, EvmErrorTraits> = {
         messageKey: i18nKey('errors.evm.replacement_underpriced.body'),
         severity: ErrorSeverity.MEDIUM,
         retryable: false,
+        expected: true,
     },
     replaced_transaction_confirmed: {
         titleKey: i18nKey('errors.evm.replaced_transaction_confirmed.title'),
         messageKey: i18nKey('errors.evm.replaced_transaction_confirmed.body'),
         severity: ErrorSeverity.MEDIUM,
         retryable: false,
+        // A speed-up or cancel losing the race to its original is ordinary timing.
+        expected: true,
     },
     insufficient_funds: {
         titleKey: i18nKey('errors.evm.insufficient_funds.title'),
@@ -80,6 +86,14 @@ export const TRAITS: Record<EvmErrorCode, EvmErrorTraits> = {
         messageKey: i18nKey('errors.evm.insufficient_funds.body'),
         severity: ErrorSeverity.MEDIUM,
         retryable: false,
+        expected: true,
+    },
+    fee_above_confirmed: {
+        titleKey: i18nKey('errors.evm.fee_above_confirmed.title'),
+        messageKey: i18nKey('errors.evm.fee_above_confirmed.body'),
+        severity: ErrorSeverity.MEDIUM,
+        retryable: true,
+        expected: true,
     },
     rate_limited: {
         titleKey: i18nKey('errors.evm.rate_limited.title'),

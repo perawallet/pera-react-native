@@ -16,11 +16,7 @@ import { formatAssetAmount } from '@perawallet/wallet-core-assets'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { trackEvent, SwapEvent, AnalyticsMetadataKey } from '@analytics'
-import {
-    formatCurrency,
-    type Nullable,
-    type Optional,
-} from '@perawallet/wallet-core-shared'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import {
     sortQuotesByAmountOutDesc,
     useProvidersQuery,
@@ -38,7 +34,8 @@ type SwapProviderRow = {
     iconUrl: Optional<string>
     displayName: string
     amountDisplay: string
-    fiatDisplay: Optional<string>
+    /** In the preferred currency; null until a rate resolves. */
+    fiatValue: Nullable<Decimal>
 }
 
 type UseSwapProviderContentResult = {
@@ -52,7 +49,7 @@ export const useSwapProviderContent = ({
     quotes,
     selectedProviderName,
 }: UseSwapProviderContentParams): UseSwapProviderContentResult => {
-    const { preferredCurrency, usdToPreferred } = useCurrency(scope)
+    const { usdToPreferred } = useCurrency(scope)
     const { data: providers } = useProvidersQuery(scope)
 
     const [userSelection, setUserSelection] =
@@ -99,18 +96,15 @@ export const useSwapProviderContent = ({
                 const fiatValue = quote.amountOutUsdValue
                     ? usdToPreferred(new Decimal(quote.amountOutUsdValue))
                     : null
-                const fiatDisplay = fiatValue
-                    ? formatCurrency(fiatValue, 2, preferredCurrency)
-                    : undefined
                 return {
                     quote,
                     iconUrl: providerItem?.iconUrl,
                     displayName,
                     amountDisplay,
-                    fiatDisplay,
+                    fiatValue,
                 }
             }),
-        [alternativeQuotes, providers, usdToPreferred, preferredCurrency],
+        [alternativeQuotes, providers, usdToPreferred],
     )
 
     return { userSelection, rows, handleSelect }

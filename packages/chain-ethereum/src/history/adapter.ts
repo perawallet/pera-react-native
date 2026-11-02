@@ -48,6 +48,9 @@ const toRecords = (
             scope,
             status: item.status === 'success' ? 'confirmed' : 'failed',
             timestamp: Date.parse(item.block_time),
+            ...(item.block_number !== undefined && {
+                blockNumber: item.block_number,
+            }),
             fee: item.fee === null ? undefined : new Decimal(item.fee),
             ...(item.from !== null && { initiator: item.from }),
             summary: summarizeEthereumHistoryItem(

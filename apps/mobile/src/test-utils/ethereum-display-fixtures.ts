@@ -27,6 +27,7 @@ export type EthereumDisplayFixtureKind =
     | 'token-transfer'
     | 'nft-transfer'
     | 'contract-call'
+    | 'approval'
     | 'contract-creation'
 
 export const ETHEREUM_FIXTURE_SENDER =
@@ -40,6 +41,9 @@ export const ETHEREUM_FIXTURE_TOKEN =
 // The bytes are hard-coded because viem isn't an apps/mobile dependency.
 export const ETHEREUM_FIXTURE_APPROVE_DATA =
     '0x095ea7b3000000000000000000000000000000000022d473030f116ddee9f6b43ac78ba3ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
+
+// No standard token function has this selector, so it reads as an unrecognised call.
+export const ETHEREUM_FIXTURE_CONTRACT_CALL_DATA = `0x5ae401dc${'0'.repeat(63)}1${'0'.repeat(64)}`
 
 // transfer(RECIPIENT, 5_000_000)
 const TOKEN_TRANSFER_DATA =
@@ -130,6 +134,16 @@ const TRANSACTIONS: Record<
         summary: NFT_TRANSFER_SUMMARY,
     },
     'contract-call': {
+        transaction: {
+            ...BASE_TRANSACTION,
+            to: ETHEREUM_FIXTURE_TOKEN,
+            value: 0n,
+            gas: 60_000n,
+            data: ETHEREUM_FIXTURE_CONTRACT_CALL_DATA,
+        },
+        summary: CALL_SUMMARY,
+    },
+    approval: {
         transaction: {
             ...BASE_TRANSACTION,
             to: ETHEREUM_FIXTURE_TOKEN,

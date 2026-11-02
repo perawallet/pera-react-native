@@ -24,6 +24,7 @@ import {
     type ProposalQueue,
     type ProposalQueueSheet,
 } from '@perawallet/wallet-core-connections'
+import { EIP1193_DAPP_KIND } from '@perawallet/wallet-core-dapp/wire'
 import { generateUniqueId, type Nullable } from '@perawallet/wallet-core-shared'
 import { useBottomSheet, type BottomSheetOptions } from '@modules/bottom-sheet'
 import {
@@ -64,9 +65,11 @@ export const useProposalQueue = (
                     autoCreateContainer: false,
                 }),
             // In-app pairings skip the sheet: the dApp is right behind the
-            // sheet host and shows its own connected state.
+            // sheet host and shows its own connected state. An injected EVM
+            // page is the same case, with no `origin.source` of its own.
             openSuccess: connection =>
-                connection.origin?.source === 'in-app'
+                connection.origin?.source === 'in-app' ||
+                connection.kind === EIP1193_DAPP_KIND
                     ? null
                     : sheet(
                           <ConnectionApprovalSuccessView

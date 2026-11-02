@@ -1161,6 +1161,11 @@ describe('useAccountHistory', () => {
 
             expect(mockNavigate).toHaveBeenCalledWith('GroupTransactionList', {
                 groupId: 'SWAP_GROUP_ABC',
+                historyTransaction: expect.objectContaining({
+                    chainData: expect.objectContaining({
+                        groupId: 'SWAP_GROUP_ABC',
+                    }),
+                }),
             })
         })
 
@@ -1199,5 +1204,15 @@ describe('useAccountHistory', () => {
                 historyTransaction: transaction,
             })
         })
+    })
+
+    it('opens the filter sheet when the filter action is pressed', () => {
+        const { result } = renderHook(() => useAccountHistory())
+
+        act(() => {
+            result.current.handleFilterPress()
+        })
+
+        expect(mockRequestBottomSheet).toHaveBeenCalled()
     })
 })

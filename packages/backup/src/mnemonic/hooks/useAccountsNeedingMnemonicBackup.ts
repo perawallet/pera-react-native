@@ -15,8 +15,10 @@ import { useQueries } from '@tanstack/react-query'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 import {
+    accountChainEntries,
     accountFundedNetworksQueryOptions,
     chainAccountOf,
+    useOtherRegisteredChainIds,
     useDelegationAuthorities,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -50,16 +52,31 @@ export const useAccountsNeedingMnemonicBackup = (
         [accounts, scope.chainId],
     )
     const authorities = useDelegationAuthorities(addresses, scope.chainId)
+    const otherChainIds = useOtherRegisteredChainIds(scope.chainId)
+    // Every account's chain addresses in one batch; owners maps each lookup back
+    // to its account so funding on any chain counts, as on the single-account hook.
+    const { entries, owners } = useMemo(() => {
+        const perAccount = accounts.map(account =>
+            accountChainEntries(account, scope.chainId, otherChainIds),
+        )
+        return {
+            entries: perAccount.flat(),
+            owners: perAccount.flatMap((list, index) => list.map(() => index)),
+        }
+    }, [accounts, scope.chainId, otherChainIds])
     const funding = useQueries({
-        queries: addresses.map(address =>
-            accountFundedNetworksQueryOptions(address || undefined, scope),
+        queries: entries.map(entry =>
+            accountFundedNetworksQueryOptions(entry, scope),
         ),
     })
 
-    const isPending = funding.some(
-        (query, index) => addresses[index] !== '' && query.isPending,
+    const isPending = funding.some(query => query.isPending)
+    const fundedFlags = accounts.map((_, index) =>
+        funding.some(
+            (query, lookup) =>
+                owners[lookup] === index && (query.data?.length ?? 0) > 0,
+        ),
     )
-    const fundedFlags = funding.map(query => (query.data?.length ?? 0) > 0)
     const fundedKey = fundedFlags.join()
 
     const needing = useMemo(

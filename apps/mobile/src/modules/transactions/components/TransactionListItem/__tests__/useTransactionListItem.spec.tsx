@@ -61,6 +61,7 @@ vi.mock('@hooks/useClipboard', () => ({
 
 const mockReplace = vi.hoisted(() => ({
     canReplace: false,
+    isBlocked: false,
     handleReplace: vi.fn(async () => undefined),
 }))
 vi.mock('../../../hooks/history/useReplaceTransaction', () => ({
@@ -181,17 +182,14 @@ describe('useTransactionListItem', () => {
     })
 
     describe('swaps', () => {
-        it('shows its own subtitle and skips the counterparty lookup', () => {
+        it('has no subtitle and stacks both legs, received first', () => {
             const row = renderRow(golden('swap'))
 
-            expect(useCounterpartyName).toHaveBeenCalledWith('', 'algorand')
-            expect(row.subtitle).toMatch(
-                /^transactions\.list_item\.swap_subtitle /,
-            )
-            expect(row.amounts[0]).toMatchObject({
-                currency: 'USDC',
-                prefix: '+',
-            })
+            expect(row.subtitle).toBeNull()
+            expect(row.amounts.map(a => [a.currency, a.prefix])).toEqual([
+                ['USDC', '+'],
+                ['ALGO', '-'],
+            ])
         })
     })
 
@@ -335,6 +333,17 @@ describe('useTransactionListItem with a record', () => {
         historyChainAdapters.reset()
         stored([])
         mockReplace.canReplace = false
+        mockReplace.isBlocked = false
+    })
+
+    it('says a send stuck behind an earlier one is waiting on it', () => {
+        mockReplace.canReplace = true
+        mockReplace.isBlocked = true
+
+        expect(renderRecord().notice).toMatchObject({
+            kind: 'warning',
+            titleKey: 'transactions.notice.waiting_on_earlier',
+        })
     })
 
     it("renders the record's own summary without a history adapter", () => {

@@ -3,7 +3,11 @@
  */
 
 import { defineRule } from 'lanekeep'
-import { TEST_SUPPORT, withoutTests } from '../shared/scope.js'
+import {
+    SHARED_APP_CODE_PATHS,
+    TEST_SUPPORT,
+    withoutTests,
+} from '../shared/scope.js'
 
 export default defineRule({
     id: 'pera/no-legacy-chain-in-app',
@@ -14,7 +18,7 @@ export default defineRule({
         message:
             'A shared app module must not pin the Algorand scope with LEGACY_CHAIN_ID',
         remediation:
-            "Take the chain from where the user entered the feature: the account's scope (`useAccountScope`), the sign request (`chainIdOfSignRequest`), or a `ChainScope` route param. UI only one chain serves belongs in that chain's module under `modules/<chain>/`, reached through `chainUiFor(family)`. Only `bootstrap/` and `modules/algorand/` may name the legacy chain.",
+            "Take the chain from where the user entered the feature: the account's scope (`useAccountScope`), the sign request (`chainIdOfSignRequest`), or a `ChainScope` route param. UI only one chain serves belongs in that chain's module under `modules/<chain>/`, reached through `chainUiFor(family)`. Only `bootstrap/` and `modules/algorand/` may name the legacy chain; the shared hooks and components answer to `pera/no-legacy-chain-in-shared-app-code`, which blocks on them.",
         examples: {
             bad: 'const scope = useSelectedScope(LEGACY_CHAIN_ID)',
             good: 'const scope = useAccountScope(account)',
@@ -25,6 +29,9 @@ export default defineRule({
         pathNotMatches: [
             '**/apps/mobile/src/bootstrap/**',
             '**/apps/mobile/src/modules/algorand/**',
+            // The shared hooks and components have their own rule, which
+            // blocks on them: pera/no-legacy-chain-in-shared-app-code.
+            ...SHARED_APP_CODE_PATHS,
             ...TEST_SUPPORT,
         ],
     }),

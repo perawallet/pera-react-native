@@ -19,14 +19,14 @@ import { useStyles } from './styles'
 export const BackupReminderWriteDownScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const { onContinue } = useBackupReminderWriteDownScreen()
+    const { body, warning, onContinue } = useBackupReminderWriteDownScreen()
 
     return (
         <PWInfoView
             testID='backup_write_down_screen'
             illustration={EditPenImage}
             title={t('backup.write_down.title')}
-            body={t('backup.write_down.body')}
+            body={body}
             footerExtras={
                 <PWView style={styles.warningRow}>
                     <PWIcon
@@ -37,7 +37,7 @@ export const BackupReminderWriteDownScreen = () => {
                         variant='body'
                         style={styles.warning}
                     >
-                        {t('backup.write_down.warning')}
+                        {warning}
                     </PWText>
                 </PWView>
             }

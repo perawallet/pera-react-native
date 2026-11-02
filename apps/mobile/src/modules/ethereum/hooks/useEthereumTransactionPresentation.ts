@@ -17,9 +17,11 @@ import {
     useFindAccountByAddress,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import type {
-    ChainScope,
-    TransactionNative,
+import {
+    i18nKey,
+    type ChainScope,
+    type I18nKey,
+    type TransactionNative,
 } from '@perawallet/wallet-core-chain-contract'
 import {
     ETHEREUM_CHAIN_ID,
@@ -47,13 +49,9 @@ export type { EthereumAmount } from './useEthereumStandardCall'
 export type EthereumTransactionPresentation = {
     view: EthereumTransactionView
     scope: ChainScope
-    titleKey:
-        | 'transactions.list_item.send'
-        | 'transactions.list_item.contract_call'
-        | 'transactions.list_item.approval'
-        | 'transactions.list_item.revoke_approval'
+    titleKey: I18nKey
     iconName: IconName
-    /** A contract call read as a standard token call; null while `contractDecoding` is off. */
+    /** A contract call read as a standard token call; null for any other call. */
     standardCall: Nullable<EthereumStandardCallPresentation>
     /** Moves value: a transfer view, or a contract call read as a token or NFT transfer. */
     isTransfer: boolean
@@ -136,12 +134,12 @@ const titleKeyOf = (
 ): EthereumTransactionPresentation['titleKey'] => {
     if (standardCall && isApproval(standardCall)) {
         return isRevocation(standardCall)
-            ? 'transactions.list_item.revoke_approval'
-            : 'transactions.list_item.approval'
+            ? i18nKey('transactions.list_item.revoke_approval')
+            : i18nKey('transactions.list_item.approval')
     }
     return view.kind === 'contract-call' && !standardCall
-        ? 'transactions.list_item.contract_call'
-        : 'transactions.list_item.send'
+        ? i18nKey('transactions.list_item.contract_call')
+        : i18nKey('transactions.list_item.send')
 }
 
 const iconNameOf = (

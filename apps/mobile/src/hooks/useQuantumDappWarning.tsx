@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 import { useCallback } from 'react'
 import {
     getSignerFor,
@@ -24,6 +23,7 @@ import {
 } from '@components/QuantumDappWarningSheet'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { UserPreferences } from '@constants/user-preferences'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { useIsQuantumDappWarningEnabled } from './useIsQuantumDappWarningEnabled'
 
 export type UseQuantumDappWarningResult = {
@@ -32,6 +32,7 @@ export type UseQuantumDappWarningResult = {
     // mounted — callers must never proceed past that throw.
     confirmQuantumDappUsage: (
         addresses: string[],
+        chainId: ChainId,
     ) => Promise<QuantumDappWarningDecision>
 }
 
@@ -42,7 +43,10 @@ export const useQuantumDappWarning = (): UseQuantumDappWarningResult => {
     const { request } = useBottomSheet()
 
     const confirmQuantumDappUsage = useCallback(
-        async (addresses: string[]): Promise<QuantumDappWarningDecision> => {
+        async (
+            addresses: string[],
+            chainId: ChainId,
+        ): Promise<QuantumDappWarningDecision> => {
             if (!isEnabled) return 'continue'
             if (getPreference(UserPreferences.quantumDappWarningAcknowledged))
                 return 'continue'
@@ -51,11 +55,8 @@ export const useQuantumDappWarning = (): UseQuantumDappWarningResult => {
             // non-primary signature follow the effective signer, so a rekey to a
             // quantum auth counts too.
             const hasNonPrimarySigner = addresses.some(address => {
-                const signer = getSignerFor(address, accounts, LEGACY_CHAIN_ID)
-                return (
-                    signer !== null &&
-                    usesNonPrimaryScheme(signer, LEGACY_CHAIN_ID)
-                )
+                const signer = getSignerFor(address, accounts, chainId)
+                return signer !== null && usesNonPrimaryScheme(signer, chainId)
             })
             if (!hasNonPrimarySigner) return 'continue'
 

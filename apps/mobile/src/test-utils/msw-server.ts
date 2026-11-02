@@ -14,6 +14,7 @@ import { afterAll, beforeAll } from 'vitest'
 import { isCommonAssetRequest } from 'msw'
 import { setupServer } from 'msw/node'
 import {
+    mockAccountsBalanceHistory,
     mockAlgodPendingTransaction,
     mockAlgodSimulate,
     mockAlgodStatusAfterBlock,
@@ -70,6 +71,9 @@ export const server = setupServer(
     // Every Algorand asset sync reads its batch's cross-chain groups; none
     // here, so lists stay ungrouped unless a test supplies some.
     mockCrossChainAssetGroups(),
+    // Home's change line reads the 24h wealth history whenever the Overview
+    // renders; no history here, so no line unless a test supplies some.
+    mockAccountsBalanceHistory({ response: { results: [] } }),
 )
 
 export type UnhandledRequestMode = 'warn' | 'bypass'

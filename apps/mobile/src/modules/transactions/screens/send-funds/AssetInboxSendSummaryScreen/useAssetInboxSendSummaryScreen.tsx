@@ -68,7 +68,6 @@ type UseAssetInboxSendSummaryScreenResult = {
     asset: Nullable<PeraAsset>
     HeaderImageComponent: FC<SvgProps>
     handleSend: () => void
-    handleClose: () => void
     handleReadMore: () => void
     isProcessing: boolean
 }
@@ -191,10 +190,6 @@ export const useAssetInboxSendSummaryScreen =
             void showWarningSheet()
         }, [recipientSafety.isConfirmBlocked, showWarningSheet])
 
-        const handleClose = useCallback(() => {
-            navigation.goBack()
-        }, [navigation])
-
         const handleReadMore = useCallback(() => {
             pushWebView({
                 id: generateOrderedUniqueId(),
@@ -217,7 +212,6 @@ export const useAssetInboxSendSummaryScreen =
             HeaderImageComponent: headerImage,
             asset: asset ?? null,
             handleSend,
-            handleClose,
             handleReadMore,
             isProcessing,
         }

@@ -10,32 +10,14 @@
  limitations under the License
  */
 
-import { useCallback, useMemo, type ReactNode } from 'react'
-import { addressOn, type WalletAccount } from '@perawallet/wallet-core-accounts'
+import { type ReactNode } from 'react'
+import { type WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import {
-    PWIcon,
-    PWLoadingIndicator,
-    PWText,
-    PWTouchableOpacity,
-    PWView,
-} from '@components/core'
-import { ChainBadge } from '@components/ChainBadge'
-import { EmptyView } from '@components/EmptyView'
-import { AddressDisplay } from '@components/AddressDisplay'
-import {
-    SearchableList,
-    type SearchableListSearchProps,
-} from '@components/SearchableList'
-import { useLanguage } from '@hooks/useLanguage'
-import { AccountResultRow } from './AccountResultRow'
-import { AddressSearchInput } from './AddressSearchInput'
-import { PasteFromClipboardRow } from './PasteFromClipboardRow'
+import { PWLoadingIndicator, PWView } from '@components/core'
+import { SearchableList } from '@components/SearchableList'
 import { useStyles } from './styles'
-import {
-    useAddressSearchView,
-    type AddressSearchItem,
-} from './useAddressSearchView'
+import { useAddressSearchView } from './useAddressSearchView'
+import { useAddressSearchList } from './useAddressSearchList'
 
 export type AddressSearchViewProps = {
     onSelected: (address: string, nfdName?: string) => void
@@ -70,7 +52,6 @@ export const AddressSearchView = ({
     isSendingMultiChainAsset,
 }: AddressSearchViewProps) => {
     const styles = useStyles()
-    const { t } = useLanguage()
     const {
         value,
         setValue,
@@ -90,175 +71,21 @@ export const AddressSearchView = ({
         isSendingMultiChainAsset,
     })
 
-    const chainBadge = useMemo(
-        () =>
-            chainBadgeName ? <ChainBadge name={chainBadgeName} /> : undefined,
-        [chainBadgeName],
-    )
-
-    const renderItem = useCallback(
-        ({ item }: { item: AddressSearchItem }) => {
-            switch (item.type) {
-                case 'section_header': {
-                    return <PWText variant='h4'>{t(item.title)}</PWText>
-                }
-                case 'paste': {
-                    // Fills the field instead of selecting outright, matching
-                    // native: the user still confirms the pasted address.
-                    return (
-                        <PasteFromClipboardRow
-                            address={item.address}
-                            onPress={setValue}
-                        />
-                    )
-                }
-                case 'contact': {
-                    return (
-                        <PWTouchableOpacity
-                            onPress={() => onSelected(item.address)}
-                        >
-                            <AddressDisplay
-                                scope={scope}
-                                address={item.address}
-                                showCopy={false}
-                                trailing={chainBadge}
-                                style={styles.accountDisplay}
-                            />
-                        </PWTouchableOpacity>
-                    )
-                }
-                case 'account': {
-                    const address = addressOn(item.account, scope) ?? ''
-                    return (
-                        <PWTouchableOpacity
-                            onPress={() => onSelected(address)}
-                            testID={`account_result_row_${address}`}
-                        >
-                            <AccountResultRow
-                                account={item.account}
-                                showBalance={showAccountBalance}
-                                chainId={scope.chainId}
-                                badges={chainBadge}
-                            />
-                        </PWTouchableOpacity>
-                    )
-                }
-                case 'address': {
-                    return (
-                        <PWTouchableOpacity
-                            onPress={() => onSelected(item.address)}
-                            style={showAddIcon ? styles.foreignRow : undefined}
-                        >
-                            <AddressDisplay
-                                scope={scope}
-                                address={item.address}
-                                showCopy={false}
-                                forceShowIcon
-                                style={
-                                    showAddIcon
-                                        ? styles.accountDisplayInRow
-                                        : styles.accountDisplay
-                                }
-                            />
-                            {showAddIcon && (
-                                <PWView
-                                    style={styles.addIconButton}
-                                    testID='address-search-add-icon'
-                                >
-                                    <PWIcon
-                                        name='plus'
-                                        variant='helper'
-                                        size='sm'
-                                    />
-                                </PWView>
-                            )}
-                        </PWTouchableOpacity>
-                    )
-                }
-                case 'nfd': {
-                    return (
-                        <PWTouchableOpacity
-                            onPress={() =>
-                                onSelected(item.nfd.address, item.nfd.name)
-                            }
-                            style={
-                                showAddIcon ? styles.foreignRow : styles.nfdItem
-                            }
-                        >
-                            <AddressDisplay
-                                scope={scope}
-                                address={item.nfd.address}
-                                showCopy={false}
-                                style={
-                                    showAddIcon
-                                        ? styles.accountDisplayInRow
-                                        : styles.accountDisplay
-                                }
-                            />
-                            {showAddIcon && (
-                                <PWView
-                                    style={styles.addIconButton}
-                                    testID='address-search-add-icon'
-                                >
-                                    <PWIcon
-                                        name='plus'
-                                        variant='helper'
-                                        size='sm'
-                                    />
-                                </PWView>
-                            )}
-                        </PWTouchableOpacity>
-                    )
-                }
-            }
-        },
-        [
-            onSelected,
-            setValue,
-            styles,
-            t,
-            showAccountBalance,
-            showAddIcon,
-            scope,
-            chainBadge,
-        ],
-    )
-
-    // SearchableList takes a component, so the scanned chain is bound here.
-    const SearchInput = useMemo(() => {
-        const chainIds = [scope.chainId]
-        const BoundAddressSearchInput = (props: SearchableListSearchProps) => (
-            <AddressSearchInput
-                {...props}
-                chainIds={chainIds}
-            />
-        )
-        return BoundAddressSearchInput
-    }, [scope.chainId])
-
-    const renderSeparator = useCallback(
-        () => <PWView style={styles.listSeparator} />,
-        [styles],
-    )
-
-    const keyExtractor = useCallback((item: AddressSearchItem) => item.key, [])
-
-    const emptyComponent = useCallback(
-        () =>
-            wrongNetworkMessage ? (
-                <EmptyView
-                    title={wrongNetworkMessage.title}
-                    body={wrongNetworkMessage.body}
-                    shouldTruncateBody={false}
-                />
-            ) : (
-                <EmptyView
-                    title={t('address_entry.no_accounts_found')}
-                    body={t('address_entry.no_accounts_body')}
-                />
-            ),
-        [t, wrongNetworkMessage],
-    )
+    const {
+        renderItem,
+        SearchInput,
+        renderSeparator,
+        keyExtractor,
+        emptyComponent,
+    } = useAddressSearchList({
+        scope,
+        onSelected,
+        setValue,
+        chainBadgeName,
+        showAccountBalance,
+        showAddIcon,
+        wrongNetworkMessage,
+    })
 
     // An excluded address (the send's own account) can leave nothing to list
     // before any query, which isn't a miss to report; other pickers keep it.

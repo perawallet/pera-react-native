@@ -10,85 +10,148 @@
  limitations under the License
  */
 
-import { PWView } from '@components/core'
+import { PWSkeleton, PWText, PWView } from '@components/core'
 import { useStyles } from './styles'
 import {
-    percentChange,
+    formatPercentage,
     type HistoryPeriod,
+    type Maybe,
+    type Nullable,
 } from '@perawallet/wallet-core-shared'
-import { useMemo } from 'react'
-import { Decimal } from 'decimal.js'
+import type { Decimal } from 'decimal.js'
 import { useSettings } from '@perawallet/wallet-core-settings'
 import {
     type AccountHoldingSource,
+    useAccountsAssetsBalanceHistoryQuery,
     usePortfolioHistoryQuery,
+    type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
 import { PreferredAmount } from '@components/PreferredAmount'
-import { TrendIndicator } from '@components/TrendIndicator'
+import {
+    useHistoryTrend,
+    type PortfolioTrendDirection,
+} from '@hooks/usePortfolioTrend'
 
-export type WealthTrendProps = {
-    /** Trended as one summed series. */
-    sources: AccountHoldingSource[]
-    currencyScope: ChainScope
-    period: HistoryPeriod
-    /** Gate the (slow) history fetch on chart visibility. */
-    enabled?: boolean
+/** One asset held by one account on one chain. */
+export type WealthTrendHolding = {
+    account: WalletAccount
+    assetId: string
+    scope: ChainScope
 }
 
-export const WealthTrend = ({
-    sources,
-    currencyScope,
-    period,
-    enabled = true,
-}: WealthTrendProps) => {
+export type WealthTrendProps = {
+    period: HistoryPeriod
+    /** A scrubbed chart point's value: the trend then runs from the chart's start to it. */
+    selectedValue?: Maybe<Decimal>
+} & (
+    | {
+          /** Trended as one summed series. */
+          sources: AccountHoldingSource[]
+          currencyScope: ChainScope
+          holding?: never
+      }
+    | {
+          holding: WealthTrendHolding
+          sources?: never
+          currencyScope?: never
+      }
+)
+
+const NO_SOURCES: AccountHoldingSource[] = []
+
+const SIGN_BY_DIRECTION: Record<PortfolioTrendDirection, string> = {
+    up: '+',
+    down: '-',
+    flat: '',
+}
+
+// A move that rounds to nothing reads 0.00%; a zero start has no percentage to give.
+const percentageTextOf = (
+    direction: PortfolioTrendDirection,
+    percentage: Decimal,
+): Nullable<string> => {
+    if (direction === 'flat') return formatPercentage(0)
+    return percentage.isZero() ? null : formatPercentage(percentage.abs())
+}
+
+export const WealthTrend = (props: WealthTrendProps) => {
+    const { period, holding, selectedValue } = props
     const styles = useStyles()
     const { privacyMode } = useSettings()
 
-    const { data, isPending, isUnavailableOnNetwork, isPartial } =
-        usePortfolioHistoryQuery(sources, period, currencyScope, enabled)
+    // Both queries are called every render; the mode that isn't in use is gated off.
+    const portfolioHistory = usePortfolioHistoryQuery(
+        holding ? NO_SOURCES : props.sources,
+        period,
+        holding ? holding.scope : props.currencyScope,
+        !holding,
+    )
+    const holdingHistory = useAccountsAssetsBalanceHistoryQuery(
+        holding?.account ?? null,
+        holding?.assetId ?? '',
+        period,
+        holding ? holding.scope : props.currencyScope,
+        !!holding,
+    )
+    const {
+        trendAbsolute,
+        trendPercentage,
+        trendDirection,
+        hasNoTrend,
+        isPending,
+    } = useHistoryTrend(
+        holding ? holdingHistory : portfolioHistory,
+        holding
+            ? holdingHistory.isUnavailableOnNetwork
+            : portfolioHistory.isPartial ||
+                  portfolioHistory.isUnavailableOnNetwork,
+        selectedValue,
+    )
 
-    // Trend follows the fiat value, like the chart — the ALGO-denominated
-    // value is flat for an all-ALGO account no matter what the price does.
-    // Unpriced points are dropped first: defaulting one end to 0 would report
-    // a swing between a real value and a rate we simply don't have.
-    const [absolute, percentage, isPositive, hasPoints] = useMemo(() => {
-        const priced =
-            data?.flatMap(point =>
-                point.preferredValue ? [point.preferredValue] : [],
-            ) ?? []
-        const firstDp = priced.at(0) ?? new Decimal(0)
-        const lastDp = priced.at(-1) ?? new Decimal(0)
+    if (privacyMode) return null
 
-        return [
-            lastDp.minus(firstDp),
-            percentChange(firstDp, lastDp),
-            lastDp.greaterThanOrEqualTo(firstDp),
-            priced.length > 0,
-        ] as const
-    }, [data])
+    if (isPending) {
+        return (
+            <PWView
+                testID='wealth_trend_loading'
+                style={styles.loading}
+            >
+                <PWSkeleton style={styles.loadingBar} />
+            </PWView>
+        )
+    }
 
-    // A failed or empty chain leaves no history to measure a change over, and
-    // a chain the chart left out leaves the change short of the total beside it.
-    return isPending ||
-        !hasPoints ||
-        privacyMode ||
-        isUnavailableOnNetwork ||
-        isPartial ? (
-        <></>
-    ) : (
-        <PWView style={styles.container}>
+    // The history reports no change when a chain is missing, failed or unpriced.
+    if (hasNoTrend) return null
+
+    const sign = SIGN_BY_DIRECTION[trendDirection]
+    const percentageText = percentageTextOf(trendDirection, trendPercentage)
+    const directionStyle = {
+        up: styles.itemUp,
+        down: styles.itemDown,
+        flat: styles.itemFlat,
+    }[trendDirection]
+
+    return (
+        <PWText
+            testID='wealth_trend'
+            variant='bodyLarge'
+            weight={500}
+            style={directionStyle}
+            numberOfLines={1}
+        >
+            {/* Rounded like the direction, so a sub-cent move can't hit the fiat floor and print "< $0.01". */}
             <PreferredAmount
-                value={absolute}
+                isInline
+                prefix={sign}
+                value={trendAbsolute.abs().toDecimalPlaces(2)}
                 density='compact'
-                showSymbol
-                style={isPositive ? styles.itemUp : styles.itemDown}
+                variant='bodyLarge'
+                weight={500}
+                style={directionStyle}
             />
-            <TrendIndicator
-                percentage={percentage}
-                hasIconBackground
-                shouldHideIconWhenZero
-            />
-        </PWView>
+            {percentageText && ` (${sign}${percentageText})`}
+        </PWText>
     )
 }

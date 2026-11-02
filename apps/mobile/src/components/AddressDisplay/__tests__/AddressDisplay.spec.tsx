@@ -317,6 +317,39 @@ describe('AddressDisplay', () => {
         expect(screen.getByText(/CCC/)).toBeTruthy()
     })
 
+    it('reads inline as the NFD name alone, with no icon or address line', () => {
+        mockUseNfdForAddress.mockReturnValue({
+            data: [{ name: 'alice.algo' }],
+            isPending: false,
+        })
+
+        render(
+            <AddressDisplay
+                address={'C'.repeat(58)}
+                displayType='inline'
+            />,
+        )
+
+        expect(screen.getByText('alice.algo')).toBeTruthy()
+        expect(screen.queryByTestId('icon-person')).toBeNull()
+        expect(screen.queryByText(/CCC/)).toBeNull()
+    })
+
+    it('reads inline as the address, never a contact name, so the caller can name the contact', () => {
+        const address = 'E'.repeat(58)
+        mockContacts = [{ name: 'Bob', addresses: { algorand: address } }]
+
+        render(
+            <AddressDisplay
+                address={address}
+                displayType='inline'
+            />,
+        )
+
+        expect(screen.queryByText('Bob')).toBeNull()
+        expect(screen.getByText(/EEE/)).toBeTruthy()
+    })
+
     it('renders only the truncated address when no NFD resolves for a foreign address', () => {
         const address = 'D'.repeat(58)
         render(<AddressDisplay address={address} />)

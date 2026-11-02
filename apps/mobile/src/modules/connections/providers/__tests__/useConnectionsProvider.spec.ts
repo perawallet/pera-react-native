@@ -407,14 +407,14 @@ describe('useConnectionsProvider', () => {
     })
 
     // Registration happens during render, ahead of the boot effect: a factory
-    // that threw here would take every other handler down with it, so both
-    // build their transports inside `initialize()` instead.
-    it('registers both WalletConnect protocols with their transport deps injected', () => {
+    // that threw here would take every other handler down with it, so the
+    // WalletConnect handlers build their transports inside `initialize()` instead.
+    it('registers both WalletConnect protocols and the in-app browser EVM provider with their deps injected', () => {
         renderHook(() => useConnectionsProvider())
 
         expect(
             mockRegister.mock.calls.map(([handler]) => handler.kind),
-        ).toEqual(['walletconnect-v1', 'walletconnect-v2'])
+        ).toEqual(['walletconnect-v1', 'walletconnect-v2', 'dapp-eip1193'])
         const v2 = mockCreateV2.mock.calls[0][0]
         expect(v2.projectId).toBe(config.reownProjectId)
         expect(v2.keyValueStorage).toBe(keyValueStorage)
@@ -596,6 +596,29 @@ describe('useConnectionsProvider', () => {
             const approved = await wrapped.approve(['AAAA'])
 
             expect(approved.origin?.source).toBe('in-app')
+            expect(requestBottomSheet).toHaveBeenCalledTimes(1)
+        })
+
+        it('skips the success sheet for a connection an injected EVM page made', async () => {
+            renderHook(() => useConnectionsProvider())
+            const proposal = makeProposal('p1')
+            proposal.approve.mockResolvedValue({
+                id: 'dapp-eip1193:https://app.uniswap.org',
+                kind: 'dapp-eip1193',
+                name: 'app.uniswap.org',
+                peer: { name: 'app.uniswap.org' },
+                accounts: ['0xabc'],
+                status: 'active',
+                createdAt: 0,
+                lastActiveAt: 0,
+            })
+            proposalSubscription.listener?.(proposal)
+            const wrapped = wrappedProposalFrom(
+                requestBottomSheet.mock.calls[0],
+            )
+
+            await wrapped.approve(['0xabc'])
+
             expect(requestBottomSheet).toHaveBeenCalledTimes(1)
         })
 

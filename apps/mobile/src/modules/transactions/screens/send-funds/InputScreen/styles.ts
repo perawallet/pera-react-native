@@ -41,6 +41,11 @@ export const useStyles = makeStyles(theme => {
         },
         amount,
         amountPlaceholder,
+        feeReserveHint: {
+            color: theme.colors.textGray,
+            textAlign: 'center' as const,
+            paddingHorizontal: theme.spacing.xl,
+        },
         buttonContainer: {
             flexDirection: 'row',
             justifyContent: 'flex-start',
@@ -77,6 +82,11 @@ export const useStyles = makeStyles(theme => {
         },
         headerTitleContainer: {
             alignItems: 'center',
+        },
+        headerActions: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: theme.spacing.md,
         },
         confirmMessage: {
             alignItems: 'center',

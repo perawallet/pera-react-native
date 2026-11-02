@@ -94,7 +94,8 @@ addresses before approving, because any extension page can send on the control s
 ## Composition roots
 
 - Native: `apps/mobile/src/modules/connections/providers/useConnectionsProvider.ts` creates the
-  registry, registers the WalletConnect v1 and v2 handlers, boots it through `bootConnections`
+  registry, registers the WalletConnect v1 and v2 handlers and the EIP-1193 handler that serves
+  the in-app browser's EVM pages ([DAPP_BRIDGE](DAPP_BRIDGE.md#in-app-browser)), boots it through `bootConnections`
   (`packages/connections/src/boot.ts`), and mounts the proposal queue, error toasts and signing
   adapter.
 - Extension offscreen: `apps/browser/src/offscreen/runOffscreenApp.ts` registers the WalletConnect
@@ -120,7 +121,9 @@ neither web realm constructs it; a v2 URI there fails as `no-handler` rather tha
 A v2 session spans every chain whose `dappConnect` capability is on when a proposal arrives and again
 when it settles. Each chain's `DappRequestChainAdapter` serves its own namespace, an approved address
 goes only under the namespace whose chain's address codec accepts it (no codec, no addresses), and a
-request routes by its CAIP-2 id to a chain's selected network only. Existing sessions and their
+request routes by its CAIP-2 id to a chain's selected network only. Chains sharing a namespace (every
+EVM chain is `eip155`) are approved as one namespace entry, since a session holds a single entry per
+key and the last chain's would replace the others'. Existing sessions and their
 requests never read the capability, so turning it off leaves them listed and revocable.
 
 Message signing is gated per request instead: an EVM chain's route table reads `messageSigning` on
@@ -135,10 +138,12 @@ The app's `watchWalletNotices` feeds `ConnectionRegistry.notify` with each chain
 account changes, and v2 emits `chainChanged` and `accountsChanged` only for a chain whose support
 declares `sessionEvents`. `chainChanged` goes only to a session that already holds the new network.
 
-A dApp's switch request (`wallet_switchEthereumChain`) never moves the wallet's selection. A target
-that is not the chain's selected network is refused. The selected network is answered at once if the
-session holds it, since approval was consent to it; otherwise the user is asked before it is added to
-the session.
+A dApp's switch request (`wallet_switchEthereumChain`) never moves the wallet's selection. The target
+is resolved across every chain of the request's namespace, so a request arriving on one EVM chain can
+name another. A target no chain serves, or one a session lacks whose chain has `dappConnect` off, is
+answered with the namespace's unrecognized-chain code and the user is told; a target that is not its
+chain's selected network is refused. The selected network is answered at once if the session holds it,
+since approval was consent to it; otherwise the user is asked before it is added to the session.
 
 ## The `dapp` handler
 
@@ -192,6 +197,18 @@ that was never imported from one the user has since disconnected.
 The native-app upgrade path, `migrateWalletConnect` in `packages/migrate`, takes the store too,
 through `MigrationDeps.walletConnectSessionKeys`. All three writers build the record with
 `buildWalletConnectV1Connection` (`src/v1/connection.ts`), so the persisted shape has one definition.
+
+## Reaching Pera from a mobile browser
+
+The v2 client's metadata carries `redirect` links, `perawallet-wc://` and
+`https://perawallet.app/qr/perawallet-wc/`, so a paired dApp can bring the user back to Pera for a
+later request. The universal link keeps its trailing slash: the bare host matches no app link, while
+both links reach the WalletConnect pairing route in `packages/deeplinks`.
+
+Whether a Reown AppKit dApp lists Pera in its connect modal is decided by a WalletGuide listing, which
+WalletConnect hosts outside this repo. Without one, the user pairs by scanning the QR code or pasting
+the URI. A listing's links are opened as `<native link>wc?uri=` or `<universal link>/wc?uri=`, so it
+must use the same two links, and its chains decide whether EVM dApps offer Pera.
 
 ## WalletConnect v2 refusal codes
 

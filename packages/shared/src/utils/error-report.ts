@@ -18,10 +18,10 @@ export type ErrorReportPayload = {
     severity: LogErrorSeverity
     error: unknown
     /**
-     * Stable name for the logical error site, set only when `error`'s stack was
-     * captured inside the logger and so cannot identify the caller. Reporters
-     * that fingerprint on the stack need it to tell two sites apart; see
-     * `reportError`.
+     * Stable name for the logical error site: the error's declared report
+     * code, else the constant log message when the stack was captured inside
+     * the logger and so cannot identify the caller. Reporters that fingerprint
+     * on the stack need it to tell two sites apart; see `reportError`.
      */
     groupingKey?: string
 }

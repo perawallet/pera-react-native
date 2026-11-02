@@ -144,6 +144,7 @@ describe('Flow: Messages — inbox across chains', () => {
                 screen.getByText('messages.inbox.info.algorand_title'),
             ).toBeTruthy()
         })
+        expect(screen.getByText('messages.inbox.info.title')).toBeTruthy()
         expect(
             screen.getByText('messages.inbox.info.other_networks_title'),
         ).toBeTruthy()

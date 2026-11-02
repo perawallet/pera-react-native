@@ -16,7 +16,7 @@ import type { ScopedAssetSearchResult } from '@perawallet/wallet-core-assets'
 // Import the leaf directly (not the AssetItem barrel) so the search row doesn't
 // drag in AccountAssetItemView -> CollectibleListItem -> CollectibleThumbnail.
 import { AssetItemView } from '@modules/assets/components/AssetItem/AssetItemView'
-import { ChainLabel } from '../ChainLabel'
+import { ChainLabel } from '@modules/chain-ui/icon'
 import { useStyles } from './styles'
 
 type AssetSearchItemProps = {

@@ -10,12 +10,15 @@
  limitations under the License
  */
 
+import { useContext } from 'react'
 import {
     PWText,
+    PWTextToneContext,
     type PWTextProps,
     PWView,
     type PWViewProps,
 } from '@components/core'
+import { KeyValueAlignmentContext } from './KeyValueAlignmentContext'
 import { useStyles } from './styles'
 
 export type KeyValueRowProps = {
@@ -26,7 +29,8 @@ export type KeyValueRowProps = {
 
 export const KeyValueRow = (props: KeyValueRowProps) => {
     const { title, titleProps, children, ...rest } = props
-    const styles = useStyles(props)
+    const alignment = useContext(KeyValueAlignmentContext)
+    const styles = useStyles({ ...props, alignment })
     return (
         <PWView
             {...rest}
@@ -42,7 +46,13 @@ export const KeyValueRow = (props: KeyValueRowProps) => {
                     {title}
                 </PWText>
             </PWView>
-            <PWView style={styles.childContainer}>{children}</PWView>
+            <PWView style={styles.childContainer}>
+                <PWTextToneContext.Provider
+                    value={alignment === 'end' ? 'secondary' : 'default'}
+                >
+                    {children}
+                </PWTextToneContext.Provider>
+            </PWView>
         </PWView>
     )
 }

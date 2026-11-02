@@ -27,12 +27,14 @@ import {
     TransportError,
     type BroadcasterChainAdapter,
     type DataTransport,
+    type SubmissionFlow,
 } from '@perawallet/wallet-core-signing'
 import { EvmError, EvmErrorCode, toEvmError } from '../blockchain/errors'
 import { createEvmClient } from '../blockchain/utils/createEvmClient'
 import type { EvmChain } from '../chains/types'
 import {
     reconcileEthereumSubmissions,
+    type ProbeFailureStreaks,
     type SubmissionSettledHandlers,
 } from './reconcile'
 import { resumeEthereumCallBatches } from '../connect/callBatch/executor'
@@ -58,7 +60,40 @@ export const createEvmBroadcasterAdapter = (
         options.confirmationTimeoutMs ?? ETHEREUM_CONFIRMATION_TIMEOUT_MS
     const clientFor = (scope: ChainScope) => createEvmClient(scope, ctx, chain)
     const settleHandlers: SubmissionSettledHandlers = new Map()
+    const probeFailures: ProbeFailureStreaks = new Map()
     const nativeSymbol = chain.row.nativeAsset.symbol
+
+    // Logs the node's error rather than the SubmissionError wrapper:
+    // `isExpectedError` reads only the outer error, and only the node error
+    // knows whether the failure is the environment's.
+    const reportSubmitFailure = (
+        error: unknown,
+        flow: SubmissionFlow,
+    ): void => {
+        // Refused before the node saw it for a wallet-side reason, so not an
+        // EVM failure to group under evm.unknown.
+        if (error instanceof TransportError) {
+            logger.warn('Ethereum submission refused before broadcast', {
+                error,
+                chainId: chain.row.id,
+                flow,
+            })
+            return
+        }
+        logger.error(
+            toEvmError(
+                error instanceof SubmissionError ? error.nodeError : error,
+                nativeSymbol,
+            ),
+            {
+                chainId: chain.row.id,
+                flow,
+                ...(error instanceof SubmissionError && {
+                    classification: error.classification,
+                }),
+            },
+        )
+    }
 
     return {
         chainId: chain.row.id,
@@ -105,9 +140,15 @@ export const createEvmBroadcasterAdapter = (
                         flow: 'pipeline',
                     })
                 } catch (error) {
+                    reportSubmitFailure(error, 'pipeline')
                     // Keeps the classification: wrapping would make a node
                     // refusal look retryable.
-                    if (error instanceof SubmissionError) throw error
+                    if (
+                        error instanceof SubmissionError ||
+                        error instanceof TransportError
+                    ) {
+                        throw error
+                    }
                     const cause = toError(error)
                     throw new TransportError(cause.message, cause)
                 }
@@ -130,21 +171,28 @@ export const createEvmBroadcasterAdapter = (
         // Confirmation is the reconciler's, as for the pipeline's transport.
         submitAndAutoRefresh: async (scope, signedTransactions, options) => {
             const bytes = signedTransactions.map(signed => signed.bytes)
-            return submitAndRecordEthereumTransactions({
-                client: clientFor(scope),
-                chain,
-                scope,
-                signedTransactions: bytes,
-                historyEntries: await Promise.all(
+            const flow = options?.flow ?? 'pipeline'
+            try {
+                const historyEntries = await Promise.all(
                     bytes.map(serialized =>
                         historyEntryOfSigned(
                             bytesToHex(serialized) as TransactionSerialized,
                             chain,
                         ),
                     ),
-                ),
-                flow: options?.flow ?? 'pipeline',
-            })
+                )
+                return await submitAndRecordEthereumTransactions({
+                    client: clientFor(scope),
+                    chain,
+                    scope,
+                    signedTransactions: bytes,
+                    historyEntries,
+                    flow,
+                })
+            } catch (error) {
+                reportSubmitFailure(error, flow)
+                throw error
+            }
         },
         // An unsigned request has no hash yet.
         isRequestGroupAlreadySubmitted: async () => false,
@@ -155,6 +203,7 @@ export const createEvmBroadcasterAdapter = (
             const summary = await reconcileEthereumSubmissions({
                 chain,
                 settleHandlers,
+                probeFailures,
                 getClient: clientFor,
             })
             void resumeEthereumCallBatches(ctx, chain, {
@@ -164,6 +213,7 @@ export const createEvmBroadcasterAdapter = (
         },
         deriveSubmissionAttemptFromBytes: bytesList => ({
             txIds: bytesList.map(bytes => keccak256(bytes)),
+            chainData: { family: 'evm' },
         }),
         // Ethereum confirms through the reconciler, not a completion handler.
         setOnConfirmedHandler: () => undefined,

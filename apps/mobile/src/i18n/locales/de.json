@@ -285,7 +285,6 @@
         "markets": {
             "something_went_wrong_title": "Etwas ist schiefgelaufen",
             "something_went_wrong_body": "Die Details dieses Assets konnten nicht geladen werden. Bitte überprüfe deine Verbindung und versuche es erneut.",
-            "discover_more": "Weitere Details unter Entdecken ansehen",
             "title": "Märkte",
             "stats": "Statistiken",
             "price": "Preis",
@@ -309,6 +308,7 @@
         "action_buttons": {
             "swap": "Tauschen",
             "buy": "Kaufen",
+            "buy_sell": "Kaufen/Verkaufen",
             "send": "Senden",
             "receive": "Empfangen"
         },
@@ -471,7 +471,6 @@
         "remove_rekey_error_message": "Du kannst dieses Konto erst entfernen, nachdem du seine {{count}} rekeyed Konto(s) entfernt hast",
         "view_private_key": "Privaten Schlüssel anzeigen",
         "networks_title": "Netzwerke",
-        "networks_title_named": "{{name}} in jedem Netzwerk",
         "add_network": "Hinzufügen",
         "add_network_error": "Dieses Netzwerk konnte nicht hinzugefügt werden",
         "add_network_success": "{{network}} hinzugefügt",
@@ -557,7 +556,7 @@
         },
         "compatibility": {
             "title": "Passphrase in anderen Wallets verwenden",
-            "evm": "Ethereum-kompatible Netzwerke: Standard-BIP39-Wallets wie MetaMask können diese Wörter importieren, und die Adresse deines ersten Kontos stimmt überein. Konten, die du später in Pera hinzufügst, erscheinen in diesen Wallets standardmäßig eventuell nicht.",
+            "evm": "Ethereum-kompatible Netzwerke: Standard-BIP39-Wallets wie MetaMask, Uniswap oder Rabby können diese Wörter importieren, und die Adresse deines ersten Kontos stimmt überein. Nach dem Import siehst du eventuell nur diese erste Adresse. Manche Wallets zeigen deine weiteren Adressen an, sobald sie verwendet wurden; in anderen musst du sie manuell hinzufügen. Sie erscheinen in der Reihenfolge, in der du sie in Pera erstellt hast.",
             "algorand": "Algorand: funktioniert in Pera und anderen Wallets, die Algorand-HD-Wallets mit 24 Wörtern unterstützen. Ältere Algorand-Wallets mit 25 Wörtern können sie nicht importieren.",
             "warning": "Wer diese Wörter hat, kontrolliert dein Guthaben in allen Netzwerken. Gib sie niemals auf einer Website ein und teile sie mit niemandem."
         }
@@ -578,12 +577,15 @@
         "info": {
             "title": "Backup der Wiederherstellungsphrase für dein Konto erstellen",
             "body": "Ein Backup der Wiederherstellungsphrase ermöglicht es dir, dein Konto wiederherzustellen. Ohne die Wiederherstellungsphrase kannst du den Zugriff auf dein Algorand-Konto unwiderruflich verlieren, wenn du dein Gerät verlierst, das Konto entfernst oder die App löschst!",
+            "body_all_networks": "Deine Wiederherstellungsphrase ist die einzige Möglichkeit, dein Konto in allen Netzwerken wiederherzustellen: {{networks}}. Wenn du ohne Backup dein Gerät verlierst, das Konto entfernst oder die App löschst, verlierst du den Zugriff auf dein Guthaben unwiderruflich.",
             "cta": "Ich verstehe"
         },
         "write_down": {
             "title": "Bereite dich darauf vor, deine Wiederherstellungsphrase aufzuschreiben",
             "body": "Die einzige Möglichkeit, ein Algorand-Konto wiederherzustellen, ist diese Wiederherstellungsphrase.",
+            "body_all_networks": "Diese Wiederherstellungsphrase ist die einzige Möglichkeit, dein Konto und alle seine Adressen in allen Netzwerken wiederherzustellen.",
             "warning": "Teile diese Wiederherstellungsphrase mit niemandem, da sie vollen Zugriff auf dein Konto gewährt.",
+            "warning_all_networks": "Teile diese Wiederherstellungsphrase mit niemandem. Wer sie hat, kontrolliert dein Guthaben in allen Netzwerken.",
             "cta": "Ich bin bereit zu beginnen"
         },
         "mnemonic": {
@@ -1193,6 +1195,10 @@
                 "title": "Nicht genügend {{symbol}}",
                 "body": "Dieses Konto verfügt nicht über genügend {{symbol}}, um den Betrag und die Netzwerkgebühr zu decken. Füge mehr {{symbol}} hinzu und versuche es erneut."
             },
+            "fee_above_confirmed": {
+                "title": "Netzwerkgebühren gestiegen",
+                "body": "Die Netzwerkgebühr liegt jetzt über der von dir bestätigten maximalen Gebühr. Prüfe die Transaktion, um die neue Gebühr zu sehen."
+            },
             "rate_limited": {
                 "title": "Netzwerk ausgelastet",
                 "body": "Das Netzwerk erhält gerade zu viele Anfragen. Bitte warte einen Moment und versuche es erneut."
@@ -1279,6 +1285,10 @@
                 "title": "Transaktion nicht mehr ausstehend",
                 "body": "Diese Transaktion wurde bereits bestätigt oder ersetzt und kann nicht mehr beschleunigt oder storniert werden."
             },
+            "nonce_gap_filled": {
+                "title": "Nicht mehr blockiert",
+                "body": "Die frühere Transaktion ist jetzt im Netzwerk, daher kann diese ohne Freigeben bestätigt werden."
+            },
             "asset_frozen": {
                 "title": "Asset eingefroren",
                 "body": "Das Asset {{assetId}} ist eingefroren, daher kann diese Übertragung nicht abgeschlossen werden. Der Freeze-Manager des Assets muss es zuerst freigeben."
@@ -1312,7 +1322,10 @@
             "connection_timeout_body": "WalletConnect konnte nicht erreicht werden, um deine signierte Transaktion zu übermitteln. Überprüfe deine Verbindung und versuche es erneut.",
             "bridge_connection_body": "Verbindung zu WalletConnect konnte nicht hergestellt werden. Überprüfe deine Internetverbindung und versuche es erneut.",
             "session_request_expired_body": "Diese Verbindungsanfrage ist abgelaufen. Starte eine neue Verbindung über die dApp und versuche es erneut.",
-            "request_expired_body": "Diese Signaturanfrage ist abgelaufen, bevor sie beantwortet wurde. Lass die App sie erneut senden."
+            "request_expired_body": "Diese Signaturanfrage ist abgelaufen, bevor sie beantwortet wurde. Lass die App sie erneut senden.",
+            "unsupported_method_body": "{{dappName}} hat {{method}} angefragt, was Pera nicht unterstützt. Die Anfrage wurde abgelehnt.",
+            "unsupported_network_body": "{{dappName}} wollte das Netzwerk mit der Chain-ID {{chainId}} verwenden, das Pera nicht unterstützt. Die Anfrage wurde abgelehnt.",
+            "unsupported_chains_body": "Diese App wollte ein Netzwerk verwenden, das Pera nicht unterstützt. Die Verbindung wurde abgelehnt."
         },
         "signing": {
             "title": "Bei der Verarbeitung der Signaturanfrage ist ein Fehler aufgetreten",
@@ -2537,10 +2550,6 @@
         "title": "Portfoliowert",
         "show_chart": "Diagramm anzeigen",
         "hide_chart": "Diagramm ausblenden",
-        "last_24_hours": "Letzte 24 Stunden",
-        "last_7_days": "Letzte 7 Tage",
-        "last_30_days": "Letzte 30 Tage",
-        "last_year": "Letztes Jahr",
         "partial_total": "Bestände ohne Preis nicht enthalten",
         "info": {
             "title": "So berechnen wir den Portfoliowert",
@@ -2894,6 +2903,11 @@
         }
     },
     "send_funds": {
+        "discard": {
+            "title": "Diese Transaktion verwerfen?",
+            "body": "Der eingegebene Betrag und der Empfänger gehen verloren.",
+            "confirm": "Verwerfen"
+        },
         "recipient_safety": {
             "checking": "Empfänger wird geprüft…",
             "look_alike_title": "Diese Adresse ähnelt einer, die du kennst",
@@ -2942,6 +2956,7 @@
             "max": "MAX",
             "next": "Weiter",
             "amount_label": "Betrag",
+            "fee_reserve_hint": "Ein kleiner Betrag wird für die Netzwerkgebühren zurückbehalten. Nicht verbrauchte Gebühren bleiben in deinem Konto.",
             "error_title": "Ungültiger Betrag",
             "error_body": "Bitte gib einen Betrag größer als {{min}} ein.",
             "exceeds_max_title": "Unzureichendes Guthaben",
@@ -3338,6 +3353,7 @@
         },
         "spend_approval": {
             "spend_warning": "Diese Signatur erlaubt einer anderen Adresse, Token ohne erneute Rückfrage von deinem Konto zu bewegen.",
+            "nft_spend_warning": "Diese Signatur erlaubt einer anderen Adresse, dieses NFT ohne erneute Rückfrage von deinem Konto zu bewegen.",
             "spend_warning_bold": "Signiere nur, wenn du dieser Anwendung vertraust.",
             "spender_caption": "Berechtigte Adresse: {{address}}",
             "unlimited_warning": "Der Betrag ist unbegrenzt, daher kann die berechtigte Adresse alle deine Token dieser Art nehmen.",
@@ -3480,9 +3496,9 @@
     },
     "transactions": {
         "common": {
+            "typed_title": "{{type}}-Transaktion",
             "from": "Von",
             "to": "An",
-            "sent_to": "Gesendet an",
             "close_amount": "Restguthaben",
             "close_to": "Restguthaben an",
             "fee": "Gebühr",
@@ -3496,7 +3512,9 @@
             "date": "Datum",
             "note": "Transaktionsnotiz",
             "view_raw_transaction": "JSON anzeigen",
-            "view_in_explorer": "Im Pera Explorer anzeigen",
+            "network": "Netzwerk",
+            "block": "Block",
+            "view_in_explorer": "In {{explorer}} ansehen",
             "view_asset_url": "Asset-URL anzeigen",
             "view_note": "Notiz anzeigen",
             "view_metadata": "Metadaten anzeigen",
@@ -3509,7 +3527,8 @@
             "pending": "Ausstehend seit {{since}}",
             "failed": "Fehlgeschlagen",
             "replaced": "Durch eine andere Transaktion ersetzt",
-            "replacement_not_needed": "Nicht nötig: Die ursprüngliche Transaktion wurde zuerst bestätigt"
+            "replacement_not_needed": "Nicht nötig: Die ursprüngliche Transaktion wurde zuerst bestätigt",
+            "waiting_on_earlier": "Wartet auf eine frühere Transaktion"
         },
         "list_item": {
             "send": "Senden",
@@ -3529,7 +3548,6 @@
             "default": "Transaktion",
             "more_impacts": "{{count}} weitere anzeigen",
             "interpreted_title": "{{title}}",
-            "swap_subtitle": "{{amountIn}} {{assetIn}} gegen {{amountOut}} {{assetOut}}",
             "nft_subtitle": "{{collection}} #{{tokenId}}",
             "nft_batch_subtitle": "{{collection}} · {{count}} Elemente",
             "inner_transaction_count": "{{innerCount}} innere Transaktionen",
@@ -3639,7 +3657,6 @@
         "heartbeat": {
             "description": "Ein Heartbeat beweist, dass ein Konto weiterhin online ist und am Algorand-Konsens teilnimmt. Dabei werden keine Guthaben bewegt.",
             "account": "Konto mit Online-Nachweis",
-            "submitted_by": "Eingereicht von",
             "key_dilution": "Schlüsselverdünnung",
             "vote_id": "Vote-ID"
         },
@@ -3686,7 +3703,10 @@
             "body": "Beschleunigen sendet sie erneut mit einer höheren Netzwerkgebühr. Stornieren ersetzt sie durch eine leere Überweisung an dich selbst, die ebenfalls eine Netzwerkgebühr kostet. Wird die ursprüngliche Transaktion zuerst bestätigt, wird nichts ersetzt.",
             "speed_up": "Beschleunigen",
             "cancel": "Transaktion stornieren",
-            "review_notice": "Ersetzt Transaktion {{txId}}"
+            "review_notice": "Ersetzt Transaktion {{txId}}",
+            "blocked_title": "Wartet auf eine frühere Transaktion",
+            "blocked_body": "Eine frühere Transaktion von diesem Konto hat das Netzwerk nie erreicht, daher kann diese erst bestätigt werden, wenn etwas ihren Platz einnimmt. Freigeben sendet an ihrer Stelle eine leere Überweisung an dich selbst, die eine Netzwerkgebühr kostet.",
+            "unblock": "Freigeben"
         },
         "suspected_poisoning": {
             "marker": "Verdacht auf Address Poisoning",
@@ -3712,11 +3732,10 @@
         },
         "request": {
             "title": "{{name}} möchte sich mit deinem Konto verbinden",
-            "permissions_title_one": "{{count}} Berechtigung angefragt",
-            "permissions_title_other": "{{count}} Berechtigungen angefragt",
-            "permissions_request_accounts": "Deine Wallet-Adresse & Guthaben anzeigen",
-            "permissions_sign_transaction": "Transaktionssignierung anfragen",
-            "permissions_sign_data": "Signierung beliebiger Daten anfragen",
+            "title_network": "{{name}} möchte sich mit deinem Konto auf {{network}} verbinden",
+            "title_networks": "{{name}} möchte sich mit deinen Konten auf {{network}} und {{otherNetwork}} verbinden",
+            "network_not_added": "Nicht hinzugefügt",
+            "origin_verified": "Von WalletConnect verifiziert",
             "accounts_title": "KONTEN AUSWÄHLEN",
             "no_accounts": "Keines deiner Konten kann sich in diesem Netzwerk verbinden.",
             "success_sheet_title": "Du bist mit {{name}} verbunden",
@@ -3734,6 +3753,13 @@
             "networks_betanet": "Betanet",
             "error_network_mismatch": "Diese App wollte sich mit einem anderen Netzwerk verbinden, dein Wallet ist aber auf {{active}}. Wechsle das Netzwerk in den Einstellungen und versuche es erneut.",
             "error_delivery_failed": "Pera konnte die App nicht erreichen, um deine Antwort zu übermitteln — sie wartet möglicherweise noch. Versuche es erneut über die App."
+        },
+        "permissions": {
+            "heading": "Diese App kann",
+            "view_accounts": "Deine Adresse und Guthaben sehen",
+            "approve_transactions": "Dich bitten, Transaktionen zu genehmigen",
+            "sign_messages": "Dich bitten, Nachrichten zu signieren",
+            "switch_networks": "Darum bitten, das Netzwerk zu wechseln"
         },
         "connection": {
             "approve_delivery_failed": "Die dApp konnte nicht erreicht werden, um die Verbindung zu bestätigen. Überprüfe deine Internetverbindung und versuche es erneut."
@@ -3758,6 +3784,7 @@
             "delete_all_body": "Möchtest du wirklich alle Sitzungen löschen?  Dadurch werden alle deine aktiven Sitzungen entfernt und die Verbindung zu allen verbundenen Apps getrennt.",
             "version": "Diese Sitzung verwendet WalletConnect V{{version}}",
             "connected_accounts": "Verbunden mit",
+            "network_label": "{{chain}} {{network}}",
             "permissions": "Erweiterte Berechtigungen",
             "permissions_info_title": "Erweiterte Berechtigungen",
             "permissions_info_body": "WalletConnect ist ein Kommunikationsprotokoll für Web3, das es Wallets und dApps ermöglicht, sich sicher zu verbinden und zu interagieren. Mit jeder neuen Version führt WalletConnect neue Möglichkeiten ein, Transaktionsanfragen von Drittanbieter-Projekten zu handhaben, zu signieren und/oder anzuzeigen.",

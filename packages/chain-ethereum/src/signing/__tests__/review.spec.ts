@@ -267,15 +267,15 @@ describe('ethereumReviewerAdapter', () => {
     })
 
     describe('approve(spender, 2^256-1)', () => {
-        it('is an unrecognised contract call with its selector and target, and no title guess', async () => {
+        it('is an approval to its spender, its view still a contract call with selector and target', async () => {
             const { summary, view } = await reviewOne(unsigned(APPROVE))
 
             expect(summary).toEqual({
-                kind: 'contract-call',
-                title: { key: 'transactions.list_item.contract_call' },
+                kind: 'approval',
+                title: { key: 'transactions.list_item.approval' },
                 direction: 'none',
-                counterparty: TOKEN,
-                icon: 'contract-call',
+                counterparty: SPENDER,
+                icon: 'approval',
             })
             expect(view).toMatchObject({
                 kind: 'contract-call',
@@ -285,13 +285,13 @@ describe('ethereumReviewerAdapter', () => {
             })
         })
 
-        it('warns once and needs review', async () => {
+        it('warns once, as a danger, and needs review', async () => {
             const { reviewed } = await reviewOne(unsigned(APPROVE))
 
             expect(reviewed.warnings).toEqual([
                 expect.objectContaining({
-                    type: 'unknown-contract',
-                    severity: 'warning',
+                    type: 'token-approval',
+                    severity: 'danger',
                 }),
             ])
             expect(
@@ -699,6 +699,7 @@ describe('ethereumReviewerAdapter', () => {
             [unsigned({ ...TRANSFER, to: undefined, data: '0x60' }), CONTEXT],
             [unsigned({ ...TRANSFER, data: '0xabcd' }), CONTEXT],
             [unsigned(APPROVE, { from: STRANGER }), CONTEXT],
+            [unsigned(TOKEN_TRANSFER), CONTEXT],
         ]
 
         it('never consults it while contractDecoding is off', async () => {
@@ -793,6 +794,15 @@ describe("a dApp's standard token calls", () => {
             args: [SPENDER, 0n],
         }),
     }
+    const SET_APPROVAL_FOR_ALL_REVOKE: TransactionSerializableEIP1559 = {
+        ...APPROVE,
+        to: NFT_CONTRACT,
+        data: encodeFunctionData({
+            abi: erc721Abi,
+            functionName: 'setApprovalForAll',
+            args: [SPENDER, false],
+        }),
+    }
     const SET_APPROVAL_FOR_ALL: TransactionSerializableEIP1559 = {
         ...APPROVE,
         to: NFT_CONTRACT,
@@ -817,11 +827,11 @@ describe("a dApp's standard token calls", () => {
         })
     })
 
-    describe('with contractDecoding on', () => {
+    describe('under the shipped capability defaults', () => {
         it('reviews an unlimited approve as an approval with a danger warning, behind review', async () => {
             const { reviewed, summary } = await reviewOne(
                 unsigned(APPROVE),
-                DECODING,
+                CONTEXT,
             )
 
             expect(summary).toEqual({
@@ -843,15 +853,18 @@ describe("a dApp's standard token calls", () => {
         })
 
         it('reviews a collection-wide grant with a danger warning', async () => {
-            const { reviewed } = await reviewOne(
+            const { reviewed, summary } = await reviewOne(
                 unsigned(SET_APPROVAL_FOR_ALL),
-                DECODING,
+                CONTEXT,
             )
 
+            expect(summary.title.key).toBe('transactions.list_item.approval')
+            expect(summary.counterparty).toBe(SPENDER)
             expect(reviewed.warnings).toEqual([
                 expect.objectContaining({
                     type: 'token-approval',
                     severity: 'danger',
+                    message: expect.stringContaining('in this collection'),
                 }),
             ])
         })
@@ -859,7 +872,7 @@ describe("a dApp's standard token calls", () => {
         it('reviews a revocation without a warning', async () => {
             const { reviewed, summary } = await reviewOne(
                 unsigned(REVOKE),
-                DECODING,
+                CONTEXT,
             )
 
             expect(summary.title.key).toBe(
@@ -868,7 +881,32 @@ describe("a dApp's standard token calls", () => {
             expect(reviewed.warnings).toEqual([])
         })
 
-        it('reviews a token transfer as a send without a warning, and still never signs it unreviewed', async () => {
+        it('reviews setApprovalForAll(operator, false) as a revocation without a warning', async () => {
+            const { reviewed, summary } = await reviewOne(
+                unsigned(SET_APPROVAL_FOR_ALL_REVOKE),
+                CONTEXT,
+            )
+
+            expect(summary.title.key).toBe(
+                'transactions.list_item.revoke_approval',
+            )
+            expect(summary.counterparty).toBe(SPENDER)
+            expect(reviewed.warnings).toEqual([])
+        })
+
+        it('keeps a token transfer an unrecognised contract call with the unknown-contract warning, since a selector match proves no token', async () => {
+            const { reviewed, summary } = await reviewOne(
+                unsigned(TOKEN_TRANSFER),
+                CONTEXT,
+            )
+
+            expect(summary.kind).toBe('contract-call')
+            expect(reviewed.warnings).toEqual([
+                expect.objectContaining({ type: 'unknown-contract' }),
+            ])
+        })
+
+        it('reviews a token transfer as a send without a warning while contractDecoding is on, and still never signs it unreviewed', async () => {
             const { reviewed, summary } = await reviewOne(
                 unsigned(TOKEN_TRANSFER),
                 DECODING,
@@ -889,10 +927,10 @@ describe("a dApp's standard token calls", () => {
         })
 
         it('reads nothing from a call the wallet built', async () => {
-            const { reviewed, summary } = await reviewOne(unsigned(APPROVE), {
-                ...DECODING,
-                isWalletBuilt: true,
-            })
+            const { reviewed, summary } = await reviewOne(
+                unsigned(APPROVE),
+                WALLET_BUILT,
+            )
 
             expect(summary.kind).toBe('contract-call')
             expect(reviewed.warnings).toEqual([
@@ -903,7 +941,7 @@ describe("a dApp's standard token calls", () => {
         it('keeps a call that is not a standard function unrecognised', async () => {
             const { reviewed, summary } = await reviewOne(
                 unsigned(NON_STANDARD_CALL),
-                DECODING,
+                CONTEXT,
             )
 
             expect(summary.kind).toBe('contract-call')
@@ -913,27 +951,21 @@ describe("a dApp's standard token calls", () => {
         })
     })
 
-    describe('with contractDecoding off', () => {
-        it.each([
-            ['an approve', APPROVE],
-            ['a revocation', REVOKE],
-            ['a collection approval', SET_APPROVAL_FOR_ALL],
-            ['a token transfer', TOKEN_TRANSFER],
-        ])(
-            'reviews %s as an unrecognised contract call, as before',
-            async (_, transaction) => {
-                const { reviewed, summary } = await reviewOne(
-                    unsigned(transaction),
-                )
+    it.each([
+        ['an approve', APPROVE],
+        ['a revocation', REVOKE],
+        ['a collection approval', SET_APPROVAL_FOR_ALL],
+        ['a collection revocation', SET_APPROVAL_FOR_ALL_REVOKE],
+    ])(
+        'reviews %s the same with contractDecoding on',
+        async (_, transaction) => {
+            const shipped = await reviewOne(unsigned(transaction), CONTEXT)
+            const decoding = await reviewOne(unsigned(transaction), DECODING)
 
-                expect(summary.kind).toBe('contract-call')
-                expect(reviewed.warnings).toEqual([
-                    expect.objectContaining({ type: 'unknown-contract' }),
-                ])
-                expect(
-                    ethereumReviewerAdapter.policy.autoApproveLocal(reviewed),
-                ).toBe(false)
-            },
-        )
-    })
+            expect(shipped.summary).toEqual(decoding.summary)
+            expect(shipped.reviewed.warnings).toEqual(
+                decoding.reviewed.warnings,
+            )
+        },
+    )
 })

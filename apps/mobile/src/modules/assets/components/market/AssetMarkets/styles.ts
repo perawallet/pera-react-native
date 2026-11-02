@@ -45,37 +45,13 @@ export const useStyles = makeStyles(theme => {
         headerIcons: {
             flexDirection: 'row',
             alignItems: 'center',
-            gap: theme.spacing.sm,
+            gap: theme.spacing.md,
         },
 
         chartContainer: {
             marginTop: theme.spacing.xl,
             gap: theme.spacing.md,
             marginBottom: theme.spacing.xl,
-        },
-        discoverButton: {
-            backgroundColor: theme.colors.layerGrayLighter,
-            borderRadius: theme.spacing.sm,
-            padding: theme.spacing.md,
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: theme.spacing.sm,
-            marginBottom: theme.spacing.md,
-            marginTop: theme.spacing.md,
-        },
-        discoverText: {
-            color: theme.colors.textGray,
-            flex: 1,
-            minWidth: 0,
-        },
-        discoverLink: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            flexShrink: 0,
-        },
-        discoverLinkText: {
-            marginRight: theme.spacing.xs,
-            flexShrink: 1,
         },
         tagText,
         loadingContainer: {
@@ -87,13 +63,6 @@ export const useStyles = makeStyles(theme => {
             alignItems: 'center',
             justifyContent: 'space-between',
             gap: theme.spacing.md,
-        },
-        // Mirrors the account overview's dateDisplay: flexGrow claims the rest
-        // of the row so the scrub date sits hard right, off the trend figures.
-        dateDisplay: {
-            color: theme.colors.textGray,
-            textAlign: 'right',
-            flexGrow: 1,
         },
         priceContainer: {
             flexDirection: 'row',

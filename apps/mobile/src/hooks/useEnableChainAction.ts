@@ -30,6 +30,12 @@ export type UseEnableChainActionResult = {
         chainId: ChainId,
         onEnabled?: (account: WalletAccount) => void,
     ) => void
+    /** Enables the chain on each account in turn, stopping at the first failure; `onEnabled` runs once, after all hold it. */
+    enableChainOnAccounts: (
+        accountIds: readonly string[],
+        chainId: ChainId,
+        onEnabled?: () => void,
+    ) => void
 }
 
 /** Adds a chain to an account from a sheet the user stays on, reporting a failure with `errorTitle`. */
@@ -43,12 +49,8 @@ export const useEnableChainAction = (
     // State lags a second tap that lands before the re-render.
     const isEnablingRef = useRef(false)
 
-    const enableChain = useCallback(
-        (
-            accountId: string,
-            chainId: ChainId,
-            onEnabled?: (account: WalletAccount) => void,
-        ) => {
+    const run = useCallback(
+        (chainId: ChainId, task: () => Promise<void>) => {
             if (isEnablingRef.current) return
             isEnablingRef.current = true
             setEnablingChainId(chainId)
@@ -56,8 +58,7 @@ export const useEnableChainAction = (
                 try {
                     // Derivation blocks the JS thread; let the loading state paint first.
                     await new Promise(resolve => requestAnimationFrame(resolve))
-                    const account = await enable(accountId, chainId, 'user')
-                    if (isMounted()) onEnabled?.(account)
+                    await task()
                 } catch (error) {
                     if (!isMounted()) return
                     showError(error, errorTitle, {
@@ -69,8 +70,36 @@ export const useEnableChainAction = (
                 }
             })()
         },
-        [enable, isMounted, showError, errorTitle],
+        [isMounted, showError, errorTitle],
     )
 
-    return { enablingChainId, enableChain }
+    const enableChain = useCallback(
+        (
+            accountId: string,
+            chainId: ChainId,
+            onEnabled?: (account: WalletAccount) => void,
+        ) =>
+            run(chainId, async () => {
+                const account = await enable(accountId, chainId, 'user')
+                if (isMounted()) onEnabled?.(account)
+            }),
+        [run, enable, isMounted],
+    )
+
+    const enableChainOnAccounts = useCallback(
+        (
+            accountIds: readonly string[],
+            chainId: ChainId,
+            onEnabled?: () => void,
+        ) =>
+            run(chainId, async () => {
+                for (const accountId of accountIds) {
+                    await enable(accountId, chainId, 'user')
+                }
+                if (isMounted()) onEnabled?.()
+            }),
+        [run, enable, isMounted],
+    )
+
+    return { enablingChainId, enableChain, enableChainOnAccounts }
 }

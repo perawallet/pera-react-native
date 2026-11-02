@@ -285,7 +285,6 @@
         "markets": {
             "something_went_wrong_title": "Bir şeyler ters gitti",
             "something_went_wrong_body": "Bu varlığın detaylarını yükleyemedik. Lütfen bağlantını kontrol edip tekrar dene.",
-            "discover_more": "Discover’da daha fazla detay gör",
             "title": "Piyasalar",
             "stats": "İstatistikler",
             "price": "Fiyat",
@@ -309,6 +308,7 @@
         "action_buttons": {
             "swap": "Swap",
             "buy": "Satın al",
+            "buy_sell": "Al/Sat",
             "send": "Gönder",
             "receive": "Al"
         },
@@ -471,7 +471,6 @@
         "remove_rekey_error_message": "Bu hesabı, ona rekey yapılmış {{count}} hesabı kaldırmadan kaldıramazsın",
         "view_private_key": "Özel anahtarı görüntüle",
         "networks_title": "Ağlar",
-        "networks_title_named": "Her ağda {{name}}",
         "add_network": "Ekle",
         "add_network_error": "Bu ağ eklenemedi",
         "add_network_success": "{{network}} ağı eklendi",
@@ -557,7 +556,7 @@
         },
         "compatibility": {
             "title": "Bu passphrase’i başka cüzdanlarda kullanmak",
-            "evm": "Ethereum uyumlu ağlar: MetaMask gibi standart BIP39 cüzdanları bu kelimeleri içe aktarabilir ve ilk hesabının adresi aynı olur. Pera’da sonradan eklediğin hesaplar bu cüzdanlarda varsayılan olarak görünmeyebilir.",
+            "evm": "Ethereum uyumlu ağlar: MetaMask, Uniswap veya Rabby gibi standart BIP39 cüzdanları bu kelimeleri içe aktarabilir ve ilk hesabının adresi aynı olur. İçe aktardıktan sonra yalnızca bu ilk adresi görebilirsin. Bazı cüzdanlar diğer adreslerini kullanıldıktan sonra gösterir; bazılarında ise onları manuel olarak eklemen gerekir. Adresler, Pera’da oluşturduğun sırayla görünür.",
             "algorand": "Algorand: Pera’da ve 24 kelimelik Algorand HD cüzdanlarını destekleyen diğer cüzdanlarda çalışır. 25 kelimelik eski Algorand cüzdanları bunu içe aktaramaz.",
             "warning": "Bu kelimelere sahip olan herkes tüm ağlardaki fonlarını kontrol eder. Onları asla bir web sitesine girme ve kimseyle paylaşma."
         }
@@ -578,12 +577,15 @@
         "info": {
             "title": "Hesabın için kurtarma passphrase’i yedeklemesi oluştur",
             "body": "Kurtarma passphrase’i yedeklemesi oluşturmak, hesabını kurtarmanı sağlar. Kurtarma passphrase’i olmadan; cihazını kaybedersen, hesabı kaldırırsan veya uygulamayı silersen, Algorand hesabına erişimini kalıcı olarak kaybedebilirsin!",
+            "body_all_networks": "Kurtarma passphrase’in, hesabını tüm ağlarda kurtarmanın tek yoludur: {{networks}}. Yedeğin olmadan cihazını kaybedersen, hesabı kaldırırsan veya uygulamayı silersen fonlarına erişimini kalıcı olarak kaybedersin.",
             "cta": "Anladım"
         },
         "write_down": {
             "title": "Kurtarma passphrase’ini yazmaya hazırlan",
             "body": "Bir Algorand hesabını kurtarmanın tek yolu bu kurtarma passphrase’idir.",
+            "body_all_networks": "Bu kurtarma passphrase’i, hesabını ve tüm ağlardaki adreslerini kurtarmanın tek yoludur.",
             "warning": "Bu kurtarma passphrase’ini kimseyle paylaşma; hesabına tam erişim sağlar.",
+            "warning_all_networks": "Bu kurtarma passphrase’ini kimseyle paylaşma. Ona sahip olan herkes tüm ağlardaki fonlarını kontrol eder.",
             "cta": "Başlamaya hazırım"
         },
         "mnemonic": {
@@ -1201,6 +1203,10 @@
                 "title": "Yetersiz {{symbol}}",
                 "body": "Bu hesapta tutarı ve ağ ücretini karşılamak için yeterli {{symbol}} yok. Daha fazla {{symbol}} ekle ve tekrar dene."
             },
+            "fee_above_confirmed": {
+                "title": "Ağ ücretleri yükseldi",
+                "body": "Ağ ücreti artık onayladığın maksimum ücretin üzerinde. Yeni ücreti görmek için gönderimi incele."
+            },
             "rate_limited": {
                 "title": "Ağ yoğun",
                 "body": "Ağ şu anda çok fazla istek alıyor. Biraz bekle ve tekrar dene."
@@ -1287,6 +1293,10 @@
                 "title": "İşlem artık beklemede değil",
                 "body": "Bu işlem zaten onaylandı veya değiştirildi; artık hızlandırılamaz ya da iptal edilemez."
             },
+            "nonce_gap_filled": {
+                "title": "Artık engellenmiyor",
+                "body": "Önceki işlem artık ağda; bu işlem engel kaldırılmadan onaylanabilir."
+            },
             "asset_frozen": {
                 "title": "Varlık donduruldu",
                 "body": "{{assetId}} ID’li varlık dondurulmuş, bu yüzden bu transfer tamamlanamıyor. Önce varlığın dondurma yöneticisinin dondurmayı kaldırması gerekir."
@@ -1320,7 +1330,10 @@
             "connection_timeout_body": "İmzalanan işlemi iletmek için WalletConnect’e ulaşılamadı. Bağlantını kontrol et ve tekrar dene.",
             "bridge_connection_body": "WalletConnect'e bağlanılamadı. İnternet bağlantını kontrol et ve tekrar dene.",
             "session_request_expired_body": "Bu bağlantı isteğinin süresi doldu. dApp üzerinden yeni bir bağlantı başlat ve tekrar dene.",
-            "request_expired_body": "Bu imza isteğinin süresi yanıtlanmadan önce doldu. Uygulamadan isteği tekrar göndermesini iste."
+            "request_expired_body": "Bu imza isteğinin süresi yanıtlanmadan önce doldu. Uygulamadan isteği tekrar göndermesini iste.",
+            "unsupported_method_body": "{{dappName}} uygulaması Pera’nın desteklemediği bir yöntem istedi ({{method}}). İstek reddedildi.",
+            "unsupported_network_body": "{{dappName}} uygulaması, Pera’nın desteklemediği zincir kimliği {{chainId}} olan ağı kullanmak istedi. İstek reddedildi.",
+            "unsupported_chains_body": "Bu uygulama Pera’nın desteklemediği bir ağ kullanmak istedi. Bağlantı reddedildi."
         },
         "signing": {
             "title": "İmzalama isteği işlenirken bir hata oluştu",
@@ -2545,10 +2558,6 @@
         "title": "Portföy değeri",
         "show_chart": "Grafiği göster",
         "hide_chart": "Grafiği gizle",
-        "last_24_hours": "Son 24 saat",
-        "last_7_days": "Son 7 gün",
-        "last_30_days": "Son 30 gün",
-        "last_year": "Son 1 yıl",
         "partial_total": "Fiyatı olmayan varlıklar hariç",
         "info": {
             "title": "Portföy değerini nasıl hesaplıyoruz",
@@ -2902,6 +2911,11 @@
         }
     },
     "send_funds": {
+        "discard": {
+            "title": "Bu işlem silinsin mi?",
+            "body": "Girdiğin tutar ve alıcı kaybolacak.",
+            "confirm": "Sil"
+        },
         "recipient_safety": {
             "checking": "Alıcı kontrol ediliyor…",
             "look_alike_title": "Bu adres tanıdığın bir adrese benziyor",
@@ -2950,6 +2964,7 @@
             "max": "MAKS",
             "next": "İleri",
             "amount_label": "Tutar",
+            "fee_reserve_hint": "Ağ ücretlerini karşılamak için küçük bir tutar ayrılır. Kullanılmayan ücret hesabında kalır.",
             "error_title": "Geçersiz miktar",
             "error_body": "Lütfen {{min}} değerinden büyük bir miktar gir.",
             "exceeds_max_title": "Yetersiz bakiye",
@@ -3346,6 +3361,7 @@
         },
         "spend_approval": {
             "spend_warning": "Bu imza, başka bir adresin hesabından sana tekrar sormadan token hareket ettirmesine izin verir.",
+            "nft_spend_warning": "Bu imza, başka bir adresin bu NFT’yi hesabından sana tekrar sormadan hareket ettirmesine izin verir.",
             "spend_warning_bold": "Yalnızca bu uygulamaya güveniyorsan imzala.",
             "spender_caption": "Yetkili adres: {{address}}",
             "unlimited_warning": "Tutar sınırsız, bu yüzden yetkili adres bu tokenden sahip olduğun her şeyi alabilir.",
@@ -3488,9 +3504,9 @@
     },
     "transactions": {
         "common": {
+            "typed_title": "{{type}} işlemi",
             "from": "Gönderen",
             "to": "Alıcı",
-            "sent_to": "Alıcı",
             "close_amount": "Kalan bakiye",
             "close_to": "Kalan bakiyenin alıcısı",
             "fee": "Ücret",
@@ -3504,7 +3520,9 @@
             "date": "Tarih",
             "note": "İşlem notu",
             "view_raw_transaction": "JSON’u görüntüle",
-            "view_in_explorer": "Pera Explorer’da görüntüle",
+            "network": "Ağ",
+            "block": "Blok",
+            "view_in_explorer": "{{explorer}} üzerinde görüntüle",
             "view_asset_url": "Varlık URL’sini görüntüle",
             "view_note": "Notu görüntüle",
             "view_metadata": "Metadata’yı görüntüle",
@@ -3517,7 +3535,8 @@
             "pending": "Beklemede, başlangıç zamanı: {{since}}",
             "failed": "Başarısız",
             "replaced": "Başka bir işlemle değiştirildi",
-            "replacement_not_needed": "Gerek kalmadı: asıl işlem önce onaylandı"
+            "replacement_not_needed": "Gerek kalmadı: asıl işlem önce onaylandı",
+            "waiting_on_earlier": "Önceki bir işlem bekleniyor"
         },
         "list_item": {
             "send": "Gönder",
@@ -3537,7 +3556,6 @@
             "default": "İşlem",
             "more_impacts": "{{count}} tane daha göster",
             "interpreted_title": "{{title}}",
-            "swap_subtitle": "{{amountIn}} {{assetIn}} karşılığında {{amountOut}} {{assetOut}}",
             "nft_subtitle": "{{collection}} #{{tokenId}}",
             "nft_batch_subtitle": "{{collection}} · {{count}} öğe",
             "inner_transaction_count": "{{innerCount}} iç işlem",
@@ -3647,7 +3665,6 @@
         "heartbeat": {
             "description": "Heartbeat, bir hesabın hâlâ çevrimiçi olduğunu ve Algorand konsensüsüne katıldığını kanıtlar. Hiçbir fon transfer edilmez.",
             "account": "Çevrimiçi olduğu kanıtlanan hesap",
-            "submitted_by": "Gönderen",
             "key_dilution": "Key dilution",
             "vote_id": "Vote ID"
         },
@@ -3694,7 +3711,10 @@
             "body": "Hızlandır, işlemi daha yüksek bir ağ ücretiyle yeniden gönderir. İptal et, işlemi kendine yapılan boş bir transferle değiştirir; bu da bir ağ ücreti gerektirir. Asıl işlem önce onaylanırsa hiçbir şey değiştirilmez.",
             "speed_up": "Hızlandır",
             "cancel": "İşlemi iptal et",
-            "review_notice": "{{txId}} işleminin yerini alır"
+            "review_notice": "{{txId}} işleminin yerini alır",
+            "blocked_title": "Önceki bir işlem bekleniyor",
+            "blocked_body": "Bu hesaptan yapılan önceki bir işlem ağa hiç ulaşmadı, bu yüzden onun yerini bir şey almadan bu işlem onaylanamaz. Engeli kaldır, onun yerine kendine boş bir transfer gönderir; bu da bir ağ ücreti gerektirir.",
+            "unblock": "Engeli kaldır"
         },
         "suspected_poisoning": {
             "marker": "Şüpheli adres zehirlenmesi",
@@ -3720,11 +3740,10 @@
         },
         "request": {
             "title": "{{name}} hesabına bağlanmak istiyor",
-            "permissions_title_one": "{{count}} izin istendi",
-            "permissions_title_other": "{{count}} izin istendi",
-            "permissions_request_accounts": "Cüzdan adresini ve bakiyelerini görüntüleme",
-            "permissions_sign_transaction": "İşlem imzalama talep etme",
-            "permissions_sign_data": "Serbest veri imzalama talep etme",
+            "title_network": "{{name}} {{network}} hesabına bağlanmak istiyor",
+            "title_networks": "{{name}} {{network}} ve {{otherNetwork}} hesaplarına bağlanmak istiyor",
+            "network_not_added": "Eklenmedi",
+            "origin_verified": "WalletConnect tarafından doğrulandı",
             "accounts_title": "HESAPLARI SEÇ",
             "no_accounts": "Hesaplarından hiçbiri bu ağda bağlanamıyor.",
             "success_sheet_title": "{{name}} bağlantısı kuruldu",
@@ -3742,6 +3761,13 @@
             "quantum_fee_delivery_failed": "İstek tamamlanamadı. Bu uygulama, Quantum hesapları için gereken daha yüksek ağ ücretlerini desteklemiyor olabilir.",
             "origin_scam": "Bu uygulama güvenlik riski olarak işaretlendi. Güvenmiyorsan bağlanma.",
             "origin_unverified": "Pera bu uygulamanın web sitesini doğrulayamadı."
+        },
+        "permissions": {
+            "heading": "Bu uygulama şunları yapabilir",
+            "view_accounts": "Adresini ve bakiyelerini görüntüleme",
+            "approve_transactions": "İşlemleri onaylamanı isteme",
+            "sign_messages": "Mesajları imzalamanı isteme",
+            "switch_networks": "Ağ değiştirmeyi isteme"
         },
         "connection": {
             "approve_delivery_failed": "Bağlantıyı onaylamak için dApp’e ulaşılamadı. İnternet bağlantını kontrol et ve tekrar dene."
@@ -3767,6 +3793,7 @@
             "disconnect_failed_title": "Bağlantı kesilemedi",
             "version": "Bu oturum WalletConnect V{{version}} kullanıyor",
             "connected_accounts": "Bağlı hesaplar",
+            "network_label": "{{chain}} {{network}}",
             "permissions": "Gelişmiş izinler",
             "permissions_info_title": "Gelişmiş izinler",
             "permissions_info_body": "WalletConnect, cüzdanların ve dApp’lerin güvenli şekilde bağlanmasını ve etkileşim kurmasını sağlayan bir web3 iletişim protokolüdür. WalletConnect her yeni sürümde, üçüncü taraf projelerden gelen işlem isteklerini işlemek, imzalamak ve/veya görüntülemek için yeni yöntemler sunar."

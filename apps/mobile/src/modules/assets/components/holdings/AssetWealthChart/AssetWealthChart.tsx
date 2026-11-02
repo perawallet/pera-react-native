@@ -40,6 +40,9 @@ const getPreferredValue = (item: AccountAssetBalanceHistoryItem): number =>
     // Non-null by construction: `plottablePoints` drops unpriced points below.
     (item.preferredValue as Decimal).toNumber()
 
+const getDatetime = (item: AccountAssetBalanceHistoryItem): Date =>
+    item.datetime
+
 // Memoised like WealthChart: the history query rebuilds its results in an
 // inline `select`, so an unmemoised re-render hands the chart a new data
 // array and victory resets an in-progress scrub.
@@ -79,6 +82,7 @@ export const AssetWealthChart = memo(function AssetWealthChart({
         <BalanceLineChart
             series={plottablePoints}
             getValue={getPreferredValue}
+            getDatetime={getDatetime}
             onSelectionChanged={onSelectionChanged}
             isPending={isPending}
             isError={isError}

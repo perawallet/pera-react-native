@@ -33,17 +33,22 @@ export type UseAccountsAssetsBalanceHistoryQueryResult = {
 }
 
 export const useAccountsAssetsBalanceHistoryQuery = (
-    account: WalletAccount,
+    account: Nullable<WalletAccount>,
     assetId: string,
     period: HistoryPeriod,
     scope: ChainScope,
+    enabled = true,
 ): UseAccountsAssetsBalanceHistoryQueryResult => {
-    const address = chainAccountOf(account, scope.chainId)?.address ?? ''
+    const address = account
+        ? (chainAccountOf(account, scope.chainId)?.address ?? '')
+        : ''
     const { preferredCurrency, usdToPreferred } = useCurrency(scope)
     const isUnavailableOnNetwork = !useChainCapability(
         scope.chainId,
         'balanceHistory',
     )
+
+    const isQueryEnabled = enabled && !!account && !isUnavailableOnNetwork
 
     const query = useQuery({
         queryKey: getAccountAssetBalanceHistoryQueryKey(
@@ -53,7 +58,7 @@ export const useAccountsAssetsBalanceHistoryQuery = (
             period,
             preferredCurrency,
         ),
-        enabled: !isUnavailableOnNetwork,
+        enabled: isQueryEnabled,
         queryFn: () =>
             fetchHoldingBalanceHistory(
                 address,
@@ -72,7 +77,7 @@ export const useAccountsAssetsBalanceHistoryQuery = (
 
     return {
         data: query.data ?? [],
-        isPending: isUnavailableOnNetwork ? false : query.isPending,
+        isPending: isQueryEnabled ? query.isPending : false,
         isSuccess: query.isSuccess,
         isError: query.isError,
         isPaused: query.isPaused,
@@ -81,8 +86,6 @@ export const useAccountsAssetsBalanceHistoryQuery = (
         // The observer's refetch() ignores `enabled` and would still fire the
         // doomed request on a chain without the source.
         refetch: (options?: RefetchOptions) =>
-            isUnavailableOnNetwork
-                ? Promise.resolve(query)
-                : query.refetch(options),
+            isQueryEnabled ? query.refetch(options) : Promise.resolve(query),
     }
 }

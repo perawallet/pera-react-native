@@ -32,6 +32,9 @@ import { getVerificationIcon } from '../../utils/verification'
 
 const ONE = new Decimal(1)
 
+const isNativeHolding = ({ scope, assetId }: GroupableHolding): boolean =>
+    nativeAssetInfoOf({ chainId: scope.chainId, assetId }) !== undefined
+
 // `trusted` isn't a metadata tier: only a chain's native coin earns it, as on single rows.
 type GroupTier = PeraAssetVerificationTier | 'trusted'
 
@@ -98,12 +101,7 @@ export const useAssetGroupRow = <T extends GroupableHolding>({
     const tier = useMemo((): Nullable<GroupTier> => {
         const tiers = members.map(({ asset, holding }): Nullable<GroupTier> => {
             if (!asset) return null
-            const isNative =
-                nativeAssetInfoOf({
-                    chainId: holding.scope.chainId,
-                    assetId: holding.assetId,
-                }) !== undefined
-            return isNative
+            return isNativeHolding(holding)
                 ? 'trusted'
                 : (asset.peraMetadata?.verificationTier ??
                       PeraAssetVerificationTier.unverified)
@@ -122,10 +120,12 @@ export const useAssetGroupRow = <T extends GroupableHolding>({
         )
     }, [members])
 
+    // A native coin's id is a placeholder, never `<unit> · native`, as on single rows.
     const subtitle = useMemo(() => {
         const ids = new Set(members.map(({ holding }) => holding.assetId))
         const [sharedId] = ids
-        return ids.size === 1 && sharedId
+        const isNative = members.some(({ holding }) => isNativeHolding(holding))
+        return ids.size === 1 && sharedId && !isNative
             ? `${group.symbol} · ${sharedId}`
             : group.symbol
     }, [members, group.symbol])

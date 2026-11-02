@@ -16,12 +16,10 @@ import {
 } from '@perawallet/wallet-core-shared'
 import {
     addressCodecs,
-    LEGACY_CHAIN_ID,
-    type ChainId,
+    type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
 import { useNfdForAddressQuery } from '@perawallet/wallet-core-nfd'
 import { useMemo } from 'react'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
 
 export type AddressFormat = 'short' | 'long' | 'full'
 
@@ -36,14 +34,12 @@ type UseResolvedAddressResult = {
 
 export const useResolvedAddress = (
     address: string,
+    scope: ChainScope,
     options?: {
         enabled?: boolean
         format?: AddressFormat
-        /** Truncates a 'short' address with this chain's codec instead of Algorand's. */
-        chainId?: ChainId
     },
 ): UseResolvedAddressResult => {
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const { data: nfdNames, isPending } = useNfdForAddressQuery(
         scope,
         address,
@@ -56,7 +52,7 @@ export const useResolvedAddress = (
 
     const format = options?.format ?? 'short'
 
-    const chainId = options?.chainId
+    const chainId = scope.chainId
     const truncate = (): string =>
         format === 'short' && chainId && addressCodecs.has(chainId)
             ? addressCodecs.get(chainId).truncate(address)

@@ -12,7 +12,6 @@
 
 import { useCallback } from 'react'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { ConnectionProposal } from '@perawallet/wallet-core-connections'
 import { PWButton, PWFlatList, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
@@ -20,7 +19,12 @@ import { SiteSafetyGate } from '@modules/site-safety'
 import { useStyles } from '@components/ConnectionApproval/styles'
 import { ConnectionApprovalAccountRow } from './ConnectionApprovalAccountRow'
 import { ConnectionApprovalViewHeader } from './ConnectionApprovalViewHeader'
-import { useConnectionApprovalView } from './useConnectionApprovalView'
+import {
+    useConnectionApprovalView,
+    type ConnectionAccountRow,
+} from './useConnectionApprovalView'
+
+const accountRowKey = (row: ConnectionAccountRow) => row.account.id
 
 export type ConnectionApprovalViewProps = {
     proposal: ConnectionProposal
@@ -33,13 +37,17 @@ export const ConnectionApprovalView = ({
     const styles = useStyles({ bottomInset: insets.bottom })
     const { t } = useLanguage()
     const {
-        sortedAccounts,
+        accountRows,
+        title,
+        requestedNetworks,
+        handleAddNetwork,
+        permissions,
+        isOriginVerified,
         selectedAccounts,
         isConnecting,
         handleAccountPress,
         handleConnect,
         handleCancel,
-        peerName,
         peerUrlLabel,
         canOpenPeerUrl,
         handlePressUrl,
@@ -50,10 +58,11 @@ export const ConnectionApprovalView = ({
     } = useConnectionApprovalView(proposal)
 
     const renderAccountRow = useCallback(
-        ({ item }: { item: WalletAccount }) => (
+        ({ item }: { item: ConnectionAccountRow }) => (
             <ConnectionApprovalAccountRow
-                account={item}
-                isSelected={selectedAccounts.includes(item.id)}
+                account={item.account}
+                chainId={item.chainId}
+                isSelected={selectedAccounts.includes(item.account.id)}
                 onPress={handleAccountPress}
             />
         ),
@@ -68,15 +77,18 @@ export const ConnectionApprovalView = ({
             <PWFlatList
                 style={styles.container}
                 contentContainerStyle={styles.contentContainer}
-                data={sortedAccounts}
+                data={accountRows}
+                keyExtractor={accountRowKey}
                 renderItem={renderAccountRow}
                 extraData={selectedAccounts}
                 ListHeaderComponent={
                     <ConnectionApprovalViewHeader
                         peer={proposal.peer}
-                        peerName={peerName}
-                        networks={proposal.requested.networks}
-                        methods={proposal.requested.methods}
+                        title={title}
+                        requestedNetworks={requestedNetworks}
+                        onAddNetwork={handleAddNetwork}
+                        permissions={permissions}
+                        isOriginVerified={isOriginVerified}
                         peerUrlLabel={peerUrlLabel}
                         canOpenPeerUrl={canOpenPeerUrl}
                         onPressUrl={handlePressUrl}

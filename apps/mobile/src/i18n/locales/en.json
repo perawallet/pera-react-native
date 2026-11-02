@@ -285,7 +285,6 @@
         "markets": {
             "something_went_wrong_title": "Something went wrong",
             "something_went_wrong_body": "We were unable to load this asset's details. Please check your connection and try again.",
-            "discover_more": "See more details on Discover",
             "title": "Markets",
             "stats": "Statistics",
             "price": "Price",
@@ -309,6 +308,7 @@
         "action_buttons": {
             "swap": "Swap",
             "buy": "Buy",
+            "buy_sell": "Buy/Sell",
             "send": "Send",
             "receive": "Receive"
         },
@@ -471,7 +471,6 @@
         "remove_rekey_error_message": "You can't remove this account before removing its {{count}} rekeyed account(s)",
         "view_private_key": "View private key",
         "networks_title": "Networks",
-        "networks_title_named": "{{name}} on each network",
         "add_network": "Add",
         "add_network_error": "Couldn't add this network",
         "add_network_success": "{{network}} added",
@@ -557,7 +556,7 @@
         },
         "compatibility": {
             "title": "Using this passphrase in other wallets",
-            "evm": "Ethereum-compatible networks: standard BIP39 wallets such as MetaMask can import these words, and your first account's address will match. Accounts you add later in Pera may not appear in those wallets by default.",
+            "evm": "Ethereum-compatible networks: standard BIP39 wallets such as MetaMask, Uniswap or Rabby can import these words, and your first account's address will match. After importing, you may only see that first address. Some wallets show your other addresses once they've been used; in others, you'll need to add them manually. They appear in the order you created them in Pera.",
             "algorand": "Algorand: works in Pera and other wallets that support Algorand 24-word HD wallets. Legacy 25-word Algorand wallets can't import it.",
             "warning": "Anyone who has these words controls your funds on every network. Never enter them on a website or share them with anyone."
         }
@@ -572,18 +571,21 @@
     },
     "backup": {
         "banner": {
-            "text": "You need to backup the recovery passphrase",
-            "cta": "Backup now"
+            "text": "You need to back up your recovery passphrase",
+            "cta": "Back Up Now"
         },
         "info": {
             "title": "Create a recovery passphrase backup for your account",
             "body": "Creating a recovery passphrase backup will allow you to recover your account. Without the recovery passphrase, if you lose your device, remove the account or delete the app, you can permanently lose access to your Algorand account!",
+            "body_all_networks": "Your recovery passphrase is the only way to recover your account on all networks: {{networks}}. If you lose your device, remove the account or delete the app without a backup, you'll permanently lose access to your funds.",
             "cta": "I Understand"
         },
         "write_down": {
             "title": "Prepare to write down your recovery passphrase",
             "body": "The only way to recover an Algorand account is with this recovery passphrase.",
+            "body_all_networks": "This recovery passphrase is the only way to recover your account and all its addresses on every network.",
             "warning": "Do not share this recovery passphrase with anyone, as it grants full access to your account.",
+            "warning_all_networks": "Never share this recovery passphrase. Anyone who has it controls your funds on every network.",
             "cta": "I'm Ready to Begin"
         },
         "mnemonic": {
@@ -1201,6 +1203,10 @@
                 "title": "Insufficient {{symbol}}",
                 "body": "This account doesn't have enough {{symbol}} to cover the amount and the network fee. Add more {{symbol}} and try again."
             },
+            "fee_above_confirmed": {
+                "title": "Network fees went up",
+                "body": "The network fee is now above the max fee you confirmed. Review the send to see the new fee."
+            },
             "rate_limited": {
                 "title": "Network busy",
                 "body": "The network is receiving too many requests right now. Please wait a moment and try again."
@@ -1287,6 +1293,10 @@
                 "title": "Transaction no longer pending",
                 "body": "This transaction has already confirmed or been replaced, so it can't be sped up or cancelled."
             },
+            "nonce_gap_filled": {
+                "title": "No longer blocked",
+                "body": "The earlier transaction is now on the network, so this one can confirm without unblocking."
+            },
             "asset_frozen": {
                 "title": "Asset frozen",
                 "body": "Asset {{assetId}} is frozen, so this transfer can't be completed. The asset's freeze manager must unfreeze it first."
@@ -1320,7 +1330,10 @@
             "connection_timeout_body": "Couldn't reach WalletConnect to deliver your signed transaction. Check your connection and try again.",
             "bridge_connection_body": "Couldn't connect to WalletConnect. Check your internet connection and try again.",
             "session_request_expired_body": "This connection request has expired. Start a new connection from the dApp and try again.",
-            "request_expired_body": "This signing request expired before it was answered. Ask the app to send it again."
+            "request_expired_body": "This signing request expired before it was answered. Ask the app to send it again.",
+            "unsupported_method_body": "{{dappName}} asked for {{method}}, which Pera doesn't support, so the request was declined.",
+            "unsupported_network_body": "{{dappName}} asked to use the network with chain ID {{chainId}}, which Pera doesn't support, so the request was declined.",
+            "unsupported_chains_body": "This app asked to use a network Pera doesn't support, so the connection was declined."
         },
         "signing": {
             "title": "An error occurred processing the signing request",
@@ -2545,14 +2558,10 @@
         "title": "Portfolio Value",
         "show_chart": "Show Chart",
         "hide_chart": "Hide Chart",
-        "last_24_hours": "Last 24 Hours",
-        "last_7_days": "Last 7 Days",
-        "last_30_days": "Last 30 Days",
-        "last_year": "Last 1 Year",
         "partial_total": "Excludes holdings without a price",
         "info": {
             "title": "How we calculate portfolio value",
-            "body": "The Total Portfolio Value is calculated by adding up the value of all asset values and Algo available in your accounts, excluding Watch Accounts.\n\nAsset values are calculated based on daily values fetched from several ecosystem partners.  Since some asset values are not available, the Total Portfolio Value should be considered an estimation."
+            "body": "The Total Portfolio Value is calculated by adding up the value of every asset held in your accounts across all networks, excluding Watch Accounts.\n\nAsset values are calculated based on prices fetched from several ecosystem partners. Since some asset values are not available, the Total Portfolio Value should be considered an estimation."
         }
     },
     "prompts": {
@@ -2902,6 +2911,11 @@
         }
     },
     "send_funds": {
+        "discard": {
+            "title": "Discard this transaction?",
+            "body": "The amount and recipient you entered will be lost.",
+            "confirm": "Discard"
+        },
         "recipient_safety": {
             "checking": "Checking the recipient…",
             "look_alike_title": "This address looks like one you know",
@@ -2950,6 +2964,7 @@
             "max": "MAX",
             "next": "Next",
             "amount_label": "Amount",
+            "fee_reserve_hint": "A small amount is kept to cover network fees. Any unused fee stays in your account.",
             "error_title": "Invalid Amount",
             "error_body": "Please enter an amount greater than {{min}}.",
             "exceeds_max_title": "Insufficient Balance",
@@ -3346,6 +3361,7 @@
         },
         "spend_approval": {
             "spend_warning": "This signature lets another address move tokens out of your account without asking you again.",
+            "nft_spend_warning": "This signature lets another address move this NFT out of your account without asking you again.",
             "spend_warning_bold": "Only sign if you trust this application.",
             "spender_caption": "Spender: {{address}}",
             "unlimited_warning": "The amount is unlimited, so the spender can take all of this token you hold.",
@@ -3488,9 +3504,9 @@
     },
     "transactions": {
         "common": {
+            "typed_title": "{{type}} Transaction",
             "from": "From",
             "to": "To",
-            "sent_to": "Sent To",
             "close_amount": "Remainder Amount",
             "close_to": "Remainder Sent To",
             "fee": "Fee",
@@ -3504,7 +3520,9 @@
             "date": "Date",
             "note": "Transaction Note",
             "view_raw_transaction": "View JSON",
-            "view_in_explorer": "View in Pera Explorer",
+            "network": "Network",
+            "block": "Block",
+            "view_in_explorer": "View in {{explorer}}",
             "view_asset_url": "View Asset URL",
             "view_note": "View Note",
             "view_metadata": "View Metadata",
@@ -3517,7 +3535,8 @@
             "pending": "Pending since {{since}}",
             "failed": "Failed",
             "replaced": "Replaced by another transaction",
-            "replacement_not_needed": "Not needed: the original transaction confirmed first"
+            "replacement_not_needed": "Not needed: the original transaction confirmed first",
+            "waiting_on_earlier": "Waiting on an earlier transaction"
         },
         "list_item": {
             "send": "Send",
@@ -3537,7 +3556,6 @@
             "default": "Transaction",
             "more_impacts": "Show {{count}} more",
             "interpreted_title": "{{title}}",
-            "swap_subtitle": "{{amountIn}} {{assetIn}} for {{amountOut}} {{assetOut}}",
             "nft_subtitle": "{{collection}} #{{tokenId}}",
             "nft_batch_subtitle": "{{collection}} · {{count}} items",
             "inner_transaction_count": "{{innerCount}} inner txns",
@@ -3647,7 +3665,6 @@
         "heartbeat": {
             "description": "A heartbeat proves an account is still online and participating in Algorand consensus. It moves no funds.",
             "account": "Account Proved Online",
-            "submitted_by": "Submitted By",
             "key_dilution": "Key Dilution",
             "vote_id": "Vote ID"
         },
@@ -3694,7 +3711,10 @@
             "body": "Speed up sends it again with a higher network fee. Cancel replaces it with an empty transfer to yourself, which also costs a network fee. If the original confirms first, nothing is replaced.",
             "speed_up": "Speed Up",
             "cancel": "Cancel Transaction",
-            "review_notice": "Replaces transaction {{txId}}"
+            "review_notice": "Replaces transaction {{txId}}",
+            "blocked_title": "Waiting on an earlier transaction",
+            "blocked_body": "An earlier transaction from this account never reached the network, so this one can't confirm until something takes its place. Unblock sends an empty transfer to yourself in its place, which costs a network fee.",
+            "unblock": "Unblock"
         },
         "suspected_poisoning": {
             "marker": "Suspected address poisoning",
@@ -3720,11 +3740,10 @@
         },
         "request": {
             "title": "{{name}} wants to connect to your account",
-            "permissions_title_one": "Requested {{count}} permission",
-            "permissions_title_other": "Requested {{count}} permissions",
-            "permissions_request_accounts": "View your wallet address & balances",
-            "permissions_sign_transaction": "Request transaction signing",
-            "permissions_sign_data": "Request arbitrary data signing",
+            "title_network": "{{name}} wants to connect to your {{network}} account",
+            "title_networks": "{{name}} wants to connect to your {{network}} and {{otherNetwork}} accounts",
+            "network_not_added": "Not added",
+            "origin_verified": "Verified by WalletConnect",
             "accounts_title": "SELECT ACCOUNTS",
             "no_accounts": "None of your accounts can connect on this network.",
             "success_sheet_title": "You are connected to {{name}}",
@@ -3742,6 +3761,13 @@
             "quantum_fee_delivery_failed": "The request could not be completed. This app may not support the higher network fees required by Quantum accounts.",
             "origin_scam": "This app has been flagged as a security risk. Don't connect unless you trust it.",
             "origin_unverified": "Pera couldn't verify this app's website."
+        },
+        "permissions": {
+            "heading": "This app will be able to",
+            "view_accounts": "See your address and balances",
+            "approve_transactions": "Ask you to approve transactions",
+            "sign_messages": "Ask you to sign messages",
+            "switch_networks": "Ask to switch networks"
         },
         "connection": {
             "approve_delivery_failed": "Couldn't reach the dApp to confirm the connection. Check your internet connection and try again."
@@ -3767,6 +3793,7 @@
             "disconnect_failed_title": "Couldn't disconnect",
             "version": "This session is using WalletConnect V{{version}}",
             "connected_accounts": "Connected with",
+            "network_label": "{{chain}} {{network}}",
             "permissions": "Advanced Permissions",
             "permissions_info_title": "Advanced Permissions",
             "permissions_info_body": "WalletConnect is a communications protocol for web3, enabling wallets and dApps to securely connect and interact. With each new version, WalletConnect introduces new ways to handle, sign and/or display transaction requests coming from third party projects."

@@ -73,6 +73,11 @@ export {
     getOnChainAccountStateQueryKey,
 } from './querykeys'
 export * from './useAccountFundedNetworksQuery'
+export {
+    accountChainEntries,
+    useOtherRegisteredChainIds,
+    type AccountChainEntry,
+} from './accountChainEntries'
 export * from './useAccountSummaryQuery'
 export * from './useAccountHoldingsCountQuery'
 export * from './useAccountValueTotalsQuery'
@@ -85,6 +90,7 @@ export * from './useRemoveTokenMutation'
 export * from './useAccountHoldingSources'
 export * from './useIsHoldingsRefreshFailed'
 export * from './useHasAccountChainState'
+export * from './useUnreadHoldingChainIds'
 export * from './useAccountCollectiblesQuery'
 export * from './useEnsureAccountEnriched'
 export * from './useSyncNewAccounts'

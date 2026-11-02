@@ -20,17 +20,24 @@ import { useStyles } from './styles'
 
 export type ChainChipProps = {
     chainId: ChainId
+    /** Drops the pill, so the icon lines up with text beside it. */
+    isBare?: boolean
     style?: StyleProp<ViewStyle>
     testID?: string
 }
 
-export const ChainChip = ({ chainId, style, testID }: ChainChipProps) => {
+export const ChainChip = ({
+    chainId,
+    isBare = false,
+    style,
+    testID,
+}: ChainChipProps) => {
     const styles = useStyles()
     const { theme } = useTheme()
 
     return (
         <PWView
-            style={[styles.container, style]}
+            style={[styles.container, !isBare && styles.pill, style]}
             testID={testID}
         >
             <ChainIcon

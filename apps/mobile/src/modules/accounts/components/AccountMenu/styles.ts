@@ -12,6 +12,29 @@
 
 import { makeStyles } from '@rneui/themed'
 
+type AddAccountPillStyleProps = {
+    pillHeight: number
+    bottomInset: number
+}
+
+export const useAddAccountPillStyles = makeStyles(
+    (theme, { pillHeight, bottomInset }: AddAccountPillStyleProps) => ({
+        // Floats over the list; box-none keeps the rows beside the pill tappable.
+        container: {
+            position: 'absolute',
+            left: 0,
+            right: 0,
+            bottom: theme.spacing.lg + bottomInset,
+            alignItems: 'center',
+            pointerEvents: 'box-none',
+        },
+        // Lets the last row scroll clear of the pill.
+        footerSpacer: {
+            height: pillHeight + theme.spacing.lg + bottomInset,
+        },
+    }),
+)
+
 export const useStyles = makeStyles(theme => {
     return {
         portfolioContainer: {

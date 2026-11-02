@@ -262,8 +262,8 @@ const ROLE_BY_FIELD_NAME: ReadonlyMap<string, ReviewedAddressRole> = new Map([
     ['verifyingContract', 'target'],
 ])
 
-// Read by the schema like the tree, so a permit the parser doesn't recognise
-// (DAI's `holder/spender/expiry/allowed`, a Permit2 with no readable deadline)
+// Read by the schema like the tree, so a permit that yields no spend approval
+// (a DAI permit that revokes, a Permit2 with no readable deadline)
 // still has its spender checked.
 const schemaAddresses = (
     types: Record<string, readonly TypedDataParameter[]>,

@@ -20,7 +20,9 @@ import { useReplaceTransaction } from '../useReplaceTransaction'
 
 const mocks = vi.hoisted(() => ({
     isReplaceable: true,
+    isBlocked: false,
     replace: vi.fn(),
+    fill: vi.fn(),
     request: vi.fn(),
     showError: vi.fn(),
 }))
@@ -33,6 +35,8 @@ vi.mock('@perawallet/wallet-core-transactions', () => ({
         replace: mocks.replace,
         isPending: false,
     }),
+    useBlockingGapQuery: () => ({ isBlocked: mocks.isBlocked }),
+    useFillNonceGapMutation: () => ({ fill: mocks.fill, isPending: false }),
 }))
 
 vi.mock('@modules/bottom-sheet', () => ({
@@ -67,7 +71,9 @@ describe('useReplaceTransaction', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mocks.isReplaceable = true
+        mocks.isBlocked = false
         mocks.replace.mockResolvedValue(undefined)
+        mocks.fill.mockResolvedValue(undefined)
     })
 
     it('reports whether the record can be re-priced', () => {
@@ -104,6 +110,42 @@ describe('useReplaceTransaction', () => {
         const error = new Error('no longer pending')
         mocks.request.mockResolvedValue({ kind: 'cancel' })
         mocks.replace.mockRejectedValue(error)
+
+        await render(RECORD).handleReplace()
+
+        expect(mocks.showError).toHaveBeenCalledWith(error)
+    })
+
+    it('offers unblock in the sheet when an earlier transaction blocks the record', async () => {
+        mocks.isBlocked = true
+        mocks.request.mockResolvedValue(undefined)
+
+        const { isBlocked, handleReplace } = render(RECORD)
+        await handleReplace()
+
+        expect(isBlocked).toBe(true)
+        expect(mocks.request.mock.calls[0][0].contents.props).toEqual({
+            isBlocked: true,
+        })
+    })
+
+    it('queues a fill of the gap, not a replacement, when the user unblocks', async () => {
+        mocks.isBlocked = true
+        mocks.request.mockResolvedValue({ kind: 'unblock' })
+
+        await render(RECORD).handleReplace()
+
+        expect(mocks.fill).toHaveBeenCalledWith({
+            scope: RECORD.scope,
+            txId: '0xpending',
+        })
+        expect(mocks.replace).not.toHaveBeenCalled()
+    })
+
+    it('shows why the gap could not be filled', async () => {
+        const error = new Error('gap already filled')
+        mocks.request.mockResolvedValue({ kind: 'unblock' })
+        mocks.fill.mockRejectedValue(error)
 
         await render(RECORD).handleReplace()
 

@@ -35,7 +35,7 @@
     "@perawallet/wallet-extension-platform-driver": "workspace:*",
     "@perawallet/wallet-extension-provider": "workspace:*",
     "@sqlite.org/sqlite-wasm": "catalog:",
-    "firebase": "^12.17.1"
+    "firebase": "^13.1.0"
   },
   "devDependencies": {
     "@noble/ciphers": "catalog:",

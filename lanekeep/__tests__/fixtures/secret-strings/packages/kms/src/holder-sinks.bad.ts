@@ -44,3 +44,8 @@ export const stateUpdater = (m: string) => {
     const seed = deriveBip39Seed(m)
     setSeed(() => seed)
 }
+export const setterNotPrefixedWithSet = (m: string) => {
+    const [current, updateSecret] = useState<Uint8Array>()
+    const seed = deriveBip39Seed(m)
+    updateSecret(seed)
+}

@@ -33,13 +33,15 @@ catalog:
   "@ledgerhq/errors": ^6.35.0
   # Exact: each release pins its own axios and @ledgerhq/* dependencies exactly,
   # so a range would drift the Ledger transport copies out from under it.
-  "@ledgerhq/hw-app-eth": 7.11.0
+  "@ledgerhq/hw-app-eth": 7.11.1
   "@ledgerhq/hw-transport-web-ble": ^6.35.0
   "@ledgerhq/hw-transport-webhid": ^6.36.0
   "@ledgerhq/react-native-hid": 6.39.5
   "@noble/ciphers": ^2.2.0
-  # Each "@scure/bip32" release pins this exactly; see the note there.
+  # Each "@scure/bip32" and "@scure/bip39" release pins this exactly; see the
+  # notes there.
   # pin: follows @scure/bip32
+  # pin: follows @scure/bip39
   "@noble/hashes": ^2.4.0
   "@noble/secp256k1": ^3.2.0
   "@perawallet/walletconnect": 1.0.3
@@ -64,7 +66,8 @@ catalog:
   # Pinned exactly: each release pins @noble/hashes exactly, so move it with
   # the @noble/hashes floor above or the tree carries two hashes copies.
   "@scure/bip32": 2.4.0
-  "@scure/bip39": ^2.2.0
+  # Pinned exactly for the same reason as "@scure/bip32".
+  "@scure/bip39": 2.4.0
   "@sqlite.org/sqlite-wasm": 3.53.0-build1
   "@tanstack/query-async-storage-persister": ^5.99.0
   "@tanstack/react-query": ^5.99.0
@@ -75,7 +78,7 @@ catalog:
   "@types/node": ^20.19.39
   "@types/react": ~19.3.0
   "@types/w3c-web-hid": ^1.0.7
-  "@types/web-bluetooth": ^0.0.21
+  "@types/web-bluetooth": ^0.0.22
   "@vitejs/plugin-react": 6.1.2
   "@vitest/coverage-v8": ^5.0.3
   # Kept in step with "@reown/walletkit" above; see the note there.
@@ -113,11 +116,11 @@ catalog:
   expo-localization: 58.0.5
   expo-notifications: 58.1.6
   expo-sqlite: 58.0.13
-  fake-indexeddb: 6.2.5
+  fake-indexeddb: 6.2.6
   falcon-1024: 0.2.0
-  # 3.33.1 fails the required Dead Code job on an unchanged .fallowrc.jsonc
-  # (unused exports and files that 3.30.0 doesn't report); raise this only with
-  # `pnpm fallow` green on the new release.
+  # 3.33.1 and 3.34.0 fail the required Dead Code job on an unchanged
+  # .fallowrc.jsonc (unused exports and files that 3.30.0 doesn't report); raise
+  # this only with `pnpm fallow` green on the new release.
   # pin: hold 3.30.0
   fallow: 3.30.0
   fast-glob: ^3.3.2
@@ -125,7 +128,7 @@ catalog:
   ky: ^2.0.2
   lanekeep: 0.14.0
   msw: ^2.14.6
-  oxfmt: ^0.73.0
+  oxfmt: ^0.74.0
   punycode: ^2.3.1
   react: 19.3.0
   react-dom: 19.3.0
@@ -164,10 +167,10 @@ minimumReleaseAge: 10080
 
 auditConfig:
   ignoreGhsas:
-    # node-forge has no patched release (first_patched_version: null; npm's
-    # latest is 1.4.0). Its only consumers are @expo/cli and
-    # @expo/code-signing-certificates, dev/build tooling that never ships to a
-    # device. Drop this entry once a fix lands.
+    # node-forge has no patched release (first_patched_version: null; 1.4.1,
+    # which the override floors to, doesn't fix it). Its only consumers are
+    # @expo/cli and @expo/code-signing-certificates, dev/build tooling that never
+    # ships to a device. Drop this entry once a fix lands.
     - GHSA-86w9-cpqp-85rv # node-forge: lax RSA PKCS#1 v1.5 signature verification
     # braces has no patched release (first_patched_version: null; npm's latest
     # is 3.0.3). Its only consumer is micromatch under metro-file-map and
@@ -178,6 +181,14 @@ auditConfig:
     # @expo/cli's, which never ships to a device; the zod override floors every
     # 4.x copy. Drop this entry once @expo/cli moves to zod 4.
     - GHSA-mrhx-c7xc-m3w5 # zod: memory exhaustion validating oversized arrays
+    # glob and minimatch are fixed only in new majors (glob 14, minimatch 11),
+    # which change matching semantics, so neither can be forced under consumers
+    # pinned to older majors. The production-path copies are @expo/config-plugins'
+    # glob 13 / minimatch 10 (its latest still asks for glob ^13), prebuild
+    # tooling that globs our own paths without an AbortSignal and never ships
+    # to a device. Drop both once @expo/config-plugins moves to glob 14.
+    - GHSA-3g3m-2fjr-6pw4 # glob: AbortSignal cancellation bypass
+    - GHSA-g3hv-75wg-m249 # minimatch: denial of service via globparts amplification
 
 minimumReleaseAgeExclude:
   # @algorandfoundation/keystore is deliberately NOT listed: nothing in the
@@ -234,6 +245,10 @@ minimumReleaseAgeExclude:
   # 4.1.5, SLSA provenance, no install scripts. Pinned to the version so it
   # stops applying once 4.2.3 clears the gate on its own.
   - fast-uri@4.2.3
+  # The node-forge audit floor (see the override). Same three Digital Bazaar
+  # maintainers as 1.4.0, no install scripts, no dependencies. Pinned to the
+  # version so it stops applying once 1.4.1 clears the gate on its own.
+  - node-forge@1.4.1
 
 onlyBuiltDependencies:
   - '@firebase/util'
@@ -324,6 +339,10 @@ patchedDependencies:
   # reused screens (software-mansion/react-native-screens#3755). Drop once
   # upstream ships the fix.
   "react-native-screens@4.30.0": patches/react-native-screens@4.30.0.patch
+  # iOS: upload-symbols hangs local Debug builds for minutes; skip the dSYM upload
+  # for Debug. The script is copied into the Xcode project at pod install, so
+  # the patch takes effect only after a fresh pod install.
+  "@react-native-firebase/crashlytics@27.0.0": patches/@react-native-firebase__crashlytics@27.0.0.patch
 
 overrides:
   # No `algosdk` override: official 3.7.0 satisfies @algorandfoundation/
@@ -407,6 +426,8 @@ overrides:
   # confusion, path equivalence, scheme injection), patched in 4.2.3. Pinned to
   # the lowest patched version rather than latest.
   fast-uri@<4.2.3: 4.2.3
+  # GHSA-mrwp-f3q8-3g9p (custom credentials follow cross-realm redirects).
+  follow-redirects@>=1.16.0 <1.16.2: 1.16.2
   happy-dom@>=19.0.0 <20.0.2: '>=20.0.2'
   # The 4.x consumers already resolve to 5.x through this open range; the floor
   # names the patched 5.x so a stale lock entry cannot hold them below it.
@@ -414,6 +435,26 @@ overrides:
   # Keep the production-proven resolution: in the tree since #996 and shipped in
   # v7.0.0. Deliberately outside @gorhom/portal's declared `^3.3.1`.
   '@gorhom/portal>nanoid': 6.0.0
+  # Eleven advisories patched in 1.4.1 (TLS, PKCS#12, X.509, AES-GCM, PEM); the
+  # one it leaves open is in auditConfig.ignoreGhsas.
+  node-forge@<1.4.1: 1.4.1
+  # One copy of each crypto library per major, enforced by
+  # pera/single-copy-packages. The 1.x lines are closed (1.9.7 and 1.8.0 are
+  # their last releases), and every 1.x consumer imports only subpaths and
+  # functions those releases export. The hashes selector is bounded below 1.8.0
+  # because @exodus/bytes accepts '^1.8.0 || ^2.0.0' and must keep that range.
+  '@noble/curves@1': 1.9.7
+  '@noble/hashes@<1.8.0': 1.8.0
+  # The scoped 2.x pins take the copy @scure/bip32 brings and move with it.
+  # keystore-core imports only sha512_256 from @noble/hashes/sha2.js, and
+  # xhd-wallet-api imports only ed25519, x25519, mod and the LE number
+  # helpers; 2.4.0 exports all of them.
+  '@algorandfoundation/keystore-core>@noble/hashes': 2.4.0
+  '@algorandfoundation/xhd-wallet-api>@noble/curves': 2.4.0
+  # Takes viem's copy and moves with viem. @walletconnect/utils calls only
+  # Signature.fromHex and Secp256k1.recoverAddress, signature-identical in 0.9
+  # and 0.14, on its session_authenticate path.
+  '@walletconnect/utils>ox': 0.14.56
   picomatch@3: 3.0.1
   picomatch@4: 4.0.4
   react: 19.3.0
@@ -422,9 +463,11 @@ overrides:
   # @ledgerhq/react-native-hw-transport-ble brings its own exact 3.4.0, a second
   # copy whose JS would drive the 3.5.1 native code apps/mobile autolinks.
   react-native-ble-plx: 3.5.1
-  react-native-nitro-modules: 0.36.5
+  react-native-nitro-modules: 0.37.1
   react-native-quick-base64: 3.0.0
   react-native-quick-crypto: 1.1.6
+  # Eight advisories patched in 8.12.2 (TLS validation, cache poisoning, DoS).
+  undici@>=8.0.0 <8.12.2: 8.12.2
   uuid@<14: 14.0.0
   ws@>=7.0.0 <7.5.11: 7.5.11
   ws@>=8.0.0 <8.20.1: '>=8.20.1'

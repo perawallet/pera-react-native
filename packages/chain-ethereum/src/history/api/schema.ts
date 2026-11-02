@@ -67,6 +67,8 @@ export const evmHistoryItemSchema = z.object({
     // Lowercase, as viem's keccak256 gives the submission ledger, so a
     // pending send and its mined row share one id.
     hash: z.string().toLowerCase().nullable(),
+    // Display only, so a malformed one drops the number and never the row.
+    block_number: z.number().int().min(0).optional().catch(undefined),
     block_time: z.iso.datetime({ offset: true }),
     from: address.nullable(),
     to: address.nullable(),

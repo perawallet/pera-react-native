@@ -10,24 +10,9 @@ const FIXTURES =
     'lanekeep/__tests__/fixtures/apps/mobile/src/**/legacy-chain.*.ts'
 
 // Delete an entry when its file is clean; never add one. Flip the rule to
-// `error` when the list is empty.
+// `error` when the list is empty. The shared hooks and components are not
+// listed here: `pera/no-legacy-chain-in-shared-app-code` owns those paths.
 const LEGACY_CHAIN_BASELINE: readonly string[] = [
-    'apps/mobile/src/components/AccountDisplay/useAccountDisplay.ts',
-    'apps/mobile/src/components/AccountIcon/useAccountIcon.ts',
-    'apps/mobile/src/components/AccountWithBalance/useAccountWithBalance.ts',
-    'apps/mobile/src/components/AddressDisplay/useAddressDisplay.ts',
-    'apps/mobile/src/components/AddressListItem/AddressListItem.tsx',
-    'apps/mobile/src/components/AssetSelector/AssetSelectorById/AssetSelectorById.tsx',
-    'apps/mobile/src/components/PreferredAmount/ConvertedPreferredAmount/ConvertedPreferredAmount.tsx',
-    'apps/mobile/src/components/PreferredAmount/PrecomputedPreferredAmount/PrecomputedPreferredAmount.tsx',
-    'apps/mobile/src/components/PreferredAmount/usePreferredAmount.ts',
-    'apps/mobile/src/components/RootComponent/RootContentContainer/RootContentContainer.tsx',
-    'apps/mobile/src/components/TestnetIndicator/useTestnetIndicator.web.ts',
-    'apps/mobile/src/hooks/useAccountTypeLabel.ts',
-    'apps/mobile/src/hooks/useIsDataSigningBlocked.ts',
-    'apps/mobile/src/hooks/useNfdResolve.ts',
-    'apps/mobile/src/hooks/useQuantumDappWarning.tsx',
-    'apps/mobile/src/hooks/useResolvedAddress.ts',
     'apps/mobile/src/modules/accounts/components/AccountDrawer/useAccountPickers.tsx',
     'apps/mobile/src/modules/accounts/components/AccountHistory/useAccountHistoryRows.ts',
     'apps/mobile/src/modules/accounts/components/AccountInfoCard/AccountTypeInfoContent/useAccountTypeInfo.ts',
@@ -46,7 +31,7 @@ const LEGACY_CHAIN_BASELINE: readonly string[] = [
     'apps/mobile/src/modules/accounts/components/PortfolioView/usePortfolioView.ts',
     'apps/mobile/src/modules/accounts/components/SharedAccountDetailsContent/useSharedAccountDetailsContent.ts',
     'apps/mobile/src/modules/accounts/components/WatchAccountButtonPanel/useWatchAccountButtonPanel.ts',
-    'apps/mobile/src/modules/accounts/screens/RemoveAssetsScreen/useRemoveAssetsScreen.ts',
+    'apps/mobile/src/modules/accounts/screens/RemoveAssetsScreen/useRemoveAssetsScreen.tsx',
     'apps/mobile/src/modules/assets/components/AccountAssetSelectionList/useAccountAssetSelectionList.ts',
     'apps/mobile/src/modules/assets/components/AssetItem/AccountAssetItemView.tsx',
     'apps/mobile/src/modules/assets/components/OptInAccountSelectionContent/OptInAccountSelectionContent.tsx',
@@ -181,6 +166,15 @@ describe('pera/no-legacy-chain-in-app', () => {
         expect(
             found.filter(v => !v.file.endsWith('legacy-chain.bad.ts')),
         ).toEqual([])
+    })
+
+    it('skips the shared app code paths owned by the other rule', async () => {
+        const found = await runRule(
+            RULE,
+            'lanekeep/__tests__/fixtures/apps/mobile/src/{hooks,components}/**/*.{ts,tsx}',
+        )
+
+        expect(found).toEqual([])
     })
 
     it('reports exactly the baseline files across the app', async () => {

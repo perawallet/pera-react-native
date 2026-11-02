@@ -11,7 +11,7 @@
  */
 
 import type { I18nKey } from '@perawallet/wallet-core-chain-contract'
-import type { Nullable } from '../utils/types'
+import type { Nullable, Optional } from '../utils/types'
 
 export enum ErrorSeverity {
     LOW = 'low',
@@ -66,6 +66,13 @@ export interface ErrorMetadata {
      * loud message on screen and still deserves nothing in Crashlytics.
      */
     expected?: boolean
+    /**
+     * A stable, namespaced code for the failure (`<source>.<code>`),
+     * independent of message and copy. Crash reports group by it and analytics
+     * carry it. Set it on an error one factory builds for many causes, whose
+     * shared stack can't tell them apart.
+     */
+    reportCode?: string
 }
 
 // oxlint-disable-next-line pera/typed-domain-errors -- the base every domain error extends
@@ -125,6 +132,24 @@ export class AppError extends Error {
             originalError: this.originalError?.message,
         }
     }
+}
+
+const MAX_REPORT_CODE_DEPTH = 8
+
+/** The outermost declared `reportCode` on the `originalError` chain. */
+export const reportCodeOf = (error: unknown): Optional<string> => {
+    let current: unknown = error
+    for (
+        let depth = 0;
+        depth < MAX_REPORT_CODE_DEPTH && current instanceof AppError;
+        depth++
+    ) {
+        if (current.metadata.reportCode !== undefined) {
+            return current.metadata.reportCode
+        }
+        current = current.originalError
+    }
+    return undefined
 }
 
 export const isRetryableError = (error: Nullable<Error>): boolean => {

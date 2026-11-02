@@ -187,6 +187,17 @@ export const decodeEvmStandardCall = (call: {
     }
 }
 
+/**
+ * A grant carries its own warning, so approvals are read whatever the chain's
+ * capabilities; revocations are read too so a revoke isn't flagged as unknown.
+ * A transfer isn't: a selector match proves the encoding, not that the target
+ * is a token, so it is read only while `contractDecoding` is on.
+ */
+export const isEvmApprovalCall = (call: EvmStandardCall): boolean =>
+    call.kind === 'approve' ||
+    call.kind === 'increase-allowance' ||
+    call.kind === 'set-approval-for-all'
+
 const isRevocation = (call: EvmStandardCall): boolean =>
     (call.kind === 'approve' && call.value.isZero()) ||
     (call.kind === 'set-approval-for-all' && !call.isApproved)

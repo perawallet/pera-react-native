@@ -31,4 +31,8 @@ describe('precisionFor', () => {
     it('maps the detailed density to the preferred full precision', () => {
         expect(precisionFor('detailed')).toBe('preferredFull')
     })
+
+    it('maps the unit price density to unit price precision', () => {
+        expect(precisionFor('unitPrice')).toBe('unitPrice')
+    })
 })

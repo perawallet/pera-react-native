@@ -10,7 +10,8 @@
  limitations under the License
  */
 
-import { getAddress, isAddress } from 'viem'
+import { Decimal } from 'decimal.js'
+import { getAddress, isAddress, maxUint256 } from 'viem'
 import type { TypedDataDefinition, TypedDataParameter } from 'viem'
 import type {
     SpendAllowance,
@@ -18,6 +19,7 @@ import type {
 } from '@perawallet/wallet-core-chain-contract'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import { areEvmAddressesEqual } from '../accounts/address-codec'
+import { toEvmNftAssetId } from '../blockchain/utils/caip19'
 import type { EvmChain } from '../chains/types'
 import { isRecord } from './adapter'
 import { toAllowanceAmount } from './allowance'
@@ -28,10 +30,23 @@ type Field = readonly [name: string, type: string]
 
 // A schema that differs in any name, type or order hashes to a different
 // typehash, so it can never be a signature the real contract accepts.
-const PERMIT: readonly Field[] = [
+const EIP2612_PERMIT: readonly Field[] = [
     ['owner', 'address'],
     ['spender', 'address'],
     ['value', 'uint256'],
+    ['nonce', 'uint256'],
+    ['deadline', 'uint256'],
+]
+const DAI_PERMIT: readonly Field[] = [
+    ['holder', 'address'],
+    ['spender', 'address'],
+    ['nonce', 'uint256'],
+    ['expiry', 'uint256'],
+    ['allowed', 'bool'],
+]
+const ERC721_PERMIT: readonly Field[] = [
+    ['spender', 'address'],
+    ['tokenId', 'uint256'],
     ['nonce', 'uint256'],
     ['deadline', 'uint256'],
 ]
@@ -140,6 +155,22 @@ const toAllowance = (
     return { assetId, ...(allowance && { amount: allowance }) }
 }
 
+const toNftAllowance = (
+    contract: unknown,
+    tokenId: unknown,
+): Optional<TokenAllowance> => {
+    const address = toAddress(contract)
+    const id = toUint(tokenId)
+    if (address === undefined || id === undefined || id > maxUint256) {
+        return undefined
+    }
+    return {
+        assetId: toEvmNftAssetId(address, id.toString()),
+        amount: new Decimal(1),
+        nft: { collection: address, tokenId: id.toString() },
+    }
+}
+
 type Parsed = {
     spender: unknown
     allowances: Optional<TokenAllowance>[]
@@ -155,6 +186,44 @@ const parsePermit = (
     allowances: [toAllowance(token, message.value)],
     expiry: toUint(message.deadline),
 })
+
+// DAI grants its whole balance when `allowed` is true and nothing otherwise;
+// an expiry of 0 means it never lapses.
+const parseDaiPermit = (
+    message: Record<string, unknown>,
+    token: unknown,
+): Parsed => {
+    const expiry = toUint(message.expiry)
+    return {
+        spender: message.spender,
+        allowances:
+            message.allowed === true ? [toAllowance(token, maxUint256)] : [],
+        expiry: expiry === 0n ? maxUint256 : expiry,
+    }
+}
+
+const parseErc721Permit = (
+    message: Record<string, unknown>,
+    contract: unknown,
+): Parsed => ({
+    spender: message.spender,
+    allowances: [toNftAllowance(contract, message.tokenId)],
+    expiry: toUint(message.deadline),
+})
+
+type PermitShape = {
+    fields: readonly Field[]
+    parse: (
+        message: Record<string, unknown>,
+        verifyingContract: unknown,
+    ) => Parsed
+}
+
+const PERMIT_SHAPES: readonly PermitShape[] = [
+    { fields: EIP2612_PERMIT, parse: parsePermit },
+    { fields: DAI_PERMIT, parse: parseDaiPermit },
+    { fields: ERC721_PERMIT, parse: parseErc721Permit },
+]
 
 const parsePermit2 = (
     { key, isBatch }: Permit2Shape,
@@ -200,9 +269,11 @@ const parseTypedData = (typedData: TypedDataDefinition): Optional<Parsed> => {
 
     if (primaryType === 'Permit') {
         // The token is the contract that verifies the signature.
-        return matches(types.Permit, PERMIT) &&
-            toAddress(verifyingContract) !== undefined
-            ? parsePermit(message, verifyingContract)
+        const permit = PERMIT_SHAPES.find(({ fields }) =>
+            matches(types.Permit, fields),
+        )
+        return permit && toAddress(verifyingContract) !== undefined
+            ? permit.parse(message, verifyingContract)
             : undefined
     }
 
@@ -227,7 +298,7 @@ const parseTypedData = (typedData: TypedDataDefinition): Optional<Parsed> => {
         : undefined
 }
 
-/** EIP-2612 `Permit` or Permit2 typed data, complete or not. Never throws. */
+/** EIP-2612, DAI-style or ERC-721 `Permit`, or Permit2 typed data, complete or not. Never throws. */
 export const isPermitTypedData = (typedData: unknown): boolean => {
     try {
         return parseTypedData(typedData as TypedDataDefinition) !== undefined
@@ -237,9 +308,9 @@ export const isPermitTypedData = (typedData: unknown): boolean => {
 }
 
 /**
- * Recognises EIP-2612 `Permit` and Permit2 typed data that lets `spender` move
- * the signer's tokens. `now` is Unix ms. Never throws; anything it doesn't
- * match exactly yields `undefined`.
+ * Recognises EIP-2612, DAI-style or ERC-721 `Permit`, or Permit2 typed data that
+ * lets `spender` move the signer's tokens or NFT. `now` is Unix ms. Never throws;
+ * anything it doesn't match exactly yields `undefined`.
  */
 export const spendApprovalOf = (
     typedData: TypedDataDefinition,

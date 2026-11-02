@@ -13,6 +13,7 @@
 /* oxlint-disable no-console -- the shared logger is the console sink every package's diagnostics route through */
 
 import { config } from '@perawallet/wallet-core-config'
+import { reportCodeOf } from '../errors/base'
 import { isExpectedError } from '../errors/expected'
 import {
     readSafely,
@@ -150,6 +151,7 @@ class Logger {
                 this.errorReporter({
                     severity,
                     error: redactErrorForReport(messageOrError),
+                    groupingKey: reportCodeOf(messageOrError),
                 })
                 return
             }
@@ -178,11 +180,16 @@ class Logger {
                     readSafely(() => messageOrError.stack).value,
                 ) as typeof reportableError.stack
 
-                // No groupingKey: this error's own stack points at where it was
-                // thrown, which separates sites far better than a shared name
-                // would. Supplying one here would prepend an identical frame
-                // above genuinely distinct stacks and merge them.
-                this.errorReporter({ severity, error: reportableError })
+                // Only a declared code keys an Error with its own stack: a shared
+                // name would merge distinct stacks, but a factory-built error's
+                // stacks all start in the factory.
+                this.errorReporter({
+                    severity,
+                    error: reportableError,
+                    groupingKey:
+                        reportCodeOf(messageOrError) ??
+                        reportCodeOf(this.findContextError(context)),
+                })
                 return
             }
 
@@ -191,9 +198,11 @@ class Logger {
             // in the app, and a stack-fingerprinting reporter collapses them all
             // into one issue. Two things fix that:
             //
-            // 1. `groupingKey`, the constant message, names the site. The
-            //    message alone, never `combinedMessage`, whose interpolated
-            //    context would make every event its own issue.
+            // 1. `groupingKey` names the site: a declared report code on the
+            //    context error wins, since one message ('Query failed') can
+            //    carry many distinct failures; else the constant message. Never
+            //    `combinedMessage`, whose interpolated context would make every
+            //    event its own issue.
             // 2. Adopting the stack of an `Error` passed in context, so the
             //    frames below point at the real origin instead of at `log()`.
             const contextError = this.findContextError(context)
@@ -209,7 +218,7 @@ class Logger {
             this.errorReporter({
                 severity,
                 error: reportableError,
-                groupingKey: message,
+                groupingKey: reportCodeOf(contextError) ?? message,
             })
         } catch {
             // Never allow error reporting to crash the app.

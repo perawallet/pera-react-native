@@ -22,6 +22,8 @@ vi.mock('@perawallet/wallet-core-nfd', () => ({
     useNfdSearchQuery: vi.fn(),
 }))
 
+const SCOPE = { chainId: 'algorand', networkId: 'mainnet' } as const
+
 const ALGORAND_ADDRESS =
     'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY5HFKQ'
 const NFD_ADDRESS = 'RP35URKAEVP6PA3WIJGDGA3FZKNV76E7Y2QZPEJ4TDLV72T326B3IOFX7A'
@@ -47,7 +49,9 @@ describe('useNfdResolve', () => {
     })
 
     it('returns an Algorand address as typed, without searching NFD', () => {
-        const { result } = renderHook(() => useNfdResolve(ALGORAND_ADDRESS))
+        const { result } = renderHook(() =>
+            useNfdResolve(ALGORAND_ADDRESS, SCOPE),
+        )
 
         expect(result.current.isDirectAddress).toBe(true)
         expect(result.current.resolvedAddress).toBe(ALGORAND_ADDRESS)
@@ -59,7 +63,9 @@ describe('useNfdResolve', () => {
     })
 
     it("returns an address another registered chain's codec accepts as typed", () => {
-        const { result } = renderHook(() => useNfdResolve(FIXTURE_ADDRESS))
+        const { result } = renderHook(() =>
+            useNfdResolve(FIXTURE_ADDRESS, SCOPE),
+        )
 
         expect(result.current.isDirectAddress).toBe(true)
         expect(result.current.resolvedAddress).toBe(FIXTURE_ADDRESS)
@@ -69,7 +75,7 @@ describe('useNfdResolve', () => {
     it('resolves a name through the NFD search', () => {
         mockSearch([{ name: 'alice.algo', address: NFD_ADDRESS }])
 
-        const { result } = renderHook(() => useNfdResolve('alice.algo'))
+        const { result } = renderHook(() => useNfdResolve('alice.algo', SCOPE))
 
         expect(useNfdSearchQuery).toHaveBeenLastCalledWith(
             expect.objectContaining({ chainId: 'algorand' }),
@@ -83,7 +89,9 @@ describe('useNfdResolve', () => {
     })
 
     it('resolves to nothing for input that is neither an address nor a name', () => {
-        const { result } = renderHook(() => useNfdResolve('not-an-address'))
+        const { result } = renderHook(() =>
+            useNfdResolve('not-an-address', SCOPE),
+        )
 
         expect(result.current.isDirectAddress).toBe(false)
         expect(result.current.isNfdResolved).toBe(false)

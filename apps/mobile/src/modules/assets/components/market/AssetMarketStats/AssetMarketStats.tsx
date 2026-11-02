@@ -63,6 +63,7 @@ export const AssetMarketStats = ({
                     </PWText>
                     <PreferredAmount
                         variant='h2'
+                        density='unitPrice'
                         sourceAmount={new Decimal(1)}
                         sourceAssetId={assetDetails.assetId}
                         scope={scope}

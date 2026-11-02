@@ -147,7 +147,7 @@ export const registerTestMultisigAdapter = (): void => {
             chainId: TEST_CHAIN_ID,
             multisigNative: {
                 parametersOf: native =>
-                    native?.multisig
+                    native?.family === 'algorand' && native.multisig
                         ? {
                               ...native.multisig,
                               addresses: [...native.multisig.addresses],
