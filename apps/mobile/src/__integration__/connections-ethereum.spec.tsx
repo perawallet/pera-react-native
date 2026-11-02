@@ -79,6 +79,7 @@ import {
 import type { ConnectionOrigin } from '@perawallet/wallet-extension-connections'
 import {
     DEFAULT_EVM_RPC_RESPONSES,
+    EvmRpcErrorFixture,
     evmRpcHandlers,
     evmTransactionReceipt,
 } from '@perawallet/wallet-core-chain-ethereum/test-handlers'
@@ -801,6 +802,60 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                         'signing.transaction_view.invalid_title',
                     ),
                 ).toBeNull()
+            })
+
+            it("Given a dApp's gas limit far above what the call needs, when it is queued, then the review warns of the high fee", async () => {
+                const walletKit = await settle()
+                renderSignReview()
+
+                sendTransaction(walletKit, {
+                    from: CHECKSUMMED_ETH_ADDRESS,
+                    to: RECIPIENT,
+                    value: '0x1',
+                    gas: '0x989680',
+                })
+                await queued()
+
+                await waitFor(
+                    () => {
+                        expect(
+                            screen.getAllByTestId('ethereum_high_fee_warning'),
+                        ).not.toHaveLength(0)
+                    },
+                    { timeout: 5000 },
+                )
+            })
+
+            it('Given a call the node says would revert, when the dApp sends it with its own gas, then nothing is queued and the user is told why', async () => {
+                const walletKit = await settle()
+                server.use(
+                    ...evmRpcHandlers({
+                        responses: {
+                            eth_estimateGas: new EvmRpcErrorFixture(
+                                3,
+                                'execution reverted: ERC20: transfer amount exceeds balance',
+                            ),
+                        },
+                    }),
+                )
+
+                sendTransaction(walletKit, {
+                    from: CHECKSUMMED_ETH_ADDRESS,
+                    to: RECIPIENT,
+                    value: '0x0',
+                    data: '0xa9059cbb',
+                    gas: '0x30d40',
+                })
+
+                await waitFor(() => {
+                    expect(answerOf(walletKit)).toHaveProperty('error')
+                })
+                expect(pendingSignRequests()).toHaveLength(0)
+                await waitFor(() => {
+                    expect(toastBodies()).toContain(
+                        'errors.evm.reverted_with_reason.body',
+                    )
+                })
             })
 
             it('Given a queued request, when the user rejects it, then the dApp receives 4001', async () => {

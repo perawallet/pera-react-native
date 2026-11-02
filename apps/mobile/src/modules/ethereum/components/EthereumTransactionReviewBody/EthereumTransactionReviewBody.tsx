@@ -15,6 +15,7 @@ import type { StackNavigationProp } from '@react-navigation/stack'
 import { PWButton, PWText, PWView } from '@components/core'
 import { AccountWithBalance } from '@components/AccountWithBalance'
 import { AssetAmount } from '@components/AssetAmount'
+import { ChainNotice } from '@components/ChainNotice'
 import { useLanguage } from '@hooks/useLanguage'
 import { TransactionReviewLayout, type ReviewBodyProps } from '@modules/signing'
 import type { SigningStackParamList } from '@modules/signing/routes'
@@ -41,8 +42,14 @@ export const EthereumTransactionReviewBody = ({
         return null
     }
 
-    const { maxFee, signingAccount, scope, standardCall, isTransfer } =
-        presentation
+    const {
+        maxFee,
+        highFeeText,
+        signingAccount,
+        scope,
+        standardCall,
+        isTransfer,
+    } = presentation
     const handleViewDetails = () => {
         navigation.navigate('TransactionDetails', { scope, transaction })
     }
@@ -90,6 +97,15 @@ export const EthereumTransactionReviewBody = ({
             details={details}
             fee={
                 <PWView>
+                    {highFeeText && (
+                        <ChainNotice
+                            kind='warning'
+                            titleKey='transactions.warning.high_fee_warning'
+                            params={{ fee: highFeeText }}
+                            style={styles.highFeeNotice}
+                            testID='ethereum_high_fee_warning'
+                        />
+                    )}
                     <PWView
                         testID='ethereum_max_fee'
                         style={styles.feeRow}
