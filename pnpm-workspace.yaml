@@ -27,7 +27,7 @@ catalog:
   "@algorandfoundation/xhd-wallet-api": ^2.0.0-canary.1
   "@lottiefiles/dotlottie-react": 0.20.0
   "@babel/runtime": ^7.29.2
-  "@expensify/react-native-wallet": 0.2.1
+  "@expensify/react-native-wallet": 0.1.41
   "@expo/app-integrity": 58.0.2
   "@joe-p/react-native-falcon": 0.1.0
   "@ledgerhq/errors": ^6.35.0
@@ -81,16 +81,16 @@ catalog:
   # Kept in step with "@reown/walletkit" above; see the note there.
   # pin: follows @reown/walletkit
   # pin: lockstep walletconnect
-  "@walletconnect/core": 2.26.0
+  "@walletconnect/core": 2.25.0
   # Same release train as core: it installs the `global.NetInfo` and
   # `global.Platform` shims core's utils read, so bump the two together.
   # pin: lockstep walletconnect
-  "@walletconnect/react-native-compat": 2.26.0
+  "@walletconnect/react-native-compat": 2.25.0
   # The exact version "@walletconnect/core" depends on: `buildApprovedNamespaces`
   # encodes the namespace rules the relay and the dApp both enforce, so a copy
   # out of step with core's would build sessions core then rejects.
   # pin: follows @walletconnect/core
-  "@walletconnect/utils": 2.26.0
+  "@walletconnect/utils": 2.25.0
   # 3.7.0 is a floor, not a preference: the `pqsig` field and the
   # scheme-agnostic PQ signer surface Pera's quantum accounts sign with landed
   # in that release (algorand/js-algorand-sdk PR #1102). 3.6.x still resolves
@@ -119,7 +119,7 @@ catalog:
   # .fallowrc.jsonc (unused exports and files that 3.30.0 doesn't report); raise
   # this only with `pnpm fallow` green on the new release.
   # pin: hold 3.30.0
-  fallow: 3.36.0
+  fallow: 3.30.0
   fast-glob: ^3.3.2
   jsdom: ^30.0.1
   ky: ^2.0.2
@@ -142,7 +142,7 @@ catalog:
   # Metro, Hermes and the extension bundles were verified against this exact
   # version; re-run those checks before a bump.
   # pin: hold 2.57.7
-  viem: 2.57.11
+  viem: 2.57.7
   vite: ~8.3.4
   vitest: ^5.0.3
   xstate: ^5.28.0
