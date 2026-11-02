@@ -11,10 +11,16 @@ const LOCK = 'pnpm-lock.yaml'
 
 type Found = [file: string, line: number, message: string][]
 
-const lockfile = (snapshots: string[]): string =>
-    ["lockfileVersion: '9.0'", '', 'snapshots:', '', ...snapshots, ''].join(
-        '\n',
-    )
+const lockfile = (snapshots: string[], importers: string[] = []): string =>
+    [
+        "lockfileVersion: '9.0'",
+        '',
+        ...(importers.length > 0 ? ['importers:', '', ...importers, ''] : []),
+        'snapshots:',
+        '',
+        ...snapshots,
+        '',
+    ].join('\n')
 
 /** The 1-based line of the snapshot entry whose key line is exactly `key`. */
 const lineOf = (lock: string, key: string): number =>
@@ -71,10 +77,10 @@ const check = async (files: Record<string, string>): Promise<Found> =>
         }
     })
 
-const run = (snapshots: string[]): Promise<Found> =>
+const run = (snapshots: string[], importers: string[] = []): Promise<Found> =>
     check({
         [WORKSPACE]: 'packages:\n  - packages/*\n',
-        [LOCK]: lockfile(snapshots),
+        [LOCK]: lockfile(snapshots, importers),
     })
 
 const COLLAPSE =
@@ -122,7 +128,64 @@ describe('pera/single-copy-packages', () => {
             [
                 LOCK,
                 lineOf(lockfile(snapshots), old),
-                "'@noble/curves' resolves to 2 versions on 1.x: 1.9.1 (from a workspace package), 1.9.7 (from ox@0.14.56); " +
+                "'@noble/curves' resolves to 2 versions on 1.x: 1.9.1 (no lockfile entry depends on it), 1.9.7 (from ox@0.14.56); " +
+                    COLLAPSE,
+            ],
+        ])
+    })
+
+    it('names a dependent that reaches the copy through optionalDependencies', async () => {
+        const old = "  '@noble/curves@1.9.1':"
+        const snapshots = [
+            ...clean(),
+            old,
+            '    dependencies:',
+            "      '@noble/hashes': 1.8.0",
+            '  fsevents@2.3.3:',
+            '    optionalDependencies:',
+            "      '@noble/curves': 1.9.1",
+        ]
+
+        const found = await run(snapshots)
+
+        expect(found).toEqual([
+            [
+                LOCK,
+                lineOf(lockfile(snapshots), old),
+                "'@noble/curves' resolves to 2 versions on 1.x: 1.9.1 (from fsevents@2.3.3), 1.9.7 (from ox@0.14.56); " +
+                    COLLAPSE,
+            ],
+        ])
+    })
+
+    it('names the workspace importers that depend on the copy directly', async () => {
+        const old = "  '@noble/curves@1.9.1':"
+        const snapshots = [
+            ...clean(),
+            old,
+            '    dependencies:',
+            "      '@noble/hashes': 1.8.0",
+        ]
+        const importers = [
+            '  .:',
+            '    devDependencies:',
+            "      '@noble/curves':",
+            '        specifier: 1.9.1',
+            '        version: 1.9.1',
+            '  apps/mobile:',
+            '    dependencies:',
+            "      '@noble/curves':",
+            '        specifier: ^1.9.0',
+            '        version: 1.9.1',
+        ]
+
+        const found = await run(snapshots, importers)
+
+        expect(found).toEqual([
+            [
+                LOCK,
+                lineOf(lockfile(snapshots, importers), old),
+                "'@noble/curves' resolves to 2 versions on 1.x: 1.9.1 (from the workspace root, workspace apps/mobile), 1.9.7 (from ox@0.14.56); " +
                     COLLAPSE,
             ],
         ])
@@ -138,7 +201,7 @@ describe('pera/single-copy-packages', () => {
             [
                 LOCK,
                 lineOf(lockfile(snapshots), next),
-                "'@noble/hashes' 3.0.0 (from a workspace package) is on 3.x, outside its allowed 1.x and 2.x; move it onto an allowed line with an override, or add 3.x to its split with the reason",
+                "'@noble/hashes' 3.0.0 (no lockfile entry depends on it) is on 3.x, outside its allowed 1.x and 2.x; move it onto an allowed line with an override, or add 3.x to its split with the reason",
             ],
         ])
     })

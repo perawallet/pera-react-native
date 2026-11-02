@@ -59,7 +59,14 @@ const dependentsOf = (
     for (const [key, variants] of lock.snapshots) {
         if (variants.some(deps => deps.get(name) === version)) found.add(key)
     }
-    return [...found].sort()
+    const workspaces: string[] = []
+    for (const [path, deps] of lock.importers) {
+        if (deps.get(name) !== version) continue
+        workspaces.push(
+            path === '.' ? 'the workspace root' : `workspace ${path}`,
+        )
+    }
+    return [...workspaces.sort(), ...[...found].sort()]
 }
 
 const describeCopy = (
@@ -69,7 +76,7 @@ const describeCopy = (
 ): string => {
     const dependents = dependentsOf(lock, name, version)
     return dependents.length === 0
-        ? `${version} (from a workspace package)`
+        ? `${version} (no lockfile entry depends on it)`
         : `${version} (from ${dependents.join(', ')})`
 }
 

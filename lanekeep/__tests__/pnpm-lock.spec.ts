@@ -27,6 +27,16 @@ const LOCK = [
     '      plain:',
     '        specifier: 2.0.0',
     '        version: 2.0.0',
+    '    devDependencies:',
+    "      '@scope/a':",
+    '        specifier: catalog:',
+    '        version: 1.2.3(typescript@7.0.2)',
+    '',
+    '  apps/mobile:',
+    '    optionalDependencies:',
+    '      tail:',
+    '        specifier: ^1.0.0',
+    '        version: 1.0.0',
     '',
     'snapshots:',
     '',
@@ -45,7 +55,7 @@ const LOCK = [
     '',
     '  tail@1.0.0:',
     '    optionalDependencies:',
-    '      ignored: 1.0.0',
+    '      opt: 1.0.0(typescript@7.0.2)',
     '',
 ].join('\n')
 
@@ -73,15 +83,35 @@ describe('parsePnpmLock', () => {
 
     it('records the 1-based line of the first snapshot entry of each release', () => {
         expect([...lock.snapshotLines]).toEqual([
-            ['@scope/a@1.2.3', 25],
-            ['plain@2.0.0', 36],
-            ['tail@1.0.0', 38],
+            ['@scope/a@1.2.3', 35],
+            ['plain@2.0.0', 46],
+            ['tail@1.0.0', 48],
         ])
     })
 
-    it('parses a single-line empty snapshot and reads only dependencies', () => {
+    it('parses a single-line empty snapshot', () => {
         expect(lock.snapshots.get('plain@2.0.0')?.map(d => d.size)).toEqual([0])
-        expect(lock.snapshots.get('tail@1.0.0')?.map(d => d.size)).toEqual([0])
+    })
+
+    it('reads optionalDependencies of a snapshot alongside its dependencies', () => {
+        expect(lock.snapshots.get('tail@1.0.0')?.map(d => [...d])).toEqual([
+            [['opt', '1.0.0']],
+        ])
+    })
+
+    it('reads every dependency group of each importer, peer suffix stripped', () => {
+        expect(
+            [...lock.importers].map(([path, deps]) => [path, [...deps]]),
+        ).toEqual([
+            [
+                '.',
+                [
+                    ['plain', '2.0.0'],
+                    ['@scope/a', '1.2.3'],
+                ],
+            ],
+            ['apps/mobile', [['tail', '1.0.0']]],
+        ])
     })
 })
 
