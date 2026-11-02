@@ -1097,7 +1097,9 @@
         },
         "add_contact": {
             "duplicate_address_warning": "Contact for this address already exists.",
-            "add": "Add"
+            "add": "Add",
+            "added_title": "Contact added",
+            "added_body": "{{name}} was added to your contacts."
         },
         "view_contact": {
             "no_contact_title": "No contact found",
