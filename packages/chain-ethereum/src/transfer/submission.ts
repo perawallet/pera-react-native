@@ -309,9 +309,10 @@ export const historyEntryOfSigned = async (
  * send; a failed read of the nonce's open rows refuses it unsent with a
  * retryable `TransportError`. A speed-up or cancel at a nonce an open attempt
  * already holds replaces it: the row links the two, and one that doesn't
- * outbid the original by the node's minimum bump is refused without being sent. Any other send at a held
- * nonce is refused the same way. On an OP-stack chain the recorded max fee
- * includes the oracle's fee for the signed bytes, or gas alone when that read fails.
+ * outbid the original by the node's minimum bump is refused without being
+ * sent. Any other send at a held nonce is refused the same way. On an
+ * OP-stack chain the recorded max fee includes the oracle's fee for the
+ * signed bytes, or gas alone when that read fails.
  */
 export const submitAndRecordEthereumTransactions = async ({
     client,

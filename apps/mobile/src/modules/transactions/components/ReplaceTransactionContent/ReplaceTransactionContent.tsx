@@ -51,27 +51,32 @@ export const ReplaceTransactionContent = ({
                         : 'transactions.replacement.body',
                 )}
             </PWText>
+            {/* A re-priced or cancelled send still waits behind the gap, so
+                blocked offers only the fill. */}
             <PWView style={styles.actions}>
-                {isBlocked && (
+                {isBlocked ? (
                     <PWButton
                         testID='replace_transaction_unblock'
                         variant='primary'
                         title={t('transactions.replacement.unblock')}
                         onPress={() => resolve({ kind: 'unblock' })}
                     />
+                ) : (
+                    <>
+                        <PWButton
+                            testID='replace_transaction_speed_up'
+                            variant='primary'
+                            title={t('transactions.replacement.speed_up')}
+                            onPress={() => resolve({ kind: 'speed-up' })}
+                        />
+                        <PWButton
+                            testID='replace_transaction_cancel'
+                            variant='secondary'
+                            title={t('transactions.replacement.cancel')}
+                            onPress={() => resolve({ kind: 'cancel' })}
+                        />
+                    </>
                 )}
-                <PWButton
-                    testID='replace_transaction_speed_up'
-                    variant={isBlocked ? 'secondary' : 'primary'}
-                    title={t('transactions.replacement.speed_up')}
-                    onPress={() => resolve({ kind: 'speed-up' })}
-                />
-                <PWButton
-                    testID='replace_transaction_cancel'
-                    variant='secondary'
-                    title={t('transactions.replacement.cancel')}
-                    onPress={() => resolve({ kind: 'cancel' })}
-                />
             </PWView>
         </PWView>
     )

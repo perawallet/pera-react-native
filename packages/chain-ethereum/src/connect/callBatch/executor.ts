@@ -38,6 +38,7 @@ import {
     signTransactionsInBackground,
     updateTransactionBatch,
     SubmissionError,
+    TransportError,
     type ReviewApproval,
     type ReviewApprovalRef,
     type SubmissionHistoryEntry,
@@ -293,11 +294,13 @@ const run = async (
         }
     }
 
+    // `deferred`: refused before the node saw it for a wallet-side reason
+    // that may pass, so the next tick resends the saved bytes.
     const send = async ({
         signed,
         entry,
         isRecorded,
-    }: Unsent): Promise<boolean> => {
+    }: Unsent): Promise<'sent' | 'refused' | 'deferred'> => {
         try {
             await (isRecorded
                 ? submitEthereumTransactions(client, [signed.bytes], chain)
@@ -309,13 +312,14 @@ const run = async (
                       flow: 'batch',
                       historyEntries: [entry],
                   }))
-            return true
+            return 'sent'
         } catch (error) {
+            if (error instanceof TransportError) return 'deferred'
             // Anything but a node's refusal may still have landed; the settle reads it.
-            return !(
-                error instanceof SubmissionError &&
+            return error instanceof SubmissionError &&
                 error.classification === 'rejected-by-node'
-            )
+                ? 'refused'
+                : 'sent'
         }
     }
 
@@ -421,9 +425,10 @@ const run = async (
 
         if (unsent?.signed.id === txId) {
             attempted.add(txId)
-            const isSent = await send(unsent)
+            const sent = await send(unsent)
             unsent = undefined
-            if (!isSent) {
+            if (sent === 'deferred') break
+            if (sent === 'refused') {
                 await save(current.txIds, position, 'failed')
                 break
             }
