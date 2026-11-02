@@ -16,6 +16,7 @@ import {
     recoverTransactionAddress,
     type Address,
     type FeeValuesEIP1559,
+    type Hex,
     type TransactionSerializableEIP1559,
     type TransactionSerialized,
 } from 'viem'
@@ -43,6 +44,7 @@ import type { EvmChain } from '../chains/types'
 import type { EthereumTransactionPayload } from '../signing/adapter'
 import { ethereumCallSummary } from '../signing/review'
 import { readEvmFeePresets, type EvmPricedTransaction } from './fees'
+import { readReceipt } from './reconcile'
 import { cancelSummary } from './summary'
 
 /** Gas units of a plain transfer, all a cancel needs. */
@@ -182,9 +184,24 @@ export const findEvmNonceGap = async (
         scope: context.scope,
         sender: from,
         nonce: pending,
-        statuses: [...OPEN_SUBMISSION_STATUSES, 'confirmed', 'replaced'],
+        statuses: [
+            ...OPEN_SUBMISSION_STATUSES,
+            'confirmed',
+            'replaced',
+            'failed',
+        ],
     })
-    return attempts.length === 0 ? pending : null
+    // `failed` covers dropped and reverted alike; only a reverted one has a receipt.
+    const failed = attempts.filter(({ status }) => status === 'failed')
+    if (failed.length < attempts.length) return null
+    const receipts = await Promise.all(
+        failed
+            .flatMap(({ txIds }) => txIds)
+            .map(txId => readReceipt(client, txId as Hex)),
+    ).catch((error: unknown) => {
+        throw toEvmError(error, chain.row.nativeAsset.symbol)
+    })
+    return receipts.some(Boolean) ? null : pending
 }
 
 /** A cancel at the empty nonce, priced at the fast preset since nothing there needs outbidding. */

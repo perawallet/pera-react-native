@@ -126,6 +126,7 @@ export {
     CreatorCannotOptOutError,
     AssetFrozenError,
     TransactionNotReplaceableError,
+    NonceGapFilledError,
     TransactionDetailNotFoundError,
     DelegationError,
     type DelegationErrorReason,

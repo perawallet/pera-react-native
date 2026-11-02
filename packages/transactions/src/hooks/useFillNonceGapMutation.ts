@@ -17,7 +17,7 @@ import {
     getReplaceableSubmissionAttempt,
     useSigningRequest,
 } from '@perawallet/wallet-core-signing'
-import { TransactionNotReplaceableError } from '../errors'
+import { NonceGapFilledError, TransactionNotReplaceableError } from '../errors'
 import { transferChainAdapters } from '../transfer-adapter'
 
 export type FillNonceGapParams = {
@@ -50,7 +50,7 @@ export const useFillNonceGapMutation = (): UseFillNonceGapMutationResult => {
             }
             const request = { rawTransaction: attempt.rawTransaction }
             const sequence = await findBlockingGap(request, { scope })
-            if (sequence === null) throw new TransactionNotReplaceableError()
+            if (sequence === null) throw new NonceGapFilledError()
             const txs = await buildGapFill({ ...request, sequence }, { scope })
             // Not a replacement of txId: the fill takes the empty number below it.
             addSignRequest({

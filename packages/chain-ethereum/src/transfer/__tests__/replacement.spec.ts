@@ -43,7 +43,10 @@ import {
     resolveSubmissionAttempt,
 } from '@perawallet/wallet-core-signing'
 import { InvalidSendParamsError } from '@perawallet/wallet-core-transactions'
-import { evmRpcHandlers } from '../../blockchain/msw-handlers'
+import {
+    evmRpcHandlers,
+    evmTransactionReceipt,
+} from '../../blockchain/msw-handlers'
 import { TEST_RPC_URL, testChainContext } from '../../__tests__/context'
 import { BASE, ETHEREUM, evmScopeOf } from '../../__tests__/evm-chains'
 import {
@@ -390,6 +393,33 @@ describe('Ethereum transaction replacement', () => {
             await resolveSubmissionAttempt({ db, id, status: 'failed' })
 
             await expect(findGap()).resolves.toBe(1)
+        })
+
+        it('finds none where the send at the nonce was mined but reverted', async () => {
+            const reverted = `0x${'ab'.repeat(32)}` as const
+            server.use(
+                ...evmRpcHandlers({
+                    rpcUrl: TEST_RPC_URL,
+                    responses: {
+                        eth_getTransactionCount: '0x1',
+                        eth_getTransactionReceipt: evmTransactionReceipt({
+                            transactionHash: reverted,
+                            status: '0x0',
+                        }),
+                    },
+                }),
+            )
+            const id = await recordSubmissionAttempt({
+                db,
+                scope: context.scope,
+                txIds: [reverted],
+                flow: 'pipeline',
+                sender: SENDER,
+                nonce: 1,
+            })
+            await resolveSubmissionAttempt({ db, id, status: 'failed' })
+
+            await expect(findGap()).resolves.toBeNull()
         })
 
         it('fills the gap with an empty transfer to the sender at the fast preset', async () => {

@@ -475,6 +475,37 @@ describe('call batch execution', () => {
             expect(node.events[0]).toBe(`send:${signed.id}`)
         })
 
+        it('Given the ledger still cannot be read a day after the batch was approved, when the approval is sent, then the batch fails unsent rather than retrying forever', async () => {
+            const node = fakeNode()
+            const signed = await signAsSender(
+                (
+                    await prepareEthereumCallBatch(ctx, ETHEREUM, {
+                        from: SENDER,
+                        calls: [APPROVE],
+                    })
+                ).first,
+            )
+            vi.spyOn(Date, 'now').mockReturnValueOnce(
+                Date.now() - REVIEW_APPROVAL_TTL_MS - 1,
+            )
+            const recorded = await recordAt(
+                [signed.id],
+                0,
+                bytesToHex(signed.bytes),
+            )
+            vi.mocked(getSubmissionAttemptsAtNonce).mockRejectedValueOnce(
+                new Error('database is locked'),
+            )
+
+            await runEthereumCallBatch(ctx, ETHEREUM, recorded, deps)
+
+            expect(await readBatch()).toMatchObject({
+                outcome: 'failed',
+                position: 0,
+            })
+            expect(node.sentCount()).toBe(0)
+        })
+
         it('Given a recorded approval with its bytes that the ledger never saw, when it resumes, then those bytes are sent rather than a new transaction', async () => {
             const node = fakeNode()
             const signed = await signAsSender(

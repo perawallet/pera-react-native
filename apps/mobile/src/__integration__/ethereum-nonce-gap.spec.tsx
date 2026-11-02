@@ -53,7 +53,7 @@ import {
     type SourceMetadata,
 } from '@perawallet/wallet-core-signing'
 import {
-    TransactionNotReplaceableError,
+    NonceGapFilledError,
     useBlockingGapQuery,
     useFillNonceGapMutation,
 } from '@perawallet/wallet-core-transactions'
@@ -331,7 +331,7 @@ describe('Flow: unblock an Ethereum send stuck behind a dropped nonce', () => {
             act(() =>
                 result.current.mutation.fill({ scope: SCOPE, txId: stuck }),
             ),
-        ).rejects.toBeInstanceOf(TransactionNotReplaceableError)
+        ).rejects.toBeInstanceOf(NonceGapFilledError)
         expect(result.current.gap.isBlocked).toBe(false)
         expect(result.current.signing.pendingSignRequests).toHaveLength(0)
     })

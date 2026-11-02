@@ -66,7 +66,7 @@ export const PROBE_FAILURE_ESCALATION_STREAK = 20
 
 type Verdict = 'confirmed' | 'failed' | 'replaced'
 
-const readReceipt = async (client: PublicClient, hash: Hex) => {
+export const readReceipt = async (client: PublicClient, hash: Hex) => {
     try {
         return await client.getTransactionReceipt({ hash })
     } catch (error) {

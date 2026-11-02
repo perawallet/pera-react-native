@@ -70,7 +70,10 @@ import {
 } from '../../signing/__tests__/fixtures'
 import { ethereumCallSummary } from '../../signing/review'
 import { createEvmBroadcasterAdapter } from '../broadcaster'
-import { submitEthereumTransactions } from '../submission'
+import {
+    SubmissionLedgerUnreadableError,
+    submitEthereumTransactions,
+} from '../submission'
 import { BASE, ETHEREUM, evmScopeOf } from '../../__tests__/evm-chains'
 import { opStackOracleResponder, unsignedEncodingOf } from './op-stack-oracle'
 
@@ -576,7 +579,9 @@ describe('Ethereum broadcaster adapter', () => {
                     .createSubmitTransport(SCOPE)
                     .send(signedTransactions, SOURCE)
 
-                await expect(sent).rejects.toBeInstanceOf(TransportError)
+                await expect(sent).rejects.toBeInstanceOf(
+                    SubmissionLedgerUnreadableError,
+                )
                 await expect(sent).rejects.not.toBeInstanceOf(SubmissionError)
                 expect(methods).not.toContain('eth_sendRawTransaction')
                 expect(reports()).toEqual([])
@@ -594,7 +599,9 @@ describe('Ethereum broadcaster adapter', () => {
                 { scope: SCOPE, id: HASH, bytes: BYTES },
             ])
 
-            await expect(refused).rejects.toBeInstanceOf(TransportError)
+            await expect(refused).rejects.toBeInstanceOf(
+                SubmissionLedgerUnreadableError,
+            )
             await expect(refused).rejects.toMatchObject({
                 metadata: { retryable: true },
             })

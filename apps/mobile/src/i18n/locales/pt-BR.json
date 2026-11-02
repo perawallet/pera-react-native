@@ -1291,6 +1291,10 @@
                 "title": "Transação não está mais pendente",
                 "body": "Esta transação já foi confirmada ou substituída, então não pode ser acelerada nem cancelada."
             },
+            "nonce_gap_filled": {
+                "title": "Não está mais bloqueada",
+                "body": "A transação anterior já está na rede, então esta pode ser confirmada sem desbloquear."
+            },
             "asset_frozen": {
                 "title": "Ativo congelado",
                 "body": "O ativo {{assetId}} está congelado, então esta transferência não pode ser concluída. O gestor de congelamento do ativo precisa descongelá-lo primeiro."

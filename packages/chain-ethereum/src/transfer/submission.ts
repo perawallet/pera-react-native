@@ -303,11 +303,19 @@ export const historyEntryOfSigned = async (
     }
 }
 
+/** Refused before broadcast: the ledger read may pass on a retry, and nothing reached the node. */
+export class SubmissionLedgerUnreadableError extends TransportError {
+    constructor(originalError?: Error) {
+        super('submission ledger read failed', originalError)
+        this.name = 'SubmissionLedgerUnreadableError'
+    }
+}
+
 /**
  * Writes each transaction's ledger row before sending it, so a send that gets
  * no answer still holds its nonce. A ledger write failure never blocks the
  * send; a failed read of the nonce's open rows refuses it unsent with a
- * retryable `TransportError`. A speed-up or cancel at a nonce an open attempt
+ * retryable `SubmissionLedgerUnreadableError`. A speed-up or cancel at a nonce an open attempt
  * already holds replaces it: the row links the two, and one that doesn't
  * outbid the original by the node's minimum bump is refused without being
  * sent. Any other send at a held nonce is refused the same way. On an
@@ -352,10 +360,7 @@ export const submitAndRecordEthereumTransactions = async ({
                       nonce,
                       hash,
                   ).catch((error: unknown) => {
-                      throw new TransportError(
-                          'submission ledger read failed',
-                          toError(error),
-                      )
+                      throw new SubmissionLedgerUnreadableError(toError(error))
                   })
         if (isNonceCollision(replaced, parsed, sender)) {
             throw new SubmissionError(

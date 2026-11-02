@@ -1291,6 +1291,10 @@
                 "title": "Transaction plus en attente",
                 "body": "Cette transaction a déjà été confirmée ou remplacée et ne peut plus être accélérée ni annulée."
             },
+            "nonce_gap_filled": {
+                "title": "Plus bloquée",
+                "body": "La transaction antérieure est maintenant sur le réseau, celle-ci peut donc être confirmée sans être débloquée."
+            },
             "asset_frozen": {
                 "title": "Actif gelé",
                 "body": "L’actif {{assetId}} est gelé, ce transfert ne peut donc pas aboutir. Le gestionnaire de gel de l’actif doit d’abord le dégeler."

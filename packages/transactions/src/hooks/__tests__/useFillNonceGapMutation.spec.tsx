@@ -16,7 +16,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { UnsignedTransaction } from '@perawallet/wallet-core-chain-contract'
-import { TransactionNotReplaceableError } from '../../errors'
+import {
+    NonceGapFilledError,
+    TransactionNotReplaceableError,
+} from '../../errors'
 import {
     transferChainAdapters,
     type TransferChainAdapter,
@@ -113,7 +116,7 @@ describe('useFillNonceGapMutation', () => {
 
         await expect(
             result.current.fill({ scope: SCOPE, txId: '0xpending' }),
-        ).rejects.toBeInstanceOf(TransactionNotReplaceableError)
+        ).rejects.toBeInstanceOf(NonceGapFilledError)
         expect(buildGapFill).not.toHaveBeenCalled()
         expect(mocks.addSignRequest).not.toHaveBeenCalled()
     })

@@ -1291,6 +1291,10 @@
                 "title": "Transaction no longer pending",
                 "body": "This transaction has already confirmed or been replaced, so it can't be sped up or cancelled."
             },
+            "nonce_gap_filled": {
+                "title": "No longer blocked",
+                "body": "The earlier transaction is now on the network, so this one can confirm without unblocking."
+            },
             "asset_frozen": {
                 "title": "Asset frozen",
                 "body": "Asset {{assetId}} is frozen, so this transfer can't be completed. The asset's freeze manager must unfreeze it first."

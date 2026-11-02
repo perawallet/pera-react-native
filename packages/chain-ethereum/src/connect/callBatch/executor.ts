@@ -38,7 +38,6 @@ import {
     signTransactionsInBackground,
     updateTransactionBatch,
     SubmissionError,
-    TransportError,
     type ReviewApproval,
     type ReviewApprovalRef,
     type SubmissionHistoryEntry,
@@ -51,6 +50,7 @@ import type { EvmChain } from '../../chains/types'
 import {
     ETHEREUM_CONFIRMATION_TIMEOUT_MS,
     isTransactionKnownToNode,
+    SubmissionLedgerUnreadableError,
     submitAndRecordEthereumTransactions,
     submitEthereumTransactions,
 } from '../../transfer/submission'
@@ -314,7 +314,9 @@ const run = async (
                   }))
             return 'sent'
         } catch (error) {
-            if (error instanceof TransportError) return 'deferred'
+            if (error instanceof SubmissionLedgerUnreadableError) {
+                return 'deferred'
+            }
             // Anything but a node's refusal may still have landed; the settle reads it.
             return error instanceof SubmissionError &&
                 error.classification === 'rejected-by-node'
@@ -427,8 +429,15 @@ const run = async (
             attempted.add(txId)
             const sent = await send(unsent)
             unsent = undefined
-            if (sent === 'deferred') break
-            if (sent === 'refused') {
+            // Nothing reached the node, so failing it is safe; without the cap a
+            // ledger that never recovers keeps the dApp's request pending forever.
+            if (
+                sent === 'deferred' &&
+                Date.now() - batch.createdAt <= REVIEW_APPROVAL_TTL_MS
+            ) {
+                break
+            }
+            if (sent !== 'sent') {
                 await save(current.txIds, position, 'failed')
                 break
             }

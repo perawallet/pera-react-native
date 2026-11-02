@@ -1291,6 +1291,10 @@
                 "title": "İşlem artık beklemede değil",
                 "body": "Bu işlem zaten onaylandı veya değiştirildi; artık hızlandırılamaz ya da iptal edilemez."
             },
+            "nonce_gap_filled": {
+                "title": "Artık engellenmiyor",
+                "body": "Önceki işlem artık ağda; bu işlem engel kaldırılmadan onaylanabilir."
+            },
             "asset_frozen": {
                 "title": "Varlık donduruldu",
                 "body": "{{assetId}} ID’li varlık dondurulmuş, bu yüzden bu transfer tamamlanamıyor. Önce varlığın dondurma yöneticisinin dondurmayı kaldırması gerekir."
