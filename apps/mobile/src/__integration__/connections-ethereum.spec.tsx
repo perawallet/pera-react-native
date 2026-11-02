@@ -855,10 +855,12 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                     )[0],
                 )
 
+                fireEvent.click(screen.getAllByText('common.show_more')[0])
+
                 expect(
                     screen.getAllByTestId('ethereum_contract_call_data')[0]
                         .textContent,
-                ).toBe(data)
+                ).toContain(data)
             })
 
             it("Given a dApp's gas limit far above what the call needs, when it is queued, then the review warns of the high fee", async () => {

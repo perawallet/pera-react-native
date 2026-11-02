@@ -73,14 +73,10 @@ export const EthereumContractCallDetails = ({
                 testID='ethereum_contract_call_data'
                 copyValue={view.data}
             >
-                {isReview ? (
-                    <PWText>{view.data}</PWText>
-                ) : (
-                    <ExpandableText
-                        text={view.data}
-                        limit={CALL_DATA_PREVIEW_LENGTH}
-                    />
-                )}
+                <ExpandableText
+                    text={view.data}
+                    limit={CALL_DATA_PREVIEW_LENGTH}
+                />
             </CopyableText>
         </KeyValueRow>
     )

@@ -333,10 +333,9 @@ describe('Ethereum transaction bodies', () => {
             )
             expect(advanced.contains(content)).toBe(true)
             expect(content.closest('[pointer-events="none"]')).not.toBeNull()
-            expect(screen.queryByText('common.show_more')).toBeNull()
         })
 
-        it('shows the full call data once Advanced is opened', () => {
+        it('shows a preview of the call data once Advanced is opened, and all of it on request', () => {
             render(
                 <TransactionReviewBody
                     transaction={natives['contract-call']}
@@ -352,11 +351,17 @@ describe('Ethereum transaction bodies', () => {
                     .getByTestId('ethereum_contract_call_data')
                     .closest('[pointer-events="none"]'),
             ).toBeNull()
-            expect(textOf('ethereum_contract_call_data')).toBe(
-                ETHEREUM_FIXTURE_CONTRACT_CALL_DATA,
+            expect(textOf('ethereum_contract_call_data')).toContain(
+                COLLAPSED_CALL_DATA,
             )
             expect(textOf('ethereum_contract_call_selector')).toContain(
                 '0x5ae401dc',
+            )
+
+            fireEvent.click(screen.getByText('common.show_more'))
+
+            expect(textOf('ethereum_contract_call_data')).toContain(
+                ETHEREUM_FIXTURE_CONTRACT_CALL_DATA,
             )
         })
 
