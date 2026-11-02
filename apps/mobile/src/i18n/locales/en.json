@@ -1663,7 +1663,9 @@
             "title": "Pera Card Account",
             "subtitle": "Spend your crypto",
             "activate": "Activate",
-            "status_approved": "Approved"
+            "status_frozen": "Frozen",
+            "status_blocked": "Blocked",
+            "status_pending": "Setting up"
         },
         "intro": {
             "navigation_title": "Pera Card",

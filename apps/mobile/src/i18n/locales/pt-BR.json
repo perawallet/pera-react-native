@@ -1663,7 +1663,9 @@
             "title": "Conta Pera Card",
             "subtitle": "Gaste suas criptomoedas",
             "activate": "Ativar",
-            "status_approved": "Aprovada"
+            "status_frozen": "Bloqueada",
+            "status_blocked": "Desativada",
+            "status_pending": "Configurando"
         },
         "intro": {
             "navigation_title": "Pera Card",
