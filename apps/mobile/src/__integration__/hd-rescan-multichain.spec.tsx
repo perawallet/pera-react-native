@@ -18,6 +18,7 @@ import {
     screen,
     waitFor,
 } from '@testing-library/react'
+import { http, HttpResponse } from 'msw'
 
 import {
     chainAccountOf,
@@ -205,7 +206,10 @@ describe('Flow: scan for new accounts on a wallet created in Pera', () => {
             expect.arrayContaining([...referenced]),
         )
     })
-    it('Given the Ethereum history service is down, when the user scans for new accounts, then the result names Ethereum as unchecked and offers to check it again', async () => {
+    it('Given Ethereum is unreachable, both its node and Pera history, when the user scans for new accounts, then the result names Ethereum as unchecked and offers to check it again', async () => {
+        // Ethereum's Pera services come from .env, which CI lacks: with only
+        // history down, a CI build checks Ethereum on the node alone and finds
+        // nothing, so the node is down too.
         server.use(
             mockAccountFastLookup({
                 address: HD_TEST_ADDRESS,
@@ -217,7 +221,7 @@ describe('Flow: scan for new accounts on a wallet created in Pera', () => {
             }),
             mockIndexerSearchForAccounts(),
             ...peraEvmHistoryHandlers({ history: 503 }),
-            ...evmRpcHandlers({ rpcUrl: ETHEREUM_RPC_URL }),
+            http.post(ETHEREUM_RPC_URL, () => HttpResponse.error()),
         )
         const account = await createPeraWalletWithAlgorandOnly()
 
