@@ -155,11 +155,14 @@ export type CardUxState = BaseStoreState & {
     }) => void
     /** Marks the current escrow card as approved by AB. */
     markEscrowCardApproved: () => void
-    setCardSnapshot: (snapshot: {
-        cardId: string
-        status: CardStatus
-        panLast4: string
-    }) => void
+    /** `null` clears the hint once the status query reports no card. */
+    setCardSnapshot: (
+        snapshot: Nullable<{
+            cardId: string
+            status: CardStatus
+            panLast4: string
+        }>,
+    ) => void
     setTransactionFilters: (filters: CardTransactionFilters) => void
     /**
      * Clears the onboarding-flow fields when a new sign-up begins. Leaves
