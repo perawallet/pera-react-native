@@ -30,6 +30,7 @@ Environment:
   SMOKE_TAG                    Robot tag to select (default: release-gate)
   SMOKE_SUITE                  suite file (default: e2e/tests/onboarding.robot)
   SMOKE_RESULTS_DIR            Robot output dir (default: ./smoke-results)
+  SMOKE_STRICT                 fail the build on a failed gate (default: true; false on -alpha tags)
   UV_VERSION                   uv release used to build the e2e venv
 EOF
   exit 1
@@ -112,6 +113,10 @@ fi
 # SMOKE_STRICT is the mute switch for triage. Flipping it keeps the verdict
 # flowing to Slack; the alternative people reach for under pressure is
 # trusting the SDK's exit code, which reports success for failed runs.
+# Alpha tags are nightlies: their gate reports but never blocks the build.
+if [ -z "${SMOKE_STRICT:-}" ]; then
+  case "${BITRISE_GIT_TAG:-}" in *-alpha.*) SMOKE_STRICT=false ;; esac
+fi
 if [ "${SMOKE_STRICT:-true}" = "true" ]; then
   exit 1
 fi
