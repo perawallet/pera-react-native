@@ -3225,7 +3225,7 @@
             "app_integrity_clear_backoff": "Backoffs löschen",
             "refresh_cache": "Vollständigen Cache aktualisieren",
             "refresh_cache_success_title": "Cache aktualisiert",
-            "refresh_cache_success_body": "Alle Konten neu abgerufen und Abfragen invalidiert.",
+            "refresh_cache_success_body": "Asset-Daten verworfen; alle Chains werden jetzt neu synchronisiert.",
             "refresh_cache_error_title": "Aktualisierung fehlgeschlagen",
             "refresh_cache_error_body": "Cache konnte nicht aktualisiert werden. Details in den Logs.",
             "reset_banners": "Banner zurücksetzen",

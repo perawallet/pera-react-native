@@ -115,7 +115,6 @@ const LEGACY_CHAIN_BASELINE: readonly string[] = [
     'apps/mobile/src/modules/security/hooks/useDuressWipe.ts',
     'apps/mobile/src/modules/settings/screens/SettingsCurrencyScreen/useSettingsCurrencyScreen.ts',
     'apps/mobile/src/modules/settings/screens/SettingsScreen/useSettingsOptions.ts',
-    'apps/mobile/src/modules/settings/screens/developer/SettingsDeveloperManageCacheScreen/SettingsDeveloperManageCacheScreen.tsx',
     'apps/mobile/src/modules/settings/screens/developer/SettingsDeveloperMigrationViewerScreen/sections/AccountCard/AccountCard.tsx',
     'apps/mobile/src/modules/settings/screens/developer/SettingsDeveloperMigrationViewerScreen/useRNMigrationSnapshot.ts',
     'apps/mobile/src/modules/settings/screens/developer/SettingsDeveloperMigrationViewerScreen/useRunMigration.ts',

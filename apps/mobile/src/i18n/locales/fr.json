@@ -3233,7 +3233,7 @@
             "app_integrity_clear_backoff": "Effacer les backoffs",
             "refresh_cache": "Actualiser tout le cache",
             "refresh_cache_success_title": "Cache actualisé",
-            "refresh_cache_success_body": "Tous les comptes ont été rechargés et les requêtes invalidées.",
+            "refresh_cache_success_body": "Données d’actifs expirées ; toutes les chaînes sont en cours de resynchronisation.",
             "refresh_cache_error_title": "Échec de l’actualisation",
             "refresh_cache_error_body": "Impossible d’actualiser le cache. Consultez les logs pour plus de détails.",
             "reset_banners": "Réinitialiser les bannières",

@@ -29,6 +29,7 @@ export {
     getAssetPeraMetadata,
     updateAssetPeraMetadata,
     deleteAssets,
+    expireAllAssets,
 } from './metadataRepository'
 export {
     upsertAssetPrices,

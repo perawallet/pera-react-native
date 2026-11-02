@@ -11,14 +11,12 @@
  */
 
 import { useState } from 'react'
-import {
-    chainAccountOf,
-    useAllAccounts,
-} from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import { expireAllAssets } from '@perawallet/wallet-core-assets'
 import { useAgeGateStore } from '@perawallet/wallet-core-device'
-import { getSyncService } from '@perawallet/wallet-core-background'
-import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
+import {
+    getSyncService,
+    resetSyncCursors,
+} from '@perawallet/wallet-core-background'
 import { useBannersStore } from '@perawallet/wallet-core-banners'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 
@@ -32,8 +30,6 @@ export const SettingsDeveloperManageCacheScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
     const { showToast, errorToast } = useToast()
-    const accounts = useAllAccounts()
-    const scope = useSelectedScope(LEGACY_CHAIN_ID)
     const resetBanners = useBannersStore(state => state.resetState)
     const resetAgeGate = useAgeGateStore(state => state.resetState)
     const { deletePreference } = usePreferences()
@@ -41,15 +37,10 @@ export const SettingsDeveloperManageCacheScreen = () => {
 
     const handleRefreshCache = async () => {
         setIsRefreshing(true)
-        const addresses =
-            accounts?.flatMap(
-                account =>
-                    chainAccountOf(account, LEGACY_CHAIN_ID)?.address ?? [],
-            ) ?? []
         try {
-            const syncService = getSyncService()
-            await syncService.refreshAccounts(addresses, scope)
-            syncService.invalidateQueries()
+            await expireAllAssets()
+            resetSyncCursors()
+            getSyncService().restart()
             showToast({
                 title: t('settings.developer.refresh_cache_success_title'),
                 body: t('settings.developer.refresh_cache_success_body'),
