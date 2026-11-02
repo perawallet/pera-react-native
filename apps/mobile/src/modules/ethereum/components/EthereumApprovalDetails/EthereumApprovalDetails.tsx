@@ -44,6 +44,7 @@ export const EthereumApprovalDetails = ({
                 spender={standardCall.spender}
                 contract={standardCall.contract}
                 isRevocation
+                scope={scope}
             />
         )
     } else if (standardCall?.kind === 'collection-approval') {
@@ -58,6 +59,7 @@ export const EthereumApprovalDetails = ({
                 spender={standardCall.operator}
                 contract={standardCall.contract}
                 isRevocation
+                scope={scope}
             />
         )
     } else if (standardCall?.kind === 'nft-approval') {
@@ -72,6 +74,7 @@ export const EthereumApprovalDetails = ({
                 })}
                 contract={standardCall.contract}
                 isRevocation={standardCall.isRevocation}
+                scope={scope}
             />
         )
     }

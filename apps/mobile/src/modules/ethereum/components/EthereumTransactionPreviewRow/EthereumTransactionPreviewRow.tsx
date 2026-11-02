@@ -53,6 +53,7 @@ export const EthereumTransactionPreviewRow = ({
                     <AddressDisplay
                         address={counterparty}
                         displayType='address-only'
+                        scope={presentation.scope}
                         showCopy={false}
                         textProps={{
                             variant: 'caption',

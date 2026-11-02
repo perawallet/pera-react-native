@@ -57,7 +57,10 @@ export const EthereumTransactionDetailSection = ({
                 {!!standardCall && (
                     <EthereumApprovalDetails presentation={presentation} />
                 )}
-                <EthereumContractCallDetails presentation={presentation} />
+                <EthereumContractCallDetails
+                    presentation={presentation}
+                    variant='detail'
+                />
             </>
         )
     } else {

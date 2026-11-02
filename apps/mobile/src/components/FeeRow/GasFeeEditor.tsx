@@ -14,23 +14,15 @@ import {
     FEE_PRESETS,
     type FeePreset,
     type FeePresetEstimate,
-    i18nKey,
-    type I18nKey,
 } from '@perawallet/wallet-core-chain-contract'
 import { PWRadioButton, PWText, PWView } from '@components/core'
 import { InfoButton } from '@components/InfoButton'
 import { useLanguage } from '@hooks/useLanguage'
 import { FeeAmount } from './FeeAmount'
+import { FEE_PRESET_LABELS } from './feePresetLabels'
 import { describeFeeWait } from './feeWait'
 import { FEE_ROW_TEST_ID, type FeeRowProps } from './types'
 import { useStyles } from './styles'
-
-// Record keeps this exhaustive: a new preset fails to compile until labelled.
-const FEE_PRESET_LABELS: Record<FeePreset, I18nKey> = {
-    slow: i18nKey('send_funds.fee.slow'),
-    normal: i18nKey('send_funds.fee.normal'),
-    fast: i18nKey('send_funds.fee.fast'),
-}
 
 type GasFeeEditorProps = Pick<
     FeeRowProps,

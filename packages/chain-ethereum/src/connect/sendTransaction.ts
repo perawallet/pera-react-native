@@ -26,6 +26,7 @@ import { createEvmClient } from '../blockchain/utils/createEvmClient'
 import { ethereumCallSummary } from '../signing/review'
 import type { EthereumTransactionPayload } from '../signing/adapter'
 import {
+    evmFeePresetOf,
     readEvmFeePresets,
     readEvmGas,
     withRequestedEvmFees,
@@ -287,6 +288,11 @@ export const buildEthereumSendTransaction = async (
             ...(accessList && { accessList }),
         },
         ...(hasHighFee && { hasHighFee: true as const }),
+        feeEstimate: {
+            preset: evmFeePresetOf(maxPriorityFeePerGas, fees.presets),
+            amount:
+                estimate.gas * paidPerGas(maxFeePerGas, maxPriorityFeePerGas),
+        },
     }
     return {
         scope,
