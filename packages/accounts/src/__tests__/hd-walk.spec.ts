@@ -426,7 +426,9 @@ describe('discoverWalletActivity', () => {
     })
 
     describe('onProbeSettled', () => {
-        const walkOne = async (onProbeSettled: (outcome: string) => void) =>
+        const walkOne = async (
+            onProbeSettled: (chainId: string, outcome: string) => void,
+        ) =>
             discoverWalletActivity({
                 walletId: 'seed',
                 chainIds: [ETHEREUM],
@@ -442,7 +444,7 @@ describe('discoverWalletActivity', () => {
 
             await walkOne(onProbeSettled)
 
-            expect(onProbeSettled.mock.calls).toEqual([['answered']])
+            expect(onProbeSettled.mock.calls).toEqual([[ETHEREUM, 'answered']])
         })
 
         it('reports partial when the answer leaves an address out, which reads as inactive', async () => {
@@ -456,7 +458,7 @@ describe('discoverWalletActivity', () => {
 
             const probed = await walkOne(onProbeSettled)
 
-            expect(onProbeSettled.mock.calls).toEqual([['partial']])
+            expect(onProbeSettled.mock.calls).toEqual([[ETHEREUM, 'partial']])
             expect(activeIndexes(probed)).toEqual([])
         })
 
@@ -470,7 +472,7 @@ describe('discoverWalletActivity', () => {
 
             await walkOne(onProbeSettled)
 
-            expect(onProbeSettled.mock.calls).toEqual([['partial']])
+            expect(onProbeSettled.mock.calls).toEqual([[ETHEREUM, 'partial']])
         })
 
         it('reports failed when the probe rejects', async () => {
@@ -482,7 +484,7 @@ describe('discoverWalletActivity', () => {
 
             await walkOne(onProbeSettled)
 
-            expect(onProbeSettled.mock.calls).toEqual([['failed']])
+            expect(onProbeSettled.mock.calls).toEqual([[ETHEREUM, 'failed']])
         })
 
         it('reports failed when no index derives', async () => {
@@ -494,8 +496,99 @@ describe('discoverWalletActivity', () => {
 
             await walkOne(onProbeSettled)
 
-            expect(onProbeSettled.mock.calls).toEqual([['failed']])
+            expect(onProbeSettled.mock.calls).toEqual([[ETHEREUM, 'failed']])
         })
+    })
+
+    it('starts no batch once aborted, and resolves to what it found before', async () => {
+        const families = registerChainFamilies([ALGORAND])
+        const controller = new AbortController()
+        const algorandProbe = families.checkActivity
+            .get(ALGORAND)!
+            .mockImplementation(async (probed: string[]) => {
+                controller.abort()
+                return new Map(probed.map(address => [address, true]))
+            })
+
+        const probed = await discoverWalletActivity({
+            walletId: 'seed',
+            chainIds: [ALGORAND],
+            accountGapLimit: 1,
+            keyIndexGapLimit: 1,
+            signal: controller.signal,
+        })
+
+        expect(algorandProbe).toHaveBeenCalledTimes(1)
+        expect(activeIndexes(probed)).toEqual([
+            [{ account: 0, keyIndex: 0 }, [ALGORAND]],
+        ])
+    })
+
+    it('reports each batch once every chain has probed it', async () => {
+        const families = registerChainFamilies([ALGORAND])
+        activeOn(families, ALGORAND, [familyHdAddress('algorand', 0, 0)])
+        const onBatchProbed = vi.fn()
+
+        await discoverWalletActivity({
+            walletId: 'seed',
+            chainIds: [ALGORAND],
+            accountGapLimit: 1,
+            keyIndexGapLimit: 1,
+            onBatchProbed,
+        })
+
+        expect(onBatchProbed.mock.calls).toEqual([
+            [[{ account: 0, keyIndex: 0 }]],
+            [[{ account: 0, keyIndex: 1 }]],
+            [[{ account: 1, keyIndex: 0 }]],
+        ])
+    })
+
+    it('reports a find only once the gaps keep it, never one active past a gap', async () => {
+        const families = registerChainFamilies([ALGORAND])
+        activeOn(families, ALGORAND, [
+            familyHdAddress('algorand', 0, 0),
+            familyHdAddress('algorand', 0, 3),
+        ])
+        const onFound = vi.fn()
+
+        await discoverWalletActivity({
+            walletId: 'seed',
+            chainIds: [ALGORAND],
+            accountGapLimit: 1,
+            keyIndexGapLimit: 2,
+            onFound,
+        })
+
+        expect(
+            onFound.mock.calls.flatMap(([entries]) =>
+                entries.map((entry: { index: HdIndex }) => entry.index),
+            ),
+        ).toEqual([{ account: 0, keyIndex: 0 }])
+    })
+
+    it('stops probing a chain after its probe rejects, and keeps walking the others', async () => {
+        const families = registerChainFamilies([ALGORAND, ETHEREUM])
+        activeOn(families, ALGORAND, [
+            familyHdAddress('algorand', 0, 0),
+            familyHdAddress('algorand', 1, 0),
+        ])
+        const ethereumProbe = families.checkActivity
+            .get(ETHEREUM)!
+            .mockRejectedValue(new Error('history down'))
+
+        const probed = await discoverWalletActivity({
+            walletId: 'seed',
+            chainIds: [ALGORAND, ETHEREUM],
+            accountGapLimit: 1,
+            keyIndexGapLimit: 1,
+        })
+
+        expect(ethereumProbe).toHaveBeenCalledTimes(1)
+        expect(activeIndexes(probed)).toEqual([
+            [{ account: 0, keyIndex: 0 }, [ALGORAND]],
+            [{ account: 1, keyIndex: 0 }, [ALGORAND]],
+        ])
     })
 
     it('still reports the keys a batch derived when its probe throws', async () => {

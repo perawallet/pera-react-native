@@ -18,6 +18,7 @@ import type {
 import type { AccountsChainAdapter } from '@perawallet/wallet-core-accounts'
 import {
     createConcurrencyLimit,
+    logger,
     type ConcurrencyLimit,
     type Optional,
 } from '@perawallet/wallet-core-shared'
@@ -198,6 +199,13 @@ export const createEvmActivityCheck =
         })
         if (addresses.length > 0 && active.size === 0) {
             throw errors[0] ?? new Error('No address could be checked')
+        }
+        if (active.size < addresses.length) {
+            logger.warn('EVM activity check left addresses unanswered', {
+                chainId: scope.chainId,
+                unanswered: addresses.length - active.size,
+                error: errors[0],
+            })
         }
         return active
     }

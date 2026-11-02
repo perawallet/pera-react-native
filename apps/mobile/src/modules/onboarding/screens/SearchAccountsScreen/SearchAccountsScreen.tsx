@@ -11,16 +11,44 @@
  */
 
 import { Animated } from 'react-native'
-import { PWRoundIcon, PWScreen, PWText, PWView } from '@components/core'
+import {
+    PWButton,
+    PWRoundIcon,
+    PWScreen,
+    PWText,
+    PWView,
+} from '@components/core'
+import { ScanNetworkRow } from './ScanNetworkRow'
 import { useStyles } from './styles'
 import { useSearchAccountsScreen } from './useSearchAccountsScreen'
 
 export const SearchAccountsScreen = () => {
-    const { t, dotOpacities } = useSearchAccountsScreen()
+    const {
+        t,
+        dotOpacities,
+        progressLabel,
+        networks,
+        canCancel,
+        isCancelling,
+        handleCancel,
+    } = useSearchAccountsScreen()
     const styles = useStyles()
 
     return (
-        <PWScreen scroll='never'>
+        <PWScreen
+            scroll='never'
+            footer={
+                canCancel ? (
+                    <PWButton
+                        testID='search_accounts_cancel_button'
+                        title={t('onboarding.searching_accounts.cancel')}
+                        variant='secondary'
+                        onPress={handleCancel}
+                        isLoading={isCancelling}
+                    />
+                ) : undefined
+            }
+        >
             <PWView style={styles.container}>
                 <PWView style={styles.topRow}>
                     <PWRoundIcon
@@ -65,12 +93,33 @@ export const SearchAccountsScreen = () => {
                     />
                 </PWView>
 
-                <PWText
-                    variant='h3'
-                    style={styles.title}
-                >
-                    {t('onboarding.searching_accounts.title')}
-                </PWText>
+                <PWView style={styles.heading}>
+                    <PWText
+                        variant='h3'
+                        style={styles.title}
+                    >
+                        {t('onboarding.searching_accounts.title')}
+                    </PWText>
+                    {!!progressLabel && (
+                        <PWText
+                            style={styles.progress}
+                            testID='search_accounts_progress'
+                        >
+                            {progressLabel}
+                        </PWText>
+                    )}
+                </PWView>
+
+                {networks.length > 0 && (
+                    <PWView style={styles.networks}>
+                        {networks.map(network => (
+                            <ScanNetworkRow
+                                key={network.chainId}
+                                network={network}
+                            />
+                        ))}
+                    </PWView>
+                )}
             </PWView>
         </PWScreen>
     )

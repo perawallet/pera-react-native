@@ -48,12 +48,17 @@ type WalkHdTreeParams = {
     accountIndexLimit?: number
     /** Key indexes past this many, per account index, are never probed. Unbounded by default. */
     keyIndexLimit?: number
+    /** Once aborted, no further batch starts; the walk resolves to what it found. */
+    signal?: AbortSignal
+    /** Called with each account index's active keys once the gaps confirm them. */
+    onFound?: (indices: readonly HdIndex[]) => void
 }
 
 type ScanLimits = {
     keyIndexGapLimit: number
     keyIndexLimit: number
     onLimit: () => void
+    signal?: AbortSignal
 }
 
 export const hdPathKey = ({ account, keyIndex }: HdIndex): string =>
@@ -64,14 +69,14 @@ const byPath = (a: HdIndex, b: HdIndex): number =>
 
 async function scanAccountIndex(
     account: number,
-    { keyIndexGapLimit, keyIndexLimit, onLimit }: ScanLimits,
+    { keyIndexGapLimit, keyIndexLimit, onLimit, signal }: ScanLimits,
     probe: HdBatchProbe,
 ): Promise<HdIndex[]> {
     const active: HdIndex[] = []
     let keyGap = 0
     let keyIndex = 0
 
-    while (keyGap < keyIndexGapLimit) {
+    while (keyGap < keyIndexGapLimit && !signal?.aborted) {
         if (keyIndex >= keyIndexLimit) {
             onLimit()
             break
@@ -115,6 +120,8 @@ export async function walkHdTree({
     keyIndexGapLimit = KEY_INDEX_GAP_LIMIT,
     accountIndexLimit = Infinity,
     keyIndexLimit = Infinity,
+    signal,
+    onFound,
 }: WalkHdTreeParams): Promise<HdIndex[]> {
     const found: HdIndex[] = []
     let accountGap = 0
@@ -126,9 +133,10 @@ export async function walkHdTree({
         onLimit: () => {
             hasHitLimit = true
         },
+        signal,
     }
 
-    while (accountGap < accountGapLimit) {
+    while (accountGap < accountGapLimit && !signal?.aborted) {
         if (accountIndex >= accountIndexLimit) {
             hasHitLimit = true
             break
@@ -143,6 +151,7 @@ export async function walkHdTree({
         for (const result of results) {
             if (result.status === 'fulfilled' && result.value.length > 0) {
                 found.push(...result.value)
+                onFound?.(result.value)
                 accountGap = 0
             } else {
                 accountGap++
@@ -195,8 +204,20 @@ type DiscoverWalletActivityParams = {
     rootKey?: Uint8Array
     accountGapLimit?: number
     keyIndexGapLimit?: number
-    /** Called once per chain for each probed batch. */
-    onProbeSettled?: (outcome: HdProbeOutcome) => void
+    /**
+     * Called once per chain for each probed batch. A chain whose batch
+     * `failed` is not probed again for the rest of the walk.
+     */
+    onProbeSettled?: (chainId: ChainId, outcome: HdProbeOutcome) => void
+    /** Called with each batch's indexes once every chain's probe of it resolves. */
+    onBatchProbed?: (batch: readonly HdIndex[]) => void
+    /**
+     * Called with the active indexes the walk keeps, once the gaps confirm
+     * them; an index active past a gap is probed but never reported.
+     */
+    onFound?: (found: readonly ProbedHdIndex[]) => void
+    /** Once aborted, no further batch is derived or probed; the walk resolves to what it found. */
+    signal?: AbortSignal
 }
 
 /**
@@ -216,8 +237,14 @@ export async function discoverWalletActivity({
     accountGapLimit = ACCOUNT_GAP_LIMIT,
     keyIndexGapLimit,
     onProbeSettled,
+    onBatchProbed,
+    onFound,
+    signal,
 }: DiscoverWalletActivityParams): Promise<ProbedHdIndex[]> {
     const { chains: registry } = getProvider()
+    // A chain whose probe rejected is down for this walk: probing it again
+    // would only queue more failing lookups ahead of the chains that answer.
+    const failedChains = new Set<ChainId>()
     // Filled as each key is derived, so a batch that fails later still reports
     // the keys it saved and the caller can drop them.
     const probed = new Map<string, ProbedHdIndex>()
@@ -312,38 +339,53 @@ export async function discoverWalletActivity({
         scope: ChainScope,
         entries: Optional<ChainAccount>[],
     ): Promise<Optional<ChainAccount>[]> => {
+        const { chainId } = scope
         const addresses = entries.flatMap(entry =>
             entry ? [entry.address] : [],
         )
         if (addresses.length === 0) {
-            onProbeSettled?.('failed')
+            onProbeSettled?.(chainId, 'failed')
             return entries.map(() => undefined)
         }
         let activity: Map<string, boolean>
         try {
             activity = await accountsChainAdapters
-                .get(scope.chainId)
+                .get(chainId)
                 .checkActivity(addresses, scope)
-        } catch {
-            onProbeSettled?.('failed')
+        } catch (error) {
+            if (!failedChains.has(chainId)) {
+                failedChains.add(chainId)
+                logger.warn('Wallet discovery probe failed', {
+                    chainId,
+                    error,
+                })
+            }
+            onProbeSettled?.(chainId, 'failed')
             return entries.map(() => undefined)
         }
         onProbeAnswered?.()
         const isComplete =
             addresses.length === entries.length &&
             addresses.every(address => activity.has(address))
-        onProbeSettled?.(isComplete ? 'answered' : 'partial')
+        onProbeSettled?.(chainId, isComplete ? 'answered' : 'partial')
         return entries.map(entry =>
             entry && activity.get(entry.address) === true ? entry : undefined,
         )
     }
 
     const probe: HdBatchProbe = async indices => {
-        const derivedPerChain: {
+        // Batches already queued behind an abort would each still derive and
+        // probe on every chain.
+        if (signal?.aborted) return indices.map(() => false)
+        const derivedPerChain: Optional<{
             scope: ChainScope
             entries: Optional<ChainAccount>[]
-        }[] = []
+        }>[] = []
         for (const chainId of chainIds) {
+            if (failedChains.has(chainId)) {
+                derivedPerChain.push(undefined)
+                continue
+            }
             const scope = {
                 chainId,
                 networkId: selectChainNetworkId(
@@ -357,8 +399,10 @@ export async function discoverWalletActivity({
             })
         }
         const activePerChain = await Promise.all(
-            derivedPerChain.map(({ scope, entries }) =>
-                probeChain(scope, entries),
+            derivedPerChain.map(derived =>
+                derived
+                    ? probeChain(derived.scope, derived.entries)
+                    : indices.map(() => undefined),
             ),
         )
         const unused = new Set<string>()
@@ -386,6 +430,7 @@ export async function discoverWalletActivity({
         if (onUnusedKeys && unused.size > 0) {
             await onUnusedKeys([...unused]).catch(() => undefined)
         }
+        onBatchProbed?.(indices)
         return results
     }
 
@@ -400,6 +445,8 @@ export async function discoverWalletActivity({
                     heldAccountIndex + 1 + accountGapLimit,
                 ),
                 keyIndexLimit: WALLET_KEY_INDEX_LIMIT,
+                signal,
+                onFound: indices => onFound?.(indices.map(probedAt)),
             })
         ).map(hdPathKey),
     )

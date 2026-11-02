@@ -51,7 +51,18 @@ export const useStyles = makeStyles(theme => ({
     dot4: {
         backgroundColor: theme.colors.textMain,
     },
+    heading: {
+        alignItems: 'center',
+        gap: theme.spacing.sm,
+    },
     title: {
         textAlign: 'center',
+    },
+    progress: {
+        color: theme.colors.textGray,
+        textAlign: 'center',
+    },
+    networks: {
+        alignSelf: 'stretch',
     },
 }))

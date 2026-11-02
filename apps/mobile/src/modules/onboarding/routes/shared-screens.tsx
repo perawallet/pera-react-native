@@ -28,6 +28,7 @@ import { ImportPrivateKeyScreen } from '@modules/onboarding/screens/ImportPrivat
 import { ImportSelectAddressesScreen } from '@modules/onboarding/screens/ImportSelectAddressesScreen'
 import { ImportRekeyedAddressesScreen } from '@modules/onboarding/screens/ImportRekeyedAddressesScreen'
 import { SearchAccountsScreen } from '@modules/onboarding/screens/SearchAccountsScreen'
+import { ScanAccountsResultScreen } from '@modules/onboarding/screens/ScanAccountsResultScreen'
 import { AsbImportInfoScreen } from '@modules/onboarding/screens/AsbImportInfoScreen'
 import { AsbImportBackupScreen } from '@modules/onboarding/screens/AsbImportBackupScreen'
 import { AsbImportKeyScreen } from '@modules/onboarding/screens/AsbImportKeyScreen'
@@ -78,6 +79,9 @@ const ImportPrivateKeyScreenWithErrorBoundary = withAccountErrorBoundary(
 )
 const SearchAccountsScreenWithErrorBoundary =
     withAccountErrorBoundary(SearchAccountsScreen)
+const ScanAccountsResultScreenWithErrorBoundary = withAccountErrorBoundary(
+    ScanAccountsResultScreen,
+)
 const ImportSelectAddressesScreenWithErrorBoundary = withAccountErrorBoundary(
     ImportSelectAddressesScreen,
 )
@@ -144,6 +148,7 @@ export const IMPORT_FLOW_SCREEN_NAMES = [
     'ImportPrivateKey',
     'NameAccount',
     'SearchAccounts',
+    'ScanAccountsResult',
     'ImportSelectAddresses',
     'ImportRekeyedAddresses',
     'LedgerPair',
@@ -218,6 +223,12 @@ export const renderImportFlowScreens = (
             options={{ headerShown: false }}
             layout={fullScreenLayout}
             component={SearchAccountsScreenWithErrorBoundary}
+        />
+        <Stack.Screen
+            name='ScanAccountsResult'
+            options={{ headerShown: false }}
+            layout={fullScreenLayout}
+            component={ScanAccountsResultScreenWithErrorBoundary}
         />
         <Stack.Screen
             name='ImportSelectAddresses'

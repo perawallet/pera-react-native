@@ -16,6 +16,7 @@ import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 import { BalanceLineChart } from '@components/BalanceLineChart'
 import { PWText } from '@components/core'
+import { networkListOf } from '@modules/chain-ui'
 import {
     isIntegrityRequiredError,
     type HistoryPeriod,
@@ -27,7 +28,6 @@ import {
     usePortfolioHistoryQuery,
 } from '@perawallet/wallet-core-accounts'
 import type { ChainScope } from '@perawallet/wallet-core-chain-contract'
-import { chainDisplayNameOf } from '@perawallet/wallet-core-chain-shared'
 
 export type WealthChartProps = {
     /** Plotted as one summed series. */
@@ -76,18 +76,10 @@ export const WealthChart = memo(function WealthChart({
         [data],
     )
 
-    // Hermes has no Intl.ListFormat, so the final conjunction is translated.
-    const excludedNetworks = useMemo(() => {
-        const names = excludedChainIds.map(
-            chainId => chainDisplayNameOf(chainId) ?? chainId,
-        )
-        return names.length < 2
-            ? (names[0] ?? '')
-            : t('common.wealth_chart.networks_list', {
-                  first: names.slice(0, -1).join(', '),
-                  last: names.at(-1),
-              })
-    }, [excludedChainIds, t])
+    const excludedNetworks = useMemo(
+        () => networkListOf(excludedChainIds, t),
+        [excludedChainIds, t],
+    )
 
     return (
         <>

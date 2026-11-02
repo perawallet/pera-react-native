@@ -971,6 +971,7 @@
         }
     },
     "common": {
+        "networks_list": "{{first}} und {{last}}",
         "offline_mode": "Offline-Modus",
         "offline_mode_description": "Guthaben sind möglicherweise nicht aktuell und einige Aktionen sind nicht verfügbar, bis du wieder online bist.",
         "offline_refresh_body": "Du bist offline — dies wird automatisch aktualisiert, sobald du wieder online bist.",
@@ -1049,8 +1050,7 @@
         "wealth_chart": {
             "empty_body": "Sobald ein Guthabenverlauf vorliegt, wird hier ein Diagramm angezeigt",
             "asset_empty_body": "Sobald für dieses Asset auf diesem Konto ein Guthabenverlauf vorliegt, wird hier ein Diagramm angezeigt",
-            "excludes_networks": "Dieses Diagramm enthält noch keine {{networks}}-Assets",
-            "networks_list": "{{first}} und {{last}}"
+            "excludes_networks": "Dieses Diagramm enthält noch keine {{networks}}-Assets"
         },
         "webview": {
             "failed_title": "Seite konnte nicht geladen werden",
@@ -2259,18 +2259,42 @@
         },
         "searching_accounts": {
             "title": "Deine Konten werden gesucht",
-            "no_new_addresses_title": "Keine neuen Adressen gefunden",
-            "no_new_addresses_body": "Wir konnten keine weiteren, mit diesem Wallet verbundenen Adressen finden.",
             "rekey_scan_failed_title": "Rekeyed Konten konnten nicht geprüft werden",
             "rekey_scan_failed_body": "Dein Konto wurde importiert. Wir konnten nicht prüfen, ob andere Konten darauf rekeyed sind — du kannst den Scan in den Einstellungen wiederholen.",
             "rekey_rescan_failed_body": "Wir konnten nicht prüfen, ob andere Konten auf dieses Wallet rekeyed sind. Scanne erneut, um es noch einmal zu versuchen.",
-            "rescan_found_title": "Scan abgeschlossen",
-            "rescan_found_body_one": "1 Konto wurde hinzugefügt oder aktualisiert.",
-            "rescan_found_body_other": "{{count}} Konten wurden hinzugefügt oder aktualisiert.",
-            "rescan_partial_title": "Scan unvollständig",
-            "rescan_partial_body": "Einige Prüfungen konnten nicht abgeschlossen werden. Bisher gefundene Konten wurden hinzugefügt. Scanne erneut, um den Rest zu finden.",
             "rescan_failed_title": "Konten konnten nicht gescannt werden",
-            "rescan_failed_body": "Prüfe deine Verbindung und versuche es erneut."
+            "rescan_failed_body": "Prüfe deine Verbindung und versuche es erneut.",
+            "cancel": "Abbrechen",
+            "network_checking": "Wird geprüft",
+            "network_failed": "Nicht geprüft",
+            "checked_accounts_one": "{{count}} Konto geprüft",
+            "checked_accounts_other": "{{count}} Konten geprüft",
+            "new_found_one": "{{count}} neues Konto gefunden",
+            "new_found_other": "{{count}} neue Konten gefunden"
+        },
+        "scan_accounts_result": {
+            "found_title_one": "{{count}} neues Konto gefunden",
+            "found_title_other": "{{count}} neue Konten gefunden",
+            "found_body_one": "Es wurde deinem Wallet hinzugefügt.",
+            "found_body_other": "Sie wurden deinem Wallet hinzugefügt.",
+            "none_title": "Keine neuen Konten gefunden",
+            "none_body": "Wir haben keine weiteren Konten zu diesem Wallet gefunden.",
+            "failed_networks_body": "Nicht geprüft werden konnten: {{networks}}. Auf anderen Netzwerken gefundene Konten wurden hinzugefügt.",
+            "failed_networks_none_body": "Nicht geprüft werden konnten: {{networks}}. Auf den anderen Netzwerken wurde nichts Neues gefunden.",
+            "incomplete_body": "Einige Prüfungen konnten nicht abgeschlossen werden. Bisher gefundene Konten wurden hinzugefügt. Scanne erneut, um den Rest zu finden.",
+            "cancelled_title": "Scan gestoppt",
+            "cancelled_body": "Konten, die vor dem Stoppen gefunden wurden, wurden hinzugefügt.",
+            "cancelled_none_body": "Bis zum Stoppen wurde nichts Neues gefunden.",
+            "retry_networks": "Erneut prüfen: {{networks}}",
+            "scan_again": "Erneut scannen",
+            "done": "Fertig",
+            "incomplete_title": "Scan unvollständig",
+            "updated_title_one": "Neue Netzwerke bei {{count}} Konto gefunden",
+            "updated_title_other": "Neue Netzwerke bei {{count}} Konten gefunden",
+            "updated_body_one": "Wir haben Aktivität auf weiteren Netzwerken gefunden und sie für dieses Konto aktiviert.",
+            "updated_body_other": "Wir haben Aktivität auf weiteren Netzwerken gefunden und sie für diese Konten aktiviert.",
+            "updated_note_one": "Bei {{count}} bestehenden Konto wurden außerdem neue Netzwerke aktiviert.",
+            "updated_note_other": "Bei {{count}} bestehenden Konten wurden außerdem neue Netzwerke aktiviert."
         },
         "create_account": {
             "processing": "Dein Wallet wird eingerichtet...",

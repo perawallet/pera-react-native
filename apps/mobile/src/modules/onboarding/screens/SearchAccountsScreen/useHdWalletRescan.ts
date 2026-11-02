@@ -18,27 +18,40 @@ import {
     useAccountsStore,
     useSelectedAccountId,
     type WalletAccount,
+    type WalletDiscoveryProgress,
 } from '@perawallet/wallet-core-accounts'
+import type { ChainId } from '@perawallet/wallet-core-chain-contract'
 import { logger } from '@perawallet/wallet-core-shared'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
+import { networkListOf } from '@modules/chain-ui'
 import {
     REKEY_SCAN_UNAVAILABLE,
     useDelegationScanNoticeResult,
-    useExitAccountFlow,
 } from '../../hooks'
 
+export type HdWalletRescanOptions = {
+    /** Walks only these chains, e.g. the ones an earlier scan couldn't check. */
+    chainIds?: ChainId[]
+    signal?: AbortSignal
+    onProgress?: (progress: WalletDiscoveryProgress) => void
+    /** True once the user left the screen; the rescan then navigates nowhere. */
+    hasLeft?: () => boolean
+}
+
 export type UseHdWalletRescanResult = {
-    rescanHdWallet: (account: WalletAccount) => Promise<void>
+    rescanHdWallet: (
+        account: WalletAccount,
+        options?: HdWalletRescanOptions,
+    ) => Promise<void>
 }
 
 /** A persisted seed has no in-memory root key, so each chain derives through the keystore: no unlock beyond the app's own. */
 export const useHdWalletRescan = (): UseHdWalletRescanResult => {
     const { t } = useLanguage()
-    const { showToast, errorToast } = useToast()
+    const { errorToast, showToast } = useToast()
     const navigation = useAppNavigation()
-    const { exitAccountFlow } = useExitAccountFlow()
     const { scanRekeyed, rekeyScanAddressesOf, withoutHeld } =
         useDelegationScanNoticeResult()
     const { setSelectedAccountId } = useSelectedAccountId()
@@ -47,74 +60,91 @@ export const useHdWalletRescan = (): UseHdWalletRescanResult => {
     )
 
     const rescanHdWallet = useCallback(
-        async (account: WalletAccount) => {
+        async (
+            account: WalletAccount,
+            {
+                chainIds,
+                signal,
+                onProgress,
+                hasLeft,
+            }: HdWalletRescanOptions = {},
+        ) => {
             try {
                 const walletId = seedOf(account)
                 if (walletId === undefined) throw new NoHdSeedError(account.id)
 
-                const { accounts: changed, coverage } =
-                    await discoverWalletAccounts(walletId)
+                const {
+                    accounts: changed,
+                    createdAccountIds,
+                    coverage,
+                    failedChainIds,
+                    isCancelled,
+                } = await discoverWalletAccounts(walletId, {
+                    chainIds,
+                    signal,
+                    onProgress,
+                })
+                if (hasLeft?.()) return
                 // Nothing answered, so "found nothing" would be a guess.
-                if (coverage === 'unanswered') {
+                if (coverage === 'unanswered' && !isCancelled) {
                     throw new Error('Wallet discovery got no answer')
                 }
 
-                const heldAccounts = getAllAccounts()
-                const addresses = rekeyScanAddressesOf(
-                    heldAccounts.filter(held => seedOf(held) === walletId),
-                )
-                const scanned = await scanRekeyed(addresses, 'rescan')
-                // The scan lists every account rekeyed to the wallet, held or not; only the unheld are news.
-                const rekeyed =
-                    scanned === REKEY_SCAN_UNAVAILABLE
-                        ? scanned
-                        : withoutHeld(scanned, heldAccounts)
-
-                if (coverage === 'partial') {
-                    showToast({
-                        type: 'warning',
-                        title: t(
-                            'onboarding.searching_accounts.rescan_partial_title',
-                        ),
-                        body: t(
-                            'onboarding.searching_accounts.rescan_partial_body',
-                        ),
-                    })
-                } else if (changed.length > 0) {
-                    showToast({
-                        type: 'success',
-                        title: t(
-                            'onboarding.searching_accounts.rescan_found_title',
-                        ),
-                        body: t(
-                            'onboarding.searching_accounts.rescan_found_body',
-                            { count: changed.length },
-                        ),
-                    })
-                } else if (
-                    rekeyed !== REKEY_SCAN_UNAVAILABLE &&
-                    rekeyed.length === 0
-                ) {
-                    showToast({
-                        type: 'info',
-                        title: t(
-                            'onboarding.searching_accounts.no_new_addresses_title',
-                        ),
-                        body: t(
-                            'onboarding.searching_accounts.no_new_addresses_body',
-                        ),
-                    })
+                if (!isCancelled) {
+                    const heldAccounts = getAllAccounts()
+                    const addresses = rekeyScanAddressesOf(
+                        heldAccounts.filter(held => seedOf(held) === walletId),
+                    )
+                    const scanned = await scanRekeyed(addresses, 'rescan')
+                    if (hasLeft?.()) return
+                    // The scan lists every account rekeyed to the wallet, held or not; only the unheld are news.
+                    const rekeyed =
+                        scanned === REKEY_SCAN_UNAVAILABLE
+                            ? []
+                            : withoutHeld(scanned, heldAccounts)
+                    if (rekeyed.length > 0) {
+                        // The rekeyed picker takes the place of the result
+                        // screen, so an unfinished scan is said here instead.
+                        if (coverage !== 'complete') {
+                            showToast({
+                                type: 'warning',
+                                title: t(
+                                    'onboarding.scan_accounts_result.incomplete_title',
+                                ),
+                                body:
+                                    failedChainIds.length > 0
+                                        ? t(
+                                              'onboarding.scan_accounts_result.failed_networks_body',
+                                              {
+                                                  networks: networkListOf(
+                                                      failedChainIds,
+                                                      t,
+                                                  ),
+                                              },
+                                          )
+                                        : t(
+                                              'onboarding.scan_accounts_result.incomplete_body',
+                                          ),
+                            })
+                        }
+                        setSelectedAccountId(account.id)
+                        navigation.replace('ImportRekeyedAddresses', {
+                            accounts: rekeyed,
+                        })
+                        return
+                    }
                 }
 
-                if (rekeyed !== REKEY_SCAN_UNAVAILABLE && rekeyed.length > 0) {
-                    setSelectedAccountId(account.id)
-                    navigation.replace('ImportRekeyedAddresses', {
-                        accounts: rekeyed,
-                    })
-                    return
-                }
-                exitAccountFlow()
+                navigation.replace('ScanAccountsResult', {
+                    account,
+                    changedAccountIds: changed.map(added => added.id),
+                    createdAccountIds,
+                    failedChainIds,
+                    isCancelled,
+                    isIncomplete: coverage !== 'complete',
+                })
             } catch (error) {
+                if (hasLeft?.()) return
                 logger.error('Failed during wallet rescan', { error })
                 errorToast(
                     t('onboarding.searching_accounts.rescan_failed_title'),
@@ -128,11 +158,10 @@ export const useHdWalletRescan = (): UseHdWalletRescanResult => {
             scanRekeyed,
             rekeyScanAddressesOf,
             withoutHeld,
-            showToast,
             errorToast,
+            showToast,
             t,
             navigation,
-            exitAccountFlow,
             setSelectedAccountId,
         ],
     )
