@@ -2007,7 +2007,7 @@
             "invitation_title": "<0>Vous avez reçu une invitation</0> à rejoindre un compte partagé {{address}}",
             "view_invitation_details": "Voir les détails de l’invitation",
             "info": {
-                "title": "À propos de la boîte de réception",
+                "title": "À propos de la boîte",
                 "algorand_title": "Algorand",
                 "algorand_body": "Un compte Algorand doit effectuer un opt-in pour un actif avant de pouvoir le détenir. Les actifs qui vous sont envoyés avant votre opt-in attendent ici, dans la boîte de réception, jusqu’à ce que vous les réclamiez ou les refusiez. Les invitations à des comptes partagés et les demandes de signature arrivent également ici.",
                 "other_networks_title": "Autres réseaux",
