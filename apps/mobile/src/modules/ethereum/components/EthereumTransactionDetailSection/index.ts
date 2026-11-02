@@ -10,11 +10,4 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed'
-
-export const useStyles = makeStyles(theme => ({
-    container: {
-        paddingHorizontal: theme.spacing.sm,
-        gap: theme.spacing.lg,
-    },
-}))
+export { EthereumTransactionDetailSection } from './EthereumTransactionDetailSection'

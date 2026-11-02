@@ -10,10 +10,4 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed'
-
-export const useStyles = makeStyles(theme => ({
-    container: {
-        gap: theme.spacing.lg,
-    },
-}))
+export { EthereumRecordReadBody } from './EthereumRecordReadBody'

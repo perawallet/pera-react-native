@@ -10,4 +10,4 @@
  limitations under the License
  */
 
-export { EthereumRecordFacts } from './EthereumRecordFacts'
+export { EthereumRecordAmountCard } from './EthereumRecordAmountCard'
