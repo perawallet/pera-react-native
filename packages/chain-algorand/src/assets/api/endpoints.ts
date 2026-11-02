@@ -13,6 +13,7 @@
 import { buildIntegrityHeaders } from '@perawallet/wallet-core-app-integrity'
 import type { AssetGroup } from '@perawallet/wallet-core-assets'
 import {
+    logger,
     PeraServiceUnavailableError,
     queryClient,
     type Nullable,
@@ -144,15 +145,30 @@ export const fetchAssetItems = async (
         data: deviceId ? { ids, device_id: deviceId } : { ids },
     })
     const { results } = assetItemsResponseSchema.parse(data)
-    return new Map(
-        results.flatMap(row => {
-            const assetId = assetIdOf.get(row.asset_id)
-            const parsed = assetItemResponseSchema.safeParse(row)
-            return assetId === undefined || !parsed.success
-                ? []
-                : [[assetId, parsed.data] as const]
-        }),
-    )
+    const items = new Map<string, AssetItemResponse>()
+    const unreadable: { assetId: string; issues: unknown[] }[] = []
+    for (const row of results) {
+        const assetId = assetIdOf.get(row.asset_id)
+        if (assetId === undefined) continue
+        const parsed = assetItemResponseSchema.safeParse(row)
+        if (parsed.success) items.set(assetId, parsed.data)
+        else
+            unreadable.push({
+                assetId: row.asset_id,
+                issues: parsed.error.issues.slice(0, 3),
+            })
+    }
+    // A dropped row stays missing and is asked for again on every sync, so a
+    // contract drift would otherwise show up only as blank asset rows.
+    if (unreadable.length > 0) {
+        logger.warn('Unreadable v4 asset items dropped', {
+            network,
+            dropped: unreadable.length,
+            of: results.length,
+            first: unreadable[0],
+        })
+    }
+    return items
 }
 
 export const fetchAssetDetails = async (

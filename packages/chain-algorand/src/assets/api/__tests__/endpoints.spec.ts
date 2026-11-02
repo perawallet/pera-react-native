@@ -38,7 +38,10 @@ import {
 } from '../endpoints'
 import { searchAssets } from '../search-endpoints'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
-import { PeraServiceUnavailableError } from '@perawallet/wallet-core-shared'
+import {
+    logger,
+    PeraServiceUnavailableError,
+} from '@perawallet/wallet-core-shared'
 
 const validAsset = {
     asset_id: 123,
@@ -220,6 +223,47 @@ describe('assets endpoints', () => {
                 creator: { address: 'CREATOR' },
                 is_favorited: true,
             })
+        })
+
+        test('warns once per batch, naming the first unreadable row', async () => {
+            const warn = vi.spyOn(logger, 'warn').mockImplementation(() => {})
+            queryClientMock.mockResolvedValue({
+                data: {
+                    results: [
+                        { ...v4Item('7'), total: 12 },
+                        { ...v4Item('8'), labels: undefined },
+                        v4Item('99'),
+                    ],
+                },
+            })
+
+            await fetchAssetItems(['7', '8'], 'mainnet')
+
+            expect(warn).toHaveBeenCalledTimes(1)
+            expect(warn).toHaveBeenCalledWith(
+                'Unreadable v4 asset items dropped',
+                expect.objectContaining({
+                    network: 'mainnet',
+                    dropped: 2,
+                    of: 3,
+                    first: expect.objectContaining({
+                        assetId: `${MAINNET}/asa:7`,
+                    }),
+                }),
+            )
+            warn.mockRestore()
+        })
+
+        test('stays quiet when every row is readable', async () => {
+            const warn = vi.spyOn(logger, 'warn').mockImplementation(() => {})
+            queryClientMock.mockResolvedValue({
+                data: { results: [v4Item('7')] },
+            })
+
+            await fetchAssetItems(['7'], 'mainnet')
+
+            expect(warn).not.toHaveBeenCalled()
+            warn.mockRestore()
         })
 
         test('makes no request for no ids', async () => {
