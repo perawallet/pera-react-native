@@ -197,7 +197,7 @@
   },
   "devDependencies": {
     "@algorandfoundation/algokit-utils": "catalog:",
-    "@babel/core": "^7.29.7",
+    "@babel/core": "^8.0.9",
     "@babel/plugin-transform-export-namespace-from": "^7.29.7",
     "@babel/runtime": "catalog:",
     "@expo/dom-webview": "58.0.2",
