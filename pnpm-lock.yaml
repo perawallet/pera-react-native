@@ -1082,8 +1082,8 @@ importers:
         specifier: 'catalog:'
         version: 0.12.5
       victory-native:
-        specifier: ^42.0.0
-        version: 42.0.1(9d0fe099421b214ea96c0bd0b9f6169e)
+        specifier: ^43.0.1
+        version: 43.0.1(815a8233c70e3f4e3e3a72688bd4b052)
       zod:
         specifier: 'catalog:'
         version: 4.6.7
@@ -6494,6 +6494,7 @@ packages:
 
   '@ledgerhq/errors@6.37.0':
     resolution: {integrity: sha512-T5yiKI5UX7ugeocdTF3TUsCIN2BH41Bio4ZeN410YFjFOf3es08n/5JyMzzKwzRgP0blG3HfBf7s7vJKqCSAeg==}
+    deprecated: This package is no longer maintained and will not receive updates. Published versions remain available.
 
   '@ledgerhq/evm-tools@2.0.0':
     resolution: {integrity: sha512-wkZQxYduOFNwnNloZQ35Dk8oKBVQ1ajNX09wazEVeLxzfWTDMvZwWWtaKK0WUdX53/OX4l2wr/5vaNCJs+IYow==}
@@ -6511,9 +6512,11 @@ packages:
 
   '@ledgerhq/hw-transport-web-ble@6.35.0':
     resolution: {integrity: sha512-nc4FAWZ0GtZO9ydDCKlvDzOEVdUXlGL/0nWPIOeCE5xxuXug5iR0uhC4Bl0qwlUCEnhewmXwLJsCFcCdr/N4QQ==}
+    deprecated: This package is no longer maintained. Use @ledgerhq/device-transport-kit-web-ble instead.
 
   '@ledgerhq/hw-transport-webhid@6.36.0':
     resolution: {integrity: sha512-1mKWm3LyGOgmaYlAiqbmaGoupOZHbj2Kow5sXLxKZzQa4kFvQuUdinYOWhs7T8hqJyAkz9WlHYyKM7aIs8kjNg==}
+    deprecated: This package is no longer maintained. Use @ledgerhq/device-transport-kit-web-hid instead.
 
   '@ledgerhq/hw-transport@6.31.9':
     resolution: {integrity: sha512-HqB2Whl2qbrzyvs9gC/GmLhIy8RO4CWzjqHS4k0bPWDZRqKa8m6H32vjrbXGO//pUL1Mlu87UwvxvLyuICdjwg==}
@@ -6535,11 +6538,13 @@ packages:
 
   '@ledgerhq/react-native-hid@6.39.5':
     resolution: {integrity: sha512-q12Q9Qr0wgOen82JX/asSXhLPQITwa5L2n+efP+lJoqrqqvwfu1C2MZ8Nu5qWIFQDB7G121MnzwZGp/TNGQtrw==}
+    deprecated: This package is no longer maintained. Use @ledgerhq/device-transport-kit-react-native-hid instead.
     peerDependencies:
       react-native: 0.88.0
 
   '@ledgerhq/react-native-hw-transport-ble@6.41.0':
     resolution: {integrity: sha512-MM3WsIXgCWXC85qfLIqUUPz6hvhl/VxSS1TZxZ7xALrtXhgnDpS2h/MuN/mYbbTwPg7/CHnLIeQhb+UI/Bc30w==}
+    deprecated: This package is no longer maintained. Use @ledgerhq/device-transport-kit-react-native-ble instead.
 
   '@ledgerhq/types-live@6.127.0':
     resolution: {integrity: sha512-CsMZ3L1H8cvCFiaJAaAFnv/r1lsOkeCxedWylCm5/HRnI/egMr9GX84gMHRh7vFN8nHRfjzA0lLifb1duoqjcw==}
@@ -10765,6 +10770,22 @@ packages:
   react-native-skia-apple-tvos@154.0.0:
     resolution: {integrity: sha512-W06tUa+O3TJTYg5G+Lly/pwxE+2zKsmwJ/23yeR+25zSu7VmfdSz3VqFN3BM0jEioN4ASMm/0cMECocV7vxbMQ==}
 
+  react-native-skia@2.15.2:
+    resolution: {integrity: sha512-f+Az9i4AO2uuNtG0UxIyRaSgoKFXZ66XQeD7Y2lsnAanKcY/BlPmU379IKd2LBTPYUab9JMGwLiKkZo7pelfJQ==}
+    hasBin: true
+    peerDependencies:
+      react: 19.3.0
+      react-native: 0.88.0
+      react-native-reanimated: '>=4.0.0'
+      react-native-worklets: '>=0.7.0'
+    peerDependenciesMeta:
+      react-native:
+        optional: true
+      react-native-reanimated:
+        optional: true
+      react-native-worklets:
+        optional: true
+
   react-native-ssl-public-key-pinning@1.2.6:
     resolution: {integrity: sha512-WrWCRgXSet/lw8VVgrnTM5RXI+YWmSxE4+PmWcxFOUq7Kea+arkYASvDD1Dajw6yFGEw4GYuvIRdp6s7KxO60Q==}
     peerDependencies:
@@ -11508,14 +11529,15 @@ packages:
     resolution: {integrity: sha512-BNGbWLfd0eUPabhkXUVm0j8uuvREyTh5ovRa/dyow/BqAbZJyC+5fU+IzQOzmAKzYqYRAISoRhdQr3eIZ/PXqg==}
     engines: {node: '>= 0.8'}
 
-  victory-native@42.0.1:
-    resolution: {integrity: sha512-W3dNBMeRtZ8AQGBkV1PrYYKLFSstTy6uulmlJJFch4hvPX/R1xH1VJXzZopK6GGbcq/ejcr8WwntWwhqTo0lzA==}
+  victory-native@43.0.1:
+    resolution: {integrity: sha512-99R5fT70ugk+QKxGfqEGHAIZBPvBEEkenJf80UUR4ETlbpdDl0IeIwvK7pQzF7YKQhdD+LozO0u2sSnngM9NBA==}
     peerDependencies:
-      '@shopify/react-native-skia': '>=2.6.0 <3.0.0'
       react: 19.3.0
       react-native: 0.88.0
-      react-native-gesture-handler: '>=2.0.0'
-      react-native-reanimated: '>=3.19.1'
+      react-native-gesture-handler: '>=2.0.0 <4.0.0'
+      react-native-reanimated: '>=4.1.7 <5.0.0'
+      react-native-skia: '>=2.15.1 <3.0.0'
+      react-native-worklets: '>=0.7.0'
 
   viem@2.57.7:
     resolution: {integrity: sha512-x3UqqrcQuESaRVK6a0BvNmoNP0SVhu913uxEAxYLJx1lNYnj6ylTntfUdakCUKjk1+T+63gkdwFGJQ2O5C/nRw==}
@@ -18635,6 +18657,20 @@ snapshots:
 
   react-native-skia-apple-tvos@154.0.0: {}
 
+  react-native-skia@2.15.2(react-native-reanimated@4.7.1(react-native-worklets@0.13.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7))(react-native@0.88.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0))(react-native@0.88.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0))(react-native-worklets@0.13.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7))(react-native@0.88.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0))(react-native@0.88.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0):
+    dependencies:
+      canvaskit-wasm: 0.41.0
+      react: 19.3.0
+      react-native-skia-android: 154.0.0
+      react-native-skia-apple-ios: 154.0.0
+      react-native-skia-apple-macos: 154.0.0
+      react-native-skia-apple-tvos: 154.0.0
+      react-reconciler: 0.31.0(react@19.3.0)
+    optionalDependencies:
+      react-native: 0.88.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0)
+      react-native-reanimated: 4.7.1(react-native-worklets@0.13.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7))(react-native@0.88.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0))(react-native@0.88.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0)
+      react-native-worklets: 0.13.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7))(react-native@0.88.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0)
+
   react-native-ssl-public-key-pinning@1.2.6(react-native@0.88.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0):
     dependencies:
       react: 19.3.0
@@ -19379,9 +19415,8 @@ snapshots:
 
   vary@1.1.2: {}
 
-  victory-native@42.0.1(9d0fe099421b214ea96c0bd0b9f6169e):
+  victory-native@43.0.1(815a8233c70e3f4e3e3a72688bd4b052):
     dependencies:
-      '@shopify/react-native-skia': 2.14.0(react-native-reanimated@4.7.1(react-native-worklets@0.13.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7))(react-native@0.88.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0))(react-native@0.88.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0))(react-native-worklets@0.13.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7))(react-native@0.88.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0))(react-native@0.88.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0)
       d3-scale: 4.0.2
       d3-shape: 3.2.0
       d3-zoom: 3.0.0
@@ -19391,6 +19426,8 @@ snapshots:
       react-native: 0.88.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0)
       react-native-gesture-handler: 3.3.0(react-native@0.88.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0)
       react-native-reanimated: 4.7.1(react-native-worklets@0.13.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7))(react-native@0.88.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0))(react-native@0.88.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0)
+      react-native-skia: 2.15.2(react-native-reanimated@4.7.1(react-native-worklets@0.13.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7))(react-native@0.88.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0))(react-native@0.88.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0))(react-native-worklets@0.13.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7))(react-native@0.88.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0))(react-native@0.88.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0)
+      react-native-worklets: 0.13.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7))(react-native@0.88.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.0(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0))(react@19.3.0)
     transitivePeerDependencies:
       - '@types/react'
 

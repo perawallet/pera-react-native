@@ -191,7 +191,7 @@
     "readable-stream": "^4.8.0",
     "sharp": "^0.35.5",
     "util": "catalog:",
-    "victory-native": "^42.0.0",
+    "victory-native": "^43.0.1",
     "zod": "catalog:",
     "zustand": "catalog:"
   },
