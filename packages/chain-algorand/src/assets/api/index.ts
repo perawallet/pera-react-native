@@ -16,9 +16,11 @@ export {
     fetchPublicAssetDetails,
     fetchIndexerAssetDetails,
     fetchCrossChainAssetGroups,
+    fetchAssetItems,
 } from './endpoints'
 export {
     transformAssetResponse,
+    transformAssetItemResponse,
     transformCollectibleResponse,
     transformIndexerAssetResponse,
     transformPublicAssetResponse,
