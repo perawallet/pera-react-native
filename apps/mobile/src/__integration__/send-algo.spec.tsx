@@ -34,6 +34,7 @@ import { Notifier } from 'react-native-notifier'
 import { useNavigation } from '@react-navigation/native'
 
 import { server } from '@test-utils/msw-server'
+import { navigationRef } from '@routes/navigationRef'
 import { seedAuthority } from '@test-utils/algorandAccountsAdapter'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
@@ -464,8 +465,7 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
         const rejectSpy = vi.fn(() =>
             HttpResponse.json(
                 {
-                    message:
-                        'TransactionPool.Remember: transaction ABC: overspend',
+                    message: `TransactionPool.Remember: transaction ABC: overspend (account ${ALGO25_TEST_ADDRESS}, data {}, tried to spend {1000000})`,
                 },
                 { status: 400 },
             ),
@@ -504,7 +504,7 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
         expectFlowEvents(analytics, 'sendFailed', 'algorand')
     })
 
-    it('Given valid send params, when the submission fails with a network error, then the processing screen surfaces an error toast and returns to confirmation without reaching success', async () => {
+    it('Given valid send params, when the submission fails with a network error, then the processing screen surfaces the status-unknown notice and leaves for History without reaching success', async () => {
         await seedAlgo25Sender()
         useSendFundsStore
             .getState()
@@ -512,6 +512,10 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
         useSendFundsStore.getState().setAmount(new Decimal(1))
         useSendFundsStore.getState().setDestination(RECEIVER_ADDRESS)
         useSendFundsStore.getState().setSendMode('normal')
+        vi.spyOn(navigationRef, 'isReady').mockReturnValue(true)
+        const navigate = vi
+            .spyOn(navigationRef, 'navigate')
+            .mockImplementation(() => undefined)
 
         // A transport-level failure on the submit POST (dropped
         // connection, DNS, etc). The headless callback pipeline does not
@@ -553,6 +557,10 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
             { timeout: 15_000 },
         )
         expect(screen.queryByTestId('pw-result-view')).toBeNull()
+        expect(navigate).toHaveBeenCalledWith(
+            'TabBar',
+            expect.objectContaining({ screen: 'Home' }),
+        )
     })
 
     it('Given valid send params, when the submit response is lost but the transaction landed on-chain, then the success screen renders instead of a failure', async () => {

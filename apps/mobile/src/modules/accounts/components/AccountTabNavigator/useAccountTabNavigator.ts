@@ -10,7 +10,13 @@
  limitations under the License
  */
 
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import {
+    useNavigation,
+    useRoute,
+    type NavigationProp,
+    type RouteProp,
+} from '@react-navigation/native'
 import {
     runOnJS,
     useAnimatedReaction,
@@ -26,13 +32,12 @@ import { useChainCapability } from '@perawallet/wallet-core-chain-shared'
 import type { PWPagerTab } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useNftHoldingSources } from '../../hooks/useNftHoldingSources'
+import type { AccountStackParamsList, AccountTabKey } from '../../routes/types'
 import {
     trackEvent,
     AccountDetailsEvent,
     AnalyticsMetadataKey,
 } from '@analytics'
-
-export type AccountTabKey = 'Overview' | 'Nfts' | 'History'
 
 const TAB_EVENTS: Record<AccountTabKey, AccountDetailsEvent> = {
     Overview: AccountDetailsEvent.Assets,
@@ -112,6 +117,25 @@ export const useAccountTabNavigator = (
         },
         [tabs],
     )
+
+    // A caller outside the screen asks for a tab through the route; the
+    // param is cleared once read so asking again later applies again.
+    const navigation =
+        useNavigation<
+            NavigationProp<AccountStackParamsList, 'AccountDetails'>
+        >()
+    const requestedTab =
+        useRoute<RouteProp<AccountStackParamsList, 'AccountDetails'>>().params
+            ?.tab
+    useEffect(() => {
+        if (!requestedTab) return
+        const requestedIndex = tabs.findIndex(tab => tab.key === requestedTab)
+        if (requestedIndex >= 0) {
+            setActiveKey(requestedTab)
+            markVisited(requestedIndex)
+        }
+        navigation.setParams({ tab: undefined })
+    }, [requestedTab, tabs, markVisited, navigation])
 
     // Mount the incoming page as the drag passes halfway rather than when it
     // settles, so the mount lands while the finger is still moving instead of

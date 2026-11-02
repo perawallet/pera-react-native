@@ -21,10 +21,13 @@ import {
 } from '@test-utils/algorandAccountsAdapter'
 import { useTransactionProcessingScreen } from '../useTransactionProcessingScreen'
 import {
+    SubmissionError,
     UserRejectedSigningError,
     signingEventBus,
     type TransportResult,
 } from '@perawallet/wallet-core-signing'
+import { EvmError, EvmErrorCode } from '@perawallet/wallet-core-chain-ethereum'
+import { navigateToAccountHistory } from '@modules/deeplink/core'
 import {
     useAccountChainStateStore,
     useAllAccounts,
@@ -86,6 +89,10 @@ const {
 vi.mock('@analytics', async () => ({
     ...(await vi.importActual<object>('@analytics')),
     trackEvent: mockTrackEvent,
+}))
+
+vi.mock('@modules/deeplink/core', () => ({
+    navigateToAccountHistory: vi.fn(),
 }))
 
 vi.mock('@utils/tabResumeIntent', () => ({
@@ -312,6 +319,51 @@ describe('useTransactionProcessingScreen', () => {
             expect.objectContaining({ type: 'error' }),
             expect.anything(),
         )
+    })
+
+    it('closes the send and opens History when the broadcast got no answer, instead of returning to a Confirm that would send again', async () => {
+        sendScope.chainId = 'ethereum'
+        mockExecute.mockRejectedValueOnce(
+            new SubmissionError(
+                ['0xabc'],
+                'unknown-outcome',
+                new EvmError(EvmErrorCode.TIMEOUT),
+            ),
+        )
+
+        renderHook(() => useTransactionProcessingScreen())
+
+        await waitFor(() => expect(navigateToAccountHistory).toHaveBeenCalled())
+        expect(mockOnFinished).toHaveBeenCalled()
+        expect(mockGoBack).not.toHaveBeenCalled()
+        // No bottom-sheet notifier: the sheet closes with the flow.
+        expect(mockShowToast).toHaveBeenCalledWith(
+            expect.objectContaining({ type: 'error' }),
+            undefined,
+        )
+        expect(mockTrackEvent).toHaveBeenCalledWith(
+            TransactionsEvent.Failed,
+            expect.objectContaining({
+                [AnalyticsMetadataKey.ErrorCode]: 'evm.timeout',
+                [AnalyticsMetadataKey.IsRetryable]: true,
+            }),
+        )
+    })
+
+    it('returns to Confirm when the node rejected the send', async () => {
+        mockExecute.mockRejectedValueOnce(
+            new SubmissionError(
+                ['0xabc'],
+                'rejected-by-node',
+                new EvmError(EvmErrorCode.INSUFFICIENT_FUNDS),
+            ),
+        )
+
+        renderHook(() => useTransactionProcessingScreen())
+
+        await waitFor(() => expect(mockGoBack).toHaveBeenCalled())
+        expect(navigateToAccountHistory).not.toHaveBeenCalled()
+        expect(mockOnFinished).not.toHaveBeenCalled()
     })
 
     it('records a failed send with its chain, declared code and retryability', async () => {
