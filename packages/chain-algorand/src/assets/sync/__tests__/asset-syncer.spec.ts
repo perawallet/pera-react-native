@@ -24,6 +24,11 @@ const fetchCrossChainAssetGroupsMock = vi.hoisted(() =>
     ),
 )
 const transformAssetResponseMock = vi.hoisted(() => vi.fn(a => a))
+const fetchAssetItemsMock = vi.hoisted(() => vi.fn())
+const transformAssetItemResponseMock = vi.hoisted(() =>
+    vi.fn((assetId: string) => ({ assetId }) as unknown),
+)
+const isV4AssetSyncEnabledMock = vi.hoisted(() => vi.fn(() => false))
 const fetchIndexerAssetDetailsMock = vi.hoisted(() => vi.fn())
 const transformIndexerAssetResponseMock = vi.hoisted(() => vi.fn(a => a))
 const upsertAssetsMock = vi.hoisted(() => vi.fn())
@@ -40,6 +45,8 @@ vi.mock('../../api', () => ({
     fetchAssets: fetchAssetsMock,
     fetchCrossChainAssetGroups: fetchCrossChainAssetGroupsMock,
     transformAssetResponse: transformAssetResponseMock,
+    fetchAssetItems: fetchAssetItemsMock,
+    transformAssetItemResponse: transformAssetItemResponseMock,
     fetchIndexerAssetDetails: fetchIndexerAssetDetailsMock,
     transformIndexerAssetResponse: transformIndexerAssetResponseMock,
 }))
@@ -53,6 +60,10 @@ vi.mock('@perawallet/wallet-core-assets', async importOriginal => ({
     upsertPeraAssets: upsertPeraAssetsMock,
     getStaleOrMissingAssetIds: getStaleOrMissingAssetIdsMock,
     getCollectibleIdsMissingUrl: getCollectibleIdsMissingUrlMock,
+}))
+
+vi.mock('../v4-asset-sync-gate', () => ({
+    isV4AssetSyncEnabled: isV4AssetSyncEnabledMock,
 }))
 
 const canCallIntegrityGuardedRouteMock = vi.hoisted(() => vi.fn(() => true))
@@ -103,6 +114,19 @@ describe('fetchAndPersistAssets', () => {
         deviceIdGetMock.mockReset()
         deviceIdGetMock.mockReturnValue(null)
         canCallIntegrityGuardedRouteMock.mockReturnValue(true)
+        isV4AssetSyncEnabledMock.mockReturnValue(false)
+        fetchAssetItemsMock.mockReset()
+        transformAssetItemResponseMock.mockClear()
+    })
+
+    test('a production build reads Django and the group, never the full v4 item', async () => {
+        fetchAssetsMock.mockResolvedValue({ results: [{ asset_id: 1 }] })
+
+        await fetchAndPersistAssets(['1'], MAINNET_SCOPE)
+
+        expect(fetchAssetsMock).toHaveBeenCalledTimes(1)
+        expect(fetchCrossChainAssetGroupsMock).toHaveBeenCalledTimes(1)
+        expect(fetchAssetItemsMock).not.toHaveBeenCalled()
     })
 
     test('device-scoped: passes the network device id to fetchAssets', async () => {
@@ -471,6 +495,112 @@ describe('fetchAndPersistAssets', () => {
         expect(fetchAssetsMock).not.toHaveBeenCalled()
         expect(upsertPeraAssetsMock).not.toHaveBeenCalled()
         expect(upsertAssetsMock).not.toHaveBeenCalled()
+    })
+
+    describe('v4 asset sync enabled', () => {
+        const item = (assetId: string) => ({ asset_id: `asa:${assetId}` })
+
+        beforeEach(() => {
+            isV4AssetSyncEnabledMock.mockReturnValue(true)
+            fetchAssetItemsMock.mockImplementation(
+                async (ids: string[]) =>
+                    new Map(ids.map(id => [id, item(id)] as const)),
+            )
+        })
+
+        test('reads each batch with one v4 request and nothing else', async () => {
+            deviceIdGetMock.mockReturnValue('4567123498765432101')
+
+            await fetchAndPersistAssets(['1', '2'], MAINNET_SCOPE)
+
+            expect(fetchAssetItemsMock).toHaveBeenCalledTimes(1)
+            expect(fetchAssetItemsMock).toHaveBeenCalledWith(
+                ['1', '2'],
+                'mainnet',
+                '4567123498765432101',
+            )
+            expect(fetchAssetsMock).not.toHaveBeenCalled()
+            expect(fetchCrossChainAssetGroupsMock).not.toHaveBeenCalled()
+            expect(upsertAssetsMock).toHaveBeenCalledWith({
+                items: [{ assetId: '1' }, { assetId: '2' }],
+                scope: MAINNET_SCOPE,
+            })
+        })
+
+        test('makes one request per batch', async () => {
+            const ids = Array.from({ length: 250 }, (_, i) => String(i + 1))
+
+            await fetchAndPersistAssets(ids, MAINNET_SCOPE)
+
+            expect(fetchAssetItemsMock).toHaveBeenCalledTimes(3)
+            expect(fetchAssetsMock).not.toHaveBeenCalled()
+        })
+
+        test.each([
+            ['555', true],
+            [null, false],
+        ])(
+            'with device id %s, reads the device fields only when scoped (%s)',
+            async (deviceId, isDeviceScoped) => {
+                deviceIdGetMock.mockReturnValue(deviceId)
+
+                await fetchAndPersistAssets(['1'], MAINNET_SCOPE)
+
+                expect(transformAssetItemResponseMock).toHaveBeenCalledWith(
+                    '1',
+                    item('1'),
+                    { isDeviceScoped },
+                )
+            },
+        )
+
+        test('skips an item the transform cannot use', async () => {
+            transformAssetItemResponseMock.mockImplementationOnce(() => null)
+
+            await fetchAndPersistAssets(['1', '2'], MAINNET_SCOPE)
+
+            expect(upsertAssetsMock).toHaveBeenCalledWith({
+                items: [{ assetId: '2' }],
+                scope: MAINNET_SCOPE,
+            })
+        })
+
+        test('a failed read writes nothing for that batch and the others still persist', async () => {
+            const ids = Array.from({ length: 150 }, (_, i) => String(i + 1))
+            fetchAssetItemsMock.mockRejectedValueOnce(
+                new Error('device_not_found'),
+            )
+
+            await expect(
+                fetchAndPersistAssets(ids, MAINNET_SCOPE),
+            ).resolves.toBeUndefined()
+
+            expect(fetchAssetItemsMock).toHaveBeenCalledTimes(2)
+            expect(upsertAssetsMock).toHaveBeenCalledTimes(1)
+            expect(upsertAssetsMock.mock.lastCall?.[0].items).toHaveLength(50)
+        })
+
+        test('still rechecks unread groups only while integrity can pass', async () => {
+            canCallIntegrityGuardedRouteMock.mockReturnValue(false)
+
+            await fetchAndPersistAssets(['1'], MAINNET_SCOPE)
+
+            expect(getStaleOrMissingAssetIdsMock).toHaveBeenCalledWith(
+                expect.objectContaining({ recheckUnreadGroup: false }),
+            )
+        })
+
+        test('a non-Pera network still reads only the chain indexer', async () => {
+            fetchIndexerAssetDetailsMock.mockResolvedValue({ assetId: '1' })
+
+            await fetchAndPersistAssets(['1'], {
+                chainId: LEGACY_CHAIN_ID,
+                networkId: 'betanet',
+            } as const)
+
+            expect(fetchAssetItemsMock).not.toHaveBeenCalled()
+            expect(upsertAssetsMock).not.toHaveBeenCalled()
+        })
     })
 
     test('refuses a scope that is not an Algorand network before touching the DB', async () => {
