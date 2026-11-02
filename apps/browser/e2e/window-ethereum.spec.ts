@@ -42,6 +42,7 @@ import {
     serveFakeEvmNode,
     type FakeEvmNode,
 } from './fixtures/fake-evm-node.mjs'
+import { EVM_PROVIDER_MARKER } from '../scripts/bundle-content.mjs'
 import { skipPasskeyUnlockStep } from './passkey-unlock-step'
 
 const dist = path.resolve(
@@ -51,12 +52,11 @@ const dist = path.resolve(
 
 const PAGE = '<!doctype html><html><body>dapp</body></html>'
 
-// Which side of the build flag this dist was bundled on; the provider's
-// announce event name survives minification only when it is built in.
+// The same test scripts/build.mjs asserts against CHAINS.
 const servesEvm = readFileSync(
     path.join(dist, 'content-inject-main.js'),
     'utf8',
-).includes('eip6963:announceProvider')
+).includes(EVM_PROVIDER_MARKER)
 
 // Every EVM RPC URL the bundle baked, from the esbuild surfaces and the
 // exported UI chunks alike (the offscreen document runs the latter).

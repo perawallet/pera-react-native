@@ -51,24 +51,32 @@ const GET_ETH_BALANCE = selectorOf('getEthBalance(address)')
 const word = value => BigInt(value).toString(16).padStart(64, '0')
 
 // The wallet reads balances through Multicall3 aggregate3, hand-decoded here
-// for want of an ABI library in this app. The holder's getEthBalance answers
-// BALANCE_WEI; every other call fails, which the wallet reads as "no token".
-const answerAggregate3 = data => {
+// for want of an ABI library in this app. getEthBalance answers BALANCE_WEI
+// for any address; every other call fails, which the wallet reads as "no
+// token". A failing call that does not allow failure reverts the whole
+// aggregate, as on a real node: null.
+export const answerAggregate3 = data => {
     const hex = data.slice(2 + 8)
     const wordAt = byteOffset =>
         BigInt(`0x${hex.slice(byteOffset * 2, byteOffset * 2 + 64)}`)
     const array = Number(wordAt(0))
     const count = Number(wordAt(array))
     const heads = array + 32
-    const results = Array.from({ length: count }, (_, index) => {
+    const results = []
+    for (let index = 0; index < count; index++) {
         const call = heads + Number(wordAt(heads + index * 32))
         const target = `0x${word(wordAt(call)).slice(24)}`
+        const allowFailure = wordAt(call + 32) !== 0n
         const callData = call + Number(wordAt(call + 64))
         const selector = hex.slice((callData + 32) * 2, (callData + 36) * 2)
-        return target === MULTICALL3_ADDRESS && selector === GET_ETH_BALANCE
-            ? word(1) + word(64) + word(32) + word(BALANCE_WEI)
-            : word(0) + word(64) + word(0)
-    })
+        if (target === MULTICALL3_ADDRESS && selector === GET_ETH_BALANCE) {
+            results.push(word(1) + word(64) + word(32) + word(BALANCE_WEI))
+        } else if (allowFailure) {
+            results.push(word(0) + word(64) + word(0))
+        } else {
+            return null
+        }
+    }
     let offset = count * 32
     const offsets = results.map(result => {
         const at = offset
@@ -147,11 +155,14 @@ export const createFakeEvmNode = () => {
     const answer = ({ id, method, params }) => {
         methods.push(method)
         if (method === 'eth_call' && isAggregate3(params ?? [])) {
-            return {
-                jsonrpc: '2.0',
-                id,
-                result: answerAggregate3(params[0].data),
-            }
+            const result = answerAggregate3(params[0].data)
+            return result === null
+                ? {
+                      jsonrpc: '2.0',
+                      id,
+                      error: { code: 3, message: 'execution reverted' },
+                  }
+                : { jsonrpc: '2.0', id, result }
         }
         const result = results[method]
         if (!result) {
