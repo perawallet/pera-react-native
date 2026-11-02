@@ -44,7 +44,7 @@ import type { EvmChain } from '../chains/types'
 import type { EthereumTransactionPayload } from '../signing/adapter'
 import { ethereumCallSummary } from '../signing/review'
 import { readEvmFeePresets, type EvmPricedTransaction } from './fees'
-import { readReceipt } from './reconcile'
+import { readReceipt } from './receipt'
 import { cancelSummary } from './summary'
 
 /** Gas units of a plain transfer, all a cancel needs. */
