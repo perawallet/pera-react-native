@@ -328,7 +328,10 @@ export const useTransactionConfirmationScreen =
             const nativeNeeded = isNativeAssetId(selectedAssetId)
                 ? baseUnitAmount.plus(maxFeeAmount)
                 : maxFeeAmount
-            if (!nativeSpendable.max.lt(nativeNeeded)) {
+            // A MAX that re-sizes to nothing leaves the whole balance for the fee, which
+            // `max < amount + fee` doesn't catch: sending zero would only burn the fee.
+            const isEmptyMax = isMaxNativeSend && baseUnitAmount.isZero()
+            if (!isEmptyMax && !nativeSpendable.max.lt(nativeNeeded)) {
                 return undefined
             }
             const unitName = nativeAsset.unitName ?? ''
@@ -360,6 +363,7 @@ export const useTransactionConfirmationScreen =
             maxFeeAmount,
             nativeSpendable,
             baseUnitAmount,
+            isMaxNativeSend,
             selectedAssetId,
             isNativeAssetId,
             nativeAsset,

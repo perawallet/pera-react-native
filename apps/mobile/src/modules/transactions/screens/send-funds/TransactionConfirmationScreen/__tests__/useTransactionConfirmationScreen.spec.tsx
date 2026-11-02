@@ -774,6 +774,22 @@ describe('useTransactionConfirmationScreen', () => {
                 expect(mockNavigate).not.toHaveBeenCalled()
             })
 
+            it('reports a shortfall, and will not confirm, when the fee takes the whole balance', () => {
+                spendable(500)
+
+                const { result } = reviewMax()
+                act(() => {
+                    result.current.handleConfirm()
+                })
+
+                expect(result.current.amount?.toFixed()).toBe('0')
+                expect(result.current.feeShortfall).toBeDefined()
+                expect(mockNavigate).not.toHaveBeenCalled()
+                expect(
+                    mockSendFundsState.setConfirmedMaxFee,
+                ).not.toHaveBeenCalled()
+            })
+
             it('keeps the amount a send typed in, and still confirms its max fee', () => {
                 spendable(1000)
 
