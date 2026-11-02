@@ -73,13 +73,12 @@ jobs:
             # `text` puts the per-file table in the log, `json-summary` feeds
             # the Summary step; both replace the config's reporters.
             - name: Coverage
-              run: >-
-                  pnpm exec turbo run test
-                  $(printf -- '--filter=./packages/%s ' $PACKAGES)
-                  --continue
-                  -- --coverage
-                  --coverage.reporter=text
-                  --coverage.reporter=json-summary
+              run: |
+                  read -ra dirs <<< "$PACKAGES"
+                  filters=()
+                  for p in "${dirs[@]}"; do filters+=("--filter=./packages/$p"); done
+                  pnpm exec turbo run test "${filters[@]}" --continue -- \
+                    --coverage --coverage.reporter=text --coverage.reporter=json-summary
 
             # A package whose tests or build failed writes no report, so its row
             # says so rather than vanishing. Only the Coverage step fails the job.
