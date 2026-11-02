@@ -1205,6 +1205,14 @@
                 "title": "Netzwerk ausgelastet",
                 "body": "Das Netzwerk erhält gerade zu viele Anfragen. Bitte warte einen Moment und versuche es erneut."
             },
+            "timeout": {
+                "title": "Netzwerk antwortet nicht",
+                "body": "Das Netzwerk hat nicht rechtzeitig geantwortet. Bitte versuche es erneut."
+            },
+            "network_unreachable": {
+                "title": "Netzwerk nicht erreichbar",
+                "body": "Wir konnten keine Verbindung zum Netzwerk herstellen. Prüfe deine Verbindung oder versuche es in einem Moment erneut."
+            },
             "invalid_private_key": "Gib einen gültigen privaten Schlüssel ein: 64 Hexadezimalzeichen, mit oder ohne 0x.",
             "replaced_transaction_confirmed": {
                 "title": "Transaktion bereits bestätigt",

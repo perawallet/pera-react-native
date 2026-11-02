@@ -23,6 +23,7 @@ import {
 import { toError, type Optional } from '@perawallet/wallet-core-shared'
 import { EvmError, type EvmErrorParams } from './EvmError'
 import { EvmErrorCode } from './evmErrorCodes'
+import { toRpcTransportError } from './toRpcTransportError'
 
 // geth/reth say "replacement transaction underpriced"; erigon and nethermind
 // say "replacement fee too low". viem has no class for either.
@@ -124,6 +125,17 @@ const classify = (
         return reason
             ? { code: EvmErrorCode.REVERTED_WITH_REASON, params: { reason } }
             : { code: EvmErrorCode.REVERTED }
+    }
+    // Last, so a verdict in the text outranks the transport: a gateway can
+    // answer 5xx with a node's own rejection in the body. A 429 returned above.
+    const transport = toRpcTransportError(error)
+    if (transport) {
+        return {
+            code:
+                transport.kind === 'timeout'
+                    ? EvmErrorCode.TIMEOUT
+                    : EvmErrorCode.NETWORK_UNREACHABLE,
+        }
     }
     return { code: EvmErrorCode.UNKNOWN }
 }

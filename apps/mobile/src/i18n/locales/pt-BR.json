@@ -1213,6 +1213,14 @@
                 "title": "Rede congestionada",
                 "body": "A rede está recebendo muitas solicitações no momento. Aguarde um instante e tente novamente."
             },
+            "timeout": {
+                "title": "A rede não respondeu",
+                "body": "A rede não respondeu a tempo. Tente novamente."
+            },
+            "network_unreachable": {
+                "title": "Não foi possível acessar a rede",
+                "body": "Não conseguimos nos conectar à rede. Verifique sua conexão ou tente novamente em instantes."
+            },
             "invalid_private_key": "Insira uma chave privada válida: 64 caracteres hexadecimais, com ou sem 0x.",
             "replaced_transaction_confirmed": {
                 "title": "Transação já confirmada",

@@ -1213,6 +1213,14 @@
                 "title": "Red saturada",
                 "body": "La red está recibiendo demasiadas solicitudes en este momento. Espera un momento y vuelve a intentarlo."
             },
+            "timeout": {
+                "title": "La red no responde",
+                "body": "La red no respondió a tiempo. Inténtalo de nuevo."
+            },
+            "network_unreachable": {
+                "title": "No se puede conectar con la red",
+                "body": "No pudimos conectarnos a la red. Revisa tu conexión o vuelve a intentarlo en un momento."
+            },
             "invalid_private_key": "Introduce una clave privada válida: 64 caracteres hexadecimales, con o sin 0x.",
             "replaced_transaction_confirmed": {
                 "title": "Transacción ya confirmada",

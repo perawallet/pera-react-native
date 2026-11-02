@@ -1213,6 +1213,14 @@
                 "title": "Network busy",
                 "body": "The network is receiving too many requests right now. Please wait a moment and try again."
             },
+            "timeout": {
+                "title": "Network didn't respond",
+                "body": "The network didn't respond in time. Please try again."
+            },
+            "network_unreachable": {
+                "title": "Can't reach the network",
+                "body": "We couldn't connect to the network. Check your connection, or try again in a moment."
+            },
             "invalid_private_key": "Enter a valid private key: 64 hexadecimal characters, with or without 0x.",
             "replaced_transaction_confirmed": {
                 "title": "Transaction already confirmed",

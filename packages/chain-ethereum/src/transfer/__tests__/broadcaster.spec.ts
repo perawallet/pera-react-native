@@ -1110,6 +1110,7 @@ describe('Ethereum broadcaster adapter', () => {
             expect(adapter.submitTimeoutError(5_000)).toMatchObject({
                 classification: 'unknown-outcome',
                 metadata: { retryable: true },
+                nodeError: { code: EvmErrorCode.TIMEOUT },
             })
         })
 
