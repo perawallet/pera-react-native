@@ -773,7 +773,7 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                 })
             })
 
-            it('Given a valid request, when it is queued, then the review shows the Ethereum transaction with its max fee', async () => {
+            it('Given a valid request, when it is queued, then the review is titled for one transaction and shows the fee estimate and max fee', async () => {
                 const walletKit = await settle()
                 // Mounted first so the request FAQ is acknowledged before the
                 // request arrives; otherwise its sheet covers the review.
@@ -795,13 +795,70 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                     { timeout: 5000 },
                 )
                 expect(
-                    screen.getAllByTestId('ethereum_max_fee'),
+                    screen.getAllByTestId('ethereum_review_fee'),
+                ).not.toHaveLength(0)
+                expect(
+                    screen.getAllByTestId('fee_summary_estimate'),
+                ).not.toHaveLength(0)
+                expect(
+                    screen.getAllByTestId('fee_summary_max'),
+                ).not.toHaveLength(0)
+                expect(
+                    screen.getAllByText('signing.transactions.title_one'),
                 ).not.toHaveLength(0)
                 expect(
                     screen.queryByText(
                         'signing.transaction_view.invalid_title',
                     ),
                 ).toBeNull()
+            })
+
+            it('Given a call to a contract Pera cannot read, when it is queued, then its selector and call data sit collapsed under Advanced until opened', async () => {
+                const walletKit = await settle()
+                renderSignReview()
+                const data = `0x3593564c${'0'.repeat(63)}1${'0'.repeat(64)}`
+
+                sendTransaction(walletKit, {
+                    from: CHECKSUMMED_ETH_ADDRESS,
+                    to: RECIPIENT,
+                    value: '0x1',
+                    data,
+                })
+                await queued()
+
+                await waitFor(
+                    () => {
+                        expect(
+                            screen.getAllByTestId(
+                                'ethereum_contract_call_advanced',
+                            ),
+                        ).not.toHaveLength(0)
+                    },
+                    { timeout: 5000 },
+                )
+                const [advanced] = screen.getAllByTestId(
+                    'ethereum_contract_call_advanced',
+                )
+                // The panel's collapsed state is asserted in the unit specs;
+                // this flow's renderer drops the attribute that shows it.
+                expect(advanced.textContent).toContain(
+                    'transactions.contract_call.advanced',
+                )
+                expect(advanced.textContent).toContain('0x3593564c')
+                expect(
+                    screen.getAllByTestId('ethereum_contract_call_warning'),
+                ).not.toHaveLength(0)
+
+                fireEvent.click(
+                    screen.getAllByText(
+                        'transactions.contract_call.advanced',
+                    )[0],
+                )
+
+                expect(
+                    screen.getAllByTestId('ethereum_contract_call_data')[0]
+                        .textContent,
+                ).toBe(data)
             })
 
             it("Given a dApp's gas limit far above what the call needs, when it is queued, then the review warns of the high fee", async () => {
@@ -1307,6 +1364,25 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                 ).toEqual(sent)
                 // The swap was signed with no second review.
                 expect(pendingSignRequests()).toHaveLength(0)
+            })
+
+            it('Given an approve-then-swap batch, when it is queued, then the review keeps the plural title', async () => {
+                const walletKit = await settle()
+                renderSignReview()
+
+                sendCalls(walletKit)
+
+                await waitFor(
+                    () => {
+                        expect(
+                            screen.getAllByText('signing.transactions.title'),
+                        ).not.toHaveLength(0)
+                    },
+                    { timeout: 5000 },
+                )
+                expect(
+                    screen.queryByText('signing.transactions.title_one'),
+                ).toBeNull()
             })
 
             it('Given a batch of one call, when it is reviewed and approved, then it lands and its status is 200 with one receipt', async () => {
