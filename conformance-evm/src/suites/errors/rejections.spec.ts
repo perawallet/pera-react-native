@@ -43,6 +43,7 @@ import {
     signedTransfer,
     submitAndRecord,
     withPendingPool,
+    withTransactionFields,
 } from '../submission/support'
 
 const RECIPIENT = '0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC'
@@ -162,17 +163,13 @@ describe('evm node rejections classified by toEvmError', () => {
 
     it('classifies a gas limit below the intrinsic cost as OUT_OF_GAS', async () => {
         const { env, sender } = await setUp()
-        const unsigned = await buildEthereumSendTransaction(
+        // Set after the build: the app never signs less than a call's estimate.
+        const built = await buildEthereumSendTransaction(
             env.ctx,
             env.evmChain,
-            {
-                from: sender.address,
-                to: RECIPIENT,
-                value: 1n,
-                data: '0x',
-                gas: 20_000n,
-            },
+            { from: sender.address, to: RECIPIENT, value: 1n, data: '0x' },
         )
+        const unsigned = withTransactionFields(built, { gas: 20_000n })
         const raw = await signTransactionWithApp(env, sender, unsigned)
 
         const error = await rejectionOf(() => sendRaw(env, raw))
@@ -256,11 +253,17 @@ describe('evm node rejections classified by toEvmError', () => {
         const { env, sender } = await setUp()
         const input = await revertingCallInput(env, sender.address, 'burnGas()')
         const gasLimit = 100_000n
-        const unsigned = await buildEthereumSendTransaction(
+        // Pointed at the contract after the build: the app refuses to build a call the node cannot estimate.
+        const built = await buildEthereumSendTransaction(
             env.ctx,
             env.evmChain,
-            { ...input, gas: gasLimit },
+            { from: sender.address, to: RECIPIENT, value: 0n, data: '0x' },
         )
+        const unsigned = withTransactionFields(built, {
+            to: input.to,
+            data: input.data,
+            gas: gasLimit,
+        })
         const raw = await signTransactionWithApp(env, sender, unsigned)
         const broadcaster = createEvmBroadcasterAdapter(env.ctx, env.evmChain)
         const [hash] = await broadcaster.submit(env.scope, [hexToBytes(raw)])
