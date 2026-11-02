@@ -86,7 +86,7 @@ describe.each(EVM_TEST_CHAINS)('the $row.id module', chain => {
         expect(enabled.sort()).toEqual([...ENABLED].sort())
     })
 
-    it('supports no Algorand-only capability, so remote config cannot switch one on', () => {
+    it('supports nothing that reaches Algorand-only code or a Pera endpoint EVM lacks, so remote config cannot switch it on', () => {
         for (const capability of [
             'assetInbox',
             'rekey',
@@ -96,6 +96,10 @@ describe.each(EVM_TEST_CHAINS)('the $row.id module', chain => {
             'quantumAccounts',
             'liquidAuth',
             'feeDelegation',
+            'notifications',
+            'assetFavorites',
+            'priceAlerts',
+            'csvExport',
         ] as const) {
             expect(module.supportedCapabilities).not.toContain(capability)
         }
@@ -201,9 +205,23 @@ describe('a row override', () => {
         expect(chains.capabilities('ethereum').pricing).toBe(true)
     })
 
+    it('supports a capability its row switches on, for its own chain only', () => {
+        const withSwap = createEvmChainModule(
+            createEvmChain({ ...BASE.row, capabilities: { swap: true } }),
+        )
+
+        expect(withSwap.supportedCapabilities).toContain('swap')
+        expect(evmChainModules.ethereum.supportedCapabilities).not.toContain(
+            'swap',
+        )
+    })
+
     it('keeps the shared defaults for a row without overrides', () => {
         expect(evmChainModules.base.capabilityDefaults).toBe(
             evmCapabilityDefaults,
+        )
+        expect(evmChainModules.base.supportedCapabilities).toBe(
+            evmChainModules.ethereum.supportedCapabilities,
         )
         expect(evmChainModules.base.capabilityRestrictions).toBeUndefined()
     })

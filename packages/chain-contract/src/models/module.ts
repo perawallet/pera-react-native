@@ -81,9 +81,9 @@ export interface ChainModule {
     descriptor: ChainDescriptor
     capabilityDefaults: ChainCapabilities
     /**
-     * Every capability the chain can serve, on by default or not. Remote config
-     * and the Feature Flags screen can't switch on one outside it, since its
-     * flow would reach code with nothing for this chain.
+     * Every capability the chain can serve, on by default or not; any other
+     * would reach code with nothing for this chain. Overrides can't switch one
+     * on, and `registerChainSetup` refuses a build that does.
      */
     supportedCapabilities: readonly ChainCapability[]
     /** The developer modes each capability is off in, e.g. because the chain's backend only serves mainnet. */

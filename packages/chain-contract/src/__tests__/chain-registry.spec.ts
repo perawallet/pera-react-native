@@ -402,13 +402,92 @@ describe('registerChainSetup', () => {
         expect(module.register).toHaveBeenCalledWith(context)
     })
 
-    it('forwards the module supported capabilities to the registry', () => {
-        const module = moduleWith({ supportedCapabilities: ['send'] })
+    const sendOnlyModule = (): ChainModule =>
+        moduleWith({
+            capabilityDefaults: {
+                ...allFalse,
+                send: true,
+            } as ChainCapabilities,
+            supportedCapabilities: ['send'],
+        })
 
-        registerChainSetup([entryWith({ module })], chains, () => context)
+    it('forwards the module supported capabilities to the registry', () => {
+        registerChainSetup(
+            [entryWith({ module: sendOnlyModule() })],
+            chains,
+            () => context,
+        )
 
         expect(chains.supports('algorand', 'send')).toBe(true)
         expect(chains.supports('algorand', 'swap')).toBe(false)
+    })
+
+    it('refuses a build override that switches on a capability the module does not support, registering no chain', () => {
+        const other = moduleWith({
+            descriptor: { ...descriptor, id: 'ethereum' },
+        })
+        const module = sendOnlyModule()
+
+        expect(() =>
+            registerChainSetup(
+                [
+                    entryWith({ chainId: 'ethereum', module: other }),
+                    entryWith({ module, capabilities: { assetInbox: true } }),
+                ],
+                chains,
+                () => context,
+            ),
+        ).toThrow(
+            'Chain "algorand" is built with assetInbox on, which its module does not support',
+        )
+        expect(chains.has('ethereum')).toBe(false)
+        expect(chains.has('algorand')).toBe(false)
+        expect(other.register).not.toHaveBeenCalled()
+    })
+
+    it('refuses module defaults that switch on a capability the module does not support', () => {
+        const module = moduleWith({
+            capabilityDefaults: {
+                ...allFalse,
+                staking: true,
+            } as ChainCapabilities,
+            supportedCapabilities: [],
+        })
+
+        expect(() =>
+            registerChainSetup([entryWith({ module })], chains, () => context),
+        ).toThrow('Chain "algorand" is built with staking on')
+    })
+
+    it('accepts a build override that switches an unsupported capability off', () => {
+        registerChainSetup(
+            [
+                entryWith({
+                    module: sendOnlyModule(),
+                    capabilities: { assetInbox: false },
+                }),
+            ],
+            chains,
+            () => context,
+        )
+
+        expect(chains.capabilities('algorand').assetInbox).toBe(false)
+    })
+
+    it('does not check a disabled entry', () => {
+        expect(() =>
+            registerChainSetup(
+                [
+                    entryWith({
+                        enabled: false,
+                        module: sendOnlyModule(),
+                        capabilities: { assetInbox: true },
+                    }),
+                ],
+                chains,
+                () => context,
+            ),
+        ).not.toThrow()
     })
 
     it('forwards the module capability restrictions to the registry', () => {

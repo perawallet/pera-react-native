@@ -219,16 +219,33 @@ export const registerChainSetup = (
     chains: ChainRegistry,
     contextFor: (entry: ChainSetupEntry) => ChainContext,
 ): void => {
-    for (const entry of setup) {
-        if (!entry.enabled) {
-            continue
-        }
-        chains.register(
-            entry.module.descriptor,
-            {
+    const chainsToRegister = setup
+        .filter(entry => entry.enabled)
+        .map(entry => ({
+            entry,
+            build: {
                 ...entry.module.capabilityDefaults,
                 ...entry.capabilities,
             },
+        }))
+    // Checked before any chain registers, and at boot rather than in tests: the
+    // parity spec only sees the test env's `CHAIN_<ID>_CAPABILITIES`.
+    for (const { entry, build } of chainsToRegister) {
+        const unsupported = CHAIN_CAPABILITIES.filter(
+            capability =>
+                build[capability] &&
+                !entry.module.supportedCapabilities.includes(capability),
+        )
+        if (unsupported.length > 0) {
+            throw new Error(
+                `Chain "${entry.chainId}" is built with ${unsupported.join(', ')} on, which its module does not support`,
+            )
+        }
+    }
+    for (const { entry, build } of chainsToRegister) {
+        chains.register(
+            entry.module.descriptor,
+            build,
             entry.module.capabilityRestrictions,
             entry.module.supportedCapabilities,
         )

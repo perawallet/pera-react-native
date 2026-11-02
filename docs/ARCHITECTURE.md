@@ -175,7 +175,8 @@ requirement is restricted only while every registered chain's mode is.
 
 A chain module's `supportedCapabilities` lists every capability it can serve, on by default or not.
 A remote config or Feature Flags override that switches on one outside it is dropped with a warning;
-a `false` always applies. The parity spec (`apps/mobile/src/__integration__/capability-parity.spec.ts`)
+a `false` always applies. A build that does (module defaults or `CHAIN_<ID>_CAPABILITIES`) fails at
+boot in `registerChainSetup`. The parity spec (`apps/mobile/src/__integration__/capability-parity.spec.ts`)
 requires the registries `CAPABILITY_ADAPTERS` names for every supported capability, enabled or not, so
 no override reaches a flow without its chain's adapter.
 

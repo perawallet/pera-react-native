@@ -17,7 +17,7 @@ import type {
 import { evmPinnedHosts, evmSslPinningFlag } from './blockchain/pinned-hosts'
 import {
     evmCapabilityDefaultsOf,
-    evmSupportedCapabilities,
+    evmSupportedCapabilitiesOf,
 } from './capability-defaults'
 import { EVM_CHAINS } from './chains/table'
 import type { EvmChain } from './chains/types'
@@ -26,7 +26,7 @@ import { createEvmChainRegistration } from './register'
 export const createEvmChainModule = (chain: EvmChain): ChainModule => ({
     descriptor: chain.descriptor,
     capabilityDefaults: evmCapabilityDefaultsOf(chain.row),
-    supportedCapabilities: evmSupportedCapabilities,
+    supportedCapabilities: evmSupportedCapabilitiesOf(chain.row),
     capabilityRestrictions: chain.row.restrictions,
     register: createEvmChainRegistration(chain),
     remoteConfigDefaults: { [evmSslPinningFlag(chain.row.id)]: false },
