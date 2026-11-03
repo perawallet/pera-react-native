@@ -99,6 +99,23 @@ describe('useCardStatusQuery', () => {
         expect(state.lastKnownPanLast4).toBe('1234')
     })
 
+    it('stores an empty card number as missing', async () => {
+        fetchCardStatus.mockResolvedValue({
+            ...card,
+            status: CardStatus.Pending,
+            panLast4: '',
+        })
+
+        const { result } = renderHook(() => useCardStatusQuery(SCOPE), {
+            wrapper,
+        })
+
+        await waitFor(() => expect(result.current.isSuccess).toBe(true))
+        const state = useCardStore.getState()
+        expect(state.lastKnownStatus).toBe(CardStatus.Pending)
+        expect(state.lastKnownPanLast4).toBeNull()
+    })
+
     it('clears the snapshot once the user has no card', async () => {
         useCardStore.getState().setCardSnapshot({
             cardId: 'card_1',

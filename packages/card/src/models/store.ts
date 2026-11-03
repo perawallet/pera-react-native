@@ -160,7 +160,7 @@ export type CardUxState = BaseStoreState & {
         snapshot: Nullable<{
             cardId: string
             status: CardStatus
-            panLast4: string
+            panLast4: Nullable<string>
         }>,
     ) => void
     setTransactionFilters: (filters: CardTransactionFilters) => void

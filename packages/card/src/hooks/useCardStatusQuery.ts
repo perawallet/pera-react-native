@@ -52,7 +52,9 @@ export const useCardStatusQuery = (
                     ? {
                           cardId: card.id,
                           status: card.status,
-                          panLast4: card.panLast4,
+                          // Readers check for null, so an empty value is
+                          // stored as missing rather than rendered.
+                          panLast4: card.panLast4 || null,
                       }
                     : null,
             )
