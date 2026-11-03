@@ -20,6 +20,7 @@ import {
 } from './base'
 import { isRawPlatformNetworkError } from './expected'
 import { isIntegrityRequiredError } from './integrity'
+import { isPeraServiceUnavailableError } from './pera-service'
 
 /**
  * Thrown by `assertOnline` before a mutation reaches the transport, so offline
@@ -215,15 +216,17 @@ export const CHAIN_REFUSAL_CODES: readonly string[] = [
 ]
 
 /**
- * A 422 refusing the chain a request names: the backend doesn't know it, or
+ * The backend refuses the chain a request names: it doesn't know it, or
  * hasn't switched it on yet. It switches chains on one at a time, without an
- * app release.
+ * app release. Either the 422 itself, or the refusal the query client raises
+ * before sending once the chain is known to be refused.
  */
 export const isChainRefusedError = (error: unknown): boolean =>
-    isPeraNetworkError(error) &&
-    error.status === 422 &&
-    error.backendCode !== undefined &&
-    CHAIN_REFUSAL_CODES.includes(error.backendCode)
+    (isPeraServiceUnavailableError(error) && error.isChainRefused) ||
+    (isPeraNetworkError(error) &&
+        error.status === 422 &&
+        error.backendCode !== undefined &&
+        CHAIN_REFUSAL_CODES.includes(error.backendCode))
 
 /**
  * True when the failure means the device has no usable connection —
