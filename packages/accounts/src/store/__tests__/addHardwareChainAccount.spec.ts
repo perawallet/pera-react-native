@@ -17,6 +17,7 @@ import { buildTestAccount, TEST_CUSTODY } from '../../__tests__/accountFactory'
 import {
     ALGORAND,
     ALGORAND_ADDRESS,
+    BASE,
     ETHEREUM,
     EVM_KEY_ADDRESS,
     registerChainFamilies,
@@ -123,32 +124,110 @@ describe('addHardwareChainAccount', () => {
         expect(Object.keys(result.chains)).toEqual([ETHEREUM])
     })
 
-    test('keeps a USB import apart: its id names a model, not a device', () => {
-        state().setAccounts([
+    describe('over USB', () => {
+        const USB_DEVICE: HardwareWalletDetails = {
+            ...DEVICE,
+            transportType: 'usb',
+        }
+        const OTHER_EVM_ADDRESS = `0x${'e1'.repeat(20)}`
+        const usbLedger = (
+            id: string,
+            chains: Parameters<typeof buildTestAccount>[1],
+            deviceId = 'usb-plug-1',
+        ) =>
             buildTestAccount(
                 {
                     ...TEST_CUSTODY.hardware,
-                    device: {
-                        ...TEST_CUSTODY.hardware.device,
-                        transportType: 'usb',
-                    },
+                    device: { ...USB_DEVICE, deviceId },
                 },
-                { [ALGORAND]: { address: ALGORAND_ADDRESS } },
-                { id: 'usb-ledger' },
-            ),
-        ])
+                chains,
+                { id, name: 'Ledger 1' },
+            )
 
-        const result = state().addHardwareChainAccount(
-            { ...DEVICE, transportType: 'usb' },
-            ETHEREUM,
-            EVM_KEY_ADDRESS,
-            undefined,
-            undefined,
-            'usb-ledger',
-        )
+        test('joins the proven USB account at the index', () => {
+            state().setAccounts([
+                usbLedger('usb-ledger', {
+                    [ALGORAND]: { address: ALGORAND_ADDRESS },
+                }),
+            ])
 
-        expect(state().accounts).toHaveLength(2)
-        expect(result.id).not.toBe('usb-ledger')
+            const result = state().addHardwareChainAccount(
+                { ...USB_DEVICE, deviceId: 'replugged' },
+                ETHEREUM,
+                EVM_KEY_ADDRESS,
+                undefined,
+                undefined,
+                'usb-ledger',
+            )
+
+            expect(state().accounts).toHaveLength(1)
+            expect(result.id).toBe('usb-ledger')
+            expect(result.chains[ALGORAND]?.address).toBe(ALGORAND_ADDRESS)
+            expect(result.chains[ETHEREUM]?.address).toBe(EVM_KEY_ADDRESS)
+        })
+
+        test('keeps a USB import apart when no account is proven', () => {
+            state().setAccounts([
+                usbLedger('usb-ledger', {
+                    [ALGORAND]: { address: ALGORAND_ADDRESS },
+                }),
+            ])
+
+            const result = state().addHardwareChainAccount(
+                { ...USB_DEVICE, deviceId: 'replugged' },
+                ETHEREUM,
+                EVM_KEY_ADDRESS,
+            )
+
+            expect(state().accounts).toHaveLength(2)
+            expect(result.id).not.toBe('usb-ledger')
+        })
+
+        test('keeps two USB devices at one index apart', () => {
+            const deviceB = usbLedger('usb-b', {
+                [ETHEREUM]: { address: OTHER_EVM_ADDRESS },
+            })
+            state().setAccounts([
+                usbLedger('usb-a', {
+                    [ETHEREUM]: { address: EVM_KEY_ADDRESS },
+                }),
+                deviceB,
+            ])
+
+            state().addHardwareChainAccount(
+                USB_DEVICE,
+                BASE,
+                EVM_KEY_ADDRESS,
+                undefined,
+                undefined,
+                'usb-a',
+            )
+
+            const [a, b, ...rest] = state().accounts
+            expect(rest).toEqual([])
+            expect(a.id).toBe('usb-a')
+            expect(a.chains[ETHEREUM]?.address).toBe(EVM_KEY_ADDRESS)
+            expect(a.chains[BASE]?.address).toBe(EVM_KEY_ADDRESS)
+            expect(b).toBe(deviceB)
+        })
+
+        test('returns the USB account already holding the address on the chain', () => {
+            state().setAccounts([
+                usbLedger('usb-ledger', {
+                    [ETHEREUM]: { address: EVM_KEY_ADDRESS },
+                }),
+            ])
+            const before = state().accounts[0]
+
+            const result = state().addHardwareChainAccount(
+                { ...USB_DEVICE, deviceId: 'replugged' },
+                ETHEREUM,
+                EVM_KEY_ADDRESS,
+            )
+
+            expect(result).toBe(before)
+            expect(state().accounts).toEqual([before])
+        })
     })
 
     test('keeps another account index of the same device apart', () => {
@@ -375,7 +454,7 @@ describe('a device position stays one account', () => {
         )
     })
 
-    test('upgrades in place at a USB position instead of joining its account', () => {
+    test('joins the proven USB account when upgrading a watch account', () => {
         const usbDevice = {
             ...TEST_CUSTODY.hardware.device,
             transportType: 'usb' as const,
@@ -391,19 +470,21 @@ describe('a device position stays one account', () => {
             { id: 'watch' },
         )
         state().setAccounts([usbLedger, watch])
+        state().setSelectedAccountId('watch')
 
         state().upgradeWatchAccountToHardware(
             'watch',
-            { ...usbDevice, accountIndex: 0 },
+            { ...usbDevice, deviceId: 'replugged', accountIndex: 0 },
             ETHEREUM,
             'usb-ledger',
         )
 
-        expect(state().accounts).toHaveLength(2)
-        expect(state().accounts[1]).toMatchObject({
-            id: 'watch',
-            custody: { kind: 'hardware' },
-        })
+        const [only, ...rest] = state().accounts
+        expect(rest).toEqual([])
+        expect(only.id).toBe('usb-ledger')
+        expect(only.chains[ALGORAND]?.address).toBe(ALGORAND_ADDRESS)
+        expect(only.chains[ETHEREUM]?.address).toBe(EVM_KEY_ADDRESS)
+        expect(state().selectedAccountId).toBe('usb-ledger')
     })
 
     test("rebinds in place when the new position's account isn't proven", () => {

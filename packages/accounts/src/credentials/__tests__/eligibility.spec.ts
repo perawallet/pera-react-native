@@ -426,18 +426,42 @@ describe('findHardwareHolder', () => {
         ).toBe('index-1')
     })
 
-    test('finds no holder at a USB position, whose id names a model', () => {
+    test('finds the USB account at the index whatever its stored id', () => {
         const usb = { ...device, transportType: 'usb' as const }
         const accounts = [
             buildTestAccount(
-                { kind: 'hardware', device: usb, accountIndex: 0 },
+                {
+                    kind: 'hardware',
+                    device: { ...usb, deviceId: 'usb-a' },
+                    accountIndex: 0,
+                },
                 { [ETHEREUM]: { address: EVM_KEY_ADDRESS } },
                 { id: 'usb' },
             ),
         ]
 
         expect(
-            findHardwareHolder(accounts, { ...usb, accountIndex: 0 }),
+            findHardwareHolder(accounts, {
+                ...usb,
+                deviceId: 'usb-b',
+                accountIndex: 0,
+            })?.id,
+        ).toBe('usb')
+    })
+
+    test('keeps transports apart at the same id and index', () => {
+        const usb = { ...device, transportType: 'usb' as const }
+        const usbLedger = buildTestAccount(
+            { kind: 'hardware', device: usb, accountIndex: 0 },
+            { [ETHEREUM]: { address: EVM_KEY_ADDRESS } },
+            { id: 'usb' },
+        )
+
+        expect(
+            findHardwareHolder([ledger('ble', 0)], { ...usb, accountIndex: 0 }),
+        ).toBeUndefined()
+        expect(
+            findHardwareHolder([usbLedger], { ...device, accountIndex: 0 }),
         ).toBeUndefined()
     })
 
@@ -507,6 +531,56 @@ describe('hardwareJoinCandidates', () => {
         expect(
             hardwareJoinCandidates([both], position, [ALGORAND, ETHEREUM]),
         ).toEqual([])
+    })
+
+    describe('over USB', () => {
+        const usb = { ...device, transportType: 'usb' as const }
+        const usbLedger = (
+            id: string,
+            deviceId: string,
+            accountIndex: number,
+            chains: WalletAccount['chains'] = {
+                [ETHEREUM]: { address: EVM_KEY_ADDRESS },
+            },
+        ) =>
+            buildTestAccount(
+                {
+                    kind: 'hardware',
+                    device: { ...usb, deviceId },
+                    accountIndex,
+                },
+                chains,
+                { id },
+            )
+
+        test('lists every USB account at the index, across stored ids', () => {
+            const accounts = [
+                usbLedger('usb-a', 'usb-a', 0),
+                usbLedger('usb-b', 'usb-b', 0),
+                usbLedger('usb-index-1', 'usb-a', 1),
+                ledger('ble', { [ETHEREUM]: { address: EVM_KEY_ADDRESS } }),
+            ]
+
+            expect(
+                hardwareJoinCandidates(
+                    accounts,
+                    { ...usb, deviceId: 'usb-c', accountIndex: 0 },
+                    [BASE],
+                ).map(({ id }) => id),
+            ).toEqual(['usb-a', 'usb-b'])
+        })
+
+        test('still excludes a USB account holding the chain', () => {
+            const onBase = usbLedger('on-base', 'usb-a', 0, {
+                [BASE]: { address: EVM_KEY_ADDRESS },
+            })
+
+            expect(
+                hardwareJoinCandidates([onBase], { ...usb, accountIndex: 0 }, [
+                    BASE,
+                ]),
+            ).toEqual([])
+        })
     })
 })
 
