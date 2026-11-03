@@ -11,7 +11,7 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import { transactionStatusNotice } from '../statusNotice'
+import { confirmingNotice, transactionStatusNotice } from '../statusNotice'
 
 const SINCE = 1752576000000
 
@@ -48,4 +48,13 @@ describe('transactionStatusNotice', () => {
             expect(transactionStatusNotice(status, SINCE)).toBeUndefined()
         },
     )
+})
+
+describe('confirmingNotice', () => {
+    it('warns that the transaction is on chain but not final, without a time', () => {
+        expect(confirmingNotice()).toEqual({
+            kind: 'warning',
+            title: { key: 'transactions.notice.confirming' },
+        })
+    })
 })

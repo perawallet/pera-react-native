@@ -15,7 +15,7 @@ import {
     hasRecentPasswordAuth,
     isPasskeyUnlockEnabled,
     isPasskeyUnlockSupported,
-} from '@perawallet/wallet-extension-keystore-chrome'
+} from '@perawallet/wallet-extension-vault-chrome'
 import type { UsePasskeyUnlockOfferPromptResult } from './usePasskeyUnlockOfferPrompt'
 
 /**

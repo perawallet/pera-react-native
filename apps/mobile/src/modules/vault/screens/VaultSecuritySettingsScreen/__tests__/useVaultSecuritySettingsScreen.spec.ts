@@ -65,7 +65,7 @@ const mocks = vi.hoisted(() => {
 })
 const { MockInvalidPasswordError, MockVaultCorruptedError } = mocks
 
-vi.mock('@perawallet/wallet-extension-keystore-chrome', () => ({
+vi.mock('@perawallet/wallet-extension-vault-chrome', () => ({
     getAutoLockMinutes: mocks.getAutoLockMinutes,
     setAutoLockMinutes: mocks.setAutoLockMinutes,
     armAutoLock: mocks.armAutoLock,

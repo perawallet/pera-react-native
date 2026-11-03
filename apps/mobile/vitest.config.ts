@@ -166,7 +166,7 @@ const distResolvedPackages = new Set([
     '@perawallet/wallet-core-passkeys',
     '@perawallet/wallet-core-projects',
     '@perawallet/wallet-core-search',
-    '@perawallet/wallet-extension-keystore-chrome',
+    '@perawallet/wallet-extension-vault-chrome',
     '@perawallet/wallet-extension-ledger-web-ble',
     '@perawallet/wallet-extension-ledger-web-usb',
     '@perawallet/wallet-extension-passkey-autofill',

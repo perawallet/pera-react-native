@@ -57,7 +57,7 @@ export type UseSettingsPasskeysScreenResult = {
      * Defence in depth only — `needsMigration` is never `true` here. The
      * marker is written solely by `react-native-keystore`'s
      * `migrations/0001-flag-legacy-passkeys`, and on web Metro resolves that
-     * package to `extensions/keystore-chrome` while the engine comes from
+     * package to `extensions/vault-chrome` while the engine comes from
      * `@algorandfoundation/keystore-web`; neither carries the migration. Web
      * also has no flat provider records, so there is no second source to union
      * in either.

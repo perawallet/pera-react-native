@@ -192,13 +192,12 @@ auditConfig:
 
 minimumReleaseAgeExclude:
   # @algorandfoundation/keystore is deliberately NOT listed: nothing in the
-  # workspace depends on it (extensions/keystore-chrome vendors the canary.17
-  # key types it needs), so it needs no freshness exemption of its own.
+  # workspace depends on it, so it needs no freshness exemption of its own.
   # keystore-core and keystore-web ARE direct dependencies that share the
   # keystore canary publish date, so they keep their exemption independent of
   # the removed keystore pin: keystore-core is consumed by
-  # extensions/provider, extensions/passkey-autofill, packages/kms and
-  # packages/passkeys; keystore-web only by extensions/provider.
+  # extensions/provider, extensions/passkey-autofill, extensions/vault-chrome,
+  # packages/kms and packages/passkeys; keystore-web only by extensions/provider.
   # keystore-node is not listed: it arrives transitively, and its own
   # canary.3 publish (2026-08-13) already clears the 7-day minimumReleaseAge
   # window unaided, so no exclude entry is needed for it either.
@@ -354,9 +353,8 @@ overrides:
   # it on every pre-push.
 
   # No @algorandfoundation/keystore override, and no catalog entry either:
-  # keystore-chrome vendors the canary.17 key types and error class its WebAuthn
-  # signer uses (src/keystore/), so nothing in the workspace depends on this
-  # package. The catalog pin was
+  # nothing in the workspace depends on this package (its key types and errors
+  # come from keystore-core). The catalog pin was
   # dropped because it resolved to nothing in the lockfile — no importer, no
   # resolution — leaving Dependabot to bump a spec no consumer used and no test
   # could validate.

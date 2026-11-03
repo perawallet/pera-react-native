@@ -22,6 +22,12 @@ export const PRF_BLOB_KEY = 'vault:wrapped-master-key-prf'
 export const PRF_CRED_ID_KEY = 'vault:prf-credential-id'
 /** chrome.storage.session — raw unlocked master key (memory-only). */
 export const SESSION_MASTER_KEY = 'vault:master-key'
+/**
+ * chrome.storage.session: `true` while SESSION_MASTER_KEY is held. Written and
+ * removed with the key in the same call, so the lock state is readable without
+ * reading the key.
+ */
+export const SESSION_UNLOCKED_KEY = 'vault:unlocked'
 /** chrome.storage.local — persisted auto-lock preference (minutes). */
 export const AUTO_LOCK_MINUTES_KEY = 'vault:auto-lock-minutes'
 /** chrome.storage.local — unlock lockout bookkeeping (failed attempts, lockout end time). */

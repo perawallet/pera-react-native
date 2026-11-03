@@ -38,7 +38,7 @@ import {
 
 /**
  * Platform-agnostic WebAuthn authenticator core. Must never depend on
- * keystore-chrome or any `chrome.*` API, so it can run (and be tested)
+ * vault-chrome or any `chrome.*` API, so it can run (and be tested)
  * outside the extension.
  *
  * Byte-for-byte port of the ceremony assembly in mobile's

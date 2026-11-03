@@ -76,7 +76,7 @@ export const entropyChildMetadata = (
  *
  * The `secret-key` clause keeps this identical to the two copies that cannot
  * import it — `repairs/0003-mint-passkey-main-key.ts:139-143` (MMKV records,
- * pre-engine) and `keystore-chrome`'s `keystore-signer.ts` — which all three
+ * pre-engine) and `vault-chrome`'s `keystore-signer.ts` — which all three
  * must be, since they pick the same main key's parent. `commitSecret` writes
  * entropy through the secrets API, which stamps `type: 'secret-key'`
  * (`keystore-core@1.0.0-canary.3` `dist/create.js:1180`), so nothing legitimate

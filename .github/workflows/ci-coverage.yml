@@ -1,0 +1,106 @@
+name: CI / Coverage
+
+# Enforces the gate in packages/devtools/vitest/coverage.js on the chain
+# packages. Nightly because instrumenting a package slows its tests, and the PR
+# path in ci-pre-merge.yml runs without coverage. A red scheduled run is the
+# notification.
+
+on:
+    schedule:
+        # After Cache Warm (02:00) and the conformance runs (03:00, 03:30).
+        - cron: '0 4 * * *'
+    workflow_dispatch: {}
+
+# Least-privilege default, matching ci-pre-merge.yml.
+permissions:
+    contents: read
+
+jobs:
+    coverage:
+        name: Chain package coverage
+        runs-on: ubuntu-24.04
+        timeout-minutes: 30
+        permissions:
+            contents: read
+        env:
+            # Directory names under packages/, space-separated.
+            PACKAGES: chain-contract chain-shared chain-ethereum chain-algorand
+        steps:
+            - name: Checkout
+              uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+              with:
+                  persist-credentials: false
+
+            - name: Install pnpm
+              uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v5.0.0
+
+            # No `cache: pnpm`, as in ci-pre-merge.yml's Setup: node_modules
+            # comes from the copy ci-cache-warm.yml keeps on main.
+            - name: Setup Node
+              uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+              with:
+                  node-version-file: '.tool-versions'
+
+            # Path list and key match ci-cache-warm.yml's save exactly; a
+            # mismatch is a miss on every run.
+            - name: Restore node_modules
+              id: node-modules
+              uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+              with:
+                  path: |
+                      node_modules
+                      apps/*/node_modules
+                      packages/*/node_modules
+                      extensions/*/node_modules
+                      conformance/node_modules
+                      conformance-evm/node_modules
+                  key: node-modules-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+
+            - name: Install dependencies
+              if: steps.node-modules.outputs.cache-hit != 'true'
+              run: pnpm install --frozen-lockfile
+
+            # The root `test` script front-loads these; the command below calls
+            # turbo directly, so run them here instead.
+            - name: Prepare native modules and config
+              run: |
+                  bash tools/dev/rebuild-native.sh
+                  bash tools/dev/generate-config.sh
+
+            # The test task's `^build` dependency builds what the packages
+            # import. --continue reports every package even after one fails; a
+            # threshold miss makes vitest exit non-zero, which fails the job.
+            # `text` puts the per-file table in the log, `json-summary` feeds
+            # the Summary step; both replace the config's reporters.
+            - name: Coverage
+              run: |
+                  read -ra dirs <<< "$PACKAGES"
+                  filters=()
+                  for p in "${dirs[@]}"; do filters+=("--filter=./packages/$p"); done
+                  pnpm exec turbo run test "${filters[@]}" --continue -- \
+                    --coverage --coverage.reporter=text --coverage.reporter=json-summary
+
+            # A package whose tests or build failed writes no report, so its row
+            # says so rather than vanishing. Only the Coverage step fails the job.
+            - name: Summary
+              if: ${{ !cancelled() }}
+              run: |
+                  set -euo pipefail
+                  gate=$(node --input-type=module -e "const { COVERAGE_THRESHOLD } = await import('./packages/devtools/vitest/coverage.js'); console.log(COVERAGE_THRESHOLD)")
+                  {
+                    echo "## Coverage (gate ${gate}%)"
+                    echo ""
+                    echo "| Package | Lines | Statements | Branches | Functions |"
+                    echo "| --- | --- | --- | --- | --- |"
+                    for p in $PACKAGES; do
+                      f="packages/$p/coverage/coverage-summary.json"
+                      if [ -f "$f" ]; then
+                        jq -r --arg p "$p" --argjson gate "$gate" '
+                          def cell: if . < $gate then "❌ \(.)%" else "\(.)%" end;
+                          "| \($p) | \(.total.lines.pct | cell) | \(.total.statements.pct | cell) | \(.total.branches.pct | cell) | \(.total.functions.pct | cell) |"
+                        ' "$f"
+                      else
+                        echo "| $p | ❌ no report | | | |"
+                      fi
+                    done
+                  } >> "$GITHUB_STEP_SUMMARY"

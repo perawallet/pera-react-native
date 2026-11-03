@@ -10,7 +10,13 @@
  limitations under the License
  */
 
-import { BaseError, type Address, type Hex, type PublicClient } from 'viem'
+import {
+    BaseError,
+    TransactionNotFoundError,
+    type Address,
+    type Hex,
+    type PublicClient,
+} from 'viem'
 import { toEvmError } from '../blockchain/errors'
 import {
     parseScopeKey,
@@ -29,12 +35,14 @@ import {
     getSubmissionAttemptsAtNonce,
     OPEN_SUBMISSION_STATUSES,
     resolveSubmissionAttempt,
+    setOpenSubmissionStatus,
     type ReconcileSummary,
+    type SetOpenSubmissionStatusParams,
     type SubmissionAttempt,
     type SubmissionFlow,
     type SubmissionSettledHandler,
 } from '@perawallet/wallet-core-signing'
-import type { EvmChain } from '../chains/types'
+import type { EvmChain, EvmChainRow } from '../chains/types'
 import { readReceipt } from './receipt'
 import { isTransactionKnownToNode } from './submission'
 
@@ -61,12 +69,21 @@ export const PROBE_FAILURE_ESCALATION_STREAK = 20
 
 type Verdict = 'confirmed' | 'failed' | 'replaced'
 
-/** What one probe reads through; `receiptOf` reads each hash once per pass. */
+/** An open status a probe moves a row to, rather than settling it. */
+type Progress = SetOpenSubmissionStatusParams['status']
+
+/** Blocks a receipt must sit under the head before its verdict is final; 0 where the chain is final at once. */
+const finalityDepthOf = ({ finality }: EvmChainRow): bigint =>
+    finality.kind === 'confirmations' ? BigInt(finality.recommended) : 0n
+
+/** What one probe reads through; `receiptOf` reads each hash once per pass, `headOf` each scope's head. */
 type ProbeContext = {
     client: PublicClient
     scope: ChainScope
     db: Optional<Database>
+    depth: bigint
     receiptOf: (hash: Hex) => ReturnType<typeof readReceipt>
+    headOf: () => Promise<bigint>
 }
 
 const isOlder = (a: SubmissionAttempt, b: SubmissionAttempt): boolean =>
@@ -93,14 +110,59 @@ const hasNewerOpenSibling = async (
     )
 }
 
+// A load-balanced RPC can lag on receipts while it already serves the mined
+// transaction, so a missing receipt alone is not a reorg.
+const isMinedOnNode = async (
+    client: PublicClient,
+    hash: Hex,
+): Promise<boolean> => {
+    try {
+        return (await client.getTransaction({ hash })).blockNumber !== null
+    } catch (error) {
+        if (error instanceof TransactionNotFoundError) return false
+        throw error
+    }
+}
+
+// A sibling still short of depth means the winner at this nonce can change in
+// a reorg, and a loser settled now would stay terminal with the wrong status.
+// Both signals are needed: the ledger status covers a receipt that is briefly
+// missing on a lagging RPC, and the receipt covers a sibling whose status
+// another probe in the same pass has not written yet.
+const hasReorgableSibling = async (
+    attempt: SubmissionAttempt,
+    { scope, db, depth, receiptOf, headOf }: ProbeContext,
+): Promise<boolean> => {
+    const { sender, nonce } = attempt
+    if (sender === null || nonce === null || depth === 0n) return false
+    const siblings = await getSubmissionAttemptsAtNonce({
+        db,
+        scope,
+        sender,
+        nonce,
+        statuses: OPEN_SUBMISSION_STATUSES,
+    })
+    for (const sibling of siblings) {
+        const hash = sibling.txIds[0] as Optional<Hex>
+        if (sibling.id === attempt.id || hash === undefined) continue
+        if (sibling.status === 'confirming') return true
+        const receipt = await receiptOf(hash)
+        if (receipt && receipt.blockNumber + depth > (await headOf())) {
+            return true
+        }
+    }
+    return false
+}
+
 /**
  * Null while the node gives no proof either way. Every read that fails
  * throws, so an RPC error, timeout or rate limit leaves the row open.
  */
 const probe = async (
     attempt: SubmissionAttempt,
-    { client, scope, db, receiptOf }: ProbeContext,
-): Promise<Nullable<Verdict>> => {
+    context: ProbeContext,
+): Promise<Nullable<Verdict | Progress>> => {
+    const { client, scope, db, depth, receiptOf, headOf } = context
     const hash = attempt.txIds[0] as Optional<Hex>
     if (hash === undefined) return null
 
@@ -116,7 +178,19 @@ const probe = async (
             : null
 
     const receipt = await receiptOf(hash)
-    if (receipt) return receipt.status === 'success' ? 'confirmed' : 'failed'
+    if (receipt) {
+        // A reorg can still take a receipt back, a revert included.
+        if (depth > 0n && receipt.blockNumber + depth > (await headOf())) {
+            return 'confirming'
+        }
+        return receipt.status === 'success' ? 'confirmed' : 'failed'
+    }
+    if (attempt.status === 'confirming') {
+        // Still mined on the node: the receipt index lags, nothing was undone.
+        if (await isMinedOnNode(client, hash)) return null
+        // The block its receipt was in is gone; the transaction may land again.
+        return 'submitted'
+    }
 
     const landedPast = mined !== null && nonce !== null && mined > nonce
     const pastGrace = Date.now() - attempt.createdAt > DROPPED_GRACE_MS
@@ -126,7 +200,9 @@ const probe = async (
     // ours with a lagging receipt index on a load-balanced RPC is not a
     // replacement. A dropped or replaced one is gone from the node.
     if (await isTransactionKnownToNode(client, hash)) return null
-    if (landedPast) return 'replaced'
+    if (landedPast) {
+        return (await hasReorgableSibling(attempt, context)) ? null : 'replaced'
+    }
     // A re-priced original waits for its nonce to be mined, when the winner
     // decides between replaced and failed.
     if (await hasNewerOpenSibling(attempt, scope, db)) return null
@@ -206,7 +282,13 @@ export const reconcileEthereumSubmissions = async ({
     db,
     limit = DEFAULT_PASS_LIMIT,
 }: ReconcileEthereumSubmissionsParams): Promise<ReconcileSummary> => {
-    const summary: ReconcileSummary = { probed: 0, confirmed: 0, failed: 0 }
+    const summary: ReconcileSummary = {
+        probed: 0,
+        confirmed: 0,
+        progressed: 0,
+        failed: 0,
+    }
+    const depth = finalityDepthOf(chain.row)
     let open: SubmissionAttempt[]
     try {
         open = await getOpenSubmissionAttempts({
@@ -227,6 +309,7 @@ export const reconcileEthereumSubmissions = async ({
     const clients = new Map<ChainScopeKey, PublicClient>()
     // Siblings at one nonce read each other's receipts, so a pass reads each once.
     const receipts = new Map<string, ReturnType<typeof readReceipt>>()
+    const heads = new Map<ChainScopeKey, Promise<bigint>>()
     // Parallel, so a black-holed RPC costs one timeout per tick, not one per row.
     await Promise.all(
         open.map(async attempt => {
@@ -239,6 +322,16 @@ export const reconcileEthereumSubmissions = async ({
                     client,
                     scope,
                     db,
+                    depth,
+                    // Uncached: viem would otherwise serve a head up to a block old to a reused client.
+                    headOf: () => {
+                        let head = heads.get(scopeKey)
+                        if (!head) {
+                            head = client.getBlockNumber({ cacheTime: 0 })
+                            heads.set(scopeKey, head)
+                        }
+                        return head
+                    },
                     receiptOf: hash => {
                         const key = `${scopeKey}:${hash.toLowerCase()}`
                         let receipt = receipts.get(key)
@@ -252,6 +345,18 @@ export const reconcileEthereumSubmissions = async ({
                 summary.probed++
                 let verdict = await probe(attempt, context)
                 if (verdict === null) {
+                    probeFailures.delete(attempt.id)
+                    return
+                }
+                if (verdict === 'confirming' || verdict === 'submitted') {
+                    if (verdict !== attempt.status) {
+                        await setOpenSubmissionStatus({
+                            db,
+                            id: attempt.id,
+                            status: verdict,
+                        })
+                        summary.progressed++
+                    }
                     probeFailures.delete(attempt.id)
                     return
                 }

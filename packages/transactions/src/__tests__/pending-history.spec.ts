@@ -126,6 +126,18 @@ describe('getPendingTransactionRecords', () => {
         },
     )
 
+    it('reads a confirming attempt as pending with a confirming notice and no date', async () => {
+        ledger(attempt({ status: 'confirming' }))
+
+        const [record] = await pendingRecords()
+
+        expect(record.status).toBe('pending')
+        expect(record.summary.notice).toEqual({
+            kind: 'warning',
+            title: { key: 'transactions.notice.confirming' },
+        })
+    })
+
     it('dates a pending notice from when the attempt was recorded', async () => {
         ledger(attempt())
 
@@ -233,6 +245,24 @@ describe('getPendingTransactionRecords', () => {
             ['0xb', 'transactions.notice.replacement_not_needed'],
             ['0xa', undefined],
         ])
+    })
+
+    it('says a failed replacement was not needed while the transaction it re-priced is still confirming', async () => {
+        ledger(
+            attempt({
+                id: 'speed-up',
+                txIds: ['0xb'],
+                status: 'failed',
+                replacesAttemptId: 'original',
+            }),
+            attempt({ id: 'original', txIds: ['0xa'], status: 'confirming' }),
+        )
+
+        const [replacement] = await pendingRecords()
+
+        expect(replacement.summary.notice?.title.key).toBe(
+            'transactions.notice.replacement_not_needed',
+        )
     })
 
     it('keeps a failed replacement as failed when nothing it re-priced confirmed', async () => {

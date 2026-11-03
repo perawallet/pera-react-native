@@ -14,6 +14,9 @@
 // chain: the codec refuses another chain's receiver, the transfer adapter
 // builds an EIP-1559 transaction, and its broadcaster submits it.
 
+// Real English resources: these flows assert the copy the user reads, not keys.
+import '../i18n'
+
 import {
     afterAll,
     afterEach,
@@ -33,19 +36,29 @@ import {
     waitFor,
     within,
 } from '@testing-library/react'
+import i18n from 'i18next'
 import { Notifier } from 'react-native-notifier'
 
 import {
+    addAccountToken,
+    fetchAndPersistAccount,
     insertAssetHolding,
     useAccountChainStateStore,
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { nativeAssetFor } from '@perawallet/wallet-core-assets'
-import { chainDisplayNameOf } from '@perawallet/wallet-core-chain-shared'
+import {
+    fetchAndPersistAssets,
+    nativeAssetFor,
+} from '@perawallet/wallet-core-assets'
+import {
+    chainDisplayNameOf,
+    getChainDescriptor,
+} from '@perawallet/wallet-core-chain-shared'
 import { useContacts } from '@perawallet/wallet-core-contacts'
 import {
     DEFAULT_EVM_RPC_RESPONSES,
+    erc20CallResponder,
     EvmRpcErrorFixture,
     evmRpcHandlers,
 } from '@perawallet/wallet-core-chain-ethereum/test-handlers'
@@ -84,6 +97,7 @@ import {
     SENDER,
     TOKEN,
     UNKNOWN_RECIPIENT,
+    UNLISTED_TOKEN,
 } from './__fixtures__/ethereum-send'
 import {
     recordAnalyticsEvents,
@@ -131,6 +145,14 @@ const dropRpc = (shouldDrop: (methods: string[]) => boolean) =>
         return undefined
     })
 
+const expectEthereumSuccessCopy = () => {
+    const result = screen.getByTestId('send_success').textContent ?? ''
+    expect(result).toContain(
+        'Your transaction was sent to the Ethereum network and is waiting for confirmation.',
+    )
+    expect(result).not.toContain('Algorand')
+}
+
 describe('Flow: send from an Ethereum account', () => {
     let analytics: AnalyticsRecorder
     beforeEach(() => {
@@ -141,6 +163,14 @@ describe('Flow: send from an Ethereum account', () => {
     })
 
     const sentRawTransactions: string[] = []
+    // The screen on show while the node receives the broadcast.
+    const screenAtBroadcast: string[] = []
+    const recordSentRawTransaction = (params: readonly unknown[]) => {
+        sentRawTransactions.push(params[0] as string)
+        screenAtBroadcast.push(document.body.textContent ?? '')
+        const respond = DEFAULT_EVM_RPC_RESPONSES.eth_sendRawTransaction
+        return typeof respond === 'function' ? respond(params) : respond
+    }
 
     beforeAll(async () => {
         await setupTestDatabase()
@@ -163,19 +193,13 @@ describe('Flow: send from an Ethereum account', () => {
             .setPreference(UserPreferences.transactionInfoAgreed, true)
         vi.mocked(Notifier.showNotification).mockClear()
         sentRawTransactions.length = 0
+        screenAtBroadcast.length = 0
         vi.spyOn(kmsCore, 'sign').mockImplementation(signWithSenderKey)
         server.use(
             ...evmRpcHandlers({
                 rpcUrl: RPC_URL,
                 responses: {
-                    eth_sendRawTransaction: params => {
-                        sentRawTransactions.push(params[0] as string)
-                        const respond =
-                            DEFAULT_EVM_RPC_RESPONSES.eth_sendRawTransaction
-                        return typeof respond === 'function'
-                            ? respond(params)
-                            : respond
-                    },
+                    eth_sendRawTransaction: recordSentRawTransaction,
                 },
             }),
         )
@@ -199,12 +223,20 @@ describe('Flow: send from an Ethereum account', () => {
 
         // Broadcast is not mined: the screen says submitted and names Etherscan.
         expect(
-            screen.getByText('send_funds.success.pending_title'),
+            screen.getByText(i18n.t('send_funds.success.pending_title')),
         ).toBeTruthy()
         expect(
-            screen.getByText('send_funds.success.view_on_explorer'),
+            screen.getByText(
+                i18n.t('send_funds.success.view_on_explorer', {
+                    explorer: getChainDescriptor('ethereum').explorer.name,
+                }),
+            ),
         ).toBeTruthy()
         expect(sentRawTransactions).toHaveLength(1)
+        expect(screenAtBroadcast[0]).toContain(
+            'Your transaction is being sent to the Ethereum network.',
+        )
+        expectEthereumSuccessCopy()
         // Read back by the address its signature recovers to.
         expect((await sentRecord())?.summary).toMatchObject({
             kind: 'transfer',
@@ -306,7 +338,9 @@ describe('Flow: send from an Ethereum account', () => {
             () =>
                 expect(Notifier.showNotification).toHaveBeenCalledWith(
                     expect.objectContaining({
-                        title: 'errors.submission.unknown_outcome.title',
+                        title: i18n.t(
+                            'errors.submission.unknown_outcome.title',
+                        ),
                     }),
                 ),
             { timeout: 10_000 },
@@ -346,7 +380,7 @@ describe('Flow: send from an Ethereum account', () => {
             () =>
                 expect(Notifier.showNotification).toHaveBeenCalledWith(
                     expect.objectContaining({
-                        title: 'errors.evm.network_unreachable.title',
+                        title: i18n.t('errors.evm.network_unreachable.title'),
                     }),
                 ),
             { timeout: 10_000 },
@@ -519,11 +553,62 @@ describe('Flow: send from an Ethereum account', () => {
         await confirmSend()
 
         expect(sentRawTransactions).toHaveLength(1)
+        expectEthereumSuccessCopy()
         expect((await sentRecord())?.summary).toMatchObject({
             kind: 'token-transfer',
             counterparty: RECEIVER,
             amount: {
                 assetRef: { chainId: 'ethereum', assetId: TOKEN },
+                value: new Decimal(12_500_000),
+            },
+        })
+    })
+
+    it('Given a token no Pera list names that the account added and holds, when the user sends 12.5 of it, then a token transfer call to its contract reaches the node', async () => {
+        server.use(
+            ...evmRpcHandlers({
+                rpcUrl: RPC_URL,
+                responses: {
+                    eth_getBalance: '0x8ac7230489e80000',
+                    eth_call: erc20CallResponder({
+                        [UNLISTED_TOKEN]: {
+                            name: 'Unlisted Token',
+                            symbol: 'UNL',
+                            decimals: 6,
+                            totalSupply: 1_000_000_000_000n,
+                            balances: { [SENDER]: 25_000_000n },
+                        },
+                    }),
+                    eth_sendRawTransaction: recordSentRawTransaction,
+                },
+            }),
+        )
+        // With no Pera services, the metadata and balance come from the chain
+        // alone, as the background sync reads them for an added token.
+        await fetchAndPersistAssets([UNLISTED_TOKEN], ETH_SCOPE)
+        await addAccountToken({
+            accountAddress: SENDER,
+            scope: ETH_SCOPE,
+            assetId: UNLISTED_TOKEN,
+        })
+        await fetchAndPersistAccount(SENDER, ETH_SCOPE)
+        selectSender(ETHEREUM_SENDER)
+        useSendFundsStore
+            .getState()
+            .setSelectedAsset({ chainId: 'ethereum', assetId: UNLISTED_TOKEN })
+        useSendFundsStore.getState().setAmount(new Decimal('12.5'))
+        useSendFundsStore.getState().setDestination(RECEIVER)
+        useSendFundsStore.getState().setSendMode('normal')
+
+        renderSendConfirmationStack()
+        await confirmSend()
+
+        expect(sentRawTransactions).toHaveLength(1)
+        expect((await sentRecord())?.summary).toMatchObject({
+            kind: 'token-transfer',
+            counterparty: RECEIVER,
+            amount: {
+                assetRef: { chainId: 'ethereum', assetId: UNLISTED_TOKEN },
                 value: new Decimal(12_500_000),
             },
         })
@@ -542,7 +627,9 @@ describe('Flow: send from an Ethereum account', () => {
         await waitFor(() =>
             expect(Notifier.showNotification).toHaveBeenCalledWith(
                 expect.objectContaining({
-                    title: 'send_funds.destination.invalid_address_title',
+                    title: i18n.t(
+                        'send_funds.destination.invalid_address_title',
+                    ),
                 }),
             ),
         )
@@ -564,7 +651,9 @@ describe('Flow: send from an Ethereum account', () => {
         await waitFor(() =>
             expect(Notifier.showNotification).toHaveBeenCalledWith(
                 expect.objectContaining({
-                    title: 'send_funds.destination.invalid_address_title',
+                    title: i18n.t(
+                        'send_funds.destination.invalid_address_title',
+                    ),
                 }),
             ),
         )
@@ -649,7 +738,7 @@ describe('Flow: send from an Ethereum account', () => {
             expect(screen.queryByText('Watch only')).toBeNull()
             // The Ethereum placeholder is what finds the field at all.
             const fields = screen.getAllByPlaceholderText(
-                'address_entry.search_placeholder_evm',
+                i18n.t('address_entry.search_placeholder_evm'),
             )
             expect(fields.length).toBeGreaterThan(0)
             fireEvent.change(fields[fields.length - 1], {

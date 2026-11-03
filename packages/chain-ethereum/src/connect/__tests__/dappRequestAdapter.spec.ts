@@ -15,6 +15,7 @@ import { buildAccount } from '@perawallet/wallet-core-accounts'
 import { testChainContext } from '../../__tests__/context'
 import { createEthereumDappRequestAdapter } from '../dappRequestAdapter'
 import { ETHEREUM } from '../../__tests__/evm-chains'
+import { ETHEREUM_NODE_READ_METHODS } from '../nodeReads'
 
 const watch = buildAccount({
     custody: { kind: 'watch' },
@@ -30,6 +31,10 @@ describe('ethereumDappRequestAdapter', () => {
     it('is keyed by the Ethereum chain id and serves eip155 over WalletConnect', () => {
         expect(adapter.chainId).toBe('ethereum')
         expect(adapter.walletConnect.namespace).toBe('eip155')
+    })
+
+    it("lets a page read through the chain's node, and only the listed methods", () => {
+        expect(adapter.nodeReads?.methods).toEqual(ETHEREUM_NODE_READ_METHODS)
     })
 
     it('reports its own networks and withholds any other', () => {

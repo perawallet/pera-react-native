@@ -21,7 +21,7 @@ import {
     isPasskeyUnlockSupported,
     verifyPasskey,
     verifyVaultPassword,
-} from '@perawallet/wallet-extension-keystore-chrome'
+} from '@perawallet/wallet-extension-vault-chrome'
 
 type UseVaultPasswordPromptParams = {
     onVerified: () => void

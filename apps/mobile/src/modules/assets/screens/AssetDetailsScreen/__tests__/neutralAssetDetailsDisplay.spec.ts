@@ -32,7 +32,7 @@ describe('neutralAssetDetailsDisplay', () => {
     it('labels a token by its asset id and links the descriptor explorer', () => {
         expect(
             neutralAssetDetailsDisplay.resolveAbout(paramsFor(USDC, false)),
-        ).toEqual({
+        ).toStrictEqual({
             idLabelKey: 'asset_details.collectible.asset_id',
             urlLabelKey: 'asset_details.about.url',
             explorerLink: {

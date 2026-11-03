@@ -14,7 +14,7 @@ import { useCallback, useEffect, useState } from 'react'
 import {
     createVault,
     isPasskeyUnlockSupported,
-} from '@perawallet/wallet-extension-keystore-chrome'
+} from '@perawallet/wallet-extension-vault-chrome'
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import { usePasskeySetupStore } from '../../hooks/usePasskeySetupStore.web'
 import {

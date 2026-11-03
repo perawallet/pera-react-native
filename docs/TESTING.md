@@ -75,8 +75,9 @@ deliberately takes a `lanekeep-ignore-next-line` with a reason.
 
 ### Coverage
 
-`pnpm test:coverage` holds every workspace to 80% on lines, statements, branches and functions. The
-mobile count leaves out what the table above sends to integration tests: PascalCase `.tsx` files
+`pnpm test:coverage` holds every workspace to 80% on lines, statements, branches and functions.
+`.github/workflows/ci-coverage.yml` enforces the gate nightly on the chain packages it lists, and a
+drop below it turns that run red. The mobile count leaves out what the table above sends to integration tests: PascalCase `.tsx` files
 under `apps/mobile/src/modules/`, `routes/` folders, and the dev-gallery catalogs. Module hooks
 (`use*`) still count, so a gap there is a missing hook test, not a missing render test.
 
@@ -337,6 +338,23 @@ describes, not the test that uses it, so it stays reusable.
 
 Shared setup helpers live there too: `registerFakeLedgerProvider` (`ledger.ts`) registers a Ledger
 BLE transport, with an optional blocking signer for tests that assert the awaiting-approval UI.
+
+### Recorded backend responses
+
+The Pera backend routes the EVM chains call have recorded responses in
+`packages/chain-ethereum/src/__tests__/backend-recordings/`. Each one's `*.contract.spec.ts` parses
+every row strictly with the schema the app uses, so a backend change the app would silently drop fails
+CI. Two routes the app calls have no recording: NFT holdings
+(`/api/v3/evm/{id}/accounts/{addr}/nfts/`) and NFT metadata (`/api/v4/nfts/`). The backend doesn't
+serve either yet, so there is no route test to record from. Add both once it does.
+
+Staging can't be recorded from a laptop or CI: its Cloudflare answers `/api/v3/evm/*` and
+`/api/v4/*` with a 403 HTML page for anything but the app, whatever the token. The recordings come
+instead from the backend's own route tests: run `bun install` in an `algorand-backend` checkout's
+`bun/`, then `node tools/dev/record-backend-responses.mjs <checkout>`. They hold the real routes'
+output over the test suites' fake data. Refresh them when the backend changes one of these routes,
+and never edit them by hand. A new EVM route needs an entry in that script and a contract spec. A
+spec that fails after a refresh means the schema or the backend is wrong, not the recording.
 
 ## On-device benchmarks
 

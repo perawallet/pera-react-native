@@ -226,7 +226,10 @@ export const AssetMarkets = ({
             )}
 
             <AssetDescription
-                description={assetDetails.peraMetadata?.description}
+                description={
+                    assetDetails.peraMetadata?.description ||
+                    (about.descriptionKey ? t(about.descriptionKey) : undefined)
+                }
             />
 
             {!!IssuerControlsSection && (

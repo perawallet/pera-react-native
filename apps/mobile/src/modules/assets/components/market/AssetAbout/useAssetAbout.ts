@@ -63,7 +63,7 @@ export const useAssetAbout = (
             : null
 
     const projectUrl = toValidatedBrowserUrl(
-        assetDetails.peraMetadata?.projectUrl,
+        assetDetails.peraMetadata?.projectUrl ?? about.websiteUrl,
     )
 
     const openLink = useCallback(

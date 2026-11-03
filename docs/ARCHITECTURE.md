@@ -24,7 +24,7 @@ Pera Wallet is a monorepo that keeps UI and business logic in separate layers.
 ┌─────────────────────────────────────────────────────┐
 │                   extensions/*                       │
 │   provider · drivers (platform-chrome,               │
-│   platform-react-native, keystore-chrome) ·          │
+│   platform-react-native, vault-chrome) ·             │
 │   Ledger transports → hardware-wallet                │
 │                         ▼                            │
 │   platform  (the PlatformServices contract)          │
@@ -112,7 +112,7 @@ entry, so the contract carries no React or React Query.
 Two platform concerns are swapped by module identity rather than through that interface, and are easy
 to miss when tracing: the keystore engine and the Ledger transports (the `.web.ts` twin of the
 app's `bootstrap/hardware-wallet-transports.ts`). On web
-`@algorandfoundation/react-native-keystore` resolves to `extensions/keystore-chrome`, but only so
+`@algorandfoundation/react-native-keystore` resolves to `extensions/vault-chrome`, but only so
 static imports of it resolve; the engine comes from `@algorandfoundation/keystore-web`.
 
 ### Where browser-specific code lives
@@ -129,7 +129,7 @@ when `platform === 'web'`.
 
 A lint rule (`pera/no-chrome-imports-outside-web`, enforced by `pnpm lint:lanekeep`) checks the
 boundary in the direction that actually matters: a file that is not `.web.*` may not import
-`platform-chrome`, `keystore-chrome` or `browser-runtime`, because such a file is reachable from the native bundle and
+`platform-chrome`, `vault-chrome` or `browser-runtime`, because such a file is reachable from the native bundle and
 would fail at runtime on the missing `chrome` global.
 
 `pera/no-react-native-imports-in-packages` holds the other direction: `packages/*/src` may not

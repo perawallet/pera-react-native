@@ -10,18 +10,21 @@
  limitations under the License
  */
 
+import {
+    InvalidKeyDataError,
+    type Key,
+    type KeyStoreState,
+} from '@algorandfoundation/keystore-core'
 import { Store } from '@tanstack/store'
-import type { Key, KeyStoreState } from '../../keystore'
 import { DeterministicP256 } from '@algorandfoundation/dp256'
 import { sha256 } from '@noble/hashes/sha2.js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 // This suite's resolution of the '/webauthn' subpath depends on
 // packages/passkeys/dist existing (workspace subpath exports resolve against
 // the built dist, not src). In a clean worktree without a prior `pnpm build`,
-// this file fails to resolve the import and the keystore-chrome suite reads
-// as 159 passing + 1 failing — that's a build-order artifact, not a bug. Run
-// `pnpm build` (or at least build packages/passkeys) before trusting a red
-// result here.
+// this file fails to resolve the import — that's a build-order artifact,
+// not a bug. Run `pnpm build` (or at least build packages/passkeys) before
+// trusting a red result here.
 import {
     b64urlToBytes,
     bytesToB64url,
@@ -275,7 +278,7 @@ const credentialParams = (overrides: Record<string, unknown> = {}) => ({
     ...overrides,
 })
 
-describe('keystore-chrome webauthn signer', () => {
+describe('vault-chrome webauthn signer', () => {
     let store: Store<KeyStoreState>
     let engine: FakeEngine
 
@@ -452,6 +455,9 @@ describe('keystore-chrome webauthn signer', () => {
             await expect(
                 signer.createP256Credential(credentialParams()),
             ).rejects.toThrow(/entropy/i)
+            await expect(
+                signer.createP256Credential(credentialParams()),
+            ).rejects.toBeInstanceOf(InvalidKeyDataError)
         })
 
         it('lowercases userHandle for derivation without touching userHandleOriginalB64Url', async () => {
@@ -481,6 +487,9 @@ describe('keystore-chrome webauthn signer', () => {
             await expect(
                 signer.createP256Credential(credentialParams()),
             ).rejects.toThrow(/wallet/i)
+            await expect(
+                signer.createP256Credential(credentialParams()),
+            ).rejects.toBeInstanceOf(InvalidKeyDataError)
         })
     })
 

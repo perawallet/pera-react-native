@@ -40,7 +40,7 @@ const toHex = value => `0x${BigInt(value).toString(16)}`
 const hash32 = byte => `0x${byte.repeat(32)}`
 
 // 1 ETH, so a 1-wei send is always affordable.
-const BALANCE_WEI = 10n ** 18n
+export const BALANCE_WEI = 10n ** 18n
 
 const MULTICALL3_ADDRESS = '0xca11bde05977b3631167028862be2a173976ca11'
 const selectorOf = signature =>

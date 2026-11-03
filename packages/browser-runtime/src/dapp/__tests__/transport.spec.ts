@@ -58,6 +58,7 @@ const hostRequest = {
     provider: 'pera',
     origin: 'https://a.example',
     hasUserActivation: true,
+    isWalletLocked: true,
     faviconUrl: 'https://a.example/f.ico',
     returnTo: { tabId: 4 },
     request,
@@ -76,6 +77,7 @@ describe('createChromeDappTransport', () => {
             {
                 origin: 'https://a.example',
                 hasUserActivation: true,
+                isWalletLocked: true,
                 faviconUrl: 'https://a.example/f.ico',
             },
             request,

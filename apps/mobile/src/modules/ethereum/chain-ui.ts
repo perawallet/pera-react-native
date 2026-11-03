@@ -12,6 +12,7 @@
 
 import {
     i18nKey,
+    isEvmChainId,
     type EvmChainId,
 } from '@perawallet/wallet-core-chain-contract'
 import type { Optional } from '@perawallet/wallet-core-shared'
@@ -28,6 +29,7 @@ import { EthereumTransactionDetailBody } from './components/EthereumTransactionD
 import { EthereumTransactionPreviewRow } from './components/EthereumTransactionPreviewRow'
 import { EthereumTransactionReviewBody } from './components/EthereumTransactionReviewBody'
 import { EthereumSendFeeSection } from './components/EthereumSendFeeSection'
+import { EVM_NATIVE_COIN_ABOUT } from './native-coin-about'
 
 export const resolveEthereumAssetAbout = ({
     asset,
@@ -38,12 +40,18 @@ export const resolveEthereumAssetAbout = ({
     const url = isNativeAsset
         ? descriptor.explorer.homeUrl?.(scope.networkId)
         : descriptor.explorer.assetUrl(scope.networkId, asset.assetId)
+    const nativeCoin =
+        isNativeAsset && isEvmChainId(scope.chainId)
+            ? EVM_NATIVE_COIN_ABOUT[scope.chainId]
+            : undefined
     return {
         idLabelKey: isNativeAsset
             ? null
             : i18nKey('asset_details.collectible.contract'),
         urlLabelKey: i18nKey('asset_details.about.url'),
         explorerLink: url ? { url, label: extractDomain(url) } : null,
+        descriptionKey: nativeCoin?.descriptionKey,
+        websiteUrl: nativeCoin?.websiteUrl,
     }
 }
 

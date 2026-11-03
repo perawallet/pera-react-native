@@ -365,6 +365,11 @@ const coalescedAccountReads = (
 const isRefusedCredential = (error: unknown): boolean =>
     isPeraNetworkError(error) && (error.status === 401 || error.status === 403)
 
+// A full account pass on every block would hammer a public RPC on a fast chain;
+// the fallback only runs when block following is down, so a slow refresh is the
+// cheaper failure.
+const HEAD_FOLLOWING_MIN_INTERVAL_MS = 30_000
+
 const readHeadSignal = async (
     ctx: ChainContext,
     chain: EvmChain,
@@ -375,8 +380,13 @@ const readHeadSignal = async (
         await createEvmClient(scope, ctx, chain).getBlockNumber(),
     )
     if (cursor === null) return { changed: true, cursor: head }
-    // A lagging node can report a head behind the cursor; never move it back.
-    return { changed: head > cursor, cursor: Math.max(head, cursor) }
+    const minBlocks = Math.ceil(
+        HEAD_FOLLOWING_MIN_INTERVAL_MS / chain.row.blockTimeMs,
+    )
+    // The cursor stays put until the gap is due, so it keeps growing; a lagging
+    // node's head behind the cursor lands here too and never moves it back.
+    if (head - cursor < minBlocks) return { changed: false, cursor }
+    return { changed: true, cursor: head }
 }
 
 const fetchChangeSignal = (
@@ -389,8 +399,8 @@ const fetchChangeSignal = (
     const refusedScopes = new Set<string>()
     return async (addresses, scope, cursor) => {
         const key = `${scope.chainId}/${scope.networkId}`
-        // Plain JSON-RPC can't say which addresses a block touched, so any new
-        // block counts as a change.
+        // Plain JSON-RPC can't say which addresses a block touched, so the
+        // head stands in for them, paced by readHeadSignal.
         if (refusedScopes.has(key)) {
             return readHeadSignal(ctx, chain, scope, cursor)
         }
@@ -429,10 +439,10 @@ const fetchChangeSignal = (
         if (!answer.refresh && cursor !== null) {
             return { changed: false, cursor }
         }
-        // The backend omits round when it fails open, so the cursor stays
-        // put, or seeds from the head on a never-synced scope.
-        if (cursor !== null) return { changed: true, cursor }
-        return readHeadSignal(ctx, chain, scope, null)
+        // The backend omits round when it fails open, which is as good as it
+        // being down: follow the paced head, which also seeds a never-synced
+        // scope.
+        return readHeadSignal(ctx, chain, scope, cursor)
     }
 }
 

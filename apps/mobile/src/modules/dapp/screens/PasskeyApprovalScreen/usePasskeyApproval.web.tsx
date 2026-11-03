@@ -29,7 +29,7 @@ import {
 import {
     createKeystoreSigner,
     type PasskeyKeyStore,
-} from '@perawallet/wallet-extension-keystore-chrome'
+} from '@perawallet/wallet-extension-vault-chrome'
 import {
     getKeystore,
     getKeystoreStore,

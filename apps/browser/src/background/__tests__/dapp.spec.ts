@@ -87,14 +87,19 @@ const swSender = {
 describe('installDappPageRequestRoute', () => {
     let chromeMock: ReturnType<typeof makeChromeMock>
     let ensureOffscreenDocumentLike: Mock<() => Promise<void>>
+    let isVaultUnlocked: Mock<() => Promise<boolean>>
     beforeEach(() => {
         chromeMock = makeChromeMock()
         ensureOffscreenDocumentLike = vi
             .fn<() => Promise<void>>()
             .mockResolvedValue(undefined)
+        isVaultUnlocked = vi
+            .fn<() => Promise<boolean>>()
+            .mockResolvedValue(true)
         installDappPageRequestRoute({
             chromeLike: chromeMock as never,
             ensureOffscreenDocumentLike,
+            isVaultUnlocked,
         })
     })
 
@@ -110,10 +115,35 @@ describe('installDappPageRequestRoute', () => {
             provider: 'pera',
             origin: 'https://a.example',
             hasUserActivation: true,
+            isWalletLocked: false,
             faviconUrl: 'https://a.example/f.ico',
             returnTo: { tabId: 7 },
             request,
         })
+    })
+
+    it('stamps a locked vault on the request it forwards', async () => {
+        isVaultUnlocked.mockResolvedValue(false)
+
+        await chromeMock.deliver(pageMessage, contentSender)
+
+        await vi.waitFor(() =>
+            expect(chromeMock.runtimeSendMessage).toHaveBeenCalledWith(
+                expect.objectContaining({ isWalletLocked: true }),
+            ),
+        )
+    })
+
+    it('treats a vault whose state cannot be read as locked', async () => {
+        isVaultUnlocked.mockRejectedValue(new Error('storage unavailable'))
+
+        await chromeMock.deliver(pageMessage, contentSender)
+
+        await vi.waitFor(() =>
+            expect(chromeMock.runtimeSendMessage).toHaveBeenCalledWith(
+                expect.objectContaining({ isWalletLocked: true }),
+            ),
+        )
     })
 
     it('refuses an insecure origin with an Unauthorized response in the ack and forwards nothing', async () => {

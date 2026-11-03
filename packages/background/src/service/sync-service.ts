@@ -35,6 +35,7 @@ import {
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 import {
+    parseScopeKey,
     toScopeKey,
     type ChainScope,
     type ChainScopeKey,
@@ -117,6 +118,8 @@ export class SyncService {
     private running = false
     // A scope's first sync of the session skips its change signal: the
     // persisted cursor may predate a relaunch, and the DB must be populated.
+    // A settled submission re-arms its chain's scopes, since a paced signal
+    // may not report the sender's new balance for several blocks.
     private forceSyncedScopes = new Set<ChainScopeKey>()
     // A scope whose change signal got a 401/403: the key is wrong/missing, a
     // config-level problem retrying every tick can't fix. Reset on
@@ -473,13 +476,18 @@ export class SyncService {
         for (const { id } of this.deps.chains.list()) {
             if (!broadcasterChainAdapters.has(id)) continue
             const summary = await reconcileOpenSubmissions(id)
-            if (summary.confirmed + summary.failed > 0) {
-                // A settled row changes the pending history row's status, and
+            if (summary.confirmed + summary.failed + summary.progressed > 0) {
+                // A settled or progressed row changes the pending history row's status, and
                 // history queries are DB-cached with staleTime: Infinity, so a
                 // settle on a no-work tick would otherwise leave a stale row.
                 // Only the settled chain's: another chain's backend-read
                 // History would refetch for nothing.
                 invalidateTransactionQueriesForChain(this.deps.queryClient, id)
+                for (const key of this.forceSyncedScopes) {
+                    if (parseScopeKey(key).chainId === id) {
+                        this.forceSyncedScopes.delete(key)
+                    }
+                }
             }
         }
     }

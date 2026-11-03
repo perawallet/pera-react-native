@@ -11,7 +11,7 @@
  */
 
 import { useCallback, useEffect, useRef } from 'react'
-import { isPasskeyUnlockEnabled } from '@perawallet/wallet-extension-keystore-chrome'
+import { isPasskeyUnlockEnabled } from '@perawallet/wallet-extension-vault-chrome'
 import {
     usePreferences,
     useSettingsStore,

@@ -21,7 +21,7 @@ const mocks = vi.hoisted(() => ({
     getLockoutRemainingSeconds: vi.fn(),
 }))
 
-vi.mock('@perawallet/wallet-extension-keystore-chrome', () => ({
+vi.mock('@perawallet/wallet-extension-vault-chrome', () => ({
     verifyVaultPassword: mocks.verifyVaultPassword,
     verifyPasskey: mocks.verifyPasskey,
     isPasskeyUnlockSupported: mocks.isPasskeyUnlockSupported,
@@ -218,7 +218,7 @@ describe('useVaultPasswordPrompt', () => {
 
     it('surfaces a passkey failure and still allows the password', async () => {
         const { PasskeyUnlockError } =
-            await import('@perawallet/wallet-extension-keystore-chrome')
+            await import('@perawallet/wallet-extension-vault-chrome')
         mocks.verifyPasskey.mockRejectedValue(new PasskeyUnlockError())
         const onVerified = vi.fn()
         const { result } = renderHook(() =>
@@ -237,7 +237,7 @@ describe('useVaultPasswordPrompt', () => {
 
     it('clears hasPasskeyError on a password submission, so only one error row renders', async () => {
         const { PasskeyUnlockError } =
-            await import('@perawallet/wallet-extension-keystore-chrome')
+            await import('@perawallet/wallet-extension-vault-chrome')
         mocks.verifyPasskey.mockRejectedValue(new PasskeyUnlockError())
         mocks.verifyVaultPassword.mockResolvedValue(false)
         const { result } = renderHook(() =>
@@ -257,7 +257,7 @@ describe('useVaultPasswordPrompt', () => {
 
     it('seeds the countdown when the passkey reports a lockout', async () => {
         const { VaultLockedOutError } =
-            await import('@perawallet/wallet-extension-keystore-chrome')
+            await import('@perawallet/wallet-extension-vault-chrome')
         mocks.verifyPasskey.mockRejectedValue(new VaultLockedOutError(45))
         const { result } = renderHook(() =>
             useVaultPasswordPrompt({ onVerified: vi.fn() }),

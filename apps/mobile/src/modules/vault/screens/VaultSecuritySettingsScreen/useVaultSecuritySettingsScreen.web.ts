@@ -23,7 +23,7 @@ import {
     setAutoLockMinutes,
     VaultCorruptedError,
     AUTO_LOCK_MINUTES_OPTIONS,
-} from '@perawallet/wallet-extension-keystore-chrome'
+} from '@perawallet/wallet-extension-vault-chrome'
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import {
     usePasskeyUnlockSetup,

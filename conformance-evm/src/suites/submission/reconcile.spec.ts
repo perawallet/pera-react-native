@@ -42,8 +42,14 @@ import {
 const RECIPIENT = '0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC'
 const AMOUNT = 4242n
 
-const setUp = async () => {
+type Finality = EvmConformanceEnv['evmChain']['row']['finality']
+
+// The row's own depth is pinned by the reconcile unit specs. Here the chain
+// settles at once unless a test asks for a few blocks, so the suite never mines
+// a chain's full recommended depth on the shared node.
+const setUp = async (finality: Finality = { kind: 'instant' }) => {
     const env = await createEvmConformanceEnv('ethereum')
+    const chain = { ...env.evmChain, row: { ...env.evmChain.row, finality } }
     const sender = await createRawKeyEvmAccount(env)
     await fundEvmAccount(env, sender.address, 10n ** 18n)
     const settled = vi.fn<SubmissionSettledHandler>()
@@ -51,7 +57,7 @@ const setUp = async () => {
     const probeFailures: ProbeFailureStreaks = new Map()
     const reconcile = (limit?: number) =>
         reconcileEthereumSubmissions({
-            chain: env.evmChain,
+            chain,
             settleHandlers: handlers,
             probeFailures,
             getClient: scope => createEvmClient(scope, env.ctx, env.evmChain),
@@ -98,6 +104,7 @@ describe('evm submission reconcile', () => {
         expect(await reconcile()).toEqual({
             probed: 1,
             confirmed: 1,
+            progressed: 0,
             failed: 0,
         })
         expect(await statuses()).toEqual(['confirmed'])
@@ -106,6 +113,32 @@ describe('evm submission reconcile', () => {
             env.scope.networkId,
             'confirmed',
         )
+    })
+
+    it('holds a mined send at confirming until its receipt is the configured depth deep', async () => {
+        const depth = 3
+        const { env, sender, settled, reconcile, statuses } = await setUp({
+            kind: 'confirmations',
+            recommended: depth,
+        })
+        const { raw } = await signedTransfer(env, sender, RECIPIENT, AMOUNT)
+        const hash = await submitAndRecord(env, raw)
+        await minedReceipt(env.chain, hash)
+        await mine(env.chain, depth - 1)
+
+        expect(await reconcile()).toEqual({
+            probed: 1,
+            confirmed: 0,
+            progressed: 1,
+            failed: 0,
+        })
+        expect(await statuses()).toEqual(['confirming'])
+        expect(settled).not.toHaveBeenCalled()
+
+        await mine(env.chain)
+
+        expect(await reconcile()).toMatchObject({ confirmed: 1 })
+        expect(await statuses()).toEqual(['confirmed'])
     })
 
     it('fails a mined revert', async () => {
@@ -119,6 +152,7 @@ describe('evm submission reconcile', () => {
         expect(await reconcile()).toEqual({
             probed: 1,
             confirmed: 0,
+            progressed: 0,
             failed: 1,
         })
         expect(await statuses()).toEqual(['failed'])
@@ -162,6 +196,7 @@ describe('evm submission reconcile', () => {
         expect(await reconcile()).toEqual({
             probed: 2,
             confirmed: 1,
+            progressed: 0,
             failed: 1,
         })
         expect(await statuses()).toEqual(['replaced', 'confirmed'])
@@ -189,6 +224,7 @@ describe('evm submission reconcile', () => {
             expect(await reconcile()).toEqual({
                 probed: 1,
                 confirmed: 0,
+                progressed: 0,
                 failed: 0,
             })
             expect(await statuses()).toEqual(['submitted'])
@@ -196,6 +232,7 @@ describe('evm submission reconcile', () => {
             expect(await afterGrace(reconcile)).toEqual({
                 probed: 1,
                 confirmed: 0,
+                progressed: 0,
                 failed: 1,
             })
             expect(await statuses()).toEqual(['failed'])
@@ -233,6 +270,7 @@ describe('evm submission reconcile', () => {
             expect(await afterGrace(() => reconcile(1))).toEqual({
                 probed: 1,
                 confirmed: 0,
+                progressed: 0,
                 failed: 0,
             })
             expect(await statuses()).toEqual(['submitted', 'submitted'])

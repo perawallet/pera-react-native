@@ -14,7 +14,7 @@ import { create } from 'zustand'
 import {
     readPasskeySetupPending,
     writePasskeySetupPending,
-} from '@perawallet/wallet-extension-keystore-chrome'
+} from '@perawallet/wallet-extension-vault-chrome'
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 
 // Not persisted here: the truth lives in chrome.storage.session, which the

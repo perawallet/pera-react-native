@@ -44,6 +44,9 @@ export const SUBMISSION_HISTORY_ENTRY_VERSION = 1
  *   pending. Open.
  * - `unknown` — the POST failed without a node verdict; the group may still
  *   land. Open — the reconciler settles it.
+ * - `confirming` — on chain, but not yet as deep as its chain's finality asks,
+ *   so it can still be undone. Open — the reconciler settles it, or returns it
+ *   to `submitted` if the chain takes it back.
  * - `confirmed` — definitively on chain. Terminal.
  * - `failed` — definitively not on chain (node rejection, or its chain bound
  *   passed without landing). Terminal.
@@ -53,6 +56,7 @@ export const SUBMISSION_HISTORY_ENTRY_VERSION = 1
 export type SubmissionStatus =
     | 'submitted'
     | 'unknown'
+    | 'confirming'
     | 'confirmed'
     | 'failed'
     | 'replaced'
@@ -60,6 +64,7 @@ export type SubmissionStatus =
 export const OPEN_SUBMISSION_STATUSES: readonly SubmissionStatus[] = [
     'submitted',
     'unknown',
+    'confirming',
 ]
 
 /**

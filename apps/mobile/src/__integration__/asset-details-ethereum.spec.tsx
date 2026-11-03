@@ -192,6 +192,35 @@ describe('Flow: Asset details on its own network', () => {
         expect(screen.getByText('etherscan.io')).toBeTruthy()
     })
 
+    it('Given ETH, when its Markets tab renders, then it describes the coin and offers its website', async () => {
+        selectAccount(TWO_CHAIN_ACCOUNT)
+        renderDetails({ assetId: 'native', chainId: 'ethereum' })
+
+        expect(
+            await screen.findByText(
+                'asset_details.about.native_description.ether',
+            ),
+        ).toBeTruthy()
+        expect(
+            screen.getByText('asset_details.about.project_website'),
+        ).toBeTruthy()
+    })
+
+    it('Given an ERC-20, when its Markets tab renders, then it shows no description or website', async () => {
+        selectAccount(TWO_CHAIN_ACCOUNT)
+        renderDetails({ assetId: ETH_USDC, chainId: 'ethereum' })
+
+        expect(
+            await screen.findByText('asset_details.collectible.contract'),
+        ).toBeTruthy()
+        expect(
+            screen.queryByText('asset_details.markets.description'),
+        ).toBeNull()
+        expect(
+            screen.queryByText('asset_details.about.project_website'),
+        ).toBeNull()
+    })
+
     it("Given an ERC-20 whose stored supply is unknown, when its Markets tab renders, then it shows the contract's total supply", async () => {
         server.use(
             ...evmRpcHandlers({

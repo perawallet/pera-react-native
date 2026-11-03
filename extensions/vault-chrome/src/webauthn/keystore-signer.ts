@@ -10,6 +10,11 @@
  limitations under the License
  */
 
+import {
+    InvalidKeyDataError,
+    type Key,
+    type KeyStoreState,
+} from '@algorandfoundation/keystore-core'
 import type { Store } from '@tanstack/store'
 import {
     bytesToB64url,
@@ -19,8 +24,6 @@ import {
     type KeystoreSigner,
 } from '@perawallet/wallet-core-passkeys/webauthn'
 import type { Optional } from '@perawallet/wallet-core-shared'
-import { InvalidKeyDataError } from '../keystore/errors'
-import type { Key, KeyStoreState } from '../keystore/types'
 
 /**
  * TRAP — keys live only in the keystore-web engine (IndexedDB) behind the

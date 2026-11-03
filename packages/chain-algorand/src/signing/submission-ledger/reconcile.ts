@@ -119,16 +119,21 @@ export const reconcileOpenSubmissions = async ({
         // Never throw into the caller (the SyncService tick) — a DB failure
         // must not kill the poll loop; the next tick retries.
         logger.warn('reconcile: open-row read failed', { error })
-        return { probed: 0, confirmed: 0, failed: 0 }
+        return { probed: 0, confirmed: 0, progressed: 0, failed: 0 }
     }
     if (open.length === 0) {
-        return { probed: 0, confirmed: 0, failed: 0 }
+        return { probed: 0, confirmed: 0, progressed: 0, failed: 0 }
     }
 
     // One client per scope — cheap reads, so reuse within the pass. Keyed by
     // scope key because every row decodes to a fresh scope object.
     const clients = new Map<ChainScopeKey, SubmissionProbeClient>()
-    const summary: ReconcileSummary = { probed: 0, confirmed: 0, failed: 0 }
+    const summary: ReconcileSummary = {
+        probed: 0,
+        confirmed: 0,
+        progressed: 0,
+        failed: 0,
+    }
 
     for (const attempt of open) {
         try {
