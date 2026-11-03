@@ -249,7 +249,10 @@ describe('Flow: the Pera backend refuses Ethereum', () => {
         server.use(
             http.all(`${PERA_URL}/api/*`, () =>
                 HttpResponse.json(
-                    { error: 'Chain 1 is not enabled.', code: 'chain_not_enabled' },
+                    {
+                        error: 'Chain 1 is not enabled.',
+                        code: 'chain_not_enabled',
+                    },
                     { status: 422 },
                 ),
             ),

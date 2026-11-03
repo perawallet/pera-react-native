@@ -196,7 +196,7 @@ describe('device/hooks/usePeraServedChainsQuery', () => {
         expect(result.current.servedScopes).toEqual([])
     })
 
-    it('records nothing for a list naming none of the deployment\'s networks', async () => {
+    it("records nothing for a list naming none of the deployment's networks", async () => {
         answer(chainList('eip155:8453', 'eip155:11155111'))
 
         const { result } = renderQuery()

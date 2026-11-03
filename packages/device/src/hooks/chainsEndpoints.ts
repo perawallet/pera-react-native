@@ -44,7 +44,9 @@ export const fetchPeraServedChainIds = async (
         headers: buildIntegrityHeaders(),
     })
     if (!isChainList(data)) {
-        throw new Error('GET /api/v4/chains/ answered something other than a chain list')
+        throw new Error(
+            'GET /api/v4/chains/ answered something other than a chain list',
+        )
     }
     return data.results.map(({ chain_id }) => chain_id)
 }

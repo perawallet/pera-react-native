@@ -219,9 +219,13 @@ describe('fetchAndPersistPrices', () => {
     })
 
     test('rethrows the refusal when the backend refuses the chain for every batch', async () => {
-        const refusal = new PeraServiceUnavailableError(mainnetScope, 'prices', {
-            isChainRefused: true,
-        })
+        const refusal = new PeraServiceUnavailableError(
+            mainnetScope,
+            'prices',
+            {
+                isChainRefused: true,
+            },
+        )
         getPricesMock.mockRejectedValue(refusal)
 
         await expect(fetchAndPersistPrices(['999'], mainnetScope)).rejects.toBe(
