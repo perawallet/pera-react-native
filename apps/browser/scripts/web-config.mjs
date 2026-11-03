@@ -105,8 +105,9 @@ export const WEB_CONFIG_ALLOWLIST = [
     // CHAINS lists an EVM chain ships it and every other build stays viem-free.
     'chainIds',
     'chainAlgorandCapabilities',
-    // Every EVM chain's capabilities, and per network its public RPC URL and
-    // Pera service list; generate-config.sh refuses a listed chain without them.
+    // Every build-gated chain's capabilities, and per network each config field
+    // its package declares; generate-config.sh refuses a listed chain without
+    // a required one.
     ...chainPackageConfigKeys(),
 ]
 
@@ -174,7 +175,7 @@ export const assertE2eEvmRpcOverrideAllowed = appEnvironment => {
 }
 
 /**
- * Points every chain RPC URL a generated-env.ts bakes at `url`, so an e2e bundle
+ * Points every EVM RPC URL a generated-env.ts bakes at `url`, so an e2e bundle
  * holds no real node. Only keys that already have a value change: a chain the
  * build does not ship is not added, and one it ships is not dropped.
  */

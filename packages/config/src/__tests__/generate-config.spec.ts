@@ -64,7 +64,10 @@ const chainPackages = createRequire(import.meta.url)(
     validateChainPackages: (packages: ChainPackage[]) => void
 }
 
-const TEST_CHAIN_PACKAGES = join(__dirname, 'fixtures/test-chain-packages.cjs')
+const TEST_CHAIN_PACKAGES = join(
+    __dirname,
+    '../../../../tools/dev/__tests__/fixtures/test-chain-packages.cjs',
+)
 
 const EVM_CHAIN_IDS = Object.keys(EVM_CHAIN_NETWORKS) as EvmChainId[]
 
@@ -340,6 +343,30 @@ describe('tools/dev/generate-config.sh', () => {
                     CONFIG_ALLOWLIST: 'chainIds testchainMainnetRpcUrl',
                 }),
             ).toMatch(/CONFIG_ALLOWLIST drops testchainDevnetRpcUrl/)
+        })
+
+        test('fails a build whose table names a chain id that is not one word', () => {
+            const table = join(dir, 'hyphenated-chain-packages.cjs')
+            writeFileSync(
+                table,
+                `module.exports = { CHAIN_PACKAGES: ${JSON.stringify([
+                    {
+                        package: '@perawallet/wallet-core-chain-testchain',
+                        networks: {
+                            'test-chain': [{ id: 'mainnet', tier: 'mainnet' }],
+                        },
+                        mobileStubbedModules: [],
+                        scopeConfigFields: [
+                            { name: 'rpcUrl', isRequired: true },
+                        ],
+                    },
+                ])} }`,
+            )
+
+            expect(
+                runExpectingFailure({ CHAIN_PACKAGES_TABLE: table }),
+            ).toMatch(/serves chain "test-chain"/)
+            expect(existsSync(join(dir, 'generated-env.ts'))).toBe(false)
         })
 
         test('fails before writing anything when the table is missing', () => {

@@ -37,13 +37,13 @@ const { chainPackageScopeConfigKeys } = createRequire(import.meta.url)(
     './dev/chain-packages.cjs',
 )
 
-// Every network that names an EIP-155 chain id, with the env carrying its RPC URLs.
+// Every chain-ethereum network, with the env carrying its RPC URLs.
 const evmRpcScopes = () =>
     chainPackageScopeConfigKeys()
         .filter(
             keys =>
-                keys.field === 'rpcUrl' &&
-                keys.network.eip155ChainId !== undefined,
+                keys.package === '@perawallet/wallet-core-chain-ethereum' &&
+                keys.field === 'rpcUrl',
         )
         .map(keys => ({
             chainId: keys.chainId,

@@ -48,7 +48,7 @@ const isChainPackageIncluded = (chainPackage, chainIds) =>
 const stubbedChainModules = (chainIds, packages = CHAIN_PACKAGES) =>
     packages
         .filter(chainPackage => !isChainPackageIncluded(chainPackage, chainIds))
-        .flatMap(chainPackage => [...chainPackage.mobileStubbedModules])
+        .flatMap(chainPackage => chainPackage.mobileStubbedModules)
 
 // The E2E fixture deeplink's only entry points. It rewrites wallet state on
 // command, so it ships only in a bundle built for a device test run.

@@ -11,6 +11,7 @@
  */
 
 import { existsSync, mkdtempSync, writeFileSync } from 'fs'
+import { createRequire } from 'module'
 import { tmpdir } from 'os'
 import path from 'path'
 import { describe, expect, it } from 'vitest'
@@ -105,12 +106,10 @@ describe('isDeveloperGalleryIncluded', () => {
     })
 })
 
-const TEST_CHAIN_PACKAGE = {
-    package: '@perawallet/wallet-core-chain-testchain',
-    networks: { testchain: [{ id: 'mainnet', tier: 'mainnet' }] },
-    mobileStubbedModules: ['src/testchain/entry'],
-    scopeConfigFields: [{ name: 'rpcUrl', isRequired: true }],
-}
+// The same test-only package generate-config.spec refuses without its URLs.
+const { CHAIN_PACKAGES: TEST_CHAIN_PACKAGES } = createRequire(import.meta.url)(
+    '../../../tools/dev/__tests__/fixtures/test-chain-packages.cjs',
+) as { CHAIN_PACKAGES: typeof CHAIN_PACKAGES }
 
 const [EVM_PACKAGE] = CHAIN_PACKAGES
 
@@ -118,18 +117,15 @@ describe('stubbedChainModules', () => {
     it.each([[['algorand']], [[]]])(
         'stubs a chain package the chain list %j leaves out',
         chainIds => {
-            expect(stubbedChainModules(chainIds, [TEST_CHAIN_PACKAGE])).toEqual(
-                ['src/testchain/entry'],
-            )
+            expect(stubbedChainModules(chainIds, TEST_CHAIN_PACKAGES)).toEqual([
+                'src/testchain/entry',
+            ])
         },
     )
 
     it('keeps a chain package the chain list ships', () => {
         expect(
-            stubbedChainModules(
-                ['algorand', 'testchain'],
-                [TEST_CHAIN_PACKAGE],
-            ),
+            stubbedChainModules(['algorand', 'testchain'], TEST_CHAIN_PACKAGES),
         ).toEqual([])
     })
 

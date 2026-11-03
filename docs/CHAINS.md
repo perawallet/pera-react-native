@@ -144,8 +144,9 @@ The build bakes these into `packages/config/src/generated-env.ts` through
 
 The per-network variable names come from the chain package table, `tools/dev/chain-packages.cjs`,
 whose EVM entry reads `packages/chain-contract/src/models/evm-networks.json`. The build script reads
-the table, and `scopeConfigKeys` in `packages/config/src/main.ts` names the same keys for the app. `packages/config/README.md` covers the schema and how each
-CI channel sets `CHAINS`; `tools/__tests__/bitrise-chains.test.sh` pins the CI values.
+the table, and `scopeConfigKeys` in `packages/config/src/main.ts` names the same keys for the app.
+`packages/config/README.md` covers the schema and how each CI channel sets `CHAINS`;
+`tools/__tests__/bitrise-chains.test.sh` pins the CI values.
 
 `CHAINS` also decides what Metro bundles: unless it lists one of a chain package's chains, that
 package's `mobileStubbedModules` in the table resolve to their `.stub.ts` twins, so for EVM viem stays

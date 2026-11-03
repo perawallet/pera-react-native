@@ -14,8 +14,6 @@
 
 const path = require('path')
 
-const EVM_NETWORKS = require('../../packages/chain-contract/src/models/evm-networks.json')
-
 /**
  * @typedef {{ id: string, tier: string } & Record<string, unknown>} ChainNetworkRow
  * @typedef {{ name: string, isRequired: boolean }} ScopeConfigField
@@ -46,10 +44,9 @@ const CHAIN_PACKAGES = [
     {
         package: '@perawallet/wallet-core-chain-ethereum',
         networks: Object.fromEntries(
-            Object.entries(EVM_NETWORKS).map(([chainId, { networks }]) => [
-                chainId,
-                networks,
-            ]),
+            Object.entries(
+                require('../../packages/chain-contract/src/models/evm-networks.json'),
+            ).map(([chainId, { networks }]) => [chainId, networks]),
         ),
         mobileStubbedModules: [
             'src/bootstrap/evm-chain-modules',
