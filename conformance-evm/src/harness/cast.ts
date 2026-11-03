@@ -206,6 +206,13 @@ type Receipt = {
     contractAddress: Address | null
 }
 
+// `cast send --json` prints the receipt on one line, and now and then a second
+// document after it, so parsing the whole of stdout fails a send that landed.
+export const parseCastReceipt = (stdout: string): Receipt => {
+    const [receiptLine = ''] = stdout.trim().split('\n')
+    return JSON.parse(receiptLine) as Receipt
+}
+
 export const castSend = async (input: {
     chain: EvmnetChain
     privateKey: Hex
@@ -243,9 +250,9 @@ export const castSend = async (input: {
     if (positionals.length > 0) {
         args.push('--', ...positionals)
     }
-    const receipt = JSON.parse(
+    const receipt = parseCastReceipt(
         await docker(EVMNET[input.chain].container, args),
-    ) as Receipt
+    )
     if (receipt.status !== '0x1') {
         throw new Error(
             `transaction ${receipt.transactionHash} on ${input.chain} failed with status ${receipt.status}`,

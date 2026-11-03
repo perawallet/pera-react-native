@@ -10,6 +10,9 @@
  limitations under the License
  */
 
+// Real English resources: these flows assert the copy the user reads, not keys.
+import '../i18n'
+
 import {
     afterAll,
     afterEach,
@@ -29,6 +32,7 @@ import {
     screen,
     waitFor,
 } from '@testing-library/react'
+import i18n from 'i18next'
 import { http, HttpResponse } from 'msw'
 import { Notifier } from 'react-native-notifier'
 import { useNavigation } from '@react-navigation/native'
@@ -208,14 +212,17 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
 
         // Spy on the submission so we can prove the pipeline reached
         // algod with a signed transaction.
-        const sendSpy = vi.fn(() =>
-            HttpResponse.json(
+        // The screen on show while algod receives the broadcast.
+        let screenAtBroadcast = ''
+        const sendSpy = vi.fn(() => {
+            screenAtBroadcast = document.body.textContent ?? ''
+            return HttpResponse.json(
                 {
                     txId: 'TESTTXID0000000000000000000000000000000000000000000000',
                 },
                 { status: 200 },
-            ),
-        )
+            )
+        })
         server.use(http.post('*/v2/transactions', sendSpy))
 
         renderSendConfirmationStack()
@@ -236,10 +243,18 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
             },
             { timeout: 10_000 },
         )
-        expect(screen.getByText('send_funds.success.title')).toBeTruthy()
         expect(
-            screen.getByText('send_funds.success.view_in_explorer'),
+            screen.getByText(i18n.t('send_funds.success.title')),
         ).toBeTruthy()
+        expect(
+            screen.getByText(i18n.t('send_funds.success.view_in_explorer')),
+        ).toBeTruthy()
+        expect(screenAtBroadcast).toContain(
+            'Your transaction is being processed by the Algorand network.',
+        )
+        expect(screen.getByTestId('send_success').textContent).toContain(
+            'Your transaction was successfully received by the Algorand network',
+        )
 
         // Algod POST happened with the signed, grouped transaction.
         expect(sendSpy).toHaveBeenCalled()
@@ -550,7 +565,9 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
                     vi.mocked(Notifier.showNotification),
                 ).toHaveBeenCalledWith(
                     expect.objectContaining({
-                        title: 'errors.submission.unknown_outcome.title',
+                        title: i18n.t(
+                            'errors.submission.unknown_outcome.title',
+                        ),
                     }),
                 )
             },
@@ -693,9 +710,9 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
                     vi.mocked(Notifier.showNotification),
                 ).toHaveBeenCalledWith(
                     expect.objectContaining({
-                        title: 'errors.signing.title',
+                        title: i18n.t('errors.signing.title'),
                         description: expect.stringContaining(
-                            'errors.kms.key_not_found',
+                            i18n.t('errors.kms.key_not_found'),
                         ),
                     }),
                 )
@@ -742,9 +759,9 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
                     vi.mocked(Notifier.showNotification),
                 ).toHaveBeenCalledWith(
                     expect.objectContaining({
-                        title: 'errors.signing.title',
+                        title: i18n.t('errors.signing.title'),
                         description: expect.stringContaining(
-                            'errors.signing.local_key_failed',
+                            i18n.t('errors.signing.local_key_failed'),
                         ),
                     }),
                 )

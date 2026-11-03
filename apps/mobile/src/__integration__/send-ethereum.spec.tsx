@@ -14,6 +14,9 @@
 // chain: the codec refuses another chain's receiver, the transfer adapter
 // builds an EIP-1559 transaction, and its broadcaster submits it.
 
+// Real English resources: these flows assert the copy the user reads, not keys.
+import '../i18n'
+
 import {
     afterAll,
     afterEach,
@@ -33,6 +36,7 @@ import {
     waitFor,
     within,
 } from '@testing-library/react'
+import i18n from 'i18next'
 import { Notifier } from 'react-native-notifier'
 
 import {
@@ -42,7 +46,10 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { nativeAssetFor } from '@perawallet/wallet-core-assets'
-import { chainDisplayNameOf } from '@perawallet/wallet-core-chain-shared'
+import {
+    chainDisplayNameOf,
+    getChainDescriptor,
+} from '@perawallet/wallet-core-chain-shared'
 import { useContacts } from '@perawallet/wallet-core-contacts'
 import {
     DEFAULT_EVM_RPC_RESPONSES,
@@ -131,6 +138,14 @@ const dropRpc = (shouldDrop: (methods: string[]) => boolean) =>
         return undefined
     })
 
+const expectEthereumSuccessCopy = () => {
+    const result = screen.getByTestId('send_success').textContent ?? ''
+    expect(result).toContain(
+        'Your transaction was sent to the Ethereum network and is waiting for confirmation.',
+    )
+    expect(result).not.toContain('Algorand')
+}
+
 describe('Flow: send from an Ethereum account', () => {
     let analytics: AnalyticsRecorder
     beforeEach(() => {
@@ -141,6 +156,8 @@ describe('Flow: send from an Ethereum account', () => {
     })
 
     const sentRawTransactions: string[] = []
+    // The screen on show while the node receives the broadcast.
+    const screenAtBroadcast: string[] = []
 
     beforeAll(async () => {
         await setupTestDatabase()
@@ -163,6 +180,7 @@ describe('Flow: send from an Ethereum account', () => {
             .setPreference(UserPreferences.transactionInfoAgreed, true)
         vi.mocked(Notifier.showNotification).mockClear()
         sentRawTransactions.length = 0
+        screenAtBroadcast.length = 0
         vi.spyOn(kmsCore, 'sign').mockImplementation(signWithSenderKey)
         server.use(
             ...evmRpcHandlers({
@@ -170,6 +188,7 @@ describe('Flow: send from an Ethereum account', () => {
                 responses: {
                     eth_sendRawTransaction: params => {
                         sentRawTransactions.push(params[0] as string)
+                        screenAtBroadcast.push(document.body.textContent ?? '')
                         const respond =
                             DEFAULT_EVM_RPC_RESPONSES.eth_sendRawTransaction
                         return typeof respond === 'function'
@@ -199,12 +218,20 @@ describe('Flow: send from an Ethereum account', () => {
 
         // Broadcast is not mined: the screen says submitted and names Etherscan.
         expect(
-            screen.getByText('send_funds.success.pending_title'),
+            screen.getByText(i18n.t('send_funds.success.pending_title')),
         ).toBeTruthy()
         expect(
-            screen.getByText('send_funds.success.view_on_explorer'),
+            screen.getByText(
+                i18n.t('send_funds.success.view_on_explorer', {
+                    explorer: getChainDescriptor('ethereum').explorer.name,
+                }),
+            ),
         ).toBeTruthy()
         expect(sentRawTransactions).toHaveLength(1)
+        expect(screenAtBroadcast[0]).toContain(
+            'Your transaction is being sent to the Ethereum network.',
+        )
+        expectEthereumSuccessCopy()
         // Read back by the address its signature recovers to.
         expect((await sentRecord())?.summary).toMatchObject({
             kind: 'transfer',
@@ -306,7 +333,9 @@ describe('Flow: send from an Ethereum account', () => {
             () =>
                 expect(Notifier.showNotification).toHaveBeenCalledWith(
                     expect.objectContaining({
-                        title: 'errors.submission.unknown_outcome.title',
+                        title: i18n.t(
+                            'errors.submission.unknown_outcome.title',
+                        ),
                     }),
                 ),
             { timeout: 10_000 },
@@ -346,7 +375,7 @@ describe('Flow: send from an Ethereum account', () => {
             () =>
                 expect(Notifier.showNotification).toHaveBeenCalledWith(
                     expect.objectContaining({
-                        title: 'errors.evm.network_unreachable.title',
+                        title: i18n.t('errors.evm.network_unreachable.title'),
                     }),
                 ),
             { timeout: 10_000 },
@@ -519,6 +548,7 @@ describe('Flow: send from an Ethereum account', () => {
         await confirmSend()
 
         expect(sentRawTransactions).toHaveLength(1)
+        expectEthereumSuccessCopy()
         expect((await sentRecord())?.summary).toMatchObject({
             kind: 'token-transfer',
             counterparty: RECEIVER,
@@ -542,7 +572,9 @@ describe('Flow: send from an Ethereum account', () => {
         await waitFor(() =>
             expect(Notifier.showNotification).toHaveBeenCalledWith(
                 expect.objectContaining({
-                    title: 'send_funds.destination.invalid_address_title',
+                    title: i18n.t(
+                        'send_funds.destination.invalid_address_title',
+                    ),
                 }),
             ),
         )
@@ -564,7 +596,9 @@ describe('Flow: send from an Ethereum account', () => {
         await waitFor(() =>
             expect(Notifier.showNotification).toHaveBeenCalledWith(
                 expect.objectContaining({
-                    title: 'send_funds.destination.invalid_address_title',
+                    title: i18n.t(
+                        'send_funds.destination.invalid_address_title',
+                    ),
                 }),
             ),
         )
@@ -649,7 +683,7 @@ describe('Flow: send from an Ethereum account', () => {
             expect(screen.queryByText('Watch only')).toBeNull()
             // The Ethereum placeholder is what finds the field at all.
             const fields = screen.getAllByPlaceholderText(
-                'address_entry.search_placeholder_evm',
+                i18n.t('address_entry.search_placeholder_evm'),
             )
             expect(fields.length).toBeGreaterThan(0)
             fireEvent.change(fields[fields.length - 1], {

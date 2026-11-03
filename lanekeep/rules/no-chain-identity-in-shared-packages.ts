@@ -144,6 +144,11 @@ const ALLOWED: readonly Allowed[] = [
         reason: 'Narrows the asset list to whichever chain the selected chip names, never a named chain.',
     },
     {
+        file: 'apps/mobile/src/modules/accounts/components/AccountNfts/useAccountNfts.tsx',
+        text: 'row.scope.chainId === selectedChainId',
+        reason: 'Narrows the NFT gallery to whichever chain the selected chip names, never a named chain.',
+    },
+    {
         file: 'apps/mobile/src/modules/accounts/components/AccountAssetList/useAccountAssetList.tsx',
         text: 'item.scope.chainId === scope.chainId',
         reason: "Opt-out is bound to the account's own chain; compares a holding's chain with it, never a named chain.",

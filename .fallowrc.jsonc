@@ -16,6 +16,10 @@
     // metro-build-gates.js requires it, and the browser build loads it through
     // createRequire.
     "tools/dev/chain-packages.cjs",
+    // Run with node by path to refresh chain-ethereum's backend recordings; the
+    // preload is handed to `bun test --preload` by path.
+    "tools/dev/record-backend-responses.mjs",
+    "tools/dev/backend-capture-preload.mjs",
     // Release scripts CI runs with node by path (.bitrise/bitrise.yml,
     // ci/jobs/web.sh) rather than importing them.
     "tools/release/*.mjs"

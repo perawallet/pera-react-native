@@ -24,6 +24,7 @@ export type GalleryCellProps = {
     item: AccountCollectibleLiteRow
     index: number
     isGrid: boolean
+    shouldShowNetwork: boolean
     onPress: (item: AccountCollectibleLiteRow) => void
 }
 
@@ -31,6 +32,7 @@ const GalleryCellView = ({
     item,
     index,
     isGrid,
+    shouldShowNetwork,
     onPress,
 }: GalleryCellProps) => {
     const styles = useStyles()
@@ -55,10 +57,13 @@ const GalleryCellView = ({
 
     if (!displayItem) return null
 
+    const networkChainId = shouldShowNetwork ? item.scope.chainId : undefined
+
     if (!isGrid) {
         return (
             <CollectibleListItem
                 item={displayItem}
+                networkChainId={networkChainId}
                 onPress={handlePress}
             />
         )
@@ -75,6 +80,7 @@ const GalleryCellView = ({
         >
             <CollectibleGridItem
                 item={displayItem}
+                networkChainId={networkChainId}
                 onPress={handlePress}
             />
         </PWView>

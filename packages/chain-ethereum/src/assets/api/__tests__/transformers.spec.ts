@@ -69,6 +69,21 @@ describe('toAssetMetadata', () => {
         expect(isQuarantined).toBe(false)
     })
 
+    it("keeps the backend's total supply in base units", () => {
+        const { asset } = toAssetMetadata(
+            USDC,
+            item({ ...usdc, total: '61234567890000000' }),
+        )
+
+        expect(asset!.totalSupply.toFixed()).toBe('61234567890000000')
+    })
+
+    it('reads a null total as an unknown supply', () => {
+        const { asset } = toAssetMetadata(USDC, item({ ...usdc, total: null }))
+
+        expect(asset!.totalSupply.toFixed()).toBe('0')
+    })
+
     // upsertPeraAssets keeps the local favourite and price alert only when
     // the incoming value is absent.
     it('leaves the device-local flags unset', () => {

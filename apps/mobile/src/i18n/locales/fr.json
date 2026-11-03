@@ -73,11 +73,11 @@
     "app": {
         "initialization_failed": {
             "title": "Échec du lancement de l’app",
-            "body": "Une erreur s’est produite lors de l’initialisation de l’app. Essayez de la redémarrer. Si le problème persiste, contactez l’assistance.\n\nVos fonds sont en sécurité sur la blockchain Algorand.",
+            "body": "Une erreur s’est produite lors de l’initialisation de l’app. Essayez de la redémarrer. Si le problème persiste, contactez l’assistance.\n\nVos fonds sont en sécurité sur la blockchain.",
             "retry": "Réessayer",
             "keystore": {
                 "title": "Erreur de données du wallet",
-                "body": "Pera n’a pas pu lire une partie des données du wallet stockées sur cet appareil et ne peut donc pas démarrer en toute sécurité. Contactez l’assistance avant de réinstaller l’app : une réinstallation peut supprimer les comptes qui n’existent que sur cet appareil.\n\nVos fonds sont en sécurité sur la blockchain Algorand."
+                "body": "Pera n’a pas pu lire une partie des données du wallet stockées sur cet appareil et ne peut donc pas démarrer en toute sécurité. Contactez l’assistance avant de réinstaller l’app : une réinstallation peut supprimer les comptes qui n’existent que sur cet appareil.\n\nVos fonds sont en sécurité sur la blockchain."
             }
         }
     },
@@ -128,6 +128,7 @@
         },
         "collectible_title": "Ajouter un NFT",
         "collectible_note": "Vous devez effectuer un opt-in sur l’ASA ID du NFT pour pouvoir le transférer vers votre wallet. Collez l’ASA ID dans la barre de recherche.",
+        "collectible_note_multichain": "Les NFT Algorand nécessitent un opt-in avant de pouvoir vous être envoyés. Collez l’ASA ID du NFT dans la barre de recherche. Chaque opt-in coûte des frais de transaction et augmente le solde minimum de votre compte de 0,1 ALGO. Les NFT des autres réseaux, comme Ethereum, ne nécessitent pas d’opt-in.",
         "collectible_search_placeholder": "Rechercher un ID d’actif ou un nom de NFT",
         "token": {
             "added_title": "Token ajouté",
@@ -208,7 +209,7 @@
     "address_actions": {
         "title": "Adresse de compte scannée",
         "send_transaction": "Envoyer une transaction",
-        "send_transaction_subtitle": "Envoyer des ALGO ou des actifs à cette adresse",
+        "send_transaction_subtitle": "Envoyer des actifs à cette adresse",
         "watch_address": "Suivre une adresse",
         "watch_address_subtitle": "Ajouter comme compte de suivi",
         "add_contact": "Ajouter un contact",
@@ -276,7 +277,13 @@
             "asa_url": "URL de l’ASA",
             "show_on": "Afficher sur",
             "project_website": "Site du projet",
-            "open_browser": "Ouvrir dans le navigateur"
+            "open_browser": "Ouvrir dans le navigateur",
+            "native_description": {
+                "ether": "L’Ether (ETH) est la monnaie native d’Ethereum. Il sert à payer les frais de transaction et sécurise le réseau grâce au staking. Les réseaux de couche 2 comme Base et Arbitrum utilisent aussi l’ETH.",
+                "bnb": "Le BNB est la monnaie native de BNB Chain. Il sert à payer les frais de transaction et sécurise le réseau grâce au staking.",
+                "avax": "L’AVAX est la monnaie native d’Avalanche. Il sert à payer les frais de transaction et sécurise le réseau grâce au staking.",
+                "pol": "Le POL est la monnaie native de Polygon. Il sert à payer les frais de transaction et sécurise le réseau grâce au staking."
+            }
         },
         "main_screen": {
             "holdings_tab": "Avoirs",
@@ -385,9 +392,15 @@
             "search_placeholder": "Rechercher des NFT",
             "empty_title": "NFT",
             "empty_body": "Bienvenue dans votre galerie NFT ! Vous n’avez pas encore de NFT. Tous les NFT disponibles dans votre wallet apparaîtront ici.",
+            "empty_body_multichain": "Bienvenue dans votre galerie NFT !\nVous n’avez pas encore de NFT. Les NFT que vous recevez sur des réseaux comme Ethereum apparaissent ici automatiquement. Les NFT Algorand nécessitent d’abord un opt-in.",
             "empty_optin": "Opt-in à un NFT",
+            "empty_optin_algorand": "Opt-in à un NFT Algorand",
             "nomatch_title": "Aucun NFT correspondant",
             "nomatch_body": "Aucun NFT ne correspond à votre recherche",
+            "network_empty_title": "Aucun NFT",
+            "network_empty_body": "Vous n’avez aucun NFT sur {{chain}}.",
+            "suspicious_hidden_title": "NFT suspects masqués",
+            "suspicious_hidden_body": "Pera a signalé ces NFT comme du spam ou une arnaque probable. Pour les voir, activez Afficher les NFT suspects dans Gérer > Filtrer.",
             "count": "{{count}} NFT",
             "count_one": "{{count}} NFT",
             "manage": "Gérer",
@@ -399,6 +412,8 @@
             "filter_opted_in_description": "Vous pouvez afficher ou masquer les NFT en opt-in que vous ne possédez pas",
             "filter_watch_accounts": "Afficher les NFT des comptes de suivi",
             "filter_watch_accounts_description": "Cela affichera les NFT de vos comptes de suivi en plus de ceux de vos propres comptes",
+            "filter_suspicious": "Afficher les NFT suspects",
+            "filter_suspicious_description": "Cela affichera les NFT que Pera a signalés comme du spam ou une arnaque probable",
             "sort_title_asc": "Nom (A-Z)",
             "sort_title_desc": "Nom (Z-A)",
             "sort_newest_first": "Du plus récent au plus ancien",
@@ -425,7 +440,7 @@
         },
         "no_balance": {
             "welcome": "Bienvenue sur Pera !",
-            "get_started": "Pour commencer, déposez de l’ALGO",
+            "get_started": "Pour commencer, déposez des cryptos",
             "buy": "Acheter des cryptos",
             "receive": "Recevoir",
             "more": "Plus"
@@ -2426,7 +2441,7 @@
             "recover_passphrase_title": "Récupérer avec une passphrase",
             "recover_passphrase_description": "Récupérez un wallet à l’aide de sa passphrase",
             "recover_qr_title": "Récupérer avec un QR code",
-            "recover_qr_description": "Récupérez un wallet Algorand à l’aide d’un QR code",
+            "recover_qr_description": "Récupérez un wallet à l’aide d’un QR code",
             "private_key_title": "Importer une clé privée",
             "private_key_description": "Ajoutez un compte à partir de sa clé privée",
             "pair_ledger_title": "Associer un Ledger",
@@ -3072,7 +3087,7 @@
         },
         "processing": {
             "title": "Envoi de la transaction",
-            "subtitle": "Votre transaction est en cours de traitement par le réseau Algorand.",
+            "subtitle": "Votre transaction est en cours de traitement par le réseau {{network}}.",
             "title_hardware": "Connexion à votre appareil Ledger",
             "subtitle_hardware": "Connexion à {{deviceName}} en cours. Assurez-vous qu’il est déverrouillé, à portée, et que l’application {{appName}} est ouverte.",
             "subtitle_hardware_noDevice": "Connexion à votre appareil Ledger en cours. Assurez-vous qu’il est déverrouillé, à portée, et que l’application {{appName}} est ouverte.",
@@ -3081,7 +3096,7 @@
         "success": {
             "title": "Transaction traitée",
             "asset_transferred_title": "Actif transféré",
-            "subtitle": "Votre transaction a bien été reçue par le réseau Algorand",
+            "subtitle": "Votre transaction a bien été reçue par le réseau {{network}}",
             "pending_title": "Transaction envoyée",
             "pending_subtitle": "Votre transaction a été envoyée au réseau {{network}} et attend sa confirmation.",
             "view_in_explorer": "Voir le détail de la transaction dans Pera Explorer",

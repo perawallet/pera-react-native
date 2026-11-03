@@ -25,6 +25,8 @@ export const EIP1193_METHOD = {
     switchChain: 'wallet_switchEthereumChain',
     addChain: 'wallet_addEthereumChain',
     revokePermissions: 'wallet_revokePermissions',
+    getPermissions: 'wallet_getPermissions',
+    requestPermissions: 'wallet_requestPermissions',
     sendTransaction: 'eth_sendTransaction',
     personalSign: 'personal_sign',
     signTypedDataV4: 'eth_signTypedData_v4',

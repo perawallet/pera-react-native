@@ -56,6 +56,8 @@ export type DappHostRequestMessage = {
     provider: DappProvider
     origin: string
     hasUserActivation: boolean
+    /** Stamped by the service worker from the vault; a page never supplies it. */
+    isWalletLocked: boolean
     faviconUrl?: string
     returnTo: DappReturnAddress
     request: JsonRpcRequest
@@ -115,6 +117,7 @@ export const isDappHostRequestMessage = (
     isDappProvider(value.provider) &&
     typeof value.origin === 'string' &&
     typeof value.hasUserActivation === 'boolean' &&
+    typeof value.isWalletLocked === 'boolean' &&
     (value.faviconUrl === undefined || typeof value.faviconUrl === 'string') &&
     isReturnAddress(value.returnTo) &&
     isJsonRpcRequest(value.request)
