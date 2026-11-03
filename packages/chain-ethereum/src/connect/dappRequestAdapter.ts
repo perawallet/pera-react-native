@@ -28,6 +28,7 @@ import {
 } from './callBatch/params'
 import { prepareEthereumCallBatch } from './callBatch/prepare'
 import { findEthereumCallBatch, reachedCallTxIdOf } from './callBatch/status'
+import { createEthereumNodeReads } from './nodeReads'
 import { createEvmWalletConnectSupport } from './walletConnect'
 
 const NO_TRANSACTION_GROUP =
@@ -61,6 +62,8 @@ export const createEthereumDappRequestAdapter = (
     emptySignaturesFor: () => ({}),
 
     walletConnect: createEvmWalletConnectSupport(ctx, chain),
+
+    nodeReads: createEthereumNodeReads(ctx, chain),
 
     validateTransactionPayload: () => ({
         ok: false,
