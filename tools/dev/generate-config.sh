@@ -98,7 +98,7 @@ is_allowlisted() {
 }
 if is_allowlisted chainIds; then
   listed_chains=",${CHAINS//[[:space:]]/},"
-  while read -r kind chain_id requirement env key; do
+  while read -r kind chain_id requirement env key _; do
     [ "$kind" = "scope" ] && [ "$requirement" = "required" ] || continue
     [[ "$listed_chains" == *",$chain_id,"* ]] || continue
     if [ -z "${!env:-}" ]; then
@@ -298,7 +298,7 @@ append_config "CHAIN_ALGORAND_CAPABILITIES" "chainAlgorandCapabilities" "string"
 
 # Per build-gated chain its capabilities, and per network each config field its
 # package declares.
-while read -r kind _ a b c; do
+while read -r kind _ a b c _; do
   case "$kind" in
     chain) append_config "$a" "$b" "string" ;;
     scope) append_config "$b" "$c" "string" ;;

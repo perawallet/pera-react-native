@@ -33,24 +33,18 @@
 
 import { createRequire } from 'node:module'
 
-const { chainPackageScopeConfigKeys } = createRequire(import.meta.url)(
-    './dev/chain-packages.cjs',
-)
+const { EVM_CHAIN_PACKAGE, chainPackageFieldConfigKeys } = createRequire(
+    import.meta.url,
+)('./dev/chain-packages.cjs')
 
 // Every chain-ethereum network, with the env carrying its RPC URLs.
 const evmRpcScopes = () =>
-    chainPackageScopeConfigKeys()
-        .filter(
-            keys =>
-                keys.package === '@perawallet/wallet-core-chain-ethereum' &&
-                keys.field === 'rpcUrl',
-        )
-        .map(keys => ({
-            chainId: keys.chainId,
-            tier: keys.network.tier,
-            eip155ChainId: keys.network.eip155ChainId,
-            rpcUrlEnv: keys.env,
-        }))
+    chainPackageFieldConfigKeys(EVM_CHAIN_PACKAGE, 'rpcUrl').map(keys => ({
+        chainId: keys.chainId,
+        tier: keys.network.tier,
+        eip155ChainId: keys.network.eip155ChainId,
+        rpcUrlEnv: keys.env,
+    }))
 
 const ATTEMPTS = 3
 const RETRY_DELAY_MS = 1_000

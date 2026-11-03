@@ -15,13 +15,21 @@ failures=0
 # them only with the backend.
 EVM_STAGING_SERVICES="prices,assets,history,blockFollowing"
 
-# Every build-gated chain and network, from the table generate-config.sh bakes from.
+# Every build-gated chain and network, from the table generate-config.sh bakes
+# from. The staging expectations below are chain-ethereum's; another chain
+# package needs its own.
 CHAIN_CONFIG="$(node "$ROOT_DIR/tools/dev/chain-packages.cjs")"
+EVM_PACKAGE="@perawallet/wallet-core-chain-ethereum"
+evm_field_envs() { # $1 field
+    awk -v pkg="$EVM_PACKAGE" -v field="$1" \
+        '$1 == "scope" && $6 == pkg && $7 == field { print $4 }' <<< "$CHAIN_CONFIG"
+}
 GATED_CHAIN_IDS="$(awk '$1 == "chain" { print $2 }' <<< "$CHAIN_CONFIG")"
-RPC_URL_ENVS="$(awk '$1 == "scope" && $5 ~ /RpcUrl$/ { print $4 }' <<< "$CHAIN_CONFIG")"
-SERVICES_ENVS="$(awk '$1 == "scope" && $5 ~ /PeraServices$/ { print $4 }' <<< "$CHAIN_CONFIG")"
-if [ -z "$GATED_CHAIN_IDS" ] || [ -z "$RPC_URL_ENVS" ] || [ -z "$SERVICES_ENVS" ]; then
-    echo "FAIL  chain-packages.cjs listed no chains, RPC URLs or service lists"
+SCOPE_ENVS="$(awk '$1 == "scope" { print $4 }' <<< "$CHAIN_CONFIG")"
+EVM_RPC_URL_ENVS="$(evm_field_envs rpcUrl)"
+EVM_SERVICES_ENVS="$(evm_field_envs peraServices)"
+if [ -z "$GATED_CHAIN_IDS" ] || [ -z "$EVM_RPC_URL_ENVS" ] || [ -z "$EVM_SERVICES_ENVS" ]; then
+    echo "FAIL  chain-packages.cjs listed no chains, or no ${EVM_PACKAGE} RPC URLs or service lists"
     exit 1
 fi
 
@@ -74,11 +82,11 @@ for source in bitrise pipelines; do
             url="$("$env_of" "$job" "$rpc_env")"
             check "${job} sets an https ${rpc_env}" "yes" \
                 "$([[ "$url" == https://?* ]] && echo yes || echo "no (${url})")"
-        done <<< "$RPC_URL_ENVS"
+        done <<< "$EVM_RPC_URL_ENVS"
         while read -r services_env; do
             check "${job} lists the ${services_env}" \
                 "$EVM_STAGING_SERVICES" "$("$env_of" "$job" "$services_env")"
-        done <<< "$SERVICES_ENVS"
+        done <<< "$EVM_SERVICES_ENVS"
     done
 
     for job in ios-production android-production web-production; do
@@ -87,7 +95,7 @@ for source in bitrise pipelines; do
             "algorand" "$(sorted_csv "${chains:-$production_unset_chains}")"
         while read -r key; do
             check "${job} sets no ${key}" "" "$("$env_of" "$job" "$key")"
-        done <<< "$RPC_URL_ENVS"$'\n'"$SERVICES_ENVS"
+        done <<< "$SCOPE_ENVS"
     done
 done
 

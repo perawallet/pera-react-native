@@ -6,7 +6,7 @@
 //
 // Run directly, it prints one line per entry for generate-config.sh:
 //   chain <chainId> <CAPABILITIES_ENV> <capabilitiesKey>
-//   scope <chainId> <required|optional> <ENV> <key>
+//   scope <chainId> <required|optional> <ENV> <key> <package> <field>
 // CHAIN_PACKAGES_TABLE swaps the table for a test fixture; generate-config.sh
 // refuses it in a production build.
 
@@ -39,10 +39,12 @@ const path = require('path')
  * }} ChainScopeConfigKey
  */
 
+const EVM_CHAIN_PACKAGE = '@perawallet/wallet-core-chain-ethereum'
+
 /** @type {readonly ChainPackage[]} */
 const CHAIN_PACKAGES = [
     {
-        package: '@perawallet/wallet-core-chain-ethereum',
+        package: EVM_CHAIN_PACKAGE,
         networks: Object.fromEntries(
             Object.entries(
                 require('../../packages/chain-contract/src/models/evm-networks.json'),
@@ -109,6 +111,45 @@ const chainPackageScopeConfigKeys = (packages = CHAIN_PACKAGES) =>
     )
 
 /**
+ * Throws on a name the table lacks, so a renamed package fails its callers
+ * instead of handing them an empty chain or key list.
+ *
+ * @param {string} name
+ * @param {readonly ChainPackage[]} [packages]
+ * @returns {ChainPackage}
+ */
+const chainPackageNamed = (name, packages = CHAIN_PACKAGES) => {
+    const chainPackage = packages.find(entry => entry.package === name)
+    if (chainPackage === undefined) {
+        throw new Error(`No chain package named ${name} in the table`)
+    }
+    return chainPackage
+}
+
+/**
+ * One package's keys for one config field. Throws when there are none, so a
+ * renamed field can't turn a check over them into a no-op.
+ *
+ * @param {string} packageName
+ * @param {string} fieldName camelCase
+ * @param {readonly ChainPackage[]} [packages]
+ * @returns {ChainScopeConfigKey[]}
+ */
+const chainPackageFieldConfigKeys = (
+    packageName,
+    fieldName,
+    packages = CHAIN_PACKAGES,
+) => {
+    const keys = chainPackageScopeConfigKeys([
+        chainPackageNamed(packageName, packages),
+    ]).filter(keys => keys.field === fieldName)
+    if (keys.length === 0) {
+        throw new Error(`${packageName} bakes no ${fieldName} config key`)
+    }
+    return keys
+}
+
+/**
  * Throws on a table the build would bake wrong. A hyphenated chain id gets its
  * capability list baked under a key packages/config never reads.
  *
@@ -137,8 +178,11 @@ const validateChainPackages = packages => {
 
 module.exports = {
     CHAIN_PACKAGES,
+    EVM_CHAIN_PACKAGE,
     chainIdsOf,
     chainPackageCapabilityConfigKeys,
+    chainPackageFieldConfigKeys,
+    chainPackageNamed,
     chainPackageScopeConfigKeys,
     validateChainPackages,
 }
@@ -161,6 +205,8 @@ if (require.main === module) {
                 s.isRequired ? 'required' : 'optional',
                 s.env,
                 s.key,
+                s.package,
+                s.field,
             ].join(' '),
         ),
     ]

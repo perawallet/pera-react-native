@@ -18,12 +18,7 @@ const chainPackages = createRequire(import.meta.url)(
 
 const evmRpcUrlKeys = () =>
     chainPackages
-        .chainPackageScopeConfigKeys()
-        .filter(
-            keys =>
-                keys.package === '@perawallet/wallet-core-chain-ethereum' &&
-                keys.field === 'rpcUrl',
-        )
+        .chainPackageFieldConfigKeys(chainPackages.EVM_CHAIN_PACKAGE, 'rpcUrl')
         .map(keys => keys.key)
 
 /** Every chain package config key generate-config.sh can bake, from the table. */

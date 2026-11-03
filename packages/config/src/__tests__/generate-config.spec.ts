@@ -59,7 +59,13 @@ const chainPackages = createRequire(import.meta.url)(
     '../../../../tools/dev/chain-packages.cjs',
 ) as {
     CHAIN_PACKAGES: ChainPackage[]
+    EVM_CHAIN_PACKAGE: string
     chainPackageCapabilityConfigKeys: () => { env: string; key: string }[]
+    chainPackageFieldConfigKeys: (
+        packageName: string,
+        fieldName: string,
+    ) => ChainScopeConfigKey[]
+    chainPackageNamed: (name: string) => ChainPackage
     chainPackageScopeConfigKeys: () => ChainScopeConfigKey[]
     validateChainPackages: (packages: ChainPackage[]) => void
 }
@@ -283,6 +289,49 @@ describe('tools/dev/generate-config.sh', () => {
             ).toThrow(
                 /"base" is served by both @perawallet\/a and @perawallet\/b/,
             )
+        })
+    })
+
+    describe('chainPackageNamed', () => {
+        test('finds chain-ethereum', () => {
+            expect(
+                chainPackages.chainPackageNamed(chainPackages.EVM_CHAIN_PACKAGE)
+                    .package,
+            ).toBe('@perawallet/wallet-core-chain-ethereum')
+        })
+
+        test('refuses a name the table lacks', () => {
+            expect(() =>
+                chainPackages.chainPackageNamed('@perawallet/renamed'),
+            ).toThrow(/No chain package named @perawallet\/renamed/)
+        })
+    })
+
+    describe('chainPackageFieldConfigKeys', () => {
+        test('lists one key per chain-ethereum network for the field', () => {
+            const keys = chainPackages.chainPackageFieldConfigKeys(
+                chainPackages.EVM_CHAIN_PACKAGE,
+                'rpcUrl',
+            )
+
+            expect(keys.map(keys => keys.env)).toContain(
+                'ETHEREUM_MAINNET_RPC_URL',
+            )
+            expect(keys.every(keys => keys.field === 'rpcUrl')).toBe(true)
+            expect(keys).toHaveLength(
+                Object.values(EVM_CHAIN_NETWORKS).flatMap(
+                    ({ networks }) => networks,
+                ).length,
+            )
+        })
+
+        test('refuses a field the package does not declare', () => {
+            expect(() =>
+                chainPackages.chainPackageFieldConfigKeys(
+                    chainPackages.EVM_CHAIN_PACKAGE,
+                    'rpcUrls',
+                ),
+            ).toThrow(/bakes no rpcUrls config key/)
         })
     })
 

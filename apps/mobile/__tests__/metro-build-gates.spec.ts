@@ -15,7 +15,11 @@ import { createRequire } from 'module'
 import { tmpdir } from 'os'
 import path from 'path'
 import { describe, expect, it } from 'vitest'
-import { CHAIN_PACKAGES } from '../../../tools/dev/chain-packages.cjs'
+import {
+    CHAIN_PACKAGES,
+    EVM_CHAIN_PACKAGE,
+    chainPackageNamed,
+} from '../../../tools/dev/chain-packages.cjs'
 import {
     DEVELOPER_GALLERY_MODULES,
     E2E_FIXTURE_MODULES,
@@ -111,7 +115,7 @@ const { CHAIN_PACKAGES: TEST_CHAIN_PACKAGES } = createRequire(import.meta.url)(
     '../../../tools/dev/__tests__/fixtures/test-chain-packages.cjs',
 ) as { CHAIN_PACKAGES: typeof CHAIN_PACKAGES }
 
-const [EVM_PACKAGE] = CHAIN_PACKAGES
+const EVM_PACKAGE = chainPackageNamed(EVM_CHAIN_PACKAGE)
 
 describe('stubbedChainModules', () => {
     it.each([[['algorand']], [[]]])(

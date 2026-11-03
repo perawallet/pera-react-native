@@ -12,18 +12,13 @@
 
 import { createRequire } from 'node:module'
 
-const { CHAIN_PACKAGES, chainIdsOf } = createRequire(import.meta.url)(
-    '../../../tools/dev/chain-packages.cjs',
-)
+const { EVM_CHAIN_PACKAGE, chainIdsOf, chainPackageNamed } = createRequire(
+    import.meta.url,
+)('../../../tools/dev/chain-packages.cjs')
 
 // The chains chain-ethereum serves, from the table the Metro gate reads, so
 // both builds agree on which chains need viem.
-const EVM_CHAIN_IDS = chainIdsOf(
-    CHAIN_PACKAGES.find(
-        chainPackage =>
-            chainPackage.package === '@perawallet/wallet-core-chain-ethereum',
-    ),
-)
+const EVM_CHAIN_IDS = chainIdsOf(chainPackageNamed(EVM_CHAIN_PACKAGE))
 
 /**
  * Whether a build's chain list ships any EVM chain, and so needs viem.
