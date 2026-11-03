@@ -16,10 +16,14 @@ const chainPackages = createRequire(import.meta.url)(
     '../../../tools/dev/chain-packages.cjs',
 )
 
-const rpcUrlKeys = () =>
+const evmRpcUrlKeys = () =>
     chainPackages
         .chainPackageScopeConfigKeys()
-        .filter(keys => keys.field === 'rpcUrl')
+        .filter(
+            keys =>
+                keys.package === '@perawallet/wallet-core-chain-ethereum' &&
+                keys.field === 'rpcUrl',
+        )
         .map(keys => keys.key)
 
 /** Every chain package config key generate-config.sh can bake, from the table. */
@@ -182,7 +186,7 @@ export const assertE2eEvmRpcOverrideAllowed = appEnvironment => {
 export const overrideEvmRpcUrls = (generatedEnvSource, url) =>
     generatedEnvSource.replace(
         new RegExp(
-            `^(\\s+(?:${rpcUrlKeys().join('|')}):\\s*)"(?:[^"\\\\]|\\\\.)*"`,
+            `^(\\s+(?:${evmRpcUrlKeys().join('|')}):\\s*)"(?:[^"\\\\]|\\\\.)*"`,
             'gm',
         ),
         (_entry, key) => `${key}${JSON.stringify(url)}`,
