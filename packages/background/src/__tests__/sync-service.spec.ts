@@ -249,6 +249,7 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
         isPeraNetworkError: (error: unknown) =>
             error instanceof Error && error.name === 'PeraNetworkError',
         getHttpStatus: actualShared.getHttpStatus,
+        isChainRefusedError: () => false,
         partition: (arr: unknown[], size: number) => {
             const result = []
             for (let i = 0; i < arr.length; i += size) {
