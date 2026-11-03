@@ -16,8 +16,10 @@ import {
     fetchAndPersistAssets,
     getAssetById,
 } from '@perawallet/wallet-core-assets'
+import { logger } from '@perawallet/wallet-core-shared'
 import { addAccountToken, insertAssetHolding } from '../db'
 import { TokenMetadataUnavailableError } from '../errors'
+import { fetchAndPersistAccount } from '../sync/account-syncer'
 import { invalidateAccountQueriesForAddresses } from './querykeys'
 
 type AddTokenVariables = {
@@ -49,6 +51,17 @@ export const useAddTokenMutation = (): UseAddTokenMutationResult => {
             }
             await addAccountToken({ accountAddress, scope, assetId })
             await insertAssetHolding({ accountAddress, assetId, scope })
+            // The change signal won't flag an account the add didn't touch on
+            // chain, so a token already held would show zero until its next transfer.
+            await fetchAndPersistAccount(accountAddress, scope).catch(
+                (error: unknown) => {
+                    logger.warn('Account read after adding a token failed', {
+                        scope,
+                        assetId,
+                        error,
+                    })
+                },
+            )
         },
         onSuccess: (_data, { accountAddress }) => {
             invalidateAccountQueriesForAddresses(queryClient, [accountAddress])
