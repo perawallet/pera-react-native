@@ -141,7 +141,8 @@ export interface AssetOptInDeeplink extends ChainScopedDeeplink {
 export interface AssetDetailDeeplink extends ChainScopedDeeplink {
     type: typeof DeeplinkType.ASSET_DETAIL
     address: string
-    assetRef: AssetRef
+    /** Absent: the target chain's native asset. */
+    assetRef?: AssetRef
 }
 
 export interface AssetTransactionsDeeplink extends ChainScopedDeeplink {

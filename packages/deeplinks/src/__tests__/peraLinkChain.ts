@@ -48,6 +48,7 @@ export const PERA_LINK_TESTNET_CAIP2 =
     'algorand:SGO1GKSzyE7IEPItTxCByw9x8FmnrCDe'
 export const EVM_LINK_CHAIN_ID = 'ethereum' as ChainId
 export const EVM_LINK_CAIP2 = 'eip155:1'
+export const EVM_LINK_TESTNET_CAIP2 = 'eip155:11155111'
 
 const isHexAddress = (value: string): boolean =>
     /^0x[0-9a-fA-F]{40}$/.test(value)
@@ -92,6 +93,7 @@ export const registerPeraLinkChains = (): void => {
     chains.register(
         linkDescriptor(EVM_LINK_CHAIN_ID, [
             { id: 'mainnet', caip2: EVM_LINK_CAIP2 },
+            { id: 'sepolia', caip2: EVM_LINK_TESTNET_CAIP2 },
         ]),
         NO_CAPABILITIES,
     )
