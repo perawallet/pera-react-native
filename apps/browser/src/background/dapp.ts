@@ -11,6 +11,7 @@
  */
 
 import { isTrustedExtensionPageSender } from '@perawallet/wallet-extension-platform-chrome'
+import { hasSessionMasterKey } from '@perawallet/wallet-extension-keystore-chrome/vault/autolock'
 import {
     DAPP_PAGE_RESPONSE_SCOPE,
     isDappHostResponseMessage,
@@ -94,9 +95,11 @@ const broadcastToTabs = (
 export const installDappPageRequestRoute = ({
     chromeLike = chrome,
     ensureOffscreenDocumentLike = ensureOffscreenDocument,
+    isVaultUnlocked = hasSessionMasterKey,
 }: {
     chromeLike?: typeof chrome
     ensureOffscreenDocumentLike?: () => Promise<void>
+    isVaultUnlocked?: () => Promise<boolean>
 } = {}): void => {
     chromeLike.runtime.onMessage.addListener(
         (message, sender, sendResponse: (ack: DappPageRequestAck) => void) => {
@@ -138,45 +141,60 @@ export const installDappPageRequestRoute = ({
             // would silently make it a page-controlled URL fetched when the
             // approval opens — revisit this fallback before adding that permission.
             const faviconUrl = sender.tab?.favIconUrl
-            void sendDappHostRequest(
-                {
-                    provider,
-                    origin,
-                    hasUserActivation,
-                    ...(faviconUrl ? { faviconUrl } : {}),
-                    returnTo: { tabId },
-                    request,
-                },
-                { chromeLike, ensureHost: ensureOffscreenDocumentLike },
-            ).catch((error: unknown) => {
-                // The thrown error is synthetic (the host client discards the
-                // Chrome reason), so log the request context that makes it useful.
-                logger.error('[pera] dapp request could not reach the host', {
-                    origin,
-                    method: request.method,
-                    id: request.id,
-                    error,
-                })
-                void deliverToTab(
-                    chromeLike,
-                    tabId,
-                    {
-                        scope: DAPP_PAGE_RESPONSE_SCOPE,
-                        provider,
-                        origin,
-                        payload: jsonRpcError(
-                            request.id,
-                            codes.internal,
-                            'Wallet unavailable',
-                        ),
-                    },
-                    reason =>
-                        logger.warn(
-                            '[pera] dapp failure notice could not reach tab',
-                            { tabId, reason },
-                        ),
+            // The offscreen document has no access to the session storage that
+            // holds the vault key, so the lock state is read and stamped here.
+            // A state that can't be read counts as locked.
+            void isVaultUnlocked()
+                .then(
+                    isUnlocked => !isUnlocked,
+                    (): boolean => true,
                 )
-            })
+                .then(isWalletLocked =>
+                    sendDappHostRequest(
+                        {
+                            provider,
+                            origin,
+                            hasUserActivation,
+                            isWalletLocked,
+                            ...(faviconUrl ? { faviconUrl } : {}),
+                            returnTo: { tabId },
+                            request,
+                        },
+                        { chromeLike, ensureHost: ensureOffscreenDocumentLike },
+                    ),
+                )
+                .catch((error: unknown) => {
+                    // The thrown error is synthetic (the host client discards the
+                    // Chrome reason), so log the request context that makes it useful.
+                    logger.error(
+                        '[pera] dapp request could not reach the host',
+                        {
+                            origin,
+                            method: request.method,
+                            id: request.id,
+                            error,
+                        },
+                    )
+                    void deliverToTab(
+                        chromeLike,
+                        tabId,
+                        {
+                            scope: DAPP_PAGE_RESPONSE_SCOPE,
+                            provider,
+                            origin,
+                            payload: jsonRpcError(
+                                request.id,
+                                codes.internal,
+                                'Wallet unavailable',
+                            ),
+                        },
+                        reason =>
+                            logger.warn(
+                                '[pera] dapp failure notice could not reach tab',
+                                { tabId, reason },
+                            ),
+                    )
+                })
             return true
         },
     )

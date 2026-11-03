@@ -58,6 +58,7 @@ export class FakeDappTransport implements DappTransport {
         params?: unknown,
         opts: {
             hasUserActivation?: boolean
+            isWalletLocked?: boolean
             faviconUrl?: string
             id?: string
         } = {},
@@ -84,6 +85,7 @@ export class FakeDappTransport implements DappTransport {
                 {
                     origin,
                     hasUserActivation: opts.hasUserActivation ?? true,
+                    isWalletLocked: opts.isWalletLocked ?? false,
                     ...(opts.faviconUrl ? { faviconUrl: opts.faviconUrl } : {}),
                 },
                 request,

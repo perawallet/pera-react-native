@@ -18,6 +18,7 @@ const message = {
     provider: 'pera' as const,
     origin: 'https://a.example',
     hasUserActivation: true,
+    isWalletLocked: false,
     returnTo: { tabId: 2 },
     request: { jsonrpc: '2.0' as const, id: 'r', method: 'connect' },
 }

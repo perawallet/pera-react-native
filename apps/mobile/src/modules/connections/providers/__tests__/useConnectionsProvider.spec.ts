@@ -28,6 +28,7 @@ import { AppError } from '@perawallet/wallet-core-shared'
 import { FeeAdjustmentDeliveryError } from '@perawallet/wallet-core-signing'
 import type { Connection } from '@perawallet/wallet-extension-connections'
 import { i18n } from '@i18n/index'
+import { webViewDappTransport } from '@modules/webview'
 import type { ReactElement } from 'react'
 
 /** Just enough of `ConnectionProposal` for the subscription-wiring tests. */
@@ -425,6 +426,34 @@ describe('useConnectionsProvider', () => {
         expect(v1.getNetworkId).toBeTypeOf('function')
         expect(v2.getNetworkId).toBeTypeOf('function')
         expect(v2.isDappConnectEnabled).toBeTypeOf('function')
+    })
+
+    it('stamps the app lock on the in-app browser requests it relays', () => {
+        renderHook(() => useConnectionsProvider())
+        const listener = vi.fn()
+        const stop = webViewDappTransport.onRequest(listener)
+        const page = { currentUrl: () => 'https://a.example', inject: vi.fn() }
+        const message = {
+            provider: 'eip1193' as const,
+            token: 't',
+            hasUserActivation: true,
+            request: {
+                jsonrpc: '2.0' as const,
+                id: '1',
+                method: 'eth_accounts',
+            },
+        }
+
+        useSecurityStore.getState().setAppLockActive(true)
+        webViewDappTransport.receive(page, message, 'https://a.example')
+        useSecurityStore.getState().setAppLockActive(false)
+        webViewDappTransport.receive(page, message, 'https://a.example')
+        stop()
+
+        expect(listener.mock.calls.map(([ctx]) => ctx.isWalletLocked)).toEqual([
+            true,
+            false,
+        ])
     })
 
     it("reads each chain's selected network for v2", () => {
