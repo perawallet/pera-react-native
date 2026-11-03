@@ -33,6 +33,7 @@ import {
     assessRequestAddress,
     type RequestAddressAssessment,
 } from '@perawallet/wallet-core-transactions'
+import { useIsListedAddressHardBlockEnabled } from '@hooks/useIsListedAddressHardBlockEnabled'
 import { useKnownAddresses } from '@modules/transactions'
 import { createAcknowledgementStore } from './createAcknowledgementStore'
 
@@ -47,8 +48,10 @@ export type UseRequestAddressSafetyResult = {
     /** The network the request was built for; undefined when it names none. */
     scope: Optional<ChainScope>
     isChecking: boolean
-    /** A scam-listed address cannot be acknowledged away; the request can only be rejected. */
+    /** The request names a scam-listed address. */
     hasListedAddress: boolean
+    /** A listed address cannot be acknowledged away, so the request can only be rejected; false once remote config turns the hard block off. */
+    isListedAddressBlocking: boolean
     isAcknowledged: boolean
     toggleAcknowledged: () => void
     isConfirmBlocked: boolean
@@ -158,6 +161,8 @@ export const useRequestAddressSafety = ({
     const hasListedAddress = flaggedAddresses.some(
         ({ assessment }) => assessment.kind === 'listed',
     )
+    const isHardBlockEnabled = useIsListedAddressHardBlockEnabled()
+    const isListedAddressBlocking = hasListedAddress && isHardBlockEnabled
     const isAcknowledged =
         !!currentRequest && acknowledgedRequestId === currentRequest.id
     const toggleAcknowledged = useCallback(() => {
@@ -170,11 +175,12 @@ export const useRequestAddressSafety = ({
         scope,
         isChecking,
         hasListedAddress,
+        isListedAddressBlocking,
         isAcknowledged,
         toggleAcknowledged,
         isConfirmBlocked:
             isChecking ||
-            hasListedAddress ||
+            isListedAddressBlocking ||
             (flaggedAddresses.length > 0 && !isAcknowledged),
     }
 }

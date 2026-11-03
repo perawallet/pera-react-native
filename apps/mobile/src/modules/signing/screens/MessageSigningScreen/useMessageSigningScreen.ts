@@ -38,8 +38,8 @@ type UseMessageSigningScreenResult = {
     isPending: boolean
     /** Every address the signed message names, recognised as a permit or not. */
     reviewedAddresses: ReviewedAddress[]
-    /** A scam-listed address: the request can only be rejected. */
-    hasListedAddress: boolean
+    /** A scam-listed address under the hard block: the request can only be rejected. */
+    isListedAddressBlocking: boolean
     /** A flagged address or site still waits on the user's acknowledgement. */
     isConfirmBlocked: boolean
     handleApprove: () => void
@@ -68,8 +68,10 @@ export const useMessageSigningScreen = (): UseMessageSigningScreenResult => {
         () => (message ? reviewedMessageAddressesOf(message) : []),
         [message],
     )
-    const { hasListedAddress, isConfirmBlocked: isAddressConfirmBlocked } =
-        useRequestAddressSafety({ addresses: reviewedAddresses })
+    const {
+        isListedAddressBlocking,
+        isConfirmBlocked: isAddressConfirmBlocked,
+    } = useRequestAddressSafety({ addresses: reviewedAddresses })
     const { isConfirmBlocked: isSiteConfirmBlocked } = useRequestSiteSafety()
     const isConfirmBlocked = isAddressConfirmBlocked || isSiteConfirmBlocked
 
@@ -90,7 +92,7 @@ export const useMessageSigningScreen = (): UseMessageSigningScreenResult => {
         verifiedOrigin: currentRequest?.verifiedOrigin,
         isPending: pipeline.isLoading || !!signingStarted,
         reviewedAddresses,
-        hasListedAddress,
+        isListedAddressBlocking,
         isConfirmBlocked,
         handleApprove,
         handleReject,

@@ -61,7 +61,7 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
 
 const mockAddressSafety = vi.hoisted(() => ({
     isConfirmBlocked: false,
-    hasListedAddress: false,
+    isListedAddressBlocking: false,
 }))
 vi.mock('../../../hooks/useRequestAddressSafety', () => ({
     useRequestAddressSafety: () => mockAddressSafety,
@@ -139,7 +139,7 @@ describe('useSigningActionButtons', () => {
         mockGetPreference.mockReturnValue(undefined)
         mockConfirmQuantumDappUsage.mockResolvedValue('continue')
         mockAddressSafety.isConfirmBlocked = false
-        mockAddressSafety.hasListedAddress = false
+        mockAddressSafety.isListedAddressBlocking = false
         mockSiteSafety.isConfirmBlocked = false
         setupPipeline()
         ;(useSigningRequest as Mock).mockReturnValue({
@@ -197,7 +197,7 @@ describe('useSigningActionButtons', () => {
     })
 
     it('replaces the slider with a notice for a listed address, ahead of a multisig notice', () => {
-        mockAddressSafety.hasListedAddress = true
+        mockAddressSafety.isListedAddressBlocking = true
         mockAddressSafety.isConfirmBlocked = true
         ;(isSignRequestMultisigUnsignable as Mock).mockReturnValue(true)
         ;(useSigningRequest as Mock).mockReturnValue({
@@ -217,7 +217,7 @@ describe('useSigningActionButtons', () => {
     })
 
     it('keeps the notice and both holds when the site is flagged and an address is listed', () => {
-        mockAddressSafety.hasListedAddress = true
+        mockAddressSafety.isListedAddressBlocking = true
         mockAddressSafety.isConfirmBlocked = true
         mockSiteSafety.isConfirmBlocked = true
         ;(useSigningRequest as Mock).mockReturnValue({

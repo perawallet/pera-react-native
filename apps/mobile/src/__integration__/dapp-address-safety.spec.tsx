@@ -507,6 +507,23 @@ describe('Flow: a dApp request names a scam address or a look-alike of a known o
             await expectNotSentForLookup([DRAINER])
         })
 
+        it('Given remote config turns the hard block off, when a dApp asks to approve a listed drainer, then the review still flags it and the slide unlocks once the user acknowledges', async () => {
+            useRemoteConfigStore
+                .getState()
+                .setConfigOverride('enable_listed_address_hard_block', false)
+            const walletKit = await connectEthereum()
+
+            approveDrainer(walletKit)
+            await findSlide(TRANSACTION_SLIDE)
+
+            await waitFor(() => expect(screen.getByTestId(LISTED)).toBeTruthy())
+            expect(
+                screen.getByText('signing.address_safety.listed_title'),
+            ).toBeTruthy()
+            expect(screen.queryByTestId(TRANSACTION_BLOCKED)).toBeNull()
+            await expectHeldUntilAcknowledged(TRANSACTION_SLIDE)
+        })
+
         it('Given the device is offline, when a dApp asks to approve a listed drainer, then the review still blocks it', async () => {
             const walletKit = await connectEthereum()
             onlineManager.setOnline(false)

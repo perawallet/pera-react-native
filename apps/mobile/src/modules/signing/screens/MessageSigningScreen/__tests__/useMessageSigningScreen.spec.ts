@@ -36,7 +36,7 @@ const mockReviewedMessageAddressesOf = vi.hoisted(() =>
 )
 const mockAddressSafety = vi.hoisted(() => ({
     isConfirmBlocked: false,
-    hasListedAddress: false,
+    isListedAddressBlocking: false,
     addresses: undefined as unknown,
 }))
 const mockSiteSafety = vi.hoisted(() => ({ isConfirmBlocked: false }))
@@ -46,7 +46,7 @@ vi.mock('../../../hooks/useRequestAddressSafety', () => ({
         mockAddressSafety.addresses = addresses
         return {
             isConfirmBlocked: mockAddressSafety.isConfirmBlocked,
-            hasListedAddress: mockAddressSafety.hasListedAddress,
+            isListedAddressBlocking: mockAddressSafety.isListedAddressBlocking,
         }
     },
 }))
@@ -80,7 +80,7 @@ describe('useMessageSigningScreen', () => {
         vi.clearAllMocks()
         mockSigningStarted.current = null
         mockAddressSafety.isConfirmBlocked = false
-        mockAddressSafety.hasListedAddress = false
+        mockAddressSafety.isListedAddressBlocking = false
         mockAddressSafety.addresses = undefined
         mockSiteSafety.isConfirmBlocked = false
         mockReviewedMessageAddressesOf.mockReturnValue([])
@@ -123,13 +123,13 @@ describe('useMessageSigningScreen', () => {
     })
 
     it('passes a listed address through, still holding approval', () => {
-        mockAddressSafety.hasListedAddress = true
+        mockAddressSafety.isListedAddressBlocking = true
         mockAddressSafety.isConfirmBlocked = true
 
         const { result } = renderHook(() => useMessageSigningScreen())
         act(() => result.current.handleApprove())
 
-        expect(result.current.hasListedAddress).toBe(true)
+        expect(result.current.isListedAddressBlocking).toBe(true)
         expect(mockPipeline.next).not.toHaveBeenCalled()
     })
 
@@ -139,7 +139,7 @@ describe('useMessageSigningScreen', () => {
         const { result } = renderHook(() => useMessageSigningScreen())
         act(() => result.current.handleApprove())
 
-        expect(result.current.hasListedAddress).toBe(false)
+        expect(result.current.isListedAddressBlocking).toBe(false)
         expect(result.current.isConfirmBlocked).toBe(true)
         expect(mockPipeline.next).not.toHaveBeenCalled()
     })

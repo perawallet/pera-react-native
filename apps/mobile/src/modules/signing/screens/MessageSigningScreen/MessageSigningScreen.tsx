@@ -36,7 +36,7 @@ export const MessageSigningScreen = () => {
         verifiedOrigin,
         isPending,
         reviewedAddresses,
-        hasListedAddress,
+        isListedAddressBlocking,
         isConfirmBlocked,
         handleApprove,
         handleReject,
@@ -48,7 +48,7 @@ export const MessageSigningScreen = () => {
         <PWScreen
             footer={
                 <PWView style={[styles.buttonContainer, CONFIRM_ACTION_LAYOUT]}>
-                    {hasListedAddress ? (
+                    {isListedAddressBlocking ? (
                         <CannotSignNotice
                             title={t('signing.address_safety.blocked_title')}
                             body={t('signing.address_safety.blocked_body')}

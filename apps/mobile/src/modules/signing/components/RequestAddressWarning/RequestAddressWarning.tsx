@@ -34,6 +34,7 @@ export const RequestAddressWarning = ({
         flaggedAddresses,
         scope,
         hasListedAddress,
+        isListedAddressBlocking,
         isAcknowledged,
         toggleAcknowledged,
     } = useRequestAddressSafety({ addresses })
@@ -80,7 +81,7 @@ export const RequestAddressWarning = ({
                     />
                 ),
             )}
-            {!hasListedAddress && (
+            {!isListedAddressBlocking && (
                 <WarningAcknowledgeRow
                     label={t('signing.address_safety.acknowledge')}
                     isChecked={isAcknowledged}

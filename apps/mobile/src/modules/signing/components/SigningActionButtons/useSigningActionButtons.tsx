@@ -82,8 +82,10 @@ export const useSigningActionButtons = (): UseSigningActionButtonsResult => {
     const { getPreference } = usePreferences()
     const { request: requestBottomSheet } = useBottomSheet()
     const { confirmQuantumDappUsage } = useQuantumDappWarning()
-    const { hasListedAddress, isConfirmBlocked: isAddressConfirmBlocked } =
-        useRequestAddressSafety()
+    const {
+        isListedAddressBlocking,
+        isConfirmBlocked: isAddressConfirmBlocked,
+    } = useRequestAddressSafety()
     const { isConfirmBlocked: isSiteConfirmBlocked } = useRequestSiteSafety()
     const isConfirmBlocked = isAddressConfirmBlocked || isSiteConfirmBlocked
 
@@ -148,7 +150,7 @@ export const useSigningActionButtons = (): UseSigningActionButtonsResult => {
 
     const cannotSignNotice = useMemo(() => {
         if (!currentRequest) return undefined
-        if (hasListedAddress) {
+        if (isListedAddressBlocking) {
             return {
                 title: t('signing.address_safety.blocked_title'),
                 body: t('signing.address_safety.blocked_body'),
@@ -187,7 +189,7 @@ export const useSigningActionButtons = (): UseSigningActionButtonsResult => {
     }, [
         currentRequest,
         allAccounts,
-        hasListedAddress,
+        isListedAddressBlocking,
         hasUnsignableTransaction,
         t,
     ])

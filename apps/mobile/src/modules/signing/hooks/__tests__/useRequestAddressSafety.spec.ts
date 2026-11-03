@@ -62,6 +62,11 @@ vi.mock('@modules/transactions', () => ({
     },
 }))
 
+const hardBlock = vi.hoisted(() => ({ isEnabled: true }))
+vi.mock('@hooks/useIsListedAddressHardBlockEnabled', () => ({
+    useIsListedAddressHardBlockEnabled: () => hardBlock.isEnabled,
+}))
+
 const SIGNER = 'SIGN1111111111111SIGN'
 const OWN = 'OWN1AAAAAAAAAAAAOWN1'
 const CONTACT = '0xc0n1bbbbbbbbbbbbc0n1'
@@ -129,6 +134,7 @@ describe('useRequestAddressSafety', () => {
         addressCodecs.register(fakeCodec('algorand'))
         addressCodecs.register(fakeCodec('ethereum'))
         useAddressWarningAcknowledgementStore.getState().resetState()
+        hardBlock.isEnabled = true
         known.addresses = [
             { address: OWN, source: 'own-account', name: 'Main' },
             { address: CONTACT, source: 'contact', name: 'Alice' },
@@ -192,8 +198,35 @@ describe('useRequestAddressSafety', () => {
         act(() => result.current.toggleAcknowledged())
 
         expect(result.current.hasListedAddress).toBe(true)
+        expect(result.current.isListedAddressBlocking).toBe(true)
         expect(result.current.isAcknowledged).toBe(true)
         expect(result.current.isConfirmBlocked).toBe(true)
+    })
+
+    it('treats a listed address like a look-alike once remote config turns the hard block off', () => {
+        hardBlock.isEnabled = false
+        requestOn('ethereum', [[{ address: LISTED, role: 'spender' }]])
+        const { result } = renderHook(() => useRequestAddressSafety())
+        expect(result.current.hasListedAddress).toBe(true)
+        expect(result.current.isListedAddressBlocking).toBe(false)
+        expect(result.current.isConfirmBlocked).toBe(true)
+
+        act(() => result.current.toggleAcknowledged())
+
+        expect(result.current.isConfirmBlocked).toBe(false)
+    })
+
+    it('leaves a look-alike alone when the hard block is off', () => {
+        hardBlock.isEnabled = false
+        requestOn('ethereum', [
+            [{ address: lookAlikeOf(CONTACT), role: 'target' }],
+        ])
+        const { result } = renderHook(() => useRequestAddressSafety())
+
+        expect(result.current.isListedAddressBlocking).toBe(false)
+        expect(result.current.isConfirmBlocked).toBe(true)
+        act(() => result.current.toggleAcknowledged())
+        expect(result.current.isConfirmBlocked).toBe(false)
     })
 
     it('releases Confirm for a look-alike once the user acknowledges it', () => {

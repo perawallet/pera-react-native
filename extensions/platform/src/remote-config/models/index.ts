@@ -34,6 +34,7 @@ export const RemoteConfigKeys = {
     terms_version: 'terms_version',
     network_reachability_url: 'network_reachability_url',
     enable_device_registration_v4: 'enable_device_registration_v4',
+    enable_listed_address_hard_block: 'enable_listed_address_hard_block',
 } as const
 
 export type RemoteConfigKey =
@@ -111,6 +112,10 @@ export const RemoteConfigDefaults: Readonly<
     // the reader; the production variant, debug bundles included, stays off
     // until Remote Config turns it on.
     enable_device_registration_v4: false,
+    // Kill switch for the hard block on a scam-listed address in a dApp request.
+    // The lists come from external sources, so turning it off falls back to
+    // acknowledge-to-continue when a source wrongly lists a popular contract.
+    enable_listed_address_hard_block: true,
 }
 
 export interface RemoteConfigService {
