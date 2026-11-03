@@ -1397,9 +1397,9 @@ importers:
 
   extensions/keystore-chrome:
     dependencies:
-      '@algorandfoundation/wallet-provider':
-        specifier: 1.0.0-canary.6
-        version: 1.0.0-canary.6
+      '@algorandfoundation/keystore-core':
+        specifier: 1.0.0-canary.5
+        version: 1.0.0-canary.5(patch_hash=481882bbbc92c47b9f665d6a44053ac13e468eee42b0539136adfdb20f87f092)(@algorandfoundation/dp256@1.1.0)(@algorandfoundation/wallet-provider@1.0.0-canary.6)(@algorandfoundation/xhd-wallet-api@2.0.0-canary.1)(@tanstack/store@0.11.2)(before-after-hook@4.0.0)(falcon-1024@0.2.0(patch_hash=98e2e0205624da31c2026ce165fccdfaae381fbdfb28f85cad17fedf8943ca4a))
       '@noble/hashes':
         specifier: 'catalog:'
         version: 2.4.0
@@ -1415,9 +1415,6 @@ importers:
       '@tanstack/store':
         specifier: 'catalog:'
         version: 0.11.2
-      before-after-hook:
-        specifier: 'catalog:'
-        version: 4.0.0
     devDependencies:
       '@algorandfoundation/dp256':
         specifier: 'catalog:'
@@ -15242,7 +15239,7 @@ snapshots:
       obug: 2.2.1
       std-env: 4.3.0
       tinyrainbow: 3.2.0
-      vitest: 5.0.3(@types/node@20.19.43)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@2.4.0))(msw@2.15.0(@types/node@20.19.43)(typescript@7.0.2))(vite@8.3.4(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
+      vitest: 5.0.3(@types/node@26.1.2)(@vitest/coverage-v8@5.0.3)(jsdom@30.0.1(@noble/hashes@2.4.0))(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.3.4(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.51.2)(tsx@4.23.15)(yaml@2.8.3))
 
   '@vitest/istanbul-lib-coverage@1.0.2': {}
 
