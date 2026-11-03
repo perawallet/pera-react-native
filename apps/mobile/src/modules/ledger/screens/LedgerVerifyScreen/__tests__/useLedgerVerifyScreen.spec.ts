@@ -1252,6 +1252,56 @@ describe('useLedgerVerifyScreen', () => {
                 )
             })
 
+            it('joins with no prompt or read when the account holds Algorand before Ethereum', async () => {
+                const held = onEthereum(ETH_LEDGER_0, 'usb')
+                useAccountsStore.getState().setAccounts([
+                    {
+                        ...held,
+                        chains: {
+                            algorand: { address: 'LEDGER0' },
+                            ...held.chains,
+                        },
+                    } as WalletAccount,
+                ])
+
+                await importOnBaseOverUsb()
+
+                expect(mockSheetRequest).not.toHaveBeenCalled()
+                expect(mockProve).not.toHaveBeenCalled()
+                const [account, ...rest] = useAccountsStore.getState().accounts
+                expect(rest).toEqual([])
+                expect(account.chains.base?.address).toBe(
+                    ETH_LEDGER_0.toLowerCase(),
+                )
+            })
+
+            it('reads no other account at the index once the verify proves one', async () => {
+                const algorandOnly = {
+                    ...onEthereum(ETH_LEDGER_0, 'usb'),
+                    id: 'hw-algorand',
+                    chains: { algorand: { address: 'LEDGER0' } },
+                } as WalletAccount
+                useAccountsStore
+                    .getState()
+                    .setAccounts([
+                        algorandOnly,
+                        onEthereum(ETH_LEDGER_0, 'usb'),
+                    ])
+
+                await importOnBaseOverUsb()
+
+                expect(mockSheetRequest).not.toHaveBeenCalled()
+                expect(mockProve).not.toHaveBeenCalled()
+                const [algorand, ethereum, ...rest] =
+                    useAccountsStore.getState().accounts
+                expect(rest).toEqual([])
+                expect(algorand.chains.base).toBeUndefined()
+                expect(ethereum.id).toBe('hw-0')
+                expect(ethereum.chains.base?.address).toBe(
+                    ETH_LEDGER_0.toLowerCase(),
+                )
+            })
+
             it('keeps another USB device at the same index a separate account', async () => {
                 useAccountsStore
                     .getState()
