@@ -18,6 +18,7 @@ import {
     DappRequestRejectedError,
     type ConnectionProposal,
     type DappMessageRequest,
+    type DappNodeReadResult,
     type DappRequestChainAdapter,
     type DappRequestFailure,
     type InboundMessage,
@@ -73,6 +74,16 @@ const CAIP2: Record<string, Record<string, string>> = {
     base: { mainnet: 'eip155:8453' },
 }
 
+const nodeRead =
+    vi.fn<
+        (
+            chainId: ChainId,
+            networkId: NetworkId,
+            method: string,
+            params: unknown,
+        ) => Promise<DappNodeReadResult>
+    >()
+
 const fakeAdapter = (
     chainId: ChainId,
     namespace = 'eip155',
@@ -87,6 +98,16 @@ const fakeAdapter = (
     }),
     resolveReportedNetwork: scope => scope.networkId,
     emptySignaturesFor: () => ({}),
+    nodeReads: {
+        methods: [
+            'eth_call',
+            'eth_getBalance',
+            'eth_blockNumber',
+            'net_version',
+        ],
+        request: (networkId, method, params) =>
+            nodeRead(chainId, networkId, method, params),
+    },
     walletConnect: {
         namespace,
         caip2ChainIdFor: networkId => CAIP2[chainId]?.[networkId] ?? null,
@@ -254,6 +275,11 @@ describe('createEip1193ConnectionHandler', () => {
     beforeEach(() => {
         vi.useFakeTimers()
         dappRequestChainAdapters.reset()
+        nodeRead.mockReset()
+        nodeRead.mockImplementation(async (chainId, networkId, method) => ({
+            ok: true,
+            result: `${chainId}/${networkId}/${method}`,
+        }))
     })
 
     afterEach(() => {
@@ -852,6 +878,464 @@ describe('createEip1193ConnectionHandler', () => {
         })
     })
 
+    describe('node reads', () => {
+        const ACCOUNT_CALL = [{ to: ADDR_X }, 'latest']
+
+        it.each(['eth_call', 'eth_getBalance', 'eth_blockNumber'])(
+            'a connected site’s %s returns the node’s answer for its own chain',
+            async method => {
+                const { transport, registry } = setup([connectedOn('base')])
+                await registry.initialize()
+
+                const response = await transport.send(
+                    ORIGIN,
+                    method,
+                    ACCOUNT_CALL,
+                )
+
+                expect(resultOf(response)).toBe(`base/mainnet/${method}`)
+                expect(nodeRead).toHaveBeenCalledWith(
+                    'base',
+                    'mainnet',
+                    method,
+                    ACCOUNT_CALL,
+                )
+            },
+        )
+
+        it('reads the network the wallet has selected for the site’s chain', async () => {
+            const { transport, registry } = setup([connectedOn('ethereum')], {
+                networks: { ethereum: 'sepolia' },
+            })
+            await registry.initialize()
+
+            expect(resultOf(await transport.send(ORIGIN, 'net_version'))).toBe(
+                'ethereum/sepolia/net_version',
+            )
+        })
+
+        it('answers an unconnected site from the chain eth_chainId reports', async () => {
+            const { transport, registry } = setup()
+            await registry.initialize()
+
+            expect(
+                resultOf(
+                    await transport.send(ORIGIN, 'eth_getBalance', [
+                        ADDR_X,
+                        'latest',
+                    ]),
+                ),
+            ).toBe('ethereum/mainnet/eth_getBalance')
+        })
+
+        it('reads the first served chain for an unconnected site when the first is switched off', async () => {
+            const { transport, registry } = setup([], {
+                disabled: ['ethereum'],
+            })
+            await registry.initialize()
+
+            expect(
+                resultOf(await transport.send(ORIGIN, 'eth_blockNumber')),
+            ).toBe('base/mainnet/eth_blockNumber')
+        })
+
+        it('still gives an unconnected site 4100 for the methods that need an account', async () => {
+            const { transport, registry } = setup()
+            await registry.initialize()
+
+            for (const method of ['personal_sign', 'eth_sendTransaction']) {
+                expect(
+                    errorOf(await transport.send(ORIGIN, method))?.code,
+                ).toBe(EIP1193_ERROR_CODE.unauthorized)
+            }
+            expect(nodeRead).not.toHaveBeenCalled()
+        })
+
+        it.each([
+            ['connected', [connectedOn('ethereum')], 'eth_newFilter'],
+            ['unconnected', [], 'eth_sendRawTransaction'],
+        ])(
+            'a %s site calling a method outside the allow-list gets 4200 and no node is asked',
+            async (_state, seed, method) => {
+                const { transport, registry } = setup(seed)
+                await registry.initialize()
+
+                expect(
+                    errorOf(await transport.send(ORIGIN, method))?.code,
+                ).toBe(EIP1193_ERROR_CODE.unsupportedMethod)
+                expect(nodeRead).not.toHaveBeenCalled()
+            },
+        )
+
+        it('relays a node’s error with its code, message and data', async () => {
+            nodeRead.mockResolvedValue({
+                ok: false,
+                error: {
+                    code: 3,
+                    message: 'execution reverted',
+                    data: '0x08c3',
+                },
+            })
+            const { transport, registry } = setup([connectedOn('ethereum')])
+            await registry.initialize()
+
+            expect(
+                errorOf(await transport.send(ORIGIN, 'eth_call', ACCOUNT_CALL)),
+            ).toEqual({
+                code: 3,
+                message: 'execution reverted',
+                data: '0x08c3',
+            })
+        })
+
+        it('answers -32603 with a fixed message when no node replied', async () => {
+            nodeRead.mockRejectedValue(
+                new Error('POST https://node.example/key failed'),
+            )
+            const { transport, registry } = setup([connectedOn('ethereum')])
+            await registry.initialize()
+
+            expect(
+                errorOf(await transport.send(ORIGIN, 'eth_blockNumber')),
+            ).toEqual({
+                code: EIP1193_ERROR_CODE.internal,
+                message: 'The network did not answer',
+            })
+        })
+
+        it('answers 4901 when the site’s chain is no longer served', async () => {
+            const { transport, registry } = setup([connectedOn('ethereum')], {
+                networks: { ethereum: 'custom' },
+            })
+            await registry.initialize()
+
+            expect(
+                errorOf(await transport.send(ORIGIN, 'eth_blockNumber'))?.code,
+            ).toBe(EIP1193_ERROR_CODE.chainDisconnected)
+            expect(nodeRead).not.toHaveBeenCalled()
+        })
+
+        describe('concurrency cap', () => {
+            const CAP = 8
+            const OTHER_ORIGIN = 'https://other.example'
+            let releases: Array<() => void>
+
+            // Holds every read open until released, so the reads stay in flight.
+            const holdReads = () => {
+                releases = []
+                nodeRead.mockImplementation(
+                    (_chainId, _networkId, method) =>
+                        new Promise(resolve => {
+                            releases.push(() =>
+                                resolve({ ok: true, result: method }),
+                            )
+                        }),
+                )
+            }
+
+            it('answers -32005 past the cap and reads again once one finishes', async () => {
+                const { transport, registry } = setup()
+                await registry.initialize()
+                holdReads()
+                const inFlight = Array.from({ length: CAP }, () =>
+                    transport.send(ORIGIN, 'eth_blockNumber'),
+                )
+                await flush()
+
+                const over = await transport.send(ORIGIN, 'eth_blockNumber')
+
+                expect(errorOf(over)?.code).toBe(
+                    EIP1193_ERROR_CODE.limitExceeded,
+                )
+                expect(nodeRead).toHaveBeenCalledTimes(CAP)
+
+                releases[0]()
+                await inFlight[0]
+                const next = transport.send(ORIGIN, 'eth_blockNumber')
+                await flush()
+                releases[CAP]()
+
+                expect(resultOf(await next)).toBe('eth_blockNumber')
+            })
+
+            it('counts each origin on its own', async () => {
+                const { transport, registry } = setup()
+                await registry.initialize()
+                holdReads()
+                for (let index = 0; index < CAP; index += 1) {
+                    void transport.send(ORIGIN, 'eth_blockNumber')
+                }
+                await flush()
+
+                const other = transport.send(OTHER_ORIGIN, 'eth_blockNumber')
+                await flush()
+                releases[CAP]()
+
+                expect(resultOf(await other)).toBe('eth_blockNumber')
+            })
+
+            it('frees its place when the node does not answer', async () => {
+                const { transport, registry } = setup()
+                await registry.initialize()
+                nodeRead.mockRejectedValue(new Error('node down'))
+
+                for (let index = 0; index < CAP + 2; index += 1) {
+                    expect(
+                        errorOf(await transport.send(ORIGIN, 'eth_blockNumber'))
+                            ?.code,
+                    ).toBe(EIP1193_ERROR_CODE.internal)
+                }
+            })
+        })
+
+        it('answers a read while the wallet is locked and does not touch the connection', async () => {
+            const { transport, registry, store } = setup([
+                connectedOn('ethereum'),
+            ])
+            await registry.initialize()
+
+            const response = await transport.send(
+                ORIGIN,
+                'eth_blockNumber',
+                undefined,
+                { isWalletLocked: true },
+            )
+
+            expect(resultOf(response)).toBe('ethereum/mainnet/eth_blockNumber')
+            // Activity is recorded fire-and-forget, so let a late write land.
+            await flush()
+            expect((await store.get(ID))?.lastActiveAt).toBe(1)
+        })
+    })
+
+    describe('while the wallet is locked', () => {
+        const locked = { isWalletLocked: true }
+
+        it('eth_accounts is empty', async () => {
+            const { transport, registry } = setup([connectedOn('ethereum')])
+            await registry.initialize()
+
+            expect(
+                resultOf(
+                    await transport.send(
+                        ORIGIN,
+                        'eth_accounts',
+                        undefined,
+                        locked,
+                    ),
+                ),
+            ).toEqual([])
+        })
+
+        it('a connected site asking for accounts without a gesture gets 4100, not its accounts', async () => {
+            const { transport, registry, proposals } = setup([
+                connectedOn('ethereum'),
+            ])
+            await registry.initialize()
+
+            const response = await transport.send(
+                ORIGIN,
+                'eth_requestAccounts',
+                undefined,
+                { ...locked, hasUserActivation: false },
+            )
+
+            expect(errorOf(response)?.code).toBe(
+                EIP1193_ERROR_CODE.unauthorized,
+            )
+            expect(proposals).toHaveLength(0)
+        })
+
+        it('a connected site asking for accounts with a gesture goes through the approval', async () => {
+            const { transport, registry, proposals } = setup([
+                connectedOn('ethereum'),
+            ])
+            await registry.initialize()
+
+            void transport.send(
+                ORIGIN,
+                'eth_requestAccounts',
+                undefined,
+                locked,
+            )
+            await flush()
+
+            expect(proposals).toHaveLength(1)
+        })
+    })
+
+    describe('wallet_getPermissions', () => {
+        it('returns the site’s grant', async () => {
+            const { transport, registry } = setup([
+                connectedOn('ethereum', [ADDR_X, ADDR_GONE]),
+            ])
+            await registry.initialize()
+
+            expect(
+                resultOf(await transport.send(ORIGIN, 'wallet_getPermissions')),
+            ).toEqual([
+                {
+                    invoker: ORIGIN,
+                    parentCapability: 'eth_accounts',
+                    caveats: [
+                        { type: 'restrictReturnedAccounts', value: [ADDR_X] },
+                    ],
+                    date: 1,
+                },
+            ])
+        })
+
+        it('is empty for a site with no grant', async () => {
+            const { transport, registry } = setup()
+            await registry.initialize()
+
+            expect(
+                resultOf(await transport.send(ORIGIN, 'wallet_getPermissions')),
+            ).toEqual([])
+        })
+
+        it('is empty while the wallet is locked', async () => {
+            const { transport, registry } = setup([connectedOn('ethereum')])
+            await registry.initialize()
+
+            expect(
+                resultOf(
+                    await transport.send(
+                        ORIGIN,
+                        'wallet_getPermissions',
+                        undefined,
+                        { isWalletLocked: true },
+                    ),
+                ),
+            ).toEqual([])
+        })
+
+        it('is empty for a site flagged since its approval', async () => {
+            const { transport, registry } = setup([connectedOn('ethereum')], {
+                siteWarningOf: async () => 'blocked',
+            })
+            await registry.initialize()
+
+            expect(
+                resultOf(await transport.send(ORIGIN, 'wallet_getPermissions')),
+            ).toEqual([])
+        })
+    })
+
+    describe('wallet_requestPermissions', () => {
+        const ask = (
+            transport: FakeDappTransport,
+            params: unknown = [{ eth_accounts: {} }],
+        ) => transport.send(ORIGIN, 'wallet_requestPermissions', params)
+
+        it('asks the user even when the site is already connected, then answers the chosen grant', async () => {
+            const { transport, registry, proposals } = setup([
+                connectedOn('ethereum'),
+            ])
+            await registry.initialize()
+            const pending = ask(transport)
+            await flush()
+
+            expect(proposals).toHaveLength(1)
+            await proposals[0].approve([ADDR_Y])
+
+            expect(resultOf(await pending)).toMatchObject([
+                {
+                    parentCapability: 'eth_accounts',
+                    caveats: [
+                        { type: 'restrictReturnedAccounts', value: [ADDR_Y] },
+                    ],
+                },
+            ])
+        })
+
+        it('still needs a user gesture for a connected site', async () => {
+            const { transport, registry, proposals } = setup([
+                connectedOn('ethereum'),
+            ])
+            await registry.initialize()
+
+            const response = await transport.send(
+                ORIGIN,
+                'wallet_requestPermissions',
+                [{ eth_accounts: {} }],
+                { hasUserActivation: false },
+            )
+
+            expect(errorOf(response)?.code).toBe(
+                EIP1193_ERROR_CODE.unauthorized,
+            )
+            expect(proposals).toHaveLength(0)
+        })
+
+        it('opens the connect approval for a new site and answers the grant on approval', async () => {
+            const { transport, registry, proposals } = setup()
+            await registry.initialize()
+            const pending = ask(transport)
+            await flush()
+
+            await proposals[0].approve([ADDR_Y])
+
+            expect(resultOf(await pending)).toEqual([
+                {
+                    invoker: ORIGIN,
+                    parentCapability: 'eth_accounts',
+                    caveats: [
+                        { type: 'restrictReturnedAccounts', value: [ADDR_Y] },
+                    ],
+                    date: 1_000_000,
+                },
+            ])
+        })
+
+        it.each([
+            [
+                'another permission alongside it',
+                [{ eth_accounts: {}, wallet_snap: {} }],
+            ],
+            ['a non-object value', [{ eth_accounts: 'x' }]],
+            ['a second entry', [{ eth_accounts: {} }, { eth_accounts: {} }]],
+        ])('refuses %s', async (_name, params) => {
+            const { transport, registry, proposals } = setup()
+            await registry.initialize()
+
+            expect(errorOf(await ask(transport, params))?.code).toBe(
+                EIP1193_ERROR_CODE.invalidParams,
+            )
+            expect(proposals).toHaveLength(0)
+        })
+
+        it('refuses a request for anything but eth_accounts', async () => {
+            const { transport, registry, proposals } = setup()
+            await registry.initialize()
+
+            expect(
+                errorOf(await ask(transport, [{ eth_signTypedData: {} }]))
+                    ?.code,
+            ).toBe(EIP1193_ERROR_CODE.invalidParams)
+            expect(errorOf(await ask(transport, []))?.code).toBe(
+                EIP1193_ERROR_CODE.invalidParams,
+            )
+            expect(proposals).toHaveLength(0)
+        })
+
+        it('frees the site’s slot when it throws before the proposal is handed over', async () => {
+            const { transport, registry, store, proposals } = setup()
+            await registry.initialize()
+            vi.spyOn(store, 'get').mockRejectedValueOnce(
+                new Error('store down'),
+            )
+
+            expect(errorOf(await ask(transport))?.code).toBe(
+                EIP1193_ERROR_CODE.internal,
+            )
+            void ask(transport)
+            await flush()
+
+            expect(proposals).toHaveLength(1)
+        })
+    })
+
     describe('signing requests', () => {
         type RaisedRequest = Extract<InboundMessage, { kind: 'request' }>
         const requestOf = (messages: InboundMessage[]): RaisedRequest => {
@@ -1026,13 +1510,15 @@ describe('createEip1193ConnectionHandler', () => {
             expect(messages).toHaveLength(0)
         })
 
-        it('an unconnected site calling eth_call gets 4200', async () => {
+        it('an unconnected site calling a method outside the allow-list gets 4200', async () => {
             const { transport, registry, messages } = setup()
             await registry.initialize()
             expect(
-                errorOf(await transport.send(ORIGIN, 'eth_call'))?.code,
+                errorOf(await transport.send(ORIGIN, 'eth_sendRawTransaction'))
+                    ?.code,
             ).toBe(EIP1193_ERROR_CODE.unsupportedMethod)
             expect(messages).toHaveLength(0)
+            expect(nodeRead).not.toHaveBeenCalled()
         })
 
         it('a signing request on a chain no longer served gets 4901 and is never raised', async () => {
