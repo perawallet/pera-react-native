@@ -1,0 +1,41 @@
+{
+    "request": {
+        "method": "POST",
+        "path": "/api/v4/assets/",
+        "body": {
+            "ids": ["eip155:1/erc20:0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"]
+        }
+    },
+    "recordedFrom": "algorand-backend@6df2420",
+    "recordedAt": "2026-11-03T12:38:19Z",
+    "response": {
+        "results": [
+            {
+                "asset_id": "eip155:1/erc20:0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+                "type": "erc20",
+                "name": "USD Coin",
+                "unit_name": "USDC",
+                "fraction_decimals": 6,
+                "logo": null,
+                "usd_value": "1.000000000000000000000000",
+                "last_24_hours_usd_price_change_percentage": 0,
+                "is_verified": true,
+                "verification_tier": "verified",
+                "explorer_url": "https://etherscan.io",
+                "total": "49984229402263835",
+                "is_deleted": false,
+                "creator": null,
+                "collectible": null,
+                "category": null,
+                "labels": [],
+                "is_favorited": false,
+                "is_price_alert_enabled": false,
+                "cross_chain_asset_group": {
+                    "id": "0b6f7c1e-4a8e-4d2b-9a51-3f2c6d1e8b70",
+                    "name": "USD Coin",
+                    "symbol": "USDC"
+                }
+            }
+        ]
+    }
+}

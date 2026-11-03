@@ -72,7 +72,7 @@ const GRIDS: Record<
     'one-year': { points: 365, interval: 'daily' },
 }
 
-const balanceHistorySchema = z.object({
+export const balanceHistorySchema = z.object({
     results: z.array(
         z.object({
             timestamp: z.string(),

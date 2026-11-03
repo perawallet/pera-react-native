@@ -1,0 +1,17 @@
+{
+    "request": {
+        "method": "POST",
+        "path": "/api/v4/accounts/should-refresh/",
+        "body": {
+            "chain": "eip155:1",
+            "account_addresses": ["0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"],
+            "last_refreshed_round": null
+        }
+    },
+    "recordedFrom": "algorand-backend@6df2420",
+    "recordedAt": "2026-11-03T12:38:19Z",
+    "response": {
+        "refresh": true,
+        "round": 23412525
+    }
+}
