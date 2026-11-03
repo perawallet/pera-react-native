@@ -4747,7 +4747,11 @@
             "pay_at_most": "You pay at most",
             "receive": "You receive",
             "receive_at_least": "You receive at least",
-            "entire_balance": "Entire balance"
+            "entire_balance": "Entire balance",
+            "fee": "Fee",
+            "fee_share": "{{percent}} of the swap output",
+            "fee_recipient": "Paid to",
+            "base_units": "base units"
         },
         "known_contract": {
             "title": "Contract",

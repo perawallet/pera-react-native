@@ -1127,6 +1127,11 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                 // execute(0x00, [V3_SWAP_EXACT_IN: 2.5 USDC for at least 2.4 DAI, paid to the signer], deadline)
                 const SWAP_DATA =
                     '0x3593564c000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000f486570000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000100000000000000000000000000f39fd6e51aad88f6f4ce6ab8827279cfffb9226600000000000000000000000000000000000000000000000000000000002625a0000000000000000000000000000000000000000000000000214e8348c4f0000000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000002ba0b86991c6218b36c1d19d4a2e9eb0ce3606eb480000646b175474e89094c44da98b954eedeac495271d0f000000000000000000000000000000000000000000'
+                // execute(0x000604, [V3_SWAP_EXACT_IN: 2.5 USDC for 2.4 DAI into the router, PAY_PORTION of all 10 000 bips of the DAI to a stranger, SWEEP of the DAI to the signer with a minimum of 1], deadline)
+                const HOSTILE_FEE_SWAP_DATA =
+                    '0x3593564c000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000f48657000000000000000000000000000000000000000000000000000000000000000003000604000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000030000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000018000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000002625a0000000000000000000000000000000000000000000000000214e8348c4f0000000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000002ba0b86991c6218b36c1d19d4a2e9eb0ce3606eb480000646b175474e89094c44da98b954eedeac495271d0f00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000600000000000000000000000006b175474e89094c44da98b954eedeac495271d0f00000000000000000000000070997970c51812dc3a010c7d01b50e0d17dc79c8000000000000000000000000000000000000000000000000000000000000271000000000000000000000000000000000000000000000000000000000000000600000000000000000000000006b175474e89094c44da98b954eedeac495271d0f000000000000000000000000f39fd6e51aad88f6f4ce6ab8827279cfffb922660000000000000000000000000000000000000000000000000000000000000001'
+                const FEE_RECIPIENT =
+                    '0x70997970C51812dc3A010C7d01b50e0d17dc79C8'
                 // execute(0x10, [0x], deadline): V4_SWAP, a command the decoder doesn't read
                 const UNKNOWN_COMMAND_DATA =
                     '0x3593564c000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000f486570000000000000000000000000000000000000000000000000000000000000000011000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000'
@@ -1228,6 +1233,69 @@ describe('Flow: a v2 session spanning Algorand and Ethereum', () => {
                     expect(
                         screen.queryByTestId('ethereum_contract_call_warning'),
                     ).toBeNull()
+                })
+
+                it('Given a swap that pays a stranger its whole output, when it is reviewed, then it stays a Swap but shows the fee with its recipient and keeps the unknown-contract notice', async () => {
+                    await reviewRouterCall(HOSTILE_FEE_SWAP_DATA)
+
+                    await waitFor(() => {
+                        expect(
+                            screen.getAllByTestId('ethereum_action_fee_0'),
+                        ).not.toHaveLength(0)
+                    })
+                    expect(
+                        screen.getAllByText('transactions.list_item.swap'),
+                    ).not.toHaveLength(0)
+                    expect(
+                        screen.getAllByText('ethereum.contract_action.fee'),
+                    ).not.toHaveLength(0)
+                    expect(
+                        screen.getAllByText(
+                            'ethereum.contract_action.fee_share',
+                        ),
+                    ).not.toHaveLength(0)
+                    expect(
+                        screen.getAllByTestId('ethereum_action_fee_0_token'),
+                    ).not.toHaveLength(0)
+                    expect(
+                        screen.getAllByTestId(
+                            'ethereum_action_fee_0_recipient',
+                        ),
+                    ).not.toHaveLength(0)
+                    expect(
+                        screen.getAllByText(
+                            `${FEE_RECIPIENT.slice(0, 6)}...${FEE_RECIPIENT.slice(-4)}`,
+                        ),
+                    ).not.toHaveLength(0)
+                    expect(
+                        screen.getAllByTestId('ethereum_contract_call_warning'),
+                    ).not.toHaveLength(0)
+                    expect(
+                        screen.getAllByText(
+                            'ethereum.contract_action.receive_at_least',
+                        ),
+                    ).not.toHaveLength(0)
+                })
+
+                it('Given a swap whose token it has no record of, when it is reviewed, then the amount is labelled as base units', async () => {
+                    await reviewRouterCall(SWAP_DATA)
+
+                    await waitFor(() => {
+                        expect(
+                            screen.getAllByTestId('ethereum_action_receive'),
+                        ).not.toHaveLength(0)
+                    })
+                    // DAI has no record here, so its leg is raw base units and says so.
+                    await waitFor(() => {
+                        expect(
+                            screen.getAllByTestId('ethereum_action_base_units'),
+                        ).not.toHaveLength(0)
+                    })
+                    expect(
+                        screen.getAllByText(
+                            'ethereum.contract_action.base_units',
+                        ),
+                    ).not.toHaveLength(0)
                 })
 
                 it('Given a WETH deposit, when it is reviewed, then it is titled Wrap with the wrapped amount and the labelled token', async () => {

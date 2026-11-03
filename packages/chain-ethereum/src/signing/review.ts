@@ -54,6 +54,7 @@ import { readEvmReviewTransaction, readEvmTransaction } from './adapter'
 import {
     contractActionSummary,
     decodeEvmContractAction,
+    hidesUnknownContractNotice,
 } from './contract-actions'
 import { findKnownEvmContract, wrappedNativeOf } from './known-contracts'
 import type { EthereumPayloadFeeEstimate } from './adapter'
@@ -668,7 +669,7 @@ export const createEthereumReviewer = ({
                           const standard = recognisedCallOf(view?.call, context)
                           if (!standard) {
                               return context.capabilities.contractDecoding &&
-                                  view?.action
+                                  hidesUnknownContractNotice(view?.action)
                                   ? []
                                   : [{ ...UNKNOWN_CONTRACT_WARNING }]
                           }

@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { hidesUnknownContractNotice } from '@perawallet/wallet-core-chain-ethereum'
 import type { SignRequestSource } from '@perawallet/wallet-core-signing'
 import { PWText, PWView } from '@components/core'
 import { AddressDisplay } from '@components/AddressDisplay'
@@ -56,6 +57,9 @@ export const EthereumContractCallDetails = ({
     const notice = isReview
         ? contractCallNoticeOf(source, verifiedOrigin)
         : undefined
+    const isExplained =
+        !!standardCall ||
+        (!!contractAction && hidesUnknownContractNotice(view.action))
 
     const selectorRow = !!view.selector && (
         <KeyValueRow
@@ -85,7 +89,7 @@ export const EthereumContractCallDetails = ({
 
     return (
         <PWView style={styles.container}>
-            {!standardCall && !contractAction && (
+            {!isExplained && (
                 <ChainNotice
                     kind='warning'
                     titleKey={

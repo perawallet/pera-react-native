@@ -4747,7 +4747,11 @@
             "pay_at_most": "Du zahlst höchstens",
             "receive": "Du erhältst",
             "receive_at_least": "Du erhältst mindestens",
-            "entire_balance": "Gesamtes Guthaben"
+            "entire_balance": "Gesamtes Guthaben",
+            "fee": "Gebühr",
+            "fee_share": "{{percent}} der Ausgabe des Tauschs",
+            "fee_recipient": "Gezahlt an",
+            "base_units": "Basiseinheiten"
         },
         "known_contract": {
             "title": "Smart Contract",

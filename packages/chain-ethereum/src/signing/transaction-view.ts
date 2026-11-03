@@ -218,11 +218,27 @@ const isSwapLeg = (value: unknown): boolean =>
         value.bound === 'at-most' ||
         value.bound === 'at-least')
 
+const isSwapFee = (value: unknown): boolean =>
+    isRecord(value) &&
+    isAddressValue(value.token) &&
+    isAddressValue(value.recipient) &&
+    isRecord(value.size) &&
+    ((value.size.kind === 'bips' &&
+        Number.isInteger(value.size.bips) &&
+        (value.size.bips as number) > 0 &&
+        (value.size.bips as number) <= 10_000) ||
+        (value.size.kind === 'amount' && Decimal.isDecimal(value.size.amount)))
+
 const isContractAction = (value: unknown): boolean => {
     if (!isRecord(value)) return false
     switch (value.kind) {
         case 'swap': {
-            return isSwapLeg(value.input) && isSwapLeg(value.output)
+            return (
+                isSwapLeg(value.input) &&
+                isSwapLeg(value.output) &&
+                Array.isArray(value.fees) &&
+                value.fees.every(isSwapFee)
+            )
         }
         case 'wrap':
         case 'unwrap': {

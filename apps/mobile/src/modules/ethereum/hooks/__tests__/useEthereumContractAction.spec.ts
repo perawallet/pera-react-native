@@ -89,7 +89,8 @@ type SwapAction = Extract<EvmContractAction, { kind: 'swap' }>
 const swap = (
     input: SwapAction['input'],
     output: SwapAction['output'],
-): EvmContractAction => ({ kind: 'swap', input, output })
+    fees: SwapAction['fees'] = [],
+): EvmContractAction => ({ kind: 'swap', input, output, fees })
 
 describe('useEthereumContractAction', () => {
     beforeAll(() => {
@@ -126,19 +127,22 @@ describe('useEthereumContractAction', () => {
             input: {
                 asset: USDC_RECORD,
                 value: new Decimal(2.5),
+                isBaseUnits: false,
                 bound: 'exact',
             },
             output: {
                 asset: DAI_RECORD,
                 value: new Decimal(2.5),
+                isBaseUnits: false,
                 bound: 'at-least',
             },
+            fees: [],
         })
         expect(knownContract).toEqual(ROUTER_LABEL)
         expect(isLoading).toBe(false)
     })
 
-    it('shows base units, with no asset, for a token it has no record of', () => {
+    it('shows base units, flagged as such, for a token it has no record of', () => {
         const { contractAction } = render(
             viewWith(
                 swap(
@@ -157,9 +161,36 @@ describe('useEthereumContractAction', () => {
         )
 
         expect(contractAction).toMatchObject({
-            input: { asset: null, value: new Decimal(2_500_000) },
-            output: { asset: null, value: new Decimal(7) },
+            input: {
+                asset: null,
+                value: new Decimal(2_500_000),
+                isBaseUnits: true,
+            },
+            output: { asset: null, value: new Decimal(7), isBaseUnits: true },
         })
+    })
+
+    it('does not flag base units while a token record is still loading', () => {
+        mockRecords({}, [USDC])
+
+        const { contractAction } = render(
+            viewWith(
+                swap(
+                    {
+                        asset: { kind: 'token', contract: USDC },
+                        amount: new Decimal(2_500_000),
+                        bound: 'exact',
+                    },
+                    {
+                        asset: { kind: 'native' },
+                        amount: new Decimal(1),
+                        bound: 'at-least',
+                    },
+                ),
+            ),
+        )
+
+        expect(contractAction).toMatchObject({ input: { isBaseUnits: false } })
     })
 
     it('reads a native leg through the chain’s native asset, not a token record', () => {
@@ -186,8 +217,13 @@ describe('useEthereumContractAction', () => {
             input: {
                 asset: expect.objectContaining({ unitName: 'ETH' }),
                 value: new Decimal(1),
+                isBaseUnits: false,
             },
-            output: { asset: USDC_RECORD, value: new Decimal(1) },
+            output: {
+                asset: USDC_RECORD,
+                value: new Decimal(1),
+                isBaseUnits: false,
+            },
         })
     })
 
@@ -231,8 +267,8 @@ describe('useEthereumContractAction', () => {
         })
     })
 
-    it('presents an unwrap in the wrapped token at the target', () => {
-        mockRecords({ [WETH]: WETH_RECORD })
+    it('presents an unwrap with the native asset’s decimals, never raw wei, even with no record of the wrapped token', () => {
+        mockRecords({})
 
         const { contractAction } = render(
             viewWith(
@@ -241,10 +277,28 @@ describe('useEthereumContractAction', () => {
             ),
         )
 
-        expect(contractAction).toEqual({
+        expect(contractAction).toMatchObject({
             kind: 'unwrap',
-            amount: { asset: WETH_RECORD, value: new Decimal(0.5) },
+            amount: {
+                asset: expect.objectContaining({ unitName: 'ETH' }),
+                value: new Decimal(0.5),
+                isBaseUnits: false,
+            },
         })
+    })
+
+    it('does not look the wrapped token up to present an unwrap', () => {
+        mockRecords({ [WETH]: WETH_RECORD })
+        vi.mocked(useSingleAssetDetailsQuery).mockClear()
+
+        render(
+            viewWith({ kind: 'unwrap', amount: new Decimal(1) }, { to: WETH }),
+        )
+
+        expect(useSingleAssetDetailsQuery).not.toHaveBeenCalledWith(
+            WETH,
+            expect.anything(),
+        )
     })
 
     it('presents a lending action with its asset and amount', () => {
@@ -265,8 +319,160 @@ describe('useEthereumContractAction', () => {
         expect(contractAction).toEqual({
             kind: 'supply',
             assetContract: USDC,
-            amount: { asset: USDC_RECORD, value: new Decimal(3) },
+            amount: {
+                asset: USDC_RECORD,
+                value: new Decimal(3),
+                isBaseUnits: false,
+            },
             isEntireBalance: false,
+        })
+    })
+
+    it('flags a lending amount as base units when the asset has no record', () => {
+        const { contractAction } = render(
+            viewWith(
+                {
+                    kind: 'repay',
+                    asset: USDC,
+                    amount: new Decimal(3_000_000),
+                    isEntireBalance: false,
+                },
+                { to: POOL },
+            ),
+        )
+
+        expect(contractAction).toMatchObject({
+            amount: {
+                asset: null,
+                value: new Decimal(3_000_000),
+                isBaseUnits: true,
+            },
+        })
+    })
+
+    describe('a swap with fees', () => {
+        const ATTACKER = '0x70997970C51812dc3A010C7d01b50e0d17dc79C8'
+        const withFees = (fees: SwapAction['fees']) =>
+            viewWith(
+                swap(
+                    {
+                        asset: { kind: 'token', contract: USDC },
+                        amount: new Decimal(1_000_000),
+                        bound: 'exact',
+                    },
+                    {
+                        asset: { kind: 'token', contract: DAI },
+                        amount: new Decimal(1),
+                        bound: 'at-least',
+                    },
+                    fees,
+                ),
+            )
+
+        it('presents a portion fee as a percentage with its token and recipient', () => {
+            const { contractAction } = render(
+                withFees([
+                    {
+                        token: DAI,
+                        recipient: ATTACKER,
+                        size: { kind: 'bips', bips: 10_000 },
+                    },
+                    {
+                        token: DAI,
+                        recipient: SIGNER,
+                        size: { kind: 'bips', bips: 25 },
+                    },
+                ]),
+            )
+
+            expect(contractAction).toMatchObject({
+                fees: [
+                    {
+                        token: DAI,
+                        recipient: ATTACKER,
+                        size: { kind: 'percent', percent: new Decimal(100) },
+                    },
+                    {
+                        recipient: SIGNER,
+                        size: { kind: 'percent', percent: new Decimal(0.25) },
+                    },
+                ],
+            })
+        })
+
+        it('presents an amount fee in display units once the fee token is known', () => {
+            mockRecords({ [DAI]: DAI_RECORD })
+
+            const { contractAction } = render(
+                withFees([
+                    {
+                        token: DAI,
+                        recipient: ATTACKER,
+                        size: {
+                            kind: 'amount',
+                            amount: new Decimal(10n ** 18n),
+                        },
+                    },
+                ]),
+            )
+
+            expect(contractAction).toMatchObject({
+                fees: [
+                    {
+                        size: {
+                            kind: 'amount',
+                            amount: {
+                                asset: DAI_RECORD,
+                                value: new Decimal(1),
+                                isBaseUnits: false,
+                            },
+                        },
+                    },
+                ],
+            })
+        })
+
+        it('flags an amount fee as base units when the fee token has no record', () => {
+            const { contractAction } = render(
+                withFees([
+                    {
+                        token: DAI,
+                        recipient: ATTACKER,
+                        size: { kind: 'amount', amount: new Decimal(42) },
+                    },
+                ]),
+            )
+
+            expect(contractAction).toMatchObject({
+                fees: [
+                    {
+                        size: {
+                            kind: 'amount',
+                            amount: {
+                                asset: null,
+                                value: new Decimal(42),
+                                isBaseUnits: true,
+                            },
+                        },
+                    },
+                ],
+            })
+        })
+
+        it('waits on the fee token record', () => {
+            mockRecords({}, [DAI])
+
+            const { isLoading } = render(
+                withFees([
+                    {
+                        token: DAI,
+                        recipient: ATTACKER,
+                        size: { kind: 'amount', amount: new Decimal(1) },
+                    },
+                ]),
+            )
+
+            expect(isLoading).toBe(true)
         })
     })
 

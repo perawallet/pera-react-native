@@ -556,6 +556,7 @@ describe('useEthereumTransactionPresentation', () => {
                 amount: new Decimal(1_500_000),
                 bound: 'at-least',
             },
+            fees: [],
         }
 
         // The contract-call fixture is an unrecognised call; these give it a

@@ -12,7 +12,6 @@
 
 import { PWText, PWView } from '@components/core'
 import { AddressDisplay } from '@components/AddressDisplay'
-import { AssetAmount } from '@components/AssetAmount'
 import { KeyValueRow } from '@components/KeyValueRow'
 import { useLanguage } from '@hooks/useLanguage'
 import type {
@@ -20,6 +19,8 @@ import type {
     EthereumContractActionPresentation,
 } from '../../hooks/useEthereumContractAction'
 import type { EthereumTransactionPresentation } from '../../hooks/useEthereumTransactionPresentation'
+import { ActionAmount } from './ActionAmount'
+import { SwapFeeRow } from './SwapFeeRow'
 import { SwapLegRow } from './SwapLegRow'
 import { useStyles } from './styles'
 
@@ -41,7 +42,7 @@ type ActionRowsProps = {
 export const ActionRows = ({ action, presentation }: ActionRowsProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const { view, scope, isContractActionLoading } = presentation
+    const { view, scope } = presentation
 
     switch (action.kind) {
         case 'swap': {
@@ -63,6 +64,14 @@ export const ActionRows = ({ action, presentation }: ActionRowsProps) => {
                         token={swap.output.asset}
                         presentation={presentation}
                     />
+                    {action.fees.map((fee, index) => (
+                        <SwapFeeRow
+                            key={`${fee.recipient}-${index}`}
+                            testID={`ethereum_action_fee_${index}`}
+                            fee={fee}
+                            presentation={presentation}
+                        />
+                    ))}
                 </>
             )
         }
@@ -73,13 +82,9 @@ export const ActionRows = ({ action, presentation }: ActionRowsProps) => {
                     testID='ethereum_action_amount'
                     title={t('transactions.common.amount')}
                 >
-                    <AssetAmount
-                        chainId={scope.chainId}
-                        asset={action.amount.asset}
-                        value={action.amount.value}
-                        isLoading={isContractActionLoading}
-                        showSymbol
-                        ignorePrivacyMode
+                    <ActionAmount
+                        amount={action.amount}
+                        presentation={presentation}
                     />
                 </KeyValueRow>
             )
@@ -115,13 +120,9 @@ export const ActionRows = ({ action, presentation }: ActionRowsProps) => {
                                 {t('ethereum.contract_action.entire_balance')}
                             </PWText>
                         ) : (
-                            <AssetAmount
-                                chainId={scope.chainId}
-                                asset={action.amount.asset}
-                                value={action.amount.value}
-                                isLoading={isContractActionLoading}
-                                showSymbol
-                                ignorePrivacyMode
+                            <ActionAmount
+                                amount={action.amount}
+                                presentation={presentation}
                             />
                         )}
                     </KeyValueRow>

@@ -63,6 +63,7 @@ export const EthereumTransactionReviewBody = ({
         details = (
             <EthereumContractActionDetails
                 presentation={presentation}
+                variant='review'
                 source={source}
                 verifiedOrigin={verifiedOrigin}
             />

@@ -4747,7 +4747,11 @@
             "pay_at_most": "Pagas como máximo",
             "receive": "Recibes",
             "receive_at_least": "Recibes como mínimo",
-            "entire_balance": "Saldo completo"
+            "entire_balance": "Saldo completo",
+            "fee": "Comisión",
+            "fee_share": "{{percent}} del resultado del intercambio",
+            "fee_recipient": "Pagada a",
+            "base_units": "unidades base"
         },
         "known_contract": {
             "title": "Contrato",

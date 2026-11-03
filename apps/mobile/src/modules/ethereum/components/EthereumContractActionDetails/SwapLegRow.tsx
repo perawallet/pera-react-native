@@ -13,10 +13,10 @@
 import type { EvmActionAsset } from '@perawallet/wallet-core-chain-ethereum'
 import { PWView } from '@components/core'
 import { AddressDisplay } from '@components/AddressDisplay'
-import { AssetAmount } from '@components/AssetAmount'
 import { KeyValueRow } from '@components/KeyValueRow'
 import type { EthereumBoundedAmount } from '../../hooks/useEthereumContractAction'
 import type { EthereumTransactionPresentation } from '../../hooks/useEthereumTransactionPresentation'
+import { ActionAmount } from './ActionAmount'
 import { useStyles } from './styles'
 
 type SwapLegRowProps = {
@@ -43,13 +43,9 @@ export const SwapLegRow = ({
             verticalAlignment='top'
         >
             <PWView style={styles.amount}>
-                <AssetAmount
-                    chainId={presentation.scope.chainId}
-                    asset={leg.asset}
-                    value={leg.value}
-                    isLoading={presentation.isContractActionLoading}
-                    showSymbol
-                    ignorePrivacyMode
+                <ActionAmount
+                    amount={leg}
+                    presentation={presentation}
                 />
                 {token.kind === 'token' && (
                     <AddressDisplay

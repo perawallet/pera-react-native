@@ -19,4 +19,10 @@ export const useStyles = makeStyles(theme => ({
     amount: {
         gap: theme.spacing.xs,
     },
+    amountLine: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        alignItems: 'baseline',
+        gap: theme.spacing.xs,
+    },
 }))

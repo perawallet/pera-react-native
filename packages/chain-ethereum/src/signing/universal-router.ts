@@ -27,7 +27,11 @@ import {
 import type { AbiFunction, AbiParameter, Address, Hex } from 'viem'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import { areEvmAddressesEqual } from '../accounts/address-codec'
-import type { EvmContractAction, EvmSwapLeg } from './contract-action-types'
+import type {
+    EvmContractAction,
+    EvmSwapFee,
+    EvmSwapLeg,
+} from './contract-action-types'
 
 type SwapAction = Extract<EvmContractAction, { kind: 'swap' }>
 
@@ -69,6 +73,9 @@ const V2_SWAP_EXACT_OUT = 0x09
 const PERMIT2_PERMIT = 0x0a
 const WRAP_ETH = 0x0b
 const UNWRAP_WETH = 0x0c
+
+// The router reverts a portion outside 1..10 000.
+const MAX_PORTION_BIPS = 10_000n
 
 // Routers from V2.1 add a per-hop minimum price to each swap; it can only make
 // the swap revert, so it is read past rather than shown. Older routers don't have it.
@@ -115,7 +122,12 @@ type SwapStep = {
 
 type PermitStep = { kind: 'permit'; token: Address; spender: Address }
 type WrapStep = { kind: 'wrap'; recipient: Address; amount: bigint }
-type FeeStep = { kind: 'fee'; token: Address }
+type FeeStep = {
+    kind: 'fee'
+    token: Address
+    recipient: Address
+    size: EvmSwapFee['size']
+}
 type SweepStep = {
     kind: 'sweep'
     token: Address
@@ -259,7 +271,25 @@ const stepOf = (commandByte: number, input: Hex): Optional<Step> => {
         case TRANSFER:
         case PAY_PORTION: {
             const values = decodeInput(TOKEN_PAYOUT_INPUT, input)
-            return values && { kind: 'fee', token: addressOf(values[0]) }
+            if (!values) return undefined
+            const value = values[2] as bigint
+            const isPortion = type === PAY_PORTION
+            // A transfer of the router balance is a fee the calldata doesn't size.
+            if (
+                isPortion
+                    ? value === 0n || value > MAX_PORTION_BIPS
+                    : value === CONTRACT_BALANCE
+            ) {
+                return undefined
+            }
+            return {
+                kind: 'fee',
+                token: addressOf(values[0]),
+                recipient: addressOf(values[1]),
+                size: isPortion
+                    ? { kind: 'bips', bips: Number(value) }
+                    : { kind: 'amount', amount: new Decimal(value.toString()) },
+            }
         }
         case PERMIT2_PERMIT: {
             const values = decodeInput(PERMIT_INPUT, input)
@@ -471,6 +501,12 @@ const readOutput = (
     )
 }
 
+// The router's own aliases would read as meaningless addresses.
+const resolveAlias = (address: Address, call: Call): Address => {
+    if (address === MSG_SENDER) return getAddress(call.from)
+    return address === ADDRESS_THIS ? getAddress(call.to) : address
+}
+
 const readSwap = (
     call: Call,
     wrappedNative: Optional<Address>,
@@ -502,14 +538,20 @@ const readSwap = (
     }
     const input = readInput(context, grouped)
     const output = input && readOutput(context, grouped)
-    return input && output ? { kind: 'swap', input, output } : undefined
+    if (!input || !output) return undefined
+    const fees = grouped.fees.map(({ token, recipient, size }): EvmSwapFee => ({
+        token,
+        recipient: resolveAlias(recipient, call),
+        size,
+    }))
+    return { kind: 'swap', input, output, fees }
 }
 
 /**
  * The swap a Universal Router `execute` makes, or undefined unless the calldata
  * fully accounts for the call: every command is a known one that re-encodes
- * byte for byte, the output reaches only the signer (less a fee in the output
- * token), and the swaps agree on one route. Anything doubtful is no swap, so a
+ * byte for byte, the output reaches only the signer (less any fee in the
+ * output token, which the action carries), and the swaps agree on one route. Anything doubtful is no swap, so a
  * review never calls "Swap" a call that does more. Never throws.
  */
 export const decodeUniversalRouterSwap = (

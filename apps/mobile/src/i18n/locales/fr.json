@@ -4747,7 +4747,11 @@
             "pay_at_most": "Vous payez au maximum",
             "receive": "Vous recevez",
             "receive_at_least": "Vous recevez au minimum",
-            "entire_balance": "Solde total"
+            "entire_balance": "Solde total",
+            "fee": "Frais",
+            "fee_share": "{{percent}} du résultat de l’échange",
+            "fee_recipient": "Versés à",
+            "base_units": "unités de base"
         },
         "known_contract": {
             "title": "Contrat",

@@ -37,7 +37,7 @@ const view = (
         ...overrides,
     }) as EthereumTransactionView
 
-const amount = { asset: null, value: new Decimal(1) }
+const amount = { asset: null, value: new Decimal(1), isBaseUnits: true }
 
 const swapAction: EvmContractAction = {
     kind: 'swap',
@@ -51,12 +51,14 @@ const swapAction: EvmContractAction = {
         amount: new Decimal(1),
         bound: 'at-least',
     },
+    fees: [],
 }
 
 const swap: EthereumContractActionPresentation = {
     kind: 'swap',
     input: { ...amount, bound: 'exact' },
     output: { ...amount, bound: 'at-least' },
+    fees: [],
 }
 
 const wrap: EthereumContractActionPresentation = { kind: 'wrap', amount }

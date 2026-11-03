@@ -20,6 +20,7 @@ import {
     contractActionSummary,
     contractActionTitleKeyOf,
     decodeEvmContractAction,
+    hidesUnknownContractNotice,
 } from '../contract-actions'
 import { findKnownEvmContract } from '../known-contracts'
 import { SENDER } from './fixtures'
@@ -317,6 +318,7 @@ describe('contractActionSummary', () => {
                     amount: dec(1n),
                     bound: 'at-least',
                 },
+                fees: [],
             },
             { ...callFacts, to: ROUTER, value: 0n },
             ETHEREUM,
@@ -329,5 +331,45 @@ describe('contractActionSummary', () => {
             icon: 'swap',
         })
         expect(summary.amount).toBeUndefined()
+    })
+})
+
+describe('hidesUnknownContractNotice', () => {
+    const swap = (fees: Extract<EvmContractAction, { kind: 'swap' }>['fees']) =>
+        ({
+            kind: 'swap',
+            input: {
+                asset: { kind: 'native' },
+                amount: dec(1n),
+                bound: 'exact',
+            },
+            output: {
+                asset: { kind: 'token', contract: USDC },
+                amount: dec(1n),
+                bound: 'at-least',
+            },
+            fees,
+        }) satisfies EvmContractAction
+
+    it('hides it for a decoded swap with no fee and for the other actions', () => {
+        expect(hidesUnknownContractNotice(swap([]))).toBe(true)
+        expect(
+            hidesUnknownContractNotice({ kind: 'wrap', amount: dec(1n) }),
+        ).toBe(true)
+    })
+
+    it('keeps it for a swap that pays anyone a fee, and where nothing was decoded', () => {
+        expect(
+            hidesUnknownContractNotice(
+                swap([
+                    {
+                        token: USDC,
+                        recipient: OTHER,
+                        size: { kind: 'bips', bips: 1 },
+                    },
+                ]),
+            ),
+        ).toBe(false)
+        expect(hidesUnknownContractNotice(undefined)).toBe(false)
     })
 })

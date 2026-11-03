@@ -4747,7 +4747,11 @@
             "pay_at_most": "En fazla ödersin",
             "receive": "Alırsın",
             "receive_at_least": "En az alırsın",
-            "entire_balance": "Tüm bakiye"
+            "entire_balance": "Tüm bakiye",
+            "fee": "Ücret",
+            "fee_share": "Swap çıktısının {{percent}} kadarı",
+            "fee_recipient": "Alıcı",
+            "base_units": "temel birim"
         },
         "known_contract": {
             "title": "Sözleşme",

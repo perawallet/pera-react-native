@@ -17,6 +17,7 @@ import {
     decodeFunctionData,
     encodeAbiParameters,
     encodeFunctionData,
+    getAddress,
     parseAbi,
     parseAbiParameters,
     toHex,
@@ -65,6 +66,7 @@ describe('decodeUniversalRouterSwap, recorded mainnet calls', () => {
                 amount: dec(2267277n),
                 bound: 'at-least',
             },
+            fees: [],
         })
     })
 
@@ -163,6 +165,20 @@ describe('decodeUniversalRouterSwap, recorded mainnet calls', () => {
             amount: dec(10135882799193251n),
             bound: 'at-least',
         })
+    })
+
+    it('exposes the recorded fee: its token, its recipient and its size in bips', () => {
+        const action = decode(V2_PORTION_UNWRAP)
+
+        expect(action?.fees).toEqual([
+            {
+                token: WETH,
+                recipient: getAddress(
+                    '0xc2f08ddf35ca84819c8f5d33de6e0edbc87c4634',
+                ),
+                size: { kind: 'bips', bips: 100 },
+            },
+        ])
     })
 
     it('reads a swap whose unwrap is followed by an ETH sweep', () => {
@@ -564,6 +580,118 @@ describe('decodeUniversalRouterSwap, rules', () => {
         )
 
         expect(action?.output.amount).toEqual(dec(800n))
+    })
+
+    describe('fees', () => {
+        const swapToRouter = v3(
+            V3_IN,
+            ADDRESS_THIS,
+            1000n,
+            900n,
+            path3(USDC, USDT),
+            true,
+        )
+
+        it('decodes a PAY_PORTION of the whole output to a stranger with its recipient and size exposed', () => {
+            const action = decode(
+                call([
+                    swapToRouter,
+                    triple(PAY_PORTION, USDT, OTHER, 10_000n),
+                    triple(SWEEP, USDT, SIGNER, 1n),
+                ]),
+            )
+
+            expect(action?.kind).toBe('swap')
+            expect(action?.output.amount).toEqual(dec(1n))
+            expect(action?.fees).toEqual([
+                {
+                    token: USDT,
+                    recipient: OTHER,
+                    size: { kind: 'bips', bips: 10_000 },
+                },
+            ])
+        })
+
+        it('exposes a TRANSFER fee as a base-unit amount', () => {
+            const action = decode(
+                call([
+                    swapToRouter,
+                    triple(TRANSFER, USDT, OTHER, 250n),
+                    triple(SWEEP, USDT, SIGNER, 650n),
+                ]),
+            )
+
+            expect(action?.fees).toEqual([
+                {
+                    token: USDT,
+                    recipient: OTHER,
+                    size: { kind: 'amount', amount: dec(250n) },
+                },
+            ])
+        })
+
+        it('lists every fee in calldata order', () => {
+            const action = decode(
+                call([
+                    swapToRouter,
+                    triple(PAY_PORTION, USDT, OTHER, 25n),
+                    triple(TRANSFER, USDT, TOKEN, 5n),
+                    triple(SWEEP, USDT, SIGNER, 800n),
+                ]),
+            )
+
+            expect(action?.fees.map(fee => fee.recipient)).toEqual([
+                OTHER,
+                TOKEN,
+            ])
+        })
+
+        it("names the signer and the router for the router's own aliases", () => {
+            const action = decode(
+                call([
+                    swapToRouter,
+                    triple(PAY_PORTION, USDT, MSG_SENDER, 25n),
+                    triple(PAY_PORTION, USDT, ADDRESS_THIS, 25n),
+                    triple(SWEEP, USDT, SIGNER, 800n),
+                ]),
+            )
+
+            expect(action?.fees.map(fee => fee.recipient)).toEqual([
+                SIGNER,
+                ROUTER,
+            ])
+        })
+
+        it.each([
+            ['no portion', 0n],
+            ['a portion above 10 000 bips', 10_001n],
+        ])('gives nothing for %s, which the router reverts', (_name, bips) => {
+            const action = decode(
+                call([
+                    swapToRouter,
+                    triple(PAY_PORTION, USDT, OTHER, bips),
+                    triple(SWEEP, USDT, SIGNER, 1n),
+                ]),
+            )
+
+            expect(action).toBeUndefined()
+        })
+
+        it('gives nothing for a TRANSFER of the router balance, a fee the calldata does not size', () => {
+            const action = decode(
+                call([
+                    swapToRouter,
+                    triple(TRANSFER, USDT, OTHER, CONTRACT_BALANCE),
+                    triple(SWEEP, USDT, SIGNER, 1n),
+                ]),
+            )
+
+            expect(action).toBeUndefined()
+        })
+
+        it('has no fees on a swap that pays the signer directly', () => {
+            expect(decode(call([swapToSigner]))?.fees).toEqual([])
+        })
     })
 
     it('gives nothing for a fee in a token that is not the output', () => {

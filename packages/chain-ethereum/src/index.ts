@@ -41,11 +41,15 @@ export { ETHEREUM_CHAIN_ID, EVM_CHAINS, evmChainOf } from './chains/table'
 export type { EvmChain, EvmChainRow, EvmFeeStrategy } from './chains/types'
 export { createEvmChainModule, ethereumModule, evmChainModules } from './module'
 export { spendApprovalOfCall } from './signing/allowance'
-export { contractActionTitleKeyOf } from './signing/contract-actions'
+export {
+    contractActionTitleKeyOf,
+    hidesUnknownContractNotice,
+} from './signing/contract-actions'
 export type {
     EvmActionAsset,
     EvmContractAction,
     EvmContractLabel,
+    EvmSwapFee,
     EvmSwapLeg,
 } from './signing/contract-action-types'
 export type { EvmNftItem, EvmStandardCall } from './signing/standard-call-types'

@@ -4775,7 +4775,11 @@
             "pay_at_most": "Você paga no máximo",
             "receive": "Você recebe",
             "receive_at_least": "Você recebe no mínimo",
-            "entire_balance": "Saldo total"
+            "entire_balance": "Saldo total",
+            "fee": "Taxa",
+            "fee_share": "{{percent}} do resultado da conversão",
+            "fee_recipient": "Paga para",
+            "base_units": "unidades base"
         },
         "known_contract": {
             "title": "Contrato",

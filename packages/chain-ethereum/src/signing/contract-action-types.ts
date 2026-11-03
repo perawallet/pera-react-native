@@ -26,9 +26,33 @@ export type EvmSwapLeg = {
     bound: 'exact' | 'at-most' | 'at-least'
 }
 
+/** A cut of the swap's output the router pays someone else before the signer is paid. */
+export type EvmSwapFee = {
+    /** Always the swap's output token. */
+    token: Address
+    recipient: Address
+    size:
+        | {
+              kind: 'bips'
+              /** The share of the router's balance of `token`, out of 10 000. */
+              bips: number
+          }
+        | {
+              kind: 'amount'
+              /** Base units of `token`. */
+              amount: Decimal
+          }
+}
+
 /** What a call to a known contract does, read from calldata that re-encodes to exactly itself. */
 export type EvmContractAction =
-    | { kind: 'swap'; input: EvmSwapLeg; output: EvmSwapLeg }
+    | {
+          kind: 'swap'
+          input: EvmSwapLeg
+          output: EvmSwapLeg
+          /** Empty unless a third party is paid out of the output. */
+          fees: EvmSwapFee[]
+      }
     | {
           kind: 'wrap' | 'unwrap'
           /** Wei. */

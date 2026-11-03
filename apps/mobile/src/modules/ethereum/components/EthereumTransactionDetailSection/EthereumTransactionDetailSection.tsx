@@ -63,6 +63,7 @@ export const EthereumTransactionDetailSection = ({
                 {!standardCall && !!contractAction && (
                     <EthereumContractActionDetails
                         presentation={presentation}
+                        variant='detail'
                     />
                 )}
                 <EthereumContractCallDetails

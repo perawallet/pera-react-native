@@ -145,6 +145,7 @@ const ACTIONS: EvmContractAction[] = [
             amount: new Decimal(5),
             bound: 'at-least',
         },
+        fees: [],
     },
     { kind: 'wrap', amount: new Decimal(10) },
     { kind: 'unwrap', amount: new Decimal(10) },
@@ -172,6 +173,63 @@ describe('the Ethereum transaction view', () => {
             expect(readEthereumNative(toEthereumNative(view))).toEqual(view)
         },
     )
+
+    it('round-trips a swap with its fees, whether sized in bips or in base units', () => {
+        const [swap] = ACTIONS
+        const action = {
+            ...swap,
+            fees: [
+                {
+                    token: TOKEN,
+                    recipient: SPENDER,
+                    size: { kind: 'bips', bips: 30 },
+                },
+                {
+                    token: TOKEN,
+                    recipient: SPENDER,
+                    size: { kind: 'amount', amount: new Decimal(7) },
+                },
+            ],
+        } as EvmContractAction
+        const view = { ...ACTION_VIEW, action }
+
+        expect(readEthereumNative(toEthereumNative(view))).toEqual(view)
+    })
+
+    it.each([
+        ['no fees list', undefined],
+        [
+            'a fee with no recipient',
+            [{ token: TOKEN, size: { kind: 'bips', bips: 30 } }],
+        ],
+        [
+            'a portion over 10 000 bips',
+            [
+                {
+                    token: TOKEN,
+                    recipient: SPENDER,
+                    size: { kind: 'bips', bips: 10_001 },
+                },
+            ],
+        ],
+        [
+            'a fee with a non-Decimal amount',
+            [
+                {
+                    token: TOKEN,
+                    recipient: SPENDER,
+                    size: { kind: 'amount', amount: 7 },
+                },
+            ],
+        ],
+    ])('refuses a swap view with %s', (_, fees) => {
+        const [swap] = ACTIONS
+        const action = { ...swap, fees } as unknown as EvmContractAction
+
+        expect(() =>
+            readEthereumNative(toEthereumNative({ ...ACTION_VIEW, action })),
+        ).toThrow('malformed')
+    })
 
     it('round-trips a known contract without an action', () => {
         const view = { ...ACTION_VIEW, action: undefined }

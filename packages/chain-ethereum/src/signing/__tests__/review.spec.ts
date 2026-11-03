@@ -40,8 +40,11 @@ import {
 } from '../review'
 import { readEthereumNative } from '../transaction-view'
 import {
+    ATTACKER,
+    V2_PORTION_UNWRAP,
     V3_EXACT_IN_PERMIT_SWEEP,
     V4_SWAP,
+    hostileFeeSwap,
     type RecordedCall,
 } from './contract-action-fixtures'
 import { SENDER, TRANSFER } from './fixtures'
@@ -1067,6 +1070,47 @@ describe('a call to a known contract', () => {
             projectDomain: 'uniswap.org',
         })
         expect(view.action).toMatchObject({ kind: 'swap' })
+        expect(ethereumReviewerAdapter.policy.autoApproveLocal(reviewed)).toBe(
+            false,
+        )
+    })
+
+    it('keeps the unknown-contract warning on a swap that pays a fee, still titled Swap', async () => {
+        const { reviewed, summary, view } = await reviewRecorded(
+            V2_PORTION_UNWRAP,
+            DECODING,
+        )
+
+        expect(summary).toMatchObject({
+            kind: 'swap',
+            title: { key: 'transactions.list_item.swap' },
+        })
+        expect(view.action).toMatchObject({
+            kind: 'swap',
+            fees: [{ size: { kind: 'bips', bips: 100 } }],
+        })
+        expect(reviewed.warnings).toEqual([
+            expect.objectContaining({ type: 'unknown-contract' }),
+        ])
+    })
+
+    it('keeps the warning when a hostile dApp routes the whole output to a stranger and sweeps a minimum of 1', async () => {
+        const hostile = hostileFeeSwap()
+        const { reviewed, view } = await reviewRecorded(hostile, DECODING)
+
+        expect(view.action).toMatchObject({
+            kind: 'swap',
+            output: { amount: new Decimal(1), bound: 'at-least' },
+            fees: [
+                {
+                    recipient: getAddress(ATTACKER),
+                    size: { kind: 'bips', bips: 10_000 },
+                },
+            ],
+        })
+        expect(reviewed.warnings).toEqual([
+            expect.objectContaining({ type: 'unknown-contract' }),
+        ])
         expect(ethereumReviewerAdapter.policy.autoApproveLocal(reviewed)).toBe(
             false,
         )
