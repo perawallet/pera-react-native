@@ -12,9 +12,10 @@
 
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
-import { PWBadge, PWView, type PWViewProps } from '@components/core'
+import { PWView, type PWViewProps } from '@components/core'
 import { AccountDisplay } from '@components/AccountDisplay'
 import { AssetAmount } from '@components/AssetAmount'
+import { AvatarCountBadge } from '@components/AvatarCountBadge'
 import { ChainBadge } from '@components/ChainBadge'
 import { ChainUnavailableNotice } from '@components/ChainNotice'
 import { PreferredAmount } from '@components/PreferredAmount'
@@ -146,10 +147,7 @@ export const AccountWithBalance = ({
                 }
                 avatarBadge={
                     jointParticipantCount !== undefined ? (
-                        <PWBadge
-                            variant='secondary'
-                            value={jointParticipantCount}
-                        />
+                        <AvatarCountBadge count={jointParticipantCount} />
                     ) : undefined
                 }
                 style={styles.accountDisplay}
