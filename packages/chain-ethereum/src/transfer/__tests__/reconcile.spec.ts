@@ -708,6 +708,88 @@ describe('reconcileEthereumSubmissions', () => {
             expect(await statusOf(speedUp)).toBe('failed')
         })
 
+        describe('a speed-up whose nonce was mined', () => {
+            const recordPair = async () => {
+                const original = await record({ txIds: [ORIGINAL] })
+                vi.setSystemTime(Date.now() + 1_000)
+                const speedUp = await record({
+                    txIds: [REPLACEMENT],
+                    replacesAttemptId: original,
+                })
+                return { original, speedUp }
+            }
+            const statusOf = async (id: string) =>
+                (await db.select().from(SubmissionAttemptsSchema).all()).find(
+                    row => row.id === id,
+                )?.status
+            const originalMined = (head: number) =>
+                node({
+                    latest: 1,
+                    head,
+                    eth_getTransactionReceipt: params =>
+                        params[0] === ORIGINAL
+                            ? evmTransactionReceipt({
+                                  transactionHash: ORIGINAL,
+                                  blockNumber: '0x1',
+                              })
+                            : null,
+                })
+
+            it('stays submitted in the pass where its original first reaches confirming, whatever order the two rows are written in', async () => {
+                const { original, speedUp } = await recordPair()
+                originalMined(5)
+
+                await reconcile()
+
+                expect(await statusOf(original)).toBe('confirming')
+                expect(await statusOf(speedUp)).toBe('submitted')
+            })
+
+            it('stays submitted while its confirming original has no receipt for a pass but the node still serves it mined', async () => {
+                const { original, speedUp } = await recordPair()
+                originalMined(5)
+                await reconcile()
+                expect(await statusOf(original)).toBe('confirming')
+
+                node({
+                    latest: 1,
+                    head: 6,
+                    eth_getTransactionByHash: params =>
+                        params[0] === ORIGINAL
+                            ? evmRpcTransaction({ hash: ORIGINAL })
+                            : null,
+                })
+                await reconcile()
+
+                expect(await statusOf(original)).toBe('confirming')
+                expect(await statusOf(speedUp)).toBe('submitted')
+            })
+
+            it('stays submitted when the original has a shallow receipt but its head read fails, so it never reached confirming', async () => {
+                const { original, speedUp } = await recordPair()
+                vi.spyOn(console, 'warn').mockImplementation(() => {})
+                node({
+                    latest: 1,
+                    eth_blockNumber: new EvmRpcErrorFixture(
+                        -32603,
+                        'internal error',
+                    ),
+                    eth_getTransactionReceipt: params =>
+                        params[0] === ORIGINAL
+                            ? evmTransactionReceipt({
+                                  transactionHash: ORIGINAL,
+                                  blockNumber: '0x1',
+                              })
+                            : null,
+                })
+
+                await reconcile()
+
+                expect(await statusOf(original)).toBe('submitted')
+                expect(await statusOf(speedUp)).toBe('submitted')
+            })
+        })
+
         it('fails a reorged-out row the node dropped, and frees its nonce for the next send', async () => {
             await record()
             node({ eth_getTransactionReceipt: receiptAt(1), head: 5 })

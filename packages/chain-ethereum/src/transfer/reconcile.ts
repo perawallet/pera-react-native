@@ -124,24 +124,34 @@ const isMinedOnNode = async (
     }
 }
 
-// The winner at a nonce is only known once its verdict is final: a reorg can
-// still hand the nonce to another transaction, and a loser settled early would
-// stay terminal with the wrong status.
-const hasConfirmingSibling = async (
+// A sibling still short of depth means the winner at this nonce can change in
+// a reorg, and a loser settled now would stay terminal with the wrong status.
+// Both signals are needed: the ledger status covers a receipt that is briefly
+// missing on a lagging RPC, and the receipt covers a sibling whose status
+// another probe in the same pass has not written yet.
+const hasReorgableSibling = async (
     attempt: SubmissionAttempt,
-    scope: ChainScope,
-    db: Optional<Database>,
+    { scope, db, depth, receiptOf, headOf }: ProbeContext,
 ): Promise<boolean> => {
     const { sender, nonce } = attempt
-    if (sender === null || nonce === null) return false
-    const confirming = await getSubmissionAttemptsAtNonce({
+    if (sender === null || nonce === null || depth === 0n) return false
+    const siblings = await getSubmissionAttemptsAtNonce({
         db,
         scope,
         sender,
         nonce,
-        statuses: ['confirming'],
+        statuses: OPEN_SUBMISSION_STATUSES,
     })
-    return confirming.some(sibling => sibling.id !== attempt.id)
+    for (const sibling of siblings) {
+        const hash = sibling.txIds[0] as Optional<Hex>
+        if (sibling.id === attempt.id || hash === undefined) continue
+        if (sibling.status === 'confirming') return true
+        const receipt = await receiptOf(hash)
+        if (receipt && receipt.blockNumber + depth > (await headOf())) {
+            return true
+        }
+    }
+    return false
 }
 
 /**
@@ -150,8 +160,9 @@ const hasConfirmingSibling = async (
  */
 const probe = async (
     attempt: SubmissionAttempt,
-    { client, scope, db, depth, receiptOf, headOf }: ProbeContext,
+    context: ProbeContext,
 ): Promise<Nullable<Verdict | Progress>> => {
+    const { client, scope, db, depth, receiptOf, headOf } = context
     const hash = attempt.txIds[0] as Optional<Hex>
     if (hash === undefined) return null
 
@@ -190,9 +201,7 @@ const probe = async (
     // replacement. A dropped or replaced one is gone from the node.
     if (await isTransactionKnownToNode(client, hash)) return null
     if (landedPast) {
-        return (await hasConfirmingSibling(attempt, scope, db))
-            ? null
-            : 'replaced'
+        return (await hasReorgableSibling(attempt, context)) ? null : 'replaced'
     }
     // A re-priced original waits for its nonce to be mined, when the winner
     // decides between replaced and failed.
