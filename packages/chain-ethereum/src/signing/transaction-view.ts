@@ -20,6 +20,10 @@ import type {
 } from '@perawallet/wallet-core-chain-contract'
 import type { EvmNftStandard } from '../blockchain/utils/caip19'
 import { isRecord } from './adapter'
+import type {
+    EvmContractAction,
+    EvmContractLabel,
+} from './contract-action-types'
 import type { EvmStandardCall } from './standard-call-types'
 
 /** An Ethereum transaction as review and detail screens read it. */
@@ -94,6 +98,14 @@ type EthereumTransactionViewBase = {
      * address-safety check reads it regardless.
      */
     call?: EvmStandardCall
+    /**
+     * Only on a contract call to a contract in the chain's well-known registry.
+     * Like `call`, a fact about the bytes: the review shows it only while
+     * `contractDecoding` is on.
+     */
+    knownContract?: EvmContractLabel
+    /** Only with `knownContract`: what the calldata proves the call does. */
+    action?: EvmContractAction
 }
 
 const KINDS: readonly string[] = [
@@ -177,6 +189,77 @@ const isStandardCall = (value: unknown): boolean => {
     }
 }
 
+const KNOWN_CONTRACT_KINDS: readonly unknown[] = [
+    'uniswap-universal-router',
+    'uniswap-permit2',
+    'wrapped-native',
+    'aave-v3-pool',
+]
+
+const isKnownContract = (value: unknown): boolean =>
+    isRecord(value) &&
+    KNOWN_CONTRACT_KINDS.includes(value.kind) &&
+    typeof value.name === 'string' &&
+    isOptional(
+        value.projectDomain,
+        (domain): domain is string => typeof domain === 'string',
+    )
+
+const isActionAsset = (value: unknown): boolean =>
+    isRecord(value) &&
+    (value.kind === 'native' ||
+        (value.kind === 'token' && isAddressValue(value.contract)))
+
+const isSwapLeg = (value: unknown): boolean =>
+    isRecord(value) &&
+    isActionAsset(value.asset) &&
+    Decimal.isDecimal(value.amount) &&
+    (value.bound === 'exact' ||
+        value.bound === 'at-most' ||
+        value.bound === 'at-least')
+
+const isSwapFee = (value: unknown): boolean =>
+    isRecord(value) &&
+    isAddressValue(value.token) &&
+    isAddressValue(value.recipient) &&
+    isRecord(value.size) &&
+    ((value.size.kind === 'bips' &&
+        Number.isInteger(value.size.bips) &&
+        (value.size.bips as number) > 0 &&
+        (value.size.bips as number) <= 10_000) ||
+        (value.size.kind === 'amount' && Decimal.isDecimal(value.size.amount)))
+
+const isContractAction = (value: unknown): boolean => {
+    if (!isRecord(value)) return false
+    switch (value.kind) {
+        case 'swap': {
+            return (
+                isSwapLeg(value.input) &&
+                isSwapLeg(value.output) &&
+                Array.isArray(value.fees) &&
+                value.fees.every(isSwapFee)
+            )
+        }
+        case 'wrap':
+        case 'unwrap': {
+            return Decimal.isDecimal(value.amount)
+        }
+        case 'supply':
+        case 'withdraw':
+        case 'borrow':
+        case 'repay': {
+            return (
+                isAddressValue(value.asset) &&
+                Decimal.isDecimal(value.amount) &&
+                typeof value.isEntireBalance === 'boolean'
+            )
+        }
+        default: {
+            return false
+        }
+    }
+}
+
 const isFee = (value: unknown): boolean =>
     isRecord(value) &&
     Decimal.isDecimal(value.maxFeePerGas) &&
@@ -211,7 +294,14 @@ const isView = (value: unknown): value is EthereumTransactionView =>
     (value.token === undefined || isToken(value.token)) &&
     (value.nft === undefined || isNft(value.nft)) &&
     (value.call === undefined ||
-        (value.kind === 'contract-call' && isStandardCall(value.call)))
+        (value.kind === 'contract-call' && isStandardCall(value.call))) &&
+    (value.knownContract === undefined ||
+        (value.kind === 'contract-call' &&
+            isKnownContract(value.knownContract))) &&
+    (value.action === undefined ||
+        (value.kind === 'contract-call' &&
+            value.knownContract !== undefined &&
+            isContractAction(value.action)))
 
 export const toEthereumNative = (
     view: EthereumTransactionView,

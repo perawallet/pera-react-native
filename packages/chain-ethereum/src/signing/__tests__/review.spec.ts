@@ -39,6 +39,14 @@ import {
     type CallRecogniser,
 } from '../review'
 import { readEthereumNative } from '../transaction-view'
+import {
+    ATTACKER,
+    V2_PORTION_UNWRAP,
+    V3_EXACT_IN_PERMIT_SWEEP,
+    V4_SWAP,
+    hostileFeeSwap,
+    type RecordedCall,
+} from './contract-action-fixtures'
 import { SENDER, TRANSFER } from './fixtures'
 
 vi.mock('@perawallet/wallet-core-assets', async importOriginal => ({
@@ -1004,4 +1012,240 @@ describe("a dApp's standard token calls", () => {
             )
         },
     )
+})
+
+describe('a call to a known contract', () => {
+    const DECODING = {
+        capabilities: { ...evmCapabilityDefaults, contractDecoding: true },
+    }
+    const WETH: Address = '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2'
+
+    const recorded = (
+        fixture: RecordedCall,
+        chainId = 1,
+    ): TransactionSerializableEIP1559 => ({
+        ...TRANSFER,
+        chainId,
+        to: fixture.to,
+        value: fixture.value,
+        data: fixture.data,
+        gas: 300_000n,
+    })
+    const contextOf = (
+        fixture: RecordedCall,
+        overrides: Partial<ReviewContext> = {},
+    ): ReviewContext => ({
+        ...CONTEXT,
+        heldAddresses: [fixture.from],
+        ...overrides,
+    })
+    const reviewRecorded = (
+        fixture: RecordedCall,
+        overrides: Partial<ReviewContext> = {},
+        scope: ChainScope = MAINNET,
+    ) =>
+        reviewOne(
+            unsigned(recorded(fixture, scope === SEPOLIA ? 11155111 : 1), {
+                from: fixture.from,
+                scope,
+            }),
+            contextOf(fixture, { scope, ...overrides }),
+        )
+
+    it('reviews a Universal Router swap as a swap, with no unknown-contract warning, while contractDecoding is on', async () => {
+        const { reviewed, summary, view } = await reviewRecorded(
+            V3_EXACT_IN_PERMIT_SWEEP,
+            DECODING,
+        )
+
+        expect(summary).toMatchObject({
+            kind: 'swap',
+            title: { key: 'transactions.list_item.swap' },
+            icon: 'swap',
+        })
+        expect(reviewed.warnings).toEqual([])
+        expect(view.knownContract).toEqual({
+            kind: 'uniswap-universal-router',
+            name: 'Uniswap Universal Router',
+            projectDomain: 'uniswap.org',
+        })
+        expect(view.action).toMatchObject({ kind: 'swap' })
+        expect(ethereumReviewerAdapter.policy.autoApproveLocal(reviewed)).toBe(
+            false,
+        )
+    })
+
+    it('keeps the unknown-contract warning on a swap that pays a fee, still titled Swap', async () => {
+        const { reviewed, summary, view } = await reviewRecorded(
+            V2_PORTION_UNWRAP,
+            DECODING,
+        )
+
+        expect(summary).toMatchObject({
+            kind: 'swap',
+            title: { key: 'transactions.list_item.swap' },
+        })
+        expect(view.action).toMatchObject({
+            kind: 'swap',
+            fees: [{ size: { kind: 'bips', bips: 100 } }],
+        })
+        expect(reviewed.warnings).toEqual([
+            expect.objectContaining({ type: 'unknown-contract' }),
+        ])
+    })
+
+    it('keeps the warning when a hostile dApp routes the whole output to a stranger and sweeps a minimum of 1', async () => {
+        const hostile = hostileFeeSwap()
+        const { reviewed, view } = await reviewRecorded(hostile, DECODING)
+
+        expect(view.action).toMatchObject({
+            kind: 'swap',
+            output: { amount: new Decimal(1), bound: 'at-least' },
+            fees: [
+                {
+                    recipient: getAddress(ATTACKER),
+                    size: { kind: 'bips', bips: 10_000 },
+                },
+            ],
+        })
+        expect(reviewed.warnings).toEqual([
+            expect.objectContaining({ type: 'unknown-contract' }),
+        ])
+        expect(ethereumReviewerAdapter.policy.autoApproveLocal(reviewed)).toBe(
+            false,
+        )
+    })
+
+    it('labels a router call with a command it cannot read, without calling it a swap or dropping the warning', async () => {
+        const { reviewed, summary, view } = await reviewRecorded(
+            V4_SWAP,
+            DECODING,
+        )
+
+        expect(summary.kind).toBe('contract-call')
+        expect(summary.title).toEqual({
+            key: 'transactions.list_item.contract_call',
+        })
+        expect(reviewed.warnings).toEqual([
+            expect.objectContaining({ type: 'unknown-contract' }),
+        ])
+        expect(view.knownContract?.name).toBe('Uniswap Universal Router')
+        expect(view.action).toBeUndefined()
+    })
+
+    it('keeps a standard token call to a known contract as it was, whatever the label', async () => {
+        const transfer: TransactionSerializableEIP1559 = {
+            ...TOKEN_TRANSFER,
+            to: WETH,
+        }
+
+        const { reviewed, summary, view } = await reviewOne(
+            unsigned(transfer),
+            { ...CONTEXT, ...DECODING },
+        )
+
+        expect(summary).toMatchObject({
+            kind: 'token-transfer',
+            counterparty: RECIPIENT,
+        })
+        expect(reviewed.warnings).toEqual([])
+        expect(view.call?.kind).toBe('transfer')
+        expect(view.knownContract?.kind).toBe('wrapped-native')
+        expect(view.action).toBeUndefined()
+    })
+
+    it('reviews a call to an unlisted contract as it always did', async () => {
+        const { reviewed, summary, view } = await reviewOne(
+            unsigned(NON_STANDARD_CALL),
+            { ...CONTEXT, ...DECODING },
+        )
+
+        expect(summary.kind).toBe('contract-call')
+        expect(reviewed.warnings).toEqual([
+            expect.objectContaining({ type: 'unknown-contract' }),
+        ])
+        expect(view.knownContract).toBeUndefined()
+        expect(view.action).toBeUndefined()
+    })
+
+    it('reviews a labelled call without a recognised action as unrecognised', async () => {
+        const { reviewed, summary, view } = await reviewOne(
+            unsigned({ ...NON_STANDARD_CALL, to: WETH }),
+            { ...CONTEXT, ...DECODING },
+        )
+
+        expect(summary.kind).toBe('contract-call')
+        expect(reviewed.warnings).toEqual([
+            expect.objectContaining({ type: 'unknown-contract' }),
+        ])
+        expect(view.knownContract?.kind).toBe('wrapped-native')
+    })
+
+    it('reviews a swap exactly as an unrecognised call while contractDecoding is off, though the view still carries the facts', async () => {
+        const { reviewed, summary, view } = await reviewRecorded(
+            V3_EXACT_IN_PERMIT_SWEEP,
+        )
+
+        expect(evmCapabilityDefaults.contractDecoding).toBe(false)
+        expect(summary).toEqual({
+            kind: 'contract-call',
+            title: { key: 'transactions.list_item.contract_call' },
+            direction: 'none',
+            counterparty: V3_EXACT_IN_PERMIT_SWEEP.to,
+            icon: 'contract-call',
+        })
+        expect(reviewed.warnings).toEqual([
+            expect.objectContaining({ type: 'unknown-contract' }),
+        ])
+        expect(view.knownContract).toBeDefined()
+        expect(view.action).toMatchObject({ kind: 'swap' })
+    })
+
+    it('has no registry on a testnet or an unknown network, so the review is today’s', async () => {
+        const { reviewed, summary, view } = await reviewRecorded(
+            V3_EXACT_IN_PERMIT_SWEEP,
+            DECODING,
+            SEPOLIA,
+        )
+
+        expect(summary.kind).toBe('contract-call')
+        expect(reviewed.warnings).toEqual([
+            expect.objectContaining({ type: 'unknown-contract' }),
+        ])
+        expect(view.knownContract).toBeUndefined()
+        expect(
+            ethereumViewOf(
+                unsigned(recorded(V3_EXACT_IN_PERMIT_SWEEP), {
+                    from: V3_EXACT_IN_PERMIT_SWEEP.from,
+                    scope: { chainId: 'ethereum', networkId: 'custom' },
+                }),
+                ETHEREUM,
+            )?.knownContract,
+        ).toBeUndefined()
+    })
+
+    it('labels and reads a batch call that is not priced yet', () => {
+        const preview: UnsignedTransaction = {
+            ...unsigned(recorded(V3_EXACT_IN_PERMIT_SWEEP), {
+                from: V3_EXACT_IN_PERMIT_SWEEP.from,
+            }),
+            payload: {
+                from: V3_EXACT_IN_PERMIT_SWEEP.from,
+                transaction: {
+                    chainId: 1,
+                    to: V3_EXACT_IN_PERMIT_SWEEP.to,
+                    data: V3_EXACT_IN_PERMIT_SWEEP.data,
+                },
+                isPreview: true,
+            },
+        }
+
+        const view = ethereumViewOf(preview, ETHEREUM)
+
+        expect(view).toMatchObject({
+            isPreview: true,
+            knownContract: { name: 'Uniswap Universal Router' },
+            action: { kind: 'swap' },
+        })
+    })
 })

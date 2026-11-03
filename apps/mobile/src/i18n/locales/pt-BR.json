@@ -3585,6 +3585,12 @@
             "send": "Enviar",
             "receive": "Receber",
             "swap": "Converter",
+            "wrap": "Wrap",
+            "unwrap": "Unwrap",
+            "supply": "Depositar",
+            "withdraw": "Sacar",
+            "borrow": "Pedir emprestado",
+            "repay": "Pagar",
             "opt_in": "Opt-in",
             "opt_out": "Opt-out",
             "asset_config": "Configuração de ativo",
@@ -4787,6 +4793,22 @@
     "ethereum": {
         "batch": {
             "fee_when_reached": "Taxa estimada quando chegar a vez desta chamada"
+        },
+        "contract_action": {
+            "pay": "Você paga",
+            "pay_at_most": "Você paga no máximo",
+            "receive": "Você recebe",
+            "receive_at_least": "Você recebe no mínimo",
+            "entire_balance": "Saldo total",
+            "fee": "Taxa",
+            "fee_share": "{{percent}} do resultado da conversão",
+            "fee_recipient": "Paga para",
+            "base_units": "unidades base"
+        },
+        "known_contract": {
+            "title": "Contrato",
+            "verified": "Contrato verificado",
+            "matches_site": "Corresponde a {{domain}}"
         }
     }
 }

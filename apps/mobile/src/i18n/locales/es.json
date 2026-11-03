@@ -3568,6 +3568,12 @@
             "send": "Enviar",
             "receive": "Recibir",
             "swap": "Swap",
+            "wrap": "Wrap",
+            "unwrap": "Unwrap",
+            "supply": "Depositar",
+            "withdraw": "Retirar",
+            "borrow": "Pedir prestado",
+            "repay": "Reembolsar",
             "opt_in": "Añadir activo",
             "opt_out": "Eliminar activo",
             "asset_config": "Configuración de activo",
@@ -4759,6 +4765,22 @@
     "ethereum": {
         "batch": {
             "fee_when_reached": "La comisión se estima cuando llegue el turno de esta llamada"
+        },
+        "contract_action": {
+            "pay": "Pagas",
+            "pay_at_most": "Pagas como máximo",
+            "receive": "Recibes",
+            "receive_at_least": "Recibes como mínimo",
+            "entire_balance": "Saldo completo",
+            "fee": "Comisión",
+            "fee_share": "{{percent}} del resultado del intercambio",
+            "fee_recipient": "Pagada a",
+            "base_units": "unidades base"
+        },
+        "known_contract": {
+            "title": "Contrato",
+            "verified": "Contrato verificado",
+            "matches_site": "Coincide con {{domain}}"
         }
     }
 }

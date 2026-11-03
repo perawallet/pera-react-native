@@ -36,7 +36,7 @@ export { normalizeListedAddresses, toListedAddressKey } from './addresses'
 export { listLookupCandidates, toSiteHost } from './host'
 export { toConfusableSkeleton } from './confusables'
 export { findImpersonatedTarget } from './lookAlike'
-export { WELL_KNOWN_DAPPS } from './wellKnownDapps'
+export { WELL_KNOWN_DAPPS, isSiteOfDapp } from './wellKnownDapps'
 export {
     PhishingListAddressesSchema,
     PhishingListDomainsSchema,

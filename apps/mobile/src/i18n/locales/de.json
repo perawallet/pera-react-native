@@ -3560,6 +3560,12 @@
             "send": "Senden",
             "receive": "Empfangen",
             "swap": "Tausch",
+            "wrap": "Wrap",
+            "unwrap": "Unwrap",
+            "supply": "Einzahlen",
+            "withdraw": "Abheben",
+            "borrow": "Ausleihen",
+            "repay": "Zurückzahlen",
             "opt_in": "Opt-in",
             "opt_out": "Opt-out",
             "asset_config": "Asset-Konfiguration",
@@ -4759,6 +4765,22 @@
     "ethereum": {
         "batch": {
             "fee_when_reached": "Gebühr wird geschätzt, wenn dieser Aufruf an der Reihe ist"
+        },
+        "contract_action": {
+            "pay": "Du zahlst",
+            "pay_at_most": "Du zahlst höchstens",
+            "receive": "Du erhältst",
+            "receive_at_least": "Du erhältst mindestens",
+            "entire_balance": "Gesamtes Guthaben",
+            "fee": "Gebühr",
+            "fee_share": "{{percent}} der Ausgabe des Tauschs",
+            "fee_recipient": "Gezahlt an",
+            "base_units": "Basiseinheiten"
+        },
+        "known_contract": {
+            "title": "Smart Contract",
+            "verified": "Verifizierter Smart Contract",
+            "matches_site": "Entspricht {{domain}}"
         }
     }
 }
