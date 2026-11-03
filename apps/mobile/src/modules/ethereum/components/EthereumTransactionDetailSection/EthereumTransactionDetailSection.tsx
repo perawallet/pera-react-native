@@ -17,6 +17,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { TransactionDetailCard } from '@modules/signing'
 import type { EthereumTransactionPresentation } from '../../hooks/useEthereumTransactionPresentation'
 import { EthereumApprovalDetails } from '../EthereumApprovalDetails'
+import { EthereumContractActionDetails } from '../EthereumContractActionDetails'
 import { EthereumContractCallDetails } from '../EthereumContractCallDetails'
 import { EthereumTransferAssetRows } from '../EthereumTransferAssetRows'
 
@@ -36,6 +37,7 @@ export const EthereumTransactionDetailSection = ({
         view,
         scope,
         standardCall,
+        contractAction,
         isTransfer,
         amount,
         isAmountLoading,
@@ -51,11 +53,18 @@ export const EthereumTransactionDetailSection = ({
 
     let callDetails
     if (!isTransfer) {
-        // The approval first, then the raw call it was read from.
+        // What the call was read as first, then the raw call it was read from.
         callDetails = (
             <>
                 {!!standardCall && (
                     <EthereumApprovalDetails presentation={presentation} />
+                )}
+                {/* The detail screen is opened without the request, so it has no origin to match: the site match shows on the review only. */}
+                {!standardCall && !!contractAction && (
+                    <EthereumContractActionDetails
+                        presentation={presentation}
+                        variant='detail'
+                    />
                 )}
                 <EthereumContractCallDetails
                     presentation={presentation}

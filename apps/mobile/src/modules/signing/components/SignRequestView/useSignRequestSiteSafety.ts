@@ -12,6 +12,7 @@
 
 import type { SignRequest } from '@perawallet/wallet-core-signing'
 import {
+    signRequestSiteSafetyParams,
     useSiteSafetyGate,
     type UseSiteSafetyGateResult,
 } from '@modules/site-safety'
@@ -19,14 +20,5 @@ import {
 /** Checked on every request, so a site listed after it connected is caught at its next one. */
 export const useSignRequestSiteSafety = (
     request: SignRequest,
-): UseSiteSafetyGateResult => {
-    const verification = request.sourceMetadata?.verification
-    return useSiteSafetyGate({
-        urls: [
-            request.sourceMetadata?.url,
-            request.verifiedOrigin,
-            verification?.verifiedOrigin,
-        ],
-        isFlaggedByWalletConnectVerify: verification?.status === 'scam',
-    })
-}
+): UseSiteSafetyGateResult =>
+    useSiteSafetyGate(signRequestSiteSafetyParams(request))

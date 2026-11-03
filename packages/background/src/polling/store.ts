@@ -148,3 +148,8 @@ registerStore({
         ).persist.clearStorage(),
     resetState: () => useSyncCursorStore.getState().resetState(),
 })
+
+// Forgets every scope's round and asset/price sync times, so the next tick
+// re-reads each chain in full with its asset and price passes due.
+export const resetSyncCursors = (): void =>
+    useSyncCursorStore.getState().resetState()

@@ -17,6 +17,10 @@ import {
     toEthereumNative,
     type EthereumTransactionView,
 } from '../transaction-view'
+import type {
+    EvmContractAction,
+    EvmContractLabel,
+} from '../contract-action-types'
 import type { EvmStandardCall } from '../standard-call-types'
 import { SENDER } from './fixtures'
 
@@ -122,7 +126,117 @@ const STANDARD_CALLS: EvmStandardCall[] = [
     },
 ]
 
+const ROUTER_LABEL: EvmContractLabel = {
+    kind: 'uniswap-universal-router',
+    name: 'Uniswap Universal Router',
+    projectDomain: 'uniswap.org',
+}
+
+const ACTIONS: EvmContractAction[] = [
+    {
+        kind: 'swap',
+        input: {
+            asset: { kind: 'native' },
+            amount: new Decimal(10),
+            bound: 'exact',
+        },
+        output: {
+            asset: { kind: 'token', contract: TOKEN },
+            amount: new Decimal(5),
+            bound: 'at-least',
+        },
+        fees: [],
+    },
+    { kind: 'wrap', amount: new Decimal(10) },
+    { kind: 'unwrap', amount: new Decimal(10) },
+    {
+        kind: 'supply',
+        asset: TOKEN,
+        amount: new Decimal(10),
+        isEntireBalance: false,
+    },
+]
+
+const ACTION_VIEW: EthereumTransactionView = {
+    ...CALL_VIEW,
+    call: undefined,
+    knownContract: ROUTER_LABEL,
+    action: ACTIONS[0],
+}
+
 describe('the Ethereum transaction view', () => {
+    it.each(ACTIONS.map(action => [action.kind, action] as const))(
+        'round-trips a known contract with a %s',
+        (_, action) => {
+            const view = { ...ACTION_VIEW, action }
+
+            expect(readEthereumNative(toEthereumNative(view))).toEqual(view)
+        },
+    )
+
+    it('round-trips a swap with its fees, whether sized in bips or in base units', () => {
+        const [swap] = ACTIONS
+        const action = {
+            ...swap,
+            fees: [
+                {
+                    token: TOKEN,
+                    recipient: SPENDER,
+                    size: { kind: 'bips', bips: 30 },
+                },
+                {
+                    token: TOKEN,
+                    recipient: SPENDER,
+                    size: { kind: 'amount', amount: new Decimal(7) },
+                },
+            ],
+        } as EvmContractAction
+        const view = { ...ACTION_VIEW, action }
+
+        expect(readEthereumNative(toEthereumNative(view))).toEqual(view)
+    })
+
+    it.each([
+        ['no fees list', undefined],
+        [
+            'a fee with no recipient',
+            [{ token: TOKEN, size: { kind: 'bips', bips: 30 } }],
+        ],
+        [
+            'a portion over 10 000 bips',
+            [
+                {
+                    token: TOKEN,
+                    recipient: SPENDER,
+                    size: { kind: 'bips', bips: 10_001 },
+                },
+            ],
+        ],
+        [
+            'a fee with a non-Decimal amount',
+            [
+                {
+                    token: TOKEN,
+                    recipient: SPENDER,
+                    size: { kind: 'amount', amount: 7 },
+                },
+            ],
+        ],
+    ])('refuses a swap view with %s', (_, fees) => {
+        const [swap] = ACTIONS
+        const action = { ...swap, fees } as unknown as EvmContractAction
+
+        expect(() =>
+            readEthereumNative(toEthereumNative({ ...ACTION_VIEW, action })),
+        ).toThrow('malformed')
+    })
+
+    it('round-trips a known contract without an action', () => {
+        const view = { ...ACTION_VIEW, action: undefined }
+
+        expect(readEthereumNative(toEthereumNative(view))).toEqual(view)
+    })
+
     it.each(STANDARD_CALLS.map(call => [call.kind, call] as const))(
         'round-trips a contract call read as %s',
         (_, call) => {
@@ -235,6 +349,74 @@ describe('the Ethereum transaction view', () => {
             {
                 ...CALL_VIEW,
                 call: { ...STANDARD_CALLS[6], isApproved: 'yes' },
+            },
+        ],
+        [
+            'a label with an unknown kind',
+            {
+                ...ACTION_VIEW,
+                knownContract: { ...ROUTER_LABEL, kind: 'curve' },
+            },
+        ],
+        [
+            'a label without a name',
+            { ...ACTION_VIEW, knownContract: { kind: ROUTER_LABEL.kind } },
+        ],
+        [
+            'a label on a transfer view',
+            { ...VIEW, knownContract: ROUTER_LABEL },
+        ],
+        [
+            'an action without a label',
+            { ...ACTION_VIEW, knownContract: undefined },
+        ],
+        [
+            'an action on a transfer view',
+            { ...VIEW, knownContract: ROUTER_LABEL, action: ACTIONS[1] },
+        ],
+        [
+            'an action of an unknown kind',
+            {
+                ...ACTION_VIEW,
+                action: { kind: 'stake', amount: new Decimal(1) },
+            },
+        ],
+        [
+            'a wrap whose amount is not a Decimal',
+            { ...ACTION_VIEW, action: { kind: 'wrap', amount: '1' } },
+        ],
+        [
+            'a swap leg with an unknown bound',
+            {
+                ...ACTION_VIEW,
+                action: {
+                    ...ACTIONS[0],
+                    input: {
+                        ...(ACTIONS[0] as { input: object }).input,
+                        bound: 'about',
+                    },
+                },
+            },
+        ],
+        [
+            'a swap leg with a token that is not an address',
+            {
+                ...ACTION_VIEW,
+                action: {
+                    ...ACTIONS[0],
+                    output: {
+                        asset: { kind: 'token', contract: 'usdc' },
+                        amount: new Decimal(1),
+                        bound: 'exact',
+                    },
+                },
+            },
+        ],
+        [
+            'a lending action without its flag',
+            {
+                ...ACTION_VIEW,
+                action: { ...ACTIONS[3], isEntireBalance: undefined },
             },
         ],
     ])('refuses a view with %s', (_, transaction) => {

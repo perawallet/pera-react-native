@@ -1663,7 +1663,9 @@
             "title": "Pera Card Account",
             "subtitle": "Spend your crypto",
             "activate": "Activate",
-            "status_approved": "Approved"
+            "status_frozen": "Frozen",
+            "status_blocked": "Blocked",
+            "status_pending": "Setting up"
         },
         "intro": {
             "navigation_title": "Pera Card",
@@ -3259,7 +3261,7 @@
             "app_integrity_clear_backoff": "Clear backoffs",
             "refresh_cache": "Refresh full cache",
             "refresh_cache_success_title": "Cache refreshed",
-            "refresh_cache_success_body": "All accounts refetched and queries invalidated.",
+            "refresh_cache_success_body": "Asset data expired; every chain is re-syncing now.",
             "refresh_cache_error_title": "Refresh failed",
             "refresh_cache_error_body": "Could not refresh cache. Check the logs for details.",
             "reset_banners": "Reset banners",
@@ -3492,7 +3494,9 @@
         },
         "address_safety": {
             "listed_title": "Known scam address",
-            "listed_body": "This request names an address on a public list of addresses used to steal funds. Signing could hand it your assets.",
+            "listed_body": "This request names an address on a public list of addresses used to steal funds.",
+            "blocked_title": "Pera won't sign this request",
+            "blocked_body": "It names a known scam address. Reject it to keep your funds safe.",
             "look_alike_title": "This request names an address that imitates one you know",
             "look_alike_body": "It starts and ends like an address you know, but the characters in between are different. Scammers create look-alike addresses to trick you. Compare the full addresses below.",
             "acknowledge": "I understand the risk and want to sign anyway",
@@ -3568,6 +3572,12 @@
             "send": "Send",
             "receive": "Receive",
             "swap": "Swap",
+            "wrap": "Wrap",
+            "unwrap": "Unwrap",
+            "supply": "Supply",
+            "withdraw": "Withdraw",
+            "borrow": "Borrow",
+            "repay": "Repay",
             "opt_in": "Opt-in",
             "opt_out": "Opt-out",
             "asset_config": "Asset Configuration",
@@ -4792,6 +4802,22 @@
     "ethereum": {
         "batch": {
             "fee_when_reached": "Fee estimated when this call is reached"
+        },
+        "contract_action": {
+            "pay": "You pay",
+            "pay_at_most": "You pay at most",
+            "receive": "You receive",
+            "receive_at_least": "You receive at least",
+            "entire_balance": "Entire balance",
+            "fee": "Fee",
+            "fee_share": "{{percent}} of the swap output",
+            "fee_recipient": "Paid to",
+            "base_units": "base units"
+        },
+        "known_contract": {
+            "title": "Contract",
+            "verified": "Verified contract",
+            "matches_site": "Matches {{domain}}"
         }
     }
 }

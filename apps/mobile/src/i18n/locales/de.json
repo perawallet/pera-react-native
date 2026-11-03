@@ -1655,7 +1655,9 @@
             "title": "Pera Card Konto",
             "subtitle": "Gib dein Krypto aus",
             "activate": "Aktivieren",
-            "status_approved": "Genehmigt"
+            "status_frozen": "Gesperrt",
+            "status_blocked": "Deaktiviert",
+            "status_pending": "Wird eingerichtet"
         },
         "intro": {
             "navigation_title": "Pera Card",
@@ -3251,7 +3253,7 @@
             "app_integrity_clear_backoff": "Backoffs löschen",
             "refresh_cache": "Vollständigen Cache aktualisieren",
             "refresh_cache_success_title": "Cache aktualisiert",
-            "refresh_cache_success_body": "Alle Konten neu abgerufen und Abfragen invalidiert.",
+            "refresh_cache_success_body": "Asset-Daten verworfen; alle Chains werden jetzt neu synchronisiert.",
             "refresh_cache_error_title": "Aktualisierung fehlgeschlagen",
             "refresh_cache_error_body": "Cache konnte nicht aktualisiert werden. Details in den Logs.",
             "reset_banners": "Banner zurücksetzen",
@@ -3484,7 +3486,9 @@
         },
         "address_safety": {
             "listed_title": "Bekannte Betrugsadresse",
-            "listed_body": "Diese Anfrage nennt eine Adresse aus einer öffentlichen Liste von Adressen, mit denen Guthaben gestohlen wird. Wenn du signierst, könnte sie an deine Assets gelangen.",
+            "listed_body": "Diese Anfrage nennt eine Adresse aus einer öffentlichen Liste von Adressen, mit denen Guthaben gestohlen wird.",
+            "blocked_title": "Pera signiert diese Anfrage nicht",
+            "blocked_body": "Sie nennt eine bekannte Betrugsadresse. Lehne sie ab, um dein Guthaben zu schützen.",
             "look_alike_title": "Diese Anfrage nennt eine Adresse, die eine dir bekannte nachahmt",
             "look_alike_body": "Sie beginnt und endet wie eine Adresse, die du kennst, aber die Zeichen dazwischen sind anders. Betrüger erstellen ähnlich aussehende Adressen, um dich zu täuschen. Vergleiche unten die vollständigen Adressen.",
             "acknowledge": "Ich verstehe das Risiko und möchte trotzdem signieren",
@@ -3560,6 +3564,12 @@
             "send": "Senden",
             "receive": "Empfangen",
             "swap": "Tausch",
+            "wrap": "Wrap",
+            "unwrap": "Unwrap",
+            "supply": "Einzahlen",
+            "withdraw": "Abheben",
+            "borrow": "Ausleihen",
+            "repay": "Zurückzahlen",
             "opt_in": "Opt-in",
             "opt_out": "Opt-out",
             "asset_config": "Asset-Konfiguration",
@@ -4792,6 +4802,22 @@
     "ethereum": {
         "batch": {
             "fee_when_reached": "Gebühr wird geschätzt, wenn dieser Aufruf an der Reihe ist"
+        },
+        "contract_action": {
+            "pay": "Du zahlst",
+            "pay_at_most": "Du zahlst höchstens",
+            "receive": "Du erhältst",
+            "receive_at_least": "Du erhältst mindestens",
+            "entire_balance": "Gesamtes Guthaben",
+            "fee": "Gebühr",
+            "fee_share": "{{percent}} der Ausgabe des Tauschs",
+            "fee_recipient": "Gezahlt an",
+            "base_units": "Basiseinheiten"
+        },
+        "known_contract": {
+            "title": "Smart Contract",
+            "verified": "Verifizierter Smart Contract",
+            "matches_site": "Entspricht {{domain}}"
         }
     }
 }

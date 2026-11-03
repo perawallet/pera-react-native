@@ -13,6 +13,7 @@
 import { PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { RequestAddressWarning } from '@modules/signing/components/RequestAddressWarning'
+import { RequestSiteWarning } from '@modules/signing/components/RequestSiteWarning'
 import { SigningWarnings } from '@modules/signing/components/SigningWarnings'
 import { SigningActionButtons } from '@modules/signing/components/SigningActionButtons'
 import { useStyles } from './styles'
@@ -26,6 +27,8 @@ export const TransactionListFooter = () => {
     return (
         <PWView>
             <SigningWarnings isGroup />
+
+            <RequestSiteWarning />
 
             <RequestAddressWarning />
 

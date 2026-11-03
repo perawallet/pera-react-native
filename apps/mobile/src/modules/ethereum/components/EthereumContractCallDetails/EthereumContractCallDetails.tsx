@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { hidesUnknownContractNotice } from '@perawallet/wallet-core-chain-ethereum'
 import type { SignRequestSource } from '@perawallet/wallet-core-signing'
 import { PWText, PWView } from '@components/core'
 import { AddressDisplay } from '@components/AddressDisplay'
@@ -21,6 +22,7 @@ import { ExpandableText } from '@components/ExpandableText'
 import { KeyValueRow } from '@components/KeyValueRow'
 import { useLanguage } from '@hooks/useLanguage'
 import type { EthereumTransactionPresentation } from '../../hooks/useEthereumTransactionPresentation'
+import { EthereumKnownContractRow } from '../EthereumKnownContractRow'
 import { contractCallNoticeOf } from './contractCallNotice'
 import { useStyles } from './styles'
 
@@ -49,11 +51,15 @@ export const EthereumContractCallDetails = ({
 }: EthereumContractCallDetailsProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const { view, value, standardCall, scope } = presentation
+    const { view, value, standardCall, contractAction, knownContract, scope } =
+        presentation
     const isReview = variant === 'review'
     const notice = isReview
         ? contractCallNoticeOf(source, verifiedOrigin)
         : undefined
+    const isExplained =
+        !!standardCall ||
+        (!!contractAction && hidesUnknownContractNotice(view.action))
 
     const selectorRow = !!view.selector && (
         <KeyValueRow
@@ -83,7 +89,7 @@ export const EthereumContractCallDetails = ({
 
     return (
         <PWView style={styles.container}>
-            {!standardCall && (
+            {!isExplained && (
                 <ChainNotice
                     kind='warning'
                     titleKey={
@@ -91,6 +97,16 @@ export const EthereumContractCallDetails = ({
                     }
                     params={notice?.params}
                     testID='ethereum_contract_call_warning'
+                />
+            )}
+
+            {!!knownContract && !contractAction && !!view.to && (
+                <EthereumKnownContractRow
+                    knownContract={knownContract}
+                    address={view.to}
+                    scope={scope}
+                    source={source}
+                    verifiedOrigin={verifiedOrigin}
                 />
             )}
 

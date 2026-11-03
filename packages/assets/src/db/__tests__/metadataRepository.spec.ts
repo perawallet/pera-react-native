@@ -30,8 +30,10 @@ import {
     getAssetsByIds,
     updateAssetPeraMetadata,
     deleteAssets,
+    expireAllAssets,
     peraAssetFromJoinRow,
 } from '../metadataRepository'
+import { getStaleOrMissingAssetIds } from '../syncQueries'
 import {
     upsertAssetPrices,
     getAssetPricesByIds,
@@ -569,6 +571,47 @@ describe('asset metadata repository', () => {
             // Non-null incoming values win over the stale local toggle values
             expect(result[0].peraMetadata?.isFavorited).toBe(false)
             expect(result[0].peraMetadata?.isPriceAlertEnabled).toBe(false)
+        })
+    })
+
+    describe('expireAllAssets', () => {
+        it('makes every scope stale while keeping the rows and favourites', async () => {
+            await upsertAssets({
+                db,
+                items: [makeAsset({ assetId: '100' })],
+                scope: MAINNET_SCOPE,
+            })
+            await upsertAssets({
+                db,
+                items: [makeAsset({ assetId: '200' })],
+                scope: TESTNET_SCOPE,
+            })
+
+            await expireAllAssets({ db })
+
+            const ttlMs = 60 * 60 * 1000
+            await expect(
+                getStaleOrMissingAssetIds({
+                    db,
+                    assetIds: ['100'],
+                    scope: MAINNET_SCOPE,
+                    ttlMs,
+                }),
+            ).resolves.toEqual(['100'])
+            await expect(
+                getStaleOrMissingAssetIds({
+                    db,
+                    assetIds: ['200'],
+                    scope: TESTNET_SCOPE,
+                    ttlMs,
+                }),
+            ).resolves.toEqual(['200'])
+            const [kept] = await getAssetsByIds({
+                db,
+                assetIds: ['100'],
+                scope: MAINNET_SCOPE,
+            })
+            expect(kept?.peraMetadata?.isFavorited).toBe(true)
         })
     })
 

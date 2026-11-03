@@ -16,6 +16,7 @@ import {
     type AssessSiteSafetyParams,
     type SiteSafetyVerdict,
 } from '@perawallet/wallet-core-site-safety'
+import { hasSiteToCheck } from '../utils/hasSiteToCheck'
 
 export type UseSiteSafetyGateResult = {
     verdict: SiteSafetyVerdict
@@ -35,13 +36,9 @@ export type UseSiteSafetyGateResult = {
 export const useSiteSafetyGate = (
     params: AssessSiteSafetyParams,
 ): UseSiteSafetyGateResult => {
-    // A local request names no site; checking it would only flash a spinner.
-    const hasSite =
-        params.isFlaggedByWalletConnectVerify === true ||
-        params.urls.some(url => !!url)
     const { verdict, isChecking } = useSiteSafetyQuery({
         ...params,
-        isEnabled: hasSite,
+        isEnabled: hasSiteToCheck(params),
     })
     const [isContinueAnywayRevealed, setIsContinueAnywayRevealed] =
         useState(false)

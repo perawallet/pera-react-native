@@ -40,6 +40,7 @@ import {
 } from '@perawallet/wallet-core-shared'
 import { areEvmAddressesEqual } from '../accounts/address-codec'
 import {
+    eip155ChainIdOfNetwork,
     parseEvmNftAssetId,
     type EvmNftStandard,
 } from '../blockchain/utils/caip19'
@@ -50,6 +51,12 @@ import {
 } from '../transfer/nft-transfer'
 import { nftSendSubtitle, sendSummary } from '../transfer/summary'
 import { readEvmReviewTransaction, readEvmTransaction } from './adapter'
+import {
+    contractActionSummary,
+    decodeEvmContractAction,
+    hidesUnknownContractNotice,
+} from './contract-actions'
+import { findKnownEvmContract, wrappedNativeOf } from './known-contracts'
 import type { EthereumPayloadFeeEstimate } from './adapter'
 import type { EvmStandardCall } from './standard-call-types'
 import {
@@ -307,7 +314,12 @@ const viewOf = (
         token,
         nft,
         call: standard,
-    }: Pick<EthereumTransactionView, 'token' | 'nft' | 'call'> = {},
+        knownContract,
+        action,
+    }: Pick<
+        EthereumTransactionView,
+        'token' | 'nft' | 'call' | 'knownContract' | 'action'
+    > = {},
 ): EthereumTransactionView => ({
     kind,
     from: call.from,
@@ -321,11 +333,42 @@ const viewOf = (
     ...(token && { token }),
     ...(nft && { nft }),
     ...(standard && { call: standard }),
+    ...(knownContract && { knownContract }),
+    ...(action && { action }),
 })
 
-const contractCallView = (call: Call): EthereumTransactionView => {
+// `eip155ChainId` is unset where the network is unknown or a history row is
+// read: with no chain there is no registry to look the target up in.
+const contractCallView = (
+    call: Call,
+    eip155ChainId?: number,
+): EthereumTransactionView => {
     const standard = decodeEvmStandardCall(call)
-    return viewOf(call, 'contract-call', standard && { call: standard })
+    const { to } = call
+    const known =
+        eip155ChainId !== undefined && to
+            ? findKnownEvmContract(eip155ChainId, to)
+            : undefined
+    if (eip155ChainId === undefined || !to || !known) {
+        return viewOf(call, 'contract-call', standard && { call: standard })
+    }
+    // A standard token call keeps its own review, even to a known contract.
+    const action = standard
+        ? undefined
+        : decodeEvmContractAction(
+              { ...call, to },
+              known,
+              wrappedNativeOf(eip155ChainId),
+          )
+    return viewOf(call, 'contract-call', {
+        ...(standard && { call: standard }),
+        knownContract: {
+            kind: known.kind,
+            name: known.name,
+            ...(known.projectDomain && { projectDomain: known.projectDomain }),
+        },
+        ...(action && { action }),
+    })
 }
 
 const nativeAmount = (chain: EvmChain, value: bigint) => ({
@@ -447,7 +490,10 @@ export const ethereumViewOf = (
         const call = readCall(unsigned, chain)
         return call.to && size(call.data) === 0
             ? viewOf(call, 'transfer')
-            : contractCallView(call)
+            : contractCallView(
+                  call,
+                  eip155ChainIdOfNetwork(chain, unsigned.scope.networkId),
+              )
     } catch {
         return null
     }
@@ -538,11 +584,20 @@ const reviewCall = async (
             native: toEthereumNative(viewOf(call, 'nft-transfer', { nft })),
         }
     }
-    const view = contractCallView(call)
+    const view = contractCallView(
+        call,
+        eip155ChainIdOfNetwork(chain, unsigned.scope.networkId),
+    )
     const native = toEthereumNative(view)
     const standard = recognisedCallOf(view.call, context)
     if (standard) {
         return { summary: standardCallSummary(standard, chain), native }
+    }
+    if (context.capabilities.contractDecoding && view.action) {
+        return {
+            summary: contractActionSummary(view.action, call, chain),
+            native,
+        }
     }
     const recognised = context.capabilities.contractDecoding
         ? recogniseCall({ to: call.to, data: call.data, value: call.value })
@@ -610,12 +665,14 @@ export const createEthereumReviewer = ({
                 : decoded.transactions
                       .filter(t => !isAutoApproved(t))
                       .flatMap(t => {
-                          const standard = recognisedCallOf(
-                              viewOfNative(t)?.call,
-                              context,
-                          )
-                          if (!standard)
-                              return [{ ...UNKNOWN_CONTRACT_WARNING }]
+                          const view = viewOfNative(t)
+                          const standard = recognisedCallOf(view?.call, context)
+                          if (!standard) {
+                              return context.capabilities.contractDecoding &&
+                                  hidesUnknownContractNotice(view?.action)
+                                  ? []
+                                  : [{ ...UNKNOWN_CONTRACT_WARNING }]
+                          }
                           const warning = approvalWarningOf(standard)
                           return warning ? [warning] : []
                       }),

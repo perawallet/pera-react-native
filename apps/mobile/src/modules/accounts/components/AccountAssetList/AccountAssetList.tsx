@@ -15,18 +15,18 @@ import React, { useCallback } from 'react'
 import type { RefreshControlProps } from 'react-native'
 import { useStyles } from './styles'
 
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import type {
+    AccountHoldingsLiteRow,
+    WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import { findNativeAsset } from '@perawallet/wallet-core-assets'
 
 import { EmptyView } from '@components/EmptyView'
 import { FilterSelection } from '@components/FilterSelection'
 import { SearchableList } from '@components/SearchableList'
-import {
-    AssetGroupRow,
-    AssetRowSkeleton,
-    groupedHoldingItemKey,
-} from '@modules/assets'
+import { AssetRowSkeleton, groupedHoldingItemKey } from '@modules/assets'
 import { useLanguage } from '@hooks/useLanguage'
+import { ExpandableAssetGroup } from './ExpandableAssetGroup'
 import { SwipeableAssetItem } from './SwipeableAssetItem'
 import { BackupReminderBanner } from '../BackupReminderBanner'
 import { LegacyQuantumNotice } from '../LegacyQuantumNotice'
@@ -76,25 +76,8 @@ export const AccountAssetList = ({
         renderItemProps,
     } = useAccountAssetList({ account, t })
 
-    const renderItem = useCallback(
-        ({ item }: { item: AccountAssetListItem }) => {
-            if (item.kind === 'skeleton') {
-                return <AssetRowSkeleton style={styles.rowItem} />
-            }
-            if (item.kind === 'group') {
-                return (
-                    <AssetGroupRow
-                        item={item}
-                        convertFiat={convertFiat}
-                        onToggleExpanded={() =>
-                            toggleGroupExpanded(item.group.id)
-                        }
-                        style={styles.rowItem}
-                    />
-                )
-            }
-
-            const { holding: row } = item
+    const renderHolding = useCallback(
+        (row: AccountHoldingsLiteRow, isGroupMember: boolean) => {
             const { chainId } = row.scope
             return (
                 <SwipeableAssetItem
@@ -104,7 +87,7 @@ export const AccountAssetList = ({
                         findNativeAsset(chainId)?.assetId === row.assetId
                     }
                     isSwipeEnabled={renderItemProps.isSwipeable(row)}
-                    isGroupMember={item.isGroupMember}
+                    isGroupMember={isGroupMember}
                     shouldShowNetwork={renderItemProps.shouldShowNetwork}
                     convertFiat={convertFiat}
                     onPress={renderItemProps.goToAssetScreen}
@@ -112,7 +95,33 @@ export const AccountAssetList = ({
                 />
             )
         },
-        [renderItemProps, convertFiat, toggleGroupExpanded, styles.rowItem],
+        [renderItemProps, convertFiat],
+    )
+
+    const renderItem = useCallback(
+        ({ item }: { item: AccountAssetListItem }) => {
+            if (item.kind === 'skeleton') {
+                return <AssetRowSkeleton style={styles.rowItem} />
+            }
+            if (item.kind === 'group') {
+                return (
+                    // Keyed so a recycled cell doesn't carry another group's
+                    // expansion state into this one.
+                    <ExpandableAssetGroup
+                        key={item.group.id}
+                        item={item}
+                        convertFiat={convertFiat}
+                        onToggleExpanded={() =>
+                            toggleGroupExpanded(item.group.id)
+                        }
+                        renderMember={holding => renderHolding(holding, true)}
+                        headerStyle={styles.rowItem}
+                    />
+                )
+            }
+            return renderHolding(item.holding, false)
+        },
+        [renderHolding, convertFiat, toggleGroupExpanded, styles.rowItem],
     )
 
     // The chips scroll inside the wrapper's inset, not out to the screen edge:

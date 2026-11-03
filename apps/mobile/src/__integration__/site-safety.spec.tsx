@@ -518,6 +518,84 @@ describe('Flow: a dApp on a phishing list or imitating a known one', () => {
             expect('error' in response).toBe(true)
             expect(signSpy).not.toHaveBeenCalled()
         })
+
+        it('Given the user continued past the blocked view, when the review opens, then it names the site again and holds the slide until acknowledged', async () => {
+            const signer = await seedAlgo25Signer()
+            renderWithNavigation(
+                ConnectionsWithSigning,
+                'ConnectionsWithSigning',
+            )
+            await waitFor(() => expect(captured.registry).toBeTruthy())
+            const walletKit = await pairAndProposeV2()
+            await approveViaUi(signer.name as string)
+            await waitFor(async () => {
+                expect(
+                    await getProvider().connections.store.get(V2_SESSION_TOPIC),
+                ).toBeTruthy()
+            })
+
+            await downloadLists([DAPP_HOST])
+            const requested = buildPaymentTransaction({
+                sender: addressOf(signer),
+                receiver: HD_TEST_ADDRESS,
+                amount: 1_000_000n,
+            })
+            act(() => {
+                walletKit.emit(
+                    'session_request',
+                    makeRequest({
+                        id: 9602,
+                        params: [
+                            [
+                                {
+                                    txn: encodeToBase64(
+                                        encodeTransactionRaw(requested),
+                                    ),
+                                },
+                            ],
+                        ],
+                    }),
+                )
+            })
+            await findBlockedView()
+            fireEvent.click(screen.getByTestId('site_blocked_continue_anyway'))
+            fireEvent.click(screen.getByTestId('site_blocked_acknowledge'))
+            await waitFor(() =>
+                expect(
+                    isElementDisabled(
+                        closestPressable(
+                            screen.getByTestId('site_blocked_continue'),
+                        )!,
+                    ),
+                ).toBe(false),
+            )
+            fireEvent.click(
+                closestPressable(screen.getByTestId('site_blocked_continue'))!,
+            )
+
+            await waitFor(() => screen.getByTestId('request_site_warning'), {
+                timeout: 15_000,
+            })
+            expect(screen.getByTestId('request_site_host').textContent).toBe(
+                DAPP_HOST,
+            )
+            await waitFor(() =>
+                expect(
+                    isElementDisabled(
+                        screen.getByTestId('signing-confirm-slide'),
+                    ),
+                ).toBe(true),
+            )
+
+            fireEvent.click(screen.getByTestId('request_site_acknowledge'))
+            await waitFor(() =>
+                expect(
+                    isElementDisabled(
+                        screen.getByTestId('signing-confirm-slide'),
+                    ),
+                ).toBe(false),
+            )
+        })
     })
 
     describe("the extension's injected providers", () => {

@@ -1663,7 +1663,9 @@
             "title": "Conta Pera Card",
             "subtitle": "Gaste suas criptomoedas",
             "activate": "Ativar",
-            "status_approved": "Aprovada"
+            "status_frozen": "Bloqueada",
+            "status_blocked": "Desativada",
+            "status_pending": "Configurando"
         },
         "intro": {
             "navigation_title": "Pera Card",
@@ -3275,7 +3277,7 @@
             "app_integrity_clear_backoff": "Limpar backoffs",
             "refresh_cache": "Atualizar todo o cache",
             "refresh_cache_success_title": "Cache atualizado",
-            "refresh_cache_success_body": "Todas as contas foram recarregadas e as consultas invalidadas.",
+            "refresh_cache_success_body": "Dados de ativos expirados; todas as redes estão sendo ressincronizadas.",
             "refresh_cache_error_title": "Falha ao atualizar",
             "refresh_cache_error_body": "Não foi possível atualizar o cache. Consulte os logs para mais detalhes.",
             "reset_banners": "Redefinir banners",
@@ -3509,7 +3511,9 @@
         },
         "address_safety": {
             "listed_title": "Endereço de golpe conhecido",
-            "listed_body": "Esta solicitação inclui um endereço de uma lista pública de endereços usados para roubar fundos. Ao assinar, você pode entregar seus ativos a ele.",
+            "listed_body": "Esta solicitação inclui um endereço de uma lista pública de endereços usados para roubar fundos.",
+            "blocked_title": "A Pera não vai assinar esta solicitação",
+            "blocked_body": "Ela inclui um endereço de golpe conhecido. Rejeite-a para proteger seus fundos.",
             "look_alike_title": "Esta solicitação inclui um endereço que imita um que você conhece",
             "look_alike_body": "Ele começa e termina como um endereço que você conhece, mas os caracteres do meio são diferentes. Golpistas criam endereços parecidos para enganar você. Compare os endereços completos abaixo.",
             "acknowledge": "Entendo o risco e quero assinar mesmo assim",
@@ -3585,6 +3589,12 @@
             "send": "Enviar",
             "receive": "Receber",
             "swap": "Converter",
+            "wrap": "Wrap",
+            "unwrap": "Unwrap",
+            "supply": "Depositar",
+            "withdraw": "Sacar",
+            "borrow": "Pedir emprestado",
+            "repay": "Pagar",
             "opt_in": "Opt-in",
             "opt_out": "Opt-out",
             "asset_config": "Configuração de ativo",
@@ -4820,6 +4830,22 @@
     "ethereum": {
         "batch": {
             "fee_when_reached": "Taxa estimada quando chegar a vez desta chamada"
+        },
+        "contract_action": {
+            "pay": "Você paga",
+            "pay_at_most": "Você paga no máximo",
+            "receive": "Você recebe",
+            "receive_at_least": "Você recebe no mínimo",
+            "entire_balance": "Saldo total",
+            "fee": "Taxa",
+            "fee_share": "{{percent}} do resultado da conversão",
+            "fee_recipient": "Paga para",
+            "base_units": "unidades base"
+        },
+        "known_contract": {
+            "title": "Contrato",
+            "verified": "Contrato verificado",
+            "matches_site": "Corresponde a {{domain}}"
         }
     }
 }

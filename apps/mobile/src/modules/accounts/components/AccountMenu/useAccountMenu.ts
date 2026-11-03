@@ -29,7 +29,10 @@ import {
     useSortedAccounts,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
+import {
+    LEGACY_CHAIN_ID,
+    type ChainScope,
+} from '@perawallet/wallet-core-chain-contract'
 import { useCardSession, useCardStore } from '@perawallet/wallet-core-card'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
@@ -41,7 +44,12 @@ import type { AccountMenuProps } from './AccountMenu'
 
 export type AccountMenuListItem =
     | { kind: 'account'; account: WalletAccount }
-    | { kind: 'pera-card'; activated: boolean; nested: boolean }
+    | {
+          kind: 'pera-card'
+          activated: boolean
+          nested: boolean
+          scope: ChainScope
+      }
 
 type UseAccountMenuResult = {
     listItems: AccountMenuListItem[]
@@ -166,6 +174,7 @@ export const useAccountMenu = (
             kind: 'pera-card',
             activated: isAuthenticated,
             nested,
+            scope,
         })
         return accountItems
     }, [
@@ -174,7 +183,7 @@ export const useAccountMenu = (
         isPeraCardEnabled,
         isAuthenticated,
         connectedFundingSourceAddress,
-        scope.chainId,
+        scope,
     ])
 
     const handleTap = useCallback(

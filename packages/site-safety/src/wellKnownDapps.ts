@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import type { Maybe } from '@perawallet/wallet-core-shared'
+import { isWithinDomain, toSiteHost } from './host'
 import type { ImpersonationTarget } from './models'
 
 /** Sites phishing domains imitate. A target's subdomains count as the site itself. */
@@ -48,3 +50,18 @@ export const WELL_KNOWN_DAPPS: readonly ImpersonationTarget[] = [
     { name: 'Hyperliquid', domain: 'hyperliquid.xyz' },
     { name: 'Rabby', domain: 'rabby.io' },
 ]
+
+/**
+ * Whether a URL's host is the project's own site: `domain`, a subdomain of it,
+ * or, when `domain` is a well-known project's, one of its other domains.
+ */
+export const isSiteOfDapp = (url: Maybe<string>, domain: string): boolean => {
+    const host = toSiteHost(url)
+    if (!host) return false
+    const domains = [
+        domain,
+        ...(WELL_KNOWN_DAPPS.find(target => target.domain === domain)
+            ?.otherDomains ?? []),
+    ]
+    return domains.some(candidate => isWithinDomain(host.ascii, candidate))
+}

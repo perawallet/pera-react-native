@@ -20,6 +20,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { TransactionReviewLayout, type ReviewBodyProps } from '@modules/signing'
 import type { SigningStackParamList } from '@modules/signing/routes'
 import { EthereumApprovalDetails } from '../EthereumApprovalDetails'
+import { EthereumContractActionDetails } from '../EthereumContractActionDetails'
 import { EthereumContractCallDetails } from '../EthereumContractCallDetails'
 import { EthereumTransferAssetRows } from '../EthereumTransferAssetRows'
 import { useEthereumTransactionPresentation } from '../../hooks/useEthereumTransactionPresentation'
@@ -48,6 +49,7 @@ export const EthereumTransactionReviewBody = ({
         signingAccount,
         scope,
         standardCall,
+        contractAction,
         isTransfer,
     } = presentation
     const handleViewDetails = () => {
@@ -57,6 +59,15 @@ export const EthereumTransactionReviewBody = ({
     let details = null
     if (standardCall && !isTransfer) {
         details = <EthereumApprovalDetails presentation={presentation} />
+    } else if (contractAction) {
+        details = (
+            <EthereumContractActionDetails
+                presentation={presentation}
+                variant='review'
+                source={source}
+                verifiedOrigin={verifiedOrigin}
+            />
+        )
     } else if (!isTransfer) {
         details = (
             <EthereumContractCallDetails

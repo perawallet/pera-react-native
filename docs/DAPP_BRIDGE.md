@@ -119,9 +119,10 @@ required nor read, where the webview takes a single `data` object and requires
   disappears from the page's view without the connection itself changing.
 - **Network.** The connection is network-agnostic. `connect` reports the
   wallet's active network; a `network` option naming a different one fails
-  with `-32003`. A `custom` network is reported as the baked network sharing
-  its genesis hash and refused otherwise, so a forged custom-network record can
-  never make the wallet claim MainNet.
+  with `-32003`. A `custom` network is reported as the baked test network
+  sharing its genesis hash and refused otherwise, MainNet's hash included: the
+  stored record is unauthenticated, so a forged one must never make the wallet
+  claim MainNet while reading from an attacker's node.
 - **Chain.** The protocol carries no chain, so each realm builds its handler
   for one chain, and the chain's `DappRequestChainAdapter` (registry in
   `packages/connections/src/dappRequest.ts`) parses the signing payloads,

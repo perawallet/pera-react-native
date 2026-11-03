@@ -21,6 +21,7 @@ vi.mock('../../api/card', () => ({ fetchCardStatus }))
 
 import { useCardStatusQuery } from '../useCardStatusQuery'
 import { CardStatus, CardType, type Card } from '../../models'
+import { useCardStore } from '../../store'
 import { LEGACY_CHAIN_ID } from '@perawallet/wallet-core-chain-contract'
 
 const SCOPE = { chainId: LEGACY_CHAIN_ID, networkId: 'mainnet' } as const
@@ -43,6 +44,7 @@ describe('useCardStatusQuery', () => {
             defaultOptions: { queries: { retry: false } },
         })
         vi.clearAllMocks()
+        useCardStore.getState().resetState()
     })
 
     const wrapper = ({ children }: { children: React.ReactNode }) =>
@@ -78,5 +80,58 @@ describe('useCardStatusQuery', () => {
 
         await waitFor(() => expect(result.current.isLoading).toBe(false))
         expect(result.current.data).toBeNull()
+    })
+
+    it('stores the fetched card as the persisted snapshot', async () => {
+        fetchCardStatus.mockResolvedValue({
+            ...card,
+            status: CardStatus.Frozen,
+        })
+
+        const { result } = renderHook(() => useCardStatusQuery(SCOPE), {
+            wrapper,
+        })
+
+        await waitFor(() => expect(result.current.isSuccess).toBe(true))
+        const state = useCardStore.getState()
+        expect(state.cardId).toBe('card_1')
+        expect(state.lastKnownStatus).toBe(CardStatus.Frozen)
+        expect(state.lastKnownPanLast4).toBe('1234')
+    })
+
+    it('stores an empty card number as missing', async () => {
+        fetchCardStatus.mockResolvedValue({
+            ...card,
+            status: CardStatus.Pending,
+            panLast4: '',
+        })
+
+        const { result } = renderHook(() => useCardStatusQuery(SCOPE), {
+            wrapper,
+        })
+
+        await waitFor(() => expect(result.current.isSuccess).toBe(true))
+        const state = useCardStore.getState()
+        expect(state.lastKnownStatus).toBe(CardStatus.Pending)
+        expect(state.lastKnownPanLast4).toBeNull()
+    })
+
+    it('clears the snapshot once the user has no card', async () => {
+        useCardStore.getState().setCardSnapshot({
+            cardId: 'card_1',
+            status: CardStatus.Active,
+            panLast4: '1234',
+        })
+        fetchCardStatus.mockResolvedValue(null)
+
+        const { result } = renderHook(() => useCardStatusQuery(SCOPE), {
+            wrapper,
+        })
+
+        await waitFor(() => expect(result.current.isSuccess).toBe(true))
+        const state = useCardStore.getState()
+        expect(state.cardId).toBeNull()
+        expect(state.lastKnownStatus).toBeNull()
+        expect(state.lastKnownPanLast4).toBeNull()
     })
 })

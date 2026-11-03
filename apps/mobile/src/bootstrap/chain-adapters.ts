@@ -27,6 +27,7 @@ import {
 import {
     selectChainMode,
     selectChainNetworkId,
+    selectUsableEndpointOverrides,
     useNetworkStore,
     withEndpointOverrides,
 } from '@perawallet/wallet-core-chain-shared'
@@ -58,7 +59,10 @@ const chainContextFor = (entry: ChainSetupEntry): ChainContext => ({
     getEndpoints: () =>
         withEndpointOverrides(
             entry.endpoints,
-            useNetworkStore.getState().endpointOverridesByChain[entry.chainId],
+            selectUsableEndpointOverrides(
+                useNetworkStore.getState(),
+                entry.chainId,
+            ),
         ),
     getPeraBackend: scope => ({
         baseUrl: getPeraServicesConfig(scope).backendUrl,

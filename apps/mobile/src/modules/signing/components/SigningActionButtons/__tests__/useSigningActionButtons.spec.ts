@@ -59,9 +59,17 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
     ),
 }))
 
-const mockAddressSafety = vi.hoisted(() => ({ isConfirmBlocked: false }))
+const mockAddressSafety = vi.hoisted(() => ({
+    isConfirmBlocked: false,
+    isListedAddressBlocking: false,
+}))
 vi.mock('../../../hooks/useRequestAddressSafety', () => ({
     useRequestAddressSafety: () => mockAddressSafety,
+}))
+
+const mockSiteSafety = vi.hoisted(() => ({ isConfirmBlocked: false }))
+vi.mock('../../../hooks/useRequestSiteSafety', () => ({
+    useRequestSiteSafety: () => mockSiteSafety,
 }))
 
 const mockConfirmQuantumDappUsage = vi.fn()
@@ -131,6 +139,8 @@ describe('useSigningActionButtons', () => {
         mockGetPreference.mockReturnValue(undefined)
         mockConfirmQuantumDappUsage.mockResolvedValue('continue')
         mockAddressSafety.isConfirmBlocked = false
+        mockAddressSafety.isListedAddressBlocking = false
+        mockSiteSafety.isConfirmBlocked = false
         setupPipeline()
         ;(useSigningRequest as Mock).mockReturnValue({
             currentRequest: undefined,
@@ -170,6 +180,56 @@ describe('useSigningActionButtons', () => {
         expect(result.current.isConfirmBlocked).toBe(true)
         expect(mockNext).not.toHaveBeenCalled()
         expect(mockConfirmQuantumDappUsage).not.toHaveBeenCalled()
+    })
+
+    it('holds signing while a flagged site waits on acknowledgement', () => {
+        mockSiteSafety.isConfirmBlocked = true
+
+        const { result } = renderHook(() => useSigningActionButtons())
+
+        act(() => {
+            result.current.handleSignAndSend()
+        })
+
+        expect(result.current.isConfirmBlocked).toBe(true)
+        expect(result.current.cannotSignNotice).toBeUndefined()
+        expect(mockNext).not.toHaveBeenCalled()
+    })
+
+    it('replaces the slider with a notice for a listed address, ahead of a multisig notice', () => {
+        mockAddressSafety.isListedAddressBlocking = true
+        mockAddressSafety.isConfirmBlocked = true
+        ;(isSignRequestMultisigUnsignable as Mock).mockReturnValue(true)
+        ;(useSigningRequest as Mock).mockReturnValue({
+            currentRequest: { id: 'r1' },
+        })
+
+        const { result } = renderHook(() => useSigningActionButtons())
+        act(() => {
+            result.current.handleSignAndSend()
+        })
+
+        expect(result.current.cannotSignNotice).toEqual({
+            title: 'signing.address_safety.blocked_title',
+            body: 'signing.address_safety.blocked_body',
+        })
+        expect(mockNext).not.toHaveBeenCalled()
+    })
+
+    it('keeps the notice and both holds when the site is flagged and an address is listed', () => {
+        mockAddressSafety.isListedAddressBlocking = true
+        mockAddressSafety.isConfirmBlocked = true
+        mockSiteSafety.isConfirmBlocked = true
+        ;(useSigningRequest as Mock).mockReturnValue({
+            currentRequest: { id: 'r1' },
+        })
+
+        const { result } = renderHook(() => useSigningActionButtons())
+
+        expect(result.current.cannotSignNotice?.title).toBe(
+            'signing.address_safety.blocked_title',
+        )
+        expect(result.current.isConfirmBlocked).toBe(true)
     })
 
     it('opens security guard sheet instead of signing when rekey warnings exist', () => {

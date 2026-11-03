@@ -1663,7 +1663,9 @@
             "title": "Compte Pera Card",
             "subtitle": "Dépensez votre crypto",
             "activate": "Activer",
-            "status_approved": "Approuvé"
+            "status_frozen": "Bloqué",
+            "status_blocked": "Désactivé",
+            "status_pending": "Configuration en cours"
         },
         "intro": {
             "navigation_title": "Pera Card",
@@ -3259,7 +3261,7 @@
             "app_integrity_clear_backoff": "Effacer les backoffs",
             "refresh_cache": "Actualiser tout le cache",
             "refresh_cache_success_title": "Cache actualisé",
-            "refresh_cache_success_body": "Tous les comptes ont été rechargés et les requêtes invalidées.",
+            "refresh_cache_success_body": "Données d’actifs expirées ; toutes les chaînes sont en cours de resynchronisation.",
             "refresh_cache_error_title": "Échec de l’actualisation",
             "refresh_cache_error_body": "Impossible d’actualiser le cache. Consultez les logs pour plus de détails.",
             "reset_banners": "Réinitialiser les bannières",
@@ -3492,7 +3494,9 @@
         },
         "address_safety": {
             "listed_title": "Adresse frauduleuse connue",
-            "listed_body": "Cette demande mentionne une adresse figurant sur une liste publique d’adresses utilisées pour voler des fonds. En signant, vous pourriez lui céder vos actifs.",
+            "listed_body": "Cette demande mentionne une adresse figurant sur une liste publique d’adresses utilisées pour voler des fonds.",
+            "blocked_title": "Pera ne signera pas cette demande",
+            "blocked_body": "Elle mentionne une adresse frauduleuse connue. Rejetez-la pour protéger vos fonds.",
             "look_alike_title": "Cette demande mentionne une adresse qui imite une adresse que vous connaissez",
             "look_alike_body": "Elle commence et se termine comme une adresse que vous connaissez, mais les caractères du milieu sont différents. Les escrocs créent des adresses ressemblantes pour vous tromper. Comparez les adresses complètes ci-dessous.",
             "acknowledge": "Je comprends le risque et je veux signer quand même",
@@ -3568,6 +3572,12 @@
             "send": "Envoi",
             "receive": "Réception",
             "swap": "Swap",
+            "wrap": "Wrap",
+            "unwrap": "Unwrap",
+            "supply": "Dépôt",
+            "withdraw": "Retrait",
+            "borrow": "Emprunt",
+            "repay": "Remboursement",
             "opt_in": "Opt-in",
             "opt_out": "Opt-out",
             "asset_config": "Configuration d’actif",
@@ -4792,6 +4802,22 @@
     "ethereum": {
         "batch": {
             "fee_when_reached": "Frais estimés lorsque le tour de cet appel arrivera"
+        },
+        "contract_action": {
+            "pay": "Vous payez",
+            "pay_at_most": "Vous payez au maximum",
+            "receive": "Vous recevez",
+            "receive_at_least": "Vous recevez au minimum",
+            "entire_balance": "Solde total",
+            "fee": "Frais",
+            "fee_share": "{{percent}} du résultat de l’échange",
+            "fee_recipient": "Versés à",
+            "base_units": "unités de base"
+        },
+        "known_contract": {
+            "title": "Contrat",
+            "verified": "Contrat vérifié",
+            "matches_site": "Correspond à {{domain}}"
         }
     }
 }

@@ -36,14 +36,23 @@ const mockReviewedMessageAddressesOf = vi.hoisted(() =>
 )
 const mockAddressSafety = vi.hoisted(() => ({
     isConfirmBlocked: false,
+    isListedAddressBlocking: false,
     addresses: undefined as unknown,
 }))
+const mockSiteSafety = vi.hoisted(() => ({ isConfirmBlocked: false }))
 
 vi.mock('../../../hooks/useRequestAddressSafety', () => ({
     useRequestAddressSafety: ({ addresses }: { addresses: unknown }) => {
         mockAddressSafety.addresses = addresses
-        return { isConfirmBlocked: mockAddressSafety.isConfirmBlocked }
+        return {
+            isConfirmBlocked: mockAddressSafety.isConfirmBlocked,
+            isListedAddressBlocking: mockAddressSafety.isListedAddressBlocking,
+        }
     },
+}))
+
+vi.mock('../../../hooks/useRequestSiteSafety', () => ({
+    useRequestSiteSafety: () => mockSiteSafety,
 }))
 
 vi.mock('@perawallet/wallet-core-signing', async importOriginal => {
@@ -71,7 +80,9 @@ describe('useMessageSigningScreen', () => {
         vi.clearAllMocks()
         mockSigningStarted.current = null
         mockAddressSafety.isConfirmBlocked = false
+        mockAddressSafety.isListedAddressBlocking = false
         mockAddressSafety.addresses = undefined
+        mockSiteSafety.isConfirmBlocked = false
         mockReviewedMessageAddressesOf.mockReturnValue([])
         mockPipeline.isLoading = false
         mockPipeline.currentRequest = {
@@ -107,6 +118,28 @@ describe('useMessageSigningScreen', () => {
         })
         expect(result.current.reviewedAddresses).toEqual(named)
         expect(mockAddressSafety.addresses).toEqual(named)
+        expect(result.current.isConfirmBlocked).toBe(true)
+        expect(mockPipeline.next).not.toHaveBeenCalled()
+    })
+
+    it('passes a listed address through, still holding approval', () => {
+        mockAddressSafety.isListedAddressBlocking = true
+        mockAddressSafety.isConfirmBlocked = true
+
+        const { result } = renderHook(() => useMessageSigningScreen())
+        act(() => result.current.handleApprove())
+
+        expect(result.current.isListedAddressBlocking).toBe(true)
+        expect(mockPipeline.next).not.toHaveBeenCalled()
+    })
+
+    it('holds approval while the dApp site waits on acknowledgement', () => {
+        mockSiteSafety.isConfirmBlocked = true
+
+        const { result } = renderHook(() => useMessageSigningScreen())
+        act(() => result.current.handleApprove())
+
+        expect(result.current.isListedAddressBlocking).toBe(false)
         expect(result.current.isConfirmBlocked).toBe(true)
         expect(mockPipeline.next).not.toHaveBeenCalled()
     })

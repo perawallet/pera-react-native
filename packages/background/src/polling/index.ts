@@ -11,4 +11,4 @@
  */
 
 export * from './models'
-export { useSyncCursorStore } from './store'
+export { useSyncCursorStore, resetSyncCursors } from './store'

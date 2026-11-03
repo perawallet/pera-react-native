@@ -22,7 +22,6 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
-    i18nKey,
     type ChainScope,
     type FeePreset,
     type I18nKey,
@@ -32,6 +31,7 @@ import {
     ETHEREUM_CHAIN_ID,
     readEthereumNative,
     type EthereumTransactionView,
+    type EvmContractLabel,
     type EvmNftItem,
 } from '@perawallet/wallet-core-chain-ethereum'
 import { useSelectedScope } from '@perawallet/wallet-core-chain-shared'
@@ -41,8 +41,12 @@ import {
     type Optional,
 } from '@perawallet/wallet-core-shared'
 import type { IconName } from '@components/core'
-import { transactionIconName } from '@components/TransactionIcon'
 import { useBaseUnitsAmount } from '@hooks/useBaseUnitsAmount'
+import { counterpartyOf, iconNameOf, titleKeyOf } from './transactionHeading'
+import {
+    useEthereumContractAction,
+    type EthereumContractActionPresentation,
+} from './useEthereumContractAction'
 import {
     useEthereumStandardCall,
     type EthereumAmount,
@@ -64,6 +68,11 @@ export type EthereumTransactionPresentation = {
     iconName: IconName
     /** A contract call read as a standard token call; null for any other call. */
     standardCall: Nullable<EthereumStandardCallPresentation>
+    /** A call to a known contract whose calldata proves what it does; null for any other call. */
+    contractAction: Nullable<EthereumContractActionPresentation>
+    /** The well-known contract a call goes to, whether or not its action could be read. */
+    knownContract: Nullable<EvmContractLabel>
+    isContractActionLoading: boolean
     /** Moves value: a transfer view, or a contract call read as a token or NFT transfer. */
     isTransfer: boolean
     /**
@@ -112,64 +121,6 @@ const readView = (
     } catch {
         return null
     }
-}
-
-const isApproval = (
-    standardCall: Nullable<EthereumStandardCallPresentation>,
-): boolean =>
-    standardCall?.kind === 'token-approval' ||
-    standardCall?.kind === 'nft-approval' ||
-    standardCall?.kind === 'collection-approval'
-
-const isRevocation = (
-    standardCall: EthereumStandardCallPresentation,
-): boolean =>
-    (standardCall.kind === 'token-approval' && !standardCall.spendApproval) ||
-    (standardCall.kind === 'nft-approval' && standardCall.isRevocation) ||
-    (standardCall.kind === 'collection-approval' && !standardCall.isApproved)
-
-const counterpartyOf = (
-    standardCall: EthereumStandardCallPresentation,
-): string => {
-    switch (standardCall.kind) {
-        case 'token-transfer':
-        case 'nft-transfer': {
-            return standardCall.to
-        }
-        case 'token-approval':
-        case 'nft-approval': {
-            return standardCall.spender
-        }
-        case 'collection-approval': {
-            return standardCall.operator
-        }
-    }
-}
-
-const titleKeyOf = (
-    view: EthereumTransactionView,
-    standardCall: Nullable<EthereumStandardCallPresentation>,
-): EthereumTransactionPresentation['titleKey'] => {
-    if (standardCall && isApproval(standardCall)) {
-        return isRevocation(standardCall)
-            ? i18nKey('transactions.list_item.revoke_approval')
-            : i18nKey('transactions.list_item.approval')
-    }
-    return view.kind === 'contract-call' && !standardCall
-        ? i18nKey('transactions.list_item.contract_call')
-        : i18nKey('transactions.list_item.send')
-}
-
-const iconNameOf = (
-    view: EthereumTransactionView,
-    standardCall: Nullable<EthereumStandardCallPresentation>,
-): IconName => {
-    if (isApproval(standardCall)) return transactionIconName('approval')
-    return transactionIconName(
-        view.kind === 'contract-call' && !standardCall
-            ? 'contract-call'
-            : 'send',
-    )
 }
 
 type StandardCallFields = Pick<
@@ -253,6 +204,11 @@ export const useEthereumTransactionPresentation = (
     const signingAccount = useFindAccountByAddress(view?.from ?? '', scope)
     const { standardCall, isLoading: isStandardCallLoading } =
         useEthereumStandardCall(view, scope)
+    const {
+        contractAction,
+        knownContract,
+        isLoading: isContractActionLoading,
+    } = useEthereumContractAction(view, scope)
 
     return useMemo(() => {
         if (!view) return null
@@ -276,9 +232,12 @@ export const useEthereumTransactionPresentation = (
         return {
             view,
             scope,
-            titleKey: titleKeyOf(view, standardCall),
-            iconName: iconNameOf(view, standardCall),
+            titleKey: titleKeyOf(view, standardCall, contractAction),
+            iconName: iconNameOf(view, standardCall, contractAction),
             standardCall,
+            contractAction,
+            knownContract,
+            isContractActionLoading,
             isTransfer: view.kind !== 'contract-call' || isReadTransfer,
             counterparty: view.token?.to ?? view.nft?.to ?? view.to,
             ...(view.nft && {
@@ -323,5 +282,8 @@ export const useEthereumTransactionPresentation = (
         signingAccount,
         standardCall,
         isStandardCallLoading,
+        contractAction,
+        knownContract,
+        isContractActionLoading,
     ])
 }

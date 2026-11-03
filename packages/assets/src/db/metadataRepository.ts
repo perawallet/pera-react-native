@@ -472,6 +472,17 @@ export async function updateAssetPeraMetadata({
         .run()
 }
 
+/**
+ * Marks every cached asset row, on every scope, stale so the next sync
+ * refetches it. Rows stay, so favourites and the rendered list survive.
+ */
+export async function expireAllAssets({
+    db = getDatabase(),
+}: { db?: Database } = {}): Promise<void> {
+    await db.update(AssetsNodeSchema).set({ updatedAt: 0 }).run()
+    await db.update(AssetsPeraSchema).set({ updatedAt: 0 }).run()
+}
+
 type DeleteAssetsParams = {
     db?: Database
     assetIds: string[]

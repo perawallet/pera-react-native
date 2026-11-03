@@ -1663,7 +1663,9 @@
             "title": "Pera Card hesabı",
             "subtitle": "Kriptonu harca",
             "activate": "Etkinleştir",
-            "status_approved": "Onaylandı"
+            "status_frozen": "Donduruldu",
+            "status_blocked": "Bloke edildi",
+            "status_pending": "Hazırlanıyor"
         },
         "intro": {
             "navigation_title": "Pera Card",
@@ -3259,7 +3261,7 @@
             "app_integrity_clear_backoff": "Backoff’ları temizle",
             "refresh_cache": "Tüm önbelleği yenile",
             "refresh_cache_success_title": "Önbellek yenilendi",
-            "refresh_cache_success_body": "Tüm hesaplar yeniden çekildi ve sorgular geçersiz kılındı.",
+            "refresh_cache_success_body": "Varlık verileri sıfırlandı; tüm ağlar şimdi yeniden eşitleniyor.",
             "refresh_cache_error_title": "Yenileme başarısız",
             "refresh_cache_error_body": "Önbellek yenilenemedi. Ayrıntılar için logları kontrol et.",
             "reset_banners": "Banner’ları sıfırla",
@@ -3492,7 +3494,9 @@
         },
         "address_safety": {
             "listed_title": "Bilinen dolandırıcılık adresi",
-            "listed_body": "Bu istek, fon çalmak için kullanılan adreslerin yer aldığı herkese açık bir listedeki bir adresi içeriyor. İmzalarsan varlıkların bu adrese geçebilir.",
+            "listed_body": "Bu istek, fon çalmak için kullanılan adreslerin yer aldığı herkese açık bir listedeki bir adresi içeriyor.",
+            "blocked_title": "Pera bu isteği imzalamaz",
+            "blocked_body": "Bilinen bir dolandırıcılık adresini içeriyor. Fonlarını korumak için reddet.",
             "look_alike_title": "Bu istek, tanıdığın bir adresi taklit eden bir adres içeriyor",
             "look_alike_body": "Tanıdığın bir adres gibi başlıyor ve bitiyor, ama aradaki karakterler farklı. Dolandırıcılar seni kandırmak için benzer görünen adresler oluşturur. Aşağıdaki tam adresleri karşılaştır.",
             "acknowledge": "Riski anlıyorum ve yine de imzalamak istiyorum",
@@ -3568,6 +3572,12 @@
             "send": "Gönder",
             "receive": "Al",
             "swap": "Swap",
+            "wrap": "Wrap",
+            "unwrap": "Unwrap",
+            "supply": "Yatır",
+            "withdraw": "Çek",
+            "borrow": "Borçlan",
+            "repay": "Geri öde",
             "opt_in": "Opt-in",
             "opt_out": "Opt-out",
             "asset_config": "Varlık yapılandırması",
@@ -4792,6 +4802,22 @@
     "ethereum": {
         "batch": {
             "fee_when_reached": "Ücret, bu çağrının sırası geldiğinde tahmin edilir"
+        },
+        "contract_action": {
+            "pay": "Ödersin",
+            "pay_at_most": "En fazla ödersin",
+            "receive": "Alırsın",
+            "receive_at_least": "En az alırsın",
+            "entire_balance": "Tüm bakiye",
+            "fee": "Ücret",
+            "fee_share": "Swap çıktısının {{percent}} kadarı",
+            "fee_recipient": "Alıcı",
+            "base_units": "temel birim"
+        },
+        "known_contract": {
+            "title": "Sözleşme",
+            "verified": "Doğrulanmış sözleşme",
+            "matches_site": "{{domain}} ile eşleşiyor"
         }
     }
 }
