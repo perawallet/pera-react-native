@@ -25,10 +25,12 @@ import { logger } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { fetchPeraServedChainIds } from './chainsEndpoints'
 
+const PERA_SERVED_CHAINS_QUERY_KEY = ['pera-served-chains'] as const
+
 export const getPeraServedChainsQueryKey = (
     deployment: WalletMode,
 ): readonly ['pera-served-chains', WalletMode] =>
-    ['pera-served-chains', deployment] as const
+    [...PERA_SERVED_CHAINS_QUERY_KEY, deployment] as const
 
 /** The registered scopes `caip2Ids` names on `deployment`; ids naming anything else are dropped. */
 export const toServedScopes = (

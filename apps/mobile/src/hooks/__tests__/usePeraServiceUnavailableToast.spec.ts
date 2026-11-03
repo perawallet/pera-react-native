@@ -128,6 +128,28 @@ describe('usePeraServiceUnavailableToast', () => {
         )
     })
 
+    it('stays silent for a chain the backend refuses', () => {
+        let capturedHandler:
+            | ((error: PeraServiceUnavailableError) => void)
+            | undefined
+        mockSetOnPeraBackendUnavailable.mockImplementation(
+            (handler: (error: PeraServiceUnavailableError) => void) => {
+                capturedHandler = handler
+                return vi.fn()
+            },
+        )
+        renderHook(() => usePeraServiceUnavailableToast())
+        const scope = { chainId: 'ethereum', networkId: 'mainnet' } as const
+
+        capturedHandler?.(
+            new PeraServiceUnavailableError(scope, 'history', {
+                isChainRefused: true,
+            }),
+        )
+
+        expect(mockShowError).not.toHaveBeenCalled()
+    })
+
     it('stays silent for an error an adapter raised itself while the chain kill switch is on', () => {
         let capturedHandler:
             | ((error: PeraServiceUnavailableError) => void)
