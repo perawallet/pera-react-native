@@ -29,7 +29,6 @@ import {
     AssetsPeraSchema,
     AssetPricesSchema,
     PeraAssetType,
-    PeraAssetVerificationTier,
     findNativeAsset,
     isNativeAssetId,
     nativeAssetFor,
@@ -408,6 +407,8 @@ export type AccountCollectibleLiteRow = PeraAssetJoinRow & {
     /** Pera collectible title; null when metadata hasn't synced. */
     title: Nullable<string>
     collectionName: Nullable<string>
+    /** Raw `verification_tier` text; compare against `PeraAssetVerificationTier`. */
+    verificationTier: string
 }
 
 export type GetAccountCollectiblesLiteParams = {
@@ -419,8 +420,6 @@ export type GetAccountCollectiblesLiteParams = {
     search?: string
     /** When false, collectibles the account holds none of are excluded. */
     includeZeroBalance?: boolean
-    /** When false, collectibles Pera flags as suspicious are excluded. */
-    includeSuspicious?: boolean
 }
 
 /**
@@ -437,7 +436,6 @@ export async function getAccountCollectiblesLite({
     sortMode,
     search,
     includeZeroBalance = true,
-    includeSuspicious = true,
 }: GetAccountCollectiblesLiteParams): Promise<AccountCollectibleLiteRow[]> {
     if (sources.length === 0) return []
     // Built here, not at module scope: a top-level `sql` template dereferences
@@ -471,15 +469,6 @@ export async function getAccountCollectiblesLite({
 
     if (!includeZeroBalance) {
         conditions.push(ne(AccountAssetHoldingsSchema.amount, new Decimal(0)))
-    }
-
-    if (!includeSuspicious) {
-        conditions.push(
-            ne(
-                AssetsPeraSchema.verificationTier,
-                PeraAssetVerificationTier.suspicious,
-            ),
-        )
     }
 
     const term = search?.trim()
@@ -528,6 +517,7 @@ export async function getAccountCollectiblesLite({
             ...peraAssetJoinColumns(),
             title: collectibleTitleExpr,
             collectionName: collectionNameExpr,
+            verificationTier: AssetsPeraSchema.verificationTier,
         })
         .from(AccountAssetHoldingsSchema)
         // Inner: a collectible is defined by its Pera metadata row.

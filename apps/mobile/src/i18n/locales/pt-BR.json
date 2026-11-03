@@ -393,6 +393,8 @@
             "nomatch_body": "Nenhum NFT corresponde à sua busca",
             "network_empty_title": "Nenhum NFT",
             "network_empty_body": "Você não tem nenhum NFT na rede {{chain}}.",
+            "suspicious_hidden_title": "NFTs suspeitos ocultos",
+            "suspicious_hidden_body": "A Pera marcou estes NFTs como possível spam ou golpe. Para vê-los, ative Exibir NFTs suspeitos em Gerenciar > Filtrar.",
             "count": "{{count}} NFTs",
             "count_one": "{{count}} NFT",
             "manage": "Gerenciar",

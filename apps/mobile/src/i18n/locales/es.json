@@ -393,6 +393,8 @@
             "nomatch_body": "Ningún NFT coincide con tu búsqueda",
             "network_empty_title": "Sin NFT",
             "network_empty_body": "No tienes ningún NFT en {{chain}}.",
+            "suspicious_hidden_title": "NFT sospechosos ocultos",
+            "suspicious_hidden_body": "Pera ha marcado estos NFT como posible spam o estafa. Para verlos, activa Mostrar NFT sospechosos en Gestionar > Filtrar.",
             "count": "{{count}} NFT",
             "count_one": "{{count}} NFT",
             "manage": "Gestionar",

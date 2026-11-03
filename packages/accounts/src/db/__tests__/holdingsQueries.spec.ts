@@ -195,46 +195,33 @@ describe('account holdings queries', () => {
             expect(rows.map(r => r.assetId).sort()).toEqual(['10', '2'])
         })
 
-        describe('suspicious collectibles', () => {
-            beforeEach(async () => {
-                const suspicious = collectible('2', 'Banana', 'Fruit Club')
-                await upsertAssets({
-                    db,
-                    scope: MAINNET_SCOPE,
-                    items: [
-                        {
-                            ...suspicious,
-                            peraMetadata: {
-                                ...suspicious.peraMetadata!,
-                                verificationTier: 'suspicious',
-                            },
+        it('surfaces each collectible verification tier', async () => {
+            const suspicious = collectible('2', 'Banana', 'Fruit Club')
+            await upsertAssets({
+                db,
+                scope: MAINNET_SCOPE,
+                items: [
+                    {
+                        ...suspicious,
+                        peraMetadata: {
+                            ...suspicious.peraMetadata!,
+                            verificationTier: 'suspicious',
                         },
-                    ],
-                })
+                    },
+                ],
             })
 
-            it('keeps them by default', async () => {
-                const rows = await getAccountCollectiblesLite({
-                    db,
-                    sources: [{ address: 'ADDR1', scope: MAINNET_SCOPE }],
-                })
-
-                expect(rows.map(r => r.assetId).sort()).toEqual([
-                    '10',
-                    '2',
-                    '30',
-                ])
+            const rows = await getAccountCollectiblesLite({
+                db,
+                sources: [{ address: 'ADDR1', scope: MAINNET_SCOPE }],
             })
 
-            it('excludes them when they are hidden', async () => {
-                const rows = await getAccountCollectiblesLite({
-                    db,
-                    sources: [{ address: 'ADDR1', scope: MAINNET_SCOPE }],
-                    includeSuspicious: false,
-                })
-
-                expect(rows.map(r => r.assetId).sort()).toEqual(['10', '30'])
-            })
+            expect(
+                rows.find(row => row.assetId === '2')?.verificationTier,
+            ).toBe('suspicious')
+            expect(
+                rows.find(row => row.assetId === '10')?.verificationTier,
+            ).not.toBe('suspicious')
         })
 
         it('surfaces title and collection name without parsing in JS', async () => {

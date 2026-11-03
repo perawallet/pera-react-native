@@ -29,8 +29,6 @@ export type UseAccountCollectiblesQueryParams = {
     search?: string
     /** When false, collectibles the account holds none of are excluded. */
     includeZeroBalance?: boolean
-    /** When false, collectibles Pera flags as suspicious are excluded. */
-    includeSuspicious?: boolean
     enabled?: boolean
 }
 
@@ -71,7 +69,6 @@ export const useAccountCollectiblesQuery = (
         sortMode,
         search,
         includeZeroBalance = true,
-        includeSuspicious = true,
         enabled = true,
     }: UseAccountCollectiblesQueryParams = {},
 ): UseAccountCollectiblesQueryResult => {
@@ -79,7 +76,6 @@ export const useAccountCollectiblesQuery = (
         sortMode,
         search,
         includeZeroBalance,
-        includeSuspicious,
     })
     const signature = sourcesSignature(sourcesOfKey(queryKey))
     const isEnabled = sources.length > 0 && enabled
@@ -116,7 +112,6 @@ export const useAccountCollectiblesQuery = (
                 sortMode,
                 search,
                 includeZeroBalance,
-                includeSuspicious,
             })
         },
     })

@@ -393,6 +393,8 @@
             "nomatch_body": "Keine NFTs entsprechen deinem Suchbegriff",
             "network_empty_title": "Keine NFTs",
             "network_empty_body": "Du hast keine NFTs auf {{chain}}.",
+            "suspicious_hidden_title": "Verdächtige NFTs ausgeblendet",
+            "suspicious_hidden_body": "Pera hat diese NFTs als wahrscheinlichen Spam oder Betrug markiert. Um sie zu sehen, aktiviere „Verdächtige NFTs anzeigen“ unter Verwalten > Filter.",
             "count": "{{count}} NFTs",
             "count_one": "{{count}} NFT",
             "manage": "Verwalten",

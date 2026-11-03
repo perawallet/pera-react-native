@@ -97,7 +97,6 @@ export const getAccountCollectiblesQueryKey = (
         sortMode?: string
         search?: string
         includeZeroBalance?: boolean
-        includeSuspicious?: boolean
     },
 ): unknown[] => [
     MODULE_PREFIX,

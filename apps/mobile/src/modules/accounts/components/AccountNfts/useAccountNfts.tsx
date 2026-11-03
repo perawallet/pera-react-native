@@ -30,6 +30,7 @@ import {
 } from '@perawallet/wallet-core-chain-contract'
 import { chainDisplayNameOf } from '@perawallet/wallet-core-chain-shared'
 import {
+    PeraAssetVerificationTier,
     useCollectiblePreferencesStore,
     type CollectibleSortMode,
     type GalleryLayout,
@@ -62,7 +63,7 @@ type UseAccountNftsResult = {
     canOptIn: boolean
     /** On more than one NFT network, where the copy has to say opt-in is Algorand-only. */
     isMultiChain: boolean
-    /** No NFTs on any network: an active network chip or search doesn't count. */
+    /** No NFTs on any network: an active network chip, search or suspicious filter doesn't count. */
     showEmptyState: boolean
     /** Each NFT names its network: several networks are listed together. */
     shouldShowNetwork: boolean
@@ -89,6 +90,39 @@ type UseAccountNftsResult = {
     flatListRef: React.MutableRefObject<
         Nullable<React.ComponentRef<typeof PWFlatList>>
     >
+}
+
+// Suspicious first: a search or chip that only matched hidden NFTs should say
+// how to show them, not that nothing matched.
+const listEmptyCopy = ({
+    t,
+    isSuspiciousHidden,
+    isNetworkEmpty,
+    chainName,
+}: {
+    t: ReturnType<typeof useLanguage>['t']
+    isSuspiciousHidden: boolean
+    isNetworkEmpty: boolean
+    chainName: string
+}): { title: string; body: string } => {
+    if (isSuspiciousHidden) {
+        return {
+            title: t('account_details.nfts.suspicious_hidden_title'),
+            body: t('account_details.nfts.suspicious_hidden_body'),
+        }
+    }
+    if (isNetworkEmpty) {
+        return {
+            title: t('account_details.nfts.network_empty_title'),
+            body: t('account_details.nfts.network_empty_body', {
+                chain: chainName,
+            }),
+        }
+    }
+    return {
+        title: t('account_details.nfts.nomatch_title'),
+        body: t('account_details.nfts.nomatch_body'),
+    }
 }
 
 export const useAccountNfts = (): UseAccountNftsResult => {
@@ -240,11 +274,11 @@ export const useAccountNfts = (): UseAccountNftsResult => {
         sortMode: sqlSortMode,
         search: debouncedSearchFilter || undefined,
         includeZeroBalance: showOptedIn,
-        includeSuspicious: showSuspicious,
     })
 
-    // Every network is read and the chip narrows in memory, so the gallery
-    // can tell "nothing on this network" apart from "no NFTs at all".
+    // Every network and tier is read, and the chip and the suspicious filter
+    // narrow in memory, so the gallery can tell "no NFTs at all" apart from
+    // "nothing on this network" or "only suspicious ones".
     const networkRows = useMemo(
         () =>
             selectedChainId === null
@@ -252,9 +286,20 @@ export const useAccountNfts = (): UseAccountNftsResult => {
                 : rows.filter(row => row.scope.chainId === selectedChainId),
         [rows, selectedChainId],
     )
+    const visibleRows = useMemo(
+        () =>
+            showSuspicious
+                ? networkRows
+                : networkRows.filter(
+                      row =>
+                          row.verificationTier !==
+                          PeraAssetVerificationTier.suspicious,
+                  ),
+        [networkRows, showSuspicious],
+    )
 
     const collectibles = useMemo(() => {
-        if (sortMode !== 'recentlyAdded') return networkRows
+        if (sortMode !== 'recentlyAdded') return visibleRows
 
         // A row with no known order is newer than the chain's view: holdings
         // mirror the node, so only a just-acquired asset can be missing from
@@ -267,7 +312,7 @@ export const useAccountNfts = (): UseAccountNftsResult => {
             toScopeKey(row.scope) === ownScopeKey
                 ? acquisitionOrder.get(row.assetId)
                 : undefined
-        return [...networkRows].sort((a, b) => {
+        return [...visibleRows].sort((a, b) => {
             const aOrder = orderOf(a)
             const bOrder = orderOf(b)
             if (aOrder === bOrder) return 0
@@ -275,7 +320,7 @@ export const useAccountNfts = (): UseAccountNftsResult => {
             if (bOrder === undefined) return 1
             return bOrder - aOrder
         })
-    }, [networkRows, sortMode, acquisitionOrder, scope])
+    }, [visibleRows, sortMode, acquisitionOrder, scope])
 
     const handlePress = useCallback(
         (item: AccountCollectibleLiteRow) => {
@@ -338,12 +383,20 @@ export const useAccountNfts = (): UseAccountNftsResult => {
         }
     }, [galleryLayout])
 
+    const isSuspiciousHidden =
+        visibleRows.length === 0 && networkRows.length > 0
     const isNetworkEmpty =
         selectedChainId !== null && !debouncedSearchFilter.length
     const selectedChainName =
         selectedChainId === null
             ? ''
             : (chainDisplayNameOf(selectedChainId) ?? selectedChainId)
+    const { title: listEmptyTitle, body: listEmptyBody } = listEmptyCopy({
+        t,
+        isSuspiciousHidden,
+        isNetworkEmpty,
+        chainName: selectedChainName,
+    })
 
     return {
         collectibles,
@@ -355,14 +408,8 @@ export const useAccountNfts = (): UseAccountNftsResult => {
         isMultiChain,
         showEmptyState: !isPending && rows.length === 0 && !searchFilter.length,
         shouldShowNetwork: isMultiChain && selectedChainId === null,
-        listEmptyTitle: isNetworkEmpty
-            ? t('account_details.nfts.network_empty_title')
-            : t('account_details.nfts.nomatch_title'),
-        listEmptyBody: isNetworkEmpty
-            ? t('account_details.nfts.network_empty_body', {
-                  chain: selectedChainName,
-              })
-            : t('account_details.nfts.nomatch_body'),
+        listEmptyTitle,
+        listEmptyBody,
         chainFilterOptions,
         selectedChainId,
         setSelectedChainId,

@@ -124,9 +124,10 @@ vi.mock('@perawallet/wallet-core-assets', async importOriginal => {
     }
 })
 
-// Filtering, searching and ordering now happen in SQL — see the
+// Search, the opted-in filter and ordering happen in SQL — see the
 // `getAccountCollectiblesLite` suite in the accounts package for those. These
-// tests cover what the hook still owns: query wiring and the acquisition-order sort.
+// tests cover what the hook still owns: query wiring, the network chip and the
+// suspicious filter, and the acquisition-order sort.
 const ALGORAND_MAINNET = { chainId: 'algorand', networkId: 'mainnet' }
 const ETHEREUM_MAINNET = { chainId: 'ethereum', networkId: 'mainnet' }
 
@@ -143,6 +144,7 @@ const makeRow = (assetId: string, title: string, scope = ALGORAND_MAINNET) => ({
     peraMetadataJson: null,
     title,
     collectionName: null,
+    verificationTier: 'unverified',
     scope,
 })
 
@@ -234,21 +236,6 @@ describe('useAccountNfts', () => {
                 expect.objectContaining({ includeZeroBalance: true }),
             )
         })
-
-        it.each([false, true])(
-            'passes the suspicious preference (%s) down so SQL narrows the read',
-            showSuspicious => {
-                mockShowSuspicious = showSuspicious
-                renderHook(() => useAccountNfts())
-
-                expect(mockUseAccountCollectiblesQuery).toHaveBeenCalledWith(
-                    expect.anything(),
-                    expect.objectContaining({
-                        includeSuspicious: showSuspicious,
-                    }),
-                )
-            },
-        )
 
         it('passes the search term down so SQL narrows the read', () => {
             const { result } = renderHook(() => useAccountNfts())
@@ -850,6 +837,79 @@ describe('useAccountNfts', () => {
 
             expect(result.current.listEmptyTitle).toBe(
                 'account_details.nfts.nomatch_title',
+            )
+        })
+    })
+
+    describe('suspicious NFTs', () => {
+        const cleanRow = makeRow('100', 'Clean NFT')
+        const suspiciousRow = {
+            ...makeRow('200', 'Spam NFT'),
+            verificationTier: 'suspicious',
+        }
+
+        it('hides suspicious NFTs unless the preference shows them', () => {
+            mockUseAccountCollectiblesQuery.mockReturnValue({
+                collectibles: [cleanRow, suspiciousRow],
+                isPending: false,
+            })
+
+            const { result, rerender } = renderHook(() => useAccountNfts())
+            expect(result.current.collectibles).toEqual([cleanRow])
+
+            mockShowSuspicious = true
+            rerender()
+            expect(result.current.collectibles).toEqual([
+                cleanRow,
+                suspiciousRow,
+            ])
+        })
+
+        it('keeps the header and points to the filter when every NFT is suspicious', () => {
+            mockUseAccountCollectiblesQuery.mockReturnValue({
+                collectibles: [suspiciousRow],
+                isPending: false,
+            })
+
+            const { result } = renderHook(() => useAccountNfts())
+
+            expect(result.current.collectibles).toEqual([])
+            expect(result.current.showEmptyState).toBe(false)
+            expect(result.current.listEmptyTitle).toBe(
+                'account_details.nfts.suspicious_hidden_title',
+            )
+            expect(result.current.listEmptyBody).toBe(
+                'account_details.nfts.suspicious_hidden_body',
+            )
+        })
+
+        it('points to the filter when the picked network holds only suspicious NFTs', () => {
+            registerEthereumChain()
+            registerEthereumAccountsAdapter()
+            mockUseSelectedAccount.mockReturnValue({
+                ...mockAccount,
+                chains: {
+                    algorand: { address: ACCOUNT_ADDRESS },
+                    ethereum: { address: `0x${'a'.repeat(40)}` },
+                },
+            })
+            mockUseAccountCollectiblesQuery.mockReturnValue({
+                collectibles: [
+                    cleanRow,
+                    {
+                        ...makeRow('0xabc:1', 'Eth spam', ETHEREUM_MAINNET),
+                        verificationTier: 'suspicious',
+                    },
+                ],
+                isPending: false,
+            })
+            const { result } = renderHook(() => useAccountNfts())
+
+            act(() => result.current.setSelectedChainId('ethereum'))
+
+            expect(result.current.collectibles).toEqual([])
+            expect(result.current.listEmptyTitle).toBe(
+                'account_details.nfts.suspicious_hidden_title',
             )
         })
     })

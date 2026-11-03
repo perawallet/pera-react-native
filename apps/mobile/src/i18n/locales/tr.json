@@ -393,6 +393,8 @@
             "nomatch_body": "Arama terimiyle eşleşen NFT bulunamadı",
             "network_empty_title": "NFT yok",
             "network_empty_body": "{{chain}} ağında hiç NFT’n yok.",
+            "suspicious_hidden_title": "Şüpheli NFT’ler gizlendi",
+            "suspicious_hidden_body": "Pera bu NFT’leri olası spam veya dolandırıcılık olarak işaretledi. Görmek için Yönet > Filtrele’de Şüpheli NFT’leri göster seçeneğini aç.",
             "count": "{{count}} NFT",
             "count_one": "{{count}} NFT",
             "manage": "Yönet",
