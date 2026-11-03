@@ -16,9 +16,22 @@ import {
     readBackendRecording,
 } from '../../../__tests__/backend-recordings'
 import { historyPath } from '../endpoints'
-import { evmHistoryItemSchema, evmHistoryPageSchema } from '../schema'
+import {
+    evmHistoryItemSchema,
+    evmHistoryPageSchema,
+    type EvmHistoryItemResponse,
+} from '../schema'
 
 const recording = readBackendRecording('evm-account-transactions')
+
+const wireRows = (): EvmHistoryItemResponse[] =>
+    evmHistoryPageSchema.parse(recording.response)
+        .results as EvmHistoryItemResponse[]
+
+const isPresent = (value: unknown): boolean =>
+    Array.isArray(value)
+        ? value.length > 0
+        : value !== null && value !== undefined
 
 describe('GET /api/v3/evm/{id}/accounts/{addr}/transactions/ contract', () => {
     it('is the route the app calls', () => {
@@ -35,5 +48,48 @@ describe('GET /api/v3/evm/{id}/accounts/{addr}/transactions/ contract', () => {
         const { results } = evmHistoryPageSchema.parse(recording.response)
 
         expectEveryRowParses(results, evmHistoryItemSchema)
+    })
+
+    // A row parses even when one of its legs, or a display field, fails: the
+    // schema drops the leg or falls back. Here either fails the contract.
+    it('keeps every leg and field the app reads', () => {
+        const kept = wireRows().map(row => {
+            const parsed = evmHistoryItemSchema.parse(row)
+            return {
+                blockNumber: parsed.block_number,
+                internal: parsed.internal_transfers.length,
+                nfts: parsed.nft_transfers.length,
+                tokens: parsed.token_transfers.map(leg => [
+                    leg.token_symbol,
+                    leg.token_decimals,
+                ]),
+            }
+        })
+
+        expect(kept).toEqual(
+            wireRows().map(row => ({
+                blockNumber: row.block_number,
+                internal: row.internal_transfers.length,
+                nfts: row.nft_transfers.length,
+                tokens: row.token_transfers.map(leg => [
+                    leg.token_symbol,
+                    leg.token_decimals,
+                ]),
+            })),
+        )
+    })
+
+    // A field null or empty on every row passes the parse unchecked.
+    it('fills every field the app reads on at least one row', () => {
+        const rows = wireRows()
+
+        const unexercised = Object.keys(evmHistoryItemSchema.shape).filter(
+            key =>
+                !rows.some(row =>
+                    isPresent(row[key as keyof EvmHistoryItemResponse]),
+                ),
+        )
+
+        expect(unexercised).toEqual([])
     })
 })
