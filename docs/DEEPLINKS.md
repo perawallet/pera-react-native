@@ -55,7 +55,7 @@ so a `chain=` on them changes nothing.
 | `account-detail`                                                                                | `address`                                                                                                                                | ✓        |
 | `asset-transfer`                                                                                | `receiverAddress`, `assetId?` (absent: native asset), `amount?`, `note?`, `label?`, `xnote?` (Algorand)                                  | ✓        |
 | `asset-opt-in`                                                                                  | `assetId`, `address?`                                                                                                                    | ✓        |
-| `asset-detail`                                                                                  | `address`, `assetId`                                                                                                                     | ✓        |
+| `asset-detail`                                                                                  | `address`, `assetId?` (absent: native asset)                                                                                             | ✓        |
 | `swap`                                                                                          | `address?`, `assetInId?`, `assetOutId?`                                                                                                  | ✓        |
 | `buy`, `sell`                                                                                   | `address?`                                                                                                                               | ✓        |
 | `keyreg`                                                                                        | `senderAddress`, `type?` (`online`/`offline`), `votekey`, `selkey`, `sprfkey`, `votefst`, `votelst`, `votekd`, `fee?`, `note?`, `xnote?` | Algorand |
@@ -127,6 +127,9 @@ chain capability is off, whatever its source.
 - **`ethereum:` from the OS is shared.** On iOS any installed wallet can claim it and the OS picks
   one; Android shows a chooser. Pera's own surfaces issue `perawallet://` with `chain=`, which only
   Pera opens.
+- **EVM transfer notifications** (`evm-transfer-received`, `-sent`, `-failed`) open `asset-detail`
+  with `chain` = the transfer's CAIP-2, `address` = the account (the receiver for a received
+  transfer, the sender otherwise) and `assetId` = the token contract, left off for the native coin.
 - **A page has two ways in.** A navigation goes through `useWebViewNavigationGuard`, which applies the
   page policy per link type. The `openNativeURI` bridge method dispatches any parseable link without
   it, so the bridge's trusted-origin gate (`usePeraWebviewInterface`) is what keeps other origins out.
