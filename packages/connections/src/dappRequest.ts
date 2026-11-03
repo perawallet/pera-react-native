@@ -259,6 +259,26 @@ export interface WalletConnectV2ChainSupport {
     }
 }
 
+export type DappNodeReadResult =
+    | { ok: true; result: unknown }
+    /** The node's own JSON-RPC error, safe to relay to the page as is. */
+    | { ok: false; error: { code: number; message: string; data?: unknown } }
+
+/** Pure reads a chain lets a dApp page send to its node through the wallet. */
+export interface DappNodeReads {
+    /** Everything else is refused: nothing that signs, broadcasts or keeps state on one node. */
+    readonly methods: readonly string[]
+    /**
+     * Resolves with the node's answer or error; rejects only when no node
+     * replied, and throws for a method `methods` doesn't list.
+     */
+    request(
+        networkId: NetworkId,
+        method: string,
+        params: unknown,
+    ): Promise<DappNodeReadResult>
+}
+
 /**
  * The per-chain half of answering a dApp's signing request. Shared by every
  * dApp transport, so a chain parses its payloads in one place.
@@ -333,6 +353,8 @@ export interface DappRequestChainAdapter {
     readonly sendTransaction?: DappTransactionSending
     /** Omitted by a chain whose dApps send no batch of transactions. */
     readonly sendBatch?: DappBatchSending
+    /** Omitted by a chain whose dApps read nothing through the wallet. */
+    readonly nodeReads?: DappNodeReads
     /**
      * Parses a `sign-message` or `sign-typed-data` request's params. The
      * signer comes back in the chain's canonical spelling. Omitted by a chain

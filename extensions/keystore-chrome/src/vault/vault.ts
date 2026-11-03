@@ -33,9 +33,9 @@ import { runThrottledAttempt } from './lockout'
 import { clearPasswordAuth, stampPasswordAuth } from './password-auth'
 import {
     clearSessionMasterKey,
-    hasSessionMasterKey,
+    isSessionUnlocked,
     putSessionMasterKey,
-    SESSION_MASTER_KEY,
+    SESSION_UNLOCKED_KEY,
 } from './session'
 
 // PBKDF2 parameters for reading legacy `version: 1` blobs. No longer written —
@@ -448,7 +448,7 @@ export const destroyVault = async (): Promise<void> => {
 }
 
 export const isUnlocked = async (): Promise<boolean> => {
-    return hasSessionMasterKey()
+    return isSessionUnlocked()
 }
 
 export const changePassword = async (
@@ -479,7 +479,7 @@ export const onLockStateChanged = (
         areaName: string,
     ): void => {
         if (areaName !== 'session') return
-        const change = changes[SESSION_MASTER_KEY]
+        const change = changes[SESSION_UNLOCKED_KEY]
         if (!change) return
         listener(change.newValue !== undefined)
     }

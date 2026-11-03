@@ -55,11 +55,34 @@ describe('webViewDappTransport', () => {
         )
 
         expect(listener).toHaveBeenCalledWith(
-            { origin: ORIGIN, hasUserActivation: false },
+            {
+                origin: ORIGIN,
+                hasUserActivation: false,
+                isWalletLocked: true,
+            },
             expect.objectContaining({ method: 'eth_chainId' }),
             expect.any(Function),
         )
     })
+
+    it.each([true, false])(
+        'reports the app lock (%s) the request arrived under',
+        isLocked => {
+            const transport = createWebViewDappTransport()
+            transport.bindLockState(() => isLocked)
+            const { page } = pageAt(`${ORIGIN}/swap`)
+            const listener = vi.fn()
+            transport.onRequest(listener)
+
+            transport.receive(page, messageOf(), `${ORIGIN}/swap`)
+
+            expect(listener).toHaveBeenCalledWith(
+                expect.objectContaining({ isWalletLocked: isLocked }),
+                expect.anything(),
+                expect.any(Function),
+            )
+        },
+    )
 
     it('answers 4100 and skips the listener for a page that is not https', () => {
         const transport = createWebViewDappTransport()

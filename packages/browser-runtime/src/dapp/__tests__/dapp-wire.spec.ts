@@ -107,6 +107,7 @@ describe('dapp wire guards', () => {
             provider: 'pera',
             origin: 'https://a.example',
             hasUserActivation: true,
+            isWalletLocked: false,
             returnTo: { tabId: 3 },
             request,
         }
@@ -119,6 +120,14 @@ describe('dapp wire guards', () => {
         ).toBe(true)
         expect(isDappHostRequestMessage({ ...base, returnTo: {} })).toBe(false)
         expect(isDappHostRequestMessage({ ...base, origin: 7 })).toBe(false)
+        expect(
+            isDappHostRequestMessage({ ...base, isWalletLocked: true }),
+        ).toBe(true)
+        expect(
+            isDappHostRequestMessage({ ...base, isWalletLocked: 'no' }),
+        ).toBe(false)
+        const { isWalletLocked: _omitted, ...withoutLock } = base
+        expect(isDappHostRequestMessage(withoutLock)).toBe(false)
     })
     it('host response: origin + payload, return address optional', () => {
         expect(
@@ -172,6 +181,7 @@ describe('dapp wire guards', () => {
                     scope: DAPP_HOST_REQUEST_SCOPE,
                     origin: 'https://a.example',
                     hasUserActivation: true,
+                    isWalletLocked: false,
                     returnTo: { tabId: 3 },
                     request,
                 },

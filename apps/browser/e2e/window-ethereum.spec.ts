@@ -35,6 +35,7 @@ import {
 } from './approval-surface'
 import { settlePinPrompt } from './pin-prompt'
 import {
+    BALANCE_WEI,
     E2E_EVM_RPC_PORT,
     E2E_EVM_RPC_URL,
     createFakeEvmNode,
@@ -398,6 +399,18 @@ test.describe('signing from a connected dApp', () => {
 
     test.afterAll(async () => {
         await nodeServer?.close()
+    })
+
+    test('a connected dApp reads its balance from the node through window.ethereum', async () => {
+        await startRequest('balance', {
+            method: 'eth_getBalance',
+            params: [address, 'latest'],
+        })
+
+        const balance = await outcomeOf('balance')
+
+        expect(balance.code, balance.message).toBeUndefined()
+        expect(balance.result).toBe(`0x${BALANCE_WEI.toString(16)}`)
     })
 
     test('a connected dApp sends a transaction and gets the hash back', async () => {
