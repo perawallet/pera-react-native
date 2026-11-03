@@ -1213,6 +1213,14 @@
                 "title": "Ağ yoğun",
                 "body": "Ağ şu anda çok fazla istek alıyor. Biraz bekle ve tekrar dene."
             },
+            "timeout": {
+                "title": "Ağ yanıt vermedi",
+                "body": "Ağ zamanında yanıt vermedi. Tekrar dene."
+            },
+            "network_unreachable": {
+                "title": "Ağa ulaşılamıyor",
+                "body": "Ağa bağlanılamadı. Bağlantını kontrol et veya biraz sonra tekrar dene."
+            },
             "invalid_private_key": "Geçerli bir özel anahtar gir: 64 onaltılık karakter, 0x ile veya 0x olmadan.",
             "replaced_transaction_confirmed": {
                 "title": "İşlem zaten onaylandı",

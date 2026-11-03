@@ -1213,6 +1213,14 @@
                 "title": "Réseau saturé",
                 "body": "Le réseau reçoit trop de requêtes en ce moment. Veuillez patienter un instant, puis réessayer."
             },
+            "timeout": {
+                "title": "Le réseau ne répond pas",
+                "body": "Le réseau n’a pas répondu à temps. Veuillez réessayer."
+            },
+            "network_unreachable": {
+                "title": "Réseau injoignable",
+                "body": "Nous n’avons pas pu nous connecter au réseau. Vérifiez votre connexion ou réessayez dans un instant."
+            },
             "invalid_private_key": "Saisissez une clé privée valide : 64 caractères hexadécimaux, avec ou sans 0x.",
             "replaced_transaction_confirmed": {
                 "title": "Transaction déjà confirmée",

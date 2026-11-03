@@ -29,6 +29,7 @@ import {
     useTransactionSendFlow,
 } from '@perawallet/wallet-core-transactions'
 import {
+    SubmissionError,
     UserRejectedSigningError,
     useSigningEvent,
 } from '@perawallet/wallet-core-signing'
@@ -43,6 +44,7 @@ import { getChainDescriptor } from '@perawallet/wallet-core-chain-shared'
 import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 import { bottomSheetNotifier } from '@components/core'
+import { navigateToAccountHistory } from '@modules/deeplink/core'
 import { useSendFunds, useSendScope } from '@modules/transactions/hooks'
 import { trackEvent, TransactionsEvent, AnalyticsMetadataKey } from '@analytics'
 import { useErrorToast } from '@hooks/useErrorToast'
@@ -118,6 +120,9 @@ export const useTransactionProcessingScreen =
         // send-funds flow so the PendingSignaturesBottomSheet (opened by
         // useMultisigProposeListener on the same event) can take over.
         const hasExitedRef = useRef(false)
+        // The submit effect below runs once, so it reads the latest callback here.
+        const onFinishedRef = useRef(onFinished)
+        onFinishedRef.current = onFinished
         const proposeReceivedRef = useRef(false)
 
         useSigningEvent(
@@ -231,6 +236,18 @@ export const useTransactionProcessingScreen =
                             toError(error),
                         ),
                     })
+                    // No node answered: the send may still land, and Confirm would send it twice.
+                    // Any other unknown outcome keeps the notice and the way back to Confirm.
+                    if (
+                        error instanceof SubmissionError &&
+                        error.classification === 'unknown-outcome' &&
+                        error.isUnanswered
+                    ) {
+                        showError(error)
+                        onFinishedRef.current?.()
+                        navigateToAccountHistory()
+                        return
+                    }
                     showError(error, undefined, {
                         notifier: bottomSheetNotifier.current ?? undefined,
                     })

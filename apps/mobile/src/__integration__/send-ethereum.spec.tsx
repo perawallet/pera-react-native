@@ -50,7 +50,8 @@ import {
     evmRpcHandlers,
 } from '@perawallet/wallet-core-chain-ethereum/test-handlers'
 import { kmsCore } from '@perawallet/wallet-core-kms'
-import { server } from '@test-utils/msw-server'
+import { http, HttpResponse, server } from '@test-utils/msw-server'
+import { navigationRef } from '@routes/navigationRef'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { findEnabledByTestId, isElementDisabled } from '@test-utils/rnw'
 import {
@@ -118,6 +119,16 @@ const renderSendConfirmationStack = () =>
         confirmation: TransactionConfirmationScreen,
         processing: TransactionProcessingScreen,
         success: TransactionSuccessScreen,
+    })
+
+// A node that never answers: the connection drops before any JSON-RPC reply.
+const dropRpc = (shouldDrop: (methods: string[]) => boolean) =>
+    http.post(RPC_URL, async ({ request }) => {
+        const body: unknown = await request.clone().json()
+        const calls = Array.isArray(body) ? body : [body]
+        const methods = calls.map(call => String(call?.method))
+        if (shouldDrop(methods)) return HttpResponse.error()
+        return undefined
     })
 
 describe('Flow: send from an Ethereum account', () => {
@@ -266,6 +277,88 @@ describe('Flow: send from an Ethereum account', () => {
         ).toMatchObject({
             [AnalyticsMetadataKey.ErrorCode]: 'evm.replacement_underpriced',
             [AnalyticsMetadataKey.IsRetryable]: false,
+        })
+    })
+
+    it('Given an ether send whose broadcast gets no answer, when the user confirms, then the status-unknown notice shows, the flow leaves for History and the send stays on record', async () => {
+        selectSender(ETHEREUM_SENDER)
+        useSendFundsStore
+            .getState()
+            .setSelectedAsset({ chainId: 'ethereum', assetId: 'native' })
+        useSendFundsStore.getState().setAmount(new Decimal('0.5'))
+        useSendFundsStore.getState().setDestination(RECEIVER)
+        useSendFundsStore.getState().setSendMode('normal')
+        server.use(
+            dropRpc(methods => methods.includes('eth_sendRawTransaction')),
+        )
+        // The send sheet is not under a real root navigator in this harness.
+        vi.spyOn(navigationRef, 'isReady').mockReturnValue(true)
+        const navigate = vi
+            .spyOn(navigationRef, 'navigate')
+            .mockImplementation(() => undefined)
+
+        renderSendConfirmationStack()
+        fireEvent.click(
+            await findEnabledByTestId('send_confirm_button', { timeout: 5000 }),
+        )
+
+        await waitFor(
+            () =>
+                expect(Notifier.showNotification).toHaveBeenCalledWith(
+                    expect.objectContaining({
+                        title: 'errors.submission.unknown_outcome.title',
+                    }),
+                ),
+            { timeout: 10_000 },
+        )
+        expect(navigate).toHaveBeenCalledWith('TabBar', {
+            screen: 'Home',
+            params: {
+                screen: 'AccountDetails',
+                pop: true,
+                params: { tab: 'History' },
+            },
+        })
+        expect(screen.queryByTestId('send_confirm_button')).toBeNull()
+        expect(await sentRecord()).toBeDefined()
+    })
+
+    it('Given an ether send whose node cannot be reached while it builds, when the user confirms, then the unreachable notice shows and the flow returns to Confirm', async () => {
+        selectSender(ETHEREUM_SENDER)
+        useSendFundsStore
+            .getState()
+            .setSelectedAsset({ chainId: 'ethereum', assetId: 'native' })
+        useSendFundsStore.getState().setAmount(new Decimal('0.5'))
+        useSendFundsStore.getState().setDestination(RECEIVER)
+        useSendFundsStore.getState().setSendMode('normal')
+        renderSendConfirmationStack()
+        const confirm = await findEnabledByTestId('send_confirm_button', {
+            timeout: 5000,
+        })
+        // Only the build reads the nonce; the review's fee estimate did not.
+        server.use(
+            dropRpc(methods => methods.includes('eth_getTransactionCount')),
+        )
+
+        fireEvent.click(confirm)
+
+        await waitFor(
+            () =>
+                expect(Notifier.showNotification).toHaveBeenCalledWith(
+                    expect.objectContaining({
+                        title: 'errors.evm.network_unreachable.title',
+                    }),
+                ),
+            { timeout: 10_000 },
+        )
+        await waitFor(() =>
+            expect(screen.getByTestId('send_confirm_button')).toBeTruthy(),
+        )
+        expect(
+            analytics.events([TransactionsEvent.Failed])[0]?.payload,
+        ).toMatchObject({
+            [AnalyticsMetadataKey.ErrorCode]: 'evm.network_unreachable',
+            [AnalyticsMetadataKey.IsRetryable]: true,
         })
     })
 

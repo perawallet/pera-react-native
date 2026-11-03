@@ -228,12 +228,14 @@ export const createEvmBroadcasterAdapter = (
             new SubmissionError(
                 [],
                 'unknown-outcome',
-                toEvmError(
+                new EvmError(
+                    EvmErrorCode.TIMEOUT,
+                    {},
                     new Error(
                         `Transaction submit timed out after ${timeoutMs}ms`,
                     ),
-                    nativeSymbol,
                 ),
+                { isUnanswered: true },
             ),
     }
 }

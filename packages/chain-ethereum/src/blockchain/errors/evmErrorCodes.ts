@@ -23,6 +23,8 @@ export const EvmErrorCode = {
     INSUFFICIENT_FUNDS: 'insufficient_funds',
     FEE_ABOVE_CONFIRMED: 'fee_above_confirmed',
     RATE_LIMITED: 'rate_limited',
+    TIMEOUT: 'timeout',
+    NETWORK_UNREACHABLE: 'network_unreachable',
     UNKNOWN: 'unknown',
 } as const
 
@@ -98,6 +100,20 @@ export const TRAITS: Record<EvmErrorCode, EvmErrorTraits> = {
     rate_limited: {
         titleKey: i18nKey('errors.evm.rate_limited.title'),
         messageKey: i18nKey('errors.evm.rate_limited.body'),
+        severity: ErrorSeverity.LOW,
+        retryable: true,
+        expected: true,
+    },
+    timeout: {
+        titleKey: i18nKey('errors.evm.timeout.title'),
+        messageKey: i18nKey('errors.evm.timeout.body'),
+        severity: ErrorSeverity.LOW,
+        retryable: true,
+        expected: true,
+    },
+    network_unreachable: {
+        titleKey: i18nKey('errors.evm.network_unreachable.title'),
+        messageKey: i18nKey('errors.evm.network_unreachable.body'),
         severity: ErrorSeverity.LOW,
         retryable: true,
         expected: true,
