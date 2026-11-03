@@ -178,7 +178,7 @@ pera-react-native/
 │   ├── platform-react-native/ # React Native implementation
 │   ├── platform-chrome/     # Chrome implementation
 │   ├── provider/            # `getProvider()` accessor used by packages
-│   └── …                    # ledger-*, keystore-chrome, passkey-autofill
+│   └── …                    # ledger-*, vault-chrome, passkey-autofill
 ├── conformance/             # LocalNet conformance suite
 ├── conformance-evm/         # EVM conformance suite (Anvil)
 ├── tools/                   # Development and CI scripts

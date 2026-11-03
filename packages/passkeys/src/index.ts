@@ -34,7 +34,7 @@ export * from './authenticator/authenticator'
 export * from './authenticator/wire'
 // `splitP256PublicKey` is the XY-splitter; the authenticator core only
 // re-exports its own consumers of it (`p256XYToSpkiDer`, `deriveCredentialId`).
-// The keystore-chrome adapter needs the raw splitter itself to normalize
+// The vault-chrome adapter needs the raw splitter itself to normalize
 // whatever the keystore hands back as `key.publicKey` into the flat XY form
 // the `KeystoreSigner` port returns.
 export {

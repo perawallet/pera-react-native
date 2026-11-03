@@ -115,8 +115,8 @@
       "@perawallet/wallet-core-site-safety/test-handlers": [
         "../../packages/site-safety/src/test-handlers.ts"
       ],
-      "@perawallet/wallet-extension-keystore-chrome": [
-        "../../extensions/keystore-chrome/src/index.ts"
+      "@perawallet/wallet-extension-vault-chrome": [
+        "../../extensions/vault-chrome/src/index.ts"
       ],
       // bare-package path pulls the full platform-chrome graph (drizzle-orm,
       // hardware-wallet registry) into tsc; web code above the App.web

@@ -177,7 +177,7 @@ export function pbkdf2(password, salt, iterations, keylen, digest, callback) {
 }
 
 // Served next to the extension pages by scripts/build.mjs, which bundles
-// extensions/keystore-chrome/src/vault/argon2-worker.ts to this name. That
+// extensions/vault-chrome/src/vault/argon2-worker.ts to this name. That
 // worker always derives 32 bytes at Argon2 v0x13; anything else runs inline.
 const ARGON2_WORKER_URL = 'argon2-worker.js'
 const ARGON2_WORKER_OUTPUT_LENGTH = 32

@@ -21,7 +21,7 @@ const mocks = vi.hoisted(() => ({
     getLockoutRemainingSeconds: vi.fn().mockResolvedValue(0),
 }))
 
-vi.mock('@perawallet/wallet-extension-keystore-chrome', () => ({
+vi.mock('@perawallet/wallet-extension-vault-chrome', () => ({
     unlockVault: mocks.unlockVault,
     unlockWithPasskey: mocks.unlockWithPasskey,
     isPasskeyUnlockSupported: mocks.isPasskeyUnlockSupported,
@@ -69,7 +69,7 @@ describe('useUnlockScreen', () => {
 
     it('sets hasError and clears password on wrong password', async () => {
         const { InvalidPasswordError } =
-            await import('@perawallet/wallet-extension-keystore-chrome')
+            await import('@perawallet/wallet-extension-vault-chrome')
         mocks.unlockVault.mockRejectedValue(
             new InvalidPasswordError('wrong password'),
         )
@@ -107,7 +107,7 @@ describe('useUnlockScreen', () => {
 
     it('sets hasCorruptedVaultError and does not rethrow on VaultCorruptedError', async () => {
         const { VaultCorruptedError } =
-            await import('@perawallet/wallet-extension-keystore-chrome')
+            await import('@perawallet/wallet-extension-vault-chrome')
         mocks.unlockVault.mockRejectedValue(new VaultCorruptedError())
         const { result } = renderHook(() => useUnlockScreen())
         act(() => result.current.setPassword('anypassword'))
@@ -153,7 +153,7 @@ describe('useUnlockScreen', () => {
 
         it('handlePasskeyUnlock sets hasPasskeyError (not hasError) on PasskeyUnlockError', async () => {
             const { PasskeyUnlockError } =
-                await import('@perawallet/wallet-extension-keystore-chrome')
+                await import('@perawallet/wallet-extension-vault-chrome')
             mocks.unlockWithPasskey.mockRejectedValue(new PasskeyUnlockError())
             const { result } = renderHook(() => useUnlockScreen())
             await act(() => result.current.handlePasskeyUnlock())
@@ -163,7 +163,7 @@ describe('useUnlockScreen', () => {
 
         it('handlePasskeyUnlock routes VaultCorruptedError to hasCorruptedVaultError', async () => {
             const { VaultCorruptedError } =
-                await import('@perawallet/wallet-extension-keystore-chrome')
+                await import('@perawallet/wallet-extension-vault-chrome')
             mocks.unlockWithPasskey.mockRejectedValue(new VaultCorruptedError())
             const { result } = renderHook(() => useUnlockScreen())
             await act(() => result.current.handlePasskeyUnlock())
@@ -389,7 +389,7 @@ describe('useUnlockScreen', () => {
 
         it('sets lockoutSeconds from VaultLockedOutError on a failed unlock', async () => {
             const { VaultLockedOutError } =
-                await import('@perawallet/wallet-extension-keystore-chrome')
+                await import('@perawallet/wallet-extension-vault-chrome')
             mocks.unlockVault.mockRejectedValue(new VaultLockedOutError(30))
             const { result } = renderHook(() => useUnlockScreen())
             act(() => result.current.setPassword('anypassword'))
@@ -399,7 +399,7 @@ describe('useUnlockScreen', () => {
 
         it('counts down lockoutSeconds every second and stops at 0', async () => {
             const { VaultLockedOutError } =
-                await import('@perawallet/wallet-extension-keystore-chrome')
+                await import('@perawallet/wallet-extension-vault-chrome')
             mocks.unlockVault.mockRejectedValue(new VaultLockedOutError(2))
             const { result } = renderHook(() => useUnlockScreen())
             act(() => result.current.setPassword('anypassword'))
@@ -422,7 +422,7 @@ describe('useUnlockScreen', () => {
 
         it('handlePasskeyUnlock sets lockoutSeconds from VaultLockedOutError', async () => {
             const { VaultLockedOutError } =
-                await import('@perawallet/wallet-extension-keystore-chrome')
+                await import('@perawallet/wallet-extension-vault-chrome')
             mocks.unlockWithPasskey.mockRejectedValue(
                 new VaultLockedOutError(45),
             )

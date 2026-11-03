@@ -184,7 +184,7 @@ describe(RULE, () => {
             [
                 [
                     'packages/security/src/**',
-                    'extensions/keystore-chrome/src/vault/**',
+                    'extensions/vault-chrome/src/vault/**',
                 ],
                 'error',
             ],
@@ -198,7 +198,7 @@ describe(RULE, () => {
         const repo = join(__dirname, '../../../..')
         for (const dir of [
             'packages/security/src',
-            'extensions/keystore-chrome/src/vault',
+            'extensions/vault-chrome/src/vault',
             'apps/mobile/src/modules/vault',
         ]) {
             expect(existsSync(join(repo, dir))).toBe(true)

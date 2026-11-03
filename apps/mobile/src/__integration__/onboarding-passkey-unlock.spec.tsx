@@ -33,7 +33,7 @@ const mocks = vi.hoisted(() => ({
     writePasskeySetupPending: vi.fn(async (_isPending: boolean) => {}),
 }))
 
-vi.mock('@perawallet/wallet-extension-keystore-chrome', () => {
+vi.mock('@perawallet/wallet-extension-vault-chrome', () => {
     class NamedError extends Error {
         constructor(name: string, message = name) {
             super(message)

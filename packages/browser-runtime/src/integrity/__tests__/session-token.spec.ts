@@ -56,7 +56,7 @@ describe('session integrity token', () => {
 
     // `accessLevelSet` is a module-scope latch; a static import would carry
     // an earlier test's state into this one and make the call-count
-    // assertion meaningless — mirrors keystore-chrome's session.spec.ts.
+    // assertion meaningless — mirrors vault-chrome's session.spec.ts.
     it('restricts the session area to trusted contexts, once', async () => {
         vi.resetModules()
         const session = await import('../session-token')

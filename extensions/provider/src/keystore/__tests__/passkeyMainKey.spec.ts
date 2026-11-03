@@ -14,7 +14,7 @@ import { describe, expect, it } from 'vitest'
 import { PASSKEY_MAIN_KEY_SCHEME, passkeyMainKeyId } from '../passkeyMainKey'
 
 /**
- * Wire-format pin, not a behaviour test. `keystore-chrome`'s
+ * Wire-format pin, not a behaviour test. `vault-chrome`'s
  * `webauthn/keystore-signer.ts` restates both constants (it cannot import this
  * module without pulling `react-native-mmkv` into the extension bundle) and
  * asserts the same literals in `keystore-signer.spec.ts`. Every other assertion

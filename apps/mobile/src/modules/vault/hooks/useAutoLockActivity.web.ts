@@ -12,7 +12,7 @@
 
 import { useEffect, useRef } from 'react'
 import type { Nullable } from '@perawallet/wallet-core-shared'
-import { armAutoLock } from '@perawallet/wallet-extension-keystore-chrome'
+import { armAutoLock } from '@perawallet/wallet-extension-vault-chrome'
 
 const THROTTLE_MS = 60_000
 const ACTIVITY_EVENTS = ['pointerdown', 'keydown'] as const

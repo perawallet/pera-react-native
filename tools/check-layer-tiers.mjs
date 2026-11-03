@@ -52,8 +52,8 @@ const isTransport = dir =>
 // Keyed `from -> to` by workspace directory. Each reason says why the edge is
 // tolerated and what removes it.
 const ALLOWLIST = {
-    'extensions/keystore-chrome -> packages/passkeys':
-        'the Chrome keystore implements the KeystoreSigner port that packages/passkeys defines, through its dependency-free /webauthn subpath',
+    'extensions/vault-chrome -> packages/passkeys':
+        'the Chrome vault passkey signer implements the KeystoreSigner port that packages/passkeys defines, through its dependency-free /webauthn subpath',
 }
 
 const DEPENDENCY_FIELDS = [

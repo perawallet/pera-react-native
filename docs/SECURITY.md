@@ -14,7 +14,7 @@ what an attacker gains. A rough report early beats a polished one late.
 
 In scope is anything that reaches key material, produces a signature the user did not authorise, or
 makes a transaction render as something other than what it will do on chain — the mobile app in
-`apps/mobile`, the extension vault in `extensions/keystore-chrome`, the hardware-wallet and passkey
+`apps/mobile`, the extension vault in `extensions/vault-chrome`, the hardware-wallet and passkey
 transports under `extensions/`, and the shared logic in `packages/`. A build or dependency path that
 could get unreviewed code into a released binary counts too.
 
@@ -33,7 +33,7 @@ an error message. Addresses and transaction hashes are safe to log.
 
 Key material lives in the keystore and nowhere else: `@algorandfoundation/react-native-keystore` on
 native; on the browser extension, `@algorandfoundation/keystore-web`'s IndexedDB store, with every
-record sealed under the master key that the `extensions/keystore-chrome` vault releases only while
+record sealed under the master key that the `extensions/vault-chrome` vault releases only while
 unlocked. A profile written before this layout reaches that state only at its first unlock on the
 new build, when the re-seal sweep runs. It never goes into `keyValueStorage`, a Zustand store, or
 React state that outlives the operation.

@@ -1,5 +1,5 @@
 {
-  "name": "@perawallet/wallet-extension-keystore-chrome",
+  "name": "@perawallet/wallet-extension-vault-chrome",
   "version": "0.0.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

@@ -48,7 +48,7 @@ const rows: [string, () => AppError, ErrorCategory][] = [
     ['PasskeyUnlockError', () => new PasskeyUnlockError(), ErrorCategory.KMS],
 ]
 
-describe('keystore-chrome domain errors', () => {
+describe('vault-chrome domain errors', () => {
     it.each(rows)('%s is a classified AppError', (name, make, category) => {
         const error = make()
 

@@ -424,7 +424,7 @@ const customResolveRequest = (context, moduleName, platform) => {
         const sourcePath = path.resolve(
             monorepoRoot,
             'extensions',
-            'keystore-chrome',
+            'vault-chrome',
             'src',
             'index.ts',
         );

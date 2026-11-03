@@ -1,5 +1,5 @@
 import { getPlatform } from '@perawallet/wallet-extension-platform-chrome'
-import { openKeystore } from '@perawallet/wallet-extension-keystore-chrome/storage'
+import { createVault } from '@perawallet/wallet-extension-vault-chrome'
 import { openExpandedTab } from '@perawallet/wallet-core-browser-runtime'
 
-export const boot = () => [getPlatform(), openKeystore(), openExpandedTab]
+export const boot = () => [getPlatform(), createVault, openExpandedTab]
