@@ -42,8 +42,14 @@ import {
 const RECIPIENT = '0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC'
 const AMOUNT = 4242n
 
-const setUp = async () => {
+type Finality = EvmConformanceEnv['evmChain']['row']['finality']
+
+// The row's own depth is pinned by the reconcile unit specs. Here the chain
+// settles at once unless a test asks for a few blocks, so the suite never mines
+// a chain's full recommended depth on the shared node.
+const setUp = async (finality: Finality = { kind: 'instant' }) => {
     const env = await createEvmConformanceEnv('ethereum')
+    const chain = { ...env.evmChain, row: { ...env.evmChain.row, finality } }
     const sender = await createRawKeyEvmAccount(env)
     await fundEvmAccount(env, sender.address, 10n ** 18n)
     const settled = vi.fn<SubmissionSettledHandler>()
@@ -51,7 +57,7 @@ const setUp = async () => {
     const probeFailures: ProbeFailureStreaks = new Map()
     const reconcile = (limit?: number) =>
         reconcileEthereumSubmissions({
-            chain: env.evmChain,
+            chain,
             settleHandlers: handlers,
             probeFailures,
             getClient: scope => createEvmClient(scope, env.ctx, env.evmChain),
@@ -61,12 +67,6 @@ const setUp = async () => {
     const statuses = async () =>
         (await rowsAtNonce(env, sender.address, 0)).map(row => row.status)
     return { env, sender, settled, reconcile, statuses }
-}
-
-// The blocks a receipt needs on top of its own before the reconciler settles it.
-const finalityDepthOf = (env: EvmConformanceEnv): number => {
-    const { finality } = env.evmChain.row
-    return finality.kind === 'confirmations' ? finality.recommended : 0
 }
 
 // Only Date is faked: the RPC's own timers must keep running.
@@ -100,7 +100,6 @@ describe('evm submission reconcile', () => {
         const { raw } = await signedTransfer(env, sender, RECIPIENT, AMOUNT)
         const hash = await submitAndRecord(env, raw)
         expect((await minedReceipt(env.chain, hash)).status).toBe('0x1')
-        await mine(env.chain, finalityDepthOf(env))
 
         expect(await reconcile()).toEqual({
             probed: 1,
@@ -116,9 +115,12 @@ describe('evm submission reconcile', () => {
         )
     })
 
-    it('holds a mined send at confirming until its receipt is the recommended depth deep', async () => {
-        const { env, sender, settled, reconcile, statuses } = await setUp()
-        const depth = finalityDepthOf(env)
+    it('holds a mined send at confirming until its receipt is the configured depth deep', async () => {
+        const depth = 3
+        const { env, sender, settled, reconcile, statuses } = await setUp({
+            kind: 'confirmations',
+            recommended: depth,
+        })
         const { raw } = await signedTransfer(env, sender, RECIPIENT, AMOUNT)
         const hash = await submitAndRecord(env, raw)
         await minedReceipt(env.chain, hash)
@@ -146,7 +148,6 @@ describe('evm submission reconcile', () => {
             await signedRevertingCall(env, sender),
         )
         expect((await minedReceipt(env.chain, hash)).status).toBe('0x0')
-        await mine(env.chain, finalityDepthOf(env))
 
         expect(await reconcile()).toEqual({
             probed: 1,
@@ -190,7 +191,6 @@ describe('evm submission reconcile', () => {
                 return { originalHash, replacementHash }
             },
         )
-        await mine(env.chain, finalityDepthOf(env))
         expect(await nodeReceipt(env.chain, originalHash)).toBeNull()
 
         expect(await reconcile()).toEqual({
