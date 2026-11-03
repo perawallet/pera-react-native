@@ -273,7 +273,12 @@ describe('Flow: offline submission reconnect', () => {
         )
 
         const summary = await reconcileOpenSubmissions(LEGACY_CHAIN_ID)
-        expect(summary).toEqual({ probed: 1, confirmed: 1, failed: 0 })
+        expect(summary).toEqual({
+            probed: 1,
+            confirmed: 1,
+            progressed: 0,
+            failed: 0,
+        })
 
         await waitFor(async () => {
             const open = await getOpenSubmissionAttempts({

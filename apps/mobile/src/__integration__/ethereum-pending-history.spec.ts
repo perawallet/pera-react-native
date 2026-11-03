@@ -59,7 +59,7 @@ vi.mock('@perawallet/wallet-core-config', async importOriginal => {
 vi.resetModules()
 const { getPendingTransactionRecords, getTransactionHistoryWithPending } =
     await import('@perawallet/wallet-core-transactions')
-const { evmHistoryItem, evmRpcHandlers } =
+const { evmHistoryItem, evmRpcHandlers, evmTransactionReceipt } =
     await import('@perawallet/wallet-core-chain-ethereum/test-handlers')
 const { createEvmBroadcasterAdapter } =
     await import('@packages/chain-ethereum/src/transfer/broadcaster')
@@ -167,6 +167,54 @@ describe('Flow: an Ethereum send in history', () => {
         })
 
         expect(records.map(record => record.id)).toEqual([hash])
+    })
+
+    it('Given a mined send short of the recommended depth, when it is reconciled, then it shows as confirming, and as confirmed once deep enough', async () => {
+        const hash = await broadcast()
+        serveHistory([])
+        let head = '0x5'
+        server.use(
+            ...evmRpcHandlers({
+                rpcUrl: RPC_URL,
+                responses: {
+                    eth_blockNumber: () => head as `0x${string}`,
+                    eth_getTransactionReceipt: () =>
+                        evmTransactionReceipt({
+                            transactionHash: hash as `0x${string}`,
+                            blockNumber: '0x1',
+                        }),
+                },
+            }),
+        )
+        const reconcile = () =>
+            createEvmBroadcasterAdapter(
+                CONTEXT,
+                evmChainOf('ethereum'),
+            ).reconcileOpenSubmissions()
+        const recordOf = async () =>
+            (
+                await getTransactionHistoryWithPending(
+                    SENDER.toLowerCase(),
+                    SCOPE,
+                )
+            ).items[0]
+
+        await reconcile()
+        const confirming = await recordOf()
+
+        // Ethereum's recommended depth is 12 blocks on top of the receipt's.
+        head = '0xd'
+        await reconcile()
+        const confirmed = await recordOf()
+
+        expect(confirming).toMatchObject({
+            id: hash,
+            status: 'pending',
+            summary: {
+                notice: { title: { key: 'transactions.notice.confirming' } },
+            },
+        })
+        expect(confirmed).toMatchObject({ id: hash, status: 'confirmed' })
     })
 
     it('Given the backend now lists the mined send, when history loads, then one record has its hash and it is confirmed', async () => {

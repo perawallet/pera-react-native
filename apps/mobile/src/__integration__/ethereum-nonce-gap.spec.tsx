@@ -229,6 +229,8 @@ describe('Flow: unblock an Ethereum send stuck behind a dropped nonce', () => {
                 rpcUrl: RPC_URL,
                 responses: {
                     // The node holds nothing at nonce 1, so its pending count stops there.
+                    // Deep enough for a receipt at block 1 to be final.
+                    eth_blockNumber: '0xd',
                     eth_getTransactionCount: () => minedNonces as `0x${string}`,
                     eth_getTransactionReceipt: params =>
                         receipts.get(params[0] as string) ?? null,

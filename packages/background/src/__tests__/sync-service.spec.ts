@@ -329,6 +329,7 @@ describe('SyncService', () => {
         mockReconcileOpenSubmissions.mockResolvedValue({
             probed: 0,
             confirmed: 0,
+            progressed: 0,
             failed: 0,
         })
     })
@@ -398,6 +399,7 @@ describe('SyncService', () => {
         mockReconcileOpenSubmissions.mockResolvedValue({
             probed: 1,
             confirmed: 1,
+            progressed: 0,
             failed: 0,
         })
 
@@ -454,7 +456,7 @@ describe('SyncService', () => {
         })
         mockReconcileOpenSubmissions.mockImplementationOnce(async () => {
             await inFlight
-            return { probed: 0, confirmed: 0, failed: 0 }
+            return { probed: 0, confirmed: 0, progressed: 0, failed: 0 }
         })
 
         service.start()
@@ -2964,6 +2966,7 @@ describe('SyncService', () => {
                 async (chainId: string) => ({
                     probed: 1,
                     confirmed: chainId === 'ethereum' ? 1 : 0,
+                    progressed: 0,
                     failed: 0,
                 }),
             )
@@ -2982,12 +2985,33 @@ describe('SyncService', () => {
             expect(invalidateTransactionQueries).not.toHaveBeenCalled()
         })
 
+        it('invalidates a row that only progressed, such as one moving to confirming', async () => {
+            const { invalidateTransactionQueriesForChain } =
+                await import('@perawallet/wallet-core-transactions')
+            mockReconcileOpenSubmissions.mockResolvedValue({
+                probed: 1,
+                confirmed: 0,
+                progressed: 1,
+                failed: 0,
+            })
+
+            service.start()
+            await flushMicrotasks()
+            service.stop()
+
+            expect(invalidateTransactionQueriesForChain).toHaveBeenCalledWith(
+                queryClient,
+                'algorand',
+            )
+        })
+
         it('invalidates a failed settle on its own chain too', async () => {
             const { invalidateTransactionQueriesForChain } =
                 await import('@perawallet/wallet-core-transactions')
             mockReconcileOpenSubmissions.mockResolvedValue({
                 probed: 1,
                 confirmed: 0,
+                progressed: 0,
                 failed: 1,
             })
 

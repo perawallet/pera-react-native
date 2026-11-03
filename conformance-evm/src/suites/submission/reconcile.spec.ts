@@ -63,6 +63,12 @@ const setUp = async () => {
     return { env, sender, settled, reconcile, statuses }
 }
 
+// The blocks a receipt needs on top of its own before the reconciler settles it.
+const finalityDepthOf = (env: EvmConformanceEnv): number => {
+    const { finality } = env.evmChain.row
+    return finality.kind === 'confirmations' ? finality.recommended : 0
+}
+
 // Only Date is faked: the RPC's own timers must keep running.
 const afterGrace = async <T>(fn: () => Promise<T>): Promise<T> => {
     const now = Date.now()
@@ -94,10 +100,12 @@ describe('evm submission reconcile', () => {
         const { raw } = await signedTransfer(env, sender, RECIPIENT, AMOUNT)
         const hash = await submitAndRecord(env, raw)
         expect((await minedReceipt(env.chain, hash)).status).toBe('0x1')
+        await mine(env.chain, finalityDepthOf(env))
 
         expect(await reconcile()).toEqual({
             probed: 1,
             confirmed: 1,
+            progressed: 0,
             failed: 0,
         })
         expect(await statuses()).toEqual(['confirmed'])
@@ -108,6 +116,54 @@ describe('evm submission reconcile', () => {
         )
     })
 
+    it('holds a mined send at confirming until its receipt is the recommended depth deep', async () => {
+        const { env, sender, settled, reconcile, statuses } = await setUp()
+        const depth = finalityDepthOf(env)
+        const { raw } = await signedTransfer(env, sender, RECIPIENT, AMOUNT)
+        const hash = await submitAndRecord(env, raw)
+        await minedReceipt(env.chain, hash)
+        await mine(env.chain, depth - 1)
+
+        expect(await reconcile()).toEqual({
+            probed: 1,
+            confirmed: 0,
+            progressed: 1,
+            failed: 0,
+        })
+        expect(await statuses()).toEqual(['confirming'])
+        expect(settled).not.toHaveBeenCalled()
+
+        await mine(env.chain)
+
+        expect(await reconcile()).toMatchObject({ confirmed: 1 })
+        expect(await statuses()).toEqual(['confirmed'])
+    })
+
+    it('returns a confirming send to pending when its block is rolled back', async () => {
+        const { env, sender, settled, reconcile, statuses } = await setUp()
+        // Safe against other files: this suite runs them one at a time.
+        const snapshot = await anvilRpc<string>(env.chain, 'evm_snapshot')
+        const { raw } = await signedTransfer(env, sender, RECIPIENT, AMOUNT)
+        const hash = await submitAndRecord(env, raw)
+        await minedReceipt(env.chain, hash)
+        await reconcile()
+        expect(await statuses()).toEqual(['confirming'])
+
+        expect(
+            await anvilRpc<boolean>(env.chain, 'evm_revert', [snapshot]),
+        ).toBe(true)
+        expect(await nodeReceipt(env.chain, hash)).toBeNull()
+
+        expect(await reconcile()).toEqual({
+            probed: 1,
+            confirmed: 0,
+            progressed: 1,
+            failed: 0,
+        })
+        expect(await statuses()).toEqual(['submitted'])
+        expect(settled).not.toHaveBeenCalled()
+    })
+
     it('fails a mined revert', async () => {
         const { env, sender, settled, reconcile, statuses } = await setUp()
         const hash = await submitAndRecord(
@@ -115,10 +171,12 @@ describe('evm submission reconcile', () => {
             await signedRevertingCall(env, sender),
         )
         expect((await minedReceipt(env.chain, hash)).status).toBe('0x0')
+        await mine(env.chain, finalityDepthOf(env))
 
         expect(await reconcile()).toEqual({
             probed: 1,
             confirmed: 0,
+            progressed: 0,
             failed: 1,
         })
         expect(await statuses()).toEqual(['failed'])
@@ -157,11 +215,13 @@ describe('evm submission reconcile', () => {
                 return { originalHash, replacementHash }
             },
         )
+        await mine(env.chain, finalityDepthOf(env))
         expect(await nodeReceipt(env.chain, originalHash)).toBeNull()
 
         expect(await reconcile()).toEqual({
             probed: 2,
             confirmed: 1,
+            progressed: 0,
             failed: 1,
         })
         expect(await statuses()).toEqual(['replaced', 'confirmed'])
@@ -189,6 +249,7 @@ describe('evm submission reconcile', () => {
             expect(await reconcile()).toEqual({
                 probed: 1,
                 confirmed: 0,
+                progressed: 0,
                 failed: 0,
             })
             expect(await statuses()).toEqual(['submitted'])
@@ -196,6 +257,7 @@ describe('evm submission reconcile', () => {
             expect(await afterGrace(reconcile)).toEqual({
                 probed: 1,
                 confirmed: 0,
+                progressed: 0,
                 failed: 1,
             })
             expect(await statuses()).toEqual(['failed'])
@@ -233,6 +295,7 @@ describe('evm submission reconcile', () => {
             expect(await afterGrace(() => reconcile(1))).toEqual({
                 probed: 1,
                 confirmed: 0,
+                progressed: 0,
                 failed: 0,
             })
             expect(await statuses()).toEqual(['submitted', 'submitted'])

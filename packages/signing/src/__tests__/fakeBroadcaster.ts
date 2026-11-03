@@ -63,6 +63,7 @@ export const fakeBroadcasterAdapter = (
     reconcileOpenSubmissions: vi.fn(async () => ({
         probed: 0,
         confirmed: 0,
+        progressed: 0,
         failed: 0,
     })),
     deriveSubmissionAttemptFromBytes: vi.fn(() => ({ txIds: [] })),

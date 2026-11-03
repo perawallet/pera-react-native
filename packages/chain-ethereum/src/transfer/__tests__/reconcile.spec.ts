@@ -39,6 +39,7 @@ import { createTestDatabase } from '@perawallet/wallet-core-database/test-utils'
 import {
     EvmRpcErrorFixture,
     evmRpcHandlers,
+    evmRpcTransaction,
     evmTransactionReceipt,
     type EvmRpcFixtures,
 } from '../../blockchain/msw-handlers'
@@ -57,7 +58,7 @@ import {
     type ProbeFailureStreaks,
     type SubmissionSettledHandlers,
 } from '../reconcile'
-import { ETHEREUM } from '../../__tests__/evm-chains'
+import { ETHEREUM, evmChainOf } from '../../__tests__/evm-chains'
 import { findEvmNonceGap } from '../replacement'
 import { submitAndRecordEthereumTransactions } from '../submission'
 
@@ -78,14 +79,20 @@ const settleHandlers: SubmissionSettledHandlers = new Map()
 const probeFailures: ProbeFailureStreaks = new Map()
 
 // Keyed by block tag: `latest` is the mined count, `pending` the pool's.
+// `head` is the chain's block number; the default is deep enough for a receipt
+// at block 1 to be final on any chain in the table.
 const node = (
-    responses: EvmRpcFixtures['responses'] & { latest?: number } = {},
+    responses: EvmRpcFixtures['responses'] & {
+        latest?: number
+        head?: number
+    } = {},
 ) => {
-    const { latest = 0, ...rest } = responses
+    const { latest = 0, head = 1_000, ...rest } = responses
     server.use(
         ...evmRpcHandlers({
             rpcUrl: TEST_RPC_URL,
             responses: {
+                eth_blockNumber: `0x${head.toString(16)}`,
                 eth_getTransactionCount: params =>
                     `0x${(params[1] === 'latest' ? latest : 0).toString(16)}`,
                 ...rest,
@@ -126,12 +133,13 @@ describe('reconcileEthereumSubmissions', () => {
             ...overrides,
         })
 
-    const reconcile = (ledgerDb = db) =>
+    const reconcile = (ledgerDb = db, chain = ETHEREUM) =>
         reconcileEthereumSubmissions({
-            chain: ETHEREUM,
+            chain,
             settleHandlers,
             probeFailures,
-            getClient,
+            getClient: scope =>
+                createEvmClient(scope, testChainContext({ chain }), chain),
             db: ledgerDb,
         })
     const statuses = async () =>
@@ -152,6 +160,7 @@ describe('reconcileEthereumSubmissions', () => {
         await expect(reconcile()).resolves.toEqual({
             probed: 1,
             confirmed: 1,
+            progressed: 0,
             failed: 0,
         })
         expect(await statuses()).toEqual(['confirmed'])
@@ -169,6 +178,7 @@ describe('reconcileEthereumSubmissions', () => {
         await expect(reconcile()).resolves.toEqual({
             probed: 1,
             confirmed: 0,
+            progressed: 0,
             failed: 1,
         })
         expect(await statuses()).toEqual(['failed'])
@@ -183,6 +193,7 @@ describe('reconcileEthereumSubmissions', () => {
         await expect(reconcile()).resolves.toEqual({
             probed: 1,
             confirmed: 0,
+            progressed: 0,
             failed: 1,
         })
         expect(await statuses()).toEqual(['replaced'])
@@ -209,6 +220,7 @@ describe('reconcileEthereumSubmissions', () => {
         await expect(reconcile()).resolves.toEqual({
             probed: 1,
             confirmed: 0,
+            progressed: 0,
             failed: 0,
         })
         expect(await statuses()).toEqual(['submitted'])
@@ -244,6 +256,7 @@ describe('reconcileEthereumSubmissions', () => {
         await expect(reconcile()).resolves.toEqual({
             probed: 1,
             confirmed: 0,
+            progressed: 0,
             failed: 0,
         })
         expect(await statuses()).toEqual(['submitted'])
@@ -264,7 +277,12 @@ describe('reconcileEthereumSubmissions', () => {
                 getClient: unused,
                 db,
             }),
-        ).resolves.toEqual({ probed: 0, confirmed: 0, failed: 0 })
+        ).resolves.toEqual({
+            probed: 0,
+            confirmed: 0,
+            progressed: 0,
+            failed: 0,
+        })
         expect(unused).not.toHaveBeenCalled()
     })
 
@@ -512,6 +530,279 @@ describe('reconcileEthereumSubmissions', () => {
             await reconcile()
 
             expect(await statusOf(original)).toBe('replaced')
+        })
+    })
+
+    describe('finality depth', () => {
+        const DEPTH = 12
+        const ORIGINAL = `0x${'0a'.repeat(32)}` as Hex
+        const REPLACEMENT = `0x${'0b'.repeat(32)}` as Hex
+        const receiptAt = (
+            blockNumber: number,
+            status: '0x1' | '0x0' = '0x1',
+        ) =>
+            evmTransactionReceipt({
+                transactionHash: HASH,
+                blockNumber: `0x${blockNumber.toString(16)}`,
+                status,
+            })
+
+        it('holds a mined row at confirming until its receipt is the recommended depth deep, then confirms it', async () => {
+            const handler = vi.fn()
+            settleHandlers.set('pipeline', handler)
+            await record()
+            node({ eth_getTransactionReceipt: receiptAt(1), head: DEPTH })
+
+            await expect(reconcile()).resolves.toEqual({
+                probed: 1,
+                confirmed: 0,
+                progressed: 1,
+                failed: 0,
+            })
+            expect(await statuses()).toEqual(['confirming'])
+            expect(handler).not.toHaveBeenCalled()
+
+            node({ eth_getTransactionReceipt: receiptAt(1), head: DEPTH + 1 })
+
+            await expect(reconcile()).resolves.toEqual({
+                probed: 1,
+                confirmed: 1,
+                progressed: 0,
+                failed: 0,
+            })
+            expect(await statuses()).toEqual(['confirmed'])
+            expect(handler).toHaveBeenCalledExactlyOnceWith(
+                [HASH],
+                'mainnet',
+                'confirmed',
+            )
+        })
+
+        it('writes nothing on a pass that leaves a confirming row confirming', async () => {
+            await record()
+            node({ eth_getTransactionReceipt: receiptAt(1), head: 5 })
+            await reconcile()
+
+            await expect(reconcile()).resolves.toMatchObject({
+                probed: 1,
+                progressed: 0,
+            })
+            expect(await statuses()).toEqual(['confirming'])
+        })
+
+        it('holds a reverted row at confirming until the receipt is deep, then fails it', async () => {
+            await record()
+            node({
+                eth_getTransactionReceipt: receiptAt(1, '0x0'),
+                head: 5,
+            })
+
+            await reconcile()
+            expect(await statuses()).toEqual(['confirming'])
+
+            node({
+                eth_getTransactionReceipt: receiptAt(1, '0x0'),
+                head: DEPTH + 1,
+            })
+            await expect(reconcile()).resolves.toMatchObject({ failed: 1 })
+            expect(await statuses()).toEqual(['failed'])
+        })
+
+        it('returns a confirming row to submitted when its receipt disappears, and counts depth from a new block when it returns', async () => {
+            const handler = vi.fn()
+            settleHandlers.set('pipeline', handler)
+            await record()
+            node({ eth_getTransactionReceipt: receiptAt(1), head: 5 })
+            await reconcile()
+            expect(await statuses()).toEqual(['confirming'])
+
+            node({ eth_getTransactionByHash: HELD_BY_NODE, head: 6 })
+            await expect(reconcile()).resolves.toEqual({
+                probed: 1,
+                confirmed: 0,
+                progressed: 1,
+                failed: 0,
+            })
+            expect(await statuses()).toEqual(['submitted'])
+            expect(handler).not.toHaveBeenCalled()
+
+            node({ eth_getTransactionReceipt: receiptAt(5), head: 16 })
+            await reconcile()
+            expect(await statuses()).toEqual(['confirming'])
+
+            node({ eth_getTransactionReceipt: receiptAt(5), head: 17 })
+            await reconcile()
+            expect(await statuses()).toEqual(['confirmed'])
+        })
+
+        it('keeps a confirming row confirming when its receipt is missing but the node still serves it mined', async () => {
+            await record()
+            node({ eth_getTransactionReceipt: receiptAt(1), head: 5 })
+            await reconcile()
+
+            node({
+                eth_getTransactionByHash: evmRpcTransaction({ hash: HASH }),
+                head: 6,
+            })
+
+            await expect(reconcile()).resolves.toMatchObject({
+                probed: 1,
+                progressed: 0,
+            })
+            expect(await statuses()).toEqual(['confirming'])
+        })
+
+        it('counts a failed transaction read as a probe failure and leaves a confirming row as it is', async () => {
+            await record()
+            node({ eth_getTransactionReceipt: receiptAt(1), head: 5 })
+            await reconcile()
+            vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+            node({
+                eth_getTransactionByHash: new EvmRpcErrorFixture(
+                    -32603,
+                    'internal error',
+                ),
+            })
+            await reconcile()
+
+            expect(await statuses()).toEqual(['confirming'])
+            expect([...probeFailures.values()]).toEqual([1])
+        })
+
+        it('holds a speed-up whose nonce was mined while its original is still confirming, and replaces it once the original is final', async () => {
+            const original = await record({ txIds: [ORIGINAL] })
+            vi.setSystemTime(Date.now() + 1_000)
+            const speedUp = await record({
+                txIds: [REPLACEMENT],
+                replacesAttemptId: original,
+            })
+            const statusOf = async (id: string) =>
+                (await db.select().from(SubmissionAttemptsSchema).all()).find(
+                    row => row.id === id,
+                )?.status
+            const originalMined = (head: number) =>
+                node({
+                    latest: 1,
+                    head,
+                    eth_getTransactionReceipt: params =>
+                        params[0] === ORIGINAL
+                            ? evmTransactionReceipt({
+                                  transactionHash: ORIGINAL,
+                                  blockNumber: '0x1',
+                              })
+                            : null,
+                })
+
+            originalMined(5)
+            await reconcile()
+
+            expect(await statusOf(original)).toBe('confirming')
+            expect(await statusOf(speedUp)).toBe('submitted')
+
+            originalMined(DEPTH + 1)
+            await reconcile()
+            await reconcile()
+
+            expect(await statusOf(original)).toBe('confirmed')
+            expect(await statusOf(speedUp)).toBe('failed')
+        })
+
+        it('fails a reorged-out row the node dropped, and frees its nonce for the next send', async () => {
+            await record()
+            node({ eth_getTransactionReceipt: receiptAt(1), head: 5 })
+            await reconcile()
+            node({ head: 6 })
+            await reconcile()
+            expect(await statuses()).toEqual(['submitted'])
+            const client = getClient(SCOPE)
+            const sender = SENDER as `0x${string}`
+            expect(
+                await allocateEthereumNonce({
+                    client,
+                    scope: SCOPE,
+                    sender,
+                    db,
+                }),
+            ).toBe(1)
+
+            pastGraceWindow()
+            await expect(reconcile()).resolves.toMatchObject({ failed: 1 })
+
+            expect(await statuses()).toEqual(['failed'])
+            expect(
+                await allocateEthereumNonce({
+                    client,
+                    scope: SCOPE,
+                    sender,
+                    db,
+                }),
+            ).toBe(0)
+        })
+
+        it('settles on the first receipt where the chain is final at once', async () => {
+            const avalanche = evmChainOf('avalanche')
+            const scope: ChainScope = {
+                chainId: 'avalanche',
+                networkId: 'mainnet',
+            }
+            await record({ scope })
+            const blockNumberCalls = vi.fn()
+            node({
+                eth_getTransactionReceipt: receiptAt(1),
+                eth_blockNumber: () => {
+                    blockNumberCalls()
+                    return '0x1'
+                },
+            })
+
+            await expect(reconcile(db, avalanche)).resolves.toMatchObject({
+                confirmed: 1,
+                progressed: 0,
+            })
+            expect(await statuses()).toEqual(['confirmed'])
+            expect(blockNumberCalls).not.toHaveBeenCalled()
+        })
+
+        it('reads the head once per pass for rows in one scope', async () => {
+            await record()
+            await record({ txIds: [`0x${'cd'.repeat(32)}`], nonce: 1 })
+            const blockNumberCalls = vi.fn()
+            node({
+                eth_getTransactionReceipt: params =>
+                    evmTransactionReceipt({
+                        transactionHash: params[0] as Hex,
+                        blockNumber: '0x1',
+                    }),
+                eth_blockNumber: () => {
+                    blockNumberCalls()
+                    return '0x5'
+                },
+            })
+
+            await reconcile()
+
+            expect(blockNumberCalls).toHaveBeenCalledTimes(1)
+            expect(await statuses()).toEqual(['confirming', 'confirming'])
+        })
+
+        it('leaves the row unchanged and counts a failure when the head cannot be read', async () => {
+            await record()
+            vi.spyOn(console, 'warn').mockImplementation(() => {})
+            node({
+                eth_getTransactionReceipt: receiptAt(1),
+                eth_blockNumber: new EvmRpcErrorFixture(
+                    -32603,
+                    'internal error',
+                ),
+            })
+
+            await expect(reconcile()).resolves.toMatchObject({
+                progressed: 0,
+                confirmed: 0,
+            })
+            expect(await statuses()).toEqual(['submitted'])
+            expect([...probeFailures.values()]).toEqual([1])
         })
     })
 
