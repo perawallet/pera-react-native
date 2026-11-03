@@ -11,6 +11,7 @@
   android:updatePeriodMillis="0"
   android:description="@string/transactions_description"
   android:initialLayout="@layout/glance_default_loading_layout"
+  android:previewImage="@drawable/transactions_widget_preview_image"
   android:previewLayout="@layout/transactions_widget_preview"
   android:configure="com.algorand.perarn.perawidgets.config.WidgetConfigActivity"
   android:widgetFeatures="reconfigurable" />

@@ -11,6 +11,7 @@
   android:updatePeriodMillis="0"
   android:description="@string/receive_description"
   android:initialLayout="@layout/glance_default_loading_layout"
+  android:previewImage="@drawable/receive_widget_preview_image"
   android:previewLayout="@layout/receive_widget_preview"
   android:configure="com.algorand.perarn.perawidgets.config.WidgetConfigActivity"
   android:widgetFeatures="reconfigurable" />

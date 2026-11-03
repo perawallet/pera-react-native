@@ -11,6 +11,7 @@
   android:updatePeriodMillis="0"
   android:description="@string/portfolio_tabs_description"
   android:initialLayout="@layout/glance_default_loading_layout"
+  android:previewImage="@drawable/portfolio_tabs_widget_preview_image"
   android:previewLayout="@layout/portfolio_tabs_widget_preview"
   android:configure="com.algorand.perarn.perawidgets.config.WidgetConfigActivity"
   android:widgetFeatures="reconfigurable" />
