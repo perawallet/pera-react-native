@@ -177,21 +177,25 @@ export const useCardStore: UseBoundStore<
                     connectedFundingSourceAddress: ownerAddress,
                 }),
             markEscrowCardApproved: () => set({ escrowCardApproved: true }),
-            setCardSnapshot: ({ cardId, status, panLast4 }) =>
+            setCardSnapshot: snapshot =>
                 set({
-                    cardId,
-                    lastKnownStatus: status,
-                    lastKnownPanLast4: panLast4,
+                    cardId: snapshot?.cardId ?? null,
+                    lastKnownStatus: snapshot?.status ?? null,
+                    lastKnownPanLast4: snapshot?.panLast4 ?? null,
                 }),
             setTransactionFilters: filters =>
                 set({ transactionFilters: filters }),
             adoptCardUser: userId =>
                 set(state => {
                     if (state.cardUserId === userId) return {}
-                    // The escrow card belongs to the previous user's Baanx
-                    // account, so it goes along with the funding selection.
+                    // The escrow card and the card hint belong to the previous
+                    // user's Baanx account, so they go along with the funding
+                    // selection.
                     return {
                         cardUserId: userId,
+                        cardId: initialState.cardId,
+                        lastKnownStatus: initialState.lastKnownStatus,
+                        lastKnownPanLast4: initialState.lastKnownPanLast4,
                         connectedFundingSourceAddress:
                             initialState.connectedFundingSourceAddress,
                         selectedFundingType: initialState.selectedFundingType,

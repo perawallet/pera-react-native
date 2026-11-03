@@ -107,6 +107,9 @@ export const useStyles = makeStyles(theme => ({
     searchInputContainer: {
         flex: 1,
     },
+    chainFilter: {
+        paddingTop: theme.spacing.md,
+    },
     layoutToggle: {
         flexDirection: 'row',
     },

@@ -114,7 +114,7 @@ describe('useAccountHoldingSources', () => {
         expect(result.current.map(s => s.scope.chainId)).toEqual(['algorand'])
     })
 
-    it('leaves out a chain whose kill switch is on', () => {
+    it('keeps a chain whose Pera backend is switched off, as its RPC reads still run', () => {
         register('algorand', 'ethereum')
         vi.spyOn(getProvider().chains, 'isSwitchedOff').mockImplementation(
             chainId => chainId === 'ethereum',
@@ -124,7 +124,10 @@ describe('useAccountHoldingSources', () => {
             useAccountHoldingSources(BOTH_CHAINS),
         )
 
-        expect(result.current.map(s => s.scope.chainId)).toEqual(['algorand'])
+        expect(result.current.map(s => s.scope.chainId)).toEqual([
+            'algorand',
+            'ethereum',
+        ])
     })
 
     it('follows the selected network', () => {

@@ -628,13 +628,13 @@ describe('hdDiscoveryChains', () => {
         expect(hdDiscoveryChains()).toEqual([ALGORAND, ...EVM_CHAINS])
     })
 
-    test('leaves out a switched-off chain', () => {
+    test('keeps a chain whose Pera backend is switched off', () => {
         registerChainFamilies([ALGORAND, ETHEREUM, BASE])
         getProvider().chains.setCapabilityOverrides(() => ({
             chainEnabled: { [BASE]: false },
         }))
 
-        expect(hdDiscoveryChains()).toEqual([ALGORAND, ETHEREUM])
+        expect(hdDiscoveryChains()).toEqual([ALGORAND, ETHEREUM, BASE])
     })
 
     test('leaves out a chain with no accounts adapter', () => {

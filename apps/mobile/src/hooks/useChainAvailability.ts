@@ -13,22 +13,20 @@
 import { useMemo } from 'react'
 import { findNativeAsset, type PeraAsset } from '@perawallet/wallet-core-assets'
 import type { ChainId } from '@perawallet/wallet-core-chain-contract'
-import { useIsChainSwitchedOff } from '@perawallet/wallet-core-chain-shared'
 
 /**
- * Whether a chain's balances can be shown: not while its kill switch is on, nor
- * when this build ships no assets adapter for it, so no native asset to show.
+ * Whether a chain's balances can be shown: not when this build ships no assets
+ * adapter for it, so no native asset to show.
  */
 export type ChainAvailability =
     | { isAvailable: true; nativeAsset: PeraAsset }
     | { isAvailable: false }
 
 export const useChainAvailability = (chainId: ChainId): ChainAvailability => {
-    const isSwitchedOff = useIsChainSwitchedOff(chainId)
     return useMemo(() => {
-        const nativeAsset = isSwitchedOff ? undefined : findNativeAsset(chainId)
+        const nativeAsset = findNativeAsset(chainId)
         return nativeAsset
             ? { isAvailable: true, nativeAsset }
             : { isAvailable: false }
-    }, [chainId, isSwitchedOff])
+    }, [chainId])
 }

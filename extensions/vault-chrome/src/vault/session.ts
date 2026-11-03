@@ -11,10 +11,10 @@
  */
 
 import type { Nullable } from '@perawallet/wallet-core-shared'
-import { SESSION_MASTER_KEY } from '../storage-keys'
+import { SESSION_MASTER_KEY, SESSION_UNLOCKED_KEY } from '../storage-keys'
 import { VaultLockedError } from '../errors'
 
-export { SESSION_MASTER_KEY }
+export { SESSION_MASTER_KEY, SESSION_UNLOCKED_KEY }
 
 // JS strings are immutable heap copies until GC, so .fill(0) on the byte
 // arrays below is best-effort, not a complete guarantee — inherent to
@@ -44,7 +44,10 @@ const ensureAccessLevel = async (): Promise<void> => {
 
 export const putSessionMasterKey = async (key: Uint8Array): Promise<void> => {
     await ensureAccessLevel()
-    await chrome.storage.session.set({ [SESSION_MASTER_KEY]: toHex(key) })
+    await chrome.storage.session.set({
+        [SESSION_MASTER_KEY]: toHex(key),
+        [SESSION_UNLOCKED_KEY]: true,
+    })
 }
 
 export const getSessionMasterKey = async (): Promise<Nullable<Uint8Array>> => {
@@ -54,12 +57,18 @@ export const getSessionMasterKey = async (): Promise<Nullable<Uint8Array>> => {
 }
 
 export const clearSessionMasterKey = async (): Promise<void> => {
-    await chrome.storage.session.remove(SESSION_MASTER_KEY)
+    await chrome.storage.session.remove([
+        SESSION_MASTER_KEY,
+        SESSION_UNLOCKED_KEY,
+    ])
 }
 
-export const hasSessionMasterKey = async (): Promise<boolean> => {
-    const stored = await chrome.storage.session.get(SESSION_MASTER_KEY)
-    return typeof stored[SESSION_MASTER_KEY] === 'string'
+// Reads the flag, never the key: the service worker asks on every dApp
+// request, and reading the key would copy it, as a string it can't wipe, into
+// a context that otherwise never holds it.
+export const isSessionUnlocked = async (): Promise<boolean> => {
+    const stored = await chrome.storage.session.get(SESSION_UNLOCKED_KEY)
+    return stored[SESSION_UNLOCKED_KEY] === true
 }
 
 export const requireSessionMasterKey = async (): Promise<Uint8Array> => {

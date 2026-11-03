@@ -19,7 +19,6 @@ import { useBackupAccountRow } from '../useBackupAccountRow'
 const state = vi.hoisted(() => ({
     isMultichain: true,
     registered: ['algorand', 'ethereum', 'base'],
-    switchedOff: [] as string[],
 }))
 
 vi.mock('@modules/accounts', () => ({
@@ -37,10 +36,6 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
             isEnabled: account.chains[chainId] !== undefined,
             address: account.chains[chainId]?.address,
         })),
-}))
-
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useSwitchedOffChainIds: () => state.switchedOff,
 }))
 
 vi.mock('@utils/chainOptionDisplay', () => ({
@@ -68,7 +63,6 @@ describe('useBackupAccountRow', () => {
     beforeEach(() => {
         state.isMultichain = true
         state.registered = ['algorand', 'ethereum', 'base']
-        state.switchedOff = []
     })
 
     it("lists every network a device account is on, with each one's address", () => {
@@ -87,16 +81,6 @@ describe('useBackupAccountRow', () => {
             address: 'short:0xeth',
             copyValue: 'copy:0xeth',
         })
-    })
-
-    it('leaves out a network that is switched off', () => {
-        state.switchedOff = ['base']
-
-        const { result } = renderHook(() =>
-            useBackupAccountRow({ ...BASE, account: HD_ACCOUNT }),
-        )
-
-        expect(result.current.chainIds).toEqual(['algorand', 'ethereum'])
     })
 
     it('lists only Algorand for an account on Algorand alone', () => {

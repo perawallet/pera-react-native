@@ -138,7 +138,6 @@ export const useAddAssetView = (
     )
     const holdingSources = useAccountHoldingSources(selectedAccount)
     // A chain without asset search would only ever show the unavailable state.
-    // A switched-off chain reports every capability off, so it's left out too.
     const searchableChainIds = useCapableChainIds('assetSearch')
     const manageableChainIds = useCapableChainIds('manageAssets')
     // The account's own chains, as Home's chips are. The NFT sheet adds by

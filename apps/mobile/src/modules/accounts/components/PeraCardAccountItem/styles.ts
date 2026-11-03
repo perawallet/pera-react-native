@@ -57,11 +57,6 @@ export const useStyles = makeStyles(theme => {
         subtitle: {
             color: theme.colors.textGray,
         },
-        statusRow: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: theme.spacing.xs,
-        },
         statusLabel: {
             color: theme.colors.textGrayLighter,
         },

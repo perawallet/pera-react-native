@@ -234,6 +234,7 @@ in reviewed PRs, not via `fallow fix`.
 | [Architecture](docs/ARCHITECTURE.md)                       | Layering, platform drivers, per-platform features            |
 | [Style Guide](docs/STYLE_GUIDE.md)                         | Decisions behind the enforced rules                          |
 | [Testing](docs/TESTING.md)                                 | Unit, integration harness, locale tour                       |
+| [Chains](docs/CHAINS.md)                                   | Chain model, build and kill-switch knobs, adding a chain     |
 | [Security](docs/SECURITY.md)                               | Reporting a flaw, key custody, vault limits, supply chain    |
 | [Offline & Paused State](docs/OFFLINE_PAUSED_STATE.md)     | DB-first reads, the paused render contract                   |
 | [Translation Guide](docs/I18N_TRANSLATION_GUIDE.md)        | Locale bundles, plural traps, per-language rules             |

@@ -1,0 +1,63 @@
+{
+    "request": {
+        "method": "GET",
+        "path": "/api/v3/evm/1/tokens/",
+        "pathParams": {
+            "chainId": 1
+        }
+    },
+    "recordedFrom": "algorand-backend@6df2420",
+    "recordedAt": "2026-11-03T13:59:36Z",
+    "response": {
+        "results": [
+            {
+                "asset_id": "eip155:1/slip44:60",
+                "type": "native",
+                "name": "Ether",
+                "unit_name": "ETH",
+                "fraction_decimals": 18,
+                "logo": "https://coin-images.coingecko.com/usdc.png",
+                "usd_value": "2663.450000000000000000000000",
+                "last_24_hours_usd_price_change_percentage": null,
+                "is_verified": true,
+                "verification_tier": "verified",
+                "explorer_url": "https://etherscan.io",
+                "is_swappable": true,
+                "is_fundable": false,
+                "cross_chain_asset_group": null
+            },
+            {
+                "asset_id": "eip155:1/erc20:0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+                "type": "erc20",
+                "name": "USD Coin",
+                "unit_name": "USDC",
+                "fraction_decimals": 6,
+                "logo": "https://coin-images.coingecko.com/usdc.png",
+                "usd_value": "0.999800000000000000000000",
+                "last_24_hours_usd_price_change_percentage": -0.02,
+                "is_verified": true,
+                "verification_tier": "verified",
+                "explorer_url": "https://etherscan.io/token/0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+                "is_swappable": false,
+                "is_fundable": true,
+                "cross_chain_asset_group": null
+            },
+            {
+                "asset_id": "eip155:1/erc20:0xdac17f958d2ee523a2206206994597c13d831ec7",
+                "type": "erc20",
+                "name": "USD Coin",
+                "unit_name": "USDT",
+                "fraction_decimals": 6,
+                "logo": "https://coin-images.coingecko.com/usdc.png",
+                "usd_value": null,
+                "last_24_hours_usd_price_change_percentage": null,
+                "is_verified": true,
+                "verification_tier": "verified",
+                "explorer_url": "https://etherscan.io/token/0xdac17f958d2ee523a2206206994597c13d831ec7",
+                "is_swappable": true,
+                "is_fundable": true,
+                "cross_chain_asset_group": null
+            }
+        ]
+    }
+}

@@ -31,9 +31,8 @@ An app link names its chain with an optional `chain=<CAIP-2>` param:
   default can never change. Leave `chain` off Algorand links rather than spelling out MainNet: a link
   that names a network is refused while the app is on another one (TestNet link, MainNet app), and
   one that names none runs on whichever network the user has selected.
-- **Unknown values fail loudly.** A CAIP-2 the build has no chain for, an empty `chain=`, or a chain
-  switched off by remote config shows the network-unavailable error. The link never falls back to
-  Algorand.
+- **Unknown values fail loudly.** A CAIP-2 the build has no chain for, or an empty `chain=`, shows the
+  network-unavailable error. The link never falls back to Algorand.
 - **Addresses and asset ids are read in the target chain's terms.** An address is validated with
   that chain's codec, so `add-contact?address=0x…` without `chain` is rejected as an invalid Algorand
   address. An asset id is the chain's own spelling: a numeric ASA id on Algorand, a token contract
@@ -108,8 +107,7 @@ A chain URI is resolved in the same terms as a Pera link with `chain=`:
   network. An `ethereum:` link that names no chain id is Ethereum's (EIP-681 reads it as chain 1), and is
   refused when Ethereum isn't registered rather than paid on another EVM chain. For the same reason a
   payment URI the wallet writes for any other EVM chain always names its chain id, mainnet included.
-- **Refusals.** A chain switched off by remote config shows the network-unavailable error. A link the
-  chain reads but won't act on shows "Link not supported": an EIP-681 `approve` or any function
+- **Refusals.** A link the chain reads but won't act on shows "Link not supported": an EIP-681 `approve` or any function
   other than `transfer` (an approval from a link is a drain vector, and the wallet decodes no
   calldata), or a capability the chain lacks. Unreadable text is not a link at all.
 

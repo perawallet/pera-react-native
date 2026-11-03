@@ -15,6 +15,7 @@ import type { Nullable } from '@perawallet/wallet-core-shared'
 import { PWIcon, PWTouchableOpacity } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { SheetHeader, useBottomSheet } from '@modules/bottom-sheet'
+import { ChainLabel } from '@modules/chain-ui/icon'
 import { AddAssetView } from '@modules/assets/components/AddAssetView'
 import { AddAssetInfoContent } from '@modules/assets/components/AddAssetInfoContent'
 import { useStyles } from './styles'
@@ -25,11 +26,14 @@ export type AddAssetContentProps = {
     variant?: AddAssetContentVariant
     /** The network chip the sheet opens on; null opens on All. */
     chainId: Nullable<ChainId>
+    /** Names the sheet's network and says other networks need no opt-in. */
+    isMultiChain?: boolean
 }
 
 export const AddAssetContent = ({
     variant = 'asset',
     chainId,
+    isMultiChain = false,
 }: AddAssetContentProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
@@ -55,6 +59,11 @@ export const AddAssetContent = ({
         <>
             <SheetHeader
                 title={title}
+                subtitle={
+                    isMultiChain && chainId ? (
+                        <ChainLabel chainId={chainId} />
+                    ) : undefined
+                }
                 rightAction={
                     <PWTouchableOpacity
                         style={styles.headerAction}
@@ -70,6 +79,7 @@ export const AddAssetContent = ({
             <AddAssetView
                 variant={variant}
                 chainId={chainId}
+                isMultiChain={isMultiChain}
             />
         </>
     )

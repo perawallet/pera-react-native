@@ -1085,6 +1085,69 @@ describe('Ethereum broadcaster adapter', () => {
         })
     })
 
+    describe('whether any node answered a failed broadcast', () => {
+        const failWith = (respond: () => Response) =>
+            server.use(http.post(TEST_RPC_URL, respond))
+
+        it('is unanswered when the connection drops', async () => {
+            failWith(() => HttpResponse.error())
+
+            await expect(
+                submitEthereumTransactions(client(), [BYTES], ETHEREUM),
+            ).rejects.toMatchObject({
+                classification: 'unknown-outcome',
+                isUnanswered: true,
+                nodeError: { code: EvmErrorCode.NETWORK_UNREACHABLE },
+            })
+        })
+
+        it('is unanswered when the gateway fails without a verdict', async () => {
+            failWith(() => new HttpResponse(null, { status: 503 }))
+
+            await expect(
+                submitEthereumTransactions(client(), [BYTES], ETHEREUM),
+            ).rejects.toMatchObject({ isUnanswered: true })
+        })
+
+        it.each([
+            [
+                'a gateway answering 500 with a verdict in the body',
+                () => new HttpResponse('insufficient funds', { status: 500 }),
+                EvmErrorCode.INSUFFICIENT_FUNDS,
+            ],
+            [
+                'a rate limit',
+                () => new HttpResponse(null, { status: 429 }),
+                EvmErrorCode.RATE_LIMITED,
+            ],
+        ])('is answered for %s', async (_name, respond, code) => {
+            failWith(respond)
+
+            await expect(
+                submitEthereumTransactions(client(), [BYTES], ETHEREUM),
+            ).rejects.toMatchObject({
+                isUnanswered: false,
+                nodeError: { code },
+            })
+        })
+
+        it('is answered when the node refused the transaction', async () => {
+            useRpc({
+                eth_sendRawTransaction: new EvmRpcErrorFixture(
+                    -32000,
+                    'insufficient funds',
+                ),
+            })
+
+            await expect(
+                submitEthereumTransactions(client(), [BYTES], ETHEREUM),
+            ).rejects.toMatchObject({
+                classification: 'rejected-by-node',
+                isUnanswered: false,
+            })
+        })
+    })
+
     describe('members', () => {
         it('rejects the wait on a reverted receipt', async () => {
             useRpc({
@@ -1110,6 +1173,8 @@ describe('Ethereum broadcaster adapter', () => {
             expect(adapter.submitTimeoutError(5_000)).toMatchObject({
                 classification: 'unknown-outcome',
                 metadata: { retryable: true },
+                nodeError: { code: EvmErrorCode.TIMEOUT },
+                isUnanswered: true,
             })
         })
 

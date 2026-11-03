@@ -326,11 +326,17 @@ describe('useCardStore', () => {
                 scope: ALGORAND_TESTNET,
                 txId: 'TX1',
             })
+            result.current.setCardSnapshot({
+                cardId: 'card_a',
+                status: CardStatus.Active,
+                panLast4: '1234',
+            })
         })
         // Same user again (re-login): nothing is lost.
         act(() => result.current.adoptCardUser('user-a'))
         expect(result.current.escrowCardAddress).toBe('ESCROWCARDADDR')
         expect(result.current.connectedFundingSourceAddress).toBe('OWNERADDR')
+        expect(result.current.lastKnownPanLast4).toBe('1234')
         // A different user: the card belongs to someone else's Baanx account.
         act(() => result.current.adoptCardUser('user-b'))
         expect(result.current.cardUserId).toBe('user-b')
@@ -338,6 +344,9 @@ describe('useCardStore', () => {
         expect(result.current.escrowCardOwner).toBeNull()
         expect(result.current.connectedFundingSourceAddress).toBeNull()
         expect(result.current.selectedFundingType).toBeNull()
+        expect(result.current.cardId).toBeNull()
+        expect(result.current.lastKnownStatus).toBeNull()
+        expect(result.current.lastKnownPanLast4).toBeNull()
         // The owner is persisted so the check survives a restart.
         const persisted = (
             useCardStore as unknown as {
@@ -490,6 +499,24 @@ describe('useCardStore', () => {
         expect(result.current.cardId).toBe('card_1')
         expect(result.current.lastKnownStatus).toBe(CardStatus.Active)
         expect(result.current.lastKnownPanLast4).toBe('1234')
+    })
+
+    test('setCardSnapshot(null) clears the card hint', async () => {
+        const { useCardStore } = await import('../ux-store')
+        const { result } = renderHook(() => useCardStore())
+        act(() =>
+            result.current.setCardSnapshot({
+                cardId: 'card_1',
+                status: CardStatus.Frozen,
+                panLast4: '1234',
+            }),
+        )
+
+        act(() => result.current.setCardSnapshot(null))
+
+        expect(result.current.cardId).toBeNull()
+        expect(result.current.lastKnownStatus).toBeNull()
+        expect(result.current.lastKnownPanLast4).toBeNull()
     })
 
     test('resetState restores the initial defaults', async () => {

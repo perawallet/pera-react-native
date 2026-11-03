@@ -23,7 +23,6 @@ import {
     useAccountWithBalance,
 } from '../useAccountWithBalance'
 
-const mockIsSwitchedOff = vi.fn()
 const mockBasis = { current: 'native' as AccountValueBasis }
 const mockHoldingSources = vi.fn()
 const mockTotalsQuery = vi.fn()
@@ -83,13 +82,6 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
     }),
 }))
 
-vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
-    ...(await importOriginal<
-        typeof import('@perawallet/wallet-core-chain-shared')
-    >()),
-    useIsChainSwitchedOff: (chainId: string) => mockIsSwitchedOff(chainId),
-}))
-
 const ALGO_ADDRESS = 'A'.repeat(58)
 const ETH_ADDRESS = `0x${'b'.repeat(40)}`
 
@@ -119,7 +111,6 @@ describe('useAccountWithBalance', () => {
     })
 
     beforeEach(() => {
-        mockIsSwitchedOff.mockReset().mockReturnValue(false)
         mockBasis.current = 'native'
         mockAccountValueTotals.clear()
         mockTotalsQuery.mockReset()
@@ -277,15 +268,6 @@ describe('useAccountWithBalance', () => {
             expect(pending.current.preferredValue).toBeUndefined()
             expect(missing.current.preferredValue).toBeUndefined()
         })
-    })
-
-    it("flags an account whose chain's kill switch is off", () => {
-        mockIsSwitchedOff.mockReturnValue(true)
-
-        const { result } = renderHook(() => useAccountWithBalance(ETH_ACCOUNT))
-
-        expect(mockIsSwitchedOff).toHaveBeenCalledWith('ethereum')
-        expect(result.current.availability).toEqual({ isAvailable: false })
     })
 
     describe('crossChainTotal', () => {
@@ -495,7 +477,7 @@ describe('useAccountWithBalance', () => {
             })
         })
 
-        it("is unavailable when every one of the account's chains is switched off", () => {
+        it('is unavailable when the account has no holding source on a registered chain', () => {
             mockHoldingSources.mockReturnValue([])
 
             const { result } = renderHook(() =>
@@ -505,20 +487,6 @@ describe('useAccountWithBalance', () => {
             expect(result.current.crossChainTotal).toEqual({
                 kind: 'unavailable',
             })
-        })
-
-        it("still values the account when only its own chain's kill switch is on", () => {
-            mockIsSwitchedOff.mockImplementation(
-                (chainId: string) => chainId === 'algorand',
-            )
-
-            renderHook(() => useAccountWithBalance(BOTH_CHAINS))
-
-            expect(mockTotalsQuery).toHaveBeenCalledWith(
-                [BOTH_CHAINS],
-                expect.anything(),
-                true,
-            )
         })
     })
 
@@ -566,7 +534,7 @@ describe('useAccountWithBalance', () => {
             expect(result.current.singleNetworkChainId).toBeUndefined()
         })
 
-        it("is unset when the account's only chain is switched off", () => {
+        it('is unset when the account has no holding source', () => {
             mockHoldingSources.mockReturnValue([])
 
             const { result } = renderHook(() =>

@@ -88,16 +88,14 @@ describe('resolveChainDeeplink', () => {
         })
     })
 
-    it('fails as chain-unavailable without parsing when the owner is switched off', () => {
+    it('parses a link whose owner chain is switched off, as only its Pera backend is', () => {
         const parse = vi.spyOn(adapterA, 'parse')
         switchOff(A)
 
-        expect(resolveChainDeeplink(`fixturehex:${mainnetAddress}`)).toEqual({
-            status: 'failed',
-            chainId: A,
-            reason: 'chain-unavailable',
-        })
-        expect(parse).not.toHaveBeenCalled()
+        expect(
+            resolveChainDeeplink(`fixturehex:${mainnetAddress}`).status,
+        ).toBe('resolved')
+        expect(parse).toHaveBeenCalled()
     })
 
     it('offers a raw address to every chain whose codec accepts it', () => {
@@ -131,28 +129,25 @@ describe('resolveChainDeeplink', () => {
         })
     })
 
-    it('drops a switched-off chain from the raw address candidates', () => {
+    it('keeps a switched-off chain among the raw address candidates', () => {
+        const switchedOn = resolveChainDeeplink(mainnetAddress)
         switchOff(B)
 
-        expect(resolveChainDeeplink(mainnetAddress)).toEqual({
+        expect(resolveChainDeeplink(mainnetAddress)).toEqual(switchedOn)
+    })
+
+    it('resolves an address only a switched-off chain accepts to that chain', () => {
+        switchOff(A)
+
+        expect(resolveChainDeeplink(testnetAddress)).toEqual({
             status: 'resolved',
             intents: [
                 {
                     kind: 'address',
                     target: { chainId: A },
-                    address: mainnetAddress,
+                    address: testnetAddress,
                 },
             ],
-        })
-    })
-
-    it('fails as chain-unavailable for an address only a switched-off chain accepts', () => {
-        switchOff(A)
-
-        expect(resolveChainDeeplink(testnetAddress)).toEqual({
-            status: 'failed',
-            chainId: A,
-            reason: 'chain-unavailable',
         })
     })
 

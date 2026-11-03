@@ -32,6 +32,9 @@ export declare const answerAggregate3: (data: string) => string | null
 
 export declare const createFakeEvmNode: () => FakeEvmNode
 
+/** What the fake node answers `eth_getBalance` with, for every address. */
+export declare const BALANCE_WEI: bigint
+
 export declare const E2E_EVM_RPC_PORT: number
 export declare const E2E_EVM_RPC_URL: string
 

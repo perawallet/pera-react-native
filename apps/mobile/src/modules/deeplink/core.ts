@@ -24,5 +24,9 @@ export {
     isOriginGatedDeeplinkType,
 } from '@perawallet/wallet-core-deeplinks'
 export { DeeplinkTimeoutError } from './handlers/timeout'
-export { navigateToScreen, pushScreen } from './navigateToScreen'
+export {
+    navigateToAccountHistory,
+    navigateToScreen,
+    pushScreen,
+} from './navigateToScreen'
 export { parseDeeplink } from './parser'

@@ -157,11 +157,14 @@ test('onboards in the expanded tab: password → create wallet → home', async 
 // and the correct password restores home.
 test('locked popup shows unlock; wrong password errors; right password unlocks', async () => {
     // Force-lock by clearing the session master key from the service worker.
-    // SESSION_MASTER_KEY = 'vault:master-key'
+    // SESSION_MASTER_KEY = 'vault:master-key', SESSION_UNLOCKED_KEY = 'vault:unlocked'
     // (see extensions/vault-chrome/src/vault/session.ts)
     const [serviceWorker] = context.serviceWorkers()
     await serviceWorker.evaluate(async () => {
-        await chrome.storage.session.remove('vault:master-key')
+        await chrome.storage.session.remove([
+            'vault:master-key',
+            'vault:unlocked',
+        ])
     })
 
     const page = await context.newPage()
@@ -205,11 +208,14 @@ test('locked popup shows unlock; wrong password errors; right password unlocks',
 // overwrites the real wrapped-master-key blob with an unrecoverable one, so
 // no later test in this serial suite can unlock the vault again.
 // Key literals cross-reference extensions/vault-chrome/src/storage-keys.ts:
-// SESSION_MASTER_KEY = 'vault:master-key', VAULT_STORAGE_KEY = 'vault:wrapped-master-key'.
+// SESSION_MASTER_KEY = 'vault:master-key', SESSION_UNLOCKED_KEY = 'vault:unlocked', VAULT_STORAGE_KEY = 'vault:wrapped-master-key'.
 test('corrupted vault blob surfaces the corrupted error, not wrong-password', async () => {
     const [serviceWorker] = context.serviceWorkers()
     await serviceWorker.evaluate(async () => {
-        await chrome.storage.session.remove('vault:master-key')
+        await chrome.storage.session.remove([
+            'vault:master-key',
+            'vault:unlocked',
+        ])
         const stored = await chrome.storage.local.get(
             'vault:wrapped-master-key',
         )

@@ -25,10 +25,7 @@ import {
     LEGACY_CHAIN_ID,
     type ChainId,
 } from '@perawallet/wallet-core-chain-contract'
-import {
-    chainDisplayNameOf,
-    useSwitchedOffChainIds,
-} from '@perawallet/wallet-core-chain-shared'
+import { chainDisplayNameOf } from '@perawallet/wallet-core-chain-shared'
 import type { Optional, Nullable } from '@perawallet/wallet-core-shared'
 import { useCapableChainId } from '@hooks/useCapableChainIds'
 import { useIsMultichain } from '../../hooks/useIsMultichain'
@@ -86,7 +83,6 @@ export const useAccountInfoCard = ({
     const [isExpanded, setIsExpanded] = useState(false)
     const [expandedRowId, setExpandedRowId] = useState<Optional<string>>()
 
-    const switchedOff = useSwitchedOffChainIds()
     const isMultichain = useIsMultichain()
 
     const { hdSeedGroups } = useHdSeedGroups()
@@ -167,10 +163,9 @@ export const useAccountInfoCard = ({
     const structureRows = useMemo<AccountStructureRow[]>(() => {
         if (!structureGroup) return []
         return structureGroup.accounts.map(member => {
-            const options = accountChainOptions(
-                member,
-                chainId => !switchedOff.includes(chainId),
-            ).filter(option => option.isEnabled && option.address)
+            const options = accountChainOptions(member, () => true).filter(
+                option => option.isEnabled && option.address,
+            )
             const chains = options.map(option => {
                 const displayed = displayChainOption(option)
                 return {
@@ -195,7 +190,7 @@ export const useAccountInfoCard = ({
                 chains,
             }
         })
-    }, [structureGroup, switchedOff, account.id, getAccountName])
+    }, [structureGroup, account.id, getAccountName])
 
     const showStructure = isHDWallet || (isLedger && structureRows.length > 0)
 

@@ -101,4 +101,40 @@ describe('useAssetAbout', () => {
             expect.objectContaining({ url: 'https://project.example' }),
         )
     })
+
+    it("falls back to the display's website when the asset has no project URL", () => {
+        const { result } = renderHook(() =>
+            useAssetAbout(
+                makeAsset(undefined, undefined),
+                { ...makeAbout(null), websiteUrl: 'https://coin.example' },
+                SCOPE,
+            ),
+        )
+
+        expect(result.current.projectUrl).toBe('https://coin.example')
+    })
+
+    it("prefers the asset's own project URL over the display's website", () => {
+        const { result } = renderHook(() =>
+            useAssetAbout(
+                makeAsset(undefined, 'https://project.example'),
+                { ...makeAbout(null), websiteUrl: 'https://coin.example' },
+                SCOPE,
+            ),
+        )
+
+        expect(result.current.projectUrl).toBe('https://project.example')
+    })
+
+    it("offers no project row for a display website that isn't https", () => {
+        const { result } = renderHook(() =>
+            useAssetAbout(
+                makeAsset(undefined, undefined),
+                { ...makeAbout(null), websiteUrl: 'http://coin.example' },
+                SCOPE,
+            ),
+        )
+
+        expect(result.current.projectUrl).toBeNull()
+    })
 })

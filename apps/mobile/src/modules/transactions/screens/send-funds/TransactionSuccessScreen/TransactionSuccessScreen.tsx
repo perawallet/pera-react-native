@@ -56,7 +56,9 @@ export const TransactionSuccessScreen = () => {
                     ? t('send_funds.success.pending_subtitle', {
                           network: networkName,
                       })
-                    : t(subtitleKey[variant] ?? subtitleKey['payment'])
+                    : t(subtitleKey[variant] ?? subtitleKey['payment'], {
+                          network: networkName,
+                      })
             }
             linkAction={
                 handleViewInExplorer && {

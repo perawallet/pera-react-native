@@ -28,11 +28,13 @@ import { useStyles } from './styles'
 type AddAssetScreenProps = {
     variant?: AddAssetContentVariant
     chainId: Nullable<ChainId>
+    isMultiChain?: boolean
 }
 
 export const AddAssetView = ({
     variant = 'asset',
     chainId,
+    isMultiChain = false,
 }: AddAssetScreenProps) => {
     const styles = useStyles()
     const isCollectible = variant === 'collectible'
@@ -105,7 +107,9 @@ export const AddAssetView = ({
                 variant='body'
                 style={styles.noteText}
             >
-                {t('add_asset.collectible_note')}
+                {isMultiChain
+                    ? t('add_asset.collectible_note_multichain')
+                    : t('add_asset.collectible_note')}
             </PWText>
         </PWView>
     ) : undefined

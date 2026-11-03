@@ -54,6 +54,11 @@ const ALLOWED: readonly Allowed[] = [
         reason: "Compares a query key's scope against whichever chain the caller passes, never a named chain.",
     },
     {
+        file: 'packages/background/src/service/sync-service.ts',
+        text: 'parseScopeKey(key).chainId === id',
+        reason: 'Matches the scopes of whichever chain just settled a submission, never a named chain.',
+    },
+    {
         file: 'packages/dapp/src/handler.ts',
         text: 'scope.chainId === deps.chainId',
         reason: 'Matches whichever chain the handler was built for, never a named chain.',
@@ -137,6 +142,11 @@ const ALLOWED: readonly Allowed[] = [
         file: 'apps/mobile/src/modules/accounts/components/AccountAssetList/useAccountAssetList.tsx',
         text: 'source.scope.chainId === selectedChainId',
         reason: 'Narrows the asset list to whichever chain the selected chip names, never a named chain.',
+    },
+    {
+        file: 'apps/mobile/src/modules/accounts/components/AccountNfts/useAccountNfts.tsx',
+        text: 'row.scope.chainId === selectedChainId',
+        reason: 'Narrows the NFT gallery to whichever chain the selected chip names, never a named chain.',
     },
     {
         file: 'apps/mobile/src/modules/accounts/components/AccountAssetList/useAccountAssetList.tsx',

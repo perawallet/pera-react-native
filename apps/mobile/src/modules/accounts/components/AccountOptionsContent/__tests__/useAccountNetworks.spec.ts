@@ -28,7 +28,6 @@ const mocks = vi.hoisted(() => ({
     showToast: vi.fn(),
     copyToClipboard: vi.fn(),
     trackEvent: vi.fn(),
-    switchedOff: [] as string[],
     receiveOff: new Set<string>(),
 }))
 
@@ -57,7 +56,6 @@ vi.mock('@perawallet/wallet-core-chain-shared', () => ({
         () =>
         ({ chain }: { chain: { chainId: string } }) =>
             !mocks.receiveOff.has(chain.chainId),
-    useSwitchedOffChainIds: () => mocks.switchedOff,
 }))
 
 vi.mock('@perawallet/wallet-extension-provider', () => ({
@@ -123,15 +121,13 @@ describe('useAccountNetworks', () => {
         vi.clearAllMocks()
         mocks.accounts = [account]
         mocks.options = [ALGORAND]
-        mocks.switchedOff = []
         mocks.receiveOff.clear()
         mocks.accountChainOptions.mockImplementation(() => mocks.options)
         mocks.unreachableChainsNoteOf.mockReturnValue(null)
     })
 
-    it("words the kind's note for the chains that are on but out of the account's reach", () => {
+    it("words the kind's note for the chains that are out of the account's reach", () => {
         mocks.unreachableChainsNoteOf.mockReturnValue('kind.unreachable_note')
-        mocks.switchedOff = ['base']
 
         const { result } = render()
 
@@ -141,6 +137,7 @@ describe('useAccountNetworks', () => {
         expect(mocks.unreachableChainsNoteOf).toHaveBeenCalledWith(account, [
             'algorand',
             'ethereum',
+            'base',
         ])
     })
 
@@ -201,15 +198,13 @@ describe('useAccountNetworks', () => {
         })
     })
 
-    it('leaves out a switched-off chain', () => {
-        mocks.switchedOff = ['ethereum']
-
+    it('offers every chain, since a kill switch only turns off the Pera backend', () => {
         render()
 
         const isOn = mocks.accountChainOptions.mock.calls[0][1] as (
             chainId: string,
         ) => boolean
-        expect(isOn('ethereum')).toBe(false)
+        expect(isOn('ethereum')).toBe(true)
         expect(isOn('algorand')).toBe(true)
     })
 

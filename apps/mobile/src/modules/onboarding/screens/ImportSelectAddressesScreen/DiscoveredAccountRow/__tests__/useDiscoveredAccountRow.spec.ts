@@ -21,17 +21,12 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { useDiscoveredAccountRow } from '../useDiscoveredAccountRow'
 
-const state = vi.hoisted(() => ({
-    switchedOff: [] as string[],
-}))
-
 vi.mock('@hooks/useLanguage')
 vi.mock('@perawallet/wallet-core-chain-shared', async importOriginal => ({
     ...(await importOriginal<
         typeof import('@perawallet/wallet-core-chain-shared')
     >()),
     useSelectedScope: (chainId: string) => ({ chainId, networkId: 'mainnet' }),
-    useSwitchedOffChainIds: () => state.switchedOff,
 }))
 vi.mock('@perawallet/wallet-core-chain-contract', async importOriginal => ({
     ...(await importOriginal<
@@ -73,7 +68,6 @@ const linked = account({
 
 describe('useDiscoveredAccountRow', () => {
     beforeEach(() => {
-        state.switchedOff = []
         vi.mocked(useRegisteredChainIds).mockReturnValue([
             'algorand',
             'ethereum',
@@ -102,16 +96,6 @@ describe('useDiscoveredAccountRow', () => {
                 displayAddress: '0xEV…',
                 chainIds: ['ethereum', 'base'],
             },
-        ])
-    })
-
-    it('leaves out a switched-off chain', () => {
-        state.switchedOff = ['ethereum', 'base']
-
-        const { result } = renderHook(() => useDiscoveredAccountRow(linked))
-
-        expect(result.current.addressLines.map(line => line.address)).toEqual([
-            ALGO_ADDRESS,
         ])
     })
 

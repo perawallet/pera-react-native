@@ -20,6 +20,7 @@ import {
     PWTouchableOpacity,
     PWView,
 } from '@components/core'
+import { FilterSelection } from '@components/FilterSelection'
 import { SearchInput } from '@components/SearchInput'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
@@ -45,6 +46,14 @@ export const AccountNfts = () => {
         isRefreshing,
         hasAccount,
         canOptIn,
+        isMultiChain,
+        showEmptyState,
+        shouldShowNetwork,
+        listEmptyTitle,
+        listEmptyBody,
+        chainFilterOptions,
+        selectedChainId,
+        setSelectedChainId,
         galleryLayout,
         searchFilter,
         setSearchFilter,
@@ -70,23 +79,22 @@ export const AccountNfts = () => {
                 item={item}
                 index={index}
                 isGrid={isGrid}
+                shouldShowNetwork={shouldShowNetwork}
                 onPress={handlePress}
             />
         ),
-        [isGrid, handlePress],
+        [isGrid, shouldShowNetwork, handlePress],
     )
 
     if (!hasAccount) {
         return null
     }
 
-    const showEmptyState =
-        !isPending && collectibles.length === 0 && !searchFilter.length
-
     return (
         <PWView style={styles.container}>
             {showEmptyState ? (
                 <NftEmptyState
+                    isMultiChain={isMultiChain}
                     onOptInPress={canOptIn ? openAddNftSheet : undefined}
                 />
             ) : (
@@ -168,6 +176,15 @@ export const AccountNfts = () => {
                                 </PWTouchableOpacity>
                             </PWView>
                         </PWView>
+                        {chainFilterOptions.length > 0 && (
+                            <FilterSelection
+                                options={chainFilterOptions}
+                                selectedValue={selectedChainId}
+                                onSelect={setSelectedChainId}
+                                contentContainerStyle={styles.chainFilter}
+                                testID='nft_network_filter'
+                            />
+                        )}
                     </PWView>
                     <PWFlatList
                         pauseSyncOnInteraction
@@ -204,8 +221,8 @@ export const AccountNfts = () => {
                         }
                         ListEmptyComponent={
                             <EmptyView
-                                title={t('account_details.nfts.nomatch_title')}
-                                body={t('account_details.nfts.nomatch_body')}
+                                title={listEmptyTitle}
+                                body={listEmptyBody}
                                 loadingView={
                                     <GallerySkeleton isGrid={isGrid} />
                                 }

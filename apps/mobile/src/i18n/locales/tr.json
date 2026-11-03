@@ -73,11 +73,11 @@
     "app": {
         "initialization_failed": {
             "title": "Uygulama başlatılamadı",
-            "body": "Uygulama başlatılırken bir hata oluştu. Lütfen uygulamayı yeniden başlatmayı dene. Sorun devam ederse destek ekibiyle iletişime geç.\n\nFonların Algorand blok zincirinde güvende.",
+            "body": "Uygulama başlatılırken bir hata oluştu. Lütfen uygulamayı yeniden başlatmayı dene. Sorun devam ederse destek ekibiyle iletişime geç.\n\nFonların blok zincirinde güvende.",
             "retry": "Tekrar dene",
             "keystore": {
                 "title": "Cüzdan verisi hatası",
-                "body": "Pera, bu cihazda saklanan cüzdan verilerinin bir kısmını okuyamadığı için güvenli şekilde başlatılamıyor. Uygulamayı yeniden yüklemeden önce destek ekibiyle iletişime geç: yeniden yükleme, yalnızca bu cihazda bulunan hesapları silebilir.\n\nFonların Algorand blok zincirinde güvende."
+                "body": "Pera, bu cihazda saklanan cüzdan verilerinin bir kısmını okuyamadığı için güvenli şekilde başlatılamıyor. Uygulamayı yeniden yüklemeden önce destek ekibiyle iletişime geç: yeniden yükleme, yalnızca bu cihazda bulunan hesapları silebilir.\n\nFonların blok zincirinde güvende."
             }
         }
     },
@@ -128,6 +128,7 @@
         },
         "collectible_title": "NFT’ye opt-in ol",
         "collectible_note": "NFT’yi cüzdanına aktarabilmek için NFT’nin ASA ID’sine opt-in olman gerekir. ASA ID’sini arama çubuğuna yapıştır.",
+        "collectible_note_multichain": "Algorand NFT’lerinin sana gönderilebilmesi için önce opt-in olman gerekir. NFT’nin ASA ID’sini arama çubuğuna yapıştır. Her opt-in bir işlem ücretine mal olur ve hesabının minimum bakiyesini 0,1 ALGO artırır. Ethereum gibi diğer ağlardaki NFT’ler için opt-in gerekmez.",
         "collectible_search_placeholder": "Varlık ID’si veya NFT adı ara",
         "token": {
             "added_title": "Token eklendi",
@@ -208,7 +209,7 @@
     "address_actions": {
         "title": "Taranan hesap adresi",
         "send_transaction": "İşlem gönder",
-        "send_transaction_subtitle": "Bu adrese ALGO veya varlık gönder",
+        "send_transaction_subtitle": "Bu adrese varlık gönder",
         "watch_address": "Bir adresi izle",
         "watch_address_subtitle": "Yalnızca izleme hesabı olarak ekle",
         "add_contact": "Yeni kişi ekle",
@@ -276,7 +277,13 @@
             "asa_url": "ASA URL",
             "show_on": "Şurada göster",
             "project_website": "Proje web sitesi",
-            "open_browser": "Tarayıcıda aç"
+            "open_browser": "Tarayıcıda aç",
+            "native_description": {
+                "ether": "Ether (ETH), Ethereum ağının yerel coin’idir. İşlem ücretlerini öder ve staking yoluyla ağı güvence altına alır. Base ve Arbitrum gibi katman 2 ağları da ETH kullanır.",
+                "bnb": "BNB, BNB Chain ağının yerel coin’idir. İşlem ücretlerini öder ve staking yoluyla ağı güvence altına alır.",
+                "avax": "AVAX, Avalanche ağının yerel coin’idir. İşlem ücretlerini öder ve staking yoluyla ağı güvence altına alır.",
+                "pol": "POL, Polygon ağının yerel coin’idir. İşlem ücretlerini öder ve staking yoluyla ağı güvence altına alır."
+            }
         },
         "main_screen": {
             "holdings_tab": "Varlıklar",
@@ -385,9 +392,15 @@
             "search_placeholder": "NFT ara",
             "empty_title": "NFT’ler",
             "empty_body": "NFT galerine hoş geldin! Henüz hiç NFT’n yok. Cüzdanındaki tüm NFT’ler burada görünecek.",
+            "empty_body_multichain": "NFT galerine hoş geldin!\nHenüz hiç NFT’n yok. Ethereum gibi ağlarda aldığın NFT’ler burada kendiliğinden görünür. Algorand NFT’leri için önce opt-in olman gerekir.",
             "empty_optin": "NFT ekle",
+            "empty_optin_algorand": "Algorand NFT’sine opt-in ol",
             "nomatch_title": "Eşleşen NFT yok",
             "nomatch_body": "Arama terimiyle eşleşen NFT bulunamadı",
+            "network_empty_title": "NFT yok",
+            "network_empty_body": "{{chain}} ağında hiç NFT’n yok.",
+            "suspicious_hidden_title": "Şüpheli NFT’ler gizlendi",
+            "suspicious_hidden_body": "Pera bu NFT’leri olası spam veya dolandırıcılık olarak işaretledi. Görmek için Yönet > Filtrele’de Şüpheli NFT’leri göster seçeneğini aç.",
             "count": "{{count}} NFT",
             "count_one": "{{count}} NFT",
             "manage": "Yönet",
@@ -399,6 +412,8 @@
             "filter_opted_in_description": "Sahibi olmadığın hâlde opt-in olduğun NFT’leri gösterebilir veya gizleyebilirsin",
             "filter_watch_accounts": "İzleme hesaplarındaki NFT’leri göster",
             "filter_watch_accounts_description": "Bu, kendi hesaplarının yanı sıra izleme hesaplarındaki NFT’leri de gösterir",
+            "filter_suspicious": "Şüpheli NFT’leri göster",
+            "filter_suspicious_description": "Bu, Pera’nın olası spam veya dolandırıcılık olarak işaretlediği NFT’leri de gösterir",
             "sort_title_asc": "Ad (A-Z)",
             "sort_title_desc": "Ad (Z-A)",
             "sort_newest_first": "Yeniden eskiye",
@@ -425,7 +440,7 @@
         },
         "no_balance": {
             "welcome": "Pera’ya hoş geldin!",
-            "get_started": "Başlamak için ALGO yatır",
+            "get_started": "Başlamak için kripto yatır",
             "buy": "Kripto satın al",
             "receive": "Al",
             "more": "Daha fazla"
@@ -1213,6 +1228,14 @@
                 "title": "Ağ yoğun",
                 "body": "Ağ şu anda çok fazla istek alıyor. Biraz bekle ve tekrar dene."
             },
+            "timeout": {
+                "title": "Ağ yanıt vermedi",
+                "body": "Ağ zamanında yanıt vermedi. Tekrar dene."
+            },
+            "network_unreachable": {
+                "title": "Ağa ulaşılamıyor",
+                "body": "Ağa bağlanılamadı. Bağlantını kontrol et veya biraz sonra tekrar dene."
+            },
             "invalid_private_key": "Geçerli bir özel anahtar gir: 64 onaltılık karakter, 0x ile veya 0x olmadan.",
             "replaced_transaction_confirmed": {
                 "title": "İşlem zaten onaylandı",
@@ -1663,7 +1686,9 @@
             "title": "Pera Card hesabı",
             "subtitle": "Kriptonu harca",
             "activate": "Etkinleştir",
-            "status_approved": "Onaylandı"
+            "status_frozen": "Donduruldu",
+            "status_blocked": "Bloke edildi",
+            "status_pending": "Hazırlanıyor"
         },
         "intro": {
             "navigation_title": "Pera Card",
@@ -2416,7 +2441,7 @@
             "recover_passphrase_title": "Passphrase ile kurtar",
             "recover_passphrase_description": "Passphrase kullanarak bir cüzdanı kurtar",
             "recover_qr_title": "QR kod ile kurtar",
-            "recover_qr_description": "QR kod kullanarak bir Algorand cüzdanını kurtar",
+            "recover_qr_description": "QR kod kullanarak bir cüzdanı kurtar",
             "private_key_title": "Özel anahtarı içe aktar",
             "private_key_description": "Özel anahtarından bir hesap ekleyin",
             "pair_ledger_title": "Ledger ile eşleştir",
@@ -3062,7 +3087,7 @@
         },
         "processing": {
             "title": "İşlem gönderiliyor",
-            "subtitle": "İşlemin Algorand ağı tarafından işleniyor.",
+            "subtitle": "İşlemin {{network}} ağı tarafından işleniyor.",
             "title_hardware": "Ledger cihazına bağlanılıyor",
             "subtitle_hardware": "{{deviceName}} cihazına ulaşılıyor. Cihazın kilidinin açık ve menzilde olduğundan, {{appName}} uygulamasının da açık olduğundan emin ol.",
             "subtitle_hardware_noDevice": "Ledger cihazına ulaşılıyor. Cihazın kilidinin açık ve menzilde olduğundan, {{appName}} uygulamasının da açık olduğundan emin ol.",
@@ -3071,7 +3096,7 @@
         "success": {
             "title": "İşlem gerçekleşti",
             "asset_transferred_title": "Varlık transfer edildi",
-            "subtitle": "İşlemin Algorand ağı tarafından başarıyla alındı",
+            "subtitle": "İşlemin {{network}} ağı tarafından başarıyla alındı",
             "pending_title": "İşlem gönderildi",
             "pending_subtitle": "İşlemin {{network}} ağına gönderildi ve onay bekliyor.",
             "view_in_explorer": "İşlem detayını Pera Explorer’da gör",

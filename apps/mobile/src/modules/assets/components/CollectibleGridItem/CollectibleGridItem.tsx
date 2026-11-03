@@ -11,7 +11,15 @@
  */
 
 import React from 'react'
-import { PWText, PWTouchableOpacity, PWView, PWIcon } from '@components/core'
+import { useTheme } from '@rneui/themed'
+import {
+    getIconPixelSize,
+    PWText,
+    PWTouchableOpacity,
+    PWView,
+    PWIcon,
+} from '@components/core'
+import { ChainIcon } from '@modules/chain-ui/icon'
 import { CollectibleThumbnail } from '../CollectibleThumbnail'
 import { useStyles } from './styles'
 import type { CollectibleItemProps } from '@modules/assets/types/collectible'
@@ -21,8 +29,13 @@ import { useCollectibleItem } from '@modules/assets/hooks/useCollectibleItem'
 // so 600px covers 3x displays without downloading the full-size original.
 const GRID_IMAGE_WIDTH = 600
 
-const CollectibleGridItemBase = ({ item, onPress }: CollectibleItemProps) => {
+const CollectibleGridItemBase = ({
+    item,
+    onPress,
+    networkChainId,
+}: CollectibleItemProps) => {
     const styles = useStyles()
+    const { theme } = useTheme()
     const {
         thumbnailUrl,
         showAmount,
@@ -49,6 +62,14 @@ const CollectibleGridItemBase = ({ item, onPress }: CollectibleItemProps) => {
                     notOptedIn={!hasBalance}
                     imageWidth={GRID_IMAGE_WIDTH}
                 />
+                {networkChainId && (
+                    <PWView style={styles.networkBadge}>
+                        <ChainIcon
+                            chainId={networkChainId}
+                            size={getIconPixelSize(theme, 'sm')}
+                        />
+                    </PWView>
+                )}
                 {showAmount && (
                     <PWView style={styles.amountBadge}>
                         <PWText

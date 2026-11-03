@@ -129,7 +129,7 @@ describe('useSigningAccountsOnOwnChain', () => {
         expect(result.current).toEqual([algorandAccount])
     })
 
-    it("leaves out an account whose chain's kill switch is on", () => {
+    it("keeps an account whose chain's Pera backend is switched off", () => {
         register('algorand')
         useAccountsStore.getState().setAccounts([algorandAccount])
         vi.spyOn(getProvider().chains, 'isSwitchedOff').mockImplementation(
@@ -138,6 +138,6 @@ describe('useSigningAccountsOnOwnChain', () => {
 
         const { result } = renderHook(() => useSigningAccountsOnOwnChain())
 
-        expect(result.current).toEqual([])
+        expect(result.current).toEqual([algorandAccount])
     })
 })

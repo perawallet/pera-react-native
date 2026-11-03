@@ -614,4 +614,44 @@ describe('Flow: Account management', () => {
 
         expect(handlePeraCardOpen).toHaveBeenCalledTimes(1)
     })
+
+    it.each([
+        ['ACTIVE', '•••• 8533'],
+        ['FROZEN', 'peraCard.account_item.status_frozen'],
+    ])(
+        'Given an activated card session and a %s card, when the account menu opens, then the connected row shows %s',
+        async (status, expectedLabel) => {
+            useAccountsStore.getState().setAccounts([ACCOUNT_A, ACCOUNT_B])
+            useAccountsStore.getState().setSelectedAccountId(ACCOUNT_A.id)
+            useCardSessionStore.getState().setAuthenticated(true)
+            server.use(
+                http.get('*/v1/card/status', () =>
+                    HttpResponse.json({
+                        id: 'card_1',
+                        panLast4: '8533',
+                        status,
+                        type: 'VIRTUAL',
+                        orderedAt: '2026-06-23T09:39:30.771Z',
+                    }),
+                ),
+            )
+
+            renderWithNavigation(
+                () => (
+                    <AccountMenu
+                        onSelected={vi.fn()}
+                        onAddAccount={() => {}}
+                        onOpenSort={() => {}}
+                        showPeraCardActivation
+                    />
+                ),
+                'AccountMenuHost',
+            )
+
+            const label = await screen.findByTestId(
+                'pera_card_connected_row_status',
+            )
+            expect(label.textContent).toBe(expectedLabel)
+        },
+    )
 })

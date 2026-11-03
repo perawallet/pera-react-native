@@ -43,6 +43,19 @@ export const navigateHome = (replaceCurrentScreen: boolean): void => {
     })
 }
 
+// For a send whose outcome is unknown: History is where it shows up when it lands.
+export const navigateToAccountHistory = (): void => {
+    navigateToScreen(false, 'TabBar', {
+        screen: 'Home',
+        // `pop`: a send started from an asset screen must not stack a second account screen.
+        params: {
+            screen: 'AccountDetails',
+            pop: true,
+            params: { tab: 'History' },
+        },
+    })
+}
+
 /**
  * Same reasoning as `navigateToScreen`, for callers that need `push` rather
  * than `navigate`. Needed because `useHandleInboxItemPress` is shared between
