@@ -195,7 +195,7 @@ rules and failure handling are specified in `docs/WEB_INTEGRITY_ENROLMENT_CONTRA
 
 ## 6. Web keystore resolution
 
-On web, Metro still resolves `@algorandfoundation/react-native-keystore` to this package (see
+On web, Metro still resolves `@algorandfoundation/react-native-keystore` to `extensions/vault-chrome` (see
 `apps/mobile/metro.config.js`): shared barrels import it statically, and the real package would pull
 native modules into the web bundle. It exports none of that package's names, so they read as
 `undefined` there; the code paths that use them never run on web. `keystore:*` entries in

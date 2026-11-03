@@ -22,10 +22,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 // This suite's resolution of the '/webauthn' subpath depends on
 // packages/passkeys/dist existing (workspace subpath exports resolve against
 // the built dist, not src). In a clean worktree without a prior `pnpm build`,
-// this file fails to resolve the import and the vault-chrome suite reads
-// as 159 passing + 1 failing — that's a build-order artifact, not a bug. Run
-// `pnpm build` (or at least build packages/passkeys) before trusting a red
-// result here.
+// this file fails to resolve the import — that's a build-order artifact,
+// not a bug. Run `pnpm build` (or at least build packages/passkeys) before
+// trusting a red result here.
 import {
     b64urlToBytes,
     bytesToB64url,
