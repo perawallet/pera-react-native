@@ -276,7 +276,13 @@
             "asa_url": "URL de l’ASA",
             "show_on": "Afficher sur",
             "project_website": "Site du projet",
-            "open_browser": "Ouvrir dans le navigateur"
+            "open_browser": "Ouvrir dans le navigateur",
+            "native_description": {
+                "ether": "L’Ether (ETH) est la monnaie native d’Ethereum. Il sert à payer les frais de transaction et sécurise le réseau grâce au staking. Les réseaux de couche 2 comme Base et Arbitrum utilisent aussi l’ETH.",
+                "bnb": "Le BNB est la monnaie native de BNB Chain. Il sert à payer les frais de transaction et sécurise le réseau grâce au staking.",
+                "avax": "L’AVAX est la monnaie native d’Avalanche. Il sert à payer les frais de transaction et sécurise le réseau grâce au staking.",
+                "pol": "Le POL est la monnaie native de Polygon. Il sert à payer les frais de transaction et sécurise le réseau grâce au staking."
+            }
         },
         "main_screen": {
             "holdings_tab": "Avoirs",

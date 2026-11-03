@@ -276,7 +276,13 @@
             "asa_url": "URL do ASA",
             "show_on": "Ver em",
             "project_website": "Site do projeto",
-            "open_browser": "Abrir no navegador"
+            "open_browser": "Abrir no navegador",
+            "native_description": {
+                "ether": "Ether (ETH) é a moeda nativa do Ethereum. Ele paga as taxas de transação e protege a rede por meio de staking. Redes de camada 2 como Base e Arbitrum também usam ETH.",
+                "bnb": "BNB é a moeda nativa da BNB Chain. Ele paga as taxas de transação e protege a rede por meio de staking.",
+                "avax": "AVAX é a moeda nativa da Avalanche. Ele paga as taxas de transação e protege a rede por meio de staking.",
+                "pol": "POL é a moeda nativa da Polygon. Ele paga as taxas de transação e protege a rede por meio de staking."
+            }
         },
         "main_screen": {
             "holdings_tab": "Posições",

@@ -60,6 +60,48 @@ describe('resolveEthereumAssetAbout', () => {
             label: 'etherscan.io',
         })
     })
+
+    it.each([
+        ['ethereum', 'ether', 'https://ethereum.org'],
+        ['base', 'ether', 'https://ethereum.org'],
+        ['arbitrum', 'ether', 'https://ethereum.org'],
+        ['bsc', 'bnb', 'https://www.bnbchain.org'],
+        ['avalanche', 'avax', 'https://www.avax.network'],
+        ['polygon', 'pol', 'https://polygon.technology'],
+    ] as const)(
+        "describes %s's native coin and links its website",
+        (chainId, coin, websiteUrl) => {
+            const about = resolveEthereumAssetAbout({
+                ...paramsFor('native'),
+                scope: { chainId, networkId: 'mainnet' },
+                descriptor: evmChainOf(chainId).descriptor,
+            })
+
+            expect(about.descriptionKey).toBe(
+                `asset_details.about.native_description.${coin}`,
+            )
+            expect(about.websiteUrl).toBe(websiteUrl)
+        },
+    )
+
+    it('describes the native coin on a testnet too, beside the testnet explorer', () => {
+        const about = resolveEthereumAssetAbout({
+            ...paramsFor('native'),
+            scope: { chainId: 'ethereum', networkId: 'sepolia' },
+        })
+
+        expect(about.descriptionKey).toBe(
+            'asset_details.about.native_description.ether',
+        )
+        expect(about.explorerLink?.url).toBe('https://sepolia.etherscan.io')
+    })
+
+    it('gives a token no description or website of its own', () => {
+        const about = resolveEthereumAssetAbout(paramsFor(USDC))
+
+        expect(about.descriptionKey).toBeUndefined()
+        expect(about.websiteUrl).toBeUndefined()
+    })
 })
 
 describe('resolveEthereumAssetSupply', () => {

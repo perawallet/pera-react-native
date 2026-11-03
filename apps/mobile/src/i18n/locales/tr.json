@@ -276,7 +276,13 @@
             "asa_url": "ASA URL",
             "show_on": "Şurada göster",
             "project_website": "Proje web sitesi",
-            "open_browser": "Tarayıcıda aç"
+            "open_browser": "Tarayıcıda aç",
+            "native_description": {
+                "ether": "Ether (ETH), Ethereum ağının yerel coin’idir. İşlem ücretlerini öder ve staking yoluyla ağı güvence altına alır. Base ve Arbitrum gibi katman 2 ağları da ETH kullanır.",
+                "bnb": "BNB, BNB Chain ağının yerel coin’idir. İşlem ücretlerini öder ve staking yoluyla ağı güvence altına alır.",
+                "avax": "AVAX, Avalanche ağının yerel coin’idir. İşlem ücretlerini öder ve staking yoluyla ağı güvence altına alır.",
+                "pol": "POL, Polygon ağının yerel coin’idir. İşlem ücretlerini öder ve staking yoluyla ağı güvence altına alır."
+            }
         },
         "main_screen": {
             "holdings_tab": "Varlıklar",
