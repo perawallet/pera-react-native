@@ -115,8 +115,11 @@ type QueuedRequest = {
 type ServedChain = { scope: ChainScope; hexChainId: Eip155HexChainId }
 
 // Reads share the wallet's RPC endpoints and quota with its own sync, so one
-// page can't hold more than this many open. viem retries -32005.
+// page is bounded in how many it holds open and in how many it sends per
+// window. viem retries -32005.
 const MAX_CONCURRENT_NODE_READS_PER_ORIGIN = 8
+const MAX_NODE_READS_PER_ORIGIN_PER_WINDOW = 600
+const NODE_READ_WINDOW_MS = 60_000
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
     typeof value === 'object' && value !== null
@@ -219,6 +222,10 @@ export const createEip1193ConnectionHandler = (
     // shares one.
     const siteQueues = new Map<string, QueuedRequest[]>()
     const nodeReadsInFlight = new Map<string, number>()
+    const nodeReadWindows = new Map<
+        string,
+        { startedAt: number; count: number }
+    >()
 
     const getConnectionById = async (
         id: ConnectionId,
@@ -981,17 +988,30 @@ export const createEip1193ConnectionHandler = (
         respond: DappRespond,
     ): Promise<void> => {
         const inFlight = nodeReadsInFlight.get(origin) ?? 0
-        if (inFlight >= MAX_CONCURRENT_NODE_READS_PER_ORIGIN) {
+        const nowMs = now()
+        const recorded = nodeReadWindows.get(origin)
+        const window =
+            recorded && nowMs - recorded.startedAt < NODE_READ_WINDOW_MS
+                ? recorded
+                : { startedAt: nowMs, count: 0 }
+        if (
+            inFlight >= MAX_CONCURRENT_NODE_READS_PER_ORIGIN ||
+            window.count >= MAX_NODE_READS_PER_ORIGIN_PER_WINDOW
+        ) {
             return deliver(
                 respond,
                 jsonRpcError(
                     request.id,
                     EIP1193_ERROR_CODE.limitExceeded,
-                    'Too many reads are already pending for this site',
+                    'Too many reads from this site',
                 ),
             )
         }
         nodeReadsInFlight.set(origin, inFlight + 1)
+        nodeReadWindows.set(origin, {
+            startedAt: window.startedAt,
+            count: window.count + 1,
+        })
         try {
             const answer = await reads.request(
                 chain.scope.networkId,
@@ -1041,13 +1061,19 @@ export const createEip1193ConnectionHandler = (
         }
         const connection = await getConnection(ctx.origin)
         if (!connection) {
-            // Reads are public data: a site with no grant reads the chain
-            // `eth_chainId` reports to it.
+            // Reads spend the wallet's keyed node quota, so only a site the
+            // user connected may make them; any page is not a free RPC proxy.
             const [chain] = servedChains()
-            const reads = chain && nodeReadsFor(chain, request.method)
-            return reads
-                ? relayNodeRead(ctx.origin, request, chain, reads, respond)
-                : deliver(respond, unsupportedMethod(request))
+            return deliver(
+                respond,
+                chain && nodeReadsFor(chain, request.method)
+                    ? jsonRpcError(
+                          request.id,
+                          EIP1193_ERROR_CODE.unauthorized,
+                          'Not connected: call eth_requestAccounts first',
+                      )
+                    : unsupportedMethod(request),
+            )
         }
         const { chainId } = connection.metadata
         const chain = chainOn(chainId)

@@ -194,6 +194,7 @@ type SetupOptions = {
     networks?: Partial<Record<ChainId, NetworkId>>
     disabled?: ChainId[]
     siteWarningOf?: (origin: string) => Promise<SiteWarningLevel>
+    now?: () => number
 }
 
 const setup = (seed: Connection[] = [], options: SetupOptions = {}) => {
@@ -223,7 +224,7 @@ const setup = (seed: Connection[] = [], options: SetupOptions = {}) => {
                 name: address,
             })),
         siteWarningOf: options.siteWarningOf,
-        now: () => 1_000_000,
+        now: options.now ?? (() => 1_000_000),
         proposalTtlMs: 1_000,
         requestTtlMs: 1_000,
         approvalTtlMs: 60_000,
@@ -261,6 +262,16 @@ const connectedOn = (
     lastActiveAt: 1,
     metadata: { chainId },
     origin: { requesterOrigin: ORIGIN },
+})
+
+const siteOn = (
+    origin: string,
+    accounts: string[] = [ADDR_X],
+): Eip1193Connection => ({
+    ...connectedOn('ethereum', accounts),
+    id: eip1193ConnectionIdOf(origin),
+    peer: { name: new URL(origin).host, url: origin },
+    origin: { requesterOrigin: origin },
 })
 
 const notificationsOf = (transport: FakeDappTransport, method: string) =>
@@ -914,36 +925,19 @@ describe('createEip1193ConnectionHandler', () => {
             )
         })
 
-        it('answers an unconnected site from the chain eth_chainId reports', async () => {
+        // The nodes are keyed and metered, so an unconnected page must not
+        // be able to use the wallet as a free RPC proxy.
+        it('gives an unconnected site 4100 for reads as well as signing, and asks no node', async () => {
             const { transport, registry } = setup()
             await registry.initialize()
 
-            expect(
-                resultOf(
-                    await transport.send(ORIGIN, 'eth_getBalance', [
-                        ADDR_X,
-                        'latest',
-                    ]),
-                ),
-            ).toBe('ethereum/mainnet/eth_getBalance')
-        })
-
-        it('reads the first served chain for an unconnected site when the first is switched off', async () => {
-            const { transport, registry } = setup([], {
-                disabled: ['ethereum'],
-            })
-            await registry.initialize()
-
-            expect(
-                resultOf(await transport.send(ORIGIN, 'eth_blockNumber')),
-            ).toBe('base/mainnet/eth_blockNumber')
-        })
-
-        it('still gives an unconnected site 4100 for the methods that need an account', async () => {
-            const { transport, registry } = setup()
-            await registry.initialize()
-
-            for (const method of ['personal_sign', 'eth_sendTransaction']) {
+            for (const method of [
+                'eth_getBalance',
+                'eth_blockNumber',
+                'eth_call',
+                'personal_sign',
+                'eth_sendTransaction',
+            ]) {
                 expect(
                     errorOf(await transport.send(ORIGIN, method))?.code,
                 ).toBe(EIP1193_ERROR_CODE.unauthorized)
@@ -1015,6 +1009,53 @@ describe('createEip1193ConnectionHandler', () => {
             expect(nodeRead).not.toHaveBeenCalled()
         })
 
+        describe('rate limit', () => {
+            const LIMIT = 600
+            const WINDOW_MS = 60_000
+            const OTHER_ORIGIN = 'https://other.example'
+
+            it('answers -32005 once an origin has used its reads for the window, and reads again in the next', async () => {
+                let clock = 1_000_000
+                const { transport, registry } = setup(
+                    [connectedOn('ethereum')],
+                    { now: () => clock },
+                )
+                await registry.initialize()
+                for (let used = 0; used < LIMIT; used += 1) {
+                    await transport.send(ORIGIN, 'eth_blockNumber')
+                }
+
+                const over = await transport.send(ORIGIN, 'eth_blockNumber')
+
+                expect(errorOf(over)?.code).toBe(
+                    EIP1193_ERROR_CODE.limitExceeded,
+                )
+                expect(nodeRead).toHaveBeenCalledTimes(LIMIT)
+
+                clock += WINDOW_MS
+                expect(
+                    resultOf(await transport.send(ORIGIN, 'eth_blockNumber')),
+                ).toBe('ethereum/mainnet/eth_blockNumber')
+            })
+
+            it('counts each origin on its own', async () => {
+                const { transport, registry } = setup([
+                    connectedOn('ethereum'),
+                    siteOn(OTHER_ORIGIN),
+                ])
+                await registry.initialize()
+                for (let used = 0; used < LIMIT; used += 1) {
+                    await transport.send(ORIGIN, 'eth_blockNumber')
+                }
+
+                expect(
+                    resultOf(
+                        await transport.send(OTHER_ORIGIN, 'eth_blockNumber'),
+                    ),
+                ).toBe('ethereum/mainnet/eth_blockNumber')
+            })
+        })
+
         describe('concurrency cap', () => {
             const CAP = 8
             const OTHER_ORIGIN = 'https://other.example'
@@ -1034,7 +1075,7 @@ describe('createEip1193ConnectionHandler', () => {
             }
 
             it('answers -32005 past the cap and reads again once one finishes', async () => {
-                const { transport, registry } = setup()
+                const { transport, registry } = setup([connectedOn('ethereum')])
                 await registry.initialize()
                 holdReads()
                 const inFlight = Array.from({ length: CAP }, () =>
@@ -1059,7 +1100,10 @@ describe('createEip1193ConnectionHandler', () => {
             })
 
             it('counts each origin on its own', async () => {
-                const { transport, registry } = setup()
+                const { transport, registry } = setup([
+                    connectedOn('ethereum'),
+                    siteOn(OTHER_ORIGIN),
+                ])
                 await registry.initialize()
                 holdReads()
                 for (let index = 0; index < CAP; index += 1) {
@@ -1075,7 +1119,7 @@ describe('createEip1193ConnectionHandler', () => {
             })
 
             it('frees its place when the node does not answer', async () => {
-                const { transport, registry } = setup()
+                const { transport, registry } = setup([connectedOn('ethereum')])
                 await registry.initialize()
                 nodeRead.mockRejectedValue(new Error('node down'))
 
@@ -1719,15 +1763,6 @@ describe('createEip1193ConnectionHandler', () => {
                 (message): message is RaisedRequest =>
                     message.kind === 'request',
             )
-        const siteOn = (
-            origin: string,
-            accounts: string[] = [ADDR_X],
-        ): Eip1193Connection => ({
-            ...connectedOn('ethereum', accounts),
-            id: eip1193ConnectionIdOf(origin),
-            peer: { name: new URL(origin).host, url: origin },
-            origin: { requesterOrigin: origin },
-        })
         const track = (pending: Promise<JsonRpcResponse>) => {
             const state: { response?: JsonRpcResponse } = {}
             void pending.then(response => {
