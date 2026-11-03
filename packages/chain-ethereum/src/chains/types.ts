@@ -45,7 +45,7 @@ export type EvmChainRow = {
     explorerName: string
     explorerBase: Readonly<Record<NetworkId, string>>
     fee: EvmFeeStrategy
-    /** Milliseconds between blocks; prices a preset's expected wait. */
+    /** Milliseconds between blocks; prices a preset's expected wait and paces the head-following change signal. */
     blockTimeMs: number
     finality: ChainFinality
     enabledByDefault: boolean

@@ -110,9 +110,10 @@ const suites = (chain: EvmChain): void => {
         changed: {
             handlers: evmRpcHandlers({
                 rpcUrl: TEST_RPC_URL,
-                responses: { eth_blockNumber: '0x65' },
+                // Past the minimum gap of the fastest chain (Arbitrum, 120 blocks).
+                responses: { eth_blockNumber: '0x1f4' },
             }),
-            nextCursor: 101,
+            nextCursor: 500,
         },
         unchanged: {
             handlers: evmRpcHandlers({
