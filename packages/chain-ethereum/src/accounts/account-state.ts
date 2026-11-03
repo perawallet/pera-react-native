@@ -27,6 +27,7 @@ import { upsertAssets } from '@perawallet/wallet-core-assets'
 import {
     isPeraNetworkError,
     isPeraServiceUnavailableError,
+    logger,
     PeraServiceUnavailableError,
     type Optional,
     type Nullable,
@@ -141,7 +142,11 @@ const storedTokenIdsOf = async (
         return held
             .map(row => row.assetId)
             .filter(id => id !== nativeAssetId && !isEvmNftAssetId(id))
-    } catch {
+    } catch (error) {
+        logger.warn('Stored token ids could not be read; keeping the rows', {
+            scope,
+            error,
+        })
         return []
     }
 }
