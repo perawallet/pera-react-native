@@ -242,8 +242,9 @@ The backend can also refuse a chain itself: each deployment lists the chains it 
 `GET /api/v4/chains/`, and answers 422 `chain_not_enabled` or `unknown_chain` for any other. Both
 feed one gate, `isPeraScopeRefused(scope)`, which `servicesOf` reads like the kill switch, so a refused
 scope takes the same RPC-only path. `usePeraServedChainsQuery` (`packages/device`) reads the list
-once per launch for the wallet's deployment; a failed read, or one naming none of the build's
-networks, gates nothing. The query client marks a scope refused on its first 422 and throws
+once per launch for the wallet's deployment on native only: the backend rejects web integrity
+tokens on that route, so web relies on the 422 alone. A failed read, or one naming
+none of the build's networks, gates nothing. The query client marks a scope refused on its first 422 and throws
 `PeraServiceUnavailableError` with `isChainRefused`, which `isChainRefusedError` accepts, and nothing
 reports a refusal as a failure. The list only switches chains off: a chain the build doesn't register
 still needs a release.
