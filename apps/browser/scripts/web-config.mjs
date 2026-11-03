@@ -12,19 +12,20 @@
 
 import { createRequire } from 'node:module'
 
-const evmTooling = createRequire(import.meta.url)(
-    '../../../tools/dev/evm-config-keys.cjs',
+const chainPackages = createRequire(import.meta.url)(
+    '../../../tools/dev/chain-packages.cjs',
 )
 
-const evmRpcUrlKeys = () =>
-    evmTooling.evmScopeConfigKeys().map(keys => keys.rpcUrlKey)
+const rpcUrlKeys = () =>
+    chainPackages
+        .chainPackageScopeConfigKeys()
+        .filter(keys => keys.field === 'rpcUrl')
+        .map(keys => keys.key)
 
-/** Every EVM config key generate-config.sh can bake, from the network table. */
-const evmConfigKeys = () => [
-    ...evmTooling.evmChainConfigKeys().map(keys => keys.capabilitiesKey),
-    ...evmTooling
-        .evmScopeConfigKeys()
-        .flatMap(keys => [keys.rpcUrlKey, keys.peraServicesKey]),
+/** Every chain package config key generate-config.sh can bake, from the table. */
+const chainPackageConfigKeys = () => [
+    ...chainPackages.chainPackageCapabilityConfigKeys().map(keys => keys.key),
+    ...chainPackages.chainPackageScopeConfigKeys().map(keys => keys.key),
 ]
 
 /**
@@ -106,7 +107,7 @@ export const WEB_CONFIG_ALLOWLIST = [
     'chainAlgorandCapabilities',
     // Every EVM chain's capabilities, and per network its public RPC URL and
     // Pera service list; generate-config.sh refuses a listed chain without them.
-    ...evmConfigKeys(),
+    ...chainPackageConfigKeys(),
 ]
 
 const INTEGRITY_FLAGS = {
@@ -173,14 +174,14 @@ export const assertE2eEvmRpcOverrideAllowed = appEnvironment => {
 }
 
 /**
- * Points every EVM RPC URL a generated-env.ts bakes at `url`, so an e2e bundle
+ * Points every chain RPC URL a generated-env.ts bakes at `url`, so an e2e bundle
  * holds no real node. Only keys that already have a value change: a chain the
  * build does not ship is not added, and one it ships is not dropped.
  */
 export const overrideEvmRpcUrls = (generatedEnvSource, url) =>
     generatedEnvSource.replace(
         new RegExp(
-            `^(\\s+(?:${evmRpcUrlKeys().join('|')}):\\s*)"(?:[^"\\\\]|\\\\.)*"`,
+            `^(\\s+(?:${rpcUrlKeys().join('|')}):\\s*)"(?:[^"\\\\]|\\\\.)*"`,
             'gm',
         ),
         (_entry, key) => `${key}${JSON.stringify(url)}`,

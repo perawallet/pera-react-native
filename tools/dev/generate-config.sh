@@ -78,31 +78,38 @@ if [ "${APP_ENV:-}" == "production" ]; then
   fi
 fi
 
-# Every EVM chain and network, from the same table the app registers; see
-# tools/dev/evm-config-keys.cjs for the line format.
-EVM_CONFIG="$(node "$SCRIPT_DIR/evm-config-keys.cjs")"
+# The table is part of what a build ships, so a release must bake the
+# committed one.
+if [ "${APP_ENV:-}" == "production" ] && [ -n "${CHAIN_PACKAGES_TABLE:-}" ]; then
+  echo "ERROR: CHAIN_PACKAGES_TABLE is refused in a production build — it replaces the committed chain package table." >&2
+  exit 1
+fi
 
-# An EVM chain's RPC endpoints have no committed default, so in any channel a
-# build that ships the chain without them would only fail once the app reads
-# chain state. An allowlist that bakes the chain list but drops a URL ships the
-# same way.
+# Every chain of every build-gated chain package, with its per-network config
+# keys; see tools/dev/chain-packages.cjs for the line format.
+CHAIN_CONFIG="$(node "$SCRIPT_DIR/chain-packages.cjs")"
+
+# A required per-network value has no committed default, so in any channel a
+# build that ships the chain without it would only fail once the app reads
+# chain state. An allowlist that bakes the chain list but drops the key ships
+# the same way.
 is_allowlisted() {
   [ -z "${CONFIG_ALLOWLIST:-}" ] || [[ " $CONFIG_ALLOWLIST " == *" $1 "* ]]
 }
 if is_allowlisted chainIds; then
   listed_chains=",${CHAINS//[[:space:]]/},"
-  while read -r kind chain_id rpc_env rpc_key _; do
-    [ "$kind" = "scope" ] || continue
+  while read -r kind chain_id requirement env key; do
+    [ "$kind" = "scope" ] && [ "$requirement" = "required" ] || continue
     [[ "$listed_chains" == *",$chain_id,"* ]] || continue
-    if [ -z "${!rpc_env:-}" ]; then
-      echo "ERROR: $rpc_env is unset but CHAINS ships $chain_id." >&2
+    if [ -z "${!env:-}" ]; then
+      echo "ERROR: $env is unset but CHAINS ships $chain_id." >&2
       exit 1
     fi
-    if ! is_allowlisted "$rpc_key"; then
-      echo "ERROR: CONFIG_ALLOWLIST drops $rpc_key but CHAINS ships $chain_id." >&2
+    if ! is_allowlisted "$key"; then
+      echo "ERROR: CONFIG_ALLOWLIST drops $key but CHAINS ships $chain_id." >&2
       exit 1
     fi
-  done <<< "$EVM_CONFIG"
+  done <<< "$CHAIN_CONFIG"
 fi
 
 echo "Generating configuration from environment variables..."
@@ -289,20 +296,14 @@ append_config "TESTNET_CARD_USDC_ASSET_ID" "testnetCardUsdcAssetId" "string"
 append_config "CHAINS" "chainIds" "string"
 append_config "CHAIN_ALGORAND_CAPABILITIES" "chainAlgorandCapabilities" "string"
 
-# Per EVM chain its capabilities; per EVM network its public JSON-RPC endpoint
-# and the comma list of Pera services the backend serves for it (empty means
-# none).
-while read -r kind _ env_a key_a env_b key_b; do
+# Per build-gated chain its capabilities, and per network each config field its
+# package declares.
+while read -r kind _ a b c; do
   case "$kind" in
-    chain)
-      append_config "$env_a" "$key_a" "string"
-      ;;
-    scope)
-      append_config "$env_a" "$key_a" "string"
-      append_config "$env_b" "$key_b" "string"
-      ;;
+    chain) append_config "$a" "$b" "string" ;;
+    scope) append_config "$b" "$c" "string" ;;
   esac
-done <<< "$EVM_CONFIG"
+done <<< "$CHAIN_CONFIG"
 
 # Default Network
 if [ -n "$PERA_DEFAULT_NETWORK" ] && [ -z "$DEFAULT_NETWORK" ]; then

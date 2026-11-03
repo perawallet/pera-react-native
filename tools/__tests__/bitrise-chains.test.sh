@@ -15,12 +15,13 @@ failures=0
 # them only with the backend.
 EVM_STAGING_SERVICES="prices,assets,history,blockFollowing"
 
-# Every EVM chain and network, from the table generate-config.sh bakes from.
-EVM_CONFIG="$(node "$ROOT_DIR/tools/dev/evm-config-keys.cjs")"
-EVM_CHAIN_IDS="$(awk '$1 == "chain" { print $2 }' <<< "$EVM_CONFIG")"
-EVM_SCOPE_ENVS="$(awk '$1 == "scope" { print $3, $5 }' <<< "$EVM_CONFIG")"
-if [ -z "$EVM_CHAIN_IDS" ] || [ -z "$EVM_SCOPE_ENVS" ]; then
-    echo "FAIL  evm-config-keys.cjs listed no EVM chains or networks"
+# Every build-gated chain and network, from the table generate-config.sh bakes from.
+CHAIN_CONFIG="$(node "$ROOT_DIR/tools/dev/chain-packages.cjs")"
+GATED_CHAIN_IDS="$(awk '$1 == "chain" { print $2 }' <<< "$CHAIN_CONFIG")"
+RPC_URL_ENVS="$(awk '$1 == "scope" && $5 ~ /RpcUrl$/ { print $4 }' <<< "$CHAIN_CONFIG")"
+SERVICES_ENVS="$(awk '$1 == "scope" && $5 ~ /PeraServices$/ { print $4 }' <<< "$CHAIN_CONFIG")"
+if [ -z "$GATED_CHAIN_IDS" ] || [ -z "$RPC_URL_ENVS" ] || [ -z "$SERVICES_ENVS" ]; then
+    echo "FAIL  chain-packages.cjs listed no chains, RPC URLs or service lists"
     exit 1
 fi
 
@@ -67,26 +68,26 @@ for source in bitrise pipelines; do
 
     for job in ios-staging android-staging web-staging; do
         check "${job} ships every chain" \
-            "$(sorted_csv "algorand,$(paste -sd, - <<< "$EVM_CHAIN_IDS")")" \
+            "$(sorted_csv "algorand,$(paste -sd, - <<< "$GATED_CHAIN_IDS")")" \
             "$(sorted_csv "$("$env_of" "$job" CHAINS)")"
-        while read -r rpc_env services_env; do
+        while read -r rpc_env; do
             url="$("$env_of" "$job" "$rpc_env")"
             check "${job} sets an https ${rpc_env}" "yes" \
                 "$([[ "$url" == https://?* ]] && echo yes || echo "no (${url})")"
+        done <<< "$RPC_URL_ENVS"
+        while read -r services_env; do
             check "${job} lists the ${services_env}" \
                 "$EVM_STAGING_SERVICES" "$("$env_of" "$job" "$services_env")"
-        done <<< "$EVM_SCOPE_ENVS"
+        done <<< "$SERVICES_ENVS"
     done
 
     for job in ios-production android-production web-production; do
         chains="$("$env_of" "$job" CHAINS)"
         check "${job} ships Algorand alone" \
             "algorand" "$(sorted_csv "${chains:-$production_unset_chains}")"
-        while read -r rpc_env services_env; do
-            for key in "$rpc_env" "$services_env"; do
-                check "${job} sets no ${key}" "" "$("$env_of" "$job" "$key")"
-            done
-        done <<< "$EVM_SCOPE_ENVS"
+        while read -r key; do
+            check "${job} sets no ${key}" "" "$("$env_of" "$job" "$key")"
+        done <<< "$RPC_URL_ENVS"$'\n'"$SERVICES_ENVS"
     done
 done
 
