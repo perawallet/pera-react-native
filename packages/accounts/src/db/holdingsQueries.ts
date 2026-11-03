@@ -407,6 +407,8 @@ export type AccountCollectibleLiteRow = PeraAssetJoinRow & {
     /** Pera collectible title; null when metadata hasn't synced. */
     title: Nullable<string>
     collectionName: Nullable<string>
+    /** Raw `verification_tier` text; compare against `PeraAssetVerificationTier`. */
+    verificationTier: string
 }
 
 export type GetAccountCollectiblesLiteParams = {
@@ -515,6 +517,7 @@ export async function getAccountCollectiblesLite({
             ...peraAssetJoinColumns(),
             title: collectibleTitleExpr,
             collectionName: collectionNameExpr,
+            verificationTier: AssetsPeraSchema.verificationTier,
         })
         .from(AccountAssetHoldingsSchema)
         // Inner: a collectible is defined by its Pera metadata row.

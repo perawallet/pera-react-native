@@ -19,6 +19,7 @@ import {
     PWIcon,
 } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
+import { ChainLabel } from '@modules/chain-ui/icon'
 import { CollectibleThumbnail } from '../CollectibleThumbnail'
 import { useStyles } from './styles'
 import type { CollectibleItemProps } from '@modules/assets/types/collectible'
@@ -32,6 +33,7 @@ const CollectibleListItemBase = ({
     onPress,
     style,
     showFrozenBadge = false,
+    networkChainId,
 }: CollectibleItemProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
@@ -101,6 +103,12 @@ const CollectibleListItemBase = ({
                     >
                         {subtitle}
                     </PWText>
+                )}
+                {networkChainId && (
+                    <ChainLabel
+                        chainId={networkChainId}
+                        style={styles.network}
+                    />
                 )}
             </PWView>
         </PWListItemLayout>

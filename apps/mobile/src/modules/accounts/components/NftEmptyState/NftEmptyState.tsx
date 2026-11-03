@@ -16,6 +16,8 @@ import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
 
 type NftEmptyStateProps = {
+    /** Says opt-in is Algorand-only and other networks' NFTs arrive on their own. */
+    isMultiChain?: boolean
     /**
      * Hides the opt-in CTA when omitted. Unsignable accounts can't sign
      * opt-in transactions, so the button would be a dead-end.
@@ -23,18 +25,30 @@ type NftEmptyStateProps = {
     onOptInPress?: () => void
 }
 
-export const NftEmptyState = ({ onOptInPress }: NftEmptyStateProps) => {
+export const NftEmptyState = ({
+    isMultiChain = false,
+    onOptInPress,
+}: NftEmptyStateProps) => {
     const { t } = useLanguage()
 
     return (
         <EmptyView
             icon='grid-view'
             title={t('account_details.nfts.empty_title')}
-            body={t('account_details.nfts.empty_body')}
+            body={
+                isMultiChain
+                    ? t('account_details.nfts.empty_body_multichain')
+                    : t('account_details.nfts.empty_body')
+            }
+            shouldTruncateBody={!isMultiChain}
             button={
                 onOptInPress ? (
                     <PWButton
-                        title={t('account_details.nfts.empty_optin')}
+                        title={
+                            isMultiChain
+                                ? t('account_details.nfts.empty_optin_algorand')
+                                : t('account_details.nfts.empty_optin')
+                        }
                         icon='plus'
                         variant='primary'
                         onPress={onOptInPress}
