@@ -12,6 +12,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { AccountSyncResult } from '@perawallet/wallet-core-accounts'
+import { PeraServiceUnavailableError } from '@perawallet/wallet-core-shared'
 import {
     isRateLimitError,
     resolveCheckpointRound,
@@ -28,6 +29,7 @@ const mocks = vi.hoisted(() => ({
     fetchAndPersistTransactions: vi.fn(),
     hasCachedHistoryRows: vi.fn((chainId: string) => chainId === 'algorand'),
     warn: vi.fn(),
+    debug: vi.fn(),
     concurrencyLimits: [] as number[],
     adapters: {} as Record<string, { maxConcurrentStateReads?: number }>,
 }))
@@ -54,8 +56,10 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
     const actualShared =
         await importOriginal<typeof import('@perawallet/wallet-core-shared')>()
     return {
-        logger: { warn: mocks.warn },
+        logger: { warn: mocks.warn, debug: mocks.debug },
         getHttpStatus: actualShared.getHttpStatus,
+        isChainRefusedError: actualShared.isChainRefusedError,
+        PeraServiceUnavailableError: actualShared.PeraServiceUnavailableError,
         // Unbounded stand-in that records the limit it was given.
         mapWithConcurrency: async <T, R>(
             items: T[],
@@ -173,6 +177,23 @@ describe('sync phases', () => {
             expect(result.isRateLimited).toBe(true)
             expect(result.hasSuccess).toBe(false)
             expect(mocks.warn).not.toHaveBeenCalled()
+        })
+
+        it('logs a chain the backend refuses at debug level, not warn', async () => {
+            mocks.fetchAndPersistAccount.mockRejectedValue(
+                new PeraServiceUnavailableError(MAINNET, 'assets', {
+                    isChainRefused: true,
+                }),
+            )
+
+            const result = await syncAccountsPhase(['A'], MAINNET, 'account')
+
+            expect(result.hasFailure).toBe(true)
+            expect(mocks.warn).not.toHaveBeenCalled()
+            expect(mocks.debug).toHaveBeenCalledWith(
+                'Sync step failed',
+                expect.objectContaining({ phase: 'account', subject: 'A' }),
+            )
         })
 
         it('does not treat a 429 that only appears in the message as rate limited', async () => {

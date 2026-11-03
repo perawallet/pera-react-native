@@ -29,6 +29,7 @@ import {
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
 import {
+    isChainRefusedError,
     logger,
     partition,
     PeraServiceUnavailableError,
@@ -193,13 +194,13 @@ const syncNativeAsset = async (
     const [item] = hasAssetsService
         ? await fetchAssetItems(scope, chain, [NATIVE_ASSET_ID]).catch(
               (error: unknown) => {
-                  logger.warn(
-                      'Native coin group unreadable; storing without it',
-                      {
-                          scope,
-                          error,
-                      },
-                  )
+                  const message =
+                      'Native coin group unreadable; storing without it'
+                  if (isChainRefusedError(error)) {
+                      logger.debug(message, { scope, error })
+                  } else {
+                      logger.warn(message, { scope, error })
+                  }
                   return []
               },
           )
