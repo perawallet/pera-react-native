@@ -45,6 +45,22 @@ describe('classifySubmitFailure', () => {
         },
     )
 
+    it.each([
+        ['network_unavailable', true],
+        ['unknown_node_error', false],
+        ['overspend', false],
+    ] as const)('flags %s as unanswered: %s', (code, isUnanswered) => {
+        const outcome = classifySubmitFailure(
+            new AlgodError(code, {}),
+            TX_IDS,
+            'test',
+        )
+
+        expect(outcome.kind).toBe('classified')
+        if (outcome.kind !== 'classified') return
+        expect(outcome.error.isUnanswered).toBe(isUnanswered)
+    })
+
     it('classifies a node verdict as rejected-by-node and non-retryable', () => {
         const outcome = classifySubmitFailure(
             new AlgodError('overspend', {}),

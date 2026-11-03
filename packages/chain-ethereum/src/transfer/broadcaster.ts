@@ -235,6 +235,7 @@ export const createEvmBroadcasterAdapter = (
                         `Transaction submit timed out after ${timeoutMs}ms`,
                     ),
                 ),
+                { isUnanswered: true },
             ),
     }
 }
