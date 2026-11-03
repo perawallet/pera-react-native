@@ -276,7 +276,13 @@
             "asa_url": "ASA URL",
             "show_on": "Show on",
             "project_website": "Project website",
-            "open_browser": "Open with Browser"
+            "open_browser": "Open with Browser",
+            "native_description": {
+                "ether": "Ether (ETH) is the native coin of Ethereum. It pays transaction fees and secures the network through staking. Layer-2 networks such as Base and Arbitrum also use ETH.",
+                "bnb": "BNB is the native coin of BNB Chain. It pays transaction fees and secures the network through staking.",
+                "avax": "AVAX is the native coin of Avalanche. It pays transaction fees and secures the network through staking.",
+                "pol": "POL is the native coin of Polygon. It pays transaction fees and secures the network through staking."
+            }
         },
         "main_screen": {
             "holdings_tab": "Holdings",
