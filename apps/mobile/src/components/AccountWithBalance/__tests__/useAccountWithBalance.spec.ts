@@ -36,6 +36,13 @@ const mockAccountValueTotals = new Map<
     }
 >()
 
+vi.mock('@hooks/useLanguage', () => ({
+    useLanguage: () => ({
+        t: (key: string, params?: Record<string, unknown>) =>
+            params ? `${key} ${JSON.stringify(params)}` : key,
+    }),
+}))
+
 vi.mock('@perawallet/wallet-core-accounts', () => {
     const chainOf = (account: WalletAccount) =>
         Object.keys(account.chains)[0] as string
@@ -561,6 +568,9 @@ describe('useAccountWithBalance', () => {
             const { result } = renderHook(() => useAccountWithBalance(JOINT))
 
             expect(result.current.jointParticipantCount).toBe(3)
+            expect(result.current.jointSignersLabel).toBe(
+                'account_info.type_multisig_signers {"threshold":2,"total":3}',
+            )
             expect(mockMultisigParameters).toHaveBeenCalledWith(
                 JOINT,
                 'algorand',
@@ -579,6 +589,7 @@ describe('useAccountWithBalance', () => {
             )
 
             expect(result.current.jointParticipantCount).toBeUndefined()
+            expect(result.current.jointSignersLabel).toBeUndefined()
         })
 
         it('is unset for an account with no multisig parameters', () => {
@@ -587,6 +598,7 @@ describe('useAccountWithBalance', () => {
             )
 
             expect(result.current.jointParticipantCount).toBeUndefined()
+            expect(result.current.jointSignersLabel).toBeUndefined()
         })
     })
 })

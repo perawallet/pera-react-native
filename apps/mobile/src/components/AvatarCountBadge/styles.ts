@@ -12,10 +12,8 @@
 
 import { makeStyles } from '@rneui/themed'
 
-// A 16px disc inside a ring, the same footprint as the chain badge in the other corner.
-// The ring is a background-coloured border that separates it from the avatar; it sits
-// on its own view because RN counts borders inside min sizes.
-// Min sizes (not fixed) let the disc widen for two digits and grow with OS font scaling.
+// The ring gets its own view because RN counts borders inside min sizes; min (not fixed)
+// sizes let the 16px disc widen for two digits and grow with OS font scaling.
 export const useStyles = makeStyles(theme => ({
     ring: {
         borderRadius: theme.borderRadius.full,

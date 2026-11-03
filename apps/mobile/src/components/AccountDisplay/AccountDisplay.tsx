@@ -169,7 +169,10 @@ export const AccountDisplay = ({
                     )}
                     {!!avatarBadge && (
                         <PWView
-                            style={styles.avatarBadge}
+                            style={[
+                                styles.avatarBadge,
+                                styles.customAvatarBadge,
+                            ]}
                             testID='account_avatar_badge'
                         >
                             {avatarBadge}

@@ -494,6 +494,7 @@
         "type_watch": "İzleme hesabı",
         "type_ledger": "Ledger hesabı",
         "type_multisig": "Paylaşılan hesap",
+        "type_multisig_signers": "Paylaşılan · {{threshold}}/{{total}} imzalayan",
         "type_quantum": "Quantum hesabı",
         "type_rekeyed": "Rekey yapılmış hesap",
         "type_rekeyed_signer": "Rekey yapıldı ({{to}} imzalıyor)",
