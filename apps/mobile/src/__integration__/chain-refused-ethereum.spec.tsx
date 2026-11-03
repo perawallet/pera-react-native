@@ -74,7 +74,7 @@ const { isPeraScopeRefused, resetPeraScopeRefusals } =
     await import('@perawallet/wallet-core-config')
 const { mockGetPeraChains } =
     await import('@perawallet/wallet-core-device/test-handlers')
-const { isChainRefusedError, isPeraServiceUnavailableError } =
+const { isChainRefusedError, isPeraServiceUnavailableError, logger } =
     await import('@perawallet/wallet-core-shared')
 const { historyChainAdapters } =
     await import('@perawallet/wallet-core-transactions')
@@ -138,6 +138,12 @@ const readHistory = () =>
         .getTransactionHistory(ETH_ADDRESS, SCOPE)
         .catch((error: unknown) => error)
 
+const expectNothingReported = (): void => {
+    expect(isHoldingsRefreshFailed()).toBe(false)
+    expect(vi.mocked(logger.warn)).not.toHaveBeenCalled()
+    expect(vi.mocked(logger.error)).not.toHaveBeenCalled()
+}
+
 describe('Flow: the Pera backend refuses Ethereum', () => {
     const requests: string[] = []
 
@@ -150,6 +156,8 @@ describe('Flow: the Pera backend refuses Ethereum', () => {
     })
 
     beforeEach(async () => {
+        vi.spyOn(logger, 'warn')
+        vi.spyOn(logger, 'error')
         await resetTestDatabase()
         resetPeraScopeRefusals()
         useSyncCursorStore.getState().resetState()
@@ -195,6 +203,7 @@ describe('Flow: the Pera backend refuses Ethereum', () => {
     })
 
     afterEach(() => {
+        vi.restoreAllMocks()
         server.events.removeAllListeners()
         useAccountsStore.getState().setAccounts([])
         resetPeraScopeRefusals()
@@ -220,7 +229,7 @@ describe('Flow: the Pera backend refuses Ethereum', () => {
         expect(held.find(row => row.assetId === USDC)?.amount.toFixed()).toBe(
             '3000000',
         )
-        expect(isHoldingsRefreshFailed()).toBe(false)
+        expectNothingReported()
         expect(isPeraServiceUnavailableError(history)).toBe(true)
         expect(isChainRefusedError(history)).toBe(true)
     })
@@ -267,7 +276,30 @@ describe('Flow: the Pera backend refuses Ethereum', () => {
         expect(askedFirst).toBeGreaterThan(0)
         expect(requests.filter(isPeraRequest)).toHaveLength(askedFirst)
         expect(isPeraScopeRefused(SCOPE)).toBe(true)
-        expect(isHoldingsRefreshFailed()).toBe(false)
+        expectNothingReported()
         expect(isChainRefusedError(history)).toBe(true)
+    })
+
+    it('Given a tick has already synced Ethereum, when the backend starts answering 422 chain_not_enabled, then the next tick still reads the balance over RPC and nothing reports a failure', async () => {
+        const service = newService()
+        await runTick(service)
+        server.use(
+            http.all(`${PERA_URL}/api/*`, () =>
+                HttpResponse.json(
+                    {
+                        error: 'Chain 1 is not enabled.',
+                        code: 'chain_not_enabled',
+                    },
+                    { status: 422 },
+                ),
+            ),
+        )
+        requests.length = 0
+
+        await runTick(service)
+
+        expect(isPeraScopeRefused(SCOPE)).toBe(true)
+        expect(requests.some(url => url === RPC_URL)).toBe(true)
+        expectNothingReported()
     })
 })
