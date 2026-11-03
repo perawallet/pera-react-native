@@ -56,7 +56,7 @@ export type SyncStorePorts = {
 export type SyncServiceDeps = {
     queryClient: QueryClient
     stores: SyncStorePorts
-    /** The kill switch, and the chains whose open submissions each tick settles. */
+    /** The chains whose open submissions each tick settles. */
     chains: ChainRegistry
     /**
      * Optional registration function for the post-confirmation refresh

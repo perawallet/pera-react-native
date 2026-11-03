@@ -124,7 +124,7 @@ export class SyncService {
     private authRefusedScopes = new Set<ChainScopeKey>()
     // Pacing for a scope that failed its last pass, so one unhealthy endpoint
     // costs only its own scope. Cleared on restart() and on reconnect, and an
-    // entry goes once its scope stops syncing (chain off, network switched).
+    // entry goes once its scope stops syncing (network switched).
     private scopeBackoffs = new Map<ChainScopeKey, ScopeBackoff>()
     private currentInterval: number
     // Coalesce query invalidations. invalidateAccountQueries fans out to every
@@ -342,15 +342,11 @@ export class SyncService {
         try {
             await this.reconcileSubmissions()
 
-            const { chains, stores } = this.deps
+            const { stores } = this.deps
             const groups = groupAddressesByScope(
                 stores.getAccountChainAddresses(),
                 stores.getSelectedScope,
-            ).filter(
-                ({ scope }) =>
-                    !chains.isSwitchedOff(scope.chainId) &&
-                    accountsChainAdapters.has(scope.chainId),
-            )
+            ).filter(({ scope }) => accountsChainAdapters.has(scope.chainId))
 
             const groupKeys = new Set(
                 groups.map(({ scope }) => toScopeKey(scope)),
@@ -468,14 +464,13 @@ export class SyncService {
     }
 
     /**
-     * Settles open submission-attempt rows of every chain that is on and
-     * broadcasts. Per chain rather than per account group, so rows still
-     * settle once no account is left on the chain. Bounded, a no-op when
+     * Settles open submission-attempt rows of every chain that broadcasts.
+     * Per chain rather than per account group, so rows still settle once no
+     * account is left on the chain. Bounded, a no-op when
      * nothing is open, and never throws.
      */
     private async reconcileSubmissions(): Promise<void> {
         for (const { id } of this.deps.chains.list()) {
-            if (this.deps.chains.isSwitchedOff(id)) continue
             if (!broadcasterChainAdapters.has(id)) continue
             const summary = await reconcileOpenSubmissions(id)
             if (summary.confirmed + summary.failed > 0) {

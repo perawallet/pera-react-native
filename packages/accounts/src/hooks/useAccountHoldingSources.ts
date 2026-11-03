@@ -15,7 +15,6 @@ import type { ChainId, NetworkId } from '@perawallet/wallet-core-chain-contract'
 import {
     selectChainNetworkId,
     useNetworkStore,
-    useSwitchedOffChainIds,
 } from '@perawallet/wallet-core-chain-shared'
 import type { Maybe } from '@perawallet/wallet-core-shared'
 import { chainAccountOf } from '../credentials/accessors'
@@ -29,19 +28,17 @@ const FIELD_SEPARATOR = '::'
 /**
  * Where the account's holdings live: one source per registered chain the
  * account has an entry on, in registry order, at that chain's selected
- * network. A switched-off chain contributes none.
+ * network.
  */
 export const useAccountHoldingSources = (
     account: Maybe<WalletAccount>,
 ): AccountHoldingSource[] => {
     const registeredChainIds = useRegisteredChainIds()
-    const switchedOffChainIds = useSwitchedOffChainIds()
     // A primitive, so the result keeps its identity until a chain, an address
     // or a selected network actually changes.
     const key = useNetworkStore(state =>
         account
             ? registeredChainIds
-                  .filter(chainId => !switchedOffChainIds.includes(chainId))
                   .flatMap(chainId => {
                       const address = chainAccountOf(account, chainId)?.address
                       return address

@@ -125,14 +125,18 @@ describe('useAccountTabNavigator', () => {
         expect(keysOf(result.current.tabs)).toEqual(['Overview', 'History'])
     })
 
-    it("keeps only Overview while the chain's kill switch is on", () => {
+    it("keeps its tabs while the chain's kill switch is on, as it only turns off the Pera backend", () => {
+        const { result: before } = renderHook(() =>
+            useAccountTabNavigator(ALGORAND_ACCOUNT),
+        )
         act(() => setChainEnabled('algorand', false))
 
         const { result } = renderHook(() =>
             useAccountTabNavigator(ALGORAND_ACCOUNT),
         )
 
-        expect(keysOf(result.current.tabs)).toEqual(['Overview'])
+        expect(keysOf(result.current.tabs)).toEqual(keysOf(before.current.tabs))
+        expect(keysOf(result.current.tabs)).toContain('History')
     })
 
     it('falls back to Overview when the open tab goes away', () => {

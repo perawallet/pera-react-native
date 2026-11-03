@@ -56,7 +56,7 @@ export const AccountAssetList = ({
     const { t } = useLanguage()
 
     const {
-        isChainSwitchedOff,
+        hasNoHoldingSource,
         items,
         chainFilterOptions,
         fundingChainId,
@@ -225,7 +225,7 @@ export const AccountAssetList = ({
                 onSearchChange={setSearchFilter}
                 searchAccessory={chainFilter}
                 ListEmptyComponent={
-                    isChainSwitchedOff ? null : (
+                    hasNoHoldingSource ? null : (
                         <EmptyView
                             title={getEmptyTitle()}
                             body={getEmptyBody()}

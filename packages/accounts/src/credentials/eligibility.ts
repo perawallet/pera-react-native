@@ -178,8 +178,7 @@ export const eligibleChainsInFamily = (account: WalletAccount): ChainId[] => {
 
 /**
  * The chains an HD wallet's discovery walk probes, in registry order: every
- * registered chain a BIP39 seed mints on that has an accounts adapter and is
- * not switched off.
+ * registered chain a BIP39 seed mints on that has an accounts adapter.
  */
 export const hdDiscoveryChains = (): ChainId[] => {
     const { chains } = getProvider()
@@ -189,8 +188,7 @@ export const hdDiscoveryChains = (): ChainId[] => {
         .filter(
             id =>
                 seedMintableScheme(id) !== undefined &&
-                accountsChainAdapters.has(id) &&
-                !chains.isSwitchedOff(id),
+                accountsChainAdapters.has(id),
         )
 }
 

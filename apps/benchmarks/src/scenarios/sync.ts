@@ -85,7 +85,7 @@ const assertAnswered = (ctx: ScenarioContext): void => {
 }
 
 /**
- * A tick that has nothing to do (a chain switched off, no adapter, sync paused
+ * A tick that has nothing to do (no adapter, sync paused
  * or the device offline) returns at once and would time as a very fast pass.
  * The fixture network counts every request, so a tick that made fewer than
  * `minRequests` did not do the work being measured.

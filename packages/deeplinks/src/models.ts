@@ -78,6 +78,6 @@ export type ChainDeeplinkResolution =
     | {
           status: 'failed'
           chainId: ChainId
-          reason: DeeplinkParseFailure | 'chain-unavailable'
+          reason: DeeplinkParseFailure
       }
     | { status: 'unrecognised' }

@@ -115,7 +115,7 @@ describe('AccountWithBalance', () => {
         )
     })
 
-    it("replaces the balances with a notice when the chain's kill switch is off, keeping the chain badge under the name", () => {
+    it('replaces the balances with a notice when the chain is unavailable in this build, keeping the chain badge under the name', () => {
         mockHookResult.availability = { isAvailable: false }
         mockHookResult.isMultiChain = true
 
@@ -249,7 +249,7 @@ describe('AccountWithBalance', () => {
             expect(mockAssetAmount).not.toHaveBeenCalled()
         })
 
-        it("shows the unavailable notice when all of the account's chains are switched off", () => {
+        it('shows the unavailable notice when the account has no chain this build registers', () => {
             mockHookResult.crossChainTotal = { kind: 'unavailable' }
 
             render(<AccountWithBalance account={ACCOUNT} />)

@@ -10,28 +10,19 @@
  limitations under the License
  */
 
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { useIsMultichain } from '../useIsMultichain'
 
 const mocks = vi.hoisted(() => ({
     registered: [] as string[],
-    switchedOff: [] as string[],
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useRegisteredChainIds: () => mocks.registered,
 }))
 
-vi.mock('@perawallet/wallet-core-chain-shared', () => ({
-    useSwitchedOffChainIds: () => mocks.switchedOff,
-}))
-
 describe('useIsMultichain', () => {
-    beforeEach(() => {
-        mocks.switchedOff = []
-    })
-
     it('is false when one chain is registered', () => {
         mocks.registered = ['algorand']
 
@@ -40,7 +31,7 @@ describe('useIsMultichain', () => {
         expect(result.current).toBe(false)
     })
 
-    it('is true when a second chain is registered and on', () => {
+    it('is true when a second chain is registered', () => {
         mocks.registered = ['algorand', 'ethereum']
 
         const { result } = renderHook(() => useIsMultichain())
@@ -48,21 +39,11 @@ describe('useIsMultichain', () => {
         expect(result.current).toBe(true)
     })
 
-    it('stays true when only some other chains are switched off', () => {
+    it('is true with several chains registered', () => {
         mocks.registered = ['algorand', 'ethereum', 'base']
-        mocks.switchedOff = ['base']
 
         const { result } = renderHook(() => useIsMultichain())
 
         expect(result.current).toBe(true)
-    })
-
-    it('is false when every other chain is switched off', () => {
-        mocks.registered = ['algorand', 'ethereum', 'base']
-        mocks.switchedOff = ['ethereum', 'base']
-
-        const { result } = renderHook(() => useIsMultichain())
-
-        expect(result.current).toBe(false)
     })
 })

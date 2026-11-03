@@ -89,7 +89,7 @@ describe('fetchAccountState NFT holdings', () => {
             }),
         )
         const ops = createEthereumAccountStateOps(
-            testChainContext({ services: ['nfts'] }),
+            testChainContext({ services: ['assets', 'nfts'] }),
             ETHEREUM,
         )
 
@@ -120,7 +120,8 @@ describe('fetchAccountState NFT holdings', () => {
         server.events.removeAllListeners()
 
         expect(state.holdings.map(h => h.assetId)).toEqual(['native'])
-        expect(state.unrefreshedHoldings).toBeUndefined()
+        // Nothing read them, so a stored NFT stays rather than vanishing.
+        expect(state.unrefreshedHoldings?.includes(APE)).toBe(true)
         expect(requests.some(url => url.includes('/nfts/'))).toBe(false)
     })
 
@@ -141,7 +142,7 @@ describe('fetchAccountState NFT holdings', () => {
             }),
         )
         const ops = createEthereumAccountStateOps(
-            testChainContext({ services: ['nfts'] }),
+            testChainContext({ services: ['assets', 'nfts'] }),
             ETHEREUM,
             { readWindowMs: 20 },
         )
@@ -164,6 +165,30 @@ describe('fetchAccountState NFT holdings', () => {
         expect(second.unrefreshedHoldings?.includes('native')).toBe(false)
     })
 
+    it('reports an NFT outage, not the missing token list, as why holdings went unrefreshed', async () => {
+        server.use(
+            ...rpc(),
+            http.get(
+                `${TEST_PERA_URL}/api/v3/evm/1/accounts/${FIRST}/nfts/`,
+                () =>
+                    HttpResponse.json(
+                        { code: 'upstream_unavailable' },
+                        { status: 502 },
+                    ),
+            ),
+        )
+        const ops = createEthereumAccountStateOps(
+            testChainContext({ services: ['nfts'] }),
+            ETHEREUM,
+        )
+
+        const state = await ops.fetchAccountState(FIRST, SCOPE, HINT)
+
+        expect(state.unrefreshedHoldings?.error).toMatchObject({
+            status: 502,
+        })
+    })
+
     it('leaves the NFTs unrefreshed when their metadata cannot be written', async () => {
         vi.mocked(upsertAssets).mockRejectedValueOnce(new Error('disk full'))
         server.use(
@@ -174,7 +199,7 @@ describe('fetchAccountState NFT holdings', () => {
             }),
         )
         const ops = createEthereumAccountStateOps(
-            testChainContext({ services: ['nfts'] }),
+            testChainContext({ services: ['assets', 'nfts'] }),
             ETHEREUM,
         )
 
