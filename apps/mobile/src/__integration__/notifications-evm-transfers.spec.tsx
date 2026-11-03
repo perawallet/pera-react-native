@@ -131,12 +131,18 @@ const assetDetailsRoute = (assetId: string) => ({
     },
 })
 
-type DeepLinkDispatch = ReturnType<typeof useDeepLink>['handleDeepLink']
-const captured: { handleDeepLink: Optional<DeepLinkDispatch> } = {
+type UseDeepLink = ReturnType<typeof useDeepLink>
+const captured: {
+    handleDeepLink: Optional<UseDeepLink['handleDeepLink']>
+    parseDeeplink: Optional<UseDeepLink['parseDeeplink']>
+} = {
     handleDeepLink: undefined,
+    parseDeeplink: undefined,
 }
 const DeepLinkProbe = () => {
-    captured.handleDeepLink = useDeepLink().handleDeepLink
+    const { handleDeepLink, parseDeeplink } = useDeepLink()
+    captured.handleDeepLink = handleDeepLink
+    captured.parseDeeplink = parseDeeplink
     return null
 }
 
@@ -274,6 +280,10 @@ describe('Flow: Ethereum transfer notifications', () => {
                 .spyOn(navigationRef, 'navigate')
                 .mockImplementation(() => undefined)
             const onError = vi.fn()
+            expect(captured.parseDeeplink!(SEPOLIA_URL)).toMatchObject({
+                type: 'ASSET_DETAIL',
+                target: { chainId: 'ethereum', networkId: 'sepolia' },
+            })
 
             await captured.handleDeepLink!(
                 SEPOLIA_URL,
