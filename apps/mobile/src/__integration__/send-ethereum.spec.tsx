@@ -36,16 +36,22 @@ import {
 import { Notifier } from 'react-native-notifier'
 
 import {
+    addAccountToken,
+    fetchAndPersistAccount,
     insertAssetHolding,
     useAccountChainStateStore,
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { nativeAssetFor } from '@perawallet/wallet-core-assets'
+import {
+    fetchAndPersistAssets,
+    nativeAssetFor,
+} from '@perawallet/wallet-core-assets'
 import { chainDisplayNameOf } from '@perawallet/wallet-core-chain-shared'
 import { useContacts } from '@perawallet/wallet-core-contacts'
 import {
     DEFAULT_EVM_RPC_RESPONSES,
+    erc20CallResponder,
     EvmRpcErrorFixture,
     evmRpcHandlers,
 } from '@perawallet/wallet-core-chain-ethereum/test-handlers'
@@ -83,6 +89,7 @@ import {
     SENDER,
     TOKEN,
     UNKNOWN_RECIPIENT,
+    UNLISTED_TOKEN,
 } from './__fixtures__/ethereum-send'
 import {
     recordAnalyticsEvents,
@@ -130,6 +137,11 @@ describe('Flow: send from an Ethereum account', () => {
     })
 
     const sentRawTransactions: string[] = []
+    const recordSentRawTransaction = (params: readonly unknown[]) => {
+        sentRawTransactions.push(params[0] as string)
+        const respond = DEFAULT_EVM_RPC_RESPONSES.eth_sendRawTransaction
+        return typeof respond === 'function' ? respond(params) : respond
+    }
 
     beforeAll(async () => {
         await setupTestDatabase()
@@ -157,14 +169,7 @@ describe('Flow: send from an Ethereum account', () => {
             ...evmRpcHandlers({
                 rpcUrl: RPC_URL,
                 responses: {
-                    eth_sendRawTransaction: params => {
-                        sentRawTransactions.push(params[0] as string)
-                        const respond =
-                            DEFAULT_EVM_RPC_RESPONSES.eth_sendRawTransaction
-                        return typeof respond === 'function'
-                            ? respond(params)
-                            : respond
-                    },
+                    eth_sendRawTransaction: recordSentRawTransaction,
                 },
             }),
         )
@@ -431,6 +436,56 @@ describe('Flow: send from an Ethereum account', () => {
             counterparty: RECEIVER,
             amount: {
                 assetRef: { chainId: 'ethereum', assetId: TOKEN },
+                value: new Decimal(12_500_000),
+            },
+        })
+    })
+
+    it('Given a token no Pera list names that the account added and holds, when the user sends 12.5 of it, then a token transfer call to its contract reaches the node', async () => {
+        server.use(
+            ...evmRpcHandlers({
+                rpcUrl: RPC_URL,
+                responses: {
+                    eth_getBalance: '0x8ac7230489e80000',
+                    eth_call: erc20CallResponder({
+                        [UNLISTED_TOKEN]: {
+                            name: 'Unlisted Token',
+                            symbol: 'UNL',
+                            decimals: 6,
+                            totalSupply: 1_000_000_000_000n,
+                            balances: { [SENDER]: 25_000_000n },
+                        },
+                    }),
+                    eth_sendRawTransaction: recordSentRawTransaction,
+                },
+            }),
+        )
+        // With no Pera services, the metadata and balance come from the chain
+        // alone, as the background sync reads them for an added token.
+        await fetchAndPersistAssets([UNLISTED_TOKEN], ETH_SCOPE)
+        await addAccountToken({
+            accountAddress: SENDER,
+            scope: ETH_SCOPE,
+            assetId: UNLISTED_TOKEN,
+        })
+        await fetchAndPersistAccount(SENDER, ETH_SCOPE)
+        selectSender(ETHEREUM_SENDER)
+        useSendFundsStore
+            .getState()
+            .setSelectedAsset({ chainId: 'ethereum', assetId: UNLISTED_TOKEN })
+        useSendFundsStore.getState().setAmount(new Decimal('12.5'))
+        useSendFundsStore.getState().setDestination(RECEIVER)
+        useSendFundsStore.getState().setSendMode('normal')
+
+        renderSendConfirmationStack()
+        await confirmSend()
+
+        expect(sentRawTransactions).toHaveLength(1)
+        expect((await sentRecord())?.summary).toMatchObject({
+            kind: 'token-transfer',
+            counterparty: RECEIVER,
+            amount: {
+                assetRef: { chainId: 'ethereum', assetId: UNLISTED_TOKEN },
                 value: new Decimal(12_500_000),
             },
         })

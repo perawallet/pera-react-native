@@ -38,6 +38,8 @@ export const SENDER = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'
 export const RECEIVER = '0x70997970C51812dc3A010C7d01b50e0d17dc79C8'
 export const UNKNOWN_RECIPIENT = '0x000000000000000000000000000000000000dEaD'
 export const TOKEN = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
+// A contract no test token list names.
+export const UNLISTED_TOKEN = '0x5555555555555555555555555555555555555555'
 
 // An HD account, so its signing scheme resolves without the keystore loading
 // the key.
@@ -84,6 +86,9 @@ export const SENDER_SIGNATURES: Record<string, string> = {
     // 12.5 USDC to RECEIVER.
     '9fb86b86dc2f2049311d8e7f546c5ec37a26292006ba046332e4e5f34af71644':
         'f3c568bd1aff4046a6c9b73aeed1af980ba26029d498707a9ad018f73ccf793949d3dba1d1a62cdc88ff598ef04c2a94ce063db4de0fa750eeb1dd18aa6b31f801',
+    // 12.5 UNLISTED_TOKEN to RECEIVER.
+    d2f6cb427a35898a0965f278a65436e253f267b5df29927c082e2186ba2e653e:
+        '4071153ceceaca69fc10b43e29eadd4e52d19d00c7df7591ceb2899a92ccbb0139554e73077ad2618491ad51afd419bfe56eb9fba126f59778b40761941a9ce500',
 }
 
 export const signWithSenderKey = async (
