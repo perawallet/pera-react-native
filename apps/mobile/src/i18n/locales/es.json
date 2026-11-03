@@ -3570,6 +3570,7 @@
             "raw_transaction": "Transacción en bruto"
         },
         "notice": {
+            "confirming": "Confirmando",
             "pending": "Pendiente desde {{since}}",
             "failed": "Fallida",
             "replaced": "Reemplazada por otra transacción",

@@ -35,6 +35,7 @@ import {
     recordTransactionBatch,
     resolveSubmissionAttempt,
     retireReviewApproval,
+    setOpenSubmissionStatus,
     REVIEW_APPROVAL_TTL_MS,
     updateTransactionBatch,
     type TransactionBatch,
@@ -550,6 +551,34 @@ describe('call batch execution', () => {
                 position: 0,
             })
             expect(node.sentCount()).toBe(0)
+        })
+
+        it('Given the approval is confirming and the node no longer knows it, when it resumes, then the same bytes are sent again rather than the batch failing', async () => {
+            const node = fakeNode()
+            const signed = await signAsSender(
+                (
+                    await prepareEthereumCallBatch(ctx, ETHEREUM, {
+                        from: SENDER,
+                        calls: [APPROVE],
+                    })
+                ).first,
+            )
+            const attemptId = await recordSubmissionAttempt({
+                scope: MAINNET,
+                txIds: [signed.id],
+                flow: 'batch',
+                sender: SENDER,
+            })
+            await setOpenSubmissionStatus({
+                id: attemptId,
+                status: 'confirming',
+            })
+            await recordAt([signed.id], 0, bytesToHex(signed.bytes))
+
+            await resumeEthereumCallBatches(ctx, ETHEREUM, deps)
+
+            expect(await readBatch()).toMatchObject({ outcome: 'confirmed' })
+            expect(node.events[0]).toBe(`send:${signed.id}`)
         })
 
         it('Given a resume handed a row read before an earlier run finished the batch, when it runs, then it sends nothing and leaves the row settled', async () => {

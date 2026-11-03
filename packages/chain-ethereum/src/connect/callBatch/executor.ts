@@ -33,6 +33,7 @@ import {
     getSubmissionAttemptsByTxIds,
     getTransactionBatch,
     recordTransactionBatch,
+    OPEN_SUBMISSION_STATUSES,
     REVIEW_APPROVAL_TTL_MS,
     retireReviewApproval,
     signTransactionsInBackground,
@@ -88,10 +89,8 @@ const BATCH_SIGNING_SOURCE = {
     description: 'The next transaction of a batch you approved',
 }
 
-const OPEN_STATUSES: readonly SubmissionStatus[] = ['submitted', 'unknown']
-
 const ALL_SUBMISSION_STATUSES: readonly SubmissionStatus[] = [
-    ...OPEN_STATUSES,
+    ...OPEN_SUBMISSION_STATUSES,
     'confirmed',
     'failed',
     'replaced',
@@ -337,7 +336,7 @@ const run = async (
         })
         if (!(await isTransactionKnownToNode(client, hash))) {
             const isOpen = attempts.some(({ status }) =>
-                OPEN_STATUSES.includes(status),
+                OPEN_SUBMISSION_STATUSES.includes(status),
             )
             // The reconciler wrote it off as dropped or replaced.
             if (attempts.length > 0 && !isOpen) return 'failed'

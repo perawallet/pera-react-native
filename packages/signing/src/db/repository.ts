@@ -188,6 +188,33 @@ export const resolveSubmissionAttempt = async ({
     notifySubmissionLedgerChanged()
 }
 
+export type SetOpenSubmissionStatusParams = {
+    db?: Database
+    id: string
+    status: 'submitted' | 'confirming'
+}
+
+/** Moves an open row between open statuses; a terminal row is left as it is. */
+export const setOpenSubmissionStatus = async ({
+    db = getDatabase(),
+    id,
+    status,
+}: SetOpenSubmissionStatusParams): Promise<void> => {
+    await db
+        .update(SubmissionAttemptsSchema)
+        .set({ status })
+        .where(
+            and(
+                eq(SubmissionAttemptsSchema.id, id),
+                inArray(SubmissionAttemptsSchema.status, [
+                    ...OPEN_SUBMISSION_STATUSES,
+                ]),
+            ),
+        )
+        .run()
+    notifySubmissionLedgerChanged()
+}
+
 export type MarkSubmissionUnknownParams = {
     db?: Database
     id: string
@@ -423,8 +450,10 @@ export const getReplaceableSubmissionAttempt = async ({
         .where(
             and(
                 eq(SubmissionAttemptsSchema.scope, toScopeKey(scope)),
+                // A confirming attempt is already on chain; nothing can re-price it.
                 inArray(SubmissionAttemptsSchema.status, [
-                    ...OPEN_SUBMISSION_STATUSES,
+                    'submitted',
+                    'unknown',
                 ]),
                 isNotNull(SubmissionAttemptsSchema.rawTransaction),
                 isNotNull(SubmissionAttemptsSchema.nonce),
