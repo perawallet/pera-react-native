@@ -1041,6 +1041,7 @@ describe('wallet_switchEthereumChain', () => {
 
         expect(walletKit.updateSession).not.toHaveBeenCalled()
         expect(walletKit.respondSessionRequest).not.toHaveBeenCalled()
+        expect(walletKit.emitSessionEvent).not.toHaveBeenCalled()
     })
 
     it('throws, and leaves the record alone, when the dApp cannot take the session update', async () => {
@@ -1061,6 +1062,7 @@ describe('wallet_switchEthereumChain', () => {
 
         await message.reject(new DappRequestRejectedError())
 
+        expect(walletKit.emitSessionEvent).not.toHaveBeenCalled()
         expect(walletKit.updateSession).not.toHaveBeenCalled()
         expect(walletKit.respondSessionRequest).toHaveBeenCalledWith({
             topic: TOPIC,
