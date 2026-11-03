@@ -19,7 +19,7 @@ import {
     SESSION_MASTER_KEY,
     clearSessionMasterKey,
     getSessionMasterKey,
-    hasSessionMasterKey,
+    isSessionUnlocked,
     putSessionMasterKey,
     requireSessionMasterKey,
 } from '../session'
@@ -55,14 +55,25 @@ describe('session master key', () => {
     })
 
     it('reports presence and absence', async () => {
-        expect(await hasSessionMasterKey()).toBe(false)
+        expect(await isSessionUnlocked()).toBe(false)
 
         await putSessionMasterKey(KEY)
-        expect(await hasSessionMasterKey()).toBe(true)
+        expect(await isSessionUnlocked()).toBe(true)
 
         await clearSessionMasterKey()
-        expect(await hasSessionMasterKey()).toBe(false)
+        expect(await isSessionUnlocked()).toBe(false)
         expect(await getSessionMasterKey()).toBeNull()
+    })
+
+    // The service worker asks this on every dApp request; reading the key
+    // would copy it, as an unwipeable string, into its heap.
+    it('reads the lock state without reading the key', async () => {
+        await putSessionMasterKey(KEY)
+        const read = vi.spyOn(fake.chrome.storage.session, 'get')
+
+        expect(await isSessionUnlocked()).toBe(true)
+
+        expect(read.mock.calls.flat(2)).not.toContain(SESSION_MASTER_KEY)
     })
 
     // A truncated or corrupted entry must read as "locked" rather than

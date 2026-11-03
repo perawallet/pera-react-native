@@ -11,7 +11,7 @@
  */
 
 import { isTrustedExtensionPageSender } from '@perawallet/wallet-extension-platform-chrome'
-import { hasSessionMasterKey } from '@perawallet/wallet-extension-keystore-chrome/vault/autolock'
+import { isSessionUnlocked } from '@perawallet/wallet-extension-keystore-chrome/vault/autolock'
 import {
     DAPP_PAGE_RESPONSE_SCOPE,
     isDappHostResponseMessage,
@@ -95,7 +95,7 @@ const broadcastToTabs = (
 export const installDappPageRequestRoute = ({
     chromeLike = chrome,
     ensureOffscreenDocumentLike = ensureOffscreenDocument,
-    isVaultUnlocked = hasSessionMasterKey,
+    isVaultUnlocked = isSessionUnlocked,
 }: {
     chromeLike?: typeof chrome
     ensureOffscreenDocumentLike?: () => Promise<void>

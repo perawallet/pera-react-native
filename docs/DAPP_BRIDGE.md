@@ -274,16 +274,17 @@ so reads share sync's timeouts and failover). The chain owns the list and refuse
 any other method itself, so nothing that signs, broadcasts or holds state on one
 node (filters, subscriptions) can pass.
 
-- Reads are public data. A site with no grant reads the chain `eth_chainId`
-  reports to it; signing and chain switches still answer 4100.
+- Only a connected site reads. The nodes are keyed and metered, so a site with
+  no grant gets 4100, as for signing, rather than a free RPC proxy.
 - A node's own JSON-RPC error (revert data included) reaches the page as is. Any
   other failure answers -32603 with a fixed message, because a transport error's
   text names the node URL and the request.
 - A read never records activity, so a page polling `eth_blockNumber` does not
   reorder the Connections list.
-- An origin may hold `MAX_CONCURRENT_NODE_READS_PER_ORIGIN` reads open; past
-  that a read answers -32005, which viem retries. The nodes and their quota are
-  shared with the wallet's own sync, so one page can't starve it.
+- An origin may hold `MAX_CONCURRENT_NODE_READS_PER_ORIGIN` reads open and send
+  `MAX_NODE_READS_PER_ORIGIN_PER_WINDOW` per `NODE_READ_WINDOW_MS`; past either a
+  read answers -32005, which viem retries. The nodes and their quota are shared
+  with the wallet's own sync, so one page can't starve it.
 
 ### Permissions and the locked wallet
 
@@ -294,9 +295,11 @@ flow as `eth_requestAccounts`, but always opens the approval, even for a connect
 site: dApps use it to change which accounts they hold.
 
 The transport stamps `isWalletLocked` on every request: the extension's service
-worker reads the vault's session storage, which the offscreen document cannot
-reach, and the in-app browser reads the app lock. A state that can't be read
-counts as locked. While locked, `eth_accounts` and `wallet_getPermissions` return
+worker reads the vault's `SESSION_UNLOCKED_KEY` flag from session storage, which
+the offscreen document cannot reach, and the in-app browser reads the app lock.
+The flag is written and removed with the master key, so the worker never reads
+the key: every page request triggers the check, and a read would copy the key
+into the worker's heap. A state that can't be read counts as locked. While locked, `eth_accounts` and `wallet_getPermissions` return
 nothing and a reconnect goes through the approval; reads still answer, since they
 reveal no account. Nothing is pushed on lock or unlock: a page sees the change on
 its next `eth_accounts`, so a dApp that doesn't poll stays disconnected until it
