@@ -745,6 +745,29 @@ describe('chain-shared network-store', () => {
             ).toEqual({ ethereum: { sepolia: OVERRIDE } })
             expect(mergePersistedEndpointOverrides('garbage')).toEqual({})
         })
+
+        test('only test-network overrides are usable, and none before the chain registers', async () => {
+            const { selectUsableEndpointOverrides } = await loadStore()
+            const state = {
+                endpointOverridesByChain: {
+                    ethereum: { sepolia: OVERRIDE, mainnet: OVERRIDE },
+                },
+            }
+
+            const beforeRegistration = selectUsableEndpointOverrides(
+                state,
+                ETHEREUM,
+            )
+            registerEthereum()
+
+            expect(beforeRegistration).toBeUndefined()
+            expect(selectUsableEndpointOverrides(state, ETHEREUM)).toEqual({
+                sepolia: OVERRIDE,
+            })
+            expect(
+                selectUsableEndpointOverrides(state, ALGORAND),
+            ).toBeUndefined()
+        })
     })
 
     describe('selectChainNetworkId', () => {

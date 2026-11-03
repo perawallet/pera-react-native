@@ -258,9 +258,10 @@ order: reads through `fallback()`, a broadcast moving on only after a failure th
 reply (a later node's refusal then reads as an unknown outcome, since the earlier one may have
 taken it). The first URL keeps the chain's ceilings less a short reserve for the fallback, so a slow
 but healthy main node is not cut off. The app lays a developer's per-network endpoint override from
-the network store over that record, replacing the list, and only over networks the chain's config
-already carries. `tools/check-evm-rpc-endpoints.mjs` checks every built-in URL's chain id before a
-build is signed and requires production mainnet URLs to be https, on any domain. Only hosts under
+the network store over that record, replacing the list, and only over test networks the chain's
+config already carries: the stored override is unauthenticated, so a mainnet one is ignored.
+`tools/check-evm-rpc-endpoints.mjs` checks every built-in URL's chain id before a build is signed
+and requires production mainnet URLs to be https, on any domain. Only hosts under
 `perawallet.app` are pinned, and pinning does not yet cover requests made through `expo/fetch`,
 which the RPC transport uses, so the pin group is declared but does not yet protect them on a
 device.

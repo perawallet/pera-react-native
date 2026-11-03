@@ -94,7 +94,10 @@ const mocks = vi.hoisted(() => ({
     chainEndpointsFor: vi.fn(
         (chainId: string): Record<string, readonly string[]> =>
             chainId === 'ethereum'
-                ? { mainnet: ['https://mainnet.rpc.test'] }
+                ? {
+                      mainnet: ['https://mainnet.rpc.test'],
+                      sepolia: ['https://sepolia.rpc.test'],
+                  }
                 : {},
     ),
     getPeraServicesConfig: vi.fn(),
@@ -497,7 +500,10 @@ describe('registerChainAdapters', () => {
             const ethereum = contextGivenToEthereum().getEndpoints()
 
             expect(algorand).toEqual({})
-            expect(ethereum).toEqual({ mainnet: ['https://mainnet.rpc.test'] })
+            expect(ethereum).toEqual({
+                mainnet: ['https://mainnet.rpc.test'],
+                sepolia: ['https://sepolia.rpc.test'],
+            })
             expect(mocks.chainEndpointsFor).toHaveBeenCalledWith('ethereum')
         })
 
@@ -513,10 +519,11 @@ describe('registerChainAdapters', () => {
                     endpointOverridesByChain,
                 })
 
-            withOverrides({ ethereum: { mainnet: 'https://my-node.test' } })
+            withOverrides({ ethereum: { sepolia: 'https://my-node.test' } })
 
             expect(ethereum.getEndpoints()).toEqual({
-                mainnet: ['https://my-node.test'],
+                mainnet: ['https://mainnet.rpc.test'],
+                sepolia: ['https://my-node.test'],
             })
             expect(algorand.getEndpoints()).toEqual({})
 
@@ -524,6 +531,24 @@ describe('registerChainAdapters', () => {
 
             expect(ethereum.getEndpoints()).toEqual({
                 mainnet: ['https://mainnet.rpc.test'],
+                sepolia: ['https://sepolia.rpc.test'],
+            })
+        })
+
+        it('ignores a stored mainnet override, which node settings never write', () => {
+            const ethereum = contextGivenToEthereum()
+            mocks.networkGetState.mockReturnValue({
+                mode: 'live',
+                selectedNetworkByChain: {},
+                customNetworksByChain: { algorand: [] },
+                endpointOverridesByChain: {
+                    ethereum: { mainnet: 'https://attacker.test' },
+                },
+            })
+
+            expect(ethereum.getEndpoints()).toEqual({
+                mainnet: ['https://mainnet.rpc.test'],
+                sepolia: ['https://sepolia.rpc.test'],
             })
         })
 

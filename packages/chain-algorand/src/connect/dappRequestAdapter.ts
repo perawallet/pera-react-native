@@ -53,7 +53,8 @@ const arc0001GroupSchema = arc0001SignTxnRequestSchema
     .min(1)
     .max(MAX_TRANSACTION_SIGN_REQUESTS)
 
-const BAKED_NETWORKS: AlgorandNetworkId[] = ['mainnet', 'testnet', 'betanet']
+// MainNet is left out on purpose: see resolveReportedNetwork.
+const BAKED_TEST_NETWORKS: AlgorandNetworkId[] = ['testnet', 'betanet']
 
 // The webview bridge's account-type names, shared with the Pera webapp.
 const BRIDGE_ACCOUNT_TYPES: Record<AccountType, string> = {
@@ -148,15 +149,15 @@ export const algorandDappRequestAdapter: DappRequestChainAdapter = {
         return { ok: true, payload }
     },
 
-    // A custom network is reported as the baked network sharing its genesis
-    // hash and never by name: the custom-network envelope is plaintext, so a
-    // forged one with a MainNet hash and an attacker's node URLs must not make
-    // the wallet tell a dApp "this is MainNet" — the hash check is what a dApp
-    // actually validates.
+    // A custom network is reported as the baked test network sharing its
+    // genesis hash, never by name and never as MainNet: the stored envelope is
+    // unauthenticated, so a forged one carrying MainNet's hash and an
+    // attacker's node would otherwise pass a dApp's genesis check while every
+    // read comes from that node.
     resolveReportedNetwork(scope, customGenesisHash): Optional<NetworkId> {
         if (scope.networkId !== 'custom') return scope.networkId
         if (!customGenesisHash) return undefined
-        return BAKED_NETWORKS.find(
+        return BAKED_TEST_NETWORKS.find(
             baked =>
                 getAlgorandChainConfig(algorandScope(baked)).genesisHash ===
                 customGenesisHash,

@@ -245,6 +245,20 @@ describe('algorandDappRequestAdapter', () => {
                 adapter.resolveReportedNetwork(customScope, ''),
             ).toBeUndefined()
         })
+
+        it("refuses a custom network carrying MainNet's genesis hash", () => {
+            const mainnetHash = getAlgorandChainConfig({
+                chainId: LEGACY_CHAIN_ID,
+                networkId: 'mainnet',
+            } as const).genesisHash
+
+            expect(
+                adapter.resolveReportedNetwork(
+                    { chainId: LEGACY_CHAIN_ID, networkId: 'custom' } as const,
+                    mainnetHash,
+                ),
+            ).toBeUndefined()
+        })
     })
 
     describe('validateTransactionPayload', () => {

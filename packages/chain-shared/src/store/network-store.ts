@@ -156,6 +156,31 @@ export const selectEndpointOverride = (
     networkId: NetworkId,
 ): Optional<string> => state.endpointOverridesByChain[chainId]?.[networkId]
 
+/**
+ * Test networks only: the stored envelope is unauthenticated, so a mainnet
+ * override is forged and would silently repoint live reads. Fails closed
+ * before the chain registers, when tiers are unknown.
+ */
+export const selectUsableEndpointOverrides = (
+    state: { endpointOverridesByChain: EndpointOverridesByChain },
+    chainId: ChainId,
+): Optional<EndpointOverrides> => {
+    const overrides = state.endpointOverridesByChain[chainId]
+    const { chains } = getProvider()
+    if (overrides === undefined || !chains.has(chainId)) return undefined
+    const testNetworkIds = new Set(
+        chains
+            .get(chainId)
+            .descriptor.networks.filter(network => network.tier === 'testnet')
+            .map(network => network.id),
+    )
+    return Object.fromEntries(
+        Object.entries(overrides).filter(([networkId]) =>
+            testNetworkIds.has(networkId as NetworkId),
+        ),
+    )
+}
+
 // The store is created at module load, before every provider is wired, so the
 // selection is read straight off the default rather than resolved through the registry.
 const initialState = (): NetworkSelection => {
