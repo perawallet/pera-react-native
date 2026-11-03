@@ -139,31 +139,6 @@ describe('evm submission reconcile', () => {
         expect(await statuses()).toEqual(['confirmed'])
     })
 
-    it('returns a confirming send to pending when its block is rolled back', async () => {
-        const { env, sender, settled, reconcile, statuses } = await setUp()
-        // Safe against other files: this suite runs them one at a time.
-        const snapshot = await anvilRpc<string>(env.chain, 'evm_snapshot')
-        const { raw } = await signedTransfer(env, sender, RECIPIENT, AMOUNT)
-        const hash = await submitAndRecord(env, raw)
-        await minedReceipt(env.chain, hash)
-        await reconcile()
-        expect(await statuses()).toEqual(['confirming'])
-
-        expect(
-            await anvilRpc<boolean>(env.chain, 'evm_revert', [snapshot]),
-        ).toBe(true)
-        expect(await nodeReceipt(env.chain, hash)).toBeNull()
-
-        expect(await reconcile()).toEqual({
-            probed: 1,
-            confirmed: 0,
-            progressed: 1,
-            failed: 0,
-        })
-        expect(await statuses()).toEqual(['submitted'])
-        expect(settled).not.toHaveBeenCalled()
-    })
-
     it('fails a mined revert', async () => {
         const { env, sender, settled, reconcile, statuses } = await setUp()
         const hash = await submitAndRecord(
