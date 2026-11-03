@@ -26,9 +26,9 @@ dappRequestContractTests(() => algorandDappRequestAdapter, {
         scope: { chainId: LEGACY_CHAIN_ID, networkId: 'custom' } as const,
         customGenesisHash: getAlgorandChainConfig({
             chainId: LEGACY_CHAIN_ID,
-            networkId: 'mainnet',
+            networkId: 'testnet',
         } as const).genesisHash,
-        reportedAs: 'mainnet',
+        reportedAs: 'testnet',
     },
     undisclosed: {
         scope: { chainId: LEGACY_CHAIN_ID, networkId: 'custom' } as const,
