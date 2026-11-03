@@ -19,6 +19,7 @@ import {
     it,
     vi,
 } from 'vitest'
+import { http, HttpResponse } from 'msw'
 import { setupServer } from 'msw/node'
 import type { Hex } from 'viem'
 import type {
@@ -27,6 +28,7 @@ import type {
 } from '@perawallet/wallet-core-chain-contract'
 import { PeraNetworkError } from '@perawallet/wallet-core-shared'
 import { createEthereumAccountStateOps } from '../account-state'
+import { SHOULD_REFRESH_PATH } from '../endpoints'
 import { peraEvmHandlers, type ShouldRefreshRequest } from '../msw-handlers'
 import {
     EvmRpcErrorFixture,
@@ -641,6 +643,48 @@ describe('createEthereumAccountStateOps', () => {
                 expect(shouldRefreshRequests).toBe(1)
             },
         )
+
+        it('follows the RPC head without logging a warning once the backend refuses the chain', async () => {
+            const { resetPeraScopeRefusals } =
+                await import('@perawallet/wallet-core-config')
+            const { logger } = await import('@perawallet/wallet-core-shared')
+            const warn = vi.spyOn(logger, 'warn')
+            let shouldRefreshRequests = 0
+            server.use(
+                http.post(`${PERA_URL}${SHOULD_REFRESH_PATH}`, () => {
+                    shouldRefreshRequests += 1
+                    return HttpResponse.json(
+                        {
+                            error: 'Chain is not enabled',
+                            code: 'chain_not_enabled',
+                        },
+                        { status: 422 },
+                    )
+                }),
+                ...evmRpcHandlers({
+                    rpcUrl: RPC_URL,
+                    responses: { eth_blockNumber: '0x30' },
+                }),
+            )
+            const ops = createEthereumAccountStateOps(
+                contextWith(['blockFollowing']),
+                ETHEREUM,
+            )
+
+            try {
+                await expect(
+                    ops.fetchChangeSignal([ADDRESS], SCOPE, 40),
+                ).resolves.toEqual({ changed: true, cursor: 48 })
+                await expect(
+                    ops.fetchChangeSignal([ADDRESS], SCOPE, 48),
+                ).resolves.toEqual({ changed: false, cursor: 48 })
+                expect(shouldRefreshRequests).toBe(1)
+                expect(warn).not.toHaveBeenCalled()
+            } finally {
+                warn.mockRestore()
+                resetPeraScopeRefusals()
+            }
+        })
 
         it('rejects a response that does not match the schema', async () => {
             server.use(

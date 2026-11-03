@@ -25,6 +25,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { upsertAssets } from '@perawallet/wallet-core-assets'
 import {
+    isChainRefusedError,
     isPeraNetworkError,
     isPeraServiceUnavailableError,
     logger,
@@ -423,6 +424,11 @@ const fetchChangeSignal = (
         try {
             answer = await fetchShouldRefresh(scope, chain, addresses, cursor)
         } catch (error) {
+            // A refused chain is already gated in config, so later ticks skip
+            // the request; this tick still has to read the head to keep RPC going.
+            if (isChainRefusedError(error)) {
+                return readHeadSignal(ctx, chain, scope, cursor)
+            }
             if (!isRefusedCredential(error)) throw error
             refusedScopes.add(key)
             return readHeadSignal(ctx, chain, scope, cursor)
