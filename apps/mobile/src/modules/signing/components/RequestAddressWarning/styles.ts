@@ -13,25 +13,6 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-    warning: {
-        gap: theme.spacing.md,
-        marginVertical: theme.spacing.lg,
-        backgroundColor: theme.colors.suspiciousBannerBg,
-        padding: theme.spacing.lg,
-        borderRadius: theme.spacing.sm,
-    },
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.md,
-    },
-    title: {
-        flexShrink: 1,
-        color: theme.colors.suspiciousBannerContent,
-    },
-    body: {
-        color: theme.colors.suspiciousBannerContent,
-    },
     address: {
         gap: theme.spacing.xs,
     },
@@ -45,13 +26,5 @@ export const useStyles = makeStyles(theme => ({
     },
     fullAddress: {
         color: theme.colors.textMain,
-    },
-    acknowledge: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.sm,
-    },
-    acknowledgeLabel: {
-        flexShrink: 1,
     },
 }))

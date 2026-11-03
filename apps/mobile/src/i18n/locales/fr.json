@@ -3492,7 +3492,9 @@
         },
         "address_safety": {
             "listed_title": "Adresse frauduleuse connue",
-            "listed_body": "Cette demande mentionne une adresse figurant sur une liste publique d’adresses utilisées pour voler des fonds. En signant, vous pourriez lui céder vos actifs.",
+            "listed_body": "Cette demande mentionne une adresse figurant sur une liste publique d’adresses utilisées pour voler des fonds.",
+            "blocked_title": "Pera ne signera pas cette demande",
+            "blocked_body": "Elle mentionne une adresse frauduleuse connue. Rejetez-la pour protéger vos fonds.",
             "look_alike_title": "Cette demande mentionne une adresse qui imite une adresse que vous connaissez",
             "look_alike_body": "Elle commence et se termine comme une adresse que vous connaissez, mais les caractères du milieu sont différents. Les escrocs créent des adresses ressemblantes pour vous tromper. Comparez les adresses complètes ci-dessous.",
             "acknowledge": "Je comprends le risque et je veux signer quand même",

@@ -3492,7 +3492,9 @@
         },
         "address_safety": {
             "listed_title": "Bilinen dolandırıcılık adresi",
-            "listed_body": "Bu istek, fon çalmak için kullanılan adreslerin yer aldığı herkese açık bir listedeki bir adresi içeriyor. İmzalarsan varlıkların bu adrese geçebilir.",
+            "listed_body": "Bu istek, fon çalmak için kullanılan adreslerin yer aldığı herkese açık bir listedeki bir adresi içeriyor.",
+            "blocked_title": "Pera bu isteği imzalamaz",
+            "blocked_body": "Bilinen bir dolandırıcılık adresini içeriyor. Fonlarını korumak için reddet.",
             "look_alike_title": "Bu istek, tanıdığın bir adresi taklit eden bir adres içeriyor",
             "look_alike_body": "Tanıdığın bir adres gibi başlıyor ve bitiyor, ama aradaki karakterler farklı. Dolandırıcılar seni kandırmak için benzer görünen adresler oluşturur. Aşağıdaki tam adresleri karşılaştır.",
             "acknowledge": "Riski anlıyorum ve yine de imzalamak istiyorum",

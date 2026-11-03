@@ -11,13 +11,12 @@
  */
 
 import { useCallback, useMemo } from 'react'
-import { create } from 'zustand'
 import {
     addressCodecs,
     type ChainId,
     type ChainScope,
 } from '@perawallet/wallet-core-chain-contract'
-import { registerStore, type Optional } from '@perawallet/wallet-core-shared'
+import type { Optional } from '@perawallet/wallet-core-shared'
 import {
     chainIdOfSignRequest,
     isExternalCallbackSource,
@@ -34,7 +33,9 @@ import {
     assessRequestAddress,
     type RequestAddressAssessment,
 } from '@perawallet/wallet-core-transactions'
+import { useIsListedAddressHardBlockEnabled } from '@hooks/useIsListedAddressHardBlockEnabled'
 import { useKnownAddresses } from '@modules/transactions'
+import { createAcknowledgementStore } from './createAcknowledgementStore'
 
 export type FlaggedRequestAddress = {
     address: string
@@ -47,35 +48,18 @@ export type UseRequestAddressSafetyResult = {
     /** The network the request was built for; undefined when it names none. */
     scope: Optional<ChainScope>
     isChecking: boolean
+    /** The request names a scam-listed address. */
+    hasListedAddress: boolean
+    /** A listed address cannot be acknowledged away, so the request can only be rejected; false once remote config turns the hard block off. */
+    isListedAddressBlocking: boolean
     isAcknowledged: boolean
     toggleAcknowledged: () => void
     isConfirmBlocked: boolean
 }
 
-type AddressWarningAcknowledgementState = {
-    /** Keyed by request so the next request starts unacknowledged. */
-    acknowledgedRequestId: Optional<string>
-}
-
-type AddressWarningAcknowledgementActions = {
-    setAcknowledgedRequestId: (id: Optional<string>) => void
-    resetState: () => void
-}
-
-export const useAddressWarningAcknowledgementStore = create<
-    AddressWarningAcknowledgementState & AddressWarningAcknowledgementActions
->()(set => ({
-    acknowledgedRequestId: undefined,
-    setAcknowledgedRequestId: id => set({ acknowledgedRequestId: id }),
-    resetState: () => set({ acknowledgedRequestId: undefined }),
-}))
-
-registerStore({
-    name: 'address-warning-acknowledgement-store',
-    clearStorage: () => {},
-    resetState: () =>
-        useAddressWarningAcknowledgementStore.getState().resetState(),
-})
+export const useAddressWarningAcknowledgementStore = createAcknowledgementStore(
+    'address-warning-acknowledgement-store',
+)
 
 const NO_ADDRESSES: ReviewedAddress[] = []
 
@@ -174,6 +158,11 @@ export const useRequestAddressSafety = ({
         )
     }, [chainId, isChecking, reviewed, knownAddresses, isListed])
 
+    const hasListedAddress = flaggedAddresses.some(
+        ({ assessment }) => assessment.kind === 'listed',
+    )
+    const isHardBlockEnabled = useIsListedAddressHardBlockEnabled()
+    const isListedAddressBlocking = hasListedAddress && isHardBlockEnabled
     const isAcknowledged =
         !!currentRequest && acknowledgedRequestId === currentRequest.id
     const toggleAcknowledged = useCallback(() => {
@@ -185,9 +174,13 @@ export const useRequestAddressSafety = ({
         flaggedAddresses,
         scope,
         isChecking,
+        hasListedAddress,
+        isListedAddressBlocking,
         isAcknowledged,
         toggleAcknowledged,
         isConfirmBlocked:
-            isChecking || (flaggedAddresses.length > 0 && !isAcknowledged),
+            isChecking ||
+            isListedAddressBlocking ||
+            (flaggedAddresses.length > 0 && !isAcknowledged),
     }
 }

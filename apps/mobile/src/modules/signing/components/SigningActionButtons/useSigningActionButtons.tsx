@@ -40,6 +40,7 @@ import { useBottomSheet } from '@modules/bottom-sheet'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { UserPreferences } from '@constants/user-preferences'
 import { useRequestAddressSafety } from '../../hooks/useRequestAddressSafety'
+import { useRequestSiteSafety } from '../../hooks/useRequestSiteSafety'
 import {
     SecurityGuardContent,
     type GuardedWarningType,
@@ -61,7 +62,7 @@ export type UseSigningActionButtonsResult = {
      */
     cannotSignNotice: Optional<{ title: string; body: string }>
     cosignSignerAddress: string
-    /** A flagged address in the request still waits on the user's acknowledgement. */
+    /** A flagged address or site still waits on the user's acknowledgement. */
     isConfirmBlocked: boolean
 }
 
@@ -81,7 +82,12 @@ export const useSigningActionButtons = (): UseSigningActionButtonsResult => {
     const { getPreference } = usePreferences()
     const { request: requestBottomSheet } = useBottomSheet()
     const { confirmQuantumDappUsage } = useQuantumDappWarning()
-    const { isConfirmBlocked } = useRequestAddressSafety()
+    const {
+        isListedAddressBlocking,
+        isConfirmBlocked: isAddressConfirmBlocked,
+    } = useRequestAddressSafety()
+    const { isConfirmBlocked: isSiteConfirmBlocked } = useRequestSiteSafety()
+    const isConfirmBlocked = isAddressConfirmBlocked || isSiteConfirmBlocked
 
     // Bumped to remount the slide-to-confirm slider so it resets as needed
     const [slideResetKey, setSlideResetKey] = useState(0)
@@ -144,6 +150,12 @@ export const useSigningActionButtons = (): UseSigningActionButtonsResult => {
 
     const cannotSignNotice = useMemo(() => {
         if (!currentRequest) return undefined
+        if (isListedAddressBlocking) {
+            return {
+                title: t('signing.address_safety.blocked_title'),
+                body: t('signing.address_safety.blocked_body'),
+            }
+        }
         if (isSignRequestMultisigUnsignable(currentRequest, allAccounts)) {
             return {
                 title: t('signing.cannot_sign.title'),
@@ -174,7 +186,13 @@ export const useSigningActionButtons = (): UseSigningActionButtonsResult => {
             }
         }
         return undefined
-    }, [currentRequest, allAccounts, hasUnsignableTransaction, t])
+    }, [
+        currentRequest,
+        allAccounts,
+        isListedAddressBlocking,
+        hasUnsignableTransaction,
+        t,
+    ])
 
     // WalletConnect transaction confirm/decline analytics. Only dapp-originated
     // (`walletconnect`) requests carry these events; in-app/local signing is
