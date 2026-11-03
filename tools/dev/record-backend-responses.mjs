@@ -79,6 +79,12 @@ const ROUTES = [
             chainId: Number(chainId),
             address,
         }),
+        // The app pages with `cursor` and `limit` only; a filtered query
+        // (`asset_id`) answers transfer-stream rows with most fields null.
+        accepts: ({ params }) =>
+            [...params.keys()].every(
+                key => key === 'cursor' || key === 'limit',
+            ),
         tests: ['src/modules/evm/__tests__/transactions.test.ts'],
     },
     {
@@ -207,7 +213,8 @@ const recordings = ROUTES.map(route => {
                 : parseJson(exchange.requestBody)
         if (
             body === undefined ||
-            (route.accepts && !route.accepts({ requestBody, body }))
+            (route.accepts &&
+                !route.accepts({ requestBody, body, params: url.searchParams }))
         ) {
             return []
         }
@@ -253,6 +260,20 @@ for (const { name, recording } of recordings) {
         `${JSON.stringify(recording, null, 4)}\n`,
     )
 }
+// In the repo formatter's style, so a refresh diffs only what the backend changed.
+const format = spawnSync(
+    'pnpm',
+    [
+        'exec',
+        'oxfmt',
+        ...recordings.map(({ name }) => join(OUT_DIR, `${name}.json`)),
+    ],
+    {
+        cwd: resolve(import.meta.dirname, '../..'),
+        stdio: ['ignore', 'ignore', 'inherit'],
+    },
+)
+if (format.status !== 0) fail(`oxfmt exited ${format.status}`)
 console.log(
     `Recorded ${recordings.length} responses from algorand-backend@${revision} into ${OUT_DIR}`,
 )
