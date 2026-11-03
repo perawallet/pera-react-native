@@ -709,6 +709,7 @@ export const createWalletConnectV2Handler = (
         recordActivity(topic)
 
         if (isHeld) {
+            announceChain(topic, target, networkId)
             answerSwitch(topic, id, target.support)
             return
         }
@@ -932,6 +933,7 @@ export const createWalletConnectV2Handler = (
             throw new WalletConnectInvalidNetworkError()
         }
         await includeChainInSession(record, chain, caip2)
+        announceChain(record.id, chain, networkId)
     }
 
     // Never surfaced to the user: the dApp asks unprompted, and a refusal
@@ -1590,6 +1592,52 @@ export const createWalletConnectV2Handler = (
         if (startedIn === generation && client) await reconcileStored()
     }
 
+    const emitChainChanged = async (
+        topic: string,
+        chain: WalletConnectV2Chain,
+        networkId: NetworkId,
+    ): Promise<void> => {
+        const walletKit = client
+        if (!walletKit || !chain.v2.sessionEvents) return
+        const namespace = walletKit.getActiveSessions()[topic]?.namespaces[
+            chain.support.namespace
+        ] as Optional<WalletKitSession['namespaces'][string]>
+        const caip2 = chain.support.caip2ChainIdFor(networkId)
+        const data = chain.v2.sessionEvents.chainChangedData(networkId)
+        if (
+            !namespace ||
+            caip2 === null ||
+            data === null ||
+            !(namespace.events ?? []).includes('chainChanged') ||
+            // Never granted: the dApp's own switch request is what asks the
+            // user to add it.
+            !namespace.chains?.includes(caip2)
+        ) {
+            return
+        }
+        await walletKit.emitSessionEvent({
+            topic,
+            event: { name: 'chainChanged', data },
+            chainId: caip2,
+        })
+    }
+
+    // Best effort: the switch's answer must not depend on the dApp taking the event.
+    const announceChain = (
+        topic: string,
+        chain: WalletConnectV2Chain,
+        networkId: NetworkId,
+    ): void => {
+        void emitChainChanged(topic, chain, networkId).catch(
+            (error: unknown) => {
+                logger.warn('[WC v2] announcing a switched chain failed', {
+                    connectionId: topic,
+                    error,
+                })
+            },
+        )
+    }
+
     /**
      * Pushes a session event, only for a chain declaring `sessionEvents`, only
      * on a session holding its namespace, and only an event that namespace
@@ -1612,24 +1660,7 @@ export const createWalletConnectV2Handler = (
         const events = namespace.events ?? []
 
         if (notice.type === 'network-changed') {
-            const { networkId } = notice.scope
-            const caip2 = chain.support.caip2ChainIdFor(networkId)
-            const data = chain.v2.sessionEvents.chainChangedData(networkId)
-            // A session lacking the new network was never granted it; the
-            // dApp's own switch request is what asks the user to add it.
-            if (
-                caip2 === null ||
-                data === null ||
-                !events.includes('chainChanged') ||
-                !namespace.chains?.includes(caip2)
-            ) {
-                return
-            }
-            await walletKit.emitSessionEvent({
-                topic: id,
-                event: { name: 'chainChanged', data },
-                chainId: caip2,
-            })
+            await emitChainChanged(id, chain, notice.scope.networkId)
             return
         }
 
