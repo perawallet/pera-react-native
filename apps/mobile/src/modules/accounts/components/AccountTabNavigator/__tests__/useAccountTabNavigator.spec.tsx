@@ -187,7 +187,7 @@ describe('useAccountTabNavigator', () => {
         })
 
         it('stays on Overview when the chain has no History tab, and still clears the request', () => {
-            act(() => setChainEnabled('algorand', false))
+            act(() => setCapabilityOverrides({ history: false }))
             mocks.routeParams = { tab: 'History' }
 
             const { result } = renderHook(() =>

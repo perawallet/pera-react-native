@@ -2875,6 +2875,84 @@ describe('SyncService', () => {
             }
         })
 
+        describe('a submission settling', () => {
+            const settleOnEthereum = (status: 'confirmed' | 'failed') =>
+                mockReconcileOpenSubmissions.mockImplementation(
+                    async (chainId: string) => ({
+                        probed: 1,
+                        confirmed:
+                            chainId === 'ethereum' && status === 'confirmed'
+                                ? 1
+                                : 0,
+                        failed:
+                            chainId === 'ethereum' && status === 'failed'
+                                ? 1
+                                : 0,
+                    }),
+                )
+            const settleNothing = () =>
+                mockReconcileOpenSubmissions.mockResolvedValue({
+                    probed: 0,
+                    confirmed: 0,
+                    failed: 0,
+                })
+            const startAfterFirstPass = async () => {
+                mockBroadcasters.add('ethereum')
+                addEthereumAccount('eth', { ethereum: { address: '0xabc' } })
+                service = new SyncService({
+                    queryClient,
+                    stores: createSyncStorePorts(),
+                    chains: chainsDep(),
+                })
+                service.start()
+                // The never-synced scopes' forced pass.
+                await vi.advanceTimersByTimeAsync(50)
+                const { fetchAndPersistAccount } =
+                    await import('@perawallet/wallet-core-accounts')
+                vi.mocked(fetchAndPersistAccount).mockClear()
+                ethereumSignal.mockClear()
+                mockSendShouldRefreshRequest.mockClear()
+            }
+
+            it.each(['confirmed', 'failed'] as const)(
+                're-reads the accounts of a chain that settled a %s submission, without asking its change signal',
+                async status => {
+                    await startAfterFirstPass()
+                    settleOnEthereum(status)
+
+                    await vi.advanceTimersByTimeAsync(POLL_INTERVAL)
+
+                    expect(await accountReadsOn(ETHEREUM)).toContain('0xabc')
+                    expect(ethereumSignal).not.toHaveBeenCalled()
+                },
+            )
+
+            it('asks the change signal again on the tick after the forced pass', async () => {
+                await startAfterFirstPass()
+                settleOnEthereum('confirmed')
+                await vi.advanceTimersByTimeAsync(POLL_INTERVAL)
+                const { fetchAndPersistAccount } =
+                    await import('@perawallet/wallet-core-accounts')
+                vi.mocked(fetchAndPersistAccount).mockClear()
+                ethereumSignal.mockClear()
+                settleNothing()
+
+                await vi.advanceTimersByTimeAsync(POLL_INTERVAL)
+
+                expect(ethereumSignal).toHaveBeenCalledTimes(1)
+                expect(await accountReadsOn(ETHEREUM)).toEqual([])
+            })
+
+            it("leaves another chain's change signal in charge", async () => {
+                await startAfterFirstPass()
+                settleOnEthereum('confirmed')
+
+                await vi.advanceTimersByTimeAsync(POLL_INTERVAL)
+
+                expect(mockSendShouldRefreshRequest).toHaveBeenCalledTimes(1)
+            })
+        })
+
         it('invalidates only the chain that settled', async () => {
             const {
                 invalidateTransactionQueries,
